@@ -34,6 +34,10 @@ function getCurrentViewDirection(
   return direction.normalize();
 }
 
+function getTopicDisplayLabel(topic: LearningSpaceTopic) {
+  return topic.label ?? topic.topic_name ?? "Untitled Topic";
+}
+
 function TopicLabel({
   topic,
   isSelected,
@@ -104,7 +108,7 @@ function TopicLabel({
             : "border-white/10 bg-black/65 text-zinc-200"
         }`}
       >
-        {topic.label}
+        {getTopicDisplayLabel(topic)}
       </div>
     </Html>
   );

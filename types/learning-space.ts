@@ -1,6 +1,7 @@
 export type LearningSpaceTopic = {
   topic_id: string;
   topic_name: string;
+  label?: string;
   position: [number, number, number];
   render_state: {
     radius: number;
