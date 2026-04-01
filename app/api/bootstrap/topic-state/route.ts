@@ -30,6 +30,19 @@ function normalizeDiagnosis(raw: unknown): DiagnosisType {
   return "representation_gap";
 }
 
+function getCreatedAt(row: unknown): string | null {
+  if (
+    row &&
+    typeof row === "object" &&
+    "created_at" in row &&
+    typeof row.created_at === "string"
+  ) {
+    return row.created_at;
+  }
+
+  return null;
+}
+
 function mapRowsToTopics(
   rows: Awaited<ReturnType<typeof getLatestTopicState>>
 ): Topic[] {
@@ -45,8 +58,8 @@ function mapRowsToTopics(
       typeof topicJson.next_step === "string"
         ? topicJson.next_step
         : typeof row.next_step === "string" && row.next_step.trim().length > 0
-        ? row.next_step
-        : fallbackMock?.nextStep ?? "Continue learning";
+          ? row.next_step
+          : fallbackMock?.nextStep ?? "Continue learning";
 
     const positionFromJson =
       topicJson &&
@@ -81,9 +94,7 @@ function mapRowsToTopics(
       lastUpdated:
         typeof row.updated_at === "string"
           ? row.updated_at
-          : typeof row.created_at === "string"
-          ? row.created_at
-          : null,
+          : getCreatedAt(row),
       hasAvailableProbe: false,
     };
   });
