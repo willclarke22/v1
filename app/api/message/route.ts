@@ -35,6 +35,39 @@ type TopicMatchResult = {
   shouldCreateNewTopic: boolean;
 };
 
+type RawLearningSpaceTopic = {
+  topic_id?: string;
+  label?: string;
+  topic_name?: string;
+  position?: [number, number, number];
+  render_state?: {
+    radius?: number;
+    surface_noise?: number;
+    spin_rate?: number;
+    saturation?: number;
+    is_star?: boolean;
+  };
+  satellite_count?: number;
+  satellites?: Array<{
+    satellite_id?: string;
+    orbit_angle?: number;
+    linked_attempt_id?: string | null;
+  }>;
+};
+
+type RawLearningSpaceCluster = {
+  cluster_id?: string;
+  label?: string;
+  cluster_centroid?: [number, number, number];
+  member_topic_ids?: string[];
+};
+
+type RawLearningSpace = {
+  space_version?: "v1";
+  topics?: RawLearningSpaceTopic[];
+  clusters?: RawLearningSpaceCluster[];
+};
+
 const REUSE_TOPIC_THRESHOLD = 0.58;
 
 function clamp(value: number, min: number, max: number) {
@@ -1118,6 +1151,65 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
   }));
 }
 
+function adaptLearningSpaceToContract(
+  rawLearningSpace: RawLearningSpace,
+  updatedTopics: RouteTopic[]
+): LearningSpace {
+  const safeTopics = Array.isArray(rawLearningSpace.topics)
+    ? rawLearningSpace.topics
+    : [];
+
+  const safeClusters = Array.isArray(rawLearningSpace.clusters)
+    ? rawLearningSpace.clusters
+    : [];
+
+  return {
+    space_version: "v1",
+    topics: safeTopics.map((topic, index) => {
+      const fallbackTopic = updatedTopics[index];
+
+      return {
+        topic_id:
+          topic.topic_id ??
+          fallbackTopic?.id ??
+          makeId("topic-fallback"),
+        topic_name:
+          topic.topic_name ??
+          topic.label ??
+          fallbackTopic?.name ??
+          "Untitled Topic",
+        position:
+          topic.position ??
+          fallbackTopic?.position ??
+          [0, 0, 0],
+        render_state: {
+          radius: topic.render_state?.radius ?? 1,
+          surface_noise: topic.render_state?.surface_noise ?? 0,
+          spin_rate: topic.render_state?.spin_rate ?? 0,
+          saturation: topic.render_state?.saturation ?? 1,
+          is_star: topic.render_state?.is_star ?? false,
+        },
+        satellite_count:
+          topic.satellite_count ??
+          topic.satellites?.length ??
+          0,
+        satellites: (topic.satellites ?? []).map((satellite, satelliteIndex) => ({
+          satellite_id:
+            satellite.satellite_id ??
+            makeId(`satellite-${index}-${satelliteIndex}`),
+          orbit_angle: satellite.orbit_angle ?? 0,
+          linked_attempt_id: satellite.linked_attempt_id ?? null,
+        })),
+      };
+    }),
+    clusters: safeClusters.map((cluster, index) => ({
+      cluster_id: cluster.cluster_id ?? makeId(`cluster-${index}`),
+      cluster_centroid: cluster.cluster_centroid ?? [0, 0, 0],
+      member_topic_ids: cluster.member_topic_ids ?? [],
+    })),
+  };
+}
+
 function buildEngineFuel(
   updatedTopics: RouteTopic[],
   decision: InterventionModeDecision,
@@ -1239,7 +1331,12 @@ export async function POST(request: Request) {
 
     const deliveredResponse = buildDeliveredResponse(topic, decision, probePlan);
     const engineFuel = buildEngineFuel(updatedTopics, decision, probePlan);
-    const learningSpace = buildLearningSpace(updatedTopics) as LearningSpace;
+
+    const rawLearningSpace = buildLearningSpace(updatedTopics) as RawLearningSpace;
+    const learningSpace = adaptLearningSpaceToContract(
+      rawLearningSpace,
+      updatedTopics
+    );
 
     const runId = makeId("run");
 
@@ -1292,7 +1389,7 @@ export async function POST(request: Request) {
         inferred_keywords: inferKeywordsFromMessage(message),
         updated_topic_metrics: updatedTopicMetrics,
         learning_space_topic:
-          learningSpace.topics?.find((t) => t.topic_id === topic.id) ?? null,
+          learningSpace.topics.find((t) => t.topic_id === topic.id) ?? null,
       },
     });
 

@@ -1,5 +1,5 @@
 import type { Topic } from "@/types/topic";
-import type { LearningSpace } from "@/types/learning-space";
+import type { LearningSpace } from "@/types/contracts";
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -29,7 +29,7 @@ export function buildLearningSpace(topics: Topic[]): LearningSpace {
     space_version: "v1",
     topics: topics.map((topic) => ({
       topic_id: topic.id,
-      label: topic.name,
+      topic_name: topic.name,
       position: normalizeTopicPosition(topic),
       render_state: buildRenderState(topic),
       satellite_count: 0,

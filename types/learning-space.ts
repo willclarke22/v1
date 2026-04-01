@@ -1,6 +1,6 @@
 export type LearningSpaceTopic = {
   topic_id: string;
-  label: string;
+  topic_name: string;
   position: [number, number, number];
   render_state: {
     radius: number;
@@ -19,7 +19,6 @@ export type LearningSpaceTopic = {
 
 export type LearningSpaceCluster = {
   cluster_id: string;
-  label: string;
   cluster_centroid: [number, number, number];
   member_topic_ids: string[];
 };
