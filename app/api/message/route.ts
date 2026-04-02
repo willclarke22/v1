@@ -228,8 +228,8 @@ async function loadRouteTopics(): Promise<RouteTopic[]> {
       typeof topicJson.next_step === "string"
         ? topicJson.next_step
         : typeof row.next_step === "string" && row.next_step.trim().length > 0
-        ? row.next_step
-        : fallback?.nextStep ?? "Continue learning";
+          ? row.next_step
+          : fallback?.nextStep ?? "Continue learning";
 
     return {
       ...(fallback ?? mockTopics[0]),
@@ -408,12 +408,12 @@ function buildProbeReply(topicName: string, diagnosis: DiagnosisType): string {
     diagnosis === "representation_gap"
       ? "your understanding may still need a cleaner mental model"
       : diagnosis === "procedure_gap"
-      ? "you may need more step-by-step execution support"
-      : diagnosis === "recall_gap"
-      ? "the main issue may be retrieval rather than deep structure"
-      : diagnosis === "discrimination_gap"
-      ? "the main issue may be distinguishing similar concepts"
-      : "the main issue may be transferring the idea into a new setting";
+        ? "you may need more step-by-step execution support"
+        : diagnosis === "recall_gap"
+          ? "the main issue may be retrieval rather than deep structure"
+          : diagnosis === "discrimination_gap"
+            ? "the main issue may be distinguishing similar concepts"
+            : "the main issue may be transferring the idea into a new setting";
 
   return `I think your message connects most strongly to ${topicName}. Right now, ${diagnosisText}, so I’m moving us there and preparing a focused next step to reveal what you already understand.`;
 }
@@ -423,12 +423,12 @@ function buildClarifyReply(topicName: string, diagnosis: DiagnosisType): string 
     diagnosis === "representation_gap"
       ? "a cleaner mental model"
       : diagnosis === "procedure_gap"
-      ? "a clearer sequence of steps"
-      : diagnosis === "recall_gap"
-      ? "a quick retrieval-oriented reminder"
-      : diagnosis === "discrimination_gap"
-      ? "a sharper contrast between similar ideas"
-      : "help bridging the idea into a new setting";
+        ? "a clearer sequence of steps"
+        : diagnosis === "recall_gap"
+          ? "a quick retrieval-oriented reminder"
+          : diagnosis === "discrimination_gap"
+            ? "a sharper contrast between similar ideas"
+            : "help bridging the idea into a new setting";
 
   return `I think your message connects most strongly to ${topicName}. Right now, the best next move is clarification rather than measurement, because you may first need ${diagnosisText}. I’ll stabilize the idea a bit before asking you to demonstrate it.`;
 }
@@ -547,8 +547,8 @@ function buildInterventionModeDecision(
     preferredModality === "interactive"
       ? 0.74
       : preferredModality === "video"
-      ? 0.66
-      : 0.62;
+        ? 0.66
+        : 0.62;
 
   const clarifyScore = clamp(
     0.22 +
@@ -645,8 +645,8 @@ function buildProbePlan(
         preferredModality === "video"
           ? "sora"
           : preferredModality === "interactive"
-          ? "custom"
-          : "chatgpt",
+            ? "custom"
+            : "chatgpt",
       allowed_modalities: ["text", "video", "interactive"],
       allowed_generators: ["chatgpt", "sora", "custom"],
       fallback_renderer_order: ["text", "video", "interactive"],
@@ -1079,8 +1079,8 @@ function buildDeliveredProbe(
       modality === "interactive"
         ? "interactive_renderer"
         : modality === "video"
-        ? "video_renderer"
-        : "text_renderer",
+          ? "video_renderer"
+          : "text_renderer",
     generator,
     modality,
 
@@ -1099,8 +1099,8 @@ function buildDeliveredProbe(
       modality === "video"
         ? { video_payload: probePlan.video_payload }
         : modality === "interactive"
-        ? { interactive_payload: probePlan.interactive_payload }
-        : { text_payload: probePlan.text_payload },
+          ? { interactive_payload: probePlan.interactive_payload }
+          : { text_payload: probePlan.text_payload },
   };
 }
 
@@ -1348,6 +1348,8 @@ export async function POST(request: Request) {
       learning_space: learningSpace,
     };
 
+    const runResultJson = JSON.parse(JSON.stringify(result));
+
     const sceneUpdate = buildSceneUpdate(targetTopicId, learningSpace);
     const suggestedAction = buildSuggestedAction(
       topic.name,
@@ -1369,7 +1371,7 @@ export async function POST(request: Request) {
       activeDiagnosis: decision.active_diagnosis,
       replyText: deliveredResponse.learner_message.text,
       suggestedAction,
-      runResultJson: result,
+      runResultJson,
     });
 
     await upsertTopicState({
