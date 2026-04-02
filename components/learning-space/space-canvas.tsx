@@ -22,10 +22,13 @@ function getTopicById(
 }
 
 function getCurrentViewDirection(
-  camera: THREE.PerspectiveCamera,
+  camera: THREE.Camera,
   currentTarget: THREE.Vector3
 ) {
-  const direction = new THREE.Vector3().subVectors(camera.position, currentTarget);
+  const direction = new THREE.Vector3().subVectors(
+    camera.position,
+    currentTarget
+  );
 
   if (direction.lengthSq() === 0) {
     direction.set(0, 0, 1);
