@@ -49,9 +49,7 @@ function deriveTopicsFromMessageResponse(
   const deliveredProbe = data.result?.delivered_response?.delivered_probe ?? null;
 
   const targetNextStep =
-    deliveredProbe?.title ??
-    data.suggested_action ??
-    "Continue learning";
+    deliveredProbe?.title ?? data.suggested_action ?? "Continue learning";
 
   const previousById = new Map(previousTopics.map((topic) => [topic.id, topic]));
 
@@ -381,14 +379,14 @@ export default function Home() {
       {!isImmersiveProbeMode && (
         <>
           <div className="pointer-events-none absolute left-0 top-0 z-40 h-full">
-            <div className="relative h-full w-[298px]">
-              <div
-                className={`pointer-events-auto absolute left-0 top-0 h-full w-[280px] transform transition-transform duration-300 ${
-                  shellPanels.isLeftPanelOpen
-                    ? "translate-x-0"
-                    : "-translate-x-[calc(100%-18px)]"
-                }`}
-              >
+            <div
+              className={`pointer-events-auto absolute left-0 top-0 h-full w-[280px] transform transition-transform duration-300 ${
+                shellPanels.isLeftPanelOpen
+                  ? "translate-x-0"
+                  : "-translate-x-[calc(100%-18px)]"
+              }`}
+            >
+              <div className="relative h-full overflow-visible rounded-r-[2rem]">
                 <div className="h-full overflow-hidden rounded-r-[2rem]">
                   <Sidebar
                     activeTab={shellPanels.leftPanelTab}
@@ -401,22 +399,22 @@ export default function Home() {
                     progressSummary={progressSummary}
                   />
                 </div>
-              </div>
 
-              <button
-                onClick={() =>
-                  shellPanels.setIsLeftPanelOpen((prev) => !prev)
-                }
-                className={`pointer-events-auto absolute top-1/2 z-50 flex h-24 w-[18px] -translate-y-1/2 items-center justify-center rounded-r-xl border border-l-0 border-white/8 bg-white/[0.035] text-[10px] uppercase tracking-[0.18em] text-zinc-300 shadow-[0_0_14px_rgba(0,0,0,0.14)] backdrop-blur-md transition hover:bg-white/[0.06] ${
-                  shellPanels.isLeftPanelOpen ? "left-[280px]" : "left-[18px]"
-                }`}
-                type="button"
-                aria-label={shellPanels.isLeftPanelOpen ? "Close menu" : "Open menu"}
-              >
-                <span className="[writing-mode:vertical-rl] rotate-180">
-                  {shellPanels.isLeftPanelOpen ? "Close" : "Menu"}
-                </span>
-              </button>
+                <button
+                  onClick={() =>
+                    shellPanels.setIsLeftPanelOpen((prev) => !prev)
+                  }
+                  className="absolute right-0 top-1/2 z-50 flex h-24 w-[18px] -translate-y-1/2 translate-x-full items-center justify-center rounded-r-xl border border-l-0 border-white/8 bg-white/[0.035] text-[10px] uppercase tracking-[0.18em] text-zinc-300 shadow-[0_0_14px_rgba(0,0,0,0.14)] backdrop-blur-md transition hover:bg-white/[0.06]"
+                  type="button"
+                  aria-label={
+                    shellPanels.isLeftPanelOpen ? "Close menu" : "Open menu"
+                  }
+                >
+                  <span className="[writing-mode:vertical-rl] rotate-180">
+                    {shellPanels.isLeftPanelOpen ? "Close" : "Menu"}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
