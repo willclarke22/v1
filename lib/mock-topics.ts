@@ -39,7 +39,7 @@ export const mockTopics: Topic[] = [
     name: "Neurotransmitters",
     diagnosis: "discrimination_gap",
     nextStep: "Contrast related neurotransmitters in context.",
-    confusion: 0.36,
+    confusion: 0.35,
     insight: 0.55,
     learningScore: 0.63,
     position: [1.1, -1.9, 0.3],
