@@ -5,7 +5,6 @@ import { insertAttempt, insertRun, upsertTopicState } from "@/lib/persistence/my
 import { getLatestTopicState } from "@/lib/persistence/read";
 import { makeId } from "@/lib/utils/ids";
 import type {
-  AttemptDeliveryContext,
   DeliveredProbe,
   DeliveredResponse,
   DiagnosisDelta,
@@ -130,8 +129,8 @@ async function loadRouteTopics(body: ProbeAttemptPayload): Promise<RouteTopic[]>
       typeof topicJson.next_step === "string"
         ? topicJson.next_step
         : typeof row.next_step === "string" && row.next_step.trim().length > 0
-        ? row.next_step
-        : fallback?.nextStep ?? "Continue learning";
+          ? row.next_step
+          : fallback?.nextStep ?? "Continue learning";
 
     return {
       ...(fallback ?? mockTopics[0]),
@@ -462,16 +461,16 @@ function buildDiagnosisDelta(
         ? success
           ? -0.15
           : lowEvidence
-          ? 0.12
-          : 0.05
+            ? 0.12
+            : 0.05
         : 0,
     representation_gap:
       diagnosis === "representation_gap"
         ? success
           ? -0.18
           : lowEvidence
-          ? 0.1
-          : 0.04
+            ? 0.1
+            : 0.04
         : 0,
     procedure_gap:
       diagnosis === "procedure_gap"
@@ -539,10 +538,10 @@ function buildJudgedAttempt(args: {
         scoring.classification === "guess"
           ? ["low_evidence"]
           : scoring.classification === "no_response"
-          ? ["no_response"]
-          : scoring.classification === "near_miss"
-          ? ["partial_structure"]
-          : [],
+            ? ["no_response"]
+            : scoring.classification === "near_miss"
+              ? ["partial_structure"]
+              : [],
       explanation_quality: scoring.explanationQuality,
       transfer_distance: null,
       confidence_alignment:
@@ -551,16 +550,16 @@ function buildJudgedAttempt(args: {
         scoring.classification === "success"
           ? "partially_structured_mechanistic_model"
           : scoring.classification === "near_miss"
-          ? "fragile_partial_model"
-          : null,
+            ? "fragile_partial_model"
+            : null,
       struggle_type:
         scoring.classification === "no_response"
           ? "non_response"
           : scoring.classification === "guess"
-          ? "surface_recall"
-          : scoring.classification === "near_miss"
-          ? "incomplete_structure"
-          : null,
+            ? "surface_recall"
+            : scoring.classification === "near_miss"
+              ? "incomplete_structure"
+              : null,
     },
     mental_model_hypothesis_ids: [],
     outcome: {
@@ -1080,8 +1079,8 @@ function buildDecision(args: {
       scoring.classification === "success"
         ? 0.82
         : scoring.classification === "near_miss"
-        ? 0.72
-        : 0.64,
+          ? 0.72
+          : 0.64,
     decision_reasons: [
       "This run is directly downstream of a delivered probe.",
       `The judged attempt classification was ${scoring.classification}.`,
@@ -1251,6 +1250,25 @@ export async function POST(request: NextRequest) {
       learning_space: learningSpace,
     };
 
+    const runResultJson = JSON.parse(JSON.stringify(result));
+    const attemptJson = JSON.parse(JSON.stringify(judgedAttempt));
+    const topicJson = JSON.parse(
+      JSON.stringify({
+        topic_id: topic.id,
+        topic_name: topicName,
+        next_step:
+          nextProbePlan.text_plan.instructional_goal ??
+          topic.nextStep,
+        previous_probe_id: body.probeId,
+        judged_attempt: judgedAttempt,
+        updated_topic_metrics: updatedTopicMetrics,
+        next_probe_plan: nextProbePlan,
+        next_delivered_probe: nextDeliveredProbe,
+        learning_space_topic:
+          learningSpace.topics?.find((t) => t.topic_id === topic.id) ?? null,
+      })
+    );
+
     const sceneUpdate = buildSceneUpdate(topic.id, learningSpace);
 
     await insertRun({
@@ -1263,7 +1281,7 @@ export async function POST(request: NextRequest) {
       activeDiagnosis: decision.active_diagnosis,
       replyText: replyBundle.reply,
       suggestedAction: replyBundle.suggestedAction,
-      runResultJson: result,
+      runResultJson,
     });
 
     await insertAttempt({
@@ -1286,7 +1304,7 @@ export async function POST(request: NextRequest) {
           : null,
       insight: updatedTopicMetrics.insight ?? null,
       confusion: updatedTopicMetrics.confusion ?? null,
-      attemptJson: judgedAttempt,
+      attemptJson,
     });
 
     await upsertTopicState({
@@ -1301,20 +1319,7 @@ export async function POST(request: NextRequest) {
       nextStep:
         nextProbePlan.text_plan.instructional_goal ??
         topic.nextStep,
-      topicJson: {
-        topic_id: topic.id,
-        topic_name: topicName,
-        next_step:
-          nextProbePlan.text_plan.instructional_goal ??
-          topic.nextStep,
-        previous_probe_id: body.probeId,
-        judged_attempt: judgedAttempt,
-        updated_topic_metrics: updatedTopicMetrics,
-        next_probe_plan: nextProbePlan,
-        next_delivered_probe: nextDeliveredProbe,
-        learning_space_topic:
-          learningSpace.topics?.find((t) => t.topic_id === topic.id) ?? null,
-      },
+      topicJson,
     });
 
     const response: ProbeSubmitRouteResponse = {
