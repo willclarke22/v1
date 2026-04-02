@@ -1,6 +1,6 @@
-import type { TopicNode } from "@/types/topic";
+import type { Topic } from "@/types/topic";
 
-export default function MobileTopicCard({ topic }: { topic: TopicNode }) {
+export default function MobileTopicCard({ topic }: { topic: Topic }) {
   return (
     <section className="border-t border-white/10 bg-zinc-950/90 px-4 py-4 xl:hidden">
       <div className="mx-auto w-full max-w-5xl rounded-3xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur">
