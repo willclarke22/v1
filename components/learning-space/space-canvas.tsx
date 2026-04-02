@@ -2,11 +2,12 @@
 
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { Float, Html, Stars, TrackballControls } from "@react-three/drei";
-import type { TrackballControls as TrackballControlsImpl } from "three-stdlib";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ElementRef } from "react";
 import * as THREE from "three";
 import type { LearningSpace, LearningSpaceTopic } from "@/types/learning-space";
 import type { ProbeSummary } from "@/components/probes/probe-surface";
+
+type TrackballControlsRef = ElementRef<typeof TrackballControls>;
 
 function getTopicById(
   topics: LearningSpaceTopic[],
@@ -372,7 +373,7 @@ function CameraController({
   topics: LearningSpaceTopic[];
   selectedTopicId: string | null;
   focusedTopicId: string | null;
-  controlsRef: React.RefObject<TrackballControlsImpl | null>;
+  controlsRef: React.RefObject<TrackballControlsRef | null>;
   isEnteringProbe: boolean;
   probeEntryTopicId: string | null;
   onProbeEntryComplete: () => void;
@@ -591,7 +592,7 @@ export default function SpaceCanvas({
   onProbeEntryComplete,
   isBootstrappingTopics = false,
 }: SpaceCanvasProps) {
-  const controlsRef = useRef<TrackballControlsImpl | null>(null);
+  const controlsRef = useRef<TrackballControlsRef | null>(null);
   const seenTopicIdsRef = useRef<Set<string>>(new Set());
   const [appearingTopicIds, setAppearingTopicIds] = useState<Set<string>>(
     new Set()
