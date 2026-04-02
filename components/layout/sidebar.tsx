@@ -44,8 +44,8 @@ function MetricCard({
     tone === "good"
       ? "text-emerald-300"
       : tone === "attention"
-      ? "text-amber-300"
-      : "text-white";
+        ? "text-amber-300"
+        : "text-white";
 
   return (
     <div className="rounded-2xl border border-white/6 bg-white/[0.024] p-4 shadow-[0_12px_36px_rgba(0,0,0,0.13)] backdrop-blur-md">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "@/components/layout/sidebar";
+import Sidebar, { type SidebarTab } from "@/components/layout/sidebar";
 import BottomComposer from "@/components/layout/bottom-composer";
 import TopicPanel from "@/components/layout/topic-panel";
 import MobileTopicCard from "@/components/layout/mobile-topic-card";
@@ -16,10 +16,7 @@ import type {
   MessageRouteResponse,
 } from "@/types/contracts";
 import { useProbeFlow } from "@/hooks/use-probe-flow";
-import {
-  useShellPanels,
-  type SidebarTab,
-} from "@/hooks/use-shell-panels";
+import { useShellPanels } from "@/hooks/use-shell-panels";
 
 type TopicBootstrapResponse = {
   topics?: Topic[];

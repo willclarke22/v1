@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-
-export type SidebarTab = "myway" | "progress" | "view" | "settings";
+import type { SidebarTab } from "@/components/layout/sidebar";
 
 export function useShellPanels(focusedTopicId: string | null) {
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(false);
