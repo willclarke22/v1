@@ -4,7 +4,7 @@ export const mockTopics: Topic[] = [
   {
     id: "topic-1",
     name: "Neural Signaling",
-    diagnosis: "Representation gap detected.",
+    diagnosis: "representation_gap",
     nextStep: "Clarify how signals propagate across neurons.",
     confusion: 0.62,
     insight: 0.31,
@@ -15,7 +15,7 @@ export const mockTopics: Topic[] = [
   {
     id: "topic-2",
     name: "Synaptic Plasticity",
-    diagnosis: "Transfer gap detected.",
+    diagnosis: "transfer_gap",
     nextStep: "Probe whether the concept transfers to a new example.",
     confusion: 0.41,
     insight: 0.48,
@@ -26,7 +26,7 @@ export const mockTopics: Topic[] = [
   {
     id: "topic-3",
     name: "Action Potentials",
-    diagnosis: "Recall gap detected.",
+    diagnosis: "recall_gap",
     nextStep: "Reinforce the sequence of depolarization and repolarization.",
     confusion: 0.53,
     insight: 0.29,
@@ -37,7 +37,7 @@ export const mockTopics: Topic[] = [
   {
     id: "topic-4",
     name: "Neurotransmitters",
-    diagnosis: "Discrimination gap detected.",
+    diagnosis: "discrimination_gap",
     nextStep: "Contrast related neurotransmitters in context.",
     confusion: 0.36,
     insight: 0.55,
