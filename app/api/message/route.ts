@@ -1350,6 +1350,18 @@ export async function POST(request: Request) {
 
     const runResultJson = JSON.parse(JSON.stringify(result));
 
+    const topicJson = JSON.parse(
+      JSON.stringify({
+        topic_id: topic.id,
+        topic_name: topic.name,
+        next_step: topic.nextStep,
+        inferred_keywords: inferKeywordsFromMessage(message),
+        updated_topic_metrics: updatedTopicMetrics,
+        learning_space_topic:
+          learningSpace.topics.find((t) => t.topic_id === topic.id) ?? null,
+      })
+    );
+
     const sceneUpdate = buildSceneUpdate(targetTopicId, learningSpace);
     const suggestedAction = buildSuggestedAction(
       topic.name,
@@ -1384,15 +1396,7 @@ export async function POST(request: Request) {
         updatedTopics.find((t) => t.id === topic.id)?.learningScore ?? null,
       diagnosis: decision.active_diagnosis,
       nextStep: topic.nextStep,
-      topicJson: {
-        topic_id: topic.id,
-        topic_name: topic.name,
-        next_step: topic.nextStep,
-        inferred_keywords: inferKeywordsFromMessage(message),
-        updated_topic_metrics: updatedTopicMetrics,
-        learning_space_topic:
-          learningSpace.topics.find((t) => t.topic_id === topic.id) ?? null,
-      },
+      topicJson,
     });
 
     const response: MessageRouteResponse = {
