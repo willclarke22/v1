@@ -174,7 +174,11 @@ function extractReplyFromProbeSubmitResponse(data: LegacyProbeSubmitApiResponse)
 function extractSuggestedActionFromProbeSubmitResponse(
   data: LegacyProbeSubmitApiResponse
 ) {
-  return data.suggestedAction ?? "";
+  return (
+    data.suggestedAction ??
+    data.result?.engine_fuel?.intervention_mode_decision?.decision_reasons?.[0] ??
+    ""
+  );
 }
 
 function extractMetricUpdateFromProbeSubmitResponse(
@@ -186,9 +190,15 @@ function extractMetricUpdateFromProbeSubmitResponse(
 function extractNextProbeFromProbeSubmitResponse(
   data: LegacyProbeSubmitApiResponse
 ): ProbeSummary | null {
-  const contractProbe = mapDeliveredProbeToSummary(data.next_probe);
+  const contractProbe = mapDeliveredProbeToSummary(
+    data.result?.delivered_response?.delivered_probe
+  );
 
   if (contractProbe) return contractProbe;
+
+  const topLevelContractProbe = mapDeliveredProbeToSummary(data.next_probe);
+
+  if (topLevelContractProbe) return topLevelContractProbe;
 
   if (!data.nextProbe) return null;
 
