@@ -131,7 +131,9 @@ function extractSuggestedActionFromMessageResponse(data: MessageRouteResponse) {
   );
 }
 
-function extractMetricUpdateFromMessageResponse(data: MessageRouteResponse) {
+function extractMetricUpdateFromMessageResponse(
+  data: MessageRouteResponse
+): FrontendTopicMetricUpdate | null {
   const targetTopicId =
     data.intervention?.target_topic_id ??
     data.scene_update?.target_topic_id ??
@@ -207,8 +209,8 @@ function extractSuggestedActionFromProbeSubmitResponse(
 
 function extractMetricUpdateFromProbeSubmitResponse(
   data: LegacyProbeSubmitApiResponse
-) {
-  return data.updated_topic_metrics ?? data.updatedTopicMetrics;
+): FrontendTopicMetricUpdate | undefined {
+  return data.updated_topic_metrics ?? data.updatedTopicMetrics ?? undefined;
 }
 
 function extractNextProbeFromProbeSubmitResponse(
@@ -303,15 +305,15 @@ export function useProbeFlow({
           return {
             ...topic,
             confusion:
-              update.confusion !== undefined
+              update.confusion !== undefined && update.confusion !== null
                 ? clamp(update.confusion, 0, 1)
                 : topic.confusion,
             insight:
-              update.insight !== undefined
+              update.insight !== undefined && update.insight !== null
                 ? clamp(update.insight, 0, 1)
                 : topic.insight,
             learningScore:
-              update.learningScore !== undefined
+              update.learningScore !== undefined && update.learningScore !== null
                 ? clamp(update.learningScore, 0, 1)
                 : topic.learningScore,
           };
@@ -338,7 +340,10 @@ export function useProbeFlow({
 
   const finishMessageFlowSuccess = useCallback(
     (data: MessageRouteResponse) => {
-      applyTopicMetricUpdate(extractMetricUpdateFromMessageResponse(data));
+      const metricUpdate = extractMetricUpdateFromMessageResponse(data);
+      if (metricUpdate) {
+        applyTopicMetricUpdate(metricUpdate);
+      }
 
       const returnedLearningSpace = extractLearningSpaceFromMessageResponse(data);
       if (returnedLearningSpace) {
@@ -478,7 +483,10 @@ export function useProbeFlow({
           );
         }
 
-        applyTopicMetricUpdate(extractMetricUpdateFromProbeSubmitResponse(data));
+        const metricUpdate = extractMetricUpdateFromProbeSubmitResponse(data);
+        if (metricUpdate) {
+          applyTopicMetricUpdate(metricUpdate);
+        }
 
         const returnedLearningSpace = extractLearningSpaceFromProbeSubmitResponse(data);
         if (returnedLearningSpace) {
