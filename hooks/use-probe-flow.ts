@@ -132,7 +132,30 @@ function extractSuggestedActionFromMessageResponse(data: MessageRouteResponse) {
 }
 
 function extractMetricUpdateFromMessageResponse(data: MessageRouteResponse) {
-  return data.updated_topic_metrics;
+  const targetTopicId =
+    data.intervention?.target_topic_id ??
+    data.scene_update?.target_topic_id ??
+    data.result?.engine_fuel?.intervention_mode_decision?.target_topic_id ??
+    null;
+
+  if (!targetTopicId) {
+    return null;
+  }
+
+  const topic = data.result?.engine_fuel?.topics?.find(
+    (item) => item.topic_id === targetTopicId
+  );
+
+  if (!topic) {
+    return null;
+  }
+
+  return {
+    topicId: topic.topic_id,
+    confusion: topic.topic_confusion_average ?? null,
+    insight: topic.topic_insight_average ?? null,
+    learningScore: topic.topic_learning_score ?? null,
+  };
 }
 
 function mapDeliveredProbeToSummary(
