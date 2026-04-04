@@ -9,20 +9,21 @@ import type {
   DeliveredResponse,
   EngineFuel,
   ImportantRunInputs,
-  InterventionModeDecision,
   LearningSpace,
+  ModelSignals,
   MyWayRunResult,
   PreviousModeOutcome,
   ProbeSubmitRouteResponse,
   RunMetadata,
   TopicState,
+  VectorInfo,
 } from "@/types/contracts";
 import {
   applyMetricUpdate,
   buildJudgedAttempt,
   buildTopicMetricUpdate,
   buildVectorInfo,
-  ProbeAttemptPayload,
+  type ProbeAttemptPayload,
   scoreResponse,
 } from "@/lib/runtime/attempt-judging";
 import {
@@ -30,8 +31,22 @@ import {
   buildNotApplicableProbePlan,
   buildResponseBundle,
 } from "@/lib/runtime/probe-runtime";
+import { buildRecentChatHistory } from "@/lib/runtime/chat-history";
+import { scoreConfusionInsight } from "@/lib/providers/confusion-insight";
 import { isPosition, normalizeDiagnosis, nowIso } from "@/lib/runtime/shared";
 import type { RouteTopic } from "@/lib/runtime/topic-resolution";
+
+type IncomingChatTurn = {
+  role?: string;
+  text?: string;
+  content?: string;
+};
+
+type ProbeSubmitBody = ProbeAttemptPayload & {
+  chat_history?: string;
+  recent_turns?: IncomingChatTurn[];
+  conversation_turns?: IncomingChatTurn[];
+};
 
 function buildSeededTopicFromProbe(body: ProbeAttemptPayload): RouteTopic {
   const baseMock = mockTopics[0];
@@ -107,29 +122,77 @@ async function loadRouteTopics(body: ProbeAttemptPayload): Promise<RouteTopic[]>
   });
 }
 
-function buildImportantRunInputs(
-  body: ProbeAttemptPayload,
-  topic: RouteTopic,
-  vectorInfo: ReturnType<typeof buildVectorInfo>
-): ImportantRunInputs {
+function normalizeRecentTurns(body: ProbeSubmitBody) {
+  const rawTurns = Array.isArray(body.recent_turns)
+    ? body.recent_turns
+    : Array.isArray(body.conversation_turns)
+      ? body.conversation_turns
+      : [];
+
+  return rawTurns
+    .map((turn) => {
+      const rawRole = typeof turn.role === "string" ? turn.role : "user";
+      const role = rawRole === "assistant" ? "assistant" : "user";
+      const text =
+        typeof turn.text === "string"
+          ? turn.text
+          : typeof turn.content === "string"
+            ? turn.content
+            : "";
+
+      return {
+        role,
+        text: text.trim(),
+      };
+    })
+    .filter((turn) => turn.text.length > 0) as Array<{
+    role: "user" | "assistant";
+    text: string;
+  }>;
+}
+
+function buildChatHistoryFromBody(body: ProbeSubmitBody) {
+  if (typeof body.chat_history === "string" && body.chat_history.trim()) {
+    return body.chat_history.trim();
+  }
+
+  const recentTurns = normalizeRecentTurns(body);
+
+  if (!recentTurns.length) {
+    return "";
+  }
+
+  return buildRecentChatHistory(recentTurns, 6);
+}
+
+function buildFallbackModelSignals(errorMessage?: string): ModelSignals {
+  return {
+    model_confusion: null,
+    model_insight: null,
+    model_version: "unavailable",
+    inference_mode: null,
+    latency_ms: null,
+    status: errorMessage ? "error" : "unavailable",
+    error_message: errorMessage ?? null,
+  };
+}
+
+function buildImportantRunInputs(args: {
+  body: ProbeAttemptPayload;
+  topic: RouteTopic;
+  vectorInfo: VectorInfo;
+  modelSignals: ModelSignals;
+  rawResponse: string;
+}): ImportantRunInputs {
+  const { body, topic, vectorInfo, modelSignals, rawResponse } = args;
+
   return {
     user_message: {
       message_id: null,
       timestamp: body.submittedAt || nowIso(),
-      content:
-        typeof body.response === "string"
-          ? body.response
-          : JSON.stringify(body.response),
+      content: rawResponse,
     },
-    model_signals: {
-      model_confusion: null,
-      model_insight: null,
-      model_version: null,
-      inference_mode: null,
-      latency_ms: null,
-      status: "unavailable",
-      error_message: null,
-    },
+    model_signals: modelSignals,
     current_interaction_context: {
       run_kind: "attempt_run",
       is_response_to_delivered_probe: true,
@@ -187,6 +250,9 @@ function buildDeliveredProbeFromPlan(
   return {
     probe_id: plan.probe_id,
     target_topic_id: plan.target_topic_id,
+    target_diagnosis: plan.target_diagnosis,
+    intent: plan.intent,
+    probe_type: plan.probe_type,
     renderer_type: "text_renderer",
     generator: "chatgpt",
     modality: "text",
@@ -202,8 +268,6 @@ function buildDeliveredProbeFromPlan(
       plan.text_payload.personalization_snapshot.context_framing ?? null,
     expected_response_type: plan.expected_response_type,
     stimulus_id: `stimulus-${plan.probe_id}`,
-    intent: plan.intent,
-    probe_type: plan.probe_type,
     payload_snapshot: {
       text_payload: plan.text_payload,
     },
@@ -264,33 +328,77 @@ function buildDecision(args: {
   topic: RouteTopic;
   scoring: ReturnType<typeof scoreResponse>;
   replyBundle: ReturnType<typeof buildResponseBundle>;
-}): InterventionModeDecision {
-  const { topic, scoring, replyBundle } = args;
+  modelSignals: ModelSignals;
+}) {
+  const { topic, scoring, replyBundle, modelSignals } = args;
   const continueWithProbe = replyBundle.nextMode === "probe";
 
+  const baseConfidence =
+    scoring.classification === "success"
+      ? 0.82
+      : scoring.classification === "near_miss"
+        ? 0.72
+        : 0.64;
+
+  const confusion = modelSignals.model_confusion;
+  const insight = modelSignals.model_insight;
+
+  const readinessSignal =
+    typeof insight === "number"
+      ? Math.max(0, Math.min(1, scoring.correctnessEstimate * 0.65 + insight * 0.35))
+      : scoring.correctnessEstimate;
+
+  const evidenceQualitySignal =
+    typeof confusion === "number" && typeof insight === "number"
+      ? Math.max(
+          0,
+          Math.min(1, scoring.explanationQuality * 0.65 + insight * 0.25 - confusion * 0.15)
+        )
+      : scoring.explanationQuality;
+
+  const decisionReasons = [
+    "This run is directly downstream of a delivered probe.",
+    `The judged attempt classification was ${scoring.classification}.`,
+    replyBundle.whyThisNextStep,
+  ];
+
+  if (typeof confusion === "number") {
+    decisionReasons.push(
+      `Confusion signal for this attempt-like turn was ${confusion.toFixed(2)}.`
+    );
+  }
+
+  if (typeof insight === "number") {
+    decisionReasons.push(
+      `Insight signal for this attempt-like turn was ${insight.toFixed(2)}.`
+    );
+  }
+
   return {
-    mode_selected: continueWithProbe ? "probe" : "clarify",
+    mode_selected: continueWithProbe ? "probe" : "clarify" as const,
     target_topic_id: topic.id,
     active_diagnosis: replyBundle.activeDiagnosis,
     primary_block: topic.nextStep,
     decision_confidence:
-      scoring.classification === "success"
-        ? 0.82
-        : scoring.classification === "near_miss"
-          ? 0.72
-          : 0.64,
-    decision_reasons: [
-      "This run is directly downstream of a delivered probe.",
-      `The judged attempt classification was ${scoring.classification}.`,
-      replyBundle.whyThisNextStep,
-    ],
+      typeof confusion === "number" || typeof insight === "number"
+        ? Math.max(
+            0,
+            Math.min(
+              0.95,
+              baseConfidence +
+                (typeof insight === "number" ? insight * 0.06 : 0) -
+                (typeof confusion === "number" ? confusion * 0.04 : 0)
+            )
+          )
+        : baseConfidence,
+    decision_reasons: decisionReasons,
     clarify_score: continueWithProbe ? 0.42 : 0.76,
     probe_score: continueWithProbe ? 0.78 : 0.44,
     signal_summary: {
       raw_response_signal: bodyResponseSignal(scoring),
-      evidence_quality_signal: scoring.explanationQuality,
+      evidence_quality_signal: evidenceQualitySignal,
       active_problem_signal: 0.72,
-      readiness_signal: scoring.correctnessEstimate,
+      readiness_signal: readinessSignal,
       history_signal: 0.75,
     },
   };
@@ -298,7 +406,7 @@ function buildDecision(args: {
 
 function buildEngineFuel(args: {
   updatedTopics: RouteTopic[];
-  decision: InterventionModeDecision;
+  decision: ReturnType<typeof buildDecision>;
   nextProbePlan:
     | ReturnType<typeof buildNextProbePlan>
     | ReturnType<typeof buildNotApplicableProbePlan>;
@@ -343,7 +451,7 @@ function buildSceneUpdate(
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as ProbeAttemptPayload;
+    const body = (await request.json()) as ProbeSubmitBody;
 
     const rawResponse =
       typeof body?.response === "string"
@@ -375,8 +483,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const chatHistory = buildChatHistoryFromBody(body);
+
+    let modelSignals: ModelSignals = buildFallbackModelSignals();
+
+    try {
+      modelSignals = await scoreConfusionInsight({
+        userMessage: rawResponse,
+        chatHistory,
+      });
+    } catch (error) {
+      modelSignals = buildFallbackModelSignals(
+        error instanceof Error ? error.message : "Unknown confusion/insight scoring error"
+      );
+    }
+
     const topicName = body.topicName || topic.name;
     const scoring = scoreResponse(rawResponse);
+    const vectorInfo = buildVectorInfo(topic);
 
     const replyBundle = buildResponseBundle({
       topicName,
@@ -389,7 +513,6 @@ export async function POST(request: NextRequest) {
     const updatedTopics = routeTopics.map((t) =>
       applyMetricUpdate(t, updatedTopicMetrics)
     );
-    const vectorInfo = buildVectorInfo(topic);
 
     const judgedAttempt = buildJudgedAttempt({
       body: {
@@ -423,6 +546,7 @@ export async function POST(request: NextRequest) {
       topic,
       scoring,
       replyBundle,
+      modelSignals,
     });
 
     const engineFuel = buildEngineFuel({
@@ -437,11 +561,13 @@ export async function POST(request: NextRequest) {
 
     const result: MyWayRunResult = {
       run_metadata: buildRunMetadata(engineFuel, runId),
-      important_run_inputs: buildImportantRunInputs(
-        { ...body, response: rawResponse },
+      important_run_inputs: buildImportantRunInputs({
+        body: { ...body, response: rawResponse },
         topic,
-        vectorInfo
-      ),
+        vectorInfo,
+        modelSignals,
+        rawResponse,
+      }),
       engine_fuel: engineFuel,
       delivered_response: buildDeliveredResponse(
         replyBundle.reply,
@@ -513,13 +639,13 @@ export async function POST(request: NextRequest) {
     const response: ProbeSubmitRouteResponse = {
       result,
       scene_update: sceneUpdate,
-      intervention: {
-        mode_selected: decision.mode_selected,
-        target_topic_id: decision.target_topic_id,
-        active_diagnosis: decision.active_diagnosis,
-        probe_available: nextDeliveredProbe !== null,
-        status_label: replyBundle.statusLabel,
-        suggested_action: replyBundle.suggestedAction,
+      continue_probe_loop: nextDeliveredProbe !== null,
+      next_probe: nextDeliveredProbe,
+      updated_topic_metrics: {
+        topicId: body.topicId,
+        confusion: updatedTopicMetrics.confusion,
+        insight: updatedTopicMetrics.insight,
+        learningScore: updatedTopicMetrics.learningScore,
       },
     };
 

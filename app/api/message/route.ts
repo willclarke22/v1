@@ -10,6 +10,7 @@ import type {
   LearningSpace,
   MessageRouteRequest,
   MessageRouteResponse,
+  ModelSignals,
   MyWayRunResult,
   PreviousModeOutcome,
   ProbePlan,
@@ -33,6 +34,8 @@ import {
   buildUpdatedMetrics,
 } from "@/lib/runtime/message-runtime";
 import { nowIso } from "@/lib/runtime/shared";
+import { scoreConfusionInsight } from "@/lib/providers/confusion-insight";
+import { buildRecentChatHistory } from "@/lib/runtime/chat-history";
 
 type RawLearningSpaceTopic = {
   topic_id?: string;
@@ -66,6 +69,62 @@ type RawLearningSpace = {
   topics?: RawLearningSpaceTopic[];
   clusters?: RawLearningSpaceCluster[];
 };
+
+type IncomingChatTurn = {
+  role?: string;
+  text?: string;
+  content?: string;
+};
+
+type MessageRouteBody = MessageRouteRequest & {
+  message?: string;
+  chat_history?: string;
+  recent_turns?: IncomingChatTurn[];
+  conversation_turns?: IncomingChatTurn[];
+};
+
+function normalizeRecentTurns(body: MessageRouteBody) {
+  const rawTurns = Array.isArray(body.recent_turns)
+    ? body.recent_turns
+    : Array.isArray(body.conversation_turns)
+      ? body.conversation_turns
+      : [];
+
+  return rawTurns
+    .map((turn) => {
+      const rawRole = typeof turn.role === "string" ? turn.role : "user";
+      const role = rawRole === "assistant" ? "assistant" : "user";
+      const text =
+        typeof turn.text === "string"
+          ? turn.text
+          : typeof turn.content === "string"
+            ? turn.content
+            : "";
+
+      return {
+        role,
+        text: text.trim(),
+      };
+    })
+    .filter((turn) => turn.text.length > 0) as Array<{
+    role: "user" | "assistant";
+    text: string;
+  }>;
+}
+
+function buildChatHistoryFromBody(body: MessageRouteBody) {
+  if (typeof body.chat_history === "string" && body.chat_history.trim()) {
+    return body.chat_history.trim();
+  }
+
+  const recentTurns = normalizeRecentTurns(body);
+
+  if (!recentTurns.length) {
+    return "";
+  }
+
+  return buildRecentChatHistory(recentTurns, 6);
+}
 
 function buildProbeReply(
   topicName: string,
@@ -332,11 +391,21 @@ function buildSceneUpdate(
   };
 }
 
+function buildFallbackModelSignals(errorMessage?: string): ModelSignals {
+  return {
+    model_confusion: null,
+    model_insight: null,
+    model_version: "unavailable",
+    inference_mode: null,
+    latency_ms: null,
+    status: errorMessage ? "error" : "unavailable",
+    error_message: errorMessage ?? null,
+  };
+}
+
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as MessageRouteRequest & {
-      message?: string;
-    };
+    const body = (await request.json()) as MessageRouteBody;
 
     const message = body.messageText?.trim() || body.message?.trim();
 
@@ -344,6 +413,21 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "A message is required." },
         { status: 400 }
+      );
+    }
+
+    const chatHistory = buildChatHistoryFromBody(body);
+
+    let modelSignals: ModelSignals = buildFallbackModelSignals();
+
+    try {
+      modelSignals = await scoreConfusionInsight({
+        userMessage: message,
+        chatHistory,
+      });
+    } catch (error) {
+      modelSignals = buildFallbackModelSignals(
+        error instanceof Error ? error.message : "Unknown confusion/insight scoring error"
       );
     }
 
@@ -402,7 +486,8 @@ export async function POST(request: Request) {
       vectorInfo,
       "text",
       message,
-      Boolean(createdTopic)
+      Boolean(createdTopic),
+      modelSignals
     );
 
     const probePlan =
@@ -420,7 +505,50 @@ export async function POST(request: Request) {
 
     const result: MyWayRunResult = {
       run_metadata: buildRunMetadata(engineFuel, runId),
-      important_run_inputs: buildImportantRunInputs(message, vectorInfo),
+      important_run_inputs: buildImportantRunInputs(
+        message,
+        vectorInfo,
+        modelSignals,
+        {
+          run_kind: "initial_question",
+          is_response_to_delivered_probe: false,
+          prior_mode_selected: null,
+          prior_probe_was_applicable: null,
+          prior_probe_id: null,
+          prior_mode_outcome_available: false,
+        },
+        {
+          status: "absent",
+          attempt_id: null,
+          timestamp: null,
+          originating_run_id: null,
+          source_message_id: null,
+          linked_probe_id: null,
+          linked_stimulus_id: null,
+          linked_topic_id: null,
+          linked_cluster_id: null,
+          linked_resolution_contract_id: null,
+          response_type: null,
+          completion_status: null,
+          raw_response: null,
+          delivery_context: {
+            renderer_type: null,
+            generator: null,
+            modality: null,
+            tone: null,
+            pacing: null,
+            language_style: null,
+            context_framing: null,
+          },
+          submission_metadata: {
+            latency_ms: null,
+            revision_count: null,
+            used_hint: null,
+            requested_clarification_before_answering: null,
+          },
+        },
+        []
+      ),
       engine_fuel: engineFuel,
       delivered_response: deliveredResponse,
       learning_space: learningSpace,

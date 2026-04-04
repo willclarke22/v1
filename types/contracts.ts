@@ -191,8 +191,6 @@ export type UploadedContentType =
   | "image"
   | "other";
 
-export type ProbeAvailability = "available" | "not_applicable";
-
 export type RenderState = {
   radius: number;
   surface_noise: number;
@@ -485,7 +483,7 @@ export interface TextPayloadRenderingContract {
 
 export interface TextPayload {
   ready_to_send: boolean;
-  api: "responses";
+  api: Nullable<"responses">;
   model: Nullable<string>;
   instructions: Nullable<string>;
   input: Nullable<string>;
@@ -495,8 +493,8 @@ export interface TextPayload {
 
 export interface VideoPayload {
   ready_to_send: boolean;
-  api: "videos";
-  endpoint: "/v1/videos";
+  api: Nullable<"videos">;
+  endpoint: Nullable<"/v1/videos">;
   model: "sora-2" | "sora-2-pro" | null;
   size: Nullable<string>;
   seconds: Nullable<4 | 8 | 12 | 16>;
@@ -547,9 +545,9 @@ export interface DeliveredLearnerMessage {
 export interface DeliveredProbe {
   probe_id: EntityId;
   target_topic_id: Nullable<EntityId>;
-  target_diagnosis: Nullable<DiagnosisType>;
-  intent: Nullable<ProbeIntent>;
-  probe_type: Nullable<ProbeType>;
+  target_diagnosis?: Nullable<DiagnosisType>;
+  intent?: Nullable<ProbeIntent>;
+  probe_type?: Nullable<ProbeType>;
 
   renderer_type: Nullable<string>;
   generator: Nullable<string>;
@@ -746,6 +744,7 @@ export interface LearningSpaceTopic {
 
 export interface LearningSpaceCluster {
   cluster_id: EntityId;
+  cluster_name: string;
   cluster_centroid: [number, number, number];
   member_topic_ids: EntityId[];
 }
@@ -817,22 +816,15 @@ export interface FrontendInterventionSummary {
   mode_selected: InterventionMode;
   target_topic_id: Nullable<EntityId>;
   active_diagnosis: Nullable<DiagnosisType>;
-  probe_available: ProbeAvailability;
+  probe_available: boolean;
+  status_label: string;
+  suggested_action: string;
 }
 
 export interface MessageRouteResponse {
   result: MyWayRunResult;
   scene_update: FrontendSceneUpdate;
-
-  /**
-   * Frontend convenience fields.
-   * These duplicate information already present inside `result`,
-   * but make the route easier to consume during the contract-proving phase.
-   */
   intervention: FrontendInterventionSummary;
-  suggested_action: string;
-  status_label: string;
-  updated_topic_metrics?: FrontendTopicMetricUpdate;
 }
 
 export interface ProbeSubmitRouteResponse {

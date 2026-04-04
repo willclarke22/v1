@@ -3,6 +3,7 @@ import type {
   FrontendTopicMetricUpdate,
   ImportantRunInputs,
   InterventionModeDecision,
+  ModelSignals,
   ProbePlan,
   RendererModality,
   VectorInfo,
@@ -12,6 +13,13 @@ import type { RouteTopic } from "./topic-resolution";
 import { makeId } from "@/lib/utils/ids";
 
 type TopicMetricUpdate = FrontendTopicMetricUpdate;
+
+type CurrentInteractionContext =
+  ImportantRunInputs["current_interaction_context"];
+
+type NewAttempt = ImportantRunInputs["new_attempt"];
+
+type UploadedContent = ImportantRunInputs["uploaded_content"];
 
 export function inferDiagnosisFromTopic(topic: RouteTopic): DiagnosisType {
   return (
@@ -63,9 +71,69 @@ export function messageLooksClarifySeeking(message: string) {
   );
 }
 
+function buildDefaultModelSignals(): ModelSignals {
+  return {
+    model_confusion: null,
+    model_insight: null,
+    model_version: null,
+    inference_mode: null,
+    latency_ms: null,
+    status: "unavailable",
+    error_message: null,
+  };
+}
+
+function buildDefaultCurrentInteractionContext(): CurrentInteractionContext {
+  return {
+    run_kind: "initial_question",
+    is_response_to_delivered_probe: false,
+    prior_mode_selected: null,
+    prior_probe_was_applicable: null,
+    prior_probe_id: null,
+    prior_mode_outcome_available: null,
+  };
+}
+
+function buildDefaultNewAttempt(): NewAttempt {
+  return {
+    status: "absent",
+    attempt_id: null,
+    timestamp: null,
+    originating_run_id: null,
+    source_message_id: null,
+    linked_probe_id: null,
+    linked_stimulus_id: null,
+    linked_topic_id: null,
+    linked_cluster_id: null,
+    linked_resolution_contract_id: null,
+    response_type: null,
+    completion_status: null,
+    raw_response: null,
+    delivery_context: {
+      renderer_type: null,
+      generator: null,
+      modality: null,
+      tone: null,
+      pacing: null,
+      language_style: null,
+      context_framing: null,
+    },
+    submission_metadata: {
+      latency_ms: null,
+      revision_count: null,
+      used_hint: null,
+      requested_clarification_before_answering: null,
+    },
+  };
+}
+
 export function buildImportantRunInputs(
   message: string,
-  vectorInfo: VectorInfo
+  vectorInfo: VectorInfo,
+  modelSignals?: ModelSignals,
+  currentInteractionContext?: CurrentInteractionContext,
+  newAttempt?: NewAttempt,
+  uploadedContent?: UploadedContent
 ): ImportantRunInputs {
   return {
     user_message: {
@@ -73,94 +141,156 @@ export function buildImportantRunInputs(
       timestamp: nowIso(),
       content: message,
     },
-    model_signals: {
-      model_confusion: null,
-      model_insight: null,
-      model_version: null,
-      inference_mode: null,
-      latency_ms: null,
-      status: "unavailable",
-      error_message: null,
-    },
-    current_interaction_context: {
-      run_kind: "initial_question",
-      is_response_to_delivered_probe: false,
-      prior_mode_selected: null,
-      prior_probe_was_applicable: null,
-      prior_probe_id: null,
-      prior_mode_outcome_available: null,
-    },
-    new_attempt: {
-      status: "absent",
-      attempt_id: null,
-      timestamp: null,
-      originating_run_id: null,
-      source_message_id: null,
-      linked_probe_id: null,
-      linked_stimulus_id: null,
-      linked_topic_id: null,
-      linked_cluster_id: null,
-      linked_resolution_contract_id: null,
-      response_type: null,
-      completion_status: null,
-      raw_response: null,
-      delivery_context: {
-        renderer_type: null,
-        generator: null,
-        modality: null,
-        tone: null,
-        pacing: null,
-        language_style: null,
-        context_framing: null,
-      },
-      submission_metadata: {
-        latency_ms: null,
-        revision_count: null,
-        used_hint: null,
-        requested_clarification_before_answering: null,
-      },
-    },
+    model_signals: modelSignals ?? buildDefaultModelSignals(),
+    current_interaction_context:
+      currentInteractionContext ?? buildDefaultCurrentInteractionContext(),
+    new_attempt: newAttempt ?? buildDefaultNewAttempt(),
     vector_info: vectorInfo,
-    uploaded_content: [],
+    uploaded_content: uploadedContent ?? [],
   };
 }
 
-export function buildInterventionModeDecision(
-  topic: RouteTopic,
-  vectorInfo: VectorInfo,
-  preferredModality: RendererModality,
-  message: string,
-  createdTopic: boolean
-): InterventionModeDecision {
-  const diagnosis = inferDiagnosisFromTopic(topic);
-  const topSimilarity = vectorInfo.top_k_similarity_scores[0] ?? 0.3;
-  const clarifySeeking = messageLooksClarifySeeking(message);
+type InterventionScoreArgs = {
+  topic: RouteTopic;
+  vectorInfo: VectorInfo;
+  preferredModality: RendererModality;
+  message: string;
+  createdTopic: boolean;
+  modelSignals?: ModelSignals;
+};
 
-  const readinessSignal =
+function computeReadinessSignal(
+  preferredModality: RendererModality,
+  modelSignals?: ModelSignals
+) {
+  const base =
     preferredModality === "interactive"
       ? 0.74
       : preferredModality === "video"
         ? 0.66
         : 0.62;
 
-  const clarifyScore = clamp(
-    0.22 +
-      (createdTopic ? 0.22 : 0) +
-      (clarifySeeking ? 0.26 : 0) +
-      (topSimilarity < 0.62 ? 0.14 : 0),
-    0,
-    0.95
-  );
+  const confusion = modelSignals?.model_confusion;
+  const insight = modelSignals?.model_insight;
 
-  const probeScore = clamp(
-    0.28 +
-      (!createdTopic ? 0.18 : 0) +
-      (topSimilarity >= 0.62 ? 0.18 : 0.06) +
-      (clarifySeeking ? 0.02 : 0.14) +
-      (topic.nextStep ? 0.1 : 0),
-    0,
-    0.95
+  let adjusted = base;
+
+  if (typeof confusion === "number") {
+    adjusted -= confusion * 0.18;
+  }
+
+  if (typeof insight === "number") {
+    adjusted += insight * 0.16;
+  }
+
+  return clamp(adjusted, 0, 1);
+}
+
+function computeActiveProblemSignal(topic: RouteTopic, createdTopic: boolean) {
+  const base = topic.nextStep ? 0.72 : 0.5;
+  return clamp(base + (createdTopic ? 0.06 : 0), 0, 1);
+}
+
+function computeHistorySignal(createdTopic: boolean) {
+  return createdTopic ? 0.18 : 0.42;
+}
+
+function computeRawResponseSignal(message: string) {
+  const trimmed = message.trim();
+  if (!trimmed) return 0;
+
+  if (trimmed.length < 20) return 0.28;
+  if (trimmed.length < 60) return 0.46;
+  return 0.62;
+}
+
+function computeEvidenceQualitySignal(modelSignals?: ModelSignals) {
+  const confusion = modelSignals?.model_confusion;
+  const insight = modelSignals?.model_insight;
+
+  if (typeof confusion !== "number" || typeof insight !== "number") {
+    return null;
+  }
+
+  return clamp(0.5 + insight * 0.35 - confusion * 0.3, 0, 1);
+}
+
+function computeInterventionScores(args: InterventionScoreArgs) {
+  const {
+    topic,
+    vectorInfo,
+    preferredModality,
+    message,
+    createdTopic,
+    modelSignals,
+  } = args;
+
+  const diagnosis = inferDiagnosisFromTopic(topic);
+  const topSimilarity = vectorInfo.top_k_similarity_scores[0] ?? 0.3;
+  const clarifySeeking = messageLooksClarifySeeking(message);
+  const confusion = modelSignals?.model_confusion;
+  const insight = modelSignals?.model_insight;
+
+  const readinessSignal = computeReadinessSignal(
+    preferredModality,
+    modelSignals
   );
+  const activeProblemSignal = computeActiveProblemSignal(topic, createdTopic);
+  const historySignal = computeHistorySignal(createdTopic);
+  const rawResponseSignal = computeRawResponseSignal(message);
+  const evidenceQualitySignal = computeEvidenceQualitySignal(modelSignals);
+
+  let clarifyScore =
+    0.2 +
+    (createdTopic ? 0.2 : 0) +
+    (clarifySeeking ? 0.24 : 0) +
+    (topSimilarity < 0.62 ? 0.12 : 0);
+
+  let probeScore =
+    0.28 +
+    (!createdTopic ? 0.18 : 0) +
+    (topSimilarity >= 0.62 ? 0.18 : 0.06) +
+    (clarifySeeking ? 0.02 : 0.14) +
+    (topic.nextStep ? 0.1 : 0);
+
+  if (typeof confusion === "number") {
+    if (confusion >= 0.7) {
+      clarifyScore += 0.22;
+      probeScore -= 0.08;
+    } else if (confusion >= 0.55) {
+      clarifyScore += 0.14;
+      probeScore -= 0.03;
+    } else if (confusion <= 0.35) {
+      probeScore += 0.08;
+    }
+  }
+
+  if (typeof insight === "number") {
+    if (insight >= 0.6) {
+      probeScore += 0.16;
+    } else if (insight >= 0.45) {
+      probeScore += 0.08;
+    } else if (insight <= 0.2) {
+      clarifyScore += 0.08;
+    }
+  }
+
+  if (typeof confusion === "number" && typeof insight === "number") {
+    if (confusion >= 0.55 && insight >= 0.45) {
+      clarifyScore += 0.08;
+    }
+  }
+
+  if (preferredModality === "interactive") {
+    probeScore += 0.04;
+  }
+
+  if (preferredModality === "video" && clarifySeeking) {
+    clarifyScore += 0.04;
+  }
+
+  clarifyScore = clamp(clarifyScore, 0, 0.95);
+  probeScore = clamp(probeScore, 0, 0.95);
 
   const mode_selected: "clarify" | "probe" =
     clarifyScore >= probeScore ? "clarify" : "probe";
@@ -171,34 +301,71 @@ export function buildInterventionModeDecision(
           `The message matched most strongly to ${topic.name}.`,
           createdTopic
             ? "This is a very fresh or newly created topic, so stabilization is safer than immediate measurement."
-            : "The message reads more like a request for explanation than a readiness signal for assessment.",
+            : "The current message looks more like a need for stabilization than an immediate readiness signal for measurement.",
+          typeof confusion === "number"
+            ? `Confusion signal is ${confusion.toFixed(2)}, which increases the value of clarifying before probing.`
+            : "No confusion/insight score was available, so the route stayed conservative where the message itself suggested clarification.",
           `The current block still appears to be: ${topic.nextStep}.`,
         ]
       : [
           `The message matched most strongly to ${topic.name}.`,
           `The next unresolved learning move appears to be: ${topic.nextStep}.`,
-          "This run looks ready for a focused measurement step rather than clarification-only stabilization.",
+          typeof insight === "number"
+            ? `Insight signal is ${insight.toFixed(2)}, which supports moving toward a focused measurement step.`
+            : "The message and topic state together look ready for a focused measurement step.",
+          "This run looks ready for a focused probe rather than clarification-only stabilization.",
         ];
 
+  const winningScore = mode_selected === "clarify" ? clarifyScore : probeScore;
+  const losingScore = mode_selected === "clarify" ? probeScore : clarifyScore;
+  const margin = Math.max(0, winningScore - losingScore);
+
+  const decisionConfidence = clamp(0.5 + winningScore * 0.25 + margin * 0.35, 0, 0.95);
+
   return {
+    diagnosis,
     mode_selected,
-    target_topic_id: topic.id,
-    active_diagnosis: diagnosis,
-    primary_block: topic.nextStep,
-    decision_confidence:
-      mode_selected === "clarify"
-        ? clamp(0.52 + clarifyScore * 0.32, 0, 0.95)
-        : clamp(0.52 + probeScore * 0.32, 0, 0.95),
+    clarifyScore,
+    probeScore,
+    decisionConfidence,
     decision_reasons,
-    clarify_score: clarifyScore,
-    probe_score: probeScore,
-    signal_summary: {
-      raw_response_signal: null,
-      evidence_quality_signal: null,
-      active_problem_signal: 0.72,
+    signalSummary: {
+      raw_response_signal: rawResponseSignal,
+      evidence_quality_signal: evidenceQualitySignal,
+      active_problem_signal: activeProblemSignal,
       readiness_signal: readinessSignal,
-      history_signal: createdTopic ? 0.18 : 0.42,
+      history_signal: historySignal,
     },
+  };
+}
+
+export function buildInterventionModeDecision(
+  topic: RouteTopic,
+  vectorInfo: VectorInfo,
+  preferredModality: RendererModality,
+  message: string,
+  createdTopic: boolean,
+  modelSignals?: ModelSignals
+): InterventionModeDecision {
+  const computed = computeInterventionScores({
+    topic,
+    vectorInfo,
+    preferredModality,
+    message,
+    createdTopic,
+    modelSignals,
+  });
+
+  return {
+    mode_selected: computed.mode_selected,
+    target_topic_id: topic.id,
+    active_diagnosis: computed.diagnosis,
+    primary_block: topic.nextStep,
+    decision_confidence: computed.decisionConfidence,
+    decision_reasons: computed.decision_reasons,
+    clarify_score: computed.clarifyScore,
+    probe_score: computed.probeScore,
+    signal_summary: computed.signalSummary,
   };
 }
 

@@ -2,12 +2,23 @@
 
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { Float, Html, Stars, TrackballControls } from "@react-three/drei";
-import { useEffect, useMemo, useRef, useState, type ElementRef } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ElementRef,
+} from "react";
 import * as THREE from "three";
 import type { LearningSpace, LearningSpaceTopic } from "@/types/learning-space";
 import type { ProbeSummary } from "@/components/probes/probe-surface";
 
 type TrackballControlsRef = ElementRef<typeof TrackballControls>;
+
+const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 0, 10.5);
+const DEFAULT_TARGET = new THREE.Vector3(0, 0, 0);
+const ZOOMED_OUT_DISTANCE = 10.5;
+const SETTLE_DELAY_MS = 220;
 
 function getTopicById(
   topics: LearningSpaceTopic[],
@@ -42,69 +53,37 @@ function TopicLabel({
   isSelected,
   isFocused,
   isAppearing,
+  isSceneSettled,
 }: {
   topic: LearningSpaceTopic;
   isSelected: boolean;
   isFocused: boolean;
   isAppearing: boolean;
+  isSceneSettled: boolean;
 }) {
-  const { camera } = useThree();
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  const topicPosition = useMemo(
-    () => new THREE.Vector3(...topic.position),
-    [topic.position]
-  );
-
-  const directionToTopic = useMemo(() => new THREE.Vector3(), []);
-  const cameraForward = useMemo(() => new THREE.Vector3(), []);
-
-  useFrame(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const distance = camera.position.distanceTo(topicPosition);
-
-    directionToTopic.subVectors(topicPosition, camera.position).normalize();
-    camera.getWorldDirection(cameraForward);
-
-    const facingScore = cameraForward.dot(directionToTopic);
-
-    let targetOpacity = 0;
-
-    if (isFocused) {
-      targetOpacity = 1;
-    } else if (isSelected) {
-      targetOpacity = 0.95;
-    } else if (isAppearing) {
-      targetOpacity = 0.88;
-    } else if (facingScore > 0.965 && distance < 9) {
-      targetOpacity = 0.88;
-    } else if (facingScore > 0.92 && distance < 7.8) {
-      targetOpacity = 0.42;
-    } else {
-      targetOpacity = 0;
-    }
-
-    const current = Number(el.style.opacity || 0);
-    const next = current + (targetOpacity - current) * 0.12;
-    el.style.opacity = `${next}`;
-  });
+  const shouldShow = isSceneSettled && (isSelected || isFocused || isAppearing);
 
   return (
     <Html
-      position={[0, -1.35 * topic.render_state.radius, 0]}
+      position={[0, topic.render_state.radius * 1.24, 0]}
       center
       distanceFactor={10}
-      style={{ pointerEvents: "none" }}
+      style={{
+        pointerEvents: "none",
+        opacity: shouldShow ? 1 : 0,
+        transform: `translate3d(0, ${shouldShow ? "-2px" : "4px"}, 0) scale(${
+          shouldShow ? 1 : 0.96
+        })`,
+        transition:
+          "opacity 180ms ease, transform 220ms ease, filter 220ms ease",
+        filter: shouldShow ? "blur(0px)" : "blur(3px)",
+      }}
     >
       <div
-        ref={containerRef}
-        style={{ opacity: isSelected || isFocused ? 1 : 0 }}
-        className={`rounded-full border px-3 py-1 text-xs backdrop-blur transition-colors ${
+        className={`rounded-full border px-3 py-1 text-[11px] backdrop-blur-md ${
           isFocused || isSelected
-            ? "border-purple-300/40 bg-purple-400/20 text-white"
-            : "border-white/10 bg-black/65 text-zinc-200"
+            ? "border-purple-300/40 bg-purple-400/18 text-white shadow-[0_0_24px_rgba(168,85,247,0.12)]"
+            : "border-white/10 bg-black/55 text-zinc-200"
         }`}
       >
         {getTopicDisplayLabel(topic)}
@@ -113,7 +92,7 @@ function TopicLabel({
   );
 }
 
-function ProbeBadge({
+function ProbeMarker({
   topic,
   probe,
   isVisible,
@@ -126,17 +105,24 @@ function ProbeBadge({
 }) {
   return (
     <Html
-      position={[0, topic.render_state.radius * 1.38, 0]}
+      position={[
+        topic.render_state.radius * 0.72,
+        topic.render_state.radius * 0.18,
+        topic.render_state.radius * 0.72,
+      ]}
       center
       distanceFactor={10}
       style={{
         pointerEvents: isVisible ? "auto" : "none",
         opacity: isVisible ? 1 : 0,
-        transition: "opacity 180ms ease",
+        transform: `scale(${isVisible ? 1 : 0.82})`,
+        transition: "opacity 180ms ease, transform 220ms ease",
       }}
     >
       <button
         type="button"
+        aria-label="Open probe"
+        title="Open probe"
         onClick={(event) => {
           event.stopPropagation();
           onOpenProbe(probe);
@@ -144,9 +130,11 @@ function ProbeBadge({
         onPointerDown={(event) => {
           event.stopPropagation();
         }}
-        className="rounded-full border border-purple-300/45 bg-purple-500/25 px-3 py-1 text-[11px] font-medium text-white shadow-[0_0_18px_rgba(168,85,247,0.32)] backdrop-blur-md transition hover:bg-purple-500/35"
+        className="group relative flex h-9 w-9 items-center justify-center rounded-full border border-purple-300/45 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),rgba(168,85,247,0.28)_45%,rgba(50,18,84,0.9)_100%)] text-white shadow-[0_0_24px_rgba(168,85,247,0.28)] backdrop-blur-md transition duration-200 hover:scale-105 hover:border-purple-200/60 hover:shadow-[0_0_30px_rgba(168,85,247,0.38)]"
       >
-        Start probe
+        <span className="absolute inset-0 rounded-full border border-purple-200/20 opacity-70" />
+        <span className="absolute inset-[5px] rounded-full border border-white/10" />
+        <span className="text-sm leading-none">✦</span>
       </button>
     </Html>
   );
@@ -159,6 +147,7 @@ function TopicSphere({
   focusedTopicId,
   topicProbe,
   isAppearing,
+  isSceneSettled,
   onSelect,
   onFocusTopic,
   onUnfocus,
@@ -170,6 +159,7 @@ function TopicSphere({
   focusedTopicId: string | null;
   topicProbe: ProbeSummary | null;
   isAppearing: boolean;
+  isSceneSettled: boolean;
   onSelect: (id: string) => void;
   onFocusTopic: (id: string) => void;
   onUnfocus: () => void;
@@ -307,7 +297,8 @@ function TopicSphere({
     }, 260);
   }
 
-  const showProbeBadge = !!topicProbe && (isFocused || isSelected);
+  const showProbeMarker =
+    !!topicProbe && (isFocused || isSelected) && isSceneSettled;
 
   return (
     <Float speed={1.25} rotationIntensity={0.32} floatIntensity={0.78}>
@@ -346,13 +337,14 @@ function TopicSphere({
           isSelected={isSelected}
           isFocused={isFocused}
           isAppearing={isAppearing}
+          isSceneSettled={isSceneSettled}
         />
 
         {topicProbe && (
-          <ProbeBadge
+          <ProbeMarker
             topic={topic}
             probe={topicProbe}
-            isVisible={showProbeBadge}
+            isVisible={showProbeMarker}
             onOpenProbe={onOpenProbe}
           />
         )}
@@ -369,6 +361,7 @@ function CameraController({
   isEnteringProbe,
   probeEntryTopicId,
   onProbeEntryComplete,
+  onCameraMotionChange,
 }: {
   topics: LearningSpaceTopic[];
   selectedTopicId: string | null;
@@ -377,19 +370,32 @@ function CameraController({
   isEnteringProbe: boolean;
   probeEntryTopicId: string | null;
   onProbeEntryComplete: () => void;
+  onCameraMotionChange?: (moving: boolean) => void;
 }) {
   const { camera } = useThree();
 
-  const desiredCameraPosition = useRef(new THREE.Vector3(0, 0, 8));
-  const desiredTarget = useRef(new THREE.Vector3(0, 0, 0));
+  const desiredCameraPosition = useRef(DEFAULT_CAMERA_POSITION.clone());
+  const desiredTarget = useRef(DEFAULT_TARGET.clone());
 
-  const restoreCameraPositionRef = useRef(new THREE.Vector3(0, 0, 8));
-  const restoreTargetRef = useRef(new THREE.Vector3(0, 0, 0));
   const previousFocusedTopicIdRef = useRef<string | null>(null);
 
   const cameraAnimatingRef = useRef(false);
   const targetAnimatingRef = useRef(false);
   const pendingProbeEntryCompleteRef = useRef(false);
+  const isCameraMovingRef = useRef(false);
+
+  function setCameraMoving(next: boolean) {
+    if (isCameraMovingRef.current === next) return;
+    isCameraMovingRef.current = next;
+    onCameraMotionChange?.(next);
+  }
+
+  useEffect(() => {
+    return () => {
+      setCameraMoving(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useFrame(() => {
     const controls = controlsRef.current;
@@ -430,29 +436,29 @@ function CameraController({
       cameraAnimatingRef.current = true;
       targetAnimatingRef.current = true;
       controls.enabled = false;
+      setCameraMoving(true);
       previousFocusedTopicIdRef.current = focusedTopicId;
       return;
     }
 
-    if (isFocused && !wasFocused) {
-      restoreCameraPositionRef.current.copy(camera.position);
-
-      const focusedTopic = getTopicById(topics, focusedTopicId);
-      if (focusedTopic) {
-        restoreTargetRef.current.set(...focusedTopic.position);
-      } else {
-        restoreTargetRef.current.copy(controls.target);
-      }
-    }
-
     if (!isFocused && wasFocused) {
-      desiredCameraPosition.current.copy(restoreCameraPositionRef.current);
-      desiredTarget.current.copy(restoreTargetRef.current);
+      const outwardDirection = getCurrentViewDirection(camera, currentTarget);
+      const zoomOutTarget = currentTarget.clone();
+      const zoomOutDistance = Math.max(
+        ZOOMED_OUT_DISTANCE,
+        currentTarget.length() + 6
+      );
+
+      desiredTarget.current.copy(zoomOutTarget);
+      desiredCameraPosition.current.copy(
+        zoomOutTarget.clone().add(outwardDirection.multiplyScalar(zoomOutDistance))
+      );
 
       pendingProbeEntryCompleteRef.current = false;
       cameraAnimatingRef.current = true;
       targetAnimatingRef.current = true;
       controls.enabled = false;
+      setCameraMoving(true);
       previousFocusedTopicIdRef.current = focusedTopicId;
       return;
     }
@@ -476,6 +482,7 @@ function CameraController({
       cameraAnimatingRef.current = true;
       targetAnimatingRef.current = true;
       controls.enabled = false;
+      setCameraMoving(true);
       previousFocusedTopicIdRef.current = focusedTopicId;
       return;
     }
@@ -494,17 +501,19 @@ function CameraController({
       pendingProbeEntryCompleteRef.current = false;
       targetAnimatingRef.current = true;
       cameraAnimatingRef.current = false;
+      setCameraMoving(true);
       previousFocusedTopicIdRef.current = focusedTopicId;
       return;
     }
 
-    desiredTarget.current.set(0, 0, 0);
-    desiredCameraPosition.current.set(0, 0, 8);
+    desiredTarget.current.copy(DEFAULT_TARGET);
+    desiredCameraPosition.current.copy(DEFAULT_CAMERA_POSITION);
 
     pendingProbeEntryCompleteRef.current = false;
     cameraAnimatingRef.current = true;
     targetAnimatingRef.current = true;
     controls.enabled = false;
+    setCameraMoving(true);
     previousFocusedTopicIdRef.current = focusedTopicId;
   }, [
     topics,
@@ -533,7 +542,13 @@ function CameraController({
       controls.update?.();
     }
 
-    if (!cameraAnimatingRef.current) return;
+    if (!cameraAnimatingRef.current) {
+      if (!targetAnimatingRef.current) {
+        controls.enabled = true;
+        setCameraMoving(false);
+      }
+      return;
+    }
 
     const cameraAlpha = pendingProbeEntryCompleteRef.current ? 0.14 : 0.095;
 
@@ -554,6 +569,7 @@ function CameraController({
       controls.enabled = true;
       cameraAnimatingRef.current = false;
       targetAnimatingRef.current = false;
+      setCameraMoving(false);
 
       if (pendingProbeEntryCompleteRef.current) {
         pendingProbeEntryCompleteRef.current = false;
@@ -594,9 +610,14 @@ export default function SpaceCanvas({
 }: SpaceCanvasProps) {
   const controlsRef = useRef<TrackballControlsRef | null>(null);
   const seenTopicIdsRef = useRef<Set<string>>(new Set());
+  const settleTimeoutRef = useRef<number | null>(null);
+
   const [appearingTopicIds, setAppearingTopicIds] = useState<Set<string>>(
     new Set()
   );
+  const [isUserControlling, setIsUserControlling] = useState(false);
+  const [isCameraInMotion, setIsCameraInMotion] = useState(false);
+  const [isSceneSettled, setIsSceneSettled] = useState(true);
 
   useEffect(() => {
     const currentIds = learningSpace.topics.map((topic) => topic.topic_id);
@@ -628,6 +649,32 @@ export default function SpaceCanvas({
     return () => window.clearTimeout(timeout);
   }, [learningSpace.topics]);
 
+  useEffect(() => {
+    const isMoving = isUserControlling || isCameraInMotion || isEnteringProbe;
+
+    if (settleTimeoutRef.current !== null) {
+      window.clearTimeout(settleTimeoutRef.current);
+      settleTimeoutRef.current = null;
+    }
+
+    if (isMoving) {
+      setIsSceneSettled(false);
+      return;
+    }
+
+    settleTimeoutRef.current = window.setTimeout(() => {
+      setIsSceneSettled(true);
+      settleTimeoutRef.current = null;
+    }, SETTLE_DELAY_MS);
+
+    return () => {
+      if (settleTimeoutRef.current !== null) {
+        window.clearTimeout(settleTimeoutRef.current);
+        settleTimeoutRef.current = null;
+      }
+    };
+  }, [isUserControlling, isCameraInMotion, isEnteringProbe]);
+
   return (
     <section
       className="relative h-full w-full overflow-hidden bg-black"
@@ -636,7 +683,7 @@ export default function SpaceCanvas({
       }}
     >
       <div className="absolute inset-0 z-0">
-        <Canvas camera={{ position: [0, 0, 8], fov: 50 }}>
+        <Canvas camera={{ position: [0, 0, 10.5], fov: 50 }}>
           <color attach="background" args={["#000000"]} />
 
           <ambientLight intensity={1.1} />
@@ -670,6 +717,7 @@ export default function SpaceCanvas({
                 focusedTopicId={focusedTopicId}
                 topicProbe={topicProbe}
                 isAppearing={appearingTopicIds.has(topic.topic_id)}
+                isSceneSettled={isSceneSettled}
                 onSelect={(id) => onSelectTopic(id)}
                 onFocusTopic={(id) => onFocusTopicChange?.(id)}
                 onUnfocus={() => onFocusTopicChange?.(null)}
@@ -686,16 +734,23 @@ export default function SpaceCanvas({
             isEnteringProbe={isEnteringProbe}
             probeEntryTopicId={probeEntryTopicId}
             onProbeEntryComplete={onProbeEntryComplete}
+            onCameraMotionChange={setIsCameraInMotion}
           />
 
           <TrackballControls
             ref={controlsRef}
             noPan
             minDistance={0.06}
-            maxDistance={12}
+            maxDistance={18}
             rotateSpeed={3.2}
             zoomSpeed={1.2}
             dynamicDampingFactor={0.12}
+            onStart={() => {
+              setIsUserControlling(true);
+            }}
+            onEnd={() => {
+              setIsUserControlling(false);
+            }}
           />
         </Canvas>
       </div>
