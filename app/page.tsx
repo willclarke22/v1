@@ -49,7 +49,9 @@ function deriveTopicsFromMessageResponse(
   const deliveredProbe = data.result?.delivered_response?.delivered_probe ?? null;
 
   const targetNextStep =
-    deliveredProbe?.title ?? data.suggested_action ?? "Continue learning";
+    deliveredProbe?.title ??
+    data.result?.engine_fuel?.probe_plan?.text_plan?.instructional_goal ??
+    "Continue learning";
 
   const previousById = new Map(previousTopics.map((topic) => [topic.id, topic]));
 
