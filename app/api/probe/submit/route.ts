@@ -9,6 +9,7 @@ import type {
   DeliveredResponse,
   EngineFuel,
   ImportantRunInputs,
+  InterventionModeDecision,
   LearningSpace,
   ModelSignals,
   MyWayRunResult,
@@ -329,7 +330,7 @@ function buildDecision(args: {
   scoring: ReturnType<typeof scoreResponse>;
   replyBundle: ReturnType<typeof buildResponseBundle>;
   modelSignals: ModelSignals;
-}) {
+}): InterventionModeDecision {
   const { topic, scoring, replyBundle, modelSignals } = args;
   const continueWithProbe = replyBundle.nextMode === "probe";
 
@@ -345,14 +346,20 @@ function buildDecision(args: {
 
   const readinessSignal =
     typeof insight === "number"
-      ? Math.max(0, Math.min(1, scoring.correctnessEstimate * 0.65 + insight * 0.35))
+      ? Math.max(
+          0,
+          Math.min(1, scoring.correctnessEstimate * 0.65 + insight * 0.35)
+        )
       : scoring.correctnessEstimate;
 
   const evidenceQualitySignal =
     typeof confusion === "number" && typeof insight === "number"
       ? Math.max(
           0,
-          Math.min(1, scoring.explanationQuality * 0.65 + insight * 0.25 - confusion * 0.15)
+          Math.min(
+            1,
+            scoring.explanationQuality * 0.65 + insight * 0.25 - confusion * 0.15
+          )
         )
       : scoring.explanationQuality;
 
@@ -374,8 +381,8 @@ function buildDecision(args: {
     );
   }
 
-  return {
-    mode_selected: continueWithProbe ? "probe" : "clarify" as const,
+  const decision: InterventionModeDecision = {
+    mode_selected: continueWithProbe ? "probe" : "clarify",
     target_topic_id: topic.id,
     active_diagnosis: replyBundle.activeDiagnosis,
     primary_block: topic.nextStep,
@@ -402,11 +409,13 @@ function buildDecision(args: {
       history_signal: 0.75,
     },
   };
+
+  return decision;
 }
 
 function buildEngineFuel(args: {
   updatedTopics: RouteTopic[];
-  decision: ReturnType<typeof buildDecision>;
+  decision: InterventionModeDecision;
   nextProbePlan:
     | ReturnType<typeof buildNextProbePlan>
     | ReturnType<typeof buildNotApplicableProbePlan>;
@@ -494,7 +503,9 @@ export async function POST(request: NextRequest) {
       });
     } catch (error) {
       modelSignals = buildFallbackModelSignals(
-        error instanceof Error ? error.message : "Unknown confusion/insight scoring error"
+        error instanceof Error
+          ? error.message
+          : "Unknown confusion/insight scoring error"
       );
     }
 
@@ -583,8 +594,7 @@ export async function POST(request: NextRequest) {
       JSON.stringify({
         topic_id: topic.id,
         topic_name: topicName,
-        next_step:
-          nextProbePlan.text_plan.instructional_goal ?? topic.nextStep,
+        next_step: nextProbePlan.text_plan.instructional_goal ?? topic.nextStep,
         previous_probe_id: body.probeId,
         judged_attempt: judgedAttempt,
         updated_topic_metrics: updatedTopicMetrics,
@@ -631,8 +641,7 @@ export async function POST(request: NextRequest) {
       learningScore:
         updatedTopics.find((t) => t.id === topic.id)?.learningScore ?? null,
       diagnosis: decision.active_diagnosis,
-      nextStep:
-        nextProbePlan.text_plan.instructional_goal ?? topic.nextStep,
+      nextStep: nextProbePlan.text_plan.instructional_goal ?? topic.nextStep,
       topicJson,
     });
 
