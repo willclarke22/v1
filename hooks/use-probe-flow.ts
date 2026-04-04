@@ -124,7 +124,8 @@ function extractReplyFromMessageResponse(data: MessageRouteResponse) {
 
 function extractSuggestedActionFromMessageResponse(data: MessageRouteResponse) {
   return (
-    data.suggested_action ??
+    data.result?.delivered_response?.delivered_probe?.title ??
+    data.result?.engine_fuel?.probe_plan?.text_plan?.instructional_goal ??
     data.result?.engine_fuel?.intervention_mode_decision?.decision_reasons?.[0] ??
     ""
   );
