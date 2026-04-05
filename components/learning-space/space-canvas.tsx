@@ -4,7 +4,6 @@ import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { Float, Html, Stars, TrackballControls } from "@react-three/drei";
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ElementRef,
@@ -48,6 +47,43 @@ function getTopicDisplayLabel(topic: LearningSpaceTopic) {
   return topic.label ?? topic.topic_name ?? "Untitled Topic";
 }
 
+function getScreenSpaceRadiusPx(args: {
+  camera: THREE.Camera;
+  size: { width: number; height: number };
+  worldPosition: THREE.Vector3;
+  worldRadius: number;
+}) {
+  const { camera, size, worldPosition, worldRadius } = args;
+
+  if ("isPerspectiveCamera" in camera && camera.isPerspectiveCamera) {
+    const perspectiveCamera = camera as THREE.PerspectiveCamera;
+    const distance = perspectiveCamera.position.distanceTo(worldPosition);
+    const visibleHeight =
+      2 *
+      Math.tan(THREE.MathUtils.degToRad(perspectiveCamera.fov * 0.5)) *
+      distance;
+
+    if (visibleHeight <= 0) return 0;
+
+    const pixelsPerWorldUnit = size.height / visibleHeight;
+    return worldRadius * pixelsPerWorldUnit;
+  }
+
+  if ("isOrthographicCamera" in camera && camera.isOrthographicCamera) {
+    const orthographicCamera = camera as THREE.OrthographicCamera;
+    const visibleHeight =
+      (orthographicCamera.top - orthographicCamera.bottom) /
+      orthographicCamera.zoom;
+
+    if (visibleHeight <= 0) return 0;
+
+    const pixelsPerWorldUnit = size.height / visibleHeight;
+    return worldRadius * pixelsPerWorldUnit;
+  }
+
+  return 0;
+}
+
 function TopicLabel({
   topic,
   isSelected,
@@ -61,25 +97,62 @@ function TopicLabel({
   isAppearing: boolean;
   isSceneSettled: boolean;
 }) {
-  const shouldShow = isSceneSettled && (isSelected || isFocused || isAppearing);
+  const { camera, size } = useThree();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const topicPositionRef = useRef(new THREE.Vector3(...topic.position));
+
+  useEffect(() => {
+    topicPositionRef.current.set(...topic.position);
+  }, [topic.position]);
+
+  useFrame(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const shouldShow =
+      isSceneSettled && (isSelected || isFocused || isAppearing);
+
+    const screenRadiusPx = getScreenSpaceRadiusPx({
+      camera,
+      size,
+      worldPosition: topicPositionRef.current,
+      worldRadius: topic.render_state.radius,
+    });
+
+    const labelOffsetPx = Math.min(
+      52,
+      Math.max(18, screenRadiusPx * 0.55 + 10)
+    );
+
+    const targetOpacity = shouldShow ? 1 : 0;
+    const targetScale = shouldShow ? 1 : 0.96;
+    const targetBlur = shouldShow ? 0 : 3;
+    const targetYOffset = shouldShow ? -labelOffsetPx : -(labelOffsetPx - 6);
+
+    el.style.opacity = `${targetOpacity}`;
+    el.style.filter = `blur(${targetBlur}px)`;
+    el.style.transform = `translate3d(0, ${targetYOffset}px, 0) scale(${targetScale})`;
+  });
 
   return (
     <Html
-      position={[0, topic.render_state.radius * 1.24, 0]}
+      position={[0, 0, 0]}
       center
       distanceFactor={10}
       style={{
         pointerEvents: "none",
-        opacity: shouldShow ? 1 : 0,
-        transform: `translate3d(0, ${shouldShow ? "-2px" : "4px"}, 0) scale(${
-          shouldShow ? 1 : 0.96
-        })`,
-        transition:
-          "opacity 180ms ease, transform 220ms ease, filter 220ms ease",
-        filter: shouldShow ? "blur(0px)" : "blur(3px)",
       }}
     >
       <div
+        ref={containerRef}
+        style={{
+          opacity: 0,
+          transform: "translate3d(0, -18px, 0) scale(0.96)",
+          filter: "blur(3px)",
+          transition:
+            "opacity 180ms ease, transform 220ms ease, filter 220ms ease",
+          willChange: "transform, opacity, filter",
+        }}
         className={`rounded-full border px-3 py-1 text-[11px] backdrop-blur-md ${
           isFocused || isSelected
             ? "border-purple-300/40 bg-purple-400/18 text-white shadow-[0_0_24px_rgba(168,85,247,0.12)]"
@@ -93,30 +166,21 @@ function TopicLabel({
 }
 
 function ProbeMarker({
-  topic,
   probe,
   isVisible,
   onOpenProbe,
 }: {
-  topic: LearningSpaceTopic;
   probe: ProbeSummary;
   isVisible: boolean;
   onOpenProbe: (probe: ProbeSummary) => void;
 }) {
   return (
     <Html
-      position={[
-        topic.render_state.radius * 0.72,
-        topic.render_state.radius * 0.18,
-        topic.render_state.radius * 0.72,
-      ]}
+      position={[0, 0, 0]}
       center
       distanceFactor={10}
       style={{
         pointerEvents: isVisible ? "auto" : "none",
-        opacity: isVisible ? 1 : 0,
-        transform: `scale(${isVisible ? 1 : 0.82})`,
-        transition: "opacity 180ms ease, transform 220ms ease",
       }}
     >
       <button
@@ -131,6 +195,11 @@ function ProbeMarker({
           event.stopPropagation();
         }}
         className="group relative flex h-9 w-9 items-center justify-center rounded-full border border-purple-300/45 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),rgba(168,85,247,0.28)_45%,rgba(50,18,84,0.9)_100%)] text-white shadow-[0_0_24px_rgba(168,85,247,0.28)] backdrop-blur-md transition duration-200 hover:scale-105 hover:border-purple-200/60 hover:shadow-[0_0_30px_rgba(168,85,247,0.38)]"
+        style={{
+          opacity: isVisible ? 1 : 0,
+          transform: `scale(${isVisible ? 1 : 0.82})`,
+          transition: "opacity 180ms ease, transform 220ms ease",
+        }}
       >
         <span className="absolute inset-0 rounded-full border border-purple-200/20 opacity-70" />
         <span className="absolute inset-[5px] rounded-full border border-white/10" />
@@ -342,7 +411,6 @@ function TopicSphere({
 
         {topicProbe && (
           <ProbeMarker
-            topic={topic}
             probe={topicProbe}
             isVisible={showProbeMarker}
             onOpenProbe={onOpenProbe}
@@ -394,7 +462,6 @@ function CameraController({
     return () => {
       setCameraMoving(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useFrame(() => {
@@ -425,7 +492,10 @@ function CameraController({
       }
 
       const target = new THREE.Vector3(...topic.position);
-      const probeEntryDistance = Math.max(0.16, topic.render_state.radius * 0.46);
+      const probeEntryDistance = Math.max(
+        0.16,
+        topic.render_state.radius * 0.46
+      );
 
       desiredTarget.current.copy(target);
       desiredCameraPosition.current.copy(
@@ -451,7 +521,9 @@ function CameraController({
 
       desiredTarget.current.copy(zoomOutTarget);
       desiredCameraPosition.current.copy(
-        zoomOutTarget.clone().add(outwardDirection.multiplyScalar(zoomOutDistance))
+        zoomOutTarget
+          .clone()
+          .add(outwardDirection.multiplyScalar(zoomOutDistance))
       );
 
       pendingProbeEntryCompleteRef.current = false;
