@@ -150,30 +150,12 @@ function buildTitleForProbe(topic: RouteTopic, probeType: ProbeType) {
   }
 }
 
-function buildEvidenceTypesExpected(
-  probeType: ProbeType
-): Array<"predict" | "explain" | "discriminate" | "apply_transfer"> {
-  switch (probeType) {
-    case "predict":
-      return ["predict"];
-    case "discriminate":
-      return ["discriminate"];
-    case "apply_transfer":
-      return ["apply_transfer"];
-    case "transform":
-      return ["explain"];
-    case "explain":
-    default:
-      return ["explain"];
-  }
-}
-
 function buildJudgingSupport(args: {
   topic: RouteTopic;
   activeDiagnosis: DiagnosisType;
   probeType: ProbeType;
   missingElements?: string | null;
-  misconceptionTags?: string[];
+  misconceptionTags?: string[] | null;
 }) {
   const { topic, activeDiagnosis, probeType, missingElements } = args;
   const misconceptionTags = args.misconceptionTags ?? [];
@@ -258,10 +240,7 @@ function buildJudgingSupport(args: {
         "decisive_difference",
       ],
       target_misconceptions: Array.from(
-        new Set([
-          "blurred category boundary",
-          ...misconceptionTags,
-        ])
+        new Set(["blurred category boundary", ...misconceptionTags])
       ),
       success_indicators: [
         "The learner names a decisive contrast.",
@@ -535,7 +514,6 @@ export function buildNextProbePlan(args: NextProbePlanArgs): ProbePlan {
     topic,
     activeDiagnosis,
     probeIntent,
-    probeType,
     classification,
     evidenceStrength,
     judgmentConfidence,
@@ -585,7 +563,7 @@ export function buildNextProbePlan(args: NextProbePlanArgs): ProbePlan {
       activeDiagnosis,
       probeType: finalProbeType,
       missingElements,
-      misconceptionTags,
+      misconceptionTags: misconceptionTags ?? undefined,
     }),
 
     text_plan: {
