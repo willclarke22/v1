@@ -633,6 +633,10 @@ export interface JudgedAttemptFeatures {
   confidence_alignment: Nullable<ConfidenceAlignment>;
   mental_model_inferred: Nullable<string>;
   struggle_type: Nullable<string>;
+  evidence_strength: Nullable<number>;
+  judgment_confidence: Nullable<number>;
+  missing_elements: Nullable<string>;
+  misconception_tags: string[];
 }
 
 export interface DiagnosisDelta {

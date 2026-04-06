@@ -17,6 +17,7 @@ import type {
   RunMetadata,
   TopicState,
   VectorInfo,
+  ImportantRunInputs,
 } from "@/types/contracts";
 import {
   buildSeededTopicFromMessage,
@@ -32,6 +33,8 @@ import {
   buildNotApplicableProbePlan,
   buildProbePlan,
   buildUpdatedMetrics,
+  inferPreferredModality,
+  messageLooksClarifySeeking,
 } from "@/lib/runtime/message-runtime";
 import { nowIso } from "@/lib/runtime/shared";
 import { scoreConfusionInsight } from "@/lib/providers/confusion-insight";
@@ -126,6 +129,31 @@ function buildChatHistoryFromBody(body: MessageRouteBody) {
   return buildRecentChatHistory(recentTurns, 6);
 }
 
+function inferMessageRouteRunKind(args: {
+  message: string;
+  recentTurns: Array<{ role: "user" | "assistant"; text: string }>;
+  hasActiveTopicId: boolean;
+}) {
+  const { message, recentTurns, hasActiveTopicId } = args;
+
+  if (messageLooksClarifySeeking(message)) {
+    return hasActiveTopicId || recentTurns.length > 0
+      ? ("clarify_followup" as const)
+      : ("initial_question" as const);
+  }
+
+  const userTurnCount = recentTurns.filter((turn) => turn.role === "user").length;
+  const assistantTurnCount = recentTurns.filter(
+    (turn) => turn.role === "assistant"
+  ).length;
+
+  if (hasActiveTopicId && assistantTurnCount > 0 && userTurnCount > 0) {
+    return "mixed" as const;
+  }
+
+  return "initial_question" as const;
+}
+
 function buildProbeReply(
   topicName: string,
   diagnosis: InterventionModeDecision["active_diagnosis"]
@@ -193,13 +221,21 @@ function buildDeliveredProbe(
       ? `Visualize ${topic.name}`
       : modality === "interactive"
         ? `Try ${topic.name}`
-        : probePlan.text_plan.instructional_goal ?? `Explain ${topic.name}`;
+        : probePlan.probe_type === "apply_transfer"
+          ? `Apply ${topic.name} in a new situation`
+          : probePlan.probe_type === "predict"
+            ? `Predict what happens in ${topic.name}`
+            : probePlan.probe_type === "discriminate"
+              ? `Distinguish ${topic.name} clearly`
+              : probePlan.probe_type === "transform"
+                ? `Walk through ${topic.name} step by step`
+                : probePlan.text_plan.instructional_goal ?? `Explain ${topic.name}`;
 
   const instructions =
     modality === "video"
       ? probePlan.video_payload.narration ??
         probePlan.video_payload.prompt ??
-        `Watch carefully, then explain ${topic.name}.`
+        `Watch carefully, then respond about ${topic.name}.`
       : modality === "interactive"
         ? "Interact with the task, then explain what you learned."
         : probePlan.text_payload.input ?? `Explain ${topic.name} in your own words.`;
@@ -207,6 +243,9 @@ function buildDeliveredProbe(
   return {
     probe_id: probePlan.probe_id,
     target_topic_id: probePlan.target_topic_id,
+    target_diagnosis: probePlan.target_diagnosis,
+    intent: probePlan.intent,
+    probe_type: probePlan.probe_type,
     renderer_type:
       modality === "interactive"
         ? "interactive_renderer"
@@ -339,27 +378,33 @@ function adaptLearningSpaceToContract(
   };
 }
 
-function buildPreviousModeOutcome(): PreviousModeOutcome {
+function buildPreviousModeOutcome(
+  runKind: ImportantRunInputs["current_interaction_context"]["run_kind"]
+): PreviousModeOutcome {
   return {
-    mode_selected: "clarify",
+    mode_selected: runKind === "clarify_followup" ? "clarify" : "clarify",
     reasons: [
-      "No previous run is available in this mock route, so this is a cold-start placeholder.",
+      runKind === "clarify_followup"
+        ? "The current message appears to follow earlier clarification-oriented interaction."
+        : "No previous judged attempt is available in this route yet, so previous-mode state remains conservative.",
     ],
-    confidence: 0.18,
-    clarify_outcome: "not_applicable",
+    confidence: runKind === "clarify_followup" ? 0.42 : 0.18,
+    clarify_outcome:
+      runKind === "clarify_followup" ? "probe_required" : "not_applicable",
   };
 }
 
 function buildEngineFuel(
   updatedTopics: RouteTopic[],
   decision: InterventionModeDecision,
-  probePlan: ProbePlan
+  probePlan: ProbePlan,
+  previousModeOutcome: PreviousModeOutcome
 ): EngineFuel {
   return {
     topics: buildTopicStates(updatedTopics),
     clusters: [],
     linked_pairs: [],
-    previous_mode_outcome: buildPreviousModeOutcome(),
+    previous_mode_outcome: previousModeOutcome,
     intervention_mode_decision: decision,
     probe_plan: probePlan,
     attempts: [],
@@ -416,6 +461,7 @@ export async function POST(request: Request) {
       );
     }
 
+    const recentTurns = normalizeRecentTurns(body);
     const chatHistory = buildChatHistoryFromBody(body);
 
     let modelSignals: ModelSignals = buildFallbackModelSignals();
@@ -427,7 +473,9 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       modelSignals = buildFallbackModelSignals(
-        error instanceof Error ? error.message : "Unknown confusion/insight scoring error"
+        error instanceof Error
+          ? error.message
+          : "Unknown confusion/insight scoring error"
       );
     }
 
@@ -476,6 +524,56 @@ export async function POST(request: Request) {
           : [createdTopic ? 0.24 : 0.72],
     };
 
+    const preferredModality = inferPreferredModality(message);
+
+    const currentInteractionContext: ImportantRunInputs["current_interaction_context"] =
+      {
+        run_kind: inferMessageRouteRunKind({
+          message,
+          recentTurns,
+          hasActiveTopicId: Boolean(body.activeTopicId),
+        }),
+        is_response_to_delivered_probe: false,
+        prior_mode_selected:
+          recentTurns.length > 0 && messageLooksClarifySeeking(message)
+            ? "clarify"
+            : null,
+        prior_probe_was_applicable: null,
+        prior_probe_id: null,
+        prior_mode_outcome_available: recentTurns.length > 0 ? true : false,
+      };
+
+    const newAttempt: ImportantRunInputs["new_attempt"] = {
+      status: "absent",
+      attempt_id: null,
+      timestamp: null,
+      originating_run_id: null,
+      source_message_id: null,
+      linked_probe_id: null,
+      linked_stimulus_id: null,
+      linked_topic_id: null,
+      linked_cluster_id: null,
+      linked_resolution_contract_id: null,
+      response_type: null,
+      completion_status: null,
+      raw_response: null,
+      delivery_context: {
+        renderer_type: null,
+        generator: null,
+        modality: null,
+        tone: null,
+        pacing: null,
+        language_style: null,
+        context_framing: null,
+      },
+      submission_metadata: {
+        latency_ms: null,
+        revision_count: null,
+        used_hint: null,
+        requested_clarification_before_answering: null,
+      },
+    };
+
     const updatedTopicMetrics = buildUpdatedMetrics(targetTopicId, topic);
     const updatedTopics = routeTopics.map((t) =>
       applyMetricUpdate(t, updatedTopicMetrics)
@@ -484,10 +582,12 @@ export async function POST(request: Request) {
     const decision = buildInterventionModeDecision(
       topic,
       vectorInfo,
-      "text",
+      preferredModality,
       message,
       Boolean(createdTopic),
-      modelSignals
+      modelSignals,
+      currentInteractionContext,
+      newAttempt
     );
 
     const probePlan =
@@ -496,10 +596,21 @@ export async function POST(request: Request) {
         : buildNotApplicableProbePlan(topic);
 
     const deliveredResponse = buildDeliveredResponse(topic, decision, probePlan);
-    const engineFuel = buildEngineFuel(updatedTopics, decision, probePlan);
+    const previousModeOutcome = buildPreviousModeOutcome(
+      currentInteractionContext.run_kind
+    );
+    const engineFuel = buildEngineFuel(
+      updatedTopics,
+      decision,
+      probePlan,
+      previousModeOutcome
+    );
 
     const rawLearningSpace = buildLearningSpace(updatedTopics) as RawLearningSpace;
-    const learningSpace = adaptLearningSpaceToContract(rawLearningSpace, updatedTopics);
+    const learningSpace = adaptLearningSpaceToContract(
+      rawLearningSpace,
+      updatedTopics
+    );
 
     const runId = makeId("run");
 
@@ -509,44 +620,8 @@ export async function POST(request: Request) {
         message,
         vectorInfo,
         modelSignals,
-        {
-          run_kind: "initial_question",
-          is_response_to_delivered_probe: false,
-          prior_mode_selected: null,
-          prior_probe_was_applicable: null,
-          prior_probe_id: null,
-          prior_mode_outcome_available: false,
-        },
-        {
-          status: "absent",
-          attempt_id: null,
-          timestamp: null,
-          originating_run_id: null,
-          source_message_id: null,
-          linked_probe_id: null,
-          linked_stimulus_id: null,
-          linked_topic_id: null,
-          linked_cluster_id: null,
-          linked_resolution_contract_id: null,
-          response_type: null,
-          completion_status: null,
-          raw_response: null,
-          delivery_context: {
-            renderer_type: null,
-            generator: null,
-            modality: null,
-            tone: null,
-            pacing: null,
-            language_style: null,
-            context_framing: null,
-          },
-          submission_metadata: {
-            latency_ms: null,
-            revision_count: null,
-            used_hint: null,
-            requested_clarification_before_answering: null,
-          },
-        },
+        currentInteractionContext,
+        newAttempt,
         []
       ),
       engine_fuel: engineFuel,
@@ -559,11 +634,13 @@ export async function POST(request: Request) {
       JSON.stringify({
         topic_id: topic.id,
         topic_name: topic.name,
-        next_step: topic.nextStep,
+        next_step: probePlan.text_plan.instructional_goal ?? topic.nextStep,
         inferred_keywords: inferKeywordsFromMessage(message),
         updated_topic_metrics: updatedTopicMetrics,
         learning_space_topic:
           learningSpace.topics.find((t) => t.topic_id === topic.id) ?? null,
+        planned_probe:
+          deliveredResponse.delivered_probe ?? null,
       })
     );
 
@@ -574,7 +651,7 @@ export async function POST(request: Request) {
     );
     const suggestedAction = buildSuggestedAction(
       topic.name,
-      topic.nextStep,
+      probePlan.text_plan.instructional_goal ?? topic.nextStep,
       decision.mode_selected
     );
     const statusLabel = buildStatusLabel(
@@ -604,7 +681,7 @@ export async function POST(request: Request) {
       learningScore:
         updatedTopics.find((t) => t.id === topic.id)?.learningScore ?? null,
       diagnosis: decision.active_diagnosis,
-      nextStep: topic.nextStep,
+      nextStep: probePlan.text_plan.instructional_goal ?? topic.nextStep,
       topicJson,
     });
 

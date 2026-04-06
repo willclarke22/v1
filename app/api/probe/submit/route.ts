@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mockTopics } from "@/lib/mock-topics";
 import { buildLearningSpace } from "@/lib/build-learning-space";
-import { insertAttempt, insertRun, upsertTopicState } from "@/lib/persistence/myway";
+import {
+  insertAttempt,
+  insertRun,
+  upsertTopicState,
+} from "@/lib/persistence/myway";
 import { getLatestTopicState } from "@/lib/persistence/read";
 import { makeId } from "@/lib/utils/ids";
 import type {
@@ -26,6 +30,7 @@ import {
   buildVectorInfo,
   type ProbeAttemptPayload,
   scoreResponse,
+  inferDiagnosisFromTopic,
 } from "@/lib/runtime/attempt-judging";
 import {
   buildNextProbePlan,
@@ -103,8 +108,14 @@ async function loadRouteTopics(body: ProbeAttemptPayload): Promise<RouteTopic[]>
       ...(fallback ?? mockTopics[0]),
       id: row.topic_id,
       name: row.topic_name,
-      confusion: Math.max(0, Math.min(1, row.confusion ?? fallback?.confusion ?? 0.5)),
-      insight: Math.max(0, Math.min(1, row.insight ?? fallback?.insight ?? 0.5)),
+      confusion: Math.max(
+        0,
+        Math.min(1, row.confusion ?? fallback?.confusion ?? 0.5)
+      ),
+      insight: Math.max(
+        0,
+        Math.min(1, row.insight ?? fallback?.insight ?? 0.5)
+      ),
       learningScore: Math.max(
         0,
         Math.min(1, row.learning_score ?? fallback?.learningScore ?? 0.5)
@@ -230,7 +241,8 @@ function buildImportantRunInputs(args: {
         pacing: body.deliveryContext?.pacing ?? "normal",
         language_style: body.deliveryContext?.language_style ?? "plain",
         context_framing:
-          body.deliveryContext?.context_framing ?? `Probe response for ${topic.name}.`,
+          body.deliveryContext?.context_framing ??
+          `Probe response for ${topic.name}.`,
       },
       submission_metadata: {
         latency_ms: body.metadata?.latencyMs ?? null,
@@ -248,6 +260,19 @@ function buildImportantRunInputs(args: {
 function buildDeliveredProbeFromPlan(
   plan: ReturnType<typeof buildNextProbePlan>
 ): DeliveredProbe {
+  const probeType = plan.probe_type;
+
+  const title =
+    probeType === "apply_transfer"
+      ? "Apply the idea in a new situation"
+      : probeType === "predict"
+        ? "Predict what happens next"
+        : probeType === "discriminate"
+          ? "Distinguish the key difference"
+          : probeType === "transform"
+            ? "Walk through it step by step"
+            : "Explain the idea more concretely";
+
   return {
     probe_id: plan.probe_id,
     target_topic_id: plan.target_topic_id,
@@ -257,10 +282,7 @@ function buildDeliveredProbeFromPlan(
     renderer_type: "text_renderer",
     generator: "chatgpt",
     modality: "text",
-    title:
-      plan.probe_type === "apply_transfer"
-        ? "Apply the idea in a new situation"
-        : "Explain the idea more concretely",
+    title,
     instructions: plan.text_payload.input,
     actual_tone: "encouraging",
     actual_pacing: "normal",
@@ -320,6 +342,7 @@ function buildPreviousModeOutcome(): PreviousModeOutcome {
 function bodyResponseSignal(scoring: ReturnType<typeof scoreResponse>) {
   if (scoring.classification === "no_response") return 0.05;
   if (scoring.classification === "guess") return 0.25;
+  if (scoring.classification === "structural_failure") return 0.35;
   if (scoring.classification === "near_miss") return 0.6;
   if (scoring.classification === "success") return 0.85;
   return 0.4;
@@ -334,13 +357,6 @@ function buildDecision(args: {
   const { topic, scoring, replyBundle, modelSignals } = args;
   const continueWithProbe = replyBundle.nextMode === "probe";
 
-  const baseConfidence =
-    scoring.classification === "success"
-      ? 0.82
-      : scoring.classification === "near_miss"
-        ? 0.72
-        : 0.64;
-
   const confusion = modelSignals.model_confusion;
   const insight = modelSignals.model_insight;
 
@@ -348,9 +364,20 @@ function buildDecision(args: {
     typeof insight === "number"
       ? Math.max(
           0,
-          Math.min(1, scoring.correctnessEstimate * 0.65 + insight * 0.35)
+          Math.min(
+            1,
+            scoring.correctnessEstimate * 0.42 +
+              scoring.evidenceStrength * 0.28 +
+              insight * 0.3
+          )
         )
-      : scoring.correctnessEstimate;
+      : Math.max(
+          0,
+          Math.min(
+            1,
+            scoring.correctnessEstimate * 0.6 + scoring.evidenceStrength * 0.4
+          )
+        );
 
   const evidenceQualitySignal =
     typeof confusion === "number" && typeof insight === "number"
@@ -358,16 +385,64 @@ function buildDecision(args: {
           0,
           Math.min(
             1,
-            scoring.explanationQuality * 0.65 + insight * 0.25 - confusion * 0.15
+            scoring.explanationQuality * 0.34 +
+              scoring.evidenceStrength * 0.26 +
+              scoring.judgmentConfidence * 0.2 +
+              insight * 0.18 -
+              confusion * 0.12
           )
         )
-      : scoring.explanationQuality;
+      : Math.max(
+          0,
+          Math.min(
+            1,
+            scoring.explanationQuality * 0.45 +
+              scoring.evidenceStrength * 0.35 +
+              scoring.judgmentConfidence * 0.2
+          )
+        );
+
+  const classificationBase =
+    scoring.classification === "success"
+      ? 0.82
+      : scoring.classification === "near_miss"
+        ? 0.68
+        : scoring.classification === "structural_failure"
+          ? 0.64
+          : scoring.classification === "guess"
+            ? 0.58
+            : 0.54;
+
+  const decisionConfidence = Math.max(
+    0,
+    Math.min(
+      0.95,
+      classificationBase +
+        scoring.evidenceStrength * 0.1 +
+        scoring.judgmentConfidence * 0.12 +
+        (typeof insight === "number" ? insight * 0.04 : 0) -
+        (typeof confusion === "number" ? confusion * 0.03 : 0)
+    )
+  );
 
   const decisionReasons = [
     "This run is directly downstream of a delivered probe.",
     `The judged attempt classification was ${scoring.classification}.`,
+    `Evidence strength was ${scoring.evidenceStrength.toFixed(2)} and judgment confidence was ${scoring.judgmentConfidence.toFixed(2)}.`,
     replyBundle.whyThisNextStep,
   ];
+
+  if (scoring.missingElements) {
+    decisionReasons.push(
+      `Important missing element detected: ${scoring.missingElements}.`
+    );
+  }
+
+  if (scoring.misconceptionTags.length > 0) {
+    decisionReasons.push(
+      `Detected misconception tags: ${scoring.misconceptionTags.join(", ")}.`
+    );
+  }
 
   if (typeof confusion === "number") {
     decisionReasons.push(
@@ -386,21 +461,47 @@ function buildDecision(args: {
     target_topic_id: topic.id,
     active_diagnosis: replyBundle.activeDiagnosis,
     primary_block: topic.nextStep,
-    decision_confidence:
-      typeof confusion === "number" || typeof insight === "number"
-        ? Math.max(
-            0,
-            Math.min(
-              0.95,
-              baseConfidence +
-                (typeof insight === "number" ? insight * 0.06 : 0) -
-                (typeof confusion === "number" ? confusion * 0.04 : 0)
-            )
-          )
-        : baseConfidence,
+    decision_confidence: decisionConfidence,
     decision_reasons: decisionReasons,
-    clarify_score: continueWithProbe ? 0.42 : 0.76,
-    probe_score: continueWithProbe ? 0.78 : 0.44,
+    clarify_score: continueWithProbe
+      ? Math.max(
+          0.2,
+          Math.min(
+            0.8,
+            0.26 +
+              (scoring.classification === "structural_failure" ? 0.18 : 0) +
+              (scoring.classification === "near_miss" ? 0.12 : 0) +
+              (scoring.missingElements ? 0.08 : 0)
+          )
+        )
+      : Math.max(
+          0.35,
+          Math.min(
+            0.92,
+            0.62 +
+              (scoring.classification === "structural_failure" ? 0.08 : 0) +
+              (scoring.missingElements ? 0.06 : 0)
+          )
+        ),
+    probe_score: continueWithProbe
+      ? Math.max(
+          0.4,
+          Math.min(
+            0.94,
+            0.62 +
+              scoring.evidenceStrength * 0.12 +
+              (scoring.classification === "success" ? 0.08 : 0)
+          )
+        )
+      : Math.max(
+          0.18,
+          Math.min(
+            0.7,
+            0.26 +
+              (scoring.classification === "guess" ? 0.05 : 0) +
+              (scoring.classification === "no_response" ? 0.04 : 0)
+          )
+        ),
     signal_summary: {
       raw_response_signal: bodyResponseSignal(scoring),
       evidence_quality_signal: evidenceQualitySignal,
@@ -510,14 +611,25 @@ export async function POST(request: NextRequest) {
     }
 
     const topicName = body.topicName || topic.name;
-    const scoring = scoreResponse(rawResponse);
     const vectorInfo = buildVectorInfo(topic);
+
+    const provisionalDiagnosis = inferDiagnosisFromTopic(topic);
+
+    const scoring = scoreResponse(rawResponse, {
+      topic,
+      prompt: body.prompt ?? topic.nextStep,
+      activeDiagnosis: provisionalDiagnosis,
+    });
 
     const replyBundle = buildResponseBundle({
       topicName,
       classification: scoring.classification,
       explanationQuality: scoring.explanationQuality,
       insight: scoring.insight,
+      evidenceStrength: scoring.evidenceStrength,
+      judgmentConfidence: scoring.judgmentConfidence,
+      missingElements: scoring.missingElements,
+      misconceptionTags: scoring.misconceptionTags,
     });
 
     const updatedTopicMetrics = buildTopicMetricUpdate(body.topicId, scoring);
@@ -545,6 +657,10 @@ export async function POST(request: NextRequest) {
             probeIntent: replyBundle.probeIntent,
             probeType: replyBundle.probeType,
             classification: scoring.classification,
+            evidenceStrength: scoring.evidenceStrength,
+            judgmentConfidence: scoring.judgmentConfidence,
+            missingElements: scoring.missingElements,
+            misconceptionTags: scoring.misconceptionTags,
           })
         : buildNotApplicableProbePlan(topic);
 
@@ -662,7 +778,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("POST /api/probe/submit failed", error);
     return NextResponse.json(
-      { error: "Failed to process probe submission." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to process probe submission.",
+      },
       { status: 500 }
     );
   }

@@ -21,6 +21,17 @@ type NewAttempt = ImportantRunInputs["new_attempt"];
 
 type UploadedContent = ImportantRunInputs["uploaded_content"];
 
+type InterventionScoreArgs = {
+  topic: RouteTopic;
+  vectorInfo: VectorInfo;
+  preferredModality: RendererModality;
+  message: string;
+  createdTopic: boolean;
+  modelSignals?: ModelSignals;
+  currentInteractionContext?: CurrentInteractionContext;
+  newAttempt?: NewAttempt;
+};
+
 export function inferDiagnosisFromTopic(topic: RouteTopic): DiagnosisType {
   return (
     normalizeDiagnosis((topic as { diagnosis?: unknown }).diagnosis) ??
@@ -150,30 +161,244 @@ export function buildImportantRunInputs(
   };
 }
 
-type InterventionScoreArgs = {
-  topic: RouteTopic;
-  vectorInfo: VectorInfo;
-  preferredModality: RendererModality;
-  message: string;
-  createdTopic: boolean;
-  modelSignals?: ModelSignals;
-};
-
-function computeReadinessSignal(
-  preferredModality: RendererModality,
-  modelSignals?: ModelSignals
+function selectInitialProbeType(
+  diagnosis: DiagnosisType,
+  preferredModality: RendererModality
 ) {
+  if (preferredModality === "interactive" && diagnosis !== "representation_gap") {
+    return diagnosis === "procedure_gap"
+      ? "transform"
+      : diagnosis === "discrimination_gap"
+        ? "discriminate"
+        : diagnosis === "transfer_gap"
+          ? "apply_transfer"
+          : "predict";
+  }
+
+  switch (diagnosis) {
+    case "recall_gap":
+      return "predict" as const;
+    case "representation_gap":
+      return "explain" as const;
+    case "procedure_gap":
+      return "transform" as const;
+    case "discrimination_gap":
+      return "discriminate" as const;
+    case "transfer_gap":
+      return "apply_transfer" as const;
+    default:
+      return "explain" as const;
+  }
+}
+
+function buildInitialPromptForProbe(args: {
+  topic: RouteTopic;
+  diagnosis: DiagnosisType;
+  probeType: "predict" | "explain" | "discriminate" | "transform" | "apply_transfer";
+}) {
+  const { topic, diagnosis, probeType } = args;
+
+  switch (probeType) {
+    case "predict":
+      return `Predict what would happen in a simple case involving ${topic.name}, and explain why.`;
+    case "discriminate":
+      return `What is the key difference that helps distinguish ${topic.name} from a closely related idea? Explain the difference clearly.`;
+    case "transform":
+      return `Walk through ${topic.name} as a step-by-step process. What happens first, what happens next, and why does the order matter?`;
+    case "apply_transfer":
+      return `Apply ${topic.name} in a new but related situation. What stays the same, what changes, and why?`;
+    case "explain":
+    default:
+      return diagnosis === "representation_gap"
+        ? `Can you explain ${topic.name} in your own words, focusing on the key relationship or mechanism?`
+        : `Can you explain ${topic.name} clearly in your own words?`;
+  }
+}
+
+function buildInitialJudgingSupport(args: {
+  topic: RouteTopic;
+  diagnosis: DiagnosisType;
+  probeType: "predict" | "explain" | "discriminate" | "transform" | "apply_transfer";
+}) {
+  const { topic, diagnosis, probeType } = args;
+
+  if (probeType === "predict") {
+    return {
+      rubric_notes: [
+        `Judge whether the learner can make a justified prediction about ${topic.name}.`,
+        "Prefer supported prediction over guess-like wording.",
+      ],
+      evidence_type_expected: ["predict"] as Array<
+        "predict" | "explain" | "discriminate" | "apply_transfer"
+      >,
+      response_features_to_extract: [
+        "prediction_quality",
+        "causal_basis",
+        "topic_grounding",
+      ],
+      target_misconceptions: [
+        "guess without justification",
+        "surface recall without usable prediction",
+      ],
+      success_indicators: [
+        "The learner makes a concrete prediction.",
+        "The learner connects the prediction to a meaningful reason.",
+      ],
+      failure_indicators: [
+        "The learner gives only a guess or vague anticipation.",
+        "The learner cannot ground the prediction in the concept.",
+      ],
+    };
+  }
+
+  if (probeType === "discriminate") {
+    return {
+      rubric_notes: [
+        `Judge whether the learner can distinguish ${topic.name} from nearby ideas using a decisive difference.`,
+      ],
+      evidence_type_expected: ["discriminate"] as Array<
+        "predict" | "explain" | "discriminate" | "apply_transfer"
+      >,
+      response_features_to_extract: [
+        "contrast_quality",
+        "boundary_marker",
+        "decisive_difference",
+      ],
+      target_misconceptions: [
+        "blurred category boundary",
+        "listing without distinction",
+      ],
+      success_indicators: [
+        "The learner identifies a decisive difference.",
+        "The learner explains why that difference matters.",
+      ],
+      failure_indicators: [
+        "The learner stays vague about the distinction.",
+        "The learner lists traits without drawing a boundary.",
+      ],
+    };
+  }
+
+  if (probeType === "transform") {
+    return {
+      rubric_notes: [
+        `Judge whether the learner can express ${topic.name} as a coherent ordered process.`,
+      ],
+      evidence_type_expected: ["explain"] as Array<
+        "predict" | "explain" | "discriminate" | "apply_transfer"
+      >,
+      response_features_to_extract: [
+        "sequencing",
+        "step_linkage",
+        "order_dependence",
+      ],
+      target_misconceptions: [
+        "misordered reasoning",
+        "disconnected steps",
+      ],
+      success_indicators: [
+        "The learner explains the process in a sensible order.",
+        "The learner explains why one step leads to the next.",
+      ],
+      failure_indicators: [
+        "The learner gives disconnected steps.",
+        "The learner cannot explain why the order matters.",
+      ],
+    };
+  }
+
+  if (probeType === "apply_transfer") {
+    return {
+      rubric_notes: [
+        `Judge whether the learner can carry the core idea of ${topic.name} into a changed setting.`,
+      ],
+      evidence_type_expected: ["apply_transfer"] as Array<
+        "predict" | "explain" | "discriminate" | "apply_transfer"
+      >,
+      response_features_to_extract: [
+        "structure_preservation",
+        "changed_condition_handling",
+        "transfer_success",
+      ],
+      target_misconceptions: [
+        "surface wording without transferable structure",
+        "failed transfer despite apparent familiarity",
+      ],
+      success_indicators: [
+        "The learner preserves the core idea in the new case.",
+        "The learner identifies what changes and what stays the same.",
+      ],
+      failure_indicators: [
+        "The learner only repeats the original wording.",
+        "The learner cannot adapt the idea to the new setting.",
+      ],
+    };
+  }
+
+  return {
+    rubric_notes: [
+      `Judge whether the learner can explain ${topic.name} with connected reasoning.`,
+      `The current diagnosis focus is ${diagnosis}.`,
+      "Prefer structural understanding over phrase matching.",
+    ],
+    evidence_type_expected: ["explain"] as Array<
+      "predict" | "explain" | "discriminate" | "apply_transfer"
+    >,
+    response_features_to_extract: [
+      "mechanistic clarity",
+      "missing step",
+      "misordered reasoning",
+      "topic_grounding",
+    ],
+    target_misconceptions: [
+      "surface familiarity without mechanism",
+      "memorized wording without causal structure",
+    ],
+    success_indicators: [
+      "The learner explains the concept in a connected way.",
+      "The learner names the critical steps or relationships.",
+    ],
+    failure_indicators: [
+      "The learner gives only isolated facts.",
+      "The learner cannot connect the concept to the asked task.",
+    ],
+  };
+}
+
+function computeReadinessSignal(args: {
+  preferredModality: RendererModality;
+  modelSignals?: ModelSignals;
+  currentInteractionContext?: CurrentInteractionContext;
+  newAttempt?: NewAttempt;
+}) {
+  const { preferredModality, modelSignals, currentInteractionContext, newAttempt } =
+    args;
+
   const base =
     preferredModality === "interactive"
-      ? 0.74
+      ? 0.68
       : preferredModality === "video"
-        ? 0.66
-        : 0.62;
+        ? 0.62
+        : 0.58;
 
   const confusion = modelSignals?.model_confusion;
   const insight = modelSignals?.model_insight;
 
   let adjusted = base;
+
+  if (currentInteractionContext?.run_kind === "attempt_run") {
+    adjusted += 0.18;
+  } else if (currentInteractionContext?.run_kind === "clarify_followup") {
+    adjusted += 0.06;
+  }
+
+  if (currentInteractionContext?.is_response_to_delivered_probe) {
+    adjusted += 0.18;
+  }
+
+  if (newAttempt?.status === "present") {
+    adjusted += 0.14;
+  }
 
   if (typeof confusion === "number") {
     adjusted -= confusion * 0.18;
@@ -191,28 +416,183 @@ function computeActiveProblemSignal(topic: RouteTopic, createdTopic: boolean) {
   return clamp(base + (createdTopic ? 0.06 : 0), 0, 1);
 }
 
-function computeHistorySignal(createdTopic: boolean) {
-  return createdTopic ? 0.18 : 0.42;
+function computeHistorySignal(args: {
+  createdTopic: boolean;
+  currentInteractionContext?: CurrentInteractionContext;
+}) {
+  const { createdTopic, currentInteractionContext } = args;
+
+  let value = createdTopic ? 0.18 : 0.42;
+
+  if (currentInteractionContext?.prior_mode_selected === "clarify") {
+    value += 0.14;
+  }
+
+  if (currentInteractionContext?.prior_mode_outcome_available) {
+    value += 0.1;
+  }
+
+  if (currentInteractionContext?.is_response_to_delivered_probe) {
+    value += 0.18;
+  }
+
+  return clamp(value, 0, 1);
 }
 
-function computeRawResponseSignal(message: string) {
+function computeRawResponseSignal(
+  message: string,
+  currentInteractionContext?: CurrentInteractionContext,
+  newAttempt?: NewAttempt
+) {
   const trimmed = message.trim();
   if (!trimmed) return 0;
 
-  if (trimmed.length < 20) return 0.28;
-  if (trimmed.length < 60) return 0.46;
-  return 0.62;
+  let base = 0;
+
+  if (trimmed.length < 20) base = 0.28;
+  else if (trimmed.length < 60) base = 0.46;
+  else base = 0.62;
+
+  if (currentInteractionContext?.run_kind === "attempt_run") {
+    base += 0.14;
+  }
+
+  if (newAttempt?.status === "present") {
+    base += 0.12;
+  }
+
+  return clamp(base, 0, 1);
 }
 
-function computeEvidenceQualitySignal(modelSignals?: ModelSignals) {
+function computeEvidenceQualitySignal(args: {
+  modelSignals?: ModelSignals;
+  currentInteractionContext?: CurrentInteractionContext;
+  newAttempt?: NewAttempt;
+}) {
+  const { modelSignals, currentInteractionContext, newAttempt } = args;
   const confusion = modelSignals?.model_confusion;
   const insight = modelSignals?.model_insight;
 
-  if (typeof confusion !== "number" || typeof insight !== "number") {
-    return null;
+  let value =
+    typeof confusion === "number" && typeof insight === "number"
+      ? clamp(0.5 + insight * 0.35 - confusion * 0.3, 0, 1)
+      : 0.42;
+
+  if (currentInteractionContext?.is_response_to_delivered_probe) {
+    value += 0.14;
   }
 
-  return clamp(0.5 + insight * 0.35 - confusion * 0.3, 0, 1);
+  if (newAttempt?.status === "present") {
+    value += 0.1;
+  }
+
+  return clamp(value, 0, 1);
+}
+
+function computeAttemptReadinessSignal(args: {
+  currentInteractionContext?: CurrentInteractionContext;
+  newAttempt?: NewAttempt;
+}) {
+  const { currentInteractionContext, newAttempt } = args;
+
+  let value = 0.2;
+
+  if (currentInteractionContext?.run_kind === "attempt_run") value += 0.3;
+  if (currentInteractionContext?.is_response_to_delivered_probe) value += 0.28;
+  if (newAttempt?.status === "present") value += 0.22;
+
+  return clamp(value, 0, 1);
+}
+
+function computeClarifyPressureSignal(args: {
+  message: string;
+  createdTopic: boolean;
+  currentInteractionContext?: CurrentInteractionContext;
+  modelSignals?: ModelSignals;
+}) {
+  const { message, createdTopic, currentInteractionContext, modelSignals } = args;
+
+  let value = 0.14;
+
+  if (messageLooksClarifySeeking(message)) {
+    value += 0.3;
+  }
+
+  if (createdTopic) {
+    value += 0.18;
+  }
+
+  if (currentInteractionContext?.run_kind === "initial_question") {
+    value += 0.08;
+  }
+
+  if (currentInteractionContext?.run_kind === "clarify_followup") {
+    value += 0.12;
+  }
+
+  if (typeof modelSignals?.model_confusion === "number") {
+    value += modelSignals.model_confusion * 0.22;
+  }
+
+  return clamp(value, 0, 1);
+}
+
+function computeProbePressureSignal(args: {
+  topic: RouteTopic;
+  createdTopic: boolean;
+  currentInteractionContext?: CurrentInteractionContext;
+  newAttempt?: NewAttempt;
+  modelSignals?: ModelSignals;
+  topSimilarity: number;
+}) {
+  const {
+    topic,
+    createdTopic,
+    currentInteractionContext,
+    newAttempt,
+    modelSignals,
+    topSimilarity,
+  } = args;
+
+  let value = 0.18;
+
+  if (!createdTopic) {
+    value += 0.12;
+  }
+
+  if (topic.nextStep) {
+    value += 0.08;
+  }
+
+  if (topSimilarity >= 0.62) {
+    value += 0.16;
+  }
+
+  if (currentInteractionContext?.run_kind === "attempt_run") {
+    value += 0.18;
+  }
+
+  if (currentInteractionContext?.is_response_to_delivered_probe) {
+    value += 0.24;
+  }
+
+  if (newAttempt?.status === "present") {
+    value += 0.18;
+  }
+
+  if (currentInteractionContext?.prior_mode_selected === "clarify") {
+    value += 0.12;
+  }
+
+  if (typeof modelSignals?.model_insight === "number") {
+    value += modelSignals.model_insight * 0.18;
+  }
+
+  if (typeof modelSignals?.model_confusion === "number") {
+    value -= modelSignals.model_confusion * 0.08;
+  }
+
+  return clamp(value, 0, 1);
 }
 
 function computeInterventionScores(args: InterventionScoreArgs) {
@@ -223,6 +603,8 @@ function computeInterventionScores(args: InterventionScoreArgs) {
     message,
     createdTopic,
     modelSignals,
+    currentInteractionContext,
+    newAttempt,
   } = args;
 
   const diagnosis = inferDiagnosisFromTopic(topic);
@@ -231,62 +613,102 @@ function computeInterventionScores(args: InterventionScoreArgs) {
   const confusion = modelSignals?.model_confusion;
   const insight = modelSignals?.model_insight;
 
-  const readinessSignal = computeReadinessSignal(
+  const readinessSignal = computeReadinessSignal({
     preferredModality,
-    modelSignals
-  );
+    modelSignals,
+    currentInteractionContext,
+    newAttempt,
+  });
+
   const activeProblemSignal = computeActiveProblemSignal(topic, createdTopic);
-  const historySignal = computeHistorySignal(createdTopic);
-  const rawResponseSignal = computeRawResponseSignal(message);
-  const evidenceQualitySignal = computeEvidenceQualitySignal(modelSignals);
+
+  const historySignal = computeHistorySignal({
+    createdTopic,
+    currentInteractionContext,
+  });
+
+  const rawResponseSignal = computeRawResponseSignal(
+    message,
+    currentInteractionContext,
+    newAttempt
+  );
+
+  const evidenceQualitySignal = computeEvidenceQualitySignal({
+    modelSignals,
+    currentInteractionContext,
+    newAttempt,
+  });
+
+  const attemptReadinessSignal = computeAttemptReadinessSignal({
+    currentInteractionContext,
+    newAttempt,
+  });
+
+  const clarifyPressureSignal = computeClarifyPressureSignal({
+    message,
+    createdTopic,
+    currentInteractionContext,
+    modelSignals,
+  });
+
+  const probePressureSignal = computeProbePressureSignal({
+    topic,
+    createdTopic,
+    currentInteractionContext,
+    newAttempt,
+    modelSignals,
+    topSimilarity,
+  });
 
   let clarifyScore =
-    0.2 +
-    (createdTopic ? 0.2 : 0) +
-    (clarifySeeking ? 0.24 : 0) +
-    (topSimilarity < 0.62 ? 0.12 : 0);
+    0.16 +
+    clarifyPressureSignal * 0.42 +
+    activeProblemSignal * 0.08 +
+    (clarifySeeking ? 0.08 : 0);
 
   let probeScore =
-    0.28 +
-    (!createdTopic ? 0.18 : 0) +
-    (topSimilarity >= 0.62 ? 0.18 : 0.06) +
-    (clarifySeeking ? 0.02 : 0.14) +
-    (topic.nextStep ? 0.1 : 0);
+    0.18 +
+    probePressureSignal * 0.34 +
+    readinessSignal * 0.12 +
+    attemptReadinessSignal * 0.16 +
+    evidenceQualitySignal * 0.1;
 
   if (typeof confusion === "number") {
     if (confusion >= 0.7) {
-      clarifyScore += 0.22;
-      probeScore -= 0.08;
-    } else if (confusion >= 0.55) {
       clarifyScore += 0.14;
-      probeScore -= 0.03;
+      probeScore -= 0.06;
+    } else if (confusion >= 0.55) {
+      clarifyScore += 0.08;
+      probeScore -= 0.02;
     } else if (confusion <= 0.35) {
-      probeScore += 0.08;
+      probeScore += 0.05;
     }
   }
 
   if (typeof insight === "number") {
     if (insight >= 0.6) {
-      probeScore += 0.16;
+      probeScore += 0.12;
     } else if (insight >= 0.45) {
-      probeScore += 0.08;
+      probeScore += 0.06;
     } else if (insight <= 0.2) {
-      clarifyScore += 0.08;
+      clarifyScore += 0.05;
     }
   }
 
-  if (typeof confusion === "number" && typeof insight === "number") {
-    if (confusion >= 0.55 && insight >= 0.45) {
-      clarifyScore += 0.08;
-    }
+  if (currentInteractionContext?.is_response_to_delivered_probe) {
+    probeScore += 0.12;
+  }
+
+  if (currentInteractionContext?.prior_mode_selected === "clarify") {
+    probeScore += 0.08;
   }
 
   if (preferredModality === "interactive") {
-    probeScore += 0.04;
+    probeScore += 0.03;
   }
 
   if (preferredModality === "video" && clarifySeeking) {
-    clarifyScore += 0.04;
+    clarifyScore += 0.03;
   }
 
   clarifyScore = clamp(clarifyScore, 0, 0.95);
@@ -300,8 +722,10 @@ function computeInterventionScores(args: InterventionScoreArgs) {
       ? [
           `The message matched most strongly to ${topic.name}.`,
           createdTopic
-            ? "This is a very fresh or newly created topic, so stabilization is safer than immediate measurement."
-            : "The current message looks more like a need for stabilization than an immediate readiness signal for measurement.",
+            ? "This is a fresh or newly created topic, so stabilization is safer than immediate measurement."
+            : currentInteractionContext?.run_kind === "clarify_followup"
+              ? "This still looks like clarification-oriented stabilization rather than a fair measurement moment."
+              : "The current message looks more like a need for stabilization than an immediate readiness signal for measurement.",
           typeof confusion === "number"
             ? `Confusion signal is ${confusion.toFixed(2)}, which increases the value of clarifying before probing.`
             : "No confusion/insight score was available, so the route stayed conservative where the message itself suggested clarification.",
@@ -309,18 +733,26 @@ function computeInterventionScores(args: InterventionScoreArgs) {
         ]
       : [
           `The message matched most strongly to ${topic.name}.`,
-          `The next unresolved learning move appears to be: ${topic.nextStep}.`,
+          currentInteractionContext?.is_response_to_delivered_probe
+            ? "This run is positioned like a response to a previously delivered probe, which increases measurement value."
+            : currentInteractionContext?.prior_mode_selected === "clarify"
+              ? "Clarification appears to have already been attempted, so there is stronger pressure to gather evidence now."
+              : "The topic and interaction state together look ready for a focused measurement step.",
           typeof insight === "number"
             ? `Insight signal is ${insight.toFixed(2)}, which supports moving toward a focused measurement step.`
             : "The message and topic state together look ready for a focused measurement step.",
-          "This run looks ready for a focused probe rather than clarification-only stabilization.",
+          `The next unresolved learning move appears to be: ${topic.nextStep}.`,
         ];
 
   const winningScore = mode_selected === "clarify" ? clarifyScore : probeScore;
   const losingScore = mode_selected === "clarify" ? probeScore : clarifyScore;
   const margin = Math.max(0, winningScore - losingScore);
 
-  const decisionConfidence = clamp(0.5 + winningScore * 0.25 + margin * 0.35, 0, 0.95);
+  const decisionConfidence = clamp(
+    0.48 + winningScore * 0.24 + margin * 0.34 + evidenceQualitySignal * 0.08,
+    0,
+    0.95
+  );
 
   return {
     diagnosis,
@@ -345,7 +777,9 @@ export function buildInterventionModeDecision(
   preferredModality: RendererModality,
   message: string,
   createdTopic: boolean,
-  modelSignals?: ModelSignals
+  modelSignals?: ModelSignals,
+  currentInteractionContext?: CurrentInteractionContext,
+  newAttempt?: NewAttempt
 ): InterventionModeDecision {
   const computed = computeInterventionScores({
     topic,
@@ -354,6 +788,8 @@ export function buildInterventionModeDecision(
     message,
     createdTopic,
     modelSignals,
+    currentInteractionContext,
+    newAttempt,
   });
 
   return {
@@ -375,17 +811,39 @@ export function buildProbePlan(
   message: string
 ): ProbePlan {
   const preferredModality = inferPreferredModality(message);
+  const diagnosis = decision.active_diagnosis ?? inferDiagnosisFromTopic(topic);
+  const probeType = selectInitialProbeType(diagnosis, preferredModality);
   const probeId = makeId(`probe-${topic.id}`);
-  const title = topic.nextStep;
-  const instruction = `Work on ${topic.name.toLowerCase()} by completing this task: ${topic.nextStep}`;
+  const title =
+    probeType === "predict"
+      ? `Predict what happens in ${topic.name}`
+      : probeType === "discriminate"
+        ? `Distinguish ${topic.name} clearly`
+        : probeType === "transform"
+          ? `Walk through ${topic.name} step by step`
+          : probeType === "apply_transfer"
+            ? `Apply ${topic.name} in a new situation`
+            : `Explain ${topic.name} more clearly`;
+
+  const instruction = buildInitialPromptForProbe({
+    topic,
+    diagnosis,
+    probeType,
+  });
+
+  const judgingSupport = buildInitialJudgingSupport({
+    topic,
+    diagnosis,
+    probeType,
+  });
 
   return {
     status: "applicable",
     probe_id: probeId,
     target_topic_id: topic.id,
-    target_diagnosis: decision.active_diagnosis,
+    target_diagnosis: diagnosis,
     intent: "diagnostic",
-    probe_type: "explain",
+    probe_type: probeType,
     expected_response_type: "text",
 
     renderer_request: {
@@ -404,35 +862,21 @@ export function buildProbePlan(
       allow_null_delivery_on_failure: false,
     },
 
-    judging_support: {
-      rubric_notes: [
-        "Look for whether the learner can explain the mechanism in their own words.",
-        "Prefer structural understanding over phrase matching.",
-      ],
-      evidence_type_expected: ["explain"],
-      response_features_to_extract: [
-        "mechanistic clarity",
-        "missing step",
-        "misordered reasoning",
-      ],
-      target_misconceptions: [
-        "surface familiarity without mechanism",
-        "memorized wording without causal structure",
-      ],
-      success_indicators: [
-        "The learner explains the concept in a connected way.",
-        "The learner names the critical steps or relationships.",
-      ],
-      failure_indicators: [
-        "The learner gives only isolated facts.",
-        "The learner cannot connect the concept to the asked task.",
-      ],
-    },
+    judging_support: judgingSupport,
 
     text_plan: {
       status: "planned",
       pedagogical_role: "guided_question",
-      diagnostic_goal: `Check whether the learner can explain ${topic.name} coherently.`,
+      diagnostic_goal:
+        probeType === "predict"
+          ? `Check whether the learner can anticipate outcomes in ${topic.name}.`
+          : probeType === "discriminate"
+            ? `Check whether the learner can distinguish ${topic.name} from nearby ideas.`
+            : probeType === "transform"
+              ? `Check whether the learner can express ${topic.name} as a coherent ordered process.`
+              : probeType === "apply_transfer"
+                ? `Check whether the learner can transfer ${topic.name} into a changed setting.`
+                : `Check whether the learner can explain ${topic.name} coherently.`,
       instructional_goal: `Move the learner one step closer to ${topic.nextStep}.`,
       why_text: [
         "Text is the safest fallback renderer during contract-proving.",
@@ -441,9 +885,15 @@ export function buildProbePlan(
       content_selection: {
         source_mode: "generated",
         selected_concepts: [topic.name],
-        selected_examples: [],
-        selected_contrasts: [],
-        selected_misconceptions: ["surface familiarity without mechanism"],
+        selected_examples:
+          probeType === "predict" || probeType === "apply_transfer"
+            ? ["Use a simple changed case or scenario."]
+            : [],
+        selected_contrasts:
+          probeType === "discriminate"
+            ? ["Contrast against a nearby but importantly different idea."]
+            : [],
+        selected_misconceptions: judgingSupport.target_misconceptions,
         selected_context: topic.nextStep,
       },
       scaffolding: {
@@ -462,17 +912,55 @@ export function buildProbePlan(
         motivation_strategy: "curiosity_based",
         adaptation_reasons: [
           "Use supportive prompting while preserving measurement value.",
+          `Initial probe type selected from diagnosis: ${diagnosis}.`,
         ],
       },
-      measurement_intent: {
-        what_response_should_reveal: [
-          "Whether the learner understands the key structure of the topic.",
-          "Whether the learner can explain rather than merely name it.",
-        ],
-        what_would_count_as_progress: [
-          "A coherent explanation with at least one meaningful relationship or mechanism.",
-        ],
-      },
+      measurement_intent:
+        probeType === "predict"
+          ? {
+              what_response_should_reveal: [
+                "Whether the learner can make a justified prediction.",
+              ],
+              what_would_count_as_progress: [
+                "A prediction tied to the concept rather than a guess.",
+              ],
+            }
+          : probeType === "discriminate"
+            ? {
+                what_response_should_reveal: [
+                  "Whether the learner can identify the decisive difference between nearby ideas.",
+                ],
+                what_would_count_as_progress: [
+                  "A clear contrast with an explanation of why it matters.",
+                ],
+              }
+            : probeType === "transform"
+              ? {
+                  what_response_should_reveal: [
+                    "Whether the learner can express the idea as a coherent ordered process.",
+                  ],
+                  what_would_count_as_progress: [
+                    "A connected sequence with meaningful step linkage.",
+                  ],
+                }
+              : probeType === "apply_transfer"
+                ? {
+                    what_response_should_reveal: [
+                      "Whether the learner can preserve the core idea in a changed setting.",
+                    ],
+                    what_would_count_as_progress: [
+                      "Correctly mapping the same structure into a new case.",
+                    ],
+                  }
+                : {
+                    what_response_should_reveal: [
+                      "Whether the learner understands the key structure of the topic.",
+                      "Whether the learner can explain rather than merely name it.",
+                    ],
+                    what_would_count_as_progress: [
+                      "A coherent explanation with at least one meaningful relationship or mechanism.",
+                    ],
+                  },
     },
 
     video_plan: {
@@ -541,7 +1029,16 @@ export function buildProbePlan(
       ],
       task_model: {
         interaction_type: "multi_stage",
-        cognitive_operation: "predict",
+        cognitive_operation:
+          probeType === "predict"
+            ? "predict"
+            : probeType === "discriminate"
+              ? "compare"
+              : probeType === "transform"
+                ? "transform"
+                : probeType === "apply_transfer"
+                  ? "construct"
+                  : "predict",
         statefulness: "multi_step",
       },
       scaffolding: {
@@ -576,8 +1073,8 @@ export function buildProbePlan(
       api: "responses",
       model: "gpt-5.4",
       instructions:
-        "You are rendering a MyWay probe. Do not over-explain. Ask only enough to reveal the learner's understanding.",
-      input: `${title}\n\n${instruction}\n\nAsk the learner to explain what is happening in their own words.`,
+        "You are rendering a MyWay probe. Do not over-explain. Ask only enough to reveal the learner's understanding. Preserve the requested probe intent and avoid giving the final answer.",
+      input: `${title}\n\n${instruction}`,
       personalization_snapshot: {
         tone: "encouraging",
         verbosity: "medium",
@@ -588,7 +1085,12 @@ export function buildProbePlan(
       rendering_contract: {
         output_form: "guided_question",
         answer_reveal_policy: "do_not_reveal",
-        closing_action: "ask_for_explanation",
+        closing_action:
+          probeType === "predict"
+            ? "ask_for_prediction"
+            : probeType === "apply_transfer" || probeType === "transform"
+              ? "ask_for_transformation"
+              : "ask_for_explanation",
         max_length: "medium",
       },
     },
@@ -602,7 +1104,7 @@ export function buildProbePlan(
       seconds: 8,
       prompt:
         preferredModality === "video"
-          ? `Create a concise educational animation about ${topic.name}. Show only enough to prepare the learner for a follow-up explanation task about: ${topic.nextStep}.`
+          ? `Create a concise educational animation about ${topic.name}. Show only enough to prepare the learner for a follow-up response task about: ${topic.nextStep}.`
           : null,
       narration:
         preferredModality === "video"

@@ -539,13 +539,15 @@ export function useProbeFlow({
       } catch (error) {
         console.error("Probe submission failed:", error);
 
-        const errorReply =
-          "Sorry, something went wrong while submitting your probe response.";
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Sorry, something went wrong while submitting your probe response.";
 
-        setLatestReply(errorReply);
+        setLatestReply(errorMessage);
         setSuggestedAction("Try submitting your response again.");
         setProbeFeedback({
-          reply: errorReply,
+          reply: errorMessage,
           suggestedAction: "Try submitting your response again.",
         });
 
