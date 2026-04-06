@@ -435,7 +435,7 @@ export default function Home() {
 
                 <button
                   onClick={shellPanels.toggleRightPanel}
-                  className="absolute left-0 top-1/2 z-50 flex h-28 w-[19px] -translate-y-1/2 -translate-x-full items-center justify-center rounded-l-xl border border-r-0 border-white/10 bg-zinc-950/55 text-[10px] uppercase tracking-[0.18em] text-zinc-300 shadow-[0_0_20px_rgba(0,0,0,0.24)] backdrop-blur-md transition hover:bg-zinc-900/60"
+                  className="absolute left-0 top-1/2 z-50 flex h-28 w-[18px] -translate-y-1/2 -translate-x-full items-center justify-center rounded-l-xl border border-r-0 border-white/10 bg-zinc-950/55 text-[10px] uppercase tracking-[0.18em] text-zinc-300 shadow-[0_0_20px_rgba(0,0,0,0.24)] backdrop-blur-md transition hover:bg-zinc-900/60"
                   type="button"
                 >
                   <span className="[writing-mode:vertical-rl]">
