@@ -86,6 +86,12 @@ type MessageRouteBody = MessageRouteRequest & {
   conversation_turns?: IncomingChatTurn[];
 };
 
+type DeliveredRendererSelection = {
+  modality: "text" | "video" | "interactive";
+  generator: "chatgpt" | "sora" | "custom";
+  renderer_type: "text_renderer" | "video_renderer" | "interactive_renderer";
+};
+
 function normalizeRecentTurns(body: MessageRouteBody) {
   const rawTurns = Array.isArray(body.recent_turns)
     ? body.recent_turns
@@ -207,19 +213,78 @@ function buildStatusLabel(createdTopic: boolean, mode: "clarify" | "probe") {
   return `${topicLabel} • ${mode === "clarify" ? "Clarify mode" : "Probe mode"}`;
 }
 
+function selectDeliveredRenderer(probePlan: ProbePlan): DeliveredRendererSelection {
+  if (probePlan.interactive_payload.ready_to_send) {
+    return {
+      modality: "interactive",
+      generator:
+        probePlan.renderer_request.preferred_generator === "custom"
+          ? "custom"
+          : "custom",
+      renderer_type: "interactive_renderer",
+    };
+  }
+
+  if (probePlan.video_payload.ready_to_send) {
+    return {
+      modality: "video",
+      generator:
+        probePlan.video_payload.model && probePlan.video_payload.model.startsWith("sora")
+          ? "sora"
+          : probePlan.renderer_request.preferred_generator === "sora"
+            ? "sora"
+            : "sora",
+      renderer_type: "video_renderer",
+    };
+  }
+
+  if (probePlan.text_payload.ready_to_send) {
+    return {
+      modality: "text",
+      generator:
+        probePlan.renderer_request.preferred_generator === "chatgpt"
+          ? "chatgpt"
+          : "chatgpt",
+      renderer_type: "text_renderer",
+    };
+  }
+
+  const preferredModality = probePlan.renderer_request.preferred_modality ?? "text";
+  const preferredGenerator = probePlan.renderer_request.preferred_generator ?? "chatgpt";
+
+  if (preferredModality === "interactive") {
+    return {
+      modality: "interactive",
+      generator: preferredGenerator === "custom" ? "custom" : "custom",
+      renderer_type: "interactive_renderer",
+    };
+  }
+
+  if (preferredModality === "video") {
+    return {
+      modality: "video",
+      generator: preferredGenerator === "sora" ? "sora" : "sora",
+      renderer_type: "video_renderer",
+    };
+  }
+
+  return {
+    modality: "text",
+    generator: preferredGenerator === "chatgpt" ? "chatgpt" : "chatgpt",
+    renderer_type: "text_renderer",
+  };
+}
+
 function buildDeliveredProbe(
   probePlan: ProbePlan,
   topic: RouteTopic
 ): DeliveredProbe {
-  const generator =
-    probePlan.renderer_request.preferred_generator ?? "chatgpt";
-  const modality =
-    probePlan.renderer_request.preferred_modality ?? "text";
+  const selected = selectDeliveredRenderer(probePlan);
 
   const title =
-    modality === "video"
+    selected.modality === "video"
       ? `Visualize ${topic.name}`
-      : modality === "interactive"
+      : selected.modality === "interactive"
         ? `Try ${topic.name}`
         : probePlan.probe_type === "apply_transfer"
           ? `Apply ${topic.name} in a new situation`
@@ -232,12 +297,13 @@ function buildDeliveredProbe(
                 : probePlan.text_plan.instructional_goal ?? `Explain ${topic.name}`;
 
   const instructions =
-    modality === "video"
+    selected.modality === "video"
       ? probePlan.video_payload.narration ??
         probePlan.video_payload.prompt ??
         `Watch carefully, then respond about ${topic.name}.`
-      : modality === "interactive"
-        ? "Interact with the task, then explain what you learned."
+      : selected.modality === "interactive"
+        ? probePlan.interactive_payload.prompt ??
+          "Interact with the task, then explain what you learned."
         : probePlan.text_payload.input ?? `Explain ${topic.name} in your own words.`;
 
   return {
@@ -246,26 +312,35 @@ function buildDeliveredProbe(
     target_diagnosis: probePlan.target_diagnosis,
     intent: probePlan.intent,
     probe_type: probePlan.probe_type,
-    renderer_type:
-      modality === "interactive"
-        ? "interactive_renderer"
-        : modality === "video"
-          ? "video_renderer"
-          : "text_renderer",
-    generator,
-    modality,
+    renderer_type: selected.renderer_type,
+    generator: selected.generator,
+    modality: selected.modality,
     title,
     instructions,
-    actual_tone: "encouraging",
-    actual_pacing: "normal",
-    actual_language_style: "plain",
-    actual_context_framing: `Stay focused on ${topic.name} and reveal learner understanding.`,
+    actual_tone:
+      probePlan.text_plan.personalization_application.tone ??
+      probePlan.video_plan.personalization_application.tone ??
+      probePlan.interactive_plan.personalization_application.tone ??
+      "encouraging",
+    actual_pacing:
+      probePlan.text_plan.personalization_application.pacing ??
+      probePlan.video_plan.personalization_application.pacing ??
+      probePlan.interactive_plan.personalization_application.pacing ??
+      "normal",
+    actual_language_style:
+      probePlan.text_plan.personalization_application.language_style ??
+      probePlan.video_plan.personalization_application.language_style ??
+      "plain",
+    actual_context_framing:
+      probePlan.text_payload.personalization_snapshot.context_framing ??
+      probePlan.video_plan.personalization_application.context_framing ??
+      `Stay focused on ${topic.name} and reveal learner understanding.`,
     expected_response_type: probePlan.expected_response_type,
     stimulus_id: `stimulus-${probePlan.probe_id}`,
     payload_snapshot:
-      modality === "video"
+      selected.modality === "video"
         ? { video_payload: probePlan.video_payload }
-        : modality === "interactive"
+        : selected.modality === "interactive"
           ? { interactive_payload: probePlan.interactive_payload }
           : { text_payload: probePlan.text_payload },
   };
