@@ -50,6 +50,7 @@ type ResponseScoring = {
   reasoningHits: number;
   uncertaintyHits: number;
   conceptCoverage: number;
+  taskFitScore: number;
   causalChainScore: number;
   transferSignalScore: number;
   structuralSignalScore: number;
@@ -62,12 +63,35 @@ export function inferDiagnosisFromTopic(topic: RouteTopic): DiagnosisType {
   );
 }
 
-function extractCandidateConceptTokens(args: {
-  topic?: RouteTopic;
-  prompt?: string | null;
-}) {
-  const raw = `${args.topic?.name ?? ""} ${args.prompt ?? ""}`;
-  const normalized = normalizeText(raw);
+function tokenizeNormalized(text: string) {
+  return normalizeText(text)
+    .split(/[^a-z0-9]+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function normalizeSemanticToken(token: string) {
+  if (token.length <= 3) return token;
+  if (token.endsWith("ies") && token.length > 4) {
+    return `${token.slice(0, -3)}y`;
+  }
+  if (token.endsWith("ses") || token.endsWith("xes")) {
+    return token.slice(0, -2);
+  }
+  if (token.endsWith("s") && !token.endsWith("ss")) {
+    return token.slice(0, -1);
+  }
+  return token;
+}
+
+function uniqueNormalizedTokens(text: string) {
+  return Array.from(
+    new Set(tokenizeNormalized(text).map(normalizeSemanticToken))
+  );
+}
+
+function extractTopicConceptTokens(topic?: RouteTopic) {
+  if (!topic?.name) return [];
 
   const stopWords = new Set([
     "the",
@@ -106,6 +130,59 @@ function extractCandidateConceptTokens(args: {
     "could",
     "would",
     "should",
+    "concept",
+    "topic",
+    "idea",
+  ]);
+
+  return uniqueNormalizedTokens(topic.name)
+    .filter((token) => token.length >= 4 && !stopWords.has(token))
+    .slice(0, 6);
+}
+
+function extractTaskTokens(prompt?: string | null) {
+  if (!prompt) return [];
+
+  const stopWords = new Set([
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "to",
+    "of",
+    "for",
+    "in",
+    "on",
+    "with",
+    "by",
+    "from",
+    "into",
+    "through",
+    "how",
+    "what",
+    "why",
+    "when",
+    "where",
+    "which",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "being",
+    "been",
+    "do",
+    "does",
+    "did",
+    "can",
+    "could",
+    "would",
+    "should",
+    "your",
+    "own",
+    "words",
     "explain",
     "describe",
     "apply",
@@ -115,27 +192,27 @@ function extractCandidateConceptTokens(args: {
     "contrast",
     "more",
     "concretely",
-    "using",
-    "your",
-    "own",
-    "words",
-    "work",
-    "task",
-    "idea",
+    "simple",
+    "case",
+    "involving",
+    "focus",
+    "especially",
+    "missing",
+    "piece",
+    "response",
+    "target",
     "concept",
-    "topic",
+    "clearer",
+    "relationship",
+    "mechanism",
+    "cause",
+    "effect",
+    "chain",
   ]);
 
-  const tokens = Array.from(
-    new Set(
-      normalized
-        .split(/[^a-z0-9]+/)
-        .map((token) => token.trim())
-        .filter((token) => token.length >= 4 && !stopWords.has(token))
-    )
-  );
-
-  return tokens.slice(0, 8);
+  return uniqueNormalizedTokens(prompt)
+    .filter((token) => token.length >= 4 && !stopWords.has(token))
+    .slice(0, 6);
 }
 
 function countHits(normalized: string, signals: string[]) {
@@ -144,7 +221,6 @@ function countHits(normalized: string, signals: string[]) {
 
 function buildMissingElementsSummary(items: string[]) {
   const unique = Array.from(new Set(items.filter(Boolean)));
-
   if (!unique.length) return null;
   return unique.join("; ");
 }
@@ -156,6 +232,7 @@ function inferMisconceptionTags(args: {
   causalChainScore: number;
   transferSignalScore: number;
   wordCount: number;
+  activeDiagnosis?: DiagnosisType | null;
 }) {
   const tags = new Set<string>();
 
@@ -171,15 +248,19 @@ function inferMisconceptionTags(args: {
     tags.add("overcompressed_response");
   }
 
-  if (args.conceptCoverage < 0.26) {
+  if (args.conceptCoverage < 0.22) {
     tags.add("weak_topic_grounding");
   }
 
-  if (args.causalChainScore < 0.2 && args.wordCount >= 8) {
+  if (args.causalChainScore < 0.22 && args.wordCount >= 8) {
     tags.add("missing_mechanism");
   }
 
-  if (args.transferSignalScore < 0.2 && args.wordCount >= 12) {
+  if (
+    args.activeDiagnosis === "transfer_gap" &&
+    args.transferSignalScore < 0.18 &&
+    args.wordCount >= 12
+  ) {
     tags.add("weak_generalization");
   }
 
@@ -198,15 +279,15 @@ function inferMentalModel(args: {
 }) {
   if (
     args.classification === "success" &&
-    args.conceptCoverage >= 0.45 &&
-    args.causalChainScore >= 0.45
+    args.conceptCoverage >= 0.42 &&
+    args.causalChainScore >= 0.36
   ) {
     return "coherent_structural_model";
   }
 
   if (
     args.classification === "near_miss" &&
-    args.structuralSignalScore >= 0.38
+    args.structuralSignalScore >= 0.34
   ) {
     return "fragile_partial_model";
   }
@@ -227,7 +308,7 @@ function inferStruggleType(args: {
   if (args.classification === "guess") return "surface_recall";
   if (args.classification === "structural_failure") return "misstructured_reasoning";
   if (args.classification === "near_miss") {
-    return args.causalChainScore >= 0.28 || args.conceptCoverage >= 0.28
+    return args.causalChainScore >= 0.24 || args.conceptCoverage >= 0.28
       ? "productive_partial_structure"
       : "incomplete_structure";
   }
@@ -240,17 +321,25 @@ function inferErrorTypes(args: {
   conceptCoverage: number;
   transferSignalScore: number;
   uncertaintyHits: number;
+  activeDiagnosis?: DiagnosisType | null;
 }) {
   const errors = new Set<string>();
 
   if (args.classification === "guess") errors.add("low_evidence");
   if (args.classification === "no_response") errors.add("no_response");
-  if (args.classification === "structural_failure") errors.add("misstructured_reasoning");
+  if (args.classification === "structural_failure") {
+    errors.add("misstructured_reasoning");
+  }
   if (args.classification === "near_miss") errors.add("partial_structure");
 
-  if (args.conceptCoverage < 0.26) errors.add("weak_topic_grounding");
-  if (args.causalChainScore < 0.2) errors.add("missing_mechanism");
-  if (args.transferSignalScore < 0.2) errors.add("weak_transfer");
+  if (args.conceptCoverage < 0.22) errors.add("weak_topic_grounding");
+  if (args.causalChainScore < 0.22) errors.add("missing_mechanism");
+  if (
+    args.activeDiagnosis === "transfer_gap" &&
+    args.transferSignalScore < 0.18
+  ) {
+    errors.add("weak_transfer");
+  }
   if (args.uncertaintyHits >= 2) errors.add("unstable_commitment");
 
   return Array.from(errors);
@@ -263,6 +352,7 @@ export function scoreResponse(
   const trimmed = response.trim();
   const normalized = normalizeText(response);
   const wordCount = trimmed.length > 0 ? trimmed.split(/\s+/).length : 0;
+  const activeDiagnosis = options?.activeDiagnosis ?? null;
 
   const strongReasoningSignals = [
     "because",
@@ -272,11 +362,15 @@ export function scoreResponse(
     "if",
     "then",
     "causes",
+    "lead to",
     "leads to",
     "due to",
     "results in",
-    "in order to",
     "as a result",
+    "changes",
+    "affects",
+    "allows",
+    "enables",
   ];
 
   const uncertaintySignals = [
@@ -329,41 +423,80 @@ export function scoreResponse(
     "suppose",
   ];
 
-  const conceptTokens = extractCandidateConceptTokens({
-    topic: options?.topic,
-    prompt: options?.prompt,
-  });
+  const mechanismSignals = [
+    "release",
+    "released",
+    "releases",
+    "bind",
+    "binds",
+    "binding",
+    "receptor",
+    "receptors",
+    "synapse",
+    "synapses",
+    "signal",
+    "signals",
+    "respond",
+    "response",
+    "change",
+    "changes",
+    "chemical",
+    "chemicals",
+    "neuron",
+    "neurons",
+    "cell",
+    "cells",
+    "across",
+  ];
+
+  const topicConceptTokens = extractTopicConceptTokens(options?.topic);
+  const taskTokens = extractTaskTokens(options?.prompt);
+  const responseTokens = uniqueNormalizedTokens(response);
 
   const reasoningHits = countHits(normalized, strongReasoningSignals);
   const uncertaintyHits = countHits(normalized, uncertaintySignals);
   const structuralHits = countHits(normalized, structuralSignals);
   const transferHits = countHits(normalized, transferSignals);
   const exampleHits = countHits(normalized, exampleSignals);
-  const conceptHits = conceptTokens.filter((token) =>
-    normalized.includes(token)
+  const mechanismHits = countHits(normalized, mechanismSignals);
+
+  const conceptHits = topicConceptTokens.filter((token) =>
+    responseTokens.includes(token)
+  ).length;
+
+  const taskHits = taskTokens.filter((token) =>
+    responseTokens.includes(token)
   ).length;
 
   const conceptCoverage =
-    conceptTokens.length > 0
-      ? clamp(conceptHits / conceptTokens.length, 0, 1)
-      : clamp(wordCount >= 8 ? 0.45 : wordCount >= 4 ? 0.3 : 0.15, 0, 1);
+    topicConceptTokens.length > 0
+      ? clamp(conceptHits / topicConceptTokens.length, 0, 1)
+      : clamp(wordCount >= 10 ? 0.45 : wordCount >= 5 ? 0.3 : 0.15, 0, 1);
+
+  const taskFitScore =
+    taskTokens.length > 0
+      ? clamp(taskHits / taskTokens.length, 0, 1)
+      : 0.35;
 
   const causalChainScore = clamp(
-    reasoningHits * 0.22 + exampleHits * 0.12 + structuralHits * 0.08,
+    reasoningHits * 0.16 +
+      structuralHits * 0.08 +
+      exampleHits * 0.1 +
+      mechanismHits * 0.08,
     0,
     1
   );
 
   const transferSignalScore = clamp(
-    transferHits * 0.28 + (normalized.includes("same") ? 0.08 : 0),
+    transferHits * 0.24 + (normalized.includes("same") ? 0.08 : 0),
     0,
     1
   );
 
   const structuralSignalScore = clamp(
-    conceptCoverage * 0.42 +
-      causalChainScore * 0.34 +
-      clamp(structuralHits * 0.08, 0, 0.24),
+    conceptCoverage * 0.4 +
+      causalChainScore * 0.38 +
+      clamp(mechanismHits * 0.04, 0, 0.2),
     0,
     1
   );
@@ -398,9 +531,7 @@ export function scoreResponse(
     evidenceStrength = 0;
     judgmentConfidence = 0.96;
     classification = "no_response";
-    missingElements.push(
-      "No usable response was provided."
-    );
+    missingElements.push("No usable response was provided.");
   } else if (veryShort) {
     correctnessEstimate = 0.14;
     explanationQuality = 0.1;
@@ -410,25 +541,26 @@ export function scoreResponse(
     evidenceStrength = 0.14;
     judgmentConfidence = 0.84;
     classification = "guess";
-    missingElements.push(
-      "A fuller explanation or more complete evidence is needed."
-    );
+    missingElements.push("A fuller explanation or more complete evidence is needed.");
   } else {
     correctnessEstimate = clamp(
-      0.18 +
-        conceptCoverage * 0.34 +
-        causalChainScore * 0.24 +
-        transferSignalScore * 0.12 -
+      0.16 +
+        conceptCoverage * 0.38 +
+        causalChainScore * 0.22 +
+        (activeDiagnosis === "transfer_gap"
+          ? transferSignalScore * 0.12
+          : taskFitScore * 0.08) -
         uncertaintyHits * 0.05,
       0,
       1
     );
 
     explanationQuality = clamp(
-      0.16 +
-        causalChainScore * 0.36 +
-        conceptCoverage * 0.24 +
-        clamp(exampleHits * 0.08, 0, 0.16) -
+      0.14 +
+        causalChainScore * 0.34 +
+        conceptCoverage * 0.26 +
+        clamp(mechanismHits * 0.03, 0, 0.18) +
+        clamp(exampleHits * 0.06, 0, 0.12) -
         uncertaintyHits * 0.04,
       0,
       1
@@ -436,17 +568,17 @@ export function scoreResponse(
 
     evidenceStrength = clamp(
       0.12 +
-        Math.min(wordCount / 24, 1) * 0.22 +
-        conceptCoverage * 0.22 +
-        structuralSignalScore * 0.18 +
-        (veryShort ? -0.08 : 0),
+        Math.min(wordCount / 24, 1) * 0.18 +
+        conceptCoverage * 0.24 +
+        structuralSignalScore * 0.2 +
+        taskFitScore * 0.08,
       0,
       1
     );
 
     judgmentConfidence = clamp(
-      0.28 +
-        evidenceStrength * 0.34 +
+      0.26 +
+        evidenceStrength * 0.32 +
         conceptCoverage * 0.18 +
         (empty ? 0.4 : 0) -
         uncertaintyHits * 0.05,
@@ -456,8 +588,8 @@ export function scoreResponse(
 
     confusion = clamp(
       0.74 -
-        correctnessEstimate * 0.34 -
-        explanationQuality * 0.18 +
+        correctnessEstimate * 0.32 -
+        explanationQuality * 0.2 +
         uncertaintyHits * 0.05,
       0,
       1
@@ -465,8 +597,8 @@ export function scoreResponse(
 
     insight = clamp(
       0.14 +
-        correctnessEstimate * 0.34 +
-        explanationQuality * 0.22 -
+        correctnessEstimate * 0.32 +
+        explanationQuality * 0.24 -
         uncertaintyHits * 0.04,
       0,
       1
@@ -481,23 +613,40 @@ export function scoreResponse(
       0.2
     );
 
-    if (conceptCoverage < 0.22) {
+    if (conceptCoverage < 0.2) {
       missingElements.push("The response does not stay grounded in the target concept.");
     }
 
-    if (causalChainScore < 0.22) {
-      missingElements.push("The response needs a clearer relationship, mechanism, or cause-and-effect chain.");
+    if (causalChainScore < 0.18 && developed) {
+      missingElements.push(
+        "The response needs a clearer relationship, mechanism, or cause-and-effect chain."
+      );
     }
 
-    if (developed && transferSignalScore < 0.12) {
-      missingElements.push("The response does not yet show adaptation or comparison beyond the most basic framing.");
+    if (activeDiagnosis === "transfer_gap" && developed && transferSignalScore < 0.12) {
+      missingElements.push(
+        "The response does not yet adapt the idea clearly enough to a changed situation."
+      );
     }
 
-    if (developed && conceptCoverage >= 0.4 && causalChainScore >= 0.38) {
+    if (
+      developed &&
+      conceptCoverage >= 0.38 &&
+      (causalChainScore >= 0.28 || mechanismHits >= 2)
+    ) {
       classification = "success";
-    } else if (shortButUsable && conceptCoverage < 0.22 && causalChainScore < 0.16) {
+    } else if (
+      shortButUsable &&
+      conceptCoverage < 0.2 &&
+      causalChainScore < 0.14
+    ) {
       classification = "guess";
-    } else if (developed && conceptCoverage < 0.24 && causalChainScore < 0.2) {
+    } else if (
+      developed &&
+      conceptCoverage < 0.16 &&
+      causalChainScore < 0.12 &&
+      mechanismHits < 1
+    ) {
       classification = "structural_failure";
     } else {
       classification = "near_miss";
@@ -511,10 +660,11 @@ export function scoreResponse(
     causalChainScore,
     transferSignalScore,
     wordCount,
+    activeDiagnosis,
   });
 
   if (
-    options?.activeDiagnosis === "transfer_gap" &&
+    activeDiagnosis === "transfer_gap" &&
     transferSignalScore < 0.18 &&
     !empty
   ) {
@@ -522,8 +672,9 @@ export function scoreResponse(
   }
 
   if (
-    options?.activeDiagnosis === "representation_gap" &&
-    causalChainScore < 0.22 &&
+    activeDiagnosis === "representation_gap" &&
+    causalChainScore < 0.18 &&
+    mechanismHits < 2 &&
     !empty
   ) {
     misconceptionTags.push("weak_structural_representation");
@@ -544,6 +695,7 @@ export function scoreResponse(
     reasoningHits,
     uncertaintyHits,
     conceptCoverage,
+    taskFitScore,
     causalChainScore,
     transferSignalScore,
     structuralSignalScore,
@@ -676,6 +828,7 @@ export function buildJudgedAttempt(args: {
         conceptCoverage: scoring.conceptCoverage,
         transferSignalScore: scoring.transferSignalScore,
         uncertaintyHits: scoring.uncertaintyHits,
+        activeDiagnosis,
       }),
       explanation_quality: scoring.explanationQuality,
       transfer_distance:

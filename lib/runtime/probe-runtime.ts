@@ -464,6 +464,28 @@ export function buildResponseBundle(args: ResponseBundleArgs) {
       evidence >= 0.55 ||
       judgment >= 0.65;
 
+    const weakNearMiss =
+      evidence < 0.32 ||
+      explanationQuality < 0.32 ||
+      judgment < 0.38;
+
+    if (weakNearMiss) {
+      return {
+        reply:
+          evidence < 0.22
+            ? `I’m getting only a thin signal on ${topicName} so far. I want one more focused check before I switch out of measurement.`
+            : `You’re partly engaging with ${topicName}, but the evidence is still too thin for me to treat the structure as stable.`,
+        suggestedAction: "Run one smaller follow-up probe",
+        statusLabel: "Partial but still measuring",
+        whyThisNextStep:
+          "The attempt is relevant but still too weak to justify exiting the probe loop, so the system should gather one more focused piece of evidence before shifting to clarification.",
+        activeDiagnosis: activeDiagnosis,
+        nextMode: "probe" as const,
+        probeIntent: "diagnostic" as ProbeIntent,
+        probeType: selectProbeTypeForDiagnosis(activeDiagnosis, classification),
+      };
+    }
+
     return {
       reply: strongPartial
         ? `You seem partly on track with ${topicName}. There’s some real structure there, but it still needs sharpening.`
