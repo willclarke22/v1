@@ -24,6 +24,19 @@ type MessageFrame =
 
 type FrameScores = Record<MessageFrame, number>;
 
+type TopicInterpretation = {
+  rawMessage: string;
+  normalizedMessage: string;
+  frameScores: FrameScores;
+  primaryFrame: MessageFrame;
+  conceptCandidate: string;
+  canonicalLabel: string;
+  semanticKeywords: string[];
+  candidateConfidence: number;
+  isBroadOrVague: boolean;
+  isGoodNewTopicCandidate: boolean;
+};
+
 const FRAME_PATTERNS: Array<{
   frame: MessageFrame;
   patterns: RegExp[];
@@ -33,71 +46,84 @@ const FRAME_PATTERNS: Array<{
     frame: "quiz_request",
     score: 1,
     patterns: [
-      /\bquiz me on\b/i,
-      /\btest me on\b/i,
-      /\bgive me a quiz on\b/i,
-      /\bask me about\b/i,
-      /\bcheck my understanding of\b/i,
+      /^\s*quiz me on\b/i,
+      /^\s*test me on\b/i,
+      /^\s*give me a quiz on\b/i,
+      /^\s*ask me about\b/i,
+      /^\s*check my understanding of\b/i,
+      /^\s*can you quiz me on\b/i,
+      /^\s*could you quiz me on\b/i,
     ],
   },
   {
     frame: "confusion_help",
     score: 1,
     patterns: [
-      /\bi(?: am|'m)\s+confused about\b/i,
-      /\bi don't understand\b/i,
-      /\bi do not understand\b/i,
-      /\bi(?: am|'m)\s+not sure about\b/i,
-      /\bi kind of get\b/i,
-      /\bi sort of get\b/i,
-      /\bhelp me with\b/i,
-      /\bhelp me understand\b/i,
+      /^\s*i(?: am|'m)\s+confused about\b/i,
+      /^\s*i(?: am|'m)\s+struggling with\b/i,
+      /^\s*i(?: still)?\s*don't understand\b/i,
+      /^\s*i(?: still)?\s*do not understand\b/i,
+      /^\s*i(?: am|'m)\s+not sure about\b/i,
+      /^\s*i(?: kind of|sort of)\s+get\b/i,
+      /^\s*help me with\b/i,
+      /^\s*help me understand\b/i,
+      /^\s*could you help me understand\b/i,
+      /^\s*can you help me understand\b/i,
+      /^\s*i want to understand\b/i,
     ],
   },
   {
     frame: "explain_request",
     score: 1,
     patterns: [
-      /\bcan you explain\b/i,
-      /\bexplain\b/i,
-      /\bteach me about\b/i,
-      /\btell me about\b/i,
-      /\bwhat is\b/i,
-      /\bwhat are\b/i,
-      /\bhow does\b/i,
-      /\bhow do\b/i,
+      /^\s*can you explain\b/i,
+      /^\s*could you explain\b/i,
+      /^\s*explain\b/i,
+      /^\s*teach me about\b/i,
+      /^\s*tell me about\b/i,
+      /^\s*walk me through\b/i,
+      /^\s*go over\b/i,
+      /^\s*can we go over\b/i,
+      /^\s*could we go over\b/i,
+      /^\s*what is\b/i,
+      /^\s*what are\b/i,
+      /^\s*how does\b/i,
+      /^\s*how do\b/i,
     ],
   },
   {
     frame: "compare_request",
     score: 1,
     patterns: [
-      /\bwhat(?:'s| is) the difference between\b/i,
-      /\bcompare\b/i,
-      /\bcontrast\b/i,
-      /\bhow is .* different from\b/i,
+      /^\s*what(?:'s| is) the difference between\b/i,
+      /^\s*compare\b/i,
+      /^\s*contrast\b/i,
+      /^\s*how is .+ different from .+$/i,
     ],
   },
   {
     frame: "apply_request",
     score: 1,
     patterns: [
-      /\bapply\b/i,
-      /\buse this\b/i,
-      /\bwhat would happen if\b/i,
-      /\bpredict\b/i,
+      /^\s*apply\b/i,
+      /^\s*use this\b/i,
+      /^\s*what would happen if\b/i,
+      /^\s*predict\b/i,
+      /^\s*how would .+ change if .+$/i,
     ],
   },
   {
     frame: "attempt_like",
     score: 1,
     patterns: [
-      /\bi think\b/i,
-      /\bmaybe\b/i,
-      /\bmy answer is\b/i,
-      /\bit means\b/i,
-      /\bso if\b/i,
-      /\bbecause\b/i,
+      /^\s*i think\b/i,
+      /^\s*maybe\b/i,
+      /^\s*my answer is\b/i,
+      /^\s*it means\b/i,
+      /^\s*so if\b/i,
+      /^\s*because\b/i,
+      /^\s*is it because\b/i,
+      /^\s*would it be\b/i,
     ],
   },
 ];
@@ -108,18 +134,30 @@ const LEADING_FRAME_PATTERNS: RegExp[] = [
   /^\s*give me a quiz on\s+/i,
   /^\s*ask me about\s+/i,
   /^\s*check my understanding of\s+/i,
+  /^\s*can you quiz me on\s+/i,
+  /^\s*could you quiz me on\s+/i,
 
   /^\s*i(?: am|'m)\s+confused about\s+/i,
-  /^\s*i don't understand\s+/i,
-  /^\s*i do not understand\s+/i,
+  /^\s*i(?: am|'m)\s+struggling with\s+/i,
+  /^\s*i(?: still)?\s*don't understand\s+/i,
+  /^\s*i(?: still)?\s*do not understand\s+/i,
   /^\s*i(?: am|'m)\s+not sure about\s+/i,
+  /^\s*i(?: kind of|sort of)\s+get\s+/i,
   /^\s*help me with\s+/i,
   /^\s*help me understand\s+/i,
+  /^\s*could you help me understand\s+/i,
+  /^\s*can you help me understand\s+/i,
+  /^\s*i want to understand\s+/i,
 
   /^\s*can you explain\s+/i,
+  /^\s*could you explain\s+/i,
   /^\s*explain\s+/i,
   /^\s*teach me about\s+/i,
   /^\s*tell me about\s+/i,
+  /^\s*walk me through\s+/i,
+  /^\s*go over\s+/i,
+  /^\s*can we go over\s+/i,
+  /^\s*could we go over\s+/i,
   /^\s*what is\s+/i,
   /^\s*what are\s+/i,
   /^\s*how does\s+/i,
@@ -132,6 +170,8 @@ const TRAILING_FILLER_PATTERNS: RegExp[] = [
   /\s+a bit\s*$/i,
   /\s+right now\s*$/i,
   /\s+again\s*$/i,
+  /\s+really quickly\s*$/i,
+  /\s+real quick\s*$/i,
 ];
 
 const LIGHT_STOPWORDS = new Set([
@@ -171,6 +211,40 @@ const LIGHT_STOPWORDS = new Set([
   "with",
   "you",
   "your",
+]);
+
+const GENERIC_TOPIC_TOKENS = new Set([
+  "concept",
+  "concepts",
+  "idea",
+  "ideas",
+  "topic",
+  "topics",
+  "thing",
+  "things",
+  "stuff",
+  "part",
+  "parts",
+  "question",
+  "questions",
+  "problem",
+  "problems",
+]);
+
+const WEAK_TRAILING_TOKENS = new Set([
+  "work",
+  "works",
+  "working",
+  "happen",
+  "happens",
+  "happening",
+  "mean",
+  "means",
+  "thing",
+  "things",
+  "stuff",
+  "part",
+  "parts",
 ]);
 
 function normalizeMessageSurface(text: string) {
@@ -249,40 +323,12 @@ function dedupe<T>(items: T[]) {
   return Array.from(new Set(items));
 }
 
-export function detectMessageFrameScores(message: string): FrameScores {
-  const scores: FrameScores = {
-    quiz_request: 0,
-    confusion_help: 0,
-    explain_request: 0,
-    compare_request: 0,
-    apply_request: 0,
-    attempt_like: 0,
-    general: 0.2,
-  };
-
-  const normalized = compactWhitespace(message);
-
-  for (const rule of FRAME_PATTERNS) {
-    for (const pattern of rule.patterns) {
-      if (pattern.test(normalized)) {
-        scores[rule.frame] = Math.max(scores[rule.frame], rule.score);
-      }
-    }
-  }
-
-  if (scores.attempt_like > 0 && /[.!?]?$/.test(normalized)) {
-    scores.attempt_like = Math.min(1, scores.attempt_like + 0.1);
-  }
-
-  return scores;
+function firstSentence(text: string) {
+  return compactWhitespace(text).split(/[.?!]/)[0]?.trim() ?? "";
 }
 
-export function inferPrimaryMessageFrame(message: string): MessageFrame {
-  const scores = detectMessageFrameScores(message);
-  const ordered = (Object.keys(scores) as MessageFrame[]).sort(
-    (a, b) => scores[b] - scores[a]
-  );
-  return ordered[0] ?? "general";
+function hasComparisonStructure(text: string) {
+  return /\b(?:vs\.?|versus|and)\b/i.test(text);
 }
 
 function stripLeadingFrame(text: string) {
@@ -318,6 +364,189 @@ function extractCompareConcept(text: string) {
   return `${left} vs ${right}`;
 }
 
+function cleanupConceptCandidate(text: string) {
+  let output = firstSentence(text);
+
+  output = output.replace(
+    /^(?:the thing about|the part about|the idea of|something about)\s+/i,
+    ""
+  );
+
+  output = output.replace(
+    /^(?:how|why|what)\s+(?:the\s+)?(.+?)\s+(?:works?|happens?|means?)$/i,
+    "$1"
+  );
+
+  output = output.replace(/^(?:how|why|what)\s+/i, "");
+  output = output.replace(/\s+(?:works?|happens?|means?)$/i, "");
+
+  output = output.replace(
+    /^(?:a|an|the)\s+/i,
+    ""
+  );
+
+  output = compactWhitespace(output);
+
+  return output;
+}
+
+function scoreConceptCandidateQuality(candidate: string): number {
+  const normalized = normalizeTopicText(candidate);
+  const tokens = tokenize(candidate);
+
+  if (!normalized || !tokens.length) return 0.05;
+  if (normalized === "new topic") return 0.05;
+  if (tokens.length === 1 && GENERIC_TOPIC_TOKENS.has(tokens[0])) return 0.1;
+
+  let score = 0.35;
+
+  const contentTokens = tokens.filter(
+    (token) =>
+      !LIGHT_STOPWORDS.has(token) &&
+      !GENERIC_TOPIC_TOKENS.has(token) &&
+      token.length > 2
+  );
+
+  score += Math.min(0.35, contentTokens.length * 0.12);
+
+  if (tokens.length >= 2 && tokens.length <= 5) {
+    score += 0.12;
+  }
+
+  if (tokens.length > 8) {
+    score -= 0.18;
+  }
+
+  const lastToken = tokens[tokens.length - 1];
+  if (lastToken && WEAK_TRAILING_TOKENS.has(lastToken)) {
+    score -= 0.18;
+  }
+
+  if (hasComparisonStructure(candidate)) {
+    score += 0.08;
+  }
+
+  if (contentTokens.length === 0) {
+    score -= 0.22;
+  }
+
+  return clamp(score, 0.05, 0.95);
+}
+
+function isBroadOrVagueConcept(candidate: string): boolean {
+  const normalized = normalizeTopicText(candidate);
+  const tokens = tokenize(candidate);
+
+  if (!normalized) return true;
+  if (normalized === "new topic") return true;
+  if (tokens.length === 0) return true;
+
+  if (tokens.length === 1) {
+    return GENERIC_TOPIC_TOKENS.has(tokens[0]);
+  }
+
+  const meaningfulTokens = tokens.filter(
+    (token) =>
+      !LIGHT_STOPWORDS.has(token) &&
+      !GENERIC_TOPIC_TOKENS.has(token) &&
+      token.length > 2
+  );
+
+  if (meaningfulTokens.length === 0) return true;
+
+  const lastToken = tokens[tokens.length - 1];
+  if (lastToken && WEAK_TRAILING_TOKENS.has(lastToken)) {
+    return true;
+  }
+
+  return false;
+}
+
+function canonicalizeDisplayPhrase(candidate: string): string {
+  const cleaned = cleanupConceptCandidate(candidate);
+  const normalized = compactWhitespace(cleaned);
+
+  if (!normalized) return "New Topic";
+
+  const tokens = tokenize(normalized).filter((token) => {
+    const lower = token.toLowerCase();
+
+    if (LIGHT_STOPWORDS.has(lower)) return false;
+
+    if (
+      token === "vs" ||
+      token === "versus"
+    ) {
+      return true;
+    }
+
+    return true;
+  });
+
+  let displayPhrase = tokens.join(" ").trim();
+
+  if (!displayPhrase) {
+    displayPhrase = normalized;
+  }
+
+  displayPhrase = displayPhrase
+    .replace(/\bvs\b/gi, "vs")
+    .replace(/\bversus\b/gi, "vs");
+
+  const titled = toTitleCase(displayPhrase);
+  return titled.length > 48 ? `${titled.slice(0, 48).trim()}...` : titled;
+}
+
+export function detectMessageFrameScores(message: string): FrameScores {
+  const scores: FrameScores = {
+    quiz_request: 0,
+    confusion_help: 0,
+    explain_request: 0,
+    compare_request: 0,
+    apply_request: 0,
+    attempt_like: 0,
+    general: 0.2,
+  };
+
+  const normalized = compactWhitespace(message);
+
+  for (const rule of FRAME_PATTERNS) {
+    for (const pattern of rule.patterns) {
+      if (pattern.test(normalized)) {
+        scores[rule.frame] = Math.max(scores[rule.frame], rule.score);
+      }
+    }
+  }
+
+  if (
+    /^\s*(can we|could we)\s+go over\b/i.test(normalized) ||
+    /^\s*walk me through\b/i.test(normalized)
+  ) {
+    scores.explain_request = Math.max(scores.explain_request, 1);
+  }
+
+  if (
+    /^\s*i(?: am|'m)\s+confused\b/i.test(normalized) ||
+    /^\s*i(?: still)?\s*don't understand\b/i.test(normalized)
+  ) {
+    scores.confusion_help = Math.max(scores.confusion_help, 1);
+  }
+
+  if (scores.attempt_like > 0 && normalized.length > 8) {
+    scores.attempt_like = Math.min(1, scores.attempt_like + 0.08);
+  }
+
+  return scores;
+}
+
+export function inferPrimaryMessageFrame(message: string): MessageFrame {
+  const scores = detectMessageFrameScores(message);
+  const ordered = (Object.keys(scores) as MessageFrame[]).sort(
+    (a, b) => scores[b] - scores[a]
+  );
+  return ordered[0] ?? "general";
+}
+
 export function extractConceptCandidateFromMessage(message: string): string {
   const cleaned = compactWhitespace(message);
 
@@ -332,32 +561,27 @@ export function extractConceptCandidateFromMessage(message: string): string {
 
   const normalized = normalizeMessageSurface(cleaned);
 
-  const explicitConfusionMatch =
+  const explicitMatch =
     normalized.match(
       /^(?:i am|i'm)\s+confused\s+about\s+(.+?)(?:\.\s*.*)?$/i
+    ) ||
+    normalized.match(
+      /^(?:i am|i'm)\s+struggling\s+with\s+(.+?)(?:\.\s*.*)?$/i
     ) ||
     normalized.match(
       /^(?:i do not|i don't)\s+understand\s+(.+?)(?:\.\s*.*)?$/i
     ) ||
     normalized.match(
-      /^(?:help me understand|help me with|can you explain|explain|quiz me on|test me on)\s+(.+?)(?:\.\s*.*)?$/i
+      /^(?:help me understand|help me with|can you explain|could you explain|explain|quiz me on|test me on|teach me about|tell me about|walk me through|go over|can we go over|could we go over)\s+(.+?)(?:\.\s*.*)?$/i
     );
 
-  let stripped =
-    explicitConfusionMatch?.[1]?.trim() ?? stripLeadingFrame(normalized);
+  let stripped = explicitMatch?.[1]?.trim() ?? stripLeadingFrame(normalized);
 
   if (!stripped || stripped.length < 2) {
     stripped = normalized.replace(/[?.!]+$/g, "");
   }
 
-  stripped = stripped.replace(
-    /^(?:the thing about|the part about|the idea of|something about)\s+/i,
-    ""
-  );
-
-  stripped = stripped.split(/[.?!]/)[0]?.trim() ?? stripped;
-
-  stripped = compactWhitespace(stripped);
+  stripped = cleanupConceptCandidate(stripped);
 
   if (!stripped) {
     return "new topic";
@@ -366,21 +590,54 @@ export function extractConceptCandidateFromMessage(message: string): string {
   return stripped;
 }
 
+function interpretTopicCandidate(message: string): TopicInterpretation {
+  const normalizedMessage = compactWhitespace(message);
+  const frameScores = detectMessageFrameScores(normalizedMessage);
+  const primaryFrame = inferPrimaryMessageFrame(normalizedMessage);
+  const conceptCandidate = extractConceptCandidateFromMessage(normalizedMessage);
+  const canonicalLabel = canonicalizeDisplayPhrase(conceptCandidate);
+  const semanticKeywords = dedupe(
+    semanticTokenize(conceptCandidate).filter(
+      (token) => token.length > 2 && !LIGHT_STOPWORDS.has(token)
+    )
+  ).slice(0, 8);
+
+  const candidateConfidence = scoreConceptCandidateQuality(conceptCandidate);
+  const isBroadOrVague = isBroadOrVagueConcept(conceptCandidate);
+  const isGoodNewTopicCandidate =
+    !isBroadOrVague && candidateConfidence >= 0.5 && canonicalLabel !== "New Topic";
+
+  return {
+    rawMessage: message,
+    normalizedMessage,
+    frameScores,
+    primaryFrame,
+    conceptCandidate,
+    canonicalLabel,
+    semanticKeywords,
+    candidateConfidence,
+    isBroadOrVague,
+    isGoodNewTopicCandidate,
+  };
+}
+
 export function canonicalizeTopicNameFromMessage(message: string): string {
-  const concept = extractConceptCandidateFromMessage(message);
-  const cleanedConcept = compactWhitespace(concept);
+  const interpretation = interpretTopicCandidate(message);
 
-  if (!cleanedConcept) return "New Topic";
+  if (interpretation.isGoodNewTopicCandidate) {
+    return interpretation.canonicalLabel;
+  }
 
-  const rawDisplayTokens = tokenize(cleanedConcept).filter(
-    (token) => !LIGHT_STOPWORDS.has(token.toLowerCase())
-  );
+  if (interpretation.primaryFrame === "compare_request") {
+    return interpretation.canonicalLabel;
+  }
 
-  const displayPhrase =
-    rawDisplayTokens.length > 0 ? rawDisplayTokens.join(" ") : cleanedConcept;
+  if (interpretation.semanticKeywords.length > 0) {
+    const fallback = toTitleCase(interpretation.semanticKeywords.slice(0, 3).join(" "));
+    return fallback.length > 48 ? `${fallback.slice(0, 48).trim()}...` : fallback;
+  }
 
-  const titled = toTitleCase(displayPhrase);
-  return titled.length > 48 ? `${titled.slice(0, 48).trim()}...` : titled;
+  return "New Topic";
 }
 
 export function titleCaseFromMessage(message: string) {
@@ -410,12 +667,7 @@ export function inferSeededNextStep(message: string) {
 }
 
 export function inferKeywordsFromMessage(message: string): string[] {
-  const concept = extractConceptCandidateFromMessage(message);
-  return dedupe(
-    semanticTokenize(concept).filter(
-      (token) => token.length > 2 && !LIGHT_STOPWORDS.has(token)
-    )
-  ).slice(0, 8);
+  return interpretTopicCandidate(message).semanticKeywords;
 }
 
 function computeNextTopicPosition(
@@ -441,7 +693,12 @@ export function buildSeededTopicFromMessage(
   existingTopics: RouteTopic[]
 ): RouteTopic {
   const baseMock = mockTopics[0];
-  const topicName = canonicalizeTopicNameFromMessage(message);
+  const interpretation = interpretTopicCandidate(message);
+  const topicName = interpretation.isGoodNewTopicCandidate
+    ? interpretation.canonicalLabel
+    : interpretation.semanticKeywords.length > 0
+      ? toTitleCase(interpretation.semanticKeywords.slice(0, 3).join(" "))
+      : "New Topic";
 
   return {
     ...baseMock,
@@ -552,7 +809,8 @@ function getDynamicTopicKeywords(topic: RouteTopic): string[] {
 }
 
 export function scoreTopicMatch(message: string, topic: RouteTopic): number {
-  const conceptCandidate = extractConceptCandidateFromMessage(message);
+  const interpretation = interpretTopicCandidate(message);
+  const conceptCandidate = interpretation.conceptCandidate;
   const normalizedConcept = normalizeTopicText(conceptCandidate);
 
   const messageTokens = semanticTokenize(conceptCandidate);
@@ -579,29 +837,35 @@ export function scoreTopicMatch(message: string, topic: RouteTopic): number {
   const tokenOverlap = overlapScore(messageTokens, topicNameTokens);
   const semanticishScore = Math.max(keywordScore, tokenOverlap);
 
-  const frame = inferPrimaryMessageFrame(message);
   const frameBonus =
-    frame === "quiz_request" ||
-    frame === "confusion_help" ||
-    frame === "explain_request"
+    interpretation.primaryFrame === "quiz_request" ||
+    interpretation.primaryFrame === "confusion_help" ||
+    interpretation.primaryFrame === "explain_request"
       ? 0.04
       : 0;
+
+  const confidenceBonus = interpretation.candidateConfidence * 0.08;
+  const broadPenalty = interpretation.isBroadOrVague ? 0.12 : 0;
 
   const score =
     exactNameMatch * 1.0 +
     topicNameContained * 0.82 +
     semanticishScore * 0.78 +
-    frameBonus;
+    frameBonus +
+    confidenceBonus -
+    broadPenalty;
 
   return clamp(score, 0, 1);
 }
 
-const REUSE_TOPIC_THRESHOLD = 0.54;
+const REUSE_TOPIC_THRESHOLD = 0.56;
 
 export function resolveTopicForMessage(
   message: string,
   existingTopics: RouteTopic[]
 ): TopicMatchResult {
+  const interpretation = interpretTopicCandidate(message);
+
   if (!existingTopics.length) {
     return {
       matchedTopic: null,
@@ -610,7 +874,7 @@ export function resolveTopicForMessage(
         top_k_topic_ids: [],
         top_k_similarity_scores: [],
       },
-      shouldCreateNewTopic: true,
+      shouldCreateNewTopic: interpretation.isGoodNewTopicCandidate,
     };
   }
 
@@ -626,10 +890,16 @@ export function resolveTopicForMessage(
     .sort((a, b) => b.similarity - a.similarity);
 
   const best = scored[0] ?? null;
+  const bestScore = best?.similarity ?? 0;
+
+  const matchedTopic =
+    best && bestScore >= REUSE_TOPIC_THRESHOLD ? best.topic : null;
+
+  const shouldCreateNewTopic =
+    !matchedTopic && interpretation.isGoodNewTopicCandidate;
 
   return {
-    matchedTopic:
-      best && best.similarity >= REUSE_TOPIC_THRESHOLD ? best.topic : null,
+    matchedTopic,
     vectorInfo: {
       top_k_topic_names: scored.slice(0, 3).map((item) => item.topic.name),
       top_k_topic_ids: scored.slice(0, 3).map((item) => item.topic.id),
@@ -637,6 +907,6 @@ export function resolveTopicForMessage(
         .slice(0, 3)
         .map((item) => clamp(item.similarity, 0, 0.98)),
     },
-    shouldCreateNewTopic: !best || best.similarity < REUSE_TOPIC_THRESHOLD,
+    shouldCreateNewTopic,
   };
 }

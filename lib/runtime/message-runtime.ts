@@ -9,7 +9,10 @@ import type {
   VectorInfo,
 } from "@/types/contracts";
 import { clamp, normalizeDiagnosis, nowIso } from "./shared";
-import type { RouteTopic } from "./topic-resolution";
+import {
+  inferPrimaryMessageFrame,
+  type RouteTopic,
+} from "./topic-resolution";
 import { makeId } from "@/lib/utils/ids";
 
 type TopicMetricUpdate = FrontendTopicMetricUpdate;
@@ -21,12 +24,19 @@ type NewAttempt = ImportantRunInputs["new_attempt"];
 
 type UploadedContent = ImportantRunInputs["uploaded_content"];
 
+export type TopicResolutionKind =
+  | "matched"
+  | "created"
+  | "fallback_active_topic"
+  | "fallback_existing_topic";
+
 type InterventionScoreArgs = {
   topic: RouteTopic;
   vectorInfo: VectorInfo;
   preferredModality: RendererModality;
   message: string;
   createdTopic: boolean;
+  topicResolutionKind?: TopicResolutionKind;
   modelSignals?: ModelSignals;
   currentInteractionContext?: CurrentInteractionContext;
   newAttempt?: NewAttempt;
@@ -46,31 +56,71 @@ export function inferDiagnosisFromTopic(topic: RouteTopic): DiagnosisType {
   );
 }
 
-export function inferPreferredModality(message: string): RendererModality {
+function resolveTopicResolutionKind(
+  createdTopic: boolean,
+  topicResolutionKind?: TopicResolutionKind
+): TopicResolutionKind {
+  if (topicResolutionKind) return topicResolutionKind;
+  return createdTopic ? "created" : "matched";
+}
+
+function hasExplicitVideoRequest(message: string) {
   const lower = message.toLowerCase();
 
-  if (
-    lower.includes("show me") ||
-    lower.includes("visual") ||
+  return (
+    lower.includes("show me visually") ||
+    lower.includes("show me a visual") ||
+    lower.includes("visual explanation") ||
     lower.includes("diagram") ||
+    lower.includes("animation") ||
     lower.includes("video")
-  ) {
+  );
+}
+
+function hasExplicitInteractiveRequest(message: string) {
+  const lower = message.toLowerCase();
+
+  return (
+    lower.includes("interactive") ||
+    lower.includes("quiz me") ||
+    lower.includes("test me") ||
+    lower.includes("let me try") ||
+    lower.includes("let me test myself")
+  );
+}
+
+export function inferPreferredModality(
+  message: string,
+  modeHint?: "clarify" | "probe"
+): RendererModality {
+  const frame = inferPrimaryMessageFrame(message);
+
+  if (hasExplicitInteractiveRequest(message)) {
+    return modeHint === "clarify" ? "text" : "interactive";
+  }
+
+  if (hasExplicitVideoRequest(message)) {
     return "video";
   }
 
-  if (
-    lower.includes("interactive") ||
-    lower.includes("quiz") ||
-    lower.includes("let me try")
-  ) {
-    return "interactive";
+  if (frame === "quiz_request" || frame === "apply_request") {
+    return modeHint === "clarify" ? "text" : "interactive";
   }
 
   return "text";
 }
 
 export function messageLooksClarifySeeking(message: string) {
+  const frame = inferPrimaryMessageFrame(message);
   const lower = message.toLowerCase();
+
+  if (
+    frame === "confusion_help" ||
+    frame === "explain_request" ||
+    frame === "compare_request"
+  ) {
+    return true;
+  }
 
   return (
     lower.startsWith("what is ") ||
@@ -84,8 +134,8 @@ export function messageLooksClarifySeeking(message: string) {
     lower.includes("i'm confused") ||
     lower.includes("confused about") ||
     lower.includes("help me understand") ||
-    lower.includes("what does") ||
-    lower.includes("why is")
+    lower.includes("walk me through") ||
+    lower.includes("go over")
   );
 }
 
@@ -434,15 +484,21 @@ function computeReadinessSignal(args: {
   modelSignals?: ModelSignals;
   currentInteractionContext?: CurrentInteractionContext;
   newAttempt?: NewAttempt;
+  resolutionKind: TopicResolutionKind;
 }) {
-  const { preferredModality, modelSignals, currentInteractionContext, newAttempt } =
-    args;
+  const {
+    preferredModality,
+    modelSignals,
+    currentInteractionContext,
+    newAttempt,
+    resolutionKind,
+  } = args;
 
   const base =
     preferredModality === "interactive"
-      ? 0.68
+      ? 0.64
       : preferredModality === "video"
-        ? 0.62
+        ? 0.56
         : 0.58;
 
   const confusion = modelSignals?.model_confusion;
@@ -464,6 +520,14 @@ function computeReadinessSignal(args: {
     adjusted += 0.14;
   }
 
+  if (resolutionKind === "fallback_active_topic") {
+    adjusted -= 0.12;
+  } else if (resolutionKind === "fallback_existing_topic") {
+    adjusted -= 0.08;
+  } else if (resolutionKind === "created") {
+    adjusted -= 0.04;
+  }
+
   if (typeof confusion === "number") {
     adjusted -= confusion * 0.18;
   }
@@ -475,18 +539,36 @@ function computeReadinessSignal(args: {
   return clamp(adjusted, 0, 1);
 }
 
-function computeActiveProblemSignal(topic: RouteTopic, createdTopic: boolean) {
+function computeActiveProblemSignal(
+  topic: RouteTopic,
+  resolutionKind: TopicResolutionKind
+) {
   const base = topic.nextStep ? 0.72 : 0.5;
-  return clamp(base + (createdTopic ? 0.06 : 0), 0, 1);
+
+  const resolutionBonus =
+    resolutionKind === "created"
+      ? 0.06
+      : resolutionKind === "fallback_active_topic"
+        ? 0.02
+        : 0;
+
+  return clamp(base + resolutionBonus, 0, 1);
 }
 
 function computeHistorySignal(args: {
-  createdTopic: boolean;
+  resolutionKind: TopicResolutionKind;
   currentInteractionContext?: CurrentInteractionContext;
 }) {
-  const { createdTopic, currentInteractionContext } = args;
+  const { resolutionKind, currentInteractionContext } = args;
 
-  let value = createdTopic ? 0.18 : 0.42;
+  let value =
+    resolutionKind === "created"
+      ? 0.18
+      : resolutionKind === "fallback_active_topic"
+        ? 0.34
+        : resolutionKind === "fallback_existing_topic"
+          ? 0.3
+          : 0.42;
 
   if (currentInteractionContext?.prior_mode_selected === "clarify") {
     value += 0.14;
@@ -570,11 +652,11 @@ function computeAttemptReadinessSignal(args: {
 
 function computeClarifyPressureSignal(args: {
   message: string;
-  createdTopic: boolean;
+  resolutionKind: TopicResolutionKind;
   currentInteractionContext?: CurrentInteractionContext;
   modelSignals?: ModelSignals;
 }) {
-  const { message, createdTopic, currentInteractionContext, modelSignals } = args;
+  const { message, resolutionKind, currentInteractionContext, modelSignals } = args;
 
   let value = 0.14;
 
@@ -582,8 +664,12 @@ function computeClarifyPressureSignal(args: {
     value += 0.3;
   }
 
-  if (createdTopic) {
-    value += 0.18;
+  if (resolutionKind === "created") {
+    value += 0.16;
+  } else if (resolutionKind === "fallback_active_topic") {
+    value += 0.22;
+  } else if (resolutionKind === "fallback_existing_topic") {
+    value += 0.16;
   }
 
   if (currentInteractionContext?.run_kind === "initial_question") {
@@ -603,7 +689,7 @@ function computeClarifyPressureSignal(args: {
 
 function computeProbePressureSignal(args: {
   topic: RouteTopic;
-  createdTopic: boolean;
+  resolutionKind: TopicResolutionKind;
   currentInteractionContext?: CurrentInteractionContext;
   newAttempt?: NewAttempt;
   modelSignals?: ModelSignals;
@@ -611,7 +697,7 @@ function computeProbePressureSignal(args: {
 }) {
   const {
     topic,
-    createdTopic,
+    resolutionKind,
     currentInteractionContext,
     newAttempt,
     modelSignals,
@@ -620,8 +706,14 @@ function computeProbePressureSignal(args: {
 
   let value = 0.18;
 
-  if (!createdTopic) {
+  if (resolutionKind === "matched") {
     value += 0.12;
+  } else if (resolutionKind === "created") {
+    value += 0.02;
+  } else if (resolutionKind === "fallback_existing_topic") {
+    value -= 0.04;
+  } else if (resolutionKind === "fallback_active_topic") {
+    value -= 0.1;
   }
 
   if (topic.nextStep) {
@@ -630,6 +722,8 @@ function computeProbePressureSignal(args: {
 
   if (topSimilarity >= 0.62) {
     value += 0.16;
+  } else if (topSimilarity <= 0.4) {
+    value -= 0.06;
   }
 
   if (currentInteractionContext?.run_kind === "attempt_run") {
@@ -666,10 +760,16 @@ function computeInterventionScores(args: InterventionScoreArgs) {
     preferredModality,
     message,
     createdTopic,
+    topicResolutionKind,
     modelSignals,
     currentInteractionContext,
     newAttempt,
   } = args;
+
+  const resolutionKind = resolveTopicResolutionKind(
+    createdTopic,
+    topicResolutionKind
+  );
 
   const diagnosis = inferDiagnosisFromTopic(topic);
   const topSimilarity = vectorInfo.top_k_similarity_scores[0] ?? 0.3;
@@ -682,12 +782,13 @@ function computeInterventionScores(args: InterventionScoreArgs) {
     modelSignals,
     currentInteractionContext,
     newAttempt,
+    resolutionKind,
   });
 
-  const activeProblemSignal = computeActiveProblemSignal(topic, createdTopic);
+  const activeProblemSignal = computeActiveProblemSignal(topic, resolutionKind);
 
   const historySignal = computeHistorySignal({
-    createdTopic,
+    resolutionKind,
     currentInteractionContext,
   });
 
@@ -710,14 +811,14 @@ function computeInterventionScores(args: InterventionScoreArgs) {
 
   const clarifyPressureSignal = computeClarifyPressureSignal({
     message,
-    createdTopic,
+    resolutionKind,
     currentInteractionContext,
     modelSignals,
   });
 
   const probePressureSignal = computeProbePressureSignal({
     topic,
-    createdTopic,
+    resolutionKind,
     currentInteractionContext,
     newAttempt,
     modelSignals,
@@ -775,28 +876,45 @@ function computeInterventionScores(args: InterventionScoreArgs) {
     clarifyScore += 0.03;
   }
 
+  if (resolutionKind === "fallback_active_topic") {
+    clarifyScore += 0.08;
+    probeScore -= 0.04;
+  } else if (resolutionKind === "fallback_existing_topic") {
+    clarifyScore += 0.04;
+    probeScore -= 0.02;
+  }
+
   clarifyScore = clamp(clarifyScore, 0, 0.95);
   probeScore = clamp(probeScore, 0, 0.95);
 
   const mode_selected: "clarify" | "probe" =
     clarifyScore >= probeScore ? "clarify" : "probe";
 
+  const resolutionReason =
+    resolutionKind === "created"
+      ? "This target topic was newly created, so stabilization has extra value."
+      : resolutionKind === "fallback_active_topic"
+        ? "Topic targeting stayed conservative by reusing the currently active topic, which increases the value of clarification."
+        : resolutionKind === "fallback_existing_topic"
+          ? "Topic targeting used a conservative existing-topic fallback, so the system should avoid overconfident measurement."
+          : "The topic match looked strong enough to support a focused next-step decision.";
+
   const decision_reasons =
     mode_selected === "clarify"
       ? [
-          `The message matched most strongly to ${topic.name}.`,
-          createdTopic
-            ? "This is a fresh or newly created topic, so stabilization is safer than immediate measurement."
-            : currentInteractionContext?.run_kind === "clarify_followup"
-              ? "This still looks like clarification-oriented stabilization rather than a fair measurement moment."
-              : "The current message looks more like a need for stabilization than an immediate readiness signal for measurement.",
+          `The message connects most strongly to ${topic.name}.`,
+          resolutionReason,
+          currentInteractionContext?.run_kind === "clarify_followup"
+            ? "This still looks like clarification-oriented stabilization rather than a fair measurement moment."
+            : "The current message looks more like a need for stabilization than an immediate readiness signal for measurement.",
           typeof confusion === "number"
             ? `Confusion signal is ${confusion.toFixed(2)}, which increases the value of clarifying before probing.`
             : "No confusion/insight score was available, so the route stayed conservative where the message itself suggested clarification.",
           `The current block still appears to be: ${topic.nextStep}.`,
         ]
       : [
-          `The message matched most strongly to ${topic.name}.`,
+          `The message connects most strongly to ${topic.name}.`,
+          resolutionReason,
           currentInteractionContext?.is_response_to_delivered_probe
             ? "This run is positioned like a response to a previously delivered probe, which increases measurement value."
             : currentInteractionContext?.prior_mode_selected === "clarify"
@@ -813,7 +931,7 @@ function computeInterventionScores(args: InterventionScoreArgs) {
   const margin = Math.max(0, winningScore - losingScore);
 
   const decisionConfidence = clamp(
-    0.48 + winningScore * 0.24 + margin * 0.34 + evidenceQualitySignal * 0.08,
+    0.46 + winningScore * 0.24 + margin * 0.34 + evidenceQualitySignal * 0.08,
     0,
     0.95
   );
@@ -843,7 +961,8 @@ export function buildInterventionModeDecision(
   createdTopic: boolean,
   modelSignals?: ModelSignals,
   currentInteractionContext?: CurrentInteractionContext,
-  newAttempt?: NewAttempt
+  newAttempt?: NewAttempt,
+  topicResolutionKind?: TopicResolutionKind
 ): InterventionModeDecision {
   const computed = computeInterventionScores({
     topic,
@@ -851,6 +970,7 @@ export function buildInterventionModeDecision(
     preferredModality,
     message,
     createdTopic,
+    topicResolutionKind,
     modelSignals,
     currentInteractionContext,
     newAttempt,
@@ -874,7 +994,7 @@ export function buildProbePlan(
   decision: InterventionModeDecision,
   message: string
 ): ProbePlan {
-  const preferredModality = inferPreferredModality(message);
+  const preferredModality = inferPreferredModality(message, "probe");
   const diagnosis = decision.active_diagnosis ?? inferDiagnosisFromTopic(topic);
   const probeType = selectInitialProbeType(diagnosis, preferredModality);
   const probeId = makeId(`probe-${topic.id}`);
@@ -1360,11 +1480,28 @@ export function buildUpdatedMetrics(
   topicId: string,
   topic: RouteTopic
 ): TopicMetricUpdate {
+  const confusion =
+    topic.confusion >= 0.75
+      ? clamp(topic.confusion - 0.01, 0, 1)
+      : topic.confusion >= 0.5
+        ? clamp(topic.confusion - 0.03, 0, 1)
+        : clamp(topic.confusion - 0.05, 0, 1);
+
+  const insight =
+    topic.insight <= 0.25
+      ? clamp(topic.insight + 0.03, 0, 1)
+      : clamp(topic.insight + 0.05, 0, 1);
+
+  const learningScore =
+    topic.confusion >= 0.7
+      ? clamp(topic.learningScore + 0.01, 0, 1)
+      : clamp(topic.learningScore + 0.04, 0, 1);
+
   return {
     topicId,
-    confusion: clamp(topic.confusion - 0.06, 0, 1),
-    insight: clamp(topic.insight + 0.08, 0, 1),
-    learningScore: clamp(topic.learningScore + 0.07, 0, 1),
+    confusion,
+    insight,
+    learningScore,
   };
 }
 

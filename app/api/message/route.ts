@@ -92,6 +92,13 @@ type DeliveredRendererSelection = {
   renderer_type: "text_renderer" | "video_renderer" | "interactive_renderer";
 };
 
+type TopicResolutionOutcome = {
+  topic: RouteTopic;
+  createdTopic: RouteTopic | null;
+  routeTopics: RouteTopic[];
+  resolutionKind: "matched" | "created" | "fallback_active_topic" | "fallback_existing_topic";
+};
+
 function normalizeRecentTurns(body: MessageRouteBody) {
   const rawTurns = Array.isArray(body.recent_turns)
     ? body.recent_turns
@@ -208,8 +215,19 @@ function buildSuggestedAction(
   return `Next, let’s work on ${topicName.toLowerCase()}: ${nextStep}`;
 }
 
-function buildStatusLabel(createdTopic: boolean, mode: "clarify" | "probe") {
-  const topicLabel = createdTopic ? "Created new topic" : "Matched existing topic";
+function buildStatusLabel(
+  resolutionKind: TopicResolutionOutcome["resolutionKind"],
+  mode: "clarify" | "probe"
+) {
+  const topicLabel =
+    resolutionKind === "created"
+      ? "Created new topic"
+      : resolutionKind === "matched"
+        ? "Matched existing topic"
+        : resolutionKind === "fallback_active_topic"
+          ? "Used active topic fallback"
+          : "Used conservative existing-topic fallback";
+
   return `${topicLabel} • ${mode === "clarify" ? "Clarify mode" : "Probe mode"}`;
 }
 
@@ -217,10 +235,7 @@ function selectDeliveredRenderer(probePlan: ProbePlan): DeliveredRendererSelecti
   if (probePlan.interactive_payload.ready_to_send) {
     return {
       modality: "interactive",
-      generator:
-        probePlan.renderer_request.preferred_generator === "custom"
-          ? "custom"
-          : "custom",
+      generator: "custom",
       renderer_type: "interactive_renderer",
     };
   }
@@ -228,12 +243,7 @@ function selectDeliveredRenderer(probePlan: ProbePlan): DeliveredRendererSelecti
   if (probePlan.video_payload.ready_to_send) {
     return {
       modality: "video",
-      generator:
-        probePlan.video_payload.model && probePlan.video_payload.model.startsWith("sora")
-          ? "sora"
-          : probePlan.renderer_request.preferred_generator === "sora"
-            ? "sora"
-            : "sora",
+      generator: "sora",
       renderer_type: "video_renderer",
     };
   }
@@ -241,10 +251,7 @@ function selectDeliveredRenderer(probePlan: ProbePlan): DeliveredRendererSelecti
   if (probePlan.text_payload.ready_to_send) {
     return {
       modality: "text",
-      generator:
-        probePlan.renderer_request.preferred_generator === "chatgpt"
-          ? "chatgpt"
-          : "chatgpt",
+      generator: "chatgpt",
       renderer_type: "text_renderer",
     };
   }
@@ -523,6 +530,94 @@ function buildFallbackModelSignals(errorMessage?: string): ModelSignals {
   };
 }
 
+function normalizeVectorInfoFallback(
+  matchVectorInfo: VectorInfo,
+  topic: RouteTopic,
+  createdTopic: boolean
+): VectorInfo {
+  return {
+    ...matchVectorInfo,
+    top_k_topic_names:
+      matchVectorInfo.top_k_topic_names.length > 0
+        ? matchVectorInfo.top_k_topic_names
+        : [topic.name],
+    top_k_topic_ids:
+      matchVectorInfo.top_k_topic_ids.length > 0
+        ? matchVectorInfo.top_k_topic_ids
+        : [topic.id],
+    top_k_similarity_scores:
+      matchVectorInfo.top_k_similarity_scores.length > 0
+        ? matchVectorInfo.top_k_similarity_scores
+        : [createdTopic ? 0.24 : 0.52],
+  };
+}
+
+function resolveTopicOutcome(args: {
+  existingTopics: RouteTopic[];
+  activeTopicId?: string | null;
+  message: string;
+}) : TopicResolutionOutcome | null {
+  const { existingTopics, activeTopicId, message } = args;
+
+  const matchResult = resolveTopicForMessage(message, existingTopics);
+
+  if (matchResult.matchedTopic) {
+    return {
+      topic: matchResult.matchedTopic,
+      createdTopic: null,
+      routeTopics: existingTopics,
+      resolutionKind: "matched",
+    };
+  }
+
+  if (matchResult.shouldCreateNewTopic) {
+    const createdTopic = buildSeededTopicFromMessage(message, existingTopics);
+
+    return {
+      topic: createdTopic,
+      createdTopic,
+      routeTopics: [...existingTopics, createdTopic],
+      resolutionKind: "created",
+    };
+  }
+
+  if (activeTopicId) {
+    const activeTopic = existingTopics.find((topic) => topic.id === activeTopicId);
+    if (activeTopic) {
+      return {
+        topic: activeTopic,
+        createdTopic: null,
+        routeTopics: existingTopics,
+        resolutionKind: "fallback_active_topic",
+      };
+    }
+  }
+
+  if (existingTopics.length > 0) {
+    const bestVectorTopicId = matchResult.vectorInfo.top_k_topic_ids[0];
+    const bestVectorTopic =
+      existingTopics.find((topic) => topic.id === bestVectorTopicId) ?? null;
+
+    if (bestVectorTopic) {
+      return {
+        topic: bestVectorTopic,
+        createdTopic: null,
+        routeTopics: existingTopics,
+        resolutionKind: "fallback_existing_topic",
+      };
+    }
+
+    return {
+      topic: existingTopics[0],
+      createdTopic: null,
+      routeTopics: existingTopics,
+      resolutionKind: "fallback_existing_topic",
+    };
+  }
+
+  return null;
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as MessageRouteBody;
@@ -555,49 +650,30 @@ export async function POST(request: Request) {
     }
 
     const existingTopics = await loadRouteTopics();
-    const matchResult = resolveTopicForMessage(message, existingTopics);
 
-    const createdTopic = matchResult.shouldCreateNewTopic
-      ? buildSeededTopicFromMessage(message, existingTopics)
-      : null;
+    const topicResolution = resolveTopicOutcome({
+      existingTopics,
+      activeTopicId:
+        typeof body.activeTopicId === "string" ? body.activeTopicId : null,
+      message,
+    });
 
-    const routeTopics = createdTopic
-      ? [...existingTopics, createdTopic]
-      : existingTopics;
-
-    if (!routeTopics.length) {
+    if (!topicResolution) {
       return NextResponse.json(
-        { error: "No topics are available." },
+        { error: "Unable to resolve or create a topic." },
         { status: 500 }
       );
     }
 
-    const topic = createdTopic ?? matchResult.matchedTopic ?? routeTopics[0];
-
-    if (!topic) {
-      return NextResponse.json(
-        { error: "Unable to resolve a topic." },
-        { status: 500 }
-      );
-    }
-
+    const { topic, createdTopic, routeTopics, resolutionKind } = topicResolution;
     const targetTopicId = topic.id;
 
-    const vectorInfo: VectorInfo = {
-      ...matchResult.vectorInfo,
-      top_k_topic_names:
-        matchResult.vectorInfo.top_k_topic_names.length > 0
-          ? matchResult.vectorInfo.top_k_topic_names
-          : [topic.name],
-      top_k_topic_ids:
-        matchResult.vectorInfo.top_k_topic_ids.length > 0
-          ? matchResult.vectorInfo.top_k_topic_ids
-          : [topic.id],
-      top_k_similarity_scores:
-        matchResult.vectorInfo.top_k_similarity_scores.length > 0
-          ? matchResult.vectorInfo.top_k_similarity_scores
-          : [createdTopic ? 0.24 : 0.72],
-    };
+    const rawMatchVectorInfo = resolveTopicForMessage(message, existingTopics).vectorInfo;
+    const vectorInfo: VectorInfo = normalizeVectorInfoFallback(
+      rawMatchVectorInfo,
+      topic,
+      Boolean(createdTopic)
+    );
 
     const preferredModality = inferPreferredModality(message);
 
@@ -615,7 +691,7 @@ export async function POST(request: Request) {
             : null,
         prior_probe_was_applicable: null,
         prior_probe_id: null,
-        prior_mode_outcome_available: recentTurns.length > 0 ? true : false,
+        prior_mode_outcome_available: recentTurns.length > 0,
       };
 
     const newAttempt: ImportantRunInputs["new_attempt"] = {
@@ -650,30 +726,42 @@ export async function POST(request: Request) {
     };
 
     const updatedTopicMetrics = buildUpdatedMetrics(targetTopicId, topic);
-    const updatedTopics = routeTopics.map((t) =>
-      applyMetricUpdate(t, updatedTopicMetrics)
+    const updatedTopics = routeTopics.map((routeTopic) =>
+      routeTopic.id === targetTopicId
+        ? applyMetricUpdate(routeTopic, updatedTopicMetrics)
+        : routeTopic
     );
 
+    const updatedResolvedTopic =
+      updatedTopics.find((routeTopic) => routeTopic.id === targetTopicId) ?? topic;
+
     const decision = buildInterventionModeDecision(
-      topic,
+      updatedResolvedTopic,
       vectorInfo,
       preferredModality,
       message,
       Boolean(createdTopic),
       modelSignals,
       currentInteractionContext,
-      newAttempt
+      newAttempt,
+      resolutionKind
     );
 
     const probePlan =
       decision.mode_selected === "probe"
-        ? buildProbePlan(topic, decision, message)
-        : buildNotApplicableProbePlan(topic);
+        ? buildProbePlan(updatedResolvedTopic, decision, message)
+        : buildNotApplicableProbePlan(updatedResolvedTopic);
 
-    const deliveredResponse = buildDeliveredResponse(topic, decision, probePlan);
+    const deliveredResponse = buildDeliveredResponse(
+      updatedResolvedTopic,
+      decision,
+      probePlan
+    );
+
     const previousModeOutcome = buildPreviousModeOutcome(
       currentInteractionContext.run_kind
     );
+
     const engineFuel = buildEngineFuel(
       updatedTopics,
       decision,
@@ -705,17 +793,20 @@ export async function POST(request: Request) {
     };
 
     const runResultJson = JSON.parse(JSON.stringify(result));
+
     const topicJson = JSON.parse(
       JSON.stringify({
-        topic_id: topic.id,
-        topic_name: topic.name,
-        next_step: probePlan.text_plan.instructional_goal ?? topic.nextStep,
+        topic_id: updatedResolvedTopic.id,
+        topic_name: updatedResolvedTopic.name,
+        next_step:
+          probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
         inferred_keywords: inferKeywordsFromMessage(message),
         updated_topic_metrics: updatedTopicMetrics,
         learning_space_topic:
-          learningSpace.topics.find((t) => t.topic_id === topic.id) ?? null,
-        planned_probe:
-          deliveredResponse.delivered_probe ?? null,
+          learningSpace.topics.find((t) => t.topic_id === updatedResolvedTopic.id) ??
+          null,
+        planned_probe: deliveredResponse.delivered_probe ?? null,
+        resolution_kind: resolutionKind,
       })
     );
 
@@ -724,13 +815,15 @@ export async function POST(request: Request) {
       learningSpace,
       Boolean(createdTopic)
     );
+
     const suggestedAction = buildSuggestedAction(
-      topic.name,
-      probePlan.text_plan.instructional_goal ?? topic.nextStep,
+      updatedResolvedTopic.name,
+      probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
       decision.mode_selected
     );
+
     const statusLabel = buildStatusLabel(
-      Boolean(createdTopic),
+      resolutionKind,
       decision.mode_selected
     );
 
@@ -748,15 +841,17 @@ export async function POST(request: Request) {
     });
 
     await upsertTopicState({
-      topicId: topic.id,
+      topicId: updatedResolvedTopic.id,
       lastRunId: runId,
-      topicName: topic.name,
+      topicName: updatedResolvedTopic.name,
       confusion: updatedTopicMetrics.confusion ?? null,
       insight: updatedTopicMetrics.insight ?? null,
       learningScore:
-        updatedTopics.find((t) => t.id === topic.id)?.learningScore ?? null,
+        updatedTopics.find((t) => t.id === updatedResolvedTopic.id)?.learningScore ??
+        null,
       diagnosis: decision.active_diagnosis,
-      nextStep: probePlan.text_plan.instructional_goal ?? topic.nextStep,
+      nextStep:
+        probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
       topicJson,
     });
 
