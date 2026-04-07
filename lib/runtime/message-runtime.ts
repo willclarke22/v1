@@ -32,6 +32,13 @@ type InterventionScoreArgs = {
   newAttempt?: NewAttempt;
 };
 
+type ProbeType =
+  | "predict"
+  | "explain"
+  | "discriminate"
+  | "transform"
+  | "apply_transfer";
+
 export function inferDiagnosisFromTopic(topic: RouteTopic): DiagnosisType {
   return (
     normalizeDiagnosis((topic as { diagnosis?: unknown }).diagnosis) ??
@@ -164,7 +171,7 @@ export function buildImportantRunInputs(
 function selectInitialProbeType(
   diagnosis: DiagnosisType,
   preferredModality: RendererModality
-) {
+): ProbeType {
   if (preferredModality === "interactive" && diagnosis !== "representation_gap") {
     return diagnosis === "procedure_gap"
       ? "transform"
@@ -177,24 +184,81 @@ function selectInitialProbeType(
 
   switch (diagnosis) {
     case "recall_gap":
-      return "predict" as const;
+      return "predict";
     case "representation_gap":
-      return "explain" as const;
+      return "explain";
     case "procedure_gap":
-      return "transform" as const;
+      return "transform";
     case "discrimination_gap":
-      return "discriminate" as const;
+      return "discriminate";
     case "transfer_gap":
-      return "apply_transfer" as const;
+      return "apply_transfer";
     default:
-      return "explain" as const;
+      return "explain";
+  }
+}
+
+function buildLearnerFacingProbeTitle(
+  topic: RouteTopic,
+  probeType: ProbeType
+) {
+  switch (probeType) {
+    case "predict":
+      return `Predict what happens in ${topic.name}`;
+    case "discriminate":
+      return `Distinguish ${topic.name}`;
+    case "transform":
+      return `Walk through ${topic.name}`;
+    case "apply_transfer":
+      return `Apply ${topic.name} in a new situation`;
+    case "explain":
+    default:
+      return `Explain ${topic.name}`;
+  }
+}
+
+function buildLearnerFacingInstructionalGoal(
+  topic: RouteTopic,
+  probeType: ProbeType
+) {
+  switch (probeType) {
+    case "predict":
+      return `Predict what would happen in a simple case involving ${topic.name}, and explain why.`;
+    case "discriminate":
+      return `Explain the key difference that helps distinguish ${topic.name} from a closely related idea.`;
+    case "transform":
+      return `Walk through ${topic.name} step by step and explain why the order matters.`;
+    case "apply_transfer":
+      return `Apply ${topic.name} in a new but related situation and explain what changes.`;
+    case "explain":
+    default:
+      return `Explain ${topic.name} in your own words, focusing on the key relationship or mechanism.`;
+  }
+}
+
+function buildInternalDiagnosticGoal(
+  topic: RouteTopic,
+  probeType: ProbeType
+) {
+  switch (probeType) {
+    case "predict":
+      return `Check whether the learner can anticipate outcomes in ${topic.name}.`;
+    case "discriminate":
+      return `Check whether the learner can distinguish ${topic.name} from nearby ideas.`;
+    case "transform":
+      return `Check whether the learner can express ${topic.name} as a coherent ordered process.`;
+    case "apply_transfer":
+      return `Check whether the learner can transfer ${topic.name} into a changed setting.`;
+    case "explain":
+    default:
+      return `Check whether the learner can explain ${topic.name} coherently.`;
   }
 }
 
 function buildInitialPromptForProbe(args: {
   topic: RouteTopic;
   diagnosis: DiagnosisType;
-  probeType: "predict" | "explain" | "discriminate" | "transform" | "apply_transfer";
+  probeType: ProbeType;
 }) {
   const { topic, diagnosis, probeType } = args;
 
@@ -218,7 +282,7 @@ function buildInitialPromptForProbe(args: {
 function buildInitialJudgingSupport(args: {
   topic: RouteTopic;
   diagnosis: DiagnosisType;
-  probeType: "predict" | "explain" | "discriminate" | "transform" | "apply_transfer";
+  probeType: ProbeType;
 }) {
   const { topic, diagnosis, probeType } = args;
 
@@ -814,17 +878,9 @@ export function buildProbePlan(
   const diagnosis = decision.active_diagnosis ?? inferDiagnosisFromTopic(topic);
   const probeType = selectInitialProbeType(diagnosis, preferredModality);
   const probeId = makeId(`probe-${topic.id}`);
-  const title =
-    probeType === "predict"
-      ? `Predict what happens in ${topic.name}`
-      : probeType === "discriminate"
-        ? `Distinguish ${topic.name} clearly`
-        : probeType === "transform"
-          ? `Walk through ${topic.name} step by step`
-          : probeType === "apply_transfer"
-            ? `Apply ${topic.name} in a new situation`
-            : `Explain ${topic.name} more clearly`;
 
+  const learnerFacingTitle = buildLearnerFacingProbeTitle(topic, probeType);
+  const learnerFacingGoal = buildLearnerFacingInstructionalGoal(topic, probeType);
   const instruction = buildInitialPromptForProbe({
     topic,
     diagnosis,
@@ -867,17 +923,8 @@ export function buildProbePlan(
     text_plan: {
       status: "planned",
       pedagogical_role: "guided_question",
-      diagnostic_goal:
-        probeType === "predict"
-          ? `Check whether the learner can anticipate outcomes in ${topic.name}.`
-          : probeType === "discriminate"
-            ? `Check whether the learner can distinguish ${topic.name} from nearby ideas.`
-            : probeType === "transform"
-              ? `Check whether the learner can express ${topic.name} as a coherent ordered process.`
-              : probeType === "apply_transfer"
-                ? `Check whether the learner can transfer ${topic.name} into a changed setting.`
-                : `Check whether the learner can explain ${topic.name} coherently.`,
-      instructional_goal: `Move the learner one step closer to ${topic.nextStep}.`,
+      diagnostic_goal: buildInternalDiagnosticGoal(topic, probeType),
+      instructional_goal: learnerFacingGoal,
       why_text: [
         "Text is the safest fallback renderer during contract-proving.",
         "A text prompt keeps the plan easy to judge and easy to store.",
@@ -1074,7 +1121,7 @@ export function buildProbePlan(
       model: "gpt-5.4",
       instructions:
         "You are rendering a MyWay probe. Do not over-explain. Ask only enough to reveal the learner's understanding. Preserve the requested probe intent and avoid giving the final answer.",
-      input: `${title}\n\n${instruction}`,
+      input: `${learnerFacingTitle}\n\n${instruction}`,
       personalization_snapshot: {
         tone: "encouraging",
         verbosity: "medium",
