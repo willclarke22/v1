@@ -96,7 +96,11 @@ type TopicResolutionOutcome = {
   topic: RouteTopic;
   createdTopic: RouteTopic | null;
   routeTopics: RouteTopic[];
-  resolutionKind: "matched" | "created" | "fallback_active_topic" | "fallback_existing_topic";
+  resolutionKind:
+    | "matched"
+    | "created"
+    | "fallback_active_topic"
+    | "fallback_existing_topic";
 };
 
 function normalizeRecentTurns(body: MessageRouteBody) {
@@ -231,7 +235,9 @@ function buildStatusLabel(
   return `${topicLabel} • ${mode === "clarify" ? "Clarify mode" : "Probe mode"}`;
 }
 
-function selectDeliveredRenderer(probePlan: ProbePlan): DeliveredRendererSelection {
+function selectDeliveredRenderer(
+  probePlan: ProbePlan
+): DeliveredRendererSelection {
   if (probePlan.interactive_payload.ready_to_send) {
     return {
       modality: "interactive",
@@ -257,7 +263,8 @@ function selectDeliveredRenderer(probePlan: ProbePlan): DeliveredRendererSelecti
   }
 
   const preferredModality = probePlan.renderer_request.preferred_modality ?? "text";
-  const preferredGenerator = probePlan.renderer_request.preferred_generator ?? "chatgpt";
+  const preferredGenerator =
+    probePlan.renderer_request.preferred_generator ?? "chatgpt";
 
   if (preferredModality === "interactive") {
     return {
@@ -556,8 +563,19 @@ function resolveTopicOutcome(args: {
   existingTopics: RouteTopic[];
   activeTopicId?: string | null;
   message: string;
-}) : TopicResolutionOutcome | null {
+}): TopicResolutionOutcome | null {
   const { existingTopics, activeTopicId, message } = args;
+
+  if (existingTopics.length === 0) {
+    const createdTopic = buildSeededTopicFromMessage(message, existingTopics);
+
+    return {
+      topic: createdTopic,
+      createdTopic,
+      routeTopics: [createdTopic],
+      resolutionKind: "created",
+    };
+  }
 
   const matchResult = resolveTopicForMessage(message, existingTopics);
 
@@ -593,29 +611,25 @@ function resolveTopicOutcome(args: {
     }
   }
 
-  if (existingTopics.length > 0) {
-    const bestVectorTopicId = matchResult.vectorInfo.top_k_topic_ids[0];
-    const bestVectorTopic =
-      existingTopics.find((topic) => topic.id === bestVectorTopicId) ?? null;
+  const bestVectorTopicId = matchResult.vectorInfo.top_k_topic_ids[0];
+  const bestVectorTopic =
+    existingTopics.find((topic) => topic.id === bestVectorTopicId) ?? null;
 
-    if (bestVectorTopic) {
-      return {
-        topic: bestVectorTopic,
-        createdTopic: null,
-        routeTopics: existingTopics,
-        resolutionKind: "fallback_existing_topic",
-      };
-    }
-
+  if (bestVectorTopic) {
     return {
-      topic: existingTopics[0],
+      topic: bestVectorTopic,
       createdTopic: null,
       routeTopics: existingTopics,
       resolutionKind: "fallback_existing_topic",
     };
   }
 
-  return null;
+  return {
+    topic: existingTopics[0],
+    createdTopic: null,
+    routeTopics: existingTopics,
+    resolutionKind: "fallback_existing_topic",
+  };
 }
 
 export async function POST(request: Request) {
