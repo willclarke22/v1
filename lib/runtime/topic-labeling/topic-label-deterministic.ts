@@ -468,13 +468,17 @@ function cleanupSpan(span: string | null) {
     .replace(/\s+/g, " ")
     .trim();
 
-  output = reduceToHeadConcept(output);
+  const reduced = reduceToHeadConcept(output);
 
-  if (looksLikeLearnerStateClause(output)) {
+  if (!reduced) {
     return null;
   }
 
-  return output || null;
+  if (looksLikeLearnerStateClause(reduced)) {
+    return null;
+  }
+
+  return reduced;
 }
 
 function simplifyEconomicLabel(text: string) {
@@ -1204,7 +1208,9 @@ export function runDeterministicTopicLabeling(
         specificity === "too_vague"
           ? ["Concept span is too vague for a persistent topic."]
           : conceptSpan && isClauseLikeSpan(conceptSpan)
-            ? ["Concept span still looks too clause-like for a strong persistent topic label."]
+            ? [
+                "Concept span still looks too clause-like for a strong persistent topic label.",
+              ]
             : [],
       ambiguity_flags:
         confidence < 0.75
