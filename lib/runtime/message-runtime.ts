@@ -25,10 +25,11 @@ type NewAttempt = ImportantRunInputs["new_attempt"];
 type UploadedContent = ImportantRunInputs["uploaded_content"];
 
 export type TopicResolutionKind =
-  | "matched"
-  | "created"
+  | "matched_existing"
+  | "created_new_candidate"
   | "fallback_active_topic"
-  | "fallback_existing_topic";
+  | "fallback_existing_topic"
+  | "no_match";
 
 type InterventionScoreArgs = {
   topic: RouteTopic;
@@ -61,7 +62,7 @@ function resolveTopicResolutionKind(
   topicResolutionKind?: TopicResolutionKind
 ): TopicResolutionKind {
   if (topicResolutionKind) return topicResolutionKind;
-  return createdTopic ? "created" : "matched";
+  return createdTopic ? "created_new_candidate" : "matched_existing";
 }
 
 function hasExplicitVideoRequest(message: string) {
@@ -524,7 +525,7 @@ function computeReadinessSignal(args: {
     adjusted -= 0.12;
   } else if (resolutionKind === "fallback_existing_topic") {
     adjusted -= 0.08;
-  } else if (resolutionKind === "created") {
+  } else if (resolutionKind === "created_new_candidate") {
     adjusted -= 0.04;
   }
 
@@ -546,7 +547,7 @@ function computeActiveProblemSignal(
   const base = topic.nextStep ? 0.72 : 0.5;
 
   const resolutionBonus =
-    resolutionKind === "created"
+    resolutionKind === "created_new_candidate"
       ? 0.06
       : resolutionKind === "fallback_active_topic"
         ? 0.02
@@ -562,13 +563,15 @@ function computeHistorySignal(args: {
   const { resolutionKind, currentInteractionContext } = args;
 
   let value =
-    resolutionKind === "created"
+    resolutionKind === "created_new_candidate"
       ? 0.18
       : resolutionKind === "fallback_active_topic"
         ? 0.34
         : resolutionKind === "fallback_existing_topic"
           ? 0.3
-          : 0.42;
+          : resolutionKind === "no_match"
+            ? 0.24
+            : 0.42;
 
   if (currentInteractionContext?.prior_mode_selected === "clarify") {
     value += 0.14;
@@ -664,12 +667,14 @@ function computeClarifyPressureSignal(args: {
     value += 0.3;
   }
 
-  if (resolutionKind === "created") {
+  if (resolutionKind === "created_new_candidate") {
     value += 0.16;
   } else if (resolutionKind === "fallback_active_topic") {
     value += 0.22;
   } else if (resolutionKind === "fallback_existing_topic") {
     value += 0.16;
+  } else if (resolutionKind === "no_match") {
+    value += 0.12;
   }
 
   if (currentInteractionContext?.run_kind === "initial_question") {
@@ -706,14 +711,16 @@ function computeProbePressureSignal(args: {
 
   let value = 0.18;
 
-  if (resolutionKind === "matched") {
+  if (resolutionKind === "matched_existing") {
     value += 0.12;
-  } else if (resolutionKind === "created") {
+  } else if (resolutionKind === "created_new_candidate") {
     value += 0.02;
   } else if (resolutionKind === "fallback_existing_topic") {
     value -= 0.04;
   } else if (resolutionKind === "fallback_active_topic") {
     value -= 0.1;
+  } else if (resolutionKind === "no_match") {
+    value -= 0.08;
   }
 
   if (topic.nextStep) {
@@ -882,6 +889,9 @@ function computeInterventionScores(args: InterventionScoreArgs) {
   } else if (resolutionKind === "fallback_existing_topic") {
     clarifyScore += 0.04;
     probeScore -= 0.02;
+  } else if (resolutionKind === "no_match") {
+    clarifyScore += 0.06;
+    probeScore -= 0.03;
   }
 
   clarifyScore = clamp(clarifyScore, 0, 0.95);
@@ -891,13 +901,15 @@ function computeInterventionScores(args: InterventionScoreArgs) {
     clarifyScore >= probeScore ? "clarify" : "probe";
 
   const resolutionReason =
-    resolutionKind === "created"
+    resolutionKind === "created_new_candidate"
       ? "This target topic was newly created, so stabilization has extra value."
       : resolutionKind === "fallback_active_topic"
         ? "Topic targeting stayed conservative by reusing the currently active topic, which increases the value of clarification."
         : resolutionKind === "fallback_existing_topic"
           ? "Topic targeting used a conservative existing-topic fallback, so the system should avoid overconfident measurement."
-          : "The topic match looked strong enough to support a focused next-step decision.";
+          : resolutionKind === "no_match"
+            ? "Topic targeting remained uncertain, so the system should stay conservative before measuring aggressively."
+            : "The topic match looked strong enough to support a focused next-step decision.";
 
   const decision_reasons =
     mode_selected === "clarify"

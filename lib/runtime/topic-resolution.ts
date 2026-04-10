@@ -17,6 +17,9 @@ export type TopicMatchResult = {
   matchedTopic: RouteTopic | null;
   vectorInfo: VectorInfo;
   shouldCreateNewTopic: boolean;
+  resolutionKind: "matched_existing" | "created_new_candidate" | "no_match";
+  resolvedLabel: string | null;
+  matchConfidence: number;
 };
 
 type MessageFrame =
@@ -86,14 +89,6 @@ function overlapScore(a: string[], b: string[]) {
   }
 
   return overlap / Math.max(aSet.size, bSet.size);
-}
-
-function toTitleCase(text: string) {
-  return text
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 }
 
 function mapIntentToFrame(intent: TopicMessageIntent): MessageFrame {
@@ -371,6 +366,11 @@ export function resolveTopicForMessage(
         top_k_similarity_scores: [],
       },
       shouldCreateNewTopic: labeling.topic_decision.should_create_new_topic,
+      resolutionKind: labeling.topic_decision.should_create_new_topic
+        ? "created_new_candidate"
+        : "no_match",
+      resolvedLabel: labeling.topic_decision.canonical_label ?? null,
+      matchConfidence: 0,
     };
   }
 
@@ -394,5 +394,12 @@ export function resolveTopicForMessage(
     matchedTopic,
     vectorInfo: buildVectorInfoFromScoredTopics(scored),
     shouldCreateNewTopic,
+    resolutionKind: matchedTopic
+      ? "matched_existing"
+      : shouldCreateNewTopic
+        ? "created_new_candidate"
+        : "no_match",
+    resolvedLabel: labeling.topic_decision.canonical_label ?? null,
+    matchConfidence: bestScore,
   };
 }

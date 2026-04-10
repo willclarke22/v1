@@ -13,6 +13,7 @@ import type { LearningSpace, LearningSpaceTopic } from "@/types/learning-space";
 import type { ProbeSummary } from "@/components/probes/probe-surface";
 
 type TrackballControlsRef = ElementRef<typeof TrackballControls>;
+type SceneArrivalMode = "warp" | "focus";
 
 const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 0, 10.5);
 const DEFAULT_TARGET = new THREE.Vector3(0, 0, 0);
@@ -425,6 +426,7 @@ function CameraController({
   topics,
   selectedTopicId,
   focusedTopicId,
+  arrivalMode,
   controlsRef,
   isEnteringProbe,
   probeEntryTopicId,
@@ -434,6 +436,7 @@ function CameraController({
   topics: LearningSpaceTopic[];
   selectedTopicId: string | null;
   focusedTopicId: string | null;
+  arrivalMode: SceneArrivalMode;
   controlsRef: React.RefObject<TrackballControlsRef | null>;
   isEnteringProbe: boolean;
   probeEntryTopicId: string | null;
@@ -446,11 +449,16 @@ function CameraController({
   const desiredTarget = useRef(DEFAULT_TARGET.clone());
 
   const previousFocusedTopicIdRef = useRef<string | null>(null);
+  const lastHandledSelectedTopicIdRef = useRef<string | null>(null);
+  const lastHandledFocusedTopicIdRef = useRef<string | null>(null);
+  const lastHandledArrivalModeRef = useRef<SceneArrivalMode | null>(null);
 
   const cameraAnimatingRef = useRef(false);
   const targetAnimatingRef = useRef(false);
   const pendingProbeEntryCompleteRef = useRef(false);
   const isCameraMovingRef = useRef(false);
+  const currentCameraAlphaRef = useRef(0.095);
+  const currentTargetAlphaRef = useRef(0.1);
 
   function setCameraMoving(next: boolean) {
     if (isCameraMovingRef.current === next) return;
@@ -502,12 +510,18 @@ function CameraController({
         target.clone().add(currentDirection.multiplyScalar(probeEntryDistance))
       );
 
+      currentCameraAlphaRef.current = 0.14;
+      currentTargetAlphaRef.current = 0.14;
       pendingProbeEntryCompleteRef.current = true;
       cameraAnimatingRef.current = true;
       targetAnimatingRef.current = true;
       controls.enabled = false;
       setCameraMoving(true);
+
       previousFocusedTopicIdRef.current = focusedTopicId;
+      lastHandledSelectedTopicIdRef.current = selectedTopicId;
+      lastHandledFocusedTopicIdRef.current = focusedTopicId;
+      lastHandledArrivalModeRef.current = arrivalMode;
       return;
     }
 
@@ -526,12 +540,18 @@ function CameraController({
           .add(outwardDirection.multiplyScalar(zoomOutDistance))
       );
 
+      currentCameraAlphaRef.current = 0.095;
+      currentTargetAlphaRef.current = 0.1;
       pendingProbeEntryCompleteRef.current = false;
       cameraAnimatingRef.current = true;
       targetAnimatingRef.current = true;
       controls.enabled = false;
       setCameraMoving(true);
+
       previousFocusedTopicIdRef.current = focusedTopicId;
+      lastHandledSelectedTopicIdRef.current = selectedTopicId;
+      lastHandledFocusedTopicIdRef.current = focusedTopicId;
+      lastHandledArrivalModeRef.current = arrivalMode;
       return;
     }
 
@@ -542,21 +562,44 @@ function CameraController({
         return;
       }
 
-      const target = new THREE.Vector3(...topic.position);
-      const focusDistance = Math.max(4.1, topic.render_state.radius * 3.7);
+      const focusTargetChanged =
+        lastHandledFocusedTopicIdRef.current !== focusedTopicId;
+      const arrivalChanged =
+        lastHandledArrivalModeRef.current !== arrivalMode;
 
-      desiredTarget.current.copy(target);
-      desiredCameraPosition.current.copy(
-        target.clone().add(currentDirection.multiplyScalar(focusDistance))
-      );
+      if (focusTargetChanged || arrivalChanged) {
+        const target = new THREE.Vector3(...topic.position);
 
-      pendingProbeEntryCompleteRef.current = false;
-      cameraAnimatingRef.current = true;
-      targetAnimatingRef.current = true;
-      controls.enabled = false;
-      setCameraMoving(true);
-      previousFocusedTopicIdRef.current = focusedTopicId;
-      return;
+        if (arrivalMode === "warp") {
+          const warpDistance = Math.max(5.2, topic.render_state.radius * 4.6);
+          desiredTarget.current.copy(target);
+          desiredCameraPosition.current.copy(
+            target.clone().add(currentDirection.multiplyScalar(warpDistance))
+          );
+          currentCameraAlphaRef.current = 0.125;
+          currentTargetAlphaRef.current = 0.13;
+        } else {
+          const focusDistance = Math.max(4.1, topic.render_state.radius * 3.7);
+          desiredTarget.current.copy(target);
+          desiredCameraPosition.current.copy(
+            target.clone().add(currentDirection.multiplyScalar(focusDistance))
+          );
+          currentCameraAlphaRef.current = 0.095;
+          currentTargetAlphaRef.current = 0.1;
+        }
+
+        pendingProbeEntryCompleteRef.current = false;
+        cameraAnimatingRef.current = true;
+        targetAnimatingRef.current = true;
+        controls.enabled = false;
+        setCameraMoving(true);
+
+        previousFocusedTopicIdRef.current = focusedTopicId;
+        lastHandledSelectedTopicIdRef.current = selectedTopicId;
+        lastHandledFocusedTopicIdRef.current = focusedTopicId;
+        lastHandledArrivalModeRef.current = arrivalMode;
+        return;
+      }
     }
 
     if (selectedTopicId) {
@@ -566,31 +609,56 @@ function CameraController({
         return;
       }
 
-      const target = new THREE.Vector3(...topic.position);
+      const selectedTargetChanged =
+        lastHandledSelectedTopicIdRef.current !== selectedTopicId;
 
-      desiredTarget.current.copy(target);
+      if (selectedTargetChanged) {
+        const target = new THREE.Vector3(...topic.position);
 
-      pendingProbeEntryCompleteRef.current = false;
-      targetAnimatingRef.current = true;
-      cameraAnimatingRef.current = false;
-      setCameraMoving(true);
-      previousFocusedTopicIdRef.current = focusedTopicId;
-      return;
+        desiredTarget.current.copy(target);
+
+        currentCameraAlphaRef.current = 0.095;
+        currentTargetAlphaRef.current = 0.1;
+        pendingProbeEntryCompleteRef.current = false;
+        targetAnimatingRef.current = true;
+        cameraAnimatingRef.current = false;
+        setCameraMoving(true);
+
+        previousFocusedTopicIdRef.current = focusedTopicId;
+        lastHandledSelectedTopicIdRef.current = selectedTopicId;
+        lastHandledFocusedTopicIdRef.current = focusedTopicId;
+        lastHandledArrivalModeRef.current = arrivalMode;
+        return;
+      }
     }
 
-    desiredTarget.current.copy(DEFAULT_TARGET);
-    desiredCameraPosition.current.copy(DEFAULT_CAMERA_POSITION);
+    if (
+      selectedTopicId === null &&
+      focusedTopicId === null &&
+      (lastHandledSelectedTopicIdRef.current !== null ||
+        lastHandledFocusedTopicIdRef.current !== null)
+    ) {
+      desiredTarget.current.copy(DEFAULT_TARGET);
+      desiredCameraPosition.current.copy(DEFAULT_CAMERA_POSITION);
 
-    pendingProbeEntryCompleteRef.current = false;
-    cameraAnimatingRef.current = true;
-    targetAnimatingRef.current = true;
-    controls.enabled = false;
-    setCameraMoving(true);
-    previousFocusedTopicIdRef.current = focusedTopicId;
+      currentCameraAlphaRef.current = 0.095;
+      currentTargetAlphaRef.current = 0.1;
+      pendingProbeEntryCompleteRef.current = false;
+      cameraAnimatingRef.current = true;
+      targetAnimatingRef.current = true;
+      controls.enabled = false;
+      setCameraMoving(true);
+
+      previousFocusedTopicIdRef.current = focusedTopicId;
+      lastHandledSelectedTopicIdRef.current = selectedTopicId;
+      lastHandledFocusedTopicIdRef.current = focusedTopicId;
+      lastHandledArrivalModeRef.current = arrivalMode;
+    }
   }, [
     topics,
     selectedTopicId,
     focusedTopicId,
+    arrivalMode,
     isEnteringProbe,
     probeEntryTopicId,
     camera,
@@ -602,9 +670,7 @@ function CameraController({
     if (!controls) return;
 
     if (targetAnimatingRef.current) {
-      const targetAlpha = pendingProbeEntryCompleteRef.current ? 0.14 : 0.1;
-
-      controls.target.lerp(desiredTarget.current, targetAlpha);
+      controls.target.lerp(desiredTarget.current, currentTargetAlphaRef.current);
 
       if (controls.target.distanceTo(desiredTarget.current) < 0.01) {
         controls.target.copy(desiredTarget.current);
@@ -622,10 +688,11 @@ function CameraController({
       return;
     }
 
-    const cameraAlpha = pendingProbeEntryCompleteRef.current ? 0.14 : 0.095;
-
-    camera.position.lerp(desiredCameraPosition.current, cameraAlpha);
-    controls.target.lerp(desiredTarget.current, cameraAlpha);
+    camera.position.lerp(
+      desiredCameraPosition.current,
+      currentCameraAlphaRef.current
+    );
+    controls.target.lerp(desiredTarget.current, currentCameraAlphaRef.current);
     controls.update?.();
 
     const cameraDone =
@@ -657,6 +724,7 @@ type SpaceCanvasProps = {
   learningSpace: LearningSpace;
   selectedTopicId: string | null;
   focusedTopicId: string | null;
+  arrivalMode?: SceneArrivalMode;
   availableProbe: ProbeSummary | null;
   isEnteringProbe: boolean;
   probeEntryTopicId: string | null;
@@ -671,6 +739,7 @@ export default function SpaceCanvas({
   learningSpace,
   selectedTopicId,
   focusedTopicId,
+  arrivalMode = "focus",
   availableProbe,
   isEnteringProbe,
   probeEntryTopicId,
@@ -802,6 +871,7 @@ export default function SpaceCanvas({
             topics={learningSpace.topics}
             selectedTopicId={selectedTopicId}
             focusedTopicId={focusedTopicId}
+            arrivalMode={arrivalMode}
             controlsRef={controlsRef}
             isEnteringProbe={isEnteringProbe}
             probeEntryTopicId={probeEntryTopicId}

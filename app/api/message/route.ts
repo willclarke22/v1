@@ -92,15 +92,21 @@ type DeliveredRendererSelection = {
   renderer_type: "text_renderer" | "video_renderer" | "interactive_renderer";
 };
 
+type RouteResolutionKind =
+  | "matched_existing"
+  | "created_new_candidate"
+  | "fallback_active_topic"
+  | "fallback_existing_topic"
+  | "no_match";
+
 type TopicResolutionOutcome = {
   topic: RouteTopic;
   createdTopic: RouteTopic | null;
   routeTopics: RouteTopic[];
-  resolutionKind:
-    | "matched"
-    | "created"
-    | "fallback_active_topic"
-    | "fallback_existing_topic";
+  resolutionKind: RouteResolutionKind;
+  vectorInfo: VectorInfo;
+  resolvedLabel: string | null;
+  matchConfidence: number;
 };
 
 function normalizeRecentTurns(body: MessageRouteBody) {
@@ -220,19 +226,39 @@ function buildSuggestedAction(
 }
 
 function buildStatusLabel(
-  resolutionKind: TopicResolutionOutcome["resolutionKind"],
+  resolutionKind: RouteResolutionKind,
   mode: "clarify" | "probe"
 ) {
   const topicLabel =
-    resolutionKind === "created"
+    resolutionKind === "created_new_candidate"
       ? "Created new topic"
-      : resolutionKind === "matched"
+      : resolutionKind === "matched_existing"
         ? "Matched existing topic"
         : resolutionKind === "fallback_active_topic"
           ? "Used active topic fallback"
-          : "Used conservative existing-topic fallback";
+          : resolutionKind === "fallback_existing_topic"
+            ? "Used conservative existing-topic fallback"
+            : "No confident match";
 
   return `${topicLabel} • ${mode === "clarify" ? "Clarify mode" : "Probe mode"}`;
+}
+
+function mapResolutionKindForDecision(
+  resolutionKind: RouteResolutionKind
+): string {
+  switch (resolutionKind) {
+    case "matched_existing":
+      return "matched";
+    case "created_new_candidate":
+      return "created";
+    case "fallback_active_topic":
+      return "fallback_active_topic";
+    case "fallback_existing_topic":
+      return "fallback_existing_topic";
+    case "no_match":
+    default:
+      return "fallback_existing_topic";
+  }
 }
 
 function selectDeliveredRenderer(
@@ -269,7 +295,7 @@ function selectDeliveredRenderer(
   if (preferredModality === "interactive") {
     return {
       modality: "interactive",
-      generator: preferredGenerator === "custom" ? "custom" : "custom",
+      generator: "custom",
       renderer_type: "interactive_renderer",
     };
   }
@@ -277,14 +303,14 @@ function selectDeliveredRenderer(
   if (preferredModality === "video") {
     return {
       modality: "video",
-      generator: preferredGenerator === "sora" ? "sora" : "sora",
+      generator: "sora",
       renderer_type: "video_renderer",
     };
   }
 
   return {
     modality: "text",
-    generator: preferredGenerator === "chatgpt" ? "chatgpt" : "chatgpt",
+    generator: "chatgpt",
     renderer_type: "text_renderer",
   };
 }
@@ -515,12 +541,13 @@ function buildRunMetadata(engineFuel: EngineFuel, runId: string): RunMetadata {
 function buildSceneUpdate(
   topicId: string,
   learningSpace: LearningSpace,
-  isNewTopic: boolean
+  resolutionKind: RouteResolutionKind
 ): MessageRouteResponse["scene_update"] {
   return {
     target_topic_id: topicId,
     camera_destination_topic_id: topicId,
-    arrival_mode: isNewTopic ? "warp" : "focus",
+    arrival_mode:
+      resolutionKind === "created_new_candidate" ? "warp" : "focus",
     learning_space: learningSpace,
   };
 }
@@ -573,7 +600,14 @@ function resolveTopicOutcome(args: {
       topic: createdTopic,
       createdTopic,
       routeTopics: [createdTopic],
-      resolutionKind: "created",
+      resolutionKind: "created_new_candidate",
+      vectorInfo: {
+        top_k_topic_names: [],
+        top_k_topic_ids: [],
+        top_k_similarity_scores: [],
+      },
+      resolvedLabel: createdTopic.name,
+      matchConfidence: 0,
     };
   }
 
@@ -584,7 +618,10 @@ function resolveTopicOutcome(args: {
       topic: matchResult.matchedTopic,
       createdTopic: null,
       routeTopics: existingTopics,
-      resolutionKind: "matched",
+      resolutionKind: "matched_existing",
+      vectorInfo: matchResult.vectorInfo,
+      resolvedLabel: matchResult.resolvedLabel,
+      matchConfidence: matchResult.matchConfidence,
     };
   }
 
@@ -595,7 +632,10 @@ function resolveTopicOutcome(args: {
       topic: createdTopic,
       createdTopic,
       routeTopics: [...existingTopics, createdTopic],
-      resolutionKind: "created",
+      resolutionKind: "created_new_candidate",
+      vectorInfo: matchResult.vectorInfo,
+      resolvedLabel: matchResult.resolvedLabel ?? createdTopic.name,
+      matchConfidence: matchResult.matchConfidence,
     };
   }
 
@@ -607,6 +647,9 @@ function resolveTopicOutcome(args: {
         createdTopic: null,
         routeTopics: existingTopics,
         resolutionKind: "fallback_active_topic",
+        vectorInfo: matchResult.vectorInfo,
+        resolvedLabel: matchResult.resolvedLabel,
+        matchConfidence: matchResult.matchConfidence,
       };
     }
   }
@@ -621,6 +664,9 @@ function resolveTopicOutcome(args: {
       createdTopic: null,
       routeTopics: existingTopics,
       resolutionKind: "fallback_existing_topic",
+      vectorInfo: matchResult.vectorInfo,
+      resolvedLabel: matchResult.resolvedLabel,
+      matchConfidence: matchResult.matchConfidence,
     };
   }
 
@@ -629,6 +675,9 @@ function resolveTopicOutcome(args: {
     createdTopic: null,
     routeTopics: existingTopics,
     resolutionKind: "fallback_existing_topic",
+    vectorInfo: matchResult.vectorInfo,
+    resolvedLabel: matchResult.resolvedLabel,
+    matchConfidence: matchResult.matchConfidence,
   };
 }
 
@@ -679,12 +728,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const { topic, createdTopic, routeTopics, resolutionKind } = topicResolution;
+    const {
+      topic,
+      createdTopic,
+      routeTopics,
+      resolutionKind,
+      vectorInfo: rawVectorInfo,
+      resolvedLabel,
+      matchConfidence,
+    } = topicResolution;
+
     const targetTopicId = topic.id;
 
-    const rawMatchVectorInfo = resolveTopicForMessage(message, existingTopics).vectorInfo;
     const vectorInfo: VectorInfo = normalizeVectorInfoFallback(
-      rawMatchVectorInfo,
+      rawVectorInfo,
       topic,
       Boolean(createdTopic)
     );
@@ -758,7 +815,7 @@ export async function POST(request: Request) {
       modelSignals,
       currentInteractionContext,
       newAttempt,
-      resolutionKind
+      mapResolutionKindForDecision(resolutionKind)
     );
 
     const probePlan =
@@ -821,13 +878,15 @@ export async function POST(request: Request) {
           null,
         planned_probe: deliveredResponse.delivered_probe ?? null,
         resolution_kind: resolutionKind,
+        resolved_label: resolvedLabel,
+        match_confidence: matchConfidence,
       })
     );
 
     const sceneUpdate = buildSceneUpdate(
       targetTopicId,
       learningSpace,
-      Boolean(createdTopic)
+      resolutionKind
     );
 
     const suggestedAction = buildSuggestedAction(

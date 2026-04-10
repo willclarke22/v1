@@ -24,6 +24,8 @@ type TopicBootstrapResponse = {
   error?: string;
 };
 
+type SceneArrivalMode = "warp" | "focus";
+
 function clamp(value: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
 }
@@ -92,6 +94,23 @@ function deriveTopicsFromMessageResponse(
       hasAvailableProbe,
     };
   });
+}
+
+function resolveReturnedTopicId(
+  data: MessageRouteResponse,
+  nextTopics: Topic[] | null
+) {
+  return (
+    data.intervention?.target_topic_id ??
+    data.scene_update?.target_topic_id ??
+    data.result?.engine_fuel?.intervention_mode_decision?.target_topic_id ??
+    nextTopics?.[0]?.id ??
+    null
+  );
+}
+
+function resolveArrivalMode(data: MessageRouteResponse): SceneArrivalMode {
+  return data.scene_update?.arrival_mode === "warp" ? "warp" : "focus";
 }
 
 export default function Home() {
@@ -317,15 +336,16 @@ export default function Home() {
         setServerLearningSpace(null);
       }
 
-      const resolvedTopicId =
-        data.intervention?.target_topic_id ??
-        data.scene_update?.target_topic_id ??
-        data.result?.engine_fuel?.intervention_mode_decision?.target_topic_id ??
-        nextTopics?.[0]?.id ??
-        null;
+      const resolvedTopicId = resolveReturnedTopicId(data, nextTopics);
+      const arrivalMode = resolveArrivalMode(data);
 
       if (resolvedTopicId) {
-        focusTopic(resolvedTopicId);
+        if (arrivalMode === "warp") {
+          setSelectedTopicId(resolvedTopicId);
+          focusTopic(resolvedTopicId);
+        } else {
+          focusTopic(resolvedTopicId);
+        }
       } else if (nextTopics?.length) {
         setSelectedTopicId(nextTopics[0].id);
       }
