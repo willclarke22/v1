@@ -243,24 +243,6 @@ function buildStatusLabel(
   return `${topicLabel} • ${mode === "clarify" ? "Clarify mode" : "Probe mode"}`;
 }
 
-function mapResolutionKindForDecision(
-  resolutionKind: RouteResolutionKind
-): string {
-  switch (resolutionKind) {
-    case "matched_existing":
-      return "matched";
-    case "created_new_candidate":
-      return "created";
-    case "fallback_active_topic":
-      return "fallback_active_topic";
-    case "fallback_existing_topic":
-      return "fallback_existing_topic";
-    case "no_match":
-    default:
-      return "fallback_existing_topic";
-  }
-}
-
 function selectDeliveredRenderer(
   probePlan: ProbePlan
 ): DeliveredRendererSelection {
@@ -815,7 +797,7 @@ export async function POST(request: Request) {
       modelSignals,
       currentInteractionContext,
       newAttempt,
-      mapResolutionKindForDecision(resolutionKind)
+      resolutionKind
     );
 
     const probePlan =
