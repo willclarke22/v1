@@ -40,6 +40,7 @@ const TOO_VAGUE_LABELS = new Set([
   "chapter",
   "textbook",
   "problem",
+  "help",
 ]);
 
 const GENERIC_STARTERS = [
@@ -50,6 +51,46 @@ const GENERIC_STARTERS = [
   "that ",
   "these ",
   "those ",
+];
+
+const CLAUSE_STARTERS = [
+  "how ",
+  "why ",
+  "what ",
+  "when ",
+  "where ",
+  "whether ",
+  "if ",
+  "can ",
+  "could ",
+  "would ",
+  "should ",
+  "is ",
+  "are ",
+  "does ",
+  "do ",
+  "did ",
+  "i need help with ",
+  "help me with ",
+  "help me understand ",
+  "i want to learn about ",
+  "can we go over ",
+  "could we go over ",
+  "walk me through ",
+  "explain ",
+  "can you explain ",
+  "i'm confused about ",
+  "i am confused about ",
+  "i don't understand ",
+  "i dont understand ",
+  "i don't get ",
+  "i dont get ",
+  "the thing i don't get is ",
+  "the thing i dont get is ",
+  "the part i don't understand is ",
+  "the part i dont understand is ",
+  "the part i don't get is ",
+  "the part i dont get is ",
 ];
 
 function normalizeSurface(text: string) {
@@ -143,6 +184,10 @@ function hasFocusMarker(text: string) {
   );
 }
 
+function hasHelpRequestMarker(text: string) {
+  return /\b(i need help with|help me with|help me understand)\b/i.test(text);
+}
+
 function detectIntent(message: string): TopicMessageIntent {
   const m = normalizeSurface(message).toLowerCase();
 
@@ -160,6 +205,8 @@ function detectIntent(message: string): TopicMessageIntent {
     m.includes("i'm confused") ||
     m.includes("i am confused") ||
     m.includes("help me understand") ||
+    m.includes("help me with") ||
+    m.includes("i need help with") ||
     m.includes("struggling with") ||
     m.includes("i don't get it") ||
     m.includes("i dont get it") ||
@@ -221,6 +268,8 @@ function classifySentenceRole(sentence: string): SentenceRole {
     s.includes("i'm confused") ||
     s.includes("i am confused") ||
     s.includes("help me understand") ||
+    s.includes("help me with") ||
+    s.includes("i need help with") ||
     s.includes("struggling with") ||
     s.includes("i don't get it") ||
     s.includes("i dont get it") ||
@@ -308,6 +357,7 @@ function extractFocusedConfusionSpan(sentence: string): string | null {
     /\b(?:mainly|mostly|especially|specifically|particularly)\s+confused about\s+(.+?)[.?!]*$/i,
     /\b(?:the part|the thing)\s+i\s+(?:don't|dont)\s+get\s+(?:is\s+)?(.+?)[.?!]*$/i,
     /\b(?:the part|the thing)\s+i\s+(?:don't|dont)\s+understand\s+(?:is\s+)?(.+?)[.?!]*$/i,
+    /\b(?:i need help with|help me with)\s+(.+?)[.?!]*$/i,
     /\b(?:don't|dont)\s+get\s+(.+?)[.?!]*$/i,
     /\b(?:don't|dont)\s+understand\s+(.+?)[.?!]*$/i,
   ];
@@ -337,11 +387,59 @@ function looksLikeLearnerStateClause(span: string | null) {
     normalized === "i am confused" ||
     normalized === "i m confused" ||
     normalized === "help me understand" ||
+    normalized === "help me with" ||
+    normalized === "i need help with" ||
     normalized === "don t get it" ||
     normalized === "dont get it" ||
     normalized === "don t understand it" ||
     normalized === "dont understand it"
   );
+}
+
+function stripClauseStarter(text: string) {
+  let output = normalizeSurface(text);
+
+  for (const starter of CLAUSE_STARTERS) {
+    if (output.toLowerCase().startsWith(starter)) {
+      output = output.slice(starter.length).trim();
+      break;
+    }
+  }
+
+  return output;
+}
+
+function reduceToHeadConcept(span: string | null) {
+  if (!span) return null;
+
+  let output = normalizeSurface(span);
+
+  output = stripClauseStarter(output);
+
+  output = output
+    .replace(/\bhow\s+(.+?)\s+works?$/i, "$1")
+    .replace(/\bhow\s+(.+?)\s+work$/i, "$1")
+    .replace(/\bthe way\s+(.+?)\s+works?$/i, "$1")
+    .replace(/\bthe part where\s+(.+?)$/i, "$1")
+    .replace(/\bwhat happens when\s+(.+?)$/i, "$1")
+    .replace(/\bwhy\s+(.+?)$/i, "$1")
+    .replace(/\bhow\s+(.+?)$/i, "$1")
+    .replace(/\bthe thing about\s+(.+?)$/i, "$1")
+    .replace(/\bthe idea of\s+(.+?)$/i, "$1")
+    .replace(/\bthe concept of\s+(.+?)$/i, "$1")
+    .trim();
+
+  output = output
+    .replace(/\bworks?$|happens?$|mean(?:s)?$|does$|do$|is$|are$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  output = output
+    .replace(/\bfor me$|\bat all$|\bright now$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return output || null;
 }
 
 function cleanupSpan(span: string | null) {
@@ -369,6 +467,8 @@ function cleanupSpan(span: string | null) {
     .replace(/\bbut I (?:don't|dont) understand\b/i, "")
     .replace(/\s+/g, " ")
     .trim();
+
+  output = reduceToHeadConcept(output);
 
   if (looksLikeLearnerStateClause(output)) {
     return null;
@@ -420,6 +520,50 @@ function scoreSpecificity(label: string | null): TopicSpecificity {
   if (wordCount <= 1) return "broad_but_usable";
   if (wordCount <= 4) return "good";
   return "very_specific";
+}
+
+function isClauseLikeSpan(span: string | null) {
+  if (!span) return true;
+
+  const normalized = normalizeLoose(span);
+  if (!normalized) return true;
+
+  if (CLAUSE_STARTERS.some((starter) => normalized.startsWith(starter.trim()))) {
+    return true;
+  }
+
+  const tokens = tokenize(span);
+  const clauseWords = new Set([
+    "how",
+    "why",
+    "what",
+    "when",
+    "where",
+    "if",
+    "can",
+    "could",
+    "would",
+    "should",
+    "does",
+    "do",
+    "did",
+    "is",
+    "are",
+    "am",
+    "was",
+    "were",
+    "work",
+    "works",
+    "happen",
+    "happens",
+  ]);
+
+  let clauseWordCount = 0;
+  for (const token of tokens) {
+    if (clauseWords.has(token)) clauseWordCount += 1;
+  }
+
+  return clauseWordCount >= 2;
 }
 
 function findReuseCandidate(
@@ -477,7 +621,9 @@ function buildCandidate(
   };
 }
 
-function extractStandaloneConceptCandidate(sentence: string): TopicCandidate | null {
+function extractStandaloneConceptCandidate(
+  sentence: string
+): TopicCandidate | null {
   const normalized = normalizeSurface(sentence);
   const role = classifySentenceRole(normalized);
   const tokens = tokenize(normalized);
@@ -491,6 +637,7 @@ function extractStandaloneConceptCandidate(sentence: string): TopicCandidate | n
   const specificity = scoreSpecificity(label);
 
   if (specificity === "too_vague") return null;
+  if (isClauseLikeSpan(cleaned)) return null;
 
   return buildCandidate(cleaned, normalized, role, null, null, []);
 }
@@ -500,7 +647,7 @@ function extractTailConceptCandidate(sentence: string): TopicCandidate | null {
 
   const tailPatterns: RegExp[] = [
     /(?:learn about|understand|review|study)\s+(.+?)[.?!]*$/i,
-    /(?:confused about|struggling with|help me understand)\s+(.+?)[.?!]*$/i,
+    /(?:confused about|struggling with|help me understand|help me with|i need help with)\s+(.+?)[.?!]*$/i,
   ];
 
   for (const regex of tailPatterns) {
@@ -513,7 +660,7 @@ function extractTailConceptCandidate(sentence: string): TopicCandidate | null {
       classifySentenceRole(normalized),
       null,
       null,
-      []
+      hasHelpRequestMarker(normalized) ? ["focus_target"] : []
     );
 
     if (candidate) return candidate;
@@ -545,6 +692,107 @@ function countSpanMentions(fullMessage: string, span: string) {
   return matches?.length ?? 0;
 }
 
+function spansSubstantiallyOverlap(a: string, b: string) {
+  const aTokens = semanticTokens(a);
+  const bTokens = semanticTokens(b);
+
+  if (!aTokens.length || !bTokens.length) return false;
+
+  const overlap = overlapScore(aTokens, bTokens);
+  if (overlap >= 0.6) return true;
+
+  const aLoose = normalizeLoose(a);
+  const bLoose = normalizeLoose(b);
+
+  return aLoose.includes(bLoose) || bLoose.includes(aLoose);
+}
+
+function choosePreferredOverlappingCandidate(
+  current: TopicCandidate,
+  incoming: TopicCandidate
+) {
+  const currentLabel = canonicalizeLabel(current.span);
+  const incomingLabel = canonicalizeLabel(incoming.span);
+
+  const currentSpecificity = scoreSpecificity(currentLabel);
+  const incomingSpecificity = scoreSpecificity(incomingLabel);
+
+  const currentClauseLike = isClauseLikeSpan(current.span);
+  const incomingClauseLike = isClauseLikeSpan(incoming.span);
+
+  const currentTokens = tokenize(current.span).length;
+  const incomingTokens = tokenize(incoming.span).length;
+
+  const currentFocus = current.qualifiers.includes("focus_target");
+  const incomingFocus = incoming.qualifiers.includes("focus_target");
+
+  if (currentFocus !== incomingFocus) {
+    return incomingFocus ? incoming : current;
+  }
+
+  if (currentClauseLike !== incomingClauseLike) {
+    return incomingClauseLike ? current : incoming;
+  }
+
+  if (
+    currentSpecificity === "too_vague" &&
+    incomingSpecificity !== "too_vague"
+  ) {
+    return incoming;
+  }
+
+  if (
+    incomingSpecificity === "too_vague" &&
+    currentSpecificity !== "too_vague"
+  ) {
+    return current;
+  }
+
+  if (currentTokens !== incomingTokens) {
+    return incomingTokens < currentTokens ? incoming : current;
+  }
+
+  if (current.sourceRole !== incoming.sourceRole) {
+    const priority: Record<SentenceRole, number> = {
+      confusion: 6,
+      comparison: 5,
+      question: 4,
+      request: 3,
+      context: 2,
+      attempt: 1,
+      other: 0,
+    };
+
+    return priority[incoming.sourceRole] > priority[current.sourceRole]
+      ? incoming
+      : current;
+  }
+
+  return incoming;
+}
+
+function dedupeAndGroupCandidates(candidates: TopicCandidate[]) {
+  const grouped: TopicCandidate[] = [];
+
+  for (const candidate of candidates) {
+    const existingIndex = grouped.findIndex((existing) =>
+      spansSubstantiallyOverlap(existing.span, candidate.span)
+    );
+
+    if (existingIndex === -1) {
+      grouped.push(candidate);
+      continue;
+    }
+
+    grouped[existingIndex] = choosePreferredOverlappingCandidate(
+      grouped[existingIndex],
+      candidate
+    );
+  }
+
+  return grouped;
+}
+
 function extractCandidatesFromSentence(sentence: string): TopicCandidate[] {
   const normalized = normalizeSurface(sentence);
   const role = classifySentenceRole(normalized);
@@ -572,7 +820,9 @@ function extractCandidatesFromSentence(sentence: string): TopicCandidate[] {
       "confusion",
       null,
       null,
-      hasFocusMarker(normalized) ? ["focus_target"] : []
+      hasFocusMarker(normalized) || hasHelpRequestMarker(normalized)
+        ? ["focus_target"]
+        : []
     );
     if (focusedCandidate) candidates.push(focusedCandidate);
   }
@@ -585,8 +835,9 @@ function extractCandidatesFromSentence(sentence: string): TopicCandidate[] {
   }> = [
     {
       regex:
-        /^(?:i don't really understand|i dont really understand|i don't understand|i dont understand|i'm confused about|i am confused about|help me understand)\s+(.+?)(?:\s+at all)?[.?!]*$/i,
+        /^(?:i don't really understand|i dont really understand|i don't understand|i dont understand|i'm confused about|i am confused about|help me understand|help me with|i need help with)\s+(.+?)(?:\s+at all)?[.?!]*$/i,
       conceptGroup: 1,
+      qualifiers: ["focus_target"],
     },
     {
       regex:
@@ -766,7 +1017,7 @@ function scoreCandidate(candidate: TopicCandidate, fullMessage: string): number 
   }
 
   if (
-    /\b(?:don't understand|dont understand|confused|don't get it|dont get it)\b/i.test(
+    /\b(?:don't understand|dont understand|confused|don't get it|dont get it|i need help with|help me with)\b/i.test(
       fullMessage
     )
   ) {
@@ -782,6 +1033,10 @@ function scoreCandidate(candidate: TopicCandidate, fullMessage: string): number 
 
   if (looksLikeLearnerStateClause(candidate.span)) {
     score -= 0.6;
+  }
+
+  if (isClauseLikeSpan(candidate.span)) {
+    score -= 0.22;
   }
 
   if (
@@ -820,7 +1075,7 @@ function collectCandidates(message: string): TopicCandidate[] {
     }
   }
 
-  return collected;
+  return dedupeAndGroupCandidates(collected);
 }
 
 function isCreateWorthyBroadLabel(
@@ -873,6 +1128,14 @@ export function runDeterministicTopicLabeling(
   if (specificity === "broad_but_usable") confidence += 0.05;
   if (shouldReuse) confidence += 0.12;
 
+  if (bestCandidate && bestCandidate.qualifiers.includes("focus_target")) {
+    confidence += 0.06;
+  }
+
+  if (conceptSpan && isClauseLikeSpan(conceptSpan)) {
+    confidence -= 0.1;
+  }
+
   confidence = clampTopicConfidence(confidence);
 
   const shouldCreate =
@@ -923,7 +1186,7 @@ export function runDeterministicTopicLabeling(
     diagnostics: {
       reasoning_summary: [
         scoredCandidates.length > 0
-          ? `Generated ${scoredCandidates.length} candidate topic spans.`
+          ? `Generated ${scoredCandidates.length} candidate topic spans after grouping.`
           : "No topic candidates were extracted.",
         conceptSpan
           ? `Selected concept span: ${conceptSpan}.`
@@ -940,7 +1203,9 @@ export function runDeterministicTopicLabeling(
       rejection_reasons:
         specificity === "too_vague"
           ? ["Concept span is too vague for a persistent topic."]
-          : [],
+          : conceptSpan && isClauseLikeSpan(conceptSpan)
+            ? ["Concept span still looks too clause-like for a strong persistent topic label."]
+            : [],
       ambiguity_flags:
         confidence < 0.75
           ? ["low_confidence_labeling"]

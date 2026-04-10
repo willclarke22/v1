@@ -17,7 +17,12 @@ export type TopicMatchResult = {
   matchedTopic: RouteTopic | null;
   vectorInfo: VectorInfo;
   shouldCreateNewTopic: boolean;
-  resolutionKind: "matched_existing" | "created_new_candidate" | "no_match";
+  resolutionKind:
+    | "matched_existing"
+    | "created_new_candidate"
+    | "fallback_active_topic"
+    | "fallback_existing_topic"
+    | "no_match";
   resolvedLabel: string | null;
   matchConfidence: number;
 };
@@ -114,7 +119,8 @@ function mapIntentToFrame(intent: TopicMessageIntent): MessageFrame {
 
 function buildTopicLabelingInput(
   message: string,
-  existingTopics: RouteTopic[]
+  existingTopics: RouteTopic[],
+  activeTopic?: RouteTopic | null
 ): TopicLabelingInput {
   const retrievalCandidates: RetrievalCandidate[] = existingTopics.map((topic) => ({
     topic_id: topic.id,
@@ -124,15 +130,19 @@ function buildTopicLabelingInput(
 
   return {
     raw_message: message,
-    active_topic_id: null,
-    active_topic_name: null,
+    active_topic_id: activeTopic?.id ?? null,
+    active_topic_name: activeTopic?.name ?? null,
     recent_topic_names: existingTopics.slice(-8).map((topic) => topic.name),
     retrieval_candidates: retrievalCandidates,
   };
 }
 
-function buildLabelingResult(message: string, existingTopics: RouteTopic[]) {
-  const input = buildTopicLabelingInput(message, existingTopics);
+function buildLabelingResult(
+  message: string,
+  existingTopics: RouteTopic[],
+  activeTopic?: RouteTopic | null
+) {
+  const input = buildTopicLabelingInput(message, existingTopics, activeTopic);
   return runDeterministicTopicLabeling(input);
 }
 
@@ -157,9 +167,10 @@ export function inferKeywordsFromMessage(message: string): string[] {
     labeling.topic_decision.canonical_label ??
     message;
 
-  return dedupe(
-    semanticTokenize(source).filter((token) => token.length > 2)
-  ).slice(0, 8);
+  return dedupe(semanticTokenize(source).filter((token) => token.length > 2)).slice(
+    0,
+    8
+  );
 }
 
 function computeLocalTopicSimilarity(
@@ -186,10 +197,7 @@ function computeLocalTopicSimilarity(
 
   const tokenScore = overlapScore(candidateTokens, topicTokens);
 
-  const score =
-    exactNameMatch * 1.0 +
-    containedMatch * 0.82 +
-    tokenScore * 0.78;
+  const score = exactNameMatch * 1.0 + containedMatch * 0.82 + tokenScore * 0.78;
 
   return clamp(score, 0, 1);
 }
@@ -327,8 +335,29 @@ export async function loadRouteTopics(): Promise<RouteTopic[]> {
   });
 }
 
-export function scoreTopicMatch(message: string, topic: RouteTopic): number {
-  const labeling = buildLabelingResult(message, []);
+function isStrongDeterministicLabel(
+  labeling: ReturnType<typeof runDeterministicTopicLabeling>
+) {
+  return (
+    Boolean(labeling.topic_decision.canonical_label) &&
+    labeling.topic_decision.topic_specificity !== "too_vague" &&
+    labeling.topic_decision.confidence >= 0.62
+  );
+}
+
+function shouldAllowWeakFallbackToExistingTopic(
+  labeling: ReturnType<typeof runDeterministicTopicLabeling>
+) {
+  return (
+    !labeling.topic_decision.should_create_new_topic &&
+    labeling.topic_decision.topic_specificity === "too_vague"
+  );
+}
+
+function scoreTopicMatchFromLabeling(
+  labeling: ReturnType<typeof runDeterministicTopicLabeling>,
+  topic: RouteTopic
+): number {
   const candidateLabel = labeling.topic_decision.canonical_label;
   const conceptSpan = labeling.interpretation.concept_span;
 
@@ -343,62 +372,124 @@ export function scoreTopicMatch(message: string, topic: RouteTopic): number {
       : 0;
 
   const confidenceBonus = labeling.topic_decision.confidence * 0.08;
+
   const vaguePenalty =
     labeling.topic_decision.topic_specificity === "too_vague" ? 0.12 : 0;
 
-  return clamp(baseScore + frameBonus + confidenceBonus - vaguePenalty, 0, 1);
+  const activeTopicReferenceBonus =
+    labeling.interpretation.references_active_topic ? 0.08 : 0;
+
+  return clamp(
+    baseScore + frameBonus + confidenceBonus + activeTopicReferenceBonus - vaguePenalty,
+    0,
+    1
+  );
 }
 
-const REUSE_TOPIC_THRESHOLD = 0.56;
+export function scoreTopicMatch(message: string, topic: RouteTopic): number {
+  const labeling = buildLabelingResult(message, []);
+  return scoreTopicMatchFromLabeling(labeling, topic);
+}
+
+const STRONG_REUSE_TOPIC_THRESHOLD = 0.62;
+const WEAK_REUSE_TOPIC_THRESHOLD = 0.5;
+const ACTIVE_TOPIC_FALLBACK_THRESHOLD = 0.44;
 
 export function resolveTopicForMessage(
   message: string,
-  existingTopics: RouteTopic[]
+  existingTopics: RouteTopic[],
+  activeTopic?: RouteTopic | null
 ): TopicMatchResult {
-  const labeling = buildLabelingResult(message, existingTopics);
+  const labeling = buildLabelingResult(message, existingTopics, activeTopic);
+
+  const emptyVectorInfo: VectorInfo = {
+    top_k_topic_names: [],
+    top_k_topic_ids: [],
+    top_k_similarity_scores: [],
+  };
 
   if (!existingTopics.length) {
     return {
       matchedTopic: null,
-      vectorInfo: {
-        top_k_topic_names: [],
-        top_k_topic_ids: [],
-        top_k_similarity_scores: [],
-      },
+      vectorInfo: emptyVectorInfo,
       shouldCreateNewTopic: labeling.topic_decision.should_create_new_topic,
       resolutionKind: labeling.topic_decision.should_create_new_topic
         ? "created_new_candidate"
         : "no_match",
       resolvedLabel: labeling.topic_decision.canonical_label ?? null,
-      matchConfidence: 0,
+      matchConfidence: labeling.topic_decision.confidence,
     };
   }
 
   const scored = existingTopics
     .map((topic) => ({
       topic,
-      similarity: scoreTopicMatch(message, topic),
+      similarity: scoreTopicMatchFromLabeling(labeling, topic),
     }))
     .sort((a, b) => b.similarity - a.similarity);
 
   const best = scored[0] ?? null;
   const bestScore = best?.similarity ?? 0;
+  const vectorInfo = buildVectorInfoFromScoredTopics(scored);
 
-  const matchedTopic =
-    best && bestScore >= REUSE_TOPIC_THRESHOLD ? best.topic : null;
+  const strongLabel = isStrongDeterministicLabel(labeling);
+  const weakFallbackAllowed = shouldAllowWeakFallbackToExistingTopic(labeling);
 
-  const shouldCreateNewTopic =
-    !matchedTopic && labeling.topic_decision.should_create_new_topic;
+  if (best && strongLabel && bestScore >= STRONG_REUSE_TOPIC_THRESHOLD) {
+    return {
+      matchedTopic: best.topic,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind: "matched_existing",
+      resolvedLabel: labeling.topic_decision.canonical_label ?? best.topic.name,
+      matchConfidence: bestScore,
+    };
+  }
+
+  if (best && weakFallbackAllowed && bestScore >= WEAK_REUSE_TOPIC_THRESHOLD) {
+    return {
+      matchedTopic: best.topic,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind: "fallback_existing_topic",
+      resolvedLabel: labeling.topic_decision.canonical_label ?? best.topic.name,
+      matchConfidence: bestScore,
+    };
+  }
+
+  if (
+    activeTopic &&
+    !labeling.topic_decision.should_create_new_topic &&
+    best &&
+    best.topic.id === activeTopic.id &&
+    bestScore >= ACTIVE_TOPIC_FALLBACK_THRESHOLD
+  ) {
+    return {
+      matchedTopic: activeTopic,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind: "fallback_active_topic",
+      resolvedLabel: labeling.topic_decision.canonical_label ?? activeTopic.name,
+      matchConfidence: bestScore,
+    };
+  }
+
+  if (labeling.topic_decision.should_create_new_topic) {
+    return {
+      matchedTopic: null,
+      vectorInfo,
+      shouldCreateNewTopic: true,
+      resolutionKind: "created_new_candidate",
+      resolvedLabel: labeling.topic_decision.canonical_label ?? null,
+      matchConfidence: labeling.topic_decision.confidence,
+    };
+  }
 
   return {
-    matchedTopic,
-    vectorInfo: buildVectorInfoFromScoredTopics(scored),
-    shouldCreateNewTopic,
-    resolutionKind: matchedTopic
-      ? "matched_existing"
-      : shouldCreateNewTopic
-        ? "created_new_candidate"
-        : "no_match",
+    matchedTopic: null,
+    vectorInfo,
+    shouldCreateNewTopic: false,
+    resolutionKind: "no_match",
     resolvedLabel: labeling.topic_decision.canonical_label ?? null,
     matchConfidence: bestScore,
   };

@@ -442,10 +442,7 @@ function adaptLearningSpaceToContract(
           topic.label ??
           fallbackTopic?.name ??
           "Untitled Topic",
-        position:
-          topic.position ??
-          fallbackTopic?.position ??
-          [0, 0, 0],
+        position: topic.position ?? fallbackTopic?.position ?? [0, 0, 0],
         render_state: {
           radius: topic.render_state?.radius ?? 1,
           surface_noise: topic.render_state?.surface_noise ?? 0,
@@ -454,9 +451,7 @@ function adaptLearningSpaceToContract(
           is_star: topic.render_state?.is_star ?? false,
         },
         satellite_count:
-          topic.satellite_count ??
-          topic.satellites?.length ??
-          0,
+          topic.satellite_count ?? topic.satellites?.length ?? 0,
         satellites: (topic.satellites ?? []).map((satellite, satelliteIndex) => ({
           satellite_id:
             satellite.satellite_id ??
@@ -593,14 +588,19 @@ function resolveTopicOutcome(args: {
     };
   }
 
-  const matchResult = resolveTopicForMessage(message, existingTopics);
+  const activeTopic =
+    activeTopicId != null
+      ? existingTopics.find((topic) => topic.id === activeTopicId) ?? null
+      : null;
+
+  const matchResult = resolveTopicForMessage(message, existingTopics, activeTopic);
 
   if (matchResult.matchedTopic) {
     return {
       topic: matchResult.matchedTopic,
       createdTopic: null,
       routeTopics: existingTopics,
-      resolutionKind: "matched_existing",
+      resolutionKind: matchResult.resolutionKind,
       vectorInfo: matchResult.vectorInfo,
       resolvedLabel: matchResult.resolvedLabel,
       matchConfidence: matchResult.matchConfidence,
@@ -621,19 +621,16 @@ function resolveTopicOutcome(args: {
     };
   }
 
-  if (activeTopicId) {
-    const activeTopic = existingTopics.find((topic) => topic.id === activeTopicId);
-    if (activeTopic) {
-      return {
-        topic: activeTopic,
-        createdTopic: null,
-        routeTopics: existingTopics,
-        resolutionKind: "fallback_active_topic",
-        vectorInfo: matchResult.vectorInfo,
-        resolvedLabel: matchResult.resolvedLabel,
-        matchConfidence: matchResult.matchConfidence,
-      };
-    }
+  if (activeTopic) {
+    return {
+      topic: activeTopic,
+      createdTopic: null,
+      routeTopics: existingTopics,
+      resolutionKind: "fallback_active_topic",
+      vectorInfo: matchResult.vectorInfo,
+      resolvedLabel: matchResult.resolvedLabel ?? activeTopic.name,
+      matchConfidence: matchResult.matchConfidence,
+    };
   }
 
   const bestVectorTopicId = matchResult.vectorInfo.top_k_topic_ids[0];
@@ -647,7 +644,7 @@ function resolveTopicOutcome(args: {
       routeTopics: existingTopics,
       resolutionKind: "fallback_existing_topic",
       vectorInfo: matchResult.vectorInfo,
-      resolvedLabel: matchResult.resolvedLabel,
+      resolvedLabel: matchResult.resolvedLabel ?? bestVectorTopic.name,
       matchConfidence: matchResult.matchConfidence,
     };
   }
@@ -658,7 +655,7 @@ function resolveTopicOutcome(args: {
     routeTopics: existingTopics,
     resolutionKind: "fallback_existing_topic",
     vectorInfo: matchResult.vectorInfo,
-    resolvedLabel: matchResult.resolvedLabel,
+    resolvedLabel: matchResult.resolvedLabel ?? existingTopics[0]?.name ?? null,
     matchConfidence: matchResult.matchConfidence,
   };
 }
