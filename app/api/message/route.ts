@@ -405,16 +405,31 @@ function buildDeliveredResponse(
 }
 
 function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
-  return updatedTopics.map((topic) => ({
-    topic_id: topic.id,
-    topic_name: topic.name,
-    topic_learning_score: topic.learningScore,
-    topic_confusion_average: topic.confusion,
-    topic_insight_average: topic.insight,
-    topic_message_count: topic.messageCount ?? 0,
-    topic_last_update: topic.lastUpdated ?? nowIso(),
-    topic_centroid: topic.position,
-  }));
+  return updatedTopics.map((topic) => {
+    const topicWithOptionalMetrics = topic as RouteTopic & {
+      learningVelocity?: number;
+      noveltyScore?: number;
+      difficulty?: number;
+      decayRate?: number;
+      linkThreshold?: number;
+    };
+
+    return {
+      topic_id: topic.id,
+      topic_name: topic.name,
+      topic_learning_score: topic.learningScore,
+      topic_confusion_average: topic.confusion,
+      topic_insight_average: topic.insight,
+      topic_learning_velocity: topicWithOptionalMetrics.learningVelocity ?? 0,
+      topic_novelty_score: topicWithOptionalMetrics.noveltyScore ?? 0,
+      topic_difficulty: topicWithOptionalMetrics.difficulty ?? 0.5,
+      topic_decay_rate: topicWithOptionalMetrics.decayRate ?? 0.1,
+      topic_link_threshold: topicWithOptionalMetrics.linkThreshold ?? 0.5,
+      topic_message_count: topic.messageCount ?? 0,
+      topic_last_update: topic.lastUpdated ?? nowIso(),
+      topic_centroid: topic.position,
+    };
+  });
 }
 
 function buildPreviousModeOutcome(
