@@ -105,6 +105,19 @@ type RouteResolutionKind =
   | "fallback_existing_topic"
   | "no_match";
 
+type TopicLabelingMode = "deterministic_only" | "deterministic_plus_llm";
+
+type TopicResolutionDebug = {
+  topic_labeling_mode: TopicLabelingMode;
+  llm_fallback_allowed_by_mode: boolean;
+  llm_fallback_recommended_by_policy: boolean;
+  llm_fallback_attempted: boolean;
+  llm_fallback_used: boolean;
+  resolution_kind: RouteResolutionKind;
+  resolved_label: string | null;
+  match_confidence: number;
+};
+
 type TopicResolutionOutcome = {
   topic: RouteTopic;
   createdTopic: RouteTopic | null;
@@ -114,6 +127,7 @@ type TopicResolutionOutcome = {
   resolvedLabel: string | null;
   matchConfidence: number;
   usedLLMFallback: boolean;
+  debug: TopicResolutionDebug;
 };
 
 function normalizeRecentTurns(body: MessageRouteBody) {
@@ -655,12 +669,25 @@ function adaptLearningSpaceToContract(
   };
 }
 
+function getTopicLabelingMode(): TopicLabelingMode {
+  const raw = process.env.MYWAY_TOPIC_LABELING_MODE?.trim().toLowerCase();
+
+  if (raw === "deterministic_only") {
+    return "deterministic_only";
+  }
+
+  return "deterministic_plus_llm";
+}
+
 async function resolveTopicOutcome(args: {
   existingTopics: RouteTopic[];
   activeTopicId?: string | null;
   message: string;
 }): Promise<TopicResolutionOutcome | null> {
   const { existingTopics, activeTopicId, message } = args;
+  const topicLabelingMode = getTopicLabelingMode();
+  const llmFallbackAllowedByMode =
+    topicLabelingMode === "deterministic_plus_llm";
 
   if (existingTopics.length === 0) {
     const createdTopic = buildSeededTopicFromMessage(message, existingTopics);
@@ -678,6 +705,16 @@ async function resolveTopicOutcome(args: {
       resolvedLabel: createdTopic.name,
       matchConfidence: 0,
       usedLLMFallback: false,
+      debug: {
+        topic_labeling_mode: topicLabelingMode,
+        llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+        llm_fallback_recommended_by_policy: false,
+        llm_fallback_attempted: false,
+        llm_fallback_used: false,
+        resolution_kind: "created_new_candidate",
+        resolved_label: createdTopic.name,
+        match_confidence: 0,
+      },
     };
   }
 
@@ -695,10 +732,13 @@ async function resolveTopicOutcome(args: {
   const deterministicSnapshot =
     buildDeterministicTopicResolutionSnapshot(deterministicMatch);
 
-  const shouldEscalate = shouldTryLLMTopicResolutionFallback({
+  const llmFallbackRecommendedByPolicy = shouldTryLLMTopicResolutionFallback({
     ...deterministicSnapshot,
     existingTopicsCount: existingTopics.length,
   });
+
+  const shouldEscalate =
+    llmFallbackAllowedByMode && llmFallbackRecommendedByPolicy;
 
   if (!shouldEscalate) {
     if (deterministicMatch.matchedTopic) {
@@ -711,6 +751,16 @@ async function resolveTopicOutcome(args: {
         resolvedLabel: deterministicMatch.resolvedLabel,
         matchConfidence: deterministicMatch.matchConfidence,
         usedLLMFallback: false,
+        debug: {
+          topic_labeling_mode: topicLabelingMode,
+          llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+          llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+          llm_fallback_attempted: false,
+          llm_fallback_used: false,
+          resolution_kind: deterministicMatch.resolutionKind,
+          resolved_label: deterministicMatch.resolvedLabel,
+          match_confidence: deterministicMatch.matchConfidence,
+        },
       };
     }
 
@@ -726,6 +776,16 @@ async function resolveTopicOutcome(args: {
         resolvedLabel: deterministicMatch.resolvedLabel ?? createdTopic.name,
         matchConfidence: deterministicMatch.matchConfidence,
         usedLLMFallback: false,
+        debug: {
+          topic_labeling_mode: topicLabelingMode,
+          llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+          llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+          llm_fallback_attempted: false,
+          llm_fallback_used: false,
+          resolution_kind: "created_new_candidate",
+          resolved_label: deterministicMatch.resolvedLabel ?? createdTopic.name,
+          match_confidence: deterministicMatch.matchConfidence,
+        },
       };
     }
 
@@ -739,6 +799,16 @@ async function resolveTopicOutcome(args: {
         resolvedLabel: deterministicMatch.resolvedLabel ?? activeTopic.name,
         matchConfidence: deterministicMatch.matchConfidence,
         usedLLMFallback: false,
+        debug: {
+          topic_labeling_mode: topicLabelingMode,
+          llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+          llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+          llm_fallback_attempted: false,
+          llm_fallback_used: false,
+          resolution_kind: "fallback_active_topic",
+          resolved_label: deterministicMatch.resolvedLabel ?? activeTopic.name,
+          match_confidence: deterministicMatch.matchConfidence,
+        },
       };
     }
 
@@ -756,6 +826,17 @@ async function resolveTopicOutcome(args: {
         resolvedLabel: deterministicMatch.resolvedLabel ?? bestVectorTopic.name,
         matchConfidence: deterministicMatch.matchConfidence,
         usedLLMFallback: false,
+        debug: {
+          topic_labeling_mode: topicLabelingMode,
+          llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+          llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+          llm_fallback_attempted: false,
+          llm_fallback_used: false,
+          resolution_kind: "fallback_existing_topic",
+          resolved_label:
+            deterministicMatch.resolvedLabel ?? bestVectorTopic.name,
+          match_confidence: deterministicMatch.matchConfidence,
+        },
       };
     }
 
@@ -769,6 +850,17 @@ async function resolveTopicOutcome(args: {
         deterministicMatch.resolvedLabel ?? existingTopics[0]?.name ?? null,
       matchConfidence: deterministicMatch.matchConfidence,
       usedLLMFallback: false,
+      debug: {
+        topic_labeling_mode: topicLabelingMode,
+        llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+        llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+        llm_fallback_attempted: false,
+        llm_fallback_used: false,
+        resolution_kind: "fallback_existing_topic",
+        resolved_label:
+          deterministicMatch.resolvedLabel ?? existingTopics[0]?.name ?? null,
+        match_confidence: deterministicMatch.matchConfidence,
+      },
     };
   }
 
@@ -796,6 +888,16 @@ async function resolveTopicOutcome(args: {
           resolvedLabel: llmDecision.canonical_label ?? matchedTopic.name,
           matchConfidence: llmDecision.confidence,
           usedLLMFallback: true,
+          debug: {
+            topic_labeling_mode: topicLabelingMode,
+            llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+            llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+            llm_fallback_attempted: true,
+            llm_fallback_used: true,
+            resolution_kind: "matched_existing",
+            resolved_label: llmDecision.canonical_label ?? matchedTopic.name,
+            match_confidence: llmDecision.confidence,
+          },
         };
       }
     }
@@ -810,6 +912,16 @@ async function resolveTopicOutcome(args: {
         resolvedLabel: llmDecision.canonical_label ?? activeTopic.name,
         matchConfidence: llmDecision.confidence,
         usedLLMFallback: true,
+        debug: {
+          topic_labeling_mode: topicLabelingMode,
+          llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+          llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+          llm_fallback_attempted: true,
+          llm_fallback_used: true,
+          resolution_kind: "fallback_active_topic",
+          resolved_label: llmDecision.canonical_label ?? activeTopic.name,
+          match_confidence: llmDecision.confidence,
+        },
       };
     }
 
@@ -833,6 +945,16 @@ async function resolveTopicOutcome(args: {
         resolvedLabel: llmDecision.canonical_label,
         matchConfidence: llmDecision.confidence,
         usedLLMFallback: true,
+        debug: {
+          topic_labeling_mode: topicLabelingMode,
+          llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+          llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+          llm_fallback_attempted: true,
+          llm_fallback_used: true,
+          resolution_kind: "created_new_candidate",
+          resolved_label: llmDecision.canonical_label,
+          match_confidence: llmDecision.confidence,
+        },
       };
     }
   }
@@ -847,6 +969,16 @@ async function resolveTopicOutcome(args: {
       resolvedLabel: deterministicMatch.resolvedLabel,
       matchConfidence: deterministicMatch.matchConfidence,
       usedLLMFallback: false,
+      debug: {
+        topic_labeling_mode: topicLabelingMode,
+        llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+        llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+        llm_fallback_attempted: true,
+        llm_fallback_used: false,
+        resolution_kind: deterministicMatch.resolutionKind,
+        resolved_label: deterministicMatch.resolvedLabel,
+        match_confidence: deterministicMatch.matchConfidence,
+      },
     };
   }
 
@@ -862,6 +994,16 @@ async function resolveTopicOutcome(args: {
       resolvedLabel: deterministicMatch.resolvedLabel ?? createdTopic.name,
       matchConfidence: deterministicMatch.matchConfidence,
       usedLLMFallback: false,
+      debug: {
+        topic_labeling_mode: topicLabelingMode,
+        llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+        llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+        llm_fallback_attempted: true,
+        llm_fallback_used: false,
+        resolution_kind: "created_new_candidate",
+        resolved_label: deterministicMatch.resolvedLabel ?? createdTopic.name,
+        match_confidence: deterministicMatch.matchConfidence,
+      },
     };
   }
 
@@ -875,6 +1017,16 @@ async function resolveTopicOutcome(args: {
       resolvedLabel: deterministicMatch.resolvedLabel ?? activeTopic.name,
       matchConfidence: deterministicMatch.matchConfidence,
       usedLLMFallback: false,
+      debug: {
+        topic_labeling_mode: topicLabelingMode,
+        llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+        llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+        llm_fallback_attempted: true,
+        llm_fallback_used: false,
+        resolution_kind: "fallback_active_topic",
+        resolved_label: deterministicMatch.resolvedLabel ?? activeTopic.name,
+        match_confidence: deterministicMatch.matchConfidence,
+      },
     };
   }
 
@@ -892,6 +1044,16 @@ async function resolveTopicOutcome(args: {
       resolvedLabel: deterministicMatch.resolvedLabel ?? bestVectorTopic.name,
       matchConfidence: deterministicMatch.matchConfidence,
       usedLLMFallback: false,
+      debug: {
+        topic_labeling_mode: topicLabelingMode,
+        llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+        llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+        llm_fallback_attempted: true,
+        llm_fallback_used: false,
+        resolution_kind: "fallback_existing_topic",
+        resolved_label: deterministicMatch.resolvedLabel ?? bestVectorTopic.name,
+        match_confidence: deterministicMatch.matchConfidence,
+      },
     };
   }
 
@@ -905,6 +1067,17 @@ async function resolveTopicOutcome(args: {
       deterministicMatch.resolvedLabel ?? existingTopics[0]?.name ?? null,
     matchConfidence: deterministicMatch.matchConfidence,
     usedLLMFallback: false,
+    debug: {
+      topic_labeling_mode: topicLabelingMode,
+      llm_fallback_allowed_by_mode: llmFallbackAllowedByMode,
+      llm_fallback_recommended_by_policy: llmFallbackRecommendedByPolicy,
+      llm_fallback_attempted: true,
+      llm_fallback_used: false,
+      resolution_kind: "fallback_existing_topic",
+      resolved_label:
+        deterministicMatch.resolvedLabel ?? existingTopics[0]?.name ?? null,
+      match_confidence: deterministicMatch.matchConfidence,
+    },
   };
 }
 
@@ -964,6 +1137,7 @@ export async function POST(request: Request) {
       resolvedLabel,
       matchConfidence,
       usedLLMFallback,
+      debug: topicResolutionDebug,
     } = topicResolution;
 
     const targetTopicId = topic.id;
@@ -1109,6 +1283,7 @@ export async function POST(request: Request) {
         resolved_label: resolvedLabel,
         match_confidence: matchConfidence,
         used_llm_topic_fallback: usedLLMFallback,
+        topic_resolution_debug: topicResolutionDebug,
       })
     );
 
@@ -1157,7 +1332,9 @@ export async function POST(request: Request) {
       topicJson,
     });
 
-    const response: MessageRouteResponse = {
+    const response: MessageRouteResponse & {
+      topic_resolution_debug: TopicResolutionDebug;
+    } = {
       result,
       scene_update: sceneUpdate,
       intervention: {
@@ -1168,6 +1345,7 @@ export async function POST(request: Request) {
         status_label: statusLabel,
         suggested_action: suggestedAction,
       },
+      topic_resolution_debug: topicResolutionDebug,
     };
 
     return NextResponse.json(response);
