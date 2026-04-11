@@ -767,46 +767,47 @@ function mapRowsToTopics(
   return rows.map((row, index) => {
     const fallbackTopic = mockTopics[index % mockTopics.length];
 
-    const position = isPosition((row as { topic_centroid?: unknown }).topic_centroid)
-      ? ((row as { topic_centroid: [number, number, number] }).topic_centroid)
+    const rowWithTopicFields = row as unknown as {
+      topic_id?: string;
+      topic_name?: string;
+      active_diagnosis?: unknown;
+      suggested_next_step?: string | null;
+      topic_confusion_average?: number | null;
+      topic_insight_average?: number | null;
+      topic_learning_score?: number | null;
+      topic_message_count?: number | null;
+      topic_last_update?: string | null;
+      topic_centroid?: unknown;
+    };
+
+    const position = isPosition(rowWithTopicFields.topic_centroid)
+      ? rowWithTopicFields.topic_centroid
       : fallbackTopic.position;
 
     return {
       ...fallbackTopic,
-      id:
-        (row as { topic_id?: string }).topic_id ??
-        fallbackTopic.id ??
-        makeId("topic"),
-      name:
-        (row as { topic_name?: string }).topic_name?.trim() ||
-        fallbackTopic.name,
+      id: rowWithTopicFields.topic_id ?? fallbackTopic.id ?? makeId("topic"),
+      name: rowWithTopicFields.topic_name?.trim() || fallbackTopic.name,
       diagnosis: normalizeDiagnosis(
-        (row as { active_diagnosis?: unknown }).active_diagnosis ??
-          fallbackTopic.diagnosis
+        rowWithTopicFields.active_diagnosis ?? fallbackTopic.diagnosis
       ),
       nextStep:
-        (row as { suggested_next_step?: string | null }).suggested_next_step?.trim() ||
-        fallbackTopic.nextStep,
+        rowWithTopicFields.suggested_next_step?.trim() || fallbackTopic.nextStep,
       confusion: clamp(
         Number(
-          (row as { topic_confusion_average?: number | null })
-            .topic_confusion_average ?? fallbackTopic.confusion
+          rowWithTopicFields.topic_confusion_average ?? fallbackTopic.confusion
         ),
         0,
         1
       ),
       insight: clamp(
-        Number(
-          (row as { topic_insight_average?: number | null }).topic_insight_average ??
-            fallbackTopic.insight
-        ),
+        Number(rowWithTopicFields.topic_insight_average ?? fallbackTopic.insight),
         0,
         1
       ),
       learningScore: clamp(
         Number(
-          (row as { topic_learning_score?: number | null }).topic_learning_score ??
-            fallbackTopic.learningScore
+          rowWithTopicFields.topic_learning_score ?? fallbackTopic.learningScore
         ),
         0,
         1
@@ -815,14 +816,12 @@ function mapRowsToTopics(
       scale: fallbackTopic.scale ?? 1,
       messageCount:
         Number(
-          (row as { topic_message_count?: number | null }).topic_message_count ??
+          rowWithTopicFields.topic_message_count ??
             fallbackTopic.messageCount ??
             0
         ) || 0,
       lastUpdated:
-        (row as { topic_last_update?: string | null }).topic_last_update ??
-        fallbackTopic.lastUpdated ??
-        null,
+        rowWithTopicFields.topic_last_update ?? fallbackTopic.lastUpdated ?? null,
       hasAvailableProbe: false,
     } as RouteTopic;
   });
