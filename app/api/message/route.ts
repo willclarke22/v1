@@ -635,18 +635,23 @@ function adaptLearningSpaceToContract(
         })),
       };
     }),
-    clusters: (rawLearningSpace.clusters ?? []).map((cluster, index) => ({
-      cluster_id: cluster.cluster_id ?? `cluster-${index}`,
-      label: cluster.label ?? `Cluster ${index + 1}`,
-      cluster_centroid:
-        Array.isArray(cluster.cluster_centroid) &&
-        cluster.cluster_centroid.length === 3
-          ? (cluster.cluster_centroid as [number, number, number])
-          : [0, 0, 0],
-      member_topic_ids: Array.isArray(cluster.member_topic_ids)
-        ? cluster.member_topic_ids
-        : [],
-    })),
+    clusters: (rawLearningSpace.clusters ?? []).map((cluster, index) => {
+      const resolvedClusterName = cluster.label ?? `Cluster ${index + 1}`;
+
+      return {
+        cluster_id: cluster.cluster_id ?? `cluster-${index}`,
+        cluster_name: resolvedClusterName,
+        label: resolvedClusterName,
+        cluster_centroid:
+          Array.isArray(cluster.cluster_centroid) &&
+          cluster.cluster_centroid.length === 3
+            ? (cluster.cluster_centroid as [number, number, number])
+            : [0, 0, 0],
+        member_topic_ids: Array.isArray(cluster.member_topic_ids)
+          ? cluster.member_topic_ids
+          : [],
+      };
+    }),
   };
 }
 
