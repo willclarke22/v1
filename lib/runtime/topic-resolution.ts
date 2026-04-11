@@ -832,12 +832,12 @@ export async function loadRouteTopics(): Promise<RouteTopic[]> {
     const rows = await getLatestTopicState();
     const mapped = mapRowsToTopics(rows);
 
-    if (mapped.length > 0) {
-      return mapped;
-    }
+    return mapped;
   } catch (error) {
-    console.error("Failed to read topic_state, falling back to mock topics:", error);
+    console.error(
+      "Failed to read topic_state in loadRouteTopics; returning empty topic list:",
+      error
+    );
+    return [];
   }
-
-  return mockTopics as RouteTopic[];
 }
