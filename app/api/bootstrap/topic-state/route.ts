@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getLatestTopicState } from "@/lib/persistence/read";
-import { mockTopics } from "@/lib/mock-topics";
 import type { DiagnosisType } from "@/types/contracts";
 import type { Topic } from "@/types/topic";
 
@@ -43,58 +42,74 @@ function getCreatedAt(row: unknown): string | null {
   return null;
 }
 
+function getTopicJson(row: unknown): Record<string, unknown> {
+  if (
+    row &&
+    typeof row === "object" &&
+    "topic_json" in row &&
+    row.topic_json &&
+    typeof row.topic_json === "object"
+  ) {
+    return row.topic_json as Record<string, unknown>;
+  }
+
+  return {};
+}
+
+function getLearningSpaceTopicPosition(
+  topicJson: Record<string, unknown>
+): [number, number, number] | null {
+  if (
+    "learning_space_topic" in topicJson &&
+    topicJson.learning_space_topic &&
+    typeof topicJson.learning_space_topic === "object"
+  ) {
+    const learningSpaceTopic = topicJson.learning_space_topic as Record<
+      string,
+      unknown
+    >;
+
+    if (isPosition(learningSpaceTopic.position)) {
+      return learningSpaceTopic.position;
+    }
+  }
+
+  return null;
+}
+
 function mapRowsToTopics(
   rows: Awaited<ReturnType<typeof getLatestTopicState>>
 ): Topic[] {
   return rows.map((row, index) => {
-    const fallbackMock =
-      mockTopics.find((topic) => topic.id === row.topic_id) ??
-      mockTopics[index % Math.max(mockTopics.length, 1)];
+    const topicJson = getTopicJson(row);
 
-    const topicJson =
-      row.topic_json && typeof row.topic_json === "object" ? row.topic_json : {};
-
-    const maybeNextStep =
-      typeof topicJson.next_step === "string"
+    const nextStep =
+      typeof topicJson.next_step === "string" && topicJson.next_step.trim().length > 0
         ? topicJson.next_step
         : typeof row.next_step === "string" && row.next_step.trim().length > 0
           ? row.next_step
-          : fallbackMock?.nextStep ?? "Continue learning";
+          : "Continue learning";
 
-    const positionFromJson =
-      topicJson &&
-      typeof topicJson === "object" &&
-      "learning_space_topic" in topicJson &&
-      topicJson.learning_space_topic &&
-      typeof topicJson.learning_space_topic === "object" &&
-      "position" in topicJson.learning_space_topic
-        ? (topicJson.learning_space_topic as { position?: unknown }).position
-        : null;
-
-    const position = isPosition(positionFromJson)
-      ? positionFromJson
-      : fallbackMock?.position ?? [0, 0, 0];
+    const position =
+      getLearningSpaceTopicPosition(topicJson) ??
+      (isPosition((row as { topic_centroid?: unknown }).topic_centroid)
+        ? ((row as { topic_centroid: [number, number, number] }).topic_centroid)
+        : [index * 2.2, 0, 0]);
 
     return {
       id: row.topic_id,
       name: row.topic_name,
-      diagnosis: normalizeDiagnosis(
-        row.diagnosis ??
-          (fallbackMock as { diagnosis?: unknown } | undefined)?.diagnosis
-      ),
-      nextStep: maybeNextStep,
-      confusion: clamp(row.confusion ?? fallbackMock?.confusion ?? 0.5),
-      insight: clamp(row.insight ?? fallbackMock?.insight ?? 0.5),
-      learningScore: clamp(
-        row.learning_score ?? fallbackMock?.learningScore ?? 0.5
-      ),
+      diagnosis: normalizeDiagnosis(row.diagnosis),
+      nextStep,
+      confusion: clamp(row.confusion ?? 0.5),
+      insight: clamp(row.insight ?? 0.5),
+      learningScore: clamp(row.learning_score ?? 0.5),
       position,
-      scale: fallbackMock?.scale,
-      messageCount: 1,
+      scale: 1,
+      messageCount:
+        typeof row.topic_message_count === "number" ? row.topic_message_count : 0,
       lastUpdated:
-        typeof row.updated_at === "string"
-          ? row.updated_at
-          : getCreatedAt(row),
+        typeof row.updated_at === "string" ? row.updated_at : getCreatedAt(row),
       hasAvailableProbe: false,
     };
   });
