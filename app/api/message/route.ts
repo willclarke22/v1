@@ -605,14 +605,16 @@ function adaptLearningSpaceToContract(
     space_version: "v1",
     topics: (rawLearningSpace.topics ?? []).map((topic, index) => {
       const fallbackTopic = updatedTopics[index] ?? updatedTopics[0];
+      const resolvedTopicName =
+        topic.topic_name ??
+        topic.label ??
+        fallbackTopic?.name ??
+        "Untitled Topic";
 
       return {
         topic_id: topic.topic_id ?? fallbackTopic?.id ?? makeId("topic"),
-        label:
-          topic.label ??
-          topic.topic_name ??
-          fallbackTopic?.name ??
-          "Untitled Topic",
+        topic_name: resolvedTopicName,
+        label: resolvedTopicName,
         position:
           Array.isArray(topic.position) && topic.position.length === 3
             ? (topic.position as [number, number, number])
