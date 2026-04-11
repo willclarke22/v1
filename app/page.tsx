@@ -120,6 +120,8 @@ export default function Home() {
   const [serverLearningSpace, setServerLearningSpace] =
     useState<LearningSpace | null>(null);
   const [isBootstrappingTopics, setIsBootstrappingTopics] = useState(true);
+  const [sceneArrivalMode, setSceneArrivalMode] =
+    useState<SceneArrivalMode>("focus");
 
   const localLearningSpace = useMemo(() => buildLearningSpace(topics), [topics]);
   const learningSpace = serverLearningSpace ?? localLearningSpace;
@@ -218,6 +220,7 @@ export default function Home() {
         }
 
         setServerLearningSpace(null);
+        setSceneArrivalMode("focus");
       } catch (error) {
         console.error("Topic bootstrap failed:", error);
       } finally {
@@ -339,9 +342,12 @@ export default function Home() {
       const resolvedTopicId = resolveReturnedTopicId(data, nextTopics);
       const arrivalMode = resolveArrivalMode(data);
 
+      setSceneArrivalMode(arrivalMode);
+
       if (resolvedTopicId) {
+        setSelectedTopicId(resolvedTopicId);
+
         if (arrivalMode === "warp") {
-          setSelectedTopicId(resolvedTopicId);
           focusTopic(resolvedTopicId);
         } else {
           focusTopic(resolvedTopicId);
@@ -370,6 +376,7 @@ export default function Home() {
             availableProbe={probeFlow.availableProbe}
             isEnteringProbe={probeFlow.isEnteringProbe}
             probeEntryTopicId={probeFlow.probeEntryTopicId}
+            arrivalMode={sceneArrivalMode}
             onSelectTopic={(id) => {
               if (id === null) {
                 setSelectedTopicId(null);

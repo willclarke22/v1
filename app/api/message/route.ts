@@ -6,6 +6,7 @@ import type {
   DeliveredProbe,
   DeliveredResponse,
   EngineFuel,
+  ImportantRunInputs,
   InterventionModeDecision,
   LearningSpace,
   MessageRouteRequest,
@@ -17,13 +18,14 @@ import type {
   RunMetadata,
   TopicState,
   VectorInfo,
-  ImportantRunInputs,
 } from "@/types/contracts";
 import {
+  buildDeterministicTopicResolutionSnapshot,
   buildSeededTopicFromMessage,
   inferKeywordsFromMessage,
   loadRouteTopics,
   resolveTopicForMessage,
+  shouldTryLLMTopicResolutionFallback,
   type RouteTopic,
 } from "@/lib/runtime/topic-resolution";
 import {
@@ -39,6 +41,10 @@ import {
 import { nowIso } from "@/lib/runtime/shared";
 import { scoreConfusionInsight } from "@/lib/providers/confusion-insight";
 import { buildRecentChatHistory } from "@/lib/runtime/chat-history";
+import {
+  runTopicLabelingLLMAdjudication,
+  type TopicLabelingLLMDecision,
+} from "@/lib/providers/topic-labeling-llm";
 
 type RawLearningSpaceTopic = {
   topic_id?: string;
@@ -107,6 +113,7 @@ type TopicResolutionOutcome = {
   vectorInfo: VectorInfo;
   resolvedLabel: string | null;
   matchConfidence: number;
+  usedLLMFallback: boolean;
 };
 
 function normalizeRecentTurns(body: MessageRouteBody) {
@@ -401,88 +408,24 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
   return updatedTopics.map((topic) => ({
     topic_id: topic.id,
     topic_name: topic.name,
+    topic_learning_score: topic.learningScore,
     topic_confusion_average: topic.confusion,
     topic_insight_average: topic.insight,
-    topic_learning_score: topic.learningScore,
-    topic_learning_velocity: 0,
-    topic_novelty_score: 0.5,
-    topic_message_count: 1,
-    topic_difficulty: 0.5,
-    topic_decay_rate: 0.05,
-    topic_link_threshold: 0.5,
-    topic_last_update: nowIso(),
-    topic_centroid: topic.position as [number, number, number],
+    topic_message_count: topic.messageCount ?? 0,
+    topic_last_update: topic.lastUpdated ?? nowIso(),
+    topic_centroid: topic.position,
   }));
-}
-
-function adaptLearningSpaceToContract(
-  rawLearningSpace: RawLearningSpace,
-  updatedTopics: RouteTopic[]
-): LearningSpace {
-  const safeTopics = Array.isArray(rawLearningSpace.topics)
-    ? rawLearningSpace.topics
-    : [];
-
-  const safeClusters = Array.isArray(rawLearningSpace.clusters)
-    ? rawLearningSpace.clusters
-    : [];
-
-  return {
-    space_version: "v1",
-    topics: safeTopics.map((topic, index) => {
-      const fallbackTopic = updatedTopics[index];
-
-      return {
-        topic_id:
-          topic.topic_id ??
-          fallbackTopic?.id ??
-          makeId("topic-fallback"),
-        topic_name:
-          topic.topic_name ??
-          topic.label ??
-          fallbackTopic?.name ??
-          "Untitled Topic",
-        position: topic.position ?? fallbackTopic?.position ?? [0, 0, 0],
-        render_state: {
-          radius: topic.render_state?.radius ?? 1,
-          surface_noise: topic.render_state?.surface_noise ?? 0,
-          spin_rate: topic.render_state?.spin_rate ?? 0,
-          saturation: topic.render_state?.saturation ?? 1,
-          is_star: topic.render_state?.is_star ?? false,
-        },
-        satellite_count:
-          topic.satellite_count ?? topic.satellites?.length ?? 0,
-        satellites: (topic.satellites ?? []).map((satellite, satelliteIndex) => ({
-          satellite_id:
-            satellite.satellite_id ??
-            makeId(`satellite-${fallbackTopic?.id ?? satelliteIndex}`),
-          orbit_angle: satellite.orbit_angle ?? satelliteIndex * 0.8,
-          linked_attempt_id: satellite.linked_attempt_id ?? null,
-        })),
-      };
-    }),
-    clusters: safeClusters.map((cluster, index) => ({
-      cluster_id: cluster.cluster_id ?? makeId(`cluster-${index}`),
-      cluster_name: cluster.label ?? `Cluster ${index + 1}`,
-      cluster_centroid: cluster.cluster_centroid ?? [0, 0, 0],
-      member_topic_ids: cluster.member_topic_ids ?? [],
-    })),
-  };
 }
 
 function buildPreviousModeOutcome(
   runKind: ImportantRunInputs["current_interaction_context"]["run_kind"]
 ): PreviousModeOutcome {
   return {
-    mode_selected: runKind === "clarify_followup" ? "clarify" : "clarify",
-    reasons: [
-      runKind === "clarify_followup"
-        ? "The current message appears to follow earlier clarification-oriented interaction."
-        : "No previous judged attempt is available in this route yet, so previous-mode state remains conservative.",
-    ],
-    confidence: runKind === "clarify_followup" ? 0.42 : 0.18,
+    mode_selected: runKind === "clarify_followup" ? "clarify" : "probe",
+    reasons: [],
+    confidence: 0.5,
     clarify_outcome:
-      runKind === "clarify_followup" ? "probe_required" : "not_applicable",
+      runKind === "clarify_followup" ? "sufficient" : "not_applicable",
   };
 }
 
@@ -563,11 +506,138 @@ function normalizeVectorInfoFallback(
   };
 }
 
-function resolveTopicOutcome(args: {
+function normalizeTextLoose(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function looksLikeSuspiciousCreateLabel(label: string | null) {
+  if (!label) return true;
+
+  const normalized = normalizeTextLoose(label);
+  if (!normalized) return true;
+
+  const suspiciousSingles = new Set([
+    "i",
+    "me",
+    "you",
+    "we",
+    "they",
+    "this",
+    "that",
+    "it",
+    "part",
+    "thing",
+    "stuff",
+    "help",
+    "question",
+    "new topic",
+    "law works",
+  ]);
+
+  if (suspiciousSingles.has(normalized)) return true;
+  if (normalized.split(" ").length > 8) return true;
+  if (/\b(help|understand|get|confused|stuck|trouble)\b/i.test(label)) return true;
+
+  return false;
+}
+
+function buildSeededTopicFromResolvedLabel(args: {
+  message: string;
+  existingTopics: RouteTopic[];
+  resolvedLabel: string;
+}): RouteTopic {
+  const seeded = buildSeededTopicFromMessage(args.message, args.existingTopics);
+  return {
+    ...seeded,
+    name: args.resolvedLabel,
+  };
+}
+
+function findTopicFromLLMResult(args: {
+  existingTopics: RouteTopic[];
+  decision: TopicLabelingLLMDecision;
+}) {
+  const { existingTopics, decision } = args;
+
+  if (decision.matched_topic_id) {
+    const byId =
+      existingTopics.find((topic) => topic.id === decision.matched_topic_id) ??
+      null;
+    if (byId) return byId;
+  }
+
+  if (decision.matched_topic_name) {
+    const looseTarget = normalizeTextLoose(decision.matched_topic_name);
+    const byName =
+      existingTopics.find(
+        (topic) => normalizeTextLoose(topic.name) === looseTarget
+      ) ?? null;
+    if (byName) return byName;
+  }
+
+  return null;
+}
+
+function adaptLearningSpaceToContract(
+  rawLearningSpace: RawLearningSpace,
+  updatedTopics: RouteTopic[]
+): LearningSpace {
+  return {
+    space_version: "v1",
+    topics: (rawLearningSpace.topics ?? []).map((topic, index) => {
+      const fallbackTopic = updatedTopics[index] ?? updatedTopics[0];
+
+      return {
+        topic_id: topic.topic_id ?? fallbackTopic?.id ?? makeId("topic"),
+        label:
+          topic.label ??
+          topic.topic_name ??
+          fallbackTopic?.name ??
+          "Untitled Topic",
+        position:
+          Array.isArray(topic.position) && topic.position.length === 3
+            ? (topic.position as [number, number, number])
+            : fallbackTopic?.position ?? [0, 0, 0],
+        render_state: {
+          radius: topic.render_state?.radius ?? 0.8,
+          surface_noise: topic.render_state?.surface_noise ?? 0.3,
+          spin_rate: topic.render_state?.spin_rate ?? 0.25,
+          saturation: topic.render_state?.saturation ?? 0.7,
+          is_star: topic.render_state?.is_star ?? false,
+        },
+        satellite_count: topic.satellite_count ?? 0,
+        satellites: (topic.satellites ?? []).map((satellite, satelliteIndex) => ({
+          satellite_id:
+            satellite.satellite_id ?? `sat-${index}-${satelliteIndex}`,
+          orbit_angle: satellite.orbit_angle ?? 0,
+          linked_attempt_id: satellite.linked_attempt_id ?? null,
+        })),
+      };
+    }),
+    clusters: (rawLearningSpace.clusters ?? []).map((cluster, index) => ({
+      cluster_id: cluster.cluster_id ?? `cluster-${index}`,
+      label: cluster.label ?? `Cluster ${index + 1}`,
+      cluster_centroid:
+        Array.isArray(cluster.cluster_centroid) &&
+        cluster.cluster_centroid.length === 3
+          ? (cluster.cluster_centroid as [number, number, number])
+          : [0, 0, 0],
+      member_topic_ids: Array.isArray(cluster.member_topic_ids)
+        ? cluster.member_topic_ids
+        : [],
+    })),
+  };
+}
+
+async function resolveTopicOutcome(args: {
   existingTopics: RouteTopic[];
   activeTopicId?: string | null;
   message: string;
-}): TopicResolutionOutcome | null {
+}): Promise<TopicResolutionOutcome | null> {
   const { existingTopics, activeTopicId, message } = args;
 
   if (existingTopics.length === 0) {
@@ -585,6 +655,7 @@ function resolveTopicOutcome(args: {
       },
       resolvedLabel: createdTopic.name,
       matchConfidence: 0,
+      usedLLMFallback: false,
     };
   }
 
@@ -593,21 +664,171 @@ function resolveTopicOutcome(args: {
       ? existingTopics.find((topic) => topic.id === activeTopicId) ?? null
       : null;
 
-  const matchResult = resolveTopicForMessage(message, existingTopics, activeTopic);
+  const deterministicMatch = resolveTopicForMessage(
+    message,
+    existingTopics,
+    activeTopic
+  );
 
-  if (matchResult.matchedTopic) {
+  const deterministicSnapshot =
+    buildDeterministicTopicResolutionSnapshot(deterministicMatch);
+
+  const shouldEscalate = shouldTryLLMTopicResolutionFallback({
+    ...deterministicSnapshot,
+    existingTopicsCount: existingTopics.length,
+  });
+
+  if (!shouldEscalate) {
+    if (deterministicMatch.matchedTopic) {
+      return {
+        topic: deterministicMatch.matchedTopic,
+        createdTopic: null,
+        routeTopics: existingTopics,
+        resolutionKind: deterministicMatch.resolutionKind,
+        vectorInfo: deterministicMatch.vectorInfo,
+        resolvedLabel: deterministicMatch.resolvedLabel,
+        matchConfidence: deterministicMatch.matchConfidence,
+        usedLLMFallback: false,
+      };
+    }
+
+    if (deterministicMatch.shouldCreateNewTopic) {
+      const createdTopic = buildSeededTopicFromMessage(message, existingTopics);
+
+      return {
+        topic: createdTopic,
+        createdTopic,
+        routeTopics: [...existingTopics, createdTopic],
+        resolutionKind: "created_new_candidate",
+        vectorInfo: deterministicMatch.vectorInfo,
+        resolvedLabel: deterministicMatch.resolvedLabel ?? createdTopic.name,
+        matchConfidence: deterministicMatch.matchConfidence,
+        usedLLMFallback: false,
+      };
+    }
+
+    if (activeTopic) {
+      return {
+        topic: activeTopic,
+        createdTopic: null,
+        routeTopics: existingTopics,
+        resolutionKind: "fallback_active_topic",
+        vectorInfo: deterministicMatch.vectorInfo,
+        resolvedLabel: deterministicMatch.resolvedLabel ?? activeTopic.name,
+        matchConfidence: deterministicMatch.matchConfidence,
+        usedLLMFallback: false,
+      };
+    }
+
+    const bestVectorTopicId = deterministicMatch.vectorInfo.top_k_topic_ids[0];
+    const bestVectorTopic =
+      existingTopics.find((topic) => topic.id === bestVectorTopicId) ?? null;
+
+    if (bestVectorTopic) {
+      return {
+        topic: bestVectorTopic,
+        createdTopic: null,
+        routeTopics: existingTopics,
+        resolutionKind: "fallback_existing_topic",
+        vectorInfo: deterministicMatch.vectorInfo,
+        resolvedLabel: deterministicMatch.resolvedLabel ?? bestVectorTopic.name,
+        matchConfidence: deterministicMatch.matchConfidence,
+        usedLLMFallback: false,
+      };
+    }
+
     return {
-      topic: matchResult.matchedTopic,
+      topic: existingTopics[0],
       createdTopic: null,
       routeTopics: existingTopics,
-      resolutionKind: matchResult.resolutionKind,
-      vectorInfo: matchResult.vectorInfo,
-      resolvedLabel: matchResult.resolvedLabel,
-      matchConfidence: matchResult.matchConfidence,
+      resolutionKind: "fallback_existing_topic",
+      vectorInfo: deterministicMatch.vectorInfo,
+      resolvedLabel:
+        deterministicMatch.resolvedLabel ?? existingTopics[0]?.name ?? null,
+      matchConfidence: deterministicMatch.matchConfidence,
+      usedLLMFallback: false,
     };
   }
 
-  if (matchResult.shouldCreateNewTopic) {
+  const llmDecision = await runTopicLabelingLLMAdjudication({
+    message,
+    activeTopic,
+    existingTopics,
+    deterministicResolution: deterministicSnapshot,
+  });
+
+  if (llmDecision) {
+    if (llmDecision.decision === "reuse_existing") {
+      const matchedTopic = findTopicFromLLMResult({
+        existingTopics,
+        decision: llmDecision,
+      });
+
+      if (matchedTopic) {
+        return {
+          topic: matchedTopic,
+          createdTopic: null,
+          routeTopics: existingTopics,
+          resolutionKind: "matched_existing",
+          vectorInfo: deterministicMatch.vectorInfo,
+          resolvedLabel: llmDecision.canonical_label ?? matchedTopic.name,
+          matchConfidence: llmDecision.confidence,
+          usedLLMFallback: true,
+        };
+      }
+    }
+
+    if (llmDecision.decision === "fallback_active" && activeTopic) {
+      return {
+        topic: activeTopic,
+        createdTopic: null,
+        routeTopics: existingTopics,
+        resolutionKind: "fallback_active_topic",
+        vectorInfo: deterministicMatch.vectorInfo,
+        resolvedLabel: llmDecision.canonical_label ?? activeTopic.name,
+        matchConfidence: llmDecision.confidence,
+        usedLLMFallback: true,
+      };
+    }
+
+    if (
+      llmDecision.decision === "create_new" &&
+      llmDecision.canonical_label &&
+      !looksLikeSuspiciousCreateLabel(llmDecision.canonical_label)
+    ) {
+      const createdTopic = buildSeededTopicFromResolvedLabel({
+        message,
+        existingTopics,
+        resolvedLabel: llmDecision.canonical_label,
+      });
+
+      return {
+        topic: createdTopic,
+        createdTopic,
+        routeTopics: [...existingTopics, createdTopic],
+        resolutionKind: "created_new_candidate",
+        vectorInfo: deterministicMatch.vectorInfo,
+        resolvedLabel: llmDecision.canonical_label,
+        matchConfidence: llmDecision.confidence,
+        usedLLMFallback: true,
+      };
+    }
+  }
+
+  if (deterministicMatch.matchedTopic) {
+    return {
+      topic: deterministicMatch.matchedTopic,
+      createdTopic: null,
+      routeTopics: existingTopics,
+      resolutionKind: deterministicMatch.resolutionKind,
+      vectorInfo: deterministicMatch.vectorInfo,
+      resolvedLabel: deterministicMatch.resolvedLabel,
+      matchConfidence: deterministicMatch.matchConfidence,
+      usedLLMFallback: false,
+    };
+  }
+
+  if (deterministicMatch.shouldCreateNewTopic) {
     const createdTopic = buildSeededTopicFromMessage(message, existingTopics);
 
     return {
@@ -615,9 +836,10 @@ function resolveTopicOutcome(args: {
       createdTopic,
       routeTopics: [...existingTopics, createdTopic],
       resolutionKind: "created_new_candidate",
-      vectorInfo: matchResult.vectorInfo,
-      resolvedLabel: matchResult.resolvedLabel ?? createdTopic.name,
-      matchConfidence: matchResult.matchConfidence,
+      vectorInfo: deterministicMatch.vectorInfo,
+      resolvedLabel: deterministicMatch.resolvedLabel ?? createdTopic.name,
+      matchConfidence: deterministicMatch.matchConfidence,
+      usedLLMFallback: false,
     };
   }
 
@@ -627,13 +849,14 @@ function resolveTopicOutcome(args: {
       createdTopic: null,
       routeTopics: existingTopics,
       resolutionKind: "fallback_active_topic",
-      vectorInfo: matchResult.vectorInfo,
-      resolvedLabel: matchResult.resolvedLabel ?? activeTopic.name,
-      matchConfidence: matchResult.matchConfidence,
+      vectorInfo: deterministicMatch.vectorInfo,
+      resolvedLabel: deterministicMatch.resolvedLabel ?? activeTopic.name,
+      matchConfidence: deterministicMatch.matchConfidence,
+      usedLLMFallback: false,
     };
   }
 
-  const bestVectorTopicId = matchResult.vectorInfo.top_k_topic_ids[0];
+  const bestVectorTopicId = deterministicMatch.vectorInfo.top_k_topic_ids[0];
   const bestVectorTopic =
     existingTopics.find((topic) => topic.id === bestVectorTopicId) ?? null;
 
@@ -643,9 +866,10 @@ function resolveTopicOutcome(args: {
       createdTopic: null,
       routeTopics: existingTopics,
       resolutionKind: "fallback_existing_topic",
-      vectorInfo: matchResult.vectorInfo,
-      resolvedLabel: matchResult.resolvedLabel ?? bestVectorTopic.name,
-      matchConfidence: matchResult.matchConfidence,
+      vectorInfo: deterministicMatch.vectorInfo,
+      resolvedLabel: deterministicMatch.resolvedLabel ?? bestVectorTopic.name,
+      matchConfidence: deterministicMatch.matchConfidence,
+      usedLLMFallback: false,
     };
   }
 
@@ -654,9 +878,11 @@ function resolveTopicOutcome(args: {
     createdTopic: null,
     routeTopics: existingTopics,
     resolutionKind: "fallback_existing_topic",
-    vectorInfo: matchResult.vectorInfo,
-    resolvedLabel: matchResult.resolvedLabel ?? existingTopics[0]?.name ?? null,
-    matchConfidence: matchResult.matchConfidence,
+    vectorInfo: deterministicMatch.vectorInfo,
+    resolvedLabel:
+      deterministicMatch.resolvedLabel ?? existingTopics[0]?.name ?? null,
+    matchConfidence: deterministicMatch.matchConfidence,
+    usedLLMFallback: false,
   };
 }
 
@@ -693,7 +919,7 @@ export async function POST(request: Request) {
 
     const existingTopics = await loadRouteTopics();
 
-    const topicResolution = resolveTopicOutcome({
+    const topicResolution = await resolveTopicOutcome({
       existingTopics,
       activeTopicId:
         typeof body.activeTopicId === "string" ? body.activeTopicId : null,
@@ -715,6 +941,7 @@ export async function POST(request: Request) {
       vectorInfo: rawVectorInfo,
       resolvedLabel,
       matchConfidence,
+      usedLLMFallback,
     } = topicResolution;
 
     const targetTopicId = topic.id;
@@ -859,6 +1086,7 @@ export async function POST(request: Request) {
         resolution_kind: resolutionKind,
         resolved_label: resolvedLabel,
         match_confidence: matchConfidence,
+        used_llm_topic_fallback: usedLLMFallback,
       })
     );
 

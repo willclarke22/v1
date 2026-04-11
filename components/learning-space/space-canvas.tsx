@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ElementRef,
+  type RefObject,
 } from "react";
 import * as THREE from "three";
 import type { LearningSpace, LearningSpaceTopic } from "@/types/learning-space";
@@ -45,7 +46,7 @@ function getCurrentViewDirection(
 }
 
 function getTopicDisplayLabel(topic: LearningSpaceTopic) {
-  return topic.label ?? topic.topic_name ?? "Untitled Topic";
+  return topic.label ?? "Untitled Topic";
 }
 
 function getScreenSpaceRadiusPx(args: {
@@ -437,7 +438,7 @@ function CameraController({
   selectedTopicId: string | null;
   focusedTopicId: string | null;
   arrivalMode: SceneArrivalMode;
-  controlsRef: React.RefObject<TrackballControlsRef | null>;
+  controlsRef: RefObject<TrackballControlsRef | null>;
   isEnteringProbe: boolean;
   probeEntryTopicId: string | null;
   onProbeEntryComplete: () => void;

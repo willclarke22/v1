@@ -136,7 +136,14 @@ export function messageLooksClarifySeeking(message: string) {
     lower.includes("confused about") ||
     lower.includes("help me understand") ||
     lower.includes("walk me through") ||
-    lower.includes("go over")
+    lower.includes("go over") ||
+    lower.includes("help me with") ||
+    lower.includes("i need help with") ||
+    lower.includes("can i get some help with") ||
+    lower.includes("could i get some help with") ||
+    lower.includes("can you help me with") ||
+    lower.includes("could you help me with") ||
+    lower.includes("i could use some help with")
   );
 }
 

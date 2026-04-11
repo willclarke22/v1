@@ -268,4 +268,28 @@ export const TOPIC_LABEL_GOLDENS = [
     expected_intent: "general_question",
     should_create_or_reuse: true,
   },
+  {
+  message: "Can I get some help with neurotransmitters?",
+  expected_label: "Neurotransmitters",
+  expected_intent: "confusion_help",
+  should_create_or_reuse: true,
+  },
+  {
+  message: "Could I get some help with action potentials?",
+  expected_label: "Action Potentials",
+  expected_intent: "confusion_help",
+  should_create_or_reuse: true,
+  },
+  {
+  message: "Can you help me with synaptic transmission?",
+  expected_label: "Synaptic Transmission",
+  expected_intent: "confusion_help",
+  should_create_or_reuse: true,
+  },
+  {
+  message: "I could use some help with dopamine",
+  expected_label: "Dopamine",
+  expected_intent: "confusion_help",
+  should_create_or_reuse: true,
+  },
 ];
