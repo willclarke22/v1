@@ -81,35 +81,53 @@ function mapRowsToTopics(
   rows: Awaited<ReturnType<typeof getLatestTopicState>>
 ): Topic[] {
   return rows.map((row, index) => {
+    const rowWithTopicFields = row as unknown as {
+      topic_id: string;
+      topic_name: string;
+      diagnosis?: unknown;
+      confusion?: number | null;
+      insight?: number | null;
+      learning_score?: number | null;
+      next_step?: string | null;
+      updated_at?: string | null;
+      topic_message_count?: number | null;
+      topic_centroid?: unknown;
+    };
+
     const topicJson = getTopicJson(row);
 
     const nextStep =
       typeof topicJson.next_step === "string" && topicJson.next_step.trim().length > 0
         ? topicJson.next_step
-        : typeof row.next_step === "string" && row.next_step.trim().length > 0
-          ? row.next_step
+        : typeof rowWithTopicFields.next_step === "string" &&
+            rowWithTopicFields.next_step.trim().length > 0
+          ? rowWithTopicFields.next_step
           : "Continue learning";
 
     const position =
       getLearningSpaceTopicPosition(topicJson) ??
-      (isPosition((row as { topic_centroid?: unknown }).topic_centroid)
-        ? ((row as { topic_centroid: [number, number, number] }).topic_centroid)
+      (isPosition(rowWithTopicFields.topic_centroid)
+        ? rowWithTopicFields.topic_centroid
         : [index * 2.2, 0, 0]);
 
     return {
-      id: row.topic_id,
-      name: row.topic_name,
-      diagnosis: normalizeDiagnosis(row.diagnosis),
+      id: rowWithTopicFields.topic_id,
+      name: rowWithTopicFields.topic_name,
+      diagnosis: normalizeDiagnosis(rowWithTopicFields.diagnosis),
       nextStep,
-      confusion: clamp(row.confusion ?? 0.5),
-      insight: clamp(row.insight ?? 0.5),
-      learningScore: clamp(row.learning_score ?? 0.5),
+      confusion: clamp(rowWithTopicFields.confusion ?? 0.5),
+      insight: clamp(rowWithTopicFields.insight ?? 0.5),
+      learningScore: clamp(rowWithTopicFields.learning_score ?? 0.5),
       position,
       scale: 1,
       messageCount:
-        typeof row.topic_message_count === "number" ? row.topic_message_count : 0,
+        typeof rowWithTopicFields.topic_message_count === "number"
+          ? rowWithTopicFields.topic_message_count
+          : 0,
       lastUpdated:
-        typeof row.updated_at === "string" ? row.updated_at : getCreatedAt(row),
+        typeof rowWithTopicFields.updated_at === "string"
+          ? rowWithTopicFields.updated_at
+          : getCreatedAt(row),
       hasAvailableProbe: false,
     };
   });
