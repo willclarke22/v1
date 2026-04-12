@@ -69,6 +69,20 @@ type ScoredTopic = {
   breakdown: TopicScoreBreakdown;
 };
 
+type ResolutionHypothesisKind =
+  | "stay_active"
+  | "switch_existing"
+  | "create_new"
+  | "ambiguous";
+
+type ResolutionHypothesis = {
+  kind: ResolutionHypothesisKind;
+  score: number;
+  reasons: string[];
+  topic: RouteTopic | null;
+  label: string | null;
+};
+
 type ResolutionAdjudication = {
   labeling: TopicLabelingResult;
   scoredTopics: ScoredTopic[];
@@ -76,8 +90,9 @@ type ResolutionAdjudication = {
   best: ScoredTopic | null;
   second: ScoredTopic | null;
   topGap: number;
-  strongDeterministicLabel: boolean;
-  weakFallbackAllowed: boolean;
+  activeTopicScore: ScoredTopic | null;
+  hypotheses: ResolutionHypothesis[];
+  winner: ResolutionHypothesis;
   fallbackRecommended: boolean;
 };
 
@@ -87,6 +102,7 @@ const ACTIVE_TOPIC_FALLBACK_THRESHOLD = 0.46;
 const CREATE_NEW_CONFIDENCE_THRESHOLD = 0.72;
 const LOW_CONFIDENCE_CREATE_NEW_FLOOR = 0.58;
 const CANDIDATE_COMPETITION_GAP_THRESHOLD = 0.08;
+const AMBIGUOUS_WIN_THRESHOLD = 0.62;
 
 function normalizeSurface(text: string) {
   return text
@@ -317,7 +333,7 @@ function hasAmbiguityFlag(labeling: TopicLabelingResult, flag: string) {
   return labeling.diagnostics.ambiguity_flags.includes(flag);
 }
 
-function isStrongDeterministicLabel(labeling: TopicLabelingResult) {
+function looksLikeStrongDeterministicCreateLabel(labeling: TopicLabelingResult) {
   const specificity = labeling.topic_decision.topic_specificity;
   const confidence = labeling.topic_decision.confidence;
 
@@ -330,82 +346,6 @@ function isStrongDeterministicLabel(labeling: TopicLabelingResult) {
   return (
     confidence >= CREATE_NEW_CONFIDENCE_THRESHOLD &&
     (specificity === "good" || specificity === "very_specific")
-  );
-}
-
-function shouldAllowWeakFallbackToExistingTopic(labeling: TopicLabelingResult) {
-  if (labeling.topic_decision.topic_specificity === "too_vague") return true;
-  if (hasAmbiguityFlag(labeling, "low_confidence")) return true;
-  if (hasAmbiguityFlag(labeling, "candidate_competition")) return true;
-  if (hasAmbiguityFlag(labeling, "needs_adjudication")) return true;
-  if (hasAmbiguityFlag(labeling, "label_suspicious")) return true;
-
-  return labeling.topic_decision.confidence < CREATE_NEW_CONFIDENCE_THRESHOLD;
-}
-
-function shouldRecommendFallbackAdjudication(labeling: TopicLabelingResult) {
-  return (
-    hasAmbiguityFlag(labeling, "candidate_competition") ||
-    hasAmbiguityFlag(labeling, "needs_adjudication") ||
-    hasAmbiguityFlag(labeling, "label_suspicious") ||
-    hasAmbiguityFlag(labeling, "low_confidence")
-  );
-}
-
-function scoreTopicMatchFromLabeling(
-  labeling: TopicLabelingResult,
-  topic: RouteTopic,
-  activeTopic?: RouteTopic | null
-): number {
-  const candidateLabel = labeling.topic_decision.canonical_label;
-  const conceptSpan = labeling.interpretation.concept_span;
-  const questionAboutTopic = labeling.interpretation.question_about_topic;
-
-  const baseScore = computeLocalTopicSimilarity(candidateLabel, conceptSpan, topic);
-
-  const questionScore = questionAboutTopic
-    ? overlapScore(
-        semanticTokenize(questionAboutTopic),
-        semanticTokenize(topic.name)
-      ) * 0.18
-    : 0;
-
-  const frame = mapIntentToFrame(labeling.interpretation.message_intent);
-  const frameBonus =
-    frame === "quiz_request" ||
-    frame === "confusion_help" ||
-    frame === "explain_request"
-      ? 0.04
-      : 0;
-
-  const confidenceBonus = labeling.topic_decision.confidence * 0.08;
-
-  const vaguePenalty =
-    labeling.topic_decision.topic_specificity === "too_vague" ? 0.12 : 0;
-
-  const ambiguityPenalty =
-    hasAmbiguityFlag(labeling, "candidate_competition") ||
-    hasAmbiguityFlag(labeling, "label_suspicious")
-      ? 0.05
-      : 0;
-
-  const activeTopicReferenceBonus =
-    labeling.interpretation.references_active_topic &&
-    activeTopic &&
-    topic.id === activeTopic.id
-      ? 0.08
-      : 0;
-
-  return clamp(
-    baseScore +
-      questionScore +
-      frameBonus +
-      confidenceBonus +
-      activeTopicReferenceBonus -
-      vaguePenalty -
-      ambiguityPenalty,
-    0,
-    1
   );
 }
 
@@ -466,7 +406,17 @@ function buildScoreBreakdown(
       ? 0.05
       : 0;
 
-  const finalScore = scoreTopicMatchFromLabeling(labeling, topic, activeTopic);
+  const finalScore = clamp(
+    conceptOverlap +
+      questionOverlap +
+      frameBonus +
+      retrievalBias +
+      activeTopicBonus -
+      vaguePenalty -
+      ambiguityPenalty,
+    0,
+    1
+  );
 
   return {
     exactNameMatch,
@@ -485,17 +435,16 @@ function buildScoreBreakdown(
 
 export function scoreTopicMatch(message: string, topic: RouteTopic): number {
   const labeling = buildLabelingResult(message, []);
-  return scoreTopicMatchFromLabeling(labeling, topic);
+  const breakdown = buildScoreBreakdown(labeling, topic);
+  return breakdown.finalScore;
 }
 
-function adjudicateTopicResolution(
-  message: string,
+function buildBaseTopicScores(
+  labeling: TopicLabelingResult,
   existingTopics: RouteTopic[],
   activeTopic?: RouteTopic | null
-): ResolutionAdjudication {
-  const labeling = buildLabelingResult(message, existingTopics, activeTopic);
-
-  const scoredTopics = existingTopics
+): ScoredTopic[] {
+  return existingTopics
     .map((topic) => {
       const breakdown = buildScoreBreakdown(labeling, topic, activeTopic);
       return {
@@ -505,10 +454,402 @@ function adjudicateTopicResolution(
       };
     })
     .sort((a, b) => b.similarity - a.similarity);
+}
 
+function scoreStayActiveHypothesis(args: {
+  labeling: TopicLabelingResult;
+  activeTopic: RouteTopic | null | undefined;
+  activeTopicScore: ScoredTopic | null;
+  topGap: number;
+}): ResolutionHypothesis {
+  const { labeling, activeTopic, activeTopicScore, topGap } = args;
+
+  if (!activeTopic || !activeTopicScore) {
+    return {
+      kind: "stay_active",
+      score: 0,
+      reasons: ["No active topic is available to stay on."],
+      topic: null,
+      label: labeling.topic_decision.canonical_label ?? null,
+    };
+  }
+
+  let score = 0;
+  const reasons: string[] = [];
+
+  score += activeTopicScore.similarity * 0.72;
+  reasons.push(`Active topic similarity is ${activeTopicScore.similarity.toFixed(2)}.`);
+
+  if (labeling.interpretation.references_active_topic) {
+    score += 0.12;
+    reasons.push("Message appears to reference the active topic explicitly.");
+  }
+
+  if (activeTopicScore.similarity >= ACTIVE_TOPIC_FALLBACK_THRESHOLD) {
+    score += 0.06;
+    reasons.push("Active topic clears the minimum continuity threshold.");
+  }
+
+  if (topGap < CANDIDATE_COMPETITION_GAP_THRESHOLD) {
+    score += 0.03;
+    reasons.push("No strong competing topic clearly beats the active topic.");
+  }
+
+  if (hasAmbiguityFlag(labeling, "label_suspicious")) {
+    score += 0.05;
+    reasons.push("Suspicious label makes conservative continuity slightly safer.");
+  }
+
+  if (labeling.topic_decision.should_create_new_topic) {
+    score -= 0.1;
+    reasons.push("Deterministic labeling leans toward a new concept.");
+  }
+
+  if (hasAmbiguityFlag(labeling, "candidate_competition")) {
+    score -= 0.04;
+    reasons.push("Competing candidate signals reduce confidence in staying.");
+  }
+
+  return {
+    kind: "stay_active",
+    score: clamp(score, 0, 1),
+    reasons,
+    topic: activeTopic,
+    label: labeling.topic_decision.canonical_label ?? activeTopic.name,
+  };
+}
+
+function scoreSwitchExistingHypothesis(args: {
+  labeling: TopicLabelingResult;
+  best: ScoredTopic | null;
+  activeTopic: RouteTopic | null | undefined;
+  activeTopicScore: ScoredTopic | null;
+  topGap: number;
+}): ResolutionHypothesis {
+  const { labeling, best, activeTopic, activeTopicScore, topGap } = args;
+
+  if (!best) {
+    return {
+      kind: "switch_existing",
+      score: 0,
+      reasons: ["No existing topic candidate is available."],
+      topic: null,
+      label: labeling.topic_decision.canonical_label ?? null,
+    };
+  }
+
+  const switchingToActive = activeTopic && best.topic.id === activeTopic.id;
+  let score = 0;
+  const reasons: string[] = [];
+
+  score += best.similarity * 0.78;
+  reasons.push(`Best existing-topic similarity is ${best.similarity.toFixed(2)}.`);
+
+  if (!switchingToActive) {
+    score += 0.05;
+    reasons.push("Best match is not merely the active topic.");
+  }
+
+  if (best.similarity >= STRONG_REUSE_TOPIC_THRESHOLD) {
+    score += 0.07;
+    reasons.push("Best topic clears the strong reuse threshold.");
+  }
+
+  if (topGap >= CANDIDATE_COMPETITION_GAP_THRESHOLD) {
+    score += 0.05;
+    reasons.push("Best topic has a healthy margin over alternatives.");
+  }
+
+  if (activeTopicScore && !switchingToActive) {
+    const margin = best.similarity - activeTopicScore.similarity;
+    if (margin > 0.06) {
+      score += 0.06;
+      reasons.push("Best topic clearly beats the active topic.");
+    } else if (margin < 0.02) {
+      score -= 0.04;
+      reasons.push("Best topic does not clearly separate from the active topic.");
+    }
+  }
+
+  if (hasAmbiguityFlag(labeling, "candidate_competition")) {
+    score -= 0.05;
+    reasons.push("Candidate competition reduces confidence in switching.");
+  }
+
+  if (hasAmbiguityFlag(labeling, "label_suspicious")) {
+    score -= 0.04;
+    reasons.push("Suspicious label reduces trust in deterministic switching.");
+  }
+
+  return {
+    kind: "switch_existing",
+    score: clamp(score, 0, 1),
+    reasons,
+    topic: best.topic,
+    label: labeling.topic_decision.canonical_label ?? best.topic.name,
+  };
+}
+
+function scoreCreateNewHypothesis(args: {
+  labeling: TopicLabelingResult;
+  best: ScoredTopic | null;
+  topGap: number;
+}): ResolutionHypothesis {
+  const { labeling, best, topGap } = args;
+
+  let score = 0;
+  const reasons: string[] = [];
+  const label = labeling.topic_decision.canonical_label ?? null;
+
+  if (!label) {
+    return {
+      kind: "create_new",
+      score: 0,
+      reasons: ["No canonical label is available for a new topic."],
+      topic: null,
+      label: null,
+    };
+  }
+
+  score += labeling.topic_decision.confidence * 0.58;
+  reasons.push(
+    `Deterministic label confidence is ${labeling.topic_decision.confidence.toFixed(2)}.`
+  );
+
+  if (looksLikeStrongDeterministicCreateLabel(labeling)) {
+    score += 0.18;
+    reasons.push("Deterministic label looks strong and create-worthy.");
+  }
+
+  if (
+    labeling.topic_decision.topic_specificity === "good" ||
+    labeling.topic_decision.topic_specificity === "very_specific"
+  ) {
+    score += 0.12;
+    reasons.push("Label specificity supports a stable new topic.");
+  } else if (labeling.topic_decision.topic_specificity === "broad_but_usable") {
+    score += 0.04;
+    reasons.push("Label is broad but may still be usable.");
+  }
+
+  const bestScore = best?.similarity ?? 0;
+  if (bestScore < WEAK_REUSE_TOPIC_THRESHOLD) {
+    score += 0.12;
+    reasons.push("No existing topic matches strongly enough to force reuse.");
+  } else if (bestScore >= STRONG_REUSE_TOPIC_THRESHOLD) {
+    score -= 0.16;
+    reasons.push("A strong existing-topic match argues against creating new.");
+  }
+
+  if (topGap >= CANDIDATE_COMPETITION_GAP_THRESHOLD) {
+    score += 0.04;
+    reasons.push("The deterministic label is not heavily contested.");
+  }
+
+  if (hasAmbiguityFlag(labeling, "candidate_competition")) {
+    score -= 0.08;
+    reasons.push("Candidate competition weakens the create-new case.");
+  }
+
+  if (hasAmbiguityFlag(labeling, "label_suspicious")) {
+    score -= 0.12;
+    reasons.push("Suspicious label weakens the create-new case.");
+  }
+
+  if (hasAmbiguityFlag(labeling, "concept_span_clause_like")) {
+    score -= 0.07;
+    reasons.push("Clause-like concept span weakens new-topic creation.");
+  }
+
+  if (!labeling.topic_decision.should_create_new_topic) {
+    score -= 0.08;
+    reasons.push("Deterministic topic decision did not confidently request creation.");
+  }
+
+  return {
+    kind: "create_new",
+    score: clamp(score, 0, 1),
+    reasons,
+    topic: null,
+    label,
+  };
+}
+
+function scoreAmbiguousHypothesis(args: {
+  labeling: TopicLabelingResult;
+  best: ScoredTopic | null;
+  second: ScoredTopic | null;
+  topGap: number;
+  activeTopic: RouteTopic | null | undefined;
+  activeTopicScore: ScoredTopic | null;
+}): ResolutionHypothesis {
+  const { labeling, best, second, topGap, activeTopic, activeTopicScore } = args;
+
+  let score = 0.08;
+  const reasons: string[] = [];
+
+  if (hasAmbiguityFlag(labeling, "candidate_competition")) {
+    score += 0.22;
+    reasons.push("Deterministic labeling reports candidate competition.");
+  }
+
+  if (hasAmbiguityFlag(labeling, "low_confidence")) {
+    score += 0.16;
+    reasons.push("Deterministic confidence is low.");
+  }
+
+  if (hasAmbiguityFlag(labeling, "needs_adjudication")) {
+    score += 0.16;
+    reasons.push("Deterministic output recommends adjudication.");
+  }
+
+  if (hasAmbiguityFlag(labeling, "label_suspicious")) {
+    score += 0.18;
+    reasons.push("Suspicious label increases ambiguity.");
+  }
+
+  if (hasAmbiguityFlag(labeling, "concept_extraction_weak")) {
+    score += 0.18;
+    reasons.push("Concept extraction appears weak.");
+  }
+
+  if (best && second && topGap < CANDIDATE_COMPETITION_GAP_THRESHOLD) {
+    score += 0.12;
+    reasons.push("Top existing-topic candidates are tightly clustered.");
+  }
+
+  if (
+    activeTopic &&
+    activeTopicScore &&
+    best &&
+    best.topic.id !== activeTopic.id &&
+    Math.abs(best.similarity - activeTopicScore.similarity) < 0.05
+  ) {
+    score += 0.08;
+    reasons.push("Active topic and best alternative are too close to separate confidently.");
+  }
+
+  return {
+    kind: "ambiguous",
+    score: clamp(score, 0, 1),
+    reasons,
+    topic: null,
+    label: labeling.topic_decision.canonical_label ?? null,
+  };
+}
+
+function buildResolutionHypotheses(args: {
+  labeling: TopicLabelingResult;
+  scoredTopics: ScoredTopic[];
+  best: ScoredTopic | null;
+  second: ScoredTopic | null;
+  topGap: number;
+  activeTopic?: RouteTopic | null;
+}): ResolutionHypothesis[] {
+  const { labeling, scoredTopics, best, second, topGap, activeTopic } = args;
+
+  const activeTopicScore =
+    activeTopic
+      ? scoredTopics.find((item) => item.topic.id === activeTopic.id) ?? null
+      : null;
+
+  const stayActive = scoreStayActiveHypothesis({
+    labeling,
+    activeTopic,
+    activeTopicScore,
+    topGap,
+  });
+
+  const switchExisting = scoreSwitchExistingHypothesis({
+    labeling,
+    best,
+    activeTopic,
+    activeTopicScore,
+    topGap,
+  });
+
+  const createNew = scoreCreateNewHypothesis({
+    labeling,
+    best,
+    topGap,
+  });
+
+  const ambiguous = scoreAmbiguousHypothesis({
+    labeling,
+    best,
+    second,
+    topGap,
+    activeTopic,
+    activeTopicScore,
+  });
+
+  return [stayActive, switchExisting, createNew, ambiguous];
+}
+
+function chooseWinningHypothesis(
+  hypotheses: ResolutionHypothesis[]
+): ResolutionHypothesis {
+  const sorted = hypotheses.slice().sort((a, b) => b.score - a.score);
+  const best = sorted[0];
+
+  if (!best) {
+    return {
+      kind: "ambiguous",
+      score: 1,
+      reasons: ["No usable hypothesis was generated."],
+      topic: null,
+      label: null,
+    };
+  }
+
+  return best;
+}
+
+function shouldRecommendFallbackAdjudication(
+  winner: ResolutionHypothesis,
+  labeling: TopicLabelingResult,
+  topGap: number
+) {
+  if (winner.kind === "ambiguous" && winner.score >= AMBIGUOUS_WIN_THRESHOLD) {
+    return true;
+  }
+
+  if (hasAmbiguityFlag(labeling, "candidate_competition")) return true;
+  if (hasAmbiguityFlag(labeling, "needs_adjudication")) return true;
+  if (hasAmbiguityFlag(labeling, "label_suspicious")) return true;
+  if (hasAmbiguityFlag(labeling, "low_confidence")) return true;
+  if (topGap < CANDIDATE_COMPETITION_GAP_THRESHOLD) return true;
+
+  return false;
+}
+
+function adjudicateTopicResolution(
+  message: string,
+  existingTopics: RouteTopic[],
+  activeTopic?: RouteTopic | null
+): ResolutionAdjudication {
+  const labeling = buildLabelingResult(message, existingTopics, activeTopic);
+
+  const scoredTopics = buildBaseTopicScores(labeling, existingTopics, activeTopic);
   const best = scoredTopics[0] ?? null;
   const second = scoredTopics[1] ?? null;
   const topGap = best ? Math.max(0, best.similarity - (second?.similarity ?? 0)) : 0;
+
+  const activeTopicScore =
+    activeTopic
+      ? scoredTopics.find((item) => item.topic.id === activeTopic.id) ?? null
+      : null;
+
+  const hypotheses = buildResolutionHypotheses({
+    labeling,
+    scoredTopics,
+    best,
+    second,
+    topGap,
+    activeTopic,
+  });
+
+  const winner = chooseWinningHypothesis(hypotheses);
 
   return {
     labeling,
@@ -517,38 +858,15 @@ function adjudicateTopicResolution(
     best,
     second,
     topGap,
-    strongDeterministicLabel: isStrongDeterministicLabel(labeling),
-    weakFallbackAllowed: shouldAllowWeakFallbackToExistingTopic(labeling),
-    fallbackRecommended: shouldRecommendFallbackAdjudication(labeling),
+    activeTopicScore,
+    hypotheses,
+    winner,
+    fallbackRecommended: shouldRecommendFallbackAdjudication(
+      winner,
+      labeling,
+      topGap
+    ),
   };
-}
-
-function shouldCreateNewTopicFromAdjudication(
-  adjudication: ResolutionAdjudication
-): boolean {
-  const { labeling, best, topGap, strongDeterministicLabel } = adjudication;
-
-  if (!labeling.topic_decision.canonical_label) return false;
-  if (!labeling.topic_decision.should_create_new_topic) return false;
-  if (labeling.topic_decision.topic_specificity === "too_vague") return false;
-  if (hasAmbiguityFlag(labeling, "label_suspicious")) return false;
-
-  const confidence = labeling.topic_decision.confidence;
-  const bestScore = best?.similarity ?? 0;
-
-  if (strongDeterministicLabel && bestScore < STRONG_REUSE_TOPIC_THRESHOLD) {
-    return true;
-  }
-
-  if (
-    confidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR &&
-    bestScore < WEAK_REUSE_TOPIC_THRESHOLD &&
-    topGap >= CANDIDATE_COMPETITION_GAP_THRESHOLD
-  ) {
-    return true;
-  }
-
-  return false;
 }
 
 function looksLikeSuspiciousResolvedLabel(label: string | null) {
@@ -623,14 +941,7 @@ export function resolveTopicForMessage(
   activeTopic?: RouteTopic | null
 ): TopicMatchResult {
   const adjudication = adjudicateTopicResolution(message, existingTopics, activeTopic);
-  const {
-    labeling,
-    vectorInfo,
-    best,
-    topGap,
-    strongDeterministicLabel,
-    weakFallbackAllowed,
-  } = adjudication;
+  const { labeling, vectorInfo, best, winner, activeTopicScore } = adjudication;
 
   const emptyVectorInfo: VectorInfo = {
     top_k_topic_names: [],
@@ -639,60 +950,93 @@ export function resolveTopicForMessage(
   };
 
   if (!existingTopics.length) {
-    const shouldCreate = shouldCreateNewTopicFromAdjudication(adjudication);
+    const createConfidence =
+      labeling.topic_decision.should_create_new_topic &&
+      !looksLikeSuspiciousResolvedLabel(labeling.topic_decision.canonical_label)
+        ? labeling.topic_decision.confidence
+        : 0;
 
     return {
       matchedTopic: null,
       vectorInfo: emptyVectorInfo,
-      shouldCreateNewTopic: shouldCreate,
-      resolutionKind: shouldCreate ? "created_new_candidate" : "no_match",
+      shouldCreateNewTopic: createConfidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR,
+      resolutionKind:
+        createConfidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR
+          ? "created_new_candidate"
+          : "no_match",
       resolvedLabel: labeling.topic_decision.canonical_label ?? null,
-      matchConfidence: labeling.topic_decision.confidence,
+      matchConfidence:
+        createConfidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR
+          ? createConfidence
+          : labeling.topic_decision.confidence,
     };
   }
 
-  const bestScore = best?.similarity ?? 0;
+  if (winner.kind === "switch_existing" && winner.topic) {
+    const winningTopic = winner.topic;
+    const isActive = activeTopic && winningTopic.id === activeTopic.id;
+    const matchConfidence =
+      best?.topic.id === winningTopic.id ? best.similarity : winner.score;
 
-  if (best && strongDeterministicLabel && bestScore >= STRONG_REUSE_TOPIC_THRESHOLD) {
+    if (
+      !isActive &&
+      matchConfidence >= STRONG_REUSE_TOPIC_THRESHOLD &&
+      !hasAmbiguityFlag(labeling, "candidate_competition")
+    ) {
+      return {
+        matchedTopic: winningTopic,
+        vectorInfo,
+        shouldCreateNewTopic: false,
+        resolutionKind: "matched_existing",
+        resolvedLabel: labeling.topic_decision.canonical_label ?? winningTopic.name,
+        matchConfidence,
+      };
+    }
+
     return {
-      matchedTopic: best.topic,
+      matchedTopic: winningTopic,
       vectorInfo,
       shouldCreateNewTopic: false,
-      resolutionKind: "matched_existing",
-      resolvedLabel: labeling.topic_decision.canonical_label ?? best.topic.name,
-      matchConfidence: bestScore,
+      resolutionKind: isActive ? "fallback_active_topic" : "fallback_existing_topic",
+      resolvedLabel: labeling.topic_decision.canonical_label ?? winningTopic.name,
+      matchConfidence,
+    };
+  }
+
+  if (winner.kind === "stay_active" && winner.topic) {
+    const matchConfidence = activeTopicScore?.similarity ?? winner.score;
+
+    return {
+      matchedTopic: winner.topic,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind: "fallback_active_topic",
+      resolvedLabel: labeling.topic_decision.canonical_label ?? winner.topic.name,
+      matchConfidence,
     };
   }
 
   if (
-    activeTopic &&
-    labeling.interpretation.references_active_topic &&
-    best &&
-    best.topic.id === activeTopic.id &&
-    bestScore >= ACTIVE_TOPIC_FALLBACK_THRESHOLD
+    winner.kind === "create_new" &&
+    winner.label &&
+    !looksLikeSuspiciousResolvedLabel(winner.label) &&
+    winner.score >= LOW_CONFIDENCE_CREATE_NEW_FLOOR
   ) {
-    return {
-      matchedTopic: activeTopic,
-      vectorInfo,
-      shouldCreateNewTopic: false,
-      resolutionKind: "fallback_active_topic",
-      resolvedLabel: labeling.topic_decision.canonical_label ?? activeTopic.name,
-      matchConfidence: bestScore,
-    };
-  }
-
-  if (shouldCreateNewTopicFromAdjudication(adjudication)) {
     return {
       matchedTopic: null,
       vectorInfo,
       shouldCreateNewTopic: true,
       resolutionKind: "created_new_candidate",
-      resolvedLabel: labeling.topic_decision.canonical_label ?? null,
-      matchConfidence: labeling.topic_decision.confidence,
+      resolvedLabel: winner.label,
+      matchConfidence: Math.max(winner.score, labeling.topic_decision.confidence),
     };
   }
 
-  if (best && weakFallbackAllowed && bestScore >= WEAK_REUSE_TOPIC_THRESHOLD) {
+  if (
+    best &&
+    best.similarity >= WEAK_REUSE_TOPIC_THRESHOLD &&
+    !looksLikeSuspiciousResolvedLabel(labeling.topic_decision.canonical_label)
+  ) {
     return {
       matchedTopic: best.topic,
       vectorInfo,
@@ -702,16 +1046,15 @@ export function resolveTopicForMessage(
           ? "fallback_active_topic"
           : "fallback_existing_topic",
       resolvedLabel: labeling.topic_decision.canonical_label ?? best.topic.name,
-      matchConfidence: bestScore,
+      matchConfidence: best.similarity,
     };
   }
 
   if (
     activeTopic &&
-    !labeling.topic_decision.should_create_new_topic &&
-    best &&
-    best.topic.id === activeTopic.id &&
-    bestScore >= ACTIVE_TOPIC_FALLBACK_THRESHOLD
+    activeTopicScore &&
+    activeTopicScore.similarity >= ACTIVE_TOPIC_FALLBACK_THRESHOLD &&
+    winner.kind !== "create_new"
   ) {
     return {
       matchedTopic: activeTopic,
@@ -719,7 +1062,7 @@ export function resolveTopicForMessage(
       shouldCreateNewTopic: false,
       resolutionKind: "fallback_active_topic",
       resolvedLabel: labeling.topic_decision.canonical_label ?? activeTopic.name,
-      matchConfidence: bestScore,
+      matchConfidence: activeTopicScore.similarity,
     };
   }
 
@@ -729,7 +1072,11 @@ export function resolveTopicForMessage(
     shouldCreateNewTopic: false,
     resolutionKind: "no_match",
     resolvedLabel: labeling.topic_decision.canonical_label ?? null,
-    matchConfidence: Math.max(bestScore, labeling.topic_decision.confidence * 0.7),
+    matchConfidence: Math.max(
+      best?.similarity ?? 0,
+      labeling.topic_decision.confidence * 0.7,
+      winner.score * 0.7
+    ),
   };
 }
 

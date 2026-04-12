@@ -17,14 +17,52 @@ type SentenceRole =
   | "context"
   | "other";
 
+type ClauseInfo = {
+  raw: string;
+  normalized: string;
+  index: number;
+  role: SentenceRole;
+  hasContrastBoundary: boolean;
+  hasFocusMarker: boolean;
+  hasConfusionMarker: boolean;
+  hasQuestionMarker: boolean;
+  hasRequestMarker: boolean;
+  hasContextMarker: boolean;
+};
+
+type MessageInterpretation = {
+  messageIntent: TopicMessageIntent;
+  clauses: ClauseInfo[];
+};
+
+type CandidateScoreBreakdown = {
+  roleWeight: number;
+  focusWeight: number;
+  contrastWeight: number;
+  confusionAdjacencyWeight: number;
+  requestAdjacencyWeight: number;
+  contextRecoveryWeight: number;
+  mentionWeight: number;
+  specificityWeight: number;
+  reuseHintWeight: number;
+  genericPenalty: number;
+  clausePenalty: number;
+  learnerStatePenalty: number;
+  lengthPenalty: number;
+  total: number;
+};
+
 type TopicCandidate = {
   span: string;
-  sourceSentence: string;
+  normalizedSpan: string;
+  sourceClause: string;
   sourceRole: SentenceRole;
+  clauseIndex: number;
   questionAboutTopic: string | null;
   comparisonTarget: string | null;
   qualifiers: string[];
   score: number;
+  scoreBreakdown: CandidateScoreBreakdown | null;
 };
 
 const TOO_VAGUE_LABELS = new Set([
@@ -89,65 +127,175 @@ const GENERIC_STARTERS = [
   "their ",
 ];
 
-const CLAUSE_STARTERS = [
-  "how ",
-  "why ",
-  "what ",
-  "when ",
-  "where ",
-  "whether ",
-  "if ",
-  "can ",
-  "could ",
-  "would ",
-  "should ",
-  "is ",
-  "are ",
-  "does ",
-  "do ",
-  "did ",
-  "i need help with ",
-  "help me with ",
-  "help me understand ",
-  "i want to learn about ",
-  "can we go over ",
-  "could we go over ",
-  "walk me through ",
-  "explain ",
-  "can you explain ",
-  "i'm confused about ",
-  "i am confused about ",
-  "i don't understand ",
-  "i dont understand ",
-  "i don't get ",
-  "i dont get ",
-  "the thing i don't get is ",
-  "the thing i dont get is ",
-  "the part i don't understand is ",
-  "the part i dont understand is ",
-  "the part i don't get is ",
-  "the part i dont get is ",
-  "i'm stuck on ",
-  "i am stuck on ",
-  "i'm struggling with ",
-  "i am struggling with ",
-  "i'm having trouble with ",
-  "i am having trouble with ",
-  "i have trouble with ",
-  "can i get some help with ",
-  "could i get some help with ",
-  "can you help me with ",
-  "could you help me with ",
-  "i could use some help with ",
-];
+const FOCUS_MARKER_REGEX =
+  /\b(mainly|mostly|especially|specifically|particularly|the part|the thing|most of all|primarily)\b/i;
 
-const STOPWORD_TAILS = new Set([
-  "for me",
-  "right now",
-  "at all",
-  "a bit",
-  "a lot",
+const CONFUSION_MARKER_REGEX =
+  /\b(i don't understand|i dont understand|i'm confused|i am confused|confused about|help me understand|help me with|i need help with|struggling with|i'm stuck on|i am stuck on|i'm having trouble with|i am having trouble with|i have trouble with|i don't get|i dont get|can't figure out|cannot figure out|can t figure out)\b/i;
+
+const REQUEST_MARKER_REGEX =
+  /\b(can we go over|could we go over|walk me through|explain|can you explain|quiz me on|test me on|ask me about|i want to learn about|if i want to learn about|where should i start with|where do i start with|how should i start with|how do i start with)\b/i;
+
+const CONTEXT_MARKER_REGEX =
+  /\b(textbook|chapter|notes|teacher|lecture|class|syllabus|worksheet|formula|equation|graph)\b/i;
+
+const FILLER_WORDS = new Set([
+  "really",
+  "honestly",
+  "basically",
+  "just",
+  "actually",
+  "still",
+  "kind",
+  "sort",
+  "please",
+  "again",
+  "better",
+  "more",
+  "clearly",
 ]);
+
+const FUNCTION_WORDS = new Set([
+  "a",
+  "an",
+  "the",
+  "this",
+  "that",
+  "these",
+  "those",
+  "my",
+  "our",
+  "their",
+  "your",
+  "its",
+  "and",
+  "or",
+  "but",
+  "if",
+  "then",
+  "than",
+  "to",
+  "of",
+  "for",
+  "from",
+  "in",
+  "on",
+  "at",
+  "by",
+  "with",
+  "about",
+  "into",
+  "through",
+  "during",
+  "after",
+  "before",
+  "under",
+  "over",
+  "between",
+  "among",
+  "is",
+  "are",
+  "am",
+  "was",
+  "were",
+  "be",
+  "being",
+  "been",
+  "do",
+  "does",
+  "did",
+  "can",
+  "could",
+  "would",
+  "should",
+  "will",
+  "why",
+  "what",
+  "when",
+  "where",
+  "how",
+  "whether",
+  "because",
+  "maybe",
+  "i",
+  "me",
+  "we",
+  "you",
+  "they",
+  "he",
+  "she",
+  "them",
+  "us",
+]);
+
+const CLAUSE_WORDS = new Set([
+  "how",
+  "why",
+  "what",
+  "when",
+  "where",
+  "whether",
+  "if",
+  "can",
+  "could",
+  "would",
+  "should",
+  "does",
+  "do",
+  "did",
+  "is",
+  "are",
+  "am",
+  "was",
+  "were",
+  "work",
+  "works",
+  "happen",
+  "happens",
+  "affect",
+  "influence",
+  "impact",
+  "change",
+  "shape",
+  "mean",
+  "means",
+  "use",
+  "uses",
+  "start",
+  "figure",
+]);
+
+const BAD_SINGLE_TOKENS = new Set([
+  "t",
+  "m",
+  "re",
+  "ve",
+  "ll",
+  "d",
+  "s",
+]);
+
+const PROCESS_PHRASE_REGEXES: RegExp[] = [
+  /^(?:t\s+)?figure out$/i,
+  /^(?:t\s+)?figure out how$/i,
+  /^work$/i,
+  /^works$/i,
+  /^work out$/i,
+  /^understand$/i,
+  /^learn$/i,
+  /^learn about$/i,
+  /^where to start$/i,
+  /^how to start$/i,
+  /^start$/i,
+  /^where should i start$/i,
+  /^how should i start$/i,
+  /^where do i start$/i,
+  /^how do i start$/i,
+  /^don t know where to start$/i,
+  /^dont know where to start$/i,
+  /^can t figure out$/i,
+  /^cant figure out$/i,
+];
 
 function normalizeSurface(text: string) {
   return text
@@ -226,26 +374,12 @@ function overlapScore(a: string[], b: string[]) {
   return overlap / Math.max(aSet.size, bSet.size);
 }
 
-function splitIntoSentences(text: string): string[] {
-  const normalized = normalizeSurface(text);
-  if (!normalized) return [];
-
-  return normalized
-    .split(/(?<=[.?!])\s+|\s+\bbut\b\s+/i)
-    .map((sentence) => normalizeSurface(sentence))
-    .filter(Boolean);
-}
-
-function hasFocusMarker(text: string) {
-  return /\b(mainly|mostly|especially|specifically|particularly|the part|the thing|most of all)\b/i.test(
-    text
-  );
-}
-
-function hasHelpRequestMarker(text: string) {
-  return /\b(i need help with|help me with|help me understand|can i get some help with|could i get some help with|can you help me with|could you help me with|i could use some help with|i'm stuck on|i am stuck on|i'm struggling with|i am struggling with|i'm having trouble with|i am having trouble with|i have trouble with)\b/i.test(
-    text
-  );
+function isBadProcessPhrase(text: string | null) {
+  if (!text) return true;
+  const normalized = normalizeLoose(text);
+  if (!normalized) return true;
+  if (BAD_SINGLE_TOKENS.has(normalized)) return true;
+  return PROCESS_PHRASE_REGEXES.some((regex) => regex.test(normalized));
 }
 
 function detectIntent(message: string): TopicMessageIntent {
@@ -259,30 +393,7 @@ function detectIntent(message: string): TopicMessageIntent {
     return "quiz_request";
   }
 
-  if (
-    m.includes("i don't understand") ||
-    m.includes("i dont understand") ||
-    m.includes("i'm confused") ||
-    m.includes("i am confused") ||
-    m.includes("help me understand") ||
-    m.includes("help me with") ||
-    m.includes("i need help with") ||
-    m.includes("struggling with") ||
-    m.includes("i'm stuck on") ||
-    m.includes("i am stuck on") ||
-    m.includes("i'm having trouble with") ||
-    m.includes("i am having trouble with") ||
-    m.includes("i have trouble with") ||
-    m.includes("i don't get it") ||
-    m.includes("i dont get it") ||
-    m.includes("can i get some help with") ||
-    m.includes("could i get some help with") ||
-    m.includes("can you help me with") ||
-    m.includes("could you help me with") ||
-    m.includes("i could use some help with") ||
-    /\b(?:don't|dont)\s+get\s+\w+/i.test(m) ||
-    /\b(?:don't|dont)\s+understand\s+\w+/i.test(m)
-  ) {
+  if (CONFUSION_MARKER_REGEX.test(m)) {
     return "confusion_help";
   }
 
@@ -300,7 +411,8 @@ function detectIntent(message: string): TopicMessageIntent {
     m.startsWith("walk me through ") ||
     m.startsWith("explain ") ||
     m.startsWith("can you explain ") ||
-    m.startsWith("i want to learn about ")
+    m.startsWith("i want to learn about ") ||
+    m.startsWith("if i want to learn about ")
   ) {
     return "explain_request";
   }
@@ -329,28 +441,10 @@ function detectIntent(message: string): TopicMessageIntent {
   return "unclear";
 }
 
-function classifySentenceRole(sentence: string): SentenceRole {
-  const s = normalizeSurface(sentence).toLowerCase();
+function classifyClauseRole(clause: string): SentenceRole {
+  const s = normalizeSurface(clause).toLowerCase();
 
-  if (
-    s.includes("i don't understand") ||
-    s.includes("i dont understand") ||
-    s.includes("i'm confused") ||
-    s.includes("i am confused") ||
-    s.includes("help me understand") ||
-    s.includes("help me with") ||
-    s.includes("i need help with") ||
-    s.includes("struggling with") ||
-    s.includes("i'm stuck on") ||
-    s.includes("i am stuck on") ||
-    s.includes("i'm having trouble with") ||
-    s.includes("i am having trouble with") ||
-    s.includes("i have trouble with") ||
-    s.includes("i don't get it") ||
-    s.includes("i dont get it") ||
-    /\b(?:don't|dont)\s+get\s+\w+/i.test(s) ||
-    /\b(?:don't|dont)\s+understand\s+\w+/i.test(s)
-  ) {
+  if (CONFUSION_MARKER_REGEX.test(s)) {
     return "confusion";
   }
 
@@ -362,16 +456,7 @@ function classifySentenceRole(sentence: string): SentenceRole {
     return "comparison";
   }
 
-  if (
-    s.startsWith("can we go over ") ||
-    s.startsWith("could we go over ") ||
-    s.startsWith("walk me through ") ||
-    s.startsWith("explain ") ||
-    s.startsWith("can you explain ") ||
-    s.startsWith("quiz me on ") ||
-    s.startsWith("test me on ") ||
-    s.startsWith("i want to learn about ")
-  ) {
+  if (REQUEST_MARKER_REGEX.test(s)) {
     return "request";
   }
 
@@ -388,22 +473,61 @@ function classifySentenceRole(sentence: string): SentenceRole {
     return "attempt";
   }
 
-  if (
-    s.includes("textbook") ||
-    s.includes("chapter") ||
-    s.includes("notes") ||
-    s.includes("teacher") ||
-    s.includes("lecture") ||
-    s.includes("class")
-  ) {
+  if (CONTEXT_MARKER_REGEX.test(s)) {
     return "context";
   }
 
   return "other";
 }
 
-function extractComparison(sentence: string) {
-  const normalized = normalizeSurface(sentence);
+function splitIntoClauses(text: string): ClauseInfo[] {
+  const normalized = normalizeSurface(text);
+  if (!normalized) return [];
+
+  const clauses: ClauseInfo[] = [];
+  const pieces = normalized
+    .split(
+      /(?<=[.?!])\s+|(?=,\s*but\b)|(?=\s+\bbut\b\s+)|(?=,\s*especially\b)|(?=,\s*mainly\b)/i
+    )
+    .map((piece) => normalizeSurface(piece))
+    .filter(Boolean);
+
+  for (let i = 0; i < pieces.length; i += 1) {
+    const raw = pieces[i];
+    const lower = raw.toLowerCase();
+    const hasContrastBoundary =
+      i > 0 &&
+      (lower.startsWith("but ") ||
+        lower.startsWith(", but ") ||
+        lower.startsWith("mainly ") ||
+        lower.startsWith("especially "));
+
+    clauses.push({
+      raw,
+      normalized: normalizeLoose(raw),
+      index: i,
+      role: classifyClauseRole(raw),
+      hasContrastBoundary,
+      hasFocusMarker: FOCUS_MARKER_REGEX.test(raw),
+      hasConfusionMarker: CONFUSION_MARKER_REGEX.test(raw),
+      hasQuestionMarker: raw.endsWith("?"),
+      hasRequestMarker: REQUEST_MARKER_REGEX.test(raw),
+      hasContextMarker: CONTEXT_MARKER_REGEX.test(raw),
+    });
+  }
+
+  return clauses;
+}
+
+function analyzeMessageStructure(message: string): MessageInterpretation {
+  return {
+    messageIntent: detectIntent(message),
+    clauses: splitIntoClauses(message),
+  };
+}
+
+function extractComparison(clause: string) {
+  const normalized = normalizeSurface(clause);
   const match =
     normalized.match(
       /\b(?:difference between|compare|contrast)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)\??$/i
@@ -421,30 +545,6 @@ function extractComparison(sentence: string) {
     right,
     combined: `${left} vs ${right}`,
   };
-}
-
-function extractFocusedConfusionSpan(sentence: string): string | null {
-  const normalized = normalizeSurface(sentence);
-
-  const patterns: RegExp[] = [
-    /\b(?:mainly|mostly|especially|specifically|particularly|most of all)\s+(?:don't|dont)\s+get\s+(.+?)[.?!]*$/i,
-    /\b(?:mainly|mostly|especially|specifically|particularly|most of all)\s+(?:don't|dont)\s+understand\s+(.+?)[.?!]*$/i,
-    /\b(?:mainly|mostly|especially|specifically|particularly|most of all)\s+confused about\s+(.+?)[.?!]*$/i,
-    /\b(?:the part|the thing)\s+i\s+(?:don't|dont)\s+get\s+(?:is\s+)?(.+?)[.?!]*$/i,
-    /\b(?:the part|the thing)\s+i\s+(?:don't|dont)\s+understand\s+(?:is\s+)?(.+?)[.?!]*$/i,
-    /\b(?:i need help with|help me with|help me understand|can i get some help with|could i get some help with|can you help me with|could you help me with|i could use some help with|i(?:'m| am)? stuck on|i(?:'m| am)? struggling with|i(?:'m| am)? having trouble with|i have trouble with)\s+(.+?)[.?!]*$/i,
-    /\b(?:don't|dont)\s+get\s+(.+?)[.?!]*$/i,
-    /\b(?:don't|dont)\s+understand\s+(.+?)[.?!]*$/i,
-  ];
-
-  for (const regex of patterns) {
-    const match = normalized.match(regex);
-    if (match?.[1]) {
-      return normalizeSurface(match[1]);
-    }
-  }
-
-  return null;
 }
 
 function looksLikeLearnerStateClause(span: string | null) {
@@ -474,16 +574,36 @@ function looksLikeLearnerStateClause(span: string | null) {
     normalized === "don t get it" ||
     normalized === "dont get it" ||
     normalized === "don t understand it" ||
-    normalized === "dont understand it"
+    normalized === "dont understand it" ||
+    normalized === "can t figure out" ||
+    normalized === "cant figure out"
   );
 }
 
-function stripClauseStarter(text: string) {
+function stripLeadingQuestionWrapper(text: string) {
   let output = normalizeSurface(text);
 
-  for (const starter of CLAUSE_STARTERS) {
-    if (output.toLowerCase().startsWith(starter)) {
-      output = output.slice(starter.length).trim();
+  const wrapperPatterns: RegExp[] = [
+    /^(?:how|why|what)\s+(.+)$/i,
+    /^(?:how|why|what)\s+the\s+(.+)$/i,
+    /^(?:how|why|what)\s+an\s+(.+)$/i,
+    /^(?:how|why|what)\s+a\s+(.+)$/i,
+  ];
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+
+    for (const regex of wrapperPatterns) {
+      const match = output.match(regex);
+      if (!match?.[1]) continue;
+
+      const candidate = normalizeSurface(match[1]);
+      if (!candidate) continue;
+      if (isBadProcessPhrase(candidate)) continue;
+
+      output = candidate;
+      changed = true;
       break;
     }
   }
@@ -491,70 +611,17 @@ function stripClauseStarter(text: string) {
   return output;
 }
 
-function stripTrailingNoise(text: string) {
-  let output = normalizeSurface(text);
-
-  output = output
-    .replace(/\b(?:please|again|more clearly|better)\b/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  for (const tail of STOPWORD_TAILS) {
-    if (output.toLowerCase().endsWith(tail)) {
-      output = output.slice(0, -tail.length).trim();
-    }
-  }
-
-  output = output
-    .replace(/\b(?:for learning|in the brain|in physics|in biology)\b$/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return output;
-}
-
-function reduceToHeadConcept(span: string | null) {
-  if (!span) return null;
-
-  let output = normalizeSurface(span);
-
-  output = stripClauseStarter(output);
-
-  output = output
-    .replace(/\bhow\s+(.+?)\s+works?$/i, "$1")
-    .replace(/\bhow\s+(.+?)\s+work$/i, "$1")
-    .replace(/\bthe way\s+(.+?)\s+works?$/i, "$1")
-    .replace(/\bthe part where\s+(.+?)$/i, "$1")
-    .replace(/\bwhat happens when\s+(.+?)$/i, "$1")
-    .replace(/\bwhy\s+(.+?)$/i, "$1")
-    .replace(/\bhow\s+(.+?)$/i, "$1")
-    .replace(/\bthe thing about\s+(.+?)$/i, "$1")
-    .replace(/\bthe idea of\s+(.+?)$/i, "$1")
-    .replace(/\bthe concept of\s+(.+?)$/i, "$1")
-    .trim();
-
-  output = output
-    .replace(/\bworks?$|happens?$|mean(?:s)?$|does$|do$|is$|are$/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  output = stripTrailingNoise(output);
-
-  return output || null;
-}
-
-function cleanupSpan(span: string | null) {
+function normalizeCandidateSpan(span: string | null) {
   if (!span) return null;
 
   let output = normalizeSurface(span);
 
   output = output
-    .replace(/\b(really|honestly|basically|just|actually|still|kind of|sort of)\b/gi, "")
+    .replace(/[?.!,:;]+$/g, "")
+    .replace(/\b(really|honestly|basically|just|actually|still)\b/gi, "")
     .replace(/\b(at all)\b/gi, "")
     .replace(/\s+/g, " ")
     .trim();
-
-  output = output.replace(/[?.!,:;]+$/g, "").trim();
 
   for (const starter of GENERIC_STARTERS) {
     if (output.toLowerCase().startsWith(starter)) {
@@ -564,19 +631,81 @@ function cleanupSpan(span: string | null) {
   }
 
   output = output
-    .replace(/\bbut I (?:don't|dont) get it\b/i, "")
-    .replace(/\bbut I (?:don't|dont) understand\b/i, "")
-    .replace(/\bbut I'm confused\b/i, "")
-    .replace(/\bbut I am confused\b/i, "")
+    .replace(
+      /^(?:can we go over|could we go over|walk me through|explain|can you explain|quiz me on|test me on|ask me about|i want to learn about|if i want to learn about|i'm confused about|i am confused about|help me understand|help me with|i need help with|can i get some help with|could i get some help with|can you help me with|could you help me with|i could use some help with|i(?:'m| am)? stuck on|i(?:'m| am)? struggling with|i(?:'m| am)? having trouble with|i have trouble with|i(?:\s+can'?t|\s+cannot|\s+can t)\s+figure out)\s+/i,
+      ""
+    )
+    .replace(
+      /^(?:the part|the thing)\s+i\s+(?:don't|dont)\s+(?:get|understand)\s+(?:is\s+)?/i,
+      ""
+    )
+    .replace(/^(?:what is|what are|how does|how do|why is|why does)\s+/i, "")
+    .replace(
+      /^(?:where should i start with|where do i start with|how should i start with|how do i start with)\s+/i,
+      ""
+    )
+    .replace(/^about\s+/i, "")
+    .replace(/^regarding\s+/i, "")
+    .replace(/^on\s+/i, "")
+    .replace(/^with\s+/i, "")
+    .replace(
+      /\b(?:where should i start|where do i start|how should i start|how do i start)\b$/i,
+      ""
+    )
+    .replace(/\b(?:works?|work|happens?|mean(?:s)?|does|do|is|are)$/i, "")
+    .replace(/\b(?:for me|right now|a bit|a lot)$/i, "")
     .replace(/\s+/g, " ")
     .trim();
 
-  const reduced = reduceToHeadConcept(output);
+  output = stripLeadingQuestionWrapper(output);
 
-  if (!reduced) return null;
-  if (looksLikeLearnerStateClause(reduced)) return null;
+  if (isBadProcessPhrase(output)) return null;
 
-  return reduced;
+  let tokens = tokenize(output).filter((token) => !BAD_SINGLE_TOKENS.has(token));
+  if (!tokens.length) return null;
+
+  output = tokens.join(" ").trim();
+  if (!output) return null;
+
+  output = stripLeadingQuestionWrapper(output);
+
+  tokens = tokenize(output).filter((token) => !BAD_SINGLE_TOKENS.has(token));
+  if (!tokens.length) return null;
+
+  output = tokens.join(" ").trim();
+
+  for (const starter of GENERIC_STARTERS) {
+    if (output.toLowerCase().startsWith(starter)) {
+      output = output.slice(starter.length).trim();
+      break;
+    }
+  }
+
+  if (!output) return null;
+  if (isBadProcessPhrase(output)) return null;
+
+  return output;
+}
+
+function isClauseLikeSpan(span: string | null) {
+  if (!span) return true;
+
+  const normalized = normalizeLoose(span);
+  if (!normalized) return true;
+
+  const tokens = tokenize(span);
+
+  if (tokens.length <= 1) return false;
+
+  let clauseWordCount = 0;
+  for (const token of tokens) {
+    if (CLAUSE_WORDS.has(token)) clauseWordCount += 1;
+  }
+
+  if (clauseWordCount >= 2) return true;
+  if (/^(how|why|what|when|where|whether|if)\b/i.test(normalized)) return true;
+
+  return false;
 }
 
 function simplifyEconomicLabel(text: string) {
@@ -593,9 +722,11 @@ function simplifyEconomicLabel(text: string) {
   return normalized;
 }
 
-function canonicalizeLabel(span: string | null) {
-  const cleaned = cleanupSpan(span);
+function shapeDisplayLabel(span: string | null) {
+  const cleaned = normalizeCandidateSpan(span);
   if (!cleaned) return null;
+  if (looksLikeLearnerStateClause(cleaned)) return null;
+  if (isBadProcessPhrase(cleaned)) return null;
 
   const simplified = simplifyEconomicLabel(cleaned);
 
@@ -604,6 +735,8 @@ function canonicalizeLabel(span: string | null) {
     .replace(/\bvs\.\b/gi, "vs")
     .replace(/\s+/g, " ")
     .trim();
+
+  if (isBadProcessPhrase(normalized)) return null;
 
   return toTitleCase(normalized);
 }
@@ -624,67 +757,19 @@ function scoreSpecificity(label: string | null): TopicSpecificity {
   return "very_specific";
 }
 
-function isClauseLikeSpan(span: string | null) {
-  if (!span) return true;
-
-  const normalized = normalizeLoose(span);
-  if (!normalized) return true;
-
-  if (CLAUSE_STARTERS.some((starter) => normalized.startsWith(starter.trim()))) {
-    return true;
-  }
-
-  const tokens = tokenize(span);
-  const clauseWords = new Set([
-    "how",
-    "why",
-    "what",
-    "when",
-    "where",
-    "if",
-    "can",
-    "could",
-    "would",
-    "should",
-    "does",
-    "do",
-    "did",
-    "is",
-    "are",
-    "am",
-    "was",
-    "were",
-    "work",
-    "works",
-    "happen",
-    "happens",
-    "affect",
-    "influence",
-    "impact",
-    "change",
-    "shape",
-  ]);
-
-  let clauseWordCount = 0;
-  for (const token of tokens) {
-    if (clauseWords.has(token)) clauseWordCount += 1;
-  }
-
-  return clauseWordCount >= 2;
-}
-
 function looksLikeSuspiciousLabel(label: string | null) {
   if (!label) return true;
 
   const normalized = normalizeLoose(label);
   if (!normalized) return true;
   if (TOO_VAGUE_LABELS.has(normalized)) return true;
+  if (isBadProcessPhrase(label)) return true;
 
   const tokenCount = tokenize(label).length;
   if (tokenCount > 8) return true;
 
   if (
-    /\b(?:help|understand|get|confused|stuck|trouble|learn|explain|go over)\b/i.test(
+    /\b(?:help|understand|get|confused|stuck|trouble|learn|explain|go over|figure out|start)\b/i.test(
       label
     )
   ) {
@@ -694,118 +779,8 @@ function looksLikeSuspiciousLabel(label: string | null) {
   return false;
 }
 
-function findReuseCandidate(
-  label: string | null,
-  candidates: RetrievalCandidate[]
-): RetrievalCandidate | null {
-  if (!label || !candidates.length) return null;
-
-  const normalizedLabel = label.toLowerCase();
-  const labelTokens = semanticTokens(label);
-
-  let best: RetrievalCandidate | null = null;
-  let bestScore = 0;
-
-  for (const candidate of candidates) {
-    const candidateName = candidate.topic_name.toLowerCase();
-    const exact = candidateName === normalizedLabel ? 1 : 0;
-    const tokenScore = overlapScore(
-      labelTokens,
-      semanticTokens(candidate.topic_name)
-    );
-    const retrievalScore = candidate.similarity ?? 0;
-
-    const score = exact * 1.0 + tokenScore * 0.7 + retrievalScore * 0.6;
-
-    if (score > bestScore) {
-      bestScore = score;
-      best = candidate;
-    }
-  }
-
-  if (bestScore >= 0.82) return best;
-  return null;
-}
-
-function buildCandidate(
-  span: string | null,
-  sourceSentence: string,
-  sourceRole: SentenceRole,
-  questionAboutTopic: string | null = null,
-  comparisonTarget: string | null = null,
-  qualifiers: string[] = []
-): TopicCandidate | null {
-  const cleaned = cleanupSpan(span);
-  if (!cleaned) return null;
-
-  return {
-    span: cleaned,
-    sourceSentence,
-    sourceRole,
-    questionAboutTopic,
-    comparisonTarget,
-    qualifiers,
-    score: 0,
-  };
-}
-
-function extractStandaloneConceptCandidate(
-  sentence: string
-): TopicCandidate | null {
-  const normalized = normalizeSurface(sentence);
-  const role = classifySentenceRole(normalized);
-  const tokens = tokenize(normalized);
-
-  if (!tokens.length || tokens.length > 5) return null;
-
-  const cleaned = cleanupSpan(normalized);
-  if (!cleaned) return null;
-
-  const label = canonicalizeLabel(cleaned);
-  const specificity = scoreSpecificity(label);
-
-  if (specificity === "too_vague") return null;
-  if (isClauseLikeSpan(cleaned)) return null;
-
-  return buildCandidate(cleaned, normalized, role, null, null, []);
-}
-
-function extractTailConceptCandidate(sentence: string): TopicCandidate | null {
-  const normalized = normalizeSurface(sentence);
-
-  const tailPatterns: RegExp[] = [
-    /(?:learn about|understand|review|study)\s+(.+?)[.?!]*$/i,
-    /(?:confused about|struggling with|help me understand|help me with|i need help with|i(?:'m| am)? stuck on|i(?:'m| am)? having trouble with|i have trouble with)\s+(.+?)[.?!]*$/i,
-  ];
-
-  for (const regex of tailPatterns) {
-    const match = normalized.match(regex);
-    if (!match) continue;
-
-    const candidate = buildCandidate(
-      match[1] ?? null,
-      normalized,
-      classifySentenceRole(normalized),
-      null,
-      null,
-      hasHelpRequestMarker(normalized) ? ["focus_target"] : []
-    );
-
-    if (candidate) return candidate;
-  }
-
-  return null;
-}
-
-function appearsInBroadList(sentence: string, span: string) {
-  const normalizedSentence = normalizeLoose(sentence);
-  const normalizedSpan = normalizeLoose(span);
-
-  if (!normalizedSentence || !normalizedSpan) return false;
-
-  const hasListStructure = sentence.includes(",") || /\b(and|or)\b/i.test(sentence);
-
-  return hasListStructure && normalizedSentence.includes(normalizedSpan);
+function dedupe<T>(items: T[]) {
+  return Array.from(new Set(items));
 }
 
 function countSpanMentions(fullMessage: string, span: string) {
@@ -817,6 +792,17 @@ function countSpanMentions(fullMessage: string, span: string) {
   const escaped = normalizedSpan.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const matches = normalizedMessage.match(new RegExp(`\\b${escaped}\\b`, "g"));
   return matches?.length ?? 0;
+}
+
+function appearsInBroadList(clause: string, span: string) {
+  const normalizedClause = normalizeLoose(clause);
+  const normalizedSpan = normalizeLoose(span);
+
+  if (!normalizedClause || !normalizedSpan) return false;
+
+  const hasListStructure = clause.includes(",") || /\b(and|or)\b/i.test(clause);
+
+  return hasListStructure && normalizedClause.includes(normalizedSpan);
 }
 
 function spansSubstantiallyOverlap(a: string, b: string) {
@@ -834,12 +820,321 @@ function spansSubstantiallyOverlap(a: string, b: string) {
   return aLoose.includes(bLoose) || bLoose.includes(aLoose);
 }
 
+function buildCandidate(args: {
+  span: string | null;
+  clause: ClauseInfo;
+  questionAboutTopic?: string | null;
+  comparisonTarget?: string | null;
+  qualifiers?: string[];
+}): TopicCandidate | null {
+  const normalized = normalizeCandidateSpan(args.span);
+  if (!normalized) return null;
+  if (looksLikeLearnerStateClause(normalized)) return null;
+  if (isBadProcessPhrase(normalized)) return null;
+
+  const label = shapeDisplayLabel(normalized);
+  if (!label && tokenize(normalized).length <= 2) {
+    return null;
+  }
+
+  return {
+    span: normalized,
+    normalizedSpan: normalizeLoose(normalized),
+    sourceClause: args.clause.raw,
+    sourceRole: args.clause.role,
+    clauseIndex: args.clause.index,
+    questionAboutTopic: args.questionAboutTopic ?? null,
+    comparisonTarget: args.comparisonTarget ?? null,
+    qualifiers: args.qualifiers ?? [],
+    score: 0,
+    scoreBreakdown: null,
+  };
+}
+
+function extractFocusTailCandidates(clause: ClauseInfo): TopicCandidate[] {
+  const candidates: TopicCandidate[] = [];
+  const text = clause.raw;
+
+  const patterns: Array<{ regex: RegExp; qualifiers?: string[] }> = [
+    {
+      regex:
+        /\b(?:mainly|mostly|especially|specifically|particularly|most of all)\s+(?:confused about|stuck on|struggling with|having trouble with|don't understand|dont understand|don't get|dont get|can't figure out|cannot figure out|can t figure out)\s+(.+?)[.?!]*$/i,
+      qualifiers: ["focus_target"],
+    },
+    {
+      regex:
+        /\b(?:the part|the thing)\s+i\s+(?:don't|dont)\s+(?:get|understand)\s+(?:is\s+)?(.+?)[.?!]*$/i,
+      qualifiers: ["focus_target"],
+    },
+    {
+      regex:
+        /\b(?:i need help with|help me with|help me understand|can i get some help with|could i get some help with|can you help me with|could you help me with|i could use some help with|i(?:'m| am)? stuck on|i(?:'m| am)? struggling with|i(?:'m| am)? having trouble with|i have trouble with|i(?:\s+can'?t|\s+cannot|\s+can t)\s+figure out)\s+(.+?)[.?!]*$/i,
+      qualifiers: ["focus_target"],
+    },
+    {
+      regex: /\b(?:don't|dont)\s+(?:get|understand)\s+(.+?)[.?!]*$/i,
+      qualifiers: ["focus_target"],
+    },
+  ];
+
+  for (const rule of patterns) {
+    const match = text.match(rule.regex);
+    if (!match?.[1]) continue;
+
+    const candidate = buildCandidate({
+      span: match[1],
+      clause,
+      qualifiers: rule.qualifiers ?? [],
+    });
+
+    if (candidate) candidates.push(candidate);
+  }
+
+  return candidates;
+}
+
+function extractPrepositionalCandidates(clause: ClauseInfo): TopicCandidate[] {
+  const candidates: TopicCandidate[] = [];
+  const text = clause.raw;
+
+  const patterns: Array<{ regex: RegExp; qualifiers?: string[] }> = [
+    { regex: /\babout\s+(.+?)(?:,| but| and|\.|\?|!|$)/i },
+    { regex: /\bregarding\s+(.+?)(?:,| but| and|\.|\?|!|$)/i },
+    { regex: /\bon\s+(.+?)(?:,| but| and|\.|\?|!|$)/i },
+    { regex: /\bwith\s+(.+?)(?:,| but| and|\.|\?|!|$)/i },
+    {
+      regex:
+        /\b(?:formula|equation|graph|section|chapter|idea|concept)\s+(?:on|about|for)\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
+    },
+    {
+      regex:
+        /\bhas\s+a\s+(?:formula|equation|graph|section|idea|concept)\s+(?:on|about|for)\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
+      qualifiers: ["context_recovery"],
+    },
+  ];
+
+  for (const rule of patterns) {
+    const match = text.match(rule.regex);
+    if (!match?.[1]) continue;
+
+    const candidate = buildCandidate({
+      span: match[1],
+      clause,
+      qualifiers: rule.qualifiers ?? [],
+    });
+
+    if (candidate) candidates.push(candidate);
+  }
+
+  return candidates;
+}
+
+function extractComparisonCandidates(clause: ClauseInfo): TopicCandidate[] {
+  const comparison = extractComparison(clause.raw);
+  if (!comparison) return [];
+
+  const candidate = buildCandidate({
+    span: comparison.combined,
+    clause: { ...clause, role: "comparison" },
+    comparisonTarget: comparison.right,
+  });
+
+  return candidate ? [candidate] : [];
+}
+
+function extractQuestionCandidates(clause: ClauseInfo): TopicCandidate[] {
+  const candidates: TopicCandidate[] = [];
+  const text = clause.raw;
+
+  const directPatterns: Array<{
+    regex: RegExp;
+    conceptGroup: number;
+    questionBuilder?: (match: RegExpMatchArray) => string | null;
+  }> = [
+    {
+      regex: /^is\s+(.+?)\s+important\s+for\s+(.+?)[?]*$/i,
+      conceptGroup: 1,
+      questionBuilder: (m) => `important for ${normalizeSurface(m[2] ?? "")}`,
+    },
+    {
+      regex:
+        /^(?:how does)\s+(.+?)\s+(affect|influence|impact|change|shape)\s+(.+?)[?]*$/i,
+      conceptGroup: 1,
+      questionBuilder: (m) =>
+        `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[3] ?? "")}`.trim(),
+    },
+    {
+      regex: /^does\s+(.+?)\s+(affect|influence|change|cause)\s+(.+?)[?]*$/i,
+      conceptGroup: 1,
+      questionBuilder: (m) =>
+        `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[3] ?? "")}`.trim(),
+    },
+    {
+      regex: /^(?:what is|what are)\s+(.+?)[?]*$/i,
+      conceptGroup: 1,
+    },
+    {
+      regex: /^(?:how does|how do)\s+(.+?)[?]*$/i,
+      conceptGroup: 1,
+    },
+    {
+      regex: /^(?:why is|why does)\s+(.+?)[?]*$/i,
+      conceptGroup: 1,
+    },
+    {
+      regex:
+        /^(?:if i want to learn about)\s+(.+?)\s+(?:where should i start|how should i start|where do i start|how do i start)\??$/i,
+      conceptGroup: 1,
+      questionBuilder: () => "where to start",
+    },
+    {
+      regex:
+        /^(?:where should i start with|where do i start with|how should i start with|how do i start with)\s+(.+?)\??$/i,
+      conceptGroup: 1,
+      questionBuilder: () => "where to start",
+    },
+  ];
+
+  for (const rule of directPatterns) {
+    const match = text.match(rule.regex);
+    if (!match) continue;
+
+    const candidate = buildCandidate({
+      span: match[rule.conceptGroup] ?? null,
+      clause,
+      questionAboutTopic: rule.questionBuilder ? rule.questionBuilder(match) : null,
+      qualifiers: ["focus_target"],
+    });
+
+    if (candidate) candidates.push(candidate);
+  }
+
+  return candidates;
+}
+
+function extractRequestCandidates(clause: ClauseInfo): TopicCandidate[] {
+  const candidates: TopicCandidate[] = [];
+  const text = clause.raw;
+
+  const patterns: Array<{ regex: RegExp; qualifiers?: string[] }> = [
+    {
+      regex:
+        /^(?:can we go over|could we go over|walk me through|explain|can you explain|quiz me on|test me on|ask me about|i want to learn about)\s+(.+?)[.?!]*$/i,
+      qualifiers: ["focus_target"],
+    },
+    {
+      regex:
+        /^(?:if i want to learn about)\s+(.+?)\s+(?:where should i start|how should i start|where do i start|how do i start)\??$/i,
+      qualifiers: ["focus_target"],
+    },
+    {
+      regex:
+        /^(?:my notes mention|my textbook mentions|we learned about|it talks about)\s+(.+?)[.?!]*$/i,
+      qualifiers: ["context_recovery"],
+    },
+  ];
+
+  for (const rule of patterns) {
+    const match = text.match(rule.regex);
+    if (!match?.[1]) continue;
+
+    const candidate = buildCandidate({
+      span: match[1],
+      clause,
+      qualifiers: rule.qualifiers ?? [],
+    });
+
+    if (candidate) candidates.push(candidate);
+  }
+
+  return candidates;
+}
+
+function extractNounLikeCandidates(clause: ClauseInfo): TopicCandidate[] {
+  const rawTokens = tokenize(clause.raw);
+  if (!rawTokens.length) return [];
+
+  const spans: string[] = [];
+  let current: string[] = [];
+
+  function flush() {
+    if (current.length > 0) {
+      spans.push(current.join(" "));
+      current = [];
+    }
+  }
+
+  for (const token of rawTokens) {
+    if (
+      FUNCTION_WORDS.has(token) ||
+      FILLER_WORDS.has(token) ||
+      BAD_SINGLE_TOKENS.has(token)
+    ) {
+      flush();
+      continue;
+    }
+
+    current.push(token);
+
+    if (current.length >= 4) {
+      flush();
+    }
+  }
+
+  flush();
+
+  return spans
+    .filter((span) => {
+      const tokens = tokenize(span);
+      if (!tokens.length) return false;
+      if (tokens.every((token) => BAD_SINGLE_TOKENS.has(token))) return false;
+      if (isBadProcessPhrase(span)) return false;
+      if (
+        tokens.some((token) =>
+          ["figure", "out", "start", "understand", "learn", "work"].includes(
+            token
+          )
+        ) &&
+        tokens.length <= 3
+      ) {
+        return false;
+      }
+      return true;
+    })
+    .map((span) =>
+      buildCandidate({
+        span,
+        clause,
+      })
+    )
+    .filter((candidate): candidate is TopicCandidate => Boolean(candidate));
+}
+
+function extractStandaloneConceptCandidate(clause: ClauseInfo): TopicCandidate | null {
+  const tokens = tokenize(clause.raw);
+  if (!tokens.length || tokens.length > 5) return null;
+  if (tokens.some((token) => BAD_SINGLE_TOKENS.has(token))) return null;
+
+  const shaped = shapeDisplayLabel(clause.raw);
+  if (!shaped) return null;
+
+  const specificity = scoreSpecificity(shaped);
+  if (specificity === "too_vague") return null;
+  if (isClauseLikeSpan(clause.raw)) return null;
+  if (isBadProcessPhrase(shaped)) return null;
+
+  return buildCandidate({
+    span: clause.raw,
+    clause,
+  });
+}
+
 function choosePreferredOverlappingCandidate(
   current: TopicCandidate,
   incoming: TopicCandidate
 ) {
-  const currentLabel = canonicalizeLabel(current.span);
-  const incomingLabel = canonicalizeLabel(incoming.span);
+  const currentLabel = shapeDisplayLabel(current.span);
+  const incomingLabel = shapeDisplayLabel(incoming.span);
 
   const currentSpecificity = scoreSpecificity(currentLabel);
   const incomingSpecificity = scoreSpecificity(incomingLabel);
@@ -920,322 +1215,204 @@ function dedupeAndGroupCandidates(candidates: TopicCandidate[]) {
   return grouped;
 }
 
-function extractCandidatesFromSentence(sentence: string): TopicCandidate[] {
-  const normalized = normalizeSurface(sentence);
-  const role = classifySentenceRole(normalized);
-  const candidates: TopicCandidate[] = [];
+function extractConceptCandidates(
+  interpretation: MessageInterpretation
+): TopicCandidate[] {
+  const collected: TopicCandidate[] = [];
 
-  const comparison = extractComparison(normalized);
-  if (comparison) {
-    const candidate = buildCandidate(
-      comparison.combined,
-      normalized,
-      "comparison",
-      null,
-      comparison.right,
-      []
-    );
-    if (candidate) candidates.push(candidate);
-    return candidates;
+  for (const clause of interpretation.clauses) {
+    collected.push(...extractComparisonCandidates(clause));
+    collected.push(...extractFocusTailCandidates(clause));
+    collected.push(...extractPrepositionalCandidates(clause));
+    collected.push(...extractQuestionCandidates(clause));
+    collected.push(...extractRequestCandidates(clause));
+    collected.push(...extractNounLikeCandidates(clause));
+
+    const standalone = extractStandaloneConceptCandidate(clause);
+    if (standalone) collected.push(standalone);
   }
 
-  const focusedConfusionSpan = extractFocusedConfusionSpan(normalized);
-  if (focusedConfusionSpan) {
-    const focusedCandidate = buildCandidate(
-      focusedConfusionSpan,
-      normalized,
-      "confusion",
-      null,
-      null,
-      hasFocusMarker(normalized) || hasHelpRequestMarker(normalized)
-        ? ["focus_target"]
-        : []
+  return dedupeAndGroupCandidates(collected);
+}
+
+function findReuseCandidate(
+  label: string | null,
+  candidates: RetrievalCandidate[]
+): RetrievalCandidate | null {
+  if (!label || !candidates.length) return null;
+
+  const normalizedLabel = label.toLowerCase();
+  const labelTokens = semanticTokens(label);
+
+  let best: RetrievalCandidate | null = null;
+  let bestScore = 0;
+
+  for (const candidate of candidates) {
+    const candidateName = candidate.topic_name.toLowerCase();
+    const exact = candidateName === normalizedLabel ? 1 : 0;
+    const tokenScore = overlapScore(
+      labelTokens,
+      semanticTokens(candidate.topic_name)
     );
-    if (focusedCandidate) candidates.push(focusedCandidate);
-  }
+    const retrievalScore = candidate.similarity ?? 0;
 
-  const directPatterns: Array<{
-    regex: RegExp;
-    conceptGroup: number;
-    questionBuilder?: (match: RegExpMatchArray) => string | null;
-    qualifiers?: string[];
-  }> = [
-    {
-      regex:
-        /^(?:i don't really understand|i dont really understand|i don't understand|i dont understand|i'm confused about|i am confused about|help me understand|help me with|i need help with|i(?:'m| am)? stuck on|i(?:'m| am)? struggling with|i(?:'m| am)? having trouble with|i have trouble with)\s+(.+?)(?:\s+at all)?[.?!]*$/i,
-      conceptGroup: 1,
-      qualifiers: ["focus_target"],
-    },
-    {
-      regex:
-        /^(?:can we go over|could we go over|walk me through|explain|can you explain|quiz me on|test me on|i want to learn about)\s+(.+?)[.?!]*$/i,
-      conceptGroup: 1,
-    },
-    {
-      regex: /^is\s+(.+?)\s+important\s+for\s+(.+?)[?]*$/i,
-      conceptGroup: 1,
-      questionBuilder: (m) => `important for ${normalizeSurface(m[2] ?? "")}`,
-    },
-    {
-      regex:
-        /^(?:how does)\s+(.+?)\s+(affect|influence|impact|change|shape)\s+(.+?)[?]*$/i,
-      conceptGroup: 1,
-      questionBuilder: (m) =>
-        `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[3] ?? "")}`.trim(),
-    },
-    {
-      regex: /^does\s+(.+?)\s+(affect|influence|change|cause)\s+(.+?)[?]*$/i,
-      conceptGroup: 1,
-      questionBuilder: (m) =>
-        `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[3] ?? "")}`.trim(),
-    },
-    {
-      regex: /^(?:what is|what are)\s+(.+?)[?]*$/i,
-      conceptGroup: 1,
-    },
-    {
-      regex: /^(?:how does|how do)\s+(.+?)[?]*$/i,
-      conceptGroup: 1,
-    },
-    {
-      regex:
-        /^(?:my notes mention|my textbook mentions|we learned about|it talks about)\s+(.+?)[.?!]*$/i,
-      conceptGroup: 1,
-    },
-    {
-      regex:
-        /^(?:can i get some help with|could i get some help with|can you help me with|could you help me with|i could use some help with)\s+(.+?)[.?!]*$/i,
-      conceptGroup: 1,
-      qualifiers: ["focus_target"],
-    },
-  ];
+    const score = exact * 1.0 + tokenScore * 0.7 + retrievalScore * 0.6;
 
-  for (const rule of directPatterns) {
-    const match = normalized.match(rule.regex);
-    if (!match) continue;
-
-    const candidate = buildCandidate(
-      match[rule.conceptGroup] ?? null,
-      normalized,
-      role,
-      rule.questionBuilder ? rule.questionBuilder(match) : null,
-      null,
-      rule.qualifiers ?? []
-    );
-
-    if (candidate) candidates.push(candidate);
-  }
-
-  const embeddedPatterns: Array<{
-    regex: RegExp;
-    qualifiers?: string[];
-  }> = [
-    {
-      regex:
-        /\b(?:formula|equation|graph|section|chapter|idea|concept)\s+(?:on|about|for)\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
-    },
-    {
-      regex:
-        /\bhas\s+a\s+(?:formula|equation|graph|section|idea|concept)\s+(?:on|about|for)\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
-    },
-    {
-      regex: /\bit says\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
-    },
-    {
-      regex: /\babout\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
-    },
-    {
-      regex: /\bregarding\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
-    },
-    {
-      regex: /\bmainly confused about\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
-      qualifiers: ["focus_target"],
-    },
-    {
-      regex: /\bconfused about\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
-    },
-    {
-      regex: /\bstuck on\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
-      qualifiers: ["focus_target"],
-    },
-    {
-      regex: /\bhaving trouble with\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
-      qualifiers: ["focus_target"],
-    },
-    {
-      regex: /\bstruggling with\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
-      qualifiers: ["focus_target"],
-    },
-  ];
-
-  for (const rule of embeddedPatterns) {
-    const match = normalized.match(rule.regex);
-    if (!match) continue;
-
-    const raw = normalizeSurface(match[1] ?? "");
-    const refined =
-      raw.match(/^(?:the\s+)?(.+?)\s+(?:formula|equation)$/i)?.[1] ??
-      raw.match(
-        /^(.+?)\s+(?:for learning|in the brain|in physics|in biology)$/i
-      )?.[1] ??
-      raw;
-
-    const candidate = buildCandidate(
-      refined,
-      normalized,
-      role,
-      null,
-      null,
-      rule.qualifiers ?? []
-    );
-    if (candidate) candidates.push(candidate);
-  }
-
-  if (role === "question") {
-    const subjectQuestionPatterns: RegExp[] = [
-      /^is\s+(.+?)\s+(?:important|necessary|useful|relevant)\b/i,
-      /^does\s+(.+?)\s+\w+\b/i,
-      /^why is\s+(.+?)\s+\w+\b/i,
-    ];
-
-    for (const regex of subjectQuestionPatterns) {
-      const match = normalized.match(regex);
-      if (!match) continue;
-      const candidate = buildCandidate(
-        match[1] ?? null,
-        normalized,
-        role,
-        null,
-        null,
-        []
-      );
-      if (candidate) candidates.push(candidate);
+    if (score > bestScore) {
+      bestScore = score;
+      best = candidate;
     }
   }
 
-  const tailCandidate = extractTailConceptCandidate(normalized);
-  if (tailCandidate) {
-    candidates.push(tailCandidate);
-  }
-
-  const standaloneCandidate = extractStandaloneConceptCandidate(normalized);
-  if (standaloneCandidate) {
-    candidates.push(standaloneCandidate);
-  }
-
-  return candidates;
+  if (bestScore >= 0.82) return best;
+  return null;
 }
 
-function scoreCandidate(
-  candidate: TopicCandidate,
-  fullMessage: string,
-  allCandidates: TopicCandidate[]
-): number {
-  let score = 0.24;
-
-  const label = canonicalizeLabel(candidate.span);
+function buildCandidateScoreBreakdown(args: {
+  candidate: TopicCandidate;
+  message: string;
+  interpretation: MessageInterpretation;
+  retrievalCandidates: RetrievalCandidate[];
+}): CandidateScoreBreakdown {
+  const { candidate, message, interpretation, retrievalCandidates } = args;
+  const clause = interpretation.clauses.find(
+    (item) => item.index === candidate.clauseIndex
+  );
+  const label = shapeDisplayLabel(candidate.span);
   const specificity = scoreSpecificity(label);
-  const spanTokens = tokenize(candidate.span);
+  const tokenCount = tokenize(candidate.span).length;
+  const mentionCount = countSpanMentions(message, candidate.span);
 
-  if (candidate.sourceRole === "confusion") score += 0.28;
-  if (candidate.sourceRole === "question") score += 0.2;
-  if (candidate.sourceRole === "request") score += 0.18;
-  if (candidate.sourceRole === "comparison") score += 0.26;
-  if (candidate.sourceRole === "context") score -= 0.04;
+  let roleWeight = 0;
+  let focusWeight = 0;
+  let contrastWeight = 0;
+  let confusionAdjacencyWeight = 0;
+  let requestAdjacencyWeight = 0;
+  let contextRecoveryWeight = 0;
+  let mentionWeight = 0;
+  let specificityWeight = 0;
+  let reuseHintWeight = 0;
+  let genericPenalty = 0;
+  let clausePenalty = 0;
+  let learnerStatePenalty = 0;
+  let lengthPenalty = 0;
 
-  if (candidate.qualifiers.includes("focus_target")) score += 0.25;
-  if (candidate.questionAboutTopic) score += 0.08;
-  if (candidate.comparisonTarget) score += 0.1;
+  if (candidate.sourceRole === "confusion") roleWeight += 0.28;
+  if (candidate.sourceRole === "question") roleWeight += 0.2;
+  if (candidate.sourceRole === "request") roleWeight += 0.18;
+  if (candidate.sourceRole === "comparison") roleWeight += 0.26;
+  if (candidate.sourceRole === "context") roleWeight -= 0.04;
 
-  if (specificity === "good") score += 0.18;
-  if (specificity === "very_specific") score += 0.14;
-  if (specificity === "broad_but_usable") score += 0.08;
-  if (specificity === "too_vague") score -= 0.38;
+  if (candidate.qualifiers.includes("focus_target")) focusWeight += 0.25;
+  if (clause?.hasFocusMarker) focusWeight += 0.08;
 
-  if (spanTokens.length >= 2 && spanTokens.length <= 5) score += 0.12;
-  if (spanTokens.length === 1) score += 0.08;
-  if (spanTokens.length > 8) score -= 0.16;
+  if (clause?.hasContrastBoundary) contrastWeight += 0.08;
 
-  const fullLower = normalizeLoose(fullMessage);
-  const spanLower = normalizeLoose(candidate.span);
-
-  if (spanLower && fullLower.includes(spanLower)) {
-    score += 0.05;
-  }
+  if (clause?.hasConfusionMarker) confusionAdjacencyWeight += 0.1;
+  if (clause?.hasRequestMarker) requestAdjacencyWeight += 0.06;
 
   if (
-    /\b(?:don't understand|dont understand|confused|don't get it|dont get it|i need help with|help me with|stuck on|struggling with|having trouble with)\b/i.test(
-      fullMessage
-    )
+    clause?.hasContextMarker &&
+    candidate.sourceRole === "context" &&
+    candidate.qualifiers.includes("context_recovery")
   ) {
-    score += 0.06;
+    contextRecoveryWeight += 0.18;
   }
 
-  if (appearsInBroadList(candidate.sourceSentence, candidate.span)) {
-    score -= 0.12;
-  }
+  if (mentionCount >= 2) mentionWeight += 0.14;
+  else if (mentionCount === 1) mentionWeight += 0.05;
 
-  const mentionCount = countSpanMentions(fullMessage, candidate.span);
-  if (mentionCount >= 2) score += 0.14;
+  if (specificity === "good") specificityWeight += 0.18;
+  if (specificity === "very_specific") specificityWeight += 0.14;
+  if (specificity === "broad_but_usable") specificityWeight += 0.08;
+  if (specificity === "too_vague") genericPenalty += 0.38;
+
+  const labelTokens = label ? semanticTokens(label) : [];
+  let bestReuseHint = 0;
+  for (const retrieval of retrievalCandidates) {
+    const retrievalTokens = semanticTokens(retrieval.topic_name);
+    const overlap = overlapScore(labelTokens, retrievalTokens);
+    const score = overlap * 0.1 + (retrieval.similarity ?? 0) * 0.06;
+    if (score > bestReuseHint) bestReuseHint = score;
+  }
+  reuseHintWeight += bestReuseHint;
+
+  if (appearsInBroadList(candidate.sourceClause, candidate.span)) {
+    genericPenalty += 0.12;
+  }
 
   if (looksLikeLearnerStateClause(candidate.span)) {
-    score -= 0.6;
+    learnerStatePenalty += 0.6;
   }
 
   if (isClauseLikeSpan(candidate.span)) {
-    score -= 0.22;
+    clausePenalty += 0.22;
   }
 
   if (looksLikeSuspiciousLabel(label)) {
-    score -= 0.18;
+    genericPenalty += 0.18;
   }
 
-  if (
-    /\b(?:formula|equation|graph|section|idea|concept)\s+(?:on|about|for)\b/i.test(
-      candidate.sourceSentence
-    ) &&
-    candidate.sourceRole === "context"
-  ) {
-    score += 0.18;
+  if (isBadProcessPhrase(candidate.span)) {
+    genericPenalty += 0.28;
   }
 
-  const competingStrongCandidates = allCandidates.filter((other) => {
-    if (other.span === candidate.span) return false;
-    return !spansSubstantiallyOverlap(other.span, candidate.span);
-  }).length;
-
-  if (candidate.qualifiers.includes("focus_target") && competingStrongCandidates > 0) {
-    score += 0.05;
+  if (tokenCount > 8) {
+    lengthPenalty += 0.16;
+  } else if (tokenCount >= 2 && tokenCount <= 5) {
+    lengthPenalty -= 0.12;
+  } else if (tokenCount === 1) {
+    lengthPenalty -= 0.08;
   }
 
-  return clampTopicConfidence(score);
+  let total =
+    0.24 +
+    roleWeight +
+    focusWeight +
+    contrastWeight +
+    confusionAdjacencyWeight +
+    requestAdjacencyWeight +
+    contextRecoveryWeight +
+    mentionWeight +
+    specificityWeight +
+    reuseHintWeight -
+    genericPenalty -
+    clausePenalty -
+    learnerStatePenalty -
+    lengthPenalty;
+
+  total = clampTopicConfidence(total);
+
+  return {
+    roleWeight,
+    focusWeight,
+    contrastWeight,
+    confusionAdjacencyWeight,
+    requestAdjacencyWeight,
+    contextRecoveryWeight,
+    mentionWeight,
+    specificityWeight,
+    reuseHintWeight,
+    genericPenalty,
+    clausePenalty,
+    learnerStatePenalty,
+    lengthPenalty,
+    total,
+  };
+}
+
+function scoreCandidate(args: {
+  candidate: TopicCandidate;
+  message: string;
+  interpretation: MessageInterpretation;
+  retrievalCandidates: RetrievalCandidate[];
+}) {
+  return buildCandidateScoreBreakdown(args);
 }
 
 function chooseBestCandidate(candidates: TopicCandidate[]): TopicCandidate | null {
   if (!candidates.length) return null;
-
-  const scored = candidates
-    .map((candidate) => ({
-      ...candidate,
-      score: candidate.score,
-    }))
-    .sort((a, b) => b.score - a.score);
-
-  return scored[0] ?? null;
-}
-
-function collectCandidates(message: string): TopicCandidate[] {
-  const sentences = splitIntoSentences(message);
-  const collected: TopicCandidate[] = [];
-
-  for (const sentence of sentences) {
-    const sentenceCandidates = extractCandidatesFromSentence(sentence);
-    for (const candidate of sentenceCandidates) {
-      collected.push(candidate);
-    }
-  }
-
-  return dedupeAndGroupCandidates(collected);
+  return candidates.slice().sort((a, b) => b.score - a.score)[0] ?? null;
 }
 
 function isCreateWorthyBroadLabel(
@@ -1248,6 +1425,7 @@ function isCreateWorthyBroadLabel(
 
   const normalized = label.toLowerCase().trim();
   if (TOO_VAGUE_LABELS.has(normalized)) return false;
+  if (isBadProcessPhrase(label)) return false;
 
   return confidence >= 0.74;
 }
@@ -1260,6 +1438,7 @@ function buildAmbiguityFlags(args: {
   scoredCandidates: TopicCandidate[];
   topGap: number;
   reuseCandidate: RetrievalCandidate | null;
+  interpretation: MessageInterpretation;
 }) {
   const flags: string[] = [];
   const {
@@ -1270,6 +1449,7 @@ function buildAmbiguityFlags(args: {
     scoredCandidates,
     topGap,
     reuseCandidate,
+    interpretation,
   } = args;
 
   if (!conceptSpan) {
@@ -1296,26 +1476,43 @@ function buildAmbiguityFlags(args: {
     flags.push("candidate_competition");
   }
 
+  if (
+    interpretation.messageIntent !== "unclear" &&
+    scoredCandidates.length === 0
+  ) {
+    flags.push("concept_extraction_weak");
+  }
+
   if (!reuseCandidate && canonicalLabel && confidence >= 0.55 && confidence < 0.74) {
     flags.push("needs_adjudication");
   }
 
-  return flags;
+  return dedupe(flags);
 }
 
 export function runDeterministicTopicLabeling(
   input: TopicLabelingInput
 ): TopicLabelingResult {
   const normalizedMessage = normalizeSurface(input.raw_message);
-  const intent = detectIntent(normalizedMessage);
+  const interpretation = analyzeMessageStructure(normalizedMessage);
 
-  const rawCandidates = collectCandidates(normalizedMessage);
+  const rawCandidates = extractConceptCandidates(interpretation);
 
   const scoredCandidates = rawCandidates
-    .map((candidate) => ({
-      ...candidate,
-      score: scoreCandidate(candidate, normalizedMessage, rawCandidates),
-    }))
+    .map((candidate) => {
+      const breakdown = scoreCandidate({
+        candidate,
+        message: normalizedMessage,
+        interpretation,
+        retrievalCandidates: input.retrieval_candidates,
+      });
+
+      return {
+        ...candidate,
+        score: breakdown.total,
+        scoreBreakdown: breakdown,
+      };
+    })
     .sort((a, b) => b.score - a.score);
 
   const bestCandidate = chooseBestCandidate(scoredCandidates);
@@ -1324,8 +1521,8 @@ export function runDeterministicTopicLabeling(
     ? Math.max(0, bestCandidate.score - (secondCandidate?.score ?? 0))
     : 0;
 
-  const conceptSpan = cleanupSpan(bestCandidate?.span ?? null);
-  const canonicalLabel = canonicalizeLabel(conceptSpan);
+  const conceptSpan = normalizeCandidateSpan(bestCandidate?.span ?? null);
+  const canonicalLabel = shapeDisplayLabel(conceptSpan);
   const specificity = scoreSpecificity(canonicalLabel);
   const reuseCandidate = findReuseCandidate(
     canonicalLabel,
@@ -1345,7 +1542,7 @@ export function runDeterministicTopicLabeling(
   if (specificity === "broad_but_usable") confidence += 0.05;
   if (shouldReuse) confidence += 0.12;
 
-  if (bestCandidate && bestCandidate.qualifiers.includes("focus_target")) {
+  if (bestCandidate?.qualifiers.includes("focus_target")) {
     confidence += 0.06;
   }
 
@@ -1361,6 +1558,13 @@ export function runDeterministicTopicLabeling(
     confidence -= 0.06;
   }
 
+  if (
+    interpretation.messageIntent !== "unclear" &&
+    scoredCandidates.length === 0
+  ) {
+    confidence -= 0.08;
+  }
+
   confidence = clampTopicConfidence(confidence);
 
   const ambiguityFlags = buildAmbiguityFlags({
@@ -1371,6 +1575,7 @@ export function runDeterministicTopicLabeling(
     scoredCandidates,
     topGap,
     reuseCandidate,
+    interpretation,
   });
 
   const shouldCreate =
@@ -1381,16 +1586,18 @@ export function runDeterministicTopicLabeling(
       specificity === "very_specific" ||
       isCreateWorthyBroadLabel(canonicalLabel, confidence, specificity));
 
+  const referencesActiveTopic =
+    input.active_topic_name && canonicalLabel
+      ? input.active_topic_name.toLowerCase() === canonicalLabel.toLowerCase()
+      : null;
+
   return {
     schema_version: TOPIC_LABEL_SCHEMA_VERSION,
     input,
     interpretation: {
-      message_intent: intent,
+      message_intent: interpretation.messageIntent,
       is_topic_reference_to_existing_topic: shouldReuse ? true : null,
-      references_active_topic:
-        input.active_topic_name && canonicalLabel
-          ? input.active_topic_name.toLowerCase() === canonicalLabel.toLowerCase()
-          : null,
+      references_active_topic: referencesActiveTopic,
       concept_span: conceptSpan,
       concept_span_start:
         conceptSpan && normalizedMessage.includes(conceptSpan)
