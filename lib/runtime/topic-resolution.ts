@@ -611,7 +611,7 @@ function scoreCreateNewHypothesis(args: {
     };
   }
 
-  score += labeling.topic_decision.confidence * 0.58;
+  score += labeling.topic_decision.confidence * 0.62;
   reasons.push(
     `Deterministic label confidence is ${labeling.topic_decision.confidence.toFixed(2)}.`
   );
@@ -625,7 +625,7 @@ function scoreCreateNewHypothesis(args: {
     labeling.topic_decision.topic_specificity === "good" ||
     labeling.topic_decision.topic_specificity === "very_specific"
   ) {
-    score += 0.12;
+    score += 0.14;
     reasons.push("Label specificity supports a stable new topic.");
   } else if (labeling.topic_decision.topic_specificity === "broad_but_usable") {
     score += 0.04;
@@ -634,11 +634,16 @@ function scoreCreateNewHypothesis(args: {
 
   const bestScore = best?.similarity ?? 0;
   if (bestScore < WEAK_REUSE_TOPIC_THRESHOLD) {
-    score += 0.12;
+    score += 0.18;
     reasons.push("No existing topic matches strongly enough to force reuse.");
   } else if (bestScore >= STRONG_REUSE_TOPIC_THRESHOLD) {
     score -= 0.16;
     reasons.push("A strong existing-topic match argues against creating new.");
+  }
+
+  if (bestScore < 0.3 && labeling.topic_decision.confidence >= 0.7) {
+    score += 0.12;
+    reasons.push("Clean label plus weak existing matches supports creation.");
   }
 
   if (topGap >= CANDIDATE_COMPETITION_GAP_THRESHOLD) {
@@ -662,8 +667,8 @@ function scoreCreateNewHypothesis(args: {
   }
 
   if (!labeling.topic_decision.should_create_new_topic) {
-    score -= 0.08;
-    reasons.push("Deterministic topic decision did not confidently request creation.");
+    score -= 0.02;
+    reasons.push("Deterministic topic decision was cautious about creation.");
   }
 
   return {
@@ -1029,6 +1034,22 @@ export function resolveTopicForMessage(
       resolutionKind: "created_new_candidate",
       resolvedLabel: winner.label,
       matchConfidence: Math.max(winner.score, labeling.topic_decision.confidence),
+    };
+  }
+
+  if (
+    labeling.topic_decision.canonical_label &&
+    labeling.topic_decision.confidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR &&
+    !looksLikeSuspiciousResolvedLabel(labeling.topic_decision.canonical_label) &&
+    (best?.similarity ?? 0) < WEAK_REUSE_TOPIC_THRESHOLD
+  ) {
+    return {
+      matchedTopic: null,
+      vectorInfo,
+      shouldCreateNewTopic: true,
+      resolutionKind: "created_new_candidate",
+      resolvedLabel: labeling.topic_decision.canonical_label,
+      matchConfidence: labeling.topic_decision.confidence,
     };
   }
 

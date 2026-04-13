@@ -127,6 +127,48 @@ const GENERIC_STARTERS = [
   "their ",
 ];
 
+const TRAILING_NOISE_TOKENS = new Set([
+  "now",
+  "again",
+  "today",
+  "first",
+  "instead",
+  "please",
+]);
+
+const NEGATION_STEM_TOKENS = new Set([
+  "don",
+  "doesn",
+  "didn",
+  "isn",
+  "aren",
+  "wasn",
+  "weren",
+  "won",
+  "wouldn",
+  "couldn",
+  "shouldn",
+  "hasn",
+  "haven",
+  "hadn",
+  "mustn",
+  "needn",
+]);
+
+const CONTEXT_SHELL_REGEXES: RegExp[] = [
+  /^(?:my\s+)?textbook\s+has$/i,
+  /^(?:my\s+)?textbook\s+mentions$/i,
+  /^(?:my\s+)?notes\s+mention$/i,
+  /^(?:my\s+)?notes\s+say$/i,
+  /^(?:we\s+)?learned\s+about$/i,
+  /^(?:it\s+)?talks\s+about$/i,
+  /^(?:there\s+is|there s)\s+(?:a|an|the)?$/i,
+  /^(?:my\s+)?textbook$/i,
+  /^(?:my\s+)?notes$/i,
+  /^textbook\s+has$/i,
+  /^formula\s+about$/i,
+];
+
 const FOCUS_MARKER_REGEX =
   /\b(mainly|mostly|especially|specifically|particularly|the part|the thing|most of all|primarily)\b/i;
 
@@ -382,6 +424,28 @@ function isBadProcessPhrase(text: string | null) {
   return PROCESS_PHRASE_REGEXES.some((regex) => regex.test(normalized));
 }
 
+function hasNegationStemToken(text: string | null) {
+  if (!text) return false;
+  return tokenize(text).some((token) => NEGATION_STEM_TOKENS.has(token));
+}
+
+function looksLikeContextShell(text: string | null) {
+  if (!text) return false;
+  const normalized = normalizeLoose(text);
+  if (!normalized) return false;
+  return CONTEXT_SHELL_REGEXES.some((regex) => regex.test(normalized));
+}
+
+function stripTrailingNoise(text: string) {
+  let tokens = tokenize(text);
+  while (tokens.length > 1) {
+    const last = tokens[tokens.length - 1];
+    if (!TRAILING_NOISE_TOKENS.has(last)) break;
+    tokens = tokens.slice(0, -1);
+  }
+  return tokens.join(" ").trim();
+}
+
 function detectIntent(message: string): TopicMessageIntent {
   const m = normalizeSurface(message).toLowerCase();
 
@@ -444,16 +508,12 @@ function detectIntent(message: string): TopicMessageIntent {
 function classifyClauseRole(clause: string): SentenceRole {
   const s = normalizeSurface(clause).toLowerCase();
 
-  if (CONFUSION_MARKER_REGEX.test(s)) {
-    return "confusion";
+  if (s.includes("difference between") || s.startsWith("compare ") || s.startsWith("contrast ")) {
+    return "comparison";
   }
 
-  if (
-    s.startsWith("compare ") ||
-    s.startsWith("contrast ") ||
-    s.includes("difference between")
-  ) {
-    return "comparison";
+  if (CONFUSION_MARKER_REGEX.test(s)) {
+    return "confusion";
   }
 
   if (REQUEST_MARKER_REGEX.test(s)) {
@@ -528,23 +588,30 @@ function analyzeMessageStructure(message: string): MessageInterpretation {
 
 function extractComparison(clause: string) {
   const normalized = normalizeSurface(clause);
-  const match =
-    normalized.match(
-      /\b(?:difference between|compare|contrast)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)\??$/i
-    ) ?? null;
 
-  if (!match) return null;
+  const patterns = [
+    /\b(?:difference between)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)\??$/i,
+    /\b(?:compare|contrast)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)\??$/i,
+    /^(?:what(?:'s| is)?\s+the\s+difference\s+between)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)\??$/i,
+  ];
 
-  const left = normalizeSurface(match[1] ?? "");
-  const right = normalizeSurface(match[2] ?? "");
+  for (const regex of patterns) {
+    const match = normalized.match(regex);
+    if (!match) continue;
 
-  if (!left || !right) return null;
+    const left = normalizeSurface(match[1] ?? "");
+    const right = normalizeSurface(match[2] ?? "");
 
-  return {
-    left,
-    right,
-    combined: `${left} vs ${right}`,
-  };
+    if (!left || !right) continue;
+
+    return {
+      left,
+      right,
+      combined: `${left} vs ${right}`,
+    };
+  }
+
+  return null;
 }
 
 function looksLikeLearnerStateClause(span: string | null) {
@@ -644,6 +711,11 @@ function normalizeCandidateSpan(span: string | null) {
       /^(?:where should i start with|where do i start with|how should i start with|how do i start with)\s+/i,
       ""
     )
+    .replace(/^(?:my\s+textbook\s+has\s+(?:a|an)\s+(?:formula|equation|graph)\s+about)\s+/i, "")
+    .replace(/^(?:my\s+textbook\s+mentions)\s+/i, "")
+    .replace(/^(?:my\s+notes\s+mention)\s+/i, "")
+    .replace(/^(?:we\s+learned\s+about)\s+/i, "")
+    .replace(/^(?:it\s+talks\s+about)\s+/i, "")
     .replace(/^about\s+/i, "")
     .replace(/^regarding\s+/i, "")
     .replace(/^on\s+/i, "")
@@ -658,18 +730,26 @@ function normalizeCandidateSpan(span: string | null) {
     .trim();
 
   output = stripLeadingQuestionWrapper(output);
+  output = stripTrailingNoise(output);
 
   if (isBadProcessPhrase(output)) return null;
+  if (hasNegationStemToken(output)) return null;
+  if (looksLikeContextShell(output)) return null;
 
-  let tokens = tokenize(output).filter((token) => !BAD_SINGLE_TOKENS.has(token));
+  let tokens = tokenize(output).filter(
+    (token) => !BAD_SINGLE_TOKENS.has(token) && !NEGATION_STEM_TOKENS.has(token)
+  );
   if (!tokens.length) return null;
 
   output = tokens.join(" ").trim();
   if (!output) return null;
 
   output = stripLeadingQuestionWrapper(output);
+  output = stripTrailingNoise(output);
 
-  tokens = tokenize(output).filter((token) => !BAD_SINGLE_TOKENS.has(token));
+  tokens = tokenize(output).filter(
+    (token) => !BAD_SINGLE_TOKENS.has(token) && !NEGATION_STEM_TOKENS.has(token)
+  );
   if (!tokens.length) return null;
 
   output = tokens.join(" ").trim();
@@ -681,8 +761,12 @@ function normalizeCandidateSpan(span: string | null) {
     }
   }
 
+  output = stripTrailingNoise(output);
+
   if (!output) return null;
   if (isBadProcessPhrase(output)) return null;
+  if (hasNegationStemToken(output)) return null;
+  if (looksLikeContextShell(output)) return null;
 
   return output;
 }
@@ -727,6 +811,8 @@ function shapeDisplayLabel(span: string | null) {
   if (!cleaned) return null;
   if (looksLikeLearnerStateClause(cleaned)) return null;
   if (isBadProcessPhrase(cleaned)) return null;
+  if (hasNegationStemToken(cleaned)) return null;
+  if (looksLikeContextShell(cleaned)) return null;
 
   const simplified = simplifyEconomicLabel(cleaned);
 
@@ -737,6 +823,8 @@ function shapeDisplayLabel(span: string | null) {
     .trim();
 
   if (isBadProcessPhrase(normalized)) return null;
+  if (hasNegationStemToken(normalized)) return null;
+  if (looksLikeContextShell(normalized)) return null;
 
   return toTitleCase(normalized);
 }
@@ -764,6 +852,8 @@ function looksLikeSuspiciousLabel(label: string | null) {
   if (!normalized) return true;
   if (TOO_VAGUE_LABELS.has(normalized)) return true;
   if (isBadProcessPhrase(label)) return true;
+  if (hasNegationStemToken(label)) return true;
+  if (looksLikeContextShell(label)) return true;
 
   const tokenCount = tokenize(label).length;
   if (tokenCount > 8) return true;
@@ -831,6 +921,8 @@ function buildCandidate(args: {
   if (!normalized) return null;
   if (looksLikeLearnerStateClause(normalized)) return null;
   if (isBadProcessPhrase(normalized)) return null;
+  if (hasNegationStemToken(normalized)) return null;
+  if (looksLikeContextShell(normalized)) return null;
 
   const label = shapeDisplayLabel(normalized);
   if (!label && tokenize(normalized).length <= 2) {
@@ -909,7 +1001,7 @@ function extractPrepositionalCandidates(clause: ClauseInfo): TopicCandidate[] {
     {
       regex:
         /\bhas\s+a\s+(?:formula|equation|graph|section|idea|concept)\s+(?:on|about|for)\s+(.+?)(?:,| but| and|\.|\?|!|$)/i,
-      qualifiers: ["context_recovery"],
+      qualifiers: ["context_recovery", "focus_target"],
     },
   ];
 
@@ -937,6 +1029,7 @@ function extractComparisonCandidates(clause: ClauseInfo): TopicCandidate[] {
     span: comparison.combined,
     clause: { ...clause, role: "comparison" },
     comparisonTarget: comparison.right,
+    qualifiers: ["comparison_pair", "focus_target"],
   });
 
   return candidate ? [candidate] : [];
@@ -1030,7 +1123,7 @@ function extractRequestCandidates(clause: ClauseInfo): TopicCandidate[] {
     {
       regex:
         /^(?:my notes mention|my textbook mentions|we learned about|it talks about)\s+(.+?)[.?!]*$/i,
-      qualifiers: ["context_recovery"],
+      qualifiers: ["context_recovery", "focus_target"],
     },
   ];
 
@@ -1068,7 +1161,8 @@ function extractNounLikeCandidates(clause: ClauseInfo): TopicCandidate[] {
     if (
       FUNCTION_WORDS.has(token) ||
       FILLER_WORDS.has(token) ||
-      BAD_SINGLE_TOKENS.has(token)
+      BAD_SINGLE_TOKENS.has(token) ||
+      NEGATION_STEM_TOKENS.has(token)
     ) {
       flush();
       continue;
@@ -1088,7 +1182,9 @@ function extractNounLikeCandidates(clause: ClauseInfo): TopicCandidate[] {
       const tokens = tokenize(span);
       if (!tokens.length) return false;
       if (tokens.every((token) => BAD_SINGLE_TOKENS.has(token))) return false;
+      if (tokens.some((token) => NEGATION_STEM_TOKENS.has(token))) return false;
       if (isBadProcessPhrase(span)) return false;
+      if (looksLikeContextShell(span)) return false;
       if (
         tokens.some((token) =>
           ["figure", "out", "start", "understand", "learn", "work"].includes(
@@ -1114,6 +1210,7 @@ function extractStandaloneConceptCandidate(clause: ClauseInfo): TopicCandidate |
   const tokens = tokenize(clause.raw);
   if (!tokens.length || tokens.length > 5) return null;
   if (tokens.some((token) => BAD_SINGLE_TOKENS.has(token))) return null;
+  if (tokens.some((token) => NEGATION_STEM_TOKENS.has(token))) return null;
 
   const shaped = shapeDisplayLabel(clause.raw);
   if (!shaped) return null;
@@ -1122,6 +1219,7 @@ function extractStandaloneConceptCandidate(clause: ClauseInfo): TopicCandidate |
   if (specificity === "too_vague") return null;
   if (isClauseLikeSpan(clause.raw)) return null;
   if (isBadProcessPhrase(shaped)) return null;
+  if (looksLikeContextShell(shaped)) return null;
 
   return buildCandidate({
     span: clause.raw,
@@ -1147,6 +1245,12 @@ function choosePreferredOverlappingCandidate(
 
   const currentFocus = current.qualifiers.includes("focus_target");
   const incomingFocus = incoming.qualifiers.includes("focus_target");
+  const currentComparison = current.qualifiers.includes("comparison_pair");
+  const incomingComparison = incoming.qualifiers.includes("comparison_pair");
+
+  if (currentComparison !== incomingComparison) {
+    return incomingComparison ? incoming : current;
+  }
 
   if (currentFocus !== incomingFocus) {
     return incomingFocus ? incoming : current;
@@ -1177,7 +1281,7 @@ function choosePreferredOverlappingCandidate(
   if (current.sourceRole !== incoming.sourceRole) {
     const priority: Record<SentenceRole, number> = {
       confusion: 6,
-      comparison: 5,
+      comparison: 7,
       question: 4,
       request: 3,
       context: 2,
@@ -1300,10 +1404,11 @@ function buildCandidateScoreBreakdown(args: {
   if (candidate.sourceRole === "confusion") roleWeight += 0.28;
   if (candidate.sourceRole === "question") roleWeight += 0.2;
   if (candidate.sourceRole === "request") roleWeight += 0.18;
-  if (candidate.sourceRole === "comparison") roleWeight += 0.26;
+  if (candidate.sourceRole === "comparison") roleWeight += 0.34;
   if (candidate.sourceRole === "context") roleWeight -= 0.04;
 
   if (candidate.qualifiers.includes("focus_target")) focusWeight += 0.25;
+  if (candidate.qualifiers.includes("comparison_pair")) focusWeight += 0.12;
   if (clause?.hasFocusMarker) focusWeight += 0.08;
 
   if (clause?.hasContrastBoundary) contrastWeight += 0.08;
@@ -1313,10 +1418,9 @@ function buildCandidateScoreBreakdown(args: {
 
   if (
     clause?.hasContextMarker &&
-    candidate.sourceRole === "context" &&
     candidate.qualifiers.includes("context_recovery")
   ) {
-    contextRecoveryWeight += 0.18;
+    contextRecoveryWeight += 0.28;
   }
 
   if (mentionCount >= 2) mentionWeight += 0.14;
@@ -1355,6 +1459,14 @@ function buildCandidateScoreBreakdown(args: {
 
   if (isBadProcessPhrase(candidate.span)) {
     genericPenalty += 0.28;
+  }
+
+  if (hasNegationStemToken(candidate.span)) {
+    genericPenalty += 0.4;
+  }
+
+  if (looksLikeContextShell(candidate.span)) {
+    genericPenalty += 0.5;
   }
 
   if (tokenCount > 8) {
@@ -1426,6 +1538,8 @@ function isCreateWorthyBroadLabel(
   const normalized = label.toLowerCase().trim();
   if (TOO_VAGUE_LABELS.has(normalized)) return false;
   if (isBadProcessPhrase(label)) return false;
+  if (hasNegationStemToken(label)) return false;
+  if (looksLikeContextShell(label)) return false;
 
   return confidence >= 0.74;
 }
@@ -1544,6 +1658,10 @@ export function runDeterministicTopicLabeling(
 
   if (bestCandidate?.qualifiers.includes("focus_target")) {
     confidence += 0.06;
+  }
+
+  if (bestCandidate?.qualifiers.includes("comparison_pair")) {
+    confidence += 0.08;
   }
 
   if (conceptSpan && isClauseLikeSpan(conceptSpan)) {

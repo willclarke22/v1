@@ -3,6 +3,13 @@ export type GoldensTopic = {
   name: string;
 };
 
+export type ResolutionKind =
+  | "matched_existing"
+  | "created_new_candidate"
+  | "fallback_active_topic"
+  | "fallback_existing_topic"
+  | "no_match";
+
 export type TopicGoldenCase = {
   id: string;
   description: string;
@@ -11,25 +18,32 @@ export type TopicGoldenCase = {
   activeTopicId: string | null;
 
   expectedLabel?: string | null;
-  expectedResolutionKind?:
-    | "matched_existing"
-    | "created_new_candidate"
-    | "fallback_active_topic"
-    | "fallback_existing_topic"
-    | "no_match";
-
+  expectedResolutionKind?: ResolutionKind;
   expectedShouldCreate?: boolean;
   expectedMatchedTopicName?: string | null;
 
-  forbiddenResolutionKinds?: Array<
-    | "matched_existing"
-    | "created_new_candidate"
-    | "fallback_active_topic"
-    | "fallback_existing_topic"
-    | "no_match"
-  >;
+  forbiddenResolutionKinds?: ResolutionKind[];
 
   notes?: string;
+};
+
+export type TopicGoldenSequenceStep = {
+  id: string;
+  message: string;
+
+  expectedLabel?: string | null;
+  expectedResolutionKind?: ResolutionKind;
+  expectedShouldCreate?: boolean;
+  expectedMatchedTopicName?: string | null;
+  forbiddenResolutionKinds?: ResolutionKind[];
+};
+
+export type TopicGoldenSequence = {
+  id: string;
+  description: string;
+  initialTopics: GoldensTopic[];
+  initialActiveTopicId: string | null;
+  steps: TopicGoldenSequenceStep[];
 };
 
 export const TOPIC_LABELING_GOLDENS: TopicGoldenCase[] = [
@@ -122,5 +136,60 @@ export const TOPIC_LABELING_GOLDENS: TopicGoldenCase[] = [
     expectedLabel: "Mitosis vs Meiosis",
     expectedResolutionKind: "created_new_candidate",
     expectedShouldCreate: true,
+  },
+];
+
+export const TOPIC_LABELING_SEQUENCES: TopicGoldenSequence[] = [
+  {
+    id: "sequence-001",
+    description: "create first topic then switch to a new one and stay there",
+    initialTopics: [],
+    initialActiveTopicId: null,
+    steps: [
+      {
+        id: "step-1",
+        message: "I want to learn about neurotransmitters.",
+        expectedLabel: "Neurotransmitters",
+        expectedResolutionKind: "created_new_candidate",
+        expectedShouldCreate: true,
+      },
+      {
+        id: "step-2",
+        message: "Actually I want to learn about budgeting now.",
+        expectedLabel: "Budgeting",
+        expectedResolutionKind: "created_new_candidate",
+        expectedShouldCreate: true,
+        forbiddenResolutionKinds: ["fallback_active_topic"],
+      },
+      {
+        id: "step-3",
+        message: "Can you quiz me on budgeting?",
+        expectedLabel: "Budgeting",
+        expectedMatchedTopicName: "Budgeting",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+    ],
+  },
+  {
+    id: "sequence-002",
+    description: "context sentence then focused follow-up on same concept",
+    initialTopics: [],
+    initialActiveTopicId: null,
+    steps: [
+      {
+        id: "step-1",
+        message: "My textbook has a formula about the speed of sound, but I don't get it.",
+        expectedLabel: "Speed Of Sound",
+        expectedResolutionKind: "created_new_candidate",
+        expectedShouldCreate: true,
+      },
+      {
+        id: "step-2",
+        message: "Can we go over speed of sound again?",
+        expectedLabel: "Speed Of Sound",
+        expectedMatchedTopicName: "Speed Of Sound",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+    ],
   },
 ];
