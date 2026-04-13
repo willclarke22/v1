@@ -104,6 +104,19 @@ const LOW_CONFIDENCE_CREATE_NEW_FLOOR = 0.58;
 const CANDIDATE_COMPETITION_GAP_THRESHOLD = 0.08;
 const AMBIGUOUS_WIN_THRESHOLD = 0.62;
 
+const ACTIVE_TOPIC_ANAPHORIC_FOLLOWUP_REGEXES: RegExp[] = [
+  /^(?:quiz me on (?:that|it))\.?$/i,
+  /^(?:can you quiz me on (?:that|it))\??$/i,
+  /^(?:test me on (?:that|it))\.?$/i,
+  /^(?:can you test me on (?:that|it))\??$/i,
+  /^(?:ask me about (?:that|it))\.?$/i,
+  /^(?:can you ask me about (?:that|it))\??$/i,
+  /^(?:go over (?:that|it) again)\.?$/i,
+  /^(?:can we go over (?:that|it) again)\??$/i,
+  /^(?:explain (?:that|it) again)\.?$/i,
+  /^(?:can you explain (?:that|it) again)\??$/i,
+];
+
 function normalizeSurface(text: string) {
   return text
     .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
@@ -191,6 +204,13 @@ function mapIntentToFrame(intent: TopicMessageIntent): MessageFrame {
     default:
       return "general";
   }
+}
+
+function looksLikeActiveTopicAnaphoricFollowup(message: string) {
+  const normalized = normalizeSurface(message);
+  return ACTIVE_TOPIC_ANAPHORIC_FOLLOWUP_REGEXES.some((regex) =>
+    regex.test(normalized)
+  );
 }
 
 function buildTopicLabelingInput(
@@ -461,8 +481,9 @@ function scoreStayActiveHypothesis(args: {
   activeTopic: RouteTopic | null | undefined;
   activeTopicScore: ScoredTopic | null;
   topGap: number;
+  message: string;
 }): ResolutionHypothesis {
-  const { labeling, activeTopic, activeTopicScore, topGap } = args;
+  const { labeling, activeTopic, activeTopicScore, topGap, message } = args;
 
   if (!activeTopic || !activeTopicScore) {
     return {
@@ -498,6 +519,11 @@ function scoreStayActiveHypothesis(args: {
   if (hasAmbiguityFlag(labeling, "label_suspicious")) {
     score += 0.05;
     reasons.push("Suspicious label makes conservative continuity slightly safer.");
+  }
+
+  if (looksLikeActiveTopicAnaphoricFollowup(message)) {
+    score += 0.28;
+    reasons.push("Short anaphoric follow-up strongly suggests staying on the active topic.");
   }
 
   if (labeling.topic_decision.should_create_new_topic) {
@@ -750,8 +776,9 @@ function buildResolutionHypotheses(args: {
   second: ScoredTopic | null;
   topGap: number;
   activeTopic?: RouteTopic | null;
+  message: string;
 }): ResolutionHypothesis[] {
-  const { labeling, scoredTopics, best, second, topGap, activeTopic } = args;
+  const { labeling, scoredTopics, best, second, topGap, activeTopic, message } = args;
 
   const activeTopicScore =
     activeTopic
@@ -763,6 +790,7 @@ function buildResolutionHypotheses(args: {
     activeTopic,
     activeTopicScore,
     topGap,
+    message,
   });
 
   const switchExisting = scoreSwitchExistingHypothesis({
@@ -852,6 +880,7 @@ function adjudicateTopicResolution(
     second,
     topGap,
     activeTopic,
+    message,
   });
 
   const winner = chooseWinningHypothesis(hypotheses);
@@ -974,6 +1003,25 @@ export function resolveTopicForMessage(
         createConfidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR
           ? createConfidence
           : labeling.topic_decision.confidence,
+    };
+  }
+
+  if (
+    activeTopic &&
+    looksLikeActiveTopicAnaphoricFollowup(message) &&
+    !labeling.topic_decision.should_create_new_topic
+  ) {
+    return {
+      matchedTopic: activeTopic,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind: "fallback_active_topic",
+      resolvedLabel: activeTopic.name,
+      matchConfidence: Math.max(
+        activeTopicScore?.similarity ?? 0,
+        0.86,
+        labeling.topic_decision.confidence
+      ),
     };
   }
 
