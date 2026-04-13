@@ -28,7 +28,36 @@ type CaseResult = {
 
   pass: boolean;
   failures: string[];
+  notes?: string;
 };
+
+type CliOptions = {
+  suite: "all" | "isolated" | "sequence";
+  grep: string | null;
+  onlyFailures: boolean;
+};
+
+function parseArgs(argv: string[]): CliOptions {
+  const options: CliOptions = {
+    suite: "all",
+    grep: null,
+    onlyFailures: false,
+  };
+
+  for (const arg of argv) {
+    if (arg === "--suite=isolated") {
+      options.suite = "isolated";
+    } else if (arg === "--suite=sequence") {
+      options.suite = "sequence";
+    } else if (arg.startsWith("--grep=")) {
+      options.grep = arg.slice("--grep=".length).trim() || null;
+    } else if (arg === "--only-failures") {
+      options.onlyFailures = true;
+    }
+  }
+
+  return options;
+}
 
 function makeRouteTopics(topics: GoldensTopic[]): RouteTopic[] {
   return topics.map((topic, index) => ({
@@ -42,7 +71,7 @@ function makeRouteTopics(topics: GoldensTopic[]): RouteTopic[] {
     position: [index * 2, 0, 0] as [number, number, number],
     scale: 1,
     messageCount: 1,
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: "2026-01-01T00:00:00.000Z",
     hasAvailableProbe: false,
   })) as RouteTopic[];
 }
@@ -59,7 +88,7 @@ function makeCreatedTopic(label: string, index: number): RouteTopic {
     position: [index * 2, 0, 0] as [number, number, number],
     scale: 1,
     messageCount: 1,
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: "2026-01-01T00:00:00.000Z",
     hasAvailableProbe: false,
   } as RouteTopic;
 }
@@ -69,9 +98,7 @@ function hasOwn<T extends object>(obj: T, key: PropertyKey): boolean {
 }
 
 function evaluateExpectations(
-  source:
-    | TopicGoldenCase
-    | TopicGoldenSequenceStep,
+  source: TopicGoldenCase | TopicGoldenSequenceStep,
   actual: {
     actualLabel: string | null;
     actualResolutionKind: ResolutionKind;
@@ -173,6 +200,7 @@ function evaluateCase(testCase: TopicGoldenCase): CaseResult {
     actualConfidence,
     pass: failures.length === 0,
     failures,
+    notes: testCase.notes,
   };
 }
 
@@ -225,6 +253,7 @@ function evaluateSequence(sequence: TopicGoldenSequence): CaseResult[] {
       actualConfidence,
       pass: failures.length === 0,
       failures,
+      notes: step.notes ?? sequence.notes,
     });
 
     if (resolution.matchedTopic) {
@@ -239,6 +268,49 @@ function evaluateSequence(sequence: TopicGoldenSequence): CaseResult[] {
   return results;
 }
 
+function filterResults(results: CaseResult[], options: CliOptions): CaseResult[] {
+  return results.filter((result) => {
+    if (options.suite !== "all" && result.suite !== options.suite) {
+      return false;
+    }
+
+    if (options.grep) {
+      const haystack = [
+        result.id,
+        result.description,
+        result.message,
+        result.actualLabel ?? "",
+        result.actualMatchedTopicName ?? "",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      if (!haystack.includes(options.grep.toLowerCase())) {
+        return false;
+      }
+    }
+
+    if (options.onlyFailures && result.pass) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function printSuiteBreakdown(results: CaseResult[]) {
+  const suites: Array<CaseResult["suite"]> = ["isolated", "sequence"];
+
+  console.log("=== Suite Breakdown ===");
+  for (const suite of suites) {
+    const suiteResults = results.filter((r) => r.suite === suite);
+    const passed = suiteResults.filter((r) => r.pass).length;
+    const failed = suiteResults.length - passed;
+    console.log(`${suite}: total=${suiteResults.length} passed=${passed} failed=${failed}`);
+  }
+  console.log("");
+}
+
 function printSummary(results: CaseResult[]) {
   const passed = results.filter((r) => r.pass).length;
   const failed = results.length - passed;
@@ -249,6 +321,8 @@ function printSummary(results: CaseResult[]) {
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
   console.log("");
+
+  printSuiteBreakdown(results);
 
   const tableRows = results.map((r) => ({
     suite: r.suite,
@@ -272,7 +346,13 @@ function printSummary(results: CaseResult[]) {
       console.log(`Message: ${failedCase.message}`);
       console.log(`Actual label: ${failedCase.actualLabel}`);
       console.log(`Actual resolution: ${failedCase.actualResolutionKind}`);
-      console.log(`Failures:`);
+      console.log(`Actual matched topic: ${failedCase.actualMatchedTopicName}`);
+      console.log(`Actual should create: ${failedCase.actualShouldCreate}`);
+      console.log(`Actual confidence: ${failedCase.actualConfidence.toFixed(2)}`);
+      if (failedCase.notes) {
+        console.log(`Notes: ${failedCase.notes}`);
+      }
+      console.log("Failures:");
       for (const failure of failedCase.failures) {
         console.log(`  - ${failure}`);
       }
@@ -281,13 +361,25 @@ function printSummary(results: CaseResult[]) {
 }
 
 function main() {
+  const options = parseArgs(process.argv.slice(2));
+
   const isolatedResults = TOPIC_LABELING_GOLDENS.map(evaluateCase);
   const sequenceResults = TOPIC_LABELING_SEQUENCES.flatMap(evaluateSequence);
   const allResults = [...isolatedResults, ...sequenceResults];
+  const filteredResults = filterResults(allResults, options);
 
-  printSummary(allResults);
+  if (filteredResults.length === 0) {
+    console.log("No topic-labeling golden cases matched the current filters.");
+    console.log(
+      "Try without filters, or use something like --suite=isolated --grep=curling --only-failures."
+    );
+    process.exitCode = 1;
+    return;
+  }
 
-  const hasFailure = allResults.some((r) => !r.pass);
+  printSummary(filteredResults);
+
+  const hasFailure = filteredResults.some((r) => !r.pass);
   if (hasFailure) {
     process.exitCode = 1;
   }
