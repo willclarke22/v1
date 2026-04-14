@@ -1,3 +1,5 @@
+// scripts/topic-labeling-goldens.ts
+
 export type GoldensTopic = {
   id: string;
   name: string;
@@ -722,6 +724,585 @@ export const TOPIC_LABELING_SEQUENCES: TopicGoldenSequence[] = [
         expectedLabel: "Action Potentials",
         expectedMatchedTopicName: "Action Potentials",
         forbiddenResolutionKinds: ["created_new_candidate", "fallback_active_topic", "no_match"],
+      },
+    ],
+  },
+];
+
+// =============================================================================
+// HARD SUITE
+// =============================================================================
+
+export const TOPIC_LABELING_HARD_GOLDENS: TopicGoldenCase[] = [
+  // ---------------------------------------------------------------------------
+  // Messy real-user wording
+  // ---------------------------------------------------------------------------
+  {
+    id: "hard-messy-001",
+    description: "messy conversational wrapper around concrete bio topic",
+    message: "ok so like i was trying to learn action potentials yesterday and now i'm lost again",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Action Potentials",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-messy-002",
+    description: "messy casual phrasing with targeted confusion phrase",
+    message: "dopamine kinda makes sense but reuptake is where i start getting confused",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Reuptake",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-messy-003",
+    description: "colloquial physics prompt with junk wrappers",
+    message: "can you help me with that speed of sound thing from physics because i keep mixing it up",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Speed of Sound",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-messy-004",
+    description: "messy math phrasing should still keep named law",
+    message: "ugh i swear i knew the law of cosines before but now it is not clicking",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Law of Cosines",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Broad context, narrow true target
+  // ---------------------------------------------------------------------------
+  {
+    id: "hard-focus-001",
+    description: "broad neuroscience context but specific mechanism is target",
+    message:
+      "I'm reviewing neurons, synapses, neurotransmitters, receptors, and reuptake, but the thing I actually don't get is reuptake.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Reuptake",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-focus-002",
+    description: "broad trig context but specific law is target",
+    message:
+      "I'm studying triangles, sine, cosine, tangent, and all of that, but I'm specifically stuck on the law of sines.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Law of Sines",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-focus-003",
+    description: "broad genetics context but subtopic should win",
+    message:
+      "We're doing genetics broadly, but the part that is messing me up is Punnett squares.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Punnett Squares",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-focus-004",
+    description: "broad finance context with specific target late",
+    message:
+      "I've been reading about budgeting, saving, debt, and credit cards, but I mainly need help with compound interest.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Compound Interest",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Late target reveal
+  // ---------------------------------------------------------------------------
+  {
+    id: "hard-late-001",
+    description: "late reveal with reversal from broad topic to precise target",
+    message:
+      "At first I thought the hard part was meiosis, but actually what I need help with is crossing over.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Crossing Over",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-late-002",
+    description: "chapter-level context followed by exact chemistry target",
+    message:
+      "This whole chapter has a lot going on, but the real issue for me is equilibrium constant.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Equilibrium Constant",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-late-003",
+    description: "problem solving context with exact math operation target late",
+    message:
+      "The example looked fine until the last step, and now I think what I actually don't understand is factoring.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Factoring",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-late-004",
+    description: "topic shift inside sentence to narrower subtopic",
+    message:
+      "I was talking about neurotransmitters earlier, but the specific thing I want to go over now is serotonin reuptake.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Serotonin Reuptake",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Comparison pressure
+  // ---------------------------------------------------------------------------
+  {
+    id: "hard-compare-001",
+    description: "law comparison should produce stable vs label",
+    message: "Can you compare the law of sines and the law of cosines?",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Law of Sines vs Law of Cosines",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-compare-002",
+    description: "everyday finance comparison",
+    message: "I keep mixing up savings accounts and chequing accounts.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Savings Accounts vs Chequing Accounts",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-compare-003",
+    description: "simple physics comparison",
+    message: "What's the difference between speed and velocity?",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Speed vs Velocity",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Real-world non-academic domains
+  // ---------------------------------------------------------------------------
+  {
+    id: "hard-real-001",
+    description: "sports rules with named sub-concept",
+    message: "How does offside work in soccer?",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Offside in Soccer",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-real-002",
+    description: "practical finance concept",
+    message: "I don't get how interest on a credit card actually works.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Credit Card Interest",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-real-003",
+    description: "insurance concept with simple everyday framing",
+    message: "Can you explain what a deductible is in insurance?",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Insurance Deductibles",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-real-004",
+    description: "language comparison in everyday grammar",
+    message: "I keep forgetting when to use your vs you're.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Your vs You're",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Paragraph stress
+  // ---------------------------------------------------------------------------
+  {
+    id: "hard-paragraph-001",
+    description: "longer paragraph with specific sound target",
+    message:
+      "So in class today we were talking about sound and waves and resonance and all of that, and I kind of followed at first, but then once the formula stuff started I realized I don't actually understand the speed of sound part.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Speed of Sound",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-paragraph-002",
+    description: "longer paragraph with comparison target late",
+    message:
+      "I was doing practice questions for bio and I thought I was confused about mitosis generally, but after looking again I think it's really just metaphase vs anaphase that I keep mixing up.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Metaphase vs Anaphase",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+  {
+    id: "hard-paragraph-003",
+    description: "longer paragraph with practical finance target",
+    message:
+      "My teacher explained budgeting, fixed expenses, variable expenses, debt, and saving, and most of that was okay, but I still don't really know how to make a budget that balances.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Balancing a Budget",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+  },
+
+  // ---------------------------------------------------------------------------
+  // Negative / meta / admin cases
+  // ---------------------------------------------------------------------------
+  {
+    id: "hard-negative-001",
+    description: "pure gratitude should not invent a new topic",
+    message: "Thanks, that helped.",
+    existingTopics: [{ id: "t1", name: "Reuptake" }],
+    activeTopicId: "t1",
+    expectedMatchedTopicName: "Reuptake",
+    forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+    notes:
+      "Meta/closing utterance should normally stay anchored rather than create a junk topic.",
+  },
+  {
+    id: "hard-negative-002",
+    description: "style request should not invent a new topic",
+    message: "Can you say that again but shorter?",
+    existingTopics: [{ id: "t1", name: "Speed of Sound" }],
+    activeTopicId: "t1",
+    expectedMatchedTopicName: "Speed of Sound",
+    forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+  },
+  {
+    id: "hard-negative-003",
+    description: "very vague continuation should not invent a new topic",
+    message: "Wait, what do you mean?",
+    existingTopics: [{ id: "t1", name: "Action Potentials" }],
+    activeTopicId: "t1",
+    expectedMatchedTopicName: "Action Potentials",
+    forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+  },
+  {
+    id: "hard-negative-004",
+    description: "another-example request should stay on active topic",
+    message: "Show me another example.",
+    existingTopics: [{ id: "t1", name: "Law of Cosines" }],
+    activeTopicId: "t1",
+    expectedMatchedTopicName: "Law of Cosines",
+    forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+  },
+
+  // ---------------------------------------------------------------------------
+  // Anti-junk regressions
+  // ---------------------------------------------------------------------------
+  {
+    id: "hard-antijunk-001",
+    description: "should not collapse to generic noun from rules sentence",
+    message: "Why can't I understand the rules of curling?",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Rules of Curling",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+    notes: "Regression guard against labels like 'Rules'.",
+  },
+  {
+    id: "hard-antijunk-002",
+    description: "should not collapse to generic verb wrapper",
+    message: "I need help with the speed of sound.",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Speed of Sound",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+    notes: "Regression guard against labels like 'Need' or 'Help'.",
+  },
+  {
+    id: "hard-antijunk-003",
+    description: "comparison should not collapse to generic adjective",
+    message: "What's different between mitosis and meiosis?",
+    existingTopics: [],
+    activeTopicId: null,
+    expectedLabel: "Mitosis vs Meiosis",
+    expectedResolutionKind: "created_new_candidate",
+    expectedShouldCreate: true,
+    notes: "Regression guard against labels like 'Different'.",
+  },
+];
+
+export const TOPIC_LABELING_HARD_SEQUENCES: TopicGoldenSequence[] = [
+  {
+    id: "hard-sequence-001",
+    description: "pronoun-heavy continuation on same topic after explicit creation",
+    initialTopics: [],
+    initialActiveTopicId: null,
+    steps: [
+      {
+        id: "step-1",
+        message: "Can we go over action potentials?",
+        expectedLabel: "Action Potentials",
+        expectedResolutionKind: "created_new_candidate",
+        expectedShouldCreate: true,
+      },
+      {
+        id: "step-2",
+        message: "Wait, what happens right before that?",
+        expectedMatchedTopicName: "Action Potentials",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+      {
+        id: "step-3",
+        message: "No, the second part.",
+        expectedMatchedTopicName: "Action Potentials",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+      {
+        id: "step-4",
+        message: "Quiz me on it.",
+        expectedMatchedTopicName: "Action Potentials",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+    ],
+    notes:
+      "This sequence stresses pronoun-heavy follow-ups that should stay anchored to the active topic.",
+  },
+  {
+    id: "hard-sequence-002",
+    description: "curling topic with narrower same-topic follow-ups",
+    initialTopics: [],
+    initialActiveTopicId: null,
+    steps: [
+      {
+        id: "step-1",
+        message: "I'm confused about the rules of curling.",
+        expectedLabel: "Rules of Curling",
+        expectedResolutionKind: "created_new_candidate",
+        expectedShouldCreate: true,
+      },
+      {
+        id: "step-2",
+        message: "What about the scoring part?",
+        expectedMatchedTopicName: "Rules of Curling",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+      {
+        id: "step-3",
+        message: "No, I meant the sweeping part.",
+        expectedMatchedTopicName: "Rules of Curling",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+      {
+        id: "step-4",
+        message: "Can we do that again?",
+        expectedMatchedTopicName: "Rules of Curling",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+    ],
+  },
+  {
+    id: "hard-sequence-003",
+    description: "detour to a second topic then explicit return to first topic",
+    initialTopics: [],
+    initialActiveTopicId: null,
+    steps: [
+      {
+        id: "step-1",
+        message: "Help me with dopamine.",
+        expectedLabel: "Dopamine",
+        expectedResolutionKind: "created_new_candidate",
+        expectedShouldCreate: true,
+      },
+      {
+        id: "step-2",
+        message: "Actually quick side question, what's serotonin?",
+        expectedLabel: "Serotonin",
+        expectedResolutionKind: "created_new_candidate",
+        expectedShouldCreate: true,
+        forbiddenResolutionKinds: ["fallback_active_topic"],
+      },
+      {
+        id: "step-3",
+        message: "Ok back to the first one.",
+        expectedMatchedTopicName: "Dopamine",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+    ],
+    notes:
+      "This may expose whether your resolver has enough logic for 'first one' style recovery.",
+  },
+  {
+    id: "hard-sequence-004",
+    description: "budgeting then compound interest detour then go back",
+    initialTopics: [],
+    initialActiveTopicId: null,
+    steps: [
+      {
+        id: "step-1",
+        message: "Can we go over budgeting?",
+        expectedLabel: "Budgeting",
+        expectedResolutionKind: "created_new_candidate",
+        expectedShouldCreate: true,
+      },
+      {
+        id: "step-2",
+        message: "Wait also what's compound interest?",
+        expectedLabel: "Compound Interest",
+        expectedResolutionKind: "created_new_candidate",
+        expectedShouldCreate: true,
+        forbiddenResolutionKinds: ["fallback_active_topic"],
+      },
+      {
+        id: "step-3",
+        message: "Never mind, go back.",
+        expectedMatchedTopicName: "Budgeting",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+    ],
+    notes:
+      "Another explicit detour-and-return pattern that is likely harder than your current baseline sequences.",
+  },
+  {
+    id: "hard-sequence-005",
+    description: "meta/admin utterances should not produce junk topics mid-thread",
+    initialTopics: [{ id: "t1", name: "Speed of Sound" }],
+    initialActiveTopicId: "t1",
+    steps: [
+      {
+        id: "step-1",
+        message: "Can you say that again?",
+        expectedMatchedTopicName: "Speed of Sound",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+      {
+        id: "step-2",
+        message: "Wait.",
+        expectedMatchedTopicName: "Speed of Sound",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+      {
+        id: "step-3",
+        message: "Show me another example.",
+        expectedMatchedTopicName: "Speed of Sound",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+    ],
+  },
+  {
+    id: "hard-sequence-006",
+    description: "comparison topic then vague same-topic follow-up",
+    initialTopics: [],
+    initialActiveTopicId: null,
+    steps: [
+      {
+        id: "step-1",
+        message: "What's the difference between speed and velocity?",
+        expectedLabel: "Speed vs Velocity",
+        expectedResolutionKind: "created_new_candidate",
+        expectedShouldCreate: true,
+      },
+      {
+        id: "step-2",
+        message: "I keep mixing them up in word problems.",
+        expectedMatchedTopicName: "Speed vs Velocity",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+      {
+        id: "step-3",
+        message: "Quiz me on that.",
+        expectedMatchedTopicName: "Speed vs Velocity",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+    ],
+  },
+  {
+    id: "hard-sequence-007",
+    description: "broad-to-narrow first message then repeated pronoun continuation",
+    initialTopics: [],
+    initialActiveTopicId: null,
+    steps: [
+      {
+        id: "step-1",
+        message:
+          "I'm studying triangles, sine, cosine, tangent, and all of that, but I'm specifically stuck on the law of sines.",
+        expectedLabel: "Law of Sines",
+        expectedResolutionKind: "created_new_candidate",
+        expectedShouldCreate: true,
+      },
+      {
+        id: "step-2",
+        message: "Yeah, it's that one that keeps messing me up.",
+        expectedMatchedTopicName: "Law of Sines",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+      {
+        id: "step-3",
+        message: "Can we go over it again?",
+        expectedMatchedTopicName: "Law of Sines",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
+      },
+    ],
+  },
+  {
+    id: "hard-sequence-008",
+    description: "existing earlier topic should be reused instead of duplicated on explicit return",
+    initialTopics: [
+      { id: "t1", name: "Action Potentials" },
+      { id: "t2", name: "Osmosis" },
+      { id: "t3", name: "Budgeting" },
+    ],
+    initialActiveTopicId: "t3",
+    steps: [
+      {
+        id: "step-1",
+        message: "Actually go back to action potentials.",
+        expectedLabel: "Action Potentials",
+        expectedMatchedTopicName: "Action Potentials",
+        forbiddenResolutionKinds: ["created_new_candidate", "fallback_active_topic", "no_match"],
+      },
+      {
+        id: "step-2",
+        message: "No, the first part of that.",
+        expectedMatchedTopicName: "Action Potentials",
+        forbiddenResolutionKinds: ["created_new_candidate", "no_match"],
       },
     ],
   },

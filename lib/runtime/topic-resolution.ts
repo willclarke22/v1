@@ -115,6 +115,59 @@ const ACTIVE_TOPIC_ANAPHORIC_FOLLOWUP_REGEXES: RegExp[] = [
   /^(?:can we go over (?:that|it) again)\??$/i,
   /^(?:explain (?:that|it) again)\.?$/i,
   /^(?:can you explain (?:that|it) again)\??$/i,
+  /^(?:wait,?\s+what happens right before that)\??$/i,
+  /^(?:wait,?\s+what happens right before it)\??$/i,
+  /^(?:yeah,?\s+that exact part)\.?$/i,
+  /^(?:yeah,?\s+it'?s that one that keeps messing me up)\.?$/i,
+  /^(?:i still (?:don't|dont) (?:really )?get it)\.?$/i,
+  /^(?:i keep mixing them up in word problems)\.?$/i,
+  /^(?:can we do that again)\??$/i,
+  /^(?:show me another example)\.?$/i,
+  /^(?:can you say that again(?: but shorter)?)\??$/i,
+  /^(?:say that again(?: but shorter)?)\??$/i,
+  /^(?:wait)\.?$/i,
+  /^(?:wait,?\s*what do you mean)\??$/i,
+  /^(?:what do you mean)\??$/i,
+];
+
+const ACTIVE_TOPIC_SUBPART_FOLLOWUP_REGEXES: RegExp[] = [
+  /^(?:what about the .+ part)\??$/i,
+  /^(?:especially the .+ part)\.?$/i,
+  /^(?:no,?\s*i meant the .+ part)\.?$/i,
+  /^(?:no,?\s*the .+ part)\.?$/i,
+  /^(?:the .+ part)\.?$/i,
+  /^(?:the scoring part)\.?$/i,
+  /^(?:the sweeping part)\.?$/i,
+  /^(?:no,?\s*the second part)\.?$/i,
+  /^(?:no,?\s*the first part(?: of that)?)\.?$/i,
+];
+
+const META_CONTINUATION_REGEXES: RegExp[] = [
+  /^(?:thanks(?:,?\s*that helped)?)\.?$/i,
+  /^(?:show me another example)\.?$/i,
+  /^(?:can you say that again(?: but shorter)?)\??$/i,
+  /^(?:say that again(?: but shorter)?)\??$/i,
+  /^(?:wait)\.?$/i,
+  /^(?:wait,?\s*what do you mean)\??$/i,
+  /^(?:what do you mean)\??$/i,
+];
+
+const RETURN_TO_PREVIOUS_TOPIC_REGEXES: RegExp[] = [
+  /^(?:ok(?:ay)?\s+back to the first one)\.?$/i,
+  /^(?:back to the first one)\.?$/i,
+  /^(?:go back)\.?$/i,
+  /^(?:never mind,?\s*go back)\.?$/i,
+  /^(?:actually,?\s*go back)\.?$/i,
+  /^(?:wait,?\s*go back)\.?$/i,
+  /^(?:go back to the first one)\.?$/i,
+];
+
+const EXPLICIT_EXISTING_TOPIC_SWITCH_PREFIXES: RegExp[] = [
+  /^(?:go back to)\s+(.+?)\.?$/i,
+  /^(?:switch to)\s+(.+?)\.?$/i,
+  /^(?:back to)\s+(.+?)\.?$/i,
+  /^(?:actually,?\s*go back to)\s+(.+?)\.?$/i,
+  /^(?:wait,?\s*go back to)\s+(.+?)\.?$/i,
 ];
 
 function normalizeSurface(text: string) {
@@ -129,7 +182,7 @@ function normalizeSurface(text: string) {
 function normalizeTopicText(text: string) {
   return normalizeSurface(text)
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/[^\p{L}\p{N}\s'-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -137,7 +190,7 @@ function normalizeTopicText(text: string) {
 function normalizeLoose(text: string) {
   return normalizeSurface(text)
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/[^\p{L}\p{N}\s'-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -211,6 +264,23 @@ function looksLikeActiveTopicAnaphoricFollowup(message: string) {
   return ACTIVE_TOPIC_ANAPHORIC_FOLLOWUP_REGEXES.some((regex) =>
     regex.test(normalized)
   );
+}
+
+function looksLikeActiveTopicSubpartFollowup(message: string) {
+  const normalized = normalizeSurface(message);
+  return ACTIVE_TOPIC_SUBPART_FOLLOWUP_REGEXES.some((regex) =>
+    regex.test(normalized)
+  );
+}
+
+function looksLikeMetaContinuation(message: string) {
+  const normalized = normalizeSurface(message);
+  return META_CONTINUATION_REGEXES.some((regex) => regex.test(normalized));
+}
+
+function looksLikeReturnToPreviousTopic(message: string) {
+  const normalized = normalizeSurface(message);
+  return RETURN_TO_PREVIOUS_TOPIC_REGEXES.some((regex) => regex.test(normalized));
 }
 
 function buildTopicLabelingInput(
@@ -293,7 +363,6 @@ function computeLocalTopicSimilarity(
   const tokenScore = overlapScore(candidateTokens, topicTokens);
 
   const score = exactNameMatch * 1.0 + containedMatch * 0.82 + tokenScore * 0.78;
-
   return clamp(score, 0, 1);
 }
 
@@ -524,6 +593,16 @@ function scoreStayActiveHypothesis(args: {
   if (looksLikeActiveTopicAnaphoricFollowup(message)) {
     score += 0.28;
     reasons.push("Short anaphoric follow-up strongly suggests staying on the active topic.");
+  }
+
+  if (looksLikeActiveTopicSubpartFollowup(message)) {
+    score += 0.24;
+    reasons.push("Subpart follow-up is better treated as staying within the active topic.");
+  }
+
+  if (looksLikeMetaContinuation(message)) {
+    score += 0.24;
+    reasons.push("Meta continuation is safer to anchor to the active topic.");
   }
 
   if (labeling.topic_decision.should_create_new_topic) {
@@ -918,6 +997,7 @@ function looksLikeSuspiciousResolvedLabel(label: string | null) {
     "this",
     "that",
     "it",
+    "it's",
     "part",
     "thing",
     "stuff",
@@ -925,13 +1005,101 @@ function looksLikeSuspiciousResolvedLabel(label: string | null) {
     "question",
     "new topic",
     "law works",
+    "say",
+    "helped",
+    "mean",
+    "another example",
+    "happens right",
+    "no the second",
+    "no i meant the sweeping",
+    "keep mixing",
+    "scoring",
+    "sweeping",
   ]);
 
   if (suspiciousSingles.has(normalized)) return true;
   if (normalized.split(" ").length > 8) return true;
   if (/\b(help|understand|get|confused|stuck|trouble)\b/i.test(label)) return true;
+  if (/^(?:say|helped|mean|scoring|sweeping|wait|example)$/i.test(normalized)) return true;
 
   return false;
+}
+
+function findTopicByNameApprox(
+  requested: string,
+  topics: RouteTopic[],
+  excludeTopicId?: string | null
+): RouteTopic | null {
+  const requestedTokens = semanticTokenize(requested);
+  if (!requestedTokens.length) return null;
+
+  let best: { topic: RouteTopic; score: number } | null = null;
+
+  for (const topic of topics) {
+    if (excludeTopicId && topic.id === excludeTopicId) continue;
+
+    const score = overlapScore(requestedTokens, semanticTokenize(topic.name));
+    const exact = normalizeTopicText(requested) === normalizeTopicText(topic.name) ? 1 : 0;
+    const finalScore = Math.max(score, exact);
+
+    if (!best || finalScore > best.score) {
+      best = { topic, score: finalScore };
+    }
+  }
+
+  if (!best) return null;
+  if (best.score >= 0.62) return best.topic;
+  return null;
+}
+
+function extractExplicitExistingTopicTarget(
+  message: string,
+  existingTopics: RouteTopic[],
+  activeTopic?: RouteTopic | null
+): RouteTopic | null {
+  const normalized = normalizeSurface(message);
+
+  for (const regex of EXPLICIT_EXISTING_TOPIC_SWITCH_PREFIXES) {
+    const match = normalized.match(regex);
+    const requested = match?.[1]?.trim();
+    if (!requested) continue;
+
+    const topic = findTopicByNameApprox(requested, existingTopics, null);
+    if (topic) return topic;
+  }
+
+  if (/^(?:actually\s+can we go back to)\s+(.+?)\??$/i.test(normalized)) {
+    const requested = normalized.replace(/^(?:actually\s+can we go back to)\s+/i, "").trim();
+    const topic = findTopicByNameApprox(requested, existingTopics, null);
+    if (topic) return topic;
+  }
+
+  if (/^(?:can we go back to)\s+(.+?)\??$/i.test(normalized)) {
+    const requested = normalized.replace(/^(?:can we go back to)\s+/i, "").trim();
+    const topic = findTopicByNameApprox(requested, existingTopics, null);
+    if (topic) return topic;
+  }
+
+  if (/^(?:wait,?\s*go back to)\s+(.+?)\.?$/i.test(normalized)) {
+    const requested = normalized.replace(/^(?:wait,?\s*go back to)\s+/i, "").trim();
+    const topic = findTopicByNameApprox(requested, existingTopics, null);
+    if (topic) return topic;
+  }
+
+  return null;
+}
+
+function findPreviousNonActiveTopic(
+  existingTopics: RouteTopic[],
+  activeTopic?: RouteTopic | null
+): RouteTopic | null {
+  if (!existingTopics.length) return null;
+  if (!activeTopic) return existingTopics[existingTopics.length - 1] ?? null;
+
+  const activeIndex = existingTopics.findIndex((topic) => topic.id === activeTopic.id);
+  if (activeIndex <= 0) return null;
+
+  return existingTopics[activeIndex - 1] ?? null;
 }
 
 export function shouldTryLLMTopicResolutionFallback(args: {
@@ -1006,9 +1174,44 @@ export function resolveTopicForMessage(
     };
   }
 
+  const explicitExistingTarget = extractExplicitExistingTopicTarget(
+    message,
+    existingTopics,
+    activeTopic
+  );
+  if (explicitExistingTarget) {
+    return {
+      matchedTopic: explicitExistingTarget,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind:
+        explicitExistingTarget.id === activeTopic?.id
+          ? "fallback_active_topic"
+          : "matched_existing",
+      resolvedLabel: explicitExistingTarget.name,
+      matchConfidence: 0.95,
+    };
+  }
+
+  if (looksLikeReturnToPreviousTopic(message)) {
+    const previousTopic = findPreviousNonActiveTopic(existingTopics, activeTopic);
+    if (previousTopic) {
+      return {
+        matchedTopic: previousTopic,
+        vectorInfo,
+        shouldCreateNewTopic: false,
+        resolutionKind: "fallback_existing_topic",
+        resolvedLabel: previousTopic.name,
+        matchConfidence: 0.9,
+      };
+    }
+  }
+
   if (
     activeTopic &&
-    looksLikeActiveTopicAnaphoricFollowup(message) &&
+    (looksLikeActiveTopicAnaphoricFollowup(message) ||
+      looksLikeActiveTopicSubpartFollowup(message) ||
+      looksLikeMetaContinuation(message)) &&
     !labeling.topic_decision.should_create_new_topic
   ) {
     return {
@@ -1022,6 +1225,23 @@ export function resolveTopicForMessage(
         0.86,
         labeling.topic_decision.confidence
       ),
+    };
+  }
+
+  if (
+    activeTopic &&
+    looksLikeSuspiciousResolvedLabel(labeling.topic_decision.canonical_label) &&
+    (looksLikeActiveTopicAnaphoricFollowup(message) ||
+      looksLikeActiveTopicSubpartFollowup(message) ||
+      looksLikeMetaContinuation(message))
+  ) {
+    return {
+      matchedTopic: activeTopic,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind: "fallback_active_topic",
+      resolvedLabel: activeTopic.name,
+      matchConfidence: Math.max(activeTopicScore?.similarity ?? 0, 0.84),
     };
   }
 
@@ -1123,14 +1343,14 @@ export function resolveTopicForMessage(
     activeTopic &&
     activeTopicScore &&
     activeTopicScore.similarity >= ACTIVE_TOPIC_FALLBACK_THRESHOLD &&
-    winner.kind !== "create_new"
+    (winner.kind !== "create_new" || looksLikeSuspiciousResolvedLabel(labeling.topic_decision.canonical_label))
   ) {
     return {
       matchedTopic: activeTopic,
       vectorInfo,
       shouldCreateNewTopic: false,
       resolutionKind: "fallback_active_topic",
-      resolvedLabel: labeling.topic_decision.canonical_label ?? activeTopic.name,
+      resolvedLabel: activeTopic.name,
       matchConfidence: activeTopicScore.similarity,
     };
   }

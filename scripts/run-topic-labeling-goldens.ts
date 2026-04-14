@@ -1,3 +1,5 @@
+// scripts/run-topic-labeling-goldens.ts
+
 import { runDeterministicTopicLabeling } from "../lib/runtime/topic-labeling/topic-label-deterministic";
 import {
   resolveTopicForMessage,
@@ -7,6 +9,8 @@ import {
 import {
   TOPIC_LABELING_GOLDENS,
   TOPIC_LABELING_SEQUENCES,
+  TOPIC_LABELING_HARD_GOLDENS,
+  TOPIC_LABELING_HARD_SEQUENCES,
   type GoldensTopic,
   type ResolutionKind,
   type TopicGoldenCase,
@@ -14,8 +18,15 @@ import {
   type TopicGoldenSequenceStep,
 } from "./topic-labeling-goldens";
 
+type ResultScope =
+  | "baseline-isolated"
+  | "baseline-sequence"
+  | "hard-isolated"
+  | "hard-sequence";
+
 type CaseResult = {
   suite: "isolated" | "sequence";
+  scope: ResultScope;
   id: string;
   description: string;
   message: string;
@@ -32,7 +43,16 @@ type CaseResult = {
 };
 
 type CliOptions = {
-  suite: "all" | "isolated" | "sequence";
+  suite:
+    | "all"
+    | "baseline"
+    | "hard"
+    | "isolated"
+    | "sequence"
+    | "baseline-isolated"
+    | "baseline-sequence"
+    | "hard-isolated"
+    | "hard-sequence";
   grep: string | null;
   onlyFailures: boolean;
 };
@@ -45,10 +65,22 @@ function parseArgs(argv: string[]): CliOptions {
   };
 
   for (const arg of argv) {
-    if (arg === "--suite=isolated") {
+    if (arg === "--suite=baseline") {
+      options.suite = "baseline";
+    } else if (arg === "--suite=hard") {
+      options.suite = "hard";
+    } else if (arg === "--suite=isolated") {
       options.suite = "isolated";
     } else if (arg === "--suite=sequence") {
       options.suite = "sequence";
+    } else if (arg === "--suite=baseline-isolated") {
+      options.suite = "baseline-isolated";
+    } else if (arg === "--suite=baseline-sequence") {
+      options.suite = "baseline-sequence";
+    } else if (arg === "--suite=hard-isolated") {
+      options.suite = "hard-isolated";
+    } else if (arg === "--suite=hard-sequence") {
+      options.suite = "hard-sequence";
     } else if (arg.startsWith("--grep=")) {
       options.grep = arg.slice("--grep=".length).trim() || null;
     } else if (arg === "--only-failures") {
@@ -150,7 +182,10 @@ function evaluateExpectations(
   return failures;
 }
 
-function evaluateCase(testCase: TopicGoldenCase): CaseResult {
+function evaluateCase(
+  testCase: TopicGoldenCase,
+  scope: "baseline-isolated" | "hard-isolated"
+): CaseResult {
   const existingTopics = makeRouteTopics(testCase.existingTopics);
   const activeTopic =
     testCase.activeTopicId == null
@@ -190,6 +225,7 @@ function evaluateCase(testCase: TopicGoldenCase): CaseResult {
 
   return {
     suite: "isolated",
+    scope,
     id: testCase.id,
     description: testCase.description,
     message: testCase.message,
@@ -204,7 +240,10 @@ function evaluateCase(testCase: TopicGoldenCase): CaseResult {
   };
 }
 
-function evaluateSequence(sequence: TopicGoldenSequence): CaseResult[] {
+function evaluateSequence(
+  sequence: TopicGoldenSequence,
+  scope: "baseline-sequence" | "hard-sequence"
+): CaseResult[] {
   let existingTopics = makeRouteTopics(sequence.initialTopics);
   let activeTopic =
     sequence.initialActiveTopicId == null
@@ -243,6 +282,7 @@ function evaluateSequence(sequence: TopicGoldenSequence): CaseResult[] {
 
     results.push({
       suite: "sequence",
+      scope,
       id: `${sequence.id}:${step.id}`,
       description: `${sequence.description} :: ${step.id}`,
       message: step.message,
@@ -270,8 +310,22 @@ function evaluateSequence(sequence: TopicGoldenSequence): CaseResult[] {
 
 function filterResults(results: CaseResult[], options: CliOptions): CaseResult[] {
   return results.filter((result) => {
-    if (options.suite !== "all" && result.suite !== options.suite) {
-      return false;
+    if (options.suite === "baseline") {
+      if (!result.scope.startsWith("baseline")) return false;
+    } else if (options.suite === "hard") {
+      if (!result.scope.startsWith("hard")) return false;
+    } else if (options.suite === "isolated") {
+      if (result.suite !== "isolated") return false;
+    } else if (options.suite === "sequence") {
+      if (result.suite !== "sequence") return false;
+    } else if (options.suite === "baseline-isolated") {
+      if (result.scope !== "baseline-isolated") return false;
+    } else if (options.suite === "baseline-sequence") {
+      if (result.scope !== "baseline-sequence") return false;
+    } else if (options.suite === "hard-isolated") {
+      if (result.scope !== "hard-isolated") return false;
+    } else if (options.suite === "hard-sequence") {
+      if (result.scope !== "hard-sequence") return false;
     }
 
     if (options.grep) {
@@ -281,6 +335,7 @@ function filterResults(results: CaseResult[], options: CliOptions): CaseResult[]
         result.message,
         result.actualLabel ?? "",
         result.actualMatchedTopicName ?? "",
+        result.scope,
       ]
         .join(" ")
         .toLowerCase();
@@ -296,6 +351,24 @@ function filterResults(results: CaseResult[], options: CliOptions): CaseResult[]
 
     return true;
   });
+}
+
+function printScopeBreakdown(results: CaseResult[]) {
+  const scopes: ResultScope[] = [
+    "baseline-isolated",
+    "baseline-sequence",
+    "hard-isolated",
+    "hard-sequence",
+  ];
+
+  console.log("=== Scope Breakdown ===");
+  for (const scope of scopes) {
+    const scopeResults = results.filter((r) => r.scope === scope);
+    const passed = scopeResults.filter((r) => r.pass).length;
+    const failed = scopeResults.length - passed;
+    console.log(`${scope}: total=${scopeResults.length} passed=${passed} failed=${failed}`);
+  }
+  console.log("");
 }
 
 function printSuiteBreakdown(results: CaseResult[]) {
@@ -322,9 +395,11 @@ function printSummary(results: CaseResult[]) {
   console.log(`Failed: ${failed}`);
   console.log("");
 
+  printScopeBreakdown(results);
   printSuiteBreakdown(results);
 
   const tableRows = results.map((r) => ({
+    scope: r.scope,
     suite: r.suite,
     id: r.id,
     pass: r.pass ? "PASS" : "FAIL",
@@ -342,7 +417,7 @@ function printSummary(results: CaseResult[]) {
     console.log("");
     console.log("=== Failed Cases ===");
     for (const failedCase of failedCases) {
-      console.log(`\n[${failedCase.id}] ${failedCase.description}`);
+      console.log(`\n[${failedCase.scope}] [${failedCase.id}] ${failedCase.description}`);
       console.log(`Message: ${failedCase.message}`);
       console.log(`Actual label: ${failedCase.actualLabel}`);
       console.log(`Actual resolution: ${failedCase.actualResolutionKind}`);
@@ -363,15 +438,33 @@ function printSummary(results: CaseResult[]) {
 function main() {
   const options = parseArgs(process.argv.slice(2));
 
-  const isolatedResults = TOPIC_LABELING_GOLDENS.map(evaluateCase);
-  const sequenceResults = TOPIC_LABELING_SEQUENCES.flatMap(evaluateSequence);
-  const allResults = [...isolatedResults, ...sequenceResults];
+  const baselineIsolatedResults = TOPIC_LABELING_GOLDENS.map((testCase) =>
+    evaluateCase(testCase, "baseline-isolated")
+  );
+  const baselineSequenceResults = TOPIC_LABELING_SEQUENCES.flatMap((sequence) =>
+    evaluateSequence(sequence, "baseline-sequence")
+  );
+
+  const hardIsolatedResults = TOPIC_LABELING_HARD_GOLDENS.map((testCase) =>
+    evaluateCase(testCase, "hard-isolated")
+  );
+  const hardSequenceResults = TOPIC_LABELING_HARD_SEQUENCES.flatMap((sequence) =>
+    evaluateSequence(sequence, "hard-sequence")
+  );
+
+  const allResults = [
+    ...baselineIsolatedResults,
+    ...baselineSequenceResults,
+    ...hardIsolatedResults,
+    ...hardSequenceResults,
+  ];
+
   const filteredResults = filterResults(allResults, options);
 
   if (filteredResults.length === 0) {
     console.log("No topic-labeling golden cases matched the current filters.");
     console.log(
-      "Try without filters, or use something like --suite=isolated --grep=curling --only-failures."
+      "Try without filters, or use something like --suite=hard --grep=curling --only-failures."
     );
     process.exitCode = 1;
     return;
