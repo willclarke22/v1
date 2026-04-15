@@ -21,6 +21,15 @@ export type TopicResolutionDecision =
   | "create_new"
   | "no_persistent_topic_yet";
 
+export type SentenceRole =
+  | "confusion"
+  | "question"
+  | "comparison"
+  | "request"
+  | "attempt"
+  | "context"
+  | "other";
+
 export type RetrievalCandidate = {
   topic_id: string;
   topic_name: string;
@@ -60,10 +69,42 @@ export type TopicLabelingDecision = {
   confidence: number;
 };
 
+export type TopicCandidateScoreBreakdown = {
+  roleWeight: number;
+  focusWeight: number;
+  contrastWeight: number;
+  confusionAdjacencyWeight: number;
+  requestAdjacencyWeight: number;
+  contextRecoveryWeight: number;
+  mentionWeight: number;
+  specificityWeight: number;
+  reuseHintWeight: number;
+  genericPenalty: number;
+  clausePenalty: number;
+  learnerStatePenalty: number;
+  lengthPenalty: number;
+  total: number;
+};
+
+export type TopicLabelingScoredCandidate = {
+  span: string;
+  normalized_span: string;
+  source_clause: string;
+  source_role: SentenceRole;
+  clause_index: number;
+  question_about_topic: string | null;
+  comparison_target: string | null;
+  qualifiers: string[];
+  score: number;
+  score_breakdown: TopicCandidateScoreBreakdown | null;
+  display_label: string | null;
+};
+
 export type TopicLabelingDiagnostics = {
   reasoning_summary: string[];
   rejection_reasons: string[];
   ambiguity_flags: string[];
+  scored_candidates: TopicLabelingScoredCandidate[];
 };
 
 export type TopicLabelingResult = {
