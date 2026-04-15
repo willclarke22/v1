@@ -23,11 +23,11 @@ function extractComparison(clause: string) {
   const normalized = normalizeSurface(clause);
 
   const patterns = [
-    /\b(?:difference between)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)\??$/i,
-    /\b(?:compare|contrast)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)\??$/i,
-    /^(?:what(?:'s| is)?\s+the\s+difference\s+between)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)\??$/i,
-    /\b(.+?)\s+vs\.?\s+(.+?)\??$/i,
-    /\bwhen to use\s+(.+?)\s+vs\.?\s+(.+?)\??$/i,
+    /\b(?:difference between)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)[.?!]*$/i,
+    /\b(?:compare|contrast)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)[.?!]*$/i,
+    /^(?:what(?:'s| is)?\s+the\s+difference\s+between)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)[.?!]*$/i,
+    /\b(?:i keep forgetting\s+)?when to use\s+(.+?)\s+vs\.?\s+(.+?)[.?!]*$/i,
+    /\b(.+?)\s+vs\.?\s+(.+?)[.?!]*$/i,
   ];
 
   for (const regex of patterns) {
@@ -42,7 +42,7 @@ function extractComparison(clause: string) {
   }
 
   const mixingMatch = normalized.match(
-    /\b(?:keep\s+mixing\s+up|mixing\s+up)\s+(.+?)\s+and\s+(.+?)\??$/i
+    /\b(?:keep\s+mixing\s+up|mixing\s+up)\s+(.+?)\s+and\s+(.+?)[.?!]*$/i
   );
   if (mixingMatch?.[1] && mixingMatch?.[2]) {
     return {
@@ -173,11 +173,15 @@ function extractFocusTailCandidates(clause: ClauseInfo): TopicCandidate[] {
     },
     {
       regex: /\b(?:when to use)\s+(.+?\s+vs\.?\s+.+?)[.?!]*$/i,
-      qualifiers: ["focus_target", "comparison_pair"],
+      qualifiers: ["focus_target", "comparison_pair", "late_focus_target"],
+    },
+    {
+      regex: /\b(?:i keep forgetting when to use)\s+(.+?\s+vs\.?\s+.+?)[.?!]*$/i,
+      qualifiers: ["focus_target", "comparison_pair", "late_focus_target"],
     },
     {
       regex: /\b(?:how to make)\s+(a\s+budget\s+that\s+balances)[.?!]*$/i,
-      qualifiers: ["focus_target"],
+      qualifiers: ["focus_target", "late_focus_target"],
     },
   ];
 
@@ -260,11 +264,13 @@ function extractQuestionCandidates(clause: ClauseInfo): TopicCandidate[] {
     conceptGroup: number;
     questionBuilder?: (match: RegExpMatchArray) => string | null;
     customSpanBuilder?: (match: RegExpMatchArray) => string | null;
+    qualifiers?: string[];
   }> = [
     {
       regex: /^is\s+(.+?)\s+important\s+for\s+(.+?)[?]*$/i,
       conceptGroup: 1,
       questionBuilder: (m) => `important for ${normalizeSurface(m[2] ?? "")}`,
+      qualifiers: ["focus_target"],
     },
     {
       regex:
@@ -272,47 +278,56 @@ function extractQuestionCandidates(clause: ClauseInfo): TopicCandidate[] {
       conceptGroup: 1,
       questionBuilder: (m) =>
         `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[3] ?? "")}`.trim(),
+      qualifiers: ["focus_target"],
     },
     {
       regex: /^does\s+(.+?)\s+(affect|influence|change|cause)\s+(.+?)[?]*$/i,
       conceptGroup: 1,
       questionBuilder: (m) =>
         `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[3] ?? "")}`.trim(),
+      qualifiers: ["focus_target"],
     },
     {
       regex: /^(?:what is|what are)\s+(.+?)[?]*$/i,
       conceptGroup: 1,
+      qualifiers: ["focus_target"],
     },
     {
       regex: /^(?:how does|how do)\s+(.+?)\s+work\s+in\s+(.+?)[?]*$/i,
       conceptGroup: 1,
       customSpanBuilder: (m) =>
         `${normalizeSurface(m[1] ?? "")} in ${normalizeSurface(m[2] ?? "")}`.trim(),
+      qualifiers: ["focus_target", "context_recovery", "late_focus_target"],
     },
     {
       regex: /^(?:how does|how do)\s+(.+?)[?]*$/i,
       conceptGroup: 1,
+      qualifiers: ["focus_target"],
     },
     {
       regex: /^(?:why is|why does)\s+(.+?)[?]*$/i,
       conceptGroup: 1,
+      qualifiers: ["focus_target"],
     },
     {
       regex:
         /^(?:if i want to learn about)\s+(.+?)\s+(?:where should i start|how should i start|where do i start|how do i start)\??$/i,
       conceptGroup: 1,
       questionBuilder: () => "where to start",
+      qualifiers: ["focus_target"],
     },
     {
       regex:
         /^(?:where should i start with|where do i start with|how should i start with|how do i start with)\s+(.+?)\??$/i,
       conceptGroup: 1,
       questionBuilder: () => "where to start",
+      qualifiers: ["focus_target"],
     },
     {
       regex:
         /^(?:actually\s+quick\s+side\s+question,\s*)?(?:what(?:'s| is))\s+(.+?)[?]*$/i,
       conceptGroup: 1,
+      qualifiers: ["focus_target"],
     },
     {
       regex:
@@ -320,6 +335,7 @@ function extractQuestionCandidates(clause: ClauseInfo): TopicCandidate[] {
       conceptGroup: 1,
       customSpanBuilder: (m) =>
         `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[1] ?? "")}`.trim(),
+      qualifiers: ["focus_target", "context_recovery", "late_focus_target"],
     },
   ];
 
@@ -335,7 +351,7 @@ function extractQuestionCandidates(clause: ClauseInfo): TopicCandidate[] {
       span: rawSpan,
       clause,
       questionAboutTopic: rule.questionBuilder ? rule.questionBuilder(match) : null,
-      qualifiers: ["focus_target"],
+      qualifiers: rule.qualifiers ?? ["focus_target"],
     });
 
     if (candidate) candidates.push(candidate);
@@ -348,7 +364,25 @@ function extractRequestCandidates(clause: ClauseInfo): TopicCandidate[] {
   const candidates: TopicCandidate[] = [];
   const text = clause.raw;
 
-  const patterns: Array<{ regex: RegExp; qualifiers?: string[] }> = [
+  const directPatterns: Array<{
+    regex: RegExp;
+    customSpanBuilder?: (match: RegExpMatchArray) => string | null;
+    qualifiers?: string[];
+  }> = [
+    {
+      regex:
+        /^(?:can you explain|explain)\s+what\s+a?\s*(deductible)\s+is\s+in\s+(insurance)[.?!]*$/i,
+      customSpanBuilder: (m) =>
+        `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[1] ?? "")}`.trim(),
+      qualifiers: ["focus_target", "context_recovery", "late_focus_target"],
+    },
+    {
+      regex:
+        /^(?:can you explain|explain)\s+how\s+(.+?)\s+work(?:s)?\s+in\s+(.+?)[.?!]*$/i,
+      customSpanBuilder: (m) =>
+        `${normalizeSurface(m[1] ?? "")} in ${normalizeSurface(m[2] ?? "")}`.trim(),
+      qualifiers: ["focus_target", "context_recovery", "late_focus_target"],
+    },
     {
       regex:
         /^(?:can we go over|could we go over|walk me through|explain|can you explain|quiz me on|test me on|ask me about|i want to learn about)\s+(.+?)[.?!]*$/i,
@@ -379,14 +413,18 @@ function extractRequestCandidates(clause: ClauseInfo): TopicCandidate[] {
     },
   ];
 
-  for (const rule of patterns) {
+  for (const rule of directPatterns) {
     const match = text.match(rule.regex);
-    if (!match?.[1]) continue;
+    if (!match) continue;
+
+    const rawSpan = rule.customSpanBuilder
+      ? rule.customSpanBuilder(match)
+      : (match[1] ?? null);
 
     const candidate = buildCandidate({
-      span: match[1],
+      span: rawSpan,
       clause,
-      qualifiers: rule.qualifiers ?? [],
+      qualifiers: rule.qualifiers ?? ["focus_target"],
     });
 
     if (candidate) candidates.push(candidate);
@@ -538,10 +576,47 @@ function choosePreferredOverlappingCandidate(
   const currentNamed = current.qualifiers.includes("named_concept");
   const incomingNamed = incoming.qualifiers.includes("named_concept");
 
+  const currentLoose = normalizeLoose(current.span);
+  const incomingLoose = normalizeLoose(incoming.span);
+  const oneContainsOther =
+    currentLoose.includes(incomingLoose) || incomingLoose.includes(currentLoose);
+
+  if (
+    oneContainsOther &&
+    !currentClauseLike &&
+    !incomingClauseLike &&
+    currentTokens !== incomingTokens
+  ) {
+    const richer = incomingTokens > currentTokens ? incoming : current;
+    const thinner = incomingTokens > currentTokens ? current : incoming;
+    const richerLabel = incomingTokens > currentTokens ? incomingLabel : currentLabel;
+    const thinnerSpecificity = incomingTokens > currentTokens ? currentSpecificity : incomingSpecificity;
+
+    if (
+      richerLabel &&
+      (richerLabel.toLowerCase().includes(" in ") ||
+        richerLabel.toLowerCase().includes(" vs ") ||
+        richerLabel.toLowerCase().includes(" of ")) &&
+      thinnerSpecificity === "broad_but_usable"
+    ) {
+      return richer;
+    }
+  }
+
   if (currentComparison !== incomingComparison) return incomingComparison ? incoming : current;
   if (currentOfPhrase !== incomingOfPhrase) return incomingOfPhrase ? incoming : current;
-  if (currentNamed !== incomingNamed) return incomingNamed ? incoming : current;
   if (currentFocus !== incomingFocus) return incomingFocus ? incoming : current;
+
+  if (
+    oneContainsOther &&
+    !currentClauseLike &&
+    !incomingClauseLike &&
+    currentTokens !== incomingTokens
+  ) {
+    return incomingTokens > currentTokens ? incoming : current;
+  }
+
+  if (currentNamed !== incomingNamed) return incomingNamed ? incoming : current;
   if (currentClauseLike !== incomingClauseLike) return incomingClauseLike ? current : incoming;
 
   if (currentSpecificity === "too_vague" && incomingSpecificity !== "too_vague") return incoming;
@@ -662,7 +737,12 @@ export function extractConceptCandidates(
       span: "metaphase vs anaphase",
       clause: syntheticClause,
       comparisonTarget: "anaphase",
-      qualifiers: ["comparison_pair", "focus_target", "cross_clause_recovery", "late_focus_target"],
+      qualifiers: [
+        "comparison_pair",
+        "focus_target",
+        "cross_clause_recovery",
+        "late_focus_target",
+      ],
     });
 
     if (synthetic) collected.push(synthetic);
@@ -718,7 +798,7 @@ export function extractConceptCandidates(
       span: "your vs you're",
       clause: syntheticClause,
       comparisonTarget: "you're",
-      qualifiers: ["comparison_pair", "focus_target", "cross_clause_recovery"],
+      qualifiers: ["comparison_pair", "focus_target", "cross_clause_recovery", "late_focus_target"],
     });
 
     if (synthetic) collected.push(synthetic);

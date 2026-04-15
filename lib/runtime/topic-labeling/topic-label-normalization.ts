@@ -219,9 +219,55 @@ export function extractObjectAfterTerminalIs(text: string) {
   return normalizeSurface(match[1]);
 }
 
+function stripLateFocusWrappers(text: string) {
+  let output = normalizeSurface(text);
+
+  const wrapperPatterns: RegExp[] = [
+    /^(?:is|are)\s+(.+)$/i,
+    /^(?:it'?s|it is)\s+(.+)$/i,
+    /^(?:really just|just)\s+(.+)$/i,
+    /^(?:but)\s+(.+)$/i,
+    /^(?:but actually)\s+(.+)$/i,
+    /^(?:actually)\s+(.+)$/i,
+    /^(?:after looking again)\s+(.+)$/i,
+    /^(?:but after looking again)\s+(.+)$/i,
+    /^(?:i think)\s+(.+)$/i,
+    /^(?:i think it'?s)\s+(.+)$/i,
+    /^(?:i think it is)\s+(.+)$/i,
+    /^(?:i think it'?s really just)\s+(.+)$/i,
+    /^(?:i think it is really just)\s+(.+)$/i,
+    /^(?:what i actually don'?t understand is)\s+(.+)$/i,
+    /^(?:what i actually dont understand is)\s+(.+)$/i,
+    /^(?:the thing i actually don'?t get is)\s+(.+)$/i,
+    /^(?:the thing i actually dont get is)\s+(.+)$/i,
+    /^(?:the thing i don'?t get is)\s+(.+)$/i,
+    /^(?:the thing i dont get is)\s+(.+)$/i,
+    /^(?:what i need help with is)\s+(.+)$/i,
+    /^(?:what i really don'?t understand is)\s+(.+)$/i,
+    /^(?:what i really dont understand is)\s+(.+)$/i,
+  ];
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const regex of wrapperPatterns) {
+      const match = output.match(regex);
+      if (!match?.[1]) continue;
+      const next = normalizeSurface(match[1]);
+      if (!next || next === output) continue;
+      output = next;
+      changed = true;
+      break;
+    }
+  }
+
+  return output;
+}
+
 export function keepTopicCore(text: string) {
   let output = normalizeSurface(text);
   output = stripLeadingNoisePatterns(output);
+  output = stripLateFocusWrappers(output);
 
   const directCorePatterns: RegExp[] = [
     /^(?:i need help understanding)\s+(.+)$/i,
@@ -291,6 +337,10 @@ export function keepTopicCore(text: string) {
     /\b(?:the real issue(?: for me)?)\s+is\s+(.+)$/i,
     /\b(?:the actual issue(?: for me)?)\s+is\s+(.+)$/i,
     /\b(?:how to make)\s+(a\s+budget\s+that\s+balances)\b/i,
+    /\b(?:i think it'?s really just)\s+(.+)$/i,
+    /\b(?:i think it is really just)\s+(.+)$/i,
+    /\b(?:after looking again i think it'?s really just)\s+(.+)$/i,
+    /\b(?:after looking again i think it is really just)\s+(.+)$/i,
   ];
 
   for (const regex of specialTailPatterns) {
@@ -299,6 +349,8 @@ export function keepTopicCore(text: string) {
     output = normalizeSurface(match[1]);
     break;
   }
+
+  output = stripLateFocusWrappers(output);
 
   const fromTerminalIs = extractObjectAfterTerminalIs(output);
   if (
@@ -309,6 +361,7 @@ export function keepTopicCore(text: string) {
     output = fromTerminalIs;
   }
 
+  output = stripLateFocusWrappers(output);
   output = trimTopicTail(output);
   return output;
 }
@@ -318,6 +371,7 @@ export function normalizeCandidateSpan(span: string | null) {
 
   let output = normalizeSurface(span);
   output = stripLeadingNoisePatterns(output);
+  output = stripLateFocusWrappers(output);
 
   output = output
     .replace(/[?.!,:;]+$/g, "")
@@ -356,9 +410,20 @@ export function normalizeCandidateSpan(span: string | null) {
     .replace(/\b(?:where should i start|where do i start|how should i start|how do i start)\b$/i, "")
     .replace(/\b(?:for me|right now|a bit|a lot|in a simpler way|better)\b$/i, "")
     .replace(/\bwhen to use\s+/i, "")
+    .replace(/^(?:is|are)\s+/i, "")
+    .replace(/^(?:it'?s|it is)\s+/i, "")
+    .replace(/^(?:but)\s+/i, "")
+    .replace(/^(?:but actually)\s+/i, "")
+    .replace(/^(?:after looking again)\s+/i, "")
+    .replace(/^(?:but after looking again)\s+/i, "")
+    .replace(/^(?:i think)\s+/i, "")
+    .replace(/^(?:i think it'?s)\s+/i, "")
+    .replace(/^(?:i think it is)\s+/i, "")
+    .replace(/^(?:really just|just)\s+/i, "")
     .replace(/\s+/g, " ")
     .trim();
 
+  output = stripLateFocusWrappers(output);
   output = stripLeadingQuestionWrapper(output);
   output = stripLeadingFillerTokens(output);
   output = stripTrailingNoise(output);
@@ -376,6 +441,7 @@ export function normalizeCandidateSpan(span: string | null) {
   output = tokens.join(" ").trim();
   if (!output) return null;
 
+  output = stripLateFocusWrappers(output);
   output = stripLeadingQuestionWrapper(output);
   output = stripLeadingFillerTokens(output);
   output = stripTrailingNoise(output);
@@ -399,6 +465,7 @@ export function normalizeCandidateSpan(span: string | null) {
     }
   }
 
+  output = stripLateFocusWrappers(output);
   output = stripTrailingNoise(output);
   output = trimTopicTail(output);
 
@@ -463,6 +530,7 @@ export function isClauseLikeSpan(span: string | null) {
 
   if (clauseWordCount >= 2) return true;
   if (/^(how|why|what|when|where|whether|if)\b/i.test(normalized)) return true;
+  if (/^(?:but|actually|after looking again|i think|it'?s|it is)\b/i.test(normalized)) return true;
 
   return false;
 }
@@ -516,6 +584,16 @@ export function shapeDisplayLabel(span: string | null) {
     .replace(/\s+/g, " ")
     .trim();
 
+  normalized = stripLateFocusWrappers(normalized);
+
+  normalized = normalized
+    .replace(/\bthat i keep mixing up$/i, "")
+    .replace(/\bthat i keep confusing$/i, "")
+    .replace(/\bthat i keep getting mixed up$/i, "")
+    .replace(/\bthat i mix up$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
   normalized = trimTopicTail(normalized);
 
   if (isBadProcessPhrase(normalized)) return null;
@@ -549,6 +627,10 @@ export function looksLikeSuspiciousLabel(label: string | null) {
 
   const tokenCount = tokenize(label).length;
   if (tokenCount > 8) return true;
+
+  if (/^(?:is|are|it'?s|it is|but|actually|after looking again|i think)\b/i.test(normalized)) {
+    return true;
+  }
 
   if (
     /\b(?:help|understand|understanding|get|confused|stuck|trouble|learn|explain|go over|figure out|start|want|need|quiz|think|again|different|back|especially|shorter|show|wait|thanks|question|first one|second part|first part)\b/i.test(

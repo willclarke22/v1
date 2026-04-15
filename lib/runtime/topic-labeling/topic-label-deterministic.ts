@@ -142,13 +142,16 @@ function buildCandidateScoreBreakdown(args: {
   if (candidate.qualifiers.includes("named_concept")) focusWeight += 0.14;
   if (candidate.qualifiers.includes("explicit_switch")) focusWeight += 0.18;
   if (candidate.qualifiers.includes("cross_clause_recovery")) focusWeight += 0.18;
-  if (candidate.qualifiers.includes("late_focus_target")) focusWeight += 0.24;
+  if (candidate.qualifiers.includes("late_focus_target")) focusWeight += 0.28;
+  if (candidate.qualifiers.includes("context_recovery")) focusWeight += 0.08;
+
   if (
     candidate.qualifiers.includes("comparison_pair") &&
     candidate.qualifiers.includes("late_focus_target")
   ) {
-    focusWeight += 0.12;
+    focusWeight += 0.16;
   }
+
   if (clause?.hasFocusMarker) focusWeight += 0.08;
 
   if (clause?.hasContrastBoundary) contrastWeight += 0.08;
@@ -196,6 +199,62 @@ function buildCandidateScoreBreakdown(args: {
 
   if (looksLikeSuspiciousLabel(label)) {
     genericPenalty += 0.18;
+  }
+
+  const hasExplicitComparison = /\bvs\b|\bversus\b/i.test(message);
+  const hasDomainShaping = /\bwork\s+in\b/i.test(message) || /\bin insurance\b/i.test(message);
+  const hasWrapperComparison = /\b(?:keep forgetting|when to use)\b/i.test(message);
+  const looksClauseWrapped =
+    label != null && /^(?:is|are|it'?s|it is|but|actually|after looking again|i think)\b/i.test(label);
+
+  if (hasExplicitComparison && !candidate.qualifiers.includes("comparison_pair")) {
+    genericPenalty += 0.16;
+  }
+
+  if (
+    hasExplicitComparison &&
+    candidate.qualifiers.includes("comparison_pair") &&
+    candidate.qualifiers.includes("late_focus_target")
+  ) {
+    focusWeight += 0.12;
+  }
+
+  if (
+    hasDomainShaping &&
+    !candidate.span.toLowerCase().includes(" in ") &&
+    tokenCount === 1 &&
+    !candidate.qualifiers.includes("context_recovery")
+  ) {
+    genericPenalty += 0.14;
+  }
+
+  if (
+    hasDomainShaping &&
+    (candidate.span.toLowerCase().includes(" in ") ||
+      candidate.qualifiers.includes("context_recovery"))
+  ) {
+    contextRecoveryWeight += 0.12;
+  }
+
+  if (
+    hasWrapperComparison &&
+    candidate.qualifiers.includes("comparison_pair")
+  ) {
+    focusWeight += 0.1;
+  }
+
+  if (
+    /\bbut\b/i.test(message) &&
+    hasExplicitComparison &&
+    !candidate.qualifiers.includes("comparison_pair") &&
+    candidate.clauseIndex < interpretation.clauses.length - 1
+  ) {
+    genericPenalty += 0.12;
+  }
+
+  if (looksClauseWrapped) {
+    genericPenalty += 0.22;
+    clausePenalty += 0.12;
   }
 
   if (tokenCount > 8) {
@@ -378,11 +437,22 @@ export function runDeterministicTopicLabeling(
   }
 
   if (bestCandidate?.qualifiers.includes("late_focus_target")) {
-    confidence += 0.06;
+    confidence += 0.08;
+  }
+
+  if (bestCandidate?.qualifiers.includes("context_recovery")) {
+    confidence += 0.05;
   }
 
   if (conceptSpan && isClauseLikeSpan(conceptSpan)) {
     confidence -= 0.1;
+  }
+
+  if (
+    canonicalLabel &&
+    /^(?:is|are|it'?s|it is|but|actually|after looking again|i think)\b/i.test(canonicalLabel)
+  ) {
+    confidence -= 0.16;
   }
 
   if (looksLikeSuspiciousLabel(canonicalLabel)) {
