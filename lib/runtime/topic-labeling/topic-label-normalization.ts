@@ -73,7 +73,7 @@ export function semanticTokens(text: string) {
   return tokenize(text).map((token) => singularizeToken(token));
 }
 
-function shapeWordWithSpecialCases(word: string, index: number) {
+function shapeWordWithSpecialCases(word: string, index: number): string {
   const lower = word.toLowerCase();
 
   if (SPECIAL_CASE_LABELS[lower]) return SPECIAL_CASE_LABELS[lower];
