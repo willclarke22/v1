@@ -124,6 +124,49 @@ export function looksLikeContextShell(text: string | null) {
   return CONTEXT_SHELL_REGEXES.some((regex) => regex.test(normalized));
 }
 
+function stripPatternLoop(text: string, patterns: RegExp[]) {
+  let output = normalizeSurface(text);
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+    for (const regex of patterns) {
+      const next = output.replace(regex, "").trim();
+      if (next !== output && next.length > 0) {
+        output = next;
+        changed = true;
+      }
+    }
+  }
+
+  return output;
+}
+
+function extractLeadingCoreByPattern(
+  text: string,
+  patterns: RegExp[]
+): string {
+  let output = normalizeSurface(text);
+  let changed = true;
+
+  while (changed) {
+    changed = false;
+    for (const regex of patterns) {
+      const match = output.match(regex);
+      if (!match?.[1]) continue;
+
+      const next = normalizeSurface(match[1]);
+      if (!next || next === output) continue;
+
+      output = next;
+      changed = true;
+      break;
+    }
+  }
+
+  return output;
+}
+
 export function stripTrailingNoise(text: string) {
   let tokens = tokenize(text);
   while (tokens.length > 1) {
@@ -138,7 +181,10 @@ export function stripLeadingFillerTokens(text: string) {
   let tokens = tokenize(text);
   while (tokens.length > 1) {
     const first = tokens[0];
-    if (!FILLER_WORDS.has(first) && !["uh", "uhh", "well", "yeah", "ok", "okay"].includes(first)) {
+    if (
+      !FILLER_WORDS.has(first) &&
+      !["uh", "uhh", "well", "yeah", "ok", "okay"].includes(first)
+    ) {
       break;
     }
     tokens = tokens.slice(1);
@@ -166,6 +212,20 @@ export function stripLeadingNoisePatterns(text: string) {
 
 export function trimTopicTail(text: string) {
   let output = normalizeSurface(text);
+
+  output = extractLeadingCoreByPattern(output, [
+    /^(.+?)\s+(?:and\s+i\s+(?:do\s+not|don'?t|dont).*)$/i,
+    /^(.+?)\s+(?:that\s+i\s+(?:do\s+not|don'?t|dont).*)$/i,
+    /^(.+?)\s+(?:is\s+what\s+i(?:'m| am)?\s+confused\s+about.*)$/i,
+    /^(.+?)\s+(?:is\s+what\s+i\s+am\s+confused\s+about.*)$/i,
+    /^(.+?)\s+(?:are\s+what\s+i\s+keep\s+getting\s+stuck\s+on.*)$/i,
+    /^(.+?)\s+(?:is\s+not\s+clicking(?:\s+\w+)?).*$/i,
+    /^(.+?)\s+(?:came\s+up.*)$/i,
+    /^(.+?)\s+(?:showed\s+up.*)$/i,
+    /^(.+?)\s+(?:because\s+i(?:'m| am)?\s+lost.*)$/i,
+    /^(.+?)\s+(?:bc\s+i(?:'m| am)?\s+lost.*)$/i,
+    /^(.+?)\s+(?:the\s+whole\s+thing\s+confusing\s+to\s+me.*)$/i,
+  ]);
 
   let changed = true;
   while (changed) {
@@ -245,6 +305,7 @@ function stripLateFocusWrappers(text: string) {
     /^(?:what i need help with is)\s+(.+)$/i,
     /^(?:what i really don'?t understand is)\s+(.+)$/i,
     /^(?:what i really dont understand is)\s+(.+)$/i,
+    /^(?:that is where)\s+(.+)$/i,
   ];
 
   let changed = true;
@@ -264,10 +325,39 @@ function stripLateFocusWrappers(text: string) {
   return output;
 }
 
+function stripMidSentenceTailFragments(text: string) {
+  let output = normalizeSurface(text);
+
+  output = extractLeadingCoreByPattern(output, [
+    /^(.+?)\s+(?:is\s+what\s+i(?:'m| am)?\s+confused\s+about.*)$/i,
+    /^(.+?)\s+(?:is\s+what\s+i\s+am\s+confused\s+about.*)$/i,
+    /^(.+?)\s+(?:are\s+what\s+i\s+keep\s+getting\s+stuck\s+on.*)$/i,
+    /^(.+?)\s+(?:that\s+i\s+(?:do\s+not|don'?t|dont)\s+get.*)$/i,
+    /^(.+?)\s+(?:that\s+i\s+(?:do\s+not|don'?t|dont)\s+really\s+understand.*)$/i,
+    /^(.+?)\s+(?:is\s+not\s+clicking(?:\s+\w+)?).*$/i,
+    /^(.+?)\s+(?:because\s+i(?:'m| am)?\s+lost.*)$/i,
+    /^(.+?)\s+(?:bc\s+i(?:'m| am)?\s+lost.*)$/i,
+  ]);
+
+  return output;
+}
+
+function collapseVerbDomainShape(text: string) {
+  const normalized = normalizeSurface(text);
+
+  const workInMatch = normalized.match(/^(.+?)\s+works?\s+in\s+(.+)$/i);
+  if (workInMatch?.[1] && workInMatch?.[2]) {
+    return `${normalizeSurface(workInMatch[1])} in ${normalizeSurface(workInMatch[2])}`.trim();
+  }
+
+  return normalized;
+}
+
 export function keepTopicCore(text: string) {
   let output = normalizeSurface(text);
   output = stripLeadingNoisePatterns(output);
   output = stripLateFocusWrappers(output);
+  output = stripMidSentenceTailFragments(output);
 
   const directCorePatterns: RegExp[] = [
     /^(?:i need help understanding)\s+(.+)$/i,
@@ -299,6 +389,7 @@ export function keepTopicCore(text: string) {
     /^(?:i want to work on)\s+(.+)$/i,
     /^(?:work on)\s+(.+)$/i,
     /^(?:how does)\s+(.+?)\s+work\s+in\s+(.+)$/i,
+    /^(?:how do)\s+(.+?)\s+work\s+in\s+(.+)$/i,
     /^(?:what is)\s+a?\s*(deductible)\s+in\s+(insurance)$/i,
     /^(?:what(?:'s| is))\s+a?\s*(deductible)\s+in\s+(insurance)$/i,
   ];
@@ -307,9 +398,14 @@ export function keepTopicCore(text: string) {
     const match = output.match(regex);
     if (!match) continue;
 
-    if (/^(?:how does)\s+(.+?)\s+work\s+in\s+(.+)$/i.test(output) && match[1] && match[2]) {
-      output = `${normalizeSurface(match[1])} in ${normalizeSurface(match[2])}`;
-      break;
+    if (
+      /^(?:how does)\s+(.+?)\s+work\s+in\s+(.+)$/i.test(output) ||
+      /^(?:how do)\s+(.+?)\s+work\s+in\s+(.+)$/i.test(output)
+    ) {
+      if (match[1] && match[2]) {
+        output = `${normalizeSurface(match[1])} in ${normalizeSurface(match[2])}`;
+        break;
+      }
     }
 
     if (/deductible/i.test(output) && /insurance/i.test(output) && match[1] && match[2]) {
@@ -341,6 +437,7 @@ export function keepTopicCore(text: string) {
     /\b(?:i think it is really just)\s+(.+)$/i,
     /\b(?:after looking again i think it'?s really just)\s+(.+)$/i,
     /\b(?:after looking again i think it is really just)\s+(.+)$/i,
+    /\b(?:until)\s+(.+?)\s+(?:showed up|came up)\b.*$/i,
   ];
 
   for (const regex of specialTailPatterns) {
@@ -350,7 +447,9 @@ export function keepTopicCore(text: string) {
     break;
   }
 
+  output = stripMidSentenceTailFragments(output);
   output = stripLateFocusWrappers(output);
+  output = collapseVerbDomainShape(output);
 
   const fromTerminalIs = extractObjectAfterTerminalIs(output);
   if (
@@ -361,7 +460,9 @@ export function keepTopicCore(text: string) {
     output = fromTerminalIs;
   }
 
+  output = stripMidSentenceTailFragments(output);
   output = stripLateFocusWrappers(output);
+  output = collapseVerbDomainShape(output);
   output = trimTopicTail(output);
   return output;
 }
@@ -423,6 +524,8 @@ export function normalizeCandidateSpan(span: string | null) {
     .replace(/\s+/g, " ")
     .trim();
 
+  output = stripMidSentenceTailFragments(output);
+  output = collapseVerbDomainShape(output);
   output = stripLateFocusWrappers(output);
   output = stripLeadingQuestionWrapper(output);
   output = stripLeadingFillerTokens(output);
@@ -441,6 +544,8 @@ export function normalizeCandidateSpan(span: string | null) {
   output = tokens.join(" ").trim();
   if (!output) return null;
 
+  output = stripMidSentenceTailFragments(output);
+  output = collapseVerbDomainShape(output);
   output = stripLateFocusWrappers(output);
   output = stripLeadingQuestionWrapper(output);
   output = stripLeadingFillerTokens(output);
@@ -465,6 +570,8 @@ export function normalizeCandidateSpan(span: string | null) {
     }
   }
 
+  output = stripMidSentenceTailFragments(output);
+  output = collapseVerbDomainShape(output);
   output = stripLateFocusWrappers(output);
   output = stripTrailingNoise(output);
   output = trimTopicTail(output);
@@ -508,6 +615,11 @@ export function looksLikeLearnerStateClause(span: string | null) {
     normalized === "dont understand it" ||
     normalized === "can t figure out" ||
     normalized === "cant figure out" ||
+    normalized === "not clicking" ||
+    normalized === "not clicking rn" ||
+    normalized === "i m lost" ||
+    normalized === "im lost" ||
+    normalized === "i am lost" ||
     normalized === "that" ||
     normalized === "it" ||
     normalized === "again"
@@ -543,10 +655,11 @@ export function simplifyDomainLabel(text: string) {
   if (/^interest on a credit card$/i.test(normalized)) return "Credit Card Interest";
   if (/^interest on a credit card actually$/i.test(normalized)) return "Credit Card Interest";
   if (/^offside work in soccer$/i.test(normalized)) return "Offside in Soccer";
+  if (/^offside works in soccer$/i.test(normalized)) return "Offside in Soccer";
   if (/^offside in soccer$/i.test(normalized)) return "Offside in Soccer";
   if (/^offside$/i.test(normalized)) return "Offside";
   if (/^deductible in insurance$/i.test(normalized) || /^insurance deductible$/i.test(normalized)) {
-    return "Insurance Deductibles";
+    return "Insurance Deductible";
   }
   if (/^deductible$/i.test(normalized)) return "Deductible";
   if (/^your vs you're$/i.test(normalized) || /^your vs you'?re$/i.test(normalized)) {
@@ -580,10 +693,14 @@ export function shapeDisplayLabel(span: string | null) {
     .replace(/\bin a simpler(?: way)?$/i, "")
     .replace(/\bfor me$/i, "")
     .replace(/\bcomes up$/i, "")
+    .replace(/\bcame up$/i, "")
+    .replace(/\bshowed up$/i, "")
     .replace(/\bin neurons$/i, "")
     .replace(/\s+/g, " ")
     .trim();
 
+  normalized = stripMidSentenceTailFragments(normalized);
+  normalized = collapseVerbDomainShape(normalized);
   normalized = stripLateFocusWrappers(normalized);
 
   normalized = normalized
@@ -633,7 +750,7 @@ export function looksLikeSuspiciousLabel(label: string | null) {
   }
 
   if (
-    /\b(?:help|understand|understanding|get|confused|stuck|trouble|learn|explain|go over|figure out|start|want|need|quiz|think|again|different|back|especially|shorter|show|wait|thanks|question|first one|second part|first part)\b/i.test(
+    /\b(?:help|understand|understanding|get|confused|stuck|trouble|learn|explain|go over|figure out|start|want|need|quiz|think|again|different|back|especially|shorter|show|wait|thanks|question|first one|second part|first part|clicking|came up|showed up|lost)\b/i.test(
       label
     )
   ) {
@@ -796,7 +913,7 @@ export function splitIntoClauses(text: string): ClauseInfo[] {
   const clauses: ClauseInfo[] = [];
   const pieces = normalized
     .split(
-      /(?<=[.?!])\s+|(?=,\s*but\b)|(?=\s+\bbut\b\s+)|(?=,\s*especially\b)|(?=,\s*mainly\b)|(?=,\s*specifically\b)|(?=,\s*particularly\b)|(?=,\s*actually\b)/i
+      /(?<=[.?!])\s+|(?=,\s*but\b)|(?=\s+\bbut\b\s+)|(?=,\s*especially\b)|(?=,\s*mainly\b)|(?=,\s*specifically\b)|(?=,\s*particularly\b)|(?=,\s*actually\b)|(?=,\s*and now\b)/i
     )
     .map((piece) => normalizeSurface(piece))
     .filter(Boolean);
@@ -812,7 +929,8 @@ export function splitIntoClauses(text: string): ClauseInfo[] {
         lower.startsWith("especially ") ||
         lower.startsWith("specifically ") ||
         lower.startsWith("particularly ") ||
-        lower.startsWith("actually "));
+        lower.startsWith("actually ") ||
+        lower.startsWith("and now "));
 
     clauses.push({
       raw,

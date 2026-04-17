@@ -937,7 +937,7 @@ export const TOPIC_LABELING_HARD_GOLDENS: TopicGoldenCase[] = [
     message: "Can you explain what a deductible is in insurance?",
     existingTopics: [],
     activeTopicId: null,
-    expectedLabel: "Insurance Deductibles",
+    expectedLabel: "Insurance Deductible",
     expectedResolutionKind: "created_new_candidate",
     expectedShouldCreate: true,
   },

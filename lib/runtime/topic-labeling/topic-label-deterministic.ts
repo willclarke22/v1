@@ -103,6 +103,16 @@ function isCreateWorthyBroadLabel(
   return confidence >= 0.74;
 }
 
+function getCandidateDisplayLabel(candidate: TopicCandidate) {
+  return shapeDisplayLabel(candidate.coreText) ?? shapeDisplayLabel(candidate.span);
+}
+
+function candidateLooksClauseWrapped(candidate: TopicCandidate) {
+  const label = getCandidateDisplayLabel(candidate);
+  if (!label) return false;
+  return /^(?:is|are|it'?s|it is|but|actually|after looking again|i think)\b/i.test(label);
+}
+
 function buildCandidateScoreBreakdown(args: {
   candidate: TopicCandidate;
   message: string;
@@ -111,10 +121,10 @@ function buildCandidateScoreBreakdown(args: {
 }) {
   const { candidate, message, interpretation, retrievalCandidates } = args;
   const clause = interpretation.clauses.find((item) => item.index === candidate.clauseIndex);
-  const label = shapeDisplayLabel(candidate.span);
+  const label = getCandidateDisplayLabel(candidate);
   const specificity = scoreSpecificity(label);
-  const tokenCount = tokenize(candidate.span).length;
-  const mentionCount = countSpanMentions(message, candidate.span);
+  const tokenCount = tokenize(candidate.coreText).length;
+  const mentionCount = countSpanMentions(message, candidate.coreText);
 
   let roleWeight = 0;
   let focusWeight = 0;
@@ -136,30 +146,53 @@ function buildCandidateScoreBreakdown(args: {
   if (candidate.sourceRole === "comparison") roleWeight += 0.34;
   if (candidate.sourceRole === "context") roleWeight -= 0.04;
 
-  if (candidate.qualifiers.includes("focus_target")) focusWeight += 0.25;
+  if (candidate.qualifiers.includes("focus_target")) focusWeight += 0.22;
   if (candidate.qualifiers.includes("comparison_pair")) focusWeight += 0.16;
-  if (candidate.qualifiers.includes("of_phrase")) focusWeight += 0.16;
-  if (candidate.qualifiers.includes("named_concept")) focusWeight += 0.14;
-  if (candidate.qualifiers.includes("explicit_switch")) focusWeight += 0.18;
-  if (candidate.qualifiers.includes("cross_clause_recovery")) focusWeight += 0.18;
-  if (candidate.qualifiers.includes("late_focus_target")) focusWeight += 0.28;
+  if (candidate.qualifiers.includes("of_phrase")) focusWeight += 0.14;
+  if (candidate.qualifiers.includes("named_concept")) focusWeight += 0.12;
+  if (candidate.qualifiers.includes("explicit_switch")) focusWeight += 0.14;
+  if (candidate.qualifiers.includes("cross_clause_recovery")) focusWeight += 0.14;
+  if (candidate.qualifiers.includes("late_focus_target")) focusWeight += 0.18;
   if (candidate.qualifiers.includes("context_recovery")) focusWeight += 0.08;
 
-  if (
-    candidate.qualifiers.includes("comparison_pair") &&
-    candidate.qualifiers.includes("late_focus_target")
-  ) {
-    focusWeight += 0.16;
+  if (clause?.hasFocusMarker) focusWeight += 0.06;
+
+  if (candidate.kind === "comparison_pair") focusWeight += 0.24;
+  if (candidate.kind === "of_phrase") focusWeight += 0.14;
+  if (candidate.kind === "domain_shaped") focusWeight += 0.14;
+  if (candidate.kind === "context_anchor") contextRecoveryWeight += 0.18;
+  if (candidate.kind === "followup_reference") focusWeight += 0.04;
+
+  if (candidate.leftText && candidate.rightText) {
+    focusWeight += 0.08;
   }
 
-  if (clause?.hasFocusMarker) focusWeight += 0.08;
+  if (candidate.domainText) {
+    contextRecoveryWeight += 0.08;
+  }
+
+  if (candidate.tailText) {
+    const tailTokens = tokenize(candidate.tailText).length;
+    if (tailTokens >= 2) {
+      clausePenalty += 0.06;
+    }
+  }
+
+  if (!candidate.shouldCompeteAsTopic) {
+    genericPenalty += 0.22;
+  }
+
+  if (candidate.isSubpartReference) {
+    learnerStatePenalty += 0.18;
+    genericPenalty += 0.1;
+  }
 
   if (clause?.hasContrastBoundary) contrastWeight += 0.08;
   if (clause?.hasConfusionMarker) confusionAdjacencyWeight += 0.1;
   if (clause?.hasRequestMarker) requestAdjacencyWeight += 0.06;
 
   if (clause?.hasContextMarker && candidate.qualifiers.includes("context_recovery")) {
-    contextRecoveryWeight += 0.28;
+    contextRecoveryWeight += 0.22;
   }
 
   if (mentionCount >= 2) mentionWeight += 0.14;
@@ -181,19 +214,19 @@ function buildCandidateScoreBreakdown(args: {
   }
   reuseHintWeight += bestReuseHint;
 
-  if (appearsInBroadList(candidate.sourceClause, candidate.span)) {
+  if (appearsInBroadList(candidate.sourceClause, candidate.coreText)) {
     genericPenalty += 0.12;
   }
 
   if (
-    candidate.span === "that" ||
-    candidate.span === "it" ||
-    candidate.span === "again"
+    candidate.coreText === "that" ||
+    candidate.coreText === "it" ||
+    candidate.coreText === "again"
   ) {
     learnerStatePenalty += 0.6;
   }
 
-  if (isClauseLikeSpan(candidate.span)) {
+  if (isClauseLikeSpan(candidate.coreText)) {
     clausePenalty += 0.22;
   }
 
@@ -201,52 +234,40 @@ function buildCandidateScoreBreakdown(args: {
     genericPenalty += 0.18;
   }
 
-  const hasExplicitComparison = /\bvs\b|\bversus\b/i.test(message);
+  const hasExplicitComparison = /\bvs\b|\bversus\b|\bdifference between\b|\bcompare\b|\bcontrast\b/i.test(message);
   const hasDomainShaping = /\bwork\s+in\b/i.test(message) || /\bin insurance\b/i.test(message);
   const hasWrapperComparison = /\b(?:keep forgetting|when to use)\b/i.test(message);
-  const looksClauseWrapped =
-    label != null && /^(?:is|are|it'?s|it is|but|actually|after looking again|i think)\b/i.test(label);
+  const looksClauseWrapped = candidateLooksClauseWrapped(candidate);
 
-  if (hasExplicitComparison && !candidate.qualifiers.includes("comparison_pair")) {
-    genericPenalty += 0.16;
+  if (hasExplicitComparison && candidate.kind !== "comparison_pair") {
+    genericPenalty += 0.2;
   }
 
-  if (
-    hasExplicitComparison &&
-    candidate.qualifiers.includes("comparison_pair") &&
-    candidate.qualifiers.includes("late_focus_target")
-  ) {
-    focusWeight += 0.12;
+  if (hasExplicitComparison && candidate.kind === "comparison_pair") {
+    focusWeight += 0.18;
   }
 
   if (
     hasDomainShaping &&
-    !candidate.span.toLowerCase().includes(" in ") &&
+    !candidate.domainText &&
     tokenCount === 1 &&
     !candidate.qualifiers.includes("context_recovery")
   ) {
     genericPenalty += 0.14;
   }
 
-  if (
-    hasDomainShaping &&
-    (candidate.span.toLowerCase().includes(" in ") ||
-      candidate.qualifiers.includes("context_recovery"))
-  ) {
+  if (hasDomainShaping && candidate.domainText) {
     contextRecoveryWeight += 0.12;
   }
 
-  if (
-    hasWrapperComparison &&
-    candidate.qualifiers.includes("comparison_pair")
-  ) {
-    focusWeight += 0.1;
+  if (hasWrapperComparison && candidate.kind === "comparison_pair") {
+    focusWeight += 0.12;
   }
 
   if (
     /\bbut\b/i.test(message) &&
     hasExplicitComparison &&
-    !candidate.qualifiers.includes("comparison_pair") &&
+    candidate.kind !== "comparison_pair" &&
     candidate.clauseIndex < interpretation.clauses.length - 1
   ) {
     genericPenalty += 0.12;
@@ -310,6 +331,7 @@ function buildAmbiguityFlags(args: {
   topGap: number;
   reuseCandidate: RetrievalCandidate | null;
   interpretation: MessageInterpretation;
+  bestCandidate: TopicCandidate | null;
 }) {
   const flags: string[] = [];
   const {
@@ -321,6 +343,7 @@ function buildAmbiguityFlags(args: {
     topGap,
     reuseCandidate,
     interpretation,
+    bestCandidate,
   } = args;
 
   if (!conceptSpan) {
@@ -353,6 +376,14 @@ function buildAmbiguityFlags(args: {
 
   if (!reuseCandidate && canonicalLabel && confidence >= 0.55 && confidence < 0.74) {
     flags.push("needs_adjudication");
+  }
+
+  if (bestCandidate && !bestCandidate.shouldCompeteAsTopic) {
+    flags.push("candidate_non_topicish");
+  }
+
+  if (bestCandidate?.isSubpartReference) {
+    flags.push("subpart_reference");
   }
 
   return dedupe(flags);
@@ -392,13 +423,13 @@ export function runDeterministicTopicLabeling(
   if (
     messageLooksLikePureFollowup(normalizedMessage) &&
     input.active_topic_name &&
-    (!bestCandidate || looksLikeSuspiciousLabel(shapeDisplayLabel(bestCandidate.span)))
+    (!bestCandidate || looksLikeSuspiciousLabel(getCandidateDisplayLabel(bestCandidate)))
   ) {
     bestCandidate = null;
   }
 
-  let conceptSpan = normalizeCandidateSpan(bestCandidate?.span ?? null);
-  let canonicalLabel = shapeDisplayLabel(conceptSpan);
+  let conceptSpan = normalizeCandidateSpan(bestCandidate?.coreText ?? bestCandidate?.span ?? null);
+  let canonicalLabel = bestCandidate ? getCandidateDisplayLabel(bestCandidate) : null;
 
   if (
     !canonicalLabel &&
@@ -424,34 +455,43 @@ export function runDeterministicTopicLabeling(
   if (specificity === "broad_but_usable") confidence += 0.05;
   if (shouldReuse) confidence += 0.12;
 
+  if (bestCandidate?.kind === "comparison_pair") {
+    confidence += 0.12;
+  }
+
+  if (bestCandidate?.kind === "of_phrase") {
+    confidence += 0.08;
+  }
+
+  if (bestCandidate?.kind === "domain_shaped") {
+    confidence += 0.08;
+  }
+
   if (bestCandidate?.qualifiers.includes("focus_target")) {
-    confidence += 0.06;
-  }
-
-  if (bestCandidate?.qualifiers.includes("comparison_pair")) {
-    confidence += 0.08;
-  }
-
-  if (bestCandidate?.qualifiers.includes("of_phrase")) {
-    confidence += 0.08;
+    confidence += 0.05;
   }
 
   if (bestCandidate?.qualifiers.includes("late_focus_target")) {
-    confidence += 0.08;
+    confidence += 0.05;
   }
 
   if (bestCandidate?.qualifiers.includes("context_recovery")) {
-    confidence += 0.05;
+    confidence += 0.04;
+  }
+
+  if (!bestCandidate?.shouldCompeteAsTopic) {
+    confidence -= 0.16;
+  }
+
+  if (bestCandidate?.isSubpartReference) {
+    confidence -= 0.16;
   }
 
   if (conceptSpan && isClauseLikeSpan(conceptSpan)) {
     confidence -= 0.1;
   }
 
-  if (
-    canonicalLabel &&
-    /^(?:is|are|it'?s|it is|but|actually|after looking again|i think)\b/i.test(canonicalLabel)
-  ) {
+  if (bestCandidate && candidateLooksClauseWrapped(bestCandidate)) {
     confidence -= 0.16;
   }
 
@@ -485,12 +525,15 @@ export function runDeterministicTopicLabeling(
     topGap,
     reuseCandidate,
     interpretation,
+    bestCandidate,
   });
 
   const shouldCreate =
     !shouldReuse &&
     !ambiguityFlags.includes("label_too_vague") &&
     !ambiguityFlags.includes("label_suspicious") &&
+    !ambiguityFlags.includes("candidate_non_topicish") &&
+    !ambiguityFlags.includes("subpart_reference") &&
     !messageLooksLikePureFollowup(normalizedMessage) &&
     (specificity === "good" ||
       specificity === "very_specific" ||
@@ -542,6 +585,9 @@ export function runDeterministicTopicLabeling(
         scoredCandidates.length > 0
           ? `Generated ${scoredCandidates.length} candidate topic spans after grouping.`
           : "No topic candidates were extracted.",
+        bestCandidate
+          ? `Top candidate kind: ${bestCandidate.kind}.`
+          : "No best candidate kind was selected.",
         conceptSpan
           ? `Selected concept span: ${conceptSpan}.`
           : "Could not confidently select a concept span.",
@@ -570,11 +616,17 @@ export function runDeterministicTopicLabeling(
         ...(conceptSpan && isClauseLikeSpan(conceptSpan)
           ? ["Concept span still looks clause-like rather than topic-like."]
           : []),
+        ...(!bestCandidate?.shouldCompeteAsTopic
+          ? ["Top candidate behaves more like a discourse cue than a durable topic."]
+          : []),
+        ...(bestCandidate?.isSubpartReference
+          ? ["Top candidate looks like a subpart reference that should usually attach to a parent topic."]
+          : []),
       ],
       ambiguity_flags: dedupe(ambiguityFlags),
       scored_candidates: scoredCandidates.map((candidate) => ({
-        span: candidate.span,
-        normalized_span: candidate.normalizedSpan,
+        span: candidate.coreText,
+        normalized_span: candidate.normalizedCoreText,
         source_clause: candidate.sourceClause,
         source_role: candidate.sourceRole,
         clause_index: candidate.clauseIndex,
@@ -583,7 +635,7 @@ export function runDeterministicTopicLabeling(
         qualifiers: candidate.qualifiers,
         score: candidate.score,
         score_breakdown: candidate.scoreBreakdown,
-        display_label: shapeDisplayLabel(candidate.span),
+        display_label: getCandidateDisplayLabel(candidate),
       })),
     },
   };

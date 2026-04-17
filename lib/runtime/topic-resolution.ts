@@ -140,6 +140,13 @@ const ACTIVE_TOPIC_SUBPART_FOLLOWUP_REGEXES: RegExp[] = [
   /^(?:the sweeping part)\.?$/i,
   /^(?:no,?\s*the second part)\.?$/i,
   /^(?:no,?\s*the first part(?: of that)?)\.?$/i,
+
+  // Broader mixed/embedded subpart references
+  /^(?:can we go over (?:that|it) again,\s*especially the .+ part)\??$/i,
+  /^(?:go over (?:that|it) again,\s*especially the .+ part)\.?$/i,
+  /^(?:explain (?:that|it) again,\s*especially the .+ part)\.?$/i,
+  /^(?:can you explain (?:that|it) again,\s*especially the .+ part)\??$/i,
+  /^(?:yeah,?\s*that exact part,\s*especially the .+ part)\.?$/i,
 ];
 
 const META_CONTINUATION_REGEXES: RegExp[] = [
@@ -238,6 +245,10 @@ function overlapScore(a: string[], b: string[]) {
   return overlap / Math.max(aSet.size, bSet.size);
 }
 
+function hasAmbiguityFlag(labeling: TopicLabelingResult, flag: string) {
+  return labeling.diagnostics.ambiguity_flags.includes(flag);
+}
+
 function mapIntentToFrame(intent: TopicMessageIntent): MessageFrame {
   switch (intent) {
     case "quiz_request":
@@ -271,6 +282,23 @@ function looksLikeActiveTopicSubpartFollowup(message: string) {
   return ACTIVE_TOPIC_SUBPART_FOLLOWUP_REGEXES.some((regex) =>
     regex.test(normalized)
   );
+}
+
+function looksLikeMixedAnaphoricSubpartFollowup(message: string) {
+  const normalized = normalizeSurface(message);
+
+  const hasAnaphoricCue =
+    /\b(?:that|it)\b/i.test(normalized) &&
+    /\b(?:again|exact part)\b/i.test(normalized);
+
+  const hasSubpartCue =
+    /\b(?:especially the .+ part|the .+ part|scoring part|sweeping part)\b/i.test(
+      normalized
+    );
+
+  const hasGoOverCue = /\b(?:go over|explain)\b/i.test(normalized);
+
+  return (hasAnaphoricCue && hasSubpartCue) || (hasGoOverCue && hasSubpartCue);
 }
 
 function looksLikeMetaContinuation(message: string) {
@@ -416,10 +444,6 @@ export function inferSeededNextStep(message: string) {
     default:
       return `Explain ${concept} clearly in your own words.`;
   }
-}
-
-function hasAmbiguityFlag(labeling: TopicLabelingResult, flag: string) {
-  return labeling.diagnostics.ambiguity_flags.includes(flag);
 }
 
 function looksLikeStrongDeterministicCreateLabel(labeling: TopicLabelingResult) {
@@ -596,8 +620,13 @@ function scoreStayActiveHypothesis(args: {
   }
 
   if (looksLikeActiveTopicSubpartFollowup(message)) {
-    score += 0.24;
+    score += 0.3;
     reasons.push("Subpart follow-up is better treated as staying within the active topic.");
+  }
+
+  if (looksLikeMixedAnaphoricSubpartFollowup(message)) {
+    score += 0.36;
+    reasons.push("Mixed anaphoric + subpart follow-up strongly favors staying on the active topic.");
   }
 
   if (looksLikeMetaContinuation(message)) {
@@ -1025,6 +1054,19 @@ function looksLikeSuspiciousResolvedLabel(label: string | null) {
   return false;
 }
 
+function looksLikeSubpartResolvedLabel(label: string | null) {
+  if (!label) return false;
+  const normalized = normalizeLoose(label);
+  return (
+    normalized === "scoring" ||
+    normalized === "sweeping" ||
+    normalized === "first part" ||
+    normalized === "second part" ||
+    normalized === "that part" ||
+    normalized === "this part"
+  );
+}
+
 function findTopicByNameApprox(
   requested: string,
   topics: RouteTopic[],
@@ -1207,10 +1249,47 @@ export function resolveTopicForMessage(
     }
   }
 
+  // Strongest policy: mixed anaphoric + subpart follow-ups should attach to active topic.
+  if (
+    activeTopic &&
+    looksLikeMixedAnaphoricSubpartFollowup(message)
+  ) {
+    return {
+      matchedTopic: activeTopic,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind: "fallback_active_topic",
+      resolvedLabel: activeTopic.name,
+      matchConfidence: Math.max(
+        activeTopicScore?.similarity ?? 0,
+        0.9,
+        labeling.topic_decision.confidence
+      ),
+    };
+  }
+
+  // Strong policy: pure subpart follow-ups should also attach to active topic.
+  if (
+    activeTopic &&
+    looksLikeActiveTopicSubpartFollowup(message)
+  ) {
+    return {
+      matchedTopic: activeTopic,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind: "fallback_active_topic",
+      resolvedLabel: activeTopic.name,
+      matchConfidence: Math.max(
+        activeTopicScore?.similarity ?? 0,
+        0.88,
+        labeling.topic_decision.confidence
+      ),
+    };
+  }
+
   if (
     activeTopic &&
     (looksLikeActiveTopicAnaphoricFollowup(message) ||
-      looksLikeActiveTopicSubpartFollowup(message) ||
       looksLikeMetaContinuation(message)) &&
     !labeling.topic_decision.should_create_new_topic
   ) {
@@ -1230,9 +1309,11 @@ export function resolveTopicForMessage(
 
   if (
     activeTopic &&
-    looksLikeSuspiciousResolvedLabel(labeling.topic_decision.canonical_label) &&
+    (looksLikeSuspiciousResolvedLabel(labeling.topic_decision.canonical_label) ||
+      looksLikeSubpartResolvedLabel(labeling.topic_decision.canonical_label)) &&
     (looksLikeActiveTopicAnaphoricFollowup(message) ||
       looksLikeActiveTopicSubpartFollowup(message) ||
+      looksLikeMixedAnaphoricSubpartFollowup(message) ||
       looksLikeMetaContinuation(message))
   ) {
     return {
@@ -1293,6 +1374,7 @@ export function resolveTopicForMessage(
     winner.kind === "create_new" &&
     winner.label &&
     !looksLikeSuspiciousResolvedLabel(winner.label) &&
+    !looksLikeSubpartResolvedLabel(winner.label) &&
     winner.score >= LOW_CONFIDENCE_CREATE_NEW_FLOOR
   ) {
     return {
@@ -1309,6 +1391,7 @@ export function resolveTopicForMessage(
     labeling.topic_decision.canonical_label &&
     labeling.topic_decision.confidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR &&
     !looksLikeSuspiciousResolvedLabel(labeling.topic_decision.canonical_label) &&
+    !looksLikeSubpartResolvedLabel(labeling.topic_decision.canonical_label) &&
     (best?.similarity ?? 0) < WEAK_REUSE_TOPIC_THRESHOLD
   ) {
     return {
@@ -1343,7 +1426,9 @@ export function resolveTopicForMessage(
     activeTopic &&
     activeTopicScore &&
     activeTopicScore.similarity >= ACTIVE_TOPIC_FALLBACK_THRESHOLD &&
-    (winner.kind !== "create_new" || looksLikeSuspiciousResolvedLabel(labeling.topic_decision.canonical_label))
+    (winner.kind !== "create_new" ||
+      looksLikeSuspiciousResolvedLabel(labeling.topic_decision.canonical_label) ||
+      looksLikeSubpartResolvedLabel(labeling.topic_decision.canonical_label))
   ) {
     return {
       matchedTopic: activeTopic,
