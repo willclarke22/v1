@@ -17,12 +17,18 @@ import {
   type TopicGoldenSequence,
   type TopicGoldenSequenceStep,
 } from "./topic-labeling-goldens";
+import {
+  TOPIC_LABELING_HOLDOUT_GOLDENS,
+  TOPIC_LABELING_HOLDOUT_SEQUENCES,
+} from "./topic-labeling-holdout";
 
 type ResultScope =
   | "baseline-isolated"
   | "baseline-sequence"
   | "hard-isolated"
-  | "hard-sequence";
+  | "hard-sequence"
+  | "holdout-isolated"
+  | "holdout-sequence";
 
 type CaseResult = {
   suite: "isolated" | "sequence";
@@ -40,6 +46,7 @@ type CaseResult = {
   pass: boolean;
   failures: string[];
   notes?: string;
+  category: string | null;
 };
 
 type CliOptions = {
@@ -47,12 +54,15 @@ type CliOptions = {
     | "all"
     | "baseline"
     | "hard"
+    | "holdout"
     | "isolated"
     | "sequence"
     | "baseline-isolated"
     | "baseline-sequence"
     | "hard-isolated"
-    | "hard-sequence";
+    | "hard-sequence"
+    | "holdout-isolated"
+    | "holdout-sequence";
   grep: string | null;
   onlyFailures: boolean;
 };
@@ -69,6 +79,8 @@ function parseArgs(argv: string[]): CliOptions {
       options.suite = "baseline";
     } else if (arg === "--suite=hard") {
       options.suite = "hard";
+    } else if (arg === "--suite=holdout") {
+      options.suite = "holdout";
     } else if (arg === "--suite=isolated") {
       options.suite = "isolated";
     } else if (arg === "--suite=sequence") {
@@ -81,6 +93,10 @@ function parseArgs(argv: string[]): CliOptions {
       options.suite = "hard-isolated";
     } else if (arg === "--suite=hard-sequence") {
       options.suite = "hard-sequence";
+    } else if (arg === "--suite=holdout-isolated") {
+      options.suite = "holdout-isolated";
+    } else if (arg === "--suite=holdout-sequence") {
+      options.suite = "holdout-sequence";
     } else if (arg.startsWith("--grep=")) {
       options.grep = arg.slice("--grep=".length).trim() || null;
     } else if (arg === "--only-failures") {
@@ -89,6 +105,15 @@ function parseArgs(argv: string[]): CliOptions {
   }
 
   return options;
+}
+
+function extractCategory(notes?: string): string | null {
+  if (!notes) return null;
+
+  const match = notes.match(/\[category:([^\]]+)\]/i);
+  if (!match?.[1]) return null;
+
+  return match[1].trim().toLowerCase();
 }
 
 function makeRouteTopics(topics: GoldensTopic[]): RouteTopic[] {
@@ -184,7 +209,7 @@ function evaluateExpectations(
 
 function evaluateCase(
   testCase: TopicGoldenCase,
-  scope: "baseline-isolated" | "hard-isolated"
+  scope: "baseline-isolated" | "hard-isolated" | "holdout-isolated"
 ): CaseResult {
   const existingTopics = makeRouteTopics(testCase.existingTopics);
   const activeTopic =
@@ -237,12 +262,13 @@ function evaluateCase(
     pass: failures.length === 0,
     failures,
     notes: testCase.notes,
+    category: extractCategory(testCase.notes),
   };
 }
 
 function evaluateSequence(
   sequence: TopicGoldenSequence,
-  scope: "baseline-sequence" | "hard-sequence"
+  scope: "baseline-sequence" | "hard-sequence" | "holdout-sequence"
 ): CaseResult[] {
   let existingTopics = makeRouteTopics(sequence.initialTopics);
   let activeTopic =
@@ -294,6 +320,7 @@ function evaluateSequence(
       pass: failures.length === 0,
       failures,
       notes: step.notes ?? sequence.notes,
+      category: extractCategory(step.notes ?? sequence.notes),
     });
 
     if (resolution.matchedTopic) {
@@ -314,6 +341,8 @@ function filterResults(results: CaseResult[], options: CliOptions): CaseResult[]
       if (!result.scope.startsWith("baseline")) return false;
     } else if (options.suite === "hard") {
       if (!result.scope.startsWith("hard")) return false;
+    } else if (options.suite === "holdout") {
+      if (!result.scope.startsWith("holdout")) return false;
     } else if (options.suite === "isolated") {
       if (result.suite !== "isolated") return false;
     } else if (options.suite === "sequence") {
@@ -326,6 +355,10 @@ function filterResults(results: CaseResult[], options: CliOptions): CaseResult[]
       if (result.scope !== "hard-isolated") return false;
     } else if (options.suite === "hard-sequence") {
       if (result.scope !== "hard-sequence") return false;
+    } else if (options.suite === "holdout-isolated") {
+      if (result.scope !== "holdout-isolated") return false;
+    } else if (options.suite === "holdout-sequence") {
+      if (result.scope !== "holdout-sequence") return false;
     }
 
     if (options.grep) {
@@ -336,6 +369,8 @@ function filterResults(results: CaseResult[], options: CliOptions): CaseResult[]
         result.actualLabel ?? "",
         result.actualMatchedTopicName ?? "",
         result.scope,
+        result.category ?? "",
+        result.notes ?? "",
       ]
         .join(" ")
         .toLowerCase();
@@ -359,6 +394,8 @@ function printScopeBreakdown(results: CaseResult[]) {
     "baseline-sequence",
     "hard-isolated",
     "hard-sequence",
+    "holdout-isolated",
+    "holdout-sequence",
   ];
 
   console.log("=== Scope Breakdown ===");
@@ -384,6 +421,27 @@ function printSuiteBreakdown(results: CaseResult[]) {
   console.log("");
 }
 
+function printFamilyBreakdown(results: CaseResult[]) {
+  const categorized = results.filter((r) => r.category);
+
+  if (categorized.length === 0) {
+    return;
+  }
+
+  const families = Array.from(
+    new Set(categorized.map((r) => r.category).filter(Boolean))
+  ).sort();
+
+  console.log("=== Category Breakdown ===");
+  for (const family of families) {
+    const familyResults = categorized.filter((r) => r.category === family);
+    const passed = familyResults.filter((r) => r.pass).length;
+    const failed = familyResults.length - passed;
+    console.log(`${family}: total=${familyResults.length} passed=${passed} failed=${failed}`);
+  }
+  console.log("");
+}
+
 function printSummary(results: CaseResult[]) {
   const passed = results.filter((r) => r.pass).length;
   const failed = results.length - passed;
@@ -397,10 +455,12 @@ function printSummary(results: CaseResult[]) {
 
   printScopeBreakdown(results);
   printSuiteBreakdown(results);
+  printFamilyBreakdown(results);
 
   const tableRows = results.map((r) => ({
     scope: r.scope,
     suite: r.suite,
+    category: r.category ?? "",
     id: r.id,
     pass: r.pass ? "PASS" : "FAIL",
     label: r.actualLabel ?? "",
@@ -424,6 +484,9 @@ function printSummary(results: CaseResult[]) {
       console.log(`Actual matched topic: ${failedCase.actualMatchedTopicName}`);
       console.log(`Actual should create: ${failedCase.actualShouldCreate}`);
       console.log(`Actual confidence: ${failedCase.actualConfidence.toFixed(2)}`);
+      if (failedCase.category) {
+        console.log(`Category: ${failedCase.category}`);
+      }
       if (failedCase.notes) {
         console.log(`Notes: ${failedCase.notes}`);
       }
@@ -452,11 +515,20 @@ function main() {
     evaluateSequence(sequence, "hard-sequence")
   );
 
+  const holdoutIsolatedResults = TOPIC_LABELING_HOLDOUT_GOLDENS.map((testCase) =>
+    evaluateCase(testCase, "holdout-isolated")
+  );
+  const holdoutSequenceResults = TOPIC_LABELING_HOLDOUT_SEQUENCES.flatMap((sequence) =>
+    evaluateSequence(sequence, "holdout-sequence")
+  );
+
   const allResults = [
     ...baselineIsolatedResults,
     ...baselineSequenceResults,
     ...hardIsolatedResults,
     ...hardSequenceResults,
+    ...holdoutIsolatedResults,
+    ...holdoutSequenceResults,
   ];
 
   const filteredResults = filterResults(allResults, options);
@@ -464,7 +536,7 @@ function main() {
   if (filteredResults.length === 0) {
     console.log("No topic-labeling golden cases matched the current filters.");
     console.log(
-      "Try without filters, or use something like --suite=hard --grep=curling --only-failures."
+      "Try without filters, or use something like --suite=holdout --grep=paragraph --only-failures."
     );
     process.exitCode = 1;
     return;
