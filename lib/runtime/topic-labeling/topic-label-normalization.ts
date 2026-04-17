@@ -20,6 +20,22 @@ import {
   TYPO_NORMALIZATION_MAP,
 } from "./topic-label-constants";
 
+const SPECIAL_CASE_LABELS: Record<string, string> = {
+  ph: "pH",
+  llm: "LLM",
+  llms: "LLMs",
+  ai: "AI",
+  dna: "DNA",
+  rna: "RNA",
+  adp: "ADP",
+  atp: "ATP",
+  gdp: "GDP",
+  gtp: "GTP",
+  mrna: "mRNA",
+  trna: "tRNA",
+  rrna: "rRNA",
+};
+
 export function normalizeSurface(text: string) {
   return text
     .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
@@ -57,32 +73,35 @@ export function semanticTokens(text: string) {
   return tokenize(text).map((token) => singularizeToken(token));
 }
 
+function shapeWordWithSpecialCases(word: string, index: number) {
+  const lower = word.toLowerCase();
+
+  if (SPECIAL_CASE_LABELS[lower]) return SPECIAL_CASE_LABELS[lower];
+  if (lower === "vs") return "vs";
+
+  const keepLower = ["a", "of", "and", "the", "in", "on", "for", "to"];
+  if (index > 0 && keepLower.includes(lower)) return lower;
+
+  if (word.includes("-")) {
+    return word
+      .split("-")
+      .map((part, partIndex) => shapeWordWithSpecialCases(part, partIndex))
+      .join("-");
+  }
+
+  if (word.includes("'")) {
+    if (SPECIAL_CASE_LABELS[lower]) return SPECIAL_CASE_LABELS[lower];
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }
+
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+}
+
 export function toTitleCase(text: string) {
   return text
     .split(" ")
     .filter(Boolean)
-    .map((word, index) => {
-      const lower = word.toLowerCase();
-      if (lower === "vs") return "vs";
-
-      const keepLower = ["a", "of", "and", "the", "in", "on", "for", "to"];
-      if (index > 0 && keepLower.includes(lower)) return lower;
-
-      if (word.includes("-")) {
-        return word
-          .split("-")
-          .map((part) =>
-            part ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : part
-          )
-          .join("-");
-      }
-
-      if (word.includes("'")) {
-        return word.charAt(0).toUpperCase() + word.slice(1);
-      }
-
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    })
+    .map((word, index) => shapeWordWithSpecialCases(word, index))
     .join(" ");
 }
 
@@ -124,28 +143,7 @@ export function looksLikeContextShell(text: string | null) {
   return CONTEXT_SHELL_REGEXES.some((regex) => regex.test(normalized));
 }
 
-function stripPatternLoop(text: string, patterns: RegExp[]) {
-  let output = normalizeSurface(text);
-  let changed = true;
-
-  while (changed) {
-    changed = false;
-    for (const regex of patterns) {
-      const next = output.replace(regex, "").trim();
-      if (next !== output && next.length > 0) {
-        output = next;
-        changed = true;
-      }
-    }
-  }
-
-  return output;
-}
-
-function extractLeadingCoreByPattern(
-  text: string,
-  patterns: RegExp[]
-): string {
+function extractLeadingCoreByPattern(text: string, patterns: RegExp[]): string {
   let output = normalizeSurface(text);
   let changed = true;
 
@@ -163,6 +161,63 @@ function extractLeadingCoreByPattern(
       break;
     }
   }
+
+  return output;
+}
+
+function normalizeNoisyAcronyms(text: string) {
+  let output = normalizeSurface(text);
+
+  output = output
+    .replace(/\bph\b/g, "pH")
+    .replace(/\bllms\b/gi, "LLMs")
+    .replace(/\bllm\b/gi, "LLM")
+    .replace(/\byoure\b/gi, "you're");
+
+  return output;
+}
+
+function normalizeNoisyPhrasing(text: string) {
+  let output = normalizeSurface(text);
+
+  output = output
+    .replace(/\bidk\b/gi, "I don't know")
+    .replace(/\bim\b/gi, "I'm")
+    .replace(/\bdont\b/gi, "don't")
+    .replace(/\bcant\b/gi, "can't")
+    .replace(/\bw\b/gi, "with")
+    .replace(/\bu\b/gi, "you");
+
+  return normalizeSurface(output);
+}
+
+function stripKnownTailFragments(text: string) {
+  let output = normalizeSurface(text);
+
+  output = extractLeadingCoreByPattern(output, [
+    /^(.+?)\s+yet$/i,
+    /^(.+?)\s+tbh$/i,
+    /^(.+?)\s+lol$/i,
+    /^(.+?)\s+rn$/i,
+    /^(.+?)\s+right now$/i,
+    /^(.+?)\s+for me$/i,
+    /^(.+?)\s+at all$/i,
+    /^(.+?)\s+still$/i,
+    /^(.+?)\s+that i don't get yet$/i,
+    /^(.+?)\s+that i dont get yet$/i,
+    /^(.+?)\s+that i still don't get$/i,
+    /^(.+?)\s+that i still dont get$/i,
+    /^(.+?)\s+that still mess(?:es)? me up.*$/i,
+    /^(.+?)\s+mess(?:es)? me up.*$/i,
+    /^(.+?)\s+is what make(?:s)? the whole thing confusing.*$/i,
+    /^(.+?)\s+are what make(?:s)? the whole thing confusing.*$/i,
+    /^(.+?)\s+is still what make(?:s)? the whole thing confusing.*$/i,
+    /^(.+?)\s+are still what make(?:s)? the whole thing confusing.*$/i,
+    /^(.+?)\s+i lose track.*$/i,
+    /^(.+?)\s+lose track.*$/i,
+    /^(.+?)\s+what the rule is doing.*$/i,
+    /^(.+?)\s+what the play stops.*$/i,
+  ]);
 
   return output;
 }
@@ -194,6 +249,8 @@ export function stripLeadingFillerTokens(text: string) {
 
 export function stripLeadingNoisePatterns(text: string) {
   let output = normalizeSurface(text);
+  output = normalizeNoisyPhrasing(output);
+  output = normalizeNoisyAcronyms(output);
 
   let changed = true;
   while (changed) {
@@ -212,6 +269,8 @@ export function stripLeadingNoisePatterns(text: string) {
 
 export function trimTopicTail(text: string) {
   let output = normalizeSurface(text);
+  output = normalizeNoisyAcronyms(output);
+  output = stripKnownTailFragments(output);
 
   output = extractLeadingCoreByPattern(output, [
     /^(.+?)\s+(?:and\s+i\s+(?:do\s+not|don'?t|dont).*)$/i,
@@ -225,6 +284,12 @@ export function trimTopicTail(text: string) {
     /^(.+?)\s+(?:because\s+i(?:'m| am)?\s+lost.*)$/i,
     /^(.+?)\s+(?:bc\s+i(?:'m| am)?\s+lost.*)$/i,
     /^(.+?)\s+(?:the\s+whole\s+thing\s+confusing\s+to\s+me.*)$/i,
+    /^(.+?)\s+(?:the\s+whole\s+thing\s+confusing.*)$/i,
+    /^(.+?)\s+(?:what\s+make(?:s)?\s+the\s+whole\s+thing\s+confusing.*)$/i,
+    /^(.+?)\s+(?:i\s+lose\s+track.*)$/i,
+    /^(.+?)\s+(?:lose\s+track.*)$/i,
+    /^(.+?)\s+(?:mess(?:es)?\s+me\s+up.*)$/i,
+    /^(.+?)\s+(?:mean\s+in\s+.+)$/i,
   ]);
 
   let changed = true;
@@ -238,6 +303,8 @@ export function trimTopicTail(text: string) {
       }
     }
   }
+
+  output = stripKnownTailFragments(output);
 
   return output;
 }
@@ -337,6 +404,9 @@ function stripMidSentenceTailFragments(text: string) {
     /^(.+?)\s+(?:is\s+not\s+clicking(?:\s+\w+)?).*$/i,
     /^(.+?)\s+(?:because\s+i(?:'m| am)?\s+lost.*)$/i,
     /^(.+?)\s+(?:bc\s+i(?:'m| am)?\s+lost.*)$/i,
+    /^(.+?)\s+(?:mess(?:es)?\s+me\s+up.*)$/i,
+    /^(.+?)\s+(?:i\s+lose\s+track.*)$/i,
+    /^(.+?)\s+(?:lose\s+track.*)$/i,
   ]);
 
   return output;
@@ -350,14 +420,49 @@ function collapseVerbDomainShape(text: string) {
     return `${normalizeSurface(workInMatch[1])} in ${normalizeSurface(workInMatch[2])}`.trim();
   }
 
+  const workOnMatch = normalized.match(/^(.+?)\s+works?\s+on\s+(.+)$/i);
+  if (workOnMatch?.[1] && workOnMatch?.[2]) {
+    return `${normalizeSurface(workOnMatch[1])} on ${normalizeSurface(workOnMatch[2])}`.trim();
+  }
+
+  const meanInMatch = normalized.match(/^(.+?)\s+mean\s+in\s+(.+)$/i);
+  if (meanInMatch?.[1] && meanInMatch?.[2]) {
+    return `${normalizeSurface(meanInMatch[2])} ${normalizeSurface(meanInMatch[1])}`.trim();
+  }
+
+  const isInMatch = normalized.match(/^(.+?)\s+in\s+a\s+(.+)$/i);
+  if (isInMatch?.[1] && isInMatch?.[2]) {
+    const thing = normalizeSurface(isInMatch[1]);
+    const domain = normalizeSurface(isInMatch[2]);
+    if (/^(loan|mortgage|credit card|budget)$/i.test(domain)) {
+      return `${domain} ${thing}`.trim();
+    }
+  }
+
+  return normalized;
+}
+
+function normalizeExplicitNoisyComparisons(text: string) {
+  const normalized = normalizeSurface(text);
+
+  if (/\byour\b/i.test(normalized) && /\byou'?re|youre\b/i.test(normalized)) {
+    if (/\bmess(?:es)? me up\b/i.test(normalized) || /\bmixing\b/i.test(normalized)) {
+      return "your vs you're";
+    }
+  }
+
   return normalized;
 }
 
 export function keepTopicCore(text: string) {
   let output = normalizeSurface(text);
+  output = normalizeNoisyPhrasing(output);
+  output = normalizeNoisyAcronyms(output);
+  output = normalizeExplicitNoisyComparisons(output);
   output = stripLeadingNoisePatterns(output);
   output = stripLateFocusWrappers(output);
   output = stripMidSentenceTailFragments(output);
+  output = stripKnownTailFragments(output);
 
   const directCorePatterns: RegExp[] = [
     /^(?:i need help understanding)\s+(.+)$/i,
@@ -390,7 +495,11 @@ export function keepTopicCore(text: string) {
     /^(?:work on)\s+(.+)$/i,
     /^(?:how does)\s+(.+?)\s+work\s+in\s+(.+)$/i,
     /^(?:how do)\s+(.+?)\s+work\s+in\s+(.+)$/i,
-    /^(?:what is)\s+a?\s*(deductible)\s+in\s+(insurance)$/i,
+    /^(?:how does)\s+(.+?)\s+work\s+on\s+(.+)$/i,
+    /^(?:how do)\s+(.+?)\s+work\s+on\s+(.+)$/i,
+    /^(?:what does)\s+a?\s*(.+?)\s+mean\s+in\s+(.+)$/i,
+    /^(?:what is)\s+a?\s*(.+?)\s+in\s+a\s+(.+)$/i,
+    /^(?:what is)\s+a?\s*(.+?)\s+in\s+(.+)$/i,
     /^(?:what(?:'s| is))\s+a?\s*(deductible)\s+in\s+(insurance)$/i,
   ];
 
@@ -404,6 +513,41 @@ export function keepTopicCore(text: string) {
     ) {
       if (match[1] && match[2]) {
         output = `${normalizeSurface(match[1])} in ${normalizeSurface(match[2])}`;
+        break;
+      }
+    }
+
+    if (
+      /^(?:how does)\s+(.+?)\s+work\s+on\s+(.+)$/i.test(output) ||
+      /^(?:how do)\s+(.+?)\s+work\s+on\s+(.+)$/i.test(output)
+    ) {
+      if (match[1] && match[2]) {
+        output = `${normalizeSurface(match[1])} on ${normalizeSurface(match[2])}`;
+        break;
+      }
+    }
+
+    if (/^what does/i.test(output) && /\bmean in\b/i.test(output) && match[1] && match[2]) {
+      output = `${normalizeSurface(match[2])} ${normalizeSurface(match[1])}`;
+      break;
+    }
+
+    if (/^what is/i.test(output) && /\bin a\b/i.test(output) && match[1] && match[2]) {
+      output = `${normalizeSurface(match[2])} ${normalizeSurface(match[1])}`;
+      break;
+    }
+
+    if (
+      /^what is/i.test(output) &&
+      /\bin\b/i.test(output) &&
+      !/\bdeductible\b/i.test(output) &&
+      match[1] &&
+      match[2]
+    ) {
+      const thing = normalizeSurface(match[1]);
+      const domain = normalizeSurface(match[2]);
+      if (/^(loan|mortgage|insurance|credit card)$/i.test(domain)) {
+        output = `${domain} ${thing}`;
         break;
       }
     }
@@ -463,6 +607,7 @@ export function keepTopicCore(text: string) {
   output = stripMidSentenceTailFragments(output);
   output = stripLateFocusWrappers(output);
   output = collapseVerbDomainShape(output);
+  output = stripKnownTailFragments(output);
   output = trimTopicTail(output);
   return output;
 }
@@ -471,6 +616,9 @@ export function normalizeCandidateSpan(span: string | null) {
   if (!span) return null;
 
   let output = normalizeSurface(span);
+  output = normalizeNoisyPhrasing(output);
+  output = normalizeNoisyAcronyms(output);
+  output = normalizeExplicitNoisyComparisons(output);
   output = stripLeadingNoisePatterns(output);
   output = stripLateFocusWrappers(output);
 
@@ -530,6 +678,7 @@ export function normalizeCandidateSpan(span: string | null) {
   output = stripLeadingQuestionWrapper(output);
   output = stripLeadingFillerTokens(output);
   output = stripTrailingNoise(output);
+  output = stripKnownTailFragments(output);
   output = trimTopicTail(output);
 
   let tokens = tokenize(output)
@@ -550,6 +699,7 @@ export function normalizeCandidateSpan(span: string | null) {
   output = stripLeadingQuestionWrapper(output);
   output = stripLeadingFillerTokens(output);
   output = stripTrailingNoise(output);
+  output = stripKnownTailFragments(output);
   output = trimTopicTail(output);
 
   tokens = tokenize(output)
@@ -574,6 +724,7 @@ export function normalizeCandidateSpan(span: string | null) {
   output = collapseVerbDomainShape(output);
   output = stripLateFocusWrappers(output);
   output = stripTrailingNoise(output);
+  output = stripKnownTailFragments(output);
   output = trimTopicTail(output);
 
   if (!output) return null;
@@ -649,17 +800,30 @@ export function isClauseLikeSpan(span: string | null) {
 
 export function simplifyDomainLabel(text: string) {
   const normalized = normalizeSurface(text);
+  const loose = normalizeLoose(normalized);
 
   if (/^the price of a barrel of oil$/i.test(normalized)) return "Oil Prices";
   if (/^price of a barrel of oil$/i.test(normalized)) return "Oil Prices";
   if (/^interest on a credit card$/i.test(normalized)) return "Credit Card Interest";
   if (/^interest on a credit card actually$/i.test(normalized)) return "Credit Card Interest";
+  if (/^interest on student loans?$/i.test(normalized)) return "Interest on Student Loans";
+  if (/^student loans? interest$/i.test(normalized)) return "Interest on Student Loans";
   if (/^offside work in soccer$/i.test(normalized)) return "Offside in Soccer";
   if (/^offside works in soccer$/i.test(normalized)) return "Offside in Soccer";
   if (/^offside in soccer$/i.test(normalized)) return "Offside in Soccer";
+  if (/^icing in hockey$/i.test(normalized)) return "Icing in Hockey";
   if (/^offside$/i.test(normalized)) return "Offside";
   if (/^deductible in insurance$/i.test(normalized) || /^insurance deductible$/i.test(normalized)) {
     return "Insurance Deductible";
+  }
+  if (/^premium in insurance$/i.test(normalized) || /^insurance premium$/i.test(normalized)) {
+    return "Insurance Premium";
+  }
+  if (/^principal in a loan$/i.test(normalized) || /^principal in loan$/i.test(normalized)) {
+    return "Loan Principal";
+  }
+  if (/^loan principal$/i.test(normalized)) {
+    return "Loan Principal";
   }
   if (/^deductible$/i.test(normalized)) return "Deductible";
   if (/^your vs you're$/i.test(normalized) || /^your vs you'?re$/i.test(normalized)) {
@@ -668,6 +832,9 @@ export function simplifyDomainLabel(text: string) {
   if (/^make a budget that balances$/i.test(normalized)) return "Balancing a Budget";
   if (/^budget that balances$/i.test(normalized)) return "Balancing a Budget";
   if (/^a budget that balances$/i.test(normalized)) return "Balancing a Budget";
+  if (loose === "ph") return "pH";
+  if (loose === "llm") return "LLM";
+  if (loose === "llms") return "LLMs";
 
   return normalized;
 }
@@ -708,9 +875,13 @@ export function shapeDisplayLabel(span: string | null) {
     .replace(/\bthat i keep confusing$/i, "")
     .replace(/\bthat i keep getting mixed up$/i, "")
     .replace(/\bthat i mix up$/i, "")
+    .replace(/\bmess(?:es)? me up.*$/i, "")
+    .replace(/\blose track.*$/i, "")
+    .replace(/\bwhole thing confusing.*$/i, "")
     .replace(/\s+/g, " ")
     .trim();
 
+  normalized = stripKnownTailFragments(normalized);
   normalized = trimTopicTail(normalized);
 
   if (isBadProcessPhrase(normalized)) return null;
@@ -742,6 +913,25 @@ export function looksLikeSuspiciousLabel(label: string | null) {
   if (hasNegationStemToken(label)) return true;
   if (looksLikeContextShell(label)) return true;
 
+  const suspiciousSingles = new Set([
+    "yet",
+    "lol",
+    "tbh",
+    "up",
+    "track",
+    "whole",
+    "confusing",
+    "mean",
+    "say",
+    "wait",
+    "helped",
+    "one",
+    "scoring",
+    "sweeping",
+  ]);
+
+  if (suspiciousSingles.has(normalized)) return true;
+
   const tokenCount = tokenize(label).length;
   if (tokenCount > 8) return true;
 
@@ -752,6 +942,14 @@ export function looksLikeSuspiciousLabel(label: string | null) {
   if (
     /\b(?:help|understand|understanding|get|confused|stuck|trouble|learn|explain|go over|figure out|start|want|need|quiz|think|again|different|back|especially|shorter|show|wait|thanks|question|first one|second part|first part|clicking|came up|showed up|lost)\b/i.test(
       label
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    /\b(?:whole thing confusing|lose track|mess me up|up lol|student loans tbh|premium mean)\b/i.test(
+      normalized
     )
   ) {
     return true;

@@ -113,6 +113,71 @@ function candidateLooksClauseWrapped(candidate: TopicCandidate) {
   return /^(?:is|are|it'?s|it is|but|actually|after looking again|i think)\b/i.test(label);
 }
 
+function candidateLooksTailHeavy(candidate: TopicCandidate) {
+  const combined = `${candidate.coreText} ${candidate.tailText ?? ""}`.toLowerCase();
+  return (
+    /\band everyone else seems\b/i.test(combined) ||
+    /\bare what make\b/i.test(combined) ||
+    /\bis what make\b/i.test(combined) ||
+    /\bare still what make\b/i.test(combined) ||
+    /\bis still what make\b/i.test(combined) ||
+    /\byet\b/i.test(combined) ||
+    /\blol\b/i.test(combined) ||
+    /\btbh\b/i.test(combined) ||
+    /\blose track\b/i.test(combined) ||
+    /\bwhole thing confusing\b/i.test(combined) ||
+    /\bmess(?:es)? me up\b/i.test(combined)
+  );
+}
+
+function candidateLooksNoisyResidue(candidate: TopicCandidate) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  const core = candidate.coreText.toLowerCase();
+  const tail = (candidate.tailText ?? "").toLowerCase();
+
+  return (
+    label === "yet" ||
+    label === "up lol" ||
+    label === "whole thing confusing" ||
+    label === "lose track" ||
+    label === "student loans tbh" ||
+    label === "premium mean" ||
+    /\btbh\b/.test(core) ||
+    /\blol\b/.test(core) ||
+    /\byet\b/.test(core) ||
+    /\blose track\b/.test(core) ||
+    /\bwhole thing confusing\b/.test(core) ||
+    /\bmess(?:es)? me up\b/.test(core) ||
+    /\btbh\b/.test(tail) ||
+    /\blol\b/.test(tail)
+  );
+}
+
+function candidateLooksAbstractButUseful(candidate: TopicCandidate, message: string) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  if (!label) return false;
+
+  return (
+    /\bhow\b/.test(label) &&
+    /\bwork\b/.test(label) &&
+    /\b(i want to learn about|would really like to learn about|help me understand|can you explain)\b/i.test(
+      message
+    )
+  );
+}
+
+function candidateLooksProblemFraming(candidate: TopicCandidate) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  if (!label) return false;
+
+  return (
+    /\bdeterministic code can'?t solve all\b/i.test(label) ||
+    /\bsolve all my problems\b/i.test(label) ||
+    /\bwhole thing confusing\b/i.test(label) ||
+    /\blose track\b/i.test(label)
+  );
+}
+
 function buildCandidateScoreBreakdown(args: {
   candidate: TopicCandidate;
   message: string;
@@ -139,6 +204,9 @@ function buildCandidateScoreBreakdown(args: {
   let clausePenalty = 0;
   let learnerStatePenalty = 0;
   let lengthPenalty = 0;
+  let tailPenalty = 0;
+  let abstractFocusWeight = 0;
+  let problemFramingPenalty = 0;
 
   if (candidate.sourceRole === "confusion") roleWeight += 0.28;
   if (candidate.sourceRole === "question") roleWeight += 0.2;
@@ -159,9 +227,13 @@ function buildCandidateScoreBreakdown(args: {
 
   if (candidate.kind === "comparison_pair") focusWeight += 0.24;
   if (candidate.kind === "of_phrase") focusWeight += 0.14;
-  if (candidate.kind === "domain_shaped") focusWeight += 0.14;
+  if (candidate.kind === "domain_shaped") {
+    focusWeight += 0.14;
+    contextRecoveryWeight += 0.12;
+  }
   if (candidate.kind === "context_anchor") contextRecoveryWeight += 0.18;
   if (candidate.kind === "followup_reference") focusWeight += 0.04;
+  if (candidate.kind === "named_concept") focusWeight += 0.05;
 
   if (candidate.leftText && candidate.rightText) {
     focusWeight += 0.08;
@@ -234,9 +306,21 @@ function buildCandidateScoreBreakdown(args: {
     genericPenalty += 0.18;
   }
 
-  const hasExplicitComparison = /\bvs\b|\bversus\b|\bdifference between\b|\bcompare\b|\bcontrast\b/i.test(message);
-  const hasDomainShaping = /\bwork\s+in\b/i.test(message) || /\bin insurance\b/i.test(message);
-  const hasWrapperComparison = /\b(?:keep forgetting|when to use)\b/i.test(message);
+  const hasExplicitComparison =
+    /\bvs\b|\bversus\b|\bdifference between\b|\bcompare\b|\bcontrast\b/i.test(message);
+  const hasDomainShaping =
+    /\bwork\s+in\b/i.test(message) ||
+    /\bwork\s+on\b/i.test(message) ||
+    /\bin insurance\b/i.test(message) ||
+    /\bin a loan\b/i.test(message) ||
+    /\bstudent loans?\b/i.test(message) ||
+    /\bhockey\b/i.test(message);
+  const hasWrapperComparison =
+    /\b(?:keep forgetting|when to use|mess(?:es)? me up|mixing up)\b/i.test(message);
+  const hasExplicitLearningRequest =
+    /\b(?:i want to learn about|would really like to learn about|help me understand|can you explain|explain)\b/i.test(
+      message
+    );
   const looksClauseWrapped = candidateLooksClauseWrapped(candidate);
 
   if (hasExplicitComparison && candidate.kind !== "comparison_pair") {
@@ -258,6 +342,7 @@ function buildCandidateScoreBreakdown(args: {
 
   if (hasDomainShaping && candidate.domainText) {
     contextRecoveryWeight += 0.12;
+    focusWeight += 0.06;
   }
 
   if (hasWrapperComparison && candidate.kind === "comparison_pair") {
@@ -278,6 +363,35 @@ function buildCandidateScoreBreakdown(args: {
     clausePenalty += 0.12;
   }
 
+  if (candidateLooksTailHeavy(candidate)) {
+    tailPenalty += 0.18;
+  }
+
+  if (candidateLooksNoisyResidue(candidate)) {
+    tailPenalty += 0.28;
+    genericPenalty += 0.12;
+  }
+
+  if (candidateLooksAbstractButUseful(candidate, message)) {
+    abstractFocusWeight += 0.18;
+  }
+
+  if (hasExplicitLearningRequest && candidateLooksAbstractButUseful(candidate, message)) {
+    abstractFocusWeight += 0.1;
+  }
+
+  if (candidateLooksProblemFraming(candidate)) {
+    problemFramingPenalty += 0.22;
+  }
+
+  if (
+    hasExplicitLearningRequest &&
+    candidateLooksProblemFraming(candidate) &&
+    !candidate.qualifiers.includes("focus_target")
+  ) {
+    problemFramingPenalty += 0.08;
+  }
+
   if (tokenCount > 8) {
     lengthPenalty += 0.16;
   } else if (tokenCount >= 2 && tokenCount <= 5) {
@@ -296,11 +410,14 @@ function buildCandidateScoreBreakdown(args: {
     contextRecoveryWeight +
     mentionWeight +
     specificityWeight +
-    reuseHintWeight -
+    reuseHintWeight +
+    abstractFocusWeight -
     genericPenalty -
     clausePenalty -
     learnerStatePenalty -
-    lengthPenalty;
+    lengthPenalty -
+    tailPenalty -
+    problemFramingPenalty;
 
   total = clampTopicConfidence(total);
 
@@ -318,6 +435,9 @@ function buildCandidateScoreBreakdown(args: {
     clausePenalty,
     learnerStatePenalty,
     lengthPenalty,
+    tailPenalty,
+    abstractFocusWeight,
+    problemFramingPenalty,
     total,
   };
 }
@@ -384,6 +504,10 @@ function buildAmbiguityFlags(args: {
 
   if (bestCandidate?.isSubpartReference) {
     flags.push("subpart_reference");
+  }
+
+  if (bestCandidate && candidateLooksNoisyResidue(bestCandidate)) {
+    flags.push("tail_residue_candidate");
   }
 
   return dedupe(flags);
@@ -464,7 +588,11 @@ export function runDeterministicTopicLabeling(
   }
 
   if (bestCandidate?.kind === "domain_shaped") {
-    confidence += 0.08;
+    confidence += 0.1;
+  }
+
+  if (bestCandidate?.kind === "context_anchor") {
+    confidence += 0.06;
   }
 
   if (bestCandidate?.qualifiers.includes("focus_target")) {
@@ -477,6 +605,10 @@ export function runDeterministicTopicLabeling(
 
   if (bestCandidate?.qualifiers.includes("context_recovery")) {
     confidence += 0.04;
+  }
+
+  if (bestCandidate && candidateLooksAbstractButUseful(bestCandidate, normalizedMessage)) {
+    confidence += 0.05;
   }
 
   if (!bestCandidate?.shouldCompeteAsTopic) {
@@ -495,6 +627,18 @@ export function runDeterministicTopicLabeling(
     confidence -= 0.16;
   }
 
+  if (bestCandidate && candidateLooksTailHeavy(bestCandidate)) {
+    confidence -= 0.1;
+  }
+
+  if (bestCandidate && candidateLooksNoisyResidue(bestCandidate)) {
+    confidence -= 0.16;
+  }
+
+  if (bestCandidate && candidateLooksProblemFraming(bestCandidate)) {
+    confidence -= 0.12;
+  }
+
   if (looksLikeSuspiciousLabel(canonicalLabel)) {
     confidence -= 0.1;
   }
@@ -503,10 +647,7 @@ export function runDeterministicTopicLabeling(
     confidence -= 0.06;
   }
 
-  if (
-    interpretation.messageIntent !== "unclear" &&
-    scoredCandidates.length === 0
-  ) {
+  if (interpretation.messageIntent !== "unclear" && scoredCandidates.length === 0) {
     confidence -= 0.08;
   }
 
@@ -534,6 +675,7 @@ export function runDeterministicTopicLabeling(
     !ambiguityFlags.includes("label_suspicious") &&
     !ambiguityFlags.includes("candidate_non_topicish") &&
     !ambiguityFlags.includes("subpart_reference") &&
+    !ambiguityFlags.includes("tail_residue_candidate") &&
     !messageLooksLikePureFollowup(normalizedMessage) &&
     (specificity === "good" ||
       specificity === "very_specific" ||
@@ -621,6 +763,9 @@ export function runDeterministicTopicLabeling(
           : []),
         ...(bestCandidate?.isSubpartReference
           ? ["Top candidate looks like a subpart reference that should usually attach to a parent topic."]
+          : []),
+        ...(bestCandidate && candidateLooksTailHeavy(bestCandidate)
+          ? ["Top candidate still looks tail-heavy or residue-contaminated."]
           : []),
       ],
       ambiguity_flags: dedupe(ambiguityFlags),

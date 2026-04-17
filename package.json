@@ -10,6 +10,7 @@
     "test:topic-labeling": "tsx scripts/run-topic-labeling-goldens.ts"
   },
   "dependencies": {
+    "@qdrant/js-client-rest": "^1.17.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@supabase/supabase-js": "^2.100.0",
