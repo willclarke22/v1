@@ -32,6 +32,7 @@ import {
   resolveTopicForMessage,
   shouldTryLLMTopicResolutionFallback,
   type RouteTopic,
+  type TopicResolutionTrace,
 } from "@/lib/runtime/topic-resolution";
 import {
   applyMetricUpdate,
@@ -121,6 +122,7 @@ type TopicResolutionDebug = {
   resolution_kind: RouteResolutionKind;
   resolved_label: string | null;
   match_confidence: number;
+  resolution_trace: TopicResolutionTrace | null;
 };
 
 type TopicResolutionOutcome = {
@@ -132,6 +134,7 @@ type TopicResolutionOutcome = {
   resolvedLabel: string | null;
   matchConfidence: number;
   usedLLMFallback: boolean;
+  resolutionTrace: TopicResolutionTrace | null;
   debug: TopicResolutionDebug;
 };
 
@@ -699,6 +702,7 @@ function buildTopicResolutionDebug(args: {
   resolutionKind: RouteResolutionKind;
   resolvedLabel: string | null;
   matchConfidence: number;
+  resolutionTrace: TopicResolutionTrace | null;
 }): TopicResolutionDebug {
   return {
     topic_labeling_mode: args.topicLabelingMode,
@@ -709,6 +713,7 @@ function buildTopicResolutionDebug(args: {
     resolution_kind: args.resolutionKind,
     resolved_label: args.resolvedLabel,
     match_confidence: args.matchConfidence,
+    resolution_trace: args.resolutionTrace,
   };
 }
 
@@ -721,6 +726,7 @@ function buildResolvedOutcome(args: {
   resolvedLabel: string | null;
   matchConfidence: number;
   usedLLMFallback: boolean;
+  resolutionTrace: TopicResolutionTrace | null;
   topicLabelingMode: TopicLabelingMode;
   llmFallbackAllowedByMode: boolean;
   llmFallbackRecommendedByPolicy: boolean;
@@ -735,6 +741,7 @@ function buildResolvedOutcome(args: {
     resolvedLabel: args.resolvedLabel,
     matchConfidence: args.matchConfidence,
     usedLLMFallback: args.usedLLMFallback,
+    resolutionTrace: args.resolutionTrace,
     debug: buildTopicResolutionDebug({
       topicLabelingMode: args.topicLabelingMode,
       llmFallbackAllowedByMode: args.llmFallbackAllowedByMode,
@@ -744,6 +751,7 @@ function buildResolvedOutcome(args: {
       resolutionKind: args.resolutionKind,
       resolvedLabel: args.resolvedLabel,
       matchConfidence: args.matchConfidence,
+      resolutionTrace: args.resolutionTrace,
     }),
   };
 }
@@ -771,6 +779,7 @@ async function resolveTopicOutcome(args: {
       resolvedLabel: createdTopic.name,
       matchConfidence: 0,
       usedLLMFallback: false,
+      resolutionTrace: null,
       topicLabelingMode,
       llmFallbackAllowedByMode,
       llmFallbackRecommendedByPolicy: false,
@@ -813,6 +822,7 @@ async function resolveTopicOutcome(args: {
         resolvedLabel: deterministicMatch.resolvedLabel,
         matchConfidence: deterministicMatch.matchConfidence,
         usedLLMFallback: false,
+        resolutionTrace: deterministicMatch.resolutionTrace ?? null,
         topicLabelingMode,
         llmFallbackAllowedByMode,
         llmFallbackRecommendedByPolicy,
@@ -840,6 +850,7 @@ async function resolveTopicOutcome(args: {
         resolvedLabel: deterministicMatch.resolvedLabel,
         matchConfidence: deterministicMatch.matchConfidence,
         usedLLMFallback: false,
+        resolutionTrace: deterministicMatch.resolutionTrace ?? null,
         topicLabelingMode,
         llmFallbackAllowedByMode,
         llmFallbackRecommendedByPolicy,
@@ -869,11 +880,15 @@ async function resolveTopicOutcome(args: {
           topic: matchedTopic,
           createdTopic: null,
           routeTopics: existingTopics,
-          resolutionKind: "matched_existing",
+          resolutionKind:
+            matchedTopic.id === activeTopic?.id
+              ? "fallback_active_topic"
+              : "matched_existing",
           vectorInfo: deterministicMatch.vectorInfo,
           resolvedLabel: llmDecision.canonical_label ?? matchedTopic.name,
           matchConfidence: llmDecision.confidence,
           usedLLMFallback: true,
+          resolutionTrace: deterministicMatch.resolutionTrace ?? null,
           topicLabelingMode,
           llmFallbackAllowedByMode,
           llmFallbackRecommendedByPolicy,
@@ -892,6 +907,7 @@ async function resolveTopicOutcome(args: {
         resolvedLabel: llmDecision.canonical_label ?? activeTopic.name,
         matchConfidence: llmDecision.confidence,
         usedLLMFallback: true,
+        resolutionTrace: deterministicMatch.resolutionTrace ?? null,
         topicLabelingMode,
         llmFallbackAllowedByMode,
         llmFallbackRecommendedByPolicy,
@@ -919,6 +935,7 @@ async function resolveTopicOutcome(args: {
         resolvedLabel: llmDecision.canonical_label,
         matchConfidence: llmDecision.confidence,
         usedLLMFallback: true,
+        resolutionTrace: deterministicMatch.resolutionTrace ?? null,
         topicLabelingMode,
         llmFallbackAllowedByMode,
         llmFallbackRecommendedByPolicy,
@@ -937,6 +954,7 @@ async function resolveTopicOutcome(args: {
       resolvedLabel: deterministicMatch.resolvedLabel,
       matchConfidence: deterministicMatch.matchConfidence,
       usedLLMFallback: false,
+      resolutionTrace: deterministicMatch.resolutionTrace ?? null,
       topicLabelingMode,
       llmFallbackAllowedByMode,
       llmFallbackRecommendedByPolicy,
@@ -964,6 +982,7 @@ async function resolveTopicOutcome(args: {
       resolvedLabel: deterministicMatch.resolvedLabel,
       matchConfidence: deterministicMatch.matchConfidence,
       usedLLMFallback: false,
+      resolutionTrace: deterministicMatch.resolutionTrace ?? null,
       topicLabelingMode,
       llmFallbackAllowedByMode,
       llmFallbackRecommendedByPolicy,
@@ -1040,6 +1059,7 @@ export async function POST(request: Request) {
       resolvedLabel,
       matchConfidence,
       usedLLMFallback,
+      resolutionTrace,
       debug: topicResolutionDebug,
     } = topicResolution;
 
@@ -1104,9 +1124,15 @@ export async function POST(request: Request) {
     const updatedResolvedTopic =
       updatedTopics.find((routeTopic) => routeTopic.id === targetTopicId) ?? topic;
 
+    const normalizedVectorInfo = normalizeVectorInfoFallback(
+      vectorInfo,
+      topic,
+      Boolean(createdTopic)
+    );
+
     const decision = buildInterventionModeDecision(
       updatedResolvedTopic,
-      normalizeVectorInfoFallback(vectorInfo, topic, Boolean(createdTopic)),
+      normalizedVectorInfo,
       preferredModality,
       message,
       Boolean(createdTopic),
@@ -1150,7 +1176,7 @@ export async function POST(request: Request) {
       run_metadata: buildRunMetadata(engineFuel, runId),
       important_run_inputs: buildImportantRunInputs(
         message,
-        normalizeVectorInfoFallback(vectorInfo, topic, Boolean(createdTopic)),
+        normalizedVectorInfo,
         modelSignals,
         currentInteractionContext,
         newAttempt,
@@ -1180,11 +1206,8 @@ export async function POST(request: Request) {
         match_confidence: matchConfidence,
         used_llm_topic_fallback: usedLLMFallback,
         topic_resolution_debug: topicResolutionDebug,
-        semantic_vector_info: normalizeVectorInfoFallback(
-          vectorInfo,
-          topic,
-          Boolean(createdTopic)
-        ),
+        topic_resolution_trace: resolutionTrace,
+        semantic_vector_info: normalizedVectorInfo,
       })
     );
 
@@ -1254,6 +1277,7 @@ export async function POST(request: Request) {
 
     const response: MessageRouteResponse & {
       topic_resolution_debug: TopicResolutionDebug;
+      topic_resolution_trace: TopicResolutionTrace | null;
     } = {
       result,
       scene_update: sceneUpdate,
@@ -1266,6 +1290,7 @@ export async function POST(request: Request) {
         suggested_action: suggestedAction,
       },
       topic_resolution_debug: topicResolutionDebug,
+      topic_resolution_trace: resolutionTrace,
     };
 
     return NextResponse.json(response);

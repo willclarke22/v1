@@ -75,7 +75,7 @@ function findReuseCandidate(
     const tokenScore = overlapScore(labelTokens, semanticTokens(candidate.topic_name));
     const retrievalScore = candidate.similarity ?? 0;
 
-    const score = exact * 1.0 + tokenScore * 0.7 + retrievalScore * 0.6;
+    const score = exact * 1.0 + tokenScore * 0.72 + retrievalScore * 0.64;
 
     if (score > bestScore) {
       bestScore = score;
@@ -178,6 +178,88 @@ function candidateLooksProblemFraming(candidate: TopicCandidate) {
   );
 }
 
+function candidateLooksMechanismLike(candidate: TopicCandidate, message: string) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  const core = candidate.coreText.toLowerCase();
+
+  if (!label) return false;
+
+  return (
+    /\bhow\b/.test(label) ||
+    /\bwhy\b/.test(label) ||
+    /\bwork\b/.test(label) ||
+    /\bworks\b/.test(label) ||
+    /\bprocess\b/.test(label) ||
+    /\bmechanism\b/.test(label) ||
+    /\bpathway\b/.test(label) ||
+    /\bcycle\b/.test(label) ||
+    /\bstep\b/.test(label) ||
+    /\bsteps\b/.test(label) ||
+    /\bflow\b/.test(label) ||
+    /\bsequence\b/.test(label) ||
+    /\bwhat happens\b/.test(label) ||
+    /\bwhy .+ happens\b/.test(label) ||
+    /\bhow .+ works\b/.test(core) ||
+    /\bhow .+ work\b/.test(core) ||
+    /\bwhy .+ work\b/.test(core) ||
+    /\bwhy .+ works\b/.test(core) ||
+    /\bhow\b.*\bwork\b/i.test(message)
+  );
+}
+
+function candidateLooksObjectOnly(candidate: TopicCandidate) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  if (!label) return false;
+
+  const tokens = tokenize(label);
+  if (tokens.length > 2) return false;
+
+  return (
+    !/\bhow\b|\bwhy\b|\bprocess\b|\bmechanism\b|\bsteps?\b|\bflow\b/i.test(label) &&
+    !candidate.qualifiers.includes("comparison_pair") &&
+    !candidate.qualifiers.includes("focus_target")
+  );
+}
+
+function candidateLooksLateFocusPreferred(candidate: TopicCandidate) {
+  return (
+    candidate.qualifiers.includes("late_focus_target") ||
+    candidate.qualifiers.includes("focus_target") ||
+    candidate.qualifiers.includes("cross_clause_recovery")
+  );
+}
+
+function candidateLooksExplicitConfusionTarget(candidate: TopicCandidate, message: string) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  const sourceClause = candidate.sourceClause.toLowerCase();
+
+  return (
+    /\b(mainly confused about|specifically confused about|especially confused about)\b/i.test(message) ||
+    /\bconfused about\b/.test(sourceClause) ||
+    /\bstuck on\b/.test(sourceClause) ||
+    /\bdon'?t get\b/.test(sourceClause) ||
+    /\bkeep mixing\b/.test(sourceClause) ||
+    /\bthe .+ part\b/.test(sourceClause)
+  )
+    ? Boolean(label)
+    : false;
+}
+
+function candidateLooksGeneralBucket(candidate: TopicCandidate) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  if (!label) return false;
+
+  return (
+    label === "rules" ||
+    label === "law" ||
+    label === "system" ||
+    label === "process" ||
+    label === "part" ||
+    label === "thing" ||
+    label === "concept"
+  );
+}
+
 function buildCandidateScoreBreakdown(args: {
   candidate: TopicCandidate;
   message: string;
@@ -206,24 +288,29 @@ function buildCandidateScoreBreakdown(args: {
   let lengthPenalty = 0;
   let tailPenalty = 0;
   let abstractFocusWeight = 0;
+  let mechanismWeight = 0;
+  let lateFocusWeight = 0;
+  let explicitConfusionWeight = 0;
+  let generalBucketPenalty = 0;
+  let objectOnlyPenalty = 0;
   let problemFramingPenalty = 0;
 
-  if (candidate.sourceRole === "confusion") roleWeight += 0.28;
+  if (candidate.sourceRole === "confusion") roleWeight += 0.3;
   if (candidate.sourceRole === "question") roleWeight += 0.2;
   if (candidate.sourceRole === "request") roleWeight += 0.18;
   if (candidate.sourceRole === "comparison") roleWeight += 0.34;
   if (candidate.sourceRole === "context") roleWeight -= 0.04;
 
-  if (candidate.qualifiers.includes("focus_target")) focusWeight += 0.22;
+  if (candidate.qualifiers.includes("focus_target")) focusWeight += 0.24;
   if (candidate.qualifiers.includes("comparison_pair")) focusWeight += 0.16;
   if (candidate.qualifiers.includes("of_phrase")) focusWeight += 0.14;
   if (candidate.qualifiers.includes("named_concept")) focusWeight += 0.12;
   if (candidate.qualifiers.includes("explicit_switch")) focusWeight += 0.14;
-  if (candidate.qualifiers.includes("cross_clause_recovery")) focusWeight += 0.14;
-  if (candidate.qualifiers.includes("late_focus_target")) focusWeight += 0.18;
+  if (candidate.qualifiers.includes("cross_clause_recovery")) focusWeight += 0.16;
+  if (candidate.qualifiers.includes("late_focus_target")) focusWeight += 0.22;
   if (candidate.qualifiers.includes("context_recovery")) focusWeight += 0.08;
 
-  if (clause?.hasFocusMarker) focusWeight += 0.06;
+  if (clause?.hasFocusMarker) focusWeight += 0.08;
 
   if (candidate.kind === "comparison_pair") focusWeight += 0.24;
   if (candidate.kind === "of_phrase") focusWeight += 0.14;
@@ -260,7 +347,7 @@ function buildCandidateScoreBreakdown(args: {
   }
 
   if (clause?.hasContrastBoundary) contrastWeight += 0.08;
-  if (clause?.hasConfusionMarker) confusionAdjacencyWeight += 0.1;
+  if (clause?.hasConfusionMarker) confusionAdjacencyWeight += 0.12;
   if (clause?.hasRequestMarker) requestAdjacencyWeight += 0.06;
 
   if (clause?.hasContextMarker && candidate.qualifiers.includes("context_recovery")) {
@@ -271,7 +358,7 @@ function buildCandidateScoreBreakdown(args: {
   else if (mentionCount === 1) mentionWeight += 0.05;
 
   if (specificity === "good") specificityWeight += 0.18;
-  if (specificity === "very_specific") specificityWeight += 0.14;
+  if (specificity === "very_specific") specificityWeight += 0.16;
   if (specificity === "broad_but_usable") specificityWeight += 0.08;
   if (specificity === "too_vague") genericPenalty += 0.38;
 
@@ -280,8 +367,8 @@ function buildCandidateScoreBreakdown(args: {
   for (const retrieval of retrievalCandidates) {
     const retrievalTokens = semanticTokens(retrieval.topic_name);
     const score =
-      overlapScore(labelTokens, retrievalTokens) * 0.1 +
-      (retrieval.similarity ?? 0) * 0.06;
+      overlapScore(labelTokens, retrievalTokens) * 0.12 +
+      (retrieval.similarity ?? 0) * 0.08;
     if (score > bestReuseHint) bestReuseHint = score;
   }
   reuseHintWeight += bestReuseHint;
@@ -377,11 +464,52 @@ function buildCandidateScoreBreakdown(args: {
   }
 
   if (hasExplicitLearningRequest && candidateLooksAbstractButUseful(candidate, message)) {
-    abstractFocusWeight += 0.1;
+    abstractFocusWeight += 0.12;
+  }
+
+  if (candidateLooksMechanismLike(candidate, message)) {
+    mechanismWeight += 0.18;
+  }
+
+  if (hasExplicitLearningRequest && candidateLooksMechanismLike(candidate, message)) {
+    mechanismWeight += 0.1;
+  }
+
+  if (candidateLooksLateFocusPreferred(candidate)) {
+    lateFocusWeight += 0.16;
+  }
+
+  if (candidateLooksExplicitConfusionTarget(candidate, message)) {
+    explicitConfusionWeight += 0.16;
+  }
+
+  if (candidateLooksGeneralBucket(candidate)) {
+    generalBucketPenalty += 0.16;
+  }
+
+  if (candidateLooksObjectOnly(candidate) && candidateLooksMechanismLike(candidate, message)) {
+    objectOnlyPenalty += 0.08;
+  }
+
+  if (
+    /\bhow\b.*\bwork\b/i.test(message) &&
+    candidateLooksObjectOnly(candidate) &&
+    !candidate.qualifiers.includes("focus_target")
+  ) {
+    objectOnlyPenalty += 0.18;
+  }
+
+  if (
+    /\bmainly confused about\b|\bespecially confused about\b|\bspecifically confused about\b/i.test(
+      message
+    ) &&
+    !candidateLooksExplicitConfusionTarget(candidate, message)
+  ) {
+    genericPenalty += 0.08;
   }
 
   if (candidateLooksProblemFraming(candidate)) {
-    problemFramingPenalty += 0.22;
+    problemFramingPenalty += 0.24;
   }
 
   if (
@@ -389,7 +517,7 @@ function buildCandidateScoreBreakdown(args: {
     candidateLooksProblemFraming(candidate) &&
     !candidate.qualifiers.includes("focus_target")
   ) {
-    problemFramingPenalty += 0.08;
+    problemFramingPenalty += 0.1;
   }
 
   if (tokenCount > 8) {
@@ -411,12 +539,17 @@ function buildCandidateScoreBreakdown(args: {
     mentionWeight +
     specificityWeight +
     reuseHintWeight +
-    abstractFocusWeight -
+    abstractFocusWeight +
+    mechanismWeight +
+    lateFocusWeight +
+    explicitConfusionWeight -
     genericPenalty -
     clausePenalty -
     learnerStatePenalty -
     lengthPenalty -
     tailPenalty -
+    generalBucketPenalty -
+    objectOnlyPenalty -
     problemFramingPenalty;
 
   total = clampTopicConfidence(total);
@@ -437,6 +570,11 @@ function buildCandidateScoreBreakdown(args: {
     lengthPenalty,
     tailPenalty,
     abstractFocusWeight,
+    mechanismWeight,
+    lateFocusWeight,
+    explicitConfusionWeight,
+    generalBucketPenalty,
+    objectOnlyPenalty,
     problemFramingPenalty,
     total,
   };
@@ -510,6 +648,14 @@ function buildAmbiguityFlags(args: {
     flags.push("tail_residue_candidate");
   }
 
+  if (bestCandidate && candidateLooksProblemFraming(bestCandidate)) {
+    flags.push("problem_framing_candidate");
+  }
+
+  if (bestCandidate && candidateLooksGeneralBucket(bestCandidate)) {
+    flags.push("overly_general_candidate");
+  }
+
   return dedupe(flags);
 }
 
@@ -571,11 +717,11 @@ export function runDeterministicTopicLabeling(
   let confidence = 0.2;
 
   if (scoredCandidates.length > 0) confidence += 0.12;
-  if (bestCandidate) confidence += bestCandidate.score * 0.3;
+  if (bestCandidate) confidence += bestCandidate.score * 0.32;
   if (conceptSpan) confidence += 0.14;
   if (canonicalLabel) confidence += 0.12;
   if (specificity === "good") confidence += 0.08;
-  if (specificity === "very_specific") confidence += 0.07;
+  if (specificity === "very_specific") confidence += 0.08;
   if (specificity === "broad_but_usable") confidence += 0.05;
   if (shouldReuse) confidence += 0.12;
 
@@ -596,11 +742,11 @@ export function runDeterministicTopicLabeling(
   }
 
   if (bestCandidate?.qualifiers.includes("focus_target")) {
-    confidence += 0.05;
+    confidence += 0.06;
   }
 
   if (bestCandidate?.qualifiers.includes("late_focus_target")) {
-    confidence += 0.05;
+    confidence += 0.06;
   }
 
   if (bestCandidate?.qualifiers.includes("context_recovery")) {
@@ -609,6 +755,14 @@ export function runDeterministicTopicLabeling(
 
   if (bestCandidate && candidateLooksAbstractButUseful(bestCandidate, normalizedMessage)) {
     confidence += 0.05;
+  }
+
+  if (bestCandidate && candidateLooksMechanismLike(bestCandidate, normalizedMessage)) {
+    confidence += 0.06;
+  }
+
+  if (bestCandidate && candidateLooksExplicitConfusionTarget(bestCandidate, normalizedMessage)) {
+    confidence += 0.06;
   }
 
   if (!bestCandidate?.shouldCompeteAsTopic) {
@@ -636,7 +790,11 @@ export function runDeterministicTopicLabeling(
   }
 
   if (bestCandidate && candidateLooksProblemFraming(bestCandidate)) {
-    confidence -= 0.12;
+    confidence -= 0.14;
+  }
+
+  if (bestCandidate && candidateLooksGeneralBucket(bestCandidate)) {
+    confidence -= 0.14;
   }
 
   if (looksLikeSuspiciousLabel(canonicalLabel)) {
@@ -676,6 +834,7 @@ export function runDeterministicTopicLabeling(
     !ambiguityFlags.includes("candidate_non_topicish") &&
     !ambiguityFlags.includes("subpart_reference") &&
     !ambiguityFlags.includes("tail_residue_candidate") &&
+    !ambiguityFlags.includes("problem_framing_candidate") &&
     !messageLooksLikePureFollowup(normalizedMessage) &&
     (specificity === "good" ||
       specificity === "very_specific" ||
@@ -766,6 +925,12 @@ export function runDeterministicTopicLabeling(
           : []),
         ...(bestCandidate && candidateLooksTailHeavy(bestCandidate)
           ? ["Top candidate still looks tail-heavy or residue-contaminated."]
+          : []),
+        ...(bestCandidate && candidateLooksProblemFraming(bestCandidate)
+          ? ["Top candidate looks more like a problem framing than the actual concept to learn."]
+          : []),
+        ...(bestCandidate && candidateLooksGeneralBucket(bestCandidate)
+          ? ["Top candidate is too general relative to the user’s likely focus."]
           : []),
       ],
       ambiguity_flags: dedupe(ambiguityFlags),
