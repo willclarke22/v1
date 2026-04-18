@@ -2,8 +2,8 @@ import "dotenv/config";
 import { getLatestTopicState } from "@/lib/persistence/read";
 import { embedTexts } from "@/lib/vector/embed";
 import {
+  createQdrantClient,
   ensureTopicCollection,
-  qdrant,
   TOPIC_COLLECTION,
 } from "@/lib/vector/qdrant";
 
@@ -63,6 +63,7 @@ async function main() {
   }
 
   const ensureResult = await ensureTopicCollection();
+  const qdrant = createQdrantClient();
 
   console.log(
     ensureResult.created

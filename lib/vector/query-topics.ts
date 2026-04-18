@@ -1,15 +1,19 @@
-import { qdrant, TOPIC_COLLECTION } from "@/lib/vector/qdrant";
+import { createQdrantClient, hasQdrantConfig, TOPIC_COLLECTION } from "@/lib/vector/qdrant";
 import { embedText } from "@/lib/vector/embed";
 import type { VectorInfo } from "@/types/contracts";
 
 type QdrantTopicPayload = {
   topic_id?: unknown;
   topic_name?: unknown;
-  diagnosis?: unknown;
-  next_step?: unknown;
-  updated_at?: unknown;
-  embedding_text?: unknown;
 };
+
+function emptyVectorInfo(): VectorInfo {
+  return {
+    top_k_topic_names: [],
+    top_k_topic_ids: [],
+    top_k_similarity_scores: [],
+  };
+}
 
 function asString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -24,14 +28,15 @@ export async function querySemanticTopicCandidates(
   limit = 5
 ): Promise<VectorInfo> {
   if (typeof message !== "string" || !message.trim()) {
-    return {
-      top_k_topic_names: [],
-      top_k_topic_ids: [],
-      top_k_similarity_scores: [],
-    };
+    return emptyVectorInfo();
+  }
+
+  if (!hasQdrantConfig()) {
+    return emptyVectorInfo();
   }
 
   const vector = await embedText(message);
+  const qdrant = createQdrantClient();
 
   const result = await qdrant.query(TOPIC_COLLECTION, {
     query: vector,

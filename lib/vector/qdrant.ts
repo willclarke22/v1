@@ -1,25 +1,44 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
 
-function getEnv(name: string): string {
-  const value = process.env[name];
-
-  if (!value || !value.trim()) {
-    throw new Error(`Missing ${name}`);
-  }
-
-  return value.trim();
-}
-
-export const QDRANT_URL = getEnv("QDRANT_URL");
-export const QDRANT_API_KEY = getEnv("QDRANT_API_KEY");
-
 export const TOPIC_COLLECTION = "myway-topics";
 export const TOPIC_VECTOR_SIZE = 384;
 
-export const qdrant = new QdrantClient({
-  url: QDRANT_URL,
-  apiKey: QDRANT_API_KEY,
-});
+function getOptionalEnv(name: string): string | null {
+  const value = process.env[name];
+  if (!value || !value.trim()) {
+    return null;
+  }
+  return value.trim();
+}
+
+export function getQdrantConfig() {
+  return {
+    url: getOptionalEnv("QDRANT_URL"),
+    apiKey: getOptionalEnv("QDRANT_API_KEY"),
+  };
+}
+
+export function hasQdrantConfig(): boolean {
+  const { url, apiKey } = getQdrantConfig();
+  return Boolean(url && apiKey);
+}
+
+export function createQdrantClient(): QdrantClient {
+  const { url, apiKey } = getQdrantConfig();
+
+  if (!url) {
+    throw new Error("Missing QDRANT_URL");
+  }
+
+  if (!apiKey) {
+    throw new Error("Missing QDRANT_API_KEY");
+  }
+
+  return new QdrantClient({
+    url,
+    apiKey,
+  });
+}
 
 type EnsureTopicCollectionResult = {
   created: boolean;
@@ -27,6 +46,8 @@ type EnsureTopicCollectionResult = {
 };
 
 export async function ensureTopicCollection(): Promise<EnsureTopicCollectionResult> {
+  const qdrant = createQdrantClient();
+
   try {
     await qdrant.getCollection(TOPIC_COLLECTION);
 
