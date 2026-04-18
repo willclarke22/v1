@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { buildLearningSpace } from "@/lib/build-learning-space";
 import { insertRun, upsertTopicState } from "@/lib/persistence/myway";
 import { makeId } from "@/lib/utils/ids";
+import { querySemanticTopicCandidates } from "@/lib/vector/query-topics";
 import type {
   DeliveredProbe,
   DeliveredResponse,
@@ -129,6 +130,47 @@ type TopicResolutionOutcome = {
   usedLLMFallback: boolean;
   debug: TopicResolutionDebug;
 };
+
+function emptyVectorInfo(): VectorInfo {
+  return {
+    top_k_topic_names: [],
+    top_k_topic_ids: [],
+    top_k_similarity_scores: [],
+  };
+}
+
+function hasUsableVectorInfo(vectorInfo: VectorInfo | null | undefined): boolean {
+  if (!vectorInfo) return false;
+
+  return (
+    vectorInfo.top_k_topic_ids.length > 0 ||
+    vectorInfo.top_k_topic_names.length > 0 ||
+    vectorInfo.top_k_similarity_scores.length > 0
+  );
+}
+
+function mergeVectorInfo(
+  primary: VectorInfo | null | undefined,
+  fallback: VectorInfo | null | undefined
+): VectorInfo {
+  if (hasUsableVectorInfo(primary)) {
+    return {
+      top_k_topic_names: primary?.top_k_topic_names ?? [],
+      top_k_topic_ids: primary?.top_k_topic_ids ?? [],
+      top_k_similarity_scores: primary?.top_k_similarity_scores ?? [],
+    };
+  }
+
+  if (hasUsableVectorInfo(fallback)) {
+    return {
+      top_k_topic_names: fallback?.top_k_topic_names ?? [],
+      top_k_topic_ids: fallback?.top_k_topic_ids ?? [],
+      top_k_similarity_scores: fallback?.top_k_similarity_scores ?? [],
+    };
+  }
+
+  return emptyVectorInfo();
+}
 
 function normalizeRecentTurns(body: MessageRouteBody) {
   const rawTurns = Array.isArray(body.recent_turns)
@@ -609,6 +651,18 @@ function findTopicFromLLMResult(args: {
   return null;
 }
 
+function findTopicFromVectorInfo(args: {
+  existingTopics: RouteTopic[];
+  vectorInfo: VectorInfo;
+}): RouteTopic | null {
+  const { existingTopics, vectorInfo } = args;
+
+  const bestVectorTopicId = vectorInfo.top_k_topic_ids[0];
+  if (!bestVectorTopicId) return null;
+
+  return existingTopics.find((topic) => topic.id === bestVectorTopicId) ?? null;
+}
+
 function adaptLearningSpaceToContract(
   rawLearningSpace: RawLearningSpace,
   updatedTopics: RouteTopic[]
@@ -740,6 +794,7 @@ function buildDeterministicOutcome(args: {
   existingTopics: RouteTopic[];
   activeTopic: RouteTopic | null;
   message: string;
+  semanticVectorInfo: VectorInfo;
   topicLabelingMode: TopicLabelingMode;
   llmFallbackAllowedByMode: boolean;
   llmFallbackRecommendedByPolicy: boolean;
@@ -750,11 +805,17 @@ function buildDeterministicOutcome(args: {
     existingTopics,
     activeTopic,
     message,
+    semanticVectorInfo,
     topicLabelingMode,
     llmFallbackAllowedByMode,
     llmFallbackRecommendedByPolicy,
     llmFallbackAttempted,
   } = args;
+
+  const effectiveVectorInfo = mergeVectorInfo(
+    semanticVectorInfo,
+    deterministicMatch.vectorInfo
+  );
 
   if (deterministicMatch.matchedTopic) {
     return buildResolvedOutcome({
@@ -762,7 +823,7 @@ function buildDeterministicOutcome(args: {
       createdTopic: null,
       routeTopics: existingTopics,
       resolutionKind: deterministicMatch.resolutionKind,
-      vectorInfo: deterministicMatch.vectorInfo,
+      vectorInfo: effectiveVectorInfo,
       resolvedLabel: deterministicMatch.resolvedLabel,
       matchConfidence: deterministicMatch.matchConfidence,
       usedLLMFallback: false,
@@ -789,7 +850,7 @@ function buildDeterministicOutcome(args: {
       createdTopic,
       routeTopics: [...existingTopics, createdTopic],
       resolutionKind: "created_new_candidate",
-      vectorInfo: deterministicMatch.vectorInfo,
+      vectorInfo: effectiveVectorInfo,
       resolvedLabel: deterministicMatch.resolvedLabel,
       matchConfidence: deterministicMatch.matchConfidence,
       usedLLMFallback: false,
@@ -806,7 +867,7 @@ function buildDeterministicOutcome(args: {
       createdTopic: null,
       routeTopics: existingTopics,
       resolutionKind: "fallback_active_topic",
-      vectorInfo: deterministicMatch.vectorInfo,
+      vectorInfo: effectiveVectorInfo,
       resolvedLabel: deterministicMatch.resolvedLabel ?? activeTopic.name,
       matchConfidence: deterministicMatch.matchConfidence,
       usedLLMFallback: false,
@@ -817,18 +878,42 @@ function buildDeterministicOutcome(args: {
     });
   }
 
-  const bestVectorTopicId = deterministicMatch.vectorInfo.top_k_topic_ids[0];
-  const bestVectorTopic =
-    existingTopics.find((topic) => topic.id === bestVectorTopicId) ?? null;
+  const bestSemanticTopic = findTopicFromVectorInfo({
+    existingTopics,
+    vectorInfo: semanticVectorInfo,
+  });
 
-  if (bestVectorTopic) {
+  if (bestSemanticTopic) {
     return buildResolvedOutcome({
-      topic: bestVectorTopic,
+      topic: bestSemanticTopic,
       createdTopic: null,
       routeTopics: existingTopics,
       resolutionKind: "fallback_existing_topic",
-      vectorInfo: deterministicMatch.vectorInfo,
-      resolvedLabel: deterministicMatch.resolvedLabel ?? bestVectorTopic.name,
+      vectorInfo: effectiveVectorInfo,
+      resolvedLabel: deterministicMatch.resolvedLabel ?? bestSemanticTopic.name,
+      matchConfidence: deterministicMatch.matchConfidence,
+      usedLLMFallback: false,
+      topicLabelingMode,
+      llmFallbackAllowedByMode,
+      llmFallbackRecommendedByPolicy,
+      llmFallbackAttempted,
+    });
+  }
+
+  const bestDeterministicVectorTopic = findTopicFromVectorInfo({
+    existingTopics,
+    vectorInfo: deterministicMatch.vectorInfo,
+  });
+
+  if (bestDeterministicVectorTopic) {
+    return buildResolvedOutcome({
+      topic: bestDeterministicVectorTopic,
+      createdTopic: null,
+      routeTopics: existingTopics,
+      resolutionKind: "fallback_existing_topic",
+      vectorInfo: effectiveVectorInfo,
+      resolvedLabel:
+        deterministicMatch.resolvedLabel ?? bestDeterministicVectorTopic.name,
       matchConfidence: deterministicMatch.matchConfidence,
       usedLLMFallback: false,
       topicLabelingMode,
@@ -844,7 +929,7 @@ function buildDeterministicOutcome(args: {
       createdTopic: null,
       routeTopics: existingTopics,
       resolutionKind: "fallback_existing_topic",
-      vectorInfo: deterministicMatch.vectorInfo,
+      vectorInfo: effectiveVectorInfo,
       resolvedLabel: deterministicMatch.resolvedLabel ?? existingTopics[0].name,
       matchConfidence: deterministicMatch.matchConfidence,
       usedLLMFallback: false,
@@ -862,8 +947,9 @@ async function resolveTopicOutcome(args: {
   existingTopics: RouteTopic[];
   activeTopicId?: string | null;
   message: string;
+  semanticVectorInfo: VectorInfo;
 }): Promise<TopicResolutionOutcome | null> {
-  const { existingTopics, activeTopicId, message } = args;
+  const { existingTopics, activeTopicId, message, semanticVectorInfo } = args;
   const topicLabelingMode = getTopicLabelingMode();
   const llmFallbackAllowedByMode =
     topicLabelingMode === "deterministic_plus_llm";
@@ -876,11 +962,7 @@ async function resolveTopicOutcome(args: {
       createdTopic,
       routeTopics: [createdTopic],
       resolutionKind: "created_new_candidate",
-      vectorInfo: {
-        top_k_topic_names: [],
-        top_k_topic_ids: [],
-        top_k_similarity_scores: [],
-      },
+      vectorInfo: semanticVectorInfo,
       resolvedLabel: createdTopic.name,
       matchConfidence: 0,
       usedLLMFallback: false,
@@ -902,8 +984,16 @@ async function resolveTopicOutcome(args: {
     activeTopic
   );
 
+  const effectiveVectorInfo = mergeVectorInfo(
+    semanticVectorInfo,
+    deterministicMatch.vectorInfo
+  );
+
   const deterministicSnapshot =
-    buildDeterministicTopicResolutionSnapshot(deterministicMatch);
+    buildDeterministicTopicResolutionSnapshot({
+      ...deterministicMatch,
+      vectorInfo: effectiveVectorInfo,
+    });
 
   const llmFallbackRecommendedByPolicy = shouldTryLLMTopicResolutionFallback({
     ...deterministicSnapshot,
@@ -915,10 +1005,14 @@ async function resolveTopicOutcome(args: {
 
   if (!shouldEscalate) {
     return buildDeterministicOutcome({
-      deterministicMatch,
+      deterministicMatch: {
+        ...deterministicMatch,
+        vectorInfo: effectiveVectorInfo,
+      },
       existingTopics,
       activeTopic,
       message,
+      semanticVectorInfo,
       topicLabelingMode,
       llmFallbackAllowedByMode,
       llmFallbackRecommendedByPolicy,
@@ -946,7 +1040,7 @@ async function resolveTopicOutcome(args: {
           createdTopic: null,
           routeTopics: existingTopics,
           resolutionKind: "matched_existing",
-          vectorInfo: deterministicMatch.vectorInfo,
+          vectorInfo: effectiveVectorInfo,
           resolvedLabel: llmDecision.canonical_label ?? matchedTopic.name,
           matchConfidence: llmDecision.confidence,
           usedLLMFallback: true,
@@ -964,7 +1058,7 @@ async function resolveTopicOutcome(args: {
         createdTopic: null,
         routeTopics: existingTopics,
         resolutionKind: "fallback_active_topic",
-        vectorInfo: deterministicMatch.vectorInfo,
+        vectorInfo: effectiveVectorInfo,
         resolvedLabel: llmDecision.canonical_label ?? activeTopic.name,
         matchConfidence: llmDecision.confidence,
         usedLLMFallback: true,
@@ -991,7 +1085,7 @@ async function resolveTopicOutcome(args: {
         createdTopic,
         routeTopics: [...existingTopics, createdTopic],
         resolutionKind: "created_new_candidate",
-        vectorInfo: deterministicMatch.vectorInfo,
+        vectorInfo: effectiveVectorInfo,
         resolvedLabel: llmDecision.canonical_label,
         matchConfidence: llmDecision.confidence,
         usedLLMFallback: true,
@@ -1004,10 +1098,14 @@ async function resolveTopicOutcome(args: {
   }
 
   return buildDeterministicOutcome({
-    deterministicMatch,
+    deterministicMatch: {
+      ...deterministicMatch,
+      vectorInfo: effectiveVectorInfo,
+    },
     existingTopics,
     activeTopic,
     message,
+    semanticVectorInfo,
     topicLabelingMode,
     llmFallbackAllowedByMode,
     llmFallbackRecommendedByPolicy,
@@ -1048,11 +1146,21 @@ export async function POST(request: Request) {
 
     const existingTopics = await loadRouteTopics();
 
+    let semanticVectorInfo: VectorInfo = emptyVectorInfo();
+
+    try {
+      semanticVectorInfo = await querySemanticTopicCandidates(message, 5);
+    } catch (error) {
+      console.warn("Semantic topic retrieval failed in POST /api/message", error);
+      semanticVectorInfo = emptyVectorInfo();
+    }
+
     const topicResolution = await resolveTopicOutcome({
       existingTopics,
       activeTopicId:
         typeof body.activeTopicId === "string" ? body.activeTopicId : null,
       message,
+      semanticVectorInfo,
     });
 
     if (!topicResolution) {
@@ -1218,6 +1326,7 @@ export async function POST(request: Request) {
         match_confidence: matchConfidence,
         used_llm_topic_fallback: usedLLMFallback,
         topic_resolution_debug: topicResolutionDebug,
+        semantic_vector_info: vectorInfo,
       })
     );
 

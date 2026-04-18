@@ -1,49 +1,59 @@
-import dotenv from "dotenv";
-dotenv.config({ path: ".env.local" });
-
+import "dotenv/config";
 import { getLatestTopicState } from "@/lib/persistence/read";
-import { qdrant, TOPIC_COLLECTION } from "@/lib/vector/qdrant";
-import { embedText } from "@/lib/vector/embed";
+import { embedTexts } from "@/lib/vector/embed";
+import {
+  ensureTopicCollection,
+  qdrant,
+  TOPIC_COLLECTION,
+} from "@/lib/vector/qdrant";
+
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: JsonValue }
+  | JsonValue[];
 
 type TopicStateRow = Awaited<ReturnType<typeof getLatestTopicState>>[number];
 
-function safeString(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
+function asRecord(value: unknown): Record<string, JsonValue> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  return value as Record<string, JsonValue>;
 }
 
-function extractKeywordText(topicJson: Record<string, unknown> | null): string[] {
-  if (!topicJson) return [];
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
 
-  const raw = topicJson["inferred_keywords"];
-  if (!Array.isArray(raw)) return [];
-
-  return raw
+  return value
     .filter((item): item is string => typeof item === "string")
-    .map((s) => s.trim())
+    .map((item) => item.trim())
     .filter(Boolean);
 }
 
-function buildTopicEmbeddingText(row: TopicStateRow): string {
-  const keywordText = extractKeywordText(row.topic_json).join(", ");
+function buildEmbeddingText(row: TopicStateRow): string {
+  const topicJson = asRecord(row.topic_json);
+  const inferredKeywords = asStringArray(topicJson?.inferred_keywords);
 
   const parts = [
-    row.topic_name,
-    row.diagnosis ? `Diagnosis: ${row.diagnosis}` : "",
-    row.next_step ? `Next step: ${row.next_step}` : "",
-    keywordText ? `Keywords: ${keywordText}` : "",
-  ].filter(Boolean);
+    `Topic: ${row.topic_name}`,
+    row.diagnosis ? `Diagnosis: ${row.diagnosis}` : null,
+    row.next_step ? `Next step: ${row.next_step}` : null,
+    inferredKeywords.length > 0
+      ? `Keywords: ${inferredKeywords.join(", ")}`
+      : null,
+  ].filter((part): part is string => Boolean(part && part.trim()));
 
   return parts.join("\n");
 }
 
-function toDeterministicPointId(topicId: string): string {
-  return crypto.randomUUID?.() ? crypto.randomUUID() : topicId;
+function buildPointId(topicId: string): string {
+  return topicId;
 }
 
-/**
- * For first pass safety, store the real topic_id in payload and use a UUID point id.
- * Later, you may want a stable uuidv5-style mapping instead.
- */
 async function main() {
   const rows = await getLatestTopicState();
 
@@ -52,14 +62,35 @@ async function main() {
     return;
   }
 
-  const points = [];
+  const ensureResult = await ensureTopicCollection();
 
-  for (const row of rows) {
-    const text = buildTopicEmbeddingText(row);
-    const vector = await embedText(text);
+  console.log(
+    ensureResult.created
+      ? `Created Qdrant collection "${ensureResult.collectionName}".`
+      : `Using existing Qdrant collection "${ensureResult.collectionName}".`
+  );
 
-    points.push({
-      id: crypto.randomUUID(),
+  const embeddingTexts = rows.map(buildEmbeddingText);
+  const vectors = await embedTexts(embeddingTexts);
+
+  if (vectors.length !== rows.length) {
+    throw new Error(
+      `Embedding count mismatch: got ${vectors.length}, expected ${rows.length}`
+    );
+  }
+
+  const points = rows.map((row, index) => {
+    const topicJson = asRecord(row.topic_json);
+    const inferredKeywords = asStringArray(topicJson?.inferred_keywords);
+    const embeddingText = embeddingTexts[index];
+    const vector = vectors[index];
+
+    if (!Array.isArray(vector) || vector.length === 0) {
+      throw new Error(`Invalid embedding vector for topic_id "${row.topic_id}"`);
+    }
+
+    return {
+      id: buildPointId(row.topic_id),
       vector,
       payload: {
         topic_id: row.topic_id,
@@ -67,17 +98,20 @@ async function main() {
         diagnosis: row.diagnosis,
         next_step: row.next_step,
         updated_at: row.updated_at,
-        embedding_text: text,
+        inferred_keywords: inferredKeywords,
+        embedding_text: embeddingText,
       },
-    });
-  }
+    };
+  });
 
   await qdrant.upsert(TOPIC_COLLECTION, {
     wait: true,
     points,
   });
 
-  console.log(`Backfilled ${points.length} topics into ${TOPIC_COLLECTION}.`);
+  console.log(
+    `Backfilled ${points.length} topic_state rows into Qdrant collection "${TOPIC_COLLECTION}".`
+  );
 }
 
 main().catch((error) => {
