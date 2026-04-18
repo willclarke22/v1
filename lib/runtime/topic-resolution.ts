@@ -54,7 +54,8 @@ type TopicScoreBreakdown = {
   containedMatch: number;
   conceptOverlap: number;
   questionOverlap: number;
-  retrievalBias: number;
+  semanticRetrieval: number;
+  retrievalRankBonus: number;
   activeTopicBonus: number;
   frameBonus: number;
   confidenceBonus: number;
@@ -140,8 +141,6 @@ const ACTIVE_TOPIC_SUBPART_FOLLOWUP_REGEXES: RegExp[] = [
   /^(?:the sweeping part)\.?$/i,
   /^(?:no,?\s*the second part)\.?$/i,
   /^(?:no,?\s*the first part(?: of that)?)\.?$/i,
-
-  // Broader mixed/embedded subpart references
   /^(?:can we go over (?:that|it) again,\s*especially the .+ part)\??$/i,
   /^(?:go over (?:that|it) again,\s*especially the .+ part)\.?$/i,
   /^(?:explain (?:that|it) again,\s*especially the .+ part)\.?$/i,
@@ -176,6 +175,59 @@ const EXPLICIT_EXISTING_TOPIC_SWITCH_PREFIXES: RegExp[] = [
   /^(?:actually,?\s*go back to)\s+(.+?)\.?$/i,
   /^(?:wait,?\s*go back to)\s+(.+?)\.?$/i,
 ];
+
+function emptyVectorInfo(): VectorInfo {
+  return {
+    top_k_topic_names: [],
+    top_k_topic_ids: [],
+    top_k_similarity_scores: [],
+  };
+}
+
+function normalizeVectorInfo(vectorInfo?: VectorInfo | null): VectorInfo {
+  if (!vectorInfo) {
+    return emptyVectorInfo();
+  }
+
+  return {
+    top_k_topic_names: Array.isArray(vectorInfo.top_k_topic_names)
+      ? vectorInfo.top_k_topic_names.filter((item): item is string => typeof item === "string")
+      : [],
+    top_k_topic_ids: Array.isArray(vectorInfo.top_k_topic_ids)
+      ? vectorInfo.top_k_topic_ids.filter((item): item is string => typeof item === "string")
+      : [],
+    top_k_similarity_scores: Array.isArray(vectorInfo.top_k_similarity_scores)
+      ? vectorInfo.top_k_similarity_scores.filter(
+          (item): item is number => typeof item === "number" && !Number.isNaN(item)
+        )
+      : [],
+  };
+}
+
+function hasUsableVectorInfo(vectorInfo?: VectorInfo | null): boolean {
+  const normalized = normalizeVectorInfo(vectorInfo);
+
+  return (
+    normalized.top_k_topic_ids.length > 0 ||
+    normalized.top_k_topic_names.length > 0 ||
+    normalized.top_k_similarity_scores.length > 0
+  );
+}
+
+function mergeVectorInfos(
+  primary?: VectorInfo | null,
+  fallback?: VectorInfo | null
+): VectorInfo {
+  if (hasUsableVectorInfo(primary)) {
+    return normalizeVectorInfo(primary);
+  }
+
+  if (hasUsableVectorInfo(fallback)) {
+    return normalizeVectorInfo(fallback);
+  }
+
+  return emptyVectorInfo();
+}
 
 function normalizeSurface(text: string) {
   return text
@@ -311,15 +363,93 @@ function looksLikeReturnToPreviousTopic(message: string) {
   return RETURN_TO_PREVIOUS_TOPIC_REGEXES.some((regex) => regex.test(normalized));
 }
 
+function findVectorCandidateIndexForTopic(
+  topic: RouteTopic,
+  vectorInfo?: VectorInfo | null
+): number {
+  const normalized = normalizeVectorInfo(vectorInfo);
+
+  const byId = normalized.top_k_topic_ids.findIndex((topicId) => topicId === topic.id);
+  if (byId >= 0) return byId;
+
+  const topicNameLoose = normalizeLoose(topic.name);
+  return normalized.top_k_topic_names.findIndex(
+    (topicName) => normalizeLoose(topicName) === topicNameLoose
+  );
+}
+
+function getSemanticSimilarityForTopic(
+  topic: RouteTopic,
+  vectorInfo?: VectorInfo | null
+): number {
+  const normalized = normalizeVectorInfo(vectorInfo);
+  const index = findVectorCandidateIndexForTopic(topic, normalized);
+
+  if (index < 0) return 0;
+
+  const score = normalized.top_k_similarity_scores[index] ?? 0;
+  return clamp(score, 0, 1);
+}
+
+function getSemanticRetrievalSupport(
+  topic: RouteTopic,
+  vectorInfo?: VectorInfo | null
+): {
+  semanticSimilarity: number;
+  retrievalRankBonus: number;
+  combinedSupport: number;
+} {
+  const normalized = normalizeVectorInfo(vectorInfo);
+  const index = findVectorCandidateIndexForTopic(topic, normalized);
+
+  if (index < 0) {
+    return {
+      semanticSimilarity: 0,
+      retrievalRankBonus: 0,
+      combinedSupport: 0,
+    };
+  }
+
+  const semanticSimilarity = clamp(
+    normalized.top_k_similarity_scores[index] ?? 0,
+    0,
+    1
+  );
+
+  const retrievalRankBonus =
+    index === 0
+      ? 0.12
+      : index === 1
+        ? 0.08
+        : index === 2
+          ? 0.05
+          : index === 3
+            ? 0.03
+            : 0.01;
+
+  const combinedSupport = clamp(
+    semanticSimilarity * 0.7 + retrievalRankBonus,
+    0,
+    1
+  );
+
+  return {
+    semanticSimilarity,
+    retrievalRankBonus,
+    combinedSupport,
+  };
+}
+
 function buildTopicLabelingInput(
   message: string,
   existingTopics: RouteTopic[],
-  activeTopic?: RouteTopic | null
+  activeTopic?: RouteTopic | null,
+  semanticVectorInfo?: VectorInfo | null
 ): TopicLabelingInput {
   const retrievalCandidates: RetrievalCandidate[] = existingTopics.map((topic) => ({
     topic_id: topic.id,
     topic_name: topic.name,
-    similarity: 0,
+    similarity: getSemanticSimilarityForTopic(topic, semanticVectorInfo),
   }));
 
   return {
@@ -334,9 +464,15 @@ function buildTopicLabelingInput(
 function buildLabelingResult(
   message: string,
   existingTopics: RouteTopic[],
-  activeTopic?: RouteTopic | null
+  activeTopic?: RouteTopic | null,
+  semanticVectorInfo?: VectorInfo | null
 ) {
-  const input = buildTopicLabelingInput(message, existingTopics, activeTopic);
+  const input = buildTopicLabelingInput(
+    message,
+    existingTopics,
+    activeTopic,
+    semanticVectorInfo
+  );
   return runDeterministicTopicLabeling(input);
 }
 
@@ -398,10 +534,10 @@ function buildVectorInfoFromScoredTopics(
   scored: Array<{ topic: RouteTopic; similarity: number }>
 ): VectorInfo {
   return {
-    top_k_topic_names: scored.slice(0, 3).map((item) => item.topic.name),
-    top_k_topic_ids: scored.slice(0, 3).map((item) => item.topic.id),
+    top_k_topic_names: scored.slice(0, 5).map((item) => item.topic.name),
+    top_k_topic_ids: scored.slice(0, 5).map((item) => item.topic.id),
     top_k_similarity_scores: scored
-      .slice(0, 3)
+      .slice(0, 5)
       .map((item) => clamp(item.similarity, 0, 0.98)),
   };
 }
@@ -465,6 +601,7 @@ function looksLikeStrongDeterministicCreateLabel(labeling: TopicLabelingResult) 
 function buildScoreBreakdown(
   labeling: TopicLabelingResult,
   topic: RouteTopic,
+  semanticVectorInfo?: VectorInfo | null,
   activeTopic?: RouteTopic | null
 ): TopicScoreBreakdown {
   const candidateLabel = labeling.topic_decision.canonical_label;
@@ -493,7 +630,8 @@ function buildScoreBreakdown(
       ) * 0.18
     : 0;
 
-  const retrievalBias = labeling.topic_decision.confidence * 0.08;
+  const semanticSupport = getSemanticRetrievalSupport(topic, semanticVectorInfo);
+  const semanticRetrieval = semanticSupport.combinedSupport * 0.22;
 
   const activeTopicBonus =
     labeling.interpretation.references_active_topic &&
@@ -510,6 +648,8 @@ function buildScoreBreakdown(
       ? 0.04
       : 0;
 
+  const confidenceBonus = labeling.topic_decision.confidence * 0.08;
+
   const vaguePenalty =
     labeling.topic_decision.topic_specificity === "too_vague" ? 0.12 : 0;
 
@@ -522,8 +662,9 @@ function buildScoreBreakdown(
   const finalScore = clamp(
     conceptOverlap +
       questionOverlap +
+      semanticRetrieval +
       frameBonus +
-      retrievalBias +
+      confidenceBonus +
       activeTopicBonus -
       vaguePenalty -
       ambiguityPenalty,
@@ -536,30 +677,45 @@ function buildScoreBreakdown(
     containedMatch,
     conceptOverlap,
     questionOverlap,
-    retrievalBias,
+    semanticRetrieval,
+    retrievalRankBonus: semanticSupport.retrievalRankBonus,
     activeTopicBonus,
     frameBonus,
-    confidenceBonus: labeling.topic_decision.confidence * 0.08,
+    confidenceBonus,
     vaguePenalty,
     ambiguityPenalty,
     finalScore,
   };
 }
 
-export function scoreTopicMatch(message: string, topic: RouteTopic): number {
-  const labeling = buildLabelingResult(message, []);
-  const breakdown = buildScoreBreakdown(labeling, topic);
+export function scoreTopicMatch(
+  message: string,
+  topic: RouteTopic,
+  semanticVectorInfo?: VectorInfo | null
+): number {
+  const labeling = buildLabelingResult(message, [], null, semanticVectorInfo);
+  const breakdown = buildScoreBreakdown(
+    labeling,
+    topic,
+    semanticVectorInfo
+  );
   return breakdown.finalScore;
 }
 
 function buildBaseTopicScores(
   labeling: TopicLabelingResult,
   existingTopics: RouteTopic[],
+  semanticVectorInfo?: VectorInfo | null,
   activeTopic?: RouteTopic | null
 ): ScoredTopic[] {
   return existingTopics
     .map((topic) => {
-      const breakdown = buildScoreBreakdown(labeling, topic, activeTopic);
+      const breakdown = buildScoreBreakdown(
+        labeling,
+        topic,
+        semanticVectorInfo,
+        activeTopic
+      );
       return {
         topic,
         similarity: breakdown.finalScore,
@@ -659,8 +815,9 @@ function scoreSwitchExistingHypothesis(args: {
   activeTopic: RouteTopic | null | undefined;
   activeTopicScore: ScoredTopic | null;
   topGap: number;
+  semanticVectorInfo?: VectorInfo | null;
 }): ResolutionHypothesis {
-  const { labeling, best, activeTopic, activeTopicScore, topGap } = args;
+  const { labeling, best, activeTopic, activeTopicScore, topGap, semanticVectorInfo } = args;
 
   if (!best) {
     return {
@@ -692,6 +849,12 @@ function scoreSwitchExistingHypothesis(args: {
   if (topGap >= CANDIDATE_COMPETITION_GAP_THRESHOLD) {
     score += 0.05;
     reasons.push("Best topic has a healthy margin over alternatives.");
+  }
+
+  const semanticSupport = getSemanticRetrievalSupport(best.topic, semanticVectorInfo);
+  if (semanticSupport.semanticSimilarity >= 0.22) {
+    score += 0.06;
+    reasons.push("Semantic retrieval also supports this existing topic.");
   }
 
   if (activeTopicScore && !switchingToActive) {
@@ -728,8 +891,9 @@ function scoreCreateNewHypothesis(args: {
   labeling: TopicLabelingResult;
   best: ScoredTopic | null;
   topGap: number;
+  semanticVectorInfo?: VectorInfo | null;
 }): ResolutionHypothesis {
-  const { labeling, best, topGap } = args;
+  const { labeling, best, topGap, semanticVectorInfo } = args;
 
   let score = 0;
   const reasons: string[] = [];
@@ -783,6 +947,14 @@ function scoreCreateNewHypothesis(args: {
   if (topGap >= CANDIDATE_COMPETITION_GAP_THRESHOLD) {
     score += 0.04;
     reasons.push("The deterministic label is not heavily contested.");
+  }
+
+  if (best) {
+    const semanticSupport = getSemanticRetrievalSupport(best.topic, semanticVectorInfo);
+    if (semanticSupport.semanticSimilarity >= 0.22) {
+      score -= 0.1;
+      reasons.push("Semantic retrieval found a meaningful nearby existing topic.");
+    }
   }
 
   if (hasAmbiguityFlag(labeling, "candidate_competition")) {
@@ -885,8 +1057,18 @@ function buildResolutionHypotheses(args: {
   topGap: number;
   activeTopic?: RouteTopic | null;
   message: string;
+  semanticVectorInfo?: VectorInfo | null;
 }): ResolutionHypothesis[] {
-  const { labeling, scoredTopics, best, second, topGap, activeTopic, message } = args;
+  const {
+    labeling,
+    scoredTopics,
+    best,
+    second,
+    topGap,
+    activeTopic,
+    message,
+    semanticVectorInfo,
+  } = args;
 
   const activeTopicScore =
     activeTopic
@@ -907,12 +1089,14 @@ function buildResolutionHypotheses(args: {
     activeTopic,
     activeTopicScore,
     topGap,
+    semanticVectorInfo,
   });
 
   const createNew = scoreCreateNewHypothesis({
     labeling,
     best,
     topGap,
+    semanticVectorInfo,
   });
 
   const ambiguous = scoreAmbiguousHypothesis({
@@ -967,11 +1151,25 @@ function shouldRecommendFallbackAdjudication(
 function adjudicateTopicResolution(
   message: string,
   existingTopics: RouteTopic[],
-  activeTopic?: RouteTopic | null
+  activeTopic?: RouteTopic | null,
+  semanticVectorInfo?: VectorInfo | null
 ): ResolutionAdjudication {
-  const labeling = buildLabelingResult(message, existingTopics, activeTopic);
+  const normalizedSemanticVectorInfo = normalizeVectorInfo(semanticVectorInfo);
 
-  const scoredTopics = buildBaseTopicScores(labeling, existingTopics, activeTopic);
+  const labeling = buildLabelingResult(
+    message,
+    existingTopics,
+    activeTopic,
+    normalizedSemanticVectorInfo
+  );
+
+  const scoredTopics = buildBaseTopicScores(
+    labeling,
+    existingTopics,
+    normalizedSemanticVectorInfo,
+    activeTopic
+  );
+
   const best = scoredTopics[0] ?? null;
   const second = scoredTopics[1] ?? null;
   const topGap = best ? Math.max(0, best.similarity - (second?.similarity ?? 0)) : 0;
@@ -989,6 +1187,7 @@ function adjudicateTopicResolution(
     topGap,
     activeTopic,
     message,
+    semanticVectorInfo: normalizedSemanticVectorInfo,
   });
 
   const winner = chooseWinningHypothesis(hypotheses);
@@ -996,7 +1195,10 @@ function adjudicateTopicResolution(
   return {
     labeling,
     scoredTopics,
-    vectorInfo: buildVectorInfoFromScoredTopics(scoredTopics),
+    vectorInfo: mergeVectorInfos(
+      normalizedSemanticVectorInfo,
+      buildVectorInfoFromScoredTopics(scoredTopics)
+    ),
     best,
     second,
     topGap,
@@ -1149,18 +1351,40 @@ export function shouldTryLLMTopicResolutionFallback(args: {
   matchConfidence: number;
   resolvedLabel: string | null;
   existingTopicsCount: number;
+  vectorInfo?: VectorInfo | null;
 }) {
-  const { resolutionKind, matchConfidence, resolvedLabel, existingTopicsCount } = args;
+  const {
+    resolutionKind,
+    matchConfidence,
+    resolvedLabel,
+    existingTopicsCount,
+    vectorInfo,
+  } = args;
 
   if (existingTopicsCount === 0) return false;
+
+  const topSemanticScore =
+    normalizeVectorInfo(vectorInfo).top_k_similarity_scores[0] ?? 0;
+
   if (looksLikeSuspiciousResolvedLabel(resolvedLabel)) return true;
   if (resolutionKind === "no_match") return true;
-  if (resolutionKind === "fallback_existing_topic" && matchConfidence < 0.66) {
+
+  if (
+    resolutionKind === "fallback_existing_topic" &&
+    matchConfidence < 0.66 &&
+    topSemanticScore < 0.24
+  ) {
     return true;
   }
-  if (resolutionKind === "fallback_active_topic" && matchConfidence < 0.58) {
+
+  if (
+    resolutionKind === "fallback_active_topic" &&
+    matchConfidence < 0.58 &&
+    topSemanticScore < 0.22
+  ) {
     return true;
   }
+
   if (resolutionKind === "created_new_candidate" && matchConfidence < 0.78) {
     return true;
   }
@@ -1182,16 +1406,19 @@ export function buildDeterministicTopicResolutionSnapshot(
 export function resolveTopicForMessage(
   message: string,
   existingTopics: RouteTopic[],
-  activeTopic?: RouteTopic | null
+  activeTopic?: RouteTopic | null,
+  semanticVectorInfo?: VectorInfo | null
 ): TopicMatchResult {
-  const adjudication = adjudicateTopicResolution(message, existingTopics, activeTopic);
-  const { labeling, vectorInfo, best, winner, activeTopicScore } = adjudication;
+  const normalizedSemanticVectorInfo = normalizeVectorInfo(semanticVectorInfo);
 
-  const emptyVectorInfo: VectorInfo = {
-    top_k_topic_names: [],
-    top_k_topic_ids: [],
-    top_k_similarity_scores: [],
-  };
+  const adjudication = adjudicateTopicResolution(
+    message,
+    existingTopics,
+    activeTopic,
+    normalizedSemanticVectorInfo
+  );
+
+  const { labeling, vectorInfo, best, winner, activeTopicScore } = adjudication;
 
   if (!existingTopics.length) {
     const createConfidence =
@@ -1202,7 +1429,7 @@ export function resolveTopicForMessage(
 
     return {
       matchedTopic: null,
-      vectorInfo: emptyVectorInfo,
+      vectorInfo,
       shouldCreateNewTopic: createConfidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR,
       resolutionKind:
         createConfidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR
@@ -1249,11 +1476,7 @@ export function resolveTopicForMessage(
     }
   }
 
-  // Strongest policy: mixed anaphoric + subpart follow-ups should attach to active topic.
-  if (
-    activeTopic &&
-    looksLikeMixedAnaphoricSubpartFollowup(message)
-  ) {
+  if (activeTopic && looksLikeMixedAnaphoricSubpartFollowup(message)) {
     return {
       matchedTopic: activeTopic,
       vectorInfo,
@@ -1268,11 +1491,7 @@ export function resolveTopicForMessage(
     };
   }
 
-  // Strong policy: pure subpart follow-ups should also attach to active topic.
-  if (
-    activeTopic &&
-    looksLikeActiveTopicSubpartFollowup(message)
-  ) {
+  if (activeTopic && looksLikeActiveTopicSubpartFollowup(message)) {
     return {
       matchedTopic: activeTopic,
       vectorInfo,
@@ -1478,6 +1697,22 @@ export function buildSeededTopicFromMessage(
   } as RouteTopic;
 }
 
+function extractPositionFromTopicJson(topicJson: unknown): [number, number, number] | null {
+  if (!topicJson || typeof topicJson !== "object" || Array.isArray(topicJson)) {
+    return null;
+  }
+
+  const json = topicJson as {
+    learning_space_topic?: {
+      position?: unknown;
+    };
+  };
+
+  return isPosition(json.learning_space_topic?.position)
+    ? json.learning_space_topic.position
+    : null;
+}
+
 function mapRowsToTopics(
   rows: Awaited<ReturnType<typeof getLatestTopicState>>
 ): RouteTopic[] {
@@ -1488,61 +1723,34 @@ function mapRowsToTopics(
   return rows.map((row, index) => {
     const fallbackTopic = mockTopics[index % mockTopics.length];
 
-    const rowWithTopicFields = row as unknown as {
-      topic_id?: string;
-      topic_name?: string;
-      active_diagnosis?: unknown;
-      suggested_next_step?: string | null;
-      topic_confusion_average?: number | null;
-      topic_insight_average?: number | null;
-      topic_learning_score?: number | null;
-      topic_message_count?: number | null;
-      topic_last_update?: string | null;
-      topic_centroid?: unknown;
-    };
-
-    const position = isPosition(rowWithTopicFields.topic_centroid)
-      ? rowWithTopicFields.topic_centroid
-      : fallbackTopic.position;
+    const position =
+      extractPositionFromTopicJson(row.topic_json) ?? fallbackTopic.position;
 
     return {
       ...fallbackTopic,
-      id: rowWithTopicFields.topic_id ?? fallbackTopic.id ?? makeId("topic"),
-      name: rowWithTopicFields.topic_name?.trim() || fallbackTopic.name,
-      diagnosis: normalizeDiagnosis(
-        rowWithTopicFields.active_diagnosis ?? fallbackTopic.diagnosis
-      ),
-      nextStep:
-        rowWithTopicFields.suggested_next_step?.trim() || fallbackTopic.nextStep,
+      id: row.topic_id ?? fallbackTopic.id ?? makeId("topic"),
+      name: row.topic_name?.trim() || fallbackTopic.name,
+      diagnosis: normalizeDiagnosis(row.diagnosis ?? fallbackTopic.diagnosis),
+      nextStep: row.next_step?.trim() || fallbackTopic.nextStep,
       confusion: clamp(
-        Number(
-          rowWithTopicFields.topic_confusion_average ?? fallbackTopic.confusion
-        ),
+        Number(row.confusion ?? fallbackTopic.confusion),
         0,
         1
       ),
       insight: clamp(
-        Number(rowWithTopicFields.topic_insight_average ?? fallbackTopic.insight),
+        Number(row.insight ?? fallbackTopic.insight),
         0,
         1
       ),
       learningScore: clamp(
-        Number(
-          rowWithTopicFields.topic_learning_score ?? fallbackTopic.learningScore
-        ),
+        Number(row.learning_score ?? fallbackTopic.learningScore),
         0,
         1
       ),
       position,
       scale: fallbackTopic.scale ?? 1,
-      messageCount:
-        Number(
-          rowWithTopicFields.topic_message_count ??
-            fallbackTopic.messageCount ??
-            0
-        ) || 0,
-      lastUpdated:
-        rowWithTopicFields.topic_last_update ?? fallbackTopic.lastUpdated ?? null,
+      messageCount: fallbackTopic.messageCount ?? 0,
+      lastUpdated: row.updated_at ?? fallbackTopic.lastUpdated ?? null,
       hasAvailableProbe: false,
     } as RouteTopic;
   });
