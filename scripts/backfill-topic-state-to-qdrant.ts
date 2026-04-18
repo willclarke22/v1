@@ -1,4 +1,7 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
+
+import crypto from "node:crypto";
 import { getLatestTopicState } from "@/lib/persistence/read";
 import { embedTexts } from "@/lib/vector/embed";
 import {
@@ -50,8 +53,20 @@ function buildEmbeddingText(row: TopicStateRow): string {
   return parts.join("\n");
 }
 
+/**
+ * Convert an arbitrary stable string into a deterministic UUID-shaped ID
+ * that Qdrant accepts.
+ */
 function buildPointId(topicId: string): string {
-  return topicId;
+  const hex = crypto.createHash("sha256").update(topicId).digest("hex");
+
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32),
+  ].join("-");
 }
 
 async function main() {
