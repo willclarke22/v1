@@ -570,18 +570,25 @@ function buildCandidateInterpretation(
   const conceptSpan = labeling.interpretation.concept_span ?? null;
   const questionAboutTopic = labeling.interpretation.question_about_topic ?? null;
 
+  const referencesActiveTopic =
+    labeling.interpretation.references_active_topic ?? false;
+
   const continuationCue =
     looksLikeActiveTopicAnaphoricFollowup(message) ||
     looksLikeMetaContinuation(message) ||
-    labeling.interpretation.references_active_topic;
+    referencesActiveTopic;
 
   const subpartCue =
-    looksLikeActiveTopicSubpartFollowup(message) || looksLikeMixedAnaphoricSubpartFollowup(message);
+    looksLikeActiveTopicSubpartFollowup(message) ||
+    looksLikeMixedAnaphoricSubpartFollowup(message);
 
   const explicitTopicSwitchTarget = extractExplicitSwitchTargetString(message);
-  const switchCue = looksLikeExplicitTopicSwitch(message) || Boolean(explicitTopicSwitchTarget);
+  const switchCue =
+    looksLikeExplicitTopicSwitch(message) || Boolean(explicitTopicSwitchTarget);
 
-  const sourceForGranularity = canonicalLabel ?? conceptSpan ?? questionAboutTopic ?? null;
+  const sourceForGranularity =
+    canonicalLabel ?? conceptSpan ?? questionAboutTopic ?? null;
+
   const suspiciousLabel = looksLikeSuspiciousResolvedLabel(canonicalLabel);
   const subpartLikeLabel = looksLikeSubpartResolvedLabel(canonicalLabel);
 
@@ -593,7 +600,7 @@ function buildCandidateInterpretation(
     labelConfidence: labeling.topic_decision.confidence,
     specificity: labeling.topic_decision.topic_specificity,
     granularityHint: computeGranularityHint(sourceForGranularity),
-    referencesActiveTopic: labeling.interpretation.references_active_topic ?? false,
+    referencesActiveTopic,
     switchCue,
     continuationCue,
     subpartCue,
