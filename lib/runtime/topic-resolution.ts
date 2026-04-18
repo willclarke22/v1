@@ -593,7 +593,7 @@ function buildCandidateInterpretation(
     labelConfidence: labeling.topic_decision.confidence,
     specificity: labeling.topic_decision.topic_specificity,
     granularityHint: computeGranularityHint(sourceForGranularity),
-    referencesActiveTopic: labeling.interpretation.references_active_topic,
+    referencesActiveTopic: labeling.interpretation.references_active_topic ?? false,
     switchCue,
     continuationCue,
     subpartCue,
