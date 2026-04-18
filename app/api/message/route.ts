@@ -3,6 +3,10 @@ import { buildLearningSpace } from "@/lib/build-learning-space";
 import { insertRun, upsertTopicState } from "@/lib/persistence/myway";
 import { makeId } from "@/lib/utils/ids";
 import { querySemanticTopicCandidates } from "@/lib/vector/query-topics";
+import {
+  canSyncTopicToQdrant,
+  syncTopicToQdrant,
+} from "@/lib/vector/sync-topic-to-qdrant";
 import type {
   DeliveredProbe,
   DeliveredResponse,
@@ -1374,6 +1378,25 @@ export async function POST(request: Request) {
         probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
       topicJson,
     });
+
+    if (canSyncTopicToQdrant()) {
+      try {
+        await syncTopicToQdrant({
+          topicId: updatedResolvedTopic.id,
+          topicName: updatedResolvedTopic.name,
+          diagnosis: decision.active_diagnosis,
+          nextStep:
+            probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
+          updatedAt: nowIso(),
+          topicJson,
+        });
+      } catch (error) {
+        console.warn(
+          "Topic was saved to Supabase but failed to sync to Qdrant.",
+          error
+        );
+      }
+    }
 
     const response: MessageRouteResponse & {
       topic_resolution_debug: TopicResolutionDebug;
