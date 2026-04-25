@@ -1,0 +1,887 @@
+
+=== Topic Labeling Goldens Summary ===
+Total: 100
+Label passed: 89
+Resolution-kind passed: 96
+Create-flag passed: 96
+Matched-topic passed: 100
+End-to-end passed: 89
+Failed: 11
+
+=== Scope Breakdown ===
+baseline-isolated: total=0
+baseline-sequence: total=0
+hard-isolated: total=0
+hard-sequence: total=0
+holdout-isolated: total=0
+holdout-sequence: total=0
+blindv2-isolated: total=0
+blindv2-sequence: total=0
+naturalistic-diverse: total=100 label=89/100 resolution=96/100 endToEnd=89/100 failed=11
+
+=== Suite Breakdown ===
+isolated: total=100 label=89/100 resolution=96/100 endToEnd=89/100 failed=11
+sequence: total=0
+
+=== Category Breakdown ===
+art: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+biology: total=4 label=2/4 resolution=4/4 endToEnd=2/4 failed=2
+cars: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+chemistry: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+coding: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+comparisons: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+confusion: total=4 label=3/4 resolution=4/4 endToEnd=3/4 failed=1
+cooking: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+driving: total=4 label=3/4 resolution=3/4 endToEnd=3/4 failed=1
+emotions: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+finance: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+geography: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+grammar: total=4 label=3/4 resolution=4/4 endToEnd=3/4 failed=1
+health: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+history: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+jobs: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+law: total=4 label=3/4 resolution=4/4 endToEnd=3/4 failed=1
+mixed: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+music: total=4 label=3/4 resolution=4/4 endToEnd=3/4 failed=1
+nature: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+plumbing: total=4 label=3/4 resolution=3/4 endToEnd=3/4 failed=1
+politics_class: total=4 label=3/4 resolution=4/4 endToEnd=3/4 failed=1
+schoolwork: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+space: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+sports: total=4 label=2/4 resolution=2/4 endToEnd=2/4 failed=2
+
+=== Failure Layer Breakdown ===
+label failures: 11
+resolution-kind failures: 4
+create-flag failures: 4
+matched-topic failures: 0
+forbidden-resolution failures: 0
+
+=== Likely Failure Class Breakdown ===
+domain_shaping_failed: 1
+pfap_malformed_candidate_beat_protected_candidate: 1
+pfap_protected_candidate_lost_final_arbitration: 4
+pfap_protected_candidate_nulled: 4
+uncategorized_failure: 1
+
+=== PFAP Breakdown ===
+failed cases with protected candidates: 11/11
+failed cases where expected candidate was extracted: 9/11
+failed cases where expected candidate was PFAP-protected: 9/11
+failed cases where actual winner looked malformed: 1/11
+PFAP likely issue classes:
+  pfap_expected_label_partially_extracted_canonicalization_needed: 2
+  pfap_malformed_candidate_beat_protected_candidate: 1
+  pfap_protected_candidate_lost_final_arbitration: 4
+  pfap_protected_candidate_nulled: 4
+
+ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé (index) Γöé scope                  Γöé suite      Γöé category         Γöé id                                Γöé e2e    Γöé labelPass Γöé resolutionPass Γöé expectedLabel                            Γöé actualLabel                               Γöé expectedResolution      Γöé actualResolution        Γöé matched Γöé create Γöé confidence Γöé likelyFailure                                       Γöé pfapIssue                                                         Γöé pfapProtected Γöé expectedRank Γöé
+Γö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöñ
+Γöé 0       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cooking'        Γöé 'naturalistic-cooking-001'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Heat Control'                           Γöé 'Heat Control'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 1       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cooking'        Γöé 'naturalistic-cooking-002'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Emulsification'                         Γöé 'Emulsification'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 3             Γöé 1            Γöé
+Γöé 2       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cooking'        Γöé 'naturalistic-cooking-003'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Knife Skills'                           Γöé 'Knife Skills'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 3       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cooking'        Γöé 'naturalistic-cooking-004'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Gluten Development'                     Γöé 'Gluten Development'                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 4       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'sports'         Γöé 'naturalistic-sports-005'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Zone Defense'                           Γöé 'Zone Defense'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 5       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'sports'         Γöé 'naturalistic-sports-006'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Offside in Soccer'                      Γöé 'Offside in Soccer'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé ''           Γöé
+Γöé 6       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'sports'         Γöé 'naturalistic-sports-007'         Γöé 'FAIL' Γöé 'N'       Γöé 'N'            Γöé 'Earned Runs'                            Γöé ''                                        Γöé 'created_new_candidate' Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé 'pfap_protected_candidate_nulled'                   Γöé 'pfap_protected_candidate_nulled'                                 Γöé 1             Γöé 1            Γöé
+Γöé 7       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'sports'         Γöé 'naturalistic-sports-008'         Γöé 'FAIL' Γöé 'N'       Γöé 'N'            Γöé 'Tennis Scoring'                         Γöé ''                                        Γöé 'created_new_candidate' Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé 'pfap_protected_candidate_nulled'                   Γöé 'pfap_protected_candidate_nulled'                                 Γöé 2             Γöé 1            Γöé
+Γöé 8       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'jobs'           Γöé 'naturalistic-jobs-009'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Behavioral Interview Questions'         Γöé 'Behavioral Interview Questions'          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 9       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'jobs'           Γöé 'naturalistic-jobs-010'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Accomplishment-Based Resume Bullets'    Γöé 'Accomplishment-Based Resume Bullets'     Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 10      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'jobs'           Γöé 'naturalistic-jobs-011'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Informational Interviews'               Γöé 'Informational Interviews'                Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 11      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'jobs'           Γöé 'naturalistic-jobs-012'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Salary Negotiation'                     Γöé 'Salary Negotiation'                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 12      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'health'         Γöé 'naturalistic-health-013'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Serving Size'                           Γöé 'Serving Size'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 13      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'health'         Γöé 'naturalistic-health-014'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Sleep Cycles'                           Γöé 'Sleep Cycles'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 14      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'health'         Γöé 'naturalistic-health-015'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Systolic vs Diastolic Blood Pressure'   Γöé 'Systolic vs Diastolic Blood Pressure'    Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé ''           Γöé
+Γöé 15      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'health'         Γöé 'naturalistic-health-016'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Immune Response'                        Γöé 'Immune Response'                         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 16      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'history'        Γöé 'naturalistic-history-017'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Causes of the French Revolution'        Γöé 'Causes of the French Revolution'         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé ''           Γöé
+Γöé 17      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'history'        Γöé 'naturalistic-history-018'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Primary Source Analysis'                Γöé 'Primary Source Analysis'                 Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé ''           Γöé
+Γöé 18      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'history'        Γöé 'naturalistic-history-019'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Proxy Wars'                             Γöé 'Proxy Wars'                              Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 3             Γöé 1            Γöé
+Γöé 19      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'history'        Γöé 'naturalistic-history-020'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Historical Significance'                Γöé 'Historical Significance'                 Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 20      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'coding'         Γöé 'naturalistic-coding-021'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Asynchronous Code'                      Γöé 'Asynchronous Code'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 21      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'coding'         Γöé 'naturalistic-coding-022'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'React State Updates'                    Γöé 'React State Updates'                     Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 22      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'coding'         Γöé 'naturalistic-coding-023'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'API Error Handling'                     Γöé 'API Error Handling'                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 23      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'coding'         Γöé 'naturalistic-coding-024'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Recursion'                              Γöé 'Recursion'                               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 24      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'grammar'        Γöé 'naturalistic-grammar-025'        Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Comma Splices'                          Γöé 'Few of'                                  Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '0.86'     Γöé 'pfap_malformed_candidate_beat_protected_candidate' Γöé 'pfap_malformed_candidate_beat_protected_candidate'               Γöé 1             Γöé 2            Γöé
+Γöé 25      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'grammar'        Γöé 'naturalistic-grammar-026'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Subject-Verb Agreement'                 Γöé 'Subject-Verb Agreement'                  Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 26      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'grammar'        Γöé 'naturalistic-grammar-027'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé "Your vs You're"                         Γöé "Your vs You're"                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 27      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'grammar'        Γöé 'naturalistic-grammar-028'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Passive Voice'                          Γöé 'Passive Voice'                           Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 28      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'schoolwork'     Γöé 'naturalistic-schoolwork-029'     Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Task Initiation'                        Γöé 'Task Initiation'                         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 29      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'schoolwork'     Γöé 'naturalistic-schoolwork-030'     Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Study Planning'                         Γöé 'Study Planning'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 30      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'schoolwork'     Γöé 'naturalistic-schoolwork-031'     Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Test Anxiety'                           Γöé 'Test Anxiety'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 31      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'schoolwork'     Γöé 'naturalistic-schoolwork-032'     Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Note-Taking Structure'                  Γöé 'Note-Taking Structure'                   Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 32      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'music'          Γöé 'naturalistic-music-033'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Rhythm Notation'                        Γöé 'Rhythm Notation'                         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 33      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'music'          Γöé 'naturalistic-music-034'          Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Secondary Dominants'                    Γöé 'Chords Stayed in One Key'                Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'pfap_protected_candidate_lost_final_arbitration'   Γöé 'pfap_protected_candidate_lost_final_arbitration'                 Γöé 2             Γöé 1            Γöé
+Γöé 34      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'music'          Γöé 'naturalistic-music-035'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Interval Recognition'                   Γöé 'Interval Recognition'                    Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 35      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'music'          Γöé 'naturalistic-music-036'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Circle of Fifths'                       Γöé 'Circle of Fifths'                        Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 36      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'geography'      Γöé 'naturalistic-geography-037'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Map Scale'                              Γöé 'Map Scale'                               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 37      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'geography'      Γöé 'naturalistic-geography-038'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Latitude vs Longitude'                  Γöé 'Latitude vs Longitude'                   Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 38      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'geography'      Γöé 'naturalistic-geography-039'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Rain Shadow Effect'                     Γöé 'Rain Shadow Effect'                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 39      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'geography'      Γöé 'naturalistic-geography-040'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Types of Plate Boundaries'              Γöé 'Types of Plate Boundaries'               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 40      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'driving'        Γöé 'naturalistic-driving-041'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Parallel Parking'                       Γöé 'Parallel Parking'                        Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 41      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'driving'        Γöé 'naturalistic-driving-042'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Right of Way'                           Γöé 'Right of Way'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 42      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'driving'        Γöé 'naturalistic-driving-043'        Γöé 'FAIL' Γöé 'N'       Γöé 'N'            Γöé 'Merge Lanes'                            Γöé ''                                        Γöé 'created_new_candidate' Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé 'pfap_protected_candidate_nulled'                   Γöé 'pfap_protected_candidate_nulled'                                 Γöé 1             Γöé 1            Γöé
+Γöé 43      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'driving'        Γöé 'naturalistic-driving-044'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Blind Spot Checks'                      Γöé 'Blind Spot Checks'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 44      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'art'            Γöé 'naturalistic-art-045'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'One-Point Perspective'                  Γöé 'One-Point Perspective'                   Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 45      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'art'            Γöé 'naturalistic-art-046'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Color Mixing'                           Γöé 'Color Mixing'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 46      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'art'            Γöé 'naturalistic-art-047'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Negative Space'                         Γöé 'Negative Space'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 47      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'art'            Γöé 'naturalistic-art-048'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Shading Values'                         Γöé 'Shading Values'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 48      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'politics_class' Γöé 'naturalistic-politics_class-049' Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Separation of Powers'                   Γöé 'Separation of Powers'                    Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 49      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'politics_class' Γöé 'naturalistic-politics_class-050' Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Federalism'                             Γöé 'Both Levels of Government Seem Involved' Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'pfap_protected_candidate_lost_final_arbitration'   Γöé 'pfap_protected_candidate_lost_final_arbitration'                 Γöé 2             Γöé 1            Γöé
+Γöé 50      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'politics_class' Γöé 'naturalistic-politics_class-051' Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Electoral College'                      Γöé 'Electoral College'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 51      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'politics_class' Γöé 'naturalistic-politics_class-052' Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Civil Liberties vs Civil Rights'        Γöé 'Civil Liberties vs Civil Rights'         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '0.98'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé ''           Γöé
+Γöé 52      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'biology'        Γöé 'naturalistic-biology-053'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Osmosis'                                Γöé 'Osmosis'                                 Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 53      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'biology'        Γöé 'naturalistic-biology-054'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Natural Selection'                      Γöé 'Natural Selection'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 54      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'biology'        Γöé 'naturalistic-biology-055'        Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Mitosis vs Meiosis'                     Γöé 'Mitosis'                                 Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'uncategorized_failure'                             Γöé 'pfap_expected_label_partially_extracted_canonicalization_needed' Γöé 2             Γöé ''           Γöé
+Γöé 55      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'biology'        Γöé 'naturalistic-biology-056'        Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Activation Energy'                      Γöé 'Happens to the Energy Barrier'           Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'pfap_protected_candidate_lost_final_arbitration'   Γöé 'pfap_protected_candidate_lost_final_arbitration'                 Γöé 2             Γöé 1            Γöé
+Γöé 56      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'chemistry'      Γöé 'naturalistic-chemistry-057'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Mole Concept'                           Γöé 'Mole Concept'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 57      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'chemistry'      Γöé 'naturalistic-chemistry-058'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Balancing Chemical Equations'           Γöé 'Balancing Chemical Equations'            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 58      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'chemistry'      Γöé 'naturalistic-chemistry-059'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Electronegativity vs Ionization Energy' Γöé 'Electronegativity vs Ionization Energy'  Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 59      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'chemistry'      Γöé 'naturalistic-chemistry-060'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'pH'                                     Γöé 'pH'                                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 60      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'finance'        Γöé 'naturalistic-finance-061'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Compound Interest'                      Γöé 'Compound Interest'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 61      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'finance'        Γöé 'naturalistic-finance-062'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'APR'                                    Γöé 'Apr'                                     Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 62      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'finance'        Γöé 'naturalistic-finance-063'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Fixed vs Variable Expenses'             Γöé 'Fixed vs Variable Expenses'              Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 3             Γöé 1            Γöé
+Γöé 63      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'finance'        Γöé 'naturalistic-finance-064'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Index Funds'                            Γöé 'Index Funds'                             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 64      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cars'           Γöé 'naturalistic-cars-065'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Torque vs Horsepower'                   Γöé 'Torque vs Horsepower'                    Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 65      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cars'           Γöé 'naturalistic-cars-066'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Automatic Transmission'                 Γöé 'Automatic Transmission'                  Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 66      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cars'           Γöé 'naturalistic-cars-067'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Anti-Lock Braking System'               Γöé 'Anti-Lock Braking System'                Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 67      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cars'           Γöé 'naturalistic-cars-068'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Oil Change Intervals'                   Γöé 'Oil Change Intervals'                    Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 68      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'nature'         Γöé 'naturalistic-nature-069'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Photosynthesis'                         Γöé 'Photosynthesis'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 69      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'nature'         Γöé 'naturalistic-nature-070'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Food Chains vs Food Webs'               Γöé 'Food Chains vs Food Webs'                Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 2            Γöé
+Γöé 70      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'nature'         Γöé 'naturalistic-nature-071'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Pollination'                            Γöé 'Pollination'                             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 71      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'nature'         Γöé 'naturalistic-nature-072'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Ecological Succession'                  Γöé 'Ecological Succession'                   Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 72      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'plumbing'       Γöé 'naturalistic-plumbing-073'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'P-Trap'                                 Γöé 'P-Trap'                                  Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 73      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'plumbing'       Γöé 'naturalistic-plumbing-074'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Water Pressure'                         Γöé 'Water Pressure'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 3             Γöé 1            Γöé
+Γöé 74      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'plumbing'       Γöé 'naturalistic-plumbing-075'       Γöé 'FAIL' Γöé 'N'       Γöé 'N'            Γöé 'Shutoff Valve'                          Γöé ''                                        Γöé 'created_new_candidate' Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé 'pfap_protected_candidate_nulled'                   Γöé 'pfap_protected_candidate_nulled'                                 Γöé 1             Γöé 1            Γöé
+Γöé 75      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'plumbing'       Γöé 'naturalistic-plumbing-076'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Plumbing Vent Pipes'                    Γöé 'Plumbing Vent Pipes'                     Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 76      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'space'          Γöé 'naturalistic-space-077'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Orbital Velocity'                       Γöé 'Orbital Velocity'                        Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 77      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'space'          Γöé 'naturalistic-space-078'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Moon Phases'                            Γöé 'Moon Phases'                             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 78      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'space'          Γöé 'naturalistic-space-079'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Gravity vs Weight'                      Γöé 'Gravity vs Weight'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 79      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'space'          Γöé 'naturalistic-space-080'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Redshift'                               Γöé 'Redshift'                                Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 80      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'law'            Γöé 'naturalistic-law-081'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Burden of Proof'                        Γöé 'Burden of Proof'                         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 81      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'law'            Γöé 'naturalistic-law-082'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Civil Law vs Criminal Law'              Γöé 'Civil Law vs Criminal Law'               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 82      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'law'            Γöé 'naturalistic-law-083'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Legal Precedent'                        Γöé 'Legal Precedent'                         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+Γöé 83      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'law'            Γöé 'naturalistic-law-084'            Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Consideration in Contracts'             Γöé 'Contract Criteria'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'domain_shaping_failed'                             Γöé 'pfap_expected_label_partially_extracted_canonicalization_needed' Γöé 2             Γöé ''           Γöé
+Γöé 84      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'emotions'       Γöé 'naturalistic-emotions-085'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Emotion Regulation'                     Γöé 'Emotion Regulation'                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 85      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'emotions'       Γöé 'naturalistic-emotions-086'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Rumination'                             Γöé 'Rumination'                              Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 86      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'emotions'       Γöé 'naturalistic-emotions-087'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Cognitive Reappraisal'                  Γöé 'Cognitive Reappraisal'                   Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 87      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'emotions'       Γöé 'naturalistic-emotions-088'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé ''                                       Γöé ''                                        Γöé 'no_match'              Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé ''                                                  Γöé ''                                                                Γöé 0             Γöé ''           Γöé
+Γöé 88      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'confusion'      Γöé 'naturalistic-confusion-089'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé ''                                       Γöé ''                                        Γöé 'no_match'              Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé ''                                                  Γöé ''                                                                Γöé 0             Γöé ''           Γöé
+Γöé 89      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'confusion'      Γöé 'naturalistic-confusion-090'      Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Monitoring Understanding'               Γöé 'Answering Instead of Only'               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'pfap_protected_candidate_lost_final_arbitration'   Γöé 'pfap_protected_candidate_lost_final_arbitration'                 Γöé 3             Γöé 2            Γöé
+Γöé 90      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'confusion'      Γöé 'naturalistic-confusion-091'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Concept Mapping'                        Γöé 'Concept Mapping'                         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 4             Γöé 1            Γöé
+Γöé 91      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'confusion'      Γöé 'naturalistic-confusion-092'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé ''                                       Γöé ''                                        Γöé 'no_match'              Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé ''                                                  Γöé ''                                                                Γöé 0             Γöé ''           Γöé
+Γöé 92      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'comparisons'    Γöé 'naturalistic-comparisons-093'    Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Affect vs Effect'                       Γöé 'Affect vs Effect'                        Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 3             Γöé 1            Γöé
+Γöé 93      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'comparisons'    Γöé 'naturalistic-comparisons-094'    Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Mean vs Median'                         Γöé 'Mean vs Median'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 4             Γöé 1            Γöé
+Γöé 94      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'comparisons'    Γöé 'naturalistic-comparisons-095'    Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Weather vs Climate'                     Γöé 'Weather vs Climate'                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 95      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'comparisons'    Γöé 'naturalistic-comparisons-096'    Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Sympathy vs Empathy'                    Γöé 'Sympathy vs Empathy'                     Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 3             Γöé 1            Γöé
+Γöé 96      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'mixed'          Γöé 'naturalistic-mixed-097'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Maillard Reaction'                      Γöé 'Maillard Reaction'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 97      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'mixed'          Γöé 'naturalistic-mixed-098'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Depreciation'                           Γöé 'Depreciation'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 98      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'mixed'          Γöé 'naturalistic-mixed-099'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Baroque vs Renaissance Art'             Γöé 'Baroque vs Renaissance Art'              Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 1             Γöé 1            Γöé
+Γöé 99      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'mixed'          Γöé 'naturalistic-mixed-100'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'pH Scale'                               Γöé 'pH Scale'                                Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                                  Γöé ''                                                                Γöé 2             Γöé 1            Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+
+=== Failed Cases ===
+
+[naturalistic-diverse] [naturalistic-sports-007] baseball scoring confusion with earned runs
+Message: I watched baseball with my cousin and mostly nodded like I understood the stats. The score itself was fine, but earned runs were where I lost track because I could not tell what counted against the pitcher.
+Category: sports
+Expected label: Earned Runs
+Actual label: null
+Expected resolution: created_new_candidate
+Actual resolution: no_match
+Expected should create: true
+Actual should create: false
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.00
+Likely failure class: pfap_protected_candidate_nulled
+Notes: [category:sports]
+Layered failures:
+  - [label] expectedLabel="Earned Runs" actualLabel=null
+  - [resolution] expectedResolutionKind=created_new_candidate actualResolutionKind=no_match
+  - [create_flag] expectedShouldCreate=true actualShouldCreate=false
+Ambiguity flags: no_concept_span, label_too_vague, label_suspicious, low_confidence
+Rejection reasons:
+  - Concept span is too vague for a persistent topic.
+  - Canonical label looks suspicious or discourse-like.
+  - Top candidate behaves more like a discourse cue than a durable topic.
+Discourse profile: broadToNarrow=true lateBottleneck=true comparison=false nullOnly=false
+Discourse notes: broad_to_narrow_shape_detected, late_bottleneck_zone_detected
+PFAP debug:
+  expectedCandidateFound=true expectedRank=1 actualRank=n/a
+  protectedCandidates=1 malformedCandidates=1 likelyIssue=pfap_protected_candidate_nulled
+  flags=protected_candidates_present, expected_candidate_pfap_protected, protected_candidate_nulled_or_resolver_blocked, protected_candidate_reached_no_match, protected_candidate_creation_blocked
+  top protected candidates:
+    1. label="Earned Runs" score=1.000 tier=protected_bottleneck kind=concept_phrase family=concept
+Candidate debug:
+  1. label="Earned Runs" score=1.000 kind=concept_phrase family=concept role=confusion clause=2000
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="earned runs" head="runs" tail=null domain=null
+     qualifiers=focus_target, bottleneck_target, context_recovery, cross_clause_recovery, strong_phrase_match, concept_phrase, durable_concept, bottleneck_context, difficulty_context, contrastive_clause, focus_context, question_context
+     source="I watched baseball with my cousin and mostly nodded like I understood the stats. The score itself was fine, but earned runs were where I lost track because I could not tell what counted against the pitcher."
+  2. label="Score Itself Was Fine" score=0.500 kind=other family=other role=other clause=1
+     pfapProtected=false tier=unprotected malformed=false compete=true subpart=false durable=false weakNoun=false residueRisk=low
+     pfapRejectReasons=tail_text_present
+     core="score itself was fine" head="fine" tail="The" domain=null
+     source="The score itself was fine"
+  3. label="Watched Baseball" score=0.000 kind=noun_chunk family=residue role=other clause=0
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="watched baseball" head="baseball" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, focus_context
+     source="I watched baseball with my cousin and mostly nodded like I understood the stats."
+  4. label="Mostly Nodded" score=0.000 kind=noun_chunk family=residue role=other clause=0
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="mostly nodded" head="nodded" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, focus_context
+     source="I watched baseball with my cousin and mostly nodded like I understood the stats."
+  5. label="Lost Track" score=0.000 kind=noun_chunk family=residue role=other clause=3
+     pfapProtected=false tier=unprotected malformed=true compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=malformed_topic_label, non_competing_candidate, weak_noun_chunk
+     core="lost track" head="track" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause, question_context
+     source="but earned runs were where I lost track because I could not tell what counted against the pitcher."
+  6. label="Not Tell" score=0.000 kind=noun_chunk family=residue role=other clause=3
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="not tell" head="tell" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause, question_context
+     source="but earned runs were where I lost track because I could not tell what counted against the pitcher."
+  7. label="Counted Against" score=0.000 kind=noun_chunk family=residue role=other clause=3
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="counted against" head="against" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause, question_context
+     source="but earned runs were where I lost track because I could not tell what counted against the pitcher."
+Resolution trace:
+  winner=ambiguous score=0.420 topic=null label=null
+  decisionAction=no_confident_decision fallbackRecommended=true topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label=null reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label=null reasons=No existing topic candidate is available.
+    - kind=create_new score=0.000 topic=null label=null reasons=No canonical label is available for a new topic.
+    - kind=ambiguous score=0.420 topic=null label=null reasons=Deterministic confidence is low.; Suspicious extracted label increases ambiguity.
+
+[naturalistic-diverse] [naturalistic-sports-008] tennis scoring implied by frustration
+Message: I know tennis points go love and fifteen and all that, but the game suddenly said deuce and advantage and I got lost. The real issue is tennis scoring, not the hitting part.
+Category: sports
+Expected label: Tennis Scoring
+Actual label: null
+Expected resolution: created_new_candidate
+Actual resolution: no_match
+Expected should create: true
+Actual should create: false
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.00
+Likely failure class: pfap_protected_candidate_nulled
+Notes: [category:sports]
+Layered failures:
+  - [label] expectedLabel="Tennis Scoring" actualLabel=null
+  - [resolution] expectedResolutionKind=created_new_candidate actualResolutionKind=no_match
+  - [create_flag] expectedShouldCreate=true actualShouldCreate=false
+Ambiguity flags: no_concept_span, label_too_vague, label_suspicious, low_confidence, candidate_competition, tight_top_gap
+Rejection reasons:
+  - Concept span is too vague for a persistent topic.
+  - Canonical label looks suspicious or discourse-like.
+  - Top candidate behaves more like a discourse cue than a durable topic.
+Discourse profile: broadToNarrow=true lateBottleneck=true comparison=false nullOnly=false
+Discourse notes: broad_to_narrow_shape_detected, late_bottleneck_zone_detected
+PFAP debug:
+  expectedCandidateFound=true expectedRank=1 actualRank=n/a
+  protectedCandidates=2 malformedCandidates=0 likelyIssue=pfap_protected_candidate_nulled
+  flags=protected_candidates_present, expected_candidate_pfap_protected, protected_candidate_nulled_or_resolver_blocked, protected_candidate_reached_no_match, protected_candidate_creation_blocked
+  top protected candidates:
+    1. label="Tennis Scoring" score=1.000 tier=protected_bottleneck kind=concept_phrase family=concept
+    2. label="Tennis Points Go Love vs Fifteen and All That" score=1.000 tier=protected_bottleneck kind=question_synthesis family=residue
+Candidate debug:
+  1. label="Tennis Scoring" score=1.000 kind=concept_phrase family=concept role=confusion clause=2000
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="tennis scoring" head="scoring" tail=null domain=null
+     qualifiers=focus_target, bottleneck_target, context_recovery, cross_clause_recovery, strong_phrase_match, concept_phrase, durable_concept, bottleneck_context, difficulty_context, contrastive_clause
+     source="I know tennis points go love and fifteen and all that, but the game suddenly said deuce and advantage and I got lost. The real issue is tennis scoring, not the hitting part."
+  2. label="Tennis Points Go Love vs Fifteen and All That" score=1.000 kind=question_synthesis family=residue role=other clause=0
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=medium
+     core="tennis points go love vs fifteen and all that" head="that" tail=null domain=null
+     qcsFrame=selection trigger=implicit_problem object="tennis points go love and fifteen and all that" synthesized="tennis points go love vs fifteen and all that"
+     qualifiers=question_synthesis, durable_concept, focus_target, bottleneck_target, implicit_problem_frame, qcs_selection, comparison_pair, selection_frame, residue_risk
+     source="I know tennis points go love and fifteen and all that"
+  3. label="Know Tennis Points Go Love" score=0.000 kind=noun_chunk family=residue role=other clause=0
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="know tennis points go love" head="love" tail=null domain=null
+     qualifiers=weak_noun_chunk
+     source="I know tennis points go love and fifteen and all that"
+  4. label="Got Lost" score=0.000 kind=noun_chunk family=residue role=other clause=2
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="got lost" head="lost" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="but the game suddenly said deuce and advantage and I got lost."
+Resolution trace:
+  winner=ambiguous score=0.640 topic=null label=null
+  decisionAction=no_confident_decision fallbackRecommended=true topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label=null reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label=null reasons=No existing topic candidate is available.
+    - kind=create_new score=0.000 topic=null label=null reasons=No canonical label is available for a new topic.
+    - kind=ambiguous score=0.640 topic=null label=null reasons=Deterministic labeling reports candidate competition.; Deterministic confidence is low.; Suspicious extracted label increases ambiguity.
+
+[naturalistic-diverse] [naturalistic-grammar-025] comma splice hidden in writing problem
+Message: What is a comma splice if the sentence still sounds fine when I read it quickly? My teacher marked a few of them, and I think I keep making that mistake without noticing.
+Category: grammar
+Expected label: Comma Splices
+Actual label: Few of
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.86
+Likely failure class: pfap_malformed_candidate_beat_protected_candidate
+Notes: [category:grammar]
+Layered failures:
+  - [label] expectedLabel="Comma Splices" actualLabel="Few of"
+Ambiguity flags: candidate_competition, tight_top_gap
+Discourse profile: broadToNarrow=true lateBottleneck=true comparison=false nullOnly=false
+Discourse notes: broad_to_narrow_shape_detected, late_bottleneck_zone_detected
+PFAP debug:
+  expectedCandidateFound=true expectedRank=2 actualRank=1
+  protectedCandidates=1 malformedCandidates=1 likelyIssue=pfap_malformed_candidate_beat_protected_candidate
+  flags=protected_candidates_present, expected_candidate_pfap_protected, malformed_actual_candidate
+  top protected candidates:
+    2. label="Comma Splices" score=1.000 tier=protected_concept kind=question_target family=concept
+       rejectReasons=tail_text_present
+Candidate debug:
+  1. label="Few of" score=1.000 kind=concept_phrase family=concept role=context clause=2
+     pfapProtected=false tier=unprotected malformed=true compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     pfapRejectReasons=malformed_topic_label
+     core="few of" head="of" tail=null domain=null
+     qualifiers=durable_concept, domain_anchor_context, domain_anchor
+     source="My teacher marked a few of them, and I think I keep making that mistake without noticing."
+  2. label="Comma Splices" score=1.000 kind=question_target family=concept role=other clause=0
+     pfapProtected=true tier=protected_concept malformed=false compete=true subpart=false durable=false weakNoun=false residueRisk=low
+     pfapRejectReasons=tail_text_present
+     core="comma splice" head="splice" tail="a if the sentence still sounds fine" domain=null
+     qualifiers=focus_target, question_context
+     source="What is a comma splice if the sentence still sounds fine"
+  3. label="Read It Quickly" score=0.000 kind=noun_chunk family=residue role=question clause=1
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="read it quickly" head="quickly" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause, question_context
+     source="when I read it quickly?"
+  4. label="Teacher Marked" score=0.000 kind=noun_chunk family=residue role=context clause=2
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="teacher marked" head="marked" tail=null domain=null
+     qualifiers=domain_anchor, weak_noun_chunk, domain_anchor_context
+     source="My teacher marked a few of them, and I think I keep making that mistake without noticing."
+  5. label="Keep Making" score=0.000 kind=noun_chunk family=residue role=context clause=2
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="keep making" head="making" tail=null domain=null
+     qualifiers=domain_anchor, weak_noun_chunk, domain_anchor_context
+     source="My teacher marked a few of them, and I think I keep making that mistake without noticing."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Few of"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Few of" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Few of" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Few of" reasons=Deterministic label confidence is 0.86.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic/QCS concept supports creation when reuse is weak.; No existing topic matches strongly enough to force reuse.; Broad anchor-like labels are not enough to justify creation alone.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Few of" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-music-034] secondary dominants buried in theory message
+Message: Music theory was okay when chords stayed in one key. But secondary dominants make the whole page feel like it suddenly changed languages.
+Category: music
+Expected label: Secondary Dominants
+Actual label: Chords Stayed in One Key
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: pfap_protected_candidate_lost_final_arbitration
+Notes: [category:music]
+Layered failures:
+  - [label] expectedLabel="Secondary Dominants" actualLabel="Chords Stayed in One Key"
+Ambiguity flags: candidate_competition, tight_top_gap, pfap_protected_winner
+Discourse profile: broadToNarrow=true lateBottleneck=true comparison=false nullOnly=false
+Discourse notes: broad_to_narrow_shape_detected, late_bottleneck_zone_detected
+PFAP debug:
+  expectedCandidateFound=true expectedRank=1 actualRank=2
+  protectedCandidates=2 malformedCandidates=1 likelyIssue=pfap_protected_candidate_lost_final_arbitration
+  flags=protected_candidates_present, expected_candidate_pfap_protected, pfap_protected_winner
+  top protected candidates:
+    1. label="Secondary Dominants" score=1.000 tier=protected_bottleneck kind=concept_phrase family=concept
+    2. label="Chords Stayed in One Key" score=1.000 tier=protected_bottleneck kind=concept_phrase family=concept
+Candidate debug:
+  1. label="Secondary Dominants" score=1.000 kind=concept_phrase family=concept role=other clause=2
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="secondary dominants" head="dominants" tail=null domain=null
+     qualifiers=concept_phrase, durable_concept, focus_target, strong_phrase_match, cross_clause_recovery, bottleneck_context, contrastive_clause
+     source="But secondary dominants make the whole page feel like it suddenly changed languages."
+  2. label="Chords Stayed in One Key" score=1.000 kind=concept_phrase family=concept role=other clause=1
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="chords stayed in one key" head="key" tail=null domain="one key"
+     qualifiers=focus_target, bottleneck_target, durable_concept, bottleneck_context, contrastive_clause, question_context
+     source="when chords stayed in one key."
+  3. label="Music Theory Was Okay" score=0.500 kind=other family=other role=other clause=0
+     pfapProtected=false tier=unprotected malformed=false compete=true subpart=false durable=false weakNoun=false residueRisk=low
+     core="music theory was okay" head="okay" tail=null domain=null
+     source="Music theory was okay"
+  4. label="Whole Page Feel" score=0.000 kind=noun_chunk family=residue role=other clause=2
+     pfapProtected=false tier=unprotected malformed=true compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=malformed_topic_label, non_competing_candidate, weak_noun_chunk
+     core="whole page feel" head="feel" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="But secondary dominants make the whole page feel like it suddenly changed languages."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Chords Stayed in One Key"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Chords Stayed in One Key" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Chords Stayed in One Key" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Chords Stayed in One Key" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Paired target structure supports a stable instructional topic.; Concept-phrase label is a durable teachable topic.; Protected durable label supports clean topic creation.; Durable naturalistic/QCS concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Chords Stayed in One Key" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-driving-043] merge lanes topic hidden in highway message
+Message: Highway driving looks fine when someone else does it. But merge lanes make me panic because I don't know when I am supposed to speed up or wait.
+Category: driving
+Expected label: Merge Lanes
+Actual label: null
+Expected resolution: created_new_candidate
+Actual resolution: no_match
+Expected should create: true
+Actual should create: false
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.00
+Likely failure class: pfap_protected_candidate_nulled
+Notes: [category:driving]
+Layered failures:
+  - [label] expectedLabel="Merge Lanes" actualLabel=null
+  - [resolution] expectedResolutionKind=created_new_candidate actualResolutionKind=no_match
+  - [create_flag] expectedShouldCreate=true actualShouldCreate=false
+Ambiguity flags: no_concept_span, label_too_vague, label_suspicious, low_confidence
+Rejection reasons:
+  - Concept span is too vague for a persistent topic.
+  - Canonical label looks suspicious or discourse-like.
+  - Top candidate behaves more like a discourse cue than a durable topic.
+Discourse profile: broadToNarrow=true lateBottleneck=true comparison=false nullOnly=false
+Discourse notes: broad_to_narrow_shape_detected, late_bottleneck_zone_detected
+PFAP debug:
+  expectedCandidateFound=true expectedRank=1 actualRank=n/a
+  protectedCandidates=1 malformedCandidates=0 likelyIssue=pfap_protected_candidate_nulled
+  flags=protected_candidates_present, expected_candidate_pfap_protected, protected_candidate_nulled_or_resolver_blocked, protected_candidate_reached_no_match, protected_candidate_creation_blocked
+  top protected candidates:
+    1. label="Merge Lanes" score=1.000 tier=protected_bottleneck kind=concept_phrase family=concept
+Candidate debug:
+  1. label="Merge Lanes" score=1.000 kind=concept_phrase family=concept role=confusion clause=2000
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="merge lanes" head="lanes" tail=null domain=null
+     qualifiers=focus_target, bottleneck_target, context_recovery, cross_clause_recovery, strong_phrase_match, concept_phrase, durable_concept, bottleneck_context, difficulty_context, contrastive_clause, question_context
+     source="Highway driving looks fine when someone else does it. But merge lanes make me panic because I don't know when I am supposed to speed up or wait."
+  2. label="Highway Driving Looks Fine" score=0.500 kind=other family=other role=other clause=0
+     pfapProtected=false tier=unprotected malformed=false compete=true subpart=false durable=false weakNoun=false residueRisk=low
+     core="highway driving looks fine" head="fine" tail=null domain=null
+     source="Highway driving looks fine"
+  3. label="Don't Know" score=0.000 kind=noun_chunk family=residue role=confusion clause=2
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="don't know" head="know" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, difficulty_context, contrastive_clause
+     source="But merge lanes make me panic because I don't know"
+  4. label="Speed Up" score=0.000 kind=noun_chunk family=residue role=other clause=3
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="speed up" head="up" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause, question_context
+     source="when I am supposed to speed up or wait."
+Resolution trace:
+  winner=ambiguous score=0.420 topic=null label=null
+  decisionAction=no_confident_decision fallbackRecommended=true topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label=null reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label=null reasons=No existing topic candidate is available.
+    - kind=create_new score=0.000 topic=null label=null reasons=No canonical label is available for a new topic.
+    - kind=ambiguous score=0.420 topic=null label=null reasons=Deterministic confidence is low.; Suspicious extracted label increases ambiguity.
+
+[naturalistic-diverse] [naturalistic-politics_class-050] federalism target implied by levels of government
+Message: Where does federal power end and provincial or state power begin when both levels of government seem involved? The worksheet makes it sound obvious, but federalism is the part I need.
+Category: politics_class
+Expected label: Federalism
+Actual label: Both Levels of Government Seem Involved
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: pfap_protected_candidate_lost_final_arbitration
+Notes: [category:politics_class]
+Layered failures:
+  - [label] expectedLabel="Federalism" actualLabel="Both Levels of Government Seem Involved"
+Ambiguity flags: candidate_competition, tight_top_gap, pfap_protected_winner
+Discourse profile: broadToNarrow=true lateBottleneck=true comparison=false nullOnly=false
+Domain hints: waves and sound
+Discourse notes: broad_to_narrow_shape_detected, late_bottleneck_zone_detected
+PFAP debug:
+  expectedCandidateFound=true expectedRank=1 actualRank=2
+  protectedCandidates=2 malformedCandidates=0 likelyIssue=pfap_protected_candidate_lost_final_arbitration
+  flags=protected_candidates_present, expected_candidate_pfap_protected, pfap_protected_winner
+  top protected candidates:
+    1. label="Federalism" score=1.000 tier=protected_bottleneck kind=concept_phrase family=concept
+    2. label="Both Levels of Government Seem Involved" score=1.000 tier=protected_bottleneck kind=concept_phrase family=concept
+Candidate debug:
+  1. label="Federalism" score=1.000 kind=concept_phrase family=concept role=other clause=4
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="federalism" head="federalism" tail=null domain=null
+     qualifiers=concept_phrase, durable_concept, focus_target, strong_phrase_match, cross_clause_recovery, bottleneck_context, contrastive_clause, focus_context
+     source="but federalism is the part I need."
+  2. label="Both Levels of Government Seem Involved" score=1.000 kind=concept_phrase family=concept role=question clause=1
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="both levels of government seem involved" head="involved" tail=null domain=null
+     qualifiers=focus_target, bottleneck_target, durable_concept, bottleneck_context, contrastive_clause, question_context
+     source="when both levels of government seem involved?"
+  3. label="Federal Power End" score=0.000 kind=noun_chunk family=residue role=other clause=0
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="federal power end" head="end" tail=null domain=null
+     qualifiers=weak_noun_chunk, question_context
+     source="Where does federal power end and provincial or state power begin"
+  4. label="State Power Begin" score=0.000 kind=noun_chunk family=residue role=other clause=0
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="state power begin" head="begin" tail=null domain=null
+     qualifiers=weak_noun_chunk, question_context
+     source="Where does federal power end and provincial or state power begin"
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Both Levels of Government Seem Involved"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Both Levels of Government Seem Involved" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Both Levels of Government Seem Involved" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Both Levels of Government Seem Involved" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Paired target structure supports a stable instructional topic.; Concept-phrase label is a durable teachable topic.; Protected durable label supports clean topic creation.; Durable naturalistic/QCS concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Both Levels of Government Seem Involved" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-biology-055] mitosis meiosis comparison
+Message: I know both mitosis and meiosis are cell division, which is exactly the problem. They blur together in my head, so I need that comparison.
+Category: biology
+Expected label: Mitosis vs Meiosis
+Actual label: Mitosis
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: uncategorized_failure
+Notes: [category:biology]
+Layered failures:
+  - [label] expectedLabel="Mitosis vs Meiosis" actualLabel="Mitosis"
+Ambiguity flags: candidate_competition, tight_top_gap, pfap_protected_winner
+Discourse profile: broadToNarrow=false lateBottleneck=false comparison=false nullOnly=false
+Domain hints: genetics, mitosis
+PFAP debug:
+  expectedCandidateFound=false expectedRank=n/a actualRank=2
+  protectedCandidates=2 malformedCandidates=1 likelyIssue=pfap_expected_label_partially_extracted_canonicalization_needed
+  flags=protected_candidates_present, pfap_protected_winner
+  top protected candidates:
+    2. label="Mitosis" score=1.000 tier=protected_concept kind=named_concept family=concept
+    3. label="Meiosis" score=1.000 tier=protected_concept kind=named_concept family=concept
+Candidate debug:
+  1. label="Blur Together in" score=1.000 kind=concept_phrase family=concept role=confusion clause=1
+     pfapProtected=false tier=unprotected malformed=true compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     pfapRejectReasons=malformed_topic_label
+     core="blur together in" head="in" tail=null domain=null
+     qualifiers=focus_target, bottleneck_target, durable_concept, bottleneck_context, difficulty_context
+     source="They blur together in my head, so I need that comparison."
+  2. label="Mitosis" score=1.000 kind=named_concept family=concept role=other clause=0
+     pfapProtected=true tier=protected_concept malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=medium
+     core="mitosis" head="mitosis" tail=null domain=null
+     qualifiers=named_concept, focus_target, bottleneck_context, focus_context, question_context, durable_concept, residue_risk
+     source="I know both mitosis and meiosis are cell division, which is exactly the problem."
+  3. label="Meiosis" score=1.000 kind=named_concept family=concept role=other clause=0
+     pfapProtected=true tier=protected_concept malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=medium
+     core="meiosis" head="meiosis" tail=null domain=null
+     qualifiers=named_concept, focus_target, bottleneck_context, focus_context, question_context, durable_concept, residue_risk
+     source="I know both mitosis and meiosis are cell division, which is exactly the problem."
+  4. label="Cell Division Which" score=0.000 kind=noun_chunk family=residue role=other clause=0
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="cell division which" head="which" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, focus_context, question_context
+     source="I know both mitosis and meiosis are cell division, which is exactly the problem."
+  5. label="Head So" score=0.000 kind=noun_chunk family=residue role=confusion clause=1
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="head so" head="so" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, difficulty_context
+     source="They blur together in my head, so I need that comparison."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Mitosis"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Mitosis" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Mitosis" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Mitosis" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label is broad but still potentially usable.; Concept-phrase label is a durable teachable topic.; Durable naturalistic/QCS concept supports creation when reuse is weak.; No existing topic matches strongly enough to force reuse.; Broad anchor-like labels are not enough to justify creation alone.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Mitosis" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-biology-056] enzyme activation energy target
+Message: The enzyme lesson felt okay until the graph showed activation energy. I can say enzymes speed things up, but I don't know what happens to the energy barrier.
+Category: biology
+Expected label: Activation Energy
+Actual label: Happens to the Energy Barrier
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: pfap_protected_candidate_lost_final_arbitration
+Notes: [category:biology]
+Layered failures:
+  - [label] expectedLabel="Activation Energy" actualLabel="Happens to the Energy Barrier"
+Ambiguity flags: candidate_competition, tight_top_gap, pfap_protected_winner
+Discourse profile: broadToNarrow=true lateBottleneck=true comparison=false nullOnly=false
+Discourse notes: broad_to_narrow_shape_detected, late_bottleneck_zone_detected
+PFAP debug:
+  expectedCandidateFound=true expectedRank=1 actualRank=2
+  protectedCandidates=2 malformedCandidates=0 likelyIssue=pfap_protected_candidate_lost_final_arbitration
+  flags=protected_candidates_present, expected_candidate_pfap_protected, pfap_protected_winner
+  top protected candidates:
+    1. label="Activation Energy" score=1.000 tier=protected_bottleneck kind=concept_phrase family=concept
+    2. label="Happens to the Energy Barrier" score=1.000 tier=protected_concept kind=concept_phrase family=concept
+Candidate debug:
+  1. label="Activation Energy" score=1.000 kind=concept_phrase family=concept role=context clause=1
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="activation energy" head="energy" tail=null domain=null
+     qualifiers=concept_phrase, durable_concept, focus_target, strong_phrase_match, cross_clause_recovery, domain_anchor_context, bottleneck_context, domain_anchor, contrastive_clause
+     source="until the graph showed activation energy."
+  2. label="Happens to the Energy Barrier" score=1.000 kind=concept_phrase family=concept role=other clause=4
+     pfapProtected=true tier=protected_concept malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="happens to the energy barrier" head="energy" tail=null domain=null
+     qualifiers=concept_phrase, durable_concept, focus_target, question_target, bottleneck_context, contrastive_clause, question_context
+     source="but I don't know what happens to the energy barrier."
+  3. label="Enzyme Lesson Felt Okay" score=0.000 kind=other family=anchor role=context clause=0
+     pfapProtected=false tier=unprotected malformed=false compete=true subpart=false durable=false weakNoun=false residueRisk=low
+     pfapRejectReasons=tail_text_present
+     core="enzyme lesson felt okay" head="okay" tail="The" domain=null
+     qualifiers=domain_anchor_context, domain_anchor
+     source="The enzyme lesson felt okay"
+  4. label="Say Enzymes Speed Things Up" score=0.000 kind=noun_chunk family=residue role=other clause=2
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="say enzymes speed things up" head="up" tail=null domain=null
+     qualifiers=weak_noun_chunk
+     source="I can say enzymes speed things up"
+  5. label="Don't Know" score=0.000 kind=noun_chunk family=residue role=other clause=4
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="don't know" head="know" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause, question_context
+     source="but I don't know what happens to the energy barrier."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Happens to the Energy Barrier"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Happens to the Energy Barrier" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Happens to the Energy Barrier" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Happens to the Energy Barrier" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic/QCS concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Happens to the Energy Barrier" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-plumbing-075] shutoff valve target implied
+Message: I am not trying to become a plumber. I just want to know where the shutoff valve fits into the whole leak situation before I panic.
+Category: plumbing
+Expected label: Shutoff Valve
+Actual label: null
+Expected resolution: created_new_candidate
+Actual resolution: no_match
+Expected should create: true
+Actual should create: false
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.00
+Likely failure class: pfap_protected_candidate_nulled
+Notes: [category:plumbing]
+Layered failures:
+  - [label] expectedLabel="Shutoff Valve" actualLabel=null
+  - [resolution] expectedResolutionKind=created_new_candidate actualResolutionKind=no_match
+  - [create_flag] expectedShouldCreate=true actualShouldCreate=false
+Ambiguity flags: no_concept_span, label_too_vague, label_suspicious, low_confidence
+Rejection reasons:
+  - Concept span is too vague for a persistent topic.
+  - Canonical label looks suspicious or discourse-like.
+  - Top candidate behaves more like a discourse cue than a durable topic.
+Discourse profile: broadToNarrow=false lateBottleneck=false comparison=false nullOnly=false
+PFAP debug:
+  expectedCandidateFound=true expectedRank=1 actualRank=n/a
+  protectedCandidates=1 malformedCandidates=0 likelyIssue=pfap_protected_candidate_nulled
+  flags=protected_candidates_present, expected_candidate_pfap_protected, protected_candidate_nulled_or_resolver_blocked, protected_candidate_reached_no_match, protected_candidate_creation_blocked
+  top protected candidates:
+    1. label="Shutoff Valve" score=1.000 tier=protected_bottleneck kind=concept_phrase family=concept
+Candidate debug:
+  1. label="Shutoff Valve" score=1.000 kind=concept_phrase family=concept role=confusion clause=2000
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="shutoff valve" head="valve" tail=null domain=null
+     qualifiers=focus_target, bottleneck_target, context_recovery, cross_clause_recovery, strong_phrase_match, concept_phrase, durable_concept, bottleneck_context, difficulty_context, question_context
+     source="I am not trying to become a plumber. I just want to know where the shutoff valve fits into the whole leak situation before I panic."
+  2. label="Not Trying" score=0.000 kind=noun_chunk family=residue role=other clause=0
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="not trying" head="trying" tail=null domain=null
+     qualifiers=weak_noun_chunk
+     source="I am not trying to become a plumber."
+  3. label="Whole Leak Situation" score=0.000 kind=noun_chunk family=residue role=confusion clause=1
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="whole leak situation" head="situation" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, difficulty_context, question_context
+     source="I just want to know where the shutoff valve fits into the whole leak situation before I panic."
+Resolution trace:
+  winner=ambiguous score=0.420 topic=null label=null
+  decisionAction=no_confident_decision fallbackRecommended=true topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label=null reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label=null reasons=No existing topic candidate is available.
+    - kind=create_new score=0.000 topic=null label=null reasons=No canonical label is available for a new topic.
+    - kind=ambiguous score=0.420 topic=null label=null reasons=Deterministic confidence is low.; Suspicious extracted label increases ambiguity.
+
+[naturalistic-diverse] [naturalistic-law-084] contract consideration hidden in agreement message
+Message: What makes a promise legally count as a contract when the textbook says consideration is required? I thought contracts were just promises written down, but that is clearly too simple.
+Category: law
+Expected label: Consideration in Contracts
+Actual label: Contract Criteria
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: domain_shaping_failed
+Notes: [category:law]
+Layered failures:
+  - [label] expectedLabel="Consideration in Contracts" actualLabel="Contract Criteria"
+Ambiguity flags: candidate_competition, tight_top_gap, question_synthesis_winner, pfap_protected_winner
+Discourse profile: broadToNarrow=true lateBottleneck=true comparison=false nullOnly=false
+Discourse notes: broad_to_narrow_shape_detected, late_bottleneck_zone_detected
+PFAP debug:
+  expectedCandidateFound=false expectedRank=n/a actualRank=2
+  protectedCandidates=2 malformedCandidates=0 likelyIssue=pfap_expected_label_partially_extracted_canonicalization_needed
+  flags=protected_candidates_present, pfap_protected_winner
+  top protected candidates:
+    1. label="Consideration Is Required" score=1.000 tier=protected_concept kind=concept_phrase family=concept
+    2. label="Contract Criteria" score=1.000 tier=protected_bottleneck kind=question_synthesis family=synthesis
+Candidate debug:
+  1. label="Consideration Is Required" score=1.000 kind=concept_phrase family=concept role=question clause=1
+     pfapProtected=true tier=protected_concept malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="consideration is required" head="consideration" tail=null domain=null
+     qualifiers=concept_phrase, durable_concept, focus_target, context_recovery, domain_anchor_context, bottleneck_context, contrastive_clause, question_context
+     source="when the textbook says consideration is required?"
+  2. label="Contract Criteria" score=1.000 kind=question_synthesis family=synthesis role=other clause=0
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="contract criteria" head="criteria" tail=null domain="contract"
+     qcsFrame=criteria trigger=explicit_question object="promise" synthesized="Contract Criteria"
+     qualifiers=question_synthesis, durable_concept, focus_target, bottleneck_target, explicit_question_frame, qcs_criteria, criteria_frame, question_context
+     source="What makes a promise legally count as a contract"
+  3. label="Promise Legally Count As" score=0.000 kind=noun_chunk family=residue role=other clause=0
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="promise legally count as" head="as" tail=null domain=null
+     qualifiers=weak_noun_chunk, question_context
+     source="What makes a promise legally count as a contract"
+  4. label="Thought Contracts" score=0.000 kind=noun_chunk family=residue role=other clause=2
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="thought contracts" head="contracts" tail=null domain=null
+     qualifiers=weak_noun_chunk
+     source="I thought contracts were just promises written down"
+  5. label="Promises Written Down" score=0.000 kind=noun_chunk family=residue role=other clause=2
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="promises written down" head="down" tail=null domain=null
+     qualifiers=weak_noun_chunk
+     source="I thought contracts were just promises written down"
+  6. label="Too Simple" score=0.000 kind=noun_chunk family=residue role=other clause=4
+     pfapProtected=false tier=unprotected malformed=false compete=false subpart=false durable=false weakNoun=true residueRisk=low
+     pfapRejectReasons=non_competing_candidate, weak_noun_chunk
+     core="too simple" head="simple" tail=null domain=null
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="but that is clearly too simple."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Contract Criteria"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Contract Criteria" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Contract Criteria" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Contract Criteria" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Question-to-concept synthesis produced a durable teachable topic.; Protected durable label supports clean topic creation.; Durable naturalistic/QCS concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Contract Criteria" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-confusion-090] metacognitive confusion target
+Message: How can I tell whether I understand something while I am answering instead of only after someone corrects me? I think the thing I need is monitoring my own understanding.
+Category: confusion
+Expected label: Monitoring Understanding
+Actual label: Answering Instead of Only
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: pfap_protected_candidate_lost_final_arbitration
+Notes: [category:confusion]
+Layered failures:
+  - [label] expectedLabel="Monitoring Understanding" actualLabel="Answering Instead of Only"
+Ambiguity flags: candidate_competition, tight_top_gap, pfap_protected_winner
+Discourse profile: broadToNarrow=false lateBottleneck=false comparison=false nullOnly=false
+PFAP debug:
+  expectedCandidateFound=true expectedRank=2 actualRank=3
+  protectedCandidates=3 malformedCandidates=0 likelyIssue=pfap_protected_candidate_lost_final_arbitration
+  flags=protected_candidates_present, expected_candidate_pfap_protected, pfap_protected_winner
+  top protected candidates:
+    1. label="Monitoring My Own Understanding" score=1.000 tier=protected_bottleneck kind=concept_phrase family=concept
+    2. label="Monitoring Understanding" score=1.000 tier=protected_bottleneck kind=question_synthesis family=synthesis
+    3. label="Answering Instead of Only" score=1.000 tier=protected_concept kind=concept_phrase family=concept
+Candidate debug:
+  1. label="Monitoring My Own Understanding" score=1.000 kind=concept_phrase family=concept role=attempt clause=1
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="monitoring my own understanding" head="understanding" tail=null domain=null
+     qualifiers=concept_phrase, durable_concept, focus_target, bottleneck_target, narrowed_target, bottleneck_context, focus_context
+     source="I think the thing I need is monitoring my own understanding."
+  2. label="Monitoring Understanding" score=1.000 kind=question_synthesis family=synthesis role=question clause=0
+     pfapProtected=true tier=protected_bottleneck malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="monitoring understanding" head="understanding" tail=null domain=null
+     qcsFrame=monitoring trigger=explicit_question object="understanding" synthesized="Monitoring Understanding"
+     qualifiers=question_synthesis, durable_concept, focus_target, bottleneck_target, explicit_question_frame, qcs_monitoring, monitoring_frame, skill_frame, question_context
+     source="How can I tell whether I understand something while I am answering instead of only after someone corrects me?"
+  3. label="Answering Instead of Only" score=1.000 kind=concept_phrase family=concept role=question clause=0
+     pfapProtected=true tier=protected_concept malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=low
+     core="answering instead of only" head="only" tail=null domain=null
+     qualifiers=durable_concept, question_context
+     source="How can I tell whether I understand something while I am answering instead of only after someone corrects me?"
+  4. label="I Understand Something While I Am Answering vs Only After Someone Corrects Me" score=1.000 kind=question_synthesis family=residue role=question clause=0
+     pfapProtected=false tier=unprotected malformed=false compete=true subpart=false durable=true weakNoun=false residueRisk=high
+     pfapRejectReasons=high_residue_risk
+     core="i understand something while i am answering vs only after someone corrects me" head="me" tail=null domain=null
+     qcsFrame=selection trigger=explicit_question object="I understand something while I am answering and only after someone corrects me" synthesized="I understand something while I am answering vs only after someone corrects me"
+     qualifiers=question_synthesis, durable_concept, focus_target, bottleneck_target, explicit_question_frame, qcs_selection, comparison_pair, selection_frame, question_context, residue_risk
+     source="How can I tell whether I understand something while I am answering instead of only after someone corrects me?"
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Answering Instead of Only"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Answering Instead of Only" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Answering Instead of Only" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Answering Instead of Only" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Paired target structure supports a stable instructional topic.; Concept-phrase label is a durable teachable topic.; Protected durable label supports clean topic creation.; Durable naturalistic/QCS concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Answering Instead of Only" reasons=Deterministic labeling reports candidate competition.

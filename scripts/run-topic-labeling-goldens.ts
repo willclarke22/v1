@@ -61,10 +61,49 @@ type CandidateDebug = {
   family: string | null;
   shouldCompeteAsTopic: boolean | null;
   isSubpartReference: boolean | null;
+  isDurableConcept: boolean | null;
+  isWeakNounChunk: boolean | null;
+  residueRisk: string | null;
+  conceptPhraseShape: string | null;
+  conceptHead: string | null;
+  conceptModifiers: string[];
+  questionSynthesisFrame: string | null;
+  questionTriggerKind: string | null;
+  questionWord: string | null;
+  questionObject: string | null;
+  synthesizedLabel: string | null;
   tailText: string | null;
   domainText: string | null;
   sourceClause: string | null;
   scoreTotal: number | null;
+  pfapProtected: boolean;
+  pfapMalformed: boolean;
+  pfapRejectReasons: string[];
+  pfapTier: string;
+};
+
+type LabelingDebug = {
+  reasoningSummary: string[];
+  rejectionReasons: string[];
+  ambiguityFlags: string[];
+  discourseProfile: {
+    hasBroadToNarrowShape: boolean | null;
+    hasLateBottleneckShape: boolean | null;
+    hasComparisonShape: boolean | null;
+    hasNullOnlyEmotionalShape: boolean | null;
+    domainHints: string[];
+    notes: string[];
+  } | null;
+};
+
+type PfapCaseDebug = {
+  expectedCandidateFound: boolean;
+  expectedCandidateRank: number | null;
+  actualCandidateRank: number | null;
+  protectedCandidates: CandidateDebug[];
+  malformedCandidates: CandidateDebug[];
+  pfapFlags: string[];
+  pfapLikelyIssue: string | null;
 };
 
 type ResolutionTraceDebug = {
@@ -117,6 +156,8 @@ type CaseResult = {
   category: string | null;
 
   candidateDebug: CandidateDebug[];
+  labelingDebug: LabelingDebug;
+  pfapDebug: PfapCaseDebug;
   resolutionTraceDebug: ResolutionTraceDebug | null;
   likelyFailureClass: string | null;
 };
@@ -336,6 +377,10 @@ function asStringArray(value: unknown): string[] {
     : [];
 }
 
+function dedupe<T>(items: T[]): T[] {
+  return Array.from(new Set(items));
+}
+
 function readPath(root: unknown, path: string[]): unknown {
   let cursor = root;
 
@@ -483,6 +528,113 @@ function evaluateLayeredExpectations(
   };
 }
 
+function labelLooksMalformedForPfap(label: string | null): boolean {
+  const normalized = normalizeForLooseCompare(label);
+  if (!normalized) return true;
+
+  const tokens = normalized.split(" ").filter(Boolean);
+  if (tokens.length === 0) return true;
+
+  const badEdgeWords = new Set([
+    "a", "an", "the", "of", "in", "on", "for", "to", "with", "and", "or", "but",
+    "if", "when", "where", "why", "how", "is", "are", "was", "were", "be", "being", "been",
+    "make", "makes", "made", "feel", "feels", "seem", "seems", "look", "looks", "sound", "sounds",
+    "blur", "together",
+  ]);
+
+  if (badEdgeWords.has(tokens[0]) || badEdgeWords.has(tokens[tokens.length - 1])) return true;
+
+  return (
+    /^(?:few of|blur together in|food webs make|where to start|where to even start|whole thing|the whole thing|what is going on|what s going on)$/i.test(normalized) ||
+    /\b(?:lol|tbh|rn|pretending|panic|feels? stupid|feels? fake|whole thing confusing|lost track|throwing me off|tripping me up)\b/i.test(normalized) ||
+    /\b(?:make|makes|made|feel|feels|seem|seems|look|looks|sound|sounds)\s*$/i.test(normalized)
+  );
+}
+
+function candidateLooksPfapProtected(candidate: CandidateDebug): boolean {
+  const label = normalizeForLooseCompare(candidate.label ?? candidate.coreText ?? candidate.span);
+  if (!label) return false;
+  if (candidate.pfapMalformed) return false;
+  if (candidate.shouldCompeteAsTopic === false) return false;
+  if (candidate.isSubpartReference === true) return false;
+  if (candidate.isWeakNounChunk === true) return false;
+  if (candidate.residueRisk === "high") return false;
+
+  const hasProtectionQualifier =
+    candidateHasQualifier(candidate, "strong_phrase_match") ||
+    candidateHasQualifier(candidate, "durable_concept") ||
+    candidateHasQualifier(candidate, "concept_phrase") ||
+    candidateHasQualifier(candidate, "bottleneck_target") ||
+    candidateHasQualifier(candidate, "late_focus_target") ||
+    candidateHasQualifier(candidate, "paired_with_domain_anchor") ||
+    candidateHasQualifier(candidate, "cross_clause_recovery") ||
+    candidateHasQualifier(candidate, "question_synthesis") ||
+    candidateHasQualifier(candidate, "qcs_candidate");
+
+  const protectedKind =
+    candidate.kind === "concept_phrase" ||
+    candidate.kind === "named_concept" ||
+    candidate.kind === "comparison_pair" ||
+    candidate.kind === "domain_shaped" ||
+    candidate.kind === "of_phrase" ||
+    candidate.kind === "question_synthesis" ||
+    candidate.kind === "focus_target";
+
+  const protectedShape =
+    /\b(?:earned runs|tennis scoring|merge lanes|shutoff valve|knife skills|offside in soccer|primary source analysis|causes of the french revolution|systolic vs diastolic blood pressure|civil liberties vs civil rights|mitosis vs meiosis|food chains vs food webs|consideration in contracts|monitoring understanding|comma splices)\b/i.test(label) ||
+    /\bvs\b/.test(label) ||
+    /\b(?:of|in|on|for)\b/.test(label) ||
+    /\b(?:analysis|scoring|skills?|checks?|cycles?|response|significance|agreement|voice|planning|anxiety|notation|recognition|scale|boundaries|parking|lanes|values|powers|selection|equations?|transmission|intervals|pollination|succession|velocity|phases|proof|precedent|regulation|reappraisal|mapping|reaction|depreciation)\b/.test(label);
+
+  return Boolean(candidate.isDurableConcept || hasProtectionQualifier || protectedKind || protectedShape);
+}
+
+function getPfapTier(candidate: CandidateDebug): string {
+  if (!candidate.pfapProtected) return "unprotected";
+  if (
+    candidateHasQualifier(candidate, "bottleneck_target") ||
+    candidateHasQualifier(candidate, "late_focus_target") ||
+    candidateHasQualifier(candidate, "cross_clause_recovery") ||
+    candidateHasQualifier(candidate, "paired_with_domain_anchor")
+  ) return "protected_bottleneck";
+  if (candidate.kind === "comparison_pair" || /\bvs\b/i.test(candidate.label ?? "")) return "protected_comparison";
+  if (candidate.kind === "domain_shaped" || candidate.domainText) return "protected_domain_shaped";
+  if (candidate.kind === "question_synthesis" || candidate.questionSynthesisFrame) return "protected_qcs";
+  return "protected_concept";
+}
+
+function buildPfapRejectReasons(candidate: CandidateDebug): string[] {
+  const reasons: string[] = [];
+  if (candidate.pfapMalformed) reasons.push("malformed_topic_label");
+  if (candidate.shouldCompeteAsTopic === false) reasons.push("non_competing_candidate");
+  if (candidate.isSubpartReference === true) reasons.push("subpart_reference");
+  if (candidate.isWeakNounChunk === true) reasons.push("weak_noun_chunk");
+  if (candidate.residueRisk === "high") reasons.push("high_residue_risk");
+  if (candidate.tailText) reasons.push("tail_text_present");
+  return reasons;
+}
+
+function extractLabelingDebug(labeling: unknown): LabelingDebug {
+  const discourse = readPath(labeling, ["diagnostics", "discourse_profile"]);
+  const discourseRecord = isRecord(discourse) ? discourse : null;
+
+  return {
+    reasoningSummary: asStringArray(readPath(labeling, ["diagnostics", "reasoning_summary"])),
+    rejectionReasons: asStringArray(readPath(labeling, ["diagnostics", "rejection_reasons"])),
+    ambiguityFlags: asStringArray(readPath(labeling, ["diagnostics", "ambiguity_flags"])),
+    discourseProfile: discourseRecord
+      ? {
+          hasBroadToNarrowShape: asBoolean(discourseRecord.has_broad_to_narrow_shape),
+          hasLateBottleneckShape: asBoolean(discourseRecord.has_late_bottleneck_shape),
+          hasComparisonShape: asBoolean(discourseRecord.has_comparison_shape),
+          hasNullOnlyEmotionalShape: asBoolean(discourseRecord.has_null_only_emotional_shape),
+          domainHints: asStringArray(discourseRecord.domain_hints),
+          notes: asStringArray(discourseRecord.notes),
+        }
+      : null,
+  };
+}
+
 function extractCandidateDebug(labeling: unknown): CandidateDebug[] {
   const possibleArrays = [
     readArrayPath(labeling, ["diagnostics", "candidates"]),
@@ -494,65 +646,59 @@ function extractCandidateDebug(labeling: unknown): CandidateDebug[] {
 
   const source = possibleArrays.find((items) => items.length > 0) ?? [];
 
-  return source
-    .filter(isRecord)
-    .map((candidate, index): CandidateDebug => {
-      const scoreBreakdown = isRecord(candidate.scoreBreakdown)
-        ? candidate.scoreBreakdown
-        : isRecord(candidate.score_breakdown)
-          ? candidate.score_breakdown
-          : null;
+  return source.filter(isRecord).map((candidate, index): CandidateDebug => {
+    const scoreBreakdown = isRecord(candidate.scoreBreakdown)
+      ? candidate.scoreBreakdown
+      : isRecord(candidate.score_breakdown)
+        ? candidate.score_breakdown
+        : null;
 
-      const coreText =
-        asString(candidate.coreText) ??
-        asString(candidate.core_text) ??
-        asString(candidate.core) ??
-        null;
+    const coreText = asString(candidate.coreText) ?? asString(candidate.core_text) ?? asString(candidate.core) ?? asString(candidate.span) ?? null;
+    const span = asString(candidate.span) ?? asString(candidate.normalizedSpan) ?? asString(candidate.normalized_span) ?? null;
+    const label = asString(candidate.label) ?? asString(candidate.displayLabel) ?? asString(candidate.display_label) ?? coreText ?? span;
 
-      const span =
-        asString(candidate.span) ??
-        asString(candidate.normalizedSpan) ??
-        asString(candidate.normalized_span) ??
-        null;
+    const draft = {
+      rank: index + 1,
+      label,
+      span,
+      coreText,
+      normalizedCoreText: asString(candidate.normalizedCoreText) ?? asString(candidate.normalized_core_text) ?? asString(candidate.normalized_span) ?? null,
+      kind: asString(candidate.kind),
+      score: asNumber(candidate.score),
+      sourceRole: asString(candidate.sourceRole) ?? asString(candidate.source_role),
+      clauseIndex: asNumber(candidate.clauseIndex) ?? asNumber(candidate.clause_index),
+      qualifiers: asStringArray(candidate.qualifiers),
+      family: asString(candidate.family) ?? asString(candidate.candidateFamily) ?? asString(candidate.candidate_family),
+      shouldCompeteAsTopic: asBoolean(candidate.shouldCompeteAsTopic) ?? asBoolean(candidate.should_compete_as_topic),
+      isSubpartReference: asBoolean(candidate.isSubpartReference) ?? asBoolean(candidate.is_subpart_reference),
+      isDurableConcept: asBoolean(candidate.isDurableConcept) ?? asBoolean(candidate.is_durable_concept),
+      isWeakNounChunk: asBoolean(candidate.isWeakNounChunk) ?? asBoolean(candidate.is_weak_noun_chunk),
+      residueRisk: asString(candidate.residueRisk) ?? asString(candidate.residue_risk),
+      conceptPhraseShape: asString(candidate.conceptPhraseShape) ?? asString(candidate.concept_phrase_shape),
+      conceptHead: asString(candidate.conceptHead) ?? asString(candidate.concept_head),
+      conceptModifiers: asStringArray(candidate.conceptModifiers).length > 0 ? asStringArray(candidate.conceptModifiers) : asStringArray(candidate.concept_modifiers),
+      questionSynthesisFrame: asString(candidate.questionSynthesisFrame) ?? asString(candidate.question_synthesis_frame),
+      questionTriggerKind: asString(candidate.questionTriggerKind) ?? asString(candidate.question_trigger_kind),
+      questionWord: asString(candidate.questionWord) ?? asString(candidate.question_word),
+      questionObject: asString(candidate.questionObject) ?? asString(candidate.question_object),
+      synthesizedLabel: asString(candidate.synthesizedLabel) ?? asString(candidate.synthesized_label),
+      tailText: asString(candidate.tailText) ?? asString(candidate.tail_text),
+      domainText: asString(candidate.domainText) ?? asString(candidate.domain_text),
+      sourceClause: asString(candidate.sourceClause) ?? asString(candidate.source_clause),
+      scoreTotal: scoreBreakdown == null ? null : asNumber(scoreBreakdown.total) ?? asNumber(scoreBreakdown.score),
+      pfapProtected: false,
+      pfapMalformed: false,
+      pfapRejectReasons: [],
+      pfapTier: "unprotected",
+    } satisfies CandidateDebug;
 
-      const label =
-        asString(candidate.label) ??
-        asString(candidate.displayLabel) ??
-        asString(candidate.display_label) ??
-        coreText ??
-        span;
+    draft.pfapMalformed = labelLooksMalformedForPfap(draft.label ?? draft.coreText ?? draft.span);
+    draft.pfapRejectReasons = buildPfapRejectReasons(draft);
+    draft.pfapProtected = candidateLooksPfapProtected(draft);
+    draft.pfapTier = getPfapTier(draft);
 
-      return {
-        rank: index + 1,
-        label,
-        span,
-        coreText,
-        normalizedCoreText:
-          asString(candidate.normalizedCoreText) ??
-          asString(candidate.normalized_core_text) ??
-          null,
-        kind: asString(candidate.kind),
-        score: asNumber(candidate.score),
-        sourceRole: asString(candidate.sourceRole) ?? asString(candidate.source_role),
-        clauseIndex:
-          asNumber(candidate.clauseIndex) ?? asNumber(candidate.clause_index),
-        qualifiers: asStringArray(candidate.qualifiers),
-        family:
-          asString(candidate.family) ??
-          asString(candidate.candidateFamily) ??
-          asString(candidate.candidate_family),
-        shouldCompeteAsTopic: asBoolean(candidate.shouldCompeteAsTopic),
-        isSubpartReference: asBoolean(candidate.isSubpartReference),
-        tailText: asString(candidate.tailText) ?? asString(candidate.tail_text),
-        domainText: asString(candidate.domainText) ?? asString(candidate.domain_text),
-        sourceClause:
-          asString(candidate.sourceClause) ?? asString(candidate.source_clause),
-        scoreTotal:
-          scoreBreakdown == null
-            ? null
-            : asNumber(scoreBreakdown.total) ?? asNumber(scoreBreakdown.score),
-      };
-    });
+    return draft;
+  });
 }
 
 function extractResolutionTraceDebug(resolution: unknown): ResolutionTraceDebug | null {
@@ -587,6 +733,73 @@ function extractResolutionTraceDebug(resolution: unknown): ResolutionTraceDebug 
 
 function candidateHasQualifier(candidate: CandidateDebug, qualifier: string): boolean {
   return candidate.qualifiers.includes(qualifier);
+}
+
+function candidateMatchesLabel(candidate: CandidateDebug, label: string | null | undefined): boolean {
+  const target = normalizeForLooseCompare(label);
+  if (!target) return false;
+
+  const options = [candidate.label, candidate.coreText, candidate.span, candidate.normalizedCoreText, candidate.synthesizedLabel];
+  return options.some((option) => normalizeForLooseCompare(option) === target);
+}
+
+function candidateContainsLabel(candidate: CandidateDebug, label: string | null | undefined): boolean {
+  const target = normalizeForLooseCompare(label);
+  if (!target) return false;
+
+  const options = [candidate.label, candidate.coreText, candidate.span, candidate.normalizedCoreText, candidate.synthesizedLabel].map(normalizeForLooseCompare);
+  return options.some((option) => option === target || option.includes(target) || target.includes(option));
+}
+
+function buildPfapCaseDebug(args: {
+  expectedLabel: string | null | undefined;
+  actualLabel: string | null;
+  candidateDebug: CandidateDebug[];
+  labelingDebug: LabelingDebug;
+  actualResolutionKind: ResolutionKind;
+  actualShouldCreate: boolean;
+  layeredFailures: LayeredFailure[];
+}): PfapCaseDebug {
+  const { expectedLabel, actualLabel, candidateDebug, labelingDebug, actualResolutionKind, actualShouldCreate, layeredFailures } = args;
+
+  const expectedCandidate = candidateDebug.find((candidate) => candidateMatchesLabel(candidate, expectedLabel));
+  const actualCandidate = candidateDebug.find((candidate) => candidateMatchesLabel(candidate, actualLabel));
+  const protectedCandidates = candidateDebug.filter((candidate) => candidate.pfapProtected);
+  const malformedCandidates = candidateDebug.filter((candidate) => candidate.pfapMalformed);
+  const pfapFlags: string[] = [];
+
+  if (protectedCandidates.length > 0) pfapFlags.push("protected_candidates_present");
+  if (expectedCandidate?.pfapProtected) pfapFlags.push("expected_candidate_pfap_protected");
+  if (expectedCandidate && !expectedCandidate.pfapProtected) pfapFlags.push("expected_candidate_extracted_but_unprotected");
+  if (actualCandidate?.pfapMalformed) pfapFlags.push("malformed_actual_candidate");
+  if (actualLabel == null && protectedCandidates.length > 0) pfapFlags.push("protected_candidate_nulled_or_resolver_blocked");
+  if (actualResolutionKind === "no_match" && protectedCandidates.length > 0) pfapFlags.push("protected_candidate_reached_no_match");
+  if (!actualShouldCreate && expectedCandidate?.pfapProtected) pfapFlags.push("protected_candidate_creation_blocked");
+  pfapFlags.push(...labelingDebug.ambiguityFlags.filter((flag) => flag.startsWith("pfap_")));
+
+  const hasLabelFailure = layeredFailures.some((failure) => failure.layer === "label");
+  const expectedLoose = normalizeForLooseCompare(expectedLabel);
+  const actualLoose = normalizeForLooseCompare(actualLabel);
+
+  let pfapLikelyIssue: string | null = null;
+  if (hasLabelFailure && expectedCandidate?.pfapProtected && actualLabel == null) pfapLikelyIssue = "pfap_protected_candidate_nulled";
+  else if (hasLabelFailure && expectedCandidate?.pfapProtected && actualCandidate?.pfapMalformed) pfapLikelyIssue = "pfap_malformed_candidate_beat_protected_candidate";
+  else if (hasLabelFailure && expectedCandidate?.pfapProtected) pfapLikelyIssue = "pfap_protected_candidate_lost_final_arbitration";
+  else if (hasLabelFailure && expectedCandidate && !expectedCandidate.pfapProtected) pfapLikelyIssue = "pfap_expected_candidate_needs_protection_metadata";
+  else if (hasLabelFailure && expectedLoose && candidateDebug.some((candidate) => candidateContainsLabel(candidate, expectedLabel))) pfapLikelyIssue = "pfap_expected_label_partially_extracted_canonicalization_needed";
+  else if (hasLabelFailure && expectedLoose && actualLoose && expectedLoose.includes(actualLoose)) pfapLikelyIssue = "pfap_domain_shaping_or_specificity_needed";
+  else if (hasLabelFailure && actualCandidate?.pfapMalformed) pfapLikelyIssue = "pfap_malformed_candidate_won";
+  else if (hasLabelFailure && actualLabel == null && protectedCandidates.length === 0) pfapLikelyIssue = "pfap_extraction_or_candidate_protection_missing";
+
+  return {
+    expectedCandidateFound: Boolean(expectedCandidate),
+    expectedCandidateRank: expectedCandidate?.rank ?? null,
+    actualCandidateRank: actualCandidate?.rank ?? null,
+    protectedCandidates,
+    malformedCandidates,
+    pfapFlags: dedupe(pfapFlags),
+    pfapLikelyIssue,
+  };
 }
 
 function normalizeForLooseCompare(text: string | null | undefined): string {
@@ -665,7 +878,13 @@ function classifyLikelyFailure(args: {
     );
   });
 
+  const protectedCandidates = candidateDebug.filter((candidate) => candidate.pfapProtected);
+
   if (!hasLabelFailure && hasResolutionFailure) {
+    if (actualResolutionKind === "no_match" && protectedCandidates.length > 0) {
+      return "pfap_protected_label_but_resolver_no_match";
+    }
+
     if (actualResolutionKind === "no_match") {
       return "good_label_but_resolver_no_match";
     }
@@ -675,6 +894,18 @@ function classifyLikelyFailure(args: {
     }
 
     return "good_label_but_resolution_failed";
+  }
+
+  if (hasLabelFailure && expectedCandidate?.pfapProtected && resultLabel == null) {
+    return "pfap_protected_candidate_nulled";
+  }
+
+  if (hasLabelFailure && expectedCandidate?.pfapProtected && actualCandidate?.pfapMalformed) {
+    return "pfap_malformed_candidate_beat_protected_candidate";
+  }
+
+  if (hasLabelFailure && expectedCandidate?.pfapProtected) {
+    return "pfap_protected_candidate_lost_final_arbitration";
   }
 
   if (hasLabelFailure && expectedCandidate) {
@@ -709,6 +940,10 @@ function classifyLikelyFailure(args: {
       ) ||
       (actualCandidate.tailText != null && actualCandidate.tailText.length > 0);
 
+    if (actualCandidate.pfapMalformed) {
+      return "pfap_malformed_candidate_won";
+    }
+
     if (actualLooksResidue) {
       return "residue_or_tail_contamination_won";
     }
@@ -729,6 +964,7 @@ function classifyLikelyFailure(args: {
   }
 
   if (hasLabelFailure && resultLabel == null && expectedLabel != null) {
+    if (protectedCandidates.length > 0) return "pfap_protected_candidate_nulled";
     return "topicful_message_returned_null";
   }
 
@@ -750,7 +986,17 @@ function buildCaseResult(args: {
 }): CaseResult {
   const evaluation = evaluateLayeredExpectations(args.expected, args.actual);
   const candidateDebug = extractCandidateDebug(args.labeling);
+  const labelingDebug = extractLabelingDebug(args.labeling);
   const resolutionTraceDebug = extractResolutionTraceDebug(args.resolution);
+  const pfapDebug = buildPfapCaseDebug({
+    expectedLabel: args.expected.expectedLabel,
+    actualLabel: args.actual.actualLabel,
+    candidateDebug,
+    labelingDebug,
+    actualResolutionKind: args.actual.actualResolutionKind,
+    actualShouldCreate: args.actual.actualShouldCreate,
+    layeredFailures: evaluation.layeredFailures,
+  });
 
   const likelyFailureClass = classifyLikelyFailure({
     resultLabel: args.actual.actualLabel,
@@ -760,7 +1006,7 @@ function buildCaseResult(args: {
     actualResolutionKind: args.actual.actualResolutionKind,
     actualShouldCreate: args.actual.actualShouldCreate,
     layeredFailures: evaluation.layeredFailures,
-  });
+  }) ?? pfapDebug.pfapLikelyIssue;
 
   return {
     suite: args.suite,
@@ -795,6 +1041,8 @@ function buildCaseResult(args: {
     category: args.category,
 
     candidateDebug,
+    labelingDebug,
+    pfapDebug,
     resolutionTraceDebug,
     likelyFailureClass,
   };
@@ -1215,6 +1463,29 @@ function printLikelyFailureBreakdown(results: CaseResult[]) {
   console.log("");
 }
 
+function printPfapBreakdown(results: CaseResult[]) {
+  const failedResults = results.filter((r) => !r.pass);
+  if (failedResults.length === 0) return;
+
+  const withProtected = failedResults.filter((r) => r.pfapDebug.protectedCandidates.length > 0).length;
+  const expectedFound = failedResults.filter((r) => r.pfapDebug.expectedCandidateFound).length;
+  const expectedProtected = failedResults.filter((r) => r.pfapDebug.pfapFlags.includes("expected_candidate_pfap_protected")).length;
+  const malformedActual = failedResults.filter((r) => r.pfapDebug.pfapFlags.includes("malformed_actual_candidate")).length;
+  const classes = Array.from(new Set(failedResults.map((r) => r.pfapDebug.pfapLikelyIssue ?? "unknown"))).sort();
+
+  console.log("=== PFAP Breakdown ===");
+  console.log(`failed cases with protected candidates: ${withProtected}/${failedResults.length}`);
+  console.log(`failed cases where expected candidate was extracted: ${expectedFound}/${failedResults.length}`);
+  console.log(`failed cases where expected candidate was PFAP-protected: ${expectedProtected}/${failedResults.length}`);
+  console.log(`failed cases where actual winner looked malformed: ${malformedActual}/${failedResults.length}`);
+  console.log("PFAP likely issue classes:");
+  for (const cls of classes) {
+    const count = failedResults.filter((r) => (r.pfapDebug.pfapLikelyIssue ?? "unknown") === cls).length;
+    console.log(`  ${cls}: ${count}`);
+  }
+  console.log("");
+}
+
 function printLayerBreakdown(results: CaseResult[]) {
   const failedResults = results.filter((r) => !r.pass);
   if (failedResults.length === 0) return;
@@ -1244,6 +1515,52 @@ function printLayerBreakdown(results: CaseResult[]) {
   console.log("");
 }
 
+function printLabelingDebug(result: CaseResult) {
+  const debug = result.labelingDebug;
+
+  if (debug.ambiguityFlags.length > 0) {
+    console.log(`Ambiguity flags: ${debug.ambiguityFlags.join(", ")}`);
+  }
+
+  if (debug.rejectionReasons.length > 0) {
+    console.log("Rejection reasons:");
+    for (const reason of debug.rejectionReasons) console.log(`  - ${reason}`);
+  }
+
+  if (debug.discourseProfile) {
+    console.log(
+      `Discourse profile: broadToNarrow=${debug.discourseProfile.hasBroadToNarrowShape ?? "n/a"} lateBottleneck=${debug.discourseProfile.hasLateBottleneckShape ?? "n/a"} comparison=${debug.discourseProfile.hasComparisonShape ?? "n/a"} nullOnly=${debug.discourseProfile.hasNullOnlyEmotionalShape ?? "n/a"}`
+    );
+    if (debug.discourseProfile.domainHints.length > 0) console.log(`Domain hints: ${debug.discourseProfile.domainHints.join(", ")}`);
+    if (debug.discourseProfile.notes.length > 0) console.log(`Discourse notes: ${debug.discourseProfile.notes.join(", ")}`);
+  }
+}
+
+function printPfapDebug(result: CaseResult) {
+  const debug = result.pfapDebug;
+
+  console.log("PFAP debug:");
+  console.log(
+    `  expectedCandidateFound=${debug.expectedCandidateFound} expectedRank=${debug.expectedCandidateRank ?? "n/a"} actualRank=${debug.actualCandidateRank ?? "n/a"}`
+  );
+  console.log(
+    `  protectedCandidates=${debug.protectedCandidates.length} malformedCandidates=${debug.malformedCandidates.length} likelyIssue=${debug.pfapLikelyIssue ?? "n/a"}`
+  );
+
+  if (debug.pfapFlags.length > 0) console.log(`  flags=${debug.pfapFlags.join(", ")}`);
+
+  if (debug.protectedCandidates.length > 0) {
+    console.log("  top protected candidates:");
+    for (const candidate of debug.protectedCandidates.slice(0, 5)) {
+      const scoreText = candidate.score != null ? candidate.score.toFixed(3) : candidate.scoreTotal != null ? candidate.scoreTotal.toFixed(3) : "n/a";
+      console.log(
+        `    ${candidate.rank}. label=${JSON.stringify(candidate.label)} score=${scoreText} tier=${candidate.pfapTier} kind=${candidate.kind ?? "n/a"} family=${candidate.family ?? "n/a"}`
+      );
+      if (candidate.pfapRejectReasons.length > 0) console.log(`       rejectReasons=${candidate.pfapRejectReasons.join(", ")}`);
+    }
+  }
+}
+
 function printCandidateDebug(result: CaseResult) {
   if (result.candidateDebug.length === 0) {
     console.log("Candidate debug: unavailable");
@@ -1260,12 +1577,26 @@ function printCandidateDebug(result: CaseResult) {
           : "n/a";
 
     console.log(
-      `  ${candidate.rank}. label=${JSON.stringify(candidate.label)} score=${scoreText} kind=${candidate.kind ?? "n/a"} role=${candidate.sourceRole ?? "n/a"} clause=${candidate.clauseIndex ?? "n/a"}`
+      `  ${candidate.rank}. label=${JSON.stringify(candidate.label)} score=${scoreText} kind=${candidate.kind ?? "n/a"} family=${candidate.family ?? "n/a"} role=${candidate.sourceRole ?? "n/a"} clause=${candidate.clauseIndex ?? "n/a"}`
     );
 
-    if (candidate.coreText || candidate.tailText || candidate.domainText) {
+    console.log(
+      `     pfapProtected=${candidate.pfapProtected} tier=${candidate.pfapTier} malformed=${candidate.pfapMalformed} compete=${candidate.shouldCompeteAsTopic ?? "n/a"} subpart=${candidate.isSubpartReference ?? "n/a"} durable=${candidate.isDurableConcept ?? "n/a"} weakNoun=${candidate.isWeakNounChunk ?? "n/a"} residueRisk=${candidate.residueRisk ?? "n/a"}`
+    );
+
+    if (candidate.pfapRejectReasons.length > 0) {
+      console.log(`     pfapRejectReasons=${candidate.pfapRejectReasons.join(", ")}`);
+    }
+
+    if (candidate.coreText || candidate.tailText || candidate.domainText || candidate.conceptHead) {
       console.log(
-        `     core=${JSON.stringify(candidate.coreText)} tail=${JSON.stringify(candidate.tailText)} domain=${JSON.stringify(candidate.domainText)}`
+        `     core=${JSON.stringify(candidate.coreText)} head=${JSON.stringify(candidate.conceptHead)} tail=${JSON.stringify(candidate.tailText)} domain=${JSON.stringify(candidate.domainText)}`
+      );
+    }
+
+    if (candidate.questionSynthesisFrame || candidate.synthesizedLabel) {
+      console.log(
+        `     qcsFrame=${candidate.questionSynthesisFrame ?? "n/a"} trigger=${candidate.questionTriggerKind ?? "n/a"} object=${JSON.stringify(candidate.questionObject)} synthesized=${JSON.stringify(candidate.synthesizedLabel)}`
       );
     }
 
@@ -1334,6 +1665,7 @@ function printSummary(results: CaseResult[], options: CliOptions) {
   printFamilyBreakdown(results);
   printLayerBreakdown(results);
   printLikelyFailureBreakdown(results);
+  printPfapBreakdown(results);
 
   const tableRows = results.map((r) => ({
     scope: r.scope,
@@ -1351,6 +1683,9 @@ function printSummary(results: CaseResult[], options: CliOptions) {
     create: r.actualShouldCreate,
     confidence: r.actualConfidence.toFixed(2),
     likelyFailure: r.likelyFailureClass ?? "",
+    pfapIssue: r.pfapDebug.pfapLikelyIssue ?? "",
+    pfapProtected: r.pfapDebug.protectedCandidates.length,
+    expectedRank: r.pfapDebug.expectedCandidateRank ?? "",
   }));
 
   console.table(tableRows);
@@ -1383,6 +1718,9 @@ function printSummary(results: CaseResult[], options: CliOptions) {
       for (const failure of failedCase.layeredFailures) {
         console.log(`  - [${failure.layer}] ${failure.message}`);
       }
+
+      printLabelingDebug(failedCase);
+      printPfapDebug(failedCase);
 
       if (options.debugCandidates || options.debugAll || failedCase.candidateDebug.length > 0) {
         printCandidateDebug(failedCase);
