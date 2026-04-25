@@ -657,7 +657,7 @@ function extractCandidateDebug(labeling: unknown): CandidateDebug[] {
     const span = asString(candidate.span) ?? asString(candidate.normalizedSpan) ?? asString(candidate.normalized_span) ?? null;
     const label = asString(candidate.label) ?? asString(candidate.displayLabel) ?? asString(candidate.display_label) ?? coreText ?? span;
 
-    const draft = {
+    const draft: CandidateDebug = {
       rank: index + 1,
       label,
       span,
@@ -690,7 +690,7 @@ function extractCandidateDebug(labeling: unknown): CandidateDebug[] {
       pfapMalformed: false,
       pfapRejectReasons: [],
       pfapTier: "unprotected",
-    } satisfies CandidateDebug;
+    };
 
     draft.pfapMalformed = labelLooksMalformedForPfap(draft.label ?? draft.coreText ?? draft.span);
     draft.pfapRejectReasons = buildPfapRejectReasons(draft);
