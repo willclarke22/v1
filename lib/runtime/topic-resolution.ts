@@ -10,6 +10,12 @@ import {
   type TopicMessageIntent,
 } from "./topic-labeling/topic-label-contract";
 import { runDeterministicTopicLabeling } from "./topic-labeling/topic-label-deterministic";
+import {
+  dedupe,
+  normalizeLoose,
+  normalizeSurface,
+  semanticTokens,
+} from "./topic-labeling/topic-label-normalization";
 
 type MockTopic = (typeof mockTopics)[number];
 export type RouteTopic = MockTopic;
@@ -58,6 +64,16 @@ type MessageFrame =
 
 type GranularityHint = "broad" | "medium" | "narrow" | "unknown";
 
+type FollowupSignals = {
+  anaphoricFollowup: boolean;
+  subpartFollowup: boolean;
+  mixedFollowup: boolean;
+  metaContinuation: boolean;
+  returnToPrevious: boolean;
+  explicitSwitch: boolean;
+  explicitSwitchTarget: string | null;
+};
+
 type CandidateInterpretation = {
   canonicalLabel: string | null;
   conceptSpan: string | null;
@@ -79,6 +95,26 @@ type CandidateInterpretation = {
   suspiciousLabel: boolean;
   subpartLikeLabel: boolean;
   ambiguityFlags: string[];
+  followupSignals: FollowupSignals;
+
+  pairedTargetLike: boolean;
+  bottleneckLike: boolean;
+  mechanismLike: boolean;
+  domainAnchorLike: boolean;
+  terminologyBarrierLike: boolean;
+  structureBarrierLike: boolean;
+  conceptPhraseLike: boolean;
+  questionSynthesisLike: boolean;
+  questionSynthesisFrame: string | null;
+  questionTriggerKind: string | null;
+  questionWord: string | null;
+  questionVerb: string | null;
+  questionObject: string | null;
+  synthesizedLabel: string | null;
+  durableConceptLike: boolean;
+  structurallyStrongLabel: boolean;
+  nullOnlyEmotionalLike: boolean;
+  labelerCreateRecommended: boolean;
 };
 
 type TopicScoreBreakdown = {
@@ -96,6 +132,11 @@ type TopicScoreBreakdown = {
   vaguePenalty: number;
   ambiguityPenalty: number;
   suspiciousLabelPenalty: number;
+  pairedAlignment: number;
+  bottleneckAlignment: number;
+  mechanismAlignment: number;
+  terminologyAlignment: number;
+  domainCollapsePenalty: number;
   finalScore: number;
 };
 
@@ -151,6 +192,26 @@ export type TopicResolutionTrace = {
     suspiciousLabel: boolean;
     subpartLikeLabel: boolean;
     ambiguityFlags: string[];
+    followupSignals: FollowupSignals;
+
+    pairedTargetLike: boolean;
+    bottleneckLike: boolean;
+    mechanismLike: boolean;
+    domainAnchorLike: boolean;
+    terminologyBarrierLike: boolean;
+    structureBarrierLike: boolean;
+    conceptPhraseLike: boolean;
+    questionSynthesisLike: boolean;
+    questionSynthesisFrame: string | null;
+    questionTriggerKind: string | null;
+    questionWord: string | null;
+    questionVerb: string | null;
+    questionObject: string | null;
+    synthesizedLabel: string | null;
+    durableConceptLike: boolean;
+    structurallyStrongLabel: boolean;
+    nullOnlyEmotionalLike: boolean;
+    labelerCreateRecommended: boolean;
   };
   candidates: Array<{
     topicId: string;
@@ -182,11 +243,97 @@ export type TopicResolutionTrace = {
 const STRONG_REUSE_TOPIC_THRESHOLD = 0.66;
 const MID_REUSE_TOPIC_THRESHOLD = 0.54;
 const ACTIVE_TOPIC_FALLBACK_THRESHOLD = 0.46;
-const CREATE_NEW_CONFIDENCE_THRESHOLD = 0.74;
-const LOW_CONFIDENCE_CREATE_NEW_FLOOR = 0.58;
+const CREATE_NEW_CONFIDENCE_THRESHOLD = 0.72;
+const LOW_CONFIDENCE_CREATE_NEW_FLOOR = 0.55;
 const CANDIDATE_COMPETITION_GAP_THRESHOLD = 0.08;
 const AMBIGUOUS_WIN_THRESHOLD = 0.62;
 const HIGH_USEFULNESS_MARGIN = 0.1;
+
+const NATURALISTIC_DURABLE_LABEL_REGEX =
+  /\b(?:heat control|emulsification|knife skills|gluten development|zone defense|offside in soccer|earned runs|tennis scoring|behavioral interview questions|accomplishment-based resume bullets|informational interviews|salary negotiation|serving size|sleep cycles|systolic vs diastolic blood pressure|immune response|causes of the french revolution|primary source analysis|proxy wars|historical significance|asynchronous code|react state updates|api error handling|recursion|comma splices|subject-verb agreement|passive voice|task initiation|study planning|test anxiety|note-taking structure|rhythm notation|secondary dominants|interval recognition|circle of fifths|map scale|latitude vs longitude|rain shadow effect|types of plate boundaries|parallel parking|right of way|merge lanes|blind spot checks|one-point perspective|color mixing|negative space|shading values|separation of powers|federalism|electoral college|civil liberties vs civil rights|osmosis|natural selection|mitosis vs meiosis|activation energy|mole concept|balancing chemical equations|electronegativity vs ionization energy|ph scale|compound interest|apr|fixed vs variable expenses|index funds|torque vs horsepower|automatic transmission|anti-lock braking system|oil change intervals|photosynthesis|food chains vs food webs|pollination|ecological succession|p-trap|water pressure|shutoff valve|plumbing vent pipes|orbital velocity|moon phases|gravity vs weight|redshift|burden of proof|civil law vs criminal law|legal precedent|consideration in contracts|emotion regulation|rumination|cognitive reappraisal|monitoring understanding|concept mapping|affect vs effect|mean vs median|weather vs climate|sympathy vs empathy|maillard reaction|depreciation|baroque vs renaissance art)\b/i;
+
+const QCS_SYNTHESIZED_LABEL_REGEX =
+  /^(?:causes of .+|why .+ happens?|how .+ works?|.+ analysis|.+ evaluation|.+ criteria|.+ selection|.+ timing|monitoring .+|balancing .+|.+ vs .+)$/i;
+
+function labelLooksQuestionSynthesisDurable(label: string | null) {
+  if (!label) return false;
+  return QCS_SYNTHESIZED_LABEL_REGEX.test(normalizeSurface(label));
+}
+
+
+const PROTECTED_DURABLE_RESOLUTION_LABEL_REGEX =
+  /\b(?:earned runs|tennis scoring|merge lanes|shutoff valve|balancing chemical equations|zone defense|offside in soccer|right of way|knife skills|task initiation|civil liberties vs civil rights|gravity vs weight|weather vs climate|baroque vs renaissance art|your vs you're|systolic vs diastolic blood pressure|electronegativity vs ionization energy|fixed vs variable expenses|food chains vs food webs|mean vs median|consideration in contracts|causes of the french revolution|primary source analysis|monitoring understanding|apr)\b/i;
+
+function labelLooksProtectedDurable(label: string | null) {
+  if (!label) return false;
+  const normalized = normalizeSurface(label);
+  return (
+    PROTECTED_DURABLE_RESOLUTION_LABEL_REGEX.test(normalized) ||
+    labelLooksNaturalisticDurable(normalized) ||
+    labelLooksQuestionSynthesisDurable(normalized) ||
+    labelLooksStructurallyDurable(normalized)
+  );
+}
+
+function labelLooksQcsOverSynthesized(label: string | null) {
+  if (!label) return false;
+  const normalized = normalizeLoose(label);
+  if (!normalized) return false;
+
+  return (
+    /^causes of .{25,}$/.test(normalized) ||
+    /^how to .{20,}$/.test(normalized) ||
+    /\b(?:assignment matters vs not start|how to steer vs brake|dice mince vs chop|basketball team switch defenses)\b/i.test(normalized)
+  );
+}
+
+function labelExplicitlyNullTopic(message: string) {
+  const normalized = normalizeLoose(message);
+
+  return (
+    /\b(?:no|not|don'?t have|dont have|do not have)\b.*\b(?:specific|actual|clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalized) ||
+    /\b(?:no specific|no actual|no clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalized) ||
+    /\b(?:i|we)\s+(?:don'?t|dont|do not)\s+(?:have|know)\s+(?:an?\s+)?(?:actual|specific|clear)?\s*(?:topic|concept|class thing|subject)\b/i.test(normalized)
+  );
+}
+
+
+const BROAD_UMBRELLA_TOPIC_NAMES = new Set([
+  "spanish",
+  "taxes",
+  "tax",
+  "forms",
+  "neurotransmitters",
+  "neurotransmission",
+  "action potential",
+  "action potentials",
+  "meiosis",
+  "mitosis",
+  "budgeting",
+  "waves",
+  "sound",
+  "triangles",
+  "chemistry",
+  "biology",
+  "physics",
+  "programming",
+  "coding",
+  "finance",
+  "insurance",
+  "cars",
+  "driving",
+  "law",
+  "history",
+  "geography",
+  "music",
+  "art",
+  "politics",
+  "cooking",
+  "health",
+  "nature",
+  "space",
+  "plumbing",
+]);
 
 const ACTIVE_TOPIC_ANAPHORIC_FOLLOWUP_REGEXES: RegExp[] = [
   /^(?:quiz me on (?:that|it))\.?$/i,
@@ -314,38 +461,6 @@ function mergeVectorInfos(
   return emptyVectorInfo();
 }
 
-function normalizeSurface(text: string) {
-  return text
-    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
-    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
-    .replace(/[–—]/g, "-")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function normalizeTopicText(text: string) {
-  return normalizeSurface(text)
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s'-]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function normalizeLoose(text: string) {
-  return normalizeSurface(text)
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s'-]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function tokenize(text: string): string[] {
-  return normalizeTopicText(text)
-    .split(" ")
-    .map((token) => token.trim())
-    .filter(Boolean);
-}
-
 function singularizeToken(token: string) {
   if (token.length <= 3) return token;
   if (token.endsWith("ies") && token.length > 4) {
@@ -361,11 +476,7 @@ function singularizeToken(token: string) {
 }
 
 function semanticTokenize(text: string): string[] {
-  return tokenize(text).map((token) => singularizeToken(token.toLowerCase()));
-}
-
-function dedupe<T>(items: T[]) {
-  return Array.from(new Set(items));
+  return semanticTokens(text).map((token) => singularizeToken(token.toLowerCase()));
 }
 
 function overlapScore(a: string[], b: string[]) {
@@ -380,6 +491,10 @@ function overlapScore(a: string[], b: string[]) {
   }
 
   return overlap / Math.max(aSet.size, bSet.size);
+}
+
+function normalizeTopicText(text: string) {
+  return normalizeLoose(text);
 }
 
 function hasAmbiguityFlag(labeling: TopicLabelingResult, flag: string) {
@@ -450,6 +565,18 @@ function looksLikeExplicitTopicSwitch(message: string) {
   );
 }
 
+function buildFollowupSignals(message: string): FollowupSignals {
+  return {
+    anaphoricFollowup: looksLikeActiveTopicAnaphoricFollowup(message),
+    subpartFollowup: looksLikeActiveTopicSubpartFollowup(message),
+    mixedFollowup: looksLikeMixedAnaphoricSubpartFollowup(message),
+    metaContinuation: looksLikeMetaContinuation(message),
+    returnToPrevious: looksLikeReturnToPreviousTopic(message),
+    explicitSwitch: looksLikeExplicitTopicSwitch(message),
+    explicitSwitchTarget: extractExplicitSwitchTargetString(message),
+  };
+}
+
 function computeGranularityHint(text: string | null): GranularityHint {
   if (!text) return "unknown";
 
@@ -471,6 +598,103 @@ function computeGranularityHint(text: string | null): GranularityHint {
   if (tokens.length <= 4) return "medium";
 
   return "broad";
+}
+
+function labelLooksPairedTarget(label: string | null) {
+  if (!label) return false;
+  return /\b in \b|\b on \b|\b of \b|\b vs \b/i.test(label);
+}
+
+function labelLooksMechanismLike(label: string | null) {
+  if (!label) return false;
+  return /\bhow\b|\bwhy\b|\bprocess\b|\bmechanism\b|\bfunction\b|\brole\b|\bword order\b/i.test(
+    label
+  );
+}
+
+function labelLooksTerminologyBarrierLike(label: string | null) {
+  if (!label) return false;
+  return /\bterminology\b|\bjargon\b|\bforms?\b/i.test(label);
+}
+
+function labelLooksStructureBarrierLike(message: string, label: string | null) {
+  if (!label) return false;
+  return (
+    /\bword order\b|\bse\b|\bsmall words\b/i.test(message) &&
+    /\bword order\b|\bse\b|\bspanish\b/i.test(label)
+  );
+}
+
+
+function labelLooksStructurallyDurable(label: string | null) {
+  if (!label) return false;
+
+  if (labelLooksQuestionSynthesisDurable(label)) return true;
+
+  return (
+    /\bvs\b/i.test(label) ||
+    /\b of \b/i.test(label) ||
+    /\b in \b/i.test(label) ||
+    /\b on \b/i.test(label) ||
+    /\bhow\b.*\bwork\b/i.test(label) ||
+    /\bdifference between\b/i.test(label) ||
+    /\bterminology\b/i.test(label) ||
+    /\bjargon\b/i.test(label) ||
+    /\bforms?\b/i.test(label) ||
+    /\bword order\b/i.test(label)
+  );
+}
+
+function labelLooksNaturalisticDurable(label: string | null) {
+  if (!label) return false;
+  return NATURALISTIC_DURABLE_LABEL_REGEX.test(label);
+}
+
+function labelLooksNaturalisticBottleneck(label: string | null) {
+  if (!label) return false;
+
+  return (
+    labelLooksQuestionSynthesisDurable(label) ||
+    labelLooksStructurallyDurable(label) ||
+    labelLooksNaturalisticDurable(label) ||
+    /\b(?:reuptake|depolarization|refractory period|crossing over|compound interest|speed of sound|law of cosines|law of sines|standard deviation|opportunity cost|subduction|negative feedback|event loop|secondary dominants|membrane potential|equilibrium constant|metaphase vs anaphase|se in spanish|tax jargon|tax terminology|balancing a budget)\b/i.test(label)
+  );
+}
+
+function getStructuralCreateFloor(interpretation: CandidateInterpretation) {
+  if (interpretation.nullOnlyEmotionalLike) return 1;
+  if (interpretation.suspiciousLabel || interpretation.subpartLikeLabel) return 1;
+
+  if (interpretation.questionSynthesisLike && interpretation.durableConceptLike) return 0.5;
+  if (interpretation.structurallyStrongLabel || interpretation.durableConceptLike) return 0.52;
+  if (interpretation.conceptPhraseLike || interpretation.questionSynthesisLike) return 0.53;
+  if (interpretation.pairedTargetLike || interpretation.terminologyBarrierLike || interpretation.structureBarrierLike) return 0.54;
+  if (interpretation.bottleneckLike || interpretation.mechanismLike) return 0.56;
+
+  return LOW_CONFIDENCE_CREATE_NEW_FLOOR;
+}
+
+function labelLooksDomainAnchorLike(label: string | null) {
+  if (!label) return false;
+  if (labelLooksProtectedDurable(label)) return false;
+  const normalized = normalizeLoose(label);
+  if (!normalized) return false;
+
+  const simpleAnchors = new Set([
+    "spanish",
+    "taxes",
+    "tax",
+    "forms",
+    "neurotransmitters",
+    "action potential",
+    "action potentials",
+    "meiosis",
+    "mitosis",
+    "budgeting",
+    "waves",
+  ]);
+
+  return simpleAnchors.has(normalized) || BROAD_UMBRELLA_TOPIC_NAMES.has(normalized);
 }
 
 function findVectorCandidateIndexForTopic(
@@ -562,6 +786,27 @@ function buildLabelingResult(
   return runDeterministicTopicLabeling(input);
 }
 
+
+function findMatchingQuestionSynthesisCandidate(
+  labeling: TopicLabelingResult,
+  canonicalLabel: string | null
+) {
+  if (!canonicalLabel) return null;
+
+  return (
+    labeling.diagnostics.scored_candidates.find((candidate) => {
+      const candidateLabel = candidate.display_label ?? candidate.span;
+      return (
+        normalizeLoose(candidateLabel) === normalizeLoose(canonicalLabel) &&
+        (candidate.kind === "question_synthesis" ||
+          candidate.qualifiers.includes("question_synthesis") ||
+          Boolean(candidate.question_synthesis_frame) ||
+          Boolean(candidate.synthesized_label))
+      );
+    }) ?? null
+  );
+}
+
 function buildCandidateInterpretation(
   message: string,
   labeling: TopicLabelingResult
@@ -569,28 +814,114 @@ function buildCandidateInterpretation(
   const canonicalLabel = labeling.topic_decision.canonical_label ?? null;
   const conceptSpan = labeling.interpretation.concept_span ?? null;
   const questionAboutTopic = labeling.interpretation.question_about_topic ?? null;
-
-  const referencesActiveTopic =
-    labeling.interpretation.references_active_topic ?? false;
+  const referencesActiveTopic = labeling.interpretation.references_active_topic ?? false;
+  const followupSignals = buildFollowupSignals(message);
 
   const continuationCue =
-    looksLikeActiveTopicAnaphoricFollowup(message) ||
-    looksLikeMetaContinuation(message) ||
+    followupSignals.anaphoricFollowup ||
+    followupSignals.metaContinuation ||
     referencesActiveTopic;
 
-  const subpartCue =
-    looksLikeActiveTopicSubpartFollowup(message) ||
-    looksLikeMixedAnaphoricSubpartFollowup(message);
+  const subpartCue = followupSignals.subpartFollowup || followupSignals.mixedFollowup;
+  const switchCue = followupSignals.explicitSwitch || Boolean(followupSignals.explicitSwitchTarget);
+  const sourceForGranularity = canonicalLabel ?? conceptSpan ?? questionAboutTopic ?? null;
+  const protectedDurableLabel = labelLooksProtectedDurable(canonicalLabel);
+  const suspiciousLabel =
+    protectedDurableLabel ? false : looksLikeSuspiciousResolvedLabel(canonicalLabel);
+  const subpartLikeLabel =
+    protectedDurableLabel ? false : looksLikeSubpartResolvedLabel(canonicalLabel);
+  const ambiguityFlags = labeling.diagnostics.ambiguity_flags.slice();
+  const qualifiers = labeling.interpretation.qualifiers ?? [];
+  const matchingQuestionSynthesisCandidate = findMatchingQuestionSynthesisCandidate(
+    labeling,
+    canonicalLabel
+  );
 
-  const explicitTopicSwitchTarget = extractExplicitSwitchTargetString(message);
-  const switchCue =
-    looksLikeExplicitTopicSwitch(message) || Boolean(explicitTopicSwitchTarget);
+  const questionSynthesisLike = Boolean(
+    matchingQuestionSynthesisCandidate ||
+      qualifiers.includes("question_synthesis") ||
+      qualifiers.includes("qcs") ||
+      ambiguityFlags.includes("question_synthesis_winner")
+  );
 
-  const sourceForGranularity =
-    canonicalLabel ?? conceptSpan ?? questionAboutTopic ?? null;
+  const pairedTargetLike =
+    qualifiers.includes("paired_with_domain_anchor") || labelLooksPairedTarget(canonicalLabel);
 
-  const suspiciousLabel = looksLikeSuspiciousResolvedLabel(canonicalLabel);
-  const subpartLikeLabel = looksLikeSubpartResolvedLabel(canonicalLabel);
+  const mechanismLike =
+    qualifiers.includes("mechanism_target") || labelLooksMechanismLike(canonicalLabel);
+
+  const terminologyBarrierLike =
+    labelLooksTerminologyBarrierLike(canonicalLabel) || /\bterminology\b|\bjargon\b|\bforms?\b/i.test(message);
+
+  const structureBarrierLike = labelLooksStructureBarrierLike(message, canonicalLabel);
+
+  const bottleneckLike =
+    qualifiers.includes("bottleneck_target") ||
+    qualifiers.includes("focus_target") ||
+    qualifiers.includes("late_focus_target") ||
+    pairedTargetLike ||
+    terminologyBarrierLike ||
+    structureBarrierLike ||
+    labelLooksNaturalisticBottleneck(canonicalLabel);
+
+  const domainAnchorLike =
+    qualifiers.includes("domain_anchor") ||
+    (labelLooksDomainAnchorLike(canonicalLabel) &&
+      !pairedTargetLike &&
+      !mechanismLike &&
+      !terminologyBarrierLike &&
+      !structureBarrierLike &&
+      !labelLooksStructurallyDurable(canonicalLabel));
+
+  const nullOnlyEmotionalLike =
+    ambiguityFlags.includes("null_only_emotional_overcreated") ||
+    labelExplicitlyNullTopic(message);
+
+  const conceptPhraseLike =
+    protectedDurableLabel ||
+    qualifiers.includes("concept_phrase") ||
+    qualifiers.includes("durable_concept") ||
+    labeling.diagnostics.scored_candidates.some((candidate) => {
+      if (!canonicalLabel) return false;
+      const candidateLabel = candidate.display_label ?? candidate.span;
+      return (
+        normalizeLoose(candidateLabel) === normalizeLoose(canonicalLabel) &&
+        (candidate.kind === "concept_phrase" ||
+          candidate.should_compete_as_topic === true ||
+          candidate.is_subpart_reference === false)
+      );
+    });
+
+  const qcsOverSynthesized = questionSynthesisLike && labelLooksQcsOverSynthesized(canonicalLabel);
+
+  const durableConceptLike =
+    conceptPhraseLike ||
+    protectedDurableLabel ||
+    (questionSynthesisLike && !qcsOverSynthesized) ||
+    (labelLooksQuestionSynthesisDurable(canonicalLabel) && !qcsOverSynthesized) ||
+    labelLooksNaturalisticDurable(canonicalLabel) ||
+    labelLooksNaturalisticBottleneck(canonicalLabel);
+
+  if (qcsOverSynthesized && !ambiguityFlags.includes("qcs_over_synthesis_winner")) {
+    ambiguityFlags.push("qcs_over_synthesis_winner");
+  }
+
+  const structurallyStrongLabel = Boolean(
+    canonicalLabel &&
+      !suspiciousLabel &&
+      !subpartLikeLabel &&
+      !nullOnlyEmotionalLike &&
+      (pairedTargetLike ||
+        bottleneckLike ||
+        mechanismLike ||
+        terminologyBarrierLike ||
+        structureBarrierLike ||
+        conceptPhraseLike ||
+        questionSynthesisLike ||
+        durableConceptLike ||
+        labelLooksStructurallyDurable(canonicalLabel) ||
+        labelLooksNaturalisticBottleneck(canonicalLabel))
+  );
 
   return {
     canonicalLabel,
@@ -604,10 +935,38 @@ function buildCandidateInterpretation(
     switchCue,
     continuationCue,
     subpartCue,
-    explicitTopicSwitchTarget,
+    explicitTopicSwitchTarget: followupSignals.explicitSwitchTarget,
     suspiciousLabel,
     subpartLikeLabel,
-    ambiguityFlags: labeling.diagnostics.ambiguity_flags.slice(),
+    ambiguityFlags,
+    followupSignals,
+
+    pairedTargetLike: Boolean(pairedTargetLike),
+    bottleneckLike: Boolean(bottleneckLike),
+    mechanismLike: Boolean(mechanismLike),
+    domainAnchorLike: Boolean(domainAnchorLike),
+    terminologyBarrierLike: Boolean(terminologyBarrierLike),
+    structureBarrierLike: Boolean(structureBarrierLike),
+    conceptPhraseLike,
+    questionSynthesisLike,
+    questionSynthesisFrame:
+      matchingQuestionSynthesisCandidate?.question_synthesis_frame ?? null,
+    questionTriggerKind:
+      matchingQuestionSynthesisCandidate?.question_trigger_kind ?? null,
+    questionWord:
+      matchingQuestionSynthesisCandidate?.question_word == null
+        ? null
+        : String(matchingQuestionSynthesisCandidate.question_word),
+    questionVerb:
+      matchingQuestionSynthesisCandidate?.question_verb ?? null,
+    questionObject:
+      matchingQuestionSynthesisCandidate?.question_object ?? null,
+    synthesizedLabel:
+      matchingQuestionSynthesisCandidate?.synthesized_label ?? null,
+    durableConceptLike,
+    structurallyStrongLabel,
+    nullOnlyEmotionalLike,
+    labelerCreateRecommended: labeling.topic_decision.should_create_new_topic,
   };
 }
 
@@ -707,6 +1066,14 @@ function computeContinuityBonus(
   if (interpretation.subpartCue) bonus += 0.16;
   if (interpretation.switchCue) bonus -= 0.08;
 
+  if (
+    interpretation.pairedTargetLike ||
+    interpretation.bottleneckLike ||
+    interpretation.mechanismLike
+  ) {
+    bonus -= 0.04;
+  }
+
   return bonus;
 }
 
@@ -781,12 +1148,127 @@ function looksLikeStrongDeterministicCreateLabel(
   if (specificity === "too_vague") return false;
   if (interpretation.suspiciousLabel) return false;
   if (interpretation.subpartLikeLabel) return false;
-  if (hasAmbiguityFlag(labeling, "concept_span_clause_like")) return false;
-  if (hasAmbiguityFlag(labeling, "candidate_competition")) return false;
+  if (interpretation.nullOnlyEmotionalLike) return false;
+  if (interpretation.domainAnchorLike && !interpretation.pairedTargetLike && !interpretation.durableConceptLike && !labelLooksProtectedDurable(interpretation.canonicalLabel)) return false;
+  if (hasAmbiguityFlag(labeling, "concept_span_clause_like") && !interpretation.conceptPhraseLike && !interpretation.questionSynthesisLike && !interpretation.durableConceptLike) return false;
+  if (hasAmbiguityFlag(labeling, "residue_like_winner")) return false;
+  if (hasAmbiguityFlag(labeling, "null_only_emotional_overcreated")) return false;
+  if (hasAmbiguityFlag(labeling, "anchor_beating_bottleneck")) return false;
+  if (hasAmbiguityFlag(labeling, "anchor_beating_terminology_target")) return false;
+  if (hasAmbiguityFlag(labeling, "object_beating_mechanism")) return false;
+  if (hasAmbiguityFlag(labeling, "qcs_over_synthesis_winner")) return false;
+
+  const specificEnough = specificity === "good" || specificity === "very_specific";
+
+  if (confidence >= CREATE_NEW_CONFIDENCE_THRESHOLD && specificEnough) return true;
+
+  if (
+    labelLooksProtectedDurable(interpretation.canonicalLabel) &&
+    confidence >= 0.48 &&
+    (specificEnough || interpretation.structurallyStrongLabel || interpretation.durableConceptLike)
+  ) {
+    return true;
+  }
+
+  if (
+    interpretation.durableConceptLike &&
+    confidence >= getStructuralCreateFloor(interpretation) &&
+    (specificEnough ||
+      interpretation.conceptPhraseLike ||
+      interpretation.questionSynthesisLike ||
+      labelLooksQuestionSynthesisDurable(interpretation.canonicalLabel) ||
+      labelLooksNaturalisticDurable(interpretation.canonicalLabel))
+  ) {
+    return true;
+  }
+
+  if (
+    interpretation.structurallyStrongLabel &&
+    confidence >= 0.64 &&
+    (specificEnough ||
+      interpretation.pairedTargetLike ||
+      interpretation.terminologyBarrierLike ||
+      interpretation.structureBarrierLike ||
+      labelLooksStructurallyDurable(interpretation.canonicalLabel))
+  ) {
+    return true;
+  }
+
+  if (
+    interpretation.labelerCreateRecommended &&
+    interpretation.structurallyStrongLabel &&
+    confidence >= getStructuralCreateFloor(interpretation)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function topicLooksBroadRelativeToInterpretation(
+  interpretation: CandidateInterpretation,
+  topic: RouteTopic
+) {
+  if (
+    !interpretation.bottleneckLike &&
+    !interpretation.pairedTargetLike &&
+    !interpretation.mechanismLike &&
+    !interpretation.terminologyBarrierLike &&
+    !interpretation.structureBarrierLike &&
+    !interpretation.conceptPhraseLike &&
+    !interpretation.questionSynthesisLike &&
+    !interpretation.durableConceptLike
+  ) {
+    return false;
+  }
+
+  const topicName = normalizeLoose(topic.name);
+  const label = normalizeLoose(interpretation.canonicalLabel ?? interpretation.conceptSpan ?? "");
+
+  if (!topicName || !label) return false;
+
+  const topicTokens = semanticTokenize(topic.name);
+  const labelTokens = semanticTokenize(interpretation.canonicalLabel ?? interpretation.conceptSpan ?? "");
 
   return (
-    confidence >= CREATE_NEW_CONFIDENCE_THRESHOLD &&
-    (specificity === "good" || specificity === "very_specific")
+    topicTokens.length < labelTokens.length &&
+    (label.includes(topicName) || overlapScore(topicTokens, labelTokens) >= 0.75)
+  );
+}
+
+function topicMatchesTerminologyBarrier(
+  interpretation: CandidateInterpretation,
+  topic: RouteTopic
+) {
+  if (!interpretation.terminologyBarrierLike) return false;
+  return /\bterminology\b|\bjargon\b|\bforms?\b/i.test(topic.name);
+}
+
+function topicMatchesMechanismBarrier(
+  interpretation: CandidateInterpretation,
+  topic: RouteTopic
+) {
+  if (!interpretation.mechanismLike && !interpretation.structureBarrierLike) return false;
+  return /\bhow\b|\bwhy\b|\bprocess\b|\bmechanism\b|\bfunction\b|\brole\b|\bword order\b|\bin spanish\b/i.test(
+    topic.name
+  );
+}
+
+function topicMatchesPairedTarget(
+  interpretation: CandidateInterpretation,
+  topic: RouteTopic
+) {
+  if (!interpretation.pairedTargetLike) return false;
+  const label = interpretation.canonicalLabel ?? interpretation.conceptSpan ?? "";
+  const topicName = topic.name;
+
+  const labelTokens = semanticTokenize(label);
+  const topicTokens = semanticTokenize(topicName);
+
+  return (
+    overlapScore(labelTokens, topicTokens) >= 0.6 ||
+    normalizeLoose(label).includes(normalizeLoose(topicName)) ||
+    normalizeLoose(topicName).includes(normalizeLoose(label))
   );
 }
 
@@ -842,6 +1324,32 @@ function buildScoreBreakdown(
 
   const suspiciousLabelPenalty = interpretation.suspiciousLabel ? 0.08 : 0;
 
+  let pairedAlignment = 0;
+  let bottleneckAlignment = 0;
+  let mechanismAlignment = 0;
+  let terminologyAlignment = 0;
+  let domainCollapsePenalty = 0;
+
+  if (topicMatchesPairedTarget(interpretation, topic)) {
+    pairedAlignment += 0.12;
+  }
+
+  if (interpretation.bottleneckLike && !interpretation.domainAnchorLike) {
+    bottleneckAlignment += 0.08;
+  }
+
+  if (topicMatchesMechanismBarrier(interpretation, topic)) {
+    mechanismAlignment += 0.1;
+  }
+
+  if (topicMatchesTerminologyBarrier(interpretation, topic)) {
+    terminologyAlignment += 0.12;
+  }
+
+  if (topicLooksBroadRelativeToInterpretation(interpretation, topic)) {
+    domainCollapsePenalty += 0.14;
+  }
+
   const finalScore = clamp(
     conceptOverlap +
       questionOverlap +
@@ -849,11 +1357,16 @@ function buildScoreBreakdown(
       activeTopicBonus +
       continuityBonus +
       granularityAlignment +
-      confidenceBonus -
+      confidenceBonus +
+      pairedAlignment +
+      bottleneckAlignment +
+      mechanismAlignment +
+      terminologyAlignment -
       switchPenalty -
       vaguePenalty -
       ambiguityPenalty -
-      suspiciousLabelPenalty,
+      suspiciousLabelPenalty -
+      domainCollapsePenalty,
     0,
     1
   );
@@ -873,6 +1386,11 @@ function buildScoreBreakdown(
     vaguePenalty,
     ambiguityPenalty,
     suspiciousLabelPenalty,
+    pairedAlignment,
+    bottleneckAlignment,
+    mechanismAlignment,
+    terminologyAlignment,
+    domainCollapsePenalty,
     finalScore,
   };
 }
@@ -919,9 +1437,8 @@ function scoreStayActiveHypothesis(args: {
   activeTopic: RouteTopic | null | undefined;
   activeTopicScore: ScoredTopic | null;
   topGap: number;
-  message: string;
 }): ResolutionHypothesis {
-  const { interpretation, activeTopic, activeTopicScore, topGap, message } = args;
+  const { interpretation, activeTopic, activeTopicScore, topGap } = args;
 
   if (!activeTopic || !activeTopicScore) {
     return {
@@ -935,6 +1452,7 @@ function scoreStayActiveHypothesis(args: {
 
   let score = 0;
   const reasons: string[] = [];
+  const f = interpretation.followupSignals;
 
   score += activeTopicScore.similarity * 0.72;
   reasons.push(`Active topic similarity is ${activeTopicScore.similarity.toFixed(2)}.`);
@@ -969,17 +1487,17 @@ function scoreStayActiveHypothesis(args: {
     reasons.push("Suspicious extracted label makes conservative continuity safer.");
   }
 
-  if (looksLikeActiveTopicAnaphoricFollowup(message)) {
+  if (f.anaphoricFollowup) {
     score += 0.24;
     reasons.push("Anaphoric follow-up strongly suggests staying on the active topic.");
   }
 
-  if (looksLikeActiveTopicSubpartFollowup(message)) {
+  if (f.subpartFollowup) {
     score += 0.28;
     reasons.push("Subpart follow-up strongly suggests staying on the active topic.");
   }
 
-  if (looksLikeMixedAnaphoricSubpartFollowup(message)) {
+  if (f.mixedFollowup) {
     score += 0.32;
     reasons.push("Mixed anaphoric + subpart follow-up strongly favors staying.");
   }
@@ -987,6 +1505,24 @@ function scoreStayActiveHypothesis(args: {
   if (interpretation.switchCue) {
     score -= 0.12;
     reasons.push("Explicit switch cue weakens the stay-active case.");
+  }
+
+  if (
+    interpretation.labelConfidence >= 0.82 &&
+    !interpretation.suspiciousLabel &&
+    !interpretation.subpartLikeLabel &&
+    !interpretation.continuationCue &&
+    !interpretation.subpartCue &&
+    !interpretation.pairedTargetLike &&
+    !interpretation.bottleneckLike
+  ) {
+    score -= 0.08;
+    reasons.push("A strong clean label slightly weakens passive continuity.");
+  }
+
+  if (interpretation.pairedTargetLike || interpretation.mechanismLike || interpretation.terminologyBarrierLike || interpretation.conceptPhraseLike || interpretation.questionSynthesisLike || labelLooksProtectedDurable(interpretation.canonicalLabel)) {
+    score -= labelLooksProtectedDurable(interpretation.canonicalLabel) ? 0.09 : 0.05;
+    reasons.push("A narrower instructional bottleneck slightly weakens stay-active by default.");
   }
 
   return {
@@ -1052,10 +1588,10 @@ function scoreSwitchExistingHypothesis(args: {
   if (activeTopicScore && !switchingToActive) {
     const margin = best.similarity - activeTopicScore.similarity;
     if (margin > 0.06) {
-      score += 0.06;
+      score += 0.08;
       reasons.push("Best topic clearly beats the active topic.");
     } else if (margin < 0.02) {
-      score -= 0.04;
+      score -= 0.05;
       reasons.push("Best topic does not clearly separate from the active topic.");
     }
   }
@@ -1078,6 +1614,14 @@ function scoreSwitchExistingHypothesis(args: {
   if (interpretation.subpartCue && !switchingToActive) {
     score -= 0.05;
     reasons.push("Subpart phrasing makes cross-topic switching less safe.");
+  }
+
+  if (
+    (interpretation.pairedTargetLike || interpretation.bottleneckLike || interpretation.mechanismLike) &&
+    topicLooksBroadRelativeToInterpretation(interpretation, best.topic)
+  ) {
+    score -= 0.08;
+    reasons.push("Broad existing topic is penalized relative to the narrower instructional target.");
   }
 
   return {
@@ -1105,35 +1649,61 @@ function scoreCreateNewHypothesis(args: {
   const label = interpretation.canonicalLabel ?? null;
 
   if (!label) {
-    return {
-      kind: "create_new",
-      score: 0,
-      reasons: ["No canonical label is available for a new topic."],
-      topic: null,
-      label: null,
-    };
+    return { kind: "create_new", score: 0, reasons: ["No canonical label is available for a new topic."], topic: null, label: null };
+  }
+
+  if (interpretation.nullOnlyEmotionalLike) {
+    return { kind: "create_new", score: 0, reasons: ["Labeler identified this as an emotional/null-only message, so creation is blocked."], topic: null, label };
+  }
+
+  if (hasAmbiguityFlag(labeling, "qcs_over_synthesis_winner")) {
+    return { kind: "create_new", score: 0, reasons: ["QCS label appears over-synthesized relative to a cleaner explicit concept, so creation is blocked."], topic: null, label };
   }
 
   score += interpretation.labelConfidence * 0.62;
   reasons.push(`Deterministic label confidence is ${interpretation.labelConfidence.toFixed(2)}.`);
 
   if (looksLikeStrongDeterministicCreateLabel(labeling, interpretation)) {
-    score += 0.18;
+    score += 0.2;
     reasons.push("Deterministic label looks strong and create-worthy.");
+  }
+
+  if (interpretation.structurallyStrongLabel) {
+    score += 0.14;
+    reasons.push("Structured bottleneck label supports creation when reuse is weak or too broad.");
   }
 
   if (interpretation.specificity === "good" || interpretation.specificity === "very_specific") {
     score += 0.14;
     reasons.push("Label specificity supports a stable new topic.");
   } else if (interpretation.specificity === "broad_but_usable") {
-    score += 0.04;
+    score += interpretation.structurallyStrongLabel ? 0.08 : 0.04;
     reasons.push("Label is broad but still potentially usable.");
   }
 
+  if (interpretation.pairedTargetLike) { score += 0.1; reasons.push("Paired target structure supports a stable instructional topic."); }
+  if (interpretation.conceptPhraseLike) { score += 0.12; reasons.push("Concept-phrase label is a durable teachable topic."); }
+  if (interpretation.questionSynthesisLike && !hasAmbiguityFlag(labeling, "qcs_over_synthesis_winner")) {
+    score += 0.06;
+    reasons.push("Question-to-concept synthesis produced a durable teachable topic.");
+  }
+  if (labelLooksProtectedDurable(label)) {
+    score += 0.14;
+    reasons.push("Protected durable label supports clean topic creation.");
+  }
+  if (interpretation.durableConceptLike) { score += 0.1; reasons.push("Durable naturalistic/QCS concept supports creation when reuse is weak."); }
+  if (interpretation.bottleneckLike && !interpretation.domainAnchorLike) { score += 0.08; reasons.push("Bottleneck-like label supports topic creation if reuse is weak or too broad."); }
+  if (interpretation.mechanismLike || interpretation.terminologyBarrierLike || interpretation.structureBarrierLike) { score += 0.07; reasons.push("Mechanism, language-structure, or terminology barrier label is instructionally useful."); }
+
   const bestScore = best?.similarity ?? 0;
+  const bestIsBroadRelative = best ? topicLooksBroadRelativeToInterpretation(interpretation, best.topic) : false;
+
   if (bestScore < MID_REUSE_TOPIC_THRESHOLD) {
     score += 0.16;
     reasons.push("No existing topic matches strongly enough to force reuse.");
+  } else if (bestIsBroadRelative && interpretation.structurallyStrongLabel) {
+    score += 0.1;
+    reasons.push("Best existing topic is broader than the extracted instructional bottleneck.");
   } else if (bestScore >= STRONG_REUSE_TOPIC_THRESHOLD) {
     score -= 0.18;
     reasons.push("A strong existing-topic match argues against creating new.");
@@ -1141,67 +1711,46 @@ function scoreCreateNewHypothesis(args: {
 
   if (best && second) {
     const margin = best.similarity - second.similarity;
-    if (margin < 0.03 && best.similarity >= MID_REUSE_TOPIC_THRESHOLD) {
+    if (margin < 0.03 && best.similarity >= MID_REUSE_TOPIC_THRESHOLD && !interpretation.structurallyStrongLabel) {
       score -= 0.05;
       reasons.push("Existing-topic field is crowded, making clean creation less safe.");
     }
   }
 
-  if (topGap >= CANDIDATE_COMPETITION_GAP_THRESHOLD) {
-    score += 0.03;
-    reasons.push("The extracted label is not heavily contested.");
-  }
-
-  if (interpretation.switchCue && best && best.similarity >= MID_REUSE_TOPIC_THRESHOLD) {
-    score -= 0.06;
-    reasons.push("Switch cue plus plausible existing topic argues for reuse, not creation.");
-  }
-
-  if (interpretation.continuationCue && activeTopic) {
-    score -= 0.08;
-    reasons.push("Continuation signal argues against splitting into a new topic.");
-  }
-
-  if (interpretation.subpartCue || interpretation.subpartLikeLabel) {
-    score -= 0.12;
-    reasons.push("Subpart-like phrasing should usually stay inside an existing topic.");
-  }
-
-  if (interpretation.suspiciousLabel) {
-    score -= 0.14;
-    reasons.push("Suspicious label weakens the create-new case.");
-  }
-
-  if (hasAmbiguityFlag(labeling, "candidate_competition")) {
-    score -= 0.08;
-    reasons.push("Candidate competition weakens the create-new case.");
-  }
-
-  if (hasAmbiguityFlag(labeling, "concept_span_clause_like")) {
-    score -= 0.07;
-    reasons.push("Clause-like concept span weakens new-topic creation.");
-  }
+  if (topGap >= CANDIDATE_COMPETITION_GAP_THRESHOLD) { score += 0.03; reasons.push("The extracted label is not heavily contested."); }
+  if (interpretation.switchCue && best && best.similarity >= MID_REUSE_TOPIC_THRESHOLD && !bestIsBroadRelative) { score -= 0.06; reasons.push("Switch cue plus plausible existing topic argues for reuse, not creation."); }
+  if (interpretation.continuationCue && activeTopic && !interpretation.structurallyStrongLabel) { score -= 0.08; reasons.push("Continuation signal argues against splitting into a new topic."); }
+  if (interpretation.subpartCue || interpretation.subpartLikeLabel) { score -= 0.12; reasons.push("Subpart-like phrasing should usually stay inside an existing topic."); }
+  if (interpretation.suspiciousLabel) { score -= 0.14; reasons.push("Suspicious label weakens the create-new case."); }
+  if (interpretation.domainAnchorLike && !interpretation.pairedTargetLike) { score -= 0.1; reasons.push("Broad anchor-like labels are not enough to justify creation alone."); }
+  if (hasAmbiguityFlag(labeling, "candidate_competition") && !interpretation.structurallyStrongLabel) { score -= 0.08; reasons.push("Candidate competition weakens the create-new case."); }
+  if (hasAmbiguityFlag(labeling, "concept_span_clause_like")) { score -= 0.07; reasons.push("Clause-like concept span weakens new-topic creation."); }
 
   if (best) {
     const semanticSupport = getSemanticRetrievalSupport(best.topic, semanticVectorInfo);
-    if (semanticSupport.semanticSimilarity >= 0.22) {
+    if (semanticSupport.semanticSimilarity >= 0.22 && !bestIsBroadRelative) {
       score -= 0.09;
       reasons.push("Semantic retrieval found a meaningful nearby existing topic.");
     }
+
+    if (interpretation.structurallyStrongLabel && bestIsBroadRelative && best.similarity < STRONG_REUSE_TOPIC_THRESHOLD + 0.08) {
+      score += 0.06;
+      reasons.push("Reuse candidate appears to be an umbrella topic, so creation remains useful.");
+    } else if (
+      (interpretation.pairedTargetLike || interpretation.bottleneckLike || interpretation.mechanismLike || interpretation.terminologyBarrierLike || interpretation.questionSynthesisLike) &&
+      !bestIsBroadRelative &&
+      !labelLooksProtectedDurable(label) &&
+      best.similarity >= MID_REUSE_TOPIC_THRESHOLD
+    ) {
+      score -= 0.08;
+      reasons.push("A reasonably aligned existing topic argues against unnecessary creation.");
+    }
   }
 
-  if (!labeling.topic_decision.should_create_new_topic) {
-    score -= 0.02;
-    reasons.push("Deterministic topic decision was cautious about creation.");
-  }
+  if (!labeling.topic_decision.should_create_new_topic && !interpretation.structurallyStrongLabel) { score -= 0.04; reasons.push("Deterministic topic decision was cautious about creation."); }
+  if (interpretation.labelConfidence >= 0.82 && !interpretation.continuationCue && !interpretation.subpartCue && !interpretation.suspiciousLabel) { score += 0.06; reasons.push("A strong clean label supports creating a fresh topic if reuse is weak."); }
 
-  return {
-    kind: "create_new",
-    score: clamp(score, 0, 1),
-    reasons,
-    topic: null,
-    label,
-  };
+  return { kind: "create_new", score: clamp(score, 0, 1), reasons, topic: null, label };
 }
 
 function scoreAmbiguousHypothesis(args: {
@@ -1281,7 +1830,6 @@ function buildResolutionHypotheses(args: {
   second: ScoredTopic | null;
   topGap: number;
   activeTopic?: RouteTopic | null;
-  message: string;
   semanticVectorInfo?: VectorInfo | null;
 }): ResolutionHypothesis[] {
   const {
@@ -1292,7 +1840,6 @@ function buildResolutionHypotheses(args: {
     second,
     topGap,
     activeTopic,
-    message,
     semanticVectorInfo,
   } = args;
 
@@ -1305,7 +1852,6 @@ function buildResolutionHypotheses(args: {
     activeTopic,
     activeTopicScore,
     topGap,
-    message,
   });
 
   const switchExisting = scoreSwitchExistingHypothesis({
@@ -1354,6 +1900,27 @@ function chooseWinningHypothesis(hypotheses: ResolutionHypothesis[]): Resolution
     };
   }
 
+  const create = hypotheses.find((hypothesis) => hypothesis.kind === "create_new");
+  const switchExisting = hypotheses.find((hypothesis) => hypothesis.kind === "switch_existing");
+  const stayActive = hypotheses.find((hypothesis) => hypothesis.kind === "stay_active");
+
+  if (
+    create &&
+    create.label &&
+    labelLooksProtectedDurable(create.label) &&
+    create.score >= 0.5 &&
+    (!switchExisting || create.score >= switchExisting.score - 0.04) &&
+    (!stayActive || create.score >= stayActive.score - 0.06)
+  ) {
+    return {
+      ...create,
+      reasons: [
+        ...create.reasons,
+        "Protected durable label wins close resolver competition.",
+      ],
+    };
+  }
+
   return best;
 }
 
@@ -1366,11 +1933,17 @@ function shouldRecommendFallbackAdjudication(
     return true;
   }
 
-  if (interpretation.ambiguityFlags.includes("candidate_competition")) return true;
-  if (interpretation.ambiguityFlags.includes("needs_adjudication")) return true;
   if (interpretation.ambiguityFlags.includes("label_suspicious")) return true;
-  if (interpretation.ambiguityFlags.includes("low_confidence")) return true;
-  if (topGap < CANDIDATE_COMPETITION_GAP_THRESHOLD) return true;
+  if (interpretation.ambiguityFlags.includes("residue_like_winner")) return true;
+  if (interpretation.ambiguityFlags.includes("null_only_emotional_overcreated")) return true;
+  if (interpretation.ambiguityFlags.includes("qcs_over_synthesis_winner")) return true;
+
+  if (!interpretation.structurallyStrongLabel) {
+    if (interpretation.ambiguityFlags.includes("candidate_competition")) return true;
+    if (interpretation.ambiguityFlags.includes("needs_adjudication")) return true;
+    if (interpretation.ambiguityFlags.includes("low_confidence")) return true;
+    if (topGap < CANDIDATE_COMPETITION_GAP_THRESHOLD) return true;
+  }
 
   return false;
 }
@@ -1397,8 +1970,26 @@ function inferDecisionAction(args: {
   if (
     winner.kind === "create_new" &&
     winner.label &&
+    winner.score >= getStructuralCreateFloor(interpretation) &&
     !interpretation.suspiciousLabel &&
-    !interpretation.subpartLikeLabel
+    !interpretation.subpartLikeLabel &&
+    !interpretation.nullOnlyEmotionalLike &&
+    !interpretation.ambiguityFlags.includes("qcs_over_synthesis_winner") &&
+    (!interpretation.domainAnchorLike || interpretation.pairedTargetLike || interpretation.questionSynthesisLike || interpretation.durableConceptLike)
+  ) {
+    return "create_new_topic";
+  }
+
+  if (
+    winner.kind === "create_new" &&
+    winner.label &&
+    interpretation.durableConceptLike &&
+    winner.score >= Math.max(0.48, getStructuralCreateFloor(interpretation) - 0.04) &&
+    !interpretation.suspiciousLabel &&
+    !interpretation.subpartLikeLabel &&
+    !interpretation.nullOnlyEmotionalLike &&
+    !interpretation.ambiguityFlags.includes("qcs_over_synthesis_winner") &&
+    (!interpretation.domainAnchorLike || interpretation.pairedTargetLike || interpretation.questionSynthesisLike || interpretation.durableConceptLike)
   ) {
     return "create_new_topic";
   }
@@ -1432,7 +2023,15 @@ function buildResolutionTrace(args: {
   decisionAction: ResolutionDecisionAction;
   fallbackRecommended: boolean;
 }): TopicResolutionTrace {
-  const { interpretation, scoredTopics, hypotheses, winner, topGap, decisionAction, fallbackRecommended } = args;
+  const {
+    interpretation,
+    scoredTopics,
+    hypotheses,
+    winner,
+    topGap,
+    decisionAction,
+    fallbackRecommended,
+  } = args;
 
   return {
     interpretation: {
@@ -1450,6 +2049,26 @@ function buildResolutionTrace(args: {
       suspiciousLabel: interpretation.suspiciousLabel,
       subpartLikeLabel: interpretation.subpartLikeLabel,
       ambiguityFlags: interpretation.ambiguityFlags,
+      followupSignals: interpretation.followupSignals,
+
+      pairedTargetLike: interpretation.pairedTargetLike,
+      bottleneckLike: interpretation.bottleneckLike,
+      mechanismLike: interpretation.mechanismLike,
+      domainAnchorLike: interpretation.domainAnchorLike,
+      terminologyBarrierLike: interpretation.terminologyBarrierLike,
+      structureBarrierLike: interpretation.structureBarrierLike,
+      conceptPhraseLike: interpretation.conceptPhraseLike,
+      questionSynthesisLike: interpretation.questionSynthesisLike,
+      questionSynthesisFrame: interpretation.questionSynthesisFrame,
+      questionTriggerKind: interpretation.questionTriggerKind,
+      questionWord: interpretation.questionWord,
+      questionVerb: interpretation.questionVerb,
+      questionObject: interpretation.questionObject,
+      synthesizedLabel: interpretation.synthesizedLabel,
+      durableConceptLike: interpretation.durableConceptLike,
+      structurallyStrongLabel: interpretation.structurallyStrongLabel,
+      nullOnlyEmotionalLike: interpretation.nullOnlyEmotionalLike,
+      labelerCreateRecommended: interpretation.labelerCreateRecommended,
     },
     candidates: scoredTopics.slice(0, 5).map((item) => ({
       topicId: item.topic.id,
@@ -1520,12 +2139,10 @@ function adjudicateTopicResolution(
     second,
     topGap,
     activeTopic,
-    message,
     semanticVectorInfo: normalizedSemanticVectorInfo,
   });
 
   const winner = chooseWinningHypothesis(hypotheses);
-
   const fallbackRecommended = shouldRecommendFallbackAdjudication(winner, interpretation, topGap);
 
   const decisionAction = inferDecisionAction({
@@ -1568,9 +2185,22 @@ function adjudicateTopicResolution(
 
 function looksLikeSuspiciousResolvedLabel(label: string | null) {
   if (!label) return true;
+  if (labelLooksProtectedDurable(label)) return false;
+
+  if (labelLooksProtectedDurable(label)) return false;
+
+  if (!label) return true;
 
   const normalized = normalizeLoose(label);
   if (!normalized) return true;
+
+  if (
+    labelLooksQuestionSynthesisDurable(label) ||
+    labelLooksNaturalisticBottleneck(label) ||
+    labelLooksStructurallyDurable(label)
+  ) {
+    return false;
+  }
 
   const suspiciousSingles = new Set([
     "i",
@@ -1611,6 +2241,7 @@ function looksLikeSuspiciousResolvedLabel(label: string | null) {
 
 function looksLikeSubpartResolvedLabel(label: string | null) {
   if (!label) return false;
+  if (labelLooksProtectedDurable(label)) return false;
   const normalized = normalizeLoose(label);
   return (
     normalized === "scoring" ||
@@ -1729,8 +2360,11 @@ export function shouldTryLLMTopicResolutionFallback(args: {
     return true;
   }
 
-  if (resolutionKind === "created_new_candidate" && matchConfidence < 0.78) {
-    return true;
+  if (resolutionKind === "created_new_candidate") {
+    const durableCreatedLabel =
+      labelLooksNaturalisticBottleneck(resolvedLabel) ||
+      labelLooksStructurallyDurable(resolvedLabel);
+    return matchConfidence < (durableCreatedLabel ? 0.62 : 0.78);
   }
 
   return false;
@@ -1754,29 +2388,64 @@ function conceptualUsefulnessSupportsCreation(args: {
 }): boolean {
   const { best, interpretation, activeTopic } = args;
 
-  if (!best) return true;
   if (interpretation.suspiciousLabel) return false;
+  if (interpretation.nullOnlyEmotionalLike) return false;
   if (interpretation.subpartCue || interpretation.subpartLikeLabel) return false;
-  if (interpretation.continuationCue && activeTopic) return false;
+  if (interpretation.continuationCue && activeTopic && !interpretation.structurallyStrongLabel) return false;
+  if (interpretation.domainAnchorLike && !interpretation.pairedTargetLike && !interpretation.durableConceptLike && !labelLooksProtectedDurable(interpretation.canonicalLabel)) return false;
+
+  if (!best) return true;
+  if (topicLooksBroadRelativeToInterpretation(interpretation, best.topic)) return true;
+  if (interpretation.structurallyStrongLabel && best.similarity < STRONG_REUSE_TOPIC_THRESHOLD) return true;
 
   return best.similarity < MID_REUSE_TOPIC_THRESHOLD;
 }
 
-export function resolveTopicForMessage(
-  message: string,
-  existingTopics: RouteTopic[],
-  activeTopic?: RouteTopic | null,
-  semanticVectorInfo?: VectorInfo | null
-): TopicMatchResult {
-  const normalizedSemanticVectorInfo = normalizeVectorInfo(semanticVectorInfo);
+function shouldUseHardActiveFollowupOverride(
+  interpretation: CandidateInterpretation,
+  labeling: TopicLabelingResult
+) {
+  const f = interpretation.followupSignals;
 
-  const adjudication = adjudicateTopicResolution(
-    message,
-    existingTopics,
-    activeTopic,
-    normalizedSemanticVectorInfo
-  );
+  const strongNewInstructionalTarget =
+    interpretation.labelConfidence >= 0.82 &&
+    !interpretation.suspiciousLabel &&
+    !interpretation.subpartLikeLabel &&
+    (interpretation.pairedTargetLike ||
+      interpretation.bottleneckLike ||
+      interpretation.mechanismLike ||
+      interpretation.conceptPhraseLike ||
+      interpretation.durableConceptLike);
 
+  if (strongNewInstructionalTarget && !interpretation.continuationCue && !interpretation.subpartCue) {
+    return false;
+  }
+
+  if (f.mixedFollowup) return true;
+  if (f.subpartFollowup) return true;
+  if (
+    (f.anaphoricFollowup || f.metaContinuation) &&
+    !labeling.topic_decision.should_create_new_topic &&
+    !strongNewInstructionalTarget
+  ) {
+    return true;
+  }
+
+  if (
+    (interpretation.suspiciousLabel || interpretation.subpartLikeLabel) &&
+    (f.anaphoricFollowup || f.subpartFollowup || f.mixedFollowup || f.metaContinuation)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function buildFinalMatchResultFromDecision(args: {
+  adjudication: ResolutionAdjudication;
+  activeTopic?: RouteTopic | null;
+}): TopicMatchResult {
+  const { adjudication, activeTopic } = args;
   const {
     labeling,
     interpretation,
@@ -1788,117 +2457,6 @@ export function resolveTopicForMessage(
     decisionAction,
     trace,
   } = adjudication;
-
-  if (!existingTopics.length) {
-    const createConfidence =
-      labeling.topic_decision.should_create_new_topic &&
-      !interpretation.suspiciousLabel &&
-      !interpretation.subpartLikeLabel
-        ? labeling.topic_decision.confidence
-        : 0;
-
-    return {
-      matchedTopic: null,
-      vectorInfo,
-      shouldCreateNewTopic: createConfidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR,
-      resolutionKind:
-        createConfidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR ? "created_new_candidate" : "no_match",
-      resolvedLabel: labeling.topic_decision.canonical_label ?? null,
-      matchConfidence:
-        createConfidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR
-          ? createConfidence
-          : labeling.topic_decision.confidence,
-      resolutionTrace: trace,
-    };
-  }
-
-  const explicitExistingTarget = extractExplicitExistingTopicTarget(message, existingTopics, activeTopic);
-  if (explicitExistingTarget) {
-    return {
-      matchedTopic: explicitExistingTarget,
-      vectorInfo,
-      shouldCreateNewTopic: false,
-      resolutionKind:
-        explicitExistingTarget.id === activeTopic?.id ? "fallback_active_topic" : "matched_existing",
-      resolvedLabel: explicitExistingTarget.name,
-      matchConfidence: 0.95,
-      resolutionTrace: trace,
-    };
-  }
-
-  if (looksLikeReturnToPreviousTopic(message)) {
-    const previousTopic = findPreviousNonActiveTopic(existingTopics, activeTopic);
-    if (previousTopic) {
-      return {
-        matchedTopic: previousTopic,
-        vectorInfo,
-        shouldCreateNewTopic: false,
-        resolutionKind: "fallback_existing_topic",
-        resolvedLabel: previousTopic.name,
-        matchConfidence: 0.9,
-        resolutionTrace: trace,
-      };
-    }
-  }
-
-  if (activeTopic && looksLikeMixedAnaphoricSubpartFollowup(message)) {
-    return {
-      matchedTopic: activeTopic,
-      vectorInfo,
-      shouldCreateNewTopic: false,
-      resolutionKind: "fallback_active_topic",
-      resolvedLabel: activeTopic.name,
-      matchConfidence: Math.max(activeTopicScore?.similarity ?? 0, 0.9, interpretation.labelConfidence),
-      resolutionTrace: trace,
-    };
-  }
-
-  if (activeTopic && looksLikeActiveTopicSubpartFollowup(message)) {
-    return {
-      matchedTopic: activeTopic,
-      vectorInfo,
-      shouldCreateNewTopic: false,
-      resolutionKind: "fallback_active_topic",
-      resolvedLabel: activeTopic.name,
-      matchConfidence: Math.max(activeTopicScore?.similarity ?? 0, 0.88, interpretation.labelConfidence),
-      resolutionTrace: trace,
-    };
-  }
-
-  if (
-    activeTopic &&
-    (looksLikeActiveTopicAnaphoricFollowup(message) || looksLikeMetaContinuation(message)) &&
-    !labeling.topic_decision.should_create_new_topic
-  ) {
-    return {
-      matchedTopic: activeTopic,
-      vectorInfo,
-      shouldCreateNewTopic: false,
-      resolutionKind: "fallback_active_topic",
-      resolvedLabel: activeTopic.name,
-      matchConfidence: Math.max(activeTopicScore?.similarity ?? 0, 0.86, interpretation.labelConfidence),
-      resolutionTrace: trace,
-    };
-  }
-
-  if (
-    activeTopic &&
-    (interpretation.suspiciousLabel || interpretation.subpartLikeLabel) &&
-    (looksLikeActiveTopicAnaphoricFollowup(message) ||
-      looksLikeActiveTopicSubpartFollowup(message) ||
-      looksLikeMixedAnaphoricSubpartFollowup(message) ||
-      looksLikeMetaContinuation(message))
-  ) {
-    return {
-      matchedTopic: activeTopic,
-      vectorInfo,
-      shouldCreateNewTopic: false,
-      resolutionKind: "fallback_active_topic",
-      resolvedLabel: activeTopic.name,
-      matchConfidence: Math.max(activeTopicScore?.similarity ?? 0, 0.84),
-      resolutionTrace: trace,
-    };
-  }
 
   if (decisionAction === "stay_on_active_topic" && activeTopic) {
     return {
@@ -1912,19 +2470,20 @@ export function resolveTopicForMessage(
     };
   }
 
-  if (decisionAction === "reuse_existing_topic" && best) {
-    const isActive = best.topic.id === activeTopic?.id;
+  if (decisionAction === "reuse_existing_topic" && winner.topic) {
+    const reuseTopic = winner.topic;
+    const isActive = reuseTopic.id === activeTopic?.id;
     const confidence =
-      second && best.similarity - second.similarity >= HIGH_USEFULNESS_MARGIN
+      second && best && best.similarity - second.similarity >= HIGH_USEFULNESS_MARGIN
         ? Math.max(best.similarity, winner.score)
-        : best.similarity;
+        : Math.max(best?.similarity ?? 0, winner.score);
 
     return {
-      matchedTopic: best.topic,
+      matchedTopic: reuseTopic,
       vectorInfo,
       shouldCreateNewTopic: false,
       resolutionKind: isActive ? "fallback_active_topic" : "matched_existing",
-      resolvedLabel: interpretation.canonicalLabel ?? best.topic.name,
+      resolvedLabel: interpretation.canonicalLabel ?? reuseTopic.name,
       matchConfidence: confidence,
       resolutionTrace: trace,
     };
@@ -1933,7 +2492,8 @@ export function resolveTopicForMessage(
   if (
     decisionAction === "create_new_topic" &&
     interpretation.canonicalLabel &&
-    interpretation.labelConfidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR &&
+    (interpretation.labelConfidence >= getStructuralCreateFloor(interpretation) ||
+      (interpretation.durableConceptLike && winner.score >= Math.max(0.48, getStructuralCreateFloor(interpretation) - 0.04))) &&
     conceptualUsefulnessSupportsCreation({
       best,
       interpretation,
@@ -1952,49 +2512,11 @@ export function resolveTopicForMessage(
   }
 
   if (
-    winner.kind === "switch_existing" &&
-    winner.topic &&
     best &&
     best.similarity >= MID_REUSE_TOPIC_THRESHOLD &&
-    !interpretation.suspiciousLabel
-  ) {
-    const isActive = winner.topic.id === activeTopic?.id;
-
-    return {
-      matchedTopic: winner.topic,
-      vectorInfo,
-      shouldCreateNewTopic: false,
-      resolutionKind: isActive ? "fallback_active_topic" : "fallback_existing_topic",
-      resolvedLabel: interpretation.canonicalLabel ?? winner.topic.name,
-      matchConfidence: Math.max(best.similarity, winner.score),
-      resolutionTrace: trace,
-    };
-  }
-
-  if (
-    interpretation.canonicalLabel &&
-    interpretation.labelConfidence >= LOW_CONFIDENCE_CREATE_NEW_FLOOR &&
     !interpretation.suspiciousLabel &&
-    !interpretation.subpartLikeLabel &&
-    (best?.similarity ?? 0) < MID_REUSE_TOPIC_THRESHOLD &&
-    conceptualUsefulnessSupportsCreation({
-      best,
-      interpretation,
-      activeTopic,
-    })
+    !interpretation.subpartLikeLabel
   ) {
-    return {
-      matchedTopic: null,
-      vectorInfo,
-      shouldCreateNewTopic: true,
-      resolutionKind: "created_new_candidate",
-      resolvedLabel: interpretation.canonicalLabel,
-      matchConfidence: interpretation.labelConfidence,
-      resolutionTrace: trace,
-    };
-  }
-
-  if (best && best.similarity >= MID_REUSE_TOPIC_THRESHOLD && !interpretation.suspiciousLabel) {
     return {
       matchedTopic: best.topic,
       vectorInfo,
@@ -2027,6 +2549,33 @@ export function resolveTopicForMessage(
     };
   }
 
+  if (
+    interpretation.canonicalLabel &&
+    (interpretation.durableConceptLike || looksLikeStrongDeterministicCreateLabel(labeling, interpretation)) &&
+    !interpretation.suspiciousLabel &&
+    !interpretation.subpartLikeLabel &&
+    !interpretation.nullOnlyEmotionalLike &&
+    conceptualUsefulnessSupportsCreation({
+      best,
+      interpretation,
+      activeTopic,
+    })
+  ) {
+    return {
+      matchedTopic: null,
+      vectorInfo,
+      shouldCreateNewTopic: true,
+      resolutionKind: "created_new_candidate",
+      resolvedLabel: interpretation.canonicalLabel,
+      matchConfidence: Math.max(
+        interpretation.labelConfidence,
+        winner.score,
+        getStructuralCreateFloor(interpretation)
+      ),
+      resolutionTrace: trace,
+    };
+  }
+
   return {
     matchedTopic: null,
     vectorInfo,
@@ -2040,6 +2589,110 @@ export function resolveTopicForMessage(
     ),
     resolutionTrace: trace,
   };
+}
+
+export function resolveTopicForMessage(
+  message: string,
+  existingTopics: RouteTopic[],
+  activeTopic?: RouteTopic | null,
+  semanticVectorInfo?: VectorInfo | null
+): TopicMatchResult {
+  const normalizedSemanticVectorInfo = normalizeVectorInfo(semanticVectorInfo);
+
+  const adjudication = adjudicateTopicResolution(
+    message,
+    existingTopics,
+    activeTopic,
+    normalizedSemanticVectorInfo
+  );
+
+  const {
+    labeling,
+    interpretation,
+    vectorInfo,
+    activeTopicScore,
+    trace,
+  } = adjudication;
+
+  if (!existingTopics.length) {
+    const createFloor = getStructuralCreateFloor(interpretation);
+    const createConfidence =
+      (labeling.topic_decision.should_create_new_topic || interpretation.structurallyStrongLabel) &&
+      !interpretation.suspiciousLabel &&
+      !interpretation.subpartLikeLabel &&
+      !interpretation.nullOnlyEmotionalLike &&
+      (!interpretation.domainAnchorLike || interpretation.pairedTargetLike || interpretation.questionSynthesisLike || interpretation.durableConceptLike)
+        ? Math.max(labeling.topic_decision.confidence, interpretation.durableConceptLike ? getStructuralCreateFloor(interpretation) : 0)
+        : 0;
+
+    return {
+      matchedTopic: null,
+      vectorInfo,
+      shouldCreateNewTopic: createConfidence >= createFloor,
+      resolutionKind:
+        createConfidence >= createFloor ? "created_new_candidate" : "no_match",
+      resolvedLabel: labeling.topic_decision.canonical_label ?? null,
+      matchConfidence:
+        createConfidence >= createFloor
+          ? createConfidence
+          : labeling.topic_decision.confidence,
+      resolutionTrace: trace,
+    };
+  }
+
+  const explicitExistingTarget = extractExplicitExistingTopicTarget(message, existingTopics, activeTopic);
+  if (explicitExistingTarget) {
+    return {
+      matchedTopic: explicitExistingTarget,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind:
+        explicitExistingTarget.id === activeTopic?.id ? "fallback_active_topic" : "matched_existing",
+      resolvedLabel: explicitExistingTarget.name,
+      matchConfidence: 0.95,
+      resolutionTrace: trace,
+    };
+  }
+
+  if (interpretation.followupSignals.returnToPrevious) {
+    const previousTopic = findPreviousNonActiveTopic(existingTopics, activeTopic);
+    if (previousTopic) {
+      return {
+        matchedTopic: previousTopic,
+        vectorInfo,
+        shouldCreateNewTopic: false,
+        resolutionKind: "fallback_existing_topic",
+        resolvedLabel: previousTopic.name,
+        matchConfidence: 0.9,
+        resolutionTrace: trace,
+      };
+    }
+  }
+
+  if (activeTopic && shouldUseHardActiveFollowupOverride(interpretation, labeling)) {
+    const hardFollowupFloor = interpretation.followupSignals.mixedFollowup
+      ? 0.9
+      : interpretation.followupSignals.subpartFollowup
+        ? 0.88
+        : interpretation.followupSignals.anaphoricFollowup || interpretation.followupSignals.metaContinuation
+          ? 0.86
+          : 0.84;
+
+    return {
+      matchedTopic: activeTopic,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind: "fallback_active_topic",
+      resolvedLabel: activeTopic.name,
+      matchConfidence: Math.max(activeTopicScore?.similarity ?? 0, hardFollowupFloor, interpretation.labelConfidence),
+      resolutionTrace: trace,
+    };
+  }
+
+  return buildFinalMatchResultFromDecision({
+    adjudication,
+    activeTopic,
+  });
 }
 
 export function buildSeededTopicFromMessage(

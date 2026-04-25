@@ -51,6 +51,10 @@ import {
   runTopicLabelingLLMAdjudication,
   type TopicLabelingLLMDecision,
 } from "@/lib/providers/topic-labeling-llm";
+import {
+  isNarrowerThanExistingBroadTopic,
+  isStructurallyStrongTopicLabel,
+} from "@/lib/runtime/topic-labeling/topic-label-contract";
 
 type RawLearningSpaceTopic = {
   topic_id?: string;
@@ -119,6 +123,10 @@ type TopicResolutionDebug = {
   llm_fallback_recommended_by_policy: boolean;
   llm_fallback_attempted: boolean;
   llm_fallback_used: boolean;
+  deterministic_trusted_without_llm: boolean;
+  deterministic_create_blocked_as_suspicious: boolean;
+  structurally_strong_resolved_label: boolean;
+  narrower_than_active_broad_topic: boolean;
   resolution_kind: RouteResolutionKind;
   resolved_label: string | null;
   match_confidence: number;
@@ -563,6 +571,10 @@ function looksLikeSuspiciousCreateLabel(label: string | null) {
   const normalized = normalizeTextLoose(label);
   if (!normalized) return true;
 
+  if (isStructurallyStrongTopicLabel(label)) {
+    return false;
+  }
+
   const suspiciousSingles = new Set([
     "i",
     "me",
@@ -579,13 +591,84 @@ function looksLikeSuspiciousCreateLabel(label: string | null) {
     "question",
     "new topic",
     "law works",
+    "where to start",
+    "where to even start",
+    "whole thing",
+    "whole thing confusing",
+    "coded language",
+    "another language",
+    "actual blocker",
+    "actual issue",
+    "specific thing",
+    "real issue",
+    "real bottleneck",
+    "tiny word",
   ]);
 
   if (suspiciousSingles.has(normalized)) return true;
-  if (normalized.split(" ").length > 8) return true;
-  if (/\b(help|understand|get|confused|stuck|trouble)\b/i.test(label)) return true;
+
+  const tokenCount = normalized.split(" ").filter(Boolean).length;
+  if (tokenCount > 8) return true;
+
+  if (
+    /\b(help|understand|get|confused|stuck|trouble|pretending|fake|stupid|dumb|panic|spiral|shut down|zoning out|nothing is sticking|missing piece|own brain)\b/i.test(
+      label
+    )
+  ) {
+    return true;
+  }
+
+  if (/^(?:is|are|it is|it s|but|actually|i think)\b/i.test(normalized)) {
+    return true;
+  }
 
   return false;
+}
+
+function shouldTrustDeterministicCreate(args: {
+  resolvedLabel: string | null;
+  matchConfidence: number;
+  activeTopic: RouteTopic | null;
+  resolutionTrace: TopicResolutionTrace | null | undefined;
+}) {
+  const { resolvedLabel, matchConfidence, activeTopic, resolutionTrace } = args;
+
+  if (!resolvedLabel || looksLikeSuspiciousCreateLabel(resolvedLabel)) {
+    return false;
+  }
+
+  const structurallyStrong = isStructurallyStrongTopicLabel(resolvedLabel);
+  const narrowerThanActive = isNarrowerThanExistingBroadTopic({
+    label: resolvedLabel,
+    existingTopicName: activeTopic?.name ?? null,
+  });
+
+  const traceAsRecord = resolutionTrace as
+    | (TopicResolutionTrace & {
+        structurallyStrongLabel?: boolean;
+        nullOnlyEmotionalLike?: boolean;
+        labelerCreateRecommended?: boolean;
+      })
+    | null
+    | undefined;
+
+  if (traceAsRecord?.nullOnlyEmotionalLike) {
+    return false;
+  }
+
+  if (traceAsRecord?.labelerCreateRecommended && matchConfidence >= 0.5) {
+    return true;
+  }
+
+  if (structurallyStrong && matchConfidence >= 0.5) {
+    return true;
+  }
+
+  if (narrowerThanActive && matchConfidence >= 0.46) {
+    return true;
+  }
+
+  return matchConfidence >= 0.58;
 }
 
 function buildSeededTopicFromResolvedLabel(args: {
@@ -699,6 +782,10 @@ function buildTopicResolutionDebug(args: {
   llmFallbackRecommendedByPolicy: boolean;
   llmFallbackAttempted: boolean;
   llmFallbackUsed: boolean;
+  deterministicTrustedWithoutLLM: boolean;
+  deterministicCreateBlockedAsSuspicious: boolean;
+  structurallyStrongResolvedLabel: boolean;
+  narrowerThanActiveBroadTopic: boolean;
   resolutionKind: RouteResolutionKind;
   resolvedLabel: string | null;
   matchConfidence: number;
@@ -710,6 +797,11 @@ function buildTopicResolutionDebug(args: {
     llm_fallback_recommended_by_policy: args.llmFallbackRecommendedByPolicy,
     llm_fallback_attempted: args.llmFallbackAttempted,
     llm_fallback_used: args.llmFallbackUsed,
+    deterministic_trusted_without_llm: args.deterministicTrustedWithoutLLM,
+    deterministic_create_blocked_as_suspicious:
+      args.deterministicCreateBlockedAsSuspicious,
+    structurally_strong_resolved_label: args.structurallyStrongResolvedLabel,
+    narrower_than_active_broad_topic: args.narrowerThanActiveBroadTopic,
     resolution_kind: args.resolutionKind,
     resolved_label: args.resolvedLabel,
     match_confidence: args.matchConfidence,
@@ -731,6 +823,10 @@ function buildResolvedOutcome(args: {
   llmFallbackAllowedByMode: boolean;
   llmFallbackRecommendedByPolicy: boolean;
   llmFallbackAttempted: boolean;
+  deterministicTrustedWithoutLLM?: boolean;
+  deterministicCreateBlockedAsSuspicious?: boolean;
+  structurallyStrongResolvedLabel?: boolean;
+  narrowerThanActiveBroadTopic?: boolean;
 }): TopicResolutionOutcome {
   return {
     topic: args.topic,
@@ -748,6 +844,11 @@ function buildResolvedOutcome(args: {
       llmFallbackRecommendedByPolicy: args.llmFallbackRecommendedByPolicy,
       llmFallbackAttempted: args.llmFallbackAttempted,
       llmFallbackUsed: args.usedLLMFallback,
+      deterministicTrustedWithoutLLM: args.deterministicTrustedWithoutLLM ?? false,
+      deterministicCreateBlockedAsSuspicious:
+        args.deterministicCreateBlockedAsSuspicious ?? false,
+      structurallyStrongResolvedLabel: args.structurallyStrongResolvedLabel ?? false,
+      narrowerThanActiveBroadTopic: args.narrowerThanActiveBroadTopic ?? false,
       resolutionKind: args.resolutionKind,
       resolvedLabel: args.resolvedLabel,
       matchConfidence: args.matchConfidence,
@@ -756,36 +857,86 @@ function buildResolvedOutcome(args: {
   };
 }
 
+function buildConservativeFallbackOutcome(args: {
+  existingTopics: RouteTopic[];
+  message: string;
+  semanticVectorInfo: VectorInfo;
+  activeTopic: RouteTopic | null;
+  topicLabelingMode: TopicLabelingMode;
+  llmFallbackAllowedByMode: boolean;
+  llmFallbackRecommendedByPolicy: boolean;
+  llmFallbackAttempted: boolean;
+  resolutionTrace?: TopicResolutionTrace | null;
+  deterministicCreateBlockedAsSuspicious?: boolean;
+}): TopicResolutionOutcome {
+  const {
+    existingTopics,
+    message,
+    semanticVectorInfo,
+    activeTopic,
+    topicLabelingMode,
+    llmFallbackAllowedByMode,
+    llmFallbackRecommendedByPolicy,
+    llmFallbackAttempted,
+    resolutionTrace,
+    deterministicCreateBlockedAsSuspicious,
+  } = args;
+
+  if (activeTopic) {
+    return buildResolvedOutcome({
+      topic: activeTopic,
+      createdTopic: null,
+      routeTopics: existingTopics,
+      resolutionKind: "fallback_active_topic",
+      vectorInfo: semanticVectorInfo,
+      resolvedLabel: activeTopic.name,
+      matchConfidence: 0.32,
+      usedLLMFallback: false,
+      resolutionTrace: resolutionTrace ?? null,
+      topicLabelingMode,
+      llmFallbackAllowedByMode,
+      llmFallbackRecommendedByPolicy,
+      llmFallbackAttempted,
+      deterministicCreateBlockedAsSuspicious:
+        deterministicCreateBlockedAsSuspicious ?? false,
+    });
+  }
+
+  const fallbackTopic = buildSeededTopicFromMessage(message, existingTopics);
+
+  return buildResolvedOutcome({
+    topic: fallbackTopic,
+    createdTopic: fallbackTopic,
+    routeTopics: [...existingTopics, fallbackTopic],
+    resolutionKind: "created_new_candidate",
+    vectorInfo: semanticVectorInfo,
+    resolvedLabel: fallbackTopic.name,
+    matchConfidence: 0.22,
+    usedLLMFallback: false,
+    resolutionTrace: resolutionTrace ?? null,
+    topicLabelingMode,
+    llmFallbackAllowedByMode,
+    llmFallbackRecommendedByPolicy,
+    llmFallbackAttempted,
+    deterministicCreateBlockedAsSuspicious:
+      deterministicCreateBlockedAsSuspicious ?? false,
+  });
+}
+
 async function resolveTopicOutcome(args: {
   existingTopics: RouteTopic[];
   activeTopicId?: string | null;
   message: string;
   semanticVectorInfo: VectorInfo;
-}): Promise<TopicResolutionOutcome | null> {
+}): Promise<TopicResolutionOutcome> {
   const { existingTopics, activeTopicId, message, semanticVectorInfo } = args;
   const topicLabelingMode = getTopicLabelingMode();
   const llmFallbackAllowedByMode =
     topicLabelingMode === "deterministic_plus_llm";
 
-  if (existingTopics.length === 0) {
-    const createdTopic = buildSeededTopicFromMessage(message, existingTopics);
-
-    return buildResolvedOutcome({
-      topic: createdTopic,
-      createdTopic,
-      routeTopics: [createdTopic],
-      resolutionKind: "created_new_candidate",
-      vectorInfo: semanticVectorInfo,
-      resolvedLabel: createdTopic.name,
-      matchConfidence: 0,
-      usedLLMFallback: false,
-      resolutionTrace: null,
-      topicLabelingMode,
-      llmFallbackAllowedByMode,
-      llmFallbackRecommendedByPolicy: false,
-      llmFallbackAttempted: false,
-    });
-  }
+  // Always run deterministic resolution first, even when there are no
+  // existing topics. This prevents the route from bypassing the upgraded
+  // naturalistic labeler and creating generic seeded labels too early.
 
   const activeTopic =
     activeTopicId != null
@@ -802,6 +953,24 @@ async function resolveTopicOutcome(args: {
   const deterministicSnapshot =
     buildDeterministicTopicResolutionSnapshot(deterministicMatch);
 
+  const deterministicResolvedLabel = deterministicMatch.resolvedLabel ?? null;
+  const structurallyStrongResolvedLabel = isStructurallyStrongTopicLabel(
+    deterministicResolvedLabel
+  );
+  const narrowerThanActiveBroadTopic = isNarrowerThanExistingBroadTopic({
+    label: deterministicResolvedLabel,
+    existingTopicName: activeTopic?.name ?? null,
+  });
+  const deterministicCreateBlockedAsSuspicious =
+    Boolean(deterministicMatch.shouldCreateNewTopic && deterministicResolvedLabel) &&
+    looksLikeSuspiciousCreateLabel(deterministicResolvedLabel);
+  const deterministicCreateTrusted = shouldTrustDeterministicCreate({
+    resolvedLabel: deterministicResolvedLabel,
+    matchConfidence: deterministicMatch.matchConfidence,
+    activeTopic,
+    resolutionTrace: deterministicMatch.resolutionTrace ?? null,
+  });
+
   const llmFallbackRecommendedByPolicy = shouldTryLLMTopicResolutionFallback({
     ...deterministicSnapshot,
     existingTopicsCount: existingTopics.length,
@@ -809,7 +978,9 @@ async function resolveTopicOutcome(args: {
   });
 
   const shouldEscalate =
-    llmFallbackAllowedByMode && llmFallbackRecommendedByPolicy;
+    llmFallbackAllowedByMode &&
+    llmFallbackRecommendedByPolicy &&
+    !deterministicCreateTrusted;
 
   if (!shouldEscalate) {
     if (deterministicMatch.matchedTopic) {
@@ -827,13 +998,17 @@ async function resolveTopicOutcome(args: {
         llmFallbackAllowedByMode,
         llmFallbackRecommendedByPolicy,
         llmFallbackAttempted: false,
+        deterministicTrustedWithoutLLM: deterministicCreateTrusted,
+        deterministicCreateBlockedAsSuspicious,
+        structurallyStrongResolvedLabel,
+        narrowerThanActiveBroadTopic,
       });
     }
 
     if (
       deterministicMatch.shouldCreateNewTopic &&
       deterministicMatch.resolvedLabel &&
-      !looksLikeSuspiciousCreateLabel(deterministicMatch.resolvedLabel)
+      deterministicCreateTrusted
     ) {
       const createdTopic = buildSeededTopicFromResolvedLabel({
         message,
@@ -855,10 +1030,25 @@ async function resolveTopicOutcome(args: {
         llmFallbackAllowedByMode,
         llmFallbackRecommendedByPolicy,
         llmFallbackAttempted: false,
+        deterministicTrustedWithoutLLM: deterministicCreateTrusted,
+        deterministicCreateBlockedAsSuspicious,
+        structurallyStrongResolvedLabel,
+        narrowerThanActiveBroadTopic,
       });
     }
 
-    return null;
+    return buildConservativeFallbackOutcome({
+      existingTopics,
+      message,
+      semanticVectorInfo: deterministicMatch.vectorInfo,
+      activeTopic,
+      topicLabelingMode,
+      llmFallbackAllowedByMode,
+      llmFallbackRecommendedByPolicy,
+      llmFallbackAttempted: false,
+      resolutionTrace: deterministicMatch.resolutionTrace ?? null,
+      deterministicCreateBlockedAsSuspicious,
+    });
   }
 
   const llmDecision = await runTopicLabelingLLMAdjudication({
@@ -965,7 +1155,7 @@ async function resolveTopicOutcome(args: {
   if (
     deterministicMatch.shouldCreateNewTopic &&
     deterministicMatch.resolvedLabel &&
-    !looksLikeSuspiciousCreateLabel(deterministicMatch.resolvedLabel)
+    deterministicCreateTrusted
   ) {
     const createdTopic = buildSeededTopicFromResolvedLabel({
       message,
@@ -990,7 +1180,18 @@ async function resolveTopicOutcome(args: {
     });
   }
 
-  return null;
+  return buildConservativeFallbackOutcome({
+    existingTopics,
+    message,
+    semanticVectorInfo: deterministicMatch.vectorInfo,
+    activeTopic,
+    topicLabelingMode,
+    llmFallbackAllowedByMode,
+    llmFallbackRecommendedByPolicy,
+    llmFallbackAttempted: true,
+    resolutionTrace: deterministicMatch.resolutionTrace ?? null,
+    deterministicCreateBlockedAsSuspicious,
+  });
 }
 
 export async function POST(request: Request) {
@@ -1042,13 +1243,6 @@ export async function POST(request: Request) {
       message,
       semanticVectorInfo,
     });
-
-    if (!topicResolution) {
-      return NextResponse.json(
-        { error: "Unable to resolve or create a topic." },
-        { status: 500 }
-      );
-    }
 
     const {
       topic,

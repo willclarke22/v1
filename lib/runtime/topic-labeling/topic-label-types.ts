@@ -44,10 +44,28 @@ export type CandidateScoreBreakdown = {
   learnerStatePenalty: number;
   lengthPenalty: number;
   total: number;
+
+  /**
+   * Optional discourse/concept diagnostics used by the newer
+   * naturalistic-language scorer.
+   *
+   * These are optional so older score objects remain valid.
+   */
+  discourseRoleWeight?: number;
+  durabilityWeight?: number;
+  mechanismWeight?: number;
+  conceptPhraseWeight?: number;
+  questionSynthesisWeight?: number;
+  competitionRiskPenalty?: number;
+  contaminationPenalty?: number;
+  structurePenalty?: number;
+  nounChunkPenalty?: number;
 };
 
 export type TopicCandidateKind =
   | "named_concept"
+  | "concept_phrase"
+  | "question_synthesis"
   | "of_phrase"
   | "comparison_pair"
   | "domain_shaped"
@@ -61,6 +79,110 @@ export type TopicCandidateKind =
   | "synthetic_anchor"
   | "other";
 
+export type ConceptPhraseShape =
+  | "compound_noun"
+  | "skill_phrase"
+  | "process_phrase"
+  | "mechanism_phrase"
+  | "academic_phrase"
+  | "practical_phrase"
+  | "comparison_like"
+  | "domain_modified"
+  | "unknown";
+
+export type QuestionSynthesisFrame =
+  | "definition"
+  | "criteria"
+  | "cause"
+  | "mechanism"
+  | "process"
+  | "skill"
+  | "selection"
+  | "comparison"
+  | "boundary"
+  | "timing"
+  | "role_responsibility"
+  | "monitoring"
+  | "analysis"
+  | "source_analysis"
+  | "translation"
+  | "classification"
+  | "unknown";
+
+export type QuestionSynthesisTriggerKind =
+  | "explicit_question"
+  | "implicit_problem";
+
+export type QuestionSynthesisWord =
+  | "who"
+  | "what"
+  | "when"
+  | "where"
+  | "why"
+  | "how"
+  | "which"
+  | null;
+
+export type QuestionSynthesisSlots = {
+  /**
+   * The grammatical actor/subject when available.
+   * This is intentionally not assumed to be "I".
+   *
+   * Examples:
+   * - "I"
+   * - "you"
+   * - "someone"
+   * - "people"
+   * - "students"
+   * - null for passive/implicit forms
+   */
+  actor: string | null;
+
+  /**
+   * Main action/relationship cue.
+   *
+   * Examples:
+   * - "analyze"
+   * - "tell whether"
+   * - "caused"
+   * - "count as"
+   * - "use"
+   * - "prove"
+   */
+  verb: string | null;
+
+  /**
+   * Main object of the question/problem frame.
+   *
+   * Examples:
+   * - "primary source"
+   * - "French Revolution"
+   * - "mean and median"
+   * - "promise"
+   */
+  object: string | null;
+
+  /**
+   * Comparison/selective frames can use left/right.
+   *
+   * Examples:
+   * - leftText: "mean"
+   * - rightText: "median"
+   */
+  leftText: string | null;
+  rightText: string | null;
+
+  /**
+   * Optional domain/container.
+   *
+   * Examples:
+   * - "contracts"
+   * - "blood pressure"
+   * - "politics class"
+   */
+  domainText: string | null;
+};
+
 export type TopicCandidate = {
   /**
    * Backward-compatible raw candidate span that older code can still use.
@@ -73,7 +195,19 @@ export type TopicCandidate = {
   normalizedSpan: string;
 
   /**
-   * New structured candidate fields.
+   * Structured candidate kind.
+   *
+   * "concept_phrase" is a durable teachable phrase that is not merely a
+   * loose noun chunk.
+   *
+   * "question_synthesis" is a durable topic label synthesized from an
+   * explicit question or implicit problem frame.
+   *
+   * Examples:
+   * - "How do people analyze a graph?" -> "Graph Analysis"
+   * - "What caused the French Revolution?" -> "Causes of the French Revolution"
+   * - "I can't tell whether to use mean or median." -> "Mean vs Median"
+   * - "The assignment says analyze the source..." -> "Primary Source Analysis"
    */
   kind: TopicCandidateKind;
 
@@ -84,6 +218,7 @@ export type TopicCandidate = {
    * - "rules of curling"
    * - "law of sines vs law of cosines"
    * - "insurance deductible"
+   * - "React state updates"
    */
   coreText: string;
 
@@ -148,6 +283,37 @@ export type TopicCandidate = {
    * Existing lightweight flags.
    */
   qualifiers: string[];
+
+  /**
+   * Optional concept-phrase metadata.
+   *
+   * These fields support making durable teachable concepts outrank weak noun
+   * chunks.
+   */
+  conceptPhraseShape?: ConceptPhraseShape;
+  conceptHead?: string | null;
+  conceptModifiers?: string[];
+  isDurableConcept?: boolean;
+  isWeakNounChunk?: boolean;
+  residueRisk?: "none" | "low" | "medium" | "high";
+
+  /**
+   * Optional Question-to-Concept Synthesis metadata.
+   *
+   * These fields allow the candidate/debug layers to show not only the final
+   * label, but also the reusable frame that produced it.
+   */
+  questionSynthesisFrame?: QuestionSynthesisFrame;
+  questionTriggerKind?: QuestionSynthesisTriggerKind;
+  questionWord?: QuestionSynthesisWord;
+  questionActor?: string | null;
+  questionVerb?: string | null;
+  questionObject?: string | null;
+  questionLeftText?: string | null;
+  questionRightText?: string | null;
+  questionDomainText?: string | null;
+  questionSynthesisSlots?: QuestionSynthesisSlots;
+  synthesizedLabel?: string | null;
 
   /**
    * Existing scoring fields.

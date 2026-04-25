@@ -1,0 +1,1008 @@
+
+=== Topic Labeling Goldens Summary ===
+Total: 100
+Label passed: 79
+Resolution-kind passed: 94
+Create-flag passed: 94
+Matched-topic passed: 100
+End-to-end passed: 79
+Failed: 21
+
+=== Scope Breakdown ===
+baseline-isolated: total=0
+baseline-sequence: total=0
+hard-isolated: total=0
+hard-sequence: total=0
+holdout-isolated: total=0
+holdout-sequence: total=0
+blindv2-isolated: total=0
+blindv2-sequence: total=0
+naturalistic-diverse: total=100 label=79/100 resolution=94/100 endToEnd=79/100 failed=21
+
+=== Suite Breakdown ===
+isolated: total=100 label=79/100 resolution=94/100 endToEnd=79/100 failed=21
+sequence: total=0
+
+=== Category Breakdown ===
+art: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+biology: total=4 label=3/4 resolution=4/4 endToEnd=3/4 failed=1
+cars: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+chemistry: total=4 label=2/4 resolution=3/4 endToEnd=2/4 failed=2
+coding: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+comparisons: total=4 label=2/4 resolution=4/4 endToEnd=2/4 failed=2
+confusion: total=4 label=3/4 resolution=4/4 endToEnd=3/4 failed=1
+cooking: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+driving: total=4 label=3/4 resolution=3/4 endToEnd=3/4 failed=1
+emotions: total=4 label=3/4 resolution=3/4 endToEnd=3/4 failed=1
+finance: total=4 label=2/4 resolution=4/4 endToEnd=2/4 failed=2
+geography: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+grammar: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+health: total=4 label=3/4 resolution=4/4 endToEnd=3/4 failed=1
+history: total=4 label=2/4 resolution=4/4 endToEnd=2/4 failed=2
+jobs: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+law: total=4 label=3/4 resolution=4/4 endToEnd=3/4 failed=1
+mixed: total=4 label=3/4 resolution=4/4 endToEnd=3/4 failed=1
+music: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+nature: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+plumbing: total=4 label=3/4 resolution=3/4 endToEnd=3/4 failed=1
+politics_class: total=4 label=3/4 resolution=4/4 endToEnd=3/4 failed=1
+schoolwork: total=4 label=4/4 resolution=4/4 endToEnd=4/4 failed=0
+space: total=4 label=3/4 resolution=4/4 endToEnd=3/4 failed=1
+sports: total=4 label=1/4 resolution=2/4 endToEnd=1/4 failed=3
+
+=== Failure Layer Breakdown ===
+label failures: 21
+resolution-kind failures: 6
+create-flag failures: 6
+matched-topic failures: 0
+forbidden-resolution failures: 0
+
+=== Likely Failure Class Breakdown ===
+broad_anchor_beat_buried_bottleneck: 2
+domain_shaping_failed: 1
+expected_label_extracted_but_lost_competition: 6
+residue_or_tail_contamination_won: 1
+topicful_message_returned_null: 1
+uncategorized_failure: 10
+
+ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+Γöé (index) Γöé scope                  Γöé suite      Γöé category         Γöé id                                Γöé e2e    Γöé labelPass Γöé resolutionPass Γöé expectedLabel                            Γöé actualLabel                                  Γöé expectedResolution      Γöé actualResolution        Γöé matched Γöé create Γöé confidence Γöé likelyFailure                                   Γöé
+Γö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöñ
+Γöé 0       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cooking'        Γöé 'naturalistic-cooking-001'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Heat Control'                           Γöé 'Heat Control'                               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 1       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cooking'        Γöé 'naturalistic-cooking-002'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Emulsification'                         Γöé 'Emulsification'                             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 2       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cooking'        Γöé 'naturalistic-cooking-003'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Knife Skills'                           Γöé 'Knife Skills'                               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 3       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cooking'        Γöé 'naturalistic-cooking-004'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Gluten Development'                     Γöé 'Gluten Development'                         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 4       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'sports'         Γöé 'naturalistic-sports-005'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Zone Defense'                           Γöé 'Zone Defense'                               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 5       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'sports'         Γöé 'naturalistic-sports-006'         Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Offside in Soccer'                      Γöé 'Soccer Play Offside'                        Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'residue_or_tail_contamination_won'             Γöé
+Γöé 6       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'sports'         Γöé 'naturalistic-sports-007'         Γöé 'FAIL' Γöé 'N'       Γöé 'N'            Γöé 'Earned Runs'                            Γöé ''                                           Γöé 'created_new_candidate' Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé 'expected_label_extracted_but_lost_competition' Γöé
+Γöé 7       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'sports'         Γöé 'naturalistic-sports-008'         Γöé 'FAIL' Γöé 'N'       Γöé 'N'            Γöé 'Tennis Scoring'                         Γöé ''                                           Γöé 'created_new_candidate' Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé 'expected_label_extracted_but_lost_competition' Γöé
+Γöé 8       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'jobs'           Γöé 'naturalistic-jobs-009'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Behavioral Interview Questions'         Γöé 'Behavioral Interview Questions'             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 9       Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'jobs'           Γöé 'naturalistic-jobs-010'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Accomplishment-Based Resume Bullets'    Γöé 'Accomplishment-Based Resume Bullets'        Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 10      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'jobs'           Γöé 'naturalistic-jobs-011'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Informational Interviews'               Γöé 'Informational Interviews'                   Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 11      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'jobs'           Γöé 'naturalistic-jobs-012'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Salary Negotiation'                     Γöé 'Salary Negotiation'                         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 12      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'health'         Γöé 'naturalistic-health-013'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Serving Size'                           Γöé 'Serving Size'                               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 13      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'health'         Γöé 'naturalistic-health-014'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Sleep Cycles'                           Γöé 'Sleep Cycles'                               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 14      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'health'         Γöé 'naturalistic-health-015'         Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Systolic vs Diastolic Blood Pressure'   Γöé 'Systolic vs Diastolic'                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'uncategorized_failure'                         Γöé
+Γöé 15      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'health'         Γöé 'naturalistic-health-016'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Immune Response'                        Γöé 'Immune Response'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 16      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'history'        Γöé 'naturalistic-history-017'        Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Causes of the French Revolution'        Γöé 'French Revolution'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'domain_shaping_failed'                         Γöé
+Γöé 17      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'history'        Γöé 'naturalistic-history-018'        Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Primary Source Analysis'                Γöé 'Feedback Keeps Saying Analysis'             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'uncategorized_failure'                         Γöé
+Γöé 18      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'history'        Γöé 'naturalistic-history-019'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Proxy Wars'                             Γöé 'Proxy Wars'                                 Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 19      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'history'        Γöé 'naturalistic-history-020'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Historical Significance'                Γöé 'Historical Significance'                    Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 20      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'coding'         Γöé 'naturalistic-coding-021'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Asynchronous Code'                      Γöé 'Asynchronous Code'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 21      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'coding'         Γöé 'naturalistic-coding-022'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'React State Updates'                    Γöé 'React State Updates'                        Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 22      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'coding'         Γöé 'naturalistic-coding-023'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'API Error Handling'                     Γöé 'Api Error Handling'                         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 23      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'coding'         Γöé 'naturalistic-coding-024'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Recursion'                              Γöé 'Recursion'                                  Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 24      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'grammar'        Γöé 'naturalistic-grammar-025'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Comma Splices'                          Γöé 'Comma Splices'                              Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 25      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'grammar'        Γöé 'naturalistic-grammar-026'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Subject-Verb Agreement'                 Γöé 'Subject-Verb Agreement'                     Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 26      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'grammar'        Γöé 'naturalistic-grammar-027'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé "Your vs You're"                         Γöé "Your vs You're"                             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 27      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'grammar'        Γöé 'naturalistic-grammar-028'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Passive Voice'                          Γöé 'Passive Voice'                              Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 28      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'schoolwork'     Γöé 'naturalistic-schoolwork-029'     Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Task Initiation'                        Γöé 'Task Initiation'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 29      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'schoolwork'     Γöé 'naturalistic-schoolwork-030'     Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Study Planning'                         Γöé 'Study Planning'                             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 30      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'schoolwork'     Γöé 'naturalistic-schoolwork-031'     Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Test Anxiety'                           Γöé 'Test Anxiety'                               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 31      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'schoolwork'     Γöé 'naturalistic-schoolwork-032'     Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Note-Taking Structure'                  Γöé 'Note-Taking Structure'                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 32      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'music'          Γöé 'naturalistic-music-033'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Rhythm Notation'                        Γöé 'Rhythm Notation'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 33      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'music'          Γöé 'naturalistic-music-034'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Secondary Dominants'                    Γöé 'Secondary Dominants'                        Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 34      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'music'          Γöé 'naturalistic-music-035'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Interval Recognition'                   Γöé 'Interval Recognition'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 35      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'music'          Γöé 'naturalistic-music-036'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Circle of Fifths'                       Γöé 'Circle of Fifths'                           Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 36      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'geography'      Γöé 'naturalistic-geography-037'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Map Scale'                              Γöé 'Map Scale'                                  Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 37      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'geography'      Γöé 'naturalistic-geography-038'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Latitude vs Longitude'                  Γöé 'Latitude vs Longitude'                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 38      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'geography'      Γöé 'naturalistic-geography-039'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Rain Shadow Effect'                     Γöé 'Rain Shadow Effect'                         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 39      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'geography'      Γöé 'naturalistic-geography-040'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Types of Plate Boundaries'              Γöé 'Types of Plate Boundaries'                  Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 40      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'driving'        Γöé 'naturalistic-driving-041'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Parallel Parking'                       Γöé 'Parallel Parking'                           Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 41      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'driving'        Γöé 'naturalistic-driving-042'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Right of Way'                           Γöé 'Right of Way'                               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 42      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'driving'        Γöé 'naturalistic-driving-043'        Γöé 'FAIL' Γöé 'N'       Γöé 'N'            Γöé 'Merge Lanes'                            Γöé ''                                           Γöé 'created_new_candidate' Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé 'expected_label_extracted_but_lost_competition' Γöé
+Γöé 43      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'driving'        Γöé 'naturalistic-driving-044'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Blind Spot Checks'                      Γöé 'Blind Spot Checks'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 44      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'art'            Γöé 'naturalistic-art-045'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'One-Point Perspective'                  Γöé 'One-Point Perspective'                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 45      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'art'            Γöé 'naturalistic-art-046'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Color Mixing'                           Γöé 'Color Mixing'                               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 46      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'art'            Γöé 'naturalistic-art-047'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Negative Space'                         Γöé 'Negative Space'                             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 47      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'art'            Γöé 'naturalistic-art-048'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Shading Values'                         Γöé 'Shading Values'                             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 48      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'politics_class' Γöé 'naturalistic-politics_class-049' Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Separation of Powers'                   Γöé 'Separation of Powers'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 49      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'politics_class' Γöé 'naturalistic-politics_class-050' Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Federalism'                             Γöé 'Federalism'                                 Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 50      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'politics_class' Γöé 'naturalistic-politics_class-051' Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Electoral College'                      Γöé 'Electoral College'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 51      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'politics_class' Γöé 'naturalistic-politics_class-052' Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Civil Liberties vs Civil Rights'        Γöé 'Chapter Uses Civil Liberties'               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '0.88'     Γöé 'uncategorized_failure'                         Γöé
+Γöé 52      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'biology'        Γöé 'naturalistic-biology-053'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Osmosis'                                Γöé 'Osmosis'                                    Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 53      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'biology'        Γöé 'naturalistic-biology-054'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Natural Selection'                      Γöé 'Natural Selection'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 54      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'biology'        Γöé 'naturalistic-biology-055'        Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Mitosis vs Meiosis'                     Γöé 'Blur Together in'                           Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'uncategorized_failure'                         Γöé
+Γöé 55      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'biology'        Γöé 'naturalistic-biology-056'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Activation Energy'                      Γöé 'Activation Energy'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '0.98'     Γöé ''                                              Γöé
+Γöé 56      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'chemistry'      Γöé 'naturalistic-chemistry-057'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Mole Concept'                           Γöé 'Mole Concept'                               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 57      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'chemistry'      Γöé 'naturalistic-chemistry-058'      Γöé 'FAIL' Γöé 'N'       Γöé 'N'            Γöé 'Balancing Chemical Equations'           Γöé ''                                           Γöé 'created_new_candidate' Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé 'topicful_message_returned_null'                Γöé
+Γöé 58      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'chemistry'      Γöé 'naturalistic-chemistry-059'      Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Electronegativity vs Ionization Energy' Γöé 'Electronegativity and Ionization Energy'    Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'uncategorized_failure'                         Γöé
+Γöé 59      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'chemistry'      Γöé 'naturalistic-chemistry-060'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'pH'                                     Γöé 'pH'                                         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 60      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'finance'        Γöé 'naturalistic-finance-061'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Compound Interest'                      Γöé 'Compound Interest'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 61      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'finance'        Γöé 'naturalistic-finance-062'        Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'APR'                                    Γöé 'Mean on'                                    Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'expected_label_extracted_but_lost_competition' Γöé
+Γöé 62      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'finance'        Γöé 'naturalistic-finance-063'        Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Fixed vs Variable Expenses'             Γöé 'Fixed and Variable Expenses'                Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'uncategorized_failure'                         Γöé
+Γöé 63      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'finance'        Γöé 'naturalistic-finance-064'        Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Index Funds'                            Γöé 'Index Funds'                                Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 64      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cars'           Γöé 'naturalistic-cars-065'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Torque vs Horsepower'                   Γöé 'Torque vs Horsepower'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 65      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cars'           Γöé 'naturalistic-cars-066'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Automatic Transmission'                 Γöé 'Automatic Transmission'                     Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 66      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cars'           Γöé 'naturalistic-cars-067'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Anti-Lock Braking System'               Γöé 'Anti-Lock Braking System'                   Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 67      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'cars'           Γöé 'naturalistic-cars-068'           Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Oil Change Intervals'                   Γöé 'Oil Change Intervals'                       Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 68      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'nature'         Γöé 'naturalistic-nature-069'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Photosynthesis'                         Γöé 'Photosynthesis'                             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 69      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'nature'         Γöé 'naturalistic-nature-070'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Food Chains vs Food Webs'               Γöé 'Food Chains vs Food Webs'                   Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 70      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'nature'         Γöé 'naturalistic-nature-071'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Pollination'                            Γöé 'Pollination'                                Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 71      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'nature'         Γöé 'naturalistic-nature-072'         Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Ecological Succession'                  Γöé 'Ecological Succession'                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 72      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'plumbing'       Γöé 'naturalistic-plumbing-073'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'P-Trap'                                 Γöé 'P-Trap'                                     Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 73      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'plumbing'       Γöé 'naturalistic-plumbing-074'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Water Pressure'                         Γöé 'Water Pressure'                             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 74      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'plumbing'       Γöé 'naturalistic-plumbing-075'       Γöé 'FAIL' Γöé 'N'       Γöé 'N'            Γöé 'Shutoff Valve'                          Γöé ''                                           Γöé 'created_new_candidate' Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé 'expected_label_extracted_but_lost_competition' Γöé
+Γöé 75      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'plumbing'       Γöé 'naturalistic-plumbing-076'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Plumbing Vent Pipes'                    Γöé 'Plumbing Vent Pipes'                        Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 76      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'space'          Γöé 'naturalistic-space-077'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Orbital Velocity'                       Γöé 'Orbital Velocity'                           Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 77      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'space'          Γöé 'naturalistic-space-078'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Moon Phases'                            Γöé 'Moon Phases'                                Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 78      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'space'          Γöé 'naturalistic-space-079'          Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Gravity vs Weight'                      Γöé 'Space Class Starts Talking'                 Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '0.98'     Γöé 'expected_label_extracted_but_lost_competition' Γöé
+Γöé 79      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'space'          Γöé 'naturalistic-space-080'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Redshift'                               Γöé 'Redshift'                                   Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 80      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'law'            Γöé 'naturalistic-law-081'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Burden of Proof'                        Γöé 'Burden of Proof'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 81      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'law'            Γöé 'naturalistic-law-082'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Civil Law vs Criminal Law'              Γöé 'Civil Law vs Criminal Law'                  Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 82      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'law'            Γöé 'naturalistic-law-083'            Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Legal Precedent'                        Γöé 'Legal Precedent'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 83      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'law'            Γöé 'naturalistic-law-084'            Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Consideration in Contracts'             Γöé 'Consideration Is Required'                  Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '0.98'     Γöé 'broad_anchor_beat_buried_bottleneck'           Γöé
+Γöé 84      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'emotions'       Γöé 'naturalistic-emotions-085'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Emotion Regulation'                     Γöé 'Emotion Regulation'                         Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 85      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'emotions'       Γöé 'naturalistic-emotions-086'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Rumination'                             Γöé 'Rumination'                                 Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 86      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'emotions'       Γöé 'naturalistic-emotions-087'       Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Cognitive Reappraisal'                  Γöé 'Cognitive Reappraisal'                      Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 87      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'emotions'       Γöé 'naturalistic-emotions-088'       Γöé 'FAIL' Γöé 'N'       Γöé 'N'            Γöé ''                                       Γöé 'Concept in'                                 Γöé 'no_match'              Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '0.98'     Γöé 'broad_anchor_beat_buried_bottleneck'           Γöé
+Γöé 88      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'confusion'      Γöé 'naturalistic-confusion-089'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé ''                                       Γöé ''                                           Γöé 'no_match'              Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé ''                                              Γöé
+Γöé 89      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'confusion'      Γöé 'naturalistic-confusion-090'      Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Monitoring Understanding'               Γöé 'Answering Instead of Only'                  Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'uncategorized_failure'                         Γöé
+Γöé 90      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'confusion'      Γöé 'naturalistic-confusion-091'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Concept Mapping'                        Γöé 'Concept Mapping'                            Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 91      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'confusion'      Γöé 'naturalistic-confusion-092'      Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé ''                                       Γöé ''                                           Γöé 'no_match'              Γöé 'no_match'              Γöé ''      Γöé false  Γöé '0.00'     Γöé ''                                              Γöé
+Γöé 92      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'comparisons'    Γöé 'naturalistic-comparisons-093'    Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Affect vs Effect'                       Γöé 'Affect vs Effect'                           Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 93      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'comparisons'    Γöé 'naturalistic-comparisons-094'    Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Mean vs Median'                         Γöé 'Median in'                                  Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'uncategorized_failure'                         Γöé
+Γöé 94      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'comparisons'    Γöé 'naturalistic-comparisons-095'    Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Weather vs Climate'                     Γöé 'Makes Something Weather Instead of Climate' Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'uncategorized_failure'                         Γöé
+Γöé 95      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'comparisons'    Γöé 'naturalistic-comparisons-096'    Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Sympathy vs Empathy'                    Γöé 'Sympathy vs Empathy'                        Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 96      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'mixed'          Γöé 'naturalistic-mixed-097'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Maillard Reaction'                      Γöé 'Maillard Reaction'                          Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 97      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'mixed'          Γöé 'naturalistic-mixed-098'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'Depreciation'                           Γöé 'Depreciation'                               Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+Γöé 98      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'mixed'          Γöé 'naturalistic-mixed-099'          Γöé 'FAIL' Γöé 'N'       Γöé 'Y'            Γöé 'Baroque vs Renaissance Art'             Γöé 'In Art History'                             Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé 'uncategorized_failure'                         Γöé
+Γöé 99      Γöé 'naturalistic-diverse' Γöé 'isolated' Γöé 'mixed'          Γöé 'naturalistic-mixed-100'          Γöé 'PASS' Γöé 'Y'       Γöé 'Y'            Γöé 'pH Scale'                               Γöé 'pH Scale'                                   Γöé 'created_new_candidate' Γöé 'created_new_candidate' Γöé ''      Γöé true   Γöé '1.00'     Γöé ''                                              Γöé
+ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+
+=== Failed Cases ===
+
+[naturalistic-diverse] [naturalistic-sports-006] soccer offside hidden in watching context
+Message: What makes a soccer play offside when the pass and the run happen almost at the same time? I can see the players moving, but the rule logic still feels like everyone else knows a hidden step.
+Category: sports
+Expected label: Offside in Soccer
+Actual label: Soccer Play Offside
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: residue_or_tail_contamination_won
+Notes: [category:sports]
+Layered failures:
+  - [label] expectedLabel="Offside in Soccer" actualLabel="Soccer Play Offside"
+Candidate debug:
+  1. label="Soccer Play Offside" score=1.000 kind=concept_phrase role=other clause=0
+     core=null tail="s a" domain=null
+     qualifiers=concept_phrase, durable_concept, focus_target, question_target
+     source="What makes a soccer play offside"
+  2. label="Run Happen Almost" score=0.000 kind=noun_chunk role=question clause=1
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause, question_context
+     source="when the pass and the run happen almost at the same time?"
+  3. label="Same Time" score=0.000 kind=noun_chunk role=question clause=1
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause, question_context
+     source="when the pass and the run happen almost at the same time?"
+  4. label="Players Moving" score=0.000 kind=noun_chunk role=other clause=2
+     qualifiers=weak_noun_chunk
+     source="I can see the players moving"
+  5. label="Rule Logic" score=0.000 kind=noun_chunk role=other clause=4
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="but the rule logic still feels like everyone else knows a hidden step."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Soccer Play Offside"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Soccer Play Offside" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Soccer Play Offside" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Soccer Play Offside" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.080 topic=null label="Soccer Play Offside" reasons=
+
+[naturalistic-diverse] [naturalistic-sports-007] baseball scoring confusion with earned runs
+Message: I watched baseball with my cousin and mostly nodded like I understood the stats. The score itself was fine, but earned runs were where I lost track because I could not tell what counted against the pitcher.
+Category: sports
+Expected label: Earned Runs
+Actual label: null
+Expected resolution: created_new_candidate
+Actual resolution: no_match
+Expected should create: true
+Actual should create: false
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.00
+Likely failure class: expected_label_extracted_but_lost_competition
+Notes: [category:sports]
+Layered failures:
+  - [label] expectedLabel="Earned Runs" actualLabel=null
+  - [resolution] expectedResolutionKind=created_new_candidate actualResolutionKind=no_match
+  - [create_flag] expectedShouldCreate=true actualShouldCreate=false
+Candidate debug:
+  1. label="Earned Runs" score=1.000 kind=concept_phrase role=other clause=3
+     qualifiers=concept_phrase, durable_concept, focus_target, strong_phrase_match, cross_clause_recovery, bottleneck_context, contrastive_clause
+     source="but earned runs were where I lost track because I could not tell what counted against the pitcher."
+  2. label="Score Itself Was Fine" score=0.500 kind=other role=other clause=1
+     core=null tail="The" domain=null
+     source="The score itself was fine"
+  3. label="Watched Baseball" score=0.000 kind=noun_chunk role=other clause=0
+     qualifiers=weak_noun_chunk, bottleneck_context, focus_context
+     source="I watched baseball with my cousin and mostly nodded like I understood the stats."
+  4. label="Mostly Nodded" score=0.000 kind=noun_chunk role=other clause=0
+     qualifiers=weak_noun_chunk, bottleneck_context, focus_context
+     source="I watched baseball with my cousin and mostly nodded like I understood the stats."
+  5. label="Lost Track" score=0.000 kind=noun_chunk role=other clause=3
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="but earned runs were where I lost track because I could not tell what counted against the pitcher."
+  6. label="Not Tell" score=0.000 kind=noun_chunk role=other clause=3
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="but earned runs were where I lost track because I could not tell what counted against the pitcher."
+  7. label="Counted Against" score=0.000 kind=noun_chunk role=other clause=3
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="but earned runs were where I lost track because I could not tell what counted against the pitcher."
+Resolution trace:
+  winner=ambiguous score=0.420 topic=null label=null
+  decisionAction=no_confident_decision fallbackRecommended=true topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label=null reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label=null reasons=No existing topic candidate is available.
+    - kind=create_new score=0.000 topic=null label=null reasons=No canonical label is available for a new topic.
+    - kind=ambiguous score=0.420 topic=null label=null reasons=Deterministic confidence is low.; Suspicious extracted label increases ambiguity.
+
+[naturalistic-diverse] [naturalistic-sports-008] tennis scoring implied by frustration
+Message: I know tennis points go love and fifteen and all that, but the game suddenly said deuce and advantage and I got lost. The real issue is tennis scoring, not the hitting part.
+Category: sports
+Expected label: Tennis Scoring
+Actual label: null
+Expected resolution: created_new_candidate
+Actual resolution: no_match
+Expected should create: true
+Actual should create: false
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.00
+Likely failure class: expected_label_extracted_but_lost_competition
+Notes: [category:sports]
+Layered failures:
+  - [label] expectedLabel="Tennis Scoring" actualLabel=null
+  - [resolution] expectedResolutionKind=created_new_candidate actualResolutionKind=no_match
+  - [create_flag] expectedShouldCreate=true actualShouldCreate=false
+Candidate debug:
+  1. label="Tennis Scoring" score=1.000 kind=concept_phrase role=other clause=3
+     qualifiers=concept_phrase, durable_concept, focus_target, bottleneck_target, narrowed_target, bottleneck_context, contrastive_clause, focus_context
+     source="The real issue is tennis scoring, not the hitting part."
+  2. label="Know Tennis Points Go Love" score=0.000 kind=noun_chunk role=other clause=0
+     qualifiers=weak_noun_chunk
+     source="I know tennis points go love and fifteen and all that"
+  3. label="Got Lost" score=0.000 kind=noun_chunk role=other clause=2
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="but the game suddenly said deuce and advantage and I got lost."
+Resolution trace:
+  winner=ambiguous score=0.420 topic=null label=null
+  decisionAction=no_confident_decision fallbackRecommended=true topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label=null reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label=null reasons=No existing topic candidate is available.
+    - kind=create_new score=0.000 topic=null label=null reasons=No canonical label is available for a new topic.
+    - kind=ambiguous score=0.420 topic=null label=null reasons=Deterministic confidence is low.; Suspicious extracted label increases ambiguity.
+
+[naturalistic-diverse] [naturalistic-health-015] blood pressure message with systolic/diastolic comparison
+Message: The nurse said my blood pressure numbers and I nodded because that seemed easier. But later I realized I don't know what systolic vs diastolic actually means.
+Category: health
+Expected label: Systolic vs Diastolic Blood Pressure
+Actual label: Systolic vs Diastolic
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: uncategorized_failure
+Notes: [category:health]
+Layered failures:
+  - [label] expectedLabel="Systolic vs Diastolic Blood Pressure" actualLabel="Systolic vs Diastolic"
+Candidate debug:
+  1. label="Systolic vs Diastolic" score=1.000 kind=concept_phrase role=comparison clause=1
+     qualifiers=focus_target, bottleneck_target, durable_concept, bottleneck_context, contrastive_clause
+     source="But later I realized I don't know what systolic vs diastolic actually means."
+  2. label="Blood Pressure Numbers" score=1.000 kind=concept_phrase role=other clause=0
+     qualifiers=durable_concept
+     source="The nurse said my blood pressure numbers and I nodded because that seemed easier."
+  3. label="Seemed Easier" score=0.000 kind=noun_chunk role=other clause=0
+     qualifiers=weak_noun_chunk
+     source="The nurse said my blood pressure numbers and I nodded because that seemed easier."
+  4. label="Don't Know" score=0.000 kind=noun_chunk role=comparison clause=1
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="But later I realized I don't know what systolic vs diastolic actually means."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Systolic vs Diastolic"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Systolic vs Diastolic" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Systolic vs Diastolic" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Systolic vs Diastolic" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Paired target structure supports a stable instructional topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Systolic vs Diastolic" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-history-017] history causation hidden in broad revolution message
+Message: What actually caused the French Revolution if it was not just one angry crowd or one bad king? I can remember some names, but the cause-and-effect chain still feels mushy.
+Category: history
+Expected label: Causes of the French Revolution
+Actual label: French Revolution
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: domain_shaping_failed
+Notes: [category:history]
+Layered failures:
+  - [label] expectedLabel="Causes of the French Revolution" actualLabel="French Revolution"
+Candidate debug:
+  1. label="French Revolution" score=1.000 kind=concept_phrase role=question clause=0
+     qualifiers=durable_concept, bottleneck_context, question_context
+     source="What actually caused the French Revolution if it was not just one angry crowd or one bad king?"
+  2. label="One Angry Crowd" score=0.000 kind=noun_chunk role=question clause=0
+     qualifiers=weak_noun_chunk, bottleneck_context, question_context
+     source="What actually caused the French Revolution if it was not just one angry crowd or one bad king?"
+  3. label="One Bad King" score=0.000 kind=noun_chunk role=question clause=0
+     qualifiers=weak_noun_chunk, bottleneck_context, question_context
+     source="What actually caused the French Revolution if it was not just one angry crowd or one bad king?"
+  4. label="Remember Some Names" score=0.000 kind=noun_chunk role=other clause=1
+     qualifiers=weak_noun_chunk
+     source="I can remember some names"
+  5. label="Cause-and-Effect Chain" score=0.000 kind=noun_chunk role=other clause=3
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="but the cause-and-effect chain still feels mushy."
+  6. label="Feels Mushy" score=0.000 kind=noun_chunk role=other clause=3
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="but the cause-and-effect chain still feels mushy."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="French Revolution"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="French Revolution" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="French Revolution" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="French Revolution" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.080 topic=null label="French Revolution" reasons=
+
+[naturalistic-diverse] [naturalistic-history-018] primary source analysis hidden in essay complaint
+Message: How do I analyze a primary source instead of just summarizing what it says? My history essay feedback keeps saying analysis, and I do not think I actually know what that means.
+Category: history
+Expected label: Primary Source Analysis
+Actual label: Feedback Keeps Saying Analysis
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: uncategorized_failure
+Notes: [category:history]
+Layered failures:
+  - [label] expectedLabel="Primary Source Analysis" actualLabel="Feedback Keeps Saying Analysis"
+Candidate debug:
+  1. label="Feedback Keeps Saying Analysis" score=1.000 kind=concept_phrase role=other clause=1
+     qualifiers=concept_phrase, durable_concept, focus_target, concept_head_match, bottleneck_context
+     source="My history essay feedback keeps saying analysis, and I do not think I actually know what that means."
+  2. label="Primary Source Instead of" score=1.000 kind=concept_phrase role=question clause=0
+     qualifiers=durable_concept, question_context
+     source="How do I analyze a primary source instead of just summarizing what it says?"
+  3. label="Not Think" score=0.000 kind=noun_chunk role=other clause=1
+     qualifiers=weak_noun_chunk, bottleneck_context
+     source="My history essay feedback keeps saying analysis, and I do not think I actually know what that means."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Feedback Keeps Saying Analysis"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Feedback Keeps Saying Analysis" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Feedback Keeps Saying Analysis" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Feedback Keeps Saying Analysis" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Feedback Keeps Saying Analysis" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-driving-043] merge lanes topic hidden in highway message
+Message: Highway driving looks fine when someone else does it. But merge lanes make me panic because I don't know when I am supposed to speed up or wait.
+Category: driving
+Expected label: Merge Lanes
+Actual label: null
+Expected resolution: created_new_candidate
+Actual resolution: no_match
+Expected should create: true
+Actual should create: false
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.00
+Likely failure class: expected_label_extracted_but_lost_competition
+Notes: [category:driving]
+Layered failures:
+  - [label] expectedLabel="Merge Lanes" actualLabel=null
+  - [resolution] expectedResolutionKind=created_new_candidate actualResolutionKind=no_match
+  - [create_flag] expectedShouldCreate=true actualShouldCreate=false
+Candidate debug:
+  1. label="Merge Lanes" score=1.000 kind=concept_phrase role=confusion clause=2
+     qualifiers=concept_phrase, durable_concept, focus_target, strong_phrase_match, cross_clause_recovery, bottleneck_context, difficulty_context, contrastive_clause
+     source="But merge lanes make me panic because I don't know"
+  2. label="Highway Driving Looks Fine" score=0.500 kind=other role=other clause=0
+     source="Highway driving looks fine"
+  3. label="Don't Know" score=0.000 kind=noun_chunk role=confusion clause=2
+     qualifiers=weak_noun_chunk, bottleneck_context, difficulty_context, contrastive_clause
+     source="But merge lanes make me panic because I don't know"
+  4. label="Speed Up" score=0.000 kind=noun_chunk role=other clause=3
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="when I am supposed to speed up or wait."
+Resolution trace:
+  winner=ambiguous score=0.420 topic=null label=null
+  decisionAction=no_confident_decision fallbackRecommended=true topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label=null reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label=null reasons=No existing topic candidate is available.
+    - kind=create_new score=0.000 topic=null label=null reasons=No canonical label is available for a new topic.
+    - kind=ambiguous score=0.420 topic=null label=null reasons=Deterministic confidence is low.; Suspicious extracted label increases ambiguity.
+
+[naturalistic-diverse] [naturalistic-politics_class-052] civil liberties vs civil rights comparison
+Message: The chapter uses civil liberties and civil rights like I should just feel the difference. I don't, so I need the comparison more than a huge politics overview.
+Category: politics_class
+Expected label: Civil Liberties vs Civil Rights
+Actual label: Chapter Uses Civil Liberties
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.88
+Likely failure class: uncategorized_failure
+Notes: [category:politics_class]
+Layered failures:
+  - [label] expectedLabel="Civil Liberties vs Civil Rights" actualLabel="Chapter Uses Civil Liberties"
+Candidate debug:
+  1. label="Chapter Uses Civil Liberties" score=1.000 kind=concept_phrase role=context clause=0
+     qualifiers=durable_concept, domain_anchor_context, domain_anchor
+     source="The chapter uses civil liberties and civil rights like I should just feel the difference."
+  2. label="Civil Rights" score=1.000 kind=concept_phrase role=context clause=0
+     qualifiers=domain_anchor, durable_concept, domain_anchor_context
+     source="The chapter uses civil liberties and civil rights like I should just feel the difference."
+  3. label="Don't So" score=0.000 kind=noun_chunk role=other clause=1
+     qualifiers=weak_noun_chunk
+     source="I don't, so I need the comparison more than a huge politics overview."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Chapter Uses Civil Liberties"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Chapter Uses Civil Liberties" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Chapter Uses Civil Liberties" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Chapter Uses Civil Liberties" reasons=Deterministic label confidence is 0.88.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; No existing topic matches strongly enough to force reuse.; Broad anchor-like labels are not enough to justify creation alone.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Chapter Uses Civil Liberties" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-biology-055] mitosis meiosis comparison
+Message: I know both mitosis and meiosis are cell division, which is exactly the problem. They blur together in my head, so I need that comparison.
+Category: biology
+Expected label: Mitosis vs Meiosis
+Actual label: Blur Together in
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: uncategorized_failure
+Notes: [category:biology]
+Layered failures:
+  - [label] expectedLabel="Mitosis vs Meiosis" actualLabel="Blur Together in"
+Candidate debug:
+  1. label="Blur Together in" score=1.000 kind=concept_phrase role=confusion clause=1
+     qualifiers=focus_target, bottleneck_target, durable_concept, bottleneck_context, difficulty_context
+     source="They blur together in my head, so I need that comparison."
+  2. label="Mitosis" score=1.000 kind=named_concept role=other clause=0
+     qualifiers=named_concept, focus_target, bottleneck_context, focus_context, durable_concept, residue_risk
+     source="I know both mitosis and meiosis are cell division, which is exactly the problem."
+  3. label="Meiosis" score=1.000 kind=named_concept role=other clause=0
+     qualifiers=named_concept, focus_target, bottleneck_context, focus_context, durable_concept, residue_risk
+     source="I know both mitosis and meiosis are cell division, which is exactly the problem."
+  4. label="Cell Division Which" score=0.000 kind=noun_chunk role=other clause=0
+     qualifiers=weak_noun_chunk, bottleneck_context, focus_context
+     source="I know both mitosis and meiosis are cell division, which is exactly the problem."
+  5. label="Head So" score=0.000 kind=noun_chunk role=confusion clause=1
+     qualifiers=weak_noun_chunk, bottleneck_context, difficulty_context
+     source="They blur together in my head, so I need that comparison."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Blur Together in"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Blur Together in" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Blur Together in" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Blur Together in" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Blur Together in" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-chemistry-058] balancing equations implicit
+Message: I can read a chemical equation when it is already finished. But when I have to balance it myself, I start changing numbers randomly.
+Category: chemistry
+Expected label: Balancing Chemical Equations
+Actual label: null
+Expected resolution: created_new_candidate
+Actual resolution: no_match
+Expected should create: true
+Actual should create: false
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.00
+Likely failure class: topicful_message_returned_null
+Notes: [category:chemistry]
+Layered failures:
+  - [label] expectedLabel="Balancing Chemical Equations" actualLabel=null
+  - [resolution] expectedResolutionKind=created_new_candidate actualResolutionKind=no_match
+  - [create_flag] expectedShouldCreate=true actualShouldCreate=false
+Candidate debug:
+  1. label="Already Finished" score=0.000 kind=noun_chunk role=other clause=1
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="when it is already finished."
+  2. label="Balance It Myself" score=0.000 kind=noun_chunk role=other clause=3
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="when I have to balance it myself, I start changing numbers randomly."
+  3. label="Chemical Equation" score=0.000 kind=noun_chunk role=context clause=0
+     qualifiers=domain_anchor, weak_noun_chunk, domain_anchor_context
+     source="I can read a chemical equation"
+Resolution trace:
+  winner=ambiguous score=0.640 topic=null label=null
+  decisionAction=no_confident_decision fallbackRecommended=true topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label=null reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label=null reasons=No existing topic candidate is available.
+    - kind=create_new score=0.000 topic=null label=null reasons=No canonical label is available for a new topic.
+    - kind=ambiguous score=0.640 topic=null label=null reasons=Deterministic labeling reports candidate competition.; Deterministic confidence is low.; Suspicious extracted label increases ambiguity.
+
+[naturalistic-diverse] [naturalistic-chemistry-059] electronegativity vs ionization energy comparison
+Message: The periodic trends lesson has too many arrows. Electronegativity and ionization energy keep feeling like the same idea even though I know they are not.
+Category: chemistry
+Expected label: Electronegativity vs Ionization Energy
+Actual label: Electronegativity and Ionization Energy
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: uncategorized_failure
+Notes: [category:chemistry]
+Layered failures:
+  - [label] expectedLabel="Electronegativity vs Ionization Energy" actualLabel="Electronegativity and Ionization Energy"
+Candidate debug:
+  1. label="Electronegativity and Ionization Energy" score=1.000 kind=concept_phrase role=other clause=1
+     qualifiers=concept_phrase, durable_concept, focus_target, concept_head_match
+     source="Electronegativity and ionization energy keep feeling like the same idea even"
+  2. label="Ionization Energy Keep Feeling" score=1.000 kind=concept_phrase role=other clause=1
+     qualifiers=durable_concept
+     source="Electronegativity and ionization energy keep feeling like the same idea even"
+  3. label="Same Idea Even" score=0.000 kind=noun_chunk role=other clause=1
+     qualifiers=weak_noun_chunk
+     source="Electronegativity and ionization energy keep feeling like the same idea even"
+  4. label="Periodic Trends Lesson Has" score=0.000 kind=noun_chunk role=context clause=0
+     core=null tail="too" domain=null
+     qualifiers=weak_noun_chunk, domain_anchor_context, domain_anchor
+     source="The periodic trends lesson has too many arrows."
+  5. label="Many Arrows" score=0.000 kind=noun_chunk role=context clause=0
+     qualifiers=domain_anchor, weak_noun_chunk, domain_anchor_context
+     source="The periodic trends lesson has too many arrows."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Electronegativity and Ionization Energy"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Electronegativity and Ionization Energy" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Electronegativity and Ionization Energy" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Electronegativity and Ionization Energy" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Electronegativity and Ionization Energy" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-finance-062] APR target hidden in credit card message
+Message: What does APR actually mean on a credit card if I already know interest is bad when I carry a balance? The term feels like something I was supposed to learn in an adult class.
+Category: finance
+Expected label: APR
+Actual label: Mean on
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: expected_label_extracted_but_lost_competition
+Notes: [category:finance]
+Layered failures:
+  - [label] expectedLabel="APR" actualLabel="Mean on"
+Candidate debug:
+  1. label="Mean on" score=1.000 kind=concept_phrase role=other clause=0
+     qualifiers=focus_target, bottleneck_target, durable_concept, bottleneck_context
+     source="What does APR actually mean on a credit card if I already know interest is bad"
+  2. label="Apr" score=1.000 kind=concept_phrase role=other clause=0
+     qualifiers=concept_phrase, durable_concept, focus_target, strong_phrase_match, cross_clause_recovery, bottleneck_context
+     source="What does APR actually mean on a credit card if I already know interest is bad"
+  3. label="Already Know Interest" score=1.000 kind=concept_phrase role=other clause=0
+     qualifiers=durable_concept, bottleneck_context, residue_risk
+     source="What does APR actually mean on a credit card if I already know interest is bad"
+  4. label="Learn in" score=0.000 kind=concept_phrase role=context clause=2
+     qualifiers=durable_concept, domain_anchor_context, domain_anchor
+     source="The term feels like something I was supposed to learn in an adult class."
+  5. label="Credit Card" score=0.000 kind=noun_chunk role=other clause=0
+     qualifiers=weak_noun_chunk, bottleneck_context
+     source="What does APR actually mean on a credit card if I already know interest is bad"
+  6. label="Term Feels" score=0.000 kind=noun_chunk role=context clause=2
+     qualifiers=domain_anchor, weak_noun_chunk, domain_anchor_context
+     source="The term feels like something I was supposed to learn in an adult class."
+  7. label="Adult Class" score=0.000 kind=noun_chunk role=context clause=2
+     qualifiers=domain_anchor, weak_noun_chunk, domain_anchor_context
+     source="The term feels like something I was supposed to learn in an adult class."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Mean on"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Mean on" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Mean on" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Mean on" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Mean on" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-finance-063] budgeting comparison needs fixed vs variable expenses
+Message: My budget looks fine until real life happens. I think I am mixing up fixed and variable expenses, because some costs keep surprising me even though I should have planned them.
+Category: finance
+Expected label: Fixed vs Variable Expenses
+Actual label: Fixed and Variable Expenses
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: uncategorized_failure
+Notes: [category:finance]
+Layered failures:
+  - [label] expectedLabel="Fixed vs Variable Expenses" actualLabel="Fixed and Variable Expenses"
+Candidate debug:
+  1. label="Fixed and Variable Expenses" score=1.000 kind=concept_phrase role=comparison clause=2
+     qualifiers=concept_phrase, durable_concept, focus_target, concept_head_match, bottleneck_context, difficulty_context
+     source="I think I am mixing up fixed and variable expenses, because some costs keep surprising me even"
+  2. label="Variable Expenses" score=1.000 kind=concept_phrase role=comparison clause=2
+     qualifiers=durable_concept, bottleneck_context, difficulty_context
+     source="I think I am mixing up fixed and variable expenses, because some costs keep surprising me even"
+  3. label="Mixing Up Fixed" score=1.000 kind=concept_phrase role=comparison clause=2
+     qualifiers=durable_concept, bottleneck_context, difficulty_context
+     source="I think I am mixing up fixed and variable expenses, because some costs keep surprising me even"
+  4. label="Though I Should Have Planned Them" score=1.000 kind=other role=other clause=3
+     qualifiers=focus_target, bottleneck_target, bottleneck_context, contrastive_clause
+     source="though I should have planned them."
+  5. label="Budget Looks Fine" score=0.380 kind=other role=other clause=0
+     core=null tail="My" domain=null
+     source="My budget looks fine"
+  6. label="Costs Keep Surprising" score=0.000 kind=noun_chunk role=comparison clause=2
+     core=null tail="some" domain=null
+     qualifiers=focus_target, bottleneck_target, weak_noun_chunk, bottleneck_context, difficulty_context
+     source="I think I am mixing up fixed and variable expenses, because some costs keep surprising me even"
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Fixed and Variable Expenses"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Fixed and Variable Expenses" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Fixed and Variable Expenses" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Fixed and Variable Expenses" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Fixed and Variable Expenses" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-plumbing-075] shutoff valve target implied
+Message: I am not trying to become a plumber. I just want to know where the shutoff valve fits into the whole leak situation before I panic.
+Category: plumbing
+Expected label: Shutoff Valve
+Actual label: null
+Expected resolution: created_new_candidate
+Actual resolution: no_match
+Expected should create: true
+Actual should create: false
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.00
+Likely failure class: expected_label_extracted_but_lost_competition
+Notes: [category:plumbing]
+Layered failures:
+  - [label] expectedLabel="Shutoff Valve" actualLabel=null
+  - [resolution] expectedResolutionKind=created_new_candidate actualResolutionKind=no_match
+  - [create_flag] expectedShouldCreate=true actualShouldCreate=false
+Candidate debug:
+  1. label="Shutoff Valve" score=1.000 kind=concept_phrase role=confusion clause=1
+     qualifiers=concept_phrase, durable_concept, focus_target, strong_phrase_match, cross_clause_recovery, bottleneck_context, difficulty_context
+     source="I just want to know where the shutoff valve fits into the whole leak situation before I panic."
+  2. label="Not Trying" score=0.000 kind=noun_chunk role=other clause=0
+     qualifiers=weak_noun_chunk
+     source="I am not trying to become a plumber."
+  3. label="Whole Leak Situation" score=0.000 kind=noun_chunk role=confusion clause=1
+     qualifiers=weak_noun_chunk, bottleneck_context, difficulty_context
+     source="I just want to know where the shutoff valve fits into the whole leak situation before I panic."
+Resolution trace:
+  winner=ambiguous score=0.420 topic=null label=null
+  decisionAction=no_confident_decision fallbackRecommended=true topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label=null reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label=null reasons=No existing topic candidate is available.
+    - kind=create_new score=0.000 topic=null label=null reasons=No canonical label is available for a new topic.
+    - kind=ambiguous score=0.420 topic=null label=null reasons=Deterministic confidence is low.; Suspicious extracted label increases ambiguity.
+
+[naturalistic-diverse] [naturalistic-space-079] gravity vs weight comparison
+Message: I can say gravity pulls things down, but then space class starts talking about mass and weight. I think gravity vs weight is the comparison I need.
+Category: space
+Expected label: Gravity vs Weight
+Actual label: Space Class Starts Talking
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.98
+Likely failure class: expected_label_extracted_but_lost_competition
+Notes: [category:space]
+Layered failures:
+  - [label] expectedLabel="Gravity vs Weight" actualLabel="Space Class Starts Talking"
+Candidate debug:
+  1. label="Space Class Starts Talking" score=1.000 kind=concept_phrase role=context clause=2
+     qualifiers=focus_target, bottleneck_target, durable_concept, domain_anchor_context, bottleneck_context, domain_anchor, contrastive_clause
+     source="but then space class starts talking about mass and weight."
+  2. label="Gravity vs Weight" score=1.000 kind=concept_phrase role=comparison clause=3
+     core=null tail="think" domain=null
+     qualifiers=durable_concept
+     source="I think gravity vs weight is the comparison I need."
+  3. label="Mass" score=0.000 kind=other role=context clause=2
+     qualifiers=domain_anchor, domain_anchor_context, bottleneck_context, contrastive_clause, residue_risk
+     source="but then space class starts talking about mass and weight."
+  4. label="Say Gravity Pulls Things Down" score=0.000 kind=noun_chunk role=other clause=0
+     qualifiers=weak_noun_chunk
+     source="I can say gravity pulls things down"
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Space Class Starts Talking"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Space Class Starts Talking" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Space Class Starts Talking" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Space Class Starts Talking" reasons=Deterministic label confidence is 0.98.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; No existing topic matches strongly enough to force reuse.; Broad anchor-like labels are not enough to justify creation alone.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Space Class Starts Talking" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-law-084] contract consideration hidden in agreement message
+Message: What makes a promise legally count as a contract when the textbook says consideration is required? I thought contracts were just promises written down, but that is clearly too simple.
+Category: law
+Expected label: Consideration in Contracts
+Actual label: Consideration Is Required
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.98
+Likely failure class: broad_anchor_beat_buried_bottleneck
+Notes: [category:law]
+Layered failures:
+  - [label] expectedLabel="Consideration in Contracts" actualLabel="Consideration Is Required"
+Candidate debug:
+  1. label="Consideration Is Required" score=1.000 kind=concept_phrase role=question clause=1
+     qualifiers=concept_phrase, durable_concept, focus_target, context_recovery, domain_anchor_context, bottleneck_context, contrastive_clause, question_context
+     source="when the textbook says consideration is required?"
+  2. label="Textbook Says Consideration" score=1.000 kind=concept_phrase role=question clause=1
+     qualifiers=durable_concept, domain_anchor_context, bottleneck_context, contrastive_clause, question_context, residue_risk
+     source="when the textbook says consideration is required?"
+  3. label="Promise Legally Count As" score=0.000 kind=noun_chunk role=other clause=0
+     qualifiers=weak_noun_chunk
+     source="What makes a promise legally count as a contract"
+  4. label="Thought Contracts" score=0.000 kind=noun_chunk role=other clause=2
+     qualifiers=weak_noun_chunk
+     source="I thought contracts were just promises written down"
+  5. label="Promises Written Down" score=0.000 kind=noun_chunk role=other clause=2
+     qualifiers=weak_noun_chunk
+     source="I thought contracts were just promises written down"
+  6. label="Too Simple" score=0.000 kind=noun_chunk role=other clause=4
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="but that is clearly too simple."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Consideration Is Required"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Consideration Is Required" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Consideration Is Required" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Consideration Is Required" reasons=Deterministic label confidence is 0.98.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Consideration Is Required" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-emotions-088] null emotional no topic
+Message: I feel weird and tired and kind of behind, but I cannot tell what the actual topic is. There is no specific class thing or concept in my head yet.
+Category: emotions
+Expected label: n/a
+Actual label: Concept in
+Expected resolution: no_match
+Actual resolution: created_new_candidate
+Expected should create: false
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 0.98
+Likely failure class: broad_anchor_beat_buried_bottleneck
+Notes: [category:emotions]
+Layered failures:
+  - [label] expectedLabel=null actualLabel="Concept in"
+  - [resolution] expectedResolutionKind=no_match actualResolutionKind=created_new_candidate
+  - [create_flag] expectedShouldCreate=false actualShouldCreate=true
+Candidate debug:
+  1. label="Actual Topic Is" score=1.000 kind=other role=other clause=3
+     core=null tail="the ." domain=null
+     qualifiers=focus_target, bottleneck_target, bottleneck_context, contrastive_clause
+     source="the actual topic is."
+  2. label="Concept in" score=1.000 kind=concept_phrase role=context clause=4
+     qualifiers=durable_concept, domain_anchor_context, domain_anchor
+     source="There is no specific class thing or concept in my head yet."
+  3. label="Of Behind" score=0.480 kind=concept_phrase role=other clause=0
+     qualifiers=durable_concept, residue_risk
+     source="I feel weird and tired and kind of behind"
+  4. label="No Specific Class Thing" score=0.000 kind=noun_chunk role=context clause=4
+     qualifiers=weak_noun_chunk, domain_anchor_context, domain_anchor
+     source="There is no specific class thing or concept in my head yet."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Concept in"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Concept in" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Concept in" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Concept in" reasons=Deterministic label confidence is 0.98.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; No existing topic matches strongly enough to force reuse.; Broad anchor-like labels are not enough to justify creation alone.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Concept in" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-confusion-090] metacognitive confusion target
+Message: How can I tell whether I understand something while I am answering instead of only after someone corrects me? I think the thing I need is monitoring my own understanding.
+Category: confusion
+Expected label: Monitoring Understanding
+Actual label: Answering Instead of Only
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: uncategorized_failure
+Notes: [category:confusion]
+Layered failures:
+  - [label] expectedLabel="Monitoring Understanding" actualLabel="Answering Instead of Only"
+Candidate debug:
+  1. label="Monitoring My Own Understanding" score=1.000 kind=concept_phrase role=attempt clause=1
+     qualifiers=concept_phrase, durable_concept, focus_target, bottleneck_target, narrowed_target, bottleneck_context, focus_context
+     source="I think the thing I need is monitoring my own understanding."
+  2. label="Answering Instead of Only" score=1.000 kind=concept_phrase role=question clause=0
+     qualifiers=durable_concept, question_context
+     source="How can I tell whether I understand something while I am answering instead of only after someone corrects me?"
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Answering Instead of Only"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Answering Instead of Only" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Answering Instead of Only" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Answering Instead of Only" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Paired target structure supports a stable instructional topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Answering Instead of Only" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-comparisons-094] mean vs median comparison
+Message: Why does one huge number change the mean so much but not the median in the same way? The stats examples are fine until mean and median stop feeling different.
+Category: comparisons
+Expected label: Mean vs Median
+Actual label: Median in
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: uncategorized_failure
+Notes: [category:comparisons]
+Layered failures:
+  - [label] expectedLabel="Mean vs Median" actualLabel="Median in"
+Candidate debug:
+  1. label="Median in" score=1.000 kind=concept_phrase role=question clause=1
+     qualifiers=focus_target, bottleneck_target, durable_concept, bottleneck_context, contrastive_clause, question_context
+     source="but not the median in the same way?"
+  2. label="Mean So Much" score=1.000 kind=concept_phrase role=other clause=0
+     qualifiers=durable_concept
+     source="Why does one huge number change the mean so much"
+  3. label="Same Way" score=1.000 kind=concept_phrase role=question clause=1
+     qualifiers=durable_concept, bottleneck_context, contrastive_clause, question_context
+     source="but not the median in the same way?"
+  4. label="Until Mean" score=1.000 kind=concept_phrase role=other clause=3
+     qualifiers=durable_concept, bottleneck_context, contrastive_clause
+     source="until mean and median stop feeling different."
+  5. label="Stats Examples Are Fine" score=0.580 kind=other role=other clause=2
+     core=null tail="The" domain=null
+     source="The stats examples are fine"
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Median in"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Median in" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Median in" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Median in" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.300 topic=null label="Median in" reasons=Deterministic labeling reports candidate competition.
+
+[naturalistic-diverse] [naturalistic-comparisons-095] weather vs climate comparison
+Message: What makes something weather instead of climate when the example still talks about temperature or rain? I can repeat the definition, but I cannot classify examples reliably.
+Category: comparisons
+Expected label: Weather vs Climate
+Actual label: Makes Something Weather Instead of Climate
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: uncategorized_failure
+Notes: [category:comparisons]
+Layered failures:
+  - [label] expectedLabel="Weather vs Climate" actualLabel="Makes Something Weather Instead of Climate"
+Candidate debug:
+  1. label="Makes Something Weather Instead of Climate" score=1.000 kind=concept_phrase role=other clause=0
+     qualifiers=durable_concept, residue_risk
+     source="What makes something weather instead of climate"
+  2. label="Temperature Or Rain" score=0.540 kind=other role=question clause=1
+     qualifiers=domain_anchor, bottleneck_context, contrastive_clause, question_context
+     source="when the example still talks about temperature or rain?"
+  3. label="Classify Examples Reliably" score=0.000 kind=noun_chunk role=other clause=4
+     qualifiers=weak_noun_chunk, bottleneck_context, contrastive_clause
+     source="but I cannot classify examples reliably."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="Makes Something Weather Instead of Climate"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="Makes Something Weather Instead of Climate" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="Makes Something Weather Instead of Climate" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="Makes Something Weather Instead of Climate" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Paired target structure supports a stable instructional topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; Bottleneck-like label supports topic creation if reuse is weak or too broad.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.080 topic=null label="Makes Something Weather Instead of Climate" reasons=
+
+[naturalistic-diverse] [naturalistic-mixed-099] art history comparison target
+Message: In art history I can memorize the names, but Baroque and Renaissance still blur together when I look at a painting. I need the comparison, not just dates.
+Category: mixed
+Expected label: Baroque vs Renaissance Art
+Actual label: In Art History
+Expected resolution: created_new_candidate
+Actual resolution: created_new_candidate
+Expected should create: true
+Actual should create: true
+Expected matched topic: n/a
+Actual matched topic: null
+Actual confidence: 1.00
+Likely failure class: uncategorized_failure
+Notes: [category:mixed]
+Layered failures:
+  - [label] expectedLabel="Baroque vs Renaissance Art" actualLabel="In Art History"
+Candidate debug:
+  1. label="In Art History" score=1.000 kind=concept_phrase role=other clause=0
+     qualifiers=durable_concept
+     source="In art history I can memorize the names"
+  2. label="Blur Together" score=0.000 kind=noun_chunk role=confusion clause=2
+     qualifiers=weak_noun_chunk, bottleneck_context, difficulty_context, contrastive_clause
+     source="but Baroque and Renaissance still blur together"
+  3. label="Comparison Not" score=0.000 kind=noun_chunk role=other clause=4
+     qualifiers=weak_noun_chunk
+     source="I need the comparison, not just dates."
+Resolution trace:
+  winner=create_new score=1.000 topic=null label="In Art History"
+  decisionAction=create_new_topic fallbackRecommended=false topGap=0.000
+  hypotheses:
+    - kind=stay_active score=0.000 topic=null label="In Art History" reasons=No active topic is available to stay on.
+    - kind=switch_existing score=0.000 topic=null label="In Art History" reasons=No existing topic candidate is available.
+    - kind=create_new score=1.000 topic=null label="In Art History" reasons=Deterministic label confidence is 1.00.; Deterministic label looks strong and create-worthy.; Structured bottleneck label supports creation when reuse is weak or too broad.; Label specificity supports a stable new topic.; Concept-phrase label is a durable teachable topic.; Durable naturalistic concept supports creation when reuse is weak.; No existing topic matches strongly enough to force reuse.; A strong clean label supports creating a fresh topic if reuse is weak.
+    - kind=ambiguous score=0.080 topic=null label="In Art History" reasons=

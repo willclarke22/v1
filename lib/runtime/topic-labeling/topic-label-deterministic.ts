@@ -13,6 +13,7 @@ import {
   isClauseLikeSpan,
   messageLooksLikePureFollowup,
   normalizeCandidateSpan,
+  normalizeLoose,
   normalizeSurface,
   scoreSpecificity,
   semanticTokens,
@@ -21,6 +22,97 @@ import {
   looksLikeSuspiciousLabel,
   analyzeMessageStructure,
 } from "./topic-label-normalization";
+
+type CandidateFamily =
+  | "paired"
+  | "synthesis"
+  | "concept"
+  | "bottleneck"
+  | "mechanism"
+  | "comparison"
+  | "terminology"
+  | "structured"
+  | "anchor"
+  | "other"
+  | "residue";
+
+type DiscourseCue =
+  | "but"
+  | "except"
+  | "actually"
+  | "mainly"
+  | "mostly"
+  | "especially"
+  | "specifically"
+  | "actual_thing"
+  | "real_bottleneck"
+  | "where_lost"
+  | "when_breaks"
+  | "until"
+  | "after_looking_again"
+  | "the_part"
+  | "the_thing"
+  | "terminology_barrier"
+  | "language_barrier"
+  | "mechanism_request";
+
+type DiscourseZone = {
+  clauseIndex: number;
+  raw: string;
+  normalized: string;
+  cues: DiscourseCue[];
+};
+
+type DiscourseProfile = {
+  broadAnchorZones: DiscourseZone[];
+  bottleneckZones: DiscourseZone[];
+  residueZones: DiscourseZone[];
+  contrastBoundaryIndex: number | null;
+
+  hasBroadToNarrowShape: boolean;
+  hasLateBottleneckShape: boolean;
+  hasLanguageBarrierShape: boolean;
+  hasTerminologyBarrierShape: boolean;
+  hasMechanismRequestShape: boolean;
+  hasComparisonShape: boolean;
+  hasNullOnlyEmotionalShape: boolean;
+
+  domainHints: string[];
+  targetHints: string[];
+  notes: string[];
+};
+
+/**
+ * Superset of the older TopicCandidate scoreBreakdown shape.
+ * Keeping the older fields makes this structurally compatible with TopicCandidate.
+ * The extra fields make debugging easier.
+ */
+type DeterministicCandidateScoreBreakdown = {
+  roleWeight: number;
+  focusWeight: number;
+  contrastWeight: number;
+  confusionAdjacencyWeight: number;
+  requestAdjacencyWeight: number;
+  contextRecoveryWeight: number;
+  mentionWeight: number;
+  specificityWeight: number;
+  reuseHintWeight: number;
+  genericPenalty: number;
+  clausePenalty: number;
+  learnerStatePenalty: number;
+  lengthPenalty: number;
+  total: number;
+
+  discourseRoleWeight: number;
+  durabilityWeight: number;
+  mechanismWeight: number;
+  conceptPhraseWeight: number;
+  questionSynthesisWeight: number;
+  competitionRiskPenalty: number;
+  contaminationPenalty: number;
+  structurePenalty: number;
+  nounChunkPenalty: number;
+};
 
 function overlapScore(a: string[], b: string[]) {
   if (!a.length || !b.length) return 0;
@@ -87,34 +179,144 @@ function findReuseCandidate(
   return null;
 }
 
-function chooseBestCandidate(candidates: TopicCandidate[]): TopicCandidate | null {
-  if (!candidates.length) return null;
-  return candidates.slice().sort((a, b) => b.score - a.score)[0] ?? null;
-}
-
-function isCreateWorthyBroadLabel(
-  label: string | null,
-  confidence: number,
-  specificity: TopicSpecificity
-) {
-  if (!label) return false;
-  if (specificity !== "broad_but_usable") return false;
-  if (looksLikeSuspiciousLabel(label)) return false;
-  return confidence >= 0.74;
-}
-
 function getCandidateDisplayLabel(candidate: TopicCandidate) {
   return shapeDisplayLabel(candidate.coreText) ?? shapeDisplayLabel(candidate.span);
+}
+
+function candidateHasQualifier(candidate: TopicCandidate, qualifier: string) {
+  return candidate.qualifiers.includes(qualifier);
+}
+
+function candidateLooksQuestionSynthesis(candidate: TopicCandidate) {
+  return (
+    candidate.kind === "question_synthesis" ||
+    candidateHasQualifier(candidate, "question_synthesis") ||
+    candidateHasQualifier(candidate, "qcs_candidate") ||
+    Boolean(candidate.synthesizedLabel) ||
+    Boolean(candidate.questionSynthesisFrame)
+  );
+}
+
+
+function candidateLooksCleanExplicitConcept(candidate: TopicCandidate) {
+  if (candidateLooksQuestionSynthesis(candidate)) return false;
+  if (candidateLooksWeakNounChunk(candidate)) return false;
+  if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate)) return false;
+
+  return (
+    candidate.kind === "concept_phrase" ||
+    candidate.kind === "comparison_pair" ||
+    candidate.kind === "domain_shaped" ||
+    candidate.kind === "of_phrase" ||
+    candidate.kind === "named_concept" ||
+    candidateHasQualifier(candidate, "strong_phrase_match") ||
+    candidateHasQualifier(candidate, "durable_concept") ||
+    candidateHasQualifier(candidate, "concept_phrase")
+  );
+}
+
+function candidateLooksProtectedDurableLabel(candidate: TopicCandidate) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  if (!label) return false;
+
+  return (
+    candidateLooksCleanExplicitConcept(candidate) ||
+    /\b(?:earned runs|tennis scoring|merge lanes|shutoff valve|balancing chemical equations|zone defense|offside in soccer|right of way|knife skills|task initiation|civil liberties vs civil rights|gravity vs weight|weather vs climate|baroque vs renaissance art|your vs you're|apr|systolic vs diastolic blood pressure|consideration in contracts)\b/i.test(label)
+  );
+}
+
+function candidateLooksQcsOverSynthesized(candidate: TopicCandidate, allCandidates: TopicCandidate[]) {
+  if (!candidateLooksQuestionSynthesis(candidate)) return false;
+
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  if (!label) return false;
+
+  const hasCleanExplicitCompetitor = allCandidates.some((other) => {
+    if (other === candidate) return false;
+    if (!candidateLooksProtectedDurableLabel(other)) return false;
+    if (candidateLooksResidueLike(other)) return false;
+    if (!other.shouldCompeteAsTopic) return false;
+
+    const otherLabel = getCandidateDisplayLabel(other)?.toLowerCase() ?? "";
+    if (!otherLabel) return false;
+
+    // Exact/clean durable concepts should beat verbose QCS labels when the
+    // QCS label merely wraps the same message frame around the concept.
+    return (
+      label.includes(otherLabel) ||
+      otherLabel.includes(label) ||
+      overlapScore(semanticTokens(label), semanticTokens(otherLabel)) >= 0.35
+    );
+  });
+
+  if (!hasCleanExplicitCompetitor) return false;
+
+  return (
+    /^causes of .+/.test(label) ||
+    /^how to .+/.test(label) ||
+    /^.+ criteria$/.test(label) ||
+    /\bvs\b/.test(label) ||
+    label.split(/\s+/).length >= 5
+  );
+}
+
+function candidateIsOnlySuspiciousWhenStandalone(candidate: TopicCandidate) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  const tokenCount = tokenize(label).length;
+
+  if (tokenCount > 1) return false;
+
+  return /^(?:scoring|sweeping|mean|question|help|part|thing|stuff|say|example|concept|topic)$/.test(label);
+}
+
+
+function candidateLooksConceptPhrase(candidate: TopicCandidate) {
+  return (
+    candidate.kind === "concept_phrase" ||
+    candidateHasQualifier(candidate, "concept_phrase") ||
+    Boolean(candidate.isDurableConcept) ||
+    candidateHasQualifier(candidate, "durable_concept")
+  );
+}
+
+function candidateLooksWeakNounChunk(candidate: TopicCandidate) {
+  return (
+    candidate.kind === "noun_chunk" &&
+    (Boolean(candidate.isWeakNounChunk) ||
+      candidateHasQualifier(candidate, "weak_noun_chunk") ||
+      candidate.residueRisk === "medium" ||
+      candidate.residueRisk === "high")
+  );
+}
+
+function candidateHasHighResidueRisk(candidate: TopicCandidate) {
+  return candidate.residueRisk === "high" || candidateHasQualifier(candidate, "residue_risk");
+}
+
+function candidateLooksDurablePracticalConcept(candidate: TopicCandidate) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  if (!label) return false;
+
+  return (
+    candidateLooksProtectedDurableLabel(candidate) ||
+    candidateLooksConceptPhrase(candidate) ||
+    /\b(?:control|skills?|development|defense|scoring|questions?|bullets?|interviews?|negotiation|size|cycles?|pressure|response|analysis|wars?|significance|code|updates?|handling|splices?|agreement|voice|initiation|planning|anxiety|structure|notation|recognition|scale|perspective|powers?|federalism|selection|energy|concept|equations?|expenses?|funds?|transmission|system|intervals?|parking|way|lanes|checks|values|boundaries|velocity|phases?|proof|precedent|consideration|regulation|rumination|reappraisal|mapping|reaction|depreciation)\b/.test(label) ||
+    /\b(?:interview questions|resume bullets|serving size|sleep cycles|primary source analysis|react state updates|api error handling|right of way|burden of proof|emotion regulation|concept mapping|oil change intervals|water pressure|moon phases|map scale)\b/.test(label)
+  );
 }
 
 function candidateLooksClauseWrapped(candidate: TopicCandidate) {
   const label = getCandidateDisplayLabel(candidate);
   if (!label) return false;
-  return /^(?:is|are|it'?s|it is|but|actually|after looking again|i think)\b/i.test(label);
+
+  return /^(?:is|are|it'?s|it is|but|actually|after looking again|i think|i guess|what i am saying is)\b/i.test(
+    label
+  );
 }
 
 function candidateLooksTailHeavy(candidate: TopicCandidate) {
   const combined = `${candidate.coreText} ${candidate.tailText ?? ""}`.toLowerCase();
+
   return (
     /\band everyone else seems\b/i.test(combined) ||
     /\bare what make\b/i.test(combined) ||
@@ -126,7 +328,16 @@ function candidateLooksTailHeavy(candidate: TopicCandidate) {
     /\btbh\b/i.test(combined) ||
     /\blose track\b/i.test(combined) ||
     /\bwhole thing confusing\b/i.test(combined) ||
-    /\bmess(?:es)? me up\b/i.test(combined)
+    /\bmess(?:es)? me up\b/i.test(combined) ||
+    /\bthrowing me off\b/i.test(combined) ||
+    /\btripping me up\b/i.test(combined) ||
+    /\bdoesn'?t click\b/i.test(combined) ||
+    /\bnot clicking\b/i.test(combined) ||
+    /\bwhere i stop\b/i.test(combined) ||
+    /\bpretending i understand\b/i.test(combined) ||
+    /\bfeels? fake\b/i.test(combined) ||
+    /\bfeel(?:ing)? stupid\b/i.test(combined) ||
+    /\bpanic\b/i.test(combined)
   );
 }
 
@@ -142,27 +353,30 @@ function candidateLooksNoisyResidue(candidate: TopicCandidate) {
     label === "lose track" ||
     label === "student loans tbh" ||
     label === "premium mean" ||
+    label === "where to start" ||
+    label === "where to even start" ||
+    label === "once everything is ready" ||
+    label === "interview coming up" ||
+    label === "ui changes in" ||
+    label === "type of case" ||
+    label === "until it gets louder" ||
+    label === "already know five other words" ||
+    label === "what is going on" ||
+    label === "what's going on" ||
     /\btbh\b/.test(core) ||
     /\blol\b/.test(core) ||
     /\byet\b/.test(core) ||
     /\blose track\b/.test(core) ||
     /\bwhole thing confusing\b/.test(core) ||
     /\bmess(?:es)? me up\b/.test(core) ||
+    /\bthrowing me off\b/.test(core) ||
+    /\btripping me up\b/.test(core) ||
+    /\bpretending i understand\b/.test(core) ||
+    /\bfeel(?:ing)? stupid\b/.test(core) ||
+    /\bfeel(?:s)? fake\b/.test(core) ||
+    /\bpanic\b/.test(core) ||
     /\btbh\b/.test(tail) ||
     /\blol\b/.test(tail)
-  );
-}
-
-function candidateLooksAbstractButUseful(candidate: TopicCandidate, message: string) {
-  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
-  if (!label) return false;
-
-  return (
-    /\bhow\b/.test(label) &&
-    /\bwork\b/.test(label) &&
-    /\b(i want to learn about|would really like to learn about|help me understand|can you explain)\b/i.test(
-      message
-    )
   );
 }
 
@@ -174,7 +388,13 @@ function candidateLooksProblemFraming(candidate: TopicCandidate) {
     /\bdeterministic code can'?t solve all\b/i.test(label) ||
     /\bsolve all my problems\b/i.test(label) ||
     /\bwhole thing confusing\b/i.test(label) ||
-    /\blose track\b/i.test(label)
+    /\blose track\b/i.test(label) ||
+    /\bwhere to start\b/i.test(label) ||
+    /\bwhere to even start\b/i.test(label) ||
+    /\bfeel(?:s|ing)? stupid\b/i.test(label) ||
+    /\bfeel(?:s)? fake\b/i.test(label) ||
+    /\bpretending\b/i.test(label) ||
+    /\bnot clicking\b/i.test(label)
   );
 }
 
@@ -185,6 +405,7 @@ function candidateLooksMechanismLike(candidate: TopicCandidate, message: string)
   if (!label) return false;
 
   return (
+    candidateHasQualifier(candidate, "mechanism_target") ||
     /\bhow\b/.test(label) ||
     /\bwhy\b/.test(label) ||
     /\bwork\b/.test(label) ||
@@ -197,13 +418,27 @@ function candidateLooksMechanismLike(candidate: TopicCandidate, message: string)
     /\bsteps\b/.test(label) ||
     /\bflow\b/.test(label) ||
     /\bsequence\b/.test(label) ||
+    /\bfunction\b/.test(label) ||
+    /\brole\b/.test(label) ||
+    /\bword order\b/.test(label) ||
     /\bwhat happens\b/.test(label) ||
     /\bwhy .+ happens\b/.test(label) ||
     /\bhow .+ works\b/.test(core) ||
     /\bhow .+ work\b/.test(core) ||
-    /\bwhy .+ work\b/.test(core) ||
-    /\bwhy .+ works\b/.test(core) ||
     /\bhow\b.*\bwork\b/i.test(message)
+  );
+}
+
+function candidateLooksAbstractButUseful(candidate: TopicCandidate, message: string) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  if (!label) return false;
+
+  return (
+    /\bhow\b/.test(label) &&
+    /\bwork\b/.test(label) &&
+    /\b(i want to learn about|would really like to learn about|help me understand|can you explain|explain)\b/i.test(
+      message
+    )
   );
 }
 
@@ -215,34 +450,15 @@ function candidateLooksObjectOnly(candidate: TopicCandidate) {
   if (tokens.length > 2) return false;
 
   return (
-    !/\bhow\b|\bwhy\b|\bprocess\b|\bmechanism\b|\bsteps?\b|\bflow\b/i.test(label) &&
-    !candidate.qualifiers.includes("comparison_pair") &&
-    !candidate.qualifiers.includes("focus_target")
+    !candidateHasQualifier(candidate, "mechanism_target") &&
+    !candidateHasQualifier(candidate, "comparison_pair") &&
+    !candidateHasQualifier(candidate, "focus_target") &&
+    !candidateHasQualifier(candidate, "bottleneck_target") &&
+    !candidateHasQualifier(candidate, "paired_with_domain_anchor") &&
+    !/\bhow\b|\bwhy\b|\bprocess\b|\bmechanism\b|\bsteps?\b|\bflow\b|\bfunction\b|\brole\b|\bword order\b/i.test(
+      label
+    )
   );
-}
-
-function candidateLooksLateFocusPreferred(candidate: TopicCandidate) {
-  return (
-    candidate.qualifiers.includes("late_focus_target") ||
-    candidate.qualifiers.includes("focus_target") ||
-    candidate.qualifiers.includes("cross_clause_recovery")
-  );
-}
-
-function candidateLooksExplicitConfusionTarget(candidate: TopicCandidate, message: string) {
-  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
-  const sourceClause = candidate.sourceClause.toLowerCase();
-
-  return (
-    /\b(mainly confused about|specifically confused about|especially confused about)\b/i.test(message) ||
-    /\bconfused about\b/.test(sourceClause) ||
-    /\bstuck on\b/.test(sourceClause) ||
-    /\bdon'?t get\b/.test(sourceClause) ||
-    /\bkeep mixing\b/.test(sourceClause) ||
-    /\bthe .+ part\b/.test(sourceClause)
-  )
-    ? Boolean(label)
-    : false;
 }
 
 function candidateLooksGeneralBucket(candidate: TopicCandidate) {
@@ -251,12 +467,542 @@ function candidateLooksGeneralBucket(candidate: TopicCandidate) {
 
   return (
     label === "rules" ||
+    label === "rule" ||
     label === "law" ||
     label === "system" ||
     label === "process" ||
     label === "part" ||
     label === "thing" ||
-    label === "concept"
+    label === "concept" ||
+    label === "topic" ||
+    label === "stuff" ||
+    label === "section" ||
+    label === "unit"
+  );
+}
+
+function candidateLooksStructuredDurable(candidate: TopicCandidate) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  if (!label) return false;
+
+  return (
+    /\bvs\b/.test(label) ||
+    /\b of \b/.test(label) ||
+    /\b in \b/.test(label) ||
+    /\b on \b/.test(label) ||
+    /\bdifference between\b/.test(label) ||
+    /\bhow\b.*\bwork\b/.test(label) ||
+    /\bterminology\b/.test(label) ||
+    /\bjargon\b/.test(label)
+  );
+}
+
+function candidateLooksBottleneckTarget(candidate: TopicCandidate, message: string) {
+  const sourceClause = candidate.sourceClause.toLowerCase();
+
+  return (
+    candidateHasQualifier(candidate, "bottleneck_target") ||
+    candidateHasQualifier(candidate, "focus_target") ||
+    candidateHasQualifier(candidate, "late_focus_target") ||
+    candidateHasQualifier(candidate, "cross_clause_recovery") ||
+    candidateHasQualifier(candidate, "paired_with_domain_anchor") ||
+    candidateHasQualifier(candidate, "narrowed_target") ||
+    /\bthe (?:part|thing|bit)\b/i.test(sourceClause) ||
+    /\bactual\b/i.test(sourceClause) ||
+    /\breal\b/i.test(sourceClause) ||
+    /\bspecific\b/i.test(sourceClause) ||
+    /\bmainly\b/i.test(sourceClause) ||
+    /\bmostly\b/i.test(sourceClause) ||
+    /\bespecially\b/i.test(sourceClause) ||
+    /\bexcept\b/i.test(sourceClause) ||
+    /\bthrowing me off\b/i.test(sourceClause) ||
+    /\btripping me up\b/i.test(sourceClause) ||
+    /\bdoesn'?t click\b/i.test(sourceClause) ||
+    /\bstopped following\b/i.test(sourceClause) ||
+    /\bbreaks my understanding\b/i.test(sourceClause) ||
+    /\bwhere i (?:start getting lost|stopped following|lose track)\b/i.test(message)
+  );
+}
+
+function candidateLooksDomainAnchor(candidate: TopicCandidate) {
+  return (
+    candidateHasQualifier(candidate, "domain_anchor") ||
+    candidateHasQualifier(candidate, "domain_anchor_context") ||
+    candidate.kind === "context_anchor"
+  );
+}
+
+function candidateLooksNarrowedTarget(candidate: TopicCandidate) {
+  return candidateHasQualifier(candidate, "narrowed_target");
+}
+
+function candidateLooksListMember(candidate: TopicCandidate) {
+  return candidateHasQualifier(candidate, "list_member");
+}
+
+function candidateLooksContrastive(candidate: TopicCandidate) {
+  return candidateHasQualifier(candidate, "contrastive_clause");
+}
+
+function candidateLooksPairedTarget(candidate: TopicCandidate) {
+  return candidateHasQualifier(candidate, "paired_with_domain_anchor");
+}
+
+function candidateLooksTerminologyLike(candidate: TopicCandidate) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+
+  return (
+    /\bterminology\b/.test(label) ||
+    /\bjargon\b/.test(label) ||
+    /\bforms?\b/.test(label) ||
+    /\bvocabulary\b/.test(label) ||
+    /\bwords?\b/.test(label)
+  );
+}
+
+function candidateLooksResidueLike(candidate: TopicCandidate) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  if (!label) return true;
+
+  // Protected durable labels are allowed even if they contain words that are
+  // suspicious only when standalone, such as "scoring" or "mean".
+  if (candidateLooksProtectedDurableLabel(candidate) && !candidateIsOnlySuspiciousWhenStandalone(candidate)) {
+    return false;
+  }
+
+  if (candidateLooksQuestionSynthesis(candidate) && !looksLikeSuspiciousLabel(label)) {
+    return false;
+  }
+
+  if (candidateLooksWeakNounChunk(candidate)) return true;
+  if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate)) return true;
+
+  return (
+    looksLikeSuspiciousLabel(label) ||
+    candidateLooksClauseWrapped(candidate) ||
+    candidateLooksNoisyResidue(candidate) ||
+    candidateLooksProblemFraming(candidate) ||
+    candidateLooksTailHeavy(candidate) ||
+    /^like$/.test(label) ||
+    /^weird$/.test(label) ||
+    /^better$/.test(label) ||
+    /^again$/.test(label) ||
+    /^where to start$/.test(label) ||
+    /^where to even start$/.test(label) ||
+    /^i don'?t get$/.test(label) ||
+    /^i dont get$/.test(label)
+  );
+}
+
+function candidateLooksInstructionalTarget(candidate: TopicCandidate, message: string) {
+  return (
+    !candidateLooksResidueLike(candidate) &&
+    !candidateLooksGeneralBucket(candidate) &&
+    candidate.shouldCompeteAsTopic &&
+    !candidate.isSubpartReference &&
+    (candidateLooksPairedTarget(candidate) ||
+      candidateLooksBottleneckTarget(candidate, message) ||
+      candidateLooksMechanismLike(candidate, message) ||
+      candidateLooksTerminologyLike(candidate) ||
+      candidate.kind === "comparison_pair" ||
+      candidate.kind === "question_synthesis" ||
+      candidate.kind === "concept_phrase" ||
+      candidateLooksDurablePracticalConcept(candidate) ||
+      candidate.kind === "of_phrase" ||
+      candidate.kind === "domain_shaped" ||
+      candidate.kind === "focus_target" ||
+      candidate.kind === "named_concept")
+  );
+}
+
+function messageRequestsMechanism(message: string) {
+  return (
+    /\bhow\b.*\bwork\b/i.test(message) ||
+    /\bwhy\b/i.test(message) ||
+    /\bprocess\b/i.test(message) ||
+    /\bmechanism\b/i.test(message) ||
+    /\bsteps?\b/i.test(message) ||
+    /\bwhat happens\b/i.test(message) ||
+    /\bfunction\b/i.test(message) ||
+    /\brole\b/i.test(message) ||
+    /\bword order\b/i.test(message)
+  );
+}
+
+function messageHasBroadToNarrowStructure(message: string) {
+  return /\bbut\b|\bexcept\b|\bactually\b|\breally just\b|\bmainly\b|\bmostly\b|\bespecially\b|\bspecifically\b|\bonce\b|\bwhen\b|\buntil\b|\bafter looking again\b/i.test(
+    message
+  );
+}
+
+function messageHasWhereToStartBarrier(message: string) {
+  return /\bwhere to start\b|\bdon'?t know where to start\b|\bwhere to even start\b/i.test(
+    message
+  );
+}
+
+function messageHasTerminologyBarrier(message: string) {
+  return /\bterminology\b|\bjargon\b|\bforms?\b|\bvocabulary\b|\bsmall words\b|\bwords are asking\b/i.test(
+    message
+  );
+}
+
+function messageHasMultiplicityBarrier(message: string) {
+  return /\bso many meanings\b|\btoo many meanings\b|\bso many different uses\b|\bevery time\b.*\bsomething else\b/i.test(
+    message
+  );
+}
+
+function messageHasStructureBarrier(message: string) {
+  return /\bword order\b|\bsmall words\b|\bse\b|\bsentence order\b|\bsentence.*doing\b/i.test(
+    message
+  );
+}
+
+function messageHasComparisonShape(message: string) {
+  return /\bvs\b|\bversus\b|\bdifference between\b|\bcompare\b|\bcontrast\b|\bmixing up\b|\bblending\b|\binterchangeable\b|\bfeel basically the same\b/i.test(
+    message
+  );
+}
+
+function computeBestReuseHint(
+  label: string | null,
+  retrievalCandidates: RetrievalCandidate[]
+) {
+  if (!label) return 0;
+
+  const labelTokens = semanticTokens(label);
+  let bestReuseHint = 0;
+
+  for (const retrieval of retrievalCandidates) {
+    const retrievalTokens = semanticTokens(retrieval.topic_name);
+    const score =
+      overlapScore(labelTokens, retrievalTokens) * 0.12 +
+      (retrieval.similarity ?? 0) * 0.08;
+
+    if (score > bestReuseHint) bestReuseHint = score;
+  }
+
+  return bestReuseHint;
+}
+
+function classifyCandidateFamily(
+  candidate: TopicCandidate,
+  message: string
+): CandidateFamily {
+  if (candidateLooksResidueLike(candidate)) return "residue";
+  if (candidateLooksPairedTarget(candidate)) return "paired";
+  if (candidate.kind === "comparison_pair") return "comparison";
+  if (candidateLooksProtectedDurableLabel(candidate) || candidate.kind === "concept_phrase" || (candidateLooksDurablePracticalConcept(candidate) && !candidateLooksQuestionSynthesis(candidate))) return "concept";
+  if (candidateLooksQuestionSynthesis(candidate)) return "synthesis";
+  if (candidateLooksTerminologyLike(candidate)) return "terminology";
+  if (candidateLooksMechanismLike(candidate, message)) return "mechanism";
+  if (candidateLooksBottleneckTarget(candidate, message)) return "bottleneck";
+  if (candidateLooksStructuredDurable(candidate)) return "structured";
+  if (candidateLooksDomainAnchor(candidate)) return "anchor";
+  return "other";
+}
+
+function familyPriority(family: CandidateFamily) {
+  switch (family) {
+    case "paired":
+      return 11;
+    case "comparison":
+      return 10;
+    case "concept":
+      return 9;
+    case "terminology":
+      return 8;
+    case "mechanism":
+      return 7;
+    case "bottleneck":
+      return 6;
+    case "structured":
+      return 5;
+    case "synthesis":
+      return 4;
+    case "anchor":
+      return 2;
+    case "other":
+      return 1;
+    case "residue":
+    default:
+      return 0;
+  }
+}
+
+function zoneFromClause(
+  clause: MessageInterpretation["clauses"][number],
+  cues: DiscourseCue[]
+): DiscourseZone {
+  return {
+    clauseIndex: clause.index,
+    raw: clause.raw,
+    normalized: clause.normalized,
+    cues,
+  };
+}
+
+function collectDiscourseCues(text: string): DiscourseCue[] {
+  const cues: DiscourseCue[] = [];
+  const normalized = normalizeLoose(text);
+
+  if (/\bbut\b/.test(normalized)) cues.push("but");
+  if (/\bexcept\b/.test(normalized)) cues.push("except");
+  if (/\bactually\b/.test(normalized)) cues.push("actually");
+  if (/\bmainly\b/.test(normalized)) cues.push("mainly");
+  if (/\bmostly\b/.test(normalized)) cues.push("mostly");
+  if (/\bespecially\b/.test(normalized)) cues.push("especially");
+  if (/\bspecifically\b/.test(normalized)) cues.push("specifically");
+  if (/\bactual thing\b|\bactual issue\b|\bactual problem\b/.test(normalized)) {
+    cues.push("actual_thing");
+  }
+  if (/\breal bottleneck\b|\breal issue\b|\breal problem\b/.test(normalized)) {
+    cues.push("real_bottleneck");
+  }
+  if (/\bwhere i\b.*\b(?:lost|stuck|stop|stopped|following)\b/.test(normalized)) {
+    cues.push("where_lost");
+  }
+  if (/\bwhen\b.*\b(?:breaks|falls apart|stop|stops|lost)\b/.test(normalized)) {
+    cues.push("when_breaks");
+  }
+  if (/\buntil\b/.test(normalized)) cues.push("until");
+  if (/\bafter looking again\b/.test(normalized)) cues.push("after_looking_again");
+  if (/\bthe part\b|\bthat part\b/.test(normalized)) cues.push("the_part");
+  if (/\bthe thing\b/.test(normalized)) cues.push("the_thing");
+  if (messageHasTerminologyBarrier(normalized)) cues.push("terminology_barrier");
+  if (messageHasStructureBarrier(normalized)) cues.push("language_barrier");
+  if (messageRequestsMechanism(normalized)) cues.push("mechanism_request");
+
+  return dedupe(cues);
+}
+
+function clauseLooksBroadAnchorLike(raw: string) {
+  const text = normalizeLoose(raw);
+
+  return (
+    /\b(?:learning about|talking about|covered|started|doing|unit on|section on|in class|lecture|textbook|worksheet|homework|reviewing)\b/.test(
+      text
+    ) ||
+    /\b(?:overall|in general|broad sense|the bigger topic|the whole unit|the umbrella)\b/.test(
+      text
+    )
+  );
+}
+
+function clauseLooksBottleneckLike(raw: string) {
+  const text = normalizeLoose(raw);
+  const cues = collectDiscourseCues(raw);
+
+  return (
+    cues.length > 0 ||
+    /\b(?:confused about|stuck on|struggling with|need help with|do not understand|don't understand|dont understand|do not get|don't get|dont get)\b/.test(
+      text
+    ) ||
+    /\b(?:keeps? (?:messing|tripping|throwing)|doesn'?t click|not clicking|stopped following|breaks my understanding|falls apart)\b/.test(
+      text
+    )
+  );
+}
+
+function clauseLooksResidueOnly(raw: string) {
+  const text = normalizeLoose(raw);
+
+  const hasDurableToken =
+    /\b(?:mitosis|meiosis|reuptake|dopamine|osmosis|depolarization|electronegativity|crossing over|compound interest|speed of sound|law of cosines|law of sines|standard deviation|opportunity cost|subduction|negative feedback|event loop|secondary dominants|membrane potential|equilibrium constant|metaphase|anaphase|spanish|se|word order|tax|taxes|terminology|jargon|forms|curling|budget|budgeting|offside|soccer|pH|ph|LLM|llm|action potentials?)\b/i.test(
+      raw
+    );
+
+  if (hasDurableToken) return false;
+
+  return (
+    /\b(?:i feel|i am feeling|i'm feeling|overwhelmed|lost|frustrated|helpless|stupid|embarrassing|panic|annoyed|dramatic)\b/.test(
+      text
+    ) ||
+    /\b(?:do not know where to start|don't know where to start|dont know where to start|where to start|whole thing|nothing makes sense)\b/.test(
+      text
+    )
+  );
+}
+
+function extractDomainHintsFromText(message: string) {
+  const normalized = normalizeLoose(message);
+  const hints: string[] = [];
+
+  if (/\bspanish\b/.test(normalized)) hints.push("spanish");
+  if (/\btaxes?\b|\btax\b/.test(normalized)) hints.push("taxes");
+  if (/\binsurance\b/.test(normalized)) hints.push("insurance");
+  if (/\bsoccer\b/.test(normalized)) hints.push("soccer");
+  if (/\bhockey\b/.test(normalized)) hints.push("hockey");
+  if (/\bcurling\b/.test(normalized)) hints.push("curling");
+  if (/\bcredit card\b/.test(normalized)) hints.push("credit card");
+  if (/\bstudent loans?\b/.test(normalized)) hints.push("student loans");
+  if (/\bloans?\b/.test(normalized)) hints.push("loan");
+  if (/\bneurotransmission\b|\bneurotransmitters?\b|\bneurons?\b|\bnervous system\b/.test(normalized)) {
+    hints.push("neuroscience");
+  }
+  if (/\bwaves?\b|\bsound\b/.test(normalized)) hints.push("waves and sound");
+  if (/\btriangles?\b/.test(normalized)) hints.push("triangles");
+  if (/\bmeiosis\b|\bgenetics\b|\bchromosomes?\b/.test(normalized)) hints.push("genetics");
+  if (/\bmitosis\b/.test(normalized)) hints.push("mitosis");
+  if (/\bbudgeting\b|\bbudget\b/.test(normalized)) hints.push("budgeting");
+
+  return dedupe(hints);
+}
+
+function buildDiscourseProfile(
+  interpretation: MessageInterpretation,
+  message: string
+): DiscourseProfile {
+  const broadAnchorZones: DiscourseZone[] = [];
+  const bottleneckZones: DiscourseZone[] = [];
+  const residueZones: DiscourseZone[] = [];
+  const notes: string[] = [];
+
+  let contrastBoundaryIndex: number | null = null;
+
+  for (const clause of interpretation.clauses) {
+    const cues = collectDiscourseCues(clause.raw);
+
+    if (clause.hasContrastBoundary && contrastBoundaryIndex == null) {
+      contrastBoundaryIndex = clause.index;
+    }
+
+    if (clauseLooksBroadAnchorLike(clause.raw)) {
+      broadAnchorZones.push(zoneFromClause(clause, cues));
+    }
+
+    if (
+      clauseLooksBottleneckLike(clause.raw) ||
+      clause.hasFocusMarker ||
+      clause.hasConfusionMarker ||
+      clause.hasContrastBoundary
+    ) {
+      bottleneckZones.push(zoneFromClause(clause, cues));
+    }
+
+    if (clauseLooksResidueOnly(clause.raw)) {
+      residueZones.push(zoneFromClause(clause, cues));
+    }
+  }
+
+  const normalized = normalizeLoose(message);
+  const hasBroadToNarrowShape = messageHasBroadToNarrowStructure(normalized);
+  const hasLateBottleneckShape =
+    hasBroadToNarrowShape &&
+    bottleneckZones.some((zone) =>
+      contrastBoundaryIndex == null ? true : zone.clauseIndex >= contrastBoundaryIndex
+    );
+
+  const hasLanguageBarrierShape =
+    messageHasStructureBarrier(normalized) || /\bspanish\b/i.test(normalized);
+  const hasTerminologyBarrierShape = messageHasTerminologyBarrier(normalized);
+  const hasMechanismRequestShape = messageRequestsMechanism(normalized);
+  const hasComparisonShape = messageHasComparisonShape(normalized);
+
+  const hasAnyDurableConceptCue =
+    /\b(?:of|in|on|vs|versus|difference|how|why|work|works|process|mechanism|terminology|jargon|forms|formula|law|rules?|phases?|layers?|steps?|standard deviation|opportunity cost|compound interest|reuptake|depolarization|electronegativity|crossing over|speed of sound|event loop|negative feedback|membrane potential|se|word order|pH|ph|analy[sz]e|tell whether|count as|caused|prove|should use)\b/i.test(
+      normalized
+    );
+
+  const hasNullOnlyEmotionalShape =
+    residueZones.length > 0 &&
+    !hasAnyDurableConceptCue &&
+    interpretation.clauses.every((clause) => clauseLooksResidueOnly(clause.raw));
+
+  if (hasBroadToNarrowShape) notes.push("broad_to_narrow_shape_detected");
+  if (hasLateBottleneckShape) notes.push("late_bottleneck_zone_detected");
+  if (hasLanguageBarrierShape) notes.push("language_barrier_shape_detected");
+  if (hasTerminologyBarrierShape) notes.push("terminology_barrier_shape_detected");
+  if (hasNullOnlyEmotionalShape) notes.push("null_only_emotional_shape_detected");
+
+  return {
+    broadAnchorZones,
+    bottleneckZones,
+    residueZones,
+    contrastBoundaryIndex,
+    hasBroadToNarrowShape,
+    hasLateBottleneckShape,
+    hasLanguageBarrierShape,
+    hasTerminologyBarrierShape,
+    hasMechanismRequestShape,
+    hasComparisonShape,
+    hasNullOnlyEmotionalShape,
+    domainHints: extractDomainHintsFromText(message),
+    targetHints: [],
+    notes,
+  };
+}
+
+function candidateInZone(candidate: TopicCandidate, zones: DiscourseZone[]) {
+  return zones.some((zone) => zone.clauseIndex === candidate.clauseIndex);
+}
+
+function candidateAfterContrast(candidate: TopicCandidate, profile: DiscourseProfile) {
+  return profile.contrastBoundaryIndex == null
+    ? false
+    : candidate.clauseIndex >= profile.contrastBoundaryIndex;
+}
+
+function candidateLooksDomainShapedByProfile(
+  candidate: TopicCandidate,
+  profile: DiscourseProfile
+) {
+  const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
+  if (!label) return false;
+
+  if (candidate.domainText) return true;
+
+  if (
+    profile.domainHints.includes("spanish") &&
+    (/\bse\b/.test(label) || /\bword order\b/.test(label))
+  ) {
+    return true;
+  }
+
+  if (
+    profile.domainHints.includes("taxes") &&
+    (/\bterminology\b/.test(label) || /\bjargon\b/.test(label) || /\bforms?\b/.test(label))
+  ) {
+    return true;
+  }
+
+  if (profile.domainHints.includes("soccer") && /\boffside\b/.test(label)) {
+    return true;
+  }
+
+  if (profile.domainHints.includes("insurance") && /\b(?:deductible|premium)\b/.test(label)) {
+    return true;
+  }
+
+  if (profile.domainHints.includes("budgeting") && /\bbalanc/.test(label)) {
+    return true;
+  }
+
+  return false;
+}
+
+function candidateLooksStrongLateBottleneck(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile
+) {
+  return (
+    !candidateLooksResidueLike(candidate) &&
+    candidate.shouldCompeteAsTopic &&
+    !candidate.isSubpartReference &&
+    (candidateLooksBottleneckTarget(candidate, message) ||
+      candidateLooksPairedTarget(candidate) ||
+      candidateLooksNarrowedTarget(candidate) ||
+      candidateLooksDomainShapedByProfile(candidate, profile) ||
+      candidateLooksTerminologyLike(candidate) ||
+      candidateLooksQuestionSynthesis(candidate) ||
+      candidate.kind === "focus_target") &&
+    (candidateInZone(candidate, profile.bottleneckZones) ||
+      candidateAfterContrast(candidate, profile) ||
+      candidateHasQualifier(candidate, "late_focus_target") ||
+      candidateHasQualifier(candidate, "cross_clause_recovery") ||
+      candidateHasQualifier(candidate, "paired_with_domain_anchor"))
   );
 }
 
@@ -264,9 +1010,19 @@ function buildCandidateScoreBreakdown(args: {
   candidate: TopicCandidate;
   message: string;
   interpretation: MessageInterpretation;
+  discourseProfile: DiscourseProfile;
   retrievalCandidates: RetrievalCandidate[];
-}) {
-  const { candidate, message, interpretation, retrievalCandidates } = args;
+  allCandidates: TopicCandidate[];
+}): DeterministicCandidateScoreBreakdown {
+  const {
+    candidate,
+    message,
+    interpretation,
+    discourseProfile,
+    retrievalCandidates,
+    allCandidates,
+  } = args;
+
   const clause = interpretation.clauses.find((item) => item.index === candidate.clauseIndex);
   const label = getCandidateDisplayLabel(candidate);
   const specificity = scoreSpecificity(label);
@@ -282,99 +1038,219 @@ function buildCandidateScoreBreakdown(args: {
   let mentionWeight = 0;
   let specificityWeight = 0;
   let reuseHintWeight = 0;
+
   let genericPenalty = 0;
   let clausePenalty = 0;
   let learnerStatePenalty = 0;
   let lengthPenalty = 0;
-  let tailPenalty = 0;
-  let abstractFocusWeight = 0;
+
+  let discourseRoleWeight = 0;
+  let durabilityWeight = 0;
   let mechanismWeight = 0;
-  let lateFocusWeight = 0;
-  let explicitConfusionWeight = 0;
-  let generalBucketPenalty = 0;
-  let objectOnlyPenalty = 0;
-  let problemFramingPenalty = 0;
+  let conceptPhraseWeight = 0;
+  let questionSynthesisWeight = 0;
+  let competitionRiskPenalty = 0;
+  let contaminationPenalty = 0;
+  let structurePenalty = 0;
+  let nounChunkPenalty = 0;
 
-  if (candidate.sourceRole === "confusion") roleWeight += 0.3;
-  if (candidate.sourceRole === "question") roleWeight += 0.2;
-  if (candidate.sourceRole === "request") roleWeight += 0.18;
   if (candidate.sourceRole === "comparison") roleWeight += 0.34;
-  if (candidate.sourceRole === "context") roleWeight -= 0.04;
+  else if (candidate.sourceRole === "confusion") roleWeight += 0.3;
+  else if (candidate.sourceRole === "question") roleWeight += 0.2;
+  else if (candidate.sourceRole === "request") roleWeight += 0.18;
+  else if (candidate.sourceRole === "context") roleWeight -= 0.04;
 
-  if (candidate.qualifiers.includes("focus_target")) focusWeight += 0.24;
-  if (candidate.qualifiers.includes("comparison_pair")) focusWeight += 0.16;
-  if (candidate.qualifiers.includes("of_phrase")) focusWeight += 0.14;
-  if (candidate.qualifiers.includes("named_concept")) focusWeight += 0.12;
-  if (candidate.qualifiers.includes("explicit_switch")) focusWeight += 0.14;
-  if (candidate.qualifiers.includes("cross_clause_recovery")) focusWeight += 0.16;
-  if (candidate.qualifiers.includes("late_focus_target")) focusWeight += 0.22;
-  if (candidate.qualifiers.includes("context_recovery")) focusWeight += 0.08;
+  if (candidateHasQualifier(candidate, "focus_target")) focusWeight += 0.2;
+  if (candidateHasQualifier(candidate, "late_focus_target")) focusWeight += 0.18;
+  if (candidateHasQualifier(candidate, "cross_clause_recovery")) focusWeight += 0.14;
+  if (candidateHasQualifier(candidate, "context_recovery")) contextRecoveryWeight += 0.08;
 
   if (clause?.hasFocusMarker) focusWeight += 0.08;
-
-  if (candidate.kind === "comparison_pair") focusWeight += 0.24;
-  if (candidate.kind === "of_phrase") focusWeight += 0.14;
-  if (candidate.kind === "domain_shaped") {
-    focusWeight += 0.14;
-    contextRecoveryWeight += 0.12;
-  }
-  if (candidate.kind === "context_anchor") contextRecoveryWeight += 0.18;
-  if (candidate.kind === "followup_reference") focusWeight += 0.04;
-  if (candidate.kind === "named_concept") focusWeight += 0.05;
-
-  if (candidate.leftText && candidate.rightText) {
-    focusWeight += 0.08;
-  }
-
-  if (candidate.domainText) {
-    contextRecoveryWeight += 0.08;
-  }
-
-  if (candidate.tailText) {
-    const tailTokens = tokenize(candidate.tailText).length;
-    if (tailTokens >= 2) {
-      clausePenalty += 0.06;
-    }
-  }
-
-  if (!candidate.shouldCompeteAsTopic) {
-    genericPenalty += 0.22;
-  }
-
-  if (candidate.isSubpartReference) {
-    learnerStatePenalty += 0.18;
-    genericPenalty += 0.1;
-  }
-
-  if (clause?.hasContrastBoundary) contrastWeight += 0.08;
+  if (clause?.hasContrastBoundary) contrastWeight += 0.1;
   if (clause?.hasConfusionMarker) confusionAdjacencyWeight += 0.12;
   if (clause?.hasRequestMarker) requestAdjacencyWeight += 0.06;
 
-  if (clause?.hasContextMarker && candidate.qualifiers.includes("context_recovery")) {
-    contextRecoveryWeight += 0.22;
+  if (candidateLooksBottleneckTarget(candidate, message)) discourseRoleWeight += 0.24;
+  if (candidateLooksNarrowedTarget(candidate)) discourseRoleWeight += 0.14;
+  if (candidateLooksContrastive(candidate)) discourseRoleWeight += 0.1;
+  if (candidateLooksPairedTarget(candidate)) discourseRoleWeight += 0.28;
+  if (candidateLooksInstructionalTarget(candidate, message)) discourseRoleWeight += 0.08;
+
+  if (discourseProfile.hasBroadToNarrowShape && candidateLooksStrongLateBottleneck(candidate, message, discourseProfile)) {
+    discourseRoleWeight += 0.32;
+    focusWeight += 0.1;
   }
 
-  if (mentionCount >= 2) mentionWeight += 0.14;
-  else if (mentionCount === 1) mentionWeight += 0.05;
+  if (discourseProfile.hasBroadToNarrowShape && candidateLooksDomainAnchor(candidate)) {
+    competitionRiskPenalty += 0.24;
+  }
 
-  if (specificity === "good") specificityWeight += 0.18;
-  if (specificity === "very_specific") specificityWeight += 0.16;
+  if (discourseProfile.hasLateBottleneckShape && candidateLooksDomainAnchor(candidate)) {
+    competitionRiskPenalty += 0.18;
+  }
+
+  if (candidateInZone(candidate, discourseProfile.broadAnchorZones) && !candidateLooksStrongLateBottleneck(candidate, message, discourseProfile)) {
+    competitionRiskPenalty += 0.08;
+  }
+
+  if (candidateInZone(candidate, discourseProfile.bottleneckZones)) {
+    discourseRoleWeight += 0.08;
+  }
+
+  if (candidateAfterContrast(candidate, discourseProfile)) {
+    contrastWeight += 0.08;
+  }
+
+  if (candidate.kind === "comparison_pair") {
+    roleWeight += 0.24;
+    durabilityWeight += 0.1;
+  }
+
+  if (candidate.kind === "of_phrase") {
+    roleWeight += 0.12;
+    durabilityWeight += 0.08;
+  }
+
+  if (candidate.kind === "domain_shaped") {
+    roleWeight += 0.14;
+    durabilityWeight += 0.1;
+  }
+
+  if (candidate.kind === "context_anchor") roleWeight += 0.04;
+  if (candidate.kind === "named_concept") roleWeight += 0.06;
+  if (candidate.kind === "concept_phrase") {
+    roleWeight += 0.1;
+    conceptPhraseWeight += 0.2;
+    durabilityWeight += 0.14;
+  }
+
+  if (candidateLooksQuestionSynthesis(candidate)) {
+    roleWeight += 0.08;
+    questionSynthesisWeight += 0.18;
+    durabilityWeight += 0.08;
+
+    // QCS is a controlled fallback/synthesis layer. It gets credit for a
+    // reusable frame, but it should not beat a cleaner explicit concept.
+    if (candidate.questionTriggerKind === "explicit_question") {
+      questionSynthesisWeight += 0.04;
+    }
+    if (candidate.questionTriggerKind === "implicit_problem") {
+      questionSynthesisWeight += 0.04;
+    }
+    if (candidate.questionSynthesisFrame && candidate.questionSynthesisFrame !== "unknown") {
+      questionSynthesisWeight += 0.04;
+    }
+    if (candidate.synthesizedLabel) {
+      questionSynthesisWeight += 0.03;
+    }
+
+    if (candidateLooksQcsOverSynthesized(candidate, allCandidates)) {
+      competitionRiskPenalty += 0.34;
+      structurePenalty += 0.1;
+    }
+  }
+
+  if (candidate.leftText && candidate.rightText) roleWeight += 0.08;
+
+  if (mentionCount >= 2) mentionWeight += 0.12;
+  else if (mentionCount === 1) mentionWeight += 0.04;
+
+  if (specificity === "good") specificityWeight += 0.16;
+  if (specificity === "very_specific") specificityWeight += 0.18;
   if (specificity === "broad_but_usable") specificityWeight += 0.08;
-  if (specificity === "too_vague") genericPenalty += 0.38;
+  if (specificity === "too_vague") structurePenalty += 0.38;
 
-  const labelTokens = label ? semanticTokens(label) : [];
-  let bestReuseHint = 0;
-  for (const retrieval of retrievalCandidates) {
-    const retrievalTokens = semanticTokens(retrieval.topic_name);
-    const score =
-      overlapScore(labelTokens, retrievalTokens) * 0.12 +
-      (retrieval.similarity ?? 0) * 0.08;
-    if (score > bestReuseHint) bestReuseHint = score;
+  if (candidateHasQualifier(candidate, "named_concept")) durabilityWeight += 0.1;
+  if (candidateHasQualifier(candidate, "concept_phrase")) conceptPhraseWeight += 0.18;
+  if (candidateHasQualifier(candidate, "question_synthesis")) questionSynthesisWeight += 0.16;
+  if (candidateHasQualifier(candidate, "qcs_candidate")) questionSynthesisWeight += 0.12;
+  if (candidateHasQualifier(candidate, "durable_concept")) durabilityWeight += 0.14;
+  if (candidateLooksProtectedDurableLabel(candidate)) {
+    durabilityWeight += 0.18;
+    conceptPhraseWeight += 0.12;
   }
-  reuseHintWeight += bestReuseHint;
+  if (candidateLooksDurablePracticalConcept(candidate)) conceptPhraseWeight += 0.12;
+  if (candidateHasQualifier(candidate, "of_phrase")) durabilityWeight += 0.1;
+  if (candidateLooksStructuredDurable(candidate)) durabilityWeight += 0.12;
+  if (candidate.domainText) durabilityWeight += 0.08;
+  if (candidateLooksPairedTarget(candidate)) durabilityWeight += 0.12;
+
+  if (candidateLooksDomainShapedByProfile(candidate, discourseProfile)) {
+    durabilityWeight += 0.12;
+    discourseRoleWeight += 0.08;
+  }
+
+  if (candidateLooksMechanismLike(candidate, message)) mechanismWeight += 0.16;
+  if (candidateLooksQuestionSynthesis(candidate)) {
+    if (candidate.questionSynthesisFrame === "cause") mechanismWeight += 0.1;
+    if (candidate.questionSynthesisFrame === "mechanism") mechanismWeight += 0.1;
+    if (candidate.questionSynthesisFrame === "process") mechanismWeight += 0.08;
+    if (candidate.questionSynthesisFrame === "analysis" || candidate.questionSynthesisFrame === "source_analysis") {
+      discourseRoleWeight += 0.08;
+    }
+    if (candidate.questionSynthesisFrame === "comparison" || candidate.questionSynthesisFrame === "selection") {
+      durabilityWeight += 0.08;
+    }
+    if (candidate.questionSynthesisFrame === "monitoring") {
+      discourseRoleWeight += 0.08;
+    }
+  }
+  if (candidateLooksAbstractButUseful(candidate, message)) mechanismWeight += 0.16;
+
+  if (discourseProfile.hasMechanismRequestShape && candidateLooksMechanismLike(candidate, message)) {
+    mechanismWeight += 0.18;
+  }
+
+  if (discourseProfile.hasMechanismRequestShape && candidateLooksPairedTarget(candidate)) {
+    mechanismWeight += 0.1;
+  }
+
+  if (discourseProfile.hasMechanismRequestShape && candidateLooksObjectOnly(candidate) && !candidateLooksQuestionSynthesis(candidate)) {
+    competitionRiskPenalty += 0.22;
+  }
+
+  if (
+    discourseProfile.hasMechanismRequestShape &&
+    candidateLooksDomainAnchor(candidate) &&
+    !candidateLooksMechanismLike(candidate, message) &&
+    !candidateLooksPairedTarget(candidate)
+  ) {
+    competitionRiskPenalty += 0.14;
+  }
+
+  if (discourseProfile.hasTerminologyBarrierShape && candidateLooksTerminologyLike(candidate)) {
+    discourseRoleWeight += 0.22;
+    durabilityWeight += 0.08;
+  }
+
+  if (discourseProfile.hasLanguageBarrierShape && candidateLooksDomainShapedByProfile(candidate, discourseProfile)) {
+    discourseRoleWeight += 0.16;
+    durabilityWeight += 0.08;
+  }
+
+  if (messageHasWhereToStartBarrier(message) && candidateLooksInstructionalTarget(candidate, message)) {
+    discourseRoleWeight += 0.08;
+  }
+
+  if (
+    messageHasMultiplicityBarrier(message) &&
+    (candidateLooksPairedTarget(candidate) || candidateLooksMechanismLike(candidate, message))
+  ) {
+    discourseRoleWeight += 0.08;
+  }
+
+  reuseHintWeight += computeBestReuseHint(label, retrievalCandidates);
 
   if (appearsInBroadList(candidate.sourceClause, candidate.coreText)) {
-    genericPenalty += 0.12;
+    competitionRiskPenalty += 0.1;
+  }
+
+  if (!candidate.shouldCompeteAsTopic) {
+    structurePenalty += 0.22;
+  }
+
+  if (candidate.isSubpartReference) {
+    structurePenalty += 0.28;
   }
 
   if (
@@ -382,154 +1258,90 @@ function buildCandidateScoreBreakdown(args: {
     candidate.coreText === "it" ||
     candidate.coreText === "again"
   ) {
-    learnerStatePenalty += 0.6;
+    structurePenalty += 0.6;
   }
 
   if (isClauseLikeSpan(candidate.coreText)) {
     clausePenalty += 0.22;
   }
 
+  if (candidateLooksClauseWrapped(candidate)) {
+    clausePenalty += 0.24;
+  }
+
   if (looksLikeSuspiciousLabel(label)) {
-    genericPenalty += 0.18;
-  }
-
-  const hasExplicitComparison =
-    /\bvs\b|\bversus\b|\bdifference between\b|\bcompare\b|\bcontrast\b/i.test(message);
-  const hasDomainShaping =
-    /\bwork\s+in\b/i.test(message) ||
-    /\bwork\s+on\b/i.test(message) ||
-    /\bin insurance\b/i.test(message) ||
-    /\bin a loan\b/i.test(message) ||
-    /\bstudent loans?\b/i.test(message) ||
-    /\bhockey\b/i.test(message);
-  const hasWrapperComparison =
-    /\b(?:keep forgetting|when to use|mess(?:es)? me up|mixing up)\b/i.test(message);
-  const hasExplicitLearningRequest =
-    /\b(?:i want to learn about|would really like to learn about|help me understand|can you explain|explain)\b/i.test(
-      message
-    );
-  const looksClauseWrapped = candidateLooksClauseWrapped(candidate);
-
-  if (hasExplicitComparison && candidate.kind !== "comparison_pair") {
-    genericPenalty += 0.2;
-  }
-
-  if (hasExplicitComparison && candidate.kind === "comparison_pair") {
-    focusWeight += 0.18;
-  }
-
-  if (
-    hasDomainShaping &&
-    !candidate.domainText &&
-    tokenCount === 1 &&
-    !candidate.qualifiers.includes("context_recovery")
-  ) {
-    genericPenalty += 0.14;
-  }
-
-  if (hasDomainShaping && candidate.domainText) {
-    contextRecoveryWeight += 0.12;
-    focusWeight += 0.06;
-  }
-
-  if (hasWrapperComparison && candidate.kind === "comparison_pair") {
-    focusWeight += 0.12;
-  }
-
-  if (
-    /\bbut\b/i.test(message) &&
-    hasExplicitComparison &&
-    candidate.kind !== "comparison_pair" &&
-    candidate.clauseIndex < interpretation.clauses.length - 1
-  ) {
-    genericPenalty += 0.12;
-  }
-
-  if (looksClauseWrapped) {
-    genericPenalty += 0.22;
-    clausePenalty += 0.12;
-  }
-
-  if (candidateLooksTailHeavy(candidate)) {
-    tailPenalty += 0.18;
-  }
-
-  if (candidateLooksNoisyResidue(candidate)) {
-    tailPenalty += 0.28;
-    genericPenalty += 0.12;
-  }
-
-  if (candidateLooksAbstractButUseful(candidate, message)) {
-    abstractFocusWeight += 0.18;
-  }
-
-  if (hasExplicitLearningRequest && candidateLooksAbstractButUseful(candidate, message)) {
-    abstractFocusWeight += 0.12;
-  }
-
-  if (candidateLooksMechanismLike(candidate, message)) {
-    mechanismWeight += 0.18;
-  }
-
-  if (hasExplicitLearningRequest && candidateLooksMechanismLike(candidate, message)) {
-    mechanismWeight += 0.1;
-  }
-
-  if (candidateLooksLateFocusPreferred(candidate)) {
-    lateFocusWeight += 0.16;
-  }
-
-  if (candidateLooksExplicitConfusionTarget(candidate, message)) {
-    explicitConfusionWeight += 0.16;
+    structurePenalty += 0.18;
   }
 
   if (candidateLooksGeneralBucket(candidate)) {
-    generalBucketPenalty += 0.16;
+    genericPenalty += 0.16;
   }
 
-  if (candidateLooksObjectOnly(candidate) && candidateLooksMechanismLike(candidate, message)) {
-    objectOnlyPenalty += 0.08;
+  if (candidateLooksTailHeavy(candidate)) {
+    contaminationPenalty += 0.2;
   }
 
-  if (
-    /\bhow\b.*\bwork\b/i.test(message) &&
-    candidateLooksObjectOnly(candidate) &&
-    !candidate.qualifiers.includes("focus_target")
-  ) {
-    objectOnlyPenalty += 0.18;
-  }
-
-  if (
-    /\bmainly confused about\b|\bespecially confused about\b|\bspecifically confused about\b/i.test(
-      message
-    ) &&
-    !candidateLooksExplicitConfusionTarget(candidate, message)
-  ) {
-    genericPenalty += 0.08;
+  if (candidateLooksNoisyResidue(candidate)) {
+    contaminationPenalty += 0.36;
   }
 
   if (candidateLooksProblemFraming(candidate)) {
-    problemFramingPenalty += 0.24;
+    learnerStatePenalty += 0.26;
+  }
+
+  if (candidateLooksResidueLike(candidate)) {
+    contaminationPenalty += 0.22;
+    learnerStatePenalty += 0.12;
+    structurePenalty += 0.1;
+  }
+
+  if (candidateLooksWeakNounChunk(candidate)) {
+    nounChunkPenalty += 0.38;
+    structurePenalty += 0.12;
+  }
+
+  if (candidate.kind === "noun_chunk" && !candidateLooksDurablePracticalConcept(candidate)) {
+    nounChunkPenalty += 0.24;
+  }
+
+  if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate) && !candidateLooksQuestionSynthesis(candidate)) {
+    nounChunkPenalty += 0.18;
+    contaminationPenalty += 0.14;
   }
 
   if (
-    hasExplicitLearningRequest &&
-    candidateLooksProblemFraming(candidate) &&
-    !candidate.qualifiers.includes("focus_target")
+    discourseProfile.hasComparisonShape &&
+    candidate.kind !== "comparison_pair" &&
+    !(candidateLooksQuestionSynthesis(candidate) &&
+      (candidate.questionSynthesisFrame === "comparison" ||
+        candidate.questionSynthesisFrame === "selection"))
   ) {
-    problemFramingPenalty += 0.1;
+    competitionRiskPenalty += 0.12;
+  }
+
+  if (discourseProfile.hasComparisonShape && candidate.kind === "comparison_pair") {
+    roleWeight += 0.16;
+    durabilityWeight += 0.08;
+    discourseRoleWeight += 0.1;
+  }
+
+  if (
+    candidateLooksDomainAnchor(candidate) &&
+    allCandidates.some((other) => candidateLooksStrongLateBottleneck(other, message, discourseProfile))
+  ) {
+    competitionRiskPenalty += 0.22;
   }
 
   if (tokenCount > 8) {
     lengthPenalty += 0.16;
-  } else if (tokenCount >= 2 && tokenCount <= 5) {
-    lengthPenalty -= 0.12;
+  } else if (tokenCount >= 2 && tokenCount <= 6) {
+    durabilityWeight += 0.1;
   } else if (tokenCount === 1) {
-    lengthPenalty -= 0.08;
+    durabilityWeight += 0.02;
   }
 
   let total =
-    0.24 +
+    0.2 +
     roleWeight +
     focusWeight +
     contrastWeight +
@@ -539,20 +1351,28 @@ function buildCandidateScoreBreakdown(args: {
     mentionWeight +
     specificityWeight +
     reuseHintWeight +
-    abstractFocusWeight +
+    durabilityWeight +
     mechanismWeight +
-    lateFocusWeight +
-    explicitConfusionWeight -
+    conceptPhraseWeight +
+    questionSynthesisWeight +
+    discourseRoleWeight -
     genericPenalty -
     clausePenalty -
     learnerStatePenalty -
     lengthPenalty -
-    tailPenalty -
-    generalBucketPenalty -
-    objectOnlyPenalty -
-    problemFramingPenalty;
+    competitionRiskPenalty -
+    contaminationPenalty -
+    structurePenalty -
+    nounChunkPenalty;
 
   total = clampTopicConfidence(total);
+
+  // Weak noun chunks are fallback evidence only. They should not produce
+  // high-confidence topic labels just because they occur near confusion words.
+  if (candidateLooksWeakNounChunk(candidate)) total = Math.min(total, 0.34);
+  else if (candidate.kind === "noun_chunk" && !candidateLooksDurablePracticalConcept(candidate)) {
+    total = Math.min(total, 0.48);
+  }
 
   return {
     roleWeight,
@@ -568,16 +1388,218 @@ function buildCandidateScoreBreakdown(args: {
     clausePenalty,
     learnerStatePenalty,
     lengthPenalty,
-    tailPenalty,
-    abstractFocusWeight,
-    mechanismWeight,
-    lateFocusWeight,
-    explicitConfusionWeight,
-    generalBucketPenalty,
-    objectOnlyPenalty,
-    problemFramingPenalty,
     total,
+    discourseRoleWeight,
+    durabilityWeight,
+    mechanismWeight,
+    conceptPhraseWeight,
+    questionSynthesisWeight,
+    competitionRiskPenalty,
+    contaminationPenalty,
+    structurePenalty,
+    nounChunkPenalty,
   };
+}
+
+function chooseBestCandidate(candidates: TopicCandidate[]): TopicCandidate | null {
+  if (!candidates.length) return null;
+  return candidates.slice().sort((a, b) => b.score - a.score)[0] ?? null;
+}
+
+function chooseBestCandidateByFamily(
+  candidates: TopicCandidate[],
+  message: string
+): TopicCandidate | null {
+  if (!candidates.length) return null;
+
+  const sorted = candidates.slice().sort((a, b) => {
+    const familyA = classifyCandidateFamily(a, message);
+    const familyB = classifyCandidateFamily(b, message);
+
+    const familyDelta = familyPriority(familyB) - familyPriority(familyA);
+    if (familyDelta !== 0) return familyDelta;
+
+    return b.score - a.score;
+  });
+
+  return sorted[0] ?? null;
+}
+
+function chooseDiscourseOverrideCandidate(
+  candidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile
+): TopicCandidate | null {
+  if (!candidates.length) return null;
+
+  const nonResidue = candidates.filter(
+    (candidate) => !candidateLooksResidueLike(candidate) && !candidateLooksWeakNounChunk(candidate)
+  );
+
+  if (profile.hasNullOnlyEmotionalShape && nonResidue.length === 0) {
+    return null;
+  }
+
+  const explicitDurable = nonResidue
+    .filter((candidate) => candidateLooksProtectedDurableLabel(candidate))
+    .sort((a, b) => {
+      const familyDelta =
+        familyPriority(classifyCandidateFamily(b, message)) -
+        familyPriority(classifyCandidateFamily(a, message));
+      if (familyDelta !== 0) return familyDelta;
+      return b.score - a.score;
+    });
+
+  if (explicitDurable[0] && explicitDurable[0].score >= 0.48) {
+    return explicitDurable[0];
+  }
+
+  const questionSyntheses = nonResidue
+    .filter(
+      (candidate) =>
+        candidateLooksQuestionSynthesis(candidate) &&
+        !candidateLooksQcsOverSynthesized(candidate, nonResidue)
+    )
+    .sort((a, b) => b.score - a.score);
+
+  if (questionSyntheses[0]) {
+    const label = getCandidateDisplayLabel(questionSyntheses[0]);
+    const specificity = scoreSpecificity(label);
+
+    if (
+      questionSyntheses[0].score >= 0.64 &&
+      (specificity === "good" ||
+        specificity === "very_specific" ||
+        candidateLooksStructuredDurable(questionSyntheses[0]))
+    ) {
+      return questionSyntheses[0];
+    }
+  }
+
+  const strongLateBottlenecks = nonResidue
+    .filter((candidate) => candidateLooksStrongLateBottleneck(candidate, message, profile))
+    .sort((a, b) => {
+      const familyDelta =
+        familyPriority(classifyCandidateFamily(b, message)) -
+        familyPriority(classifyCandidateFamily(a, message));
+
+      if (familyDelta !== 0) return familyDelta;
+      return b.score - a.score;
+    });
+
+  if (profile.hasBroadToNarrowShape && strongLateBottlenecks[0]) {
+    const candidate = strongLateBottlenecks[0];
+    const label = getCandidateDisplayLabel(candidate);
+    const specificity = scoreSpecificity(label);
+
+    if (specificity === "good" || specificity === "very_specific" || candidateLooksStructuredDurable(candidate)) {
+      return candidate;
+    }
+  }
+
+  if (profile.hasTerminologyBarrierShape || profile.hasLanguageBarrierShape) {
+    const shaped = nonResidue
+      .filter(
+        (candidate) =>
+          candidateLooksTerminologyLike(candidate) ||
+          candidateLooksDomainShapedByProfile(candidate, profile) ||
+          candidateLooksPairedTarget(candidate)
+      )
+      .sort((a, b) => b.score - a.score);
+
+    if (shaped[0]) return shaped[0];
+  }
+
+  if (profile.hasComparisonShape) {
+    const comparison = nonResidue
+      .filter((candidate) => candidate.kind === "comparison_pair")
+      .sort((a, b) => b.score - a.score)[0];
+
+    if (comparison) return comparison;
+  }
+
+  return null;
+}
+
+function chooseWinningCandidate(
+  scoredCandidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile
+): TopicCandidate | null {
+  if (!scoredCandidates.length) return null;
+
+  const discourseOverride = chooseDiscourseOverrideCandidate(
+    scoredCandidates,
+    message,
+    profile
+  );
+
+  if (discourseOverride) return discourseOverride;
+
+  const durableCandidates = scoredCandidates.filter(
+    (candidate) => !candidateLooksResidueLike(candidate) && !candidateLooksWeakNounChunk(candidate)
+  );
+
+  const explicitConceptCandidates = durableCandidates.filter((candidate) =>
+    candidateLooksProtectedDurableLabel(candidate) ||
+    candidateLooksConceptPhrase(candidate) ||
+    (candidateLooksDurablePracticalConcept(candidate) && !candidateLooksQuestionSynthesis(candidate))
+  );
+
+  const qcsCandidates = durableCandidates.filter(
+    (candidate) =>
+      candidateLooksQuestionSynthesis(candidate) &&
+      !candidateLooksQcsOverSynthesized(candidate, durableCandidates)
+  );
+
+  const conceptCandidates = explicitConceptCandidates.length
+    ? explicitConceptCandidates
+    : qcsCandidates.length
+      ? qcsCandidates
+      : durableCandidates;
+
+  const pool = conceptCandidates.length ? conceptCandidates : scoredCandidates;
+
+  const familyChosen = chooseBestCandidateByFamily(pool, message);
+  const flatChosen = chooseBestCandidate(pool);
+
+  if (!familyChosen) return flatChosen;
+  if (!flatChosen) return familyChosen;
+
+  const familyPriorityDelta =
+    familyPriority(classifyCandidateFamily(familyChosen, message)) -
+    familyPriority(classifyCandidateFamily(flatChosen, message));
+
+  if (familyPriorityDelta >= 1) return familyChosen;
+  if (flatChosen.score - familyChosen.score >= 0.16) return flatChosen;
+
+  return familyChosen;
+}
+
+function isCreateWorthyBroadLabel(
+  label: string | null,
+  confidence: number,
+  specificity: TopicSpecificity
+) {
+  if (!label) return false;
+  if (looksLikeSuspiciousLabel(label)) return false;
+
+  const lower = label.toLowerCase();
+  const structuredDurable =
+    /\bvs\b/i.test(lower) ||
+    /\b of \b/i.test(lower) ||
+    /\b in \b/i.test(lower) ||
+    /\b on \b/i.test(lower) ||
+    /\bhow\b.*\bwork\b/i.test(lower) ||
+    /\bdifference between\b/i.test(lower) ||
+    /\bterminology\b/i.test(lower) ||
+    /\bjargon\b/i.test(lower);
+
+  if (specificity === "broad_but_usable") {
+    return confidence >= (structuredDurable ? 0.66 : 0.74);
+  }
+
+  return false;
 }
 
 function buildAmbiguityFlags(args: {
@@ -590,6 +1612,8 @@ function buildAmbiguityFlags(args: {
   reuseCandidate: RetrievalCandidate | null;
   interpretation: MessageInterpretation;
   bestCandidate: TopicCandidate | null;
+  normalizedMessage: string;
+  discourseProfile: DiscourseProfile;
 }) {
   const flags: string[] = [];
   const {
@@ -602,6 +1626,8 @@ function buildAmbiguityFlags(args: {
     reuseCandidate,
     interpretation,
     bestCandidate,
+    normalizedMessage,
+    discourseProfile,
   } = args;
 
   if (!conceptSpan) {
@@ -626,6 +1652,10 @@ function buildAmbiguityFlags(args: {
 
   if (scoredCandidates.length >= 2 && topGap < 0.1) {
     flags.push("candidate_competition");
+  }
+
+  if (scoredCandidates.length >= 2 && topGap < 0.06) {
+    flags.push("tight_top_gap");
   }
 
   if (interpretation.messageIntent !== "unclear" && scoredCandidates.length === 0) {
@@ -656,7 +1686,273 @@ function buildAmbiguityFlags(args: {
     flags.push("overly_general_candidate");
   }
 
+  if (bestCandidate && candidateLooksClauseWrapped(bestCandidate)) {
+    flags.push("clause_wrapped_candidate");
+  }
+
+  const bestIsAnchor = bestCandidate ? candidateLooksDomainAnchor(bestCandidate) : false;
+
+  const strongBottleneckRunner = scoredCandidates
+    .slice(1, 5)
+    .some((candidate) => candidateLooksStrongLateBottleneck(candidate, normalizedMessage, discourseProfile));
+
+  if (discourseProfile.hasBroadToNarrowShape && bestIsAnchor && strongBottleneckRunner) {
+    flags.push("anchor_beating_bottleneck");
+  }
+
+  if (
+    discourseProfile.hasMechanismRequestShape &&
+    bestCandidate &&
+    candidateLooksObjectOnly(bestCandidate) &&
+    !candidateLooksQuestionSynthesis(bestCandidate)
+  ) {
+    flags.push("object_beating_mechanism");
+  }
+
+  if (
+    discourseProfile.hasTerminologyBarrierShape &&
+    bestCandidate &&
+    candidateLooksDomainAnchor(bestCandidate) &&
+    scoredCandidates.slice(1, 5).some((candidate) => candidateLooksTerminologyLike(candidate))
+  ) {
+    flags.push("anchor_beating_terminology_target");
+  }
+
+  if (bestCandidate && candidateLooksResidueLike(bestCandidate)) {
+    flags.push("residue_like_winner");
+  }
+
+  if (bestCandidate && candidateLooksWeakNounChunk(bestCandidate)) {
+    flags.push("weak_noun_chunk_winner");
+  }
+
+  if (bestCandidate && candidateHasHighResidueRisk(bestCandidate) && !candidateLooksConceptPhrase(bestCandidate) && !candidateLooksQuestionSynthesis(bestCandidate)) {
+    flags.push("high_residue_risk_winner");
+  }
+
+  if (bestCandidate && candidateLooksQuestionSynthesis(bestCandidate)) {
+    flags.push("question_synthesis_winner");
+  }
+
+  if (bestCandidate && candidateLooksQcsOverSynthesized(bestCandidate, scoredCandidates)) {
+    flags.push("qcs_over_synthesis_winner");
+  }
+
+  if (discourseProfile.hasNullOnlyEmotionalShape && canonicalLabel) {
+    flags.push("null_only_emotional_overcreated");
+  }
+
   return dedupe(flags);
+}
+
+function buildConfidence(args: {
+  bestCandidate: TopicCandidate | null;
+  secondCandidate: TopicCandidate | null;
+  conceptSpan: string | null;
+  canonicalLabel: string | null;
+  specificity: TopicSpecificity;
+  shouldReuse: boolean;
+  normalizedMessage: string;
+  input: TopicLabelingInput;
+  interpretation: MessageInterpretation;
+  scoredCandidates: TopicCandidate[];
+  discourseProfile: DiscourseProfile;
+}) {
+  const {
+    bestCandidate,
+    secondCandidate,
+    conceptSpan,
+    canonicalLabel,
+    specificity,
+    shouldReuse,
+    normalizedMessage,
+    input,
+    interpretation,
+    scoredCandidates,
+    discourseProfile,
+  } = args;
+
+  let confidence = 0.18;
+  const bestScore = bestCandidate?.score ?? 0;
+  const secondScore = secondCandidate?.score ?? 0;
+  const topGap = Math.max(0, bestScore - secondScore);
+
+  if (bestCandidate) confidence += bestScore * 0.4;
+  if (conceptSpan) confidence += 0.1;
+  if (canonicalLabel) confidence += 0.08;
+  if (shouldReuse) confidence += 0.1;
+
+  if (specificity === "good") confidence += 0.08;
+  if (specificity === "very_specific") confidence += 0.08;
+  if (specificity === "broad_but_usable") confidence += 0.05;
+
+  if (topGap >= 0.18) confidence += 0.12;
+  else if (topGap >= 0.1) confidence += 0.08;
+  else if (topGap < 0.06 && secondCandidate) confidence -= 0.1;
+
+  if (bestCandidate?.kind === "comparison_pair") confidence += 0.08;
+  if (bestCandidate?.kind === "question_synthesis") confidence += 0.04;
+  if (bestCandidate?.kind === "concept_phrase") confidence += 0.1;
+  if (bestCandidate?.kind === "of_phrase") confidence += 0.06;
+  if (bestCandidate?.kind === "domain_shaped") confidence += 0.06;
+  if (bestCandidate?.kind === "context_anchor") confidence += 0.03;
+  if (bestCandidate && candidateLooksDurablePracticalConcept(bestCandidate)) confidence += 0.08;
+  if (bestCandidate && candidateLooksQuestionSynthesis(bestCandidate)) {
+    confidence += 0.04;
+    if (bestCandidate.questionSynthesisFrame && bestCandidate.questionSynthesisFrame !== "unknown") {
+      confidence += 0.02;
+    }
+    if (candidateLooksQcsOverSynthesized(bestCandidate, scoredCandidates)) {
+      confidence -= 0.24;
+    }
+  }
+
+  if (bestCandidate && candidateLooksProtectedDurableLabel(bestCandidate)) {
+    confidence += 0.1;
+  }
+
+  if (bestCandidate && candidateLooksBottleneckTarget(bestCandidate, normalizedMessage)) {
+    confidence += 0.1;
+  }
+
+  if (bestCandidate && candidateLooksStrongLateBottleneck(bestCandidate, normalizedMessage, discourseProfile)) {
+    confidence += 0.12;
+  }
+
+  if (bestCandidate && candidateLooksPairedTarget(bestCandidate)) {
+    confidence += 0.12;
+  }
+
+  if (bestCandidate && candidateLooksNarrowedTarget(bestCandidate)) {
+    confidence += 0.06;
+  }
+
+  if (bestCandidate && candidateLooksMechanismLike(bestCandidate, normalizedMessage)) {
+    confidence += 0.06;
+  }
+
+  if (bestCandidate && candidateLooksStructuredDurable(bestCandidate)) {
+    confidence += 0.05;
+  }
+
+  if (
+    bestCandidate &&
+    candidateLooksDomainAnchor(bestCandidate) &&
+    discourseProfile.hasBroadToNarrowShape
+  ) {
+    confidence -= 0.12;
+  }
+
+  if (
+    bestCandidate &&
+    discourseProfile.hasMechanismRequestShape &&
+    candidateLooksObjectOnly(bestCandidate)
+  ) {
+    confidence -= 0.12;
+  }
+
+  if (bestCandidate && candidateLooksResidueLike(bestCandidate)) {
+    confidence -= 0.22;
+  }
+
+  if (bestCandidate && candidateLooksWeakNounChunk(bestCandidate)) {
+    confidence -= 0.28;
+  }
+
+  if (bestCandidate && candidateHasHighResidueRisk(bestCandidate) && !candidateLooksConceptPhrase(bestCandidate) && !candidateLooksQuestionSynthesis(bestCandidate)) {
+    confidence -= 0.18;
+  }
+
+  if (!bestCandidate?.shouldCompeteAsTopic) confidence -= 0.16;
+  if (bestCandidate?.isSubpartReference) confidence -= 0.16;
+  if (conceptSpan && isClauseLikeSpan(conceptSpan)) confidence -= 0.1;
+  if (bestCandidate && candidateLooksClauseWrapped(bestCandidate)) confidence -= 0.14;
+  if (bestCandidate && candidateLooksTailHeavy(bestCandidate)) confidence -= 0.08;
+  if (bestCandidate && candidateLooksNoisyResidue(bestCandidate)) confidence -= 0.16;
+  if (bestCandidate && candidateLooksProblemFraming(bestCandidate)) confidence -= 0.14;
+  if (bestCandidate && candidateLooksGeneralBucket(bestCandidate)) confidence -= 0.12;
+  if (looksLikeSuspiciousLabel(canonicalLabel)) confidence -= 0.1;
+  if (discourseProfile.hasNullOnlyEmotionalShape) confidence -= 0.24;
+
+  const topFamily = bestCandidate
+    ? classifyCandidateFamily(bestCandidate, normalizedMessage)
+    : "residue";
+
+  if (familyPriority(topFamily) >= 4) {
+    confidence += 0.04;
+  }
+
+  const strongInstructionalRunner = scoredCandidates
+    .slice(1, 5)
+    .filter((candidate) => candidateLooksInstructionalTarget(candidate, normalizedMessage));
+
+  if (bestCandidate && candidateLooksDomainAnchor(bestCandidate) && strongInstructionalRunner.length > 0) {
+    confidence -= 0.08;
+  }
+
+  if (interpretation.messageIntent !== "unclear" && !bestCandidate) {
+    confidence -= 0.08;
+  }
+
+  if (messageLooksLikePureFollowup(normalizedMessage) && input.active_topic_name) {
+    confidence = Math.max(confidence, 0.78);
+  }
+
+  return clampTopicConfidence(confidence);
+}
+
+function shouldSuppressWinnerAsNull(args: {
+  bestCandidate: TopicCandidate | null;
+  canonicalLabel: string | null;
+  normalizedMessage: string;
+  discourseProfile: DiscourseProfile;
+}) {
+  const { bestCandidate, canonicalLabel, normalizedMessage, discourseProfile } = args;
+
+  if (!bestCandidate || !canonicalLabel) return false;
+
+  if (discourseProfile.hasNullOnlyEmotionalShape) return true;
+
+  const label = canonicalLabel.toLowerCase();
+
+  const onlyEmotionNoConcept =
+    /\b(?:lost|overwhelmed|frustrated|confused|stupid|helpless|panic|nothing makes sense|where to start)\b/i.test(
+      normalizedMessage
+    ) &&
+    !/\b(?:of|in|on|vs|versus|difference|how|why|work|works|process|mechanism|terminology|jargon|forms|formula|law|rules?|phases?|layers?|steps?|standard deviation|opportunity cost|compound interest|reuptake|depolarization|electronegativity|crossing over|speed of sound|event loop|negative feedback|membrane potential|se|word order|pH|ph|analy[sz]e|tell whether|count as|caused|prove|should use)\b/i.test(
+      normalizedMessage
+    );
+
+  if (onlyEmotionNoConcept) return true;
+
+  if (
+    /\b(?:no|not|don'?t have|dont have|do not have)\b.*\b(?:specific|actual|clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalizedMessage) ||
+    /\b(?:no specific|no actual|no clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalizedMessage)
+  ) {
+    return true;
+  }
+
+  if (candidateLooksProtectedDurableLabel(bestCandidate)) {
+    return false;
+  }
+
+  if (
+    candidateLooksQuestionSynthesis(bestCandidate) &&
+    !looksLikeSuspiciousLabel(canonicalLabel) &&
+    !candidateLooksQcsOverSynthesized(bestCandidate, [])
+  ) {
+    return false;
+  }
+
+  return (
+    candidateLooksWeakNounChunk(bestCandidate) ||
+    candidateLooksResidueLike(bestCandidate) ||
+    candidateLooksProblemFraming(bestCandidate) ||
+    candidateLooksNoisyResidue(bestCandidate) ||
+    /^where to start$/.test(label) ||
+    /^where to even start$/.test(label) ||
+    /^whole thing$/.test(label)
+  );
 }
 
 export function runDeterministicTopicLabeling(
@@ -664,6 +1960,7 @@ export function runDeterministicTopicLabeling(
 ): TopicLabelingResult {
   const normalizedMessage = normalizeSurface(input.raw_message);
   const interpretation = analyzeMessageStructure(normalizedMessage);
+  const discourseProfile = buildDiscourseProfile(interpretation, normalizedMessage);
 
   const rawCandidates = extractConceptCandidates(interpretation, normalizedMessage);
 
@@ -673,7 +1970,9 @@ export function runDeterministicTopicLabeling(
         candidate,
         message: normalizedMessage,
         interpretation,
+        discourseProfile,
         retrievalCandidates: input.retrieval_candidates,
+        allCandidates: rawCandidates,
       });
 
       return {
@@ -684,8 +1983,13 @@ export function runDeterministicTopicLabeling(
     })
     .sort((a, b) => b.score - a.score);
 
-  let bestCandidate = chooseBestCandidate(scoredCandidates);
-  const secondCandidate = scoredCandidates[1] ?? null;
+  let bestCandidate = chooseWinningCandidate(
+    scoredCandidates,
+    normalizedMessage,
+    discourseProfile
+  );
+
+  const secondCandidate = scoredCandidates.find((c) => c !== bestCandidate) ?? null;
   const topGap = bestCandidate
     ? Math.max(0, bestCandidate.score - (secondCandidate?.score ?? 0))
     : 0;
@@ -710,110 +2014,36 @@ export function runDeterministicTopicLabeling(
     canonicalLabel = input.active_topic_name;
   }
 
+  if (
+    shouldSuppressWinnerAsNull({
+      bestCandidate,
+      canonicalLabel,
+      normalizedMessage,
+      discourseProfile,
+    })
+  ) {
+    conceptSpan = null;
+    canonicalLabel = null;
+    bestCandidate = null;
+  }
+
   const specificity = scoreSpecificity(canonicalLabel);
   const reuseCandidate = findReuseCandidate(canonicalLabel, input.retrieval_candidates);
   const shouldReuse = Boolean(reuseCandidate);
 
-  let confidence = 0.2;
-
-  if (scoredCandidates.length > 0) confidence += 0.12;
-  if (bestCandidate) confidence += bestCandidate.score * 0.32;
-  if (conceptSpan) confidence += 0.14;
-  if (canonicalLabel) confidence += 0.12;
-  if (specificity === "good") confidence += 0.08;
-  if (specificity === "very_specific") confidence += 0.08;
-  if (specificity === "broad_but_usable") confidence += 0.05;
-  if (shouldReuse) confidence += 0.12;
-
-  if (bestCandidate?.kind === "comparison_pair") {
-    confidence += 0.12;
-  }
-
-  if (bestCandidate?.kind === "of_phrase") {
-    confidence += 0.08;
-  }
-
-  if (bestCandidate?.kind === "domain_shaped") {
-    confidence += 0.1;
-  }
-
-  if (bestCandidate?.kind === "context_anchor") {
-    confidence += 0.06;
-  }
-
-  if (bestCandidate?.qualifiers.includes("focus_target")) {
-    confidence += 0.06;
-  }
-
-  if (bestCandidate?.qualifiers.includes("late_focus_target")) {
-    confidence += 0.06;
-  }
-
-  if (bestCandidate?.qualifiers.includes("context_recovery")) {
-    confidence += 0.04;
-  }
-
-  if (bestCandidate && candidateLooksAbstractButUseful(bestCandidate, normalizedMessage)) {
-    confidence += 0.05;
-  }
-
-  if (bestCandidate && candidateLooksMechanismLike(bestCandidate, normalizedMessage)) {
-    confidence += 0.06;
-  }
-
-  if (bestCandidate && candidateLooksExplicitConfusionTarget(bestCandidate, normalizedMessage)) {
-    confidence += 0.06;
-  }
-
-  if (!bestCandidate?.shouldCompeteAsTopic) {
-    confidence -= 0.16;
-  }
-
-  if (bestCandidate?.isSubpartReference) {
-    confidence -= 0.16;
-  }
-
-  if (conceptSpan && isClauseLikeSpan(conceptSpan)) {
-    confidence -= 0.1;
-  }
-
-  if (bestCandidate && candidateLooksClauseWrapped(bestCandidate)) {
-    confidence -= 0.16;
-  }
-
-  if (bestCandidate && candidateLooksTailHeavy(bestCandidate)) {
-    confidence -= 0.1;
-  }
-
-  if (bestCandidate && candidateLooksNoisyResidue(bestCandidate)) {
-    confidence -= 0.16;
-  }
-
-  if (bestCandidate && candidateLooksProblemFraming(bestCandidate)) {
-    confidence -= 0.14;
-  }
-
-  if (bestCandidate && candidateLooksGeneralBucket(bestCandidate)) {
-    confidence -= 0.14;
-  }
-
-  if (looksLikeSuspiciousLabel(canonicalLabel)) {
-    confidence -= 0.1;
-  }
-
-  if (scoredCandidates.length >= 2 && topGap < 0.1) {
-    confidence -= 0.06;
-  }
-
-  if (interpretation.messageIntent !== "unclear" && scoredCandidates.length === 0) {
-    confidence -= 0.08;
-  }
-
-  if (messageLooksLikePureFollowup(normalizedMessage) && input.active_topic_name) {
-    confidence = Math.max(confidence, 0.78);
-  }
-
-  confidence = clampTopicConfidence(confidence);
+  const confidence = buildConfidence({
+    bestCandidate,
+    secondCandidate,
+    conceptSpan,
+    canonicalLabel,
+    specificity,
+    shouldReuse,
+    normalizedMessage,
+    input,
+    interpretation,
+    scoredCandidates,
+    discourseProfile,
+  });
 
   const ambiguityFlags = buildAmbiguityFlags({
     canonicalLabel,
@@ -825,7 +2055,24 @@ export function runDeterministicTopicLabeling(
     reuseCandidate,
     interpretation,
     bestCandidate,
+    normalizedMessage,
+    discourseProfile,
   });
+
+  const structurallyStrongCreateCandidate =
+    bestCandidate != null &&
+    (candidateLooksStrongLateBottleneck(bestCandidate, normalizedMessage, discourseProfile) ||
+      candidateLooksPairedTarget(bestCandidate) ||
+      bestCandidate.kind === "comparison_pair" ||
+      bestCandidate.kind === "of_phrase" ||
+      bestCandidate.kind === "domain_shaped" ||
+      candidateLooksTerminologyLike(bestCandidate) ||
+      candidateLooksStructuredDurable(bestCandidate) ||
+      (bestCandidate.kind === "question_synthesis" &&
+        !candidateLooksQcsOverSynthesized(bestCandidate, scoredCandidates)) ||
+      bestCandidate.kind === "concept_phrase" ||
+      candidateLooksProtectedDurableLabel(bestCandidate) ||
+      candidateLooksDurablePracticalConcept(bestCandidate));
 
   const shouldCreate =
     !shouldReuse &&
@@ -835,9 +2082,20 @@ export function runDeterministicTopicLabeling(
     !ambiguityFlags.includes("subpart_reference") &&
     !ambiguityFlags.includes("tail_residue_candidate") &&
     !ambiguityFlags.includes("problem_framing_candidate") &&
+    !ambiguityFlags.includes("clause_wrapped_candidate") &&
+    !ambiguityFlags.includes("anchor_beating_bottleneck") &&
+    !ambiguityFlags.includes("object_beating_mechanism") &&
+    !ambiguityFlags.includes("anchor_beating_terminology_target") &&
+    !ambiguityFlags.includes("residue_like_winner") &&
+    !ambiguityFlags.includes("weak_noun_chunk_winner") &&
+    !ambiguityFlags.includes("high_residue_risk_winner") &&
+    !ambiguityFlags.includes("null_only_emotional_overcreated") &&
+    !ambiguityFlags.includes("qcs_over_synthesis_winner") &&
     !messageLooksLikePureFollowup(normalizedMessage) &&
+    canonicalLabel != null &&
     (specificity === "good" ||
       specificity === "very_specific" ||
+      structurallyStrongCreateCandidate ||
       isCreateWorthyBroadLabel(canonicalLabel, confidence, specificity));
 
   const referencesActiveTopic =
@@ -886,9 +2144,21 @@ export function runDeterministicTopicLabeling(
         scoredCandidates.length > 0
           ? `Generated ${scoredCandidates.length} candidate topic spans after grouping.`
           : "No topic candidates were extracted.",
+        discourseProfile.notes.length > 0
+          ? `Discourse profile: ${discourseProfile.notes.join(", ")}.`
+          : "No strong discourse profile flags were detected.",
+        discourseProfile.domainHints.length > 0
+          ? `Domain hints: ${discourseProfile.domainHints.join(", ")}.`
+          : "No domain hints were detected.",
         bestCandidate
           ? `Top candidate kind: ${bestCandidate.kind}.`
           : "No best candidate kind was selected.",
+        bestCandidate && candidateLooksQuestionSynthesis(bestCandidate)
+          ? `QCS frame: ${bestCandidate.questionSynthesisFrame ?? "unknown"}; trigger: ${bestCandidate.questionTriggerKind ?? "unknown"}.`
+          : "No QCS winner was selected.",
+        bestCandidate
+          ? `Winning candidate family: ${classifyCandidateFamily(bestCandidate, normalizedMessage)}.`
+          : "No winning candidate family was selected.",
         conceptSpan
           ? `Selected concept span: ${conceptSpan}.`
           : "Could not confidently select a concept span.",
@@ -921,7 +2191,9 @@ export function runDeterministicTopicLabeling(
           ? ["Top candidate behaves more like a discourse cue than a durable topic."]
           : []),
         ...(bestCandidate?.isSubpartReference
-          ? ["Top candidate looks like a subpart reference that should usually attach to a parent topic."]
+          ? [
+              "Top candidate looks like a subpart reference that should usually attach to a parent topic.",
+            ]
           : []),
         ...(bestCandidate && candidateLooksTailHeavy(bestCandidate)
           ? ["Top candidate still looks tail-heavy or residue-contaminated."]
@@ -931,6 +2203,27 @@ export function runDeterministicTopicLabeling(
           : []),
         ...(bestCandidate && candidateLooksGeneralBucket(bestCandidate)
           ? ["Top candidate is too general relative to the user’s likely focus."]
+          : []),
+        ...(ambiguityFlags.includes("anchor_beating_bottleneck")
+          ? ["A broad anchor may still be beating a narrower bottleneck target."]
+          : []),
+        ...(ambiguityFlags.includes("object_beating_mechanism")
+          ? ["A plain object label may still be beating a mechanism-style target."]
+          : []),
+        ...(ambiguityFlags.includes("anchor_beating_terminology_target")
+          ? ["A broad anchor may still be beating a terminology-style target."]
+          : []),
+        ...(ambiguityFlags.includes("residue_like_winner")
+          ? ["A residue-like candidate may still be winning over a better instructional target."]
+          : []),
+        ...(ambiguityFlags.includes("weak_noun_chunk_winner")
+          ? ["A weak noun-chunk candidate is not durable enough to create as a topic."]
+          : []),
+        ...(ambiguityFlags.includes("high_residue_risk_winner")
+          ? ["The winning candidate has high residue risk and should not create a topic."]
+          : []),
+        ...(ambiguityFlags.includes("null_only_emotional_overcreated")
+          ? ["The message looks emotionally complex but lacks a durable teachable target."]
           : []),
       ],
       ambiguity_flags: dedupe(ambiguityFlags),
@@ -943,10 +2236,43 @@ export function runDeterministicTopicLabeling(
         question_about_topic: candidate.questionAboutTopic,
         comparison_target: candidate.comparisonTarget,
         qualifiers: candidate.qualifiers,
+        family: classifyCandidateFamily(candidate, normalizedMessage),
         score: candidate.score,
         score_breakdown: candidate.scoreBreakdown,
         display_label: getCandidateDisplayLabel(candidate),
+        kind: candidate.kind,
+        should_compete_as_topic: candidate.shouldCompeteAsTopic,
+        is_subpart_reference: candidate.isSubpartReference,
+        tail_text: candidate.tailText,
+        domain_text: candidate.domainText,
+        question_synthesis_frame: candidate.questionSynthesisFrame,
+        question_trigger_kind: candidate.questionTriggerKind,
+        question_word: candidate.questionWord,
+        question_actor: candidate.questionActor,
+        question_verb: candidate.questionVerb,
+        question_object: candidate.questionObject,
+        question_left_text: candidate.questionLeftText,
+        question_right_text: candidate.questionRightText,
+        question_domain_text: candidate.questionDomainText,
+        question_synthesis_slots: candidate.questionSynthesisSlots,
+        synthesized_label: candidate.synthesizedLabel,
       })),
+      discourse_profile: {
+        broad_anchor_zones: discourseProfile.broadAnchorZones,
+        bottleneck_zones: discourseProfile.bottleneckZones,
+        residue_zones: discourseProfile.residueZones,
+        contrast_boundary_index: discourseProfile.contrastBoundaryIndex,
+        has_broad_to_narrow_shape: discourseProfile.hasBroadToNarrowShape,
+        has_late_bottleneck_shape: discourseProfile.hasLateBottleneckShape,
+        has_language_barrier_shape: discourseProfile.hasLanguageBarrierShape,
+        has_terminology_barrier_shape: discourseProfile.hasTerminologyBarrierShape,
+        has_mechanism_request_shape: discourseProfile.hasMechanismRequestShape,
+        has_comparison_shape: discourseProfile.hasComparisonShape,
+        has_null_only_emotional_shape: discourseProfile.hasNullOnlyEmotionalShape,
+        domain_hints: discourseProfile.domainHints,
+        target_hints: discourseProfile.targetHints,
+        notes: discourseProfile.notes,
+      },
     },
   };
 }
