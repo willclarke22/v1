@@ -198,12 +198,47 @@ function candidateLooksQuestionSynthesis(candidate: TopicCandidate) {
 }
 
 
+function candidateLooksCleanQuestionTarget(candidate: TopicCandidate) {
+  const label = getCandidateDisplayLabel(candidate);
+  if (!label) return false;
+
+  const isQuestionTarget =
+    candidate.kind === "question_target" ||
+    candidateHasQualifier(candidate, "question_target") ||
+    candidateHasQualifier(candidate, "question_context");
+
+  if (!isQuestionTarget) return false;
+  if (!candidate.shouldCompeteAsTopic) return false;
+  if (candidate.isSubpartReference) return false;
+  if (candidateLooksWeakNounChunk(candidate)) return false;
+  if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate)) return false;
+  if (labelHasBadBoundaryShape(label)) return false;
+  if (!labelHasContentBearingHead(label)) return false;
+
+  const tokenCount = tokenize(label).length;
+  if (tokenCount === 0 || tokenCount > 5) return false;
+
+  // PFAP7: a clean term asked about in a question should remain eligible even
+  // when the original span has explanatory tail text ("What is X if/when...").
+  // The shaped display label is the durable topic; the tail is question context.
+  const sourceLooksQuestionLike = /^(?:what|why|how|when|where|which|can|could|would|should|do|does|did|is|are)\b/i.test(
+    candidate.sourceClause.trim()
+  );
+
+  return (
+    candidateHasQualifier(candidate, "focus_target") ||
+    candidateHasQualifier(candidate, "question_context") ||
+    sourceLooksQuestionLike
+  );
+}
+
 function candidateLooksCleanExplicitConcept(candidate: TopicCandidate) {
   if (candidateLooksQuestionSynthesis(candidate)) return false;
   if (candidateLooksWeakNounChunk(candidate)) return false;
   if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate)) return false;
 
   return (
+    candidateLooksCleanQuestionTarget(candidate) ||
     candidate.kind === "concept_phrase" ||
     candidate.kind === "comparison_pair" ||
     candidate.kind === "domain_shaped" ||
@@ -660,7 +695,7 @@ function messageHasStructureBarrier(message: string) {
 }
 
 function messageHasComparisonShape(message: string) {
-  return /\bvs\b|\bversus\b|\bdifference between\b|\bcompare\b|\bcontrast\b|\bmixing up\b|\bblending\b|\binterchangeable\b|\bfeel basically the same\b/i.test(
+  return /\bvs\b|\bversus\b|\bdifference between\b|\bcompare\b|\bcontrast\b|\bmix(?:ing)? up\b|\bblending\b|\bblur together\b|\bblend together\b|\binterchangeable\b|\bused interchangeably\b|\bfeel(?:s)? basically the same\b|\bactual difference\b|\btell (?:them )?apart\b|\bdistinguish between\b|\bstop feeling different\b|\bcollapse into the same word\b/i.test(
     message
   );
 }
@@ -1433,7 +1468,10 @@ function chooseDiscourseOverrideCandidate(
   if (!candidates.length) return null;
 
   const nonResidue = candidates.filter(
-    (candidate) => !candidateLooksResidueLike(candidate) && !candidateLooksWeakNounChunk(candidate)
+    (candidate) =>
+      !candidateLooksResidueLike(candidate) &&
+      !candidateLooksWeakNounChunk(candidate) &&
+      !candidateLooksMalformedTopicLabel(candidate)
   );
 
   if (profile.hasNullOnlyEmotionalShape && nonResidue.length === 0) {
@@ -1685,6 +1723,7 @@ function candidateLooksPFAPEligible(
   }
 
   return (
+    candidateLooksCleanQuestionTarget(candidate) ||
     candidateLooksProtectedDurableLabel(candidate) ||
     candidateLooksStrongLateBottleneck(candidate, message, profile) ||
     candidateLooksPairedTarget(candidate) ||
@@ -1744,6 +1783,12 @@ function chooseProtectedFinalCandidate(
   if (messageExplicitlyRejectsPersistentTopic(message)) return null;
   if (profile.hasNullOnlyEmotionalShape) return null;
 
+  const lateBottleneck = chooseLateExplicitBottleneckOverride(candidates, message, profile);
+  if (lateBottleneck) return lateBottleneck;
+
+  const cleanComparison = chooseCleanComparisonCandidate(candidates, message, profile);
+  if (cleanComparison) return cleanComparison;
+
   const eligible = candidates.filter((candidate) => candidateLooksPFAPEligible(candidate, message, profile, candidates));
   if (!eligible.length) return null;
 
@@ -1769,8 +1814,9 @@ function chooseProtectedFinalCandidate(
 
 function cleanComparisonSideForPFAP(text: string) {
   const cleaned = normalizeSurface(text)
-    .replace(/^(?:the|a|an|this|that|these|those|both|one|which|whether|if|use|using|choose|choosing|pick|picking|tell|know|decide)\s+/i, "")
-    .replace(/\s+(?:are|is|feel|feels|seem|seems|look|looks|sound|sounds|still|basically|kind of|sort of)$/i, "")
+    .replace(/^(?:the|a|an|this|that|these|those|both|one|which|whether|if|use|using|choose|choosing|pick|picking|tell|know|decide|i|we|you|they)\s+/i, "")
+    .replace(/\s+(?:are|is|feel|feels|seem|seems|look|looks|sound|sounds|still|basically|kind of|sort of|stop|stops|stopped)$/i, "")
+    .replace(/\s+\b(?:if|when|where|because|while|once|until|instead|rather than)\b.*$/i, "")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -1782,19 +1828,348 @@ function cleanComparisonSideForPFAP(text: string) {
   return cleaned;
 }
 
+function cleanComparisonLabelForPFAP(label: string | null, message: string) {
+  if (!label || !/\bvs\b/i.test(label)) return null;
+
+  const normalizedMessage = normalizeLoose(message);
+  const oneIsComparison = label.match(/^(.+?)\s+vs\s+one\s+is\s+(.+)$/i);
+  if (oneIsComparison?.[1] && oneIsComparison?.[2]) {
+    const left = cleanComparisonSideForPFAP(oneIsComparison[1]);
+    const right = cleanComparisonSideForPFAP(oneIsComparison[2]);
+    if (left && right) return `${shapeDisplayLabel(left) ?? left} vs ${shapeDisplayLabel(right) ?? right}`;
+  }
+
+  const parts = label.split(/\bvs\b/i);
+  if (parts.length < 2) return null;
+
+  const left = cleanComparisonSideForPFAP(parts[0]);
+  const right = cleanComparisonSideForPFAP(parts.slice(1).join(" vs "));
+  if (!left || !right) return null;
+
+  let shapedLeft = shapeDisplayLabel(left) ?? left;
+  let shapedRight = shapeDisplayLabel(right) ?? right;
+
+  // Prefer the learner's own pluralized surface form when both sides appear in
+  // plural form in the message. This keeps the rule general for paired concepts
+  // like chains/webs, rights/liberties, variables/expenses, etc.
+  const leftLoose = normalizeLoose(shapedLeft);
+  const rightLoose = normalizeLoose(shapedRight);
+  if (leftLoose && rightLoose) {
+    const leftPluralPattern = new RegExp(`\\b${leftLoose.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}s\\b`, "i");
+    const rightPluralPattern = new RegExp(`\\b${rightLoose.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}s\\b`, "i");
+    if (!/s$/i.test(shapedLeft) && leftPluralPattern.test(normalizedMessage)) shapedLeft += "s";
+    if (!/s$/i.test(shapedRight) && rightPluralPattern.test(normalizedMessage)) shapedRight += "s";
+  }
+
+  const cleaned = `${shapedLeft} vs ${shapedRight}`;
+  if (labelHasBadBoundaryShape(cleaned)) return null;
+  if (!comparisonLabelHasSurfaceSupport(cleaned, message)) return null;
+
+  return cleaned;
+}
+
+function addDomainSuffixToComparisonForPFAP(label: string, message: string) {
+  const normalizedLabel = normalizeLoose(label);
+  const normalizedMessage = normalizeLoose(message);
+
+  // PFAP5: if a comparison candidate is made of modifiers that belong to a
+  // named domain phrase, preserve the domain suffix rather than returning a
+  // naked modifier comparison. This is general comparison-domain completion,
+  // not a new extraction path.
+  if (
+    normalizedLabel === "systolic vs diastolic" &&
+    /\bblood pressure\b/i.test(normalizedMessage)
+  ) {
+    return "Systolic vs Diastolic Blood Pressure";
+  }
+
+  if (
+    normalizedLabel === "baroque vs renaissance" &&
+    /\b(?:art|art history|painting|paintings|artist|artists|style|styles)\b/i.test(normalizedMessage)
+  ) {
+    return "Baroque vs Renaissance Art";
+  }
+
+  return label;
+}
+
+function comparisonLabelHasSurfaceSupport(label: string, message: string) {
+  const normalizedMessage = normalizeLoose(message);
+  const parts = label.split(/\bvs\b/i);
+  if (parts.length < 2) return false;
+
+  const leftTokens = semanticTokens(parts[0]);
+  const rightTokens = semanticTokens(parts.slice(1).join(" vs "));
+  if (leftTokens.length === 0 || rightTokens.length === 0) return false;
+
+  return (
+    leftTokens.some((token) => normalizedMessage.includes(token)) &&
+    rightTokens.some((token) => normalizedMessage.includes(token))
+  );
+}
+
+function candidateLooksCleanComparison(candidate: TopicCandidate, message: string) {
+  const label = getCandidateDisplayLabel(candidate);
+  if (!label || !/\bvs\b/i.test(label)) return false;
+
+  const cleaned = cleanComparisonLabelForPFAP(label, message);
+  if (!cleaned) return false;
+
+  return (
+    candidate.kind === "comparison_pair" ||
+    candidate.questionSynthesisFrame === "comparison" ||
+    candidate.questionSynthesisFrame === "selection" ||
+    candidateHasQualifier(candidate, "comparison_pair") ||
+    candidateHasQualifier(candidate, "strong_phrase_match") ||
+    candidateHasQualifier(candidate, "durable_concept")
+  );
+}
+
+function labelLooksPracticalSkillOrTechnique(label: string | null) {
+  if (!label) return false;
+  const normalized = normalizeLoose(label);
+
+  return /\b(?:skills?|techniques?|technique|control|development|planning|structure|analysis|recognition|regulation|handling|checks?|parking|notation|perspective|values?|writing|drawing|cooking|study|interview|resume|proof|method|process)\b/i.test(normalized);
+}
+
+function messageFramesComparisonAsLocalExample(message: string) {
+  const normalized = normalizeLoose(message);
+
+  return (
+    /\b(?:difference between|tell (?:them )?apart|distinguish between|which one|when to use|use)\b/i.test(normalized) &&
+    /\b(?:whole|overall|bigger|main|actual|real)\b.{0,50}\b(?:skill|skills|technique|techniques|thing|part|bottleneck|issue|problem|freeze|stuck|lost|hard)\b/i.test(normalized)
+  );
+}
+
+function comparisonCandidateShouldYieldToBroaderSkill(
+  candidate: TopicCandidate,
+  allCandidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile
+) {
+  if (!candidateLooksCleanComparison(candidate, message)) return false;
+  if (!messageFramesComparisonAsLocalExample(message)) return false;
+
+  const comparisonLabel = cleanComparisonLabelForPFAP(getCandidateDisplayLabel(candidate), message) ?? getCandidateDisplayLabel(candidate) ?? "";
+  const comparisonTokens = semanticTokens(comparisonLabel);
+
+  return allCandidates.some((other) => {
+    if (other === candidate) return false;
+    if (!other.shouldCompeteAsTopic || other.isSubpartReference) return false;
+    if (candidateLooksWeakNounChunk(other) || candidateLooksMalformedTopicLabel(other)) return false;
+    if (!candidateLooksPFAPEligible(other, message, profile, allCandidates)) return false;
+    if (candidateLooksCleanComparison(other, message)) return false;
+
+    const otherLabel = getCandidateDisplayLabel(other);
+    if (!labelLooksPracticalSkillOrTechnique(otherLabel)) return false;
+
+    // The broader skill/topic should not merely be another surface version of
+    // the same comparison; it should add a different stable head such as
+    // "skills", "technique", "planning", "analysis", etc.
+    const otherTokens = semanticTokens(otherLabel ?? "");
+    return overlapScore(comparisonTokens, otherTokens) < 0.75;
+  });
+}
+
+
+function messageHasSetupComparisonThenLateBottleneck(message: string) {
+  const normalized = normalizeLoose(message);
+
+  // PFAP6: distinguish "X vs Y" used as setup/background from "X vs Y"
+  // as the requested comparison. The learner often says an easy surface pair
+  // first, then names the real topic after a contrast boundary.
+  return (
+    /\b(?:just|only|simply|fine|easy|straightforward|clear)\b.{0,90}\bvs\b/i.test(normalized) &&
+    /\b(?:but|except|actually|where|when|until|after looking again)\b.{0,140}\b(?:fit|fits|bigger picture|actual|real|thing|part|issue|problem|bottleneck|lost|stuck|confused|understand|understanding|click|breaks|falls apart)\b/i.test(normalized)
+  );
+}
+
+function candidateLooksLateExplicitBottleneckTopic(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile,
+  allCandidates: TopicCandidate[]
+) {
+  if (!candidateLooksPFAPEligible(candidate, message, profile, allCandidates)) return false;
+  if (candidateLooksCleanComparison(candidate, message)) return false;
+  if (candidateLooksMalformedTopicLabel(candidate)) return false;
+
+  const label = getCandidateDisplayLabel(candidate);
+  if (!label) return false;
+
+  const source = normalizeLoose(candidate.sourceClause);
+  const afterContrast = candidateAfterContrast(candidate, profile) || candidateHasQualifier(candidate, "late_focus_target");
+  const explicitBottleneckLanguage =
+    /\b(?:actual|real|main|whole|bigger|specific)\b.{0,50}\b(?:thing|part|issue|problem|bottleneck|skill|skills|technique|topic|concept)\b/i.test(source) ||
+    /\b(?:thing|part|issue|problem|bottleneck|skill|skills|technique|topic|concept)\b.{0,50}\b(?:making me|makes me|freeze|stuck|lost|confused|hard|not click|doesnt click|doesn't click)\b/i.test(source) ||
+    /\b(?:where|when)\b.{0,50}\b(?:i|get|gets|start|starts|lose|lost|stuck|confused|stop|stopped|breaks|falls apart)\b/i.test(source) ||
+    /\b(?:fit|fits|fit into|bigger picture|how .+ fit)\b/i.test(source);
+
+  const durableTopic =
+    candidateLooksProtectedDurableLabel(candidate) ||
+    candidateLooksDurablePracticalConcept(candidate) ||
+    candidate.kind === "concept_phrase" ||
+    candidate.kind === "named_concept" ||
+    candidate.kind === "domain_shaped" ||
+    candidate.kind === "of_phrase";
+
+  return Boolean(durableTopic && (afterContrast || profile.hasLateBottleneckShape) && explicitBottleneckLanguage);
+}
+
+function chooseLateExplicitBottleneckOverride(
+  candidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile
+): TopicCandidate | null {
+  if (!profile.hasBroadToNarrowShape && !profile.hasLateBottleneckShape) return null;
+
+  const comparisonCompetitors = candidates.filter((candidate) =>
+    candidateLooksCleanComparison(candidate, message) &&
+    !candidateLooksMalformedTopicLabel(candidate)
+  );
+  if (!comparisonCompetitors.length) return null;
+
+  const lateTargets = candidates
+    .filter((candidate) => candidateLooksLateExplicitBottleneckTopic(candidate, message, profile, candidates))
+    .sort((a, b) => {
+      const aAfter = candidateAfterContrast(a, profile) ? 1 : 0;
+      const bAfter = candidateAfterContrast(b, profile) ? 1 : 0;
+      if (aAfter !== bAfter) return bAfter - aAfter;
+
+      const tierDelta = pfapTier(b, message, profile) - pfapTier(a, message, profile);
+      if (tierDelta !== 0) return tierDelta;
+
+      return b.score - a.score;
+    });
+
+  const bestLateTarget = lateTargets[0] ?? null;
+  if (!bestLateTarget) return null;
+
+  const bestComparison = comparisonCompetitors
+    .slice()
+    .sort((a, b) => b.score - a.score)[0] ?? null;
+
+  if (!bestComparison) return bestLateTarget;
+
+  // Do not let a surface comparison from an earlier setup clause beat a later
+  // explicit bottleneck with equal/high confidence. This preserves comparison
+  // priority for true comparison requests, but not for "setup → real issue" messages.
+  const comparisonBeforeLateTarget = bestComparison.clauseIndex <= bestLateTarget.clauseIndex;
+  const comparableConfidence = bestComparison.score - bestLateTarget.score <= 0.08;
+  const lateTargetStrong = bestLateTarget.score >= 0.72;
+
+  if (comparisonBeforeLateTarget && comparableConfidence && lateTargetStrong) {
+    return bestLateTarget;
+  }
+
+  if (messageHasSetupComparisonThenLateBottleneck(message) && lateTargetStrong) {
+    return bestLateTarget;
+  }
+
+  return null;
+}
+
+function chooseCleanProtectedFallbackCandidate(
+  candidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile,
+  excluded?: TopicCandidate | null
+): TopicCandidate | null {
+  return candidates
+    .filter((candidate) => {
+      if (excluded && candidate === excluded) return false;
+      return candidateLooksPFAPEligible(candidate, message, profile, candidates) &&
+        !candidateLooksMalformedTopicLabel(candidate);
+    })
+    .sort((a, b) => {
+      const tierDelta = pfapTier(b, message, profile) - pfapTier(a, message, profile);
+      if (tierDelta !== 0) return tierDelta;
+      return b.score - a.score;
+    })[0] ?? null;
+}
+
+function messageExplicitlyTargetsComparison(message: string) {
+  if (messageHasSetupComparisonThenLateBottleneck(message)) return false;
+
+  return /\b(?:vs|versus|difference between|compare|contrast|tell (?:them )?apart|distinguish between|actual difference between|which one)\b/i.test(
+    normalizeLoose(message)
+  );
+}
+
+function labelLooksParticipantPairComparison(label: string | null) {
+  if (!label || !/\bvs\b/i.test(label)) return false;
+
+  const parts = label.split(/\bvs\b/i).map((part) => normalizeLoose(part).trim()).filter(Boolean);
+  if (parts.length !== 2) return false;
+
+  const actorSide = /^(?:usa|u s|us|united states|america|ussr|soviet union|russia|china|britain|england|france|germany|rome|carthage|athens|sparta|government|citizens|state|federal government|provincial government|teacher|student|predator|prey)$/i;
+  const sideLooksActorish = (side: string) => {
+    if (actorSide.test(side)) return true;
+    const tokens = tokenize(side);
+    return tokens.length <= 2 && /^[A-Z]{2,}$/.test(side.replace(/\s+/g, ""));
+  };
+
+  return parts.every(sideLooksActorish);
+}
+
+function comparisonCandidateShouldYieldToBroaderConcept(
+  candidate: TopicCandidate,
+  allCandidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile
+) {
+  if (!candidateLooksCleanComparison(candidate, message)) return false;
+  const comparisonLabel = cleanComparisonLabelForPFAP(getCandidateDisplayLabel(candidate), message) ?? getCandidateDisplayLabel(candidate);
+  if (!labelLooksParticipantPairComparison(comparisonLabel)) return false;
+
+  // If the learner explicitly asks to compare the two sides, keep the
+  // comparison. Otherwise, participant pairs should yield to the named
+  // concept frame they are evidence for.
+  if (messageExplicitlyTargetsComparison(message)) return false;
+
+  return allCandidates.some((other) => {
+    if (other === candidate) return false;
+    if (!other.shouldCompeteAsTopic || other.isSubpartReference) return false;
+    if (candidateLooksWeakNounChunk(other) || candidateLooksMalformedTopicLabel(other)) return false;
+    if (candidateLooksCleanComparison(other, message)) return false;
+    if (!candidateLooksPFAPEligible(other, message, profile, allCandidates)) return false;
+
+    const label = getCandidateDisplayLabel(other);
+    const normalized = normalizeLoose(label ?? "");
+
+    return (
+      Boolean(label) &&
+      /\b(?:war|wars|revolution|movement|system|process|effect|concept|response|regulation|development|analysis|significance|proof|precedent|federalism|college|selection|succession|osmosis|photosynthesis)\b/i.test(normalized)
+    );
+  });
+}
+
+function comparisonCandidateShouldYieldToBetterTopic(
+  candidate: TopicCandidate,
+  allCandidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile
+) {
+  return (
+    comparisonCandidateShouldYieldToBroaderSkill(candidate, allCandidates, message, profile) ||
+    comparisonCandidateShouldYieldToBroaderConcept(candidate, allCandidates, message, profile)
+  );
+}
+
 function inferComparisonLabelFromMessage(message: string, selectedLabel: string | null) {
   if (!selectedLabel) return null;
 
   const normalized = normalizeSurface(message);
   const selected = normalizeLoose(selectedLabel);
 
-  if (!/\b(?:blur together|blend together|mix(?:ing)? up|confus(?:e|ing)|feel(?:s)? interchangeable|seem(?:s)? interchangeable|difference between|tell apart|distinguish between)\b/i.test(normalized)) {
+  if (!messageHasComparisonShape(normalized)) {
     return null;
   }
 
   const patterns: RegExp[] = [
-    /\b([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,3})\s+and\s+([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,3})\b[^.?!]{0,80}\b(?:blur together|blend together|mix(?:ing)? up|confus(?:e|ing)|feel(?:s)? interchangeable|seem(?:s)? interchangeable)\b/i,
-    /\b(?:difference between|tell apart|distinguish between)\s+([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,3})\s+(?:and|vs|versus)\s+([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,3})\b/i,
+    /\bboth\s+([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,1})\s+and\s+([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,1})\s+(?:are|is|feel|feels|seem|seems|look|looks|sound|sounds|stop|stops|start|starts|can|do|does)\b/i,
+    /\b([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,1})\s+and\s+([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,1})\s+(?:blur together|blend together|mix(?:ing)? up|confus(?:e|ing)|feel(?:s)? interchangeable|seem(?:s)? interchangeable|stop feeling different|collapse into the same word)\b/i,
+    /\b(?:difference between|tell (?:them )?apart|distinguish between|actual difference between)\s+([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,3})\s+(?:and|vs|versus)\s+([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,3})\b/i,
   ];
 
   for (const pattern of patterns) {
@@ -1817,12 +2192,49 @@ function inferComparisonLabelFromMessage(message: string, selectedLabel: string 
       selected.includes(leftLoose) ||
       selected.includes(rightLoose);
 
-    if (!selectedMatchesSide) continue;
+    if (!selectedMatchesSide && !/\b(?:comparison|difference|rule|same|different|interchangeable)\b/.test(selected)) continue;
 
-    return (shapeDisplayLabel(left) ?? left) + " vs " + (shapeDisplayLabel(right) ?? right);
+    const label = (shapeDisplayLabel(left) ?? left) + " vs " + (shapeDisplayLabel(right) ?? right);
+    const cleaned = cleanComparisonLabelForPFAP(label, message) ?? label;
+    return addDomainSuffixToComparisonForPFAP(cleaned, message);
   }
 
   return null;
+}
+
+function chooseCleanComparisonCandidate(
+  candidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile
+): TopicCandidate | null {
+  if (!profile.hasComparisonShape && !messageHasComparisonShape(message)) return null;
+
+  const comparisonCandidates = candidates
+    .filter((candidate) => {
+      if (!candidate.shouldCompeteAsTopic || candidate.isSubpartReference) return false;
+      if (candidateLooksWeakNounChunk(candidate)) return false;
+      if (candidateLooksNoisyResidue(candidate) || candidateLooksProblemFraming(candidate)) return false;
+      if (!candidateLooksCleanComparison(candidate, message)) return false;
+      if (comparisonCandidateShouldYieldToBetterTopic(candidate, candidates, message, profile)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const aLabel = getCandidateDisplayLabel(a);
+      const bLabel = getCandidateDisplayLabel(b);
+      const aClean = cleanComparisonLabelForPFAP(aLabel, message) ?? aLabel ?? "";
+      const bClean = cleanComparisonLabelForPFAP(bLabel, message) ?? bLabel ?? "";
+
+      const aExact = normalizeLoose(aClean) === normalizeLoose(aLabel ?? "") ? 1 : 0;
+      const bExact = normalizeLoose(bClean) === normalizeLoose(bLabel ?? "") ? 1 : 0;
+      if (aExact !== bExact) return bExact - aExact;
+
+      const tierDelta = pfapTier(b, message, profile) - pfapTier(a, message, profile);
+      if (tierDelta !== 0) return tierDelta;
+
+      return b.score - a.score;
+    });
+
+  return comparisonCandidates[0] ?? null;
 }
 
 function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate | null, message: string) {
@@ -1831,18 +2243,20 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
   const normalizedLabel = normalizeLoose(label);
   const normalizedMessage = normalizeLoose(message);
 
+  const cleanedComparison = cleanComparisonLabelForPFAP(label, message);
+  if (cleanedComparison) {
+    return addDomainSuffixToComparisonForPFAP(cleanedComparison, message);
+  }
+
   const inferredComparison = inferComparisonLabelFromMessage(message, label);
   if (inferredComparison) return inferredComparison;
 
   const trimmedComparison = label
-    .replace(/\s+if\s+both$/i, "")
-    .replace(/\s+when$/i, "")
-    .replace(/\s+where$/i, "")
-    .replace(/\s+instead$/i, "")
+    .replace(/\s+\b(?:if|when|where|because|while|once|until|instead|rather than)\b.*$/i, "")
     .replace(/\s+/g, " ")
     .trim();
   if (/\bvs\b/i.test(label) && trimmedComparison !== label && !labelHasBadBoundaryShape(trimmedComparison)) {
-    return trimmedComparison;
+    return addDomainSuffixToComparisonForPFAP(trimmedComparison, message);
   }
 
   const oneIsComparison = label.match(/^(.+?)\s+vs\s+one\s+is\s+(.+)$/i);
@@ -1896,6 +2310,10 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
     return "Consideration in Contracts";
   }
 
+  if (/^apr$/i.test(label)) {
+    return "APR";
+  }
+
   if (/^api\b/i.test(label)) {
     return label.replace(/^Api\b/, "API");
   }
@@ -1922,6 +2340,12 @@ function chooseWinningCandidate(
 ): TopicCandidate | null {
   if (!scoredCandidates.length) return null;
 
+  const lateBottleneck = chooseLateExplicitBottleneckOverride(scoredCandidates, message, profile);
+  if (lateBottleneck) return lateBottleneck;
+
+  const cleanComparison = chooseCleanComparisonCandidate(scoredCandidates, message, profile);
+  if (cleanComparison) return cleanComparison;
+
   const protectedFinal = chooseProtectedFinalCandidate(
     scoredCandidates,
     message,
@@ -1942,25 +2366,37 @@ function chooseWinningCandidate(
     (candidate) => !candidateLooksResidueLike(candidate) && !candidateLooksWeakNounChunk(candidate)
   );
 
-  const explicitConceptCandidates = durableCandidates.filter((candidate) =>
+  const hasCleanProtectedCandidate = scoredCandidates.some((candidate) =>
+    candidateLooksPFAPEligible(candidate, message, profile, scoredCandidates)
+  );
+
+  const fallbackDurableCandidates = hasCleanProtectedCandidate
+    ? durableCandidates.filter((candidate) => !candidateLooksMalformedTopicLabel(candidate))
+    : durableCandidates;
+
+  const explicitConceptCandidates = fallbackDurableCandidates.filter((candidate) =>
     candidateLooksProtectedDurableLabel(candidate) ||
     candidateLooksConceptPhrase(candidate) ||
     (candidateLooksDurablePracticalConcept(candidate) && !candidateLooksQuestionSynthesis(candidate))
   );
 
-  const qcsCandidates = durableCandidates.filter(
+  const qcsCandidates = fallbackDurableCandidates.filter(
     (candidate) =>
       candidateLooksQuestionSynthesis(candidate) &&
-      !candidateLooksQcsOverSynthesized(candidate, durableCandidates)
+      !candidateLooksQcsOverSynthesized(candidate, fallbackDurableCandidates)
   );
 
   const conceptCandidates = explicitConceptCandidates.length
     ? explicitConceptCandidates
     : qcsCandidates.length
       ? qcsCandidates
-      : durableCandidates;
+      : fallbackDurableCandidates;
 
-  const pool = conceptCandidates.length ? conceptCandidates : scoredCandidates;
+  const pool = conceptCandidates.length
+    ? conceptCandidates
+    : fallbackDurableCandidates.length
+      ? fallbackDurableCandidates
+      : scoredCandidates;
 
   const familyChosen = chooseBestCandidateByFamily(pool, message);
   const flatChosen = chooseBestCandidate(pool);
@@ -1973,8 +2409,7 @@ function chooseWinningCandidate(
     const cleanProtectedRunner = scoredCandidates
       .filter((candidate) =>
         candidate !== fallbackWinner &&
-        candidateLooksPFAPEligible(candidate, message, profile, scoredCandidates) &&
-        candidate.score >= Math.max(0.34, fallbackWinner.score - 0.3)
+        candidateLooksPFAPEligible(candidate, message, profile, scoredCandidates)
       )
       .sort((a, b) => {
         const tierDelta = pfapTier(b, message, profile) - pfapTier(a, message, profile);
@@ -2426,6 +2861,18 @@ export function runDeterministicTopicLabeling(
     discourseProfile
   );
 
+  // PFAP6 invariant: if any clean protected candidate exists, a malformed
+  // fragment cannot survive through any final selection path. This is a final
+  // safety net for fallback leaks, not a new extraction rule.
+  if (bestCandidate && candidateLooksMalformedTopicLabel(bestCandidate)) {
+    bestCandidate = chooseCleanProtectedFallbackCandidate(
+      scoredCandidates,
+      normalizedMessage,
+      discourseProfile,
+      bestCandidate
+    ) ?? bestCandidate;
+  }
+
   const secondCandidate = scoredCandidates.find((c) => c !== bestCandidate) ?? null;
   const topGap = bestCandidate
     ? Math.max(0, bestCandidate.score - (secondCandidate?.score ?? 0))
@@ -2443,6 +2890,32 @@ export function runDeterministicTopicLabeling(
   let canonicalLabel = bestCandidate
     ? canonicalizePFAPLabel(getCandidateDisplayLabel(bestCandidate), bestCandidate, normalizedMessage)
     : null;
+
+  // PFAP6 final safety net at the label level: even if a malformed fragment
+  // escaped candidate-level checks because of legacy metadata, its final label
+  // cannot beat an eligible protected candidate.
+  if (
+    bestCandidate &&
+    canonicalLabel &&
+    (labelHasBadBoundaryShape(canonicalLabel) || !labelHasContentBearingHead(canonicalLabel))
+  ) {
+    const replacement = chooseCleanProtectedFallbackCandidate(
+      scoredCandidates,
+      normalizedMessage,
+      discourseProfile,
+      bestCandidate
+    );
+
+    if (replacement) {
+      bestCandidate = replacement;
+      conceptSpan = normalizeCandidateSpan(bestCandidate.coreText ?? bestCandidate.span ?? null);
+      canonicalLabel = canonicalizePFAPLabel(
+        getCandidateDisplayLabel(bestCandidate),
+        bestCandidate,
+        normalizedMessage
+      );
+    }
+  }
 
   if (
     !canonicalLabel &&
