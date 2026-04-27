@@ -194,6 +194,79 @@ function createDeterministicLabelingTimer() {
   };
 }
 
+const STRING_CACHE_MAX_SIZE = 5000;
+
+function memoizeStringResult<T>(
+  cache: Map<string, T>,
+  key: string | null | undefined,
+  compute: (normalizedKey: string) => T
+): T {
+  const normalizedKey = key ?? "";
+  const cached = cache.get(normalizedKey);
+
+  if (cached !== undefined) return cached;
+
+  const value = compute(normalizedKey);
+  cache.set(normalizedKey, value);
+
+  if (cache.size > STRING_CACHE_MAX_SIZE) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) cache.delete(firstKey);
+  }
+
+  return value;
+}
+
+const normalizeSurfaceCache = new Map<string, string>();
+const normalizeLooseCache = new Map<string, string>();
+const tokenizeCache = new Map<string, string[]>();
+const semanticTokensCache = new Map<string, string[]>();
+const specificityCache = new Map<string, TopicSpecificity>();
+const suspiciousLabelCache = new Map<string, boolean>();
+const candidateDisplayLabelCache = new WeakMap<TopicCandidate, string | null>();
+const candidateFamilyCache = new WeakMap<TopicCandidate, Map<string, CandidateFamily>>();
+
+function cachedNormalizeSurface(text: string | null | undefined) {
+  return memoizeStringResult(normalizeSurfaceCache, text, (value) =>
+    normalizeSurface(value)
+  );
+}
+
+function cachedNormalizeLoose(text: string | null | undefined) {
+  return memoizeStringResult(normalizeLooseCache, text, (value) =>
+    normalizeLoose(value)
+  );
+}
+
+function cachedTokenize(text: string | null | undefined) {
+  return memoizeStringResult(tokenizeCache, text, (value) => tokenize(value));
+}
+
+function cachedSemanticTokens(text: string | null | undefined) {
+  return memoizeStringResult(semanticTokensCache, text, (value) =>
+    semanticTokens(value)
+  );
+}
+
+function cachedScoreSpecificity(text: string | null | undefined) {
+  return memoizeStringResult(specificityCache, text, (value) =>
+    scoreSpecificity(value || null)
+  );
+}
+
+function cachedLooksLikeSuspiciousLabel(text: string | null | undefined) {
+  return memoizeStringResult(suspiciousLabelCache, text, (value) =>
+    looksLikeSuspiciousLabel(value || null)
+  );
+}
+
+function topicLabelerDiagnosticsMode() {
+  const raw = process.env.MYWAY_TOPIC_LABELER_DIAGNOSTICS?.trim().toLowerCase();
+
+  if (raw === "full") return "full" as const;
+  return "summary" as const;
+}
+
 function overlapScore(a: string[], b: string[]) {
   if (!a.length || !b.length) return 0;
 
@@ -209,8 +282,8 @@ function overlapScore(a: string[], b: string[]) {
 }
 
 function countSpanMentions(fullMessage: string, span: string) {
-  const normalizedMessage = normalizeSurface(fullMessage).toLowerCase();
-  const normalizedSpan = normalizeSurface(span).toLowerCase();
+  const normalizedMessage = cachedNormalizeSurface(fullMessage).toLowerCase();
+  const normalizedSpan = cachedNormalizeSurface(span).toLowerCase();
 
   if (!normalizedMessage || !normalizedSpan) return 0;
 
@@ -220,8 +293,8 @@ function countSpanMentions(fullMessage: string, span: string) {
 }
 
 function appearsInBroadList(clause: string, span: string) {
-  const normalizedClause = normalizeSurface(clause).toLowerCase();
-  const normalizedSpan = normalizeSurface(span).toLowerCase();
+  const normalizedClause = cachedNormalizeSurface(clause).toLowerCase();
+  const normalizedSpan = cachedNormalizeSurface(span).toLowerCase();
 
   if (!normalizedClause || !normalizedSpan) return false;
 
@@ -236,7 +309,7 @@ function findReuseCandidate(
   if (!label || !candidates.length) return null;
 
   const normalizedLabel = label.toLowerCase();
-  const labelTokens = semanticTokens(label);
+  const labelTokens = cachedSemanticTokens(label);
 
   let best: RetrievalCandidate | null = null;
   let bestScore = 0;
@@ -244,7 +317,7 @@ function findReuseCandidate(
   for (const candidate of candidates) {
     const candidateName = candidate.topic_name.toLowerCase();
     const exact = candidateName === normalizedLabel ? 1 : 0;
-    const tokenScore = overlapScore(labelTokens, semanticTokens(candidate.topic_name));
+    const tokenScore = overlapScore(labelTokens, cachedSemanticTokens(candidate.topic_name));
     const retrievalScore = candidate.similarity ?? 0;
 
     const score = exact * 1.0 + tokenScore * 0.72 + retrievalScore * 0.64;
@@ -260,7 +333,13 @@ function findReuseCandidate(
 }
 
 function getCandidateDisplayLabel(candidate: TopicCandidate) {
-  return shapeDisplayLabel(candidate.coreText) ?? shapeDisplayLabel(candidate.span);
+  if (candidateDisplayLabelCache.has(candidate)) {
+    return candidateDisplayLabelCache.get(candidate) ?? null;
+  }
+
+  const label = shapeDisplayLabel(candidate.coreText) ?? shapeDisplayLabel(candidate.span);
+  candidateDisplayLabelCache.set(candidate, label);
+  return label;
 }
 
 function candidateHasQualifier(candidate: TopicCandidate, qualifier: string) {
@@ -295,7 +374,7 @@ function candidateLooksCleanQuestionTarget(candidate: TopicCandidate) {
   if (labelHasBadBoundaryShape(label)) return false;
   if (!labelHasContentBearingHead(label)) return false;
 
-  const tokenCount = tokenize(label).length;
+  const tokenCount = cachedTokenize(label).length;
   if (tokenCount === 0 || tokenCount > 5) return false;
 
   // PFAP7: a clean term asked about in a question should remain eligible even
@@ -360,7 +439,7 @@ function candidateLooksQcsOverSynthesized(candidate: TopicCandidate, allCandidat
     return (
       label.includes(otherLabel) ||
       otherLabel.includes(label) ||
-      overlapScore(semanticTokens(label), semanticTokens(otherLabel)) >= 0.35
+      overlapScore(cachedSemanticTokens(label), cachedSemanticTokens(otherLabel)) >= 0.35
     );
   });
 
@@ -377,7 +456,7 @@ function candidateLooksQcsOverSynthesized(candidate: TopicCandidate, allCandidat
 
 function candidateIsOnlySuspiciousWhenStandalone(candidate: TopicCandidate) {
   const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
-  const tokenCount = tokenize(label).length;
+  const tokenCount = cachedTokenize(label).length;
 
   if (tokenCount > 1) return false;
 
@@ -561,7 +640,7 @@ function candidateLooksObjectOnly(candidate: TopicCandidate) {
   const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
   if (!label) return false;
 
-  const tokens = tokenize(label);
+  const tokens = cachedTokenize(label);
   if (tokens.length > 2) return false;
 
   return (
@@ -685,7 +764,7 @@ function candidateLooksResidueLike(candidate: TopicCandidate) {
     return false;
   }
 
-  if (candidateLooksQuestionSynthesis(candidate) && !looksLikeSuspiciousLabel(label)) {
+  if (candidateLooksQuestionSynthesis(candidate) && !cachedLooksLikeSuspiciousLabel(label)) {
     return false;
   }
 
@@ -693,7 +772,7 @@ function candidateLooksResidueLike(candidate: TopicCandidate) {
   if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate)) return true;
 
   return (
-    looksLikeSuspiciousLabel(label) ||
+    cachedLooksLikeSuspiciousLabel(label) ||
     candidateLooksClauseWrapped(candidate) ||
     candidateLooksNoisyResidue(candidate) ||
     candidateLooksProblemFraming(candidate) ||
@@ -786,11 +865,11 @@ function computeBestReuseHint(
 ) {
   if (!label) return 0;
 
-  const labelTokens = semanticTokens(label);
+  const labelTokens = cachedSemanticTokens(label);
   let bestReuseHint = 0;
 
   for (const retrieval of retrievalCandidates) {
-    const retrievalTokens = semanticTokens(retrieval.topic_name);
+    const retrievalTokens = cachedSemanticTokens(retrieval.topic_name);
     const score =
       overlapScore(labelTokens, retrievalTokens) * 0.12 +
       (retrieval.similarity ?? 0) * 0.08;
@@ -801,7 +880,7 @@ function computeBestReuseHint(
   return bestReuseHint;
 }
 
-function classifyCandidateFamily(
+function classifyCandidateFamilyUncached(
   candidate: TopicCandidate,
   message: string
 ): CandidateFamily {
@@ -816,6 +895,25 @@ function classifyCandidateFamily(
   if (candidateLooksStructuredDurable(candidate)) return "structured";
   if (candidateLooksDomainAnchor(candidate)) return "anchor";
   return "other";
+}
+
+function classifyCandidateFamily(
+  candidate: TopicCandidate,
+  message: string
+): CandidateFamily {
+  let messageCache = candidateFamilyCache.get(candidate);
+
+  if (!messageCache) {
+    messageCache = new Map<string, CandidateFamily>();
+    candidateFamilyCache.set(candidate, messageCache);
+  }
+
+  const cached = messageCache.get(message);
+  if (cached) return cached;
+
+  const family = classifyCandidateFamilyUncached(candidate, message);
+  messageCache.set(message, family);
+  return family;
 }
 
 function familyPriority(family: CandidateFamily) {
@@ -860,7 +958,7 @@ function zoneFromClause(
 
 function collectDiscourseCues(text: string): DiscourseCue[] {
   const cues: DiscourseCue[] = [];
-  const normalized = normalizeLoose(text);
+  const normalized = cachedNormalizeLoose(text);
 
   if (/\bbut\b/.test(normalized)) cues.push("but");
   if (/\bexcept\b/.test(normalized)) cues.push("except");
@@ -893,7 +991,7 @@ function collectDiscourseCues(text: string): DiscourseCue[] {
 }
 
 function clauseLooksBroadAnchorLike(raw: string) {
-  const text = normalizeLoose(raw);
+  const text = cachedNormalizeLoose(raw);
 
   return (
     /\b(?:learning about|talking about|covered|started|doing|unit on|section on|in class|lecture|textbook|worksheet|homework|reviewing)\b/.test(
@@ -906,7 +1004,7 @@ function clauseLooksBroadAnchorLike(raw: string) {
 }
 
 function clauseLooksBottleneckLike(raw: string) {
-  const text = normalizeLoose(raw);
+  const text = cachedNormalizeLoose(raw);
   const cues = collectDiscourseCues(raw);
 
   return (
@@ -921,7 +1019,7 @@ function clauseLooksBottleneckLike(raw: string) {
 }
 
 function clauseLooksResidueOnly(raw: string) {
-  const text = normalizeLoose(raw);
+  const text = cachedNormalizeLoose(raw);
 
   const hasDurableToken =
     /\b(?:mitosis|meiosis|reuptake|dopamine|osmosis|depolarization|electronegativity|crossing over|compound interest|speed of sound|law of cosines|law of sines|standard deviation|opportunity cost|subduction|negative feedback|event loop|secondary dominants|membrane potential|equilibrium constant|metaphase|anaphase|spanish|se|word order|tax|taxes|terminology|jargon|forms|curling|budget|budgeting|offside|soccer|pH|ph|LLM|llm|action potentials?)\b/i.test(
@@ -941,7 +1039,7 @@ function clauseLooksResidueOnly(raw: string) {
 }
 
 function extractDomainHintsFromText(message: string) {
-  const normalized = normalizeLoose(message);
+  const normalized = cachedNormalizeLoose(message);
   const hints: string[] = [];
 
   if (/\bspanish\b/.test(normalized)) hints.push("spanish");
@@ -1001,7 +1099,7 @@ function buildDiscourseProfile(
     }
   }
 
-  const normalized = normalizeLoose(message);
+  const normalized = cachedNormalizeLoose(message);
   const hasBroadToNarrowShape = messageHasBroadToNarrowStructure(normalized);
   const hasLateBottleneckShape =
     hasBroadToNarrowShape &&
@@ -1140,8 +1238,8 @@ function buildCandidateScoreBreakdown(args: {
 
   const clause = interpretation.clauses.find((item) => item.index === candidate.clauseIndex);
   const label = getCandidateDisplayLabel(candidate);
-  const specificity = scoreSpecificity(label);
-  const tokenCount = tokenize(candidate.coreText).length;
+  const specificity = cachedScoreSpecificity(label);
+  const tokenCount = cachedTokenize(candidate.coreText).length;
   const mentionCount = countSpanMentions(message, candidate.coreText);
 
   let roleWeight = 0;
@@ -1384,7 +1482,7 @@ function buildCandidateScoreBreakdown(args: {
     clausePenalty += 0.24;
   }
 
-  if (looksLikeSuspiciousLabel(label)) {
+  if (cachedLooksLikeSuspiciousLabel(label)) {
     structurePenalty += 0.18;
   }
 
@@ -1582,7 +1680,7 @@ function chooseDiscourseOverrideCandidate(
 
   if (questionSyntheses[0]) {
     const label = getCandidateDisplayLabel(questionSyntheses[0]);
-    const specificity = scoreSpecificity(label);
+    const specificity = cachedScoreSpecificity(label);
 
     if (
       questionSyntheses[0].score >= 0.64 &&
@@ -1608,7 +1706,7 @@ function chooseDiscourseOverrideCandidate(
   if (profile.hasBroadToNarrowShape && strongLateBottlenecks[0]) {
     const candidate = strongLateBottlenecks[0];
     const label = getCandidateDisplayLabel(candidate);
-    const specificity = scoreSpecificity(label);
+    const specificity = cachedScoreSpecificity(label);
 
     if (specificity === "good" || specificity === "very_specific" || candidateLooksStructuredDurable(candidate)) {
       return candidate;
@@ -1641,7 +1739,7 @@ function chooseDiscourseOverrideCandidate(
 
 
 function messageExplicitlyRejectsPersistentTopic(message: string) {
-  const normalized = normalizeLoose(message);
+  const normalized = cachedNormalizeLoose(message);
 
   return (
     /\b(?:no|not|don'?t have|dont have|do not have)\b.*\b(?:specific|actual|clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalized) ||
@@ -1652,7 +1750,7 @@ function messageExplicitlyRejectsPersistentTopic(message: string) {
 
 function labelHasBadBoundaryShape(label: string | null) {
   if (!label) return true;
-  const normalized = normalizeLoose(label);
+  const normalized = cachedNormalizeLoose(label);
   if (!normalized) return true;
 
   return (
@@ -1664,7 +1762,7 @@ function labelHasBadBoundaryShape(label: string | null) {
 
 function labelHasContentBearingHead(label: string | null) {
   if (!label) return false;
-  const tokens = tokenize(label).filter(
+  const tokens = cachedTokenize(label).filter(
     (token) =>
       !/^(?:a|an|the|this|that|these|those|my|our|your|their|its|and|or|but|if|then|than|to|of|for|from|in|on|at|by|with|about|into|through|during|after|before|under|over|between|among|is|are|am|was|were|be|being|been|do|does|did|can|could|would|should|will|why|what|when|where|how|whether|because|maybe|i|me|we|you|they|he|she|them|us)$/i.test(token)
   );
@@ -1680,7 +1778,7 @@ function labelHasContentBearingHead(label: string | null) {
 function labelLooksLocalClauseFragment(label: string | null) {
   if (!label) return true;
 
-  const normalized = normalizeLoose(label);
+  const normalized = cachedNormalizeLoose(label);
   if (!normalized) return true;
 
   // PFAP3: these are not topic labels; they are local sentence evidence.
@@ -1705,7 +1803,7 @@ function labelLooksLocalClauseFragment(label: string | null) {
   const startsLikeLocalSubject = /^(?:the|a|an|this|that|those|these|both|one|someone|everyone|people|teacher|worksheet|recipe|article|sentence|assignment|score|game|chords?|levels?|barrier|energy|picture|sticker|object|pass|run|function|ui)\b/i.test(normalized);
 
   const hasDurableConnectorShape = /\b(?:vs|of|in|on)\b/i.test(normalized);
-  const isShortNamedish = tokenize(label).length <= 4 && !hasFiniteOrLocalVerb;
+  const isShortNamedish = cachedTokenize(label).length <= 4 && !hasFiniteOrLocalVerb;
 
   if (hasFiniteOrLocalVerb && startsLikeLocalSubject) return true;
   if (hasFiniteOrLocalVerb && !hasDurableConnectorShape && !isShortNamedish) return true;
@@ -1717,8 +1815,8 @@ function candidateLooksMalformedTopicLabel(candidate: TopicCandidate) {
   const label = getCandidateDisplayLabel(candidate);
   if (!label) return true;
 
-  const normalized = normalizeLoose(label);
-  const tokenCount = tokenize(label).length;
+  const normalized = cachedNormalizeLoose(label);
+  const tokenCount = cachedTokenize(label).length;
 
   if (labelHasBadBoundaryShape(label)) return true;
   if (!labelHasContentBearingHead(label)) return true;
@@ -1749,8 +1847,8 @@ function comparisonCandidateHasRealAnchors(candidate: TopicCandidate, message: s
   const label = getCandidateDisplayLabel(candidate);
   if (!label) return false;
 
-  const normalizedLabel = normalizeLoose(label);
-  const normalizedMessage = normalizeLoose(message);
+  const normalizedLabel = cachedNormalizeLoose(label);
+  const normalizedMessage = cachedNormalizeLoose(message);
 
   if (!/\bvs\b/.test(normalizedLabel)) return false;
   if (labelHasBadBoundaryShape(label)) return false;
@@ -1758,8 +1856,8 @@ function comparisonCandidateHasRealAnchors(candidate: TopicCandidate, message: s
   const [leftRaw, rightRaw] = normalizedLabel.split(/\bvs\b/i).map((part) => part.trim());
   if (!leftRaw || !rightRaw) return false;
 
-  const leftTokens = semanticTokens(leftRaw);
-  const rightTokens = semanticTokens(rightRaw);
+  const leftTokens = cachedSemanticTokens(leftRaw);
+  const rightTokens = cachedSemanticTokens(rightRaw);
   if (leftTokens.length === 0 || rightTokens.length === 0) return false;
 
   const badSide = /^(?:blur together|same|different|comparison|difference|which one|when to use|use|using|instead|rather than|in)$/i;
@@ -1884,8 +1982,8 @@ function chooseProtectedFinalCandidate(
       if (familyDelta !== 0) return familyDelta;
 
       const specificityDelta =
-        (scoreSpecificity(getCandidateDisplayLabel(b)) === "very_specific" ? 2 : scoreSpecificity(getCandidateDisplayLabel(b)) === "good" ? 1 : 0) -
-        (scoreSpecificity(getCandidateDisplayLabel(a)) === "very_specific" ? 2 : scoreSpecificity(getCandidateDisplayLabel(a)) === "good" ? 1 : 0);
+        (cachedScoreSpecificity(getCandidateDisplayLabel(b)) === "very_specific" ? 2 : cachedScoreSpecificity(getCandidateDisplayLabel(b)) === "good" ? 1 : 0) -
+        (cachedScoreSpecificity(getCandidateDisplayLabel(a)) === "very_specific" ? 2 : cachedScoreSpecificity(getCandidateDisplayLabel(a)) === "good" ? 1 : 0);
       if (specificityDelta !== 0) return specificityDelta;
 
       return b.score - a.score;
@@ -1893,17 +1991,17 @@ function chooseProtectedFinalCandidate(
 }
 
 function cleanComparisonSideForPFAP(text: string) {
-  const cleaned = normalizeSurface(text)
+  const cleaned = cachedNormalizeSurface(text)
     .replace(/^(?:the|a|an|this|that|these|those|both|one|which|whether|if|use|using|choose|choosing|pick|picking|tell|know|decide|i|we|you|they)\s+/i, "")
     .replace(/\s+(?:are|is|feel|feels|seem|seems|look|looks|sound|sounds|still|basically|kind of|sort of|stop|stops|stopped)$/i, "")
     .replace(/\s+\b(?:if|when|where|because|while|once|until|instead|rather than)\b.*$/i, "")
     .replace(/\s+/g, " ")
     .trim();
 
-  const loose = normalizeLoose(cleaned);
+  const loose = cachedNormalizeLoose(cleaned);
   if (!loose) return null;
   if (/^(?:same|different|confusing|comparison|difference|which one|instead|rather than|in|of|and|or)$/i.test(loose)) return null;
-  if (tokenize(cleaned).length > 4) return null;
+  if (cachedTokenize(cleaned).length > 4) return null;
 
   return cleaned;
 }
@@ -1911,7 +2009,7 @@ function cleanComparisonSideForPFAP(text: string) {
 function cleanComparisonLabelForPFAP(label: string | null, message: string) {
   if (!label || !/\bvs\b/i.test(label)) return null;
 
-  const normalizedMessage = normalizeLoose(message);
+  const normalizedMessage = cachedNormalizeLoose(message);
   const oneIsComparison = label.match(/^(.+?)\s+vs\s+one\s+is\s+(.+)$/i);
   if (oneIsComparison?.[1] && oneIsComparison?.[2]) {
     const left = cleanComparisonSideForPFAP(oneIsComparison[1]);
@@ -1932,8 +2030,8 @@ function cleanComparisonLabelForPFAP(label: string | null, message: string) {
   // Prefer the learner's own pluralized surface form when both sides appear in
   // plural form in the message. This keeps the rule general for paired concepts
   // like chains/webs, rights/liberties, variables/expenses, etc.
-  const leftLoose = normalizeLoose(shapedLeft);
-  const rightLoose = normalizeLoose(shapedRight);
+  const leftLoose = cachedNormalizeLoose(shapedLeft);
+  const rightLoose = cachedNormalizeLoose(shapedRight);
   if (leftLoose && rightLoose) {
     const leftPluralPattern = new RegExp(`\\b${leftLoose.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}s\\b`, "i");
     const rightPluralPattern = new RegExp(`\\b${rightLoose.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}s\\b`, "i");
@@ -1949,8 +2047,8 @@ function cleanComparisonLabelForPFAP(label: string | null, message: string) {
 }
 
 function addDomainSuffixToComparisonForPFAP(label: string, message: string) {
-  const normalizedLabel = normalizeLoose(label);
-  const normalizedMessage = normalizeLoose(message);
+  const normalizedLabel = cachedNormalizeLoose(label);
+  const normalizedMessage = cachedNormalizeLoose(message);
 
   // PFAP5: if a comparison candidate is made of modifiers that belong to a
   // named domain phrase, preserve the domain suffix rather than returning a
@@ -1974,12 +2072,12 @@ function addDomainSuffixToComparisonForPFAP(label: string, message: string) {
 }
 
 function comparisonLabelHasSurfaceSupport(label: string, message: string) {
-  const normalizedMessage = normalizeLoose(message);
+  const normalizedMessage = cachedNormalizeLoose(message);
   const parts = label.split(/\bvs\b/i);
   if (parts.length < 2) return false;
 
-  const leftTokens = semanticTokens(parts[0]);
-  const rightTokens = semanticTokens(parts.slice(1).join(" vs "));
+  const leftTokens = cachedSemanticTokens(parts[0]);
+  const rightTokens = cachedSemanticTokens(parts.slice(1).join(" vs "));
   if (leftTokens.length === 0 || rightTokens.length === 0) return false;
 
   return (
@@ -2007,13 +2105,13 @@ function candidateLooksCleanComparison(candidate: TopicCandidate, message: strin
 
 function labelLooksPracticalSkillOrTechnique(label: string | null) {
   if (!label) return false;
-  const normalized = normalizeLoose(label);
+  const normalized = cachedNormalizeLoose(label);
 
   return /\b(?:skills?|techniques?|technique|control|development|planning|structure|analysis|recognition|regulation|handling|checks?|parking|notation|perspective|values?|writing|drawing|cooking|study|interview|resume|proof|method|process)\b/i.test(normalized);
 }
 
 function messageFramesComparisonAsLocalExample(message: string) {
-  const normalized = normalizeLoose(message);
+  const normalized = cachedNormalizeLoose(message);
 
   return (
     /\b(?:difference between|tell (?:them )?apart|distinguish between|which one|when to use|use)\b/i.test(normalized) &&
@@ -2031,7 +2129,7 @@ function comparisonCandidateShouldYieldToBroaderSkill(
   if (!messageFramesComparisonAsLocalExample(message)) return false;
 
   const comparisonLabel = cleanComparisonLabelForPFAP(getCandidateDisplayLabel(candidate), message) ?? getCandidateDisplayLabel(candidate) ?? "";
-  const comparisonTokens = semanticTokens(comparisonLabel);
+  const comparisonTokens = cachedSemanticTokens(comparisonLabel);
 
   return allCandidates.some((other) => {
     if (other === candidate) return false;
@@ -2046,14 +2144,14 @@ function comparisonCandidateShouldYieldToBroaderSkill(
     // The broader skill/topic should not merely be another surface version of
     // the same comparison; it should add a different stable head such as
     // "skills", "technique", "planning", "analysis", etc.
-    const otherTokens = semanticTokens(otherLabel ?? "");
+    const otherTokens = cachedSemanticTokens(otherLabel ?? "");
     return overlapScore(comparisonTokens, otherTokens) < 0.75;
   });
 }
 
 
 function messageHasSetupComparisonThenLateBottleneck(message: string) {
-  const normalized = normalizeLoose(message);
+  const normalized = cachedNormalizeLoose(message);
 
   // PFAP6: distinguish "X vs Y" used as setup/background from "X vs Y"
   // as the requested comparison. The learner often says an easy surface pair
@@ -2077,7 +2175,7 @@ function candidateLooksLateExplicitBottleneckTopic(
   const label = getCandidateDisplayLabel(candidate);
   if (!label) return false;
 
-  const source = normalizeLoose(candidate.sourceClause);
+  const source = cachedNormalizeLoose(candidate.sourceClause);
   const afterContrast = candidateAfterContrast(candidate, profile) || candidateHasQualifier(candidate, "late_focus_target");
   const explicitBottleneckLanguage =
     /\b(?:actual|real|main|whole|bigger|specific)\b.{0,50}\b(?:thing|part|issue|problem|bottleneck|skill|skills|technique|topic|concept)\b/i.test(source) ||
@@ -2172,20 +2270,20 @@ function messageExplicitlyTargetsComparison(message: string) {
   if (messageHasSetupComparisonThenLateBottleneck(message)) return false;
 
   return /\b(?:vs|versus|difference between|compare|contrast|tell (?:them )?apart|distinguish between|actual difference between|which one)\b/i.test(
-    normalizeLoose(message)
+    cachedNormalizeLoose(message)
   );
 }
 
 function labelLooksParticipantPairComparison(label: string | null) {
   if (!label || !/\bvs\b/i.test(label)) return false;
 
-  const parts = label.split(/\bvs\b/i).map((part) => normalizeLoose(part).trim()).filter(Boolean);
+  const parts = label.split(/\bvs\b/i).map((part) => cachedNormalizeLoose(part).trim()).filter(Boolean);
   if (parts.length !== 2) return false;
 
   const actorSide = /^(?:usa|u s|us|united states|america|ussr|soviet union|russia|china|britain|england|france|germany|rome|carthage|athens|sparta|government|citizens|state|federal government|provincial government|teacher|student|predator|prey)$/i;
   const sideLooksActorish = (side: string) => {
     if (actorSide.test(side)) return true;
-    const tokens = tokenize(side);
+    const tokens = cachedTokenize(side);
     return tokens.length <= 2 && /^[A-Z]{2,}$/.test(side.replace(/\s+/g, ""));
   };
 
@@ -2215,7 +2313,7 @@ function comparisonCandidateShouldYieldToBroaderConcept(
     if (!candidateLooksPFAPEligible(other, message, profile, allCandidates)) return false;
 
     const label = getCandidateDisplayLabel(other);
-    const normalized = normalizeLoose(label ?? "");
+    const normalized = cachedNormalizeLoose(label ?? "");
 
     return (
       Boolean(label) &&
@@ -2239,8 +2337,8 @@ function comparisonCandidateShouldYieldToBetterTopic(
 function inferComparisonLabelFromMessage(message: string, selectedLabel: string | null) {
   if (!selectedLabel) return null;
 
-  const normalized = normalizeSurface(message);
-  const selected = normalizeLoose(selectedLabel);
+  const normalized = cachedNormalizeSurface(message);
+  const selected = cachedNormalizeLoose(selectedLabel);
 
   if (!messageHasComparisonShape(normalized)) {
     return null;
@@ -2260,8 +2358,8 @@ function inferComparisonLabelFromMessage(message: string, selectedLabel: string 
     const right = cleanComparisonSideForPFAP(match[2]);
     if (!left || !right) continue;
 
-    const leftLoose = normalizeLoose(left);
-    const rightLoose = normalizeLoose(right);
+    const leftLoose = cachedNormalizeLoose(left);
+    const rightLoose = cachedNormalizeLoose(right);
     if (leftLoose === rightLoose) continue;
 
     const selectedMatchesSide =
@@ -2304,8 +2402,8 @@ function chooseCleanComparisonCandidate(
       const aClean = cleanComparisonLabelForPFAP(aLabel, message) ?? aLabel ?? "";
       const bClean = cleanComparisonLabelForPFAP(bLabel, message) ?? bLabel ?? "";
 
-      const aExact = normalizeLoose(aClean) === normalizeLoose(aLabel ?? "") ? 1 : 0;
-      const bExact = normalizeLoose(bClean) === normalizeLoose(bLabel ?? "") ? 1 : 0;
+      const aExact = cachedNormalizeLoose(aClean) === cachedNormalizeLoose(aLabel ?? "") ? 1 : 0;
+      const bExact = cachedNormalizeLoose(bClean) === cachedNormalizeLoose(bLabel ?? "") ? 1 : 0;
       if (aExact !== bExact) return bExact - aExact;
 
       const tierDelta = pfapTier(b, message, profile) - pfapTier(a, message, profile);
@@ -2320,8 +2418,8 @@ function chooseCleanComparisonCandidate(
 function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate | null, message: string) {
   if (!label) return label;
 
-  const normalizedLabel = normalizeLoose(label);
-  const normalizedMessage = normalizeLoose(message);
+  const normalizedLabel = cachedNormalizeLoose(label);
+  const normalizedMessage = cachedNormalizeLoose(message);
 
   const cleanedComparison = cleanComparisonLabelForPFAP(label, message);
   if (cleanedComparison) {
@@ -2516,7 +2614,7 @@ function isCreateWorthyBroadLabel(
   specificity: TopicSpecificity
 ) {
   if (!label) return false;
-  if (looksLikeSuspiciousLabel(label)) return false;
+  if (cachedLooksLikeSuspiciousLabel(label)) return false;
 
   const lower = label.toLowerCase();
   const structuredDurable =
@@ -2572,7 +2670,7 @@ function buildAmbiguityFlags(args: {
     flags.push("label_too_vague");
   }
 
-  if (looksLikeSuspiciousLabel(canonicalLabel)) {
+  if (cachedLooksLikeSuspiciousLabel(canonicalLabel)) {
     flags.push("label_suspicious");
   }
 
@@ -2809,7 +2907,7 @@ function buildConfidence(args: {
   if (bestCandidate && candidateLooksNoisyResidue(bestCandidate)) confidence -= 0.16;
   if (bestCandidate && candidateLooksProblemFraming(bestCandidate)) confidence -= 0.14;
   if (bestCandidate && candidateLooksGeneralBucket(bestCandidate)) confidence -= 0.12;
-  if (looksLikeSuspiciousLabel(canonicalLabel)) confidence -= 0.1;
+  if (cachedLooksLikeSuspiciousLabel(canonicalLabel)) confidence -= 0.1;
   if (discourseProfile.hasNullOnlyEmotionalShape) confidence -= 0.24;
 
   const topFamily = bestCandidate
@@ -2890,7 +2988,7 @@ function shouldSuppressWinnerAsNull(args: {
 
   if (
     candidateLooksQuestionSynthesis(bestCandidate) &&
-    !looksLikeSuspiciousLabel(canonicalLabel) &&
+    !cachedLooksLikeSuspiciousLabel(canonicalLabel) &&
     !candidateLooksQcsOverSynthesized(bestCandidate, [])
   ) {
     return false;
@@ -2912,7 +3010,7 @@ export function runDeterministicTopicLabeling(
 ): TopicLabelingResult {
   const timer = createDeterministicLabelingTimer();
 
-  const normalizedMessage = normalizeSurface(input.raw_message);
+  const normalizedMessage = cachedNormalizeSurface(input.raw_message);
   timer.step("normalize_input");
 
   const interpretation = analyzeMessageStructure(normalizedMessage);
@@ -2973,7 +3071,7 @@ export function runDeterministicTopicLabeling(
   if (
     messageLooksLikePureFollowup(normalizedMessage) &&
     input.active_topic_name &&
-    (!bestCandidate || looksLikeSuspiciousLabel(getCandidateDisplayLabel(bestCandidate)))
+    (!bestCandidate || cachedLooksLikeSuspiciousLabel(getCandidateDisplayLabel(bestCandidate)))
   ) {
     bestCandidate = null;
   }
@@ -3034,7 +3132,7 @@ export function runDeterministicTopicLabeling(
   }
   timer.step("followup_and_null_suppression");
 
-  const specificity = scoreSpecificity(canonicalLabel);
+  const specificity = cachedScoreSpecificity(canonicalLabel);
   const reuseCandidate = findReuseCandidate(canonicalLabel, input.retrieval_candidates);
   const shouldReuse = Boolean(reuseCandidate);
   timer.step("specificity_and_reuse_decision");
@@ -3114,6 +3212,9 @@ export function runDeterministicTopicLabeling(
       : null;
   timer.step("derive_create_and_reference_decisions");
 
+  const diagnosticsMode = topicLabelerDiagnosticsMode();
+  const includeFullDiagnostics = diagnosticsMode === "full";
+
   return {
     schema_version: TOPIC_LABEL_SCHEMA_VERSION,
     input,
@@ -3190,7 +3291,7 @@ export function runDeterministicTopicLabeling(
         ...(specificity === "too_vague"
           ? ["Concept span is too vague for a persistent topic."]
           : []),
-        ...(looksLikeSuspiciousLabel(canonicalLabel)
+        ...(cachedLooksLikeSuspiciousLabel(canonicalLabel)
           ? ["Canonical label looks suspicious or discourse-like."]
           : []),
         ...(messageLooksLikePureFollowup(normalizedMessage)
@@ -3239,42 +3340,53 @@ export function runDeterministicTopicLabeling(
           : []),
       ],
       ambiguity_flags: dedupe(ambiguityFlags),
-      scored_candidates: scoredCandidates.map((candidate) => ({
-        span: candidate.coreText,
-        normalized_span: candidate.normalizedCoreText,
-        source_clause: candidate.sourceClause,
-        source_role: candidate.sourceRole,
-        clause_index: candidate.clauseIndex,
-        question_about_topic: candidate.questionAboutTopic,
-        comparison_target: candidate.comparisonTarget,
-        qualifiers: candidate.qualifiers,
-        family: classifyCandidateFamily(candidate, normalizedMessage),
-        score: candidate.score,
-        score_breakdown: candidate.scoreBreakdown,
-        display_label: getCandidateDisplayLabel(candidate),
-        kind: candidate.kind,
-        should_compete_as_topic: candidate.shouldCompeteAsTopic,
-        is_subpart_reference: candidate.isSubpartReference,
-        is_durable_concept: candidate.isDurableConcept,
-        is_weak_noun_chunk: candidate.isWeakNounChunk,
-        residue_risk: candidate.residueRisk,
-        concept_phrase_shape: candidate.conceptPhraseShape,
-        concept_head: candidate.conceptHead,
-        concept_modifiers: candidate.conceptModifiers,
-        tail_text: candidate.tailText,
-        domain_text: candidate.domainText,
-        question_synthesis_frame: candidate.questionSynthesisFrame,
-        question_trigger_kind: candidate.questionTriggerKind,
-        question_word: candidate.questionWord,
-        question_actor: candidate.questionActor,
-        question_verb: candidate.questionVerb,
-        question_object: candidate.questionObject,
-        question_left_text: candidate.questionLeftText,
-        question_right_text: candidate.questionRightText,
-        question_domain_text: candidate.questionDomainText,
-        question_synthesis_slots: candidate.questionSynthesisSlots,
-        synthesized_label: candidate.synthesizedLabel,
-      })),
+      scored_candidates: scoredCandidates.map((candidate) => {
+        const displayLabel = getCandidateDisplayLabel(candidate);
+        const baseCandidateDiagnostics = {
+          span: candidate.coreText,
+          normalized_span: candidate.normalizedCoreText,
+          source_clause: candidate.sourceClause,
+          source_role: candidate.sourceRole,
+          clause_index: candidate.clauseIndex,
+          question_about_topic: candidate.questionAboutTopic,
+          comparison_target: candidate.comparisonTarget,
+          qualifiers: candidate.qualifiers,
+          score: candidate.score,
+          score_breakdown: candidate.scoreBreakdown,
+          display_label: displayLabel,
+          kind: candidate.kind,
+          should_compete_as_topic: candidate.shouldCompeteAsTopic,
+          is_subpart_reference: candidate.isSubpartReference,
+          question_synthesis_frame: candidate.questionSynthesisFrame,
+          question_trigger_kind: candidate.questionTriggerKind,
+          question_word: candidate.questionWord,
+          question_verb: candidate.questionVerb,
+          question_object: candidate.questionObject,
+          question_synthesis_slots: candidate.questionSynthesisSlots,
+          synthesized_label: candidate.synthesizedLabel,
+        };
+
+        if (!includeFullDiagnostics) {
+          return baseCandidateDiagnostics;
+        }
+
+        return {
+          ...baseCandidateDiagnostics,
+          family: classifyCandidateFamily(candidate, normalizedMessage),
+          is_durable_concept: candidate.isDurableConcept,
+          is_weak_noun_chunk: candidate.isWeakNounChunk,
+          residue_risk: candidate.residueRisk,
+          concept_phrase_shape: candidate.conceptPhraseShape,
+          concept_head: candidate.conceptHead,
+          concept_modifiers: candidate.conceptModifiers,
+          tail_text: candidate.tailText,
+          domain_text: candidate.domainText,
+          question_actor: candidate.questionActor,
+          question_left_text: candidate.questionLeftText,
+          question_right_text: candidate.questionRightText,
+          question_domain_text: candidate.questionDomainText,
+        };
+      }),
       discourse_profile: {
         broad_anchor_zones: discourseProfile.broadAnchorZones,
         bottleneck_zones: discourseProfile.bottleneckZones,
