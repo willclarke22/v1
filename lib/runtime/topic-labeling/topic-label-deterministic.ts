@@ -114,6 +114,86 @@ type DeterministicCandidateScoreBreakdown = {
   nounChunkPenalty: number;
 };
 
+
+type DeterministicLabelingTimingStep = {
+  label: string;
+  duration_ms: number;
+  elapsed_ms: number;
+};
+
+type DeterministicLabelingTimingDebug = {
+  enabled: boolean;
+  total_ms: number;
+  steps: DeterministicLabelingTimingStep[];
+  metadata: {
+    raw_candidate_count: number;
+    scored_candidate_count: number;
+    selected_candidate_kind: string | null;
+    selected_candidate_score: number | null;
+    canonical_label: string | null;
+    should_reuse_existing_topic: boolean;
+    should_create_new_topic: boolean;
+  };
+};
+
+function roundLabelingMs(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function topicLabelerTimingEnabled() {
+  // Default-on during this debugging phase so route/test output can expose
+  // deterministic-labeler internals. Set MYWAY_TOPIC_LABELER_TIMING=off to
+  // suppress the extra diagnostic payload without changing decisions.
+  return process.env.MYWAY_TOPIC_LABELER_TIMING !== "off";
+}
+
+function topicLabelerTimingShouldLog() {
+  return process.env.MYWAY_TOPIC_LABELER_TIMING_LOG === "1";
+}
+
+function createDeterministicLabelingTimer() {
+  const enabled = topicLabelerTimingEnabled();
+  const startedAt = performance.now();
+  let lastMark = startedAt;
+  const steps: DeterministicLabelingTimingStep[] = [];
+
+  function step(label: string) {
+    if (!enabled) return;
+
+    const now = performance.now();
+    steps.push({
+      label,
+      duration_ms: roundLabelingMs(now - lastMark),
+      elapsed_ms: roundLabelingMs(now - startedAt),
+    });
+    lastMark = now;
+  }
+
+  function finish(
+    metadata: DeterministicLabelingTimingDebug["metadata"]
+  ): DeterministicLabelingTimingDebug | undefined {
+    if (!enabled) return undefined;
+
+    const timing = {
+      enabled,
+      total_ms: roundLabelingMs(performance.now() - startedAt),
+      steps,
+      metadata,
+    };
+
+    if (topicLabelerTimingShouldLog()) {
+      console.info("[topic-label-deterministic timing]", timing);
+    }
+
+    return timing;
+  }
+
+  return {
+    step,
+    finish,
+  };
+}
+
 function overlapScore(a: string[], b: string[]) {
   if (!a.length || !b.length) return 0;
 
@@ -2830,11 +2910,19 @@ function shouldSuppressWinnerAsNull(args: {
 export function runDeterministicTopicLabeling(
   input: TopicLabelingInput
 ): TopicLabelingResult {
+  const timer = createDeterministicLabelingTimer();
+
   const normalizedMessage = normalizeSurface(input.raw_message);
+  timer.step("normalize_input");
+
   const interpretation = analyzeMessageStructure(normalizedMessage);
+  timer.step("analyze_message_structure");
+
   const discourseProfile = buildDiscourseProfile(interpretation, normalizedMessage);
+  timer.step("build_discourse_profile");
 
   const rawCandidates = extractConceptCandidates(interpretation, normalizedMessage);
+  timer.step("extract_concept_candidates");
 
   const scoredCandidates = rawCandidates
     .map((candidate) => {
@@ -2854,12 +2942,14 @@ export function runDeterministicTopicLabeling(
       };
     })
     .sort((a, b) => b.score - a.score);
+  timer.step("score_and_sort_candidates");
 
   let bestCandidate = chooseWinningCandidate(
     scoredCandidates,
     normalizedMessage,
     discourseProfile
   );
+  timer.step("choose_winning_candidate");
 
   // PFAP6 invariant: if any clean protected candidate exists, a malformed
   // fragment cannot survive through any final selection path. This is a final
@@ -2872,11 +2962,13 @@ export function runDeterministicTopicLabeling(
       bestCandidate
     ) ?? bestCandidate;
   }
+  timer.step("candidate_level_malformed_safety_net");
 
   const secondCandidate = scoredCandidates.find((c) => c !== bestCandidate) ?? null;
   const topGap = bestCandidate
     ? Math.max(0, bestCandidate.score - (secondCandidate?.score ?? 0))
     : 0;
+  timer.step("derive_second_candidate_and_top_gap");
 
   if (
     messageLooksLikePureFollowup(normalizedMessage) &&
@@ -2890,6 +2982,7 @@ export function runDeterministicTopicLabeling(
   let canonicalLabel = bestCandidate
     ? canonicalizePFAPLabel(getCandidateDisplayLabel(bestCandidate), bestCandidate, normalizedMessage)
     : null;
+  timer.step("canonicalize_initial_label");
 
   // PFAP6 final safety net at the label level: even if a malformed fragment
   // escaped candidate-level checks because of legacy metadata, its final label
@@ -2916,6 +3009,7 @@ export function runDeterministicTopicLabeling(
       );
     }
   }
+  timer.step("label_level_malformed_safety_net");
 
   if (
     !canonicalLabel &&
@@ -2938,10 +3032,12 @@ export function runDeterministicTopicLabeling(
     canonicalLabel = null;
     bestCandidate = null;
   }
+  timer.step("followup_and_null_suppression");
 
   const specificity = scoreSpecificity(canonicalLabel);
   const reuseCandidate = findReuseCandidate(canonicalLabel, input.retrieval_candidates);
   const shouldReuse = Boolean(reuseCandidate);
+  timer.step("specificity_and_reuse_decision");
 
   const confidence = buildConfidence({
     bestCandidate,
@@ -2956,6 +3052,7 @@ export function runDeterministicTopicLabeling(
     scoredCandidates,
     discourseProfile,
   });
+  timer.step("build_confidence");
 
   const ambiguityFlags = buildAmbiguityFlags({
     canonicalLabel,
@@ -2970,6 +3067,7 @@ export function runDeterministicTopicLabeling(
     normalizedMessage,
     discourseProfile,
   });
+  timer.step("build_ambiguity_flags");
 
   const structurallyStrongCreateCandidate =
     bestCandidate != null &&
@@ -3014,6 +3112,7 @@ export function runDeterministicTopicLabeling(
     input.active_topic_name && canonicalLabel
       ? input.active_topic_name.toLowerCase() === canonicalLabel.toLowerCase()
       : null;
+  timer.step("derive_create_and_reference_decisions");
 
   return {
     schema_version: TOPIC_LABEL_SCHEMA_VERSION,
@@ -3051,8 +3150,9 @@ export function runDeterministicTopicLabeling(
       topic_specificity: specificity,
       confidence,
     },
-    diagnostics: {
-      reasoning_summary: [
+    diagnostics: (() => {
+      const diagnostics = {
+        reasoning_summary: [
         scoredCandidates.length > 0
           ? `Generated ${scoredCandidates.length} candidate topic spans after grouping.`
           : "No topic candidates were extracted.",
@@ -3191,6 +3291,24 @@ export function runDeterministicTopicLabeling(
         target_hints: discourseProfile.targetHints,
         notes: discourseProfile.notes,
       },
-    },
+      };
+
+      timer.step("build_diagnostics");
+
+      return {
+        ...diagnostics,
+        timing: timer.finish({
+          raw_candidate_count: rawCandidates.length,
+          scored_candidate_count: scoredCandidates.length,
+          selected_candidate_kind: bestCandidate?.kind ?? null,
+          selected_candidate_score: bestCandidate?.score ?? null,
+          canonical_label: canonicalLabel,
+          should_reuse_existing_topic: shouldReuse,
+          should_create_new_topic: shouldCreate,
+        }),
+      } as TopicLabelingResult["diagnostics"] & {
+        timing?: DeterministicLabelingTimingDebug;
+      };
+    })(),
   };
 }
