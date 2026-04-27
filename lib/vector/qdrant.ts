@@ -3,6 +3,9 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 export const TOPIC_COLLECTION = "myway-topics";
 export const TOPIC_VECTOR_SIZE = 384;
 
+let cachedQdrantClient: QdrantClient | null = null;
+let cachedQdrantClientKey: string | null = null;
+
 function getOptionalEnv(name: string): string | null {
   const value = process.env[name];
   if (!value || !value.trim()) {
@@ -23,6 +26,11 @@ export function hasQdrantConfig(): boolean {
   return Boolean(url && apiKey);
 }
 
+function buildQdrantClientKey(url: string, apiKey: string) {
+  // Use a partial key only for in-process cache identity. Do not log this value.
+  return `${url}:${apiKey.slice(0, 8)}`;
+}
+
 export function createQdrantClient(): QdrantClient {
   const { url, apiKey } = getQdrantConfig();
 
@@ -34,10 +42,24 @@ export function createQdrantClient(): QdrantClient {
     throw new Error("Missing QDRANT_API_KEY");
   }
 
-  return new QdrantClient({
+  const clientKey = buildQdrantClientKey(url, apiKey);
+
+  if (cachedQdrantClient && cachedQdrantClientKey === clientKey) {
+    return cachedQdrantClient;
+  }
+
+  cachedQdrantClient = new QdrantClient({
     url,
     apiKey,
   });
+  cachedQdrantClientKey = clientKey;
+
+  return cachedQdrantClient;
+}
+
+export function resetQdrantClientCacheForTests() {
+  cachedQdrantClient = null;
+  cachedQdrantClientKey = null;
 }
 
 type EnsureTopicCollectionResult = {

@@ -41,6 +41,12 @@ type InterventionScoreArgs = {
   modelSignals?: ModelSignals;
   currentInteractionContext?: CurrentInteractionContext;
   newAttempt?: NewAttempt;
+  /**
+   * Precomputed by the route from topic_resolution_trace.interpretation.frame.
+   * When provided, this prevents the decision path from calling
+   * messageLooksClarifySeeking(message), which can re-enter deterministic labeling.
+   */
+  clarifySeeking?: boolean;
 };
 
 type ProbeType =
@@ -49,6 +55,43 @@ type ProbeType =
   | "discriminate"
   | "transform"
   | "apply_transfer";
+
+
+type PrimaryMessageFrame = ReturnType<typeof inferPrimaryMessageFrame>;
+
+const PRIMARY_MESSAGE_FRAME_CACHE_LIMIT = 100;
+const primaryMessageFrameCache = new Map<string, PrimaryMessageFrame>();
+
+function getPrimaryMessageFrameCacheKey(message: string) {
+  return message.trim().toLowerCase();
+}
+
+function getCachedPrimaryMessageFrame(message: string): PrimaryMessageFrame {
+  const key = getPrimaryMessageFrameCacheKey(message);
+
+  if (!key) {
+    return inferPrimaryMessageFrame(message);
+  }
+
+  const cached = primaryMessageFrameCache.get(key);
+
+  if (cached) {
+    return cached;
+  }
+
+  const frame = inferPrimaryMessageFrame(message);
+  primaryMessageFrameCache.set(key, frame);
+
+  if (primaryMessageFrameCache.size > PRIMARY_MESSAGE_FRAME_CACHE_LIMIT) {
+    const oldestKey = primaryMessageFrameCache.keys().next().value;
+
+    if (oldestKey) {
+      primaryMessageFrameCache.delete(oldestKey);
+    }
+  }
+
+  return frame;
+}
 
 export function inferDiagnosisFromTopic(topic: RouteTopic): DiagnosisType {
   return (
@@ -94,7 +137,7 @@ export function inferPreferredModality(
   message: string,
   modeHint?: "clarify" | "probe"
 ): RendererModality {
-  const frame = inferPrimaryMessageFrame(message);
+  const frame = getCachedPrimaryMessageFrame(message);
 
   if (hasExplicitInteractiveRequest(message)) {
     return modeHint === "clarify" ? "text" : "interactive";
@@ -112,7 +155,7 @@ export function inferPreferredModality(
 }
 
 export function messageLooksClarifySeeking(message: string) {
-  const frame = inferPrimaryMessageFrame(message);
+  const frame = getCachedPrimaryMessageFrame(message);
   const lower = message.toLowerCase();
 
   if (
@@ -665,12 +708,22 @@ function computeClarifyPressureSignal(args: {
   resolutionKind: TopicResolutionKind;
   currentInteractionContext?: CurrentInteractionContext;
   modelSignals?: ModelSignals;
+  clarifySeeking?: boolean;
 }) {
-  const { message, resolutionKind, currentInteractionContext, modelSignals } = args;
+  const {
+    message,
+    resolutionKind,
+    currentInteractionContext,
+    modelSignals,
+    clarifySeeking,
+  } = args;
 
   let value = 0.14;
 
-  if (messageLooksClarifySeeking(message)) {
+  const isClarifySeeking =
+    clarifySeeking ?? messageLooksClarifySeeking(message);
+
+  if (isClarifySeeking) {
     value += 0.3;
   }
 
@@ -778,6 +831,7 @@ function computeInterventionScores(args: InterventionScoreArgs) {
     modelSignals,
     currentInteractionContext,
     newAttempt,
+    clarifySeeking: precomputedClarifySeeking,
   } = args;
 
   const resolutionKind = resolveTopicResolutionKind(
@@ -787,7 +841,8 @@ function computeInterventionScores(args: InterventionScoreArgs) {
 
   const diagnosis = inferDiagnosisFromTopic(topic);
   const topSimilarity = vectorInfo.top_k_similarity_scores[0] ?? 0.3;
-  const clarifySeeking = messageLooksClarifySeeking(message);
+  const clarifySeeking =
+    precomputedClarifySeeking ?? messageLooksClarifySeeking(message);
   const confusion = modelSignals?.model_confusion;
   const insight = modelSignals?.model_insight;
 
@@ -828,6 +883,7 @@ function computeInterventionScores(args: InterventionScoreArgs) {
     resolutionKind,
     currentInteractionContext,
     modelSignals,
+    clarifySeeking,
   });
 
   const probePressureSignal = computeProbePressureSignal({
@@ -981,7 +1037,8 @@ export function buildInterventionModeDecision(
   modelSignals?: ModelSignals,
   currentInteractionContext?: CurrentInteractionContext,
   newAttempt?: NewAttempt,
-  topicResolutionKind?: TopicResolutionKind
+  topicResolutionKind?: TopicResolutionKind,
+  clarifySeeking?: boolean
 ): InterventionModeDecision {
   const computed = computeInterventionScores({
     topic,
@@ -993,6 +1050,7 @@ export function buildInterventionModeDecision(
     modelSignals,
     currentInteractionContext,
     newAttempt,
+    clarifySeeking,
   });
 
   return {
@@ -1011,9 +1069,11 @@ export function buildInterventionModeDecision(
 export function buildProbePlan(
   topic: RouteTopic,
   decision: InterventionModeDecision,
-  message: string
+  message: string,
+  preferredModalityOverride?: RendererModality
 ): ProbePlan {
-  const preferredModality = inferPreferredModality(message, "probe");
+  const preferredModality =
+    preferredModalityOverride ?? inferPreferredModality(message, "probe");
   const diagnosis = decision.active_diagnosis ?? inferDiagnosisFromTopic(topic);
   const probeType = selectInitialProbeType(diagnosis, preferredModality);
   const probeId = makeId(`probe-${topic.id}`);

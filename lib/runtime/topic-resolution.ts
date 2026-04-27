@@ -53,6 +53,20 @@ export type DeterministicTopicResolutionSnapshot = {
   vectorInfo: VectorInfo;
 };
 
+type ResolutionTimingStep = {
+  label: string;
+  duration_ms: number;
+  elapsed_ms: number;
+};
+
+type ResolutionTimingDebug = {
+  enabled: boolean;
+  total_ms: number;
+  cache_hits: number;
+  cache_misses: number;
+  steps: ResolutionTimingStep[];
+};
+
 type MessageFrame =
   | "quiz_request"
   | "confusion_help"
@@ -238,6 +252,7 @@ export type TopicResolutionTrace = {
   topGap: number;
   decisionAction: ResolutionDecisionAction;
   fallbackRecommended: boolean;
+  timing?: ResolutionTimingDebug;
 };
 
 const STRONG_REUSE_TOPIC_THRESHOLD = 0.66;
@@ -248,6 +263,86 @@ const LOW_CONFIDENCE_CREATE_NEW_FLOOR = 0.55;
 const CANDIDATE_COMPETITION_GAP_THRESHOLD = 0.08;
 const AMBIGUOUS_WIN_THRESHOLD = 0.62;
 const HIGH_USEFULNESS_MARGIN = 0.1;
+
+function roundResolutionMs(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function createTopicResolutionTimer() {
+  const enabled = process.env.MYWAY_TOPIC_RESOLUTION_TIMING !== "off";
+  const startedAt = performance.now();
+  let lastMark = startedAt;
+  const steps: ResolutionTimingStep[] = [];
+  let cacheHits = 0;
+  let cacheMisses = 0;
+
+  function step(label: string) {
+    if (!enabled) return;
+
+    const now = performance.now();
+
+    steps.push({
+      label,
+      duration_ms: roundResolutionMs(now - lastMark),
+      elapsed_ms: roundResolutionMs(now - startedAt),
+    });
+
+    lastMark = now;
+  }
+
+  function recordCacheHit() {
+    if (enabled) cacheHits += 1;
+  }
+
+  function recordCacheMiss() {
+    if (enabled) cacheMisses += 1;
+  }
+
+  function finish(): ResolutionTimingDebug | undefined {
+    if (!enabled) return undefined;
+
+    return {
+      enabled,
+      total_ms: roundResolutionMs(performance.now() - startedAt),
+      cache_hits: cacheHits,
+      cache_misses: cacheMisses,
+      steps,
+    };
+  }
+
+  return {
+    step,
+    recordCacheHit,
+    recordCacheMiss,
+    finish,
+  };
+}
+
+const LABELING_RESULT_CACHE_MAX_SIZE = 100;
+const labelingResultCache = new Map<string, TopicLabelingResult>();
+
+function makeLabelingResultCacheKey(input: TopicLabelingInput) {
+  return JSON.stringify({
+    raw_message: input.raw_message.trim().toLowerCase(),
+    active_topic_id: input.active_topic_id ?? null,
+    active_topic_name: input.active_topic_name ?? null,
+    recent_topic_names: input.recent_topic_names,
+    retrieval_candidates: input.retrieval_candidates.map((candidate) => ({
+      topic_id: candidate.topic_id,
+      topic_name: candidate.topic_name,
+      similarity: roundResolutionMs(candidate.similarity),
+    })),
+  });
+}
+
+function rememberLabelingResult(cacheKey: string, result: TopicLabelingResult) {
+  labelingResultCache.set(cacheKey, result);
+
+  if (labelingResultCache.size <= LABELING_RESULT_CACHE_MAX_SIZE) return;
+
+  const firstKey = labelingResultCache.keys().next().value;
+  if (firstKey) labelingResultCache.delete(firstKey);
+}
 
 const NATURALISTIC_DURABLE_LABEL_REGEX =
   /\b(?:heat control|emulsification|knife skills|gluten development|zone defense|offside in soccer|earned runs|tennis scoring|behavioral interview questions|accomplishment-based resume bullets|informational interviews|salary negotiation|serving size|sleep cycles|systolic vs diastolic blood pressure|immune response|causes of the french revolution|primary source analysis|proxy wars|historical significance|asynchronous code|react state updates|api error handling|recursion|comma splices|subject-verb agreement|passive voice|task initiation|study planning|test anxiety|note-taking structure|rhythm notation|secondary dominants|interval recognition|circle of fifths|map scale|latitude vs longitude|rain shadow effect|types of plate boundaries|parallel parking|right of way|merge lanes|blind spot checks|one-point perspective|color mixing|negative space|shading values|separation of powers|federalism|electoral college|civil liberties vs civil rights|osmosis|natural selection|mitosis vs meiosis|activation energy|mole concept|balancing chemical equations|electronegativity vs ionization energy|ph scale|compound interest|apr|fixed vs variable expenses|index funds|torque vs horsepower|automatic transmission|anti-lock braking system|oil change intervals|photosynthesis|food chains vs food webs|pollination|ecological succession|p-trap|water pressure|shutoff valve|plumbing vent pipes|orbital velocity|moon phases|gravity vs weight|redshift|burden of proof|civil law vs criminal law|legal precedent|consideration in contracts|emotion regulation|rumination|cognitive reappraisal|monitoring understanding|concept mapping|affect vs effect|mean vs median|weather vs climate|sympathy vs empathy|maillard reaction|depreciation|baroque vs renaissance art)\b/i;
@@ -780,10 +875,23 @@ function buildLabelingResult(
   message: string,
   existingTopics: RouteTopic[],
   activeTopic?: RouteTopic | null,
-  semanticVectorInfo?: VectorInfo | null
+  semanticVectorInfo?: VectorInfo | null,
+  timer?: ReturnType<typeof createTopicResolutionTimer>
 ) {
   const input = buildTopicLabelingInput(message, existingTopics, activeTopic, semanticVectorInfo);
-  return runDeterministicTopicLabeling(input);
+  const cacheKey = makeLabelingResultCacheKey(input);
+  const cached = labelingResultCache.get(cacheKey);
+
+  if (cached) {
+    timer?.recordCacheHit();
+    return cached;
+  }
+
+  timer?.recordCacheMiss();
+  const result = runDeterministicTopicLabeling(input);
+  rememberLabelingResult(cacheKey, result);
+
+  return result;
 }
 
 
@@ -970,18 +1078,34 @@ function buildCandidateInterpretation(
   };
 }
 
+function inferPrimaryMessageFrameFromLabeling(labeling: TopicLabelingResult): MessageFrame {
+  return mapIntentToFrame(labeling.interpretation.message_intent);
+}
+
+function canonicalizeTopicNameFromLabeling(labeling: TopicLabelingResult): string {
+  return labeling.topic_decision.canonical_label ?? "New Topic";
+}
+
+function inferKeywordsFromSourceText(source: string): string[] {
+  return dedupe(semanticTokenize(source).filter((token) => token.length > 2)).slice(0, 8);
+}
+
 export function inferPrimaryMessageFrame(message: string): MessageFrame {
   const labeling = buildLabelingResult(message, []);
-  return mapIntentToFrame(labeling.interpretation.message_intent);
+  return inferPrimaryMessageFrameFromLabeling(labeling);
 }
 
 export function canonicalizeTopicNameFromMessage(message: string): string {
   const labeling = buildLabelingResult(message, []);
-  return labeling.topic_decision.canonical_label ?? "New Topic";
+  return canonicalizeTopicNameFromLabeling(labeling);
 }
 
 export function titleCaseFromMessage(message: string) {
   return canonicalizeTopicNameFromMessage(message);
+}
+
+export function inferKeywordsFromTopicLabel(label: string): string[] {
+  return inferKeywordsFromSourceText(label);
 }
 
 export function inferKeywordsFromMessage(message: string): string[] {
@@ -989,7 +1113,7 @@ export function inferKeywordsFromMessage(message: string): string[] {
   const source =
     labeling.interpretation.concept_span ?? labeling.topic_decision.canonical_label ?? message;
 
-  return dedupe(semanticTokenize(source).filter((token) => token.length > 2)).slice(0, 8);
+  return inferKeywordsFromSourceText(source);
 }
 
 function computeLocalTopicSimilarity(
@@ -1115,10 +1239,10 @@ function computeNextTopicPosition(existingTopics: RouteTopic[]): [number, number
   return [x, y, z];
 }
 
-export function inferSeededNextStep(message: string) {
-  const concept = canonicalizeTopicNameFromMessage(message);
-  const frame = inferPrimaryMessageFrame(message);
-
+function inferSeededNextStepFromConceptAndFrame(
+  concept: string,
+  frame: MessageFrame
+): string {
   switch (frame) {
     case "quiz_request":
       return `Show what you understand about ${concept} in your own words.`;
@@ -1135,6 +1259,18 @@ export function inferSeededNextStep(message: string) {
     default:
       return `Explain ${concept} clearly in your own words.`;
   }
+}
+
+export function inferSeededNextStep(message: string) {
+  const labeling = buildLabelingResult(message, []);
+  const concept = canonicalizeTopicNameFromLabeling(labeling);
+  const frame = inferPrimaryMessageFrameFromLabeling(labeling);
+
+  return inferSeededNextStepFromConceptAndFrame(concept, frame);
+}
+
+export function inferSeededNextStepFromTopicLabel(label: string) {
+  return inferSeededNextStepFromConceptAndFrame(label, "explain_request");
 }
 
 function looksLikeStrongDeterministicCreateLabel(
@@ -2022,6 +2158,7 @@ function buildResolutionTrace(args: {
   topGap: number;
   decisionAction: ResolutionDecisionAction;
   fallbackRecommended: boolean;
+  timing?: ResolutionTimingDebug;
 }): TopicResolutionTrace {
   const {
     interpretation,
@@ -2031,6 +2168,7 @@ function buildResolutionTrace(args: {
     topGap,
     decisionAction,
     fallbackRecommended,
+    timing,
   } = args;
 
   return {
@@ -2095,6 +2233,7 @@ function buildResolutionTrace(args: {
     topGap,
     decisionAction,
     fallbackRecommended,
+    ...(timing ? { timing } : {}),
   };
 }
 
@@ -2104,16 +2243,22 @@ function adjudicateTopicResolution(
   activeTopic?: RouteTopic | null,
   semanticVectorInfo?: VectorInfo | null
 ): ResolutionAdjudication {
+  const timer = createTopicResolutionTimer();
+
   const normalizedSemanticVectorInfo = normalizeVectorInfo(semanticVectorInfo);
+  timer.step("normalize_vector_info");
 
   const labeling = buildLabelingResult(
     message,
     existingTopics,
     activeTopic,
-    normalizedSemanticVectorInfo
+    normalizedSemanticVectorInfo,
+    timer
   );
+  timer.step("build_labeling_result");
 
   const interpretation = buildCandidateInterpretation(message, labeling);
+  timer.step("build_candidate_interpretation");
 
   const scoredTopics = buildBaseTopicScores(
     labeling,
@@ -2122,6 +2267,7 @@ function adjudicateTopicResolution(
     normalizedSemanticVectorInfo,
     activeTopic
   );
+  timer.step("build_base_topic_scores");
 
   const best = scoredTopics[0] ?? null;
   const second = scoredTopics[1] ?? null;
@@ -2130,6 +2276,7 @@ function adjudicateTopicResolution(
   const activeTopicScore = activeTopic
     ? scoredTopics.find((item) => item.topic.id === activeTopic.id) ?? null
     : null;
+  timer.step("derive_best_second_and_active_scores");
 
   const hypotheses = buildResolutionHypotheses({
     labeling,
@@ -2141,6 +2288,7 @@ function adjudicateTopicResolution(
     activeTopic,
     semanticVectorInfo: normalizedSemanticVectorInfo,
   });
+  timer.step("build_resolution_hypotheses");
 
   const winner = chooseWinningHypothesis(hypotheses);
   const fallbackRecommended = shouldRecommendFallbackAdjudication(winner, interpretation, topGap);
@@ -2152,8 +2300,9 @@ function adjudicateTopicResolution(
     activeTopicScore,
     interpretation,
   });
+  timer.step("choose_winner_and_decision_action");
 
-  const trace = buildResolutionTrace({
+  const traceWithoutFinalTiming = buildResolutionTrace({
     interpretation,
     scoredTopics,
     hypotheses,
@@ -2162,6 +2311,12 @@ function adjudicateTopicResolution(
     decisionAction,
     fallbackRecommended,
   });
+  timer.step("build_resolution_trace");
+
+  const trace: TopicResolutionTrace = {
+    ...traceWithoutFinalTiming,
+    timing: timer.finish(),
+  };
 
   return {
     labeling,
@@ -2695,19 +2850,18 @@ export function resolveTopicForMessage(
   });
 }
 
-export function buildSeededTopicFromMessage(
-  message: string,
-  existingTopics: RouteTopic[]
-): RouteTopic {
-  const canonicalName = canonicalizeTopicNameFromMessage(message);
-  const nextStep = inferSeededNextStep(message);
-  const position = computeNextTopicPosition(existingTopics);
+function buildSeededTopic(args: {
+  name: string;
+  nextStep: string;
+  existingTopics: RouteTopic[];
+}): RouteTopic {
+  const position = computeNextTopicPosition(args.existingTopics);
 
   return {
     id: makeId("topic"),
-    name: canonicalName,
+    name: args.name,
     diagnosis: "representation_gap",
-    nextStep,
+    nextStep: args.nextStep,
     confusion: 0.58,
     insight: 0.34,
     learningScore: 0.22,
@@ -2717,6 +2871,36 @@ export function buildSeededTopicFromMessage(
     lastUpdated: new Date().toISOString(),
     hasAvailableProbe: false,
   } as RouteTopic;
+}
+
+export function buildSeededTopicFromMessage(
+  message: string,
+  existingTopics: RouteTopic[]
+): RouteTopic {
+  const labeling = buildLabelingResult(message, []);
+  const canonicalName = canonicalizeTopicNameFromLabeling(labeling);
+  const frame = inferPrimaryMessageFrameFromLabeling(labeling);
+
+  return buildSeededTopic({
+    name: canonicalName,
+    nextStep: inferSeededNextStepFromConceptAndFrame(canonicalName, frame),
+    existingTopics,
+  });
+}
+
+export function buildSeededTopicFromResolvedLabel(args: {
+  resolvedLabel: string;
+  existingTopics: RouteTopic[];
+  frame?: MessageFrame;
+}): RouteTopic {
+  return buildSeededTopic({
+    name: args.resolvedLabel,
+    nextStep: inferSeededNextStepFromConceptAndFrame(
+      args.resolvedLabel,
+      args.frame ?? "explain_request"
+    ),
+    existingTopics: args.existingTopics,
+  });
 }
 
 function extractPositionFromTopicJson(topicJson: unknown): [number, number, number] | null {

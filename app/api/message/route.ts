@@ -26,8 +26,8 @@ import type {
 } from "@/types/contracts";
 import {
   buildDeterministicTopicResolutionSnapshot,
-  buildSeededTopicFromMessage,
-  inferKeywordsFromMessage,
+  buildSeededTopicFromResolvedLabel as buildSeededRouteTopicFromResolvedLabel,
+  inferKeywordsFromTopicLabel,
   loadRouteTopics,
   resolveTopicForMessage,
   shouldTryLLMTopicResolutionFallback,
@@ -41,8 +41,6 @@ import {
   buildNotApplicableProbePlan,
   buildProbePlan,
   buildUpdatedMetrics,
-  inferPreferredModality,
-  messageLooksClarifySeeking,
 } from "@/lib/runtime/message-runtime";
 import { nowIso } from "@/lib/runtime/shared";
 import { scoreConfusionInsight } from "@/lib/providers/confusion-insight";
@@ -146,6 +144,70 @@ type TopicResolutionOutcome = {
   debug: TopicResolutionDebug;
 };
 
+type MessageRouteTimingStep = {
+  label: string;
+  duration_ms: number;
+  elapsed_ms: number;
+};
+
+type MessageRouteLatencyDebug = {
+  enabled: boolean;
+  total_ms: number;
+  steps: MessageRouteTimingStep[];
+  metadata: {
+    route: "POST /api/message";
+    topic_count_loaded: number | null;
+    qdrant_sync_attempted: boolean;
+    qdrant_sync_succeeded: boolean | null;
+    qdrant_sync_error: string | null;
+    confusion_insight_status: ModelSignals["status"] | null;
+    topic_labeling_mode: TopicLabelingMode | null;
+    resolution_kind: RouteResolutionKind | null;
+    used_llm_topic_fallback: boolean | null;
+  };
+};
+
+function roundMs(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function createMessageRouteTimer() {
+  const enabled = process.env.MYWAY_MESSAGE_ROUTE_TIMING !== "off";
+  const startedAt = performance.now();
+  let lastMark = startedAt;
+  const steps: MessageRouteTimingStep[] = [];
+
+  function step(label: string) {
+    if (!enabled) return;
+
+    const now = performance.now();
+
+    steps.push({
+      label,
+      duration_ms: roundMs(now - lastMark),
+      elapsed_ms: roundMs(now - startedAt),
+    });
+
+    lastMark = now;
+  }
+
+  function finish(
+    metadata: MessageRouteLatencyDebug["metadata"]
+  ): MessageRouteLatencyDebug {
+    return {
+      enabled,
+      total_ms: roundMs(performance.now() - startedAt),
+      steps,
+      metadata,
+    };
+  }
+
+  return {
+    step,
+    finish,
+  };
+}
+
 function emptyVectorInfo(): VectorInfo {
   return {
     top_k_topic_names: [],
@@ -198,13 +260,14 @@ function buildChatHistoryFromBody(body: MessageRouteBody) {
 }
 
 function inferMessageRouteRunKind(args: {
-  message: string;
   recentTurns: Array<{ role: "user" | "assistant"; text: string }>;
   hasActiveTopicId: boolean;
+  clarifySeeking: boolean;
 }) {
-  const { message, recentTurns, hasActiveTopicId } = args;
+  const { recentTurns, hasActiveTopicId, clarifySeeking } = args;
+  const isClarifySeeking = clarifySeeking;
 
-  if (messageLooksClarifySeeking(message)) {
+  if (isClarifySeeking) {
     return hasActiveTopicId || recentTurns.length > 0
       ? ("clarify_followup" as const)
       : ("initial_question" as const);
@@ -220,6 +283,29 @@ function inferMessageRouteRunKind(args: {
   }
 
   return "initial_question" as const;
+}
+
+type ResolvedMessageFrame = TopicResolutionTrace["interpretation"]["frame"];
+type RoutePreferredModality = "text" | "video" | "interactive";
+
+function getResolvedMessageFrame(
+  resolutionTrace: TopicResolutionTrace | null
+): ResolvedMessageFrame {
+  return resolutionTrace?.interpretation?.frame ?? "general";
+}
+
+function derivePreferredModalityFromResolutionFrame(
+  frame: ResolvedMessageFrame
+): RoutePreferredModality {
+  if (frame === "apply_request") {
+    return "interactive";
+  }
+
+  return "text";
+}
+
+function deriveClarifySeekingFromResolutionFrame(frame: ResolvedMessageFrame) {
+  return frame === "confusion_help" || frame === "explain_request";
 }
 
 function buildProbeReply(
@@ -671,16 +757,24 @@ function shouldTrustDeterministicCreate(args: {
   return matchConfidence >= 0.58;
 }
 
-function buildSeededTopicFromResolvedLabel(args: {
-  message: string;
+function resolveFallbackTopicLabel(args: {
+  resolutionTrace?: TopicResolutionTrace | null;
+  fallbackLabel?: string | null;
+}) {
+  const tracedLabel = args.resolutionTrace?.interpretation?.canonicalLabel ?? null;
+  const candidate = tracedLabel ?? args.fallbackLabel ?? "New Topic";
+
+  return looksLikeSuspiciousCreateLabel(candidate) ? "New Topic" : candidate;
+}
+
+function buildRouteTopicFromResolvedLabel(args: {
   existingTopics: RouteTopic[];
   resolvedLabel: string;
 }): RouteTopic {
-  const seeded = buildSeededTopicFromMessage(args.message, args.existingTopics);
-  return {
-    ...seeded,
-    name: args.resolvedLabel,
-  };
+  return buildSeededRouteTopicFromResolvedLabel({
+    existingTopics: args.existingTopics,
+    resolvedLabel: args.resolvedLabel,
+  });
 }
 
 function findTopicFromLLMResult(args: {
@@ -902,7 +996,10 @@ function buildConservativeFallbackOutcome(args: {
     });
   }
 
-  const fallbackTopic = buildSeededTopicFromMessage(message, existingTopics);
+  const fallbackTopic = buildRouteTopicFromResolvedLabel({
+    existingTopics,
+    resolvedLabel: resolveFallbackTopicLabel({ resolutionTrace }),
+  });
 
   return buildResolvedOutcome({
     topic: fallbackTopic,
@@ -933,10 +1030,6 @@ async function resolveTopicOutcome(args: {
   const topicLabelingMode = getTopicLabelingMode();
   const llmFallbackAllowedByMode =
     topicLabelingMode === "deterministic_plus_llm";
-
-  // Always run deterministic resolution first, even when there are no
-  // existing topics. This prevents the route from bypassing the upgraded
-  // naturalistic labeler and creating generic seeded labels too early.
 
   const activeTopic =
     activeTopicId != null
@@ -1010,8 +1103,7 @@ async function resolveTopicOutcome(args: {
       deterministicMatch.resolvedLabel &&
       deterministicCreateTrusted
     ) {
-      const createdTopic = buildSeededTopicFromResolvedLabel({
-        message,
+      const createdTopic = buildRouteTopicFromResolvedLabel({
         existingTopics,
         resolvedLabel: deterministicMatch.resolvedLabel,
       });
@@ -1110,8 +1202,7 @@ async function resolveTopicOutcome(args: {
       llmDecision.canonical_label &&
       !looksLikeSuspiciousCreateLabel(llmDecision.canonical_label)
     ) {
-      const createdTopic = buildSeededTopicFromResolvedLabel({
-        message,
+      const createdTopic = buildRouteTopicFromResolvedLabel({
         existingTopics,
         resolvedLabel: llmDecision.canonical_label,
       });
@@ -1157,8 +1248,7 @@ async function resolveTopicOutcome(args: {
     deterministicMatch.resolvedLabel &&
     deterministicCreateTrusted
   ) {
-    const createdTopic = buildSeededTopicFromResolvedLabel({
-      message,
+    const createdTopic = buildRouteTopicFromResolvedLabel({
       existingTopics,
       resolvedLabel: deterministicMatch.resolvedLabel,
     });
@@ -1195,12 +1285,26 @@ async function resolveTopicOutcome(args: {
 }
 
 export async function POST(request: Request) {
+  const timer = createMessageRouteTimer();
+
+  let topicCountLoaded: number | null = null;
+  let qdrantSyncAttempted = false;
+  let qdrantSyncSucceeded: boolean | null = null;
+  let qdrantSyncError: string | null = null;
+  let finalModelSignalsStatus: ModelSignals["status"] | null = null;
+  let finalTopicLabelingMode: TopicLabelingMode | null = null;
+  let finalResolutionKind: RouteResolutionKind | null = null;
+  let finalUsedLLMFallback: boolean | null = null;
+
   try {
     const body = (await request.json()) as MessageRouteBody;
+    timer.step("parse_request_json");
 
     const message = body.messageText?.trim() || body.message?.trim();
 
     if (!message) {
+      timer.step("validate_message_missing");
+
       return NextResponse.json(
         { error: "A message is required." },
         { status: 400 }
@@ -1209,6 +1313,7 @@ export async function POST(request: Request) {
 
     const recentTurns = normalizeRecentTurns(body);
     const chatHistory = buildChatHistoryFromBody(body);
+    timer.step("normalize_message_and_chat_history");
 
     let modelSignals: ModelSignals = buildFallbackModelSignals();
 
@@ -1225,7 +1330,12 @@ export async function POST(request: Request) {
       );
     }
 
+    finalModelSignalsStatus = modelSignals.status;
+    timer.step("score_confusion_insight");
+
     const existingTopics = await loadRouteTopics();
+    topicCountLoaded = existingTopics.length;
+    timer.step("load_route_topics_from_supabase");
 
     let semanticVectorInfo: VectorInfo = emptyVectorInfo();
 
@@ -1236,6 +1346,8 @@ export async function POST(request: Request) {
       semanticVectorInfo = emptyVectorInfo();
     }
 
+    timer.step("query_semantic_topic_candidates_qdrant");
+
     const topicResolution = await resolveTopicOutcome({
       existingTopics,
       activeTopicId:
@@ -1243,6 +1355,8 @@ export async function POST(request: Request) {
       message,
       semanticVectorInfo,
     });
+
+    timer.step("resolve_topic_outcome");
 
     const {
       topic,
@@ -1257,21 +1371,28 @@ export async function POST(request: Request) {
       debug: topicResolutionDebug,
     } = topicResolution;
 
+    finalTopicLabelingMode = topicResolutionDebug.topic_labeling_mode;
+    finalResolutionKind = resolutionKind;
+    finalUsedLLMFallback = usedLLMFallback;
+
     const targetTopicId = topic.id;
-    const preferredModality = inferPreferredModality(message);
+    const resolvedMessageFrame = getResolvedMessageFrame(resolutionTrace);
+    const preferredModality =
+      derivePreferredModalityFromResolutionFrame(resolvedMessageFrame);
+    const clarifySeeking =
+      deriveClarifySeekingFromResolutionFrame(resolvedMessageFrame);
+    timer.step("derive_route_message_signals");
 
     const currentInteractionContext: ImportantRunInputs["current_interaction_context"] =
       {
         run_kind: inferMessageRouteRunKind({
-          message,
           recentTurns,
           hasActiveTopicId: Boolean(body.activeTopicId),
+          clarifySeeking,
         }),
         is_response_to_delivered_probe: false,
         prior_mode_selected:
-          recentTurns.length > 0 && messageLooksClarifySeeking(message)
-            ? "clarify"
-            : null,
+          recentTurns.length > 0 && clarifySeeking ? "clarify" : null,
         prior_probe_was_applicable: null,
         prior_probe_id: null,
         prior_mode_outcome_available: recentTurns.length > 0,
@@ -1308,6 +1429,8 @@ export async function POST(request: Request) {
       },
     };
 
+    timer.step("build_interaction_context_and_attempt_shell");
+
     const updatedTopicMetrics = buildUpdatedMetrics(targetTopicId, topic);
     const updatedTopics = routeTopics.map((routeTopic) =>
       routeTopic.id === targetTopicId
@@ -1333,12 +1456,18 @@ export async function POST(request: Request) {
       modelSignals,
       currentInteractionContext,
       newAttempt,
-      resolutionKind
+      resolutionKind,
+      clarifySeeking
     );
 
     const probePlan =
       decision.mode_selected === "probe"
-        ? buildProbePlan(updatedResolvedTopic, decision, message)
+        ? buildProbePlan(
+            updatedResolvedTopic,
+            decision,
+            message,
+            preferredModality
+          )
         : buildNotApplicableProbePlan(updatedResolvedTopic);
 
     const deliveredResponse = buildDeliveredResponse(
@@ -1358,11 +1487,15 @@ export async function POST(request: Request) {
       previousModeOutcome
     );
 
+    timer.step("build_decision_probe_delivery_and_engine_fuel");
+
     const rawLearningSpace = buildLearningSpace(updatedTopics) as RawLearningSpace;
     const learningSpace = adaptLearningSpaceToContract(
       rawLearningSpace,
       updatedTopics
     );
+
+    timer.step("build_learning_space");
 
     const runId = makeId("run");
 
@@ -1389,7 +1522,9 @@ export async function POST(request: Request) {
         topic_name: updatedResolvedTopic.name,
         next_step:
           probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
-        inferred_keywords: inferKeywordsFromMessage(message),
+        inferred_keywords: inferKeywordsFromTopicLabel(
+          resolvedLabel ?? updatedResolvedTopic.name
+        ),
         updated_topic_metrics: updatedTopicMetrics,
         learning_space_topic:
           learningSpace.topics.find((t) => t.topic_id === updatedResolvedTopic.id) ??
@@ -1422,6 +1557,8 @@ export async function POST(request: Request) {
       decision.mode_selected
     );
 
+    timer.step("serialize_result_topic_json_and_scene_update");
+
     await insertRun({
       id: runId,
       runType: "message",
@@ -1434,6 +1571,8 @@ export async function POST(request: Request) {
       suggestedAction,
       runResultJson,
     });
+
+    timer.step("insert_run_supabase");
 
     await upsertTopicState({
       topicId: updatedResolvedTopic.id,
@@ -1450,7 +1589,11 @@ export async function POST(request: Request) {
       topicJson,
     });
 
+    timer.step("upsert_topic_state_supabase");
+
     if (canSyncTopicToQdrant()) {
+      qdrantSyncAttempted = true;
+
       try {
         await syncTopicToQdrant({
           topicId: updatedResolvedTopic.id,
@@ -1461,17 +1604,42 @@ export async function POST(request: Request) {
           updatedAt: nowIso(),
           topicJson,
         });
+
+        qdrantSyncSucceeded = true;
       } catch (error) {
+        qdrantSyncSucceeded = false;
+        qdrantSyncError =
+          error instanceof Error ? error.message : "Unknown Qdrant sync error";
+
         console.warn(
           "Topic was saved to Supabase but failed to sync to Qdrant.",
           error
         );
       }
+    } else {
+      qdrantSyncSucceeded = null;
     }
+
+    timer.step("sync_topic_to_qdrant_if_enabled");
+
+    const latencyDebug = timer.finish({
+      route: "POST /api/message",
+      topic_count_loaded: topicCountLoaded,
+      qdrant_sync_attempted: qdrantSyncAttempted,
+      qdrant_sync_succeeded: qdrantSyncSucceeded,
+      qdrant_sync_error: qdrantSyncError,
+      confusion_insight_status: finalModelSignalsStatus,
+      topic_labeling_mode: finalTopicLabelingMode,
+      resolution_kind: finalResolutionKind,
+      used_llm_topic_fallback: finalUsedLLMFallback,
+    });
+
+    console.info("[POST /api/message timing]", latencyDebug);
 
     const response: MessageRouteResponse & {
       topic_resolution_debug: TopicResolutionDebug;
       topic_resolution_trace: TopicResolutionTrace | null;
+      latency_debug: MessageRouteLatencyDebug;
     } = {
       result,
       scene_update: sceneUpdate,
@@ -1485,13 +1653,31 @@ export async function POST(request: Request) {
       },
       topic_resolution_debug: topicResolutionDebug,
       topic_resolution_trace: resolutionTrace,
+      latency_debug: latencyDebug,
     };
 
     return NextResponse.json(response);
   } catch (error) {
+    const latencyDebug = timer.finish({
+      route: "POST /api/message",
+      topic_count_loaded: topicCountLoaded,
+      qdrant_sync_attempted: qdrantSyncAttempted,
+      qdrant_sync_succeeded: qdrantSyncSucceeded,
+      qdrant_sync_error: qdrantSyncError,
+      confusion_insight_status: finalModelSignalsStatus,
+      topic_labeling_mode: finalTopicLabelingMode,
+      resolution_kind: finalResolutionKind,
+      used_llm_topic_fallback: finalUsedLLMFallback,
+    });
+
     console.error("POST /api/message failed", error);
+    console.info("[POST /api/message timing before failure]", latencyDebug);
+
     return NextResponse.json(
-      { error: "Failed to process message." },
+      {
+        error: "Failed to process message.",
+        latency_debug: latencyDebug,
+      },
       { status: 500 }
     );
   }
