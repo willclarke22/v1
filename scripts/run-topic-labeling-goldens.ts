@@ -1,5 +1,8 @@
 // scripts/run-topic-labeling-goldens.ts
 
+import fs from "node:fs";
+import path from "node:path";
+
 import { runDeterministicTopicLabeling } from "../lib/runtime/topic-labeling/topic-label-deterministic";
 import {
   resolveTopicForMessage,
@@ -184,6 +187,16 @@ type CliOptions = {
   onlyFailures: boolean;
   debugCandidates: boolean;
   debugAll: boolean;
+  jsonOut: string | null;
+  compare: string | null;
+  diffLimit: number;
+  compact: boolean;
+  compactAll: boolean;
+  labelFailuresOnly: boolean;
+  diffOnly: boolean;
+  categoryOutDir: string | null;
+  chunkOutDir: string | null;
+  chunkCount: number;
 };
 
 type BlindV2Case = {
@@ -229,6 +242,74 @@ type ActualSpec = {
   actualMatchedTopicName: string | null;
 };
 
+type PassCount = {
+  total: number;
+  labelPassed: number;
+  resolutionPassed: number;
+  createPassed: number;
+  matchedTopicPassed: number;
+  endToEndPassed: number;
+  failed: number;
+};
+
+type SnapshotCaseResult = {
+  key: string;
+  suite: CaseResult["suite"];
+  scope: ResultScope;
+  id: string;
+  category: string | null;
+  description: string;
+  message: string;
+  expectedLabel: string | null | undefined;
+  actualLabel: string | null;
+  expectedResolutionKind: ResolutionKind | undefined;
+  actualResolutionKind: ResolutionKind;
+  expectedShouldCreate: boolean | undefined;
+  actualShouldCreate: boolean;
+  expectedMatchedTopicName: string | null | undefined;
+  actualMatchedTopicName: string | null;
+  actualConfidence: number;
+  labelPass: boolean;
+  resolutionPass: boolean;
+  createPass: boolean;
+  matchedTopicPass: boolean;
+  forbiddenPass: boolean;
+  endToEndPass: boolean;
+  likelyFailureClass: string | null;
+  pfapLikelyIssue: string | null;
+  pfapProtectedCount: number;
+  pfapMalformedCount: number;
+  expectedCandidateFound: boolean;
+  expectedCandidateRank: number | null;
+  actualCandidateRank: number | null;
+  layeredFailures: LayeredFailure[];
+};
+
+type RunSnapshot = {
+  schemaVersion: 1;
+  generatedAt: string;
+  options: {
+    suite: CliOptions["suite"];
+    grep: string | null;
+    onlyFailures: boolean;
+  };
+  summary: PassCount;
+  scopeBreakdown: Record<string, PassCount>;
+  suiteBreakdown: Record<string, PassCount>;
+  categoryBreakdown: Record<string, PassCount>;
+  layerBreakdown: Record<string, number>;
+  likelyFailureBreakdown: Record<string, number>;
+  pfapBreakdown: {
+    failedCount: number;
+    failedWithProtectedCandidates: number;
+    failedExpectedCandidateFound: number;
+    failedExpectedCandidateProtected: number;
+    failedMalformedActual: number;
+    likelyIssueBreakdown: Record<string, number>;
+  };
+  results: SnapshotCaseResult[];
+};
+
 function parseArgs(argv: string[]): CliOptions {
   const options: CliOptions = {
     suite: "all",
@@ -236,6 +317,16 @@ function parseArgs(argv: string[]): CliOptions {
     onlyFailures: false,
     debugCandidates: false,
     debugAll: false,
+    jsonOut: null,
+    compare: null,
+    diffLimit: 40,
+    compact: false,
+    compactAll: false,
+    labelFailuresOnly: false,
+    diffOnly: false,
+    categoryOutDir: null,
+    chunkOutDir: null,
+    chunkCount: 3,
   };
 
   for (const arg of argv) {
@@ -278,6 +369,54 @@ function parseArgs(argv: string[]): CliOptions {
     } else if (arg === "--debug-all") {
       options.debugAll = true;
       options.debugCandidates = true;
+    } else if (arg.startsWith("--jsonOut=")) {
+      options.jsonOut = arg.slice("--jsonOut=".length).trim() || null;
+    } else if (arg.startsWith("--json-out=")) {
+      options.jsonOut = arg.slice("--json-out=".length).trim() || null;
+    } else if (arg.startsWith("--compare=")) {
+      options.compare = arg.slice("--compare=".length).trim() || null;
+    } else if (arg.startsWith("--diff-limit=")) {
+      const parsed = Number(arg.slice("--diff-limit=".length));
+      if (Number.isFinite(parsed) && parsed >= 0) {
+        options.diffLimit = Math.floor(parsed);
+      }
+    } else if (arg === "--compact") {
+      options.compact = true;
+    } else if (arg === "--compact-all" || arg === "--all-cases") {
+      options.compact = true;
+      options.compactAll = true;
+      options.labelFailuresOnly = false;
+    } else if (arg === "--compact-failures" || arg === "--compact-failures-only") {
+      options.compact = true;
+      options.compactAll = false;
+    } else if (arg === "--label-failures-only" || arg === "--labelFailuresOnly") {
+      options.labelFailuresOnly = true;
+      options.compact = true;
+    } else if (arg === "--diffOnly" || arg === "--diff-only") {
+      options.diffOnly = true;
+      options.compact = true;
+    } else if (arg.startsWith("--categoryOutDir=")) {
+      options.categoryOutDir = arg.slice("--categoryOutDir=".length).trim() || null;
+      options.compact = true;
+    } else if (arg.startsWith("--category-out-dir=")) {
+      options.categoryOutDir = arg.slice("--category-out-dir=".length).trim() || null;
+      options.compact = true;
+    } else if (arg.startsWith("--chunkOutDir=")) {
+      options.chunkOutDir = arg.slice("--chunkOutDir=".length).trim() || null;
+      options.compact = true;
+    } else if (arg.startsWith("--chunk-out-dir=")) {
+      options.chunkOutDir = arg.slice("--chunk-out-dir=".length).trim() || null;
+      options.compact = true;
+    } else if (arg.startsWith("--chunkCount=")) {
+      const parsed = Number(arg.slice("--chunkCount=".length));
+      if (Number.isFinite(parsed) && parsed > 0) {
+        options.chunkCount = Math.max(1, Math.floor(parsed));
+      }
+    } else if (arg.startsWith("--chunk-count=")) {
+      const parsed = Number(arg.slice("--chunk-count=".length));
+      if (Number.isFinite(parsed) && parsed > 0) {
+        options.chunkCount = Math.max(1, Math.floor(parsed));
+      }
     }
   }
 
@@ -1610,6 +1749,900 @@ function printCandidateDebug(result: CaseResult) {
   }
 }
 
+
+function caseKey(result: Pick<CaseResult, "scope" | "id">): string {
+  return `${result.scope}::${result.id}`;
+}
+
+function buildPassCount(results: CaseResult[]): PassCount {
+  const labelPassed = countPassed(results, "labelPass");
+  const resolutionPassed = countPassed(results, "resolutionPass");
+  const createPassed = countPassed(results, "createPass");
+  const matchedTopicPassed = countPassed(results, "matchedTopicPass");
+  const endToEndPassed = countPassed(results, "endToEndPass");
+
+  return {
+    total: results.length,
+    labelPassed,
+    resolutionPassed,
+    createPassed,
+    matchedTopicPassed,
+    endToEndPassed,
+    failed: results.length - endToEndPassed,
+  };
+}
+
+function buildBreakdown<T extends string>(
+  results: CaseResult[],
+  getKey: (result: CaseResult) => T | null | undefined
+): Record<string, PassCount> {
+  const keys = Array.from(
+    new Set(results.map(getKey).filter((key): key is T => Boolean(key)))
+  ).sort();
+
+  const output: Record<string, PassCount> = {};
+  for (const key of keys) {
+    output[key] = buildPassCount(results.filter((result) => getKey(result) === key));
+  }
+
+  return output;
+}
+
+function countBy(items: string[]): Record<string, number> {
+  const output: Record<string, number> = {};
+  for (const item of items) {
+    output[item] = (output[item] ?? 0) + 1;
+  }
+  return Object.fromEntries(Object.entries(output).sort(([a], [b]) => a.localeCompare(b)));
+}
+
+function buildLayerBreakdown(results: CaseResult[]): Record<string, number> {
+  const failedResults = results.filter((result) => !result.pass);
+  const layers: FailureLayer[] = ["label", "resolution", "create_flag", "matched_topic", "forbidden"];
+  const output: Record<string, number> = {};
+
+  for (const layer of layers) {
+    output[layer] = failedResults.filter((result) =>
+      result.layeredFailures.some((failure) => failure.layer === layer)
+    ).length;
+  }
+
+  return output;
+}
+
+function buildPfapSnapshotBreakdown(results: CaseResult[]): RunSnapshot["pfapBreakdown"] {
+  const failedResults = results.filter((result) => !result.pass);
+  const likelyIssues = failedResults.map(
+    (result) => result.pfapDebug.pfapLikelyIssue ?? "unknown"
+  );
+
+  return {
+    failedCount: failedResults.length,
+    failedWithProtectedCandidates: failedResults.filter(
+      (result) => result.pfapDebug.protectedCandidates.length > 0
+    ).length,
+    failedExpectedCandidateFound: failedResults.filter(
+      (result) => result.pfapDebug.expectedCandidateFound
+    ).length,
+    failedExpectedCandidateProtected: failedResults.filter((result) =>
+      result.pfapDebug.pfapFlags.includes("expected_candidate_pfap_protected")
+    ).length,
+    failedMalformedActual: failedResults.filter((result) =>
+      result.pfapDebug.pfapFlags.includes("malformed_actual_candidate")
+    ).length,
+    likelyIssueBreakdown: countBy(likelyIssues),
+  };
+}
+
+function serializeCaseResult(result: CaseResult): SnapshotCaseResult {
+  return {
+    key: caseKey(result),
+    suite: result.suite,
+    scope: result.scope,
+    id: result.id,
+    category: result.category,
+    description: result.description,
+    message: result.message,
+    expectedLabel: result.expectedLabel,
+    actualLabel: result.actualLabel,
+    expectedResolutionKind: result.expectedResolutionKind,
+    actualResolutionKind: result.actualResolutionKind,
+    expectedShouldCreate: result.expectedShouldCreate,
+    actualShouldCreate: result.actualShouldCreate,
+    expectedMatchedTopicName: result.expectedMatchedTopicName,
+    actualMatchedTopicName: result.actualMatchedTopicName,
+    actualConfidence: result.actualConfidence,
+    labelPass: result.labelPass,
+    resolutionPass: result.resolutionPass,
+    createPass: result.createPass,
+    matchedTopicPass: result.matchedTopicPass,
+    forbiddenPass: result.forbiddenPass,
+    endToEndPass: result.endToEndPass,
+    likelyFailureClass: result.likelyFailureClass,
+    pfapLikelyIssue: result.pfapDebug.pfapLikelyIssue,
+    pfapProtectedCount: result.pfapDebug.protectedCandidates.length,
+    pfapMalformedCount: result.pfapDebug.malformedCandidates.length,
+    expectedCandidateFound: result.pfapDebug.expectedCandidateFound,
+    expectedCandidateRank: result.pfapDebug.expectedCandidateRank,
+    actualCandidateRank: result.pfapDebug.actualCandidateRank,
+    layeredFailures: result.layeredFailures,
+  };
+}
+
+function buildRunSnapshot(results: CaseResult[], options: CliOptions): RunSnapshot {
+  const failedResults = results.filter((result) => !result.pass);
+
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    options: {
+      suite: options.suite,
+      grep: options.grep,
+      onlyFailures: options.onlyFailures,
+    },
+    summary: buildPassCount(results),
+    scopeBreakdown: buildBreakdown(results, (result) => result.scope),
+    suiteBreakdown: buildBreakdown(results, (result) => result.suite),
+    categoryBreakdown: buildBreakdown(results, (result) => result.category),
+    layerBreakdown: buildLayerBreakdown(results),
+    likelyFailureBreakdown: countBy(
+      failedResults.map((result) => result.likelyFailureClass ?? "unknown")
+    ),
+    pfapBreakdown: buildPfapSnapshotBreakdown(results),
+    results: results.map(serializeCaseResult),
+  };
+}
+
+function writeSnapshot(results: CaseResult[], options: CliOptions) {
+  if (!options.jsonOut) return;
+
+  const snapshot = buildRunSnapshot(results, options);
+  const outPath = path.resolve(process.cwd(), options.jsonOut);
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
+  console.log(`\nWrote topic-labeling snapshot JSON: ${outPath}`);
+}
+
+function readSnapshot(filePath: string): RunSnapshot {
+  const resolvedPath = path.resolve(process.cwd(), filePath);
+  const raw = fs.readFileSync(resolvedPath, "utf8");
+  const parsed = JSON.parse(raw) as RunSnapshot;
+
+  if (parsed.schemaVersion !== 1 || !Array.isArray(parsed.results)) {
+    throw new Error(`Unsupported or invalid snapshot format: ${resolvedPath}`);
+  }
+
+  return parsed;
+}
+
+function deltaText(current: number, previous: number): string {
+  const delta = current - previous;
+  if (delta === 0) return "0";
+  return delta > 0 ? `+${delta}` : `${delta}`;
+}
+
+function compareCounts(current: PassCount, previous: PassCount) {
+  return {
+    total: `${current.total} (${deltaText(current.total, previous.total)})`,
+    label: `${current.labelPassed}/${current.total} (${deltaText(current.labelPassed, previous.labelPassed)})`,
+    resolution: `${current.resolutionPassed}/${current.total} (${deltaText(current.resolutionPassed, previous.resolutionPassed)})`,
+    create: `${current.createPassed}/${current.total} (${deltaText(current.createPassed, previous.createPassed)})`,
+    matched: `${current.matchedTopicPassed}/${current.total} (${deltaText(current.matchedTopicPassed, previous.matchedTopicPassed)})`,
+    e2e: `${current.endToEndPassed}/${current.total} (${deltaText(current.endToEndPassed, previous.endToEndPassed)})`,
+    failed: `${current.failed} (${deltaText(current.failed, previous.failed)})`,
+  };
+}
+
+function printCountMapDelta(
+  title: string,
+  current: Record<string, number>,
+  previous: Record<string, number>,
+  options: { includeZeroRows?: boolean } = {}
+) {
+  const keys = Array.from(new Set([...Object.keys(current), ...Object.keys(previous)])).sort();
+  const rows = keys
+    .map((key) => ({
+      key,
+      previous: previous[key] ?? 0,
+      current: current[key] ?? 0,
+      delta: (current[key] ?? 0) - (previous[key] ?? 0),
+    }))
+    .filter((row) => options.includeZeroRows || row.delta !== 0 || row.current !== 0 || row.previous !== 0);
+
+  if (rows.length === 0) return;
+
+  console.log(title);
+  console.table(rows);
+}
+
+function printPassCountBreakdownDelta(
+  title: string,
+  current: Record<string, PassCount>,
+  previous: Record<string, PassCount>
+) {
+  const keys = Array.from(new Set([...Object.keys(current), ...Object.keys(previous)])).sort();
+  const rows = keys
+    .map((key) => {
+      const currentCounts = current[key] ?? {
+        total: 0,
+        labelPassed: 0,
+        resolutionPassed: 0,
+        createPassed: 0,
+        matchedTopicPassed: 0,
+        endToEndPassed: 0,
+        failed: 0,
+      };
+      const previousCounts = previous[key] ?? {
+        total: 0,
+        labelPassed: 0,
+        resolutionPassed: 0,
+        createPassed: 0,
+        matchedTopicPassed: 0,
+        endToEndPassed: 0,
+        failed: 0,
+      };
+
+      return {
+        key,
+        total: `${currentCounts.total} (${deltaText(currentCounts.total, previousCounts.total)})`,
+        label: `${currentCounts.labelPassed}/${currentCounts.total} (${deltaText(currentCounts.labelPassed, previousCounts.labelPassed)})`,
+        e2e: `${currentCounts.endToEndPassed}/${currentCounts.total} (${deltaText(currentCounts.endToEndPassed, previousCounts.endToEndPassed)})`,
+        failed: `${currentCounts.failed} (${deltaText(currentCounts.failed, previousCounts.failed)})`,
+        e2eDelta: currentCounts.endToEndPassed - previousCounts.endToEndPassed,
+        failedDelta: currentCounts.failed - previousCounts.failed,
+      };
+    })
+    .filter((row) => row.e2eDelta !== 0 || row.failedDelta !== 0);
+
+  if (rows.length === 0) return;
+
+  console.log(title);
+  console.table(rows.map(({ e2eDelta: _a, failedDelta: _b, ...row }) => row));
+}
+
+
+function labelForDisplay(value: string | null | undefined): string {
+  if (value === undefined) return "<unspecified>";
+  if (value === null || value === "") return "<null>";
+  return value;
+}
+
+function hasLabelLayerFailure(result: Pick<CaseResult, "layeredFailures">): boolean {
+  return result.layeredFailures.some((failure) => failure.layer === "label");
+}
+
+function hasSnapshotLabelLayerFailure(result: Pick<SnapshotCaseResult, "layeredFailures">): boolean {
+  return result.layeredFailures.some((failure) => failure.layer === "label");
+}
+
+function printCompactPassCountLine(label: string, counts: PassCount) {
+  console.log(
+    `${label}: total=${counts.total} label=${counts.labelPassed}/${counts.total} resolution=${counts.resolutionPassed}/${counts.total} e2e=${counts.endToEndPassed}/${counts.total} failed=${counts.failed}`
+  );
+}
+
+function groupCaseResultsByCategory(results: CaseResult[]): Array<[string, CaseResult[]]> {
+  const groups = new Map<string, CaseResult[]>();
+  for (const result of results) {
+    const key = result.category ?? "uncategorized";
+    groups.set(key, [...(groups.get(key) ?? []), result]);
+  }
+  return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
+}
+
+function groupSnapshotResultsByCategory(results: SnapshotCaseResult[]): Array<[string, SnapshotCaseResult[]]> {
+  const groups = new Map<string, SnapshotCaseResult[]>();
+  for (const result of results) {
+    const key = result.category ?? "uncategorized";
+    groups.set(key, [...(groups.get(key) ?? []), result]);
+  }
+  return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
+}
+
+function printCompactCaseResult(result: CaseResult) {
+  const layerText = result.layeredFailures.map((failure) => failure.layer).join(",") || "none";
+  const statusText = result.endToEndPass ? "PASS" : "FAIL";
+  console.log(`[${result.scope}] ${result.category ?? "uncategorized"} | ${result.id} | ${statusText}`);
+  console.log(`message: ${result.message}`);
+  console.log(`expected: ${labelForDisplay(result.expectedLabel)}`);
+  console.log(`actual:   ${labelForDisplay(result.actualLabel)}`);
+  console.log(
+    `checks: label=${result.labelPass ? "Y" : "N"} resolution=${result.resolutionPass ? "Y" : "N"} create=${result.createPass ? "Y" : "N"} matched=${result.matchedTopicPass ? "Y" : "N"} forbidden=${result.forbiddenPass ? "Y" : "N"}`
+  );
+  console.log(`layers: ${layerText} | likely: ${result.likelyFailureClass ?? "n/a"} | pfap: ${result.pfapDebug.pfapLikelyIssue ?? "n/a"}`);
+
+  if (!result.resolutionPass || !result.createPass || !result.matchedTopicPass || !result.forbiddenPass) {
+    console.log(
+      `resolution: expected=${result.expectedResolutionKind ?? "n/a"} actual=${result.actualResolutionKind} | create expected=${result.expectedShouldCreate ?? "n/a"} actual=${result.actualShouldCreate} | matched expected=${result.expectedMatchedTopicName ?? "n/a"} actual=${result.actualMatchedTopicName ?? "n/a"}`
+    );
+  }
+  console.log("");
+}
+
+function printCompactSnapshotCase(result: SnapshotCaseResult) {
+  const layerText = result.layeredFailures.map((failure) => failure.layer).join(",") || "none";
+  const statusText = result.endToEndPass ? "PASS" : "FAIL";
+  console.log(`[${result.scope}] ${result.category ?? "uncategorized"} | ${result.id} | ${statusText}`);
+  console.log(`message: ${result.message}`);
+  console.log(`expected: ${labelForDisplay(result.expectedLabel)}`);
+  console.log(`actual:   ${labelForDisplay(result.actualLabel)}`);
+  console.log(
+    `checks: label=${result.labelPass ? "Y" : "N"} resolution=${result.resolutionPass ? "Y" : "N"} create=${result.createPass ? "Y" : "N"} matched=${result.matchedTopicPass ? "Y" : "N"} forbidden=${result.forbiddenPass ? "Y" : "N"}`
+  );
+  console.log(`layers: ${layerText} | likely: ${result.likelyFailureClass ?? "n/a"} | pfap: ${result.pfapLikelyIssue ?? "n/a"}`);
+
+  if (!result.resolutionPass || !result.createPass || !result.matchedTopicPass || !result.forbiddenPass) {
+    console.log(
+      `resolution: expected=${result.expectedResolutionKind ?? "n/a"} actual=${result.actualResolutionKind} | create expected=${result.expectedShouldCreate ?? "n/a"} actual=${result.actualShouldCreate} | matched expected=${result.expectedMatchedTopicName ?? "n/a"} actual=${result.actualMatchedTopicName ?? "n/a"}`
+    );
+  }
+  console.log("");
+}
+
+function compactCaseResultLines(result: CaseResult): string[] {
+  const layerText = result.layeredFailures.map((failure) => failure.layer).join(",") || "none";
+  const statusText = result.endToEndPass ? "PASS" : "FAIL";
+  const lines = [
+    `[${result.scope}] ${result.category ?? "uncategorized"} | ${result.id} | ${statusText}`,
+    `message: ${result.message}`,
+    `expected: ${labelForDisplay(result.expectedLabel)}`,
+    `actual:   ${labelForDisplay(result.actualLabel)}`,
+    `checks: label=${result.labelPass ? "Y" : "N"} resolution=${result.resolutionPass ? "Y" : "N"} create=${result.createPass ? "Y" : "N"} matched=${result.matchedTopicPass ? "Y" : "N"} forbidden=${result.forbiddenPass ? "Y" : "N"}`,
+    `layers: ${layerText} | likely: ${result.likelyFailureClass ?? "n/a"} | pfap: ${result.pfapDebug.pfapLikelyIssue ?? "n/a"}`,
+  ];
+
+  if (!result.resolutionPass || !result.createPass || !result.matchedTopicPass || !result.forbiddenPass) {
+    lines.push(
+      `resolution: expected=${result.expectedResolutionKind ?? "n/a"} actual=${result.actualResolutionKind} | create expected=${result.expectedShouldCreate ?? "n/a"} actual=${result.actualShouldCreate} | matched expected=${result.expectedMatchedTopicName ?? "n/a"} actual=${result.actualMatchedTopicName ?? "n/a"}`
+    );
+  }
+
+  lines.push("");
+  return lines;
+}
+
+function slugForFileName(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "uncategorized";
+}
+
+function compactPassCountLineText(label: string, counts: PassCount): string {
+  return `${label}: total=${counts.total} label=${counts.labelPassed}/${counts.total} resolution=${counts.resolutionPassed}/${counts.total} e2e=${counts.endToEndPassed}/${counts.total} failed=${counts.failed}`;
+}
+
+function writeCompactCategoryFiles(results: CaseResult[], options: CliOptions) {
+  if (!options.categoryOutDir) return;
+
+  const display = getCompactDisplayResults(results, options);
+  const outDir = path.resolve(process.cwd(), options.categoryOutDir);
+  fs.mkdirSync(outDir, { recursive: true });
+
+  const summary = buildPassCount(results);
+  const labelFailures = results.filter((result) => hasLabelLayerFailure(result));
+  const e2eFailures = results.filter((result) => !result.endToEndPass);
+  const scopeBreakdown = buildBreakdown(results, (result) => result.scope);
+  const categoryBreakdown = buildBreakdown(results, (result) => result.category);
+  const categoryGroups = groupCaseResultsByCategory(display.rows);
+
+  const indexLines: string[] = [
+    "=== Compact Topic Labeling Category Split Index ===",
+    compactPassCountLineText("overall", summary),
+    `label-layer failures: ${labelFailures.length}`,
+    `end-to-end failures: ${e2eFailures.length}`,
+    `displayed cases: ${display.rows.length} (${display.label})`,
+    `generatedAt: ${new Date().toISOString()}`,
+    "",
+    "=== Compact Scope Summary ===",
+  ];
+
+  for (const [scope, counts] of Object.entries(scopeBreakdown)) {
+    if (options.compactAll || counts.failed > 0 || scope === "naturalistic-diverse") {
+      indexLines.push(compactPassCountLineText(scope, counts));
+    }
+  }
+
+  indexLines.push("", options.compactAll ? "=== Compact Category Summary (all categories) ===" : "=== Compact Category Summary (failing categories only) ===");
+  for (const [category, counts] of Object.entries(categoryBreakdown)) {
+    if (options.compactAll || counts.failed > 0) indexLines.push(compactPassCountLineText(category, counts));
+  }
+
+  indexLines.push("", "=== Files ===");
+
+  categoryGroups.forEach(([category, group], index) => {
+    const filename = `${String(index + 1).padStart(2, "0")}-${slugForFileName(category)}.txt`;
+    const categoryPath = path.join(outDir, filename);
+    const lines: string[] = [
+      `=== ${category} (${group.length}) ===`,
+      `display mode: ${display.label}`,
+      "",
+    ];
+
+    for (const result of group) {
+      lines.push(...compactCaseResultLines(result));
+    }
+
+    fs.writeFileSync(categoryPath, `${lines.join("\n")}\n`, "utf8");
+    indexLines.push(`${filename}: ${category} (${group.length})`);
+  });
+
+  fs.writeFileSync(path.join(outDir, "00-index.txt"), `${indexLines.join("\n")}\n`, "utf8");
+  console.log(`\nWrote compact category split reports: ${outDir}`);
+  console.log(`Index: ${path.join(outDir, "00-index.txt")}`);
+  console.log(`Category files: ${categoryGroups.length}`);
+}
+
+
+function buildCompactReportHeaderLines(results: CaseResult[], options: CliOptions, displayLabel: string, displayedCount: number): string[] {
+  const summary = buildPassCount(results);
+  const labelFailures = results.filter((result) => hasLabelLayerFailure(result));
+  const e2eFailures = results.filter((result) => !result.endToEndPass);
+  const scopeBreakdown = buildBreakdown(results, (result) => result.scope);
+  const categoryBreakdown = buildBreakdown(results, (result) => result.category);
+
+  const lines: string[] = [
+    "=== Compact Topic Labeling Chunked Report Index ===",
+    compactPassCountLineText("overall", summary),
+    `label-layer failures: ${labelFailures.length}`,
+    `end-to-end failures: ${e2eFailures.length}`,
+    `displayed cases: ${displayedCount} (${displayLabel})`,
+    `generatedAt: ${new Date().toISOString()}`,
+    "",
+    "=== Compact Scope Summary ===",
+  ];
+
+  for (const [scope, counts] of Object.entries(scopeBreakdown)) {
+    if (options.compactAll || counts.failed > 0 || scope === "naturalistic-diverse") {
+      lines.push(compactPassCountLineText(scope, counts));
+    }
+  }
+
+  lines.push("", options.compactAll ? "=== Compact Category Summary (all categories) ===" : "=== Compact Category Summary (failing categories only) ===");
+  for (const [category, counts] of Object.entries(categoryBreakdown)) {
+    if (options.compactAll || counts.failed > 0) lines.push(compactPassCountLineText(category, counts));
+  }
+
+  return lines;
+}
+
+function caseResultLineCount(result: CaseResult): number {
+  return compactCaseResultLines(result).length;
+}
+
+function buildCompactChunkGroups(rows: CaseResult[], chunkCount: number): CaseResult[][] {
+  const safeChunkCount = Math.max(1, Math.floor(chunkCount));
+  if (rows.length === 0) return Array.from({ length: safeChunkCount }, () => []);
+
+  const totalLines = rows.reduce((sum, result) => sum + caseResultLineCount(result) + 1, 0);
+  const targetLines = Math.max(1, Math.ceil(totalLines / safeChunkCount));
+  const chunks: CaseResult[][] = [];
+  let current: CaseResult[] = [];
+  let currentLines = 0;
+
+  rows.forEach((result, index) => {
+    const itemLines = caseResultLineCount(result) + 1;
+    const remainingItems = rows.length - index;
+    const remainingChunksAfterThis = safeChunkCount - chunks.length - 1;
+    const shouldStartNewChunk =
+      current.length > 0 &&
+      currentLines + itemLines > targetLines &&
+      remainingChunksAfterThis > 0 &&
+      remainingItems > remainingChunksAfterThis;
+
+    if (shouldStartNewChunk) {
+      chunks.push(current);
+      current = [];
+      currentLines = 0;
+    }
+
+    current.push(result);
+    currentLines += itemLines;
+  });
+
+  if (current.length > 0) chunks.push(current);
+  while (chunks.length < safeChunkCount) chunks.push([]);
+  return chunks.slice(0, safeChunkCount);
+}
+
+function writeCompactChunkFiles(results: CaseResult[], options: CliOptions) {
+  if (!options.chunkOutDir) return;
+
+  const display = getCompactDisplayResults(results, options);
+  const outDir = path.resolve(process.cwd(), options.chunkOutDir);
+  fs.mkdirSync(outDir, { recursive: true });
+
+  const chunks = buildCompactChunkGroups(display.rows, options.chunkCount);
+  const indexLines = buildCompactReportHeaderLines(results, options, display.label, display.rows.length);
+  indexLines.push("", "=== Files ===");
+
+  chunks.forEach((chunk, index) => {
+    const filename = `compact-report-part-${String(index + 1).padStart(2, "0")}-of-${String(chunks.length).padStart(2, "0")}.txt`;
+    const chunkPath = path.join(outDir, filename);
+    const lines: string[] = [
+      `=== Compact Topic Labeling Report Part ${index + 1} of ${chunks.length} ===`,
+      `display mode: ${display.label}`,
+      `cases in this file: ${chunk.length}`,
+      "",
+    ];
+
+    let lastCategory: string | null = null;
+    for (const result of chunk) {
+      const category = result.category ?? "uncategorized";
+      if (category !== lastCategory) {
+        lines.push(`--- ${category} ---`, "");
+        lastCategory = category;
+      }
+      lines.push(...compactCaseResultLines(result));
+    }
+
+    fs.writeFileSync(chunkPath, `${lines.join("\n")}\n`, "utf8");
+    indexLines.push(`${filename}: ${chunk.length} case(s)`);
+  });
+
+  fs.writeFileSync(path.join(outDir, "00-index.txt"), `${indexLines.join("\n")}\n`, "utf8");
+  console.log(`\nWrote compact chunked reports: ${outDir}`);
+  console.log(`Index: ${path.join(outDir, "00-index.txt")}`);
+  console.log(`Chunk files: ${chunks.length}`);
+}
+
+function getCompactDisplayResults(results: CaseResult[], options: CliOptions): { rows: CaseResult[]; label: string; heading: string } {
+  if (options.labelFailuresOnly) {
+    return {
+      rows: results.filter((result) => hasLabelLayerFailure(result)),
+      label: "label failures only",
+      heading: "=== Compact Label Failures Grouped By Category ===",
+    };
+  }
+
+  if (options.compactAll) {
+    return {
+      rows: results,
+      label: "all cases",
+      heading: "=== Compact All Cases Grouped By Category ===",
+    };
+  }
+
+  return {
+    rows: results.filter((result) => !result.endToEndPass),
+    label: "all end-to-end failures",
+    heading: "=== Compact End-to-End Failures Grouped By Category ===",
+  };
+}
+
+function printCompactSummary(results: CaseResult[], options: CliOptions) {
+  const summary = buildPassCount(results);
+  const labelFailures = results.filter((result) => hasLabelLayerFailure(result));
+  const e2eFailures = results.filter((result) => !result.endToEndPass);
+  const display = getCompactDisplayResults(results, options);
+
+  console.log("");
+  console.log("=== Compact Topic Labeling Report ===");
+  printCompactPassCountLine("overall", summary);
+  console.log(`label-layer failures: ${labelFailures.length}`);
+  console.log(`end-to-end failures: ${e2eFailures.length}`);
+  console.log(`displayed cases: ${display.rows.length} (${display.label})`);
+  console.log("");
+
+  console.log("=== Compact Scope Summary ===");
+  const scopeBreakdown = buildBreakdown(results, (result) => result.scope);
+  for (const [scope, counts] of Object.entries(scopeBreakdown)) {
+    if (options.compactAll || counts.failed > 0 || scope === "naturalistic-diverse") {
+      printCompactPassCountLine(scope, counts);
+    }
+  }
+  console.log("");
+
+  console.log(options.compactAll ? "=== Compact Category Summary (all categories) ===" : "=== Compact Category Summary (failing categories only) ===");
+  const categoryBreakdown = buildBreakdown(results, (result) => result.category);
+  for (const [category, counts] of Object.entries(categoryBreakdown)) {
+    if (options.compactAll || counts.failed > 0) printCompactPassCountLine(category, counts);
+  }
+  console.log("");
+
+  if (display.rows.length === 0) {
+    console.log("No cases matched the compact display filter.");
+    console.log("");
+    return;
+  }
+
+  if (options.categoryOutDir) {
+    console.log(`Detailed compact rows will be written by category to: ${path.resolve(process.cwd(), options.categoryOutDir)}`);
+    console.log("");
+    return;
+  }
+
+  if (options.chunkOutDir) {
+    console.log(`Detailed compact rows will be written in ${options.chunkCount} chunk file(s) to: ${path.resolve(process.cwd(), options.chunkOutDir)}`);
+    console.log("");
+    return;
+  }
+
+  console.log(display.heading);
+
+  for (const [category, group] of groupCaseResultsByCategory(display.rows)) {
+    console.log(`\n--- ${category} (${group.length}) ---`);
+    for (const result of group) {
+      printCompactCaseResult(result);
+    }
+  }
+}
+
+function printCompactCaseDiffList(title: string, cases: SnapshotCaseResult[], limit: number, options: CliOptions) {
+  const filtered = options.labelFailuresOnly ? cases.filter(hasSnapshotLabelLayerFailure) : cases;
+  if (filtered.length === 0) return;
+
+  console.log(title);
+  const shown = limit === 0 ? [] : filtered.slice(0, limit);
+  for (const [category, group] of groupSnapshotResultsByCategory(shown)) {
+    console.log(`\n--- ${category} (${group.length}) ---`);
+    for (const result of group) {
+      printCompactSnapshotCase(result);
+    }
+  }
+
+  if (filtered.length > shown.length) {
+    console.log(`... ${filtered.length - shown.length} more not shown. Increase --diff-limit=N to display more.`);
+  }
+  console.log("");
+}
+
+function printCompactMovementMap(title: string, current: Record<string, number>, previous: Record<string, number>) {
+  const rows = Array.from(new Set([...Object.keys(current), ...Object.keys(previous)]))
+    .sort()
+    .map((key) => ({ key, previous: previous[key] ?? 0, current: current[key] ?? 0 }))
+    .map((row) => ({ ...row, delta: row.current - row.previous }))
+    .filter((row) => row.delta !== 0);
+
+  if (rows.length === 0) return;
+  console.log(title);
+  for (const row of rows) {
+    console.log(`${row.key}: ${row.previous} -> ${row.current} (${deltaText(row.current, row.previous)})`);
+  }
+  console.log("");
+}
+
+function printCompactPassMovement(title: string, current: Record<string, PassCount>, previous: Record<string, PassCount>) {
+  const rows = Array.from(new Set([...Object.keys(current), ...Object.keys(previous)]))
+    .sort()
+    .map((key) => {
+      const cur = current[key] ?? { total: 0, labelPassed: 0, resolutionPassed: 0, createPassed: 0, matchedTopicPassed: 0, endToEndPassed: 0, failed: 0 };
+      const prev = previous[key] ?? { total: 0, labelPassed: 0, resolutionPassed: 0, createPassed: 0, matchedTopicPassed: 0, endToEndPassed: 0, failed: 0 };
+      return {
+        key,
+        cur,
+        prev,
+        labelDelta: cur.labelPassed - prev.labelPassed,
+        e2eDelta: cur.endToEndPassed - prev.endToEndPassed,
+        failedDelta: cur.failed - prev.failed,
+      };
+    })
+    .filter((row) => row.labelDelta !== 0 || row.e2eDelta !== 0 || row.failedDelta !== 0);
+
+  if (rows.length === 0) return;
+  console.log(title);
+  for (const row of rows) {
+    console.log(
+      `${row.key}: label ${row.prev.labelPassed}/${row.prev.total} -> ${row.cur.labelPassed}/${row.cur.total} (${deltaText(row.cur.labelPassed, row.prev.labelPassed)}), e2e ${row.prev.endToEndPassed}/${row.prev.total} -> ${row.cur.endToEndPassed}/${row.cur.total} (${deltaText(row.cur.endToEndPassed, row.prev.endToEndPassed)}), failed ${row.prev.failed} -> ${row.cur.failed} (${deltaText(row.cur.failed, row.prev.failed)})`
+    );
+  }
+  console.log("");
+}
+
+function printCaseDiffTable(title: string, cases: SnapshotCaseResult[], limit: number) {
+  if (cases.length === 0) return;
+
+  console.log(title);
+  const shown = limit === 0 ? [] : cases.slice(0, limit);
+  console.table(
+    shown.map((result) => ({
+      scope: result.scope,
+      category: result.category ?? "",
+      id: result.id,
+      expectedLabel: result.expectedLabel ?? "",
+      actualLabel: result.actualLabel ?? "",
+      expectedResolution: result.expectedResolutionKind ?? "",
+      actualResolution: result.actualResolutionKind,
+      matched: result.actualMatchedTopicName ?? "",
+      create: result.actualShouldCreate,
+      likelyFailure: result.likelyFailureClass ?? "",
+      pfapIssue: result.pfapLikelyIssue ?? "",
+    }))
+  );
+
+  if (cases.length > shown.length) {
+    console.log(`... ${cases.length - shown.length} more not shown. Increase --diff-limit=N to display more.`);
+  }
+  console.log("");
+}
+
+function printRegressionRiskNotes(args: {
+  newRegressions: SnapshotCaseResult[];
+  naturalisticRegressions: SnapshotCaseResult[];
+  currentSnapshot: RunSnapshot;
+  previousSnapshot: RunSnapshot;
+}) {
+  const notes: string[] = [];
+
+  if (args.naturalisticRegressions.length > 0) {
+    notes.push(
+      `naturalistic-diverse regressed by ${args.naturalisticRegressions.length} case(s); do not treat this change as stable until those are repaired.`
+    );
+  }
+
+  const currentMalformed = args.currentSnapshot.pfapBreakdown.failedMalformedActual;
+  const previousMalformed = args.previousSnapshot.pfapBreakdown.failedMalformedActual;
+  if (currentMalformed > previousMalformed) {
+    notes.push(
+      `malformed actual winners increased from ${previousMalformed} to ${currentMalformed}; candidate hygiene likely regressed.`
+    );
+  }
+
+  if (args.newRegressions.length > 0) {
+    notes.push(
+      `${args.newRegressions.length} previously passing case(s) now fail; review these before making another labeler change.`
+    );
+  }
+
+  if (notes.length === 0) {
+    notes.push("no newly failing cases were detected against the comparison snapshot.");
+  }
+
+  console.log("=== Regression Risk Notes ===");
+  for (const note of notes) console.log(`- ${note}`);
+  console.log("");
+}
+
+function printComparisonReport(results: CaseResult[], options: CliOptions) {
+  if (!options.compare) return;
+
+  const previousSnapshot = readSnapshot(options.compare);
+  const currentSnapshot = buildRunSnapshot(results, options);
+  const previousByKey = new Map(previousSnapshot.results.map((result) => [result.key, result]));
+  const currentByKey = new Map(currentSnapshot.results.map((result) => [result.key, result]));
+
+  const sharedCurrent = currentSnapshot.results.filter((result) => previousByKey.has(result.key));
+  const newPasses = sharedCurrent.filter((result) => {
+    const previous = previousByKey.get(result.key);
+    return previous && !previous.endToEndPass && result.endToEndPass;
+  });
+  const newRegressions = sharedCurrent.filter((result) => {
+    const previous = previousByKey.get(result.key);
+    return previous && previous.endToEndPass && !result.endToEndPass;
+  });
+  const stillFailingChanged = sharedCurrent.filter((result) => {
+    const previous = previousByKey.get(result.key);
+    return (
+      previous != null &&
+      !previous.endToEndPass &&
+      !result.endToEndPass &&
+      (previous.actualLabel !== result.actualLabel ||
+        previous.actualResolutionKind !== result.actualResolutionKind ||
+        previous.actualShouldCreate !== result.actualShouldCreate ||
+        previous.actualMatchedTopicName !== result.actualMatchedTopicName)
+    );
+  });
+  const naturalisticRegressions = newRegressions.filter(
+    (result) => result.scope === "naturalistic-diverse"
+  );
+  const addedCases = currentSnapshot.results.filter((result) => !previousByKey.has(result.key));
+  const removedCases = previousSnapshot.results.filter((result) => !currentByKey.has(result.key));
+
+  if (options.compact) {
+    console.log("");
+    console.log("=== Compact Baseline Comparison Report ===");
+    console.log(`Compared against: ${path.resolve(process.cwd(), options.compare)}`);
+    console.log(`Previous snapshot generatedAt: ${previousSnapshot.generatedAt}`);
+    console.log(`Current snapshot generatedAt: ${currentSnapshot.generatedAt}`);
+    console.log("");
+    console.log(`overall label: ${previousSnapshot.summary.labelPassed}/${previousSnapshot.summary.total} -> ${currentSnapshot.summary.labelPassed}/${currentSnapshot.summary.total} (${deltaText(currentSnapshot.summary.labelPassed, previousSnapshot.summary.labelPassed)})`);
+    console.log(`overall e2e:   ${previousSnapshot.summary.endToEndPassed}/${previousSnapshot.summary.total} -> ${currentSnapshot.summary.endToEndPassed}/${currentSnapshot.summary.total} (${deltaText(currentSnapshot.summary.endToEndPassed, previousSnapshot.summary.endToEndPassed)})`);
+    console.log(`failed:        ${previousSnapshot.summary.failed} -> ${currentSnapshot.summary.failed} (${deltaText(currentSnapshot.summary.failed, previousSnapshot.summary.failed)})`);
+    console.log("");
+    console.log("Case movement:");
+    console.log(`New passes: ${newPasses.length}`);
+    console.log(`New regressions: ${newRegressions.length}`);
+    console.log(`Naturalistic regressions: ${naturalisticRegressions.length}`);
+    console.log(`Still failing but changed output: ${stillFailingChanged.length}`);
+    console.log(`Added cases in current run: ${addedCases.length}`);
+    console.log(`Removed cases from current run: ${removedCases.length}`);
+    console.log("");
+
+    printRegressionRiskNotes({
+      newRegressions,
+      naturalisticRegressions,
+      currentSnapshot,
+      previousSnapshot,
+    });
+
+    printCompactPassMovement("Scope movement:", currentSnapshot.scopeBreakdown, previousSnapshot.scopeBreakdown);
+    printCompactPassMovement("Category movement:", currentSnapshot.categoryBreakdown, previousSnapshot.categoryBreakdown);
+    printCompactMovementMap("Failure-layer movement:", currentSnapshot.layerBreakdown, previousSnapshot.layerBreakdown);
+    printCompactMovementMap("Likely-failure-class movement:", currentSnapshot.likelyFailureBreakdown, previousSnapshot.likelyFailureBreakdown);
+    printCompactMovementMap("PFAP likely-issue movement:", currentSnapshot.pfapBreakdown.likelyIssueBreakdown, previousSnapshot.pfapBreakdown.likelyIssueBreakdown);
+
+    console.log("PFAP headline movement:");
+    console.log(`failedWithProtectedCandidates: ${previousSnapshot.pfapBreakdown.failedWithProtectedCandidates} -> ${currentSnapshot.pfapBreakdown.failedWithProtectedCandidates} (${deltaText(currentSnapshot.pfapBreakdown.failedWithProtectedCandidates, previousSnapshot.pfapBreakdown.failedWithProtectedCandidates)})`);
+    console.log(`failedExpectedCandidateFound: ${previousSnapshot.pfapBreakdown.failedExpectedCandidateFound} -> ${currentSnapshot.pfapBreakdown.failedExpectedCandidateFound} (${deltaText(currentSnapshot.pfapBreakdown.failedExpectedCandidateFound, previousSnapshot.pfapBreakdown.failedExpectedCandidateFound)})`);
+    console.log(`failedExpectedCandidateProtected: ${previousSnapshot.pfapBreakdown.failedExpectedCandidateProtected} -> ${currentSnapshot.pfapBreakdown.failedExpectedCandidateProtected} (${deltaText(currentSnapshot.pfapBreakdown.failedExpectedCandidateProtected, previousSnapshot.pfapBreakdown.failedExpectedCandidateProtected)})`);
+    console.log(`failedMalformedActual: ${previousSnapshot.pfapBreakdown.failedMalformedActual} -> ${currentSnapshot.pfapBreakdown.failedMalformedActual} (${deltaText(currentSnapshot.pfapBreakdown.failedMalformedActual, previousSnapshot.pfapBreakdown.failedMalformedActual)})`);
+    console.log("");
+
+    printCompactCaseDiffList("New passes:", newPasses, options.diffLimit, options);
+    printCompactCaseDiffList("New regressions:", newRegressions, options.diffLimit, options);
+    printCompactCaseDiffList("Naturalistic regressions:", naturalisticRegressions, options.diffLimit, options);
+    printCompactCaseDiffList("Still failing but changed output:", stillFailingChanged, options.diffLimit, options);
+    return;
+  }
+
+  console.log("");
+  console.log("=== Baseline Comparison Report ===");
+  console.log(`Compared against: ${path.resolve(process.cwd(), options.compare)}`);
+  console.log(`Previous snapshot generatedAt: ${previousSnapshot.generatedAt}`);
+  console.log(`Current snapshot generatedAt: ${currentSnapshot.generatedAt}`);
+  console.log("");
+
+  console.log("Overall movement:");
+  console.table([compareCounts(currentSnapshot.summary, previousSnapshot.summary)]);
+  console.log("");
+
+  console.log("Case movement:");
+  console.log(`New passes: ${newPasses.length}`);
+  console.log(`New regressions: ${newRegressions.length}`);
+  console.log(`Naturalistic regressions: ${naturalisticRegressions.length}`);
+  console.log(`Still failing but changed output: ${stillFailingChanged.length}`);
+  console.log(`Added cases in current run: ${addedCases.length}`);
+  console.log(`Removed cases from current run: ${removedCases.length}`);
+  console.log("");
+
+  printRegressionRiskNotes({
+    newRegressions,
+    naturalisticRegressions,
+    currentSnapshot,
+    previousSnapshot,
+  });
+
+  printPassCountBreakdownDelta("Scope movement:", currentSnapshot.scopeBreakdown, previousSnapshot.scopeBreakdown);
+  printPassCountBreakdownDelta("Category movement:", currentSnapshot.categoryBreakdown, previousSnapshot.categoryBreakdown);
+  printCountMapDelta("Failure-layer movement:", currentSnapshot.layerBreakdown, previousSnapshot.layerBreakdown);
+  printCountMapDelta("Likely-failure-class movement:", currentSnapshot.likelyFailureBreakdown, previousSnapshot.likelyFailureBreakdown);
+  printCountMapDelta("PFAP likely-issue movement:", currentSnapshot.pfapBreakdown.likelyIssueBreakdown, previousSnapshot.pfapBreakdown.likelyIssueBreakdown);
+
+  console.log("PFAP headline movement:");
+  console.table([
+    {
+      metric: "failedWithProtectedCandidates",
+      previous: previousSnapshot.pfapBreakdown.failedWithProtectedCandidates,
+      current: currentSnapshot.pfapBreakdown.failedWithProtectedCandidates,
+      delta: currentSnapshot.pfapBreakdown.failedWithProtectedCandidates - previousSnapshot.pfapBreakdown.failedWithProtectedCandidates,
+    },
+    {
+      metric: "failedExpectedCandidateFound",
+      previous: previousSnapshot.pfapBreakdown.failedExpectedCandidateFound,
+      current: currentSnapshot.pfapBreakdown.failedExpectedCandidateFound,
+      delta: currentSnapshot.pfapBreakdown.failedExpectedCandidateFound - previousSnapshot.pfapBreakdown.failedExpectedCandidateFound,
+    },
+    {
+      metric: "failedExpectedCandidateProtected",
+      previous: previousSnapshot.pfapBreakdown.failedExpectedCandidateProtected,
+      current: currentSnapshot.pfapBreakdown.failedExpectedCandidateProtected,
+      delta: currentSnapshot.pfapBreakdown.failedExpectedCandidateProtected - previousSnapshot.pfapBreakdown.failedExpectedCandidateProtected,
+    },
+    {
+      metric: "failedMalformedActual",
+      previous: previousSnapshot.pfapBreakdown.failedMalformedActual,
+      current: currentSnapshot.pfapBreakdown.failedMalformedActual,
+      delta: currentSnapshot.pfapBreakdown.failedMalformedActual - previousSnapshot.pfapBreakdown.failedMalformedActual,
+    },
+  ]);
+  console.log("");
+
+  printCaseDiffTable("New passes:", newPasses, options.diffLimit);
+  printCaseDiffTable("New regressions:", newRegressions, options.diffLimit);
+  printCaseDiffTable("Naturalistic regressions:", naturalisticRegressions, options.diffLimit);
+  printCaseDiffTable("Still failing but changed output:", stillFailingChanged, options.diffLimit);
+}
+
 function printResolutionTraceDebug(result: CaseResult) {
   const trace = result.resolutionTraceDebug;
   if (!trace) {
@@ -1642,6 +2675,11 @@ function printResolutionTraceDebug(result: CaseResult) {
 }
 
 function printSummary(results: CaseResult[], options: CliOptions) {
+  if (options.compact) {
+    printCompactSummary(results, options);
+    return;
+  }
+
   const labelPassed = countPassed(results, "labelPass");
   const resolutionPassed = countPassed(results, "resolutionPass");
   const createPassed = countPassed(results, "createPass");
@@ -1793,7 +2831,17 @@ function main() {
     return;
   }
 
-  printSummary(filteredResults, options);
+  if (options.diffOnly) {
+    writeSnapshot(filteredResults, options);
+    printComparisonReport(filteredResults, options);
+  } else {
+    printSummary(filteredResults, options);
+    writeSnapshot(filteredResults, options);
+    printComparisonReport(filteredResults, options);
+  }
+
+  writeCompactCategoryFiles(filteredResults, options);
+  writeCompactChunkFiles(filteredResults, options);
 
   const hasFailure = filteredResults.some((r) => !r.pass);
   if (hasFailure) {

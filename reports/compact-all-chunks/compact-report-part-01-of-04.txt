@@ -1,0 +1,628 @@
+=== Compact Topic Labeling Report Part 1 of 4 ===
+display mode: all cases
+cases in this file: 84
+
+--- direct_baseline ---
+
+[baseline-isolated] direct_baseline | direct-001 | PASS
+message: I want to learn about neurotransmitters, but I don't know where to start.
+expected: Neurotransmitters
+actual:   Neurotransmitters
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] direct_baseline | direct-002 | PASS
+message: Dopamine
+expected: Dopamine
+actual:   Dopamine
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] direct_baseline | direct-003 | PASS
+message: Can we go over action potentials?
+expected: Action Potentials
+actual:   Action Potentials
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] direct_baseline | direct-004 | PASS
+message: Could you help me understand osmosis?
+expected: Osmosis
+actual:   Osmosis
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] direct_baseline | direct-005 | PASS
+message: can u help me w mitosis pls
+expected: Mitosis
+actual:   Mitosis
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] direct_baseline | direct-006 | FAIL
+message: I need help understanding insurance deductible.
+expected: Insurance Deductible
+actual:   Need Help Understanding Insurance Deductible
+checks: label=N resolution=N create=N matched=Y forbidden=Y
+layers: label,resolution,create_flag | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+resolution: expected=created_new_candidate actual=no_match | create expected=true actual=false | matched expected=n/a actual=n/a
+
+--- broad_to_narrow ---
+
+[baseline-isolated] broad_to_narrow | focus-001 | PASS
+message: I'm learning about neurotransmitters, receptors, and reuptake, but I'm mainly confused about reuptake.
+expected: Reuptake
+actual:   Reuptake
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] broad_to_narrow | focus-002 | FAIL
+message: I'm learning chemistry right now and most of it is okay, but the thing I actually need help with is electronegativity.
+expected: Electronegativity
+actual:   Most of It
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+
+[baseline-isolated] broad_to_narrow | focus-003 | PASS
+message: At first I thought meiosis was the hard part, but after looking again I think it's really just crossing over that I don't understand yet.
+expected: Crossing Over
+actual:   Crossing Over
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] broad_to_narrow | focus-004 | PASS
+message: I've been reading about budgeting and saving and debt and all of that, but the actual thing that keeps messing me up is compound interest.
+expected: Compound Interest
+actual:   Compound Interest
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] broad_to_narrow | focus-005 | PASS
+message: I keep saying I am reviewing the nervous system, but the real bottleneck is the refractory period.
+expected: Refractory Period
+actual:   Refractory Period
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] broad_to_narrow | focus-006 | PASS
+message: Programming in general is not the issue right now. What I actually need help understanding is the event loop.
+expected: Event Loop
+actual:   Event Loop
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+--- structured_phrase ---
+
+[baseline-isolated] structured_phrase | of-001 | PASS
+message: Why can't I understand the rules of curling?
+expected: Rules of Curling
+actual:   Rules of Curling
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] structured_phrase | of-002 | PASS
+message: Can you explain the phases of mitosis?
+expected: Phases of Mitosis
+actual:   Phases of Mitosis
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] structured_phrase | of-003 | FAIL
+message: I keep mixing up the layers of the skin.
+expected: Layers of the Skin
+actual:   Layers of
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] structured_phrase | of-004 | PASS
+message: I don't get the law of sines at all.
+expected: Law of Sines
+actual:   Law of Sines
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] structured_phrase | of-005 | PASS
+message: The law of cosines is the thing that keeps throwing me off.
+expected: Law of Cosines
+actual:   Law of Cosines
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] structured_phrase | of-006 | FAIL
+message: I keep getting confused by the speed of sound formula.
+expected: Speed of Sound
+actual:   Speed of Sound Formula
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+--- mechanism_question ---
+
+[baseline-isolated] mechanism_question | question-001 | FAIL
+message: How does reuptake work?
+expected: How Reuptake Works
+actual:   Reuptake
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] mechanism_question | question-002 | FAIL
+message: How do action potentials work?
+expected: How Action Potentials Work
+actual:   Action Potentials
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] mechanism_question | question-003 | PASS
+message: How does offside work in soccer?
+expected: Offside In Soccer
+actual:   Offside in Soccer
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] mechanism_question | question-004 | FAIL
+message: I don't get how interest on a credit card actually works.
+expected: Credit Card Interest
+actual:   Interest on
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: pfap_malformed_candidate_won | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] mechanism_question | question-005 | FAIL
+message: Why does negative feedback happen in homeostasis?
+expected: Why Negative Feedback Happens
+actual:   Es Negative Feedback Happen in
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: pfap_malformed_candidate_won | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+--- comparison ---
+
+[baseline-isolated] comparison | compare-001 | PASS
+message: What's the difference between mitosis and meiosis?
+expected: Mitosis vs Meiosis
+actual:   Mitosis vs Meiosis
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] comparison | compare-002 | FAIL
+message: We started mitosis and meiosis this week and I keep blending the two together. What's actually different between them?
+expected: Mitosis vs Meiosis
+actual:   Mitosis
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] comparison | compare-003 | FAIL
+message: I keep forgetting when to use your vs you're.
+expected: Your vs You're
+actual:   vs You're
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] comparison | compare-004 | PASS
+message: What's the difference between speed and velocity?
+expected: Speed vs Velocity
+actual:   Speed vs Velocity
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] comparison | compare-005 | FAIL
+message: I don't know when to use law of sines vs law of cosines.
+expected: Law of Sines vs Law of Cosines
+actual:   To Use Law of Sines
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] comparison | compare-006 | FAIL
+message: Metaphase and anaphase still feel basically the same in my head.
+expected: Metaphase vs Anaphase
+actual:   Metaphase
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+--- context_recovery ---
+
+[baseline-isolated] context_recovery | context-001 | PASS
+message: My textbook has a formula about the speed of sound, but I don't get it.
+expected: Speed of Sound
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] context_recovery | context-002 | FAIL
+message: In lecture we were doing action potentials and threshold and all that, but the part I'm actually confused about is depolarization.
+expected: Depolarization
+actual:   Action Potentials
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+
+[baseline-isolated] context_recovery | context-003 | FAIL
+message: I'm doing homework on triangles right now, but what I'm really not understanding is the law of cosines.
+expected: Law of Cosines
+actual:   I'm Doing Homework on Triangles Right
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+
+[baseline-isolated] context_recovery | context-004 | FAIL
+message: We're doing a section on waves in class. Most of it is okay. The actual thing that confuses me is the speed of sound part.
+expected: Speed of Sound
+actual:   Section on Waves in Class
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] context_recovery | context-005 | PASS
+message: We are doing probability in class and most of the examples are fine, but standard deviation is where I stop knowing what I am supposed to picture.
+expected: Standard Deviation
+actual:   Standard Deviation
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+--- buried_language_target ---
+
+[baseline-isolated] buried_language_target | spanish-001 | FAIL
+message: Why can't I get the small words in spanish? It's like the word order is really bothering me, like the word se has so many meanings and I dont knwo where to start.
+expected: Word Order In Spanish
+actual:   Se in Spanish
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] buried_language_target | spanish-002 | FAIL
+message: Spanish in general is fine, vocab is mostly fine, but honestly the actual thing throwing me off is se because every time I think I know what it is doing, it kind of does something else.
+expected: Se In Spanish
+actual:   Spanish in General
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: broad_anchor_beat_buried_bottleneck | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] buried_language_target | spanish-003 | PASS
+message: The weird part is I can know all the spanish words separately, but when the sentence actually happens I stop trusting myself because the word order makes everything feel backwards.
+expected: Word Order In Spanish
+actual:   Word Order in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] buried_language_target | spanish-004 | PASS
+message: Spanish is the only thing lately that has made me feel weirdly helpless, because I can memorize vocab for hours and then one sentence with se shows up and I feel like I understood nothing.
+expected: Se In Spanish
+actual:   Se in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] buried_language_target | spanish-005 | FAIL
+message: I can translate the words, but sentence order in Spanish makes me feel like I am reading backwards.
+expected: Word Order In Spanish
+actual:   Sentence Order in Spanish Makes
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: pfap_malformed_candidate_won | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] buried_language_target | spanish-006 | PASS
+message: The tiny word se is what keeps throwing me off in Spanish.
+expected: Se In Spanish
+actual:   Se in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] buried_language_target | tax-001 | PASS
+message: The whole terminology and jargon of taxes and forms is weird and I want to understand it in my own language but I don't get it or where to even start on how to get it bettter.
+expected: Tax Terminology And Forms
+actual:   Tax Terminology and Forms
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] buried_language_target | tax-002 | PASS
+message: I am not even interested in taxes right now, I just need the terminology to stop sounding like nonsense long enough for me to get through the forms.
+expected: Tax Terminology And Forms
+actual:   Tax Terminology and Forms
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] buried_language_target | tax-003 | PASS
+message: Taxes as a subject are whatever, but the actual issue for me is the terminology because I read one line and realize I do not know what half the words mean.
+expected: Tax Terminology
+actual:   Tax Terminology
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] buried_language_target | tax-004 | PASS
+message: I know this sounds dramatic but the tax jargon genuinely makes me feel stupid because I can't tell if I am failing at taxes or just failing at vocabulary.
+expected: Tax Jargon
+actual:   Tax Jargon
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] buried_language_target | tax-005 | FAIL
+message: The tax forms are what make me freeze because every line sounds like it assumes I already know five other words.
+expected: Tax Terminology And Forms
+actual:   Tax Forms
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+--- diverse_academic ---
+
+[baseline-isolated] diverse_academic | stats-001 | PASS
+message: Probability was mostly manageable until standard deviation showed up, and now I am not even sure what I am supposed to be picturing anymore.
+expected: Standard Deviation
+actual:   Standard Deviation
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] diverse_academic | econ-001 | PASS
+message: Economics is okay in a broad sense, but the thing I always seem to lose track of is opportunity cost because it sounds simple until I actually try to use it.
+expected: Opportunity Cost
+actual:   Opportunity Cost
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] diverse_academic | earth-001 | FAIL
+message: Plate tectonics is one of those things where I feel like I understand it for five seconds and then I hear subduction again and realize I don't really know what is moving where.
+expected: Subduction
+actual:   Understand It for Five Seconds
+checks: label=N resolution=N create=N matched=Y forbidden=Y
+layers: label,resolution,create_flag | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+resolution: expected=created_new_candidate actual=no_match | create expected=true actual=false | matched expected=n/a actual=n/a
+
+[baseline-isolated] diverse_academic | bio-001 | PASS
+message: I know homeostasis is the bigger topic, but the thing I actually need help with is negative feedback because that is the part that keeps sounding abstract to me.
+expected: Negative Feedback
+actual:   Negative Feedback
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] diverse_academic | cs-001 | PASS
+message: Programming is fine until people start talking about the event loop like it is obvious, and then I realize I do not actually know what is happening under the surface.
+expected: Event Loop
+actual:   Event Loop
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] diverse_academic | music-001 | PASS
+message: Music theory overall is not impossible, but secondary dominants are the thing that always make me feel like I missed some earlier explanation everybody else got.
+expected: Secondary Dominants
+actual:   Secondary Dominants
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+--- emotion_topicful ---
+
+[baseline-isolated] emotion_topicful | disinterest-001 | PASS
+message: Not gonna lie I am kind of over this unit, but if I have to learn something it is probably membrane potential because that is the thing that still does not click.
+expected: Membrane Potential
+actual:   Membrane Potential
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] emotion_topicful | disinterest-002 | PASS
+message: I guess I should probably understand equilibrium constant eventually, but right now it just feels like one more symbol-heavy thing I am pretending to follow.
+expected: Equilibrium Constant
+actual:   Equilibrium Constant
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] emotion_topicful | emotion-001 | FAIL
+message: This is embarrassing but I keep messing up mitosis because metaphase and anaphase still feel basically the same in my head and every time I see a question I panic a little.
+expected: Metaphase vs Anaphase
+actual:   Mitosis
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] emotion_topicful | emotion-002 | FAIL
+message: I get so irritated every time the topic of reuptake comes back because I think I finally understand it and then one tiny wording change makes me feel like I never understood it at all.
+expected: Reuptake
+actual:   Topic of Reuptake Comes Back
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[baseline-isolated] emotion_topicful | emotion-003 | PASS
+message: I feel dumb saying this, but depolarization is the thing that makes the whole neuron explanation fall apart for me.
+expected: Depolarization
+actual:   Depolarization
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+--- paragraph_context ---
+
+[baseline-isolated] paragraph_context | paragraph-001 | FAIL
+message: We're doing a unit on neurotransmission right now. I kind of understand the overall idea, but I keep getting lost when people talk about reuptake and what it changes. Could we go over that?
+expected: Reuptake
+actual:   Unit on Neurotransmission Right
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+
+[baseline-isolated] paragraph_context | paragraph-002 | PASS
+message: In class we're doing waves and sound. The worksheet has a formula for the speed of sound and everyone else seems to get what the variables are doing, but I don't. I think that's the part I need help with.
+expected: Speed of Sound
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] paragraph_context | paragraph-003 | PASS
+message: I was doing practice questions for bio and I thought I was confused about mitosis generally. But after looking again I think it's really just metaphase vs anaphase that I keep mixing up.
+expected: Metaphase vs Anaphase
+actual:   Metaphase vs Anaphase
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] paragraph_context | paragraph-004 | FAIL
+message: My teacher explained budgeting, fixed expenses, variable expenses, debt, and saving, and most of that was okay. But I still don't really know how to make a budget that balances, and that seems to be the part that makes every example fall apart for me.
+expected: Balancing a Budget
+actual:   Teacher Explained Budgeting Fixed Expenses
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+
+[baseline-isolated] paragraph_context | paragraph-005 | FAIL
+message: I thought I was asking about loans in general, but honestly the real issue is principal because every explanation uses the word like I am already supposed to understand what part of the total it refers to.
+expected: Loan Principal
+actual:   Loans in General
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: broad_anchor_beat_buried_bottleneck | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+--- noisy_natural_language ---
+
+[baseline-isolated] noisy_natural_language | noise-001 | PASS
+message: my textbook is talking about the speed of sound and i honestly dont get it
+expected: Speed of Sound
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] noisy_natural_language | noise-002 | PASS
+message: uhh... can we go over action potentials??
+expected: Action Potentials
+actual:   Action Potentials
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] noisy_natural_language | noise-003 | PASS
+message: can u help me w mitosis pls
+expected: Mitosis
+actual:   Mitosis
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] noisy_natural_language | noise-004 | PASS
+message: spanish is ok until se shows up n then i dont knwo what is happening
+expected: Se In Spanish
+actual:   Se in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+--- null_cases ---
+
+[baseline-isolated] null_cases | null-001 | PASS
+message: I don't get it.
+expected: <null>
+actual:   <null>
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] null_cases | null-002 | PASS
+message: Can you help me with this?
+expected: <null>
+actual:   <null>
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] null_cases | null-003 | PASS
+message: I do not know, I am kind of annoyed and tired and this whole thing is just not landing and I feel like I am missing something basic but I cannot even tell what the actual topic is anymore.
+expected: <null>
+actual:   <null>
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] null_cases | null-004 | PASS
+message: Can you maybe help me but also I do not even know with what exactly, I just know I keep getting stuck and then zoning out.
+expected: <null>
+actual:   <null>
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] null_cases | null-005 | PASS
+message: Ugh I do not even know. I am annoyed and tired and nothing is sticking.
+expected: <null>
+actual:   <null>
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+--- reuse_existing ---
+
+[baseline-isolated] reuse_existing | stay-001 | FAIL
+message: Can you quiz me on neurotransmitters?
+expected: Neurotransmitters
+actual:   On Neurotransmitters
+checks: label=N resolution=Y create=Y matched=N forbidden=N
+layers: label,matched_topic,forbidden | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Neurotransmitters actual=n/a
+
+[baseline-isolated] reuse_existing | stay-002 | PASS
+message: Can we go over that again?
+expected: <unspecified>
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] reuse_existing | stay-003 | PASS
+message: I still don't really get it.
+expected: <unspecified>
+actual:   Reuptake
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+--- switching ---
+
+[baseline-isolated] switching | switch-001 | PASS
+message: Actually I want to learn about budgeting now.
+expected: Budgeting
+actual:   Budgeting
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] switching | switch-002 | PASS
+message: Can we go back to mitosis instead?
+expected: Mitosis
+actual:   Mitosis
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+--- existing_vs_new_narrow ---
+
+[baseline-isolated] existing_vs_new_narrow | existing-narrow-001 | PASS
+message: Spanish is still the big topic, but the thing I actually need help with is se.
+expected: Se In Spanish
+actual:   Se in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] existing_vs_new_narrow | existing-narrow-002 | PASS
+message: Taxes is still the big topic, but right now the actual blocker is the terminology and forms.
+expected: Tax Terminology And Forms
+actual:   Tax Terminology and Forms
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] existing_vs_new_narrow | existing-narrow-003 | FAIL
+message: We can stay in neurotransmitters generally, but the specific thing I need to understand is reuptake.
+expected: Reuptake
+actual:   Stay in Neurotransmitters Generally
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+
+--- sequence_baseline ---
+
+[baseline-sequence] sequence_baseline | sequence-001:step-1 | PASS
+message: I want to learn about neurotransmitters.
+expected: Neurotransmitters
+actual:   Neurotransmitters
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-sequence] sequence_baseline | sequence-001:step-2 | PASS
+message: Actually I want to learn about budgeting now.
+expected: Budgeting
+actual:   Budgeting
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-sequence] sequence_baseline | sequence-001:step-3 | FAIL
+message: Can you quiz me on budgeting?
+expected: Budgeting
+actual:   On Budgeting
+checks: label=N resolution=Y create=Y matched=N forbidden=N
+layers: label,matched_topic,forbidden | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Budgeting actual=n/a
+
+[baseline-sequence] sequence_baseline | sequence-002:step-1 | PASS
+message: In class we're doing waves and sound. The worksheet has a formula for the speed of sound and everyone else seems to get what the variables are doing, but I don't. I think that's the part I need help with.
+expected: Speed of Sound
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-sequence] sequence_baseline | sequence-002:step-2 | PASS
+message: Yeah, that exact part.
+expected: <unspecified>
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-sequence] sequence_baseline | sequence-003:step-1 | PASS
+message: I'm learning about neurotransmitters, receptors, and reuptake, but I'm mainly confused about reuptake.
+expected: Reuptake
+actual:   Reuptake
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
