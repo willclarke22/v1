@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-01T21:54:18.272Z",
+  "generatedAt": "2026-05-01T22:23:51.022Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,22 +8,22 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 317,
+    "labelPassed": 321,
     "resolutionPassed": 333,
     "createPassed": 334,
     "matchedTopicPassed": 335,
-    "endToEndPassed": 315,
-    "failed": 21
+    "endToEndPassed": 319,
+    "failed": 17
   },
   "scopeBreakdown": {
     "baseline-isolated": {
       "total": 78,
-      "labelPassed": 75,
+      "labelPassed": 77,
       "resolutionPassed": 77,
       "createPassed": 77,
       "matchedTopicPassed": 78,
-      "endToEndPassed": 75,
-      "failed": 3
+      "endToEndPassed": 77,
+      "failed": 1
     },
     "baseline-sequence": {
       "total": 21,
@@ -36,12 +36,12 @@
     },
     "blindv2-isolated": {
       "total": 25,
-      "labelPassed": 16,
+      "labelPassed": 17,
       "resolutionPassed": 24,
       "createPassed": 24,
       "matchedTopicPassed": 25,
-      "endToEndPassed": 16,
-      "failed": 9
+      "endToEndPassed": 17,
+      "failed": 8
     },
     "blindv2-sequence": {
       "total": 11,
@@ -72,12 +72,12 @@
     },
     "holdout-isolated": {
       "total": 58,
-      "labelPassed": 52,
+      "labelPassed": 53,
       "resolutionPassed": 58,
       "createPassed": 58,
       "matchedTopicPassed": 58,
-      "endToEndPassed": 52,
-      "failed": 6
+      "endToEndPassed": 53,
+      "failed": 5
     },
     "holdout-sequence": {
       "total": 20,
@@ -101,12 +101,12 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 255,
+      "labelPassed": 259,
       "resolutionPassed": 271,
       "createPassed": 271,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 255,
-      "failed": 18
+      "endToEndPassed": 259,
+      "failed": 14
     },
     "sequence": {
       "total": 63,
@@ -139,12 +139,12 @@
     },
     "broad_to_narrow": {
       "total": 16,
-      "labelPassed": 14,
+      "labelPassed": 15,
       "resolutionPassed": 15,
       "createPassed": 15,
       "matchedTopicPassed": 16,
-      "endToEndPassed": 14,
-      "failed": 2
+      "endToEndPassed": 15,
+      "failed": 1
     },
     "buried_language_target": {
       "total": 22,
@@ -211,12 +211,12 @@
     },
     "context_recovery": {
       "total": 5,
-      "labelPassed": 4,
+      "labelPassed": 5,
       "resolutionPassed": 5,
       "createPassed": 5,
       "matchedTopicPassed": 5,
-      "endToEndPassed": 4,
-      "failed": 1
+      "endToEndPassed": 5,
+      "failed": 0
     },
     "cooking": {
       "total": 4,
@@ -526,12 +526,12 @@
     },
     "paragraph_context": {
       "total": 18,
-      "labelPassed": 13,
+      "labelPassed": 15,
       "resolutionPassed": 18,
       "createPassed": 18,
       "matchedTopicPassed": 18,
-      "endToEndPassed": 13,
-      "failed": 5
+      "endToEndPassed": 15,
+      "failed": 3
     },
     "plumbing": {
       "total": 4,
@@ -661,7 +661,7 @@
     }
   },
   "layerBreakdown": {
-    "label": 19,
+    "label": 15,
     "resolution": 3,
     "create_flag": 2,
     "matched_topic": 1,
@@ -672,19 +672,19 @@
     "expected_label_extracted_but_lost_competition": 1,
     "expected_label_present_in_message_but_not_extracted": 4,
     "good_label_but_creation_blocked": 2,
-    "pfap_protected_candidate_lost_final_arbitration": 7,
+    "pfap_protected_candidate_lost_final_arbitration": 3,
     "uncategorized_failure": 5
   },
   "pfapBreakdown": {
-    "failedCount": 21,
-    "failedWithProtectedCandidates": 19,
-    "failedExpectedCandidateFound": 9,
-    "failedExpectedCandidateProtected": 8,
+    "failedCount": 17,
+    "failedWithProtectedCandidates": 15,
+    "failedExpectedCandidateFound": 5,
+    "failedExpectedCandidateProtected": 4,
     "failedMalformedActual": 1,
     "likelyIssueBreakdown": {
       "pfap_expected_candidate_needs_protection_metadata": 1,
       "pfap_expected_label_partially_extracted_canonicalization_needed": 11,
-      "pfap_protected_candidate_lost_final_arbitration": 7,
+      "pfap_protected_candidate_lost_final_arbitration": 3,
       "unknown": 2
     }
   },
@@ -1014,7 +1014,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9800000000000001,
+      "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -1448,7 +1448,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.52,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -1659,32 +1659,27 @@
       "description": "math homework context then exact law",
       "message": "I'm doing homework on triangles right now, but what I'm really not understanding is the law of cosines.",
       "expectedLabel": "Law of Cosines",
-      "actualLabel": "I'm Doing Homework on Triangles Right",
+      "actualLabel": "Law of Cosines",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Law of Cosines\" actualLabel=\"I'm Doing Homework on Triangles Right\""
-        }
-      ]
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::context-004",
@@ -1732,7 +1727,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.6200000000000001,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -2135,7 +2130,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9800000000000001,
+      "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -2458,7 +2453,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9499999999999998,
+      "actualConfidence": 0.52,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -2470,8 +2465,8 @@
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 2,
-      "actualCandidateRank": 2,
+      "expectedCandidateRank": 3,
+      "actualCandidateRank": 3,
       "layeredFailures": []
     },
     {
@@ -2489,7 +2484,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.8180000000000001,
+      "actualConfidence": 0.52,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -2501,8 +2496,8 @@
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 3,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 1,
-      "actualCandidateRank": 1,
+      "expectedCandidateRank": 2,
+      "actualCandidateRank": 2,
       "layeredFailures": []
     },
     {
@@ -2545,32 +2540,27 @@
       "description": "rambling budgeting message with concrete practical target",
       "message": "My teacher explained budgeting, fixed expenses, variable expenses, debt, and saving, and most of that was okay. But I still don't really know how to make a budget that balances, and that seems to be the part that makes every example fall apart for me.",
       "expectedLabel": "Balancing a Budget",
-      "actualLabel": "Teacher Explained Budgeting Fixed Expenses",
+      "actualLabel": "Balancing a Budget",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.52,
-      "labelPass": false,
+      "actualConfidence": 1,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 5,
       "pfapMalformedCount": 2,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
-      "actualCandidateRank": 4,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Balancing a Budget\" actualLabel=\"Teacher Explained Budgeting Fixed Expenses\""
-        }
-      ]
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::paragraph-005",
@@ -3230,7 +3220,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.8180000000000001,
+      "actualConfidence": 0.52,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -3242,8 +3232,8 @@
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 3,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 1,
-      "actualCandidateRank": 1,
+      "expectedCandidateRank": 2,
+      "actualCandidateRank": 2,
       "layeredFailures": []
     },
     {
@@ -4496,7 +4486,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9499999999999998,
+      "actualConfidence": 0.52,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -4508,8 +4498,8 @@
       "pfapProtectedCount": 3,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 1,
-      "actualCandidateRank": 1,
+      "expectedCandidateRank": 3,
+      "actualCandidateRank": 3,
       "layeredFailures": []
     },
     {
@@ -4718,7 +4708,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.6700000000000002,
       "labelPass": false,
       "resolutionPass": true,
       "createPass": true,
@@ -4810,32 +4800,27 @@
       "description": "broad chemistry domain but target is electronegativity",
       "message": "Chemistry is not even the problem in the broad sense. It is more that electronegativity is the thing that keeps showing up and making me realize I never built a stable understanding of it.",
       "expectedLabel": "Electronegativity",
-      "actualLabel": "Stable Understanding of It",
+      "actualLabel": "Electronegativity",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 3,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Electronegativity\" actualLabel=\"Stable Understanding of It\""
-        }
-      ]
+      "actualCandidateRank": 3,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-buried-004",
@@ -5007,7 +4992,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.8100000000000003,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -5415,7 +5400,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.7420000000000002,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -5508,7 +5493,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.8100000000000003,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -5601,7 +5586,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.8100000000000003,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -6293,7 +6278,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.55,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -6471,7 +6456,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.8100000000000003,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -7533,33 +7518,28 @@
       "description": "paragraph with explicit late focus",
       "message": "We started talking about memory in class, and most of it made sense. Then the hippocampus came up, and that's the part where I stopped understanding what was going on.",
       "expectedLabel": "Hippocampus",
-      "actualLabel": "Most of It Made Sense",
+      "actualLabel": "Hippocampus",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.918,
-      "labelPass": false,
+      "actualConfidence": 1,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 4,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 2,
-      "actualCandidateRank": 4,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Hippocampus\" actualLabel=\"Most of It Made Sense\""
-        }
-      ]
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "blindv2-isolated::blindv2-paragraph-002",
@@ -7646,7 +7626,7 @@
       "actualShouldCreate": true,
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.7200000000000002,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,

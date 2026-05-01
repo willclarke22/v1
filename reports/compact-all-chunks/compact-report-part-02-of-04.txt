@@ -381,12 +381,12 @@ actual:   Compound Interest
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] broad_to_narrow | holdout-buried-003 | FAIL
+[holdout-isolated] broad_to_narrow | holdout-buried-003 | PASS
 message: Chemistry is not even the problem in the broad sense. It is more that electronegativity is the thing that keeps showing up and making me realize I never built a stable understanding of it.
 expected: Electronegativity
-actual:   Stable Understanding of It
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Electronegativity
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] broad_to_narrow | holdout-buried-004 | PASS
 message: I keep telling myself I am reviewing the nervous system, but that is too broad to even be useful. The real bottleneck is the refractory period, because every explanation of it feels clear for ten seconds and then disappears on me.

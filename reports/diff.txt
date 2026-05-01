@@ -1,12 +1,12 @@
 
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
-Previous snapshot generatedAt: 2026-05-01T21:26:44.095Z
-Current snapshot generatedAt: 2026-05-01T21:51:32.052Z
+Previous snapshot generatedAt: 2026-05-01T21:54:18.272Z
+Current snapshot generatedAt: 2026-05-01T22:20:29.652Z
 
-overall label: 313/336 -> 317/336 (+4)
-overall e2e:   311/336 -> 315/336 (+4)
-failed:        25 -> 21 (-4)
+overall label: 317/336 -> 321/336 (+4)
+overall e2e:   315/336 -> 319/336 (+4)
+failed:        21 -> 17 (-4)
 
 Case movement:
 New passes: 4
@@ -20,59 +20,62 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
-baseline-isolated: label 74/78 -> 75/78 (+1), e2e 74/78 -> 75/78 (+1), failed 4 -> 3 (-1)
-holdout-isolated: label 49/58 -> 52/58 (+3), e2e 49/58 -> 52/58 (+3), failed 9 -> 6 (-3)
+baseline-isolated: label 75/78 -> 77/78 (+2), e2e 75/78 -> 77/78 (+2), failed 3 -> 1 (-2)
+blindv2-isolated: label 16/25 -> 17/25 (+1), e2e 16/25 -> 17/25 (+1), failed 9 -> 8 (-1)
+holdout-isolated: label 52/58 -> 53/58 (+1), e2e 52/58 -> 53/58 (+1), failed 6 -> 5 (-1)
 
 Category movement:
-buried_language_target: label 19/22 -> 22/22 (+3), e2e 19/22 -> 22/22 (+3), failed 3 -> 0 (-3)
-domain_shaping: label 6/8 -> 7/8 (+1), e2e 6/8 -> 7/8 (+1), failed 2 -> 1 (-1)
+broad_to_narrow: label 14/16 -> 15/16 (+1), e2e 14/16 -> 15/16 (+1), failed 2 -> 1 (-1)
+context_recovery: label 4/5 -> 5/5 (+1), e2e 4/5 -> 5/5 (+1), failed 1 -> 0 (-1)
+paragraph_context: label 13/18 -> 15/18 (+2), e2e 13/18 -> 15/18 (+2), failed 5 -> 3 (-2)
 
 Failure-layer movement:
-label: 23 -> 19 (-4)
+label: 19 -> 15 (-4)
 
 Likely-failure-class movement:
-domain_shaping_failed: 5 -> 2 (-3)
-uncategorized_failure: 6 -> 5 (-1)
+pfap_protected_candidate_lost_final_arbitration: 7 -> 3 (-4)
 
 PFAP likely-issue movement:
-pfap_expected_label_partially_extracted_canonicalization_needed: 15 -> 11 (-4)
+pfap_protected_candidate_lost_final_arbitration: 7 -> 3 (-4)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 23 -> 19 (-4)
-failedExpectedCandidateFound: 9 -> 9 (0)
-failedExpectedCandidateProtected: 8 -> 8 (0)
+failedWithProtectedCandidates: 19 -> 15 (-4)
+failedExpectedCandidateFound: 9 -> 5 (-4)
+failedExpectedCandidateProtected: 8 -> 4 (-4)
 failedMalformedActual: 1 -> 1 (0)
 
 New passes:
 
---- buried_language_target (3) ---
-[baseline-isolated] buried_language_target | tax-005 | PASS
-message: The tax forms are what make me freeze because every line sounds like it assumes I already know five other words.
-expected: Tax Terminology And Forms
-actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[holdout-isolated] buried_language_target | holdout-tax-001 | PASS
-message: It is not even that taxes are automatically impossible, which I keep trying to remind myself of. The thing that makes me shut down is that the forms and the vocabulary feel like they were written for somebody who already knows the whole system, and then I start feeling behind before I even begin.
-expected: Tax Terminology And Forms
-actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[holdout-isolated] buried_language_target | holdout-tax-004 | PASS
-message: Taxes are the class topic, but the forms are what make me freeze because every box sounds like it assumes I already know five other words.
-expected: Tax Terminology And Forms
-actual:   Tax Terminology and Forms
+--- broad_to_narrow (1) ---
+[holdout-isolated] broad_to_narrow | holdout-buried-003 | PASS
+message: Chemistry is not even the problem in the broad sense. It is more that electronegativity is the thing that keeps showing up and making me realize I never built a stable understanding of it.
+expected: Electronegativity
+actual:   Electronegativity
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
 
---- domain_shaping (1) ---
-[holdout-isolated] domain_shaping | holdout-domain-001 | PASS
-message: I keep seeing deductible in insurance stuff and I keep pretending I know what it means from context, but I really do not.
-expected: Insurance Deductible
-actual:   Insurance Deductible
+--- context_recovery (1) ---
+[baseline-isolated] context_recovery | context-003 | PASS
+message: I'm doing homework on triangles right now, but what I'm really not understanding is the law of cosines.
+expected: Law of Cosines
+actual:   Law of Cosines
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+
+--- paragraph_context (2) ---
+[baseline-isolated] paragraph_context | paragraph-004 | PASS
+message: My teacher explained budgeting, fixed expenses, variable expenses, debt, and saving, and most of that was okay. But I still don't really know how to make a budget that balances, and that seems to be the part that makes every example fall apart for me.
+expected: Balancing a Budget
+actual:   Balancing a Budget
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[blindv2-isolated] paragraph_context | blindv2-paragraph-001 | PASS
+message: We started talking about memory in class, and most of it made sense. Then the hippocampus came up, and that's the part where I stopped understanding what was going on.
+expected: Hippocampus
+actual:   Hippocampus
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 

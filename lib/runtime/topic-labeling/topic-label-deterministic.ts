@@ -431,6 +431,7 @@ function candidateLooksCleanQuestionTarget(candidate: TopicCandidate) {
 function candidateLooksCleanExplicitConcept(candidate: TopicCandidate) {
   if (candidateLooksQuestionSynthesis(candidate)) return false;
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+  if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
   if (candidateLooksWeakNounChunk(candidate)) return false;
   if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate)) return false;
 
@@ -452,6 +453,7 @@ function candidateLooksProtectedDurableLabel(candidate: TopicCandidate) {
   if (!label) return false;
 
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+  if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
 
   return (
     candidateLooksCleanExplicitConcept(candidate) ||
@@ -644,6 +646,158 @@ function candidateLooksProblemFraming(candidate: TopicCandidate) {
   );
 }
 
+/**
+ * Patch F.6 generalization guard:
+ * Detect labels that describe the learner's state, setup activity, or
+ * problem-framing around the request rather than the durable thing MyWay
+ * should teach. These are useful diagnostic evidence, but they should not
+ * beat a concrete focus/bottleneck target in final arbitration.
+ */
+function candidateLooksLearnerStateOrSetupResidue(candidate: TopicCandidate) {
+  const label = cachedNormalizeLoose(getCandidateDisplayLabel(candidate));
+  const core = cachedNormalizeLoose(candidate.coreText);
+  const source = cachedNormalizeLoose(candidate.sourceClause);
+  const combined = `${label} ${core} ${source}`.trim();
+
+  if (!combined) return false;
+
+  const setupActivityLabel =
+    /^(?:i(?:'m| am)?|we(?:'re| are| were)?|they(?:'re| are| were)?)\s+(?:doing|working on|studying|reviewing|learning|covering|starting|started)\b.*\b(?:homework|worksheet|class|lecture|section|unit|chapter|right now|this week|today|notes?|practice(?: questions?| problems?)?)\b/i.test(label) ||
+    /^(?:homework|worksheet|class|lecture|section|unit|chapter|practice(?: questions?| problems?)?)\b.*\b(?:right now|this week|today|on|about|for)\b/i.test(label);
+
+  const learnerStateLabel =
+    /\b(?:stable|real|clear|actual|good|solid) understanding of (?:it|this|that|the thing|everything)\b/i.test(label) ||
+    /\b(?:understanding|confidence|trust|panic|spiral|freeze|freezing|shut(?:ting)? down|feeling behind|feeling lost|lost feeling)\b/i.test(label) &&
+      /\b(?:of it|of this|of that|my|me|i|myself|the whole thing)\b/i.test(label);
+
+  const broadFollowSetupLabel =
+    /^(?:i\s+can\s+)?(?:follow|understand|get)\s+most\s+of\b/i.test(label) ||
+    /^(?:most\s+of\s+)?(?:hockey|chemistry|biology|math|history|grammar|spanish|the\s+lesson|the\s+chapter|the\s+section)\s+(?:is|was|made|makes)\s+(?:fine|okay|sense)\b/i.test(label);
+
+  const stoppedUnderstandingResidueLabel =
+    /^(?:stopped?|stop|start(?:ed)?|begin|began)\s+(?:understanding|following|knowing)\b/i.test(label) ||
+    /^(?:what|why)\s+(?:was|is|the)\s+(?:going on|happening|rule is doing|play stops?)\b/i.test(label) ||
+    /^lose\s+track(?:\s+of)?\b/i.test(label) ||
+    /^lost\s+track(?:\s+of)?\b/i.test(label);
+
+  const negatedBroadScopeLabel =
+    /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:all|just|really|exactly)\s+of\b/i.test(label) ||
+    /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:the\s+)?(?:whole|big|main|actual|real)\b/i.test(label);
+
+  const problemExplanationLabel =
+    /\b(?:can'?t|cant|cannot|doesn'?t|doesnt|do not|don't|dont)\s+(?:solve|fix|answer|explain)\s+(?:all|everything|my|the)\b.*\b(?:problems?|questions?|confusion|issues?)\b/i.test(label) ||
+    /\b(?:what|why|how)\s+(?:i|we)\s+(?:am|are|'m|'re)?\s*(?:supposed to|meant to|trying to)\b/i.test(label) ||
+    /\b(?:broad|big[- ]?picture|overall)\s+(?:story|version|topic|area)\b/i.test(label) ||
+    /\b(?:where|when)\s+i\s+(?:realize|stop|start|begin|lose|lost|panic|freeze)\b/i.test(label);
+
+  // If the candidate's own source clause says it is merely setup/context, keep
+  // it out of durable-topic protection even when the shaped label looks nouny.
+  const sourceIsSetupFrame =
+    /\b(?:doing|working on|studying|reviewing|learning|covering|started|section on|unit on|homework on|worksheet on|in class|in lecture)\b/i.test(source) &&
+    !/\b(?:actual|real|specific|main|mainly|especially|confused about|stuck on|need help with|not understanding|don't understand|dont understand)\b/i.test(source);
+
+  return Boolean(
+    setupActivityLabel ||
+      learnerStateLabel ||
+      broadFollowSetupLabel ||
+      stoppedUnderstandingResidueLabel ||
+      negatedBroadScopeLabel ||
+      problemExplanationLabel ||
+      sourceIsSetupFrame
+  );
+}
+
+/**
+ * Patch F.6.1 generalization guard:
+ * Protect concrete targets introduced by "comes up / came up / shows up" in
+ * late bottleneck clauses. The pattern is domain-general:
+ *   "I can follow most of [domain], but once [concept] comes up..."
+ *   "Then [concept] came up, and that is where I stopped understanding..."
+ * The target is the concept that appears, not the learner-state/setup phrase.
+ */
+function candidateLooksCameUpFocusTarget(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile
+) {
+  if (!candidate.shouldCompeteAsTopic) return false;
+  if (candidate.isSubpartReference) return false;
+  if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+  if (candidateLooksWeakNounChunk(candidate)) return false;
+  if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
+
+  const label = getCandidateDisplayLabel(candidate);
+  if (!label || labelHasBadBoundaryShape(label) || !labelHasContentBearingHead(label)) {
+    return false;
+  }
+
+  const labelLoose = cachedNormalizeLoose(label);
+  const coreLoose = cachedNormalizeLoose(candidate.coreText);
+  const sourceLoose = cachedNormalizeLoose(candidate.sourceClause);
+  const messageLoose = cachedNormalizeLoose(message);
+  const searchable = `${sourceLoose} ${messageLoose}`.trim();
+
+  const candidateTerms = dedupe(
+    [coreLoose, labelLoose]
+      .flatMap((value) => {
+        if (!value) return [];
+        const withoutDomain = value.replace(/\s+in\s+[a-z][a-z'’-]+$/i, "").trim();
+        return [value, withoutDomain];
+      })
+      .filter((value) => cachedTokenize(value).length > 0 && cachedTokenize(value).length <= 5)
+  );
+
+  const escapedTerms = candidateTerms.map((term) =>
+    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  );
+  if (!escapedTerms.length) return false;
+
+  const appearsAsCameUpTarget = escapedTerms.some((term) => {
+    const conceptBeforeCameUp = new RegExp(
+      `\\b${term}\\b.{0,48}\\b(?:comes? up|came up|shows? up|showed up|appears?|appeared)\\b`,
+      "i"
+    ).test(searchable);
+
+    const cameUpBeforeConcept = new RegExp(
+      `\\b(?:once|when|then|until|if|after)\\b.{0,36}\\b${term}\\b.{0,48}\\b(?:comes? up|came up|shows? up|showed up|appears?|appeared)\\b`,
+      "i"
+    ).test(searchable);
+
+    const conceptAsThatPart = new RegExp(
+      `\\b${term}\\b.{0,80}\\b(?:that(?:'s| is)?|this is)\\s+(?:the\\s+)?(?:part|point|place|moment)\\b.{0,80}\\b(?:lost|stuck|stop(?:ped)? understanding|lose track|breaks?|falls apart)\\b`,
+      "i"
+    ).test(searchable);
+
+    return conceptBeforeCameUp || cameUpBeforeConcept || conceptAsThatPart;
+  });
+
+  if (!appearsAsCameUpTarget) return false;
+
+  const hasLearnerBreakCue =
+    /\b(?:lose track|lost track|lost|stuck|stop(?:ped)? understanding|do not understand|don't understand|dont understand|breaks?|falls apart|confus(?:e|ed|ing)|what (?:was|is) going on|why .+ stops?|what .+ rule is doing)\b/i.test(
+      searchable
+    );
+
+  const hasDomainSetup =
+    /\b(?:follow most of|understand most of|get most of|most of .+ makes? sense|most of it made sense|mostly okay|in class|section on|started talking about)\b/i.test(
+      searchable
+    ) || profile.hasBroadToNarrowShape || profile.hasLateBottleneckShape;
+
+  const candidateIsConcrete =
+    candidate.kind === "named_concept" ||
+    candidate.kind === "concept_phrase" ||
+    candidate.kind === "domain_shaped" ||
+    candidate.kind === "of_phrase" ||
+    candidate.kind === "focus_target" ||
+    candidateLooksDomainShapedByProfile(candidate, profile) ||
+    candidateLooksStructuredDurable(candidate) ||
+    candidateLooksProtectedDurableLabel(candidate) ||
+    candidateLooksDurablePracticalConcept(candidate);
+
+  return Boolean(candidateIsConcrete && (hasLearnerBreakCue || hasDomainSetup));
+}
+
 function candidateLooksMechanismLike(candidate: TopicCandidate, message: string) {
   const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
   const core = candidate.coreText.toLowerCase();
@@ -766,6 +920,7 @@ function candidateLooksBottleneckTarget(candidate: TopicCandidate, message: stri
     /\bdoesn'?t click\b/i.test(sourceClause) ||
     /\bstopped following\b/i.test(sourceClause) ||
     /\bbreaks my understanding\b/i.test(sourceClause) ||
+    /\b(?:once|when|then|until|if|after)\b.*\b(?:comes? up|came up|shows? up|showed up|appears?|appeared)\b/i.test(sourceClause) ||
     /\bwhere i (?:start getting lost|stopped following|lose track)\b/i.test(message)
   );
 }
@@ -811,6 +966,7 @@ function candidateLooksResidueLike(candidate: TopicCandidate) {
   if (!label) return true;
 
   if (candidateLooksMetaRequestQualityResidue(candidate)) return true;
+  if (candidateLooksLearnerStateOrSetupResidue(candidate)) return true;
   if (labelLooksArtifactLanguageTailResidue(label)) return true;
 
   // Protected durable labels are allowed even if they contain words that are
@@ -1806,6 +1962,10 @@ function candidateLooksDomainShapedByProfile(
   }
 
   if (profile.domainHints.includes("soccer") && /\boffside\b/.test(label)) {
+    return true;
+  }
+
+  if (profile.domainHints.includes("hockey") && /\b(?:icing|offside|penalt(?:y|ies)|power play|face[- ]?off)\b/.test(label)) {
     return true;
   }
 
@@ -3536,6 +3696,131 @@ function chooseArtifactLanguageBarrierOverrideCandidate(
   return null;
 }
 
+function candidateLooksConcreteFocusTargetForResidueSuppression(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile
+) {
+  if (!candidate.shouldCompeteAsTopic) return false;
+  if (candidate.isSubpartReference) return false;
+  if (candidateLooksResidueLike(candidate)) return false;
+  if (candidateLooksWeakNounChunk(candidate)) return false;
+  if (candidateLooksMalformedTopicLabel(candidate)) return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
+
+  const label = getCandidateDisplayLabel(candidate);
+  if (!label || labelHasBadBoundaryShape(label) || !labelHasContentBearingHead(label)) {
+    return false;
+  }
+
+  const specificity = cachedScoreSpecificity(label);
+  const isFocused =
+    candidateLooksLateConcreteLearningTarget(candidate, message, profile) ||
+    candidateLooksStrongLateBottleneck(candidate, message, profile) ||
+    candidateLooksCameUpFocusTarget(candidate, message, profile) ||
+    candidateLooksBottleneckTarget(candidate, message) ||
+    candidateInZone(candidate, profile.bottleneckZones) ||
+    candidateAfterContrast(candidate, profile) ||
+    candidateHasQualifier(candidate, "late_focus_target") ||
+    candidateHasQualifier(candidate, "cross_clause_recovery") ||
+    candidateHasQualifier(candidate, "paired_with_domain_anchor") ||
+    candidateHasQualifier(candidate, "narrowed_target") ||
+    candidateHasQualifier(candidate, "focus_target");
+
+  const isConcrete =
+    candidate.kind === "comparison_pair" ||
+    candidate.kind === "named_concept" ||
+    candidate.kind === "concept_phrase" ||
+    candidate.kind === "of_phrase" ||
+    candidate.kind === "domain_shaped" ||
+    candidate.kind === "focus_target" ||
+    candidateLooksProtectedDurableLabel(candidate) ||
+    candidateLooksStructuredDurable(candidate) ||
+    candidateLooksMechanismLike(candidate, message) ||
+    candidateLooksTerminologyLike(candidate) ||
+    candidateLooksDomainShapedByProfile(candidate, profile) ||
+    candidateLooksCameUpFocusTarget(candidate, message, profile) ||
+    candidateLooksStructuralRelationTarget(candidate, message, profile) ||
+    candidateLooksMeaningBarrierTarget(candidate, message, profile) ||
+    candidateLooksAbstractButUseful(candidate, message);
+
+  return Boolean(
+    isConcrete &&
+      (isFocused || candidateLooksAbstractButUseful(candidate, message) || profile.hasComparisonShape) &&
+      (specificity === "good" ||
+        specificity === "very_specific" ||
+        candidateLooksStructuredDurable(candidate) ||
+        candidateLooksProtectedDurableLabel(candidate) ||
+        candidateLooksMechanismLike(candidate, message))
+  );
+}
+
+function chooseResidueOverFocusSuppressionCandidate(
+  scoredCandidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile
+): TopicCandidate | null {
+  if (!scoredCandidates.length) return null;
+
+  const currentTop = scoredCandidates[0];
+  const topIsResidueFrame =
+    candidateLooksLearnerStateOrSetupResidue(currentTop) ||
+    candidateLooksProblemFraming(currentTop) ||
+    candidateLooksBroadSetupContextCandidate(currentTop, profile) ||
+    candidateLooksClauseWrapped(currentTop) ||
+    candidateLooksNoisyResidue(currentTop) ||
+    (candidateHasHighResidueRisk(currentTop) && !candidateLooksConceptPhrase(currentTop));
+
+  const highRankedResidueFrame = scoredCandidates.slice(0, 4).some((candidate) =>
+    candidateLooksLearnerStateOrSetupResidue(candidate) ||
+    candidateLooksProblemFraming(candidate) ||
+    candidateLooksBroadSetupContextCandidate(candidate, profile)
+  );
+
+  if (!topIsResidueFrame && !highRankedResidueFrame) return null;
+
+  const concreteTargets = scoredCandidates
+    .filter((candidate) =>
+      candidateLooksConcreteFocusTargetForResidueSuppression(candidate, message, profile)
+    )
+    .sort((a, b) => {
+      const aComparison = a.kind === "comparison_pair" ? 1 : 0;
+      const bComparison = b.kind === "comparison_pair" ? 1 : 0;
+      if (aComparison !== bComparison) return bComparison - aComparison;
+
+      const aLate = candidateLooksLateConcreteLearningTarget(a, message, profile) || candidateLooksCameUpFocusTarget(a, message, profile) ? 1 : 0;
+      const bLate = candidateLooksLateConcreteLearningTarget(b, message, profile) || candidateLooksCameUpFocusTarget(b, message, profile) ? 1 : 0;
+      if (aLate !== bLate) return bLate - aLate;
+
+      const aProtected = candidateLooksProtectedDurableLabel(a) ? 1 : 0;
+      const bProtected = candidateLooksProtectedDurableLabel(b) ? 1 : 0;
+      if (aProtected !== bProtected) return bProtected - aProtected;
+
+      const aSpecificity = cachedScoreSpecificity(getCandidateDisplayLabel(a));
+      const bSpecificity = cachedScoreSpecificity(getCandidateDisplayLabel(b));
+      const aSpecificityScore = aSpecificity === "very_specific" ? 2 : aSpecificity === "good" ? 1 : 0;
+      const bSpecificityScore = bSpecificity === "very_specific" ? 2 : bSpecificity === "good" ? 1 : 0;
+      if (aSpecificityScore !== bSpecificityScore) return bSpecificityScore - aSpecificityScore;
+
+      return b.score - a.score;
+    });
+
+  const bestTarget = concreteTargets[0] ?? null;
+  if (!bestTarget) return null;
+
+  // Conservative gate: only override residue/setup/problem-framing labels when
+  // the target is either clearly competitive, explicitly focused, or mechanism/
+  // comparison-shaped. This keeps the rule general without turning every low
+  // scoring noun into a topic.
+  if (topIsResidueFrame) return bestTarget;
+  if (bestTarget.score + 0.12 >= currentTop.score) return bestTarget;
+  if (bestTarget.kind === "comparison_pair" || candidateLooksAbstractButUseful(bestTarget, message)) {
+    return bestTarget;
+  }
+
+  return null;
+}
+
 function chooseWinningCandidate(
   scoredCandidates: TopicCandidate[],
   message: string,
@@ -3554,6 +3839,9 @@ function chooseWinningCandidate(
 
   const artifactLanguageBarrier = chooseArtifactLanguageBarrierOverrideCandidate(scoredCandidates, message, profile);
   if (artifactLanguageBarrier) return artifactLanguageBarrier;
+
+  const residueSuppression = chooseResidueOverFocusSuppressionCandidate(scoredCandidates, message, profile);
+  if (residueSuppression) return residueSuppression;
 
   const protectedFinal = chooseProtectedFinalCandidate(
     scoredCandidates,
@@ -3743,6 +4031,10 @@ function buildAmbiguityFlags(args: {
 
   if (bestCandidate && candidateLooksProblemFraming(bestCandidate)) {
     flags.push("problem_framing_candidate");
+  }
+
+  if (bestCandidate && candidateLooksLearnerStateOrSetupResidue(bestCandidate)) {
+    flags.push("learner_state_or_setup_residue_candidate");
   }
 
   if (bestCandidate && candidateLooksGeneralBucket(bestCandidate)) {
@@ -3973,6 +4265,7 @@ function buildConfidence(args: {
   if (bestCandidate && candidateLooksTailHeavy(bestCandidate)) confidence -= 0.08;
   if (bestCandidate && candidateLooksNoisyResidue(bestCandidate)) confidence -= 0.16;
   if (bestCandidate && candidateLooksProblemFraming(bestCandidate)) confidence -= 0.14;
+  if (bestCandidate && candidateLooksLearnerStateOrSetupResidue(bestCandidate)) confidence -= 0.18;
   if (bestCandidate && candidateLooksGeneralBucket(bestCandidate)) confidence -= 0.12;
   if (cachedLooksLikeSuspiciousLabel(canonicalLabel)) confidence -= 0.1;
   if (discourseProfile.hasNullOnlyEmotionalShape) confidence -= 0.24;

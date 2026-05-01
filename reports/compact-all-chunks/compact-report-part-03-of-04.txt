@@ -390,12 +390,12 @@ layers: none | likely: n/a | pfap: n/a
 
 --- paragraph_context ---
 
-[blindv2-isolated] paragraph_context | blindv2-paragraph-001 | FAIL
+[blindv2-isolated] paragraph_context | blindv2-paragraph-001 | PASS
 message: We started talking about memory in class, and most of it made sense. Then the hippocampus came up, and that's the part where I stopped understanding what was going on.
 expected: Hippocampus
-actual:   Most of It Made Sense
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Hippocampus
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [blindv2-isolated] paragraph_context | blindv2-paragraph-002 | FAIL
 message: My textbook has a formula for momentum, and I thought I was following everything. But once that showed up, everyone else seemed ahead of me.

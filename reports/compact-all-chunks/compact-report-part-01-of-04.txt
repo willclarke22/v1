@@ -231,12 +231,12 @@ actual:   Depolarization
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] context_recovery | context-003 | FAIL
+[baseline-isolated] context_recovery | context-003 | PASS
 message: I'm doing homework on triangles right now, but what I'm really not understanding is the law of cosines.
 expected: Law of Cosines
-actual:   I'm Doing Homework on Triangles Right
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Law of Cosines
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] context_recovery | context-004 | PASS
 message: We're doing a section on waves in class. Most of it is okay. The actual thing that confuses me is the speed of sound part.
@@ -436,12 +436,12 @@ actual:   Metaphase vs Anaphase
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] paragraph_context | paragraph-004 | FAIL
+[baseline-isolated] paragraph_context | paragraph-004 | PASS
 message: My teacher explained budgeting, fixed expenses, variable expenses, debt, and saving, and most of that was okay. But I still don't really know how to make a budget that balances, and that seems to be the part that makes every example fall apart for me.
 expected: Balancing a Budget
-actual:   Teacher Explained Budgeting Fixed Expenses
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Balancing a Budget
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] paragraph_context | paragraph-005 | PASS
 message: I thought I was asking about loans in general, but honestly the real issue is principal because every explanation uses the word like I am already supposed to understand what part of the total it refers to.
