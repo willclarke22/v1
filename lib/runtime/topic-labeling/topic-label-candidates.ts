@@ -980,8 +980,10 @@ function cleanupWrapperArtifactsFromSpan(args: {
   kind: TopicCandidateKind;
   qualifiers: string[];
 }) {
-  const original = args.span ? normalizeSurface(args.span) : null;
-  if (!original) return original;
+  const originalMaybe = args.span ? normalizeSurface(args.span) : null;
+  if (!originalMaybe) return originalMaybe;
+ 
+  const original = originalMaybe;
 
   // Keep comparison and QCS labels stable. Those are shaped intentionally by
   // dedicated extractors and PFAP, so wrapper cleanup should not rewrite them.
