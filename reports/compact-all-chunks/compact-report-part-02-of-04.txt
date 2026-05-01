@@ -20,20 +20,19 @@ layers: none | likely: n/a | pfap: n/a
 
 --- sequence_language ---
 
-[baseline-sequence] sequence_language | sequence-004:step-1 | FAIL
+[baseline-sequence] sequence_language | sequence-004:step-1 | PASS
 message: Why can't I get the small words in spanish? It's like the word order is really bothering me, like the word se has so many meanings and I dont knwo where to start.
 expected: Word Order In Spanish
-actual:   Se in Spanish
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Word Order in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[baseline-sequence] sequence_language | sequence-004:step-2 | FAIL
+[baseline-sequence] sequence_language | sequence-004:step-2 | PASS
 message: Yeah, that exact part. The sentence order part.
 expected: <unspecified>
 actual:   Sentence Order
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Word Order In Spanish actual=Se in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-sequence] sequence_language | sequence-005:step-1 | PASS
 message: The whole terminology and jargon of taxes and forms is weird and I want to understand it in my own language but I don't get it or where to even start on how to get it bettter.

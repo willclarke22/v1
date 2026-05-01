@@ -76,6 +76,7 @@ type DiscourseProfile = {
   hasMechanismRequestShape: boolean;
   hasComparisonShape: boolean;
   hasNullOnlyEmotionalShape: boolean;
+  hasStructuralRelationShape: boolean;
 
   domainHints: string[];
   targetHints: string[];
@@ -911,6 +912,188 @@ function messageHasComparisonShape(message: string) {
   );
 }
 
+/**
+ * Patch F.4 generalization guard:
+ * Detect the reusable confusion shape where the learner can name or see the
+ * local pieces, but the relation/order/structure/mapping between those pieces
+ * is what breaks understanding. This is broader than language word order and
+ * should not be treated as a Spanish-specific rule.
+ */
+function messageHasStructuralRelationConfusion(message: string) {
+  const normalized = cachedNormalizeLoose(message);
+
+  const hasRelationCue =
+    /\b(?:word order|sentence order|sentence structure|order of|ordered|arranged|arrangement|structure|relationship|relationships|relation|relations|connection|connections|connect|connected|fit together|fits together|go together|mapping|map onto|sequence|pattern|logic|cause and effect|cause-and-effect|chain|how (?:it|they|the parts|the pieces|the steps|the variables|the terms) (?:connect|relate|fit|go together|work together))\b/i.test(
+      normalized
+    ) ||
+    /\b(?:reading|read|feels? like i am reading|feel like i am reading) backwards\b/i.test(normalized);
+
+  const hasPieceCue =
+    /\b(?:words?|terms?|pieces?|parts?|steps?|variables?|examples?|events?|concepts?)\b.*\b(?:separately|individually|on their own|by themselves)\b/i.test(
+      normalized
+    ) ||
+    /\b(?:translate|know|understand|remember)\b.*\b(?:words?|terms?|pieces?|parts?|steps?|variables?|events?)\b/i.test(
+      normalized
+    );
+
+  const hasStruggleCue =
+    /\b(?:confus(?:e|ed|ing)|lost|stuck|bothering|breaks?|falls apart|mix(?:ing)? up|blend(?:ing)?|blur(?:ring)?|backwards|stop trusting|do not understand|don't understand|dont understand|do not get|don't get|dont get|hard to picture|mushy)\b/i.test(
+      normalized
+    );
+
+  return Boolean(hasRelationCue && (hasStruggleCue || hasPieceCue));
+}
+
+function labelHasStructuralRelationCue(label: string | null | undefined) {
+  const normalized = cachedNormalizeLoose(label);
+  if (!normalized) return false;
+
+  return (
+    /\b(?:word order|sentence order|sentence structure|relationship|relationships|relation|relations|connection|connections|concept mapping|mapping|sequence|pattern|logic|cause and effect|cause-and-effect|chain|structure|arrangement)\b/i.test(
+      normalized
+    ) ||
+    /\b(?:order|structure|relationship|relation|connection|mapping|sequence|pattern|logic|chain)\s+(?:of|in|between|for|among)\b/i.test(
+      normalized
+    )
+  );
+}
+
+function extractLanguageDomainDisplayFromText(text: string) {
+  const normalized = cachedNormalizeLoose(text);
+
+  const languageDisplays: Array<[RegExp, string]> = [
+    [/\bspanish\b/i, "Spanish"],
+    [/\bfrench\b/i, "French"],
+    [/\bgerman\b/i, "German"],
+    [/\bjapanese\b/i, "Japanese"],
+    [/\bkorean\b/i, "Korean"],
+    [/\bmandarin\b|\bchinese\b/i, "Mandarin"],
+    [/\blatin\b/i, "Latin"],
+    [/\benglish\b/i, "English"],
+    [/\bitalian\b/i, "Italian"],
+    [/\bportuguese\b/i, "Portuguese"],
+    [/\barabic\b/i, "Arabic"],
+  ];
+
+  return languageDisplays.find(([pattern]) => pattern.test(normalized))?.[1] ?? null;
+}
+
+function canonicalizeStructuralRelationLabelForPFAP(label: string | null, message: string) {
+  if (!label) return label;
+
+  const normalizedLabel = cachedNormalizeLoose(label);
+  const normalizedMessage = cachedNormalizeLoose(message);
+  const combined = `${normalizedLabel} ${normalizedMessage}`;
+  const language = extractLanguageDomainDisplayFromText(combined);
+
+  // In language-learning contexts, "sentence order" and "word order" are the
+  // same structural-relation target for topic-labeling purposes. This is a
+  // synonym/canonicalization rule, not a Spanish-specific protection rule.
+  if (
+    language &&
+    (/\b(?:word order|sentence order|sentence structure)\b/i.test(combined) ||
+      /\b(?:reading|read) backwards\b/i.test(combined))
+  ) {
+    return `Word Order in ${language}`;
+  }
+
+  // General tail cleanup for structural-relation labels that accidentally keep
+  // the next local clause verb: "X order in Y makes..." -> "X order in Y".
+  const structuralPrefix = label.match(
+    /^(.+?\b(?:word order|sentence order|sentence structure|relationship|relationships|relation|relations|connection|connections|concept mapping|mapping|sequence|pattern|logic|cause[- ]and[- ]effect chain|chain|structure|arrangement)\b(?:\s+(?:of|in|between|for|among)\s+[A-Za-z0-9][A-Za-z0-9'’-]*(?:\s+[A-Za-z0-9][A-Za-z0-9'’-]*){0,4})?)(?:\s+(?:makes?|make|feels?|feel|is|are|was|were|gets?|got|keeps?|starts?|stops?|because|when|where|that)\b.*)?$/i
+  );
+
+  if (structuralPrefix?.[1]) {
+    const shaped = shapeDisplayLabel(structuralPrefix[1]);
+    if (shaped && !labelHasBadBoundaryShape(shaped) && labelHasContentBearingHead(shaped)) {
+      return shaped;
+    }
+  }
+
+  return label;
+}
+
+function candidateLooksStructuralRelationTarget(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile
+) {
+  if (!profile.hasStructuralRelationShape && !messageHasStructuralRelationConfusion(message)) {
+    return false;
+  }
+  if (!candidate.shouldCompeteAsTopic) return false;
+  if (candidate.isSubpartReference) return false;
+  if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+  if (candidateLooksWeakNounChunk(candidate)) return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
+
+  const label = getCandidateDisplayLabel(candidate);
+  const labelLoose = cachedNormalizeLoose(label);
+  const sourceLoose = cachedNormalizeLoose(candidate.sourceClause);
+  const canonical = canonicalizeStructuralRelationLabelForPFAP(label, message);
+
+  const hasRelationCue =
+    labelHasStructuralRelationCue(label) ||
+    labelHasStructuralRelationCue(candidate.coreText) ||
+    labelHasStructuralRelationCue(candidate.sourceClause) ||
+    (canonical != null && cachedNormalizeLoose(canonical) !== labelLoose);
+
+  if (!hasRelationCue) return false;
+  if (labelHasBadBoundaryShape(canonical ?? label)) return false;
+  if (!labelHasContentBearingHead(canonical ?? label)) return false;
+
+  const hasLearnerFocus =
+    candidateLooksBottleneckTarget(candidate, message) ||
+    candidateInZone(candidate, profile.bottleneckZones) ||
+    candidateAfterContrast(candidate, profile) ||
+    /\b(?:confus(?:e|ed|ing)|bothering|lost|stuck|breaks?|falls apart|backwards|stop trusting|do not understand|don't understand|dont understand|do not get|don't get|dont get)\b/i.test(
+      sourceLoose
+    );
+
+  return hasLearnerFocus || candidateLooksDomainShapedByProfile(candidate, profile);
+}
+
+function candidateLooksLocalExampleTokenInStructuralFrame(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile
+) {
+  if (!profile.hasStructuralRelationShape && !messageHasStructuralRelationConfusion(message)) {
+    return false;
+  }
+  if (candidateLooksStructuralRelationTarget(candidate, message, profile)) return false;
+  if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+  if (candidateLooksWeakNounChunk(candidate)) return false;
+
+  const label = getCandidateDisplayLabel(candidate);
+  const labelLoose = cachedNormalizeLoose(label);
+  const coreLoose = cachedNormalizeLoose(candidate.coreText);
+  const sourceLoose = cachedNormalizeLoose(candidate.sourceClause);
+  const tokens = cachedTokenize(label);
+
+  const localTokenWithDomain = /^[a-z0-9'’-]+\s+in\s+[a-z][a-z'’-]+$/i.test(labelLoose);
+  const shortLocalToken = tokens.length <= 2 || localTokenWithDomain;
+
+  if (!shortLocalToken) return false;
+
+  const explicitlyNamedAsActualLocalTarget =
+    /\b(?:actual|real|specific|main|mainly|especially|the thing|the part)\b/i.test(sourceLoose) &&
+    (sourceLoose.includes(labelLoose) || sourceLoose.includes(coreLoose));
+
+  if (explicitlyNamedAsActualLocalTarget) return false;
+
+  const introducedAsExample =
+    new RegExp(`\\b(?:word|term|token|example|like|such as|including)\\s+(?:the\\s+)?${coreLoose.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(
+      cachedNormalizeLoose(message)
+    );
+
+  return (
+    candidateLooksObjectOnly(candidate) ||
+    candidateLooksDomainShapedByProfile(candidate, profile) ||
+    introducedAsExample
+  );
+}
+
 
 /**
  * Patch F.3 generalization guard:
@@ -1214,6 +1397,7 @@ function buildDiscourseProfile(
   const hasTerminologyBarrierShape = messageHasTerminologyBarrier(normalized);
   const hasMechanismRequestShape = messageRequestsMechanism(normalized);
   const hasComparisonShape = messageHasComparisonShape(normalized);
+  const hasStructuralRelationShape = messageHasStructuralRelationConfusion(normalized);
 
   const hasAnyDurableConceptCue = messageHasDurableConceptCue(normalized);
 
@@ -1227,6 +1411,7 @@ function buildDiscourseProfile(
   if (hasLanguageBarrierShape) notes.push("language_barrier_shape_detected");
   if (hasTerminologyBarrierShape) notes.push("terminology_barrier_shape_detected");
   if (hasNullOnlyEmotionalShape) notes.push("null_only_emotional_shape_detected");
+  if (hasStructuralRelationShape) notes.push("structural_relation_shape_detected");
   if (messageHasMetaNoStableTopicWithoutDurableCue(normalized)) {
     notes.push("meta_no_stable_topic_without_durable_cue_detected");
   }
@@ -1243,6 +1428,7 @@ function buildDiscourseProfile(
     hasMechanismRequestShape,
     hasComparisonShape,
     hasNullOnlyEmotionalShape,
+    hasStructuralRelationShape,
     domainHints: extractDomainHintsFromText(message),
     targetHints: [],
     notes,
@@ -1377,7 +1563,7 @@ function candidateLooksDomainShapedByProfile(
 
   if (
     profile.domainHints.includes("spanish") &&
-    (/\bse\b/.test(label) || /\bword order\b/.test(label))
+    (/\bse\b/.test(label) || /\bword order\b/.test(label) || /\bsentence order\b/.test(label))
   ) {
     return true;
   }
@@ -1422,6 +1608,7 @@ function candidateLooksStrongLateBottleneck(
       candidateLooksPairedTarget(candidate) ||
       candidateLooksNarrowedTarget(candidate) ||
       candidateLooksDomainShapedByProfile(candidate, profile) ||
+      candidateLooksStructuralRelationTarget(candidate, message, profile) ||
       candidateLooksTerminologyLike(candidate) ||
       candidateLooksQuestionSynthesis(candidate) ||
       candidateLooksProtectedDurableLabel(candidate) ||
@@ -1670,6 +1857,21 @@ function buildCandidateScoreBreakdown(args: {
   if (discourseProfile.hasLanguageBarrierShape && candidateLooksDomainShapedByProfile(candidate, discourseProfile)) {
     discourseRoleWeight += 0.16;
     durabilityWeight += 0.08;
+  }
+
+  if (candidateLooksStructuralRelationTarget(candidate, message, discourseProfile)) {
+    // Patch F.4: when the learner frames the blocker as relation/order/structure
+    // between pieces, reward the structural relation target over a local example token.
+    discourseRoleWeight += 0.28;
+    durabilityWeight += 0.1;
+    conceptPhraseWeight += 0.08;
+  }
+
+  if (candidateLooksLocalExampleTokenInStructuralFrame(candidate, message, discourseProfile)) {
+    // The local token can be diagnostic evidence, but it should not beat the
+    // structural relation target unless the learner explicitly names it as the
+    // actual blocker.
+    competitionRiskPenalty += 0.24;
   }
 
   if (messageHasWhereToStartBarrier(message) && candidateLooksInstructionalTarget(candidate, message)) {
@@ -2739,6 +2941,10 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
   const normalizedLabel = cachedNormalizeLoose(label);
   const normalizedMessage = cachedNormalizeLoose(message);
 
+  const structuralRelationLabel = canonicalizeStructuralRelationLabelForPFAP(label, message);
+  if (structuralRelationLabel && cachedNormalizeLoose(structuralRelationLabel) !== normalizedLabel) {
+    return structuralRelationLabel;
+  }
 
   // Patch E: narrow canonical domain/phrase repairs. These only fire when
   // the message explicitly contains the durable target evidence, so they do
@@ -2927,6 +3133,71 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
   return label;
 }
 
+function chooseStructuralRelationOverrideCandidate(
+  scoredCandidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile
+): TopicCandidate | null {
+  if (!scoredCandidates.length) return null;
+  if (!profile.hasStructuralRelationShape && !messageHasStructuralRelationConfusion(message)) {
+    return null;
+  }
+
+  const currentTop = scoredCandidates[0];
+  const topIsLocalExample = candidateLooksLocalExampleTokenInStructuralFrame(
+    currentTop,
+    message,
+    profile
+  );
+  const topIsMalformedStructural =
+    candidateLooksStructuralRelationTarget(currentTop, message, profile) &&
+    candidateLooksMalformedTopicLabel(currentTop);
+
+  // Guard against overreach: do not override an already good concept label
+  // merely because the message also mentions a relation/chain. This prevents
+  // structural language from stealing cases where the actual topic is already
+  // selected correctly.
+  if (
+    !topIsLocalExample &&
+    !topIsMalformedStructural &&
+    candidateLooksProtectedDurableLabel(currentTop) &&
+    !candidateLooksStructuralRelationTarget(currentTop, message, profile)
+  ) {
+    return null;
+  }
+
+  const structuralCandidates = scoredCandidates
+    .filter((candidate) => candidateLooksStructuralRelationTarget(candidate, message, profile))
+    .sort((a, b) => {
+      const aCanonical = canonicalizeStructuralRelationLabelForPFAP(getCandidateDisplayLabel(a), message);
+      const bCanonical = canonicalizeStructuralRelationLabelForPFAP(getCandidateDisplayLabel(b), message);
+      const aCanonicalGain =
+        cachedNormalizeLoose(aCanonical) !== cachedNormalizeLoose(getCandidateDisplayLabel(a)) ? 1 : 0;
+      const bCanonicalGain =
+        cachedNormalizeLoose(bCanonical) !== cachedNormalizeLoose(getCandidateDisplayLabel(b)) ? 1 : 0;
+      if (aCanonicalGain !== bCanonicalGain) return bCanonicalGain - aCanonicalGain;
+
+      const aSpecificity = cachedScoreSpecificity(aCanonical);
+      const bSpecificity = cachedScoreSpecificity(bCanonical);
+      const aSpecificityScore = aSpecificity === "very_specific" ? 2 : aSpecificity === "good" ? 1 : 0;
+      const bSpecificityScore = bSpecificity === "very_specific" ? 2 : bSpecificity === "good" ? 1 : 0;
+      if (aSpecificityScore !== bSpecificityScore) return bSpecificityScore - aSpecificityScore;
+
+      return b.score - a.score;
+    });
+
+  const bestStructural = structuralCandidates[0] ?? null;
+  if (!bestStructural) return null;
+
+  if (topIsLocalExample || topIsMalformedStructural) return bestStructural;
+
+  // Otherwise only allow a structural override when it is competitive and the
+  // current top is not clearly stronger.
+  if (bestStructural.score + 0.08 >= currentTop.score) return bestStructural;
+
+  return null;
+}
+
 function chooseWinningCandidate(
   scoredCandidates: TopicCandidate[],
   message: string,
@@ -2939,6 +3210,9 @@ function chooseWinningCandidate(
 
   const cleanComparison = chooseCleanComparisonCandidate(scoredCandidates, message, profile);
   if (cleanComparison) return cleanComparison;
+
+  const structuralRelation = chooseStructuralRelationOverrideCandidate(scoredCandidates, message, profile);
+  if (structuralRelation) return structuralRelation;
 
   const protectedFinal = chooseProtectedFinalCandidate(
     scoredCandidates,
@@ -3186,6 +3460,14 @@ function buildAmbiguityFlags(args: {
     flags.push("qcs_over_synthesis_winner");
   }
 
+  if (bestCandidate && candidateLooksLocalExampleTokenInStructuralFrame(bestCandidate, normalizedMessage, discourseProfile)) {
+    flags.push("local_example_token_beating_structural_relation");
+  }
+
+  if (bestCandidate && candidateLooksStructuralRelationTarget(bestCandidate, normalizedMessage, discourseProfile)) {
+    flags.push("structural_relation_winner");
+  }
+
   if (bestCandidate && candidateLooksPFAPEligible(bestCandidate, normalizedMessage, discourseProfile)) {
     flags.push("pfap_protected_winner");
   }
@@ -3293,6 +3575,14 @@ function buildConfidence(args: {
 
   if (bestCandidate && candidateLooksStructuredDurable(bestCandidate)) {
     confidence += 0.05;
+  }
+
+  if (bestCandidate && candidateLooksStructuralRelationTarget(bestCandidate, normalizedMessage, discourseProfile)) {
+    confidence += 0.1;
+  }
+
+  if (bestCandidate && candidateLooksLocalExampleTokenInStructuralFrame(bestCandidate, normalizedMessage, discourseProfile)) {
+    confidence -= 0.1;
   }
 
   if (
@@ -3605,6 +3895,7 @@ export function runDeterministicTopicLabeling(
       bestCandidate.kind === "domain_shaped" ||
       candidateLooksTerminologyLike(bestCandidate) ||
       candidateLooksStructuredDurable(bestCandidate) ||
+      candidateLooksStructuralRelationTarget(bestCandidate, normalizedMessage, discourseProfile) ||
       (bestCandidate.kind === "question_synthesis" &&
         !candidateLooksQcsOverSynthesized(bestCandidate, scoredCandidates)) ||
       bestCandidate.kind === "concept_phrase" ||
@@ -3631,6 +3922,7 @@ export function runDeterministicTopicLabeling(
     !ambiguityFlags.includes("meta_confusion_without_stable_topic") &&
     !ambiguityFlags.includes("clarify_without_topic_recommended") &&
     !ambiguityFlags.includes("qcs_over_synthesis_winner") &&
+    !ambiguityFlags.includes("local_example_token_beating_structural_relation") &&
     !messageLooksLikePureFollowup(normalizedMessage) &&
     canonicalLabel != null &&
     (specificity === "good" ||
@@ -3772,6 +4064,9 @@ export function runDeterministicTopicLabeling(
           : []),
         ...(ambiguityFlags.includes("clarify_without_topic_recommended")
           ? ["The message asks for help but explicitly says the learner cannot yet name the topic; recommend a non-persistent clarify step instead of creating a learning-space topic."]
+          : []),
+        ...(ambiguityFlags.includes("local_example_token_beating_structural_relation")
+          ? ["A local example token may be beating a structural relation target; prefer the relation/order/connection when that is the user's stated confusion shape."]
           : []),
       ],
       ambiguity_flags: dedupe(ambiguityFlags),

@@ -2,14 +2,14 @@
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
 Previous snapshot generatedAt: 2026-05-01T19:44:02.272Z
-Current snapshot generatedAt: 2026-05-01T21:05:04.182Z
+Current snapshot generatedAt: 2026-05-01T21:22:05.698Z
 
-overall label: 309/336 -> 310/336 (+1)
-overall e2e:   306/336 -> 307/336 (+1)
-failed:        30 -> 29 (-1)
+overall label: 309/336 -> 313/336 (+4)
+overall e2e:   306/336 -> 311/336 (+5)
+failed:        30 -> 25 (-5)
 
 Case movement:
-New passes: 1
+New passes: 5
 New regressions: 0
 Naturalistic regressions: 0
 Still failing but changed output: 0
@@ -20,35 +20,76 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
+baseline-isolated: label 72/78 -> 74/78 (+2), e2e 72/78 -> 74/78 (+2), failed 6 -> 4 (-2)
+baseline-sequence: label 20/21 -> 21/21 (+1), e2e 19/21 -> 21/21 (+2), failed 2 -> 0 (-2)
 holdout-isolated: label 48/58 -> 49/58 (+1), e2e 48/58 -> 49/58 (+1), failed 10 -> 9 (-1)
 
 Category movement:
+buried_language_target: label 17/22 -> 19/22 (+2), e2e 17/22 -> 19/22 (+2), failed 5 -> 3 (-2)
 null_cases: label 10/11 -> 11/11 (+1), e2e 10/11 -> 11/11 (+1), failed 1 -> 0 (-1)
+sequence_language: label 4/5 -> 5/5 (+1), e2e 3/5 -> 5/5 (+2), failed 2 -> 0 (-2)
 
 Failure-layer movement:
 create_flag: 3 -> 2 (-1)
-label: 27 -> 26 (-1)
+label: 27 -> 23 (-4)
+matched_topic: 2 -> 1 (-1)
 resolution: 4 -> 3 (-1)
 
 Likely-failure-class movement:
+domain_shaping_failed: 7 -> 5 (-2)
+good_label_but_creation_blocked: 3 -> 2 (-1)
 null_case_overcreated_topic: 1 -> 0 (-1)
+pfap_malformed_candidate_won: 1 -> 0 (-1)
 
 PFAP likely-issue movement:
-unknown: 4 -> 3 (-1)
+pfap_expected_label_partially_extracted_canonicalization_needed: 18 -> 15 (-3)
+unknown: 4 -> 2 (-2)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 26 -> 25 (-1)
+failedWithProtectedCandidates: 26 -> 23 (-3)
 failedExpectedCandidateFound: 9 -> 9 (0)
 failedExpectedCandidateProtected: 8 -> 8 (0)
-failedMalformedActual: 2 -> 2 (0)
+failedMalformedActual: 2 -> 1 (-1)
 
 New passes:
+
+--- buried_language_target (2) ---
+[baseline-isolated] buried_language_target | spanish-001 | PASS
+message: Why can't I get the small words in spanish? It's like the word order is really bothering me, like the word se has so many meanings and I dont knwo where to start.
+expected: Word Order In Spanish
+actual:   Word Order in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] buried_language_target | spanish-005 | PASS
+message: I can translate the words, but sentence order in Spanish makes me feel like I am reading backwards.
+expected: Word Order In Spanish
+actual:   Word Order in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
 
 --- null_cases (1) ---
 [holdout-isolated] null_cases | holdout-null-002 | PASS
 message: Can you maybe help me but I am not saying that in a useful way because I do not really know what I am asking about, I just know I keep stalling out.
 expected: <null>
 actual:   <null>
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+
+--- sequence_language (2) ---
+[baseline-sequence] sequence_language | sequence-004:step-1 | PASS
+message: Why can't I get the small words in spanish? It's like the word order is really bothering me, like the word se has so many meanings and I dont knwo where to start.
+expected: Word Order In Spanish
+actual:   Word Order in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-sequence] sequence_language | sequence-004:step-2 | PASS
+message: Yeah, that exact part. The sentence order part.
+expected: <unspecified>
+actual:   Sentence Order
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
