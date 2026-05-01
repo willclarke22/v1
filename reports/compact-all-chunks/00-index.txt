@@ -1,18 +1,18 @@
 === Compact Topic Labeling Chunked Report Index ===
-overall: total=336 label=313/336 resolution=333/336 e2e=311/336 failed=25
-label-layer failures: 23
-end-to-end failures: 25
+overall: total=336 label=317/336 resolution=333/336 e2e=315/336 failed=21
+label-layer failures: 19
+end-to-end failures: 21
 displayed cases: 336 (all cases)
-generatedAt: 2026-05-01T21:25:01.516Z
+generatedAt: 2026-05-01T21:53:02.919Z
 
 === Compact Scope Summary ===
-baseline-isolated: total=78 label=74/78 resolution=77/78 e2e=74/78 failed=4
+baseline-isolated: total=78 label=75/78 resolution=77/78 e2e=75/78 failed=3
 baseline-sequence: total=21 label=21/21 resolution=21/21 e2e=21/21 failed=0
 blindv2-isolated: total=25 label=16/25 resolution=24/25 e2e=16/25 failed=9
 blindv2-sequence: total=11 label=10/11 resolution=10/11 e2e=8/11 failed=3
 hard-isolated: total=12 label=12/12 resolution=12/12 e2e=12/12 failed=0
 hard-sequence: total=11 label=11/11 resolution=11/11 e2e=11/11 failed=0
-holdout-isolated: total=58 label=49/58 resolution=58/58 e2e=49/58 failed=9
+holdout-isolated: total=58 label=52/58 resolution=58/58 e2e=52/58 failed=6
 holdout-sequence: total=20 label=20/20 resolution=20/20 e2e=20/20 failed=0
 naturalistic-diverse: total=100 label=100/100 resolution=100/100 e2e=100/100 failed=0
 
@@ -20,7 +20,7 @@ naturalistic-diverse: total=100 label=100/100 resolution=100/100 e2e=100/100 fai
 art: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 biology: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 broad_to_narrow: total=16 label=14/16 resolution=15/16 e2e=14/16 failed=2
-buried_language_target: total=22 label=19/22 resolution=22/22 e2e=19/22 failed=3
+buried_language_target: total=22 label=22/22 resolution=22/22 e2e=22/22 failed=0
 cars: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 chemistry: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 coding: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
@@ -32,7 +32,7 @@ cooking: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 direct: total=3 label=1/3 resolution=3/3 e2e=1/3 failed=2
 direct_baseline: total=6 label=6/6 resolution=6/6 e2e=6/6 failed=0
 diverse_academic: total=6 label=5/6 resolution=5/6 e2e=5/6 failed=1
-domain_shaping: total=8 label=6/8 resolution=8/8 e2e=6/8 failed=2
+domain_shaping: total=8 label=7/8 resolution=8/8 e2e=7/8 failed=1
 driving: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 emotion_topicful: total=5 label=5/5 resolution=5/5 e2e=5/5 failed=0
 emotions: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0

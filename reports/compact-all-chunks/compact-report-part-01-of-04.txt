@@ -324,12 +324,12 @@ actual:   Tax Jargon
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] buried_language_target | tax-005 | FAIL
+[baseline-isolated] buried_language_target | tax-005 | PASS
 message: The tax forms are what make me freeze because every line sounds like it assumes I already know five other words.
 expected: Tax Terminology And Forms
-actual:   Tax Forms
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Tax Terminology and Forms
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- diverse_academic ---
 

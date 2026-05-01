@@ -77,6 +77,7 @@ type DiscourseProfile = {
   hasComparisonShape: boolean;
   hasNullOnlyEmotionalShape: boolean;
   hasStructuralRelationShape: boolean;
+  hasArtifactLanguageBarrierShape: boolean;
 
   domainHints: string[];
   targetHints: string[];
@@ -810,6 +811,7 @@ function candidateLooksResidueLike(candidate: TopicCandidate) {
   if (!label) return true;
 
   if (candidateLooksMetaRequestQualityResidue(candidate)) return true;
+  if (labelLooksArtifactLanguageTailResidue(label)) return true;
 
   // Protected durable labels are allowed even if they contain words that are
   // suspicious only when standalone, such as "scoring" or "mean".
@@ -1094,6 +1096,231 @@ function candidateLooksLocalExampleTokenInStructuralFrame(
   );
 }
 
+
+/**
+ * Patch F.5 generalization guard:
+ * Detect the reusable shape where the artifact/source is not the true target;
+ * the learner is blocked by the language, labels, fields, terms, or assumed
+ * background knowledge inside that artifact/source. This keeps the learning
+ * space focused on the meaning barrier rather than creating bare artifact or
+ * tail-fragment topics.
+ */
+function messageHasArtifactLanguageBarrier(message: string) {
+  const normalized = cachedNormalizeLoose(message);
+
+  const artifactCue =
+    /\b(?:forms?|boxes|fields?|labels?|pages?|documents?|worksheets?|questions?|prompts?|instructions?|directions?|applications?|bills?|statements?|polic(?:y|ies)|contracts?|recipes?|rubrics?|passages?|explanations?|materials?|stuff)\b/i.test(
+      normalized
+    );
+
+  const languageCue =
+    /\b(?:terminology|jargon|vocabulary|wording|language|phrases?|terms?|words?|labels?|what (?:it|they|this|that) (?:means?|is asking)|what (?:the )?(?:box|field|label|question|prompt|instruction)s? (?:means?|is asking)|coded|written for|assumes? (?:i|you|we|they)? ?(?:already )?know|already know|supposed to know)\b/i.test(
+      normalized
+    );
+
+  const struggleCue =
+    /\b(?:confus(?:e|ed|ing)|lost|stuck|freeze|freezes|freezing|shut(?:s|ting)? down|do not understand|don't understand|dont understand|do not get|don't get|dont get|pretending|behind|weird|another language|coded|makes? no sense)\b/i.test(
+      normalized
+    );
+
+  const explicitArtifactLanguageFrame =
+    /\b(?:forms?|boxes|fields?|labels?|worksheets?|questions?|prompts?|instructions?|documents?|pages?)\b.*\b(?:terminology|jargon|vocabulary|wording|language|words?|phrases?|terms?|coded|assumes?|written for|already know)\b/i.test(
+      normalized
+    ) ||
+    /\b(?:terminology|jargon|vocabulary|wording|language|words?|phrases?|terms?|coded)\b.*\b(?:forms?|boxes|fields?|labels?|worksheets?|questions?|prompts?|instructions?|documents?|pages?)\b/i.test(
+      normalized
+    );
+
+  return Boolean(explicitArtifactLanguageFrame || (artifactCue && languageCue && struggleCue));
+}
+
+function artifactLanguageBarrierCanonicalLabelFromMessage(message: string) {
+  if (!messageHasArtifactLanguageBarrier(message)) return null;
+
+  const normalized = cachedNormalizeLoose(message);
+
+  // Domain-shaped labels: these are not case-specific wording patches. They
+  // encode a reusable domain + artifact/source + meaning-barrier interpretation.
+  if (/\b(?:tax|taxes)\b/i.test(normalized) && /\bforms?|boxes|fields?|pages?|documents?\b/i.test(normalized)) {
+    return "Tax Terminology and Forms";
+  }
+
+  if (/\binsurance\b/i.test(normalized)) {
+    if (/\bdeductible\b/i.test(normalized)) return "Insurance Deductible";
+    if (/\bpremium\b/i.test(normalized)) return "Insurance Premium";
+    if (/\b(?:terminology|jargon|vocabulary|wording|language|terms?|words?)\b/i.test(normalized)) {
+      return "Insurance Terminology";
+    }
+  }
+
+  if (/\b(?:recipe|cooking)\b/i.test(normalized) && /\b(?:terminology|terms?|words?|instructions?|steps?)\b/i.test(normalized)) {
+    return "Cooking Terminology";
+  }
+
+  if (/\b(?:worksheet|questions?|prompts?|rubric|assignment)\b/i.test(normalized) && /\b(?:wording|language|asking|phrases?|instructions?)\b/i.test(normalized)) {
+    // Patch F.5.2: wording can be a real artifact-language target, but when
+    // the same message has a comparison/confusion-pair shape ("X and Y blur
+    // together", "mixing A and B", etc.), the wording is usually the condition
+    // under which the comparison failure appears, not the durable topic.
+    // Keep this broad and category-level: do not synthesize Question Wording
+    // from comparison-shaped messages. Let the comparison arbitration recover
+    // the real X-vs-Y target.
+    if (messageHasComparisonShape(normalized)) return null;
+
+    return "Question Wording";
+  }
+
+  if (/\b(?:medical|health|hospital|clinic)\b/i.test(normalized) && /\b(?:forms?|boxes|fields?|labels?|terminology|terms?|wording)\b/i.test(normalized)) {
+    return "Medical Form Terminology";
+  }
+
+  return null;
+}
+
+function canonicalizeArtifactLanguageBarrierLabelForPFAP(label: string | null, message: string) {
+  if (!label) return label;
+
+  const canonical = artifactLanguageBarrierCanonicalLabelFromMessage(message);
+  if (!canonical) return label;
+
+  const normalizedLabel = cachedNormalizeLoose(label);
+  const normalizedMessage = cachedNormalizeLoose(message);
+
+  const labelCanCarryBarrier =
+    candidateLabelLooksArtifactOnlyInLanguageBarrier(label, message) ||
+    labelLooksArtifactLanguageTailResidue(label) ||
+    /\b(?:terminology|jargon|vocabulary|wording|language|forms?|boxes|fields?|labels?|terms?|words?|coded|written for|already know|assumes?)\b/i.test(
+      normalizedLabel
+    ) ||
+    overlapScore(cachedSemanticTokens(label), cachedSemanticTokens(canonical)) >= 0.22;
+
+  const messageHasCanonicalEvidence = cachedSemanticTokens(canonical).some((token) =>
+    cachedSemanticTokens(normalizedMessage).includes(token)
+  );
+
+  return labelCanCarryBarrier || messageHasCanonicalEvidence ? canonical : label;
+}
+
+function labelLooksArtifactLanguageTailResidue(label: string | null | undefined) {
+  const normalized = cachedNormalizeLoose(label);
+  if (!normalized) return false;
+
+  return (
+    /\b(?:written for|somebody who already knows|someone who already knows|already knows?|assumes?|supposed to know|coded|another language|language on the page|words on the page|what the boxes? (?:mean|are asking)|what the fields? (?:mean|are asking))\b/i.test(
+      normalized
+    ) ||
+    /^(?:written for|for somebody|for someone|somebody who|someone who|already knows?|assumes?|language on|words on|coded)$/i.test(
+      normalized
+    )
+  );
+}
+
+function candidateLabelLooksArtifactOnlyInLanguageBarrier(label: string | null | undefined, message: string) {
+  if (!messageHasArtifactLanguageBarrier(message)) return false;
+
+  const normalized = cachedNormalizeLoose(label);
+  if (!normalized) return false;
+
+  return /^(?:forms?|boxes|fields?|labels?|pages?|documents?|worksheets?|questions?|prompts?|instructions?|directions?|applications?|bills?|statements?|polic(?:y|ies)|contracts?|recipes?|rubrics?|passages?|explanations?|materials?|stuff)$/i.test(
+    normalized
+  );
+}
+
+function candidateLooksArtifactOnlyInLanguageBarrier(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile
+) {
+  if (!profile.hasArtifactLanguageBarrierShape && !messageHasArtifactLanguageBarrier(message)) {
+    return false;
+  }
+
+  if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+  if (candidateLooksMeaningBarrierTarget(candidate, message, profile)) return false;
+
+  return candidateLabelLooksArtifactOnlyInLanguageBarrier(getCandidateDisplayLabel(candidate), message);
+}
+
+function candidateLooksArtifactLanguageTailResidue(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile
+) {
+  if (!profile.hasArtifactLanguageBarrierShape && !messageHasArtifactLanguageBarrier(message)) {
+    return false;
+  }
+
+  return labelLooksArtifactLanguageTailResidue(getCandidateDisplayLabel(candidate));
+}
+
+function candidateLooksMeaningBarrierTarget(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile
+) {
+  if (!profile.hasArtifactLanguageBarrierShape && !messageHasArtifactLanguageBarrier(message)) {
+    return false;
+  }
+  if (!candidate.shouldCompeteAsTopic) return false;
+  if (candidate.isSubpartReference) return false;
+  if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+  if (candidateLooksWeakNounChunk(candidate)) return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
+
+  const label = getCandidateDisplayLabel(candidate);
+  const canonical = canonicalizeArtifactLanguageBarrierLabelForPFAP(label, message);
+  const canonicalChanged = cachedNormalizeLoose(canonical) !== cachedNormalizeLoose(label);
+
+  const hasMeaningCue =
+    candidateLooksTerminologyLike(candidate) ||
+    candidateLooksDomainShapedByProfile(candidate, profile) ||
+    /\b(?:terminology|jargon|vocabulary|wording|language|terms?|words?|deductible|premium|principal|instructions?|question wording)\b/i.test(
+      cachedNormalizeLoose(label)
+    );
+
+  if (!(canonicalChanged || hasMeaningCue)) return false;
+  if (labelHasBadBoundaryShape(canonical ?? label)) return false;
+  if (!labelHasContentBearingHead(canonical ?? label)) return false;
+
+  return true;
+}
+
+
+/**
+ * Patch F.5.1 generalization guard:
+ * A wording/artifact barrier can be real, but it should not override a real
+ * comparison target when the user's core confusion is that two concepts blur,
+ * blend, or get mixed up and the wording only describes when that confusion
+ * appears. This protects the comparison family without naming specific topics.
+ */
+function artifactLanguageBarrierShouldYieldToComparison(
+  scoredCandidates: TopicCandidate[],
+  message: string
+) {
+  const normalized = cachedNormalizeLoose(message);
+  if (!messageHasComparisonShape(normalized)) return false;
+
+  const canonicalBarrier = artifactLanguageBarrierCanonicalLabelFromMessage(normalized);
+  const barrierLooksLikeQuestionWording =
+    canonicalBarrier != null &&
+    /\b(?:question wording|questions?|prompts?|instructions?|worksheet|wording)\b/i.test(canonicalBarrier);
+
+  if (!barrierLooksLikeQuestionWording) return false;
+
+  return scoredCandidates.some((candidate) => {
+    if (candidate.kind !== "comparison_pair") return false;
+    if (!candidate.shouldCompeteAsTopic) return false;
+    if (candidateLooksResidueLike(candidate)) return false;
+    if (!comparisonCandidateHasRealAnchors(candidate, message)) return false;
+
+    const label = getCandidateDisplayLabel(candidate);
+    if (!label || labelHasBadBoundaryShape(label) || !labelHasContentBearingHead(label)) {
+      return false;
+    }
+
+    return true;
+  });
+}
 
 /**
  * Patch F.3 generalization guard:
@@ -1398,6 +1625,7 @@ function buildDiscourseProfile(
   const hasMechanismRequestShape = messageRequestsMechanism(normalized);
   const hasComparisonShape = messageHasComparisonShape(normalized);
   const hasStructuralRelationShape = messageHasStructuralRelationConfusion(normalized);
+  const hasArtifactLanguageBarrierShape = messageHasArtifactLanguageBarrier(normalized);
 
   const hasAnyDurableConceptCue = messageHasDurableConceptCue(normalized);
 
@@ -1412,6 +1640,7 @@ function buildDiscourseProfile(
   if (hasTerminologyBarrierShape) notes.push("terminology_barrier_shape_detected");
   if (hasNullOnlyEmotionalShape) notes.push("null_only_emotional_shape_detected");
   if (hasStructuralRelationShape) notes.push("structural_relation_shape_detected");
+  if (hasArtifactLanguageBarrierShape) notes.push("artifact_language_barrier_shape_detected");
   if (messageHasMetaNoStableTopicWithoutDurableCue(normalized)) {
     notes.push("meta_no_stable_topic_without_durable_cue_detected");
   }
@@ -1429,6 +1658,7 @@ function buildDiscourseProfile(
     hasComparisonShape,
     hasNullOnlyEmotionalShape,
     hasStructuralRelationShape,
+    hasArtifactLanguageBarrierShape,
     domainHints: extractDomainHintsFromText(message),
     targetHints: [],
     notes,
@@ -1852,6 +2082,22 @@ function buildCandidateScoreBreakdown(args: {
   if (discourseProfile.hasTerminologyBarrierShape && candidateLooksTerminologyLike(candidate)) {
     discourseRoleWeight += 0.22;
     durabilityWeight += 0.08;
+  }
+
+  if (candidateLooksMeaningBarrierTarget(candidate, message, discourseProfile)) {
+    // Patch F.5: artifact/source language barriers should create durable
+    // meaning-barrier targets rather than bare artifact or tail-fragment topics.
+    discourseRoleWeight += 0.26;
+    durabilityWeight += 0.1;
+    conceptPhraseWeight += 0.08;
+  }
+
+  if (
+    candidateLooksArtifactOnlyInLanguageBarrier(candidate, message, discourseProfile) ||
+    candidateLooksArtifactLanguageTailResidue(candidate, message, discourseProfile)
+  ) {
+    competitionRiskPenalty += 0.28;
+    contaminationPenalty += candidateLooksArtifactLanguageTailResidue(candidate, message, discourseProfile) ? 0.18 : 0;
   }
 
   if (discourseProfile.hasLanguageBarrierShape && candidateLooksDomainShapedByProfile(candidate, discourseProfile)) {
@@ -2946,6 +3192,11 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
     return structuralRelationLabel;
   }
 
+  const artifactLanguageBarrierLabel = canonicalizeArtifactLanguageBarrierLabelForPFAP(label, message);
+  if (artifactLanguageBarrierLabel && cachedNormalizeLoose(artifactLanguageBarrierLabel) !== normalizedLabel) {
+    return artifactLanguageBarrierLabel;
+  }
+
   // Patch E: narrow canonical domain/phrase repairs. These only fire when
   // the message explicitly contains the durable target evidence, so they do
   // not change general PFAP scoring behavior.
@@ -3198,6 +3449,93 @@ function chooseStructuralRelationOverrideCandidate(
   return null;
 }
 
+function chooseArtifactLanguageBarrierOverrideCandidate(
+  scoredCandidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile
+): TopicCandidate | null {
+  if (!scoredCandidates.length) return null;
+  if (!profile.hasArtifactLanguageBarrierShape && !messageHasArtifactLanguageBarrier(message)) {
+    return null;
+  }
+
+  const currentTop = scoredCandidates[0];
+
+  // Patch F.5.1: avoid turning “the wording changes” into the topic when
+  // the message is really a comparison problem (X and Y blur/mix together).
+  if (artifactLanguageBarrierShouldYieldToComparison(scoredCandidates, message)) {
+    return null;
+  }
+
+  const topIsArtifactOnly = candidateLooksArtifactOnlyInLanguageBarrier(currentTop, message, profile);
+  const topIsTailResidue = candidateLooksArtifactLanguageTailResidue(currentTop, message, profile);
+  const topCanCanonicalize =
+    cachedNormalizeLoose(canonicalizeArtifactLanguageBarrierLabelForPFAP(getCandidateDisplayLabel(currentTop), message)) !==
+    cachedNormalizeLoose(getCandidateDisplayLabel(currentTop));
+
+  // Guard against overreach: if the current top is already a clean durable
+  // concept unrelated to the artifact-language barrier, keep it.
+  if (
+    !topIsArtifactOnly &&
+    !topIsTailResidue &&
+    !topCanCanonicalize &&
+    candidateLooksProtectedDurableLabel(currentTop) &&
+    !candidateLooksMeaningBarrierTarget(currentTop, message, profile)
+  ) {
+    return null;
+  }
+
+  const barrierCandidates = scoredCandidates
+    .filter((candidate) => {
+      const canonical = canonicalizeArtifactLanguageBarrierLabelForPFAP(getCandidateDisplayLabel(candidate), message);
+      const canonicalChanged =
+        cachedNormalizeLoose(canonical) !== cachedNormalizeLoose(getCandidateDisplayLabel(candidate));
+
+      return (
+        candidateLooksMeaningBarrierTarget(candidate, message, profile) ||
+        canonicalChanged ||
+        candidateLooksArtifactOnlyInLanguageBarrier(candidate, message, profile) ||
+        candidateLooksArtifactLanguageTailResidue(candidate, message, profile)
+      );
+    })
+    .sort((a, b) => {
+      const aCanonical = canonicalizeArtifactLanguageBarrierLabelForPFAP(getCandidateDisplayLabel(a), message);
+      const bCanonical = canonicalizeArtifactLanguageBarrierLabelForPFAP(getCandidateDisplayLabel(b), message);
+      const aCanonicalGain =
+        cachedNormalizeLoose(aCanonical) !== cachedNormalizeLoose(getCandidateDisplayLabel(a)) ? 1 : 0;
+      const bCanonicalGain =
+        cachedNormalizeLoose(bCanonical) !== cachedNormalizeLoose(getCandidateDisplayLabel(b)) ? 1 : 0;
+      if (aCanonicalGain !== bCanonicalGain) return bCanonicalGain - aCanonicalGain;
+
+      const aTarget = candidateLooksMeaningBarrierTarget(a, message, profile) ? 1 : 0;
+      const bTarget = candidateLooksMeaningBarrierTarget(b, message, profile) ? 1 : 0;
+      if (aTarget !== bTarget) return bTarget - aTarget;
+
+      const aNoise =
+        candidateLooksArtifactOnlyInLanguageBarrier(a, message, profile) ||
+        candidateLooksArtifactLanguageTailResidue(a, message, profile)
+          ? 1
+          : 0;
+      const bNoise =
+        candidateLooksArtifactOnlyInLanguageBarrier(b, message, profile) ||
+        candidateLooksArtifactLanguageTailResidue(b, message, profile)
+          ? 1
+          : 0;
+      if (aNoise !== bNoise) return aNoise - bNoise;
+
+      return b.score - a.score;
+    });
+
+  const bestBarrier = barrierCandidates[0] ?? null;
+  if (!bestBarrier) return null;
+
+  if (topIsArtifactOnly || topIsTailResidue || topCanCanonicalize) return bestBarrier;
+
+  if (bestBarrier.score + 0.1 >= currentTop.score) return bestBarrier;
+
+  return null;
+}
+
 function chooseWinningCandidate(
   scoredCandidates: TopicCandidate[],
   message: string,
@@ -3213,6 +3551,9 @@ function chooseWinningCandidate(
 
   const structuralRelation = chooseStructuralRelationOverrideCandidate(scoredCandidates, message, profile);
   if (structuralRelation) return structuralRelation;
+
+  const artifactLanguageBarrier = chooseArtifactLanguageBarrierOverrideCandidate(scoredCandidates, message, profile);
+  if (artifactLanguageBarrier) return artifactLanguageBarrier;
 
   const protectedFinal = chooseProtectedFinalCandidate(
     scoredCandidates,
@@ -3462,6 +3803,18 @@ function buildAmbiguityFlags(args: {
 
   if (bestCandidate && candidateLooksLocalExampleTokenInStructuralFrame(bestCandidate, normalizedMessage, discourseProfile)) {
     flags.push("local_example_token_beating_structural_relation");
+  }
+
+  if (bestCandidate && candidateLooksArtifactOnlyInLanguageBarrier(bestCandidate, normalizedMessage, discourseProfile)) {
+    flags.push("artifact_only_beating_language_barrier");
+  }
+
+  if (bestCandidate && candidateLooksArtifactLanguageTailResidue(bestCandidate, normalizedMessage, discourseProfile)) {
+    flags.push("artifact_language_tail_winner");
+  }
+
+  if (bestCandidate && candidateLooksMeaningBarrierTarget(bestCandidate, normalizedMessage, discourseProfile)) {
+    flags.push("artifact_language_barrier_winner");
   }
 
   if (bestCandidate && candidateLooksStructuralRelationTarget(bestCandidate, normalizedMessage, discourseProfile)) {
@@ -3894,6 +4247,7 @@ export function runDeterministicTopicLabeling(
       bestCandidate.kind === "of_phrase" ||
       bestCandidate.kind === "domain_shaped" ||
       candidateLooksTerminologyLike(bestCandidate) ||
+      candidateLooksMeaningBarrierTarget(bestCandidate, normalizedMessage, discourseProfile) ||
       candidateLooksStructuredDurable(bestCandidate) ||
       candidateLooksStructuralRelationTarget(bestCandidate, normalizedMessage, discourseProfile) ||
       (bestCandidate.kind === "question_synthesis" &&
@@ -3923,6 +4277,8 @@ export function runDeterministicTopicLabeling(
     !ambiguityFlags.includes("clarify_without_topic_recommended") &&
     !ambiguityFlags.includes("qcs_over_synthesis_winner") &&
     !ambiguityFlags.includes("local_example_token_beating_structural_relation") &&
+    !ambiguityFlags.includes("artifact_only_beating_language_barrier") &&
+    !ambiguityFlags.includes("artifact_language_tail_winner") &&
     !messageLooksLikePureFollowup(normalizedMessage) &&
     canonicalLabel != null &&
     (specificity === "good" ||
@@ -4068,6 +4424,12 @@ export function runDeterministicTopicLabeling(
         ...(ambiguityFlags.includes("local_example_token_beating_structural_relation")
           ? ["A local example token may be beating a structural relation target; prefer the relation/order/connection when that is the user's stated confusion shape."]
           : []),
+        ...(ambiguityFlags.includes("artifact_only_beating_language_barrier")
+          ? ["A bare artifact/source label may be beating a language or wording barrier target; prefer the meaning barrier when the user's stated blocker is the words, labels, fields, or assumptions inside the artifact."]
+          : []),
+        ...(ambiguityFlags.includes("artifact_language_tail_winner")
+          ? ["A tail fragment about assumed knowledge or coded wording may be winning; prefer a domain-shaped terminology/meaning-barrier label."]
+          : []),
       ],
       ambiguity_flags: dedupe(ambiguityFlags),
       scored_candidates: scoredCandidates.map((candidate) => {
@@ -4129,6 +4491,8 @@ export function runDeterministicTopicLabeling(
         has_mechanism_request_shape: discourseProfile.hasMechanismRequestShape,
         has_comparison_shape: discourseProfile.hasComparisonShape,
         has_null_only_emotional_shape: discourseProfile.hasNullOnlyEmotionalShape,
+        has_structural_relation_shape: discourseProfile.hasStructuralRelationShape,
+        has_artifact_language_barrier_shape: discourseProfile.hasArtifactLanguageBarrierShape,
         domain_hints: discourseProfile.domainHints,
         target_hints: discourseProfile.targetHints,
         notes: discourseProfile.notes,

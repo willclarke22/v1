@@ -460,12 +460,12 @@ actual:   Se in Spanish
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] buried_language_target | holdout-tax-001 | FAIL
+[holdout-isolated] buried_language_target | holdout-tax-001 | PASS
 message: It is not even that taxes are automatically impossible, which I keep trying to remind myself of. The thing that makes me shut down is that the forms and the vocabulary feel like they were written for somebody who already knows the whole system, and then I start feeling behind before I even begin.
 expected: Tax Terminology And Forms
-actual:   Written for Somebody Who Already Knows
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Tax Terminology and Forms
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] buried_language_target | holdout-tax-002 | PASS
 message: I know this sounds dramatic but tax jargon makes me feel stupid in a very specific way, because I can usually tell when I do not understand a concept, but here I cannot even tell what the words are asking me to know first.
@@ -481,12 +481,12 @@ actual:   Tax Terminology and Forms
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] buried_language_target | holdout-tax-004 | FAIL
+[holdout-isolated] buried_language_target | holdout-tax-004 | PASS
 message: Taxes are the class topic, but the forms are what make me freeze because every box sounds like it assumes I already know five other words.
 expected: Tax Terminology And Forms
-actual:   Forms
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Tax Terminology and Forms
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] buried_language_target | holdout-tax-005 | PASS
 message: The tax part is whatever. The terminology is the actual blocker because I cannot even tell what the sentence wants me to understand.
@@ -622,12 +622,12 @@ layers: none | likely: n/a | pfap: n/a
 
 --- domain_shaping ---
 
-[holdout-isolated] domain_shaping | holdout-domain-001 | FAIL
+[holdout-isolated] domain_shaping | holdout-domain-001 | PASS
 message: I keep seeing deductible in insurance stuff and I keep pretending I know what it means from context, but I really do not.
 expected: Insurance Deductible
-actual:   Keep Seeing Deductible in Insurance Stuff
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Insurance Deductible
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] domain_shaping | holdout-domain-002 | PASS
 message: I can watch soccer and enjoy it fine, but if somebody asks me to explain offside I suddenly realize I never actually learned how the rule works in a stable way.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-01T21:26:44.095Z",
+  "generatedAt": "2026-05-01T21:54:18.272Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,22 +8,22 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 313,
+    "labelPassed": 317,
     "resolutionPassed": 333,
     "createPassed": 334,
     "matchedTopicPassed": 335,
-    "endToEndPassed": 311,
-    "failed": 25
+    "endToEndPassed": 315,
+    "failed": 21
   },
   "scopeBreakdown": {
     "baseline-isolated": {
       "total": 78,
-      "labelPassed": 74,
+      "labelPassed": 75,
       "resolutionPassed": 77,
       "createPassed": 77,
       "matchedTopicPassed": 78,
-      "endToEndPassed": 74,
-      "failed": 4
+      "endToEndPassed": 75,
+      "failed": 3
     },
     "baseline-sequence": {
       "total": 21,
@@ -72,12 +72,12 @@
     },
     "holdout-isolated": {
       "total": 58,
-      "labelPassed": 49,
+      "labelPassed": 52,
       "resolutionPassed": 58,
       "createPassed": 58,
       "matchedTopicPassed": 58,
-      "endToEndPassed": 49,
-      "failed": 9
+      "endToEndPassed": 52,
+      "failed": 6
     },
     "holdout-sequence": {
       "total": 20,
@@ -101,12 +101,12 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 251,
+      "labelPassed": 255,
       "resolutionPassed": 271,
       "createPassed": 271,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 251,
-      "failed": 22
+      "endToEndPassed": 255,
+      "failed": 18
     },
     "sequence": {
       "total": 63,
@@ -148,12 +148,12 @@
     },
     "buried_language_target": {
       "total": 22,
-      "labelPassed": 19,
+      "labelPassed": 22,
       "resolutionPassed": 22,
       "createPassed": 22,
       "matchedTopicPassed": 22,
-      "endToEndPassed": 19,
-      "failed": 3
+      "endToEndPassed": 22,
+      "failed": 0
     },
     "cars": {
       "total": 4,
@@ -256,12 +256,12 @@
     },
     "domain_shaping": {
       "total": 8,
-      "labelPassed": 6,
+      "labelPassed": 7,
       "resolutionPassed": 8,
       "createPassed": 8,
       "matchedTopicPassed": 8,
-      "endToEndPassed": 6,
-      "failed": 2
+      "endToEndPassed": 7,
+      "failed": 1
     },
     "driving": {
       "total": 4,
@@ -661,29 +661,29 @@
     }
   },
   "layerBreakdown": {
-    "label": 23,
+    "label": 19,
     "resolution": 3,
     "create_flag": 2,
     "matched_topic": 1,
     "forbidden": 0
   },
   "likelyFailureBreakdown": {
-    "domain_shaping_failed": 5,
+    "domain_shaping_failed": 2,
     "expected_label_extracted_but_lost_competition": 1,
     "expected_label_present_in_message_but_not_extracted": 4,
     "good_label_but_creation_blocked": 2,
     "pfap_protected_candidate_lost_final_arbitration": 7,
-    "uncategorized_failure": 6
+    "uncategorized_failure": 5
   },
   "pfapBreakdown": {
-    "failedCount": 25,
-    "failedWithProtectedCandidates": 23,
+    "failedCount": 21,
+    "failedWithProtectedCandidates": 19,
     "failedExpectedCandidateFound": 9,
     "failedExpectedCandidateProtected": 8,
     "failedMalformedActual": 1,
     "likelyIssueBreakdown": {
       "pfap_expected_candidate_needs_protection_metadata": 1,
-      "pfap_expected_label_partially_extracted_canonicalization_needed": 15,
+      "pfap_expected_label_partially_extracted_canonicalization_needed": 11,
       "pfap_protected_candidate_lost_final_arbitration": 7,
       "unknown": 2
     }
@@ -2067,32 +2067,27 @@
       "description": "forms should not collapse to broad taxes",
       "message": "The tax forms are what make me freeze because every line sounds like it assumes I already know five other words.",
       "expectedLabel": "Tax Terminology And Forms",
-      "actualLabel": "Tax Forms",
+      "actualLabel": "Tax Terminology and Forms",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "domain_shaping_failed",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Tax Terminology And Forms\" actualLabel=\"Tax Forms\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::stats-001",
@@ -4233,7 +4228,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9700000000000002,
+      "actualConfidence": 0.67,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -5161,32 +5156,27 @@
       "description": "rambling tax message with language barrier target implicit",
       "message": "It is not even that taxes are automatically impossible, which I keep trying to remind myself of. The thing that makes me shut down is that the forms and the vocabulary feel like they were written for somebody who already knows the whole system, and then I start feeling behind before I even begin.",
       "expectedLabel": "Tax Terminology And Forms",
-      "actualLabel": "Written for Somebody Who Already Knows",
+      "actualLabel": "Tax Terminology and Forms",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
-      "labelPass": false,
+      "actualConfidence": 0.9000000000000001,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "domain_shaping_failed",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 4,
       "pfapMalformedCount": 2,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 3,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Tax Terminology And Forms\" actualLabel=\"Written for Somebody Who Already Knows\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-tax-002",
@@ -5259,32 +5249,27 @@
       "description": "forms target should not collapse to taxes",
       "message": "Taxes are the class topic, but the forms are what make me freeze because every box sounds like it assumes I already know five other words.",
       "expectedLabel": "Tax Terminology And Forms",
-      "actualLabel": "Forms",
+      "actualLabel": "Tax Terminology and Forms",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "domain_shaping_failed",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Tax Terminology And Forms\" actualLabel=\"Forms\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-tax-005",
@@ -5868,32 +5853,27 @@
       "description": "insurance deductible from a more human message",
       "message": "I keep seeing deductible in insurance stuff and I keep pretending I know what it means from context, but I really do not.",
       "expectedLabel": "Insurance Deductible",
-      "actualLabel": "Keep Seeing Deductible in Insurance Stuff",
+      "actualLabel": "Insurance Deductible",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Insurance Deductible\" actualLabel=\"Keep Seeing Deductible in Insurance Stuff\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-domain-002",
