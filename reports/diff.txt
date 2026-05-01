@@ -2,14 +2,14 @@
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
 Previous snapshot generatedAt: 2026-04-30T21:38:48.356Z
-Current snapshot generatedAt: 2026-05-01T00:33:32.227Z
+Current snapshot generatedAt: 2026-05-01T01:01:10.767Z
 
-overall label: 287/336 -> 299/336 (+12)
-overall e2e:   271/336 -> 283/336 (+12)
-failed:        65 -> 53 (-12)
+overall label: 287/336 -> 307/336 (+20)
+overall e2e:   271/336 -> 291/336 (+20)
+failed:        65 -> 45 (-20)
 
 Case movement:
-New passes: 12
+New passes: 20
 New regressions: 0
 Naturalistic regressions: 0
 Still failing but changed output: 0
@@ -20,39 +20,46 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
-baseline-isolated: label 61/78 -> 66/78 (+5), e2e 61/78 -> 66/78 (+5), failed 17 -> 12 (-5)
-hard-isolated: label 10/12 -> 11/12 (+1), e2e 10/12 -> 11/12 (+1), failed 2 -> 1 (-1)
-holdout-isolated: label 39/58 -> 45/58 (+6), e2e 39/58 -> 45/58 (+6), failed 19 -> 13 (-6)
+baseline-isolated: label 61/78 -> 70/78 (+9), e2e 61/78 -> 70/78 (+9), failed 17 -> 8 (-9)
+hard-isolated: label 10/12 -> 12/12 (+2), e2e 10/12 -> 12/12 (+2), failed 2 -> 0 (-2)
+holdout-isolated: label 39/58 -> 48/58 (+9), e2e 39/58 -> 48/58 (+9), failed 19 -> 10 (-9)
 
 Category movement:
 broad_to_narrow: label 12/16 -> 14/16 (+2), e2e 12/16 -> 14/16 (+2), failed 4 -> 2 (-2)
 buried_language_target: label 16/22 -> 17/22 (+1), e2e 16/22 -> 17/22 (+1), failed 6 -> 5 (-1)
+comparison: label 9/14 -> 11/14 (+2), e2e 9/14 -> 11/14 (+2), failed 5 -> 3 (-2)
 context_recovery: label 2/5 -> 3/5 (+1), e2e 2/5 -> 3/5 (+1), failed 3 -> 2 (-1)
+domain_shaping: label 3/8 -> 6/8 (+3), e2e 3/8 -> 6/8 (+3), failed 5 -> 2 (-3)
 existing_vs_new_narrow: label 5/8 -> 8/8 (+3), e2e 5/8 -> 8/8 (+3), failed 3 -> 0 (-3)
-hard_broad_to_narrow: label 1/3 -> 2/3 (+1), e2e 1/3 -> 2/3 (+1), failed 2 -> 1 (-1)
+hard_broad_to_narrow: label 1/3 -> 3/3 (+2), e2e 1/3 -> 3/3 (+2), failed 2 -> 0 (-2)
+mechanism_question: label 4/5 -> 5/5 (+1), e2e 4/5 -> 5/5 (+1), failed 1 -> 0 (-1)
 noisy_natural_language: label 10/13 -> 11/13 (+1), e2e 10/13 -> 11/13 (+1), failed 3 -> 2 (-1)
 paragraph_context: label 9/18 -> 12/18 (+3), e2e 9/18 -> 12/18 (+3), failed 9 -> 6 (-3)
+structured_phrase: label 5/6 -> 6/6 (+1), e2e 5/6 -> 6/6 (+1), failed 1 -> 0 (-1)
 
 Failure-layer movement:
 create_flag: 4 -> 3 (-1)
 forbidden: 1 -> 0 (-1)
-label: 49 -> 37 (-12)
+label: 49 -> 29 (-20)
 resolution: 5 -> 4 (-1)
 
 Likely-failure-class movement:
 broad_anchor_beat_buried_bottleneck: 2 -> 0 (-2)
-expected_label_present_in_message_but_not_extracted: 9 -> 8 (-1)
+domain_shaping_failed: 8 -> 7 (-1)
+expected_label_present_in_message_but_not_extracted: 9 -> 4 (-5)
+pfap_malformed_candidate_won: 2 -> 1 (-1)
 pfap_protected_candidate_lost_final_arbitration: 17 -> 8 (-9)
+uncategorized_failure: 8 -> 6 (-2)
 
 PFAP likely-issue movement:
-pfap_expected_label_partially_extracted_canonicalization_needed: 29 -> 26 (-3)
+pfap_expected_label_partially_extracted_canonicalization_needed: 29 -> 18 (-11)
 pfap_protected_candidate_lost_final_arbitration: 17 -> 8 (-9)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 45 -> 33 (-12)
+failedWithProtectedCandidates: 45 -> 28 (-17)
 failedExpectedCandidateFound: 20 -> 11 (-9)
 failedExpectedCandidateProtected: 18 -> 9 (-9)
-failedMalformedActual: 8 -> 8 (0)
+failedMalformedActual: 8 -> 5 (-3)
 
 New passes:
 
@@ -81,11 +88,50 @@ checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
 
+--- comparison (2) ---
+[baseline-isolated] comparison | compare-003 | PASS
+message: I keep forgetting when to use your vs you're.
+expected: Your vs You're
+actual:   Your vs You're
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[baseline-isolated] comparison | compare-005 | PASS
+message: I don't know when to use law of sines vs law of cosines.
+expected: Law of Sines vs Law of Cosines
+actual:   Law of Sines vs Law of Cosines
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+
 --- context_recovery (1) ---
 [baseline-isolated] context_recovery | context-002 | PASS
 message: In lecture we were doing action potentials and threshold and all that, but the part I'm actually confused about is depolarization.
 expected: Depolarization
 actual:   Depolarization
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+
+--- domain_shaping (3) ---
+[holdout-isolated] domain_shaping | holdout-domain-002 | PASS
+message: I can watch soccer and enjoy it fine, but if somebody asks me to explain offside I suddenly realize I never actually learned how the rule works in a stable way.
+expected: Offside in Soccer
+actual:   Offside in Soccer
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[holdout-isolated] domain_shaping | holdout-domain-004 | PASS
+message: I know this is basic but premium keeps showing up in insurance explanations and I do not actually know what it means.
+expected: Insurance Premium
+actual:   Insurance Premium
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[holdout-isolated] domain_shaping | holdout-domain-005 | PASS
+message: When people talk about loans I keep losing track of principal, because I thought it just meant important but clearly it means something more specific here.
+expected: Loan Principal
+actual:   Loan Principal
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
@@ -113,11 +159,27 @@ checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
 
---- hard_broad_to_narrow (1) ---
+--- hard_broad_to_narrow (2) ---
 [hard-isolated] hard_broad_to_narrow | hard-001 | PASS
 message: Ok so like I was trying to understand dopamine yesterday and I thought that was the issue, but honestly after staring at it again I think the actual thing making everything confusing is reuptake.
 expected: Reuptake
 actual:   Reuptake
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[hard-isolated] hard_broad_to_narrow | hard-002 | PASS
+message: Triangles in general are not the problem, and I can usually tell what the question is asking, but once the law of cosines shows up I start second-guessing every step and then I kind of spiral.
+expected: Law of Cosines
+actual:   Law of Cosines
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+
+--- mechanism_question (1) ---
+[baseline-isolated] mechanism_question | question-005 | PASS
+message: Why does negative feedback happen in homeostasis?
+expected: Why Negative Feedback Happens
+actual:   Why Negative Feedback Happens
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
@@ -150,6 +212,15 @@ layers: none | likely: n/a | pfap: n/a
 message: I feel like I mostly understand waves when the examples are just pictures of crests and troughs. The second numbers show up, though, I start guessing. The specific thing I want to fix is the speed of sound formula because I cannot tell what the variables are doing.
 expected: Speed of Sound
 actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+
+--- structured_phrase (1) ---
+[baseline-isolated] structured_phrase | of-003 | PASS
+message: I keep mixing up the layers of the skin.
+expected: Layers of the Skin
+actual:   Layers of the Skin
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 

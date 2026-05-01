@@ -4,12 +4,12 @@ cases in this file: 83
 
 --- domain_shaping ---
 
-[holdout-isolated] domain_shaping | holdout-domain-002 | FAIL
+[holdout-isolated] domain_shaping | holdout-domain-002 | PASS
 message: I can watch soccer and enjoy it fine, but if somebody asks me to explain offside I suddenly realize I never actually learned how the rule works in a stable way.
 expected: Offside in Soccer
-actual:   Stable Way
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Offside in Soccer
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] domain_shaping | holdout-domain-003 | PASS
 message: The thing I keep meaning to understand is how credit card interest works, because I know it matters and yet every explanation somehow makes it feel more abstract instead of less.
@@ -18,19 +18,19 @@ actual:   Credit Card Interest
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] domain_shaping | holdout-domain-004 | FAIL
+[holdout-isolated] domain_shaping | holdout-domain-004 | PASS
 message: I know this is basic but premium keeps showing up in insurance explanations and I do not actually know what it means.
 expected: Insurance Premium
-actual:   Premium Keeps Showing Up in Insurance Explanations
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Insurance Premium
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] domain_shaping | holdout-domain-005 | FAIL
+[holdout-isolated] domain_shaping | holdout-domain-005 | PASS
 message: When people talk about loans I keep losing track of principal, because I thought it just meant important but clearly it means something more specific here.
 expected: Loan Principal
-actual:   Keep Losing Track of Principal
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Loan Principal
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- existing_vs_new_narrow ---
 

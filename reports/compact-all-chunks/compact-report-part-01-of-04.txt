@@ -106,12 +106,12 @@ actual:   Phases of Mitosis
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] structured_phrase | of-003 | FAIL
+[baseline-isolated] structured_phrase | of-003 | PASS
 message: I keep mixing up the layers of the skin.
 expected: Layers of the Skin
-actual:   Layers of
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Layers of the Skin
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] structured_phrase | of-004 | PASS
 message: I don't get the law of sines at all.
@@ -164,12 +164,12 @@ actual:   Credit Card Interest
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] mechanism_question | question-005 | FAIL
+[baseline-isolated] mechanism_question | question-005 | PASS
 message: Why does negative feedback happen in homeostasis?
 expected: Why Negative Feedback Happens
-actual:   Es Negative Feedback Happen in
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_malformed_candidate_won | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Why Negative Feedback Happens
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- comparison ---
 
@@ -187,12 +187,12 @@ actual:   Mitosis vs Meiosis
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] comparison | compare-003 | FAIL
+[baseline-isolated] comparison | compare-003 | PASS
 message: I keep forgetting when to use your vs you're.
 expected: Your vs You're
-actual:   vs You're
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Your vs You're
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] comparison | compare-004 | PASS
 message: What's the difference between speed and velocity?
@@ -201,12 +201,12 @@ actual:   Speed vs Velocity
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] comparison | compare-005 | FAIL
+[baseline-isolated] comparison | compare-005 | PASS
 message: I don't know when to use law of sines vs law of cosines.
 expected: Law of Sines vs Law of Cosines
-actual:   To Use Law of Sines
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Law of Sines vs Law of Cosines
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] comparison | compare-006 | PASS
 message: Metaphase and anaphase still feel basically the same in my head.
@@ -261,12 +261,12 @@ actual:   Se in Spanish
 checks: label=N resolution=Y create=Y matched=Y forbidden=Y
 layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
 
-[baseline-isolated] buried_language_target | spanish-002 | FAIL
+[baseline-isolated] buried_language_target | spanish-002 | PASS
 message: Spanish in general is fine, vocab is mostly fine, but honestly the actual thing throwing me off is se because every time I think I know what it is doing, it kind of does something else.
 expected: Se In Spanish
-actual:   Se
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Se in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] buried_language_target | spanish-003 | PASS
 message: The weird part is I can know all the spanish words separately, but when the sentence actually happens I stop trusting myself because the word order makes everything feel backwards.
@@ -443,12 +443,12 @@ actual:   Teacher Explained Budgeting Fixed Expenses
 checks: label=N resolution=Y create=Y matched=Y forbidden=Y
 layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
 
-[baseline-isolated] paragraph_context | paragraph-005 | FAIL
+[baseline-isolated] paragraph_context | paragraph-005 | PASS
 message: I thought I was asking about loans in general, but honestly the real issue is principal because every explanation uses the word like I am already supposed to understand what part of the total it refers to.
 expected: Loan Principal
-actual:   Principal
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Loan Principal
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- noisy_natural_language ---
 

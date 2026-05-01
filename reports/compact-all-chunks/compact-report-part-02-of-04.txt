@@ -130,12 +130,12 @@ actual:   Reuptake
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[hard-isolated] hard_broad_to_narrow | hard-002 | FAIL
+[hard-isolated] hard_broad_to_narrow | hard-002 | PASS
 message: Triangles in general are not the problem, and I can usually tell what the question is asking, but once the law of cosines shows up I start second-guessing every step and then I kind of spiral.
 expected: Law of Cosines
-actual:   Law of Cosines Shows Up
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Law of Cosines
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [hard-isolated] hard_broad_to_narrow | hard-003 | PASS
 message: I thought budgeting was the thing I needed help with, and maybe it still kind of is, but after actually trying the problems I think the real issue is balancing a budget because that is the point where everything stops adding up in my head.
@@ -331,12 +331,12 @@ actual:   Membrane Potential
 checks: label=N resolution=Y create=Y matched=Y forbidden=Y
 layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
 
-[holdout-isolated] paragraph_context | holdout-paragraph-004 | FAIL
+[holdout-isolated] paragraph_context | holdout-paragraph-004 | PASS
 message: I was doing triangle homework tonight and most of it was manageable in a fake way where I sort of convince myself I am following. Then law of cosines came up and suddenly I realized that was actually the thing I never properly understood.
 expected: Law of Cosines
-actual:   Most of It
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Law of Cosines
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] paragraph_context | holdout-paragraph-005 | PASS
 message: I've been trying to follow curling when it is on TV because people around me act like the strategy is obvious. I can kind of tell when a shot looks good, but the rules of curling are still what make the whole thing feel slippery and confusing to me.

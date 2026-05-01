@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-30T21:38:48.356Z",
+  "generatedAt": "2026-05-01T01:04:32.028Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,22 +8,22 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 287,
-    "resolutionPassed": 331,
-    "createPassed": 332,
+    "labelPassed": 307,
+    "resolutionPassed": 332,
+    "createPassed": 333,
     "matchedTopicPassed": 321,
-    "endToEndPassed": 271,
-    "failed": 65
+    "endToEndPassed": 291,
+    "failed": 45
   },
   "scopeBreakdown": {
     "baseline-isolated": {
       "total": 78,
-      "labelPassed": 61,
+      "labelPassed": 70,
       "resolutionPassed": 77,
       "createPassed": 77,
       "matchedTopicPassed": 78,
-      "endToEndPassed": 61,
-      "failed": 17
+      "endToEndPassed": 70,
+      "failed": 8
     },
     "baseline-sequence": {
       "total": 21,
@@ -54,12 +54,12 @@
     },
     "hard-isolated": {
       "total": 12,
-      "labelPassed": 10,
+      "labelPassed": 12,
       "resolutionPassed": 12,
       "createPassed": 12,
       "matchedTopicPassed": 12,
-      "endToEndPassed": 10,
-      "failed": 2
+      "endToEndPassed": 12,
+      "failed": 0
     },
     "hard-sequence": {
       "total": 11,
@@ -72,12 +72,12 @@
     },
     "holdout-isolated": {
       "total": 58,
-      "labelPassed": 39,
-      "resolutionPassed": 56,
-      "createPassed": 56,
+      "labelPassed": 48,
+      "resolutionPassed": 57,
+      "createPassed": 57,
       "matchedTopicPassed": 58,
-      "endToEndPassed": 39,
-      "failed": 19
+      "endToEndPassed": 48,
+      "failed": 10
     },
     "holdout-sequence": {
       "total": 20,
@@ -101,12 +101,12 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 226,
-      "resolutionPassed": 269,
-      "createPassed": 269,
+      "labelPassed": 246,
+      "resolutionPassed": 270,
+      "createPassed": 270,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 226,
-      "failed": 47
+      "endToEndPassed": 246,
+      "failed": 27
     },
     "sequence": {
       "total": 63,
@@ -139,21 +139,21 @@
     },
     "broad_to_narrow": {
       "total": 16,
-      "labelPassed": 12,
+      "labelPassed": 14,
       "resolutionPassed": 15,
       "createPassed": 15,
       "matchedTopicPassed": 16,
-      "endToEndPassed": 12,
-      "failed": 4
+      "endToEndPassed": 14,
+      "failed": 2
     },
     "buried_language_target": {
       "total": 22,
-      "labelPassed": 16,
+      "labelPassed": 17,
       "resolutionPassed": 22,
       "createPassed": 22,
       "matchedTopicPassed": 22,
-      "endToEndPassed": 16,
-      "failed": 6
+      "endToEndPassed": 17,
+      "failed": 5
     },
     "cars": {
       "total": 4,
@@ -184,12 +184,12 @@
     },
     "comparison": {
       "total": 14,
-      "labelPassed": 9,
+      "labelPassed": 11,
       "resolutionPassed": 14,
       "createPassed": 14,
       "matchedTopicPassed": 14,
-      "endToEndPassed": 9,
-      "failed": 5
+      "endToEndPassed": 11,
+      "failed": 3
     },
     "comparisons": {
       "total": 4,
@@ -211,12 +211,12 @@
     },
     "context_recovery": {
       "total": 5,
-      "labelPassed": 2,
+      "labelPassed": 3,
       "resolutionPassed": 5,
       "createPassed": 5,
       "matchedTopicPassed": 5,
-      "endToEndPassed": 2,
-      "failed": 3
+      "endToEndPassed": 3,
+      "failed": 2
     },
     "cooking": {
       "total": 4,
@@ -256,12 +256,12 @@
     },
     "domain_shaping": {
       "total": 8,
-      "labelPassed": 3,
+      "labelPassed": 6,
       "resolutionPassed": 8,
       "createPassed": 8,
       "matchedTopicPassed": 8,
-      "endToEndPassed": 3,
-      "failed": 5
+      "endToEndPassed": 6,
+      "failed": 2
     },
     "driving": {
       "total": 4,
@@ -292,12 +292,12 @@
     },
     "existing_vs_new_narrow": {
       "total": 8,
-      "labelPassed": 5,
-      "resolutionPassed": 7,
-      "createPassed": 7,
+      "labelPassed": 8,
+      "resolutionPassed": 8,
+      "createPassed": 8,
       "matchedTopicPassed": 8,
-      "endToEndPassed": 5,
-      "failed": 3
+      "endToEndPassed": 8,
+      "failed": 0
     },
     "finance": {
       "total": 4,
@@ -337,12 +337,12 @@
     },
     "hard_broad_to_narrow": {
       "total": 3,
-      "labelPassed": 1,
+      "labelPassed": 3,
       "resolutionPassed": 3,
       "createPassed": 3,
       "matchedTopicPassed": 3,
-      "endToEndPassed": 1,
-      "failed": 2
+      "endToEndPassed": 3,
+      "failed": 0
     },
     "hard_comparison": {
       "total": 1,
@@ -463,12 +463,12 @@
     },
     "mechanism_question": {
       "total": 5,
-      "labelPassed": 4,
+      "labelPassed": 5,
       "resolutionPassed": 5,
       "createPassed": 5,
       "matchedTopicPassed": 5,
-      "endToEndPassed": 4,
-      "failed": 1
+      "endToEndPassed": 5,
+      "failed": 0
     },
     "mixed": {
       "total": 4,
@@ -508,12 +508,12 @@
     },
     "noisy_natural_language": {
       "total": 13,
-      "labelPassed": 10,
+      "labelPassed": 11,
       "resolutionPassed": 13,
       "createPassed": 13,
       "matchedTopicPassed": 13,
-      "endToEndPassed": 10,
-      "failed": 3
+      "endToEndPassed": 11,
+      "failed": 2
     },
     "null_cases": {
       "total": 11,
@@ -526,12 +526,12 @@
     },
     "paragraph_context": {
       "total": 18,
-      "labelPassed": 9,
+      "labelPassed": 12,
       "resolutionPassed": 18,
       "createPassed": 18,
       "matchedTopicPassed": 18,
-      "endToEndPassed": 9,
-      "failed": 9
+      "endToEndPassed": 12,
+      "failed": 6
     },
     "plumbing": {
       "total": 4,
@@ -634,12 +634,12 @@
     },
     "structured_phrase": {
       "total": 6,
-      "labelPassed": 5,
+      "labelPassed": 6,
       "resolutionPassed": 6,
       "createPassed": 6,
       "matchedTopicPassed": 6,
-      "endToEndPassed": 5,
-      "failed": 1
+      "endToEndPassed": 6,
+      "failed": 0
     },
     "switching": {
       "total": 2,
@@ -661,33 +661,32 @@
     }
   },
   "layerBreakdown": {
-    "label": 49,
-    "resolution": 5,
-    "create_flag": 4,
+    "label": 29,
+    "resolution": 4,
+    "create_flag": 3,
     "matched_topic": 15,
-    "forbidden": 1
+    "forbidden": 0
   },
   "likelyFailureBreakdown": {
-    "broad_anchor_beat_buried_bottleneck": 2,
-    "domain_shaping_failed": 8,
+    "domain_shaping_failed": 7,
     "expected_label_extracted_but_lost_competition": 2,
-    "expected_label_present_in_message_but_not_extracted": 9,
+    "expected_label_present_in_message_but_not_extracted": 4,
     "good_label_but_creation_blocked": 16,
     "null_case_overcreated_topic": 1,
-    "pfap_malformed_candidate_won": 2,
-    "pfap_protected_candidate_lost_final_arbitration": 17,
-    "uncategorized_failure": 8
+    "pfap_malformed_candidate_won": 1,
+    "pfap_protected_candidate_lost_final_arbitration": 8,
+    "uncategorized_failure": 6
   },
   "pfapBreakdown": {
-    "failedCount": 65,
-    "failedWithProtectedCandidates": 45,
-    "failedExpectedCandidateFound": 20,
-    "failedExpectedCandidateProtected": 18,
-    "failedMalformedActual": 8,
+    "failedCount": 45,
+    "failedWithProtectedCandidates": 28,
+    "failedExpectedCandidateFound": 11,
+    "failedExpectedCandidateProtected": 9,
+    "failedMalformedActual": 5,
     "likelyIssueBreakdown": {
       "pfap_expected_candidate_needs_protection_metadata": 2,
-      "pfap_expected_label_partially_extracted_canonicalization_needed": 29,
-      "pfap_protected_candidate_lost_final_arbitration": 17,
+      "pfap_expected_label_partially_extracted_canonicalization_needed": 18,
+      "pfap_protected_candidate_lost_final_arbitration": 8,
       "unknown": 17
     }
   },
@@ -918,32 +917,27 @@
       "description": "broad chemistry context but exact concept later",
       "message": "I'm learning chemistry right now and most of it is okay, but the thing I actually need help with is electronegativity.",
       "expectedLabel": "Electronegativity",
-      "actualLabel": "Most of It",
+      "actualLabel": "Electronegativity",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 2,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Electronegativity\" actualLabel=\"Most of It\""
-        }
-      ]
+      "actualCandidateRank": 2,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::focus-003",
@@ -1140,32 +1134,27 @@
       "description": "preserve layers of the skin phrase",
       "message": "I keep mixing up the layers of the skin.",
       "expectedLabel": "Layers of the Skin",
-      "actualLabel": "Layers of",
+      "actualLabel": "Layers of the Skin",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Layers of the Skin\" actualLabel=\"Layers of\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::of-004",
@@ -1393,32 +1382,27 @@
       "description": "why question should preserve useful mechanism label",
       "message": "Why does negative feedback happen in homeostasis?",
       "expectedLabel": "Why Negative Feedback Happens",
-      "actualLabel": "Es Negative Feedback Happen in",
+      "actualLabel": "Why Negative Feedback Happens",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_malformed_candidate_won",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Why Negative Feedback Happens\" actualLabel=\"Es Negative Feedback Happen in\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::compare-001",
@@ -1491,32 +1475,27 @@
       "description": "language comparison with everyday framing",
       "message": "I keep forgetting when to use your vs you're.",
       "expectedLabel": "Your vs You're",
-      "actualLabel": "vs You're",
+      "actualLabel": "Your vs You're",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Your vs You're\" actualLabel=\"vs You're\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::compare-004",
@@ -1558,32 +1537,27 @@
       "description": "math comparison with decision wording",
       "message": "I don't know when to use law of sines vs law of cosines.",
       "expectedLabel": "Law of Sines vs Law of Cosines",
-      "actualLabel": "To Use Law of Sines",
+      "actualLabel": "Law of Sines vs Law of Cosines",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Law of Sines vs Law of Cosines\" actualLabel=\"To Use Law of Sines\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::compare-006",
@@ -1656,32 +1630,27 @@
       "description": "lecture context then narrow mechanism",
       "message": "In lecture we were doing action potentials and threshold and all that, but the part I'm actually confused about is depolarization.",
       "expectedLabel": "Depolarization",
-      "actualLabel": "Action Potentials",
+      "actualLabel": "Depolarization",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.536,
-      "labelPass": false,
+      "actualConfidence": 1,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
-      "actualCandidateRank": 3,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Depolarization\" actualLabel=\"Action Potentials\""
-        }
-      ]
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::context-003",
@@ -1741,12 +1710,12 @@
       "matchedTopicPass": true,
       "forbiddenPass": true,
       "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
-      "pfapProtectedCount": 3,
-      "pfapMalformedCount": 0,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "likelyFailureClass": "expected_label_extracted_but_lost_competition",
+      "pfapLikelyIssue": "pfap_expected_candidate_needs_protection_metadata",
+      "pfapProtectedCount": 2,
+      "pfapMalformedCount": 1,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 3,
       "layeredFailures": [
         {
@@ -1831,32 +1800,27 @@
       "description": "se should beat broad spanish anchor",
       "message": "Spanish in general is fine, vocab is mostly fine, but honestly the actual thing throwing me off is se because every time I think I know what it is doing, it kind of does something else.",
       "expectedLabel": "Se In Spanish",
-      "actualLabel": "Spanish in General",
+      "actualLabel": "Se in Spanish",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "broad_anchor_beat_buried_bottleneck",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Se In Spanish\" actualLabel=\"Spanish in General\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::spanish-003",
@@ -2644,32 +2608,27 @@
       "description": "rambling practical finance paragraph",
       "message": "I thought I was asking about loans in general, but honestly the real issue is principal because every explanation uses the word like I am already supposed to understand what part of the total it refers to.",
       "expectedLabel": "Loan Principal",
-      "actualLabel": "Loans in General",
+      "actualLabel": "Loan Principal",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9100000000000001,
-      "labelPass": false,
+      "actualConfidence": 1,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "broad_anchor_beat_buried_bottleneck",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 2,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
-      "actualCandidateRank": 3,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Loan Principal\" actualLabel=\"Loans in General\""
-        }
-      ]
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::noise-001",
@@ -3169,32 +3128,27 @@
       "description": "existing broad Neurotransmitters topic should not swallow reuptake",
       "message": "We can stay in neurotransmitters generally, but the specific thing I need to understand is reuptake.",
       "expectedLabel": "Reuptake",
-      "actualLabel": "Stay in Neurotransmitters Generally",
+      "actualLabel": "Reuptake",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Reuptake\" actualLabel=\"Stay in Neurotransmitters Generally\""
-        }
-      ]
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "baseline-sequence::sequence-001:step-1",
@@ -3861,32 +3815,27 @@
       "description": "messy neuroscience message with buried target",
       "message": "Ok so like I was trying to understand dopamine yesterday and I thought that was the issue, but honestly after staring at it again I think the actual thing making everything confusing is reuptake.",
       "expectedLabel": "Reuptake",
-      "actualLabel": "Dopamine",
+      "actualLabel": "Reuptake",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 2,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Reuptake\" actualLabel=\"Dopamine\""
-        }
-      ]
+      "actualCandidateRank": 2,
+      "layeredFailures": []
     },
     {
       "key": "hard-isolated::hard-002",
@@ -3897,32 +3846,27 @@
       "description": "messy math paragraph with law target late",
       "message": "Triangles in general are not the problem, and I can usually tell what the question is asking, but once the law of cosines shows up I start second-guessing every step and then I kind of spiral.",
       "expectedLabel": "Law of Cosines",
-      "actualLabel": "Law of Cosines Shows Up",
+      "actualLabel": "Law of Cosines",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 3,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Law of Cosines\" actualLabel=\"Law of Cosines Shows Up\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "hard-isolated::hard-003",
@@ -4747,32 +4691,27 @@
       "description": "paragraph with budgeting context but balancing a budget buried later",
       "message": "My teacher explained budgeting, fixed expenses, variable expenses, debt, and saving, and I nodded through most of it. But when I actually try to put the numbers together myself, making a budget that balances is the point where it stops feeling real to me and starts feeling fake.",
       "expectedLabel": "Balancing a Budget",
-      "actualLabel": "Making a Budget That Balances",
+      "actualLabel": "Balancing a Budget",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 6,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 2,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Balancing a Budget\" actualLabel=\"Making a Budget That Balances\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-paragraph-007",
@@ -4783,32 +4722,27 @@
       "description": "long paragraph with domain anchor, emotional residue, and late formula target",
       "message": "I feel like I mostly understand waves when the examples are just pictures of crests and troughs. The second numbers show up, though, I start guessing. The specific thing I want to fix is the speed of sound formula because I cannot tell what the variables are doing.",
       "expectedLabel": "Speed of Sound",
-      "actualLabel": "Pictures of Crests",
+      "actualLabel": "Speed of Sound",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_extracted_but_lost_competition",
-      "pfapLikelyIssue": "pfap_expected_candidate_needs_protection_metadata",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 2,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Speed of Sound\" actualLabel=\"Pictures of Crests\""
-        }
-      ]
+      "actualCandidateRank": 2,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-paragraph-008",
@@ -5046,32 +4980,27 @@
       "description": "broad programming anchor but true target is event loop",
       "message": "Programming is not the whole problem right now. I can write small bits of code. What I actually keep getting stuck on is the event loop because people describe it like it is obvious and I cannot picture what is waiting for what.",
       "expectedLabel": "Event Loop",
-      "actualLabel": "Write Small Bits of Code",
+      "actualLabel": "Event Loop",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 2,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
-      "actualCandidateRank": 4,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Event Loop\" actualLabel=\"Write Small Bits of Code\""
-        }
-      ]
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-buried-007",
@@ -5717,32 +5646,27 @@
       "description": "messy colloquial budget message",
       "message": "i get budgeting in theory i guess but making a budget that balances is where it starts falling apart for me",
       "expectedLabel": "Balancing a Budget",
-      "actualLabel": "Making a Budget That Balances",
+      "actualLabel": "Balancing a Budget",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 3,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 2,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Balancing a Budget\" actualLabel=\"Making a Budget That Balances\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-noise-004",
@@ -6047,32 +5971,27 @@
       "description": "offside in soccer with rambling setup",
       "message": "I can watch soccer and enjoy it fine, but if somebody asks me to explain offside I suddenly realize I never actually learned how the rule works in a stable way.",
       "expectedLabel": "Offside in Soccer",
-      "actualLabel": "Stable Way",
+      "actualLabel": "Offside in Soccer",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "domain_shaping_failed",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Offside in Soccer\" actualLabel=\"Stable Way\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-domain-003",
@@ -6114,32 +6033,27 @@
       "description": "premium should become insurance premium",
       "message": "I know this is basic but premium keeps showing up in insurance explanations and I do not actually know what it means.",
       "expectedLabel": "Insurance Premium",
-      "actualLabel": "Premium Keeps Showing Up in Insurance Explanations",
+      "actualLabel": "Insurance Premium",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
-      "pfapProtectedCount": 1,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
+      "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Insurance Premium\" actualLabel=\"Premium Keeps Showing Up in Insurance Explanations\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-domain-005",
@@ -6150,32 +6064,27 @@
       "description": "principal should become loan principal",
       "message": "When people talk about loans I keep losing track of principal, because I thought it just meant important but clearly it means something more specific here.",
       "expectedLabel": "Loan Principal",
-      "actualLabel": "Keep Losing Track of Principal",
+      "actualLabel": "Loan Principal",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
-      "pfapProtectedCount": 1,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
+      "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Loan Principal\" actualLabel=\"Keep Losing Track of Principal\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-existing-001",
@@ -6248,32 +6157,27 @@
       "description": "existing broad Neurotransmitters topic should not swallow reuptake bottleneck",
       "message": "We can stay in neurotransmitters generally, but the specific thing I need to understand is reuptake and why it changes the signal.",
       "expectedLabel": "Reuptake",
-      "actualLabel": "Stay in Neurotransmitters Generally",
+      "actualLabel": "Reuptake",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Reuptake\" actualLabel=\"Stay in Neurotransmitters Generally\""
-        }
-      ]
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-existing-004",
@@ -6284,44 +6188,27 @@
       "description": "existing Budgeting topic should not swallow balancing a budget",
       "message": "Budgeting is the general topic, but I specifically get stuck when I have to make the budget balance instead of just naming expenses.",
       "expectedLabel": "Balancing a Budget",
-      "actualLabel": "Budgeting",
+      "actualLabel": "Balancing a Budget",
       "expectedResolutionKind": "created_new_candidate",
-      "actualResolutionKind": "fallback_active_topic",
+      "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
-      "actualShouldCreate": false,
-      "actualMatchedTopicName": "Budgeting",
+      "actualShouldCreate": true,
+      "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
-      "resolutionPass": false,
-      "createPass": false,
+      "labelPass": true,
+      "resolutionPass": true,
+      "createPass": true,
       "matchedTopicPass": true,
-      "forbiddenPass": false,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "forbiddenPass": true,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 2,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 3,
-      "actualCandidateRank": 4,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Balancing a Budget\" actualLabel=\"Budgeting\""
-        },
-        {
-          "layer": "resolution",
-          "message": "expectedResolutionKind=created_new_candidate actualResolutionKind=fallback_active_topic"
-        },
-        {
-          "layer": "create_flag",
-          "message": "expectedShouldCreate=true actualShouldCreate=false"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=fallback_active_topic"
-        }
-      ]
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-null-001",
@@ -11113,7 +11000,7 @@
       "endToEndPass": true,
       "likelyFailureClass": null,
       "pfapLikelyIssue": null,
-      "pfapProtectedCount": 4,
+      "pfapProtectedCount": 3,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 2,

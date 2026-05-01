@@ -567,12 +567,12 @@ actual:   <null>
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[naturalistic-diverse] confusion | naturalistic-confusion-090 | FAIL
+[naturalistic-diverse] confusion | naturalistic-confusion-090 | PASS
 message: How can I tell whether I understand something while I am answering instead of only after someone corrects me? I think the thing I need is monitoring my own understanding.
 expected: Monitoring Understanding
-actual:   Answering
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Monitoring Understanding
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [naturalistic-diverse] confusion | naturalistic-confusion-091 | PASS
 message: Where do I start when every idea feels connected to every other idea in a bad way? I think concept mapping is what I need because I cannot see which idea depends on which.
