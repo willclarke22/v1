@@ -356,6 +356,41 @@ function candidateLooksQuestionSynthesis(candidate: TopicCandidate) {
   );
 }
 
+/**
+ * Patch F.3.1 generalization guard:
+ * Detect candidate labels that describe the learner's request-quality /
+ * inability to name the issue, rather than a teachable concept.
+ *
+ * This is intentionally category-level rather than golden-label-specific:
+ * candidates like "useful way", "clear way", "what I am asking about",
+ * or "stalling out" can be useful diagnostics, but they should not become
+ * durable learning-space topics.
+ */
+function candidateLooksMetaRequestQualityResidue(candidate: TopicCandidate) {
+  const label = cachedNormalizeLoose(getCandidateDisplayLabel(candidate));
+  const core = cachedNormalizeLoose(candidate.coreText);
+  const source = cachedNormalizeLoose(candidate.sourceClause);
+  const combined = `${label} ${core} ${source}`.trim();
+
+  if (!combined) return false;
+
+  const labelIsMetaRequestQuality =
+    /^(?:useful|clear|specific|helpful|coherent|good|right|better) way$/.test(label) ||
+    /^(?:what|whether|which) (?:i|we) (?:am|are|'m|'re )?(?:asking|confused|stuck|struggling)(?: about)?$/.test(label) ||
+    /^(?:asking about|what i am asking about|what i'm asking about|what we are asking about|what we're asking about)$/.test(label) ||
+    /^(?:not saying|not asking|saying this|saying that|explaining this|describing this|stalling out|keep stalling out)$/.test(label);
+
+  const sourceSaysCannotNameTopic =
+    /\b(?:don'?t|dont|do not|can'?t|cant|cannot)\s+(?:really\s+)?(?:know|tell|figure out|identify|name|say|explain|describe)\s+(?:what|whether|which)\s+(?:i|we)\s*(?:am|are|'m|'re)?\s*(?:asking|confused|stuck|struggling|trying to ask|needing help with)\b/i.test(combined) ||
+    /\b(?:don'?t|dont|do not|can'?t|cant|cannot)\s+(?:really\s+)?(?:know|tell|figure out|identify|name)\s+(?:the\s+)?(?:actual|specific|real|clear)?\s*(?:problem|issue|question|blocker|topic|concept)\b/i.test(combined) ||
+    /\b(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:saying|asking|putting|explaining|describing)\s+(?:that|this|it)?\s*(?:in\s+)?(?:a\s+)?(?:useful|clear|specific|helpful|coherent|good|right|better)\s+way\b/i.test(combined);
+
+  const sourceIsPureStuckTriage =
+    /\b(?:just\s+)?(?:keep\s+)?(?:stalling out|shutting down|freezing|getting stuck)\b/i.test(combined) &&
+    /\b(?:don'?t|dont|do not|can'?t|cant|cannot|not)\b/i.test(combined);
+
+  return Boolean(labelIsMetaRequestQuality || sourceSaysCannotNameTopic || sourceIsPureStuckTriage);
+}
 
 function candidateLooksCleanQuestionTarget(candidate: TopicCandidate) {
   const label = getCandidateDisplayLabel(candidate);
@@ -393,6 +428,7 @@ function candidateLooksCleanQuestionTarget(candidate: TopicCandidate) {
 
 function candidateLooksCleanExplicitConcept(candidate: TopicCandidate) {
   if (candidateLooksQuestionSynthesis(candidate)) return false;
+  if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
   if (candidateLooksWeakNounChunk(candidate)) return false;
   if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate)) return false;
 
@@ -412,6 +448,8 @@ function candidateLooksCleanExplicitConcept(candidate: TopicCandidate) {
 function candidateLooksProtectedDurableLabel(candidate: TopicCandidate) {
   const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
   if (!label) return false;
+
+  if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
 
   return (
     candidateLooksCleanExplicitConcept(candidate) ||
@@ -491,6 +529,8 @@ function candidateLooksDurablePracticalConcept(candidate: TopicCandidate) {
   const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
   if (!label) return false;
 
+  if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+
   return (
     candidateLooksProtectedDurableLabel(candidate) ||
     candidateLooksConceptPhrase(candidate) ||
@@ -560,6 +600,10 @@ function candidateLooksNoisyResidue(candidate: TopicCandidate) {
     label === "already know five other words" ||
     label === "what is going on" ||
     label === "what's going on" ||
+    label === "useful way" ||
+    label === "clear way" ||
+    label === "specific way" ||
+    label === "helpful way" ||
     /\btbh\b/.test(core) ||
     /\blol\b/.test(core) ||
     /\byet\b/.test(core) ||
@@ -591,7 +635,10 @@ function candidateLooksProblemFraming(candidate: TopicCandidate) {
     /\bfeel(?:s|ing)? stupid\b/i.test(label) ||
     /\bfeel(?:s)? fake\b/i.test(label) ||
     /\bpretending\b/i.test(label) ||
-    /\bnot clicking\b/i.test(label)
+    /\bnot clicking\b/i.test(label) ||
+    /\b(?:useful|clear|specific|helpful) way\b/i.test(label) ||
+    /\bwhat (?:i|we) (?:am|are|'m|'re)? ?asking about\b/i.test(label) ||
+    /\bstalling out\b/i.test(label)
   );
 }
 
@@ -761,6 +808,8 @@ function candidateLooksResidueLike(candidate: TopicCandidate) {
   const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
   if (!label) return true;
 
+  if (candidateLooksMetaRequestQualityResidue(candidate)) return true;
+
   // Protected durable labels are allowed even if they contain words that are
   // suspicious only when standalone, such as "scoring" or "mean".
   if (candidateLooksProtectedDurableLabel(candidate) && !candidateIsOnlySuspiciousWhenStandalone(candidate)) {
@@ -860,6 +909,55 @@ function messageHasComparisonShape(message: string) {
   return /\bvs\b|\bversus\b|\bdifference between\b|\bcompare\b|\bcontrast\b|\bmix(?:ing)? up\b|\bblending\b|\bblur together\b|\bblend together\b|\binterchangeable\b|\bused interchangeably\b|\bfeel(?:s)? basically the same\b|\bactual difference\b|\btell (?:them )?apart\b|\bdistinguish between\b|\bstop feeling different\b|\bcollapse into the same word\b/i.test(
     message
   );
+}
+
+
+/**
+ * Patch F.3 generalization guard:
+ * Detect messages where the learner is explicitly saying “I need help, but I
+ * cannot yet name what the help is about.” This is a learner-state / triage
+ * signal, not a topic signal. It should suppress persistent topic creation
+ * only when no durable concept cue is present elsewhere in the message.
+ */
+function messageHasMetaNoStableTopicShape(message: string) {
+  const normalized = cachedNormalizeLoose(message);
+
+  return (
+    /\b(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:saying|asking|putting|explaining|describing)\s+(?:that|this|it)?\s*(?:in\s+)?(?:a\s+)?(?:useful|clear|specific|helpful|coherent|good)\s+way\b/i.test(normalized) ||
+    /\b(?:don'?t|dont|do not|can'?t|cant|cannot)\s+(?:really\s+)?(?:know|tell|figure out|identify|name|say|explain|describe)\s+(?:what|whether|which)\s+(?:i|we)\s*(?:am|are|'m|'re)?\s*(?:asking|confused|stuck|struggling|trying to ask|needing help with)\b/i.test(normalized) ||
+    /\b(?:don'?t|dont|do not|can'?t|cant|cannot)\s+(?:really\s+)?(?:know|tell|figure out|identify|name)\s+(?:the\s+)?(?:actual|specific|real|clear)?\s*(?:problem|issue|question|blocker|topic|concept)\b/i.test(normalized) ||
+    /\b(?:cannot|can'?t|cant)\s+tell\s+(?:what|whether|which)\s+(?:the\s+)?(?:actual|specific|real|clear)?\s*(?:problem|issue|question|blocker|topic|concept)\s*(?:is)?\b/i.test(normalized) ||
+    /\b(?:i|we)\s+(?:just\s+)?(?:know|can tell)\s+(?:that\s+)?(?:i|we)?\s*(?:keep\s+)?(?:stalling out|shutting down|freezing|getting stuck)\b/i.test(normalized) ||
+    /\b(?:i|we)\s+(?:am|are|'m|'re)\s+(?:just\s+)?(?:stalling out|shutting down|freezing|get(?:ting)? stuck)\b/i.test(normalized)
+  );
+}
+
+function messageHasDurableConceptCue(message: string) {
+  const normalized = cachedNormalizeLoose(message);
+
+  // This guard is used specifically to decide whether a meta-confusion message
+  // still contains a real teachable target. Avoid treating bare connector words
+  // like "in" or "of" as durable concept evidence; otherwise phrases such as
+  // "in a useful way" incorrectly block the no-topic clarify path.
+  const namedOrTechnicalCue =
+    /\b(?:vs|versus|difference|compare|contrast|how .+ works?|why .+ happens?|process|mechanism|terminology|jargon|forms|formula|law|rules?|phases?|layers?|steps?|standard deviation|opportunity cost|compound interest|reuptake|depolarization|electronegativity|crossing over|speed of sound|event loop|negative feedback|membrane potential|se\b|word order|sentence order|pH|ph|analy[sz]e|tell whether|count as|caused|prove|should use|[a-z0-9]+-[a-z0-9]+)\b/i.test(
+      normalized
+    );
+
+  const structuredConceptCue =
+    /\b(?:rules?|law|layers?|phases?|types?|causes?|speed|cost|interest|order|source|response|state|error|right|burden|circle|map|plate|blind spot|subject-verb|one-point|civil liberties|civil rights)\s+(?:of|in|on|for)\s+[a-z0-9][a-z0-9'-]*(?:\s+[a-z0-9][a-z0-9'-]*){0,5}\b/i.test(
+      normalized
+    );
+
+  const explicitLearningTargetCue =
+    /\b(?:about|with|on)\s+(?:[a-z0-9][a-z0-9'-]*\s+){0,4}(?:mitosis|meiosis|osmosis|dopamine|amortization|neurons?|neurotransmitters?|budgeting|taxes?|spanish|curling|soccer|insurance|coding|react|javascript|statistics|chemistry|physics|history|grammar|music|geography|driving|art)\b/i.test(
+      normalized
+    );
+
+  return Boolean(namedOrTechnicalCue || structuredConceptCue || explicitLearningTargetCue);
+}
+function messageHasMetaNoStableTopicWithoutDurableCue(message: string) {
+  return messageHasMetaNoStableTopicShape(message) && !messageHasDurableConceptCue(message);
 }
 
 function computeBestReuseHint(
@@ -1037,7 +1135,8 @@ function clauseLooksResidueOnly(raw: string) {
     ) ||
     /\b(?:do not know where to start|don't know where to start|dont know where to start|where to start|whole thing|nothing makes sense)\b/.test(
       text
-    )
+    ) ||
+    messageHasMetaNoStableTopicShape(text)
   );
 }
 
@@ -1116,10 +1215,7 @@ function buildDiscourseProfile(
   const hasMechanismRequestShape = messageRequestsMechanism(normalized);
   const hasComparisonShape = messageHasComparisonShape(normalized);
 
-  const hasAnyDurableConceptCue =
-    /\b(?:of|in|on|vs|versus|difference|how|why|work|works|process|mechanism|terminology|jargon|forms|formula|law|rules?|phases?|layers?|steps?|standard deviation|opportunity cost|compound interest|reuptake|depolarization|electronegativity|crossing over|speed of sound|event loop|negative feedback|membrane potential|se|word order|pH|ph|analy[sz]e|tell whether|count as|caused|prove|should use)\b/i.test(
-      normalized
-    );
+  const hasAnyDurableConceptCue = messageHasDurableConceptCue(normalized);
 
   const hasNullOnlyEmotionalShape =
     residueZones.length > 0 &&
@@ -1131,6 +1227,9 @@ function buildDiscourseProfile(
   if (hasLanguageBarrierShape) notes.push("language_barrier_shape_detected");
   if (hasTerminologyBarrierShape) notes.push("terminology_barrier_shape_detected");
   if (hasNullOnlyEmotionalShape) notes.push("null_only_emotional_shape_detected");
+  if (messageHasMetaNoStableTopicWithoutDurableCue(normalized)) {
+    notes.push("meta_no_stable_topic_without_durable_cue_detected");
+  }
 
   return {
     broadAnchorZones,
@@ -1887,7 +1986,8 @@ function messageExplicitlyRejectsPersistentTopic(message: string) {
   return (
     /\b(?:no|not|don'?t have|dont have|do not have)\b.*\b(?:specific|actual|clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalized) ||
     /\b(?:no specific|no actual|no clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalized) ||
-    /\b(?:i|we)\s+(?:don'?t|dont|do not)\s+(?:have|know)\s+(?:an?\s+)?(?:actual|specific|clear)?\s*(?:topic|concept|class thing|subject)\b/i.test(normalized)
+    /\b(?:i|we)\s+(?:don'?t|dont|do not)\s+(?:have|know)\s+(?:an?\s+)?(?:actual|specific|clear)?\s*(?:topic|concept|class thing|subject)\b/i.test(normalized) ||
+    messageHasMetaNoStableTopicWithoutDurableCue(normalized)
   );
 }
 
@@ -3094,6 +3194,14 @@ function buildAmbiguityFlags(args: {
     flags.push("null_only_emotional_overcreated");
   }
 
+  if (messageHasMetaNoStableTopicWithoutDurableCue(normalizedMessage)) {
+    flags.push("meta_confusion_without_stable_topic");
+    flags.push("clarify_without_topic_recommended");
+    if (canonicalLabel) {
+      flags.push("meta_no_stable_topic_overcreated");
+    }
+  }
+
   return dedupe(flags);
 }
 
@@ -3225,6 +3333,7 @@ function buildConfidence(args: {
   if (bestCandidate && candidateLooksGeneralBucket(bestCandidate)) confidence -= 0.12;
   if (cachedLooksLikeSuspiciousLabel(canonicalLabel)) confidence -= 0.1;
   if (discourseProfile.hasNullOnlyEmotionalShape) confidence -= 0.24;
+  if (messageHasMetaNoStableTopicWithoutDurableCue(normalizedMessage)) confidence -= 0.28;
 
   const topFamily = bestCandidate
     ? classifyCandidateFamily(bestCandidate, normalizedMessage)
@@ -3268,6 +3377,10 @@ function shouldSuppressWinnerAsNull(args: {
     /\b(?:no specific|no actual|no clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalizedMessage);
 
   if (explicitlyNoTopic) return true;
+
+  if (messageHasMetaNoStableTopicWithoutDurableCue(normalizedMessage)) {
+    return true;
+  }
 
   // PFAP3 invariant: once final arbitration has selected a protected,
   // well-formed durable concept, generic emotion/no-concept suppression cannot
@@ -3514,6 +3627,9 @@ export function runDeterministicTopicLabeling(
     !ambiguityFlags.includes("weak_noun_chunk_winner") &&
     !ambiguityFlags.includes("high_residue_risk_winner") &&
     !ambiguityFlags.includes("null_only_emotional_overcreated") &&
+    !ambiguityFlags.includes("meta_no_stable_topic_overcreated") &&
+    !ambiguityFlags.includes("meta_confusion_without_stable_topic") &&
+    !ambiguityFlags.includes("clarify_without_topic_recommended") &&
     !ambiguityFlags.includes("qcs_over_synthesis_winner") &&
     !messageLooksLikePureFollowup(normalizedMessage) &&
     canonicalLabel != null &&
@@ -3653,6 +3769,9 @@ export function runDeterministicTopicLabeling(
           : []),
         ...(ambiguityFlags.includes("null_only_emotional_overcreated")
           ? ["The message looks emotionally complex but lacks a durable teachable target."]
+          : []),
+        ...(ambiguityFlags.includes("clarify_without_topic_recommended")
+          ? ["The message asks for help but explicitly says the learner cannot yet name the topic; recommend a non-persistent clarify step instead of creating a learning-space topic."]
           : []),
       ],
       ambiguity_flags: dedupe(ambiguityFlags),

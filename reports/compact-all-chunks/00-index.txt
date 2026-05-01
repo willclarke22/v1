@@ -1,9 +1,9 @@
 === Compact Topic Labeling Chunked Report Index ===
-overall: total=336 label=309/336 resolution=332/336 e2e=306/336 failed=30
-label-layer failures: 27
-end-to-end failures: 30
+overall: total=336 label=310/336 resolution=333/336 e2e=307/336 failed=29
+label-layer failures: 26
+end-to-end failures: 29
 displayed cases: 336 (all cases)
-generatedAt: 2026-05-01T19:42:27.345Z
+generatedAt: 2026-05-01T21:09:07.993Z
 
 === Compact Scope Summary ===
 baseline-isolated: total=78 label=72/78 resolution=77/78 e2e=72/78 failed=6
@@ -12,7 +12,7 @@ blindv2-isolated: total=25 label=16/25 resolution=24/25 e2e=16/25 failed=9
 blindv2-sequence: total=11 label=10/11 resolution=10/11 e2e=8/11 failed=3
 hard-isolated: total=12 label=12/12 resolution=12/12 e2e=12/12 failed=0
 hard-sequence: total=11 label=11/11 resolution=11/11 e2e=11/11 failed=0
-holdout-isolated: total=58 label=48/58 resolution=57/58 e2e=48/58 failed=10
+holdout-isolated: total=58 label=49/58 resolution=58/58 e2e=49/58 failed=9
 holdout-sequence: total=20 label=20/20 resolution=20/20 e2e=20/20 failed=0
 naturalistic-diverse: total=100 label=100/100 resolution=100/100 e2e=100/100 failed=0
 
@@ -61,7 +61,7 @@ music: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 nature: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 negative_followup: total=2 label=2/2 resolution=2/2 e2e=2/2 failed=0
 noisy_natural_language: total=13 label=11/13 resolution=13/13 e2e=11/13 failed=2
-null_cases: total=11 label=10/11 resolution=10/11 e2e=10/11 failed=1
+null_cases: total=11 label=11/11 resolution=11/11 e2e=11/11 failed=0
 paragraph_context: total=18 label=13/18 resolution=18/18 e2e=13/18 failed=5
 plumbing: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 politics_class: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0

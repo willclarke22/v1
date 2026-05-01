@@ -64,13 +64,12 @@ actual:   <null>
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] null_cases | holdout-null-002 | FAIL
+[holdout-isolated] null_cases | holdout-null-002 | PASS
 message: Can you maybe help me but I am not saying that in a useful way because I do not really know what I am asking about, I just know I keep stalling out.
 expected: <null>
-actual:   Useful Way
-checks: label=N resolution=N create=N matched=Y forbidden=Y
-layers: label,resolution,create_flag | likely: null_case_overcreated_topic | pfap: n/a
-resolution: expected=no_match actual=created_new_candidate | create expected=false actual=true | matched expected=n/a actual=n/a
+actual:   <null>
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] null_cases | holdout-null-003 | PASS
 message: I feel overwhelmed and behind and I cannot tell what the problem even is, I just know the whole thing is making me shut down.

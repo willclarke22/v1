@@ -1,15 +1,15 @@
 
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
-Previous snapshot generatedAt: 2026-05-01T01:04:32.028Z
-Current snapshot generatedAt: 2026-05-01T19:40:09.190Z
+Previous snapshot generatedAt: 2026-05-01T19:44:02.272Z
+Current snapshot generatedAt: 2026-05-01T21:05:04.182Z
 
-overall label: 307/336 -> 309/336 (+2)
-overall e2e:   291/336 -> 306/336 (+15)
-failed:        45 -> 30 (-15)
+overall label: 309/336 -> 310/336 (+1)
+overall e2e:   306/336 -> 307/336 (+1)
+failed:        30 -> 29 (-1)
 
 Case movement:
-New passes: 15
+New passes: 1
 New regressions: 0
 Naturalistic regressions: 0
 Still failing but changed output: 0
@@ -20,154 +20,35 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
-baseline-isolated: label 70/78 -> 72/78 (+2), e2e 70/78 -> 72/78 (+2), failed 8 -> 6 (-2)
-baseline-sequence: label 20/21 -> 20/21 (0), e2e 16/21 -> 19/21 (+3), failed 5 -> 2 (-3)
-hard-sequence: label 11/11 -> 11/11 (0), e2e 7/11 -> 11/11 (+4), failed 4 -> 0 (-4)
-holdout-sequence: label 20/20 -> 20/20 (0), e2e 14/20 -> 20/20 (+6), failed 6 -> 0 (-6)
+holdout-isolated: label 48/58 -> 49/58 (+1), e2e 48/58 -> 49/58 (+1), failed 10 -> 9 (-1)
 
 Category movement:
-context_recovery: label 3/5 -> 4/5 (+1), e2e 3/5 -> 4/5 (+1), failed 2 -> 1 (-1)
-followup_continuity: label 28/29 -> 28/29 (0), e2e 20/29 -> 26/29 (+6), failed 9 -> 3 (-6)
-hard_sequence_language: label 6/6 -> 6/6 (0), e2e 2/6 -> 6/6 (+4), failed 4 -> 0 (-4)
-paragraph_context: label 12/18 -> 13/18 (+1), e2e 12/18 -> 13/18 (+1), failed 6 -> 5 (-1)
-sequence_existing_vs_new_narrow: label 2/2 -> 2/2 (0), e2e 1/2 -> 2/2 (+1), failed 1 -> 0 (-1)
-sequence_language: label 4/5 -> 4/5 (0), e2e 1/5 -> 3/5 (+2), failed 4 -> 2 (-2)
+null_cases: label 10/11 -> 11/11 (+1), e2e 10/11 -> 11/11 (+1), failed 1 -> 0 (-1)
 
 Failure-layer movement:
-label: 29 -> 27 (-2)
-matched_topic: 15 -> 2 (-13)
+create_flag: 3 -> 2 (-1)
+label: 27 -> 26 (-1)
+resolution: 4 -> 3 (-1)
 
 Likely-failure-class movement:
-expected_label_extracted_but_lost_competition: 2 -> 1 (-1)
-good_label_but_creation_blocked: 16 -> 3 (-13)
-pfap_protected_candidate_lost_final_arbitration: 8 -> 7 (-1)
+null_case_overcreated_topic: 1 -> 0 (-1)
 
 PFAP likely-issue movement:
-pfap_expected_candidate_needs_protection_metadata: 2 -> 1 (-1)
-pfap_protected_candidate_lost_final_arbitration: 8 -> 7 (-1)
-unknown: 17 -> 4 (-13)
+unknown: 4 -> 3 (-1)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 28 -> 26 (-2)
-failedExpectedCandidateFound: 11 -> 9 (-2)
-failedExpectedCandidateProtected: 9 -> 8 (-1)
-failedMalformedActual: 5 -> 2 (-3)
+failedWithProtectedCandidates: 26 -> 25 (-1)
+failedExpectedCandidateFound: 9 -> 9 (0)
+failedExpectedCandidateProtected: 8 -> 8 (0)
+failedMalformedActual: 2 -> 2 (0)
 
 New passes:
 
---- context_recovery (1) ---
-[baseline-isolated] context_recovery | context-004 | PASS
-message: We're doing a section on waves in class. Most of it is okay. The actual thing that confuses me is the speed of sound part.
-expected: Speed of Sound
-actual:   Speed of Sound
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-
---- followup_continuity (6) ---
-[holdout-sequence] followup_continuity | holdout-sequence-002:step-2 | PASS
-message: It just feels coded, honestly.
-expected: <unspecified>
-actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[holdout-sequence] followup_continuity | holdout-sequence-002:step-3 | PASS
-message: Can we do that again?
-expected: <unspecified>
-actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[holdout-sequence] followup_continuity | holdout-sequence-003:step-2 | PASS
-message: Yes, that tiny word is the thing that breaks my confidence.
-expected: <unspecified>
-actual:   Se in Spanish
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[holdout-sequence] followup_continuity | holdout-sequence-003:step-3 | PASS
-message: Quiz me on it, I guess.
-expected: <unspecified>
-actual:   On It
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[holdout-sequence] followup_continuity | holdout-sequence-006:step-2 | PASS
-message: Yeah, that tiny word is what I mean.
-expected: <unspecified>
+--- null_cases (1) ---
+[holdout-isolated] null_cases | holdout-null-002 | PASS
+message: Can you maybe help me but I am not saying that in a useful way because I do not really know what I am asking about, I just know I keep stalling out.
+expected: <null>
 actual:   <null>
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[holdout-sequence] followup_continuity | holdout-sequence-006:step-3 | PASS
-message: Can you quiz me on it?
-expected: <unspecified>
-actual:   On It
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-
---- hard_sequence_language (4) ---
-[hard-sequence] hard_sequence_language | hard-sequence-001:step-2 | PASS
-message: Yeah, that exact part is what keeps throwing me off.
-expected: <unspecified>
-actual:   <null>
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[hard-sequence] hard_sequence_language | hard-sequence-001:step-3 | PASS
-message: Quiz me on it.
-expected: <unspecified>
-actual:   On It
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[hard-sequence] hard_sequence_language | hard-sequence-002:step-2 | PASS
-message: It just feels coded.
-expected: <unspecified>
-actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[hard-sequence] hard_sequence_language | hard-sequence-002:step-3 | PASS
-message: Can we do that again?
-expected: <unspecified>
-actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-
---- paragraph_context (1) ---
-[baseline-isolated] paragraph_context | paragraph-001 | PASS
-message: We're doing a unit on neurotransmission right now. I kind of understand the overall idea, but I keep getting lost when people talk about reuptake and what it changes. Could we go over that?
-expected: Reuptake
-actual:   Reuptake
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-
---- sequence_existing_vs_new_narrow (1) ---
-[baseline-sequence] sequence_existing_vs_new_narrow | sequence-008:step-2 | PASS
-message: Yeah, that tiny word.
-expected: <unspecified>
-actual:   Se in Spanish
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-
---- sequence_language (2) ---
-[baseline-sequence] sequence_language | sequence-005:step-2 | PASS
-message: It just feels like another language.
-expected: <unspecified>
-actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[baseline-sequence] sequence_language | sequence-005:step-3 | PASS
-message: Can we go over that again but slower?
-expected: <unspecified>
-actual:   Tax Terminology and Forms
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
