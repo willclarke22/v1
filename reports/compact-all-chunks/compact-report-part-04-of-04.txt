@@ -1,15 +1,8 @@
 === Compact Topic Labeling Report Part 4 of 4 ===
 display mode: all cases
-cases in this file: 86
+cases in this file: 85
 
 --- health ---
-
-[naturalistic-diverse] health | naturalistic-health-015 | PASS
-message: The nurse said my blood pressure numbers and I nodded because that seemed easier. But later I realized I don't know what systolic vs diastolic actually means.
-expected: Systolic vs Diastolic Blood Pressure
-actual:   Systolic vs Diastolic Blood Pressure
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
 
 [naturalistic-diverse] health | naturalistic-health-016 | PASS
 message: I get colds and I know my body fights them somehow. The actual thing I want to understand is the immune response, because the white blood cell stuff feels like a story with missing steps.

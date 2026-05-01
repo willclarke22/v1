@@ -1,6 +1,6 @@
 === Compact Topic Labeling Report Part 2 of 4 ===
 display mode: all cases
-cases in this file: 83
+cases in this file: 84
 
 --- sequence_baseline ---
 
@@ -42,21 +42,19 @@ actual:   Tax Terminology and Forms
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-sequence] sequence_language | sequence-005:step-2 | FAIL
+[baseline-sequence] sequence_language | sequence-005:step-2 | PASS
 message: It just feels like another language.
 expected: <unspecified>
 actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Tax Terminology And Forms actual=Tax Terminology and Forms
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[baseline-sequence] sequence_language | sequence-005:step-3 | FAIL
+[baseline-sequence] sequence_language | sequence-005:step-3 | PASS
 message: Can we go over that again but slower?
 expected: <unspecified>
 actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Tax Terminology And Forms actual=Tax Terminology and Forms
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- sequence_switching ---
 
@@ -113,13 +111,12 @@ actual:   Se in Spanish
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-sequence] sequence_existing_vs_new_narrow | sequence-008:step-2 | FAIL
+[baseline-sequence] sequence_existing_vs_new_narrow | sequence-008:step-2 | PASS
 message: Yeah, that tiny word.
 expected: <unspecified>
 actual:   Se in Spanish
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Se In Spanish actual=Se in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- hard_broad_to_narrow ---
 
@@ -230,21 +227,19 @@ actual:   Word Order in Spanish
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[hard-sequence] hard_sequence_language | hard-sequence-001:step-2 | FAIL
+[hard-sequence] hard_sequence_language | hard-sequence-001:step-2 | PASS
 message: Yeah, that exact part is what keeps throwing me off.
 expected: <unspecified>
 actual:   <null>
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Word Order In Spanish actual=Word Order in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[hard-sequence] hard_sequence_language | hard-sequence-001:step-3 | FAIL
+[hard-sequence] hard_sequence_language | hard-sequence-001:step-3 | PASS
 message: Quiz me on it.
 expected: <unspecified>
 actual:   On It
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Word Order In Spanish actual=Word Order in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [hard-sequence] hard_sequence_language | hard-sequence-002:step-1 | PASS
 message: The forms and the tax terminology feel like another language and I keep shutting down right at the beginning because I don't know what half the words are asking for.
@@ -253,21 +248,19 @@ actual:   Tax Terminology and Forms
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[hard-sequence] hard_sequence_language | hard-sequence-002:step-2 | FAIL
+[hard-sequence] hard_sequence_language | hard-sequence-002:step-2 | PASS
 message: It just feels coded.
 expected: <unspecified>
 actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Tax Terminology And Forms actual=Tax Terminology and Forms
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[hard-sequence] hard_sequence_language | hard-sequence-002:step-3 | FAIL
+[hard-sequence] hard_sequence_language | hard-sequence-002:step-3 | PASS
 message: Can we do that again?
 expected: <unspecified>
 actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Tax Terminology And Forms actual=Tax Terminology and Forms
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- hard_sequence_switching ---
 
@@ -636,4 +629,11 @@ expected: Insurance Deductible
 actual:   Keep Seeing Deductible in Insurance Stuff
 checks: label=N resolution=Y create=Y matched=Y forbidden=Y
 layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[holdout-isolated] domain_shaping | holdout-domain-002 | PASS
+message: I can watch soccer and enjoy it fine, but if somebody asks me to explain offside I suddenly realize I never actually learned how the rule works in a stable way.
+expected: Offside in Soccer
+actual:   Offside in Soccer
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 

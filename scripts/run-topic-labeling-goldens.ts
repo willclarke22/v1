@@ -629,16 +629,23 @@ function evaluateLayeredExpectations(
     });
   }
 
-  const matchedTopicPass =
-    expected.expectedMatchedTopicName === undefined ||
-    expected.expectedMatchedTopicName === actual.actualMatchedTopicName;
+  const matchedTopicPass = matchedTopicNamesEquivalent(
+    expected.expectedMatchedTopicName,
+    actual.actualMatchedTopicName
+  );
 
   if (!matchedTopicPass) {
     layeredFailures.push({
       layer: "matched_topic",
       message: `expectedMatchedTopicName=${JSON.stringify(
         expected.expectedMatchedTopicName
-      )} actualMatchedTopicName=${JSON.stringify(actual.actualMatchedTopicName)}`,
+      )} actualMatchedTopicName=${JSON.stringify(
+        actual.actualMatchedTopicName
+      )} normalizedExpectedMatchedTopicName=${JSON.stringify(
+        normalizeMatchedTopicNameForCompare(expected.expectedMatchedTopicName)
+      )} normalizedActualMatchedTopicName=${JSON.stringify(
+        normalizeMatchedTopicNameForCompare(actual.actualMatchedTopicName)
+      )}`,
     });
   }
 
@@ -947,6 +954,28 @@ function normalizeForLooseCompare(text: string | null | undefined): string {
     .replace(/[^\p{L}\p{N}\s'-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function normalizeMatchedTopicNameForCompare(
+  topicName: string | null | undefined
+): string {
+  return normalizeForLooseCompare(topicName);
+}
+
+function matchedTopicNamesEquivalent(
+  expectedMatchedTopicName: string | null | undefined,
+  actualMatchedTopicName: string | null | undefined
+): boolean {
+  if (expectedMatchedTopicName === undefined) return true;
+
+  if (expectedMatchedTopicName === null || actualMatchedTopicName === null) {
+    return expectedMatchedTopicName === actualMatchedTopicName;
+  }
+
+  return (
+    normalizeMatchedTopicNameForCompare(expectedMatchedTopicName) ===
+    normalizeMatchedTopicNameForCompare(actualMatchedTopicName)
+  );
 }
 
 function labelsEquivalent(

@@ -238,12 +238,12 @@ actual:   I'm Doing Homework on Triangles Right
 checks: label=N resolution=Y create=Y matched=Y forbidden=Y
 layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
 
-[baseline-isolated] context_recovery | context-004 | FAIL
+[baseline-isolated] context_recovery | context-004 | PASS
 message: We're doing a section on waves in class. Most of it is okay. The actual thing that confuses me is the speed of sound part.
 expected: Speed of Sound
-actual:   Section on Waves in Class
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_extracted_but_lost_competition | pfap: pfap_expected_candidate_needs_protection_metadata
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] context_recovery | context-005 | PASS
 message: We are doing probability in class and most of the examples are fine, but standard deviation is where I stop knowing what I am supposed to picture.
@@ -415,12 +415,12 @@ layers: none | likely: n/a | pfap: n/a
 
 --- paragraph_context ---
 
-[baseline-isolated] paragraph_context | paragraph-001 | FAIL
+[baseline-isolated] paragraph_context | paragraph-001 | PASS
 message: We're doing a unit on neurotransmission right now. I kind of understand the overall idea, but I keep getting lost when people talk about reuptake and what it changes. Could we go over that?
 expected: Reuptake
-actual:   Unit on Neurotransmission Right
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Reuptake
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] paragraph_context | paragraph-002 | PASS
 message: In class we're doing waves and sound. The worksheet has a formula for the speed of sound and everyone else seems to get what the variables are doing, but I don't. I think that's the part I need help with.

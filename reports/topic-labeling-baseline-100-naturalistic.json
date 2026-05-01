@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-01T01:04:32.028Z",
+  "generatedAt": "2026-05-01T19:44:02.272Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,31 +8,31 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 307,
+    "labelPassed": 309,
     "resolutionPassed": 332,
     "createPassed": 333,
-    "matchedTopicPassed": 321,
-    "endToEndPassed": 291,
-    "failed": 45
+    "matchedTopicPassed": 334,
+    "endToEndPassed": 306,
+    "failed": 30
   },
   "scopeBreakdown": {
     "baseline-isolated": {
       "total": 78,
-      "labelPassed": 70,
+      "labelPassed": 72,
       "resolutionPassed": 77,
       "createPassed": 77,
       "matchedTopicPassed": 78,
-      "endToEndPassed": 70,
-      "failed": 8
+      "endToEndPassed": 72,
+      "failed": 6
     },
     "baseline-sequence": {
       "total": 21,
       "labelPassed": 20,
       "resolutionPassed": 21,
       "createPassed": 21,
-      "matchedTopicPassed": 17,
-      "endToEndPassed": 16,
-      "failed": 5
+      "matchedTopicPassed": 20,
+      "endToEndPassed": 19,
+      "failed": 2
     },
     "blindv2-isolated": {
       "total": 25,
@@ -66,9 +66,9 @@
       "labelPassed": 11,
       "resolutionPassed": 11,
       "createPassed": 11,
-      "matchedTopicPassed": 7,
-      "endToEndPassed": 7,
-      "failed": 4
+      "matchedTopicPassed": 11,
+      "endToEndPassed": 11,
+      "failed": 0
     },
     "holdout-isolated": {
       "total": 58,
@@ -84,9 +84,9 @@
       "labelPassed": 20,
       "resolutionPassed": 20,
       "createPassed": 20,
-      "matchedTopicPassed": 14,
-      "endToEndPassed": 14,
-      "failed": 6
+      "matchedTopicPassed": 20,
+      "endToEndPassed": 20,
+      "failed": 0
     },
     "naturalistic-diverse": {
       "total": 100,
@@ -101,21 +101,21 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 246,
+      "labelPassed": 248,
       "resolutionPassed": 270,
       "createPassed": 270,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 246,
-      "failed": 27
+      "endToEndPassed": 248,
+      "failed": 25
     },
     "sequence": {
       "total": 63,
       "labelPassed": 61,
       "resolutionPassed": 62,
       "createPassed": 63,
-      "matchedTopicPassed": 48,
-      "endToEndPassed": 45,
-      "failed": 18
+      "matchedTopicPassed": 61,
+      "endToEndPassed": 58,
+      "failed": 5
     }
   },
   "categoryBreakdown": {
@@ -211,12 +211,12 @@
     },
     "context_recovery": {
       "total": 5,
-      "labelPassed": 3,
+      "labelPassed": 4,
       "resolutionPassed": 5,
       "createPassed": 5,
       "matchedTopicPassed": 5,
-      "endToEndPassed": 3,
-      "failed": 2
+      "endToEndPassed": 4,
+      "failed": 1
     },
     "cooking": {
       "total": 4,
@@ -313,9 +313,9 @@
       "labelPassed": 28,
       "resolutionPassed": 28,
       "createPassed": 29,
-      "matchedTopicPassed": 22,
-      "endToEndPassed": 20,
-      "failed": 9
+      "matchedTopicPassed": 28,
+      "endToEndPassed": 26,
+      "failed": 3
     },
     "geography": {
       "total": 4,
@@ -403,9 +403,9 @@
       "labelPassed": 6,
       "resolutionPassed": 6,
       "createPassed": 6,
-      "matchedTopicPassed": 2,
-      "endToEndPassed": 2,
-      "failed": 4
+      "matchedTopicPassed": 6,
+      "endToEndPassed": 6,
+      "failed": 0
     },
     "hard_sequence_switching": {
       "total": 2,
@@ -526,12 +526,12 @@
     },
     "paragraph_context": {
       "total": 18,
-      "labelPassed": 12,
+      "labelPassed": 13,
       "resolutionPassed": 18,
       "createPassed": 18,
       "matchedTopicPassed": 18,
-      "endToEndPassed": 12,
-      "failed": 6
+      "endToEndPassed": 13,
+      "failed": 5
     },
     "plumbing": {
       "total": 4,
@@ -592,18 +592,18 @@
       "labelPassed": 2,
       "resolutionPassed": 2,
       "createPassed": 2,
-      "matchedTopicPassed": 1,
-      "endToEndPassed": 1,
-      "failed": 1
+      "matchedTopicPassed": 2,
+      "endToEndPassed": 2,
+      "failed": 0
     },
     "sequence_language": {
       "total": 5,
       "labelPassed": 4,
       "resolutionPassed": 5,
       "createPassed": 5,
-      "matchedTopicPassed": 2,
-      "endToEndPassed": 1,
-      "failed": 4
+      "matchedTopicPassed": 4,
+      "endToEndPassed": 3,
+      "failed": 2
     },
     "sequence_switching": {
       "total": 3,
@@ -661,33 +661,33 @@
     }
   },
   "layerBreakdown": {
-    "label": 29,
+    "label": 27,
     "resolution": 4,
     "create_flag": 3,
-    "matched_topic": 15,
+    "matched_topic": 2,
     "forbidden": 0
   },
   "likelyFailureBreakdown": {
     "domain_shaping_failed": 7,
-    "expected_label_extracted_but_lost_competition": 2,
+    "expected_label_extracted_but_lost_competition": 1,
     "expected_label_present_in_message_but_not_extracted": 4,
-    "good_label_but_creation_blocked": 16,
+    "good_label_but_creation_blocked": 3,
     "null_case_overcreated_topic": 1,
     "pfap_malformed_candidate_won": 1,
-    "pfap_protected_candidate_lost_final_arbitration": 8,
+    "pfap_protected_candidate_lost_final_arbitration": 7,
     "uncategorized_failure": 6
   },
   "pfapBreakdown": {
-    "failedCount": 45,
-    "failedWithProtectedCandidates": 28,
-    "failedExpectedCandidateFound": 11,
-    "failedExpectedCandidateProtected": 9,
-    "failedMalformedActual": 5,
+    "failedCount": 30,
+    "failedWithProtectedCandidates": 26,
+    "failedExpectedCandidateFound": 9,
+    "failedExpectedCandidateProtected": 8,
+    "failedMalformedActual": 2,
     "likelyIssueBreakdown": {
-      "pfap_expected_candidate_needs_protection_metadata": 2,
+      "pfap_expected_candidate_needs_protection_metadata": 1,
       "pfap_expected_label_partially_extracted_canonicalization_needed": 18,
-      "pfap_protected_candidate_lost_final_arbitration": 8,
-      "unknown": 17
+      "pfap_protected_candidate_lost_final_arbitration": 7,
+      "unknown": 4
     }
   },
   "results": [
@@ -1605,7 +1605,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.9780000000000001,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -1697,32 +1697,27 @@
       "description": "broad unit context but specific sound target late",
       "message": "We're doing a section on waves in class. Most of it is okay. The actual thing that confuses me is the speed of sound part.",
       "expectedLabel": "Speed of Sound",
-      "actualLabel": "Section on Waves in Class",
+      "actualLabel": "Speed of Sound",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_extracted_but_lost_competition",
-      "pfapLikelyIssue": "pfap_expected_candidate_needs_protection_metadata",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
-      "actualCandidateRank": 3,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Speed of Sound\" actualLabel=\"Section on Waves in Class\""
-        }
-      ]
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::context-005",
@@ -1739,7 +1734,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9800000000000001,
+      "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -2263,7 +2258,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.9800000000000001,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -2474,32 +2469,27 @@
       "description": "paragraph with broad setup and narrow mechanism",
       "message": "We're doing a unit on neurotransmission right now. I kind of understand the overall idea, but I keep getting lost when people talk about reuptake and what it changes. Could we go over that?",
       "expectedLabel": "Reuptake",
-      "actualLabel": "Unit on Neurotransmission Right",
+      "actualLabel": "Reuptake",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
-      "labelPass": false,
+      "actualConfidence": 0.9499999999999998,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 2,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Reuptake\" actualLabel=\"Unit on Neurotransmission Right\""
-        }
-      ]
+      "actualCandidateRank": 2,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::paragraph-002",
@@ -2516,7 +2506,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9100000000000001,
+      "actualConfidence": 0.8180000000000001,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -2578,7 +2568,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.8119999999999999,
+      "actualConfidence": 0.52,
       "labelPass": false,
       "resolutionPass": true,
       "createPass": true,
@@ -3257,7 +3247,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9100000000000001,
+      "actualConfidence": 0.8180000000000001,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
@@ -3457,7 +3447,7 @@
       "layeredFailures": [
         {
           "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Word Order In Spanish\" actualMatchedTopicName=\"Se in Spanish\""
+          "message": "expectedMatchedTopicName=\"Word Order In Spanish\" actualMatchedTopicName=\"Se in Spanish\" normalizedExpectedMatchedTopicName=\"word order in spanish\" normalizedActualMatchedTopicName=\"se in spanish\""
         }
       ]
     },
@@ -3509,22 +3499,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Tax Terminology And Forms\" actualMatchedTopicName=\"Tax Terminology and Forms\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "baseline-sequence::sequence-005:step-3",
@@ -3543,22 +3528,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Tax Terminology And Forms\" actualMatchedTopicName=\"Tax Terminology and Forms\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "baseline-sequence::sequence-006:step-1",
@@ -3789,22 +3769,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=\"Se in Spanish\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "hard-isolated::hard-001",
@@ -4224,22 +4199,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Word Order In Spanish\" actualMatchedTopicName=\"Word Order in Spanish\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "hard-sequence::hard-sequence-001:step-3",
@@ -4258,22 +4228,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Word Order In Spanish\" actualMatchedTopicName=\"Word Order in Spanish\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "hard-sequence::hard-sequence-002:step-1",
@@ -4323,22 +4288,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Tax Terminology And Forms\" actualMatchedTopicName=\"Tax Terminology and Forms\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "hard-sequence::hard-sequence-002:step-3",
@@ -4357,22 +4317,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Tax Terminology And Forms\" actualMatchedTopicName=\"Tax Terminology and Forms\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "hard-sequence::hard-sequence-003:step-1",
@@ -6515,22 +6470,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Tax Terminology And Forms\" actualMatchedTopicName=\"Tax Terminology and Forms\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-sequence::holdout-sequence-002:step-3",
@@ -6549,22 +6499,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Tax Terminology And Forms\" actualMatchedTopicName=\"Tax Terminology and Forms\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-sequence::holdout-sequence-003:step-1",
@@ -6614,22 +6559,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=\"Se in Spanish\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-sequence::holdout-sequence-003:step-3",
@@ -6648,22 +6588,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=\"Se in Spanish\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-sequence::holdout-sequence-004:step-1",
@@ -6861,22 +6796,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=\"Se in Spanish\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-sequence::holdout-sequence-006:step-3",
@@ -6895,22 +6825,17 @@
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=\"Se in Spanish\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-sequence::holdout-sequence-007:step-1",
@@ -7056,7 +6981,7 @@
       "actualShouldCreate": true,
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9800000000000001,
+      "actualConfidence": 1,
       "labelPass": false,
       "resolutionPass": true,
       "createPass": true,
@@ -7670,7 +7595,7 @@
       "actualShouldCreate": true,
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualConfidence": 0.918,
       "labelPass": false,
       "resolutionPass": true,
       "createPass": true,
@@ -7682,8 +7607,8 @@
       "pfapProtectedCount": 4,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 4,
-      "actualCandidateRank": 2,
+      "expectedCandidateRank": 2,
+      "actualCandidateRank": 4,
       "layeredFailures": [
         {
           "layer": "label",
@@ -7707,7 +7632,7 @@
       "actualShouldCreate": true,
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.8599999999999999,
+      "actualConfidence": 0.5640000000000001,
       "labelPass": false,
       "resolutionPass": true,
       "createPass": true,
@@ -8144,7 +8069,7 @@
       "layeredFailures": [
         {
           "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Kinetic Energy vs Potential Energy\" actualMatchedTopicName=\"Potential Energy\""
+          "message": "expectedMatchedTopicName=\"Kinetic Energy vs Potential Energy\" actualMatchedTopicName=\"Potential Energy\" normalizedExpectedMatchedTopicName=\"kinetic energy vs potential energy\" normalizedActualMatchedTopicName=\"potential energy\""
         }
       ]
     },
@@ -8988,8 +8913,8 @@
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 2,
-      "actualCandidateRank": 2,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
       "layeredFailures": []
     },
     {
@@ -9813,7 +9738,7 @@
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9800000000000001,
+      "actualConfidence": 0.9319999999999998,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,

@@ -1160,6 +1160,113 @@ function candidateAfterContrast(candidate: TopicCandidate, profile: DiscoursePro
     : candidate.clauseIndex >= profile.contrastBoundaryIndex;
 }
 
+/**
+ * Patch F.2 generalization guard:
+ * Detect candidates that are mostly classroom / worksheet / homework setup,
+ * not the learner's actual target. This is deliberately discourse-shape based;
+ * it does not name expected golden labels.
+ */
+function candidateLooksBroadSetupContextCandidate(
+  candidate: TopicCandidate,
+  profile: DiscourseProfile
+) {
+  const label = getCandidateDisplayLabel(candidate) ?? "";
+  const labelLoose = cachedNormalizeLoose(label);
+  const sourceLoose = cachedNormalizeLoose(candidate.sourceClause);
+  const combined = `${labelLoose} ${sourceLoose}`.trim();
+
+  if (!combined) return false;
+
+  const sourceIsContextual =
+    candidate.sourceRole === "context" ||
+    candidate.kind === "context_anchor" ||
+    candidateLooksDomainAnchor(candidate) ||
+    candidateInZone(candidate, profile.broadAnchorZones);
+
+  const hasSetupSurface =
+    /\b(?:homework|worksheet|section|unit|chapter|class|lecture|textbook|notes?|practice questions?|practice problems?|teacher|we(?:'re| are| were)? doing|i(?:'m| am)? doing|we started|we covered|we learned|reviewing|studying|working on|right now|this week|in class)\b/i.test(
+      combined
+    );
+
+  const hasTargetProtection =
+    candidateHasQualifier(candidate, "late_focus_target") ||
+    candidateHasQualifier(candidate, "cross_clause_recovery") ||
+    candidateHasQualifier(candidate, "bottleneck_target") ||
+    candidateHasQualifier(candidate, "focus_target") ||
+    candidateHasQualifier(candidate, "paired_with_domain_anchor") ||
+    candidateHasQualifier(candidate, "narrowed_target");
+
+  const setupStartsAsWholeClause =
+    /^(?:i\s+(?:am|m)?\s*)?(?:doing|working on|studying|reviewing)\b/i.test(labelLoose) ||
+    /^(?:we(?:'re| are| were)?\s+)?(?:doing|covering|learning|studying|reviewing|starting|started)\b/i.test(labelLoose) ||
+    /^(?:section|unit|chapter|homework|worksheet|lecture|class|textbook|notes?)\b/i.test(labelLoose);
+
+  // A context-looking candidate should only be demoted when it lacks explicit
+  // target metadata. This preserves legitimate labels that happen to mention
+  // school artifacts but are marked as the actual learning target.
+  return Boolean(
+    hasSetupSurface &&
+      (sourceIsContextual || setupStartsAsWholeClause) &&
+      !hasTargetProtection
+  );
+}
+
+/**
+ * Patch F.2 generalization guard:
+ * A late concrete target is a teachable concept located in the post-setup /
+ * bottleneck region of the message. This captures the reusable discourse shape:
+ *   setup/context -> contrast/focus marker -> actual learning target
+ * without protecting any specific golden-case label.
+ */
+function candidateLooksLateConcreteLearningTarget(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile
+) {
+  if (candidateLooksResidueLike(candidate)) return false;
+  if (candidateLooksWeakNounChunk(candidate)) return false;
+  if (candidateLooksMalformedTopicLabel(candidate)) return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
+  if (!candidate.shouldCompeteAsTopic) return false;
+  if (candidate.isSubpartReference) return false;
+
+  const label = getCandidateDisplayLabel(candidate);
+  const specificity = cachedScoreSpecificity(label);
+
+  const isInLateOrFocusedZone =
+    candidateInZone(candidate, profile.bottleneckZones) ||
+    candidateAfterContrast(candidate, profile) ||
+    candidateHasQualifier(candidate, "late_focus_target") ||
+    candidateHasQualifier(candidate, "cross_clause_recovery") ||
+    candidateHasQualifier(candidate, "paired_with_domain_anchor") ||
+    candidateHasQualifier(candidate, "bottleneck_target") ||
+    candidateHasQualifier(candidate, "focus_target");
+
+  if (!isInLateOrFocusedZone) return false;
+
+  const isConcreteTarget =
+    candidateLooksInstructionalTarget(candidate, message) ||
+    candidateLooksProtectedDurableLabel(candidate) ||
+    candidateLooksStructuredDurable(candidate) ||
+    candidateLooksConceptPhrase(candidate) ||
+    candidate.kind === "named_concept" ||
+    candidate.kind === "of_phrase" ||
+    candidate.kind === "domain_shaped" ||
+    candidate.kind === "focus_target" ||
+    candidate.kind === "comparison_pair" ||
+    candidateLooksQuestionSynthesis(candidate);
+
+  if (!isConcreteTarget) return false;
+
+  return (
+    specificity === "good" ||
+    specificity === "very_specific" ||
+    candidateLooksStructuredDurable(candidate) ||
+    candidateLooksProtectedDurableLabel(candidate) ||
+    candidateLooksDomainShapedByProfile(candidate, profile)
+  );
+}
+
 function candidateLooksDomainShapedByProfile(
   candidate: TopicCandidate,
   profile: DiscourseProfile
@@ -1203,8 +1310,13 @@ function candidateLooksStrongLateBottleneck(
   message: string,
   profile: DiscourseProfile
 ) {
+  if (candidateLooksLateConcreteLearningTarget(candidate, message, profile)) {
+    return true;
+  }
+
   return (
     !candidateLooksResidueLike(candidate) &&
+    !candidateLooksBroadSetupContextCandidate(candidate, profile) &&
     candidate.shouldCompeteAsTopic &&
     !candidate.isSubpartReference &&
     (candidateLooksBottleneckTarget(candidate, message) ||
@@ -1213,6 +1325,8 @@ function candidateLooksStrongLateBottleneck(
       candidateLooksDomainShapedByProfile(candidate, profile) ||
       candidateLooksTerminologyLike(candidate) ||
       candidateLooksQuestionSynthesis(candidate) ||
+      candidateLooksProtectedDurableLabel(candidate) ||
+      candidateLooksStructuredDurable(candidate) ||
       candidate.kind === "focus_target") &&
     (candidateInZone(candidate, profile.bottleneckZones) ||
       candidateAfterContrast(candidate, profile) ||
@@ -1305,8 +1419,23 @@ function buildCandidateScoreBreakdown(args: {
     competitionRiskPenalty += 0.18;
   }
 
+  if (candidateLooksBroadSetupContextCandidate(candidate, discourseProfile)) {
+    // Patch F.2: setup/context spans can be evidence for domain recovery, but
+    // they should not become the final topic when a later bottleneck candidate
+    // exists. This is intentionally generic and does not name specific labels.
+    competitionRiskPenalty += discourseProfile.hasLateBottleneckShape ? 0.46 : 0.28;
+    clausePenalty += 0.18;
+    structurePenalty += 0.1;
+  }
+
   if (candidateInZone(candidate, discourseProfile.broadAnchorZones) && !candidateLooksStrongLateBottleneck(candidate, message, discourseProfile)) {
     competitionRiskPenalty += 0.08;
+  }
+
+  if (candidateLooksLateConcreteLearningTarget(candidate, message, discourseProfile)) {
+    discourseRoleWeight += 0.18;
+    focusWeight += 0.08;
+    durabilityWeight += 0.08;
   }
 
   if (candidateInZone(candidate, discourseProfile.bottleneckZones)) {
@@ -1659,8 +1788,40 @@ function chooseDiscourseOverrideCandidate(
     return null;
   }
 
+  const strongLateBottlenecks = nonResidue
+    .filter((candidate) => candidateLooksStrongLateBottleneck(candidate, message, profile))
+    .sort((a, b) => {
+      const familyDelta =
+        familyPriority(classifyCandidateFamily(b, message)) -
+        familyPriority(classifyCandidateFamily(a, message));
+
+      if (familyDelta !== 0) return familyDelta;
+      return b.score - a.score;
+    });
+
+  if (profile.hasBroadToNarrowShape && strongLateBottlenecks[0]) {
+    const candidate = strongLateBottlenecks[0];
+    const label = getCandidateDisplayLabel(candidate);
+    const specificity = cachedScoreSpecificity(label);
+
+    if (
+      candidate.score >= 0.38 &&
+      (specificity === "good" ||
+        specificity === "very_specific" ||
+        candidateLooksStructuredDurable(candidate) ||
+        candidateLooksProtectedDurableLabel(candidate) ||
+        candidateLooksDomainShapedByProfile(candidate, profile))
+    ) {
+      return candidate;
+    }
+  }
+
   const explicitDurable = nonResidue
-    .filter((candidate) => candidateLooksProtectedDurableLabel(candidate))
+    .filter(
+      (candidate) =>
+        candidateLooksProtectedDurableLabel(candidate) &&
+        !candidateLooksBroadSetupContextCandidate(candidate, profile)
+    )
     .sort((a, b) => {
       const familyDelta =
         familyPriority(classifyCandidateFamily(b, message)) -
@@ -1692,27 +1853,6 @@ function chooseDiscourseOverrideCandidate(
         candidateLooksStructuredDurable(questionSyntheses[0]))
     ) {
       return questionSyntheses[0];
-    }
-  }
-
-  const strongLateBottlenecks = nonResidue
-    .filter((candidate) => candidateLooksStrongLateBottleneck(candidate, message, profile))
-    .sort((a, b) => {
-      const familyDelta =
-        familyPriority(classifyCandidateFamily(b, message)) -
-        familyPriority(classifyCandidateFamily(a, message));
-
-      if (familyDelta !== 0) return familyDelta;
-      return b.score - a.score;
-    });
-
-  if (profile.hasBroadToNarrowShape && strongLateBottlenecks[0]) {
-    const candidate = strongLateBottlenecks[0];
-    const label = getCandidateDisplayLabel(candidate);
-    const specificity = cachedScoreSpecificity(label);
-
-    if (specificity === "good" || specificity === "very_specific" || candidateLooksStructuredDurable(candidate)) {
-      return candidate;
     }
   }
 
@@ -1790,6 +1930,18 @@ function labelLooksLocalClauseFragment(label: string | null) {
   // while still allowing true durable gerund/noun phrases like "Color Mixing",
   // "Study Planning", "Balancing Chemical Equations", and "Monitoring Understanding".
   if (/^(?:keep|keeps|kept|already|still|just|really|mostly|kind of|sort of)\b/i.test(normalized)) {
+    return true;
+  }
+
+  // Patch F.2: classroom/setup clauses are evidence for context, not durable
+  // topic labels. This catches shapes like "I'm doing homework on triangles"
+  // or "section on waves in class" without naming the desired target label.
+  if (
+    /^(?:i\s+(?:am|m)?\s*)?(?:doing|working on|studying|reviewing)\b/i.test(normalized) ||
+    /^(?:we(?:'re| are| were)?\s+)?(?:doing|covering|learning|studying|reviewing|starting|started)\b/i.test(normalized) ||
+    /^(?:section|unit|chapter|homework|worksheet|lecture|class|textbook|notes?)\b/i.test(normalized) ||
+    /\b(?:homework|worksheet|section|unit|chapter|class|lecture|textbook|notes?)\b.*\b(?:right now|this week|in class)\b/i.test(normalized)
+  ) {
     return true;
   }
 

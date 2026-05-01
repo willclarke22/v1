@@ -4,13 +4,6 @@ cases in this file: 83
 
 --- domain_shaping ---
 
-[holdout-isolated] domain_shaping | holdout-domain-002 | PASS
-message: I can watch soccer and enjoy it fine, but if somebody asks me to explain offside I suddenly realize I never actually learned how the rule works in a stable way.
-expected: Offside in Soccer
-actual:   Offside in Soccer
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
 [holdout-isolated] domain_shaping | holdout-domain-003 | PASS
 message: The thing I keep meaning to understand is how credit card interest works, because I know it matters and yet every explanation somehow makes it feel more abstract instead of less.
 expected: Credit Card Interest
@@ -130,21 +123,19 @@ actual:   Tax Terminology and Forms
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-sequence] followup_continuity | holdout-sequence-002:step-2 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-002:step-2 | PASS
 message: It just feels coded, honestly.
 expected: <unspecified>
 actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Tax Terminology And Forms actual=Tax Terminology and Forms
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[holdout-sequence] followup_continuity | holdout-sequence-002:step-3 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-002:step-3 | PASS
 message: Can we do that again?
 expected: <unspecified>
 actual:   Tax Terminology and Forms
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Tax Terminology And Forms actual=Tax Terminology and Forms
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-sequence] followup_continuity | holdout-sequence-003:step-1 | PASS
 message: I can deal with spanish until se shows up again, and then suddenly I am back in that feeling of not knowing what any part of the sentence is doing.
@@ -153,21 +144,19 @@ actual:   Se in Spanish
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-sequence] followup_continuity | holdout-sequence-003:step-2 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-003:step-2 | PASS
 message: Yes, that tiny word is the thing that breaks my confidence.
 expected: <unspecified>
 actual:   Se in Spanish
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Se In Spanish actual=Se in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[holdout-sequence] followup_continuity | holdout-sequence-003:step-3 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-003:step-3 | PASS
 message: Quiz me on it, I guess.
 expected: <unspecified>
 actual:   On It
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Se In Spanish actual=Se in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-sequence] followup_continuity | holdout-sequence-004:step-1 | PASS
 message: Actually go back to osmosis.
@@ -215,21 +204,19 @@ layers: none | likely: n/a | pfap: n/a
 
 --- followup_continuity ---
 
-[holdout-sequence] followup_continuity | holdout-sequence-006:step-2 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-006:step-2 | PASS
 message: Yeah, that tiny word is what I mean.
 expected: <unspecified>
 actual:   <null>
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Se In Spanish actual=Se in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[holdout-sequence] followup_continuity | holdout-sequence-006:step-3 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-006:step-3 | PASS
 message: Can you quiz me on it?
 expected: <unspecified>
 actual:   On It
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Se In Spanish actual=Se in Spanish
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- null_cases ---
 
@@ -632,6 +619,13 @@ layers: none | likely: n/a | pfap: n/a
 message: Why do I wake up tired even when I technically slept enough hours? I keep saying I need more sleep, but I think sleep cycles are the thing I actually need to understand.
 expected: Sleep Cycles
 actual:   Sleep Cycles
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[naturalistic-diverse] health | naturalistic-health-015 | PASS
+message: The nurse said my blood pressure numbers and I nodded because that seemed easier. But later I realized I don't know what systolic vs diastolic actually means.
+expected: Systolic vs Diastolic Blood Pressure
+actual:   Systolic vs Diastolic Blood Pressure
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
