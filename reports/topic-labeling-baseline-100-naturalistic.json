@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-01T22:23:51.022Z",
+  "generatedAt": "2026-05-01T22:48:41.884Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,12 +8,12 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 321,
+    "labelPassed": 323,
     "resolutionPassed": 333,
     "createPassed": 334,
     "matchedTopicPassed": 335,
-    "endToEndPassed": 319,
-    "failed": 17
+    "endToEndPassed": 321,
+    "failed": 15
   },
   "scopeBreakdown": {
     "baseline-isolated": {
@@ -36,12 +36,12 @@
     },
     "blindv2-isolated": {
       "total": 25,
-      "labelPassed": 17,
+      "labelPassed": 18,
       "resolutionPassed": 24,
       "createPassed": 24,
       "matchedTopicPassed": 25,
-      "endToEndPassed": 17,
-      "failed": 8
+      "endToEndPassed": 18,
+      "failed": 7
     },
     "blindv2-sequence": {
       "total": 11,
@@ -72,12 +72,12 @@
     },
     "holdout-isolated": {
       "total": 58,
-      "labelPassed": 53,
+      "labelPassed": 54,
       "resolutionPassed": 58,
       "createPassed": 58,
       "matchedTopicPassed": 58,
-      "endToEndPassed": 53,
-      "failed": 5
+      "endToEndPassed": 54,
+      "failed": 4
     },
     "holdout-sequence": {
       "total": 20,
@@ -101,12 +101,12 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 259,
+      "labelPassed": 261,
       "resolutionPassed": 271,
       "createPassed": 271,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 259,
-      "failed": 14
+      "endToEndPassed": 261,
+      "failed": 12
     },
     "sequence": {
       "total": 63,
@@ -184,12 +184,12 @@
     },
     "comparison": {
       "total": 14,
-      "labelPassed": 11,
+      "labelPassed": 13,
       "resolutionPassed": 14,
       "createPassed": 14,
       "matchedTopicPassed": 14,
-      "endToEndPassed": 11,
-      "failed": 3
+      "endToEndPassed": 13,
+      "failed": 1
     },
     "comparisons": {
       "total": 4,
@@ -661,29 +661,29 @@
     }
   },
   "layerBreakdown": {
-    "label": 15,
+    "label": 13,
     "resolution": 3,
     "create_flag": 2,
     "matched_topic": 1,
     "forbidden": 0
   },
   "likelyFailureBreakdown": {
-    "domain_shaping_failed": 2,
+    "domain_shaping_failed": 1,
     "expected_label_extracted_but_lost_competition": 1,
     "expected_label_present_in_message_but_not_extracted": 4,
     "good_label_but_creation_blocked": 2,
     "pfap_protected_candidate_lost_final_arbitration": 3,
-    "uncategorized_failure": 5
+    "uncategorized_failure": 4
   },
   "pfapBreakdown": {
-    "failedCount": 17,
-    "failedWithProtectedCandidates": 15,
+    "failedCount": 15,
+    "failedWithProtectedCandidates": 13,
     "failedExpectedCandidateFound": 5,
     "failedExpectedCandidateProtected": 4,
     "failedMalformedActual": 1,
     "likelyIssueBreakdown": {
       "pfap_expected_candidate_needs_protection_metadata": 1,
-      "pfap_expected_label_partially_extracted_canonicalization_needed": 11,
+      "pfap_expected_label_partially_extracted_canonicalization_needed": 9,
       "pfap_protected_candidate_lost_final_arbitration": 3,
       "unknown": 2
     }
@@ -5740,32 +5740,27 @@
       "description": "math comparison with rambling setup",
       "message": "When I do triangle questions I do not usually panic at the beginning. The panic starts when I realize I have to decide between law of sines and law of cosines and I do not actually know what tells me which one belongs.",
       "expectedLabel": "Law of Sines vs Law of Cosines",
-      "actualLabel": "Law of Sines",
+      "actualLabel": "Law of Sines vs Law of Cosines",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "domain_shaping_failed",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 3,
       "pfapMalformedCount": 2,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Law of Sines vs Law of Cosines\" actualLabel=\"Law of Sines\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-compare-004",
@@ -7082,7 +7077,7 @@
       "description": "comparison phrased with mixing-up wrapper",
       "message": "I keep mixing up kinetic energy and potential energy.",
       "expectedLabel": "Kinetic Energy vs Potential Energy",
-      "actualLabel": "Potential Energy",
+      "actualLabel": "Kinetic Energy vs Potential Energy",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
@@ -7090,25 +7085,20 @@
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Kinetic Energy vs Potential Energy\" actualLabel=\"Potential Energy\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "blindv2-isolated::blindv2-compare-002",

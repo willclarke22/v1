@@ -599,12 +599,12 @@ actual:   Your vs You're
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] comparison | holdout-compare-003 | FAIL
+[holdout-isolated] comparison | holdout-compare-003 | PASS
 message: When I do triangle questions I do not usually panic at the beginning. The panic starts when I realize I have to decide between law of sines and law of cosines and I do not actually know what tells me which one belongs.
 expected: Law of Sines vs Law of Cosines
-actual:   Law of Sines
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Law of Sines vs Law of Cosines
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] comparison | holdout-compare-004 | PASS
 message: I can say the words speed and velocity, but in questions they still feel interchangeable and I do not know what clue is supposed to separate them.

@@ -291,12 +291,12 @@ layers: none | likely: n/a | pfap: n/a
 
 --- comparison ---
 
-[blindv2-isolated] comparison | blindv2-compare-001 | FAIL
+[blindv2-isolated] comparison | blindv2-compare-001 | PASS
 message: I keep mixing up kinetic energy and potential energy.
 expected: Kinetic Energy vs Potential Energy
-actual:   Potential Energy
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Kinetic Energy vs Potential Energy
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [blindv2-isolated] comparison | blindv2-compare-002 | FAIL
 message: Can you compare the sympathetic nervous system and the parasympathetic nervous system?

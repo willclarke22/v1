@@ -1065,7 +1065,7 @@ function messageHasStructureBarrier(message: string) {
 }
 
 function messageHasComparisonShape(message: string) {
-  return /\bvs\b|\bversus\b|\bdifference between\b|\bcompare\b|\bcontrast\b|\bmix(?:ing)? up\b|\bblending\b|\bblur together\b|\bblend together\b|\binterchangeable\b|\bused interchangeably\b|\bfeel(?:s)? basically the same\b|\bactual difference\b|\btell (?:them )?apart\b|\bdistinguish between\b|\bstop feeling different\b|\bcollapse into the same word\b/i.test(
+  return /\bvs\b|\bversus\b|\bdifference between\b|\bcompare\b|\bcontrast\b|\bmix(?:ing)? up\b|\bblending\b|\bblur together\b|\bblend together\b|\binterchangeable\b|\bused interchangeably\b|\bfeel(?:s|t)? basically the same\b|\bactual difference\b|\btell (?:them )?apart\b|\bdistinguish between\b|\bstop feeling different\b|\bcollapse into the same word\b|\bdecide between\b|\bchoose between\b|\bpick between\b|\bwhich (?:one )?(?:to use|belongs?|fits?)\b|\bnot sure which\b|\bdo(?:es)? not know which\b|\bdon'?t know which\b|\bdont know which\b/i.test(
     message
   );
 }
@@ -2859,9 +2859,11 @@ function chooseProtectedFinalCandidate(
 
 function cleanComparisonSideForPFAP(text: string) {
   const cleaned = cachedNormalizeSurface(text)
+    .replace(/^(?:it\s+(?:was|is)|it'?s|really\s+just|just)\s+/i, "")
     .replace(/^(?:the|a|an|this|that|these|those|both|one|which|whether|if|use|using|choose|choosing|pick|picking|tell|know|decide|i|we|you|they)\s+/i, "")
     .replace(/\s+(?:are|is|feel|feels|seem|seems|look|looks|sound|sounds|still|basically|kind of|sort of|stop|stops|stopped)$/i, "")
     .replace(/\s+\b(?:if|when|where|because|while|once|until|instead|rather than)\b.*$/i, "")
+    .replace(/\s+\b(?:in|on)\s+(?:word problems?|questions?|practice|notes?|homework|the notes)\b.*$/i, "")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -3270,6 +3272,23 @@ function inferComparisonLabelFromMessage(message: string, selectedLabel: string 
     return null;
   }
 
+  const implicitLabel = implicitComparisonLabelFromMessage(message);
+  if (implicitLabel) {
+    const parts = implicitLabel.split(/\bvs\b/i).map((part) => cachedNormalizeLoose(part).trim()).filter(Boolean);
+    const selectedMatchesImplicitSide = parts.some((part) =>
+      selected === part ||
+      selected.includes(part) ||
+      part.includes(selected)
+    );
+    const selectedLooksComparisonResidue =
+      /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:all|just|really|exactly)\s+of\b/i.test(selected) ||
+      /\b(?:same|different|comparison|difference|interchangeable|which one|decide between|choose between|pick between)\b/i.test(selected);
+
+    if (selectedMatchesImplicitSide || selectedLooksComparisonResidue) {
+      return implicitLabel;
+    }
+  }
+
   const patterns: RegExp[] = [
     /\bboth\s+([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,1})\s+and\s+([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,1})\s+(?:are|is|feel|feels|seem|seems|look|looks|sound|sounds|stop|stops|start|starts|can|do|does)\b/i,
     /\b([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,1})\s+and\s+([A-Za-z][A-Za-z'-]*(?:\s+[A-Za-z][A-Za-z'-]*){0,1})\s+(?:blur together|blend together|mix(?:ing)? up|confus(?:e|ing)|feel(?:s)? interchangeable|seem(?:s)? interchangeable|stop feeling different|collapse into the same word)\b/i,
@@ -3302,6 +3321,164 @@ function inferComparisonLabelFromMessage(message: string, selectedLabel: string 
     const cleaned = cleanComparisonLabelForPFAP(label, message) ?? label;
     return addDomainSuffixToComparisonForPFAP(cleaned, message);
   }
+
+  return null;
+}
+
+
+/**
+ * Patch F.7 generalization guard:
+ * Recover implicit comparison targets when the learner names two concrete
+ * anchors and frames the confusion as sameness, mixing, or selection. This is
+ * not a domain-specific rule; it is a discourse-shape rule:
+ *   "X and Y feel basically the same" -> "X vs Y"
+ *   "decide between X and Y" -> "X vs Y"
+ */
+function implicitComparisonLabelFromMessage(message: string) {
+  const normalized = cachedNormalizeSurface(message);
+  if (!messageHasComparisonShape(normalized)) return null;
+
+  // A side may be a compact term ("metaphase") or a short structured term
+  // ("law of cosines", "civil rights"). Keep this intentionally bounded so
+  // broad clauses are not turned into comparison labels.
+  const term = "[A-Za-z][A-Za-z0-9'’\\-]*(?:\\s+(?:of|in|on|the)\\s+[A-Za-z0-9][A-Za-z0-9'’\\-]*){0,3}(?:\\s+[A-Za-z][A-Za-z0-9'’\\-]*){0,2}";
+  const boundary = "(?=\\s+(?:and\\s+(?:i|we|you|they)|because|when|where|if|but|that|which|to\\s+me|in\\s+my\\s+head)|[.!?,;:]|$)";
+  const patterns = [
+    new RegExp(`\\b(?:decide|choose|pick)\\s+between\\s+(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)${boundary}`, "i"),
+    new RegExp(`\\b(?:not\\s+sure|don'?t\\s+know|dont\\s+know|do\\s+not\\s+know)\\s+(?:which\\s+(?:one\\s+)?(?:to\\s+use|belongs?|fits?)|when\\s+to\\s+use)\\s+(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)${boundary}`, "i"),
+    new RegExp(`\\b(?:mix(?:ing)?\\s+up|blending|confusing)\\s+(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)${boundary}`, "i"),
+    new RegExp(`\\b(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)\\s+(?:that\\s+)?(?:still\\s+)?(?:feel|feels|felt|seem|seems|seemed|look|looks|looked|sound|sounds|sounded)\\s+(?:basically\\s+|kind\\s+of\\s+|sort\\s+of\\s+)?(?:the\\s+)?same\\b`, "i"),
+    new RegExp(`\\b(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)\\s+(?:still\\s+)?(?:blur|blurs|blurred|blend|blends|blended|mix|mixes|mixed)\\s+(?:together|up)\\b`, "i"),
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    if (!match?.[1] || !match?.[2]) continue;
+
+    const left = cleanComparisonSideForPFAP(match[1]);
+    const right = cleanComparisonSideForPFAP(match[2]);
+    if (!left || !right) continue;
+
+    const leftLoose = cachedNormalizeLoose(left);
+    const rightLoose = cachedNormalizeLoose(right);
+    if (!leftLoose || !rightLoose || leftLoose === rightLoose) continue;
+
+    const label = `${shapeDisplayLabel(left) ?? left} vs ${shapeDisplayLabel(right) ?? right}`;
+    const cleaned = cleanComparisonLabelForPFAP(label, message) ?? label;
+    if (!comparisonLabelHasSurfaceSupport(cleaned, message)) continue;
+
+    return addDomainSuffixToComparisonForPFAP(cleaned, message);
+  }
+
+  return null;
+}
+
+function candidateMatchesImplicitComparisonSide(candidate: TopicCandidate, implicitLabel: string | null) {
+  if (!implicitLabel || !/\bvs\b/i.test(implicitLabel)) return false;
+
+  const label = getCandidateDisplayLabel(candidate);
+  if (!label) return false;
+
+  const parts = implicitLabel.split(/\bvs\b/i).map((part) => cachedNormalizeLoose(part).trim()).filter(Boolean);
+  if (parts.length !== 2) return false;
+
+  const candidateLoose = cachedNormalizeLoose(label);
+  const candidateCoreLoose = cachedNormalizeLoose(candidate.coreText);
+  if (!candidateLoose && !candidateCoreLoose) return false;
+
+  return parts.some((part) => {
+    if (!part) return false;
+    return (
+      candidateLoose === part ||
+      candidateCoreLoose === part ||
+      candidateLoose.includes(part) ||
+      part.includes(candidateLoose) ||
+      candidateCoreLoose.includes(part) ||
+      part.includes(candidateCoreLoose)
+    );
+  });
+}
+
+function candidateLooksComparisonScopeResidue(candidate: TopicCandidate) {
+  const label = cachedNormalizeLoose(getCandidateDisplayLabel(candidate));
+  if (!label) return false;
+
+  return (
+    /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:all|just|really|exactly)\s+of\b/i.test(label) ||
+    /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:the\s+)?(?:whole|big|main|actual|real)\b/i.test(label) ||
+    /^(?:basically\s+)?(?:the\s+)?same$/i.test(label) ||
+    /^(?:felt|feel|feels|seem|seems|look|looks|sound|sounds)\s+(?:basically\s+)?(?:the\s+)?same$/i.test(label) ||
+    /^(?:which one|which one belongs|which to use|decide between|choose between|pick between)$/i.test(label)
+  );
+}
+
+function chooseImplicitComparisonPairOverrideCandidate(
+  candidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile
+): TopicCandidate | null {
+  const implicitLabel = implicitComparisonLabelFromMessage(message);
+  if (!implicitLabel) return null;
+
+  const cleanExistingComparison = candidates
+    .filter((candidate) => {
+      if (!candidate.shouldCompeteAsTopic || candidate.isSubpartReference) return false;
+      if (!candidateLooksCleanComparison(candidate, message)) return false;
+      if (comparisonCandidateShouldYieldToBetterTopic(candidate, candidates, message, profile)) return false;
+      const cleaned = cleanComparisonLabelForPFAP(getCandidateDisplayLabel(candidate), message);
+      return cachedNormalizeLoose(cleaned) === cachedNormalizeLoose(implicitLabel);
+    })
+    .sort((a, b) => b.score - a.score)[0] ?? null;
+
+  if (cleanExistingComparison) return cleanExistingComparison;
+
+  const anchorCandidates = candidates
+    .filter((candidate) => {
+      if (!candidate.shouldCompeteAsTopic || candidate.isSubpartReference) return false;
+      if (candidateLooksWeakNounChunk(candidate)) return false;
+      if (candidateLooksMalformedTopicLabel(candidate)) return false;
+      if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+      if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
+      if (candidateLooksComparisonScopeResidue(candidate)) return false;
+      if (!candidateMatchesImplicitComparisonSide(candidate, implicitLabel)) return false;
+
+      return (
+        candidate.kind === "named_concept" ||
+        candidate.kind === "concept_phrase" ||
+        candidate.kind === "domain_shaped" ||
+        candidate.kind === "of_phrase" ||
+        candidate.kind === "focus_target" ||
+        candidateLooksProtectedDurableLabel(candidate) ||
+        candidateLooksDurablePracticalConcept(candidate) ||
+        candidateLooksStructuredDurable(candidate) ||
+        candidateLooksBottleneckTarget(candidate, message)
+      );
+    })
+    .sort((a, b) => {
+      const aAfter = candidateAfterContrast(a, profile) ? 1 : 0;
+      const bAfter = candidateAfterContrast(b, profile) ? 1 : 0;
+      if (aAfter !== bAfter) return bAfter - aAfter;
+
+      const aProtected = candidateLooksProtectedDurableLabel(a) ? 1 : 0;
+      const bProtected = candidateLooksProtectedDurableLabel(b) ? 1 : 0;
+      if (aProtected !== bProtected) return bProtected - aProtected;
+
+      return b.score - a.score;
+    });
+
+  const bestAnchor = anchorCandidates[0] ?? null;
+  if (!bestAnchor) return null;
+
+  const currentTop = candidates[0] ?? null;
+  const topIsComparisonResidue = currentTop
+    ? candidateLooksComparisonScopeResidue(currentTop) ||
+      candidateLooksLearnerStateOrSetupResidue(currentTop) ||
+      candidateLooksProblemFraming(currentTop) ||
+      candidateLooksNoisyResidue(currentTop)
+    : false;
+
+  if (topIsComparisonResidue) return bestAnchor;
+  if (bestAnchor.score + 0.12 >= (currentTop?.score ?? 0)) return bestAnchor;
 
   return null;
 }
@@ -3833,6 +4010,9 @@ function chooseWinningCandidate(
 
   const cleanComparison = chooseCleanComparisonCandidate(scoredCandidates, message, profile);
   if (cleanComparison) return cleanComparison;
+
+  const implicitComparison = chooseImplicitComparisonPairOverrideCandidate(scoredCandidates, message, profile);
+  if (implicitComparison) return implicitComparison;
 
   const structuralRelation = chooseStructuralRelationOverrideCandidate(scoredCandidates, message, profile);
   if (structuralRelation) return structuralRelation;

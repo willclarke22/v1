@@ -1,15 +1,15 @@
 
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
-Previous snapshot generatedAt: 2026-05-01T21:54:18.272Z
-Current snapshot generatedAt: 2026-05-01T22:20:29.652Z
+Previous snapshot generatedAt: 2026-05-01T22:23:51.022Z
+Current snapshot generatedAt: 2026-05-01T22:45:09.097Z
 
-overall label: 317/336 -> 321/336 (+4)
-overall e2e:   315/336 -> 319/336 (+4)
-failed:        21 -> 17 (-4)
+overall label: 321/336 -> 323/336 (+2)
+overall e2e:   319/336 -> 321/336 (+2)
+failed:        17 -> 15 (-2)
 
 Case movement:
-New passes: 4
+New passes: 2
 New regressions: 0
 Naturalistic regressions: 0
 Still failing but changed output: 0
@@ -20,62 +20,42 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
-baseline-isolated: label 75/78 -> 77/78 (+2), e2e 75/78 -> 77/78 (+2), failed 3 -> 1 (-2)
-blindv2-isolated: label 16/25 -> 17/25 (+1), e2e 16/25 -> 17/25 (+1), failed 9 -> 8 (-1)
-holdout-isolated: label 52/58 -> 53/58 (+1), e2e 52/58 -> 53/58 (+1), failed 6 -> 5 (-1)
+blindv2-isolated: label 17/25 -> 18/25 (+1), e2e 17/25 -> 18/25 (+1), failed 8 -> 7 (-1)
+holdout-isolated: label 53/58 -> 54/58 (+1), e2e 53/58 -> 54/58 (+1), failed 5 -> 4 (-1)
 
 Category movement:
-broad_to_narrow: label 14/16 -> 15/16 (+1), e2e 14/16 -> 15/16 (+1), failed 2 -> 1 (-1)
-context_recovery: label 4/5 -> 5/5 (+1), e2e 4/5 -> 5/5 (+1), failed 1 -> 0 (-1)
-paragraph_context: label 13/18 -> 15/18 (+2), e2e 13/18 -> 15/18 (+2), failed 5 -> 3 (-2)
+comparison: label 11/14 -> 13/14 (+2), e2e 11/14 -> 13/14 (+2), failed 3 -> 1 (-2)
 
 Failure-layer movement:
-label: 19 -> 15 (-4)
+label: 15 -> 13 (-2)
 
 Likely-failure-class movement:
-pfap_protected_candidate_lost_final_arbitration: 7 -> 3 (-4)
+domain_shaping_failed: 2 -> 1 (-1)
+uncategorized_failure: 5 -> 4 (-1)
 
 PFAP likely-issue movement:
-pfap_protected_candidate_lost_final_arbitration: 7 -> 3 (-4)
+pfap_expected_label_partially_extracted_canonicalization_needed: 11 -> 9 (-2)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 19 -> 15 (-4)
-failedExpectedCandidateFound: 9 -> 5 (-4)
-failedExpectedCandidateProtected: 8 -> 4 (-4)
+failedWithProtectedCandidates: 15 -> 13 (-2)
+failedExpectedCandidateFound: 5 -> 5 (0)
+failedExpectedCandidateProtected: 4 -> 4 (0)
 failedMalformedActual: 1 -> 1 (0)
 
 New passes:
 
---- broad_to_narrow (1) ---
-[holdout-isolated] broad_to_narrow | holdout-buried-003 | PASS
-message: Chemistry is not even the problem in the broad sense. It is more that electronegativity is the thing that keeps showing up and making me realize I never built a stable understanding of it.
-expected: Electronegativity
-actual:   Electronegativity
+--- comparison (2) ---
+[holdout-isolated] comparison | holdout-compare-003 | PASS
+message: When I do triangle questions I do not usually panic at the beginning. The panic starts when I realize I have to decide between law of sines and law of cosines and I do not actually know what tells me which one belongs.
+expected: Law of Sines vs Law of Cosines
+actual:   Law of Sines vs Law of Cosines
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-
---- context_recovery (1) ---
-[baseline-isolated] context_recovery | context-003 | PASS
-message: I'm doing homework on triangles right now, but what I'm really not understanding is the law of cosines.
-expected: Law of Cosines
-actual:   Law of Cosines
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-
---- paragraph_context (2) ---
-[baseline-isolated] paragraph_context | paragraph-004 | PASS
-message: My teacher explained budgeting, fixed expenses, variable expenses, debt, and saving, and most of that was okay. But I still don't really know how to make a budget that balances, and that seems to be the part that makes every example fall apart for me.
-expected: Balancing a Budget
-actual:   Balancing a Budget
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[blindv2-isolated] paragraph_context | blindv2-paragraph-001 | PASS
-message: We started talking about memory in class, and most of it made sense. Then the hippocampus came up, and that's the part where I stopped understanding what was going on.
-expected: Hippocampus
-actual:   Hippocampus
+[blindv2-isolated] comparison | blindv2-compare-001 | PASS
+message: I keep mixing up kinetic energy and potential energy.
+expected: Kinetic Energy vs Potential Energy
+actual:   Kinetic Energy vs Potential Energy
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
