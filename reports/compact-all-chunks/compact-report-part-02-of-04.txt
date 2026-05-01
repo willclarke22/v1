@@ -11,13 +11,12 @@ actual:   Reuptake
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-sequence] sequence_baseline | sequence-003:step-3 | FAIL
+[baseline-sequence] sequence_baseline | sequence-003:step-3 | PASS
 message: Can you quiz me on it?
 expected: <unspecified>
 actual:   On It
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolution_failed | pfap: n/a
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Reuptake actual=n/a
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- sequence_language ---
 
@@ -91,21 +90,19 @@ actual:   Speed vs Velocity
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-sequence] sequence_comparison | sequence-007:step-2 | FAIL
+[baseline-sequence] sequence_comparison | sequence-007:step-2 | PASS
 message: I keep mixing them up in word problems.
 expected: <unspecified>
 actual:   Up in Word Problems
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolution_failed | pfap: n/a
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Speed vs Velocity actual=n/a
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[baseline-sequence] sequence_comparison | sequence-007:step-3 | FAIL
+[baseline-sequence] sequence_comparison | sequence-007:step-3 | PASS
 message: Quiz me on that.
 expected: <unspecified>
 actual:   Quiz Me on That
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolution_failed | pfap: n/a
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Speed vs Velocity actual=n/a
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- sequence_existing_vs_new_narrow ---
 
@@ -120,18 +117,18 @@ layers: none | likely: n/a | pfap: n/a
 message: Yeah, that tiny word.
 expected: <unspecified>
 actual:   Se in Spanish
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolution_failed | pfap: n/a
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Se In Spanish actual=n/a
+checks: label=Y resolution=Y create=Y matched=N forbidden=Y
+layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
+resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Se In Spanish actual=Se in Spanish
 
 --- hard_broad_to_narrow ---
 
-[hard-isolated] hard_broad_to_narrow | hard-001 | FAIL
+[hard-isolated] hard_broad_to_narrow | hard-001 | PASS
 message: Ok so like I was trying to understand dopamine yesterday and I thought that was the issue, but honestly after staring at it again I think the actual thing making everything confusing is reuptake.
 expected: Reuptake
-actual:   Dopamine
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Reuptake
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [hard-isolated] hard_broad_to_narrow | hard-002 | FAIL
 message: Triangles in general are not the problem, and I can usually tell what the question is asking, but once the law of cosines shows up I start second-guessing every step and then I kind of spiral.
@@ -158,12 +155,12 @@ layers: none | likely: n/a | pfap: n/a
 
 --- hard_comparison ---
 
-[hard-isolated] hard_comparison | hard-005 | FAIL
+[hard-isolated] hard_comparison | hard-005 | PASS
 message: I was doing practice questions for bio and I thought I was confused about mitosis generally, but after looking again I think it's really just metaphase and anaphase that I keep blending together.
 expected: Metaphase vs Anaphase
-actual:   Doing Practice Questions for Bio
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Metaphase vs Anaphase
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- hard_domain_shaping ---
 
@@ -237,17 +234,17 @@ layers: none | likely: n/a | pfap: n/a
 message: Yeah, that exact part is what keeps throwing me off.
 expected: <unspecified>
 actual:   <null>
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolver_no_match | pfap: n/a
-resolution: expected=n/a actual=no_match | create expected=n/a actual=false | matched expected=Word Order In Spanish actual=n/a
+checks: label=Y resolution=Y create=Y matched=N forbidden=Y
+layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
+resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Word Order In Spanish actual=Word Order in Spanish
 
 [hard-sequence] hard_sequence_language | hard-sequence-001:step-3 | FAIL
 message: Quiz me on it.
 expected: <unspecified>
 actual:   On It
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolution_failed | pfap: n/a
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Word Order In Spanish actual=n/a
+checks: label=Y resolution=Y create=Y matched=N forbidden=Y
+layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
+resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Word Order In Spanish actual=Word Order in Spanish
 
 [hard-sequence] hard_sequence_language | hard-sequence-002:step-1 | PASS
 message: The forms and the tax terminology feel like another language and I keep shutting down right at the beginning because I don't know what half the words are asking for.
@@ -304,22 +301,21 @@ actual:   Reuptake
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[hard-sequence] hard_sequence_existing_vs_new_narrow | hard-sequence-004:step-3 | FAIL
+[hard-sequence] hard_sequence_existing_vs_new_narrow | hard-sequence-004:step-3 | PASS
 message: Quiz me on it.
 expected: <unspecified>
 actual:   On It
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolution_failed | pfap: n/a
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Reuptake actual=n/a
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- paragraph_context ---
 
-[holdout-isolated] paragraph_context | holdout-paragraph-001 | FAIL
+[holdout-isolated] paragraph_context | holdout-paragraph-001 | PASS
 message: We started a section on waves and sound this week. Reflection and refraction were mostly okay for me, or at least okay enough. But once the worksheet switched to the speed of sound formula, that was where I stopped following what the variables were even supposed to mean.
 expected: Speed of Sound
-actual:   Speed of Sound Formula
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] paragraph_context | holdout-paragraph-002 | PASS
 message: We're doing neurotransmission right now. I can kind of repeat the big-picture story back if I need to, so it sounds like I understand it. But when reuptake comes up, that is the point where I realize I do not really know what changes and why it matters.
@@ -335,12 +331,12 @@ actual:   Membrane Potential
 checks: label=N resolution=Y create=Y matched=Y forbidden=Y
 layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
 
-[holdout-isolated] paragraph_context | holdout-paragraph-004 | PASS
+[holdout-isolated] paragraph_context | holdout-paragraph-004 | FAIL
 message: I was doing triangle homework tonight and most of it was manageable in a fake way where I sort of convince myself I am following. Then law of cosines came up and suddenly I realized that was actually the thing I never properly understood.
 expected: Law of Cosines
-actual:   Law of Cosines
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
+actual:   Most of It
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
 
 [holdout-isolated] paragraph_context | holdout-paragraph-005 | PASS
 message: I've been trying to follow curling when it is on TV because people around me act like the strategy is obvious. I can kind of tell when a shot looks good, but the rules of curling are still what make the whole thing feel slippery and confusing to me.
@@ -349,19 +345,19 @@ actual:   Rules of Curling
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] paragraph_context | holdout-paragraph-006 | FAIL
+[holdout-isolated] paragraph_context | holdout-paragraph-006 | PASS
 message: My teacher explained budgeting, fixed expenses, variable expenses, debt, and saving, and I nodded through most of it. But when I actually try to put the numbers together myself, making a budget that balances is the point where it stops feeling real to me and starts feeling fake.
 expected: Balancing a Budget
-actual:   Making a Budget That Balances
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Balancing a Budget
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] paragraph_context | holdout-paragraph-007 | FAIL
+[holdout-isolated] paragraph_context | holdout-paragraph-007 | PASS
 message: I feel like I mostly understand waves when the examples are just pictures of crests and troughs. The second numbers show up, though, I start guessing. The specific thing I want to fix is the speed of sound formula because I cannot tell what the variables are doing.
 expected: Speed of Sound
-actual:   Pictures of Crests
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] paragraph_context | holdout-paragraph-008 | PASS
 message: Action potentials are kind of making sense in the broad story version. I know there is depolarization and repolarization and all of that. But the refractory period is where I lose the logic of why the neuron cannot just fire again immediately.
@@ -414,12 +410,12 @@ actual:   Negative Feedback
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] broad_to_narrow | holdout-buried-006 | FAIL
+[holdout-isolated] broad_to_narrow | holdout-buried-006 | PASS
 message: Programming is not the whole problem right now. I can write small bits of code. What I actually keep getting stuck on is the event loop because people describe it like it is obvious and I cannot picture what is waiting for what.
 expected: Event Loop
-actual:   Write Small Bits of Code
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Event Loop
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] broad_to_narrow | holdout-buried-007 | PASS
 message: Economics as a subject is not what I am asking about. The actual thing that keeps feeling too simple and too confusing at the same time is opportunity cost.
@@ -560,19 +556,19 @@ actual:   Se in Spanish
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] noisy_natural_language | holdout-noise-002 | FAIL
+[holdout-isolated] noisy_natural_language | holdout-noise-002 | PASS
 message: ugh law of cosines was maybe in my head at one point but rn it is just not clicking at all
 expected: Law of Cosines
-actual:   Ugh Law of Cosines
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Law of Cosines
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] noisy_natural_language | holdout-noise-003 | FAIL
+[holdout-isolated] noisy_natural_language | holdout-noise-003 | PASS
 message: i get budgeting in theory i guess but making a budget that balances is where it starts falling apart for me
 expected: Balancing a Budget
-actual:   Making a Budget That Balances
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Balancing a Budget
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] noisy_natural_language | holdout-noise-004 | PASS
 message: spanish isnt awful but se keeps showing up and idk what its doing tbh
@@ -597,12 +593,12 @@ layers: none | likely: n/a | pfap: n/a
 
 --- comparison ---
 
-[holdout-isolated] comparison | holdout-compare-001 | FAIL
+[holdout-isolated] comparison | holdout-compare-001 | PASS
 message: I thought I was confused about mitosis overall, but after doing more questions I think the real problem is that metaphase and anaphase still feel basically interchangeable in my head.
 expected: Metaphase vs Anaphase
-actual:   After Doing More Questions
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Metaphase vs Anaphase
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] comparison | holdout-compare-002 | PASS
 message: This is such a dumb thing to keep getting wrong, but your and you're still blur together for me when I have to decide fast.

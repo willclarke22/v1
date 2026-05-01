@@ -1,53 +1,53 @@
 === Compact Topic Labeling Chunked Report Index ===
-overall: total=336 label=270/336 resolution=330/336 e2e=245/336 failed=91
-label-layer failures: 66
-end-to-end failures: 91
+overall: total=336 label=295/336 resolution=332/336 e2e=279/336 failed=57
+label-layer failures: 41
+end-to-end failures: 57
 displayed cases: 336 (all cases)
-generatedAt: 2026-04-30T19:54:49.639Z
+generatedAt: 2026-05-01T00:11:55.635Z
 
 === Compact Scope Summary ===
-baseline-isolated: total=78 label=51/78 resolution=76/78 e2e=51/78 failed=27
-baseline-sequence: total=21 label=19/21 resolution=21/21 e2e=12/21 failed=9
+baseline-isolated: total=78 label=64/78 resolution=77/78 e2e=64/78 failed=14
+baseline-sequence: total=21 label=20/21 resolution=21/21 e2e=16/21 failed=5
 blindv2-isolated: total=25 label=16/25 resolution=24/25 e2e=16/25 failed=9
 blindv2-sequence: total=11 label=10/11 resolution=10/11 e2e=8/11 failed=3
-hard-isolated: total=12 label=9/12 resolution=12/12 e2e=9/12 failed=3
-hard-sequence: total=11 label=11/11 resolution=11/11 e2e=6/11 failed=5
-holdout-isolated: total=58 label=36/58 resolution=56/58 e2e=36/58 failed=22
-holdout-sequence: total=20 label=18/20 resolution=20/20 e2e=7/20 failed=13
-naturalistic-diverse: total=100 label=100/100 resolution=100/100 e2e=100/100 failed=0
+hard-isolated: total=12 label=11/12 resolution=12/12 e2e=11/12 failed=1
+hard-sequence: total=11 label=11/11 resolution=11/11 e2e=7/11 failed=4
+holdout-isolated: total=58 label=44/58 resolution=57/58 e2e=44/58 failed=14
+holdout-sequence: total=20 label=20/20 resolution=20/20 e2e=14/20 failed=6
+naturalistic-diverse: total=100 label=99/100 resolution=100/100 e2e=99/100 failed=1
 
 === Compact Category Summary (all categories) ===
 art: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 biology: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-broad_to_narrow: total=16 label=12/16 resolution=15/16 e2e=12/16 failed=4
+broad_to_narrow: total=16 label=14/16 resolution=15/16 e2e=14/16 failed=2
 buried_language_target: total=22 label=16/22 resolution=22/22 e2e=16/22 failed=6
 cars: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 chemistry: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 coding: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-comparison: total=14 label=6/14 resolution=14/14 e2e=6/14 failed=8
+comparison: total=14 label=9/14 resolution=14/14 e2e=9/14 failed=5
 comparisons: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-confusion: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-context_recovery: total=5 label=2/5 resolution=5/5 e2e=2/5 failed=3
+confusion: total=4 label=3/4 resolution=4/4 e2e=3/4 failed=1
+context_recovery: total=5 label=3/5 resolution=5/5 e2e=3/5 failed=2
 cooking: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 direct: total=3 label=1/3 resolution=3/3 e2e=1/3 failed=2
-direct_baseline: total=6 label=5/6 resolution=5/6 e2e=5/6 failed=1
+direct_baseline: total=6 label=6/6 resolution=6/6 e2e=6/6 failed=0
 diverse_academic: total=6 label=5/6 resolution=5/6 e2e=5/6 failed=1
 domain_shaping: total=8 label=3/8 resolution=8/8 e2e=3/8 failed=5
 driving: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-emotion_topicful: total=5 label=3/5 resolution=5/5 e2e=3/5 failed=2
+emotion_topicful: total=5 label=5/5 resolution=5/5 e2e=5/5 failed=0
 emotions: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-existing_vs_new_narrow: total=8 label=5/8 resolution=7/8 e2e=5/8 failed=3
+existing_vs_new_narrow: total=8 label=8/8 resolution=8/8 e2e=8/8 failed=0
 finance: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-followup_continuity: total=29 label=26/29 resolution=28/29 e2e=13/29 failed=16
+followup_continuity: total=29 label=28/29 resolution=28/29 e2e=20/29 failed=9
 geography: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 grammar: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-hard_broad_to_narrow: total=3 label=1/3 resolution=3/3 e2e=1/3 failed=2
-hard_comparison: total=1 label=0/1 resolution=1/1 e2e=0/1 failed=1
+hard_broad_to_narrow: total=3 label=2/3 resolution=3/3 e2e=2/3 failed=1
+hard_comparison: total=1 label=1/1 resolution=1/1 e2e=1/1 failed=0
 hard_domain_shaping: total=2 label=2/2 resolution=2/2 e2e=2/2 failed=0
 hard_existing_vs_new_narrow: total=2 label=2/2 resolution=2/2 e2e=2/2 failed=0
 hard_followup: total=1 label=1/1 resolution=1/1 e2e=1/1 failed=0
 hard_null: total=1 label=1/1 resolution=1/1 e2e=1/1 failed=0
-hard_sequence_existing_vs_new_narrow: total=3 label=3/3 resolution=3/3 e2e=2/3 failed=1
+hard_sequence_existing_vs_new_narrow: total=3 label=3/3 resolution=3/3 e2e=3/3 failed=0
 hard_sequence_language: total=6 label=6/6 resolution=6/6 e2e=2/6 failed=4
 hard_sequence_switching: total=2 label=2/2 resolution=2/2 e2e=2/2 failed=0
 hard_tail_contamination: total=2 label=2/2 resolution=2/2 e2e=2/2 failed=0
@@ -55,26 +55,26 @@ health: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 history: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 jobs: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 law: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-mechanism_question: total=5 label=1/5 resolution=5/5 e2e=1/5 failed=4
+mechanism_question: total=5 label=4/5 resolution=5/5 e2e=4/5 failed=1
 mixed: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 music: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 nature: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 negative_followup: total=2 label=2/2 resolution=2/2 e2e=2/2 failed=0
-noisy_natural_language: total=13 label=9/13 resolution=13/13 e2e=9/13 failed=4
+noisy_natural_language: total=13 label=11/13 resolution=13/13 e2e=11/13 failed=2
 null_cases: total=11 label=10/11 resolution=10/11 e2e=10/11 failed=1
-paragraph_context: total=18 label=8/18 resolution=18/18 e2e=8/18 failed=10
+paragraph_context: total=18 label=10/18 resolution=18/18 e2e=10/18 failed=8
 plumbing: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 politics_class: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-reuse_existing: total=3 label=2/3 resolution=3/3 e2e=2/3 failed=1
+reuse_existing: total=3 label=3/3 resolution=3/3 e2e=3/3 failed=0
 schoolwork: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-sequence_baseline: total=8 label=7/8 resolution=8/8 e2e=6/8 failed=2
-sequence_comparison: total=3 label=3/3 resolution=3/3 e2e=1/3 failed=2
+sequence_baseline: total=8 label=8/8 resolution=8/8 e2e=8/8 failed=0
+sequence_comparison: total=3 label=3/3 resolution=3/3 e2e=3/3 failed=0
 sequence_existing_vs_new_narrow: total=2 label=2/2 resolution=2/2 e2e=1/2 failed=1
 sequence_language: total=5 label=4/5 resolution=5/5 e2e=1/5 failed=4
 sequence_switching: total=3 label=3/3 resolution=3/3 e2e=3/3 failed=0
 space: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 sports: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-structured_phrase: total=6 label=4/6 resolution=6/6 e2e=4/6 failed=2
+structured_phrase: total=6 label=5/6 resolution=6/6 e2e=5/6 failed=1
 switching: total=2 label=2/2 resolution=2/2 e2e=2/2 failed=0
 tail_contamination: total=10 label=9/10 resolution=10/10 e2e=9/10 failed=1
 

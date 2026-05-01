@@ -39,13 +39,12 @@ actual:   Mitosis
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] direct_baseline | direct-006 | FAIL
+[baseline-isolated] direct_baseline | direct-006 | PASS
 message: I need help understanding insurance deductible.
 expected: Insurance Deductible
-actual:   Need Help Understanding Insurance Deductible
-checks: label=N resolution=N create=N matched=Y forbidden=Y
-layers: label,resolution,create_flag | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
-resolution: expected=created_new_candidate actual=no_match | create expected=true actual=false | matched expected=n/a actual=n/a
+actual:   Insurance Deductible
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- broad_to_narrow ---
 
@@ -56,12 +55,12 @@ actual:   Reuptake
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] broad_to_narrow | focus-002 | FAIL
+[baseline-isolated] broad_to_narrow | focus-002 | PASS
 message: I'm learning chemistry right now and most of it is okay, but the thing I actually need help with is electronegativity.
 expected: Electronegativity
-actual:   Most of It
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Electronegativity
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] broad_to_narrow | focus-003 | PASS
 message: At first I thought meiosis was the hard part, but after looking again I think it's really just crossing over that I don't understand yet.
@@ -128,28 +127,28 @@ actual:   Law of Cosines
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] structured_phrase | of-006 | FAIL
+[baseline-isolated] structured_phrase | of-006 | PASS
 message: I keep getting confused by the speed of sound formula.
 expected: Speed of Sound
-actual:   Speed of Sound Formula
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- mechanism_question ---
 
-[baseline-isolated] mechanism_question | question-001 | FAIL
+[baseline-isolated] mechanism_question | question-001 | PASS
 message: How does reuptake work?
-expected: How Reuptake Works
+expected: Reuptake
 actual:   Reuptake
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] mechanism_question | question-002 | FAIL
+[baseline-isolated] mechanism_question | question-002 | PASS
 message: How do action potentials work?
-expected: How Action Potentials Work
+expected: Action Potentials
 actual:   Action Potentials
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] mechanism_question | question-003 | PASS
 message: How does offside work in soccer?
@@ -158,12 +157,12 @@ actual:   Offside in Soccer
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] mechanism_question | question-004 | FAIL
+[baseline-isolated] mechanism_question | question-004 | PASS
 message: I don't get how interest on a credit card actually works.
 expected: Credit Card Interest
-actual:   Interest on
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_malformed_candidate_won | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Credit Card Interest
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] mechanism_question | question-005 | FAIL
 message: Why does negative feedback happen in homeostasis?
@@ -181,12 +180,12 @@ actual:   Mitosis vs Meiosis
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] comparison | compare-002 | FAIL
+[baseline-isolated] comparison | compare-002 | PASS
 message: We started mitosis and meiosis this week and I keep blending the two together. What's actually different between them?
 expected: Mitosis vs Meiosis
-actual:   Mitosis
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Mitosis vs Meiosis
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] comparison | compare-003 | FAIL
 message: I keep forgetting when to use your vs you're.
@@ -209,12 +208,12 @@ actual:   To Use Law of Sines
 checks: label=N resolution=Y create=Y matched=Y forbidden=Y
 layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
 
-[baseline-isolated] comparison | compare-006 | FAIL
+[baseline-isolated] comparison | compare-006 | PASS
 message: Metaphase and anaphase still feel basically the same in my head.
 expected: Metaphase vs Anaphase
-actual:   Metaphase
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Metaphase vs Anaphase
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- context_recovery ---
 
@@ -225,12 +224,12 @@ actual:   Speed of Sound
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] context_recovery | context-002 | FAIL
+[baseline-isolated] context_recovery | context-002 | PASS
 message: In lecture we were doing action potentials and threshold and all that, but the part I'm actually confused about is depolarization.
 expected: Depolarization
-actual:   Action Potentials
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Depolarization
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] context_recovery | context-003 | FAIL
 message: I'm doing homework on triangles right now, but what I'm really not understanding is the law of cosines.
@@ -244,7 +243,7 @@ message: We're doing a section on waves in class. Most of it is okay. The actual
 expected: Speed of Sound
 actual:   Section on Waves in Class
 checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+layers: label | likely: expected_label_extracted_but_lost_competition | pfap: pfap_expected_candidate_needs_protection_metadata
 
 [baseline-isolated] context_recovery | context-005 | PASS
 message: We are doing probability in class and most of the examples are fine, but standard deviation is where I stop knowing what I am supposed to picture.
@@ -265,9 +264,9 @@ layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partia
 [baseline-isolated] buried_language_target | spanish-002 | FAIL
 message: Spanish in general is fine, vocab is mostly fine, but honestly the actual thing throwing me off is se because every time I think I know what it is doing, it kind of does something else.
 expected: Se In Spanish
-actual:   Spanish in General
+actual:   Se
 checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: broad_anchor_beat_buried_bottleneck | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
 
 [baseline-isolated] buried_language_target | spanish-003 | PASS
 message: The weird part is I can know all the spanish words separately, but when the sentence actually happens I stop trusting myself because the word order makes everything feel backwards.
@@ -393,19 +392,19 @@ actual:   Equilibrium Constant
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] emotion_topicful | emotion-001 | FAIL
+[baseline-isolated] emotion_topicful | emotion-001 | PASS
 message: This is embarrassing but I keep messing up mitosis because metaphase and anaphase still feel basically the same in my head and every time I see a question I panic a little.
 expected: Metaphase vs Anaphase
-actual:   Mitosis
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Metaphase vs Anaphase
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] emotion_topicful | emotion-002 | FAIL
+[baseline-isolated] emotion_topicful | emotion-002 | PASS
 message: I get so irritated every time the topic of reuptake comes back because I think I finally understand it and then one tiny wording change makes me feel like I never understood it at all.
 expected: Reuptake
-actual:   Topic of Reuptake Comes Back
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Reuptake
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] emotion_topicful | emotion-003 | PASS
 message: I feel dumb saying this, but depolarization is the thing that makes the whole neuron explanation fall apart for me.
@@ -447,9 +446,9 @@ layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: 
 [baseline-isolated] paragraph_context | paragraph-005 | FAIL
 message: I thought I was asking about loans in general, but honestly the real issue is principal because every explanation uses the word like I am already supposed to understand what part of the total it refers to.
 expected: Loan Principal
-actual:   Loans in General
+actual:   Principal
 checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: broad_anchor_beat_buried_bottleneck | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
 
 --- noisy_natural_language ---
 
@@ -520,13 +519,12 @@ layers: none | likely: n/a | pfap: n/a
 
 --- reuse_existing ---
 
-[baseline-isolated] reuse_existing | stay-001 | FAIL
+[baseline-isolated] reuse_existing | stay-001 | PASS
 message: Can you quiz me on neurotransmitters?
 expected: Neurotransmitters
-actual:   On Neurotransmitters
-checks: label=N resolution=Y create=Y matched=N forbidden=N
-layers: label,matched_topic,forbidden | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Neurotransmitters actual=n/a
+actual:   Neurotransmitters
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] reuse_existing | stay-002 | PASS
 message: Can we go over that again?
@@ -574,12 +572,12 @@ actual:   Tax Terminology and Forms
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] existing_vs_new_narrow | existing-narrow-003 | FAIL
+[baseline-isolated] existing_vs_new_narrow | existing-narrow-003 | PASS
 message: We can stay in neurotransmitters generally, but the specific thing I need to understand is reuptake.
 expected: Reuptake
-actual:   Stay in Neurotransmitters Generally
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Reuptake
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- sequence_baseline ---
 
@@ -597,13 +595,12 @@ actual:   Budgeting
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-sequence] sequence_baseline | sequence-001:step-3 | FAIL
+[baseline-sequence] sequence_baseline | sequence-001:step-3 | PASS
 message: Can you quiz me on budgeting?
 expected: Budgeting
-actual:   On Budgeting
-checks: label=N resolution=Y create=Y matched=N forbidden=N
-layers: label,matched_topic,forbidden | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Budgeting actual=n/a
+actual:   Budgeting
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-sequence] sequence_baseline | sequence-002:step-1 | PASS
 message: In class we're doing waves and sound. The worksheet has a formula for the speed of sound and everyone else seems to get what the variables are doing, but I don't. I think that's the part I need help with.

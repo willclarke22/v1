@@ -36,10 +36,66 @@ function stripLeadingDeterminer(text: string) {
 
 function cleanComparisonSide(text: string) {
   return stripLeadingDeterminer(text)
-    .replace(/^(?:when to use|use|when i use)\s+/i, "")
+    .replace(/^(?:i\s+(?:don'?t|dont|do not)\s+know\s+)?(?:when\s+to\s+use|use|when\s+i\s+use)\s+/i, "")
+    .replace(/^(?:i\s+keep\s+forgetting\s+)?when\s+to\s+use\s+/i, "")
+    .replace(/^(?:we\s+(?:started|covered|learned|were\s+doing|are\s+doing)|i\s+was\s+(?:doing|reviewing|confused\s+about)|i\s+thought\s+i\s+was\s+confused\s+about)\s+/i, "")
+    .replace(/^to\s+use\s+/i, "")
+    .replace(/\s+(?:this\s+week|in\s+class|generally|overall)\b.*$/i, "")
+    .replace(/\s+that\s+i\b.*$/i, "")
+    .replace(/\s+(?:still\s+)?(?:feel|seem|mess(?:es)?|confus(?:e|es|ing)|blend(?:s|ing)?|mix(?:es|ing)?)\b.*$/i, "")
     .replace(/\byoure\b/gi, "you're")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function looksLikeBadComparisonSide(text: string) {
+  const loose = normalizeLoose(text);
+  const tokens = tokenize(loose);
+
+  if (!loose) return true;
+
+  // Do not allow a broad setup/list clause to become one side of an X-vs-Y
+  // topic. Patch C made comparison recovery stronger, but without this guard
+  // context such as "we're doing meiosis and inheritance and chromosome stuff"
+  // could become a malformed comparison candidate.
+  if (
+    /\b(?:we'?re|we\s+are|we\s+were|we)\s+(?:doing|covering|learning|studying|reviewing|starting|started)\b/i.test(loose) ||
+    /\b(?:right now|this week|in class|whole unit|unit|chapter|worksheet|homework|lecture)\b/i.test(loose) ||
+    /\b(?:stuff|things|all that|and all of that|generally confusing|generally|overall|in general)\b/i.test(loose) ||
+    /\b(?:at first i thought|i thought the whole|after sitting with it|sitting with it longer)\b/i.test(loose)
+  ) {
+    return true;
+  }
+
+  // A valid comparison side should usually be compact. Longer sides are often
+  // sentence residue unless they are a known/protected concept phrase.
+  if (tokens.length > 6 && !phraseContainsStrongConcept(loose)) return true;
+
+  if (looksLikeLearnerResidue(loose) || looksLikeContextShell(loose)) return true;
+
+  return false;
+}
+
+function normalizeComparisonSideForBuild(text: string) {
+  const cleaned = cleanComparisonSide(text);
+  const loose = normalizeLoose(cleaned);
+
+  // Comparison sides can be function words in grammar topics, so do not run
+  // them through the normal single-token rejection path blindly.
+  if (loose === "your") return "your";
+  if (loose === "you're" || loose === "youre") return "you're";
+
+  if (looksLikeBadComparisonSide(cleaned)) return null;
+
+  return normalizeCandidateSpan(cleaned);
+}
+
+function messageHasComparisonCue(text: string) {
+  return /\b(vs|versus|difference|different|compare|contrast|mixing|mix\s+up|mixed\s+up|blending|blend\s+together|mess(?:es)?\s+me\s+up|interchangeable|same\s+in\s+my\s+head|feel\s+basically\s+the\s+same|seem\s+basically\s+the\s+same|blur\s+together|collapse\s+into|same\s+idea|which|whether|instead\s+of|tell\s+apart|distinguish|keep\s+confusing|confusing\s+.+\s+and\s+.+|confuse\s+.+\s+and\s+.+)\b/i.test(text);
+}
+
+function comparisonSidesLookSafe(left: string, right: string) {
+  return !looksLikeBadComparisonSide(left) && !looksLikeBadComparisonSide(right);
 }
 
 function looksLikeTopicConnector(token: string) {
@@ -281,6 +337,10 @@ function pruneCoreTailArtifacts(text: string) {
     /^(.+?)\s+still\s+feel(?:s)?\s+.*$/i,
     /^(.+?)\s+starts?\s+feeling\s+.*$/i,
     /^(.+?)\s+stops?\s+feeling\s+.*$/i,
+    /^(.+?)\s+and\s+why\s+.*$/i,
+    /^(.+?)\s+and\s+how\s+.*$/i,
+    /^(.+?)\s+instead\s+of\s+.*$/i,
+    /^(.+?)\s+part$/i,
   ];
 
   for (const regex of patterns) {
@@ -331,6 +391,7 @@ function extractComparison(clause: string) {
     /\b(?:what(?:'s| is)?\s+actually\s+different\s+between)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)[.?!]*$/i,
     /\b(?:compare|contrast)\s+(?:the\s+)?(.+?)\s+(?:and|vs\.?|versus)\s+(?:the\s+)?(.+?)[.?!]*$/i,
     /^(?:what(?:'s| is)?\s+the\s+difference\s+between)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)[.?!]*$/i,
+    /\b(?:i\s+(?:don'?t|dont|do\s+not)\s+know\s+)?when\s+to\s+use\s+(.+?)\s+vs\.?\s+(.+?)[.?!]*$/i,
     /\b(?:i keep forgetting\s+)?when to use\s+(.+?)\s+vs\.?\s+(.+?)[.?!]*$/i,
     /\b(.+?)\s+vs\.?\s+(.+?)[.?!]*$/i,
   ];
@@ -342,6 +403,7 @@ function extractComparison(clause: string) {
     const left = cleanComparisonSide(match[1] ?? "");
     const right = cleanComparisonSide(match[2] ?? "");
     if (!left || !right) continue;
+    if (!comparisonSidesLookSafe(left, right)) continue;
 
     return { left, right, combined: `${left} vs ${right}` };
   }
@@ -352,7 +414,9 @@ function extractComparison(clause: string) {
   if (mixingMatch?.[1] && mixingMatch?.[2]) {
     const left = cleanComparisonSide(mixingMatch[1]);
     const right = cleanComparisonSide(mixingMatch[2]);
-    if (left && right) return { left, right, combined: `${left} vs ${right}` };
+    if (left && right && comparisonSidesLookSafe(left, right)) {
+      return { left, right, combined: `${left} vs ${right}` };
+    }
   }
 
   const sameInHeadMatch = normalized.match(
@@ -361,7 +425,9 @@ function extractComparison(clause: string) {
   if (sameInHeadMatch?.[1] && sameInHeadMatch?.[2]) {
     const left = cleanComparisonSide(sameInHeadMatch[1]);
     const right = cleanComparisonSide(sameInHeadMatch[2]);
-    if (left && right) return { left, right, combined: `${left} vs ${right}` };
+    if (left && right && comparisonSidesLookSafe(left, right)) {
+      return { left, right, combined: `${left} vs ${right}` };
+    }
   }
 
   const messMeUpMatch = normalized.match(
@@ -370,7 +436,20 @@ function extractComparison(clause: string) {
   if (messMeUpMatch?.[1] && messMeUpMatch?.[2]) {
     const left = cleanComparisonSide(messMeUpMatch[1]);
     const right = cleanComparisonSide(messMeUpMatch[2]);
-    if (left && right) return { left, right, combined: `${left} vs ${right}` };
+    if (left && right && comparisonSidesLookSafe(left, right)) {
+      return { left, right, combined: `${left} vs ${right}` };
+    }
+  }
+
+  const blendingSubjectMatch = normalized.match(
+    /\b(.+?)\s+and\s+(.+?)\s+(?:that\s+i\s+)?(?:keep\s+)?(?:blend|blending|mix|mixing|confuse|confusing)(?:\s+(?:together|the\s+two|them|up|with\s+each\s+other))?(?:.*)?$/i
+  );
+  if (blendingSubjectMatch?.[1] && blendingSubjectMatch?.[2]) {
+    const left = cleanComparisonSide(blendingSubjectMatch[1]);
+    const right = cleanComparisonSide(blendingSubjectMatch[2]);
+    if (left && right && comparisonSidesLookSafe(left, right)) {
+      return { left, right, combined: `${left} vs ${right}` };
+    }
   }
 
   return null;
@@ -896,6 +975,116 @@ function looksLikeDurableConceptPhrase(text: string) {
   return false;
 }
 
+function cleanupWrapperArtifactsFromSpan(args: {
+  span: string | null;
+  kind: TopicCandidateKind;
+  qualifiers: string[];
+}) {
+  const original = args.span ? normalizeSurface(args.span) : null;
+  if (!original) return original;
+
+  // Keep comparison and QCS labels stable. Those are shaped intentionally by
+  // dedicated extractors and PFAP, so wrapper cleanup should not rewrite them.
+  if (args.kind === "comparison_pair" || args.kind === "question_synthesis") {
+    return original;
+  }
+
+  function accept(nextRaw: string | null) {
+    const next = normalizeSurface(nextRaw ?? "");
+    if (!next) return null;
+
+    const nextLoose = normalizeLoose(next);
+    const originalLoose = normalizeLoose(original);
+    if (!nextLoose || nextLoose === originalLoose) return null;
+    if (looksLikeLearnerStateClause(nextLoose)) return null;
+    if (looksLikeLearnerResidue(nextLoose)) return null;
+    if (isBadProcessPhrase(nextLoose)) return null;
+    if (hasNegationStemToken(nextLoose)) return null;
+    if (looksLikeContextShell(nextLoose)) return null;
+
+    const tokenCount = tokenize(nextLoose).length;
+    const isReasonableLength = tokenCount >= 1 && tokenCount <= 7;
+    const isSupportedByCurrentCandidate =
+      args.kind === "focus_target" ||
+      args.kind === "request_target" ||
+      args.kind === "question_target" ||
+      args.kind === "context_anchor" ||
+      args.kind === "domain_shaped" ||
+      args.kind === "named_concept" ||
+      args.kind === "concept_phrase" ||
+      args.kind === "of_phrase" ||
+      args.qualifiers.includes("focus_target") ||
+      args.qualifiers.includes("bottleneck_target") ||
+      args.qualifiers.includes("request_context") ||
+      args.qualifiers.includes("question_context") ||
+      args.qualifiers.includes("context_recovery");
+
+    if (
+      phraseContainsStrongConcept(nextLoose) ||
+      looksLikeDurableConceptPhrase(nextLoose) ||
+      (isSupportedByCurrentCandidate && isReasonableLength)
+    ) {
+      return next;
+    }
+
+    return null;
+  }
+
+  let output = original;
+
+  const exactRewrites: Array<[RegExp, string]> = [
+    [/^speed\s+of\s+sound\s+formula$/i, "speed of sound"],
+    [/^law\s+of\s+sines\s+formula$/i, "law of sines"],
+    [/^law\s+of\s+cosines\s+formula$/i, "law of cosines"],
+    [/^interest\s+on\s+(?:a\s+)?credit\s+card$/i, "credit card interest"],
+  ];
+
+  for (const [regex, replacement] of exactRewrites) {
+    if (regex.test(output)) {
+      const accepted = accept(replacement);
+      if (accepted) output = accepted;
+      break;
+    }
+  }
+
+  const topicOfMatch = output.match(
+    /^(?:the\s+)?topic\s+of\s+(.+?)\s+(?:comes?|came|shows?|showed)\s+(?:up|back)(?:\s+again)?(?:.*)?$/i
+  );
+  if (topicOfMatch?.[1]) {
+    const accepted = accept(topicOfMatch[1]);
+    if (accepted) output = accepted;
+  }
+
+  const wrapperPatterns: RegExp[] = [
+    /^(?:please\s+)?(?:can|could)\s+(?:you|u)\s+(?:please\s+)?(?:help(?:\s+me)?\s+(?:understand|with)|explain|go\s+over|walk\s+me\s+through|teach\s+me)\s+(.+)$/i,
+    /^(?:can|could)\s+i\s+get\s+(?:some\s+)?help\s+with\s+(.+)$/i,
+    /^(?:i\s+)?(?:need|want|would\s+like|could\s+use)\s+(?:some\s+)?help\s+(?:understanding|with)\s+(.+)$/i,
+    /^(?:help(?:\s+me)?\s+(?:understand|with)|explain|go\s+over|walk\s+me\s+through|teach\s+me)\s+(.+)$/i,
+    /^(?:can\s+we\s+go\s+over|could\s+we\s+go\s+over|quiz\s+me\s+on|test\s+me\s+on|ask\s+me\s+about|i\s+want\s+to\s+learn\s+about|i\s+would\s+like\s+to\s+learn\s+about|i\s+would\s+really\s+like\s+to\s+learn\s+about)\s+(.+)$/i,
+    /^(?:i(?:'m|\s+am)?\s+stuck\s+on|im\s+stuck\s+on|i(?:'m|\s+am)?\s+struggling\s+with|im\s+struggling\s+with|i(?:'m|\s+am)?\s+having\s+trouble\s+with|im\s+having\s+trouble\s+with)\s+(.+)$/i,
+    /^(?:ugh|ok|okay|so|also|actually|wait)[,\s]+(.+)$/i,
+  ];
+
+  for (const regex of wrapperPatterns) {
+    const match = output.match(regex);
+    if (!match?.[1]) continue;
+
+    const accepted = accept(match[1]);
+    if (accepted) {
+      output = accepted;
+      break;
+    }
+  }
+
+  const leadingPrepositionMatch = output.match(/^(?:on|about|regarding)\s+(.+)$/i);
+  if (leadingPrepositionMatch?.[1]) {
+    const accepted = accept(leadingPrepositionMatch[1]);
+    if (accepted) output = accepted;
+  }
+
+  return output;
+}
+
 function candidateMetadataFor(kind: TopicCandidateKind, coreText: string) {
   const residueRisk = estimateResidueRisk(coreText);
   const isDurableConcept =
@@ -983,8 +1172,8 @@ function buildCandidate(args: {
   const kind = args.kind ?? inferKindFromQualifiers(qualifiers);
 
   if (kind === "comparison_pair" && args.leftText && args.rightText) {
-    const left = normalizeCandidateSpan(cleanComparisonSide(args.leftText));
-    const right = normalizeCandidateSpan(cleanComparisonSide(args.rightText));
+    const left = normalizeComparisonSideForBuild(args.leftText);
+    const right = normalizeComparisonSideForBuild(args.rightText);
     if (!left || !right) return null;
 
     const normalized = `${left} vs ${right}`;
@@ -1030,7 +1219,12 @@ function buildCandidate(args: {
   }
 
   const rawSpan = args.span ? normalizeSurface(args.span) : null;
-  const normalized = normalizeCandidateSpan(rawSpan);
+  const cleanedSpan = cleanupWrapperArtifactsFromSpan({
+    span: rawSpan,
+    kind,
+    qualifiers,
+  });
+  const normalized = normalizeCandidateSpan(cleanedSpan);
 
   if (!normalized) return null;
   if (looksLikeLearnerStateClause(normalized)) return null;
@@ -1208,6 +1402,30 @@ function buildBottleneckPatterns(): Array<{
     },
     {
       regex:
+        /\b(?:the\s+)?(?:thing|part|bit)\s+i\s+(?:actually\s+|really\s+|specifically\s+)?(?:need\s+help\s+with|need\s+to\s+understand|am\s+confused\s+about|(?:am|'m)\s+confused\s+about)\s+(?:is\s+)?(.+?)[.?!]*$/i,
+      qualifiers: [
+        "focus_target",
+        "late_focus_target",
+        "context_recovery",
+        "bottleneck_target",
+        "narrowed_target",
+      ],
+      kind: "focus_target",
+    },
+    {
+      regex:
+        /\b(?:the\s+)?(?:actual|real|specific)\s+(?:thing|part|issue|problem|target)\s+(?:that\s+)?(?:confuses\s+me|is\s+confusing\s+me|throws\s+me\s+off|is\s+throwing\s+me\s+off|i\s+need\s+help\s+with|i\s+need\s+to\s+understand)\s+(?:is\s+)?(.+?)[.?!]*$/i,
+      qualifiers: [
+        "focus_target",
+        "late_focus_target",
+        "context_recovery",
+        "bottleneck_target",
+        "narrowed_target",
+      ],
+      kind: "focus_target",
+    },
+    {
+      regex:
         /\b(?:where i start getting lost|where i got lost|where i stopped following|where i stop following|where i start to lose the thread|where it stops making sense|where it falls apart)\s+(?:is\s+)?(.+?)[.?!]*$/i,
       qualifiers: [
         "focus_target",
@@ -1319,12 +1537,30 @@ function extractFocusTailCandidates(clause: ClauseInfo): TopicCandidate[] {
     },
     {
       regex:
+        /\b(.+?)\s+and\s+(.+?)\s+(?:that\s+i\s+)?(?:keep\s+)?(?:blend|blending|mix|mixing|confuse|confusing)(?:\s+(?:together|the\s+two|them|up|with\s+each\s+other))?(?:.*)?$/i,
+      qualifiers: [
+        "focus_target",
+        "comparison_pair",
+        "late_focus_target",
+        "bottleneck_target",
+        "cross_clause_recovery",
+        "rescue_concept",
+        "strong_phrase_match",
+        "durable_concept",
+      ],
+    },
+    {
+      regex:
         /\b(.+?)\s+and\s+(.+?)\s+(?:still\s+)?(?:mess(?:es)? me up|feel basically the same|seem basically the same|feel interchangeable|seem interchangeable)(?:.*)?$/i,
       qualifiers: [
         "focus_target",
         "comparison_pair",
         "late_focus_target",
         "bottleneck_target",
+        "cross_clause_recovery",
+        "rescue_concept",
+        "strong_phrase_match",
+        "durable_concept",
       ],
     },
   ];
@@ -1333,14 +1569,18 @@ function extractFocusTailCandidates(clause: ClauseInfo): TopicCandidate[] {
     const match = text.match(rule.regex);
     if (!match?.[1] || !match?.[2]) continue;
 
+    const left = cleanComparisonSide(match[1]);
+    const right = cleanComparisonSide(match[2]);
+    if (!left || !right || !comparisonSidesLookSafe(left, right)) continue;
+
     const candidate = buildCandidate({
-      span: `${match[1]} vs ${match[2]}`,
+      span: `${left} vs ${right}`,
       clause,
       qualifiers: rule.qualifiers ?? [],
       kind: "comparison_pair",
-      leftText: match[1],
-      rightText: match[2],
-      comparisonTarget: cleanComparisonSide(match[2]),
+      leftText: left,
+      rightText: right,
+      comparisonTarget: right,
     });
 
     if (candidate) candidates.push(candidate);
@@ -1428,7 +1668,15 @@ function extractComparisonCandidates(clause: ClauseInfo): TopicCandidate[] {
     span: comparison.combined,
     clause: { ...clause, role: "comparison" },
     comparisonTarget: comparison.right,
-    qualifiers: ["comparison_pair", "focus_target", "bottleneck_target"],
+    qualifiers: [
+      "comparison_pair",
+      "focus_target",
+      "bottleneck_target",
+      "narrowed_target",
+      "rescue_concept",
+      "strong_phrase_match",
+      "durable_concept",
+    ],
     kind: "comparison_pair",
     leftText: comparison.left,
     rightText: comparison.right,
@@ -2758,6 +3006,20 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "named_concept",
     },
     {
+      trigger: /\bbudgeting\b.*\b(?:make|making|balance|balancing)\b.*\bbudget\b|\bbudget\b.*\bbalanc(?:e|ing)\b/i,
+      span: "balancing a budget",
+      qualifiers: [
+        "focus_target",
+        "bottleneck_target",
+        "context_recovery",
+        "cross_clause_recovery",
+        "strong_phrase_match",
+        "concept_phrase",
+        "durable_concept",
+      ],
+      kind: "concept_phrase",
+    },
+    {
       trigger: /\bprobability\b.*\bstandard deviation\b|\bstandard deviation\b.*\bprobability\b/i,
       span: "standard deviation",
       qualifiers: [
@@ -3081,11 +3343,7 @@ function injectGeneralSyntheticCandidates(
 
   for (const family of comparisonFamilies) {
     if (!family.trigger.test(fullMessage)) continue;
-    if (
-      !/\b(vs|versus|difference|different|compare|contrast|mixing|blending|mess(?:es)? me up|interchangeable|same in my head|feel basically the same|seem basically the same|blur together|collapse into|same idea|which|whether|instead of|tell apart|distinguish|confuse|confusing)\b/i.test(
-        fullMessage
-      )
-    ) {
+    if (!messageHasComparisonCue(fullMessage)) {
       continue;
     }
 
@@ -3099,6 +3357,11 @@ function injectGeneralSyntheticCandidates(
         "cross_clause_recovery",
         "late_focus_target",
         "bottleneck_target",
+        "narrowed_target",
+        "rescue_concept",
+        "strong_phrase_match",
+        "durable_concept",
+        "concept_phrase",
       ],
       kind: "comparison_pair",
       leftText: family.left,

@@ -549,6 +549,9 @@ function candidateLooksNoisyResidue(candidate: TopicCandidate) {
     label === "premium mean" ||
     label === "where to start" ||
     label === "where to even start" ||
+    label === "answering" ||
+    label === "while answering" ||
+    label === "while i am answering" ||
     label === "once everything is ready" ||
     label === "interview coming up" ||
     label === "ui changes in" ||
@@ -1805,6 +1808,10 @@ function labelLooksLocalClauseFragment(label: string | null) {
   const hasDurableConnectorShape = /\b(?:vs|of|in|on)\b/i.test(normalized);
   const isShortNamedish = cachedTokenize(label).length <= 4 && !hasFiniteOrLocalVerb;
 
+  if (/^(?:answering|correcting|guessing|trying|reading|looking|following|knowing|thinking|feeling)$/i.test(normalized)) {
+    return true;
+  }
+
   if (hasFiniteOrLocalVerb && startsLikeLocalSubject) return true;
   if (hasFiniteOrLocalVerb && !hasDurableConnectorShape && !isShortNamedish) return true;
 
@@ -1824,7 +1831,7 @@ function candidateLooksMalformedTopicLabel(candidate: TopicCandidate) {
   // These are mostly discourse/action fragments. They can be useful evidence,
   // but they should not win PFAP final arbitration as durable topics.
   if (
-    /^(?:few of|blur together in|food webs make|already know|everyone uses|what makes|where i|when i|until it|type of case|hidden step|rule logic)$/i.test(normalized)
+    /^(?:few of|blur together in|food webs make|already know|everyone uses|what makes|where i|when i|until it|type of case|hidden step|rule logic|answering|while answering|while i am answering)$/i.test(normalized)
   ) {
     return true;
   }
@@ -2162,6 +2169,53 @@ function messageHasSetupComparisonThenLateBottleneck(message: string) {
   );
 }
 
+function candidateLooksUnsafeLateBottleneckOverride(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile
+) {
+  const label = getCandidateDisplayLabel(candidate);
+  if (!label) return true;
+
+  const normalizedLabel = cachedNormalizeLoose(label);
+  const normalizedMessage = cachedNormalizeLoose(message);
+  const tokenCount = cachedTokenize(label).length;
+
+  // Patch D.1: late-bottleneck override should not promote learner-state or
+  // process residue just because it appears near an explicit bottleneck cue.
+  // These are actions/states around learning, not durable teachable topics.
+  if (
+    /^(?:answering|corrects?|someone corrects me|while i am answering|while answering|most of it|all of it|the whole thing|whole thing|the thing|the part|that part|this part|it|that)$/i.test(
+      normalizedLabel
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    tokenCount <= 2 &&
+    /\b(?:answering|correcting|guessing|trying|reading|looking|following|knowing|understanding|thinking|feeling)$/i.test(
+      normalizedLabel
+    ) &&
+    !candidateLooksProtectedDurableLabel(candidate) &&
+    !candidateLooksDomainShapedByProfile(candidate, profile)
+  ) {
+    return true;
+  }
+
+  // If a short ambiguous term needs a domain anchor, the override may still
+  // choose it, but final canonicalization should preserve the domain. Do not
+  // mark those unsafe here; they are repaired in canonicalizePFAPLabel.
+  if (
+    /^(?:se|principal|premium|offside)$/i.test(normalizedLabel) &&
+    /\b(?:spanish|loan|loans|mortgage|insurance|soccer)\b/i.test(normalizedMessage)
+  ) {
+    return false;
+  }
+
+  return false;
+}
+
 function candidateLooksLateExplicitBottleneckTopic(
   candidate: TopicCandidate,
   message: string,
@@ -2174,13 +2228,14 @@ function candidateLooksLateExplicitBottleneckTopic(
 
   const label = getCandidateDisplayLabel(candidate);
   if (!label) return false;
+  if (candidateLooksUnsafeLateBottleneckOverride(candidate, message, profile)) return false;
 
   const source = cachedNormalizeLoose(candidate.sourceClause);
   const afterContrast = candidateAfterContrast(candidate, profile) || candidateHasQualifier(candidate, "late_focus_target");
   const explicitBottleneckLanguage =
     /\b(?:actual|real|main|whole|bigger|specific)\b.{0,50}\b(?:thing|part|issue|problem|bottleneck|skill|skills|technique|topic|concept)\b/i.test(source) ||
-    /\b(?:thing|part|issue|problem|bottleneck|skill|skills|technique|topic|concept)\b.{0,50}\b(?:making me|makes me|freeze|stuck|lost|confused|hard|not click|doesnt click|doesn't click)\b/i.test(source) ||
-    /\b(?:where|when)\b.{0,50}\b(?:i|get|gets|start|starts|lose|lost|stuck|confused|stop|stopped|breaks|falls apart)\b/i.test(source) ||
+    /\b(?:thing|part|issue|problem|bottleneck|skill|skills|technique|topic|concept)\b.{0,70}\b(?:need help|need to understand|confused about|confuses me|making me|makes me|freeze|stuck|lost|confused|hard|not click|doesnt click|doesn't click)\b/i.test(source) ||
+    /\b(?:where|when)\b.{0,70}\b(?:i|get|gets|start|starts|lose|lost|stuck|confused|stop|stopped|breaks|falls apart|have to make|supposed to picture)\b/i.test(source) ||
     /\b(?:fit|fits|fit into|bigger picture|how .+ fit)\b/i.test(source);
 
   const durableTopic =
@@ -2205,7 +2260,6 @@ function chooseLateExplicitBottleneckOverride(
     candidateLooksCleanComparison(candidate, message) &&
     !candidateLooksMalformedTopicLabel(candidate)
   );
-  if (!comparisonCompetitors.length) return null;
 
   const lateTargets = candidates
     .filter((candidate) => candidateLooksLateExplicitBottleneckTopic(candidate, message, profile, candidates))
@@ -2227,7 +2281,19 @@ function chooseLateExplicitBottleneckOverride(
     .slice()
     .sort((a, b) => b.score - a.score)[0] ?? null;
 
-  if (!bestComparison) return bestLateTarget;
+  if (!bestComparison) {
+    const label = getCandidateDisplayLabel(bestLateTarget);
+    const specificity = cachedScoreSpecificity(label);
+    const lateTargetStrongEnough =
+      bestLateTarget.score >= 0.52 &&
+      (specificity === "good" ||
+        specificity === "very_specific" ||
+        candidateLooksProtectedDurableLabel(bestLateTarget) ||
+        candidateLooksDurablePracticalConcept(bestLateTarget) ||
+        candidateLooksStructuredDurable(bestLateTarget));
+
+    return lateTargetStrongEnough ? bestLateTarget : null;
+  }
 
   // Do not let a surface comparison from an earlier setup clause beat a later
   // explicit bottleneck with equal/high confidence. This preserves comparison
@@ -2466,6 +2532,34 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
 
   if (/^monitoring my own understanding$/.test(normalizedLabel)) {
     return "Monitoring Understanding";
+  }
+
+  // Patch D.2: if a local action fragment wins despite a nearby explicit
+  // monitoring-understanding target, canonicalize to the durable target.
+  // This keeps late-bottleneck gains while preserving the naturalistic
+  // confusion case: "while I am answering ... thing I need is monitoring
+  // my own understanding."
+  if (
+    /^(?:answering|while answering|while i am answering)$/i.test(normalizedLabel) &&
+    /\bmonitoring\s+(?:my\s+own\s+)?understanding\b/i.test(normalizedMessage)
+  ) {
+    return "Monitoring Understanding";
+  }
+
+  if (/^se$/i.test(normalizedLabel) && /\bspanish\b/i.test(normalizedMessage)) {
+    return "Se in Spanish";
+  }
+
+  if (/^principal$/i.test(normalizedLabel) && /\b(?:loan|loans|mortgage|mortgages)\b/i.test(normalizedMessage)) {
+    return "Loan Principal";
+  }
+
+  if (/^premium$/i.test(normalizedLabel) && /\binsurance\b/i.test(normalizedMessage)) {
+    return "Insurance Premium";
+  }
+
+  if (/^offside$/i.test(normalizedLabel) && /\bsoccer\b/i.test(normalizedMessage)) {
+    return "Offside in Soccer";
   }
 
   if (/^food webs make$/.test(normalizedLabel) && /\bfood chains?\b/.test(normalizedMessage) && /\bfood webs?\b/.test(normalizedMessage)) {

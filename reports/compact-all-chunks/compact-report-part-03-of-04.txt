@@ -48,20 +48,19 @@ actual:   Tax Terminology and Forms
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] existing_vs_new_narrow | holdout-existing-003 | FAIL
+[holdout-isolated] existing_vs_new_narrow | holdout-existing-003 | PASS
 message: We can stay in neurotransmitters generally, but the specific thing I need to understand is reuptake and why it changes the signal.
 expected: Reuptake
-actual:   Stay in Neurotransmitters Generally
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Reuptake
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] existing_vs_new_narrow | holdout-existing-004 | FAIL
+[holdout-isolated] existing_vs_new_narrow | holdout-existing-004 | PASS
 message: Budgeting is the general topic, but I specifically get stuck when I have to make the budget balance instead of just naming expenses.
 expected: Balancing a Budget
-actual:   Budgeting
-checks: label=N resolution=N create=N matched=Y forbidden=N
-layers: label,resolution,create_flag,forbidden | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
-resolution: expected=created_new_candidate actual=fallback_active_topic | create expected=true actual=false | matched expected=n/a actual=Budgeting
+actual:   Balancing a Budget
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- null_cases ---
 
@@ -103,28 +102,26 @@ layers: none | likely: n/a | pfap: n/a
 
 --- followup_continuity ---
 
-[holdout-sequence] followup_continuity | holdout-sequence-001:step-1 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-001:step-1 | PASS
 message: We started a section on waves and sound this week. Reflection and refraction were mostly okay for me. But when the worksheet switched to the speed of sound formula, that was where I stopped following what the variables were even doing.
 expected: Speed of Sound
-actual:   Speed of Sound Formula
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[holdout-sequence] followup_continuity | holdout-sequence-001:step-2 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-001:step-2 | PASS
 message: Yeah, that exact part is what made me feel lost.
 expected: <unspecified>
 actual:   <null>
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolver_no_match | pfap: n/a
-resolution: expected=n/a actual=no_match | create expected=n/a actual=false | matched expected=Speed of Sound actual=n/a
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[holdout-sequence] followup_continuity | holdout-sequence-001:step-3 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-001:step-3 | PASS
 message: Can we go over it again, but slower this time?
 expected: <unspecified>
-actual:   Speed of Sound Formula
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Speed of Sound actual=Speed of Sound Formula
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-sequence] followup_continuity | holdout-sequence-002:step-1 | PASS
 message: The forms and the tax terminology feel like another language, and I keep shutting down before I even really begin because the words already make me feel behind.
@@ -167,10 +164,10 @@ resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actu
 [holdout-sequence] followup_continuity | holdout-sequence-003:step-3 | FAIL
 message: Quiz me on it, I guess.
 expected: <unspecified>
-actual:   Quiz Me on It I Guess
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolution_failed | pfap: n/a
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Se In Spanish actual=n/a
+actual:   On It
+checks: label=Y resolution=Y create=Y matched=N forbidden=Y
+layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
+resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Se In Spanish actual=Se in Spanish
 
 [holdout-sequence] followup_continuity | holdout-sequence-004:step-1 | PASS
 message: Actually go back to osmosis.
@@ -186,28 +183,26 @@ actual:   Osmosis
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-sequence] followup_continuity | holdout-sequence-005:step-1 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-005:step-1 | PASS
 message: I thought mitosis overall was the problem, but now I think it is really just metaphase and anaphase still feeling interchangeable in my head.
 expected: Metaphase vs Anaphase
-actual:   Metaphase
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Metaphase vs Anaphase
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[holdout-sequence] followup_continuity | holdout-sequence-005:step-2 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-005:step-2 | PASS
 message: That is the exact mix-up, yeah.
 expected: <unspecified>
 actual:   Exact Mix-Up Yeah
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolution_failed | pfap: n/a
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Metaphase vs Anaphase actual=n/a
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[holdout-sequence] followup_continuity | holdout-sequence-005:step-3 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-005:step-3 | PASS
 message: Can you test me on that?
 expected: <unspecified>
 actual:   Can You Test Me on That
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolution_failed | pfap: n/a
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Metaphase vs Anaphase actual=n/a
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- existing_vs_new_narrow ---
 
@@ -224,17 +219,17 @@ layers: none | likely: n/a | pfap: n/a
 message: Yeah, that tiny word is what I mean.
 expected: <unspecified>
 actual:   <null>
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolver_no_match | pfap: n/a
-resolution: expected=n/a actual=no_match | create expected=n/a actual=false | matched expected=Se In Spanish actual=n/a
+checks: label=Y resolution=Y create=Y matched=N forbidden=Y
+layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
+resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Se In Spanish actual=Se in Spanish
 
 [holdout-sequence] followup_continuity | holdout-sequence-006:step-3 | FAIL
 message: Can you quiz me on it?
 expected: <unspecified>
 actual:   On It
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolution_failed | pfap: n/a
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Se In Spanish actual=n/a
+checks: label=Y resolution=Y create=Y matched=N forbidden=Y
+layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
+resolution: expected=n/a actual=fallback_active_topic | create expected=n/a actual=false | matched expected=Se In Spanish actual=Se in Spanish
 
 --- null_cases ---
 
@@ -254,13 +249,12 @@ actual:   Standard Deviation
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-sequence] followup_continuity | holdout-sequence-007:step-3 | FAIL
+[holdout-sequence] followup_continuity | holdout-sequence-007:step-3 | PASS
 message: Can we do another example of that?
 expected: <unspecified>
 actual:   Another Example of
-checks: label=Y resolution=Y create=Y matched=N forbidden=N
-layers: matched_topic,forbidden | likely: good_label_but_resolution_failed | pfap: n/a
-resolution: expected=n/a actual=created_new_candidate | create expected=n/a actual=true | matched expected=Standard Deviation actual=n/a
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- direct ---
 

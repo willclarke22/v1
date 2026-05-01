@@ -431,6 +431,17 @@ const BROAD_UMBRELLA_TOPIC_NAMES = new Set([
 ]);
 
 const ACTIVE_TOPIC_ANAPHORIC_FOLLOWUP_REGEXES: RegExp[] = [
+  /^(?:quiz me on (?:that|it))(?:,?\s*i guess)?[.?!]*$/i,
+  /^(?:can you quiz me on (?:that|it))(?:,?\s*i guess)?[.?!]*$/i,
+  /^(?:test me on (?:that|it))(?:,?\s*i guess)?[.?!]*$/i,
+  /^(?:can you test me on (?:that|it))(?:,?\s*i guess)?[.?!]*$/i,
+  /^(?:can we do another example of (?:that|it))[.?!]*$/i,
+  /^(?:do another example of (?:that|it))[.?!]*$/i,
+  /^(?:(?:yeah|yes),?\s+)?that exact part(?:\s+is\s+what\s+.+?)?[.?!]*$/i,
+  /^(?:(?:yeah|yes),?\s+)?that specific part(?:\s+is\s+what\s+.+?)?[.?!]*$/i,
+  /^(?:(?:yeah|yes),?\s+)?that tiny word(?:\s+is\s+what\s+.+?)?[.?!]*$/i,
+  /^(?:that is the exact mix[- ]?up,?\s*yeah)[.?!]*$/i,
+  /^(?:that's the exact mix[- ]?up,?\s*yeah)[.?!]*$/i,
   /^(?:quiz me on (?:that|it))\.?$/i,
   /^(?:can you quiz me on (?:that|it))\??$/i,
   /^(?:test me on (?:that|it))\.?$/i,
@@ -457,6 +468,10 @@ const ACTIVE_TOPIC_ANAPHORIC_FOLLOWUP_REGEXES: RegExp[] = [
 ];
 
 const ACTIVE_TOPIC_SUBPART_FOLLOWUP_REGEXES: RegExp[] = [
+  /^(?:(?:yeah|yes),?\s+)?that exact part(?:\s+is\s+what\s+.+?)?[.?!]*$/i,
+  /^(?:(?:yeah|yes),?\s+)?that specific part(?:\s+is\s+what\s+.+?)?[.?!]*$/i,
+  /^(?:(?:yeah|yes),?\s+)?that tiny word(?:\s+is\s+what\s+.+?)?[.?!]*$/i,
+  /^(?:the sentence order part)[.?!]*$/i,
   /^(?:what about the .+ part)\??$/i,
   /^(?:especially the .+ part)\.?$/i,
   /^(?:no,?\s*i meant the .+ part)\.?$/i,
@@ -474,6 +489,9 @@ const ACTIVE_TOPIC_SUBPART_FOLLOWUP_REGEXES: RegExp[] = [
 ];
 
 const META_CONTINUATION_REGEXES: RegExp[] = [
+  /^(?:can we do that again)[.?!]*$/i,
+  /^(?:can we do another example of (?:that|it))[.?!]*$/i,
+  /^(?:it just feels (?:coded|like another language))(?:,?\s*honestly)?[.?!]*$/i,
   /^(?:thanks(?:,?\s*that helped)?)\.?$/i,
   /^(?:show me another example)\.?$/i,
   /^(?:can you say that again(?: but shorter)?)\??$/i,
@@ -2536,6 +2554,38 @@ export function buildDeterministicTopicResolutionSnapshot(
   };
 }
 
+function labelLooksActiveFollowupArtifact(label: string | null) {
+  if (!label) return false;
+
+  const normalized = normalizeLoose(label);
+  if (!normalized) return false;
+
+  return (
+    /^(?:on it|on that)$/i.test(normalized) ||
+    /^(?:quiz me on it|quiz me on that|can you quiz me on it|can you quiz me on that)$/i.test(normalized) ||
+    /^(?:test me on it|test me on that|can you test me on it|can you test me on that)$/i.test(normalized) ||
+    /^(?:ask me about it|ask me about that|can you ask me about it|can you ask me about that)$/i.test(normalized) ||
+    /^(?:up in word problems)$/i.test(normalized) ||
+    /^(?:another example of)$/i.test(normalized) ||
+    /^(?:exact mix-up yeah|exact mix up yeah)$/i.test(normalized) ||
+    /^(?:that exact part|that specific part|that tiny word)$/i.test(normalized) ||
+    /^(?:can we do that again|can we do another example of that)$/i.test(normalized)
+  );
+}
+
+function messageLooksLikeConservativeActiveTopicFollowup(message: string) {
+  const normalized = normalizeSurface(message);
+
+  return (
+    looksLikeActiveTopicAnaphoricFollowup(normalized) ||
+    looksLikeActiveTopicSubpartFollowup(normalized) ||
+    looksLikeMixedAnaphoricSubpartFollowup(normalized) ||
+    looksLikeMetaContinuation(normalized) ||
+    (/\b(?:that|it)\b/i.test(normalized) &&
+      /\b(?:quiz|test|ask|again|another example|exact part|specific part|tiny word|mix[- ]?up)\b/i.test(normalized))
+  );
+}
+
 function conceptualUsefulnessSupportsCreation(args: {
   best: ScoredTopic | null;
   interpretation: CandidateInterpretation;
@@ -2557,20 +2607,28 @@ function conceptualUsefulnessSupportsCreation(args: {
 }
 
 function shouldUseHardActiveFollowupOverride(
+  message: string,
   interpretation: CandidateInterpretation,
   labeling: TopicLabelingResult
 ) {
   const f = interpretation.followupSignals;
+  const label = interpretation.canonicalLabel;
+  const labelIsFollowupArtifact = labelLooksActiveFollowupArtifact(label);
+  const messageIsConservativeFollowup = messageLooksLikeConservativeActiveTopicFollowup(message);
 
   const strongNewInstructionalTarget =
     interpretation.labelConfidence >= 0.82 &&
     !interpretation.suspiciousLabel &&
     !interpretation.subpartLikeLabel &&
+    !labelIsFollowupArtifact &&
     (interpretation.pairedTargetLike ||
       interpretation.bottleneckLike ||
       interpretation.mechanismLike ||
       interpretation.conceptPhraseLike ||
       interpretation.durableConceptLike);
+
+  if (f.explicitSwitch || f.explicitSwitchTarget) return false;
+  if (f.returnToPrevious) return false;
 
   if (strongNewInstructionalTarget && !interpretation.continuationCue && !interpretation.subpartCue) {
     return false;
@@ -2578,9 +2636,14 @@ function shouldUseHardActiveFollowupOverride(
 
   if (f.mixedFollowup) return true;
   if (f.subpartFollowup) return true;
+
+  if (labelIsFollowupArtifact && messageIsConservativeFollowup) {
+    return true;
+  }
+
   if (
     (f.anaphoricFollowup || f.metaContinuation) &&
-    !labeling.topic_decision.should_create_new_topic &&
+    (!labeling.topic_decision.should_create_new_topic || labelIsFollowupArtifact) &&
     !strongNewInstructionalTarget
   ) {
     return true;
@@ -2588,7 +2651,11 @@ function shouldUseHardActiveFollowupOverride(
 
   if (
     (interpretation.suspiciousLabel || interpretation.subpartLikeLabel) &&
-    (f.anaphoricFollowup || f.subpartFollowup || f.mixedFollowup || f.metaContinuation)
+    (f.anaphoricFollowup ||
+      f.subpartFollowup ||
+      f.mixedFollowup ||
+      f.metaContinuation ||
+      messageIsConservativeFollowup)
   ) {
     return true;
   }
@@ -2824,7 +2891,7 @@ export function resolveTopicForMessage(
     }
   }
 
-  if (activeTopic && shouldUseHardActiveFollowupOverride(interpretation, labeling)) {
+  if (activeTopic && shouldUseHardActiveFollowupOverride(message, interpretation, labeling)) {
     const hardFollowupFloor = interpretation.followupSignals.mixedFollowup
       ? 0.9
       : interpretation.followupSignals.subpartFollowup

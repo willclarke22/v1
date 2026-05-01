@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-30T18:10:51.535Z",
+  "generatedAt": "2026-04-30T21:38:48.356Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,31 +8,31 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 270,
-    "resolutionPassed": 330,
-    "createPassed": 331,
-    "matchedTopicPassed": 310,
-    "endToEndPassed": 245,
-    "failed": 91
+    "labelPassed": 287,
+    "resolutionPassed": 331,
+    "createPassed": 332,
+    "matchedTopicPassed": 321,
+    "endToEndPassed": 271,
+    "failed": 65
   },
   "scopeBreakdown": {
     "baseline-isolated": {
       "total": 78,
-      "labelPassed": 51,
-      "resolutionPassed": 76,
-      "createPassed": 76,
-      "matchedTopicPassed": 77,
-      "endToEndPassed": 51,
-      "failed": 27
+      "labelPassed": 61,
+      "resolutionPassed": 77,
+      "createPassed": 77,
+      "matchedTopicPassed": 78,
+      "endToEndPassed": 61,
+      "failed": 17
     },
     "baseline-sequence": {
       "total": 21,
-      "labelPassed": 19,
+      "labelPassed": 20,
       "resolutionPassed": 21,
       "createPassed": 21,
-      "matchedTopicPassed": 13,
-      "endToEndPassed": 12,
-      "failed": 9
+      "matchedTopicPassed": 17,
+      "endToEndPassed": 16,
+      "failed": 5
     },
     "blindv2-isolated": {
       "total": 25,
@@ -54,39 +54,39 @@
     },
     "hard-isolated": {
       "total": 12,
-      "labelPassed": 9,
+      "labelPassed": 10,
       "resolutionPassed": 12,
       "createPassed": 12,
       "matchedTopicPassed": 12,
-      "endToEndPassed": 9,
-      "failed": 3
+      "endToEndPassed": 10,
+      "failed": 2
     },
     "hard-sequence": {
       "total": 11,
       "labelPassed": 11,
       "resolutionPassed": 11,
       "createPassed": 11,
-      "matchedTopicPassed": 6,
-      "endToEndPassed": 6,
-      "failed": 5
+      "matchedTopicPassed": 7,
+      "endToEndPassed": 7,
+      "failed": 4
     },
     "holdout-isolated": {
       "total": 58,
-      "labelPassed": 36,
+      "labelPassed": 39,
       "resolutionPassed": 56,
       "createPassed": 56,
       "matchedTopicPassed": 58,
-      "endToEndPassed": 36,
-      "failed": 22
+      "endToEndPassed": 39,
+      "failed": 19
     },
     "holdout-sequence": {
       "total": 20,
-      "labelPassed": 18,
+      "labelPassed": 20,
       "resolutionPassed": 20,
       "createPassed": 20,
-      "matchedTopicPassed": 9,
-      "endToEndPassed": 7,
-      "failed": 13
+      "matchedTopicPassed": 14,
+      "endToEndPassed": 14,
+      "failed": 6
     },
     "naturalistic-diverse": {
       "total": 100,
@@ -101,21 +101,21 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 212,
-      "resolutionPassed": 268,
-      "createPassed": 268,
-      "matchedTopicPassed": 272,
-      "endToEndPassed": 212,
-      "failed": 61
+      "labelPassed": 226,
+      "resolutionPassed": 269,
+      "createPassed": 269,
+      "matchedTopicPassed": 273,
+      "endToEndPassed": 226,
+      "failed": 47
     },
     "sequence": {
       "total": 63,
-      "labelPassed": 58,
+      "labelPassed": 61,
       "resolutionPassed": 62,
       "createPassed": 63,
-      "matchedTopicPassed": 38,
-      "endToEndPassed": 33,
-      "failed": 30
+      "matchedTopicPassed": 48,
+      "endToEndPassed": 45,
+      "failed": 18
     }
   },
   "categoryBreakdown": {
@@ -184,12 +184,12 @@
     },
     "comparison": {
       "total": 14,
-      "labelPassed": 6,
+      "labelPassed": 9,
       "resolutionPassed": 14,
       "createPassed": 14,
       "matchedTopicPassed": 14,
-      "endToEndPassed": 6,
-      "failed": 8
+      "endToEndPassed": 9,
+      "failed": 5
     },
     "comparisons": {
       "total": 4,
@@ -238,12 +238,12 @@
     },
     "direct_baseline": {
       "total": 6,
-      "labelPassed": 5,
-      "resolutionPassed": 5,
-      "createPassed": 5,
+      "labelPassed": 6,
+      "resolutionPassed": 6,
+      "createPassed": 6,
       "matchedTopicPassed": 6,
-      "endToEndPassed": 5,
-      "failed": 1
+      "endToEndPassed": 6,
+      "failed": 0
     },
     "diverse_academic": {
       "total": 6,
@@ -274,12 +274,12 @@
     },
     "emotion_topicful": {
       "total": 5,
-      "labelPassed": 3,
+      "labelPassed": 5,
       "resolutionPassed": 5,
       "createPassed": 5,
       "matchedTopicPassed": 5,
-      "endToEndPassed": 3,
-      "failed": 2
+      "endToEndPassed": 5,
+      "failed": 0
     },
     "emotions": {
       "total": 4,
@@ -310,12 +310,12 @@
     },
     "followup_continuity": {
       "total": 29,
-      "labelPassed": 26,
+      "labelPassed": 28,
       "resolutionPassed": 28,
       "createPassed": 29,
-      "matchedTopicPassed": 17,
-      "endToEndPassed": 13,
-      "failed": 16
+      "matchedTopicPassed": 22,
+      "endToEndPassed": 20,
+      "failed": 9
     },
     "geography": {
       "total": 4,
@@ -346,12 +346,12 @@
     },
     "hard_comparison": {
       "total": 1,
-      "labelPassed": 0,
+      "labelPassed": 1,
       "resolutionPassed": 1,
       "createPassed": 1,
       "matchedTopicPassed": 1,
-      "endToEndPassed": 0,
-      "failed": 1
+      "endToEndPassed": 1,
+      "failed": 0
     },
     "hard_domain_shaping": {
       "total": 2,
@@ -394,9 +394,9 @@
       "labelPassed": 3,
       "resolutionPassed": 3,
       "createPassed": 3,
-      "matchedTopicPassed": 2,
-      "endToEndPassed": 2,
-      "failed": 1
+      "matchedTopicPassed": 3,
+      "endToEndPassed": 3,
+      "failed": 0
     },
     "hard_sequence_language": {
       "total": 6,
@@ -463,12 +463,12 @@
     },
     "mechanism_question": {
       "total": 5,
-      "labelPassed": 1,
+      "labelPassed": 4,
       "resolutionPassed": 5,
       "createPassed": 5,
       "matchedTopicPassed": 5,
-      "endToEndPassed": 1,
-      "failed": 4
+      "endToEndPassed": 4,
+      "failed": 1
     },
     "mixed": {
       "total": 4,
@@ -508,12 +508,12 @@
     },
     "noisy_natural_language": {
       "total": 13,
-      "labelPassed": 9,
+      "labelPassed": 10,
       "resolutionPassed": 13,
       "createPassed": 13,
       "matchedTopicPassed": 13,
-      "endToEndPassed": 9,
-      "failed": 4
+      "endToEndPassed": 10,
+      "failed": 3
     },
     "null_cases": {
       "total": 11,
@@ -526,12 +526,12 @@
     },
     "paragraph_context": {
       "total": 18,
-      "labelPassed": 8,
+      "labelPassed": 9,
       "resolutionPassed": 18,
       "createPassed": 18,
       "matchedTopicPassed": 18,
-      "endToEndPassed": 8,
-      "failed": 10
+      "endToEndPassed": 9,
+      "failed": 9
     },
     "plumbing": {
       "total": 4,
@@ -553,12 +553,12 @@
     },
     "reuse_existing": {
       "total": 3,
-      "labelPassed": 2,
+      "labelPassed": 3,
       "resolutionPassed": 3,
       "createPassed": 3,
-      "matchedTopicPassed": 2,
-      "endToEndPassed": 2,
-      "failed": 1
+      "matchedTopicPassed": 3,
+      "endToEndPassed": 3,
+      "failed": 0
     },
     "schoolwork": {
       "total": 4,
@@ -571,21 +571,21 @@
     },
     "sequence_baseline": {
       "total": 8,
-      "labelPassed": 7,
+      "labelPassed": 8,
       "resolutionPassed": 8,
       "createPassed": 8,
-      "matchedTopicPassed": 6,
-      "endToEndPassed": 6,
-      "failed": 2
+      "matchedTopicPassed": 8,
+      "endToEndPassed": 8,
+      "failed": 0
     },
     "sequence_comparison": {
       "total": 3,
       "labelPassed": 3,
       "resolutionPassed": 3,
       "createPassed": 3,
-      "matchedTopicPassed": 1,
-      "endToEndPassed": 1,
-      "failed": 2
+      "matchedTopicPassed": 3,
+      "endToEndPassed": 3,
+      "failed": 0
     },
     "sequence_existing_vs_new_narrow": {
       "total": 2,
@@ -634,12 +634,12 @@
     },
     "structured_phrase": {
       "total": 6,
-      "labelPassed": 4,
+      "labelPassed": 5,
       "resolutionPassed": 6,
       "createPassed": 6,
       "matchedTopicPassed": 6,
-      "endToEndPassed": 4,
-      "failed": 2
+      "endToEndPassed": 5,
+      "failed": 1
     },
     "switching": {
       "total": 2,
@@ -661,36 +661,34 @@
     }
   },
   "layerBreakdown": {
-    "label": 66,
-    "resolution": 6,
-    "create_flag": 5,
-    "matched_topic": 26,
-    "forbidden": 17
+    "label": 49,
+    "resolution": 5,
+    "create_flag": 4,
+    "matched_topic": 15,
+    "forbidden": 1
   },
   "likelyFailureBreakdown": {
     "broad_anchor_beat_buried_bottleneck": 2,
     "domain_shaping_failed": 8,
-    "expected_label_extracted_but_lost_competition": 1,
-    "expected_label_present_in_message_but_not_extracted": 18,
-    "good_label_but_creation_blocked": 11,
-    "good_label_but_resolution_failed": 11,
-    "good_label_but_resolver_no_match": 3,
+    "expected_label_extracted_but_lost_competition": 2,
+    "expected_label_present_in_message_but_not_extracted": 9,
+    "good_label_but_creation_blocked": 16,
     "null_case_overcreated_topic": 1,
-    "pfap_malformed_candidate_won": 3,
+    "pfap_malformed_candidate_won": 2,
     "pfap_protected_candidate_lost_final_arbitration": 17,
-    "uncategorized_failure": 16
+    "uncategorized_failure": 8
   },
   "pfapBreakdown": {
-    "failedCount": 91,
-    "failedWithProtectedCandidates": 63,
-    "failedExpectedCandidateFound": 19,
+    "failedCount": 65,
+    "failedWithProtectedCandidates": 45,
+    "failedExpectedCandidateFound": 20,
     "failedExpectedCandidateProtected": 18,
-    "failedMalformedActual": 13,
+    "failedMalformedActual": 8,
     "likelyIssueBreakdown": {
-      "pfap_expected_candidate_needs_protection_metadata": 1,
-      "pfap_expected_label_partially_extracted_canonicalization_needed": 47,
+      "pfap_expected_candidate_needs_protection_metadata": 2,
+      "pfap_expected_label_partially_extracted_canonicalization_needed": 29,
       "pfap_protected_candidate_lost_final_arbitration": 17,
-      "unknown": 26
+      "unknown": 17
     }
   },
   "results": [
@@ -858,40 +856,27 @@
       "description": "direct real-world concept",
       "message": "I need help understanding insurance deductible.",
       "expectedLabel": "Insurance Deductible",
-      "actualLabel": "Need Help Understanding Insurance Deductible",
+      "actualLabel": "Insurance Deductible",
       "expectedResolutionKind": "created_new_candidate",
-      "actualResolutionKind": "no_match",
+      "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
-      "actualShouldCreate": false,
+      "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
-      "resolutionPass": false,
-      "createPass": false,
+      "labelPass": true,
+      "resolutionPass": true,
+      "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 0,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Insurance Deductible\" actualLabel=\"Need Help Understanding Insurance Deductible\""
-        },
-        {
-          "layer": "resolution",
-          "message": "expectedResolutionKind=created_new_candidate actualResolutionKind=no_match"
-        },
-        {
-          "layer": "create_flag",
-          "message": "expectedShouldCreate=true actualShouldCreate=false"
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::focus-001",
@@ -1253,32 +1238,27 @@
       "description": "preserve speed of sound phrase",
       "message": "I keep getting confused by the speed of sound formula.",
       "expectedLabel": "Speed of Sound",
-      "actualLabel": "Speed of Sound Formula",
+      "actualLabel": "Speed of Sound",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
-      "pfapProtectedCount": 1,
-      "pfapMalformedCount": 0,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
+      "pfapProtectedCount": 0,
+      "pfapMalformedCount": 1,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Speed of Sound\" actualLabel=\"Speed of Sound Formula\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::question-001",
@@ -1288,7 +1268,7 @@
       "category": "mechanism_question",
       "description": "how-does question",
       "message": "How does reuptake work?",
-      "expectedLabel": "How Reuptake Works",
+      "expectedLabel": "Reuptake",
       "actualLabel": "Reuptake",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
@@ -1296,25 +1276,20 @@
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 0,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"How Reuptake Works\" actualLabel=\"Reuptake\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::question-002",
@@ -1324,7 +1299,7 @@
       "category": "mechanism_question",
       "description": "how-do question with plural concept",
       "message": "How do action potentials work?",
-      "expectedLabel": "How Action Potentials Work",
+      "expectedLabel": "Action Potentials",
       "actualLabel": "Action Potentials",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
@@ -1332,25 +1307,20 @@
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 0,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"How Action Potentials Work\" actualLabel=\"Action Potentials\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::question-003",
@@ -1392,32 +1362,27 @@
       "description": "mechanism question for finance",
       "message": "I don't get how interest on a credit card actually works.",
       "expectedLabel": "Credit Card Interest",
-      "actualLabel": "Interest on",
+      "actualLabel": "Credit Card Interest",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_malformed_candidate_won",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
-      "pfapProtectedCount": 0,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
+      "pfapProtectedCount": 1,
       "pfapMalformedCount": 1,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Credit Card Interest\" actualLabel=\"Interest on\""
-        }
-      ]
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 2,
+      "actualCandidateRank": 2,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::question-005",
@@ -1479,7 +1444,7 @@
       "endToEndPass": true,
       "likelyFailureClass": null,
       "pfapLikelyIssue": null,
-      "pfapProtectedCount": 2,
+      "pfapProtectedCount": 1,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
@@ -1495,32 +1460,27 @@
       "description": "comparison with learner confusion framing",
       "message": "We started mitosis and meiosis this week and I keep blending the two together. What's actually different between them?",
       "expectedLabel": "Mitosis vs Meiosis",
-      "actualLabel": "Mitosis",
+      "actualLabel": "Mitosis vs Meiosis",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.52,
-      "labelPass": false,
+      "actualConfidence": 1,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
-      "pfapProtectedCount": 2,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
+      "pfapProtectedCount": 1,
       "pfapMalformedCount": 1,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Mitosis vs Meiosis\" actualLabel=\"Mitosis\""
-        }
-      ]
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::compare-003",
@@ -1585,8 +1545,8 @@
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 2,
-      "actualCandidateRank": 2,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
       "layeredFailures": []
     },
     {
@@ -1634,32 +1594,27 @@
       "description": "biology phase comparison hidden in plain language",
       "message": "Metaphase and anaphase still feel basically the same in my head.",
       "expectedLabel": "Metaphase vs Anaphase",
-      "actualLabel": "Metaphase",
+      "actualLabel": "Metaphase vs Anaphase",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
-      "pfapProtectedCount": 2,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
+      "pfapProtectedCount": 1,
       "pfapMalformedCount": 1,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Metaphase vs Anaphase\" actualLabel=\"Metaphase\""
-        }
-      ]
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::context-001",
@@ -2462,32 +2417,27 @@
       "description": "panic / embarrassment but exact comparison target",
       "message": "This is embarrassing but I keep messing up mitosis because metaphase and anaphase still feel basically the same in my head and every time I see a question I panic a little.",
       "expectedLabel": "Metaphase vs Anaphase",
-      "actualLabel": "Mitosis",
+      "actualLabel": "Metaphase vs Anaphase",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 3,
       "pfapMalformedCount": 1,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Metaphase vs Anaphase\" actualLabel=\"Mitosis\""
-        }
-      ]
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::emotion-002",
@@ -2498,32 +2448,27 @@
       "description": "irritation with precise mechanism target",
       "message": "I get so irritated every time the topic of reuptake comes back because I think I finally understand it and then one tiny wording change makes me feel like I never understood it at all.",
       "expectedLabel": "Reuptake",
-      "actualLabel": "Topic of Reuptake Comes Back",
+      "actualLabel": "Reuptake",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 1,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Reuptake\" actualLabel=\"Topic of Reuptake Comes Back\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::emotion-003",
@@ -2648,10 +2593,10 @@
       "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 4,
-      "pfapMalformedCount": 0,
+      "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 2,
-      "actualCandidateRank": 2,
+      "expectedCandidateRank": 3,
+      "actualCandidateRank": 3,
       "layeredFailures": []
     },
     {
@@ -3014,39 +2959,26 @@
       "description": "should stay on active topic under direct quiz request",
       "message": "Can you quiz me on neurotransmitters?",
       "expectedLabel": "Neurotransmitters",
-      "actualLabel": "On Neurotransmitters",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualLabel": "Neurotransmitters",
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Neurotransmitters",
-      "actualMatchedTopicName": null,
+      "actualMatchedTopicName": "Neurotransmitters",
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
-      "forbiddenPass": false,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
-      "pfapProtectedCount": 0,
-      "pfapMalformedCount": 1,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "matchedTopicPass": true,
+      "forbiddenPass": true,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
+      "pfapProtectedCount": 1,
+      "pfapMalformedCount": 0,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Neurotransmitters\" actualLabel=\"On Neurotransmitters\""
-        },
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Neurotransmitters\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::stay-002",
@@ -3335,39 +3267,26 @@
       "description": "create one topic, switch to another, then stay there :: step-3",
       "message": "Can you quiz me on budgeting?",
       "expectedLabel": "Budgeting",
-      "actualLabel": "On Budgeting",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualLabel": "Budgeting",
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Budgeting",
-      "actualMatchedTopicName": null,
+      "actualMatchedTopicName": "Budgeting",
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
-      "forbiddenPass": false,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
-      "pfapProtectedCount": 0,
-      "pfapMalformedCount": 1,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "matchedTopicPass": true,
+      "forbiddenPass": true,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
+      "pfapProtectedCount": 1,
+      "pfapMalformedCount": 0,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Budgeting\" actualLabel=\"On Budgeting\""
-        },
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Budgeting\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "baseline-sequence::sequence-002:step-1",
@@ -3498,34 +3417,25 @@
       "description": "explicit topic then pronoun-heavy continuation :: step-3",
       "message": "Can you quiz me on it?",
       "actualLabel": "On It",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Reuptake",
-      "actualMatchedTopicName": null,
+      "actualMatchedTopicName": "Reuptake",
       "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
-      "forbiddenPass": false,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolution_failed",
+      "matchedTopicPass": true,
+      "forbiddenPass": true,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Reuptake\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "baseline-sequence::sequence-004:step-1",
@@ -3815,8 +3725,8 @@
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 2,
-      "actualCandidateRank": 2,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
       "layeredFailures": []
     },
     {
@@ -3828,34 +3738,25 @@
       "description": "comparison topic then naturalistic same-topic followup :: step-2",
       "message": "I keep mixing them up in word problems.",
       "actualLabel": "Up in Word Problems",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Speed vs Velocity",
-      "actualMatchedTopicName": null,
+      "actualMatchedTopicName": "Speed vs Velocity",
       "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
-      "forbiddenPass": false,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolution_failed",
+      "matchedTopicPass": true,
+      "forbiddenPass": true,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Speed vs Velocity\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "baseline-sequence::sequence-007:step-3",
@@ -3866,34 +3767,25 @@
       "description": "comparison topic then naturalistic same-topic followup :: step-3",
       "message": "Quiz me on that.",
       "actualLabel": "Quiz Me on That",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Speed vs Velocity",
-      "actualMatchedTopicName": null,
+      "actualMatchedTopicName": "Speed vs Velocity",
       "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
-      "forbiddenPass": false,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolution_failed",
+      "matchedTopicPass": true,
+      "forbiddenPass": true,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Speed vs Velocity\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "baseline-sequence::sequence-008:step-1",
@@ -3935,18 +3827,18 @@
       "description": "broad existing topic should split to narrow target, then stay on narrow target :: step-2",
       "message": "Yeah, that tiny word.",
       "actualLabel": "Se in Spanish",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Se In Spanish",
-      "actualMatchedTopicName": null,
+      "actualMatchedTopicName": "Se in Spanish",
       "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": false,
-      "forbiddenPass": false,
+      "forbiddenPass": true,
       "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolution_failed",
+      "likelyFailureClass": "good_label_but_creation_blocked",
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
@@ -3956,11 +3848,7 @@
       "layeredFailures": [
         {
           "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
+          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=\"Se in Spanish\""
         }
       ]
     },
@@ -4107,32 +3995,27 @@
       "description": "biology paragraph with comparison target",
       "message": "I was doing practice questions for bio and I thought I was confused about mitosis generally, but after looking again I think it's really just metaphase and anaphase that I keep blending together.",
       "expectedLabel": "Metaphase vs Anaphase",
-      "actualLabel": "Doing Practice Questions for Bio",
+      "actualLabel": "Metaphase vs Anaphase",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 4,
-      "pfapMalformedCount": 1,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "pfapMalformedCount": 2,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Metaphase vs Anaphase\" actualLabel=\"Doing Practice Questions for Bio\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "hard-isolated::hard-006",
@@ -4389,18 +4272,18 @@
       "description": "topic creation from messy long message, then pronoun-heavy continuation :: step-2",
       "message": "Yeah, that exact part is what keeps throwing me off.",
       "actualLabel": null,
-      "actualResolutionKind": "no_match",
+      "actualResolutionKind": "fallback_active_topic",
       "actualShouldCreate": false,
       "expectedMatchedTopicName": "Word Order In Spanish",
-      "actualMatchedTopicName": null,
-      "actualConfidence": 0.294,
+      "actualMatchedTopicName": "Word Order in Spanish",
+      "actualConfidence": 0.88,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": false,
-      "forbiddenPass": false,
+      "forbiddenPass": true,
       "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolver_no_match",
+      "likelyFailureClass": "good_label_but_creation_blocked",
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
@@ -4410,11 +4293,7 @@
       "layeredFailures": [
         {
           "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Word Order In Spanish\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=no_match"
+          "message": "expectedMatchedTopicName=\"Word Order In Spanish\" actualMatchedTopicName=\"Word Order in Spanish\""
         }
       ]
     },
@@ -4427,18 +4306,18 @@
       "description": "topic creation from messy long message, then pronoun-heavy continuation :: step-3",
       "message": "Quiz me on it.",
       "actualLabel": "On It",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Word Order In Spanish",
-      "actualMatchedTopicName": null,
+      "actualMatchedTopicName": "Word Order in Spanish",
       "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": false,
-      "forbiddenPass": false,
+      "forbiddenPass": true,
       "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolution_failed",
+      "likelyFailureClass": "good_label_but_creation_blocked",
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
@@ -4448,11 +4327,7 @@
       "layeredFailures": [
         {
           "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Word Order In Spanish\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
+          "message": "expectedMatchedTopicName=\"Word Order In Spanish\" actualMatchedTopicName=\"Word Order in Spanish\""
         }
       ]
     },
@@ -4683,34 +4558,25 @@
       "description": "broad active topic splits into narrow target, then vague followup stays narrow :: step-3",
       "message": "Quiz me on it.",
       "actualLabel": "On It",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Reuptake",
-      "actualMatchedTopicName": null,
+      "actualMatchedTopicName": "Reuptake",
       "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
-      "forbiddenPass": false,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolution_failed",
+      "matchedTopicPass": true,
+      "forbiddenPass": true,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Reuptake\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-paragraph-001",
@@ -4721,32 +4587,27 @@
       "description": "paragraph with broad sound context and buried speed of sound target",
       "message": "We started a section on waves and sound this week. Reflection and refraction were mostly okay for me, or at least okay enough. But once the worksheet switched to the speed of sound formula, that was where I stopped following what the variables were even supposed to mean.",
       "expectedLabel": "Speed of Sound",
-      "actualLabel": "Speed of Sound Formula",
+      "actualLabel": "Speed of Sound",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
-      "pfapProtectedCount": 3,
-      "pfapMalformedCount": 0,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
+      "pfapProtectedCount": 2,
+      "pfapMalformedCount": 1,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Speed of Sound\" actualLabel=\"Speed of Sound Formula\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-paragraph-002",
@@ -4870,11 +4731,11 @@
       "endToEndPass": true,
       "likelyFailureClass": null,
       "pfapLikelyIssue": null,
-      "pfapProtectedCount": 1,
-      "pfapMalformedCount": 2,
+      "pfapProtectedCount": 2,
+      "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 2,
-      "actualCandidateRank": 2,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
       "layeredFailures": []
     },
     {
@@ -4935,12 +4796,12 @@
       "matchedTopicPass": true,
       "forbiddenPass": true,
       "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
-      "pfapProtectedCount": 2,
-      "pfapMalformedCount": 0,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "likelyFailureClass": "expected_label_extracted_but_lost_competition",
+      "pfapLikelyIssue": "pfap_expected_candidate_needs_protection_metadata",
+      "pfapProtectedCount": 1,
+      "pfapMalformedCount": 1,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 2,
       "actualCandidateRank": 1,
       "layeredFailures": [
         {
@@ -5825,32 +5686,27 @@
       "description": "messy low-energy law of cosines complaint",
       "message": "ugh law of cosines was maybe in my head at one point but rn it is just not clicking at all",
       "expectedLabel": "Law of Cosines",
-      "actualLabel": "Ugh Law of Cosines",
+      "actualLabel": "Law of Cosines",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 0,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Law of Cosines\" actualLabel=\"Ugh Law of Cosines\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-noise-003",
@@ -5995,32 +5851,27 @@
       "description": "rambling comparison with buried target",
       "message": "I thought I was confused about mitosis overall, but after doing more questions I think the real problem is that metaphase and anaphase still feel basically interchangeable in my head.",
       "expectedLabel": "Metaphase vs Anaphase",
-      "actualLabel": "After Doing More Questions",
+      "actualLabel": "Metaphase vs Anaphase",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 4,
       "pfapMalformedCount": 1,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Metaphase vs Anaphase\" actualLabel=\"After Doing More Questions\""
-        }
-      ]
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-compare-002",
@@ -6146,9 +5997,9 @@
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 1,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
-      "actualCandidateRank": null,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
       "layeredFailures": []
     },
     {
@@ -6247,7 +6098,7 @@
       "endToEndPass": true,
       "likelyFailureClass": null,
       "pfapLikelyIssue": null,
-      "pfapProtectedCount": 2,
+      "pfapProtectedCount": 3,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
@@ -6649,32 +6500,27 @@
       "description": "paragraph-created speed of sound topic followed by emotional vague same-topic followups :: step-1",
       "message": "We started a section on waves and sound this week. Reflection and refraction were mostly okay for me. But when the worksheet switched to the speed of sound formula, that was where I stopped following what the variables were even doing.",
       "expectedLabel": "Speed of Sound",
-      "actualLabel": "Speed of Sound Formula",
+      "actualLabel": "Speed of Sound",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
-      "pfapProtectedCount": 3,
-      "pfapMalformedCount": 0,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
+      "pfapProtectedCount": 2,
+      "pfapMalformedCount": 1,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Speed of Sound\" actualLabel=\"Speed of Sound Formula\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-sequence::holdout-sequence-001:step-2",
@@ -6685,34 +6531,25 @@
       "description": "paragraph-created speed of sound topic followed by emotional vague same-topic followups :: step-2",
       "message": "Yeah, that exact part is what made me feel lost.",
       "actualLabel": null,
-      "actualResolutionKind": "no_match",
+      "actualResolutionKind": "fallback_active_topic",
       "actualShouldCreate": false,
       "expectedMatchedTopicName": "Speed of Sound",
-      "actualMatchedTopicName": null,
-      "actualConfidence": 0.42,
+      "actualMatchedTopicName": "Speed of Sound",
+      "actualConfidence": 0.88,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
-      "forbiddenPass": false,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolver_no_match",
+      "matchedTopicPass": true,
+      "forbiddenPass": true,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Speed of Sound\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=no_match"
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-sequence::holdout-sequence-001:step-3",
@@ -6722,31 +6559,26 @@
       "category": "followup_continuity",
       "description": "paragraph-created speed of sound topic followed by emotional vague same-topic followups :: step-3",
       "message": "Can we go over it again, but slower this time?",
-      "actualLabel": "Speed of Sound Formula",
+      "actualLabel": "Speed of Sound",
       "actualResolutionKind": "fallback_active_topic",
       "actualShouldCreate": false,
       "expectedMatchedTopicName": "Speed of Sound",
-      "actualMatchedTopicName": "Speed of Sound Formula",
+      "actualMatchedTopicName": "Speed of Sound",
       "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Speed of Sound\" actualMatchedTopicName=\"Speed of Sound Formula\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-sequence::holdout-sequence-002:step-1",
@@ -6920,33 +6752,29 @@
       "category": "followup_continuity",
       "description": "spanish se topic then same-topic continuation through vague emotional messages :: step-3",
       "message": "Quiz me on it, I guess.",
-      "actualLabel": "Quiz Me on It I Guess",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualLabel": "On It",
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Se In Spanish",
-      "actualMatchedTopicName": null,
+      "actualMatchedTopicName": "Se in Spanish",
       "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": false,
-      "forbiddenPass": false,
+      "forbiddenPass": true,
       "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolution_failed",
+      "likelyFailureClass": "good_label_but_creation_blocked",
       "pfapLikelyIssue": null,
-      "pfapProtectedCount": 1,
+      "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 2,
+      "actualCandidateRank": 1,
       "layeredFailures": [
         {
           "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
+          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=\"Se in Spanish\""
         }
       ]
     },
@@ -7018,32 +6846,27 @@
       "description": "buried metaphase/anaphase comparison then same-topic continuity :: step-1",
       "message": "I thought mitosis overall was the problem, but now I think it is really just metaphase and anaphase still feeling interchangeable in my head.",
       "expectedLabel": "Metaphase vs Anaphase",
-      "actualLabel": "Metaphase",
+      "actualLabel": "Metaphase vs Anaphase",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 3,
       "pfapMalformedCount": 1,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Metaphase vs Anaphase\" actualLabel=\"Metaphase\""
-        }
-      ]
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "holdout-sequence::holdout-sequence-005:step-2",
@@ -7054,34 +6877,25 @@
       "description": "buried metaphase/anaphase comparison then same-topic continuity :: step-2",
       "message": "That is the exact mix-up, yeah.",
       "actualLabel": "Exact Mix-Up Yeah",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Metaphase vs Anaphase",
-      "actualMatchedTopicName": null,
-      "actualConfidence": 1,
+      "actualMatchedTopicName": "Metaphase vs Anaphase",
+      "actualConfidence": 0.86,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
-      "forbiddenPass": false,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolution_failed",
+      "matchedTopicPass": true,
+      "forbiddenPass": true,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Metaphase vs Anaphase\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-sequence::holdout-sequence-005:step-3",
@@ -7092,34 +6906,25 @@
       "description": "buried metaphase/anaphase comparison then same-topic continuity :: step-3",
       "message": "Can you test me on that?",
       "actualLabel": "Can You Test Me on That",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Metaphase vs Anaphase",
-      "actualMatchedTopicName": null,
+      "actualMatchedTopicName": "Metaphase vs Anaphase",
       "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
-      "forbiddenPass": false,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolution_failed",
+      "matchedTopicPass": true,
+      "forbiddenPass": true,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Metaphase vs Anaphase\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "holdout-sequence::holdout-sequence-006:step-1",
@@ -7161,18 +6966,18 @@
       "description": "broad topic exists, narrow topic should be created, then followed :: step-2",
       "message": "Yeah, that tiny word is what I mean.",
       "actualLabel": null,
-      "actualResolutionKind": "no_match",
+      "actualResolutionKind": "fallback_active_topic",
       "actualShouldCreate": false,
       "expectedMatchedTopicName": "Se In Spanish",
-      "actualMatchedTopicName": null,
-      "actualConfidence": 0.434,
+      "actualMatchedTopicName": "Se in Spanish",
+      "actualConfidence": 0.88,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": false,
-      "forbiddenPass": false,
+      "forbiddenPass": true,
       "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolver_no_match",
+      "likelyFailureClass": "good_label_but_creation_blocked",
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
@@ -7182,11 +6987,7 @@
       "layeredFailures": [
         {
           "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=no_match"
+          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=\"Se in Spanish\""
         }
       ]
     },
@@ -7199,18 +7000,18 @@
       "description": "broad topic exists, narrow topic should be created, then followed :: step-3",
       "message": "Can you quiz me on it?",
       "actualLabel": "On It",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Se In Spanish",
-      "actualMatchedTopicName": null,
+      "actualMatchedTopicName": "Se in Spanish",
       "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": false,
-      "forbiddenPass": false,
+      "forbiddenPass": true,
       "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolution_failed",
+      "likelyFailureClass": "good_label_but_creation_blocked",
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
@@ -7220,11 +7021,7 @@
       "layeredFailures": [
         {
           "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
+          "message": "expectedMatchedTopicName=\"Se In Spanish\" actualMatchedTopicName=\"Se in Spanish\""
         }
       ]
     },
@@ -7299,34 +7096,25 @@
       "description": "null first message should not create, then clear topic should create :: step-3",
       "message": "Can we do another example of that?",
       "actualLabel": "Another Example of",
-      "actualResolutionKind": "created_new_candidate",
-      "actualShouldCreate": true,
+      "actualResolutionKind": "fallback_active_topic",
+      "actualShouldCreate": false,
       "expectedMatchedTopicName": "Standard Deviation",
-      "actualMatchedTopicName": null,
+      "actualMatchedTopicName": "Standard Deviation",
       "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
-      "forbiddenPass": false,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_resolution_failed",
+      "matchedTopicPass": true,
+      "forbiddenPass": true,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Standard Deviation\" actualMatchedTopicName=null"
-        },
-        {
-          "layer": "forbidden",
-          "message": "forbiddenResolutionKindHit=created_new_candidate"
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "blindv2-isolated::blindv2-direct-001",
@@ -7536,8 +7324,8 @@
       "endToEndPass": true,
       "likelyFailureClass": null,
       "pfapLikelyIssue": null,
-      "pfapProtectedCount": 1,
-      "pfapMalformedCount": 1,
+      "pfapProtectedCount": 2,
+      "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
@@ -8631,8 +8419,8 @@
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 1,
-      "actualCandidateRank": 1,
+      "expectedCandidateRank": 2,
+      "actualCandidateRank": 2,
       "layeredFailures": []
     },
     {
@@ -10242,9 +10030,9 @@
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 1,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
-      "actualCandidateRank": null,
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
       "layeredFailures": []
     },
     {
@@ -10708,8 +10496,8 @@
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 2,
-      "actualCandidateRank": 2,
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
       "layeredFailures": []
     },
     {
