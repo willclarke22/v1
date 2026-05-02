@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-02T19:03:13.542Z",
+  "generatedAt": "2026-05-02T19:30:28.580Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,12 +8,12 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 333,
+    "labelPassed": 334,
     "resolutionPassed": 333,
     "createPassed": 334,
     "matchedTopicPassed": 336,
-    "endToEndPassed": 332,
-    "failed": 4
+    "endToEndPassed": 333,
+    "failed": 3
   },
   "scopeBreakdown": {
     "baseline-isolated": {
@@ -72,12 +72,12 @@
     },
     "holdout-isolated": {
       "total": 58,
-      "labelPassed": 57,
+      "labelPassed": 58,
       "resolutionPassed": 58,
       "createPassed": 58,
       "matchedTopicPassed": 58,
-      "endToEndPassed": 57,
-      "failed": 1
+      "endToEndPassed": 58,
+      "failed": 0
     },
     "holdout-sequence": {
       "total": 20,
@@ -101,12 +101,12 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 270,
+      "labelPassed": 271,
       "resolutionPassed": 271,
       "createPassed": 271,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 270,
-      "failed": 3
+      "endToEndPassed": 271,
+      "failed": 2
     },
     "sequence": {
       "total": 63,
@@ -526,12 +526,12 @@
     },
     "paragraph_context": {
       "total": 18,
-      "labelPassed": 17,
+      "labelPassed": 18,
       "resolutionPassed": 18,
       "createPassed": 18,
       "matchedTopicPassed": 18,
-      "endToEndPassed": 17,
-      "failed": 1
+      "endToEndPassed": 18,
+      "failed": 0
     },
     "plumbing": {
       "total": 4,
@@ -661,7 +661,7 @@
     }
   },
   "layerBreakdown": {
-    "label": 3,
+    "label": 2,
     "resolution": 3,
     "create_flag": 2,
     "matched_topic": 0,
@@ -670,17 +670,17 @@
   "likelyFailureBreakdown": {
     "expected_label_extracted_but_lost_competition": 1,
     "good_label_but_creation_blocked": 1,
-    "pfap_protected_candidate_lost_final_arbitration": 2
+    "pfap_protected_candidate_lost_final_arbitration": 1
   },
   "pfapBreakdown": {
-    "failedCount": 4,
-    "failedWithProtectedCandidates": 4,
-    "failedExpectedCandidateFound": 4,
-    "failedExpectedCandidateProtected": 3,
+    "failedCount": 3,
+    "failedWithProtectedCandidates": 3,
+    "failedExpectedCandidateFound": 3,
+    "failedExpectedCandidateProtected": 2,
     "failedMalformedActual": 0,
     "likelyIssueBreakdown": {
       "pfap_expected_candidate_needs_protection_metadata": 1,
-      "pfap_protected_candidate_lost_final_arbitration": 2,
+      "pfap_protected_candidate_lost_final_arbitration": 1,
       "unknown": 1
     }
   },
@@ -4507,32 +4507,27 @@
       "description": "paragraph with broad biology setup and depolarization target late",
       "message": "In class we were doing neurons, threshold, membrane potential, and firing. At first I thought I was confused about action potentials in general, but after trying the practice questions I think it is really depolarization that keeps breaking my understanding.",
       "expectedLabel": "Depolarization",
-      "actualLabel": "Membrane Potential",
+      "actualLabel": "Depolarization",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9800000000000001,
-      "labelPass": false,
+      "actualConfidence": 0.9499999999999998,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 4,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 3,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Depolarization\" actualLabel=\"Membrane Potential\""
-        }
-      ]
+      "actualCandidateRank": 3,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-paragraph-004",

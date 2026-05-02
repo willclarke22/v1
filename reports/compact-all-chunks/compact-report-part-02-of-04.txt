@@ -316,12 +316,12 @@ actual:   Reuptake
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] paragraph_context | holdout-paragraph-003 | FAIL
+[holdout-isolated] paragraph_context | holdout-paragraph-003 | PASS
 message: In class we were doing neurons, threshold, membrane potential, and firing. At first I thought I was confused about action potentials in general, but after trying the practice questions I think it is really depolarization that keeps breaking my understanding.
 expected: Depolarization
-actual:   Membrane Potential
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Depolarization
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] paragraph_context | holdout-paragraph-004 | PASS
 message: I was doing triangle homework tonight and most of it was manageable in a fake way where I sort of convince myself I am following. Then law of cosines came up and suddenly I realized that was actually the thing I never properly understood.

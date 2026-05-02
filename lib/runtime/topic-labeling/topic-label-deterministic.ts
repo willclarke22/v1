@@ -5271,6 +5271,224 @@ function chooseResidueOverFocusSuppressionCandidate(
 }
 
 
+
+/**
+ * Patch F.14.1:
+ * A late-focus override should recover the durable concept named in the
+ * breakdown clause, not the breakdown event itself. Phrases like
+ * "the timing falls apart" or "my understanding breaks" are diagnostic
+ * evidence, but they should not become learning-space topic labels.
+ */
+function candidateLooksBreakdownEventResidueForLateFocus(
+  candidate: TopicCandidate,
+) {
+  const label = cachedNormalizeLoose(getCandidateDisplayLabel(candidate));
+  const core = cachedNormalizeLoose(candidate.coreText);
+  const combined = `${label} ${core}`.trim();
+
+  if (!combined) return false;
+
+  const hasBreakdownEventCue =
+    /\b(?:falls? apart|falling apart|breaks?|breaking|stops? making sense|doesn'?t click|doesnt click|not clicking|lose track|lost track|stop(?:ped)? following|stop(?:ped)? understanding|confus(?:e|ed|ing)|panic|freeze|freezing|spiral)\b/i.test(
+      combined,
+    );
+
+  if (!hasBreakdownEventCue) return false;
+
+  const labelLooksLikeEventOrState =
+    /^(?:the|this|that|where|when|what|why|how)\b/i.test(label) ||
+    /\b(?:timing|understanding|confidence|whole thing|everything|part|point|place|moment|feeling|problem|issue|question|example)\b/i.test(
+      label,
+    );
+
+  const labelLooksLikeDurableStructuredTopic =
+    /\b(?:notation|formula|law|rules?|phases?|layers?|types?|causes?|effect|response|system|process|mechanism|concept|skill|strategy|analysis|agreement|voice|scale|checks?|values|interest|potential|deviation|pump|subduction|depolarization)\b/i.test(
+      label,
+    ) || /\b(?:vs|of|in|on|for)\b/i.test(label);
+
+  return Boolean(labelLooksLikeEventOrState && !labelLooksLikeDurableStructuredTopic);
+}
+
+/**
+ * Patch F.14:
+ * Recover a concrete target that is named in a late/focus clause when an
+ * earlier setup candidate or learner-state residue is currently winning.
+ *
+ * This is intentionally trigger-shape based, not concept-list based:
+ *   "I think it is really X that keeps breaking my understanding" -> X
+ *   "then I hear/see/encounter X again and realize..." -> X
+ *
+ * The rule only considers compact, durable candidates already produced by the
+ * candidate extractor. It does not synthesize new concepts or broadly prefer
+ * short labels over longer labels.
+ */
+function candidateLooksExplicitLateFocusCueTarget(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile,
+) {
+  if (!candidate.shouldCompeteAsTopic) return false;
+  if (candidate.isSubpartReference) return false;
+  if (candidateLooksWeakNounChunk(candidate)) return false;
+  if (candidateLooksMalformedTopicLabel(candidate)) return false;
+  if (candidateLooksBreakdownEventResidueForLateFocus(candidate)) return false;
+  if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+  if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
+  if (candidateLooksProblemFraming(candidate)) return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
+
+  const label = getCandidateDisplayLabel(candidate);
+  if (!label) return false;
+  if (labelHasBadBoundaryShape(label)) return false;
+
+  const labelLoose = cachedNormalizeLoose(label);
+  const coreLoose = cachedNormalizeLoose(candidate.coreText);
+  const messageLoose = cachedNormalizeLoose(message);
+  const sourceLoose = cachedNormalizeLoose(candidate.sourceClause);
+  const searchable = `${sourceLoose} ${messageLoose}`.trim();
+
+  const candidateTerms = dedupe(
+    [labelLoose, coreLoose]
+      .flatMap((value) => {
+        if (!value) return [];
+        const withoutDomain = value
+          .replace(/\s+in\s+[a-z][a-z'’-]+$/i, "")
+          .replace(/\s+on\s+[a-z][a-z'’-]+$/i, "")
+          .trim();
+        return [value, withoutDomain];
+      })
+      .filter((value) => {
+        const tokenCount = cachedTokenize(value).length;
+        return tokenCount > 0 && tokenCount <= 5;
+      }),
+  );
+
+  if (!candidateTerms.length) return false;
+
+  const hasLateFrame =
+    profile.hasBroadToNarrowShape ||
+    profile.hasLateBottleneckShape ||
+    /\b(?:but|then|after|once|when|until|again|really|actual|specific)\b/i.test(
+      messageLoose,
+    );
+
+  if (!hasLateFrame) return false;
+
+  const candidateIsDurable =
+    candidate.kind === "named_concept" ||
+    candidate.kind === "concept_phrase" ||
+    candidate.kind === "domain_shaped" ||
+    candidate.kind === "of_phrase" ||
+    candidate.kind === "focus_target" ||
+    candidateLooksProtectedDurableLabel(candidate) ||
+    candidateLooksDurablePracticalConcept(candidate) ||
+    candidateLooksStructuredDurable(candidate) ||
+    candidateLooksConceptPhrase(candidate);
+
+  if (!candidateIsDurable) return false;
+
+  return candidateTerms.some((term) => {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const reallyTargetPattern = new RegExp(
+      `\\b(?:i\\s+think\\s+)?(?:it\\s+(?:is|was)|it's|that(?:'s| is))\\s+(?:really|actually|specifically|especially)\\s+${escaped}\\b.{0,96}\\b(?:that|because|where|when)\\b.{0,120}\\b(?:breaks?|breaking|lost|stuck|confus(?:e|ed|ing)|understand(?:ing)?|click|tripping|throwing|messing)\\b`,
+      "i",
+    ).test(searchable);
+
+    const actualThingPattern = new RegExp(
+      `\\b(?:actual|real|specific|main)\\s+(?:thing|part|issue|problem|target)\\s+(?:is\\s+)?${escaped}\\b.{0,120}\\b(?:breaks?|breaking|lost|stuck|confus(?:e|ed|ing)|understand(?:ing)?|click|tripping|throwing|messing)\\b`,
+      "i",
+    ).test(searchable);
+
+    const targetBreaksUnderstandingPattern = new RegExp(
+      `\\b${escaped}\\b.{0,96}\\b(?:keeps?|keep|starts?|start)\\s+(?:breaking|tripping|throwing|messing|confusing)\\b|` +
+        `\\b${escaped}\\b.{0,96}\\b(?:breaks?|falls apart|doesn'?t click|doesnt click|stops? making sense)\\b`,
+      "i",
+    ).test(searchable);
+
+    const encounteredAgainPattern = new RegExp(
+      `\\b(?:hear|heard|see|saw|encounter|encountered|run into|ran into|get to|got to)\\s+(?:the\\s+)?${escaped}\\b(?:\\s+again)?.{0,140}\\b(?:realiz(?:e|ed)|don'?t\\s+really\\s+know|dont\\s+really\\s+know|do\\s+not\\s+really\\s+know|not\\s+really\\s+know|lost|stuck|confus(?:e|ed|ing)|what\\s+(?:is|was)\\s+moving|what\\s+(?:is|was)\\s+happening)\\b`,
+      "i",
+    ).test(searchable);
+
+    return (
+      reallyTargetPattern ||
+      actualThingPattern ||
+      targetBreaksUnderstandingPattern ||
+      encounteredAgainPattern
+    );
+  });
+}
+
+function chooseExplicitLateFocusCueOverrideCandidate(
+  scoredCandidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile,
+): TopicCandidate | null {
+  if (!scoredCandidates.length) return null;
+
+  const currentTop = scoredCandidates[0];
+  const currentTopHasExplicitLateCue = candidateLooksExplicitLateFocusCueTarget(
+    currentTop,
+    message,
+    profile,
+  );
+
+  if (currentTopHasExplicitLateCue) return null;
+
+  const topIsOverrideable =
+    candidateLooksLearnerStateOrSetupResidue(currentTop) ||
+    candidateLooksProblemFraming(currentTop) ||
+    candidateLooksBroadSetupContextCandidate(currentTop, profile) ||
+    candidateLooksClauseWrapped(currentTop) ||
+    candidateLooksNoisyResidue(currentTop) ||
+    (candidateHasHighResidueRisk(currentTop) &&
+      !candidateLooksConceptPhrase(currentTop));
+
+  const explicitTargets = scoredCandidates
+    .filter((candidate) =>
+      candidateLooksExplicitLateFocusCueTarget(candidate, message, profile),
+    )
+    .sort((a, b) => {
+      const aAfter = candidateAfterContrast(a, profile) ? 1 : 0;
+      const bAfter = candidateAfterContrast(b, profile) ? 1 : 0;
+      if (aAfter !== bAfter) return bAfter - aAfter;
+
+      const aBottleneck = candidateLooksBottleneckTarget(a, message) ? 1 : 0;
+      const bBottleneck = candidateLooksBottleneckTarget(b, message) ? 1 : 0;
+      if (aBottleneck !== bBottleneck) return bBottleneck - aBottleneck;
+
+      const aProtected = candidateLooksProtectedDurableLabel(a) ? 1 : 0;
+      const bProtected = candidateLooksProtectedDurableLabel(b) ? 1 : 0;
+      if (aProtected !== bProtected) return bProtected - aProtected;
+
+      const aTokens = cachedTokenize(getCandidateDisplayLabel(a)).length;
+      const bTokens = cachedTokenize(getCandidateDisplayLabel(b)).length;
+      if (aTokens !== bTokens) return aTokens - bTokens;
+
+      return b.score - a.score;
+    });
+
+  const bestTarget = explicitTargets[0] ?? null;
+  if (!bestTarget) return null;
+
+  if (topIsOverrideable) return bestTarget;
+
+  const topLooksEarlierSetupList =
+    currentTop.clauseIndex < bestTarget.clauseIndex &&
+    appearsInBroadList(currentTop.sourceClause, currentTop.coreText) &&
+    /\b(?:class|lecture|worksheet|homework|practice|doing|started|covered|learning|reviewing)\b/i.test(
+      cachedNormalizeLoose(currentTop.sourceClause),
+    );
+
+  if (topLooksEarlierSetupList) return bestTarget;
+
+  if (bestTarget.score + 0.18 >= currentTop.score) return bestTarget;
+
+  return null;
+}
+
+
 /**
  * Patch F.13 revised:
  * When a direct learning request names a compact durable concept and then adds
@@ -5445,6 +5663,13 @@ function chooseWinningCandidate(
       profile,
     );
   if (artifactLanguageBarrier) return artifactLanguageBarrier;
+
+  const explicitLateFocusCue = chooseExplicitLateFocusCueOverrideCandidate(
+    scoredCandidates,
+    message,
+    profile,
+  );
+  if (explicitLateFocusCue) return explicitLateFocusCue;
 
   const problemFrameYield = chooseProblemFramingYieldToCompactRequestConcept(
     scoredCandidates,

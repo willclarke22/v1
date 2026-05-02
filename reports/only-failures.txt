@@ -1,22 +1,20 @@
 
 === Compact Topic Labeling Report ===
-overall: total=336 label=333/336 resolution=333/336 e2e=332/336 failed=4
-label-layer failures: 3
-end-to-end failures: 4
-displayed cases: 3 (label failures only)
+overall: total=336 label=334/336 resolution=333/336 e2e=333/336 failed=3
+label-layer failures: 2
+end-to-end failures: 3
+displayed cases: 2 (label failures only)
 
 === Compact Scope Summary ===
 baseline-isolated: total=78 label=77/78 resolution=77/78 e2e=77/78 failed=1
 blindv2-isolated: total=25 label=24/25 resolution=24/25 e2e=24/25 failed=1
 blindv2-sequence: total=11 label=11/11 resolution=10/11 e2e=10/11 failed=1
-holdout-isolated: total=58 label=57/58 resolution=58/58 e2e=57/58 failed=1
 naturalistic-diverse: total=100 label=100/100 resolution=100/100 e2e=100/100 failed=0
 
 === Compact Category Summary (failing categories only) ===
 broad_to_narrow: total=16 label=15/16 resolution=15/16 e2e=15/16 failed=1
 diverse_academic: total=6 label=5/6 resolution=5/6 e2e=5/6 failed=1
 followup_continuity: total=29 label=29/29 resolution=28/29 e2e=28/29 failed=1
-paragraph_context: total=18 label=17/18 resolution=18/18 e2e=17/18 failed=1
 
 === Compact Label Failures Grouped By Category ===
 
@@ -38,13 +36,4 @@ actual:   Understand It for Five Seconds
 checks: label=N resolution=N create=N matched=Y forbidden=Y
 layers: label,resolution,create_flag | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
 resolution: expected=created_new_candidate actual=no_match | create expected=true actual=false | matched expected=n/a actual=n/a
-
-
---- paragraph_context (1) ---
-[holdout-isolated] paragraph_context | holdout-paragraph-003 | FAIL
-message: In class we were doing neurons, threshold, membrane potential, and firing. At first I thought I was confused about action potentials in general, but after trying the practice questions I think it is really depolarization that keeps breaking my understanding.
-expected: Depolarization
-actual:   Membrane Potential
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
 

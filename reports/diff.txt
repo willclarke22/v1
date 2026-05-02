@@ -1,12 +1,12 @@
 
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
-Previous snapshot generatedAt: 2026-05-02T02:44:40.932Z
-Current snapshot generatedAt: 2026-05-02T19:00:05.702Z
+Previous snapshot generatedAt: 2026-05-02T19:03:13.542Z
+Current snapshot generatedAt: 2026-05-02T19:27:43.143Z
 
-overall label: 332/336 -> 333/336 (+1)
-overall e2e:   331/336 -> 332/336 (+1)
-failed:        5 -> 4 (-1)
+overall label: 333/336 -> 334/336 (+1)
+overall e2e:   332/336 -> 333/336 (+1)
+failed:        4 -> 3 (-1)
 
 Case movement:
 New passes: 1
@@ -20,33 +20,33 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
-blindv2-isolated: label 23/25 -> 24/25 (+1), e2e 23/25 -> 24/25 (+1), failed 2 -> 1 (-1)
+holdout-isolated: label 57/58 -> 58/58 (+1), e2e 57/58 -> 58/58 (+1), failed 1 -> 0 (-1)
 
 Category movement:
-direct: label 2/3 -> 3/3 (+1), e2e 2/3 -> 3/3 (+1), failed 1 -> 0 (-1)
+paragraph_context: label 17/18 -> 18/18 (+1), e2e 17/18 -> 18/18 (+1), failed 1 -> 0 (-1)
 
 Failure-layer movement:
-label: 4 -> 3 (-1)
+label: 3 -> 2 (-1)
 
 Likely-failure-class movement:
-expected_label_present_in_message_but_not_extracted: 1 -> 0 (-1)
+pfap_protected_candidate_lost_final_arbitration: 2 -> 1 (-1)
 
 PFAP likely-issue movement:
-pfap_expected_label_partially_extracted_canonicalization_needed: 1 -> 0 (-1)
+pfap_protected_candidate_lost_final_arbitration: 2 -> 1 (-1)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 5 -> 4 (-1)
-failedExpectedCandidateFound: 4 -> 4 (0)
-failedExpectedCandidateProtected: 3 -> 3 (0)
+failedWithProtectedCandidates: 4 -> 3 (-1)
+failedExpectedCandidateFound: 4 -> 3 (-1)
+failedExpectedCandidateProtected: 3 -> 2 (-1)
 failedMalformedActual: 0 -> 0 (0)
 
 New passes:
 
---- direct (1) ---
-[blindv2-isolated] direct | blindv2-direct-002 | PASS
-message: I would really like to learn about how llms work and why deterministic code can't solve all my problems.
-expected: LLMs
-actual:   LLMs
+--- paragraph_context (1) ---
+[holdout-isolated] paragraph_context | holdout-paragraph-003 | PASS
+message: In class we were doing neurons, threshold, membrane potential, and firing. At first I thought I was confused about action potentials in general, but after trying the practice questions I think it is really depolarization that keeps breaking my understanding.
+expected: Depolarization
+actual:   Depolarization
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
