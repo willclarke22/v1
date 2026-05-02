@@ -1,15 +1,6 @@
 === Compact Topic Labeling Report Part 4 of 4 ===
 display mode: all cases
-cases in this file: 85
-
---- health ---
-
-[naturalistic-diverse] health | naturalistic-health-016 | PASS
-message: I get colds and I know my body fights them somehow. The actual thing I want to understand is the immune response, because the white blood cell stuff feels like a story with missing steps.
-expected: Immune Response
-actual:   Immune Response
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
+cases in this file: 84
 
 --- history ---
 

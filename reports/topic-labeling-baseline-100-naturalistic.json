@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-02T19:30:28.580Z",
+  "generatedAt": "2026-05-02T20:12:25.384Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,12 +8,12 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 334,
-    "resolutionPassed": 333,
-    "createPassed": 334,
+    "labelPassed": 335,
+    "resolutionPassed": 334,
+    "createPassed": 335,
     "matchedTopicPassed": 336,
-    "endToEndPassed": 333,
-    "failed": 3
+    "endToEndPassed": 334,
+    "failed": 2
   },
   "scopeBreakdown": {
     "baseline-isolated": {
@@ -36,12 +36,12 @@
     },
     "blindv2-isolated": {
       "total": 25,
-      "labelPassed": 24,
-      "resolutionPassed": 24,
-      "createPassed": 24,
+      "labelPassed": 25,
+      "resolutionPassed": 25,
+      "createPassed": 25,
       "matchedTopicPassed": 25,
-      "endToEndPassed": 24,
-      "failed": 1
+      "endToEndPassed": 25,
+      "failed": 0
     },
     "blindv2-sequence": {
       "total": 11,
@@ -101,12 +101,12 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 271,
-      "resolutionPassed": 271,
-      "createPassed": 271,
+      "labelPassed": 272,
+      "resolutionPassed": 272,
+      "createPassed": 272,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 271,
-      "failed": 2
+      "endToEndPassed": 272,
+      "failed": 1
     },
     "sequence": {
       "total": 63,
@@ -139,12 +139,12 @@
     },
     "broad_to_narrow": {
       "total": 16,
-      "labelPassed": 15,
-      "resolutionPassed": 15,
-      "createPassed": 15,
+      "labelPassed": 16,
+      "resolutionPassed": 16,
+      "createPassed": 16,
       "matchedTopicPassed": 16,
-      "endToEndPassed": 15,
-      "failed": 1
+      "endToEndPassed": 16,
+      "failed": 0
     },
     "buried_language_target": {
       "total": 22,
@@ -661,25 +661,23 @@
     }
   },
   "layerBreakdown": {
-    "label": 2,
-    "resolution": 3,
-    "create_flag": 2,
+    "label": 1,
+    "resolution": 2,
+    "create_flag": 1,
     "matched_topic": 0,
     "forbidden": 0
   },
   "likelyFailureBreakdown": {
-    "expected_label_extracted_but_lost_competition": 1,
     "good_label_but_creation_blocked": 1,
     "pfap_protected_candidate_lost_final_arbitration": 1
   },
   "pfapBreakdown": {
-    "failedCount": 3,
-    "failedWithProtectedCandidates": 3,
-    "failedExpectedCandidateFound": 3,
+    "failedCount": 2,
+    "failedWithProtectedCandidates": 2,
+    "failedExpectedCandidateFound": 2,
     "failedExpectedCandidateProtected": 2,
     "failedMalformedActual": 0,
     "likelyIssueBreakdown": {
-      "pfap_expected_candidate_needs_protection_metadata": 1,
       "pfap_protected_candidate_lost_final_arbitration": 1,
       "unknown": 1
     }
@@ -6934,41 +6932,28 @@
       "description": "broad message with sharper subfocus",
       "message": "I'm learning about neurons, but the sodium-potassium pump is the actual thing I don't get.",
       "expectedLabel": "Sodium-Potassium Pump",
-      "actualLabel": null,
+      "actualLabel": "Sodium-Potassium Pump",
       "expectedResolutionKind": "created_new_candidate",
-      "actualResolutionKind": "no_match",
+      "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
-      "actualShouldCreate": false,
+      "actualShouldCreate": true,
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0,
-      "labelPass": false,
-      "resolutionPass": false,
-      "createPass": false,
+      "actualConfidence": 1,
+      "labelPass": true,
+      "resolutionPass": true,
+      "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_extracted_but_lost_competition",
-      "pfapLikelyIssue": "pfap_expected_candidate_needs_protection_metadata",
-      "pfapProtectedCount": 1,
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
+      "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
-      "expectedCandidateRank": 3,
-      "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Sodium-Potassium Pump\" actualLabel=null"
-        },
-        {
-          "layer": "resolution",
-          "message": "expectedResolutionKind=created_new_candidate actualResolutionKind=no_match"
-        },
-        {
-          "layer": "create_flag",
-          "message": "expectedShouldCreate=true actualShouldCreate=false"
-        }
-      ]
+      "expectedCandidateRank": 1,
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "blindv2-isolated::blindv2-focus-002",

@@ -283,6 +283,92 @@ function looksLikeWeakStandaloneChunk(text: string) {
   );
 }
 
+
+/**
+ * Patch F.15.2: strict split-copula focus target promotion.
+ *
+ * Handles only the narrow adjacent-clause shape exposed by PFAP debug:
+ *   "..., but X is / the actual thing I don't get."
+ *
+ * The durable topic is the compact concept before the copula (X), not the
+ * generic focus shell after it ("actual thing I don't get"). This intentionally
+ * does not broaden noun-chunk extraction, comparison synthesis, mechanism
+ * question canonicalization, or late-focus arbitration.
+ */
+function extractStrictSplitCopularFocusCandidates(
+  interpretation: MessageInterpretation,
+): TopicCandidate[] {
+  const candidates: TopicCandidate[] = [];
+  const clauses = interpretation.clauses;
+
+  for (let index = 0; index < clauses.length - 1; index += 1) {
+    const leftClause = clauses[index];
+    const rightClause = clauses[index + 1];
+    const left = normalizeSurface(leftClause.raw);
+    const leftLoose = normalizeLoose(left);
+    const rightLoose = normalizeLoose(rightClause.raw);
+
+    if (!left || !leftLoose || !rightLoose) continue;
+
+    const rightIsGenericFocusShell = /^(?:the\s+)?(?:actual|real|specific|main)?\s*(?:thing|part|issue|problem|blocker|bottleneck|target)\s+(?:i\s+)?(?:don'?t|dont|do\s+not|can'?t|cant|cannot)?\s*(?:really\s+)?(?:get|understand|know|figure\s+out|need\s+help\s+with|am\s+confused\s+about|m\s+confused\s+about)\b/i.test(
+      rightLoose,
+    );
+
+    if (!rightIsGenericFocusShell) continue;
+
+    const leftMatch = left.match(
+      /^(?:(?:but|except|actually|really|specifically|especially|mainly|mostly)\s+)?(?:the\s+)?(.+?)\s+(?:is|are|was|were)\s*$/i,
+    );
+    const rawSpan = leftMatch?.[1] ? normalizeSurface(leftMatch[1]) : null;
+    if (!rawSpan) continue;
+
+    const spanLoose = normalizeLoose(rawSpan);
+    const spanTokens = tokenize(spanLoose);
+
+    if (!spanLoose || spanTokens.length < 2 || spanTokens.length > 6) continue;
+    if (looksLikeLearnerResidue(spanLoose)) continue;
+    if (looksLikeWeakStandaloneChunk(spanLoose)) continue;
+    if (looksLikeContextShell(spanLoose)) continue;
+    if (hasNegationStemToken(spanLoose)) continue;
+    if (messageHasComparisonCue(spanLoose)) continue;
+    if (/\b(?:actual|real|specific|main)?\s*(?:thing|part|issue|problem|blocker|bottleneck|target)\b/i.test(spanLoose)) continue;
+
+    const hasContrastiveLeftContext =
+      leftClause.hasContrastBoundary ||
+      /\b(?:but|except|actually|really|specifically|especially|mainly|mostly)\b/i.test(
+        leftLoose,
+      );
+    if (!hasContrastiveLeftContext) continue;
+
+    const hasDurableSignal =
+      /[a-z0-9]+-[a-z0-9]+/i.test(rawSpan) ||
+      looksLikeDurableConceptPhrase(rawSpan) ||
+      phraseContainsStrongConcept(rawSpan);
+    if (!hasDurableSignal) continue;
+
+    const candidate = buildCandidate({
+      span: rawSpan,
+      clause: leftClause,
+      kind: "concept_phrase",
+      qualifiers: [
+        "concept_phrase",
+        "durable_concept",
+        "focus_target",
+        "late_focus_target",
+        "bottleneck_target",
+        "narrowed_target",
+        "strong_phrase_match",
+        "split_copular_focus_target",
+      ],
+      shouldCompeteAsTopic: true,
+    });
+
+    if (candidate) candidates.push(candidate);
+  }
+
+  return candidates;
+}
+
 function isNaturalisticDomainAnchor(text: string) {
   const normalized = normalizeLoose(text);
 
@@ -4103,6 +4189,7 @@ export function extractConceptCandidates(
   }
 
   collected.push(...extractCrossClauseAnchorCandidates(fullMessage));
+  collected.push(...extractStrictSplitCopularFocusCandidates(interpretation));
   injectGeneralSyntheticCandidates(fullMessage, interpretation, collected);
 
   return dedupeAndGroupCandidates(collected);

@@ -1,6 +1,6 @@
 === Compact Topic Labeling Report Part 3 of 4 ===
 display mode: all cases
-cases in this file: 83
+cases in this file: 84
 
 --- domain_shaping ---
 
@@ -267,13 +267,12 @@ layers: none | likely: n/a | pfap: n/a
 
 --- broad_to_narrow ---
 
-[blindv2-isolated] broad_to_narrow | blindv2-focus-001 | FAIL
+[blindv2-isolated] broad_to_narrow | blindv2-focus-001 | PASS
 message: I'm learning about neurons, but the sodium-potassium pump is the actual thing I don't get.
 expected: Sodium-Potassium Pump
-actual:   <null>
-checks: label=N resolution=N create=N matched=Y forbidden=Y
-layers: label,resolution,create_flag | likely: expected_label_extracted_but_lost_competition | pfap: pfap_expected_candidate_needs_protection_metadata
-resolution: expected=created_new_candidate actual=no_match | create expected=true actual=false | matched expected=n/a actual=n/a
+actual:   Sodium-Potassium Pump
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [blindv2-isolated] broad_to_narrow | blindv2-focus-002 | PASS
 message: Statistics is fine overall, but standard deviation is where I keep getting lost.
@@ -624,6 +623,13 @@ layers: none | likely: n/a | pfap: n/a
 message: The nurse said my blood pressure numbers and I nodded because that seemed easier. But later I realized I don't know what systolic vs diastolic actually means.
 expected: Systolic vs Diastolic Blood Pressure
 actual:   Systolic vs Diastolic Blood Pressure
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
+
+[naturalistic-diverse] health | naturalistic-health-016 | PASS
+message: I get colds and I know my body fights them somehow. The actual thing I want to understand is the immune response, because the white blood cell stuff feels like a story with missing steps.
+expected: Immune Response
+actual:   Immune Response
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 

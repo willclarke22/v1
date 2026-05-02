@@ -1,12 +1,12 @@
 
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
-Previous snapshot generatedAt: 2026-05-02T19:03:13.542Z
-Current snapshot generatedAt: 2026-05-02T19:27:43.143Z
+Previous snapshot generatedAt: 2026-05-02T19:30:28.580Z
+Current snapshot generatedAt: 2026-05-02T20:09:10.572Z
 
-overall label: 333/336 -> 334/336 (+1)
-overall e2e:   332/336 -> 333/336 (+1)
-failed:        4 -> 3 (-1)
+overall label: 334/336 -> 335/336 (+1)
+overall e2e:   333/336 -> 334/336 (+1)
+failed:        3 -> 2 (-1)
 
 Case movement:
 New passes: 1
@@ -20,33 +20,35 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
-holdout-isolated: label 57/58 -> 58/58 (+1), e2e 57/58 -> 58/58 (+1), failed 1 -> 0 (-1)
+blindv2-isolated: label 24/25 -> 25/25 (+1), e2e 24/25 -> 25/25 (+1), failed 1 -> 0 (-1)
 
 Category movement:
-paragraph_context: label 17/18 -> 18/18 (+1), e2e 17/18 -> 18/18 (+1), failed 1 -> 0 (-1)
+broad_to_narrow: label 15/16 -> 16/16 (+1), e2e 15/16 -> 16/16 (+1), failed 1 -> 0 (-1)
 
 Failure-layer movement:
-label: 3 -> 2 (-1)
+create_flag: 2 -> 1 (-1)
+label: 2 -> 1 (-1)
+resolution: 3 -> 2 (-1)
 
 Likely-failure-class movement:
-pfap_protected_candidate_lost_final_arbitration: 2 -> 1 (-1)
+expected_label_extracted_but_lost_competition: 1 -> 0 (-1)
 
 PFAP likely-issue movement:
-pfap_protected_candidate_lost_final_arbitration: 2 -> 1 (-1)
+pfap_expected_candidate_needs_protection_metadata: 1 -> 0 (-1)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 4 -> 3 (-1)
-failedExpectedCandidateFound: 4 -> 3 (-1)
-failedExpectedCandidateProtected: 3 -> 2 (-1)
+failedWithProtectedCandidates: 3 -> 2 (-1)
+failedExpectedCandidateFound: 3 -> 2 (-1)
+failedExpectedCandidateProtected: 2 -> 2 (0)
 failedMalformedActual: 0 -> 0 (0)
 
 New passes:
 
---- paragraph_context (1) ---
-[holdout-isolated] paragraph_context | holdout-paragraph-003 | PASS
-message: In class we were doing neurons, threshold, membrane potential, and firing. At first I thought I was confused about action potentials in general, but after trying the practice questions I think it is really depolarization that keeps breaking my understanding.
-expected: Depolarization
-actual:   Depolarization
+--- broad_to_narrow (1) ---
+[blindv2-isolated] broad_to_narrow | blindv2-focus-001 | PASS
+message: I'm learning about neurons, but the sodium-potassium pump is the actual thing I don't get.
+expected: Sodium-Potassium Pump
+actual:   Sodium-Potassium Pump
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 

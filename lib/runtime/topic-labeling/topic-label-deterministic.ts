@@ -684,6 +684,9 @@ function candidateLooksProblemFraming(candidate: TopicCandidate) {
   if (!label) return false;
 
   return (
+    /^(?:the\s+)?(?:actual|real|specific|main)?\s*(?:thing|part|issue|problem|blocker|bottleneck|target)\s+(?:i\s+)?(?:don'?t|dont|do not|can'?t|cant|cannot)?\s*(?:get|understand|figure out)?$/i.test(
+      label,
+    ) ||
     /\bdeterministic code can'?t solve all\b/i.test(label) ||
     /\bsolve all my problems\b/i.test(label) ||
     /\bwhole thing confusing\b/i.test(label) ||
@@ -5270,8 +5273,6 @@ function chooseResidueOverFocusSuppressionCandidate(
   return null;
 }
 
-
-
 /**
  * Patch F.14.1:
  * A late-focus override should recover the durable concept named in the
@@ -5306,7 +5307,9 @@ function candidateLooksBreakdownEventResidueForLateFocus(
       label,
     ) || /\b(?:vs|of|in|on|for)\b/i.test(label);
 
-  return Boolean(labelLooksLikeEventOrState && !labelLooksLikeDurableStructuredTopic);
+  return Boolean(
+    labelLooksLikeEventOrState && !labelLooksLikeDurableStructuredTopic,
+  );
 }
 
 /**
@@ -5335,7 +5338,8 @@ function candidateLooksExplicitLateFocusCueTarget(
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
   if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
   if (candidateLooksProblemFraming(candidate)) return false;
-  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile))
+    return false;
 
   const label = getCandidateDisplayLabel(candidate);
   if (!label) return false;
@@ -5488,7 +5492,6 @@ function chooseExplicitLateFocusCueOverrideCandidate(
   return null;
 }
 
-
 /**
  * Patch F.13 revised:
  * When a direct learning request names a compact durable concept and then adds
@@ -5576,7 +5579,9 @@ function candidateLooksCompactDirectRequestConcept(
     candidateLooksDurablePracticalConcept(candidate);
 
   return Boolean(
-    sourceHasDirectLearningRequest && labelAppearsInRequest && isCompactDurableConcept,
+    sourceHasDirectLearningRequest &&
+    labelAppearsInRequest &&
+    isCompactDurableConcept,
   );
 }
 
