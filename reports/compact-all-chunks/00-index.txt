@@ -1,14 +1,14 @@
 === Compact Topic Labeling Chunked Report Index ===
-overall: total=336 label=332/336 resolution=333/336 e2e=331/336 failed=5
-label-layer failures: 4
-end-to-end failures: 5
+overall: total=336 label=333/336 resolution=333/336 e2e=332/336 failed=4
+label-layer failures: 3
+end-to-end failures: 4
 displayed cases: 336 (all cases)
-generatedAt: 2026-05-02T02:35:42.887Z
+generatedAt: 2026-05-02T19:01:24.684Z
 
 === Compact Scope Summary ===
 baseline-isolated: total=78 label=77/78 resolution=77/78 e2e=77/78 failed=1
 baseline-sequence: total=21 label=21/21 resolution=21/21 e2e=21/21 failed=0
-blindv2-isolated: total=25 label=23/25 resolution=24/25 e2e=23/25 failed=2
+blindv2-isolated: total=25 label=24/25 resolution=24/25 e2e=24/25 failed=1
 blindv2-sequence: total=11 label=11/11 resolution=10/11 e2e=10/11 failed=1
 hard-isolated: total=12 label=12/12 resolution=12/12 e2e=12/12 failed=0
 hard-sequence: total=11 label=11/11 resolution=11/11 e2e=11/11 failed=0
@@ -29,7 +29,7 @@ comparisons: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 confusion: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 context_recovery: total=5 label=5/5 resolution=5/5 e2e=5/5 failed=0
 cooking: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-direct: total=3 label=2/3 resolution=3/3 e2e=2/3 failed=1
+direct: total=3 label=3/3 resolution=3/3 e2e=3/3 failed=0
 direct_baseline: total=6 label=6/6 resolution=6/6 e2e=6/6 failed=0
 diverse_academic: total=6 label=5/6 resolution=5/6 e2e=5/6 failed=1
 domain_shaping: total=8 label=8/8 resolution=8/8 e2e=8/8 failed=0

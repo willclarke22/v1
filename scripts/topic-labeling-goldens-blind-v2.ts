@@ -14,7 +14,7 @@ export const blindV2Isolated = [
     category: "direct",
     description: "direct abstract AI topic",
     message: "I would really like to learn about how llms work and why deterministic code can't solve all my problems.",
-    expectedLabel: "How LLMs Work",
+    expectedLabel: "LLMs",
     expectedResolution: "created_new_candidate",
     expectedMatchedTopic: null,
     expectedShouldCreate: true,

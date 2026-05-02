@@ -4330,6 +4330,91 @@ function canonicalizeContextFormulaWrapperLabelForPFAP(
 }
 
 /**
+ * Patch F.13 micro-guard:
+ * Preserve an explicit direct mechanism-learning target when the learner says
+ * they want to learn/understand "how X works" and then adds a later "why Y..."
+ * problem-framing clause. This is not a general mechanism-question rewrite:
+ * plain questions like "How do action potentials work?" should still label the
+ * underlying concept, not "How Action Potentials Work".
+ */
+function canonicalizeDirectMechanismLearningTargetForPFAP(
+  label: string | null,
+  message: string,
+) {
+  if (!label) return label;
+
+  const normalizedLabel = cachedNormalizeLoose(label);
+  const normalizedMessage = cachedNormalizeLoose(message);
+
+  const currentLooksLikeProblemFrame =
+    /\b(?:can'?t|cant|cannot|doesn'?t|doesnt|do not|don't|dont|fails?|breaks?|solve|fix|answer|explain)\b.*\b(?:all|everything|problems?|issues?|confusion|limits?|limitations?)\b/i.test(
+      normalizedLabel,
+    ) ||
+    /\b(?:solve all my problems|deterministic code|not enough|isn'?t enough|isnt enough)\b/i.test(
+      normalizedLabel,
+    );
+
+  if (!currentLooksLikeProblemFrame) return label;
+
+  const directMechanismMatch = normalizedMessage.match(
+    /\b(?:(?:i|we)\s+(?:would\s+(?:really\s+)?like|want|wanna|need)\s+to\s+(?:learn|understand|know|figure\s+out)\s+(?:about\s+)?|(?:help\s+me\s+(?:understand|learn|figure\s+out)\s+)|(?:can|could|would)\s+(?:you|we)\s+(?:explain|go\s+over|talk\s+about)\s+)how\s+(.+?)\s+works?\b.{0,96}\band\s+why\b.{0,160}\b(?:can'?t|cant|cannot|doesn'?t|doesnt|do\s+not|don't|dont|fails?|breaks?|hard|limited|limitation|problem|problems?|solve|fix|enough)\b/i,
+  );
+
+  if (!directMechanismMatch?.[1]) return label;
+
+  const rawSubject = normalizeSurface(directMechanismMatch[1])
+    .replace(/^(?:the|a|an)\s+/i, "")
+    .replace(/\s+(?:actually|really|properly|clearly)$/i, "")
+    .trim();
+
+  if (!rawSubject) return label;
+
+  const subjectTokens = cachedTokenize(rawSubject);
+  if (subjectTokens.length === 0 || subjectTokens.length > 5) return label;
+  if (
+    /\b(?:i|we|you|they|someone|something|everything|anything|this|that|it)\b/i.test(
+      rawSubject,
+    )
+  ) {
+    return label;
+  }
+  if (looksLikeSuspiciousLabel(rawSubject) || isClauseLikeSpan(rawSubject)) {
+    return label;
+  }
+
+  const shapedSubject = shapeDisplayLabel(rawSubject);
+  if (!shapedSubject) return label;
+
+  const acronymRestoredSubject = shapedSubject
+    .split(/\s+/)
+    .map((token) => {
+      const bare = token.replace(/[^A-Za-z0-9]/g, "");
+      if (/^[a-z]{2,5}s$/i.test(bare)) {
+        const base = bare.slice(0, -1);
+        if (!/[aeiou]/i.test(base)) return `${base.toUpperCase()}s`;
+      }
+      if (/^[a-z]{2,5}$/i.test(bare) && !/[aeiou]/i.test(bare)) {
+        return bare.toUpperCase();
+      }
+      return token;
+    })
+    .join(" ");
+
+  const candidateLabel = `How ${acronymRestoredSubject} Work${
+    /s$/i.test(cachedNormalizeLoose(acronymRestoredSubject)) ? "" : "s"
+  }`;
+
+  if (
+    labelHasBadBoundaryShape(candidateLabel) ||
+    !labelHasContentBearingHead(candidateLabel)
+  ) {
+    return label;
+  }
+
+  return candidateLabel;
+}
+
+/**
  * Patch F.10 micro-guard:
  * Clean noisy wrapper words that are attached to an otherwise durable label.
  * This is intentionally a final canonical-label cleanup, not a candidate
@@ -4518,6 +4603,15 @@ function canonicalizePFAPLabel(
     cachedNormalizeLoose(contextFormulaWrapperLabel) !== normalizedLabel
   ) {
     return contextFormulaWrapperLabel;
+  }
+
+  const directMechanismLearningTargetLabel =
+    canonicalizeDirectMechanismLearningTargetForPFAP(label, message);
+  if (
+    directMechanismLearningTargetLabel &&
+    cachedNormalizeLoose(directMechanismLearningTargetLabel) !== normalizedLabel
+  ) {
+    return directMechanismLearningTargetLabel;
   }
 
   const noisyWrapperLabel = canonicalizeNoisyWrapperLabelForPFAP(
@@ -5176,6 +5270,139 @@ function chooseResidueOverFocusSuppressionCandidate(
   return null;
 }
 
+
+/**
+ * Patch F.13 revised:
+ * When a direct learning request names a compact durable concept and then adds
+ * a later explanatory/problem-framing clause, the durable concept should be the
+ * learning-space topic. The explanatory clause is diagnostic/probe intent, not
+ * the topic label.
+ *
+ * Example shape:
+ *   "I would like to learn about how X works and why Y can't..."
+ * should prefer:
+ *   "X"
+ * over:
+ *   "Y Can't..."
+ *
+ * This is intentionally narrow: it only fires when the current winner is
+ * problem-framing residue and the alternative is a compact protected candidate
+ * from the same direct request clause. It does not broadly prefer short labels.
+ */
+function messageHasDirectLearningRequestProblemFrame(message: string) {
+  const normalized = cachedNormalizeLoose(message);
+
+  const hasDirectLearningRequest =
+    /\b(?:i\s+(?:would\s+really\s+like|would\s+like|want|wanna|need|am\s+trying|i'm\s+trying)\s+to\s+(?:learn|understand)|i\s+am\s+trying\s+to\s+(?:learn|understand)|help\s+me\s+understand|can\s+you\s+(?:explain|help\s+me\s+understand)|could\s+you\s+(?:explain|help\s+me\s+understand)|teach\s+me)\b/i.test(
+      normalized,
+    );
+
+  const hasProblemFrame =
+    /\band\s+why\b.{0,120}\b(?:can'?t|cant|cannot|doesn'?t|doesnt|do\s+not|don't|dont|won'?t|wont|fails?|breaks?|is\s+hard|are\s+hard|is\s+limited|are\s+limited|isn'?t\s+enough|isnt\s+enough|not\s+enough|solve|solves|solving|work|works)\b/i.test(
+      normalized,
+    ) ||
+    /\band\s+why\b.{0,120}\b(?:all\s+my\s+problems|the\s+whole\s+thing|everything|confusing|hard)\b/i.test(
+      normalized,
+    );
+
+  return hasDirectLearningRequest && hasProblemFrame;
+}
+
+function candidateLooksCompactDirectRequestConcept(
+  candidate: TopicCandidate,
+  message: string,
+) {
+  if (!candidate.shouldCompeteAsTopic) return false;
+  if (candidate.isSubpartReference) return false;
+  if (candidateLooksWeakNounChunk(candidate)) return false;
+  if (candidateLooksMalformedTopicLabel(candidate)) return false;
+  if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+  if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
+  if (candidateLooksProblemFraming(candidate)) return false;
+  if (candidateLooksNoisyResidue(candidate)) return false;
+
+  const label = getCandidateDisplayLabel(candidate);
+  if (!label) return false;
+
+  const labelLoose = cachedNormalizeLoose(label);
+  const sourceLoose = cachedNormalizeLoose(candidate.sourceClause);
+  const messageLoose = cachedNormalizeLoose(message);
+  const tokens = cachedTokenize(label);
+
+  if (!labelLoose || tokens.length === 0 || tokens.length > 3) return false;
+
+  // Do not let this rule choose a mechanism wrapper label such as
+  // "How X Works". For MyWay's ontology, the compact object/concept is the
+  // durable topic; the mechanism request belongs in diagnosis/probe intent.
+  if (
+    /\b(?:how|why|work|works|process|mechanism|function|role|steps?)\b/i.test(
+      labelLoose,
+    )
+  ) {
+    return false;
+  }
+
+  const sourceHasDirectLearningRequest =
+    /\b(?:learn|understand|explain|teach|help)\b/i.test(sourceLoose) &&
+    /\b(?:about|how|with|on)\b/i.test(sourceLoose);
+
+  const labelAppearsInRequest =
+    sourceLoose.includes(labelLoose) || messageLoose.includes(labelLoose);
+
+  const isCompactDurableConcept =
+    candidate.kind === "named_concept" ||
+    candidate.kind === "concept_phrase" ||
+    candidate.kind === "domain_shaped" ||
+    candidate.kind === "of_phrase" ||
+    candidateLooksProtectedDurableLabel(candidate) ||
+    candidateLooksDurablePracticalConcept(candidate);
+
+  return Boolean(
+    sourceHasDirectLearningRequest && labelAppearsInRequest && isCompactDurableConcept,
+  );
+}
+
+function chooseProblemFramingYieldToCompactRequestConcept(
+  scoredCandidates: TopicCandidate[],
+  message: string,
+): TopicCandidate | null {
+  if (!scoredCandidates.length) return null;
+  if (!messageHasDirectLearningRequestProblemFrame(message)) return null;
+
+  const currentTop = scoredCandidates[0];
+  if (!candidateLooksProblemFraming(currentTop)) return null;
+
+  const compactTargets = scoredCandidates
+    .filter((candidate) =>
+      candidateLooksCompactDirectRequestConcept(candidate, message),
+    )
+    .sort((a, b) => {
+      const aNamed = a.kind === "named_concept" ? 1 : 0;
+      const bNamed = b.kind === "named_concept" ? 1 : 0;
+      if (aNamed !== bNamed) return bNamed - aNamed;
+
+      const aProtected = candidateLooksProtectedDurableLabel(a) ? 1 : 0;
+      const bProtected = candidateLooksProtectedDurableLabel(b) ? 1 : 0;
+      if (aProtected !== bProtected) return bProtected - aProtected;
+
+      const aTokens = cachedTokenize(getCandidateDisplayLabel(a)).length;
+      const bTokens = cachedTokenize(getCandidateDisplayLabel(b)).length;
+      if (aTokens !== bTokens) return aTokens - bTokens;
+
+      return b.score - a.score;
+    });
+
+  const bestTarget = compactTargets[0] ?? null;
+  if (!bestTarget) return null;
+
+  // Keep this conservative: only override when the current winner is a
+  // problem-framing label and the compact target is competitive enough to be in
+  // the same candidate race.
+  if (bestTarget.score + 0.16 < currentTop.score) return null;
+
+  return bestTarget;
+}
+
 function chooseWinningCandidate(
   scoredCandidates: TopicCandidate[],
   message: string,
@@ -5218,6 +5445,12 @@ function chooseWinningCandidate(
       profile,
     );
   if (artifactLanguageBarrier) return artifactLanguageBarrier;
+
+  const problemFrameYield = chooseProblemFramingYieldToCompactRequestConcept(
+    scoredCandidates,
+    message,
+  );
+  if (problemFrameYield) return problemFrameYield;
 
   const residueSuppression = chooseResidueOverFocusSuppressionCandidate(
     scoredCandidates,

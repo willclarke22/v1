@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-02T02:44:40.932Z",
+  "generatedAt": "2026-05-02T19:03:13.542Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,12 +8,12 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 332,
+    "labelPassed": 333,
     "resolutionPassed": 333,
     "createPassed": 334,
     "matchedTopicPassed": 336,
-    "endToEndPassed": 331,
-    "failed": 5
+    "endToEndPassed": 332,
+    "failed": 4
   },
   "scopeBreakdown": {
     "baseline-isolated": {
@@ -36,12 +36,12 @@
     },
     "blindv2-isolated": {
       "total": 25,
-      "labelPassed": 23,
+      "labelPassed": 24,
       "resolutionPassed": 24,
       "createPassed": 24,
       "matchedTopicPassed": 25,
-      "endToEndPassed": 23,
-      "failed": 2
+      "endToEndPassed": 24,
+      "failed": 1
     },
     "blindv2-sequence": {
       "total": 11,
@@ -101,12 +101,12 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 269,
+      "labelPassed": 270,
       "resolutionPassed": 271,
       "createPassed": 271,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 269,
-      "failed": 4
+      "endToEndPassed": 270,
+      "failed": 3
     },
     "sequence": {
       "total": 63,
@@ -229,12 +229,12 @@
     },
     "direct": {
       "total": 3,
-      "labelPassed": 2,
+      "labelPassed": 3,
       "resolutionPassed": 3,
       "createPassed": 3,
       "matchedTopicPassed": 3,
-      "endToEndPassed": 2,
-      "failed": 1
+      "endToEndPassed": 3,
+      "failed": 0
     },
     "direct_baseline": {
       "total": 6,
@@ -661,7 +661,7 @@
     }
   },
   "layerBreakdown": {
-    "label": 4,
+    "label": 3,
     "resolution": 3,
     "create_flag": 2,
     "matched_topic": 0,
@@ -669,19 +669,17 @@
   },
   "likelyFailureBreakdown": {
     "expected_label_extracted_but_lost_competition": 1,
-    "expected_label_present_in_message_but_not_extracted": 1,
     "good_label_but_creation_blocked": 1,
     "pfap_protected_candidate_lost_final_arbitration": 2
   },
   "pfapBreakdown": {
-    "failedCount": 5,
-    "failedWithProtectedCandidates": 5,
+    "failedCount": 4,
+    "failedWithProtectedCandidates": 4,
     "failedExpectedCandidateFound": 4,
     "failedExpectedCandidateProtected": 3,
     "failedMalformedActual": 0,
     "likelyIssueBreakdown": {
       "pfap_expected_candidate_needs_protection_metadata": 1,
-      "pfap_expected_label_partially_extracted_canonicalization_needed": 1,
       "pfap_protected_candidate_lost_final_arbitration": 2,
       "unknown": 1
     }
@@ -6876,8 +6874,8 @@
       "category": "direct",
       "description": "direct abstract AI topic",
       "message": "I would really like to learn about how llms work and why deterministic code can't solve all my problems.",
-      "expectedLabel": "How LLMs Work",
-      "actualLabel": "Deterministic Code Can't Solve All",
+      "expectedLabel": "LLMs",
+      "actualLabel": "LLMs",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
@@ -6885,25 +6883,20 @@
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
-      "expectedCandidateFound": false,
-      "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"How LLMs Work\" actualLabel=\"Deterministic Code Can't Solve All\""
-        }
-      ]
+      "expectedCandidateFound": true,
+      "expectedCandidateRank": 2,
+      "actualCandidateRank": 2,
+      "layeredFailures": []
     },
     {
       "key": "blindv2-isolated::blindv2-direct-003",

@@ -251,12 +251,12 @@ actual:   Membrane Potentials
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[blindv2-isolated] direct | blindv2-direct-002 | FAIL
+[blindv2-isolated] direct | blindv2-direct-002 | PASS
 message: I would really like to learn about how llms work and why deterministic code can't solve all my problems.
-expected: How LLMs Work
-actual:   Deterministic Code Can't Solve All
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+expected: LLMs
+actual:   LLMs
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [blindv2-isolated] direct | blindv2-direct-003 | PASS
 message: Can you help me understand amortization?
