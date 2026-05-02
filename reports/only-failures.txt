@@ -1,16 +1,14 @@
 
 === Compact Topic Labeling Report ===
-overall: total=336 label=336/336 resolution=335/336 e2e=335/336 failed=1
+overall: total=336 label=336/336 resolution=336/336 e2e=336/336 failed=0
 label-layer failures: 0
-end-to-end failures: 1
+end-to-end failures: 0
 displayed cases: 0 (label failures only)
 
 === Compact Scope Summary ===
-blindv2-sequence: total=11 label=11/11 resolution=10/11 e2e=10/11 failed=1
 naturalistic-diverse: total=100 label=100/100 resolution=100/100 e2e=100/100 failed=0
 
 === Compact Category Summary (failing categories only) ===
-followup_continuity: total=29 label=29/29 resolution=28/29 e2e=28/29 failed=1
 
 No cases matched the compact display filter.
 

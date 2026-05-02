@@ -2873,11 +2873,49 @@ function shouldUseHardActiveFollowupOverride(
   return false;
 }
 
+
+function shouldPromoteFallbackExistingToMatchedExisting(args: {
+  message: string;
+  interpretation: CandidateInterpretation;
+  best: ScoredTopic;
+  activeTopic?: RouteTopic | null;
+}) {
+  const { message, interpretation, best, activeTopic } = args;
+
+  if (best.topic.id === activeTopic?.id) return false;
+  if (!interpretation.canonicalLabel) return false;
+  if (interpretation.suspiciousLabel) return false;
+  if (interpretation.subpartLikeLabel) return false;
+  if (interpretation.nullOnlyEmotionalLike) return false;
+  if (interpretation.followupSignals.returnToPrevious) return false;
+
+  // Exact clean requests like "Can I get help with osmosis?" should be
+  // classified as a real existing-topic match, not a weak fallback. Keep
+  // anaphoric/meta follow-ups conservative so "that/it/again" behavior does
+  // not accidentally upgrade to matched_existing.
+  if (messageLooksLikeConservativeActiveTopicFollowup(message)) return false;
+
+  const canonical = normalizeLoose(interpretation.canonicalLabel);
+  const topicName = normalizeLoose(best.topic.name);
+  if (!canonical || !topicName) return false;
+
+  const exactNameMatch = canonical === topicName || best.breakdown.exactNameMatch >= 1;
+  if (!exactNameMatch) return false;
+
+  const cleanDirectHelpRequest =
+    /\b(?:help with|go over|review|explain|learn about|talk about|understand|study|practice)\b/i.test(
+      normalizeSurface(message),
+    ) || interpretation.labelConfidence >= 0.72;
+
+  return Boolean(cleanDirectHelpRequest);
+}
+
 function buildFinalMatchResultFromDecision(args: {
+  message: string;
   adjudication: ResolutionAdjudication;
   activeTopic?: RouteTopic | null;
 }): TopicMatchResult {
-  const { adjudication, activeTopic } = args;
+  const { message, adjudication, activeTopic } = args;
   const {
     labeling,
     interpretation,
@@ -2949,12 +2987,24 @@ function buildFinalMatchResultFromDecision(args: {
     !interpretation.suspiciousLabel &&
     !interpretation.subpartLikeLabel
   ) {
+    const promoteCleanExactExistingMatch =
+      shouldPromoteFallbackExistingToMatchedExisting({
+        message,
+        interpretation,
+        best,
+        activeTopic,
+      });
+
     return {
       matchedTopic: best.topic,
       vectorInfo,
       shouldCreateNewTopic: false,
       resolutionKind:
-        best.topic.id === activeTopic?.id ? "fallback_active_topic" : "fallback_existing_topic",
+        best.topic.id === activeTopic?.id
+          ? "fallback_active_topic"
+          : promoteCleanExactExistingMatch
+            ? "matched_existing"
+            : "fallback_existing_topic",
       resolvedLabel: interpretation.canonicalLabel ?? best.topic.name,
       matchConfidence: best.similarity,
       resolutionTrace: trace,
@@ -3122,6 +3172,7 @@ export function resolveTopicForMessage(
   }
 
   return buildFinalMatchResultFromDecision({
+    message,
     adjudication,
     activeTopic,
   });

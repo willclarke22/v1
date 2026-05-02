@@ -498,13 +498,12 @@ actual:   Kinetic Energy vs Potential Energy
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[blindv2-sequence] followup_continuity | blindv2-seq-005:step-1 | FAIL
+[blindv2-sequence] followup_continuity | blindv2-seq-005:step-1 | PASS
 message: Can I get help with osmosis?
 expected: Osmosis
 actual:   Osmosis
-checks: label=Y resolution=N create=Y matched=Y forbidden=Y
-layers: resolution | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=matched_existing actual=fallback_existing_topic | create expected=false actual=false | matched expected=Osmosis actual=Osmosis
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [blindv2-sequence] followup_continuity | blindv2-seq-005:step-2 | PASS
 message: Can we do that again?

@@ -1,15 +1,15 @@
 === Compact Topic Labeling Chunked Report Index ===
-overall: total=336 label=336/336 resolution=335/336 e2e=335/336 failed=1
+overall: total=336 label=336/336 resolution=336/336 e2e=336/336 failed=0
 label-layer failures: 0
-end-to-end failures: 1
+end-to-end failures: 0
 displayed cases: 336 (all cases)
-generatedAt: 2026-05-02T21:52:50.143Z
+generatedAt: 2026-05-02T22:20:10.713Z
 
 === Compact Scope Summary ===
 baseline-isolated: total=78 label=78/78 resolution=78/78 e2e=78/78 failed=0
 baseline-sequence: total=21 label=21/21 resolution=21/21 e2e=21/21 failed=0
 blindv2-isolated: total=25 label=25/25 resolution=25/25 e2e=25/25 failed=0
-blindv2-sequence: total=11 label=11/11 resolution=10/11 e2e=10/11 failed=1
+blindv2-sequence: total=11 label=11/11 resolution=11/11 e2e=11/11 failed=0
 hard-isolated: total=12 label=12/12 resolution=12/12 e2e=12/12 failed=0
 hard-sequence: total=11 label=11/11 resolution=11/11 e2e=11/11 failed=0
 holdout-isolated: total=58 label=58/58 resolution=58/58 e2e=58/58 failed=0
@@ -38,7 +38,7 @@ emotion_topicful: total=5 label=5/5 resolution=5/5 e2e=5/5 failed=0
 emotions: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 existing_vs_new_narrow: total=8 label=8/8 resolution=8/8 e2e=8/8 failed=0
 finance: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-followup_continuity: total=29 label=29/29 resolution=28/29 e2e=28/29 failed=1
+followup_continuity: total=29 label=29/29 resolution=29/29 e2e=29/29 failed=0
 geography: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 grammar: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 hard_broad_to_narrow: total=3 label=3/3 resolution=3/3 e2e=3/3 failed=0

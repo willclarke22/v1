@@ -1,12 +1,12 @@
 
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
-Previous snapshot generatedAt: 2026-05-02T20:12:25.384Z
-Current snapshot generatedAt: 2026-05-02T21:47:20.444Z
+Previous snapshot generatedAt: 2026-05-02T21:53:33.344Z
+Current snapshot generatedAt: 2026-05-02T22:18:42.241Z
 
-overall label: 335/336 -> 336/336 (+1)
-overall e2e:   334/336 -> 335/336 (+1)
-failed:        2 -> 1 (-1)
+overall label: 336/336 -> 336/336 (0)
+overall e2e:   335/336 -> 336/336 (+1)
+failed:        1 -> 0 (-1)
 
 Case movement:
 New passes: 1
@@ -20,35 +20,33 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
-baseline-isolated: label 77/78 -> 78/78 (+1), e2e 77/78 -> 78/78 (+1), failed 1 -> 0 (-1)
+blindv2-sequence: label 11/11 -> 11/11 (0), e2e 10/11 -> 11/11 (+1), failed 1 -> 0 (-1)
 
 Category movement:
-diverse_academic: label 5/6 -> 6/6 (+1), e2e 5/6 -> 6/6 (+1), failed 1 -> 0 (-1)
+followup_continuity: label 29/29 -> 29/29 (0), e2e 28/29 -> 29/29 (+1), failed 1 -> 0 (-1)
 
 Failure-layer movement:
-create_flag: 1 -> 0 (-1)
-label: 1 -> 0 (-1)
-resolution: 2 -> 1 (-1)
+resolution: 1 -> 0 (-1)
 
 Likely-failure-class movement:
-pfap_protected_candidate_lost_final_arbitration: 1 -> 0 (-1)
+good_label_but_creation_blocked: 1 -> 0 (-1)
 
 PFAP likely-issue movement:
-pfap_protected_candidate_lost_final_arbitration: 1 -> 0 (-1)
+unknown: 1 -> 0 (-1)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 2 -> 1 (-1)
-failedExpectedCandidateFound: 2 -> 1 (-1)
-failedExpectedCandidateProtected: 2 -> 1 (-1)
+failedWithProtectedCandidates: 1 -> 0 (-1)
+failedExpectedCandidateFound: 1 -> 0 (-1)
+failedExpectedCandidateProtected: 1 -> 0 (-1)
 failedMalformedActual: 0 -> 0 (0)
 
 New passes:
 
---- diverse_academic (1) ---
-[baseline-isolated] diverse_academic | earth-001 | PASS
-message: Plate tectonics is one of those things where I feel like I understand it for five seconds and then I hear subduction again and realize I don't really know what is moving where.
-expected: Subduction
-actual:   Subduction
+--- followup_continuity (1) ---
+[blindv2-sequence] followup_continuity | blindv2-seq-005:step-1 | PASS
+message: Can I get help with osmosis?
+expected: Osmosis
+actual:   Osmosis
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 

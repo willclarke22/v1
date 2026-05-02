@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-02T21:53:33.344Z",
+  "generatedAt": "2026-05-02T22:23:04.027Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -9,11 +9,11 @@
   "summary": {
     "total": 336,
     "labelPassed": 336,
-    "resolutionPassed": 335,
+    "resolutionPassed": 336,
     "createPassed": 336,
     "matchedTopicPassed": 336,
-    "endToEndPassed": 335,
-    "failed": 1
+    "endToEndPassed": 336,
+    "failed": 0
   },
   "scopeBreakdown": {
     "baseline-isolated": {
@@ -46,11 +46,11 @@
     "blindv2-sequence": {
       "total": 11,
       "labelPassed": 11,
-      "resolutionPassed": 10,
+      "resolutionPassed": 11,
       "createPassed": 11,
       "matchedTopicPassed": 11,
-      "endToEndPassed": 10,
-      "failed": 1
+      "endToEndPassed": 11,
+      "failed": 0
     },
     "hard-isolated": {
       "total": 12,
@@ -111,11 +111,11 @@
     "sequence": {
       "total": 63,
       "labelPassed": 63,
-      "resolutionPassed": 62,
+      "resolutionPassed": 63,
       "createPassed": 63,
       "matchedTopicPassed": 63,
-      "endToEndPassed": 62,
-      "failed": 1
+      "endToEndPassed": 63,
+      "failed": 0
     }
   },
   "categoryBreakdown": {
@@ -311,11 +311,11 @@
     "followup_continuity": {
       "total": 29,
       "labelPassed": 29,
-      "resolutionPassed": 28,
+      "resolutionPassed": 29,
       "createPassed": 29,
       "matchedTopicPassed": 29,
-      "endToEndPassed": 28,
-      "failed": 1
+      "endToEndPassed": 29,
+      "failed": 0
     },
     "geography": {
       "total": 4,
@@ -662,23 +662,19 @@
   },
   "layerBreakdown": {
     "label": 0,
-    "resolution": 1,
+    "resolution": 0,
     "create_flag": 0,
     "matched_topic": 0,
     "forbidden": 0
   },
-  "likelyFailureBreakdown": {
-    "good_label_but_creation_blocked": 1
-  },
+  "likelyFailureBreakdown": {},
   "pfapBreakdown": {
-    "failedCount": 1,
-    "failedWithProtectedCandidates": 1,
-    "failedExpectedCandidateFound": 1,
-    "failedExpectedCandidateProtected": 1,
+    "failedCount": 0,
+    "failedWithProtectedCandidates": 0,
+    "failedExpectedCandidateFound": 0,
+    "failedExpectedCandidateProtected": 0,
     "failedMalformedActual": 0,
-    "likelyIssueBreakdown": {
-      "unknown": 1
-    }
+    "likelyIssueBreakdown": {}
   },
   "results": [
     {
@@ -7905,31 +7901,26 @@
       "expectedLabel": "Osmosis",
       "actualLabel": "Osmosis",
       "expectedResolutionKind": "matched_existing",
-      "actualResolutionKind": "fallback_existing_topic",
+      "actualResolutionKind": "matched_existing",
       "expectedShouldCreate": false,
       "actualShouldCreate": false,
       "expectedMatchedTopicName": "Osmosis",
       "actualMatchedTopicName": "Osmosis",
       "actualConfidence": 1,
       "labelPass": true,
-      "resolutionPass": false,
+      "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
       "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "resolution",
-          "message": "expectedResolutionKind=matched_existing actualResolutionKind=fallback_existing_topic"
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "blindv2-sequence::blindv2-seq-005:step-2",
