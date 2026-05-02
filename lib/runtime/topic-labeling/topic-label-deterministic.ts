@@ -865,7 +865,21 @@ function candidateLooksCameUpFocusTarget(
       "i",
     ).test(searchable);
 
-    return conceptBeforeCameUp || cameUpBeforeConcept || conceptAsThatPart;
+    // Patch F.11: same late-focus idea as "came up", but for learners who
+    // say they heard/saw/encountered a named concept again and then realized
+    // their understanding failed. This is a trigger-shape rule, not a list of
+    // concepts: "then I hear/see/run into X again and realize..." -> X.
+    const conceptAsEncounteredAgainTarget = new RegExp(
+      `\\b(?:hear|heard|see|saw|encounter|encountered|run into|ran into|get to|got to)\\s+(?:the\\s+)?${term}\\b(?:\\s+again)?.{0,96}\\b(?:realiz(?:e|ed)|don'?t really know|dont really know|do not really know|lost|stuck|confus(?:e|ed|ing)|what\\s+(?:is|was)\\s+moving|what\\s+(?:is|was)\\s+happening)\\b`,
+      "i",
+    ).test(searchable);
+
+    return (
+      conceptBeforeCameUp ||
+      cameUpBeforeConcept ||
+      conceptAsThatPart ||
+      conceptAsEncounteredAgainTarget
+    );
   });
 
   if (!appearsAsCameUpTarget) return false;
@@ -3980,6 +3994,10 @@ function implicitComparisonLabelFromMessage(message: string) {
       "i",
     ),
     new RegExp(
+      `\\b(?:it\\s+(?:was|is)|it'?s|really\\s+just|just)?\\s*(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)\\s+that\\s+(?:still\\s+)?(?:feel|feels|felt|seem|seems|seemed|look|looks|looked|sound|sounds|sounded)\\s+(?:basically\\s+|kind\\s+of\\s+|sort\\s+of\\s+)?(?:the\\s+)?same\\b`,
+      "i",
+    ),
+    new RegExp(
       `\\b(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)\\s+(?:that\\s+)?(?:still\\s+)?(?:feel|feels|felt|seem|seems|seemed|look|looks|looked|sound|sounds|sounded)\\s+(?:basically\\s+|kind\\s+of\\s+|sort\\s+of\\s+)?(?:the\\s+)?same\\b`,
       "i",
     ),
@@ -4418,6 +4436,60 @@ function canonicalizeNoisyWrapperLabelForPFAP(
   return label;
 }
 
+/**
+ * Patch F.11 micro-guard:
+ * Trim learner-state tails that attach to an otherwise durable structured
+ * concept. This is intentionally canonical-label cleanup only.
+ *
+ * General shape:
+ *   "X that I do not get" -> "X"
+ *   "X that I don't understand" -> "X"
+ *
+ * It only accepts compact, content-bearing inner labels, and is most useful
+ * for structured concepts like "Rules of Curling" where the durable topic is
+ * already at the front of the noisy label.
+ */
+function canonicalizeLearnerStateTailLabelForPFAP(
+  label: string | null,
+  message: string,
+) {
+  if (!label) return label;
+
+  const tailMatch = label.match(
+    /^(.+?)\s+that\s+(?:i|we)\s+(?:do\s+not|don'?t|dont|can'?t|cant|cannot)\s+(?:really\s+)?(?:get|understand|follow|know|explain|picture)\b.*$/i,
+  );
+  if (!tailMatch?.[1]) return label;
+
+  const inner = normalizeSurface(tailMatch[1]);
+  if (!inner) return label;
+
+  const tokenCount = cachedTokenize(inner).length;
+  if (tokenCount === 0 || tokenCount > 7) return label;
+
+  const shaped = shapeDisplayLabel(inner);
+  if (!shaped) return label;
+  if (labelHasBadBoundaryShape(shaped) || !labelHasContentBearingHead(shaped)) {
+    return label;
+  }
+
+  const innerLooksStructured =
+    /\b(?:of|in|on|for|vs|versus)\b/i.test(cachedNormalizeLoose(shaped)) ||
+    cachedScoreSpecificity(shaped) === "very_specific";
+  if (!innerLooksStructured) return label;
+
+  const normalizedMessage = cachedNormalizeLoose(message);
+  const innerLoose = cachedNormalizeLoose(shaped).replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&",
+  );
+  const messageSupportsTailFrame = new RegExp(
+    `\\b${innerLoose}\\b.{0,80}\\b(?:that\\s+)?(?:i|we)\\s+(?:do\\s+not|don'?t|dont|can'?t|cant|cannot)\\s+(?:really\\s+)?(?:get|understand|follow|know|explain|picture)\\b`,
+    "i",
+  ).test(normalizedMessage);
+
+  return messageSupportsTailFrame ? shaped : label;
+}
+
 function canonicalizePFAPLabel(
   label: string | null,
   candidate: TopicCandidate | null,
@@ -4457,6 +4529,17 @@ function canonicalizePFAPLabel(
     cachedNormalizeLoose(noisyWrapperLabel) !== normalizedLabel
   ) {
     return noisyWrapperLabel;
+  }
+
+  const learnerStateTailLabel = canonicalizeLearnerStateTailLabelForPFAP(
+    label,
+    message,
+  );
+  if (
+    learnerStateTailLabel &&
+    cachedNormalizeLoose(learnerStateTailLabel) !== normalizedLabel
+  ) {
+    return learnerStateTailLabel;
   }
 
   const structuralRelationLabel = canonicalizeStructuralRelationLabelForPFAP(

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-02T00:54:47.702Z",
+  "generatedAt": "2026-05-02T01:10:16.679Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,12 +8,12 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 330,
+    "labelPassed": 331,
     "resolutionPassed": 333,
     "createPassed": 334,
     "matchedTopicPassed": 336,
-    "endToEndPassed": 329,
-    "failed": 7
+    "endToEndPassed": 330,
+    "failed": 6
   },
   "scopeBreakdown": {
     "baseline-isolated": {
@@ -72,12 +72,12 @@
     },
     "holdout-isolated": {
       "total": 58,
-      "labelPassed": 55,
+      "labelPassed": 56,
       "resolutionPassed": 58,
       "createPassed": 58,
       "matchedTopicPassed": 58,
-      "endToEndPassed": 55,
-      "failed": 3
+      "endToEndPassed": 56,
+      "failed": 2
     },
     "holdout-sequence": {
       "total": 20,
@@ -101,12 +101,12 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 267,
+      "labelPassed": 268,
       "resolutionPassed": 271,
       "createPassed": 271,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 267,
-      "failed": 6
+      "endToEndPassed": 268,
+      "failed": 5
     },
     "sequence": {
       "total": 63,
@@ -652,16 +652,16 @@
     },
     "tail_contamination": {
       "total": 10,
-      "labelPassed": 9,
+      "labelPassed": 10,
       "resolutionPassed": 10,
       "createPassed": 10,
       "matchedTopicPassed": 10,
-      "endToEndPassed": 9,
-      "failed": 1
+      "endToEndPassed": 10,
+      "failed": 0
     }
   },
   "layerBreakdown": {
-    "label": 6,
+    "label": 5,
     "resolution": 3,
     "create_flag": 2,
     "matched_topic": 0,
@@ -671,19 +671,19 @@
     "expected_label_extracted_but_lost_competition": 1,
     "expected_label_present_in_message_but_not_extracted": 1,
     "good_label_but_creation_blocked": 1,
-    "pfap_protected_candidate_lost_final_arbitration": 3,
+    "pfap_protected_candidate_lost_final_arbitration": 2,
     "uncategorized_failure": 1
   },
   "pfapBreakdown": {
-    "failedCount": 7,
-    "failedWithProtectedCandidates": 7,
-    "failedExpectedCandidateFound": 5,
-    "failedExpectedCandidateProtected": 4,
+    "failedCount": 6,
+    "failedWithProtectedCandidates": 6,
+    "failedExpectedCandidateFound": 4,
+    "failedExpectedCandidateProtected": 3,
     "failedMalformedActual": 0,
     "likelyIssueBreakdown": {
       "pfap_expected_candidate_needs_protection_metadata": 1,
       "pfap_expected_label_partially_extracted_canonicalization_needed": 2,
-      "pfap_protected_candidate_lost_final_arbitration": 3,
+      "pfap_protected_candidate_lost_final_arbitration": 2,
       "unknown": 1
     }
   },
@@ -5357,32 +5357,27 @@
       "description": "should preserve rules of curling despite long residue tail",
       "message": "It is really the rules of curling that I do not get, not the general sport vibe, especially once scoring comes up and I start feeling like I missed some earlier explanation.",
       "expectedLabel": "Rules of Curling",
-      "actualLabel": "Rules of Curling That I Do Not Get",
+      "actualLabel": "Rules of Curling",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 3,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
-      "actualCandidateRank": 3,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Rules of Curling\" actualLabel=\"Rules of Curling That I Do Not Get\""
-        }
-      ]
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-tail-004",

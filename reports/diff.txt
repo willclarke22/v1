@@ -1,15 +1,15 @@
 
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
-Previous snapshot generatedAt: 2026-05-02T00:39:04.875Z
-Current snapshot generatedAt: 2026-05-02T00:52:14.582Z
+Previous snapshot generatedAt: 2026-05-02T00:54:47.702Z
+Current snapshot generatedAt: 2026-05-02T01:06:52.100Z
 
-overall label: 327/336 -> 330/336 (+3)
-overall e2e:   326/336 -> 329/336 (+3)
-failed:        10 -> 7 (-3)
+overall label: 330/336 -> 331/336 (+1)
+overall e2e:   329/336 -> 330/336 (+1)
+failed:        7 -> 6 (-1)
 
 Case movement:
-New passes: 3
+New passes: 1
 New regressions: 0
 Naturalistic regressions: 0
 Still failing but changed output: 0
@@ -20,53 +20,33 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
-blindv2-isolated: label 21/25 -> 23/25 (+2), e2e 21/25 -> 23/25 (+2), failed 4 -> 2 (-2)
-holdout-isolated: label 54/58 -> 55/58 (+1), e2e 54/58 -> 55/58 (+1), failed 4 -> 3 (-1)
+holdout-isolated: label 55/58 -> 56/58 (+1), e2e 55/58 -> 56/58 (+1), failed 3 -> 2 (-1)
 
 Category movement:
-domain_shaping: label 7/8 -> 8/8 (+1), e2e 7/8 -> 8/8 (+1), failed 1 -> 0 (-1)
-noisy_natural_language: label 11/13 -> 13/13 (+2), e2e 11/13 -> 13/13 (+2), failed 2 -> 0 (-2)
+tail_contamination: label 9/10 -> 10/10 (+1), e2e 9/10 -> 10/10 (+1), failed 1 -> 0 (-1)
 
 Failure-layer movement:
-label: 9 -> 6 (-3)
+label: 6 -> 5 (-1)
 
 Likely-failure-class movement:
-domain_shaping_failed: 1 -> 0 (-1)
-expected_label_present_in_message_but_not_extracted: 2 -> 1 (-1)
-uncategorized_failure: 2 -> 1 (-1)
+pfap_protected_candidate_lost_final_arbitration: 3 -> 2 (-1)
 
 PFAP likely-issue movement:
-pfap_expected_label_partially_extracted_canonicalization_needed: 5 -> 2 (-3)
+pfap_protected_candidate_lost_final_arbitration: 3 -> 2 (-1)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 9 -> 7 (-2)
-failedExpectedCandidateFound: 5 -> 5 (0)
-failedExpectedCandidateProtected: 4 -> 4 (0)
-failedMalformedActual: 1 -> 0 (-1)
+failedWithProtectedCandidates: 7 -> 6 (-1)
+failedExpectedCandidateFound: 5 -> 4 (-1)
+failedExpectedCandidateProtected: 4 -> 3 (-1)
+failedMalformedActual: 0 -> 0 (0)
 
 New passes:
 
---- domain_shaping (1) ---
-[blindv2-isolated] domain_shaping | blindv2-domain-002 | PASS
-message: Can you explain how icing works in hockey?
-expected: Icing in Hockey
-actual:   Icing in Hockey
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-
---- noisy_natural_language (2) ---
-[holdout-isolated] noisy_natural_language | holdout-noise-005 | PASS
-message: we did waves today and i was ok until speed of sound came up then i was totally guessing
-expected: Speed of Sound
-actual:   Speed of Sound
-checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
-layers: none | likely: n/a | pfap: n/a
-
-[blindv2-isolated] noisy_natural_language | blindv2-noise-002 | PASS
-message: idk how interest works on student loans tbh
-expected: Interest on Student Loans
-actual:   Interest on Student Loans
+--- tail_contamination (1) ---
+[holdout-isolated] tail_contamination | holdout-tail-003 | PASS
+message: It is really the rules of curling that I do not get, not the general sport vibe, especially once scoring comes up and I start feeling like I missed some earlier explanation.
+expected: Rules of Curling
+actual:   Rules of Curling
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 

@@ -1,9 +1,9 @@
 === Compact Topic Labeling Chunked Report Index ===
-overall: total=336 label=330/336 resolution=333/336 e2e=329/336 failed=7
-label-layer failures: 6
-end-to-end failures: 7
+overall: total=336 label=331/336 resolution=333/336 e2e=330/336 failed=6
+label-layer failures: 5
+end-to-end failures: 6
 displayed cases: 336 (all cases)
-generatedAt: 2026-05-02T00:54:00.919Z
+generatedAt: 2026-05-02T01:09:33.666Z
 
 === Compact Scope Summary ===
 baseline-isolated: total=78 label=77/78 resolution=77/78 e2e=77/78 failed=1
@@ -12,7 +12,7 @@ blindv2-isolated: total=25 label=23/25 resolution=24/25 e2e=23/25 failed=2
 blindv2-sequence: total=11 label=11/11 resolution=10/11 e2e=10/11 failed=1
 hard-isolated: total=12 label=12/12 resolution=12/12 e2e=12/12 failed=0
 hard-sequence: total=11 label=11/11 resolution=11/11 e2e=11/11 failed=0
-holdout-isolated: total=58 label=55/58 resolution=58/58 e2e=55/58 failed=3
+holdout-isolated: total=58 label=56/58 resolution=58/58 e2e=56/58 failed=2
 holdout-sequence: total=20 label=20/20 resolution=20/20 e2e=20/20 failed=0
 naturalistic-diverse: total=100 label=100/100 resolution=100/100 e2e=100/100 failed=0
 
@@ -76,7 +76,7 @@ space: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 sports: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 structured_phrase: total=6 label=6/6 resolution=6/6 e2e=6/6 failed=0
 switching: total=2 label=2/2 resolution=2/2 e2e=2/2 failed=0
-tail_contamination: total=10 label=9/10 resolution=10/10 e2e=9/10 failed=1
+tail_contamination: total=10 label=10/10 resolution=10/10 e2e=10/10 failed=0
 
 === Files ===
 compact-report-part-01-of-04.txt: 84 case(s)

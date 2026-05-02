@@ -511,12 +511,12 @@ actual:   Reuptake
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] tail_contamination | holdout-tail-003 | FAIL
+[holdout-isolated] tail_contamination | holdout-tail-003 | PASS
 message: It is really the rules of curling that I do not get, not the general sport vibe, especially once scoring comes up and I start feeling like I missed some earlier explanation.
 expected: Rules of Curling
-actual:   Rules of Curling That I Do Not Get
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+actual:   Rules of Curling
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] tail_contamination | holdout-tail-004 | PASS
 message: Law of cosines is where my brain starts doing that annoying thing where I pretend I know the next step but I really do not.
