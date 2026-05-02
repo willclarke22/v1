@@ -1,24 +1,22 @@
 
 === Compact Topic Labeling Report ===
-overall: total=336 label=327/336 resolution=333/336 e2e=326/336 failed=10
-label-layer failures: 9
-end-to-end failures: 10
-displayed cases: 9 (label failures only)
+overall: total=336 label=330/336 resolution=333/336 e2e=329/336 failed=7
+label-layer failures: 6
+end-to-end failures: 7
+displayed cases: 6 (label failures only)
 
 === Compact Scope Summary ===
 baseline-isolated: total=78 label=77/78 resolution=77/78 e2e=77/78 failed=1
-blindv2-isolated: total=25 label=21/25 resolution=24/25 e2e=21/25 failed=4
+blindv2-isolated: total=25 label=23/25 resolution=24/25 e2e=23/25 failed=2
 blindv2-sequence: total=11 label=11/11 resolution=10/11 e2e=10/11 failed=1
-holdout-isolated: total=58 label=54/58 resolution=58/58 e2e=54/58 failed=4
+holdout-isolated: total=58 label=55/58 resolution=58/58 e2e=55/58 failed=3
 naturalistic-diverse: total=100 label=100/100 resolution=100/100 e2e=100/100 failed=0
 
 === Compact Category Summary (failing categories only) ===
 broad_to_narrow: total=16 label=15/16 resolution=15/16 e2e=15/16 failed=1
 direct: total=3 label=2/3 resolution=3/3 e2e=2/3 failed=1
 diverse_academic: total=6 label=5/6 resolution=5/6 e2e=5/6 failed=1
-domain_shaping: total=8 label=7/8 resolution=8/8 e2e=7/8 failed=1
 followup_continuity: total=29 label=29/29 resolution=28/29 e2e=28/29 failed=1
-noisy_natural_language: total=13 label=11/13 resolution=13/13 e2e=11/13 failed=2
 paragraph_context: total=18 label=16/18 resolution=18/18 e2e=16/18 failed=2
 tail_contamination: total=10 label=9/10 resolution=10/10 e2e=9/10 failed=1
 
@@ -51,31 +49,6 @@ actual:   Understand It for Five Seconds
 checks: label=N resolution=N create=N matched=Y forbidden=Y
 layers: label,resolution,create_flag | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
 resolution: expected=created_new_candidate actual=no_match | create expected=true actual=false | matched expected=n/a actual=n/a
-
-
---- domain_shaping (1) ---
-[blindv2-isolated] domain_shaping | blindv2-domain-002 | FAIL
-message: Can you explain how icing works in hockey?
-expected: Icing in Hockey
-actual:   Icing Works in Hockey
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
-
-
---- noisy_natural_language (2) ---
-[holdout-isolated] noisy_natural_language | holdout-noise-005 | FAIL
-message: we did waves today and i was ok until speed of sound came up then i was totally guessing
-expected: Speed of Sound
-actual:   Until Speed of Sound
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
-
-[blindv2-isolated] noisy_natural_language | blindv2-noise-002 | FAIL
-message: idk how interest works on student loans tbh
-expected: Interest on Student Loans
-actual:   Interest on Student Loans to Be Honest
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
 
 
 --- paragraph_context (2) ---

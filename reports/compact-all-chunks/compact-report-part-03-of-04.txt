@@ -321,12 +321,12 @@ actual:   Insurance Premium
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[blindv2-isolated] domain_shaping | blindv2-domain-002 | FAIL
+[blindv2-isolated] domain_shaping | blindv2-domain-002 | PASS
 message: Can you explain how icing works in hockey?
 expected: Icing in Hockey
-actual:   Icing Works in Hockey
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Icing in Hockey
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [blindv2-isolated] domain_shaping | blindv2-domain-003 | PASS
 message: What is principal in a loan?
@@ -374,12 +374,12 @@ actual:   Mitosis
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[blindv2-isolated] noisy_natural_language | blindv2-noise-002 | FAIL
+[blindv2-isolated] noisy_natural_language | blindv2-noise-002 | PASS
 message: idk how interest works on student loans tbh
 expected: Interest on Student Loans
-actual:   Interest on Student Loans to Be Honest
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Interest on Student Loans
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [blindv2-isolated] noisy_natural_language | blindv2-noise-003 | PASS
 message: your and youre still mess me up lol

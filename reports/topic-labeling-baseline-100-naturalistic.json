@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-02T00:39:04.875Z",
+  "generatedAt": "2026-05-02T00:54:47.702Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,12 +8,12 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 327,
+    "labelPassed": 330,
     "resolutionPassed": 333,
     "createPassed": 334,
     "matchedTopicPassed": 336,
-    "endToEndPassed": 326,
-    "failed": 10
+    "endToEndPassed": 329,
+    "failed": 7
   },
   "scopeBreakdown": {
     "baseline-isolated": {
@@ -36,12 +36,12 @@
     },
     "blindv2-isolated": {
       "total": 25,
-      "labelPassed": 21,
+      "labelPassed": 23,
       "resolutionPassed": 24,
       "createPassed": 24,
       "matchedTopicPassed": 25,
-      "endToEndPassed": 21,
-      "failed": 4
+      "endToEndPassed": 23,
+      "failed": 2
     },
     "blindv2-sequence": {
       "total": 11,
@@ -72,12 +72,12 @@
     },
     "holdout-isolated": {
       "total": 58,
-      "labelPassed": 54,
+      "labelPassed": 55,
       "resolutionPassed": 58,
       "createPassed": 58,
       "matchedTopicPassed": 58,
-      "endToEndPassed": 54,
-      "failed": 4
+      "endToEndPassed": 55,
+      "failed": 3
     },
     "holdout-sequence": {
       "total": 20,
@@ -101,12 +101,12 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 264,
+      "labelPassed": 267,
       "resolutionPassed": 271,
       "createPassed": 271,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 264,
-      "failed": 9
+      "endToEndPassed": 267,
+      "failed": 6
     },
     "sequence": {
       "total": 63,
@@ -256,12 +256,12 @@
     },
     "domain_shaping": {
       "total": 8,
-      "labelPassed": 7,
+      "labelPassed": 8,
       "resolutionPassed": 8,
       "createPassed": 8,
       "matchedTopicPassed": 8,
-      "endToEndPassed": 7,
-      "failed": 1
+      "endToEndPassed": 8,
+      "failed": 0
     },
     "driving": {
       "total": 4,
@@ -508,12 +508,12 @@
     },
     "noisy_natural_language": {
       "total": 13,
-      "labelPassed": 11,
+      "labelPassed": 13,
       "resolutionPassed": 13,
       "createPassed": 13,
       "matchedTopicPassed": 13,
-      "endToEndPassed": 11,
-      "failed": 2
+      "endToEndPassed": 13,
+      "failed": 0
     },
     "null_cases": {
       "total": 11,
@@ -661,29 +661,28 @@
     }
   },
   "layerBreakdown": {
-    "label": 9,
+    "label": 6,
     "resolution": 3,
     "create_flag": 2,
     "matched_topic": 0,
     "forbidden": 0
   },
   "likelyFailureBreakdown": {
-    "domain_shaping_failed": 1,
     "expected_label_extracted_but_lost_competition": 1,
-    "expected_label_present_in_message_but_not_extracted": 2,
+    "expected_label_present_in_message_but_not_extracted": 1,
     "good_label_but_creation_blocked": 1,
     "pfap_protected_candidate_lost_final_arbitration": 3,
-    "uncategorized_failure": 2
+    "uncategorized_failure": 1
   },
   "pfapBreakdown": {
-    "failedCount": 10,
-    "failedWithProtectedCandidates": 9,
+    "failedCount": 7,
+    "failedWithProtectedCandidates": 7,
     "failedExpectedCandidateFound": 5,
     "failedExpectedCandidateProtected": 4,
-    "failedMalformedActual": 1,
+    "failedMalformedActual": 0,
     "likelyIssueBreakdown": {
       "pfap_expected_candidate_needs_protection_metadata": 1,
-      "pfap_expected_label_partially_extracted_canonicalization_needed": 5,
+      "pfap_expected_label_partially_extracted_canonicalization_needed": 2,
       "pfap_protected_candidate_lost_final_arbitration": 3,
       "unknown": 1
     }
@@ -5611,32 +5610,27 @@
       "description": "casual speed of sound message with low punctuation",
       "message": "we did waves today and i was ok until speed of sound came up then i was totally guessing",
       "expectedLabel": "Speed of Sound",
-      "actualLabel": "Until Speed of Sound",
+      "actualLabel": "Speed of Sound",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Speed of Sound\" actualLabel=\"Until Speed of Sound\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "holdout-isolated::holdout-noise-006",
@@ -7200,7 +7194,7 @@
       "description": "sports concept shaped by domain",
       "message": "Can you explain how icing works in hockey?",
       "expectedLabel": "Icing in Hockey",
-      "actualLabel": "Icing Works in Hockey",
+      "actualLabel": "Icing in Hockey",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
@@ -7208,25 +7202,20 @@
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "domain_shaping_failed",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Icing in Hockey\" actualLabel=\"Icing Works in Hockey\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "blindv2-isolated::blindv2-domain-003",
@@ -7429,7 +7418,7 @@
       "description": "messy casual domain-shaped phrasing",
       "message": "idk how interest works on student loans tbh",
       "expectedLabel": "Interest on Student Loans",
-      "actualLabel": "Interest on Student Loans to Be Honest",
+      "actualLabel": "Interest on Student Loans",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
@@ -7437,25 +7426,20 @@
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Interest on Student Loans\" actualLabel=\"Interest on Student Loans to Be Honest\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "blindv2-isolated::blindv2-noise-003",

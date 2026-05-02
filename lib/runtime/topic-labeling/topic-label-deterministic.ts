@@ -6,7 +6,10 @@ import {
   type TopicSpecificity,
   clampTopicConfidence,
 } from "./topic-label-contract";
-import type { MessageInterpretation, TopicCandidate } from "./topic-label-types";
+import type {
+  MessageInterpretation,
+  TopicCandidate,
+} from "./topic-label-types";
 import { extractConceptCandidates } from "./topic-label-candidates";
 import {
   dedupe,
@@ -116,7 +119,6 @@ type DeterministicCandidateScoreBreakdown = {
   nounChunkPenalty: number;
 };
 
-
 type DeterministicLabelingTimingStep = {
   label: string;
   duration_ms: number;
@@ -172,7 +174,7 @@ function createDeterministicLabelingTimer() {
   }
 
   function finish(
-    metadata: DeterministicLabelingTimingDebug["metadata"]
+    metadata: DeterministicLabelingTimingDebug["metadata"],
   ): DeterministicLabelingTimingDebug | undefined {
     if (!enabled) return undefined;
 
@@ -201,7 +203,7 @@ const STRING_CACHE_MAX_SIZE = 5000;
 function memoizeStringResult<T>(
   cache: Map<string, T>,
   key: string | null | undefined,
-  compute: (normalizedKey: string) => T
+  compute: (normalizedKey: string) => T,
 ): T {
   const normalizedKey = key ?? "";
   const cached = cache.get(normalizedKey);
@@ -226,17 +228,20 @@ const semanticTokensCache = new Map<string, string[]>();
 const specificityCache = new Map<string, TopicSpecificity>();
 const suspiciousLabelCache = new Map<string, boolean>();
 const candidateDisplayLabelCache = new WeakMap<TopicCandidate, string | null>();
-const candidateFamilyCache = new WeakMap<TopicCandidate, Map<string, CandidateFamily>>();
+const candidateFamilyCache = new WeakMap<
+  TopicCandidate,
+  Map<string, CandidateFamily>
+>();
 
 function cachedNormalizeSurface(text: string | null | undefined) {
   return memoizeStringResult(normalizeSurfaceCache, text, (value) =>
-    normalizeSurface(value)
+    normalizeSurface(value),
   );
 }
 
 function cachedNormalizeLoose(text: string | null | undefined) {
   return memoizeStringResult(normalizeLooseCache, text, (value) =>
-    normalizeLoose(value)
+    normalizeLoose(value),
   );
 }
 
@@ -246,19 +251,19 @@ function cachedTokenize(text: string | null | undefined) {
 
 function cachedSemanticTokens(text: string | null | undefined) {
   return memoizeStringResult(semanticTokensCache, text, (value) =>
-    semanticTokens(value)
+    semanticTokens(value),
   );
 }
 
 function cachedScoreSpecificity(text: string | null | undefined) {
   return memoizeStringResult(specificityCache, text, (value) =>
-    scoreSpecificity(value || null)
+    scoreSpecificity(value || null),
   );
 }
 
 function cachedLooksLikeSuspiciousLabel(text: string | null | undefined) {
   return memoizeStringResult(suspiciousLabelCache, text, (value) =>
-    looksLikeSuspiciousLabel(value || null)
+    looksLikeSuspiciousLabel(value || null),
   );
 }
 
@@ -306,7 +311,7 @@ function appearsInBroadList(clause: string, span: string) {
 
 function findReuseCandidate(
   label: string | null,
-  candidates: RetrievalCandidate[]
+  candidates: RetrievalCandidate[],
 ): RetrievalCandidate | null {
   if (!label || !candidates.length) return null;
 
@@ -319,7 +324,10 @@ function findReuseCandidate(
   for (const candidate of candidates) {
     const candidateName = candidate.topic_name.toLowerCase();
     const exact = candidateName === normalizedLabel ? 1 : 0;
-    const tokenScore = overlapScore(labelTokens, cachedSemanticTokens(candidate.topic_name));
+    const tokenScore = overlapScore(
+      labelTokens,
+      cachedSemanticTokens(candidate.topic_name),
+    );
     const retrievalScore = candidate.similarity ?? 0;
 
     const score = exact * 1.0 + tokenScore * 0.72 + retrievalScore * 0.64;
@@ -339,7 +347,8 @@ function getCandidateDisplayLabel(candidate: TopicCandidate) {
     return candidateDisplayLabelCache.get(candidate) ?? null;
   }
 
-  const label = shapeDisplayLabel(candidate.coreText) ?? shapeDisplayLabel(candidate.span);
+  const label =
+    shapeDisplayLabel(candidate.coreText) ?? shapeDisplayLabel(candidate.span);
   candidateDisplayLabelCache.set(candidate, label);
   return label;
 }
@@ -377,21 +386,40 @@ function candidateLooksMetaRequestQualityResidue(candidate: TopicCandidate) {
   if (!combined) return false;
 
   const labelIsMetaRequestQuality =
-    /^(?:useful|clear|specific|helpful|coherent|good|right|better) way$/.test(label) ||
-    /^(?:what|whether|which) (?:i|we) (?:am|are|'m|'re )?(?:asking|confused|stuck|struggling)(?: about)?$/.test(label) ||
-    /^(?:asking about|what i am asking about|what i'm asking about|what we are asking about|what we're asking about)$/.test(label) ||
-    /^(?:not saying|not asking|saying this|saying that|explaining this|describing this|stalling out|keep stalling out)$/.test(label);
+    /^(?:useful|clear|specific|helpful|coherent|good|right|better) way$/.test(
+      label,
+    ) ||
+    /^(?:what|whether|which) (?:i|we) (?:am|are|'m|'re )?(?:asking|confused|stuck|struggling)(?: about)?$/.test(
+      label,
+    ) ||
+    /^(?:asking about|what i am asking about|what i'm asking about|what we are asking about|what we're asking about)$/.test(
+      label,
+    ) ||
+    /^(?:not saying|not asking|saying this|saying that|explaining this|describing this|stalling out|keep stalling out)$/.test(
+      label,
+    );
 
   const sourceSaysCannotNameTopic =
-    /\b(?:don'?t|dont|do not|can'?t|cant|cannot)\s+(?:really\s+)?(?:know|tell|figure out|identify|name|say|explain|describe)\s+(?:what|whether|which)\s+(?:i|we)\s*(?:am|are|'m|'re)?\s*(?:asking|confused|stuck|struggling|trying to ask|needing help with)\b/i.test(combined) ||
-    /\b(?:don'?t|dont|do not|can'?t|cant|cannot)\s+(?:really\s+)?(?:know|tell|figure out|identify|name)\s+(?:the\s+)?(?:actual|specific|real|clear)?\s*(?:problem|issue|question|blocker|topic|concept)\b/i.test(combined) ||
-    /\b(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:saying|asking|putting|explaining|describing)\s+(?:that|this|it)?\s*(?:in\s+)?(?:a\s+)?(?:useful|clear|specific|helpful|coherent|good|right|better)\s+way\b/i.test(combined);
+    /\b(?:don'?t|dont|do not|can'?t|cant|cannot)\s+(?:really\s+)?(?:know|tell|figure out|identify|name|say|explain|describe)\s+(?:what|whether|which)\s+(?:i|we)\s*(?:am|are|'m|'re)?\s*(?:asking|confused|stuck|struggling|trying to ask|needing help with)\b/i.test(
+      combined,
+    ) ||
+    /\b(?:don'?t|dont|do not|can'?t|cant|cannot)\s+(?:really\s+)?(?:know|tell|figure out|identify|name)\s+(?:the\s+)?(?:actual|specific|real|clear)?\s*(?:problem|issue|question|blocker|topic|concept)\b/i.test(
+      combined,
+    ) ||
+    /\b(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:saying|asking|putting|explaining|describing)\s+(?:that|this|it)?\s*(?:in\s+)?(?:a\s+)?(?:useful|clear|specific|helpful|coherent|good|right|better)\s+way\b/i.test(
+      combined,
+    );
 
   const sourceIsPureStuckTriage =
-    /\b(?:just\s+)?(?:keep\s+)?(?:stalling out|shutting down|freezing|getting stuck)\b/i.test(combined) &&
-    /\b(?:don'?t|dont|do not|can'?t|cant|cannot|not)\b/i.test(combined);
+    /\b(?:just\s+)?(?:keep\s+)?(?:stalling out|shutting down|freezing|getting stuck)\b/i.test(
+      combined,
+    ) && /\b(?:don'?t|dont|do not|can'?t|cant|cannot|not)\b/i.test(combined);
 
-  return Boolean(labelIsMetaRequestQuality || sourceSaysCannotNameTopic || sourceIsPureStuckTriage);
+  return Boolean(
+    labelIsMetaRequestQuality ||
+    sourceSaysCannotNameTopic ||
+    sourceIsPureStuckTriage,
+  );
 }
 
 function candidateLooksCleanQuestionTarget(candidate: TopicCandidate) {
@@ -407,7 +435,11 @@ function candidateLooksCleanQuestionTarget(candidate: TopicCandidate) {
   if (!candidate.shouldCompeteAsTopic) return false;
   if (candidate.isSubpartReference) return false;
   if (candidateLooksWeakNounChunk(candidate)) return false;
-  if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate)) return false;
+  if (
+    candidateHasHighResidueRisk(candidate) &&
+    !candidateLooksConceptPhrase(candidate)
+  )
+    return false;
   if (labelHasBadBoundaryShape(label)) return false;
   if (!labelHasContentBearingHead(label)) return false;
 
@@ -417,9 +449,10 @@ function candidateLooksCleanQuestionTarget(candidate: TopicCandidate) {
   // PFAP7: a clean term asked about in a question should remain eligible even
   // when the original span has explanatory tail text ("What is X if/when...").
   // The shaped display label is the durable topic; the tail is question context.
-  const sourceLooksQuestionLike = /^(?:what|why|how|when|where|which|can|could|would|should|do|does|did|is|are)\b/i.test(
-    candidate.sourceClause.trim()
-  );
+  const sourceLooksQuestionLike =
+    /^(?:what|why|how|when|where|which|can|could|would|should|do|does|did|is|are)\b/i.test(
+      candidate.sourceClause.trim(),
+    );
 
   return (
     candidateHasQualifier(candidate, "focus_target") ||
@@ -433,7 +466,11 @@ function candidateLooksCleanExplicitConcept(candidate: TopicCandidate) {
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
   if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
   if (candidateLooksWeakNounChunk(candidate)) return false;
-  if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate)) return false;
+  if (
+    candidateHasHighResidueRisk(candidate) &&
+    !candidateLooksConceptPhrase(candidate)
+  )
+    return false;
 
   return (
     candidateLooksCleanQuestionTarget(candidate) ||
@@ -457,11 +494,16 @@ function candidateLooksProtectedDurableLabel(candidate: TopicCandidate) {
 
   return (
     candidateLooksCleanExplicitConcept(candidate) ||
-    /\b(?:earned runs|tennis scoring|merge lanes|shutoff valve|balancing chemical equations|zone defense|offside in soccer|right of way|knife skills|task initiation|civil liberties vs civil rights|gravity vs weight|weather vs climate|baroque vs renaissance art|your vs you're|apr|systolic vs diastolic blood pressure|consideration in contracts)\b/i.test(label)
+    /\b(?:earned runs|tennis scoring|merge lanes|shutoff valve|balancing chemical equations|zone defense|offside in soccer|right of way|knife skills|task initiation|civil liberties vs civil rights|gravity vs weight|weather vs climate|baroque vs renaissance art|your vs you're|apr|systolic vs diastolic blood pressure|consideration in contracts)\b/i.test(
+      label,
+    )
   );
 }
 
-function candidateLooksQcsOverSynthesized(candidate: TopicCandidate, allCandidates: TopicCandidate[]) {
+function candidateLooksQcsOverSynthesized(
+  candidate: TopicCandidate,
+  allCandidates: TopicCandidate[],
+) {
   if (!candidateLooksQuestionSynthesis(candidate)) return false;
 
   const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
@@ -481,7 +523,10 @@ function candidateLooksQcsOverSynthesized(candidate: TopicCandidate, allCandidat
     return (
       label.includes(otherLabel) ||
       otherLabel.includes(label) ||
-      overlapScore(cachedSemanticTokens(label), cachedSemanticTokens(otherLabel)) >= 0.35
+      overlapScore(
+        cachedSemanticTokens(label),
+        cachedSemanticTokens(otherLabel),
+      ) >= 0.35
     );
   });
 
@@ -502,9 +547,10 @@ function candidateIsOnlySuspiciousWhenStandalone(candidate: TopicCandidate) {
 
   if (tokenCount > 1) return false;
 
-  return /^(?:scoring|sweeping|mean|question|help|part|thing|stuff|say|example|concept|topic)$/.test(label);
+  return /^(?:scoring|sweeping|mean|question|help|part|thing|stuff|say|example|concept|topic)$/.test(
+    label,
+  );
 }
-
 
 function candidateLooksConceptPhrase(candidate: TopicCandidate) {
   return (
@@ -526,7 +572,10 @@ function candidateLooksWeakNounChunk(candidate: TopicCandidate) {
 }
 
 function candidateHasHighResidueRisk(candidate: TopicCandidate) {
-  return candidate.residueRisk === "high" || candidateHasQualifier(candidate, "residue_risk");
+  return (
+    candidate.residueRisk === "high" ||
+    candidateHasQualifier(candidate, "residue_risk")
+  );
 }
 
 function candidateLooksDurablePracticalConcept(candidate: TopicCandidate) {
@@ -538,8 +587,12 @@ function candidateLooksDurablePracticalConcept(candidate: TopicCandidate) {
   return (
     candidateLooksProtectedDurableLabel(candidate) ||
     candidateLooksConceptPhrase(candidate) ||
-    /\b(?:control|skills?|development|defense|scoring|questions?|bullets?|interviews?|negotiation|size|cycles?|pressure|response|analysis|wars?|significance|code|updates?|handling|splices?|agreement|voice|initiation|planning|anxiety|structure|notation|recognition|scale|perspective|powers?|federalism|selection|energy|concept|equations?|expenses?|funds?|transmission|system|intervals?|parking|way|lanes|checks|values|boundaries|velocity|phases?|proof|precedent|consideration|regulation|rumination|reappraisal|mapping|reaction|depreciation)\b/.test(label) ||
-    /\b(?:interview questions|resume bullets|serving size|sleep cycles|primary source analysis|react state updates|api error handling|right of way|burden of proof|emotion regulation|concept mapping|oil change intervals|water pressure|moon phases|map scale)\b/.test(label)
+    /\b(?:control|skills?|development|defense|scoring|questions?|bullets?|interviews?|negotiation|size|cycles?|pressure|response|analysis|wars?|significance|code|updates?|handling|splices?|agreement|voice|initiation|planning|anxiety|structure|notation|recognition|scale|perspective|powers?|federalism|selection|energy|concept|equations?|expenses?|funds?|transmission|system|intervals?|parking|way|lanes|checks|values|boundaries|velocity|phases?|proof|precedent|consideration|regulation|rumination|reappraisal|mapping|reaction|depreciation)\b/.test(
+      label,
+    ) ||
+    /\b(?:interview questions|resume bullets|serving size|sleep cycles|primary source analysis|react state updates|api error handling|right of way|burden of proof|emotion regulation|concept mapping|oil change intervals|water pressure|moon phases|map scale)\b/.test(
+      label,
+    )
   );
 }
 
@@ -548,12 +601,13 @@ function candidateLooksClauseWrapped(candidate: TopicCandidate) {
   if (!label) return false;
 
   return /^(?:is|are|it'?s|it is|but|actually|after looking again|i think|i guess|what i am saying is)\b/i.test(
-    label
+    label,
   );
 }
 
 function candidateLooksTailHeavy(candidate: TopicCandidate) {
-  const combined = `${candidate.coreText} ${candidate.tailText ?? ""}`.toLowerCase();
+  const combined =
+    `${candidate.coreText} ${candidate.tailText ?? ""}`.toLowerCase();
 
   return (
     /\band everyone else seems\b/i.test(combined) ||
@@ -662,48 +716,80 @@ function candidateLooksLearnerStateOrSetupResidue(candidate: TopicCandidate) {
   if (!combined) return false;
 
   const setupActivityLabel =
-    /^(?:i(?:'m| am)?|we(?:'re| are| were)?|they(?:'re| are| were)?)\s+(?:doing|working on|studying|reviewing|learning|covering|starting|started)\b.*\b(?:homework|worksheet|class|lecture|section|unit|chapter|right now|this week|today|notes?|practice(?: questions?| problems?)?)\b/i.test(label) ||
-    /^(?:homework|worksheet|class|lecture|section|unit|chapter|practice(?: questions?| problems?)?)\b.*\b(?:right now|this week|today|on|about|for)\b/i.test(label);
+    /^(?:i(?:'m| am)?|we(?:'re| are| were)?|they(?:'re| are| were)?)\s+(?:doing|working on|studying|reviewing|learning|covering|starting|started)\b.*\b(?:homework|worksheet|class|lecture|section|unit|chapter|right now|this week|today|notes?|practice(?: questions?| problems?)?)\b/i.test(
+      label,
+    ) ||
+    /^(?:homework|worksheet|class|lecture|section|unit|chapter|practice(?: questions?| problems?)?)\b.*\b(?:right now|this week|today|on|about|for)\b/i.test(
+      label,
+    );
 
   const learnerStateLabel =
-    /\b(?:stable|real|clear|actual|good|solid) understanding of (?:it|this|that|the thing|everything)\b/i.test(label) ||
-    /\b(?:understanding|confidence|trust|panic|spiral|freeze|freezing|shut(?:ting)? down|feeling behind|feeling lost|lost feeling)\b/i.test(label) &&
-      /\b(?:of it|of this|of that|my|me|i|myself|the whole thing)\b/i.test(label);
+    /\b(?:stable|real|clear|actual|good|solid) understanding of (?:it|this|that|the thing|everything)\b/i.test(
+      label,
+    ) ||
+    (/\b(?:understanding|confidence|trust|panic|spiral|freeze|freezing|shut(?:ting)? down|feeling behind|feeling lost|lost feeling)\b/i.test(
+      label,
+    ) &&
+      /\b(?:of it|of this|of that|my|me|i|myself|the whole thing)\b/i.test(
+        label,
+      ));
 
   const broadFollowSetupLabel =
     /^(?:i\s+can\s+)?(?:follow|understand|get)\s+most\s+of\b/i.test(label) ||
-    /^(?:most\s+of\s+)?(?:hockey|chemistry|biology|math|history|grammar|spanish|the\s+lesson|the\s+chapter|the\s+section)\s+(?:is|was|made|makes)\s+(?:fine|okay|sense)\b/i.test(label);
+    /^(?:most\s+of\s+)?(?:hockey|chemistry|biology|math|history|grammar|spanish|the\s+lesson|the\s+chapter|the\s+section)\s+(?:is|was|made|makes)\s+(?:fine|okay|sense)\b/i.test(
+      label,
+    );
 
   const stoppedUnderstandingResidueLabel =
-    /^(?:stopped?|stop|start(?:ed)?|begin|began)\s+(?:understanding|following|knowing)\b/i.test(label) ||
-    /^(?:what|why)\s+(?:was|is|the)\s+(?:going on|happening|rule is doing|play stops?)\b/i.test(label) ||
+    /^(?:stopped?|stop|start(?:ed)?|begin|began)\s+(?:understanding|following|knowing)\b/i.test(
+      label,
+    ) ||
+    /^(?:what|why)\s+(?:was|is|the)\s+(?:going on|happening|rule is doing|play stops?)\b/i.test(
+      label,
+    ) ||
     /^lose\s+track(?:\s+of)?\b/i.test(label) ||
     /^lost\s+track(?:\s+of)?\b/i.test(label);
 
   const negatedBroadScopeLabel =
-    /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:all|just|really|exactly)\s+of\b/i.test(label) ||
-    /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:the\s+)?(?:whole|big|main|actual|real)\b/i.test(label);
+    /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:all|just|really|exactly)\s+of\b/i.test(
+      label,
+    ) ||
+    /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:the\s+)?(?:whole|big|main|actual|real)\b/i.test(
+      label,
+    );
 
   const problemExplanationLabel =
-    /\b(?:can'?t|cant|cannot|doesn'?t|doesnt|do not|don't|dont)\s+(?:solve|fix|answer|explain)\s+(?:all|everything|my|the)\b.*\b(?:problems?|questions?|confusion|issues?)\b/i.test(label) ||
-    /\b(?:what|why|how)\s+(?:i|we)\s+(?:am|are|'m|'re)?\s*(?:supposed to|meant to|trying to)\b/i.test(label) ||
-    /\b(?:broad|big[- ]?picture|overall)\s+(?:story|version|topic|area)\b/i.test(label) ||
-    /\b(?:where|when)\s+i\s+(?:realize|stop|start|begin|lose|lost|panic|freeze)\b/i.test(label);
+    /\b(?:can'?t|cant|cannot|doesn'?t|doesnt|do not|don't|dont)\s+(?:solve|fix|answer|explain)\s+(?:all|everything|my|the)\b.*\b(?:problems?|questions?|confusion|issues?)\b/i.test(
+      label,
+    ) ||
+    /\b(?:what|why|how)\s+(?:i|we)\s+(?:am|are|'m|'re)?\s*(?:supposed to|meant to|trying to)\b/i.test(
+      label,
+    ) ||
+    /\b(?:broad|big[- ]?picture|overall)\s+(?:story|version|topic|area)\b/i.test(
+      label,
+    ) ||
+    /\b(?:where|when)\s+i\s+(?:realize|stop|start|begin|lose|lost|panic|freeze)\b/i.test(
+      label,
+    );
 
   // If the candidate's own source clause says it is merely setup/context, keep
   // it out of durable-topic protection even when the shaped label looks nouny.
   const sourceIsSetupFrame =
-    /\b(?:doing|working on|studying|reviewing|learning|covering|started|section on|unit on|homework on|worksheet on|in class|in lecture)\b/i.test(source) &&
-    !/\b(?:actual|real|specific|main|mainly|especially|confused about|stuck on|need help with|not understanding|don't understand|dont understand)\b/i.test(source);
+    /\b(?:doing|working on|studying|reviewing|learning|covering|started|section on|unit on|homework on|worksheet on|in class|in lecture)\b/i.test(
+      source,
+    ) &&
+    !/\b(?:actual|real|specific|main|mainly|especially|confused about|stuck on|need help with|not understanding|don't understand|dont understand)\b/i.test(
+      source,
+    );
 
   return Boolean(
     setupActivityLabel ||
-      learnerStateLabel ||
-      broadFollowSetupLabel ||
-      stoppedUnderstandingResidueLabel ||
-      negatedBroadScopeLabel ||
-      problemExplanationLabel ||
-      sourceIsSetupFrame
+    learnerStateLabel ||
+    broadFollowSetupLabel ||
+    stoppedUnderstandingResidueLabel ||
+    negatedBroadScopeLabel ||
+    problemExplanationLabel ||
+    sourceIsSetupFrame,
   );
 }
 
@@ -718,17 +804,22 @@ function candidateLooksLearnerStateOrSetupResidue(candidate: TopicCandidate) {
 function candidateLooksCameUpFocusTarget(
   candidate: TopicCandidate,
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
   if (!candidate.shouldCompeteAsTopic) return false;
   if (candidate.isSubpartReference) return false;
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
   if (candidateLooksWeakNounChunk(candidate)) return false;
   if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
-  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile))
+    return false;
 
   const label = getCandidateDisplayLabel(candidate);
-  if (!label || labelHasBadBoundaryShape(label) || !labelHasContentBearingHead(label)) {
+  if (
+    !label ||
+    labelHasBadBoundaryShape(label) ||
+    !labelHasContentBearingHead(label)
+  ) {
     return false;
   }
 
@@ -742,31 +833,36 @@ function candidateLooksCameUpFocusTarget(
     [coreLoose, labelLoose]
       .flatMap((value) => {
         if (!value) return [];
-        const withoutDomain = value.replace(/\s+in\s+[a-z][a-z'’-]+$/i, "").trim();
+        const withoutDomain = value
+          .replace(/\s+in\s+[a-z][a-z'’-]+$/i, "")
+          .trim();
         return [value, withoutDomain];
       })
-      .filter((value) => cachedTokenize(value).length > 0 && cachedTokenize(value).length <= 5)
+      .filter(
+        (value) =>
+          cachedTokenize(value).length > 0 && cachedTokenize(value).length <= 5,
+      ),
   );
 
   const escapedTerms = candidateTerms.map((term) =>
-    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
   );
   if (!escapedTerms.length) return false;
 
   const appearsAsCameUpTarget = escapedTerms.some((term) => {
     const conceptBeforeCameUp = new RegExp(
       `\\b${term}\\b.{0,48}\\b(?:comes? up|came up|shows? up|showed up|appears?|appeared)\\b`,
-      "i"
+      "i",
     ).test(searchable);
 
     const cameUpBeforeConcept = new RegExp(
       `\\b(?:once|when|then|until|if|after)\\b.{0,36}\\b${term}\\b.{0,48}\\b(?:comes? up|came up|shows? up|showed up|appears?|appeared)\\b`,
-      "i"
+      "i",
     ).test(searchable);
 
     const conceptAsThatPart = new RegExp(
       `\\b${term}\\b.{0,80}\\b(?:that(?:'s| is)?|this is)\\s+(?:the\\s+)?(?:part|point|place|moment)\\b.{0,80}\\b(?:lost|stuck|stop(?:ped)? understanding|lose track|breaks?|falls apart)\\b`,
-      "i"
+      "i",
     ).test(searchable);
 
     return conceptBeforeCameUp || cameUpBeforeConcept || conceptAsThatPart;
@@ -776,13 +872,15 @@ function candidateLooksCameUpFocusTarget(
 
   const hasLearnerBreakCue =
     /\b(?:lose track|lost track|lost|stuck|stop(?:ped)? understanding|do not understand|don't understand|dont understand|breaks?|falls apart|confus(?:e|ed|ing)|what (?:was|is) going on|why .+ stops?|what .+ rule is doing)\b/i.test(
-      searchable
+      searchable,
     );
 
   const hasDomainSetup =
     /\b(?:follow most of|understand most of|get most of|most of .+ makes? sense|most of it made sense|mostly okay|in class|section on|started talking about)\b/i.test(
-      searchable
-    ) || profile.hasBroadToNarrowShape || profile.hasLateBottleneckShape;
+      searchable,
+    ) ||
+    profile.hasBroadToNarrowShape ||
+    profile.hasLateBottleneckShape;
 
   const candidateIsConcrete =
     candidate.kind === "named_concept" ||
@@ -798,7 +896,10 @@ function candidateLooksCameUpFocusTarget(
   return Boolean(candidateIsConcrete && (hasLearnerBreakCue || hasDomainSetup));
 }
 
-function candidateLooksMechanismLike(candidate: TopicCandidate, message: string) {
+function candidateLooksMechanismLike(
+  candidate: TopicCandidate,
+  message: string,
+) {
   const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
   const core = candidate.coreText.toLowerCase();
 
@@ -829,7 +930,10 @@ function candidateLooksMechanismLike(candidate: TopicCandidate, message: string)
   );
 }
 
-function candidateLooksAbstractButUseful(candidate: TopicCandidate, message: string) {
+function candidateLooksAbstractButUseful(
+  candidate: TopicCandidate,
+  message: string,
+) {
   const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
   if (!label) return false;
 
@@ -837,7 +941,7 @@ function candidateLooksAbstractButUseful(candidate: TopicCandidate, message: str
     /\bhow\b/.test(label) &&
     /\bwork\b/.test(label) &&
     /\b(i want to learn about|would really like to learn about|help me understand|can you explain|explain)\b/i.test(
-      message
+      message,
     )
   );
 }
@@ -856,7 +960,7 @@ function candidateLooksObjectOnly(candidate: TopicCandidate) {
     !candidateHasQualifier(candidate, "bottleneck_target") &&
     !candidateHasQualifier(candidate, "paired_with_domain_anchor") &&
     !/\bhow\b|\bwhy\b|\bprocess\b|\bmechanism\b|\bsteps?\b|\bflow\b|\bfunction\b|\brole\b|\bword order\b/i.test(
-      label
+      label,
     )
   );
 }
@@ -897,7 +1001,10 @@ function candidateLooksStructuredDurable(candidate: TopicCandidate) {
   );
 }
 
-function candidateLooksBottleneckTarget(candidate: TopicCandidate, message: string) {
+function candidateLooksBottleneckTarget(
+  candidate: TopicCandidate,
+  message: string,
+) {
   const sourceClause = candidate.sourceClause.toLowerCase();
 
   return (
@@ -920,8 +1027,12 @@ function candidateLooksBottleneckTarget(candidate: TopicCandidate, message: stri
     /\bdoesn'?t click\b/i.test(sourceClause) ||
     /\bstopped following\b/i.test(sourceClause) ||
     /\bbreaks my understanding\b/i.test(sourceClause) ||
-    /\b(?:once|when|then|until|if|after)\b.*\b(?:comes? up|came up|shows? up|showed up|appears?|appeared)\b/i.test(sourceClause) ||
-    /\bwhere i (?:start getting lost|stopped following|lose track)\b/i.test(message)
+    /\b(?:once|when|then|until|if|after)\b.*\b(?:comes? up|came up|shows? up|showed up|appears?|appeared)\b/i.test(
+      sourceClause,
+    ) ||
+    /\bwhere i (?:start getting lost|stopped following|lose track)\b/i.test(
+      message,
+    )
   );
 }
 
@@ -971,16 +1082,26 @@ function candidateLooksResidueLike(candidate: TopicCandidate) {
 
   // Protected durable labels are allowed even if they contain words that are
   // suspicious only when standalone, such as "scoring" or "mean".
-  if (candidateLooksProtectedDurableLabel(candidate) && !candidateIsOnlySuspiciousWhenStandalone(candidate)) {
+  if (
+    candidateLooksProtectedDurableLabel(candidate) &&
+    !candidateIsOnlySuspiciousWhenStandalone(candidate)
+  ) {
     return false;
   }
 
-  if (candidateLooksQuestionSynthesis(candidate) && !cachedLooksLikeSuspiciousLabel(label)) {
+  if (
+    candidateLooksQuestionSynthesis(candidate) &&
+    !cachedLooksLikeSuspiciousLabel(label)
+  ) {
     return false;
   }
 
   if (candidateLooksWeakNounChunk(candidate)) return true;
-  if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate)) return true;
+  if (
+    candidateHasHighResidueRisk(candidate) &&
+    !candidateLooksConceptPhrase(candidate)
+  )
+    return true;
 
   return (
     cachedLooksLikeSuspiciousLabel(label) ||
@@ -999,7 +1120,10 @@ function candidateLooksResidueLike(candidate: TopicCandidate) {
   );
 }
 
-function candidateLooksInstructionalTarget(candidate: TopicCandidate, message: string) {
+function candidateLooksInstructionalTarget(
+  candidate: TopicCandidate,
+  message: string,
+) {
   return (
     !candidateLooksResidueLike(candidate) &&
     !candidateLooksGeneralBucket(candidate) &&
@@ -1036,37 +1160,37 @@ function messageRequestsMechanism(message: string) {
 
 function messageHasBroadToNarrowStructure(message: string) {
   return /\bbut\b|\bexcept\b|\bactually\b|\breally just\b|\bmainly\b|\bmostly\b|\bespecially\b|\bspecifically\b|\bonce\b|\bwhen\b|\buntil\b|\bafter looking again\b/i.test(
-    message
+    message,
   );
 }
 
 function messageHasWhereToStartBarrier(message: string) {
   return /\bwhere to start\b|\bdon'?t know where to start\b|\bwhere to even start\b/i.test(
-    message
+    message,
   );
 }
 
 function messageHasTerminologyBarrier(message: string) {
   return /\bterminology\b|\bjargon\b|\bforms?\b|\bvocabulary\b|\bsmall words\b|\bwords are asking\b/i.test(
-    message
+    message,
   );
 }
 
 function messageHasMultiplicityBarrier(message: string) {
   return /\bso many meanings\b|\btoo many meanings\b|\bso many different uses\b|\bevery time\b.*\bsomething else\b/i.test(
-    message
+    message,
   );
 }
 
 function messageHasStructureBarrier(message: string) {
   return /\bword order\b|\bsmall words\b|\bse\b|\bsentence order\b|\bsentence.*doing\b/i.test(
-    message
+    message,
   );
 }
 
 function messageHasComparisonShape(message: string) {
   return /\bvs\b|\bversus\b|\bdifference between\b|\bcompare\b|\bcontrast\b|\bmix(?:ing)? up\b|\bblending\b|\bblur together\b|\bblend together\b|\binterchangeable\b|\bused interchangeably\b|\bfeel(?:s|t)? basically the same\b|\bactual difference\b|\btell (?:them )?apart\b|\bdistinguish between\b|\bstop feeling different\b|\bcollapse into the same word\b|\bdecide between\b|\bchoose between\b|\bpick between\b|\bwhich (?:one )?(?:to use|belongs?|fits?)\b|\bnot sure which\b|\bdo(?:es)? not know which\b|\bdon'?t know which\b|\bdont know which\b/i.test(
-    message
+    message,
   );
 }
 
@@ -1082,21 +1206,23 @@ function messageHasStructuralRelationConfusion(message: string) {
 
   const hasRelationCue =
     /\b(?:word order|sentence order|sentence structure|order of|ordered|arranged|arrangement|structure|relationship|relationships|relation|relations|connection|connections|connect|connected|fit together|fits together|go together|mapping|map onto|sequence|pattern|logic|cause and effect|cause-and-effect|chain|how (?:it|they|the parts|the pieces|the steps|the variables|the terms) (?:connect|relate|fit|go together|work together))\b/i.test(
-      normalized
+      normalized,
     ) ||
-    /\b(?:reading|read|feels? like i am reading|feel like i am reading) backwards\b/i.test(normalized);
+    /\b(?:reading|read|feels? like i am reading|feel like i am reading) backwards\b/i.test(
+      normalized,
+    );
 
   const hasPieceCue =
     /\b(?:words?|terms?|pieces?|parts?|steps?|variables?|examples?|events?|concepts?)\b.*\b(?:separately|individually|on their own|by themselves)\b/i.test(
-      normalized
+      normalized,
     ) ||
     /\b(?:translate|know|understand|remember)\b.*\b(?:words?|terms?|pieces?|parts?|steps?|variables?|events?)\b/i.test(
-      normalized
+      normalized,
     );
 
   const hasStruggleCue =
     /\b(?:confus(?:e|ed|ing)|lost|stuck|bothering|breaks?|falls apart|mix(?:ing)? up|blend(?:ing)?|blur(?:ring)?|backwards|stop trusting|do not understand|don't understand|dont understand|do not get|don't get|dont get|hard to picture|mushy)\b/i.test(
-      normalized
+      normalized,
     );
 
   return Boolean(hasRelationCue && (hasStruggleCue || hasPieceCue));
@@ -1108,10 +1234,10 @@ function labelHasStructuralRelationCue(label: string | null | undefined) {
 
   return (
     /\b(?:word order|sentence order|sentence structure|relationship|relationships|relation|relations|connection|connections|concept mapping|mapping|sequence|pattern|logic|cause and effect|cause-and-effect|chain|structure|arrangement)\b/i.test(
-      normalized
+      normalized,
     ) ||
     /\b(?:order|structure|relationship|relation|connection|mapping|sequence|pattern|logic|chain)\s+(?:of|in|between|for|among)\b/i.test(
-      normalized
+      normalized,
     )
   );
 }
@@ -1133,10 +1259,15 @@ function extractLanguageDomainDisplayFromText(text: string) {
     [/\barabic\b/i, "Arabic"],
   ];
 
-  return languageDisplays.find(([pattern]) => pattern.test(normalized))?.[1] ?? null;
+  return (
+    languageDisplays.find(([pattern]) => pattern.test(normalized))?.[1] ?? null
+  );
 }
 
-function canonicalizeStructuralRelationLabelForPFAP(label: string | null, message: string) {
+function canonicalizeStructuralRelationLabelForPFAP(
+  label: string | null,
+  message: string,
+) {
   if (!label) return label;
 
   const normalizedLabel = cachedNormalizeLoose(label);
@@ -1158,12 +1289,16 @@ function canonicalizeStructuralRelationLabelForPFAP(label: string | null, messag
   // General tail cleanup for structural-relation labels that accidentally keep
   // the next local clause verb: "X order in Y makes..." -> "X order in Y".
   const structuralPrefix = label.match(
-    /^(.+?\b(?:word order|sentence order|sentence structure|relationship|relationships|relation|relations|connection|connections|concept mapping|mapping|sequence|pattern|logic|cause[- ]and[- ]effect chain|chain|structure|arrangement)\b(?:\s+(?:of|in|between|for|among)\s+[A-Za-z0-9][A-Za-z0-9'’-]*(?:\s+[A-Za-z0-9][A-Za-z0-9'’-]*){0,4})?)(?:\s+(?:makes?|make|feels?|feel|is|are|was|were|gets?|got|keeps?|starts?|stops?|because|when|where|that)\b.*)?$/i
+    /^(.+?\b(?:word order|sentence order|sentence structure|relationship|relationships|relation|relations|connection|connections|concept mapping|mapping|sequence|pattern|logic|cause[- ]and[- ]effect chain|chain|structure|arrangement)\b(?:\s+(?:of|in|between|for|among)\s+[A-Za-z0-9][A-Za-z0-9'’-]*(?:\s+[A-Za-z0-9][A-Za-z0-9'’-]*){0,4})?)(?:\s+(?:makes?|make|feels?|feel|is|are|was|were|gets?|got|keeps?|starts?|stops?|because|when|where|that)\b.*)?$/i,
   );
 
   if (structuralPrefix?.[1]) {
     const shaped = shapeDisplayLabel(structuralPrefix[1]);
-    if (shaped && !labelHasBadBoundaryShape(shaped) && labelHasContentBearingHead(shaped)) {
+    if (
+      shaped &&
+      !labelHasBadBoundaryShape(shaped) &&
+      labelHasContentBearingHead(shaped)
+    ) {
       return shaped;
     }
   }
@@ -1174,16 +1309,20 @@ function canonicalizeStructuralRelationLabelForPFAP(label: string | null, messag
 function candidateLooksStructuralRelationTarget(
   candidate: TopicCandidate,
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
-  if (!profile.hasStructuralRelationShape && !messageHasStructuralRelationConfusion(message)) {
+  if (
+    !profile.hasStructuralRelationShape &&
+    !messageHasStructuralRelationConfusion(message)
+  ) {
     return false;
   }
   if (!candidate.shouldCompeteAsTopic) return false;
   if (candidate.isSubpartReference) return false;
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
   if (candidateLooksWeakNounChunk(candidate)) return false;
-  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile))
+    return false;
 
   const label = getCandidateDisplayLabel(candidate);
   const labelLoose = cachedNormalizeLoose(label);
@@ -1205,21 +1344,27 @@ function candidateLooksStructuralRelationTarget(
     candidateInZone(candidate, profile.bottleneckZones) ||
     candidateAfterContrast(candidate, profile) ||
     /\b(?:confus(?:e|ed|ing)|bothering|lost|stuck|breaks?|falls apart|backwards|stop trusting|do not understand|don't understand|dont understand|do not get|don't get|dont get)\b/i.test(
-      sourceLoose
+      sourceLoose,
     );
 
-  return hasLearnerFocus || candidateLooksDomainShapedByProfile(candidate, profile);
+  return (
+    hasLearnerFocus || candidateLooksDomainShapedByProfile(candidate, profile)
+  );
 }
 
 function candidateLooksLocalExampleTokenInStructuralFrame(
   candidate: TopicCandidate,
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
-  if (!profile.hasStructuralRelationShape && !messageHasStructuralRelationConfusion(message)) {
+  if (
+    !profile.hasStructuralRelationShape &&
+    !messageHasStructuralRelationConfusion(message)
+  ) {
     return false;
   }
-  if (candidateLooksStructuralRelationTarget(candidate, message, profile)) return false;
+  if (candidateLooksStructuralRelationTarget(candidate, message, profile))
+    return false;
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
   if (candidateLooksWeakNounChunk(candidate)) return false;
 
@@ -1229,21 +1374,25 @@ function candidateLooksLocalExampleTokenInStructuralFrame(
   const sourceLoose = cachedNormalizeLoose(candidate.sourceClause);
   const tokens = cachedTokenize(label);
 
-  const localTokenWithDomain = /^[a-z0-9'’-]+\s+in\s+[a-z][a-z'’-]+$/i.test(labelLoose);
+  const localTokenWithDomain = /^[a-z0-9'’-]+\s+in\s+[a-z][a-z'’-]+$/i.test(
+    labelLoose,
+  );
   const shortLocalToken = tokens.length <= 2 || localTokenWithDomain;
 
   if (!shortLocalToken) return false;
 
   const explicitlyNamedAsActualLocalTarget =
-    /\b(?:actual|real|specific|main|mainly|especially|the thing|the part)\b/i.test(sourceLoose) &&
+    /\b(?:actual|real|specific|main|mainly|especially|the thing|the part)\b/i.test(
+      sourceLoose,
+    ) &&
     (sourceLoose.includes(labelLoose) || sourceLoose.includes(coreLoose));
 
   if (explicitlyNamedAsActualLocalTarget) return false;
 
-  const introducedAsExample =
-    new RegExp(`\\b(?:word|term|token|example|like|such as|including)\\s+(?:the\\s+)?${coreLoose.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(
-      cachedNormalizeLoose(message)
-    );
+  const introducedAsExample = new RegExp(
+    `\\b(?:word|term|token|example|like|such as|including)\\s+(?:the\\s+)?${coreLoose.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+    "i",
+  ).test(cachedNormalizeLoose(message));
 
   return (
     candidateLooksObjectOnly(candidate) ||
@@ -1251,7 +1400,6 @@ function candidateLooksLocalExampleTokenInStructuralFrame(
     introducedAsExample
   );
 }
-
 
 /**
  * Patch F.5 generalization guard:
@@ -1266,28 +1414,31 @@ function messageHasArtifactLanguageBarrier(message: string) {
 
   const artifactCue =
     /\b(?:forms?|boxes|fields?|labels?|pages?|documents?|worksheets?|questions?|prompts?|instructions?|directions?|applications?|bills?|statements?|polic(?:y|ies)|contracts?|recipes?|rubrics?|passages?|explanations?|materials?|stuff)\b/i.test(
-      normalized
+      normalized,
     );
 
   const languageCue =
     /\b(?:terminology|jargon|vocabulary|wording|language|phrases?|terms?|words?|labels?|what (?:it|they|this|that) (?:means?|is asking)|what (?:the )?(?:box|field|label|question|prompt|instruction)s? (?:means?|is asking)|coded|written for|assumes? (?:i|you|we|they)? ?(?:already )?know|already know|supposed to know)\b/i.test(
-      normalized
+      normalized,
     );
 
   const struggleCue =
     /\b(?:confus(?:e|ed|ing)|lost|stuck|freeze|freezes|freezing|shut(?:s|ting)? down|do not understand|don't understand|dont understand|do not get|don't get|dont get|pretending|behind|weird|another language|coded|makes? no sense)\b/i.test(
-      normalized
+      normalized,
     );
 
   const explicitArtifactLanguageFrame =
     /\b(?:forms?|boxes|fields?|labels?|worksheets?|questions?|prompts?|instructions?|documents?|pages?)\b.*\b(?:terminology|jargon|vocabulary|wording|language|words?|phrases?|terms?|coded|assumes?|written for|already know)\b/i.test(
-      normalized
+      normalized,
     ) ||
     /\b(?:terminology|jargon|vocabulary|wording|language|words?|phrases?|terms?|coded)\b.*\b(?:forms?|boxes|fields?|labels?|worksheets?|questions?|prompts?|instructions?|documents?|pages?)\b/i.test(
-      normalized
+      normalized,
     );
 
-  return Boolean(explicitArtifactLanguageFrame || (artifactCue && languageCue && struggleCue));
+  return Boolean(
+    explicitArtifactLanguageFrame ||
+    (artifactCue && languageCue && struggleCue),
+  );
 }
 
 function artifactLanguageBarrierCanonicalLabelFromMessage(message: string) {
@@ -1297,23 +1448,38 @@ function artifactLanguageBarrierCanonicalLabelFromMessage(message: string) {
 
   // Domain-shaped labels: these are not case-specific wording patches. They
   // encode a reusable domain + artifact/source + meaning-barrier interpretation.
-  if (/\b(?:tax|taxes)\b/i.test(normalized) && /\bforms?|boxes|fields?|pages?|documents?\b/i.test(normalized)) {
+  if (
+    /\b(?:tax|taxes)\b/i.test(normalized) &&
+    /\bforms?|boxes|fields?|pages?|documents?\b/i.test(normalized)
+  ) {
     return "Tax Terminology and Forms";
   }
 
   if (/\binsurance\b/i.test(normalized)) {
     if (/\bdeductible\b/i.test(normalized)) return "Insurance Deductible";
     if (/\bpremium\b/i.test(normalized)) return "Insurance Premium";
-    if (/\b(?:terminology|jargon|vocabulary|wording|language|terms?|words?)\b/i.test(normalized)) {
+    if (
+      /\b(?:terminology|jargon|vocabulary|wording|language|terms?|words?)\b/i.test(
+        normalized,
+      )
+    ) {
       return "Insurance Terminology";
     }
   }
 
-  if (/\b(?:recipe|cooking)\b/i.test(normalized) && /\b(?:terminology|terms?|words?|instructions?|steps?)\b/i.test(normalized)) {
+  if (
+    /\b(?:recipe|cooking)\b/i.test(normalized) &&
+    /\b(?:terminology|terms?|words?|instructions?|steps?)\b/i.test(normalized)
+  ) {
     return "Cooking Terminology";
   }
 
-  if (/\b(?:worksheet|questions?|prompts?|rubric|assignment)\b/i.test(normalized) && /\b(?:wording|language|asking|phrases?|instructions?)\b/i.test(normalized)) {
+  if (
+    /\b(?:worksheet|questions?|prompts?|rubric|assignment)\b/i.test(
+      normalized,
+    ) &&
+    /\b(?:wording|language|asking|phrases?|instructions?)\b/i.test(normalized)
+  ) {
     // Patch F.5.2: wording can be a real artifact-language target, but when
     // the same message has a comparison/confusion-pair shape ("X and Y blur
     // together", "mixing A and B", etc.), the wording is usually the condition
@@ -1326,14 +1492,22 @@ function artifactLanguageBarrierCanonicalLabelFromMessage(message: string) {
     return "Question Wording";
   }
 
-  if (/\b(?:medical|health|hospital|clinic)\b/i.test(normalized) && /\b(?:forms?|boxes|fields?|labels?|terminology|terms?|wording)\b/i.test(normalized)) {
+  if (
+    /\b(?:medical|health|hospital|clinic)\b/i.test(normalized) &&
+    /\b(?:forms?|boxes|fields?|labels?|terminology|terms?|wording)\b/i.test(
+      normalized,
+    )
+  ) {
     return "Medical Form Terminology";
   }
 
   return null;
 }
 
-function canonicalizeArtifactLanguageBarrierLabelForPFAP(label: string | null, message: string) {
+function canonicalizeArtifactLanguageBarrierLabelForPFAP(
+  label: string | null,
+  message: string,
+) {
   if (!label) return label;
 
   const canonical = artifactLanguageBarrierCanonicalLabelFromMessage(message);
@@ -1346,92 +1520,122 @@ function canonicalizeArtifactLanguageBarrierLabelForPFAP(label: string | null, m
     candidateLabelLooksArtifactOnlyInLanguageBarrier(label, message) ||
     labelLooksArtifactLanguageTailResidue(label) ||
     /\b(?:terminology|jargon|vocabulary|wording|language|forms?|boxes|fields?|labels?|terms?|words?|coded|written for|already know|assumes?)\b/i.test(
-      normalizedLabel
+      normalizedLabel,
     ) ||
-    overlapScore(cachedSemanticTokens(label), cachedSemanticTokens(canonical)) >= 0.22;
+    overlapScore(
+      cachedSemanticTokens(label),
+      cachedSemanticTokens(canonical),
+    ) >= 0.22;
 
-  const messageHasCanonicalEvidence = cachedSemanticTokens(canonical).some((token) =>
-    cachedSemanticTokens(normalizedMessage).includes(token)
+  const messageHasCanonicalEvidence = cachedSemanticTokens(canonical).some(
+    (token) => cachedSemanticTokens(normalizedMessage).includes(token),
   );
 
-  return labelCanCarryBarrier || messageHasCanonicalEvidence ? canonical : label;
+  return labelCanCarryBarrier || messageHasCanonicalEvidence
+    ? canonical
+    : label;
 }
 
-function labelLooksArtifactLanguageTailResidue(label: string | null | undefined) {
+function labelLooksArtifactLanguageTailResidue(
+  label: string | null | undefined,
+) {
   const normalized = cachedNormalizeLoose(label);
   if (!normalized) return false;
 
   return (
     /\b(?:written for|somebody who already knows|someone who already knows|already knows?|assumes?|supposed to know|coded|another language|language on the page|words on the page|what the boxes? (?:mean|are asking)|what the fields? (?:mean|are asking))\b/i.test(
-      normalized
+      normalized,
     ) ||
     /^(?:written for|for somebody|for someone|somebody who|someone who|already knows?|assumes?|language on|words on|coded)$/i.test(
-      normalized
+      normalized,
     )
   );
 }
 
-function candidateLabelLooksArtifactOnlyInLanguageBarrier(label: string | null | undefined, message: string) {
+function candidateLabelLooksArtifactOnlyInLanguageBarrier(
+  label: string | null | undefined,
+  message: string,
+) {
   if (!messageHasArtifactLanguageBarrier(message)) return false;
 
   const normalized = cachedNormalizeLoose(label);
   if (!normalized) return false;
 
   return /^(?:forms?|boxes|fields?|labels?|pages?|documents?|worksheets?|questions?|prompts?|instructions?|directions?|applications?|bills?|statements?|polic(?:y|ies)|contracts?|recipes?|rubrics?|passages?|explanations?|materials?|stuff)$/i.test(
-    normalized
+    normalized,
   );
 }
 
 function candidateLooksArtifactOnlyInLanguageBarrier(
   candidate: TopicCandidate,
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
-  if (!profile.hasArtifactLanguageBarrierShape && !messageHasArtifactLanguageBarrier(message)) {
+  if (
+    !profile.hasArtifactLanguageBarrierShape &&
+    !messageHasArtifactLanguageBarrier(message)
+  ) {
     return false;
   }
 
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
-  if (candidateLooksMeaningBarrierTarget(candidate, message, profile)) return false;
+  if (candidateLooksMeaningBarrierTarget(candidate, message, profile))
+    return false;
 
-  return candidateLabelLooksArtifactOnlyInLanguageBarrier(getCandidateDisplayLabel(candidate), message);
+  return candidateLabelLooksArtifactOnlyInLanguageBarrier(
+    getCandidateDisplayLabel(candidate),
+    message,
+  );
 }
 
 function candidateLooksArtifactLanguageTailResidue(
   candidate: TopicCandidate,
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
-  if (!profile.hasArtifactLanguageBarrierShape && !messageHasArtifactLanguageBarrier(message)) {
+  if (
+    !profile.hasArtifactLanguageBarrierShape &&
+    !messageHasArtifactLanguageBarrier(message)
+  ) {
     return false;
   }
 
-  return labelLooksArtifactLanguageTailResidue(getCandidateDisplayLabel(candidate));
+  return labelLooksArtifactLanguageTailResidue(
+    getCandidateDisplayLabel(candidate),
+  );
 }
 
 function candidateLooksMeaningBarrierTarget(
   candidate: TopicCandidate,
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
-  if (!profile.hasArtifactLanguageBarrierShape && !messageHasArtifactLanguageBarrier(message)) {
+  if (
+    !profile.hasArtifactLanguageBarrierShape &&
+    !messageHasArtifactLanguageBarrier(message)
+  ) {
     return false;
   }
   if (!candidate.shouldCompeteAsTopic) return false;
   if (candidate.isSubpartReference) return false;
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
   if (candidateLooksWeakNounChunk(candidate)) return false;
-  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile))
+    return false;
 
   const label = getCandidateDisplayLabel(candidate);
-  const canonical = canonicalizeArtifactLanguageBarrierLabelForPFAP(label, message);
-  const canonicalChanged = cachedNormalizeLoose(canonical) !== cachedNormalizeLoose(label);
+  const canonical = canonicalizeArtifactLanguageBarrierLabelForPFAP(
+    label,
+    message,
+  );
+  const canonicalChanged =
+    cachedNormalizeLoose(canonical) !== cachedNormalizeLoose(label);
 
   const hasMeaningCue =
     candidateLooksTerminologyLike(candidate) ||
     candidateLooksDomainShapedByProfile(candidate, profile) ||
     /\b(?:terminology|jargon|vocabulary|wording|language|terms?|words?|deductible|premium|principal|instructions?|question wording)\b/i.test(
-      cachedNormalizeLoose(label)
+      cachedNormalizeLoose(label),
     );
 
   if (!(canonicalChanged || hasMeaningCue)) return false;
@@ -1440,7 +1644,6 @@ function candidateLooksMeaningBarrierTarget(
 
   return true;
 }
-
 
 /**
  * Patch F.5.1 generalization guard:
@@ -1451,15 +1654,18 @@ function candidateLooksMeaningBarrierTarget(
  */
 function artifactLanguageBarrierShouldYieldToComparison(
   scoredCandidates: TopicCandidate[],
-  message: string
+  message: string,
 ) {
   const normalized = cachedNormalizeLoose(message);
   if (!messageHasComparisonShape(normalized)) return false;
 
-  const canonicalBarrier = artifactLanguageBarrierCanonicalLabelFromMessage(normalized);
+  const canonicalBarrier =
+    artifactLanguageBarrierCanonicalLabelFromMessage(normalized);
   const barrierLooksLikeQuestionWording =
     canonicalBarrier != null &&
-    /\b(?:question wording|questions?|prompts?|instructions?|worksheet|wording)\b/i.test(canonicalBarrier);
+    /\b(?:question wording|questions?|prompts?|instructions?|worksheet|wording)\b/i.test(
+      canonicalBarrier,
+    );
 
   if (!barrierLooksLikeQuestionWording) return false;
 
@@ -1470,7 +1676,11 @@ function artifactLanguageBarrierShouldYieldToComparison(
     if (!comparisonCandidateHasRealAnchors(candidate, message)) return false;
 
     const label = getCandidateDisplayLabel(candidate);
-    if (!label || labelHasBadBoundaryShape(label) || !labelHasContentBearingHead(label)) {
+    if (
+      !label ||
+      labelHasBadBoundaryShape(label) ||
+      !labelHasContentBearingHead(label)
+    ) {
       return false;
     }
 
@@ -1489,12 +1699,24 @@ function messageHasMetaNoStableTopicShape(message: string) {
   const normalized = cachedNormalizeLoose(message);
 
   return (
-    /\b(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:saying|asking|putting|explaining|describing)\s+(?:that|this|it)?\s*(?:in\s+)?(?:a\s+)?(?:useful|clear|specific|helpful|coherent|good)\s+way\b/i.test(normalized) ||
-    /\b(?:don'?t|dont|do not|can'?t|cant|cannot)\s+(?:really\s+)?(?:know|tell|figure out|identify|name|say|explain|describe)\s+(?:what|whether|which)\s+(?:i|we)\s*(?:am|are|'m|'re)?\s*(?:asking|confused|stuck|struggling|trying to ask|needing help with)\b/i.test(normalized) ||
-    /\b(?:don'?t|dont|do not|can'?t|cant|cannot)\s+(?:really\s+)?(?:know|tell|figure out|identify|name)\s+(?:the\s+)?(?:actual|specific|real|clear)?\s*(?:problem|issue|question|blocker|topic|concept)\b/i.test(normalized) ||
-    /\b(?:cannot|can'?t|cant)\s+tell\s+(?:what|whether|which)\s+(?:the\s+)?(?:actual|specific|real|clear)?\s*(?:problem|issue|question|blocker|topic|concept)\s*(?:is)?\b/i.test(normalized) ||
-    /\b(?:i|we)\s+(?:just\s+)?(?:know|can tell)\s+(?:that\s+)?(?:i|we)?\s*(?:keep\s+)?(?:stalling out|shutting down|freezing|getting stuck)\b/i.test(normalized) ||
-    /\b(?:i|we)\s+(?:am|are|'m|'re)\s+(?:just\s+)?(?:stalling out|shutting down|freezing|get(?:ting)? stuck)\b/i.test(normalized)
+    /\b(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:saying|asking|putting|explaining|describing)\s+(?:that|this|it)?\s*(?:in\s+)?(?:a\s+)?(?:useful|clear|specific|helpful|coherent|good)\s+way\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:don'?t|dont|do not|can'?t|cant|cannot)\s+(?:really\s+)?(?:know|tell|figure out|identify|name|say|explain|describe)\s+(?:what|whether|which)\s+(?:i|we)\s*(?:am|are|'m|'re)?\s*(?:asking|confused|stuck|struggling|trying to ask|needing help with)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:don'?t|dont|do not|can'?t|cant|cannot)\s+(?:really\s+)?(?:know|tell|figure out|identify|name)\s+(?:the\s+)?(?:actual|specific|real|clear)?\s*(?:problem|issue|question|blocker|topic|concept)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:cannot|can'?t|cant)\s+tell\s+(?:what|whether|which)\s+(?:the\s+)?(?:actual|specific|real|clear)?\s*(?:problem|issue|question|blocker|topic|concept)\s*(?:is)?\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:i|we)\s+(?:just\s+)?(?:know|can tell)\s+(?:that\s+)?(?:i|we)?\s*(?:keep\s+)?(?:stalling out|shutting down|freezing|getting stuck)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:i|we)\s+(?:am|are|'m|'re)\s+(?:just\s+)?(?:stalling out|shutting down|freezing|get(?:ting)? stuck)\b/i.test(
+      normalized,
+    )
   );
 }
 
@@ -1507,28 +1729,33 @@ function messageHasDurableConceptCue(message: string) {
   // "in a useful way" incorrectly block the no-topic clarify path.
   const namedOrTechnicalCue =
     /\b(?:vs|versus|difference|compare|contrast|how .+ works?|why .+ happens?|process|mechanism|terminology|jargon|forms|formula|law|rules?|phases?|layers?|steps?|standard deviation|opportunity cost|compound interest|reuptake|depolarization|electronegativity|crossing over|speed of sound|event loop|negative feedback|membrane potential|se\b|word order|sentence order|pH|ph|analy[sz]e|tell whether|count as|caused|prove|should use|[a-z0-9]+-[a-z0-9]+)\b/i.test(
-      normalized
+      normalized,
     );
 
   const structuredConceptCue =
     /\b(?:rules?|law|layers?|phases?|types?|causes?|speed|cost|interest|order|source|response|state|error|right|burden|circle|map|plate|blind spot|subject-verb|one-point|civil liberties|civil rights)\s+(?:of|in|on|for)\s+[a-z0-9][a-z0-9'-]*(?:\s+[a-z0-9][a-z0-9'-]*){0,5}\b/i.test(
-      normalized
+      normalized,
     );
 
   const explicitLearningTargetCue =
     /\b(?:about|with|on)\s+(?:[a-z0-9][a-z0-9'-]*\s+){0,4}(?:mitosis|meiosis|osmosis|dopamine|amortization|neurons?|neurotransmitters?|budgeting|taxes?|spanish|curling|soccer|insurance|coding|react|javascript|statistics|chemistry|physics|history|grammar|music|geography|driving|art)\b/i.test(
-      normalized
+      normalized,
     );
 
-  return Boolean(namedOrTechnicalCue || structuredConceptCue || explicitLearningTargetCue);
+  return Boolean(
+    namedOrTechnicalCue || structuredConceptCue || explicitLearningTargetCue,
+  );
 }
 function messageHasMetaNoStableTopicWithoutDurableCue(message: string) {
-  return messageHasMetaNoStableTopicShape(message) && !messageHasDurableConceptCue(message);
+  return (
+    messageHasMetaNoStableTopicShape(message) &&
+    !messageHasDurableConceptCue(message)
+  );
 }
 
 function computeBestReuseHint(
   label: string | null,
-  retrievalCandidates: RetrievalCandidate[]
+  retrievalCandidates: RetrievalCandidate[],
 ) {
   if (!label) return 0;
 
@@ -1549,12 +1776,18 @@ function computeBestReuseHint(
 
 function classifyCandidateFamilyUncached(
   candidate: TopicCandidate,
-  message: string
+  message: string,
 ): CandidateFamily {
   if (candidateLooksResidueLike(candidate)) return "residue";
   if (candidateLooksPairedTarget(candidate)) return "paired";
   if (candidate.kind === "comparison_pair") return "comparison";
-  if (candidateLooksProtectedDurableLabel(candidate) || candidate.kind === "concept_phrase" || (candidateLooksDurablePracticalConcept(candidate) && !candidateLooksQuestionSynthesis(candidate))) return "concept";
+  if (
+    candidateLooksProtectedDurableLabel(candidate) ||
+    candidate.kind === "concept_phrase" ||
+    (candidateLooksDurablePracticalConcept(candidate) &&
+      !candidateLooksQuestionSynthesis(candidate))
+  )
+    return "concept";
   if (candidateLooksQuestionSynthesis(candidate)) return "synthesis";
   if (candidateLooksTerminologyLike(candidate)) return "terminology";
   if (candidateLooksMechanismLike(candidate, message)) return "mechanism";
@@ -1566,7 +1799,7 @@ function classifyCandidateFamilyUncached(
 
 function classifyCandidateFamily(
   candidate: TopicCandidate,
-  message: string
+  message: string,
 ): CandidateFamily {
   let messageCache = candidateFamilyCache.get(candidate);
 
@@ -1613,7 +1846,7 @@ function familyPriority(family: CandidateFamily) {
 
 function zoneFromClause(
   clause: MessageInterpretation["clauses"][number],
-  cues: DiscourseCue[]
+  cues: DiscourseCue[],
 ): DiscourseZone {
   return {
     clauseIndex: clause.index,
@@ -1640,17 +1873,21 @@ function collectDiscourseCues(text: string): DiscourseCue[] {
   if (/\breal bottleneck\b|\breal issue\b|\breal problem\b/.test(normalized)) {
     cues.push("real_bottleneck");
   }
-  if (/\bwhere i\b.*\b(?:lost|stuck|stop|stopped|following)\b/.test(normalized)) {
+  if (
+    /\bwhere i\b.*\b(?:lost|stuck|stop|stopped|following)\b/.test(normalized)
+  ) {
     cues.push("where_lost");
   }
   if (/\bwhen\b.*\b(?:breaks|falls apart|stop|stops|lost)\b/.test(normalized)) {
     cues.push("when_breaks");
   }
   if (/\buntil\b/.test(normalized)) cues.push("until");
-  if (/\bafter looking again\b/.test(normalized)) cues.push("after_looking_again");
+  if (/\bafter looking again\b/.test(normalized))
+    cues.push("after_looking_again");
   if (/\bthe part\b|\bthat part\b/.test(normalized)) cues.push("the_part");
   if (/\bthe thing\b/.test(normalized)) cues.push("the_thing");
-  if (messageHasTerminologyBarrier(normalized)) cues.push("terminology_barrier");
+  if (messageHasTerminologyBarrier(normalized))
+    cues.push("terminology_barrier");
   if (messageHasStructureBarrier(normalized)) cues.push("language_barrier");
   if (messageRequestsMechanism(normalized)) cues.push("mechanism_request");
 
@@ -1662,10 +1899,10 @@ function clauseLooksBroadAnchorLike(raw: string) {
 
   return (
     /\b(?:learning about|talking about|covered|started|doing|unit on|section on|in class|lecture|textbook|worksheet|homework|reviewing)\b/.test(
-      text
+      text,
     ) ||
     /\b(?:overall|in general|broad sense|the bigger topic|the whole unit|the umbrella)\b/.test(
-      text
+      text,
     )
   );
 }
@@ -1677,10 +1914,10 @@ function clauseLooksBottleneckLike(raw: string) {
   return (
     cues.length > 0 ||
     /\b(?:confused about|stuck on|struggling with|need help with|do not understand|don't understand|dont understand|do not get|don't get|dont get)\b/.test(
-      text
+      text,
     ) ||
     /\b(?:keeps? (?:messing|tripping|throwing)|doesn'?t click|not clicking|stopped following|breaks my understanding|falls apart)\b/.test(
-      text
+      text,
     )
   );
 }
@@ -1690,17 +1927,17 @@ function clauseLooksResidueOnly(raw: string) {
 
   const hasDurableToken =
     /\b(?:mitosis|meiosis|reuptake|dopamine|osmosis|depolarization|electronegativity|crossing over|compound interest|speed of sound|law of cosines|law of sines|standard deviation|opportunity cost|subduction|negative feedback|event loop|secondary dominants|membrane potential|equilibrium constant|metaphase|anaphase|spanish|se|word order|tax|taxes|terminology|jargon|forms|curling|budget|budgeting|offside|soccer|pH|ph|LLM|llm|action potentials?)\b/i.test(
-      raw
+      raw,
     );
 
   if (hasDurableToken) return false;
 
   return (
     /\b(?:i feel|i am feeling|i'm feeling|overwhelmed|lost|frustrated|helpless|stupid|embarrassing|panic|annoyed|dramatic)\b/.test(
-      text
+      text,
     ) ||
     /\b(?:do not know where to start|don't know where to start|dont know where to start|where to start|whole thing|nothing makes sense)\b/.test(
-      text
+      text,
     ) ||
     messageHasMetaNoStableTopicShape(text)
   );
@@ -1719,12 +1956,17 @@ function extractDomainHintsFromText(message: string) {
   if (/\bcredit card\b/.test(normalized)) hints.push("credit card");
   if (/\bstudent loans?\b/.test(normalized)) hints.push("student loans");
   if (/\bloans?\b/.test(normalized)) hints.push("loan");
-  if (/\bneurotransmission\b|\bneurotransmitters?\b|\bneurons?\b|\bnervous system\b/.test(normalized)) {
+  if (
+    /\bneurotransmission\b|\bneurotransmitters?\b|\bneurons?\b|\bnervous system\b/.test(
+      normalized,
+    )
+  ) {
     hints.push("neuroscience");
   }
   if (/\bwaves?\b|\bsound\b/.test(normalized)) hints.push("waves and sound");
   if (/\btriangles?\b/.test(normalized)) hints.push("triangles");
-  if (/\bmeiosis\b|\bgenetics\b|\bchromosomes?\b/.test(normalized)) hints.push("genetics");
+  if (/\bmeiosis\b|\bgenetics\b|\bchromosomes?\b/.test(normalized))
+    hints.push("genetics");
   if (/\bmitosis\b/.test(normalized)) hints.push("mitosis");
   if (/\bbudgeting\b|\bbudget\b/.test(normalized)) hints.push("budgeting");
 
@@ -1733,7 +1975,7 @@ function extractDomainHintsFromText(message: string) {
 
 function buildDiscourseProfile(
   interpretation: MessageInterpretation,
-  message: string
+  message: string,
 ): DiscourseProfile {
   const broadAnchorZones: DiscourseZone[] = [];
   const bottleneckZones: DiscourseZone[] = [];
@@ -1772,7 +2014,9 @@ function buildDiscourseProfile(
   const hasLateBottleneckShape =
     hasBroadToNarrowShape &&
     bottleneckZones.some((zone) =>
-      contrastBoundaryIndex == null ? true : zone.clauseIndex >= contrastBoundaryIndex
+      contrastBoundaryIndex == null
+        ? true
+        : zone.clauseIndex >= contrastBoundaryIndex,
     );
 
   const hasLanguageBarrierShape =
@@ -1780,23 +2024,31 @@ function buildDiscourseProfile(
   const hasTerminologyBarrierShape = messageHasTerminologyBarrier(normalized);
   const hasMechanismRequestShape = messageRequestsMechanism(normalized);
   const hasComparisonShape = messageHasComparisonShape(normalized);
-  const hasStructuralRelationShape = messageHasStructuralRelationConfusion(normalized);
-  const hasArtifactLanguageBarrierShape = messageHasArtifactLanguageBarrier(normalized);
+  const hasStructuralRelationShape =
+    messageHasStructuralRelationConfusion(normalized);
+  const hasArtifactLanguageBarrierShape =
+    messageHasArtifactLanguageBarrier(normalized);
 
   const hasAnyDurableConceptCue = messageHasDurableConceptCue(normalized);
 
   const hasNullOnlyEmotionalShape =
     residueZones.length > 0 &&
     !hasAnyDurableConceptCue &&
-    interpretation.clauses.every((clause) => clauseLooksResidueOnly(clause.raw));
+    interpretation.clauses.every((clause) =>
+      clauseLooksResidueOnly(clause.raw),
+    );
 
   if (hasBroadToNarrowShape) notes.push("broad_to_narrow_shape_detected");
   if (hasLateBottleneckShape) notes.push("late_bottleneck_zone_detected");
   if (hasLanguageBarrierShape) notes.push("language_barrier_shape_detected");
-  if (hasTerminologyBarrierShape) notes.push("terminology_barrier_shape_detected");
-  if (hasNullOnlyEmotionalShape) notes.push("null_only_emotional_shape_detected");
-  if (hasStructuralRelationShape) notes.push("structural_relation_shape_detected");
-  if (hasArtifactLanguageBarrierShape) notes.push("artifact_language_barrier_shape_detected");
+  if (hasTerminologyBarrierShape)
+    notes.push("terminology_barrier_shape_detected");
+  if (hasNullOnlyEmotionalShape)
+    notes.push("null_only_emotional_shape_detected");
+  if (hasStructuralRelationShape)
+    notes.push("structural_relation_shape_detected");
+  if (hasArtifactLanguageBarrierShape)
+    notes.push("artifact_language_barrier_shape_detected");
   if (messageHasMetaNoStableTopicWithoutDurableCue(normalized)) {
     notes.push("meta_no_stable_topic_without_durable_cue_detected");
   }
@@ -1825,7 +2077,10 @@ function candidateInZone(candidate: TopicCandidate, zones: DiscourseZone[]) {
   return zones.some((zone) => zone.clauseIndex === candidate.clauseIndex);
 }
 
-function candidateAfterContrast(candidate: TopicCandidate, profile: DiscourseProfile) {
+function candidateAfterContrast(
+  candidate: TopicCandidate,
+  profile: DiscourseProfile,
+) {
   return profile.contrastBoundaryIndex == null
     ? false
     : candidate.clauseIndex >= profile.contrastBoundaryIndex;
@@ -1839,7 +2094,7 @@ function candidateAfterContrast(candidate: TopicCandidate, profile: DiscoursePro
  */
 function candidateLooksBroadSetupContextCandidate(
   candidate: TopicCandidate,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
   const label = getCandidateDisplayLabel(candidate) ?? "";
   const labelLoose = cachedNormalizeLoose(label);
@@ -1856,7 +2111,7 @@ function candidateLooksBroadSetupContextCandidate(
 
   const hasSetupSurface =
     /\b(?:homework|worksheet|section|unit|chapter|class|lecture|textbook|notes?|practice questions?|practice problems?|teacher|we(?:'re| are| were)? doing|i(?:'m| am)? doing|we started|we covered|we learned|reviewing|studying|working on|right now|this week|in class)\b/i.test(
-      combined
+      combined,
     );
 
   const hasTargetProtection =
@@ -1868,17 +2123,23 @@ function candidateLooksBroadSetupContextCandidate(
     candidateHasQualifier(candidate, "narrowed_target");
 
   const setupStartsAsWholeClause =
-    /^(?:i\s+(?:am|m)?\s*)?(?:doing|working on|studying|reviewing)\b/i.test(labelLoose) ||
-    /^(?:we(?:'re| are| were)?\s+)?(?:doing|covering|learning|studying|reviewing|starting|started)\b/i.test(labelLoose) ||
-    /^(?:section|unit|chapter|homework|worksheet|lecture|class|textbook|notes?)\b/i.test(labelLoose);
+    /^(?:i\s+(?:am|m)?\s*)?(?:doing|working on|studying|reviewing)\b/i.test(
+      labelLoose,
+    ) ||
+    /^(?:we(?:'re| are| were)?\s+)?(?:doing|covering|learning|studying|reviewing|starting|started)\b/i.test(
+      labelLoose,
+    ) ||
+    /^(?:section|unit|chapter|homework|worksheet|lecture|class|textbook|notes?)\b/i.test(
+      labelLoose,
+    );
 
   // A context-looking candidate should only be demoted when it lacks explicit
   // target metadata. This preserves legitimate labels that happen to mention
   // school artifacts but are marked as the actual learning target.
   return Boolean(
     hasSetupSurface &&
-      (sourceIsContextual || setupStartsAsWholeClause) &&
-      !hasTargetProtection
+    (sourceIsContextual || setupStartsAsWholeClause) &&
+    !hasTargetProtection,
   );
 }
 
@@ -1892,12 +2153,13 @@ function candidateLooksBroadSetupContextCandidate(
 function candidateLooksLateConcreteLearningTarget(
   candidate: TopicCandidate,
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
   if (candidateLooksResidueLike(candidate)) return false;
   if (candidateLooksWeakNounChunk(candidate)) return false;
   if (candidateLooksMalformedTopicLabel(candidate)) return false;
-  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile))
+    return false;
   if (!candidate.shouldCompeteAsTopic) return false;
   if (candidate.isSubpartReference) return false;
 
@@ -1940,7 +2202,7 @@ function candidateLooksLateConcreteLearningTarget(
 
 function candidateLooksDomainShapedByProfile(
   candidate: TopicCandidate,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
   const label = getCandidateDisplayLabel(candidate)?.toLowerCase() ?? "";
   if (!label) return false;
@@ -1949,14 +2211,18 @@ function candidateLooksDomainShapedByProfile(
 
   if (
     profile.domainHints.includes("spanish") &&
-    (/\bse\b/.test(label) || /\bword order\b/.test(label) || /\bsentence order\b/.test(label))
+    (/\bse\b/.test(label) ||
+      /\bword order\b/.test(label) ||
+      /\bsentence order\b/.test(label))
   ) {
     return true;
   }
 
   if (
     profile.domainHints.includes("taxes") &&
-    (/\bterminology\b/.test(label) || /\bjargon\b/.test(label) || /\bforms?\b/.test(label))
+    (/\bterminology\b/.test(label) ||
+      /\bjargon\b/.test(label) ||
+      /\bforms?\b/.test(label))
   ) {
     return true;
   }
@@ -1965,11 +2231,17 @@ function candidateLooksDomainShapedByProfile(
     return true;
   }
 
-  if (profile.domainHints.includes("hockey") && /\b(?:icing|offside|penalt(?:y|ies)|power play|face[- ]?off)\b/.test(label)) {
+  if (
+    profile.domainHints.includes("hockey") &&
+    /\b(?:icing|offside|penalt(?:y|ies)|power play|face[- ]?off)\b/.test(label)
+  ) {
     return true;
   }
 
-  if (profile.domainHints.includes("insurance") && /\b(?:deductible|premium)\b/.test(label)) {
+  if (
+    profile.domainHints.includes("insurance") &&
+    /\b(?:deductible|premium)\b/.test(label)
+  ) {
     return true;
   }
 
@@ -1983,7 +2255,7 @@ function candidateLooksDomainShapedByProfile(
 function candidateLooksStrongLateBottleneck(
   candidate: TopicCandidate,
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
   if (candidateLooksLateConcreteLearningTarget(candidate, message, profile)) {
     return true;
@@ -2029,7 +2301,9 @@ function buildCandidateScoreBreakdown(args: {
     allCandidates,
   } = args;
 
-  const clause = interpretation.clauses.find((item) => item.index === candidate.clauseIndex);
+  const clause = interpretation.clauses.find(
+    (item) => item.index === candidate.clauseIndex,
+  );
   const label = getCandidateDisplayLabel(candidate);
   const specificity = cachedScoreSpecificity(label);
   const tokenCount = cachedTokenize(candidate.coreText).length;
@@ -2067,31 +2341,45 @@ function buildCandidateScoreBreakdown(args: {
   else if (candidate.sourceRole === "context") roleWeight -= 0.04;
 
   if (candidateHasQualifier(candidate, "focus_target")) focusWeight += 0.2;
-  if (candidateHasQualifier(candidate, "late_focus_target")) focusWeight += 0.18;
-  if (candidateHasQualifier(candidate, "cross_clause_recovery")) focusWeight += 0.14;
-  if (candidateHasQualifier(candidate, "context_recovery")) contextRecoveryWeight += 0.08;
+  if (candidateHasQualifier(candidate, "late_focus_target"))
+    focusWeight += 0.18;
+  if (candidateHasQualifier(candidate, "cross_clause_recovery"))
+    focusWeight += 0.14;
+  if (candidateHasQualifier(candidate, "context_recovery"))
+    contextRecoveryWeight += 0.08;
 
   if (clause?.hasFocusMarker) focusWeight += 0.08;
   if (clause?.hasContrastBoundary) contrastWeight += 0.1;
   if (clause?.hasConfusionMarker) confusionAdjacencyWeight += 0.12;
   if (clause?.hasRequestMarker) requestAdjacencyWeight += 0.06;
 
-  if (candidateLooksBottleneckTarget(candidate, message)) discourseRoleWeight += 0.24;
+  if (candidateLooksBottleneckTarget(candidate, message))
+    discourseRoleWeight += 0.24;
   if (candidateLooksNarrowedTarget(candidate)) discourseRoleWeight += 0.14;
   if (candidateLooksContrastive(candidate)) discourseRoleWeight += 0.1;
   if (candidateLooksPairedTarget(candidate)) discourseRoleWeight += 0.28;
-  if (candidateLooksInstructionalTarget(candidate, message)) discourseRoleWeight += 0.08;
+  if (candidateLooksInstructionalTarget(candidate, message))
+    discourseRoleWeight += 0.08;
 
-  if (discourseProfile.hasBroadToNarrowShape && candidateLooksStrongLateBottleneck(candidate, message, discourseProfile)) {
+  if (
+    discourseProfile.hasBroadToNarrowShape &&
+    candidateLooksStrongLateBottleneck(candidate, message, discourseProfile)
+  ) {
     discourseRoleWeight += 0.32;
     focusWeight += 0.1;
   }
 
-  if (discourseProfile.hasBroadToNarrowShape && candidateLooksDomainAnchor(candidate)) {
+  if (
+    discourseProfile.hasBroadToNarrowShape &&
+    candidateLooksDomainAnchor(candidate)
+  ) {
     competitionRiskPenalty += 0.24;
   }
 
-  if (discourseProfile.hasLateBottleneckShape && candidateLooksDomainAnchor(candidate)) {
+  if (
+    discourseProfile.hasLateBottleneckShape &&
+    candidateLooksDomainAnchor(candidate)
+  ) {
     competitionRiskPenalty += 0.18;
   }
 
@@ -2099,16 +2387,27 @@ function buildCandidateScoreBreakdown(args: {
     // Patch F.2: setup/context spans can be evidence for domain recovery, but
     // they should not become the final topic when a later bottleneck candidate
     // exists. This is intentionally generic and does not name specific labels.
-    competitionRiskPenalty += discourseProfile.hasLateBottleneckShape ? 0.46 : 0.28;
+    competitionRiskPenalty += discourseProfile.hasLateBottleneckShape
+      ? 0.46
+      : 0.28;
     clausePenalty += 0.18;
     structurePenalty += 0.1;
   }
 
-  if (candidateInZone(candidate, discourseProfile.broadAnchorZones) && !candidateLooksStrongLateBottleneck(candidate, message, discourseProfile)) {
+  if (
+    candidateInZone(candidate, discourseProfile.broadAnchorZones) &&
+    !candidateLooksStrongLateBottleneck(candidate, message, discourseProfile)
+  ) {
     competitionRiskPenalty += 0.08;
   }
 
-  if (candidateLooksLateConcreteLearningTarget(candidate, message, discourseProfile)) {
+  if (
+    candidateLooksLateConcreteLearningTarget(
+      candidate,
+      message,
+      discourseProfile,
+    )
+  ) {
     discourseRoleWeight += 0.18;
     focusWeight += 0.08;
     durabilityWeight += 0.08;
@@ -2158,7 +2457,10 @@ function buildCandidateScoreBreakdown(args: {
     if (candidate.questionTriggerKind === "implicit_problem") {
       questionSynthesisWeight += 0.04;
     }
-    if (candidate.questionSynthesisFrame && candidate.questionSynthesisFrame !== "unknown") {
+    if (
+      candidate.questionSynthesisFrame &&
+      candidate.questionSynthesisFrame !== "unknown"
+    ) {
       questionSynthesisWeight += 0.04;
     }
     if (candidate.synthesizedLabel) {
@@ -2181,16 +2483,22 @@ function buildCandidateScoreBreakdown(args: {
   if (specificity === "broad_but_usable") specificityWeight += 0.08;
   if (specificity === "too_vague") structurePenalty += 0.38;
 
-  if (candidateHasQualifier(candidate, "named_concept")) durabilityWeight += 0.1;
-  if (candidateHasQualifier(candidate, "concept_phrase")) conceptPhraseWeight += 0.18;
-  if (candidateHasQualifier(candidate, "question_synthesis")) questionSynthesisWeight += 0.16;
-  if (candidateHasQualifier(candidate, "qcs_candidate")) questionSynthesisWeight += 0.12;
-  if (candidateHasQualifier(candidate, "durable_concept")) durabilityWeight += 0.14;
+  if (candidateHasQualifier(candidate, "named_concept"))
+    durabilityWeight += 0.1;
+  if (candidateHasQualifier(candidate, "concept_phrase"))
+    conceptPhraseWeight += 0.18;
+  if (candidateHasQualifier(candidate, "question_synthesis"))
+    questionSynthesisWeight += 0.16;
+  if (candidateHasQualifier(candidate, "qcs_candidate"))
+    questionSynthesisWeight += 0.12;
+  if (candidateHasQualifier(candidate, "durable_concept"))
+    durabilityWeight += 0.14;
   if (candidateLooksProtectedDurableLabel(candidate)) {
     durabilityWeight += 0.18;
     conceptPhraseWeight += 0.12;
   }
-  if (candidateLooksDurablePracticalConcept(candidate)) conceptPhraseWeight += 0.12;
+  if (candidateLooksDurablePracticalConcept(candidate))
+    conceptPhraseWeight += 0.12;
   if (candidateHasQualifier(candidate, "of_phrase")) durabilityWeight += 0.1;
   if (candidateLooksStructuredDurable(candidate)) durabilityWeight += 0.12;
   if (candidate.domainText) durabilityWeight += 0.08;
@@ -2204,29 +2512,47 @@ function buildCandidateScoreBreakdown(args: {
   if (candidateLooksMechanismLike(candidate, message)) mechanismWeight += 0.16;
   if (candidateLooksQuestionSynthesis(candidate)) {
     if (candidate.questionSynthesisFrame === "cause") mechanismWeight += 0.1;
-    if (candidate.questionSynthesisFrame === "mechanism") mechanismWeight += 0.1;
+    if (candidate.questionSynthesisFrame === "mechanism")
+      mechanismWeight += 0.1;
     if (candidate.questionSynthesisFrame === "process") mechanismWeight += 0.08;
-    if (candidate.questionSynthesisFrame === "analysis" || candidate.questionSynthesisFrame === "source_analysis") {
+    if (
+      candidate.questionSynthesisFrame === "analysis" ||
+      candidate.questionSynthesisFrame === "source_analysis"
+    ) {
       discourseRoleWeight += 0.08;
     }
-    if (candidate.questionSynthesisFrame === "comparison" || candidate.questionSynthesisFrame === "selection") {
+    if (
+      candidate.questionSynthesisFrame === "comparison" ||
+      candidate.questionSynthesisFrame === "selection"
+    ) {
       durabilityWeight += 0.08;
     }
     if (candidate.questionSynthesisFrame === "monitoring") {
       discourseRoleWeight += 0.08;
     }
   }
-  if (candidateLooksAbstractButUseful(candidate, message)) mechanismWeight += 0.16;
+  if (candidateLooksAbstractButUseful(candidate, message))
+    mechanismWeight += 0.16;
 
-  if (discourseProfile.hasMechanismRequestShape && candidateLooksMechanismLike(candidate, message)) {
+  if (
+    discourseProfile.hasMechanismRequestShape &&
+    candidateLooksMechanismLike(candidate, message)
+  ) {
     mechanismWeight += 0.18;
   }
 
-  if (discourseProfile.hasMechanismRequestShape && candidateLooksPairedTarget(candidate)) {
+  if (
+    discourseProfile.hasMechanismRequestShape &&
+    candidateLooksPairedTarget(candidate)
+  ) {
     mechanismWeight += 0.1;
   }
 
-  if (discourseProfile.hasMechanismRequestShape && candidateLooksObjectOnly(candidate) && !candidateLooksQuestionSynthesis(candidate)) {
+  if (
+    discourseProfile.hasMechanismRequestShape &&
+    candidateLooksObjectOnly(candidate) &&
+    !candidateLooksQuestionSynthesis(candidate)
+  ) {
     competitionRiskPenalty += 0.22;
   }
 
@@ -2239,12 +2565,17 @@ function buildCandidateScoreBreakdown(args: {
     competitionRiskPenalty += 0.14;
   }
 
-  if (discourseProfile.hasTerminologyBarrierShape && candidateLooksTerminologyLike(candidate)) {
+  if (
+    discourseProfile.hasTerminologyBarrierShape &&
+    candidateLooksTerminologyLike(candidate)
+  ) {
     discourseRoleWeight += 0.22;
     durabilityWeight += 0.08;
   }
 
-  if (candidateLooksMeaningBarrierTarget(candidate, message, discourseProfile)) {
+  if (
+    candidateLooksMeaningBarrierTarget(candidate, message, discourseProfile)
+  ) {
     // Patch F.5: artifact/source language barriers should create durable
     // meaning-barrier targets rather than bare artifact or tail-fragment topics.
     discourseRoleWeight += 0.26;
@@ -2253,19 +2584,38 @@ function buildCandidateScoreBreakdown(args: {
   }
 
   if (
-    candidateLooksArtifactOnlyInLanguageBarrier(candidate, message, discourseProfile) ||
-    candidateLooksArtifactLanguageTailResidue(candidate, message, discourseProfile)
+    candidateLooksArtifactOnlyInLanguageBarrier(
+      candidate,
+      message,
+      discourseProfile,
+    ) ||
+    candidateLooksArtifactLanguageTailResidue(
+      candidate,
+      message,
+      discourseProfile,
+    )
   ) {
     competitionRiskPenalty += 0.28;
-    contaminationPenalty += candidateLooksArtifactLanguageTailResidue(candidate, message, discourseProfile) ? 0.18 : 0;
+    contaminationPenalty += candidateLooksArtifactLanguageTailResidue(
+      candidate,
+      message,
+      discourseProfile,
+    )
+      ? 0.18
+      : 0;
   }
 
-  if (discourseProfile.hasLanguageBarrierShape && candidateLooksDomainShapedByProfile(candidate, discourseProfile)) {
+  if (
+    discourseProfile.hasLanguageBarrierShape &&
+    candidateLooksDomainShapedByProfile(candidate, discourseProfile)
+  ) {
     discourseRoleWeight += 0.16;
     durabilityWeight += 0.08;
   }
 
-  if (candidateLooksStructuralRelationTarget(candidate, message, discourseProfile)) {
+  if (
+    candidateLooksStructuralRelationTarget(candidate, message, discourseProfile)
+  ) {
     // Patch F.4: when the learner frames the blocker as relation/order/structure
     // between pieces, reward the structural relation target over a local example token.
     discourseRoleWeight += 0.28;
@@ -2273,20 +2623,30 @@ function buildCandidateScoreBreakdown(args: {
     conceptPhraseWeight += 0.08;
   }
 
-  if (candidateLooksLocalExampleTokenInStructuralFrame(candidate, message, discourseProfile)) {
+  if (
+    candidateLooksLocalExampleTokenInStructuralFrame(
+      candidate,
+      message,
+      discourseProfile,
+    )
+  ) {
     // The local token can be diagnostic evidence, but it should not beat the
     // structural relation target unless the learner explicitly names it as the
     // actual blocker.
     competitionRiskPenalty += 0.24;
   }
 
-  if (messageHasWhereToStartBarrier(message) && candidateLooksInstructionalTarget(candidate, message)) {
+  if (
+    messageHasWhereToStartBarrier(message) &&
+    candidateLooksInstructionalTarget(candidate, message)
+  ) {
     discourseRoleWeight += 0.08;
   }
 
   if (
     messageHasMultiplicityBarrier(message) &&
-    (candidateLooksPairedTarget(candidate) || candidateLooksMechanismLike(candidate, message))
+    (candidateLooksPairedTarget(candidate) ||
+      candidateLooksMechanismLike(candidate, message))
   ) {
     discourseRoleWeight += 0.08;
   }
@@ -2352,11 +2712,18 @@ function buildCandidateScoreBreakdown(args: {
     structurePenalty += 0.12;
   }
 
-  if (candidate.kind === "noun_chunk" && !candidateLooksDurablePracticalConcept(candidate)) {
+  if (
+    candidate.kind === "noun_chunk" &&
+    !candidateLooksDurablePracticalConcept(candidate)
+  ) {
     nounChunkPenalty += 0.24;
   }
 
-  if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate) && !candidateLooksQuestionSynthesis(candidate)) {
+  if (
+    candidateHasHighResidueRisk(candidate) &&
+    !candidateLooksConceptPhrase(candidate) &&
+    !candidateLooksQuestionSynthesis(candidate)
+  ) {
     nounChunkPenalty += 0.18;
     contaminationPenalty += 0.14;
   }
@@ -2364,14 +2731,19 @@ function buildCandidateScoreBreakdown(args: {
   if (
     discourseProfile.hasComparisonShape &&
     candidate.kind !== "comparison_pair" &&
-    !(candidateLooksQuestionSynthesis(candidate) &&
+    !(
+      candidateLooksQuestionSynthesis(candidate) &&
       (candidate.questionSynthesisFrame === "comparison" ||
-        candidate.questionSynthesisFrame === "selection"))
+        candidate.questionSynthesisFrame === "selection")
+    )
   ) {
     competitionRiskPenalty += 0.12;
   }
 
-  if (discourseProfile.hasComparisonShape && candidate.kind === "comparison_pair") {
+  if (
+    discourseProfile.hasComparisonShape &&
+    candidate.kind === "comparison_pair"
+  ) {
     roleWeight += 0.16;
     durabilityWeight += 0.08;
     discourseRoleWeight += 0.1;
@@ -2379,7 +2751,9 @@ function buildCandidateScoreBreakdown(args: {
 
   if (
     candidateLooksDomainAnchor(candidate) &&
-    allCandidates.some((other) => candidateLooksStrongLateBottleneck(other, message, discourseProfile))
+    allCandidates.some((other) =>
+      candidateLooksStrongLateBottleneck(other, message, discourseProfile),
+    )
   ) {
     competitionRiskPenalty += 0.22;
   }
@@ -2422,7 +2796,10 @@ function buildCandidateScoreBreakdown(args: {
   // Weak noun chunks are fallback evidence only. They should not produce
   // high-confidence topic labels just because they occur near confusion words.
   if (candidateLooksWeakNounChunk(candidate)) total = Math.min(total, 0.34);
-  else if (candidate.kind === "noun_chunk" && !candidateLooksDurablePracticalConcept(candidate)) {
+  else if (
+    candidate.kind === "noun_chunk" &&
+    !candidateLooksDurablePracticalConcept(candidate)
+  ) {
     total = Math.min(total, 0.48);
   }
 
@@ -2453,14 +2830,16 @@ function buildCandidateScoreBreakdown(args: {
   };
 }
 
-function chooseBestCandidate(candidates: TopicCandidate[]): TopicCandidate | null {
+function chooseBestCandidate(
+  candidates: TopicCandidate[],
+): TopicCandidate | null {
   if (!candidates.length) return null;
   return candidates.slice().sort((a, b) => b.score - a.score)[0] ?? null;
 }
 
 function chooseBestCandidateByFamily(
   candidates: TopicCandidate[],
-  message: string
+  message: string,
 ): TopicCandidate | null {
   if (!candidates.length) return null;
 
@@ -2480,7 +2859,7 @@ function chooseBestCandidateByFamily(
 function chooseDiscourseOverrideCandidate(
   candidates: TopicCandidate[],
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ): TopicCandidate | null {
   if (!candidates.length) return null;
 
@@ -2488,7 +2867,7 @@ function chooseDiscourseOverrideCandidate(
     (candidate) =>
       !candidateLooksResidueLike(candidate) &&
       !candidateLooksWeakNounChunk(candidate) &&
-      !candidateLooksMalformedTopicLabel(candidate)
+      !candidateLooksMalformedTopicLabel(candidate),
   );
 
   if (profile.hasNullOnlyEmotionalShape && nonResidue.length === 0) {
@@ -2496,7 +2875,9 @@ function chooseDiscourseOverrideCandidate(
   }
 
   const strongLateBottlenecks = nonResidue
-    .filter((candidate) => candidateLooksStrongLateBottleneck(candidate, message, profile))
+    .filter((candidate) =>
+      candidateLooksStrongLateBottleneck(candidate, message, profile),
+    )
     .sort((a, b) => {
       const familyDelta =
         familyPriority(classifyCandidateFamily(b, message)) -
@@ -2527,7 +2908,7 @@ function chooseDiscourseOverrideCandidate(
     .filter(
       (candidate) =>
         candidateLooksProtectedDurableLabel(candidate) &&
-        !candidateLooksBroadSetupContextCandidate(candidate, profile)
+        !candidateLooksBroadSetupContextCandidate(candidate, profile),
     )
     .sort((a, b) => {
       const familyDelta =
@@ -2545,7 +2926,7 @@ function chooseDiscourseOverrideCandidate(
     .filter(
       (candidate) =>
         candidateLooksQuestionSynthesis(candidate) &&
-        !candidateLooksQcsOverSynthesized(candidate, nonResidue)
+        !candidateLooksQcsOverSynthesized(candidate, nonResidue),
     )
     .sort((a, b) => b.score - a.score);
 
@@ -2569,7 +2950,7 @@ function chooseDiscourseOverrideCandidate(
         (candidate) =>
           candidateLooksTerminologyLike(candidate) ||
           candidateLooksDomainShapedByProfile(candidate, profile) ||
-          candidateLooksPairedTarget(candidate)
+          candidateLooksPairedTarget(candidate),
       )
       .sort((a, b) => b.score - a.score);
 
@@ -2587,14 +2968,19 @@ function chooseDiscourseOverrideCandidate(
   return null;
 }
 
-
 function messageExplicitlyRejectsPersistentTopic(message: string) {
   const normalized = cachedNormalizeLoose(message);
 
   return (
-    /\b(?:no|not|don'?t have|dont have|do not have)\b.*\b(?:specific|actual|clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalized) ||
-    /\b(?:no specific|no actual|no clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalized) ||
-    /\b(?:i|we)\s+(?:don'?t|dont|do not)\s+(?:have|know)\s+(?:an?\s+)?(?:actual|specific|clear)?\s*(?:topic|concept|class thing|subject)\b/i.test(normalized) ||
+    /\b(?:no|not|don'?t have|dont have|do not have)\b.*\b(?:specific|actual|clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:no specific|no actual|no clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:i|we)\s+(?:don'?t|dont|do not)\s+(?:have|know)\s+(?:an?\s+)?(?:actual|specific|clear)?\s*(?:topic|concept|class thing|subject)\b/i.test(
+      normalized,
+    ) ||
     messageHasMetaNoStableTopicWithoutDurableCue(normalized)
   );
 }
@@ -2605,9 +2991,15 @@ function labelHasBadBoundaryShape(label: string | null) {
   if (!normalized) return true;
 
   return (
-    /^(?:of|in|on|for|from|with|to|and|or|but|if|when|where|why|how|what|which|who)\b/.test(normalized) ||
-    /\b(?:of|in|on|for|from|with|to|and|or|but|if|when|where|why|how|what|which|who)$/.test(normalized) ||
-    /^(?:few of|blur together in|food webs make|soccer play offside|consideration is required|monitoring my own understanding)$/i.test(normalized)
+    /^(?:of|in|on|for|from|with|to|and|or|but|if|when|where|why|how|what|which|who)\b/.test(
+      normalized,
+    ) ||
+    /\b(?:of|in|on|for|from|with|to|and|or|but|if|when|where|why|how|what|which|who)$/.test(
+      normalized,
+    ) ||
+    /^(?:few of|blur together in|food webs make|soccer play offside|consideration is required|monitoring my own understanding)$/i.test(
+      normalized,
+    )
   );
 }
 
@@ -2615,14 +3007,18 @@ function labelHasContentBearingHead(label: string | null) {
   if (!label) return false;
   const tokens = cachedTokenize(label).filter(
     (token) =>
-      !/^(?:a|an|the|this|that|these|those|my|our|your|their|its|and|or|but|if|then|than|to|of|for|from|in|on|at|by|with|about|into|through|during|after|before|under|over|between|among|is|are|am|was|were|be|being|been|do|does|did|can|could|would|should|will|why|what|when|where|how|whether|because|maybe|i|me|we|you|they|he|she|them|us)$/i.test(token)
+      !/^(?:a|an|the|this|that|these|those|my|our|your|their|its|and|or|but|if|then|than|to|of|for|from|in|on|at|by|with|about|into|through|during|after|before|under|over|between|among|is|are|am|was|were|be|being|been|do|does|did|can|could|would|should|will|why|what|when|where|how|whether|because|maybe|i|me|we|you|they|he|she|them|us)$/i.test(
+        token,
+      ),
   );
 
   if (tokens.length === 0) return false;
 
   return tokens.some(
     (token) =>
-      !/^(?:make|makes|made|feel|feels|felt|seem|seems|look|looks|sound|sounds|know|knows|knew|read|reads|write|writes|say|says|said|use|uses|used|get|gets|got|have|has|had|go|goes|went|start|starts|started|stop|stops|stopped|try|tries|tried)$/i.test(token)
+      !/^(?:make|makes|made|feel|feels|felt|seem|seems|look|looks|sound|sounds|know|knows|knew|read|reads|write|writes|say|says|said|use|uses|used|get|gets|got|have|has|had|go|goes|went|start|starts|started|stop|stops|stopped|try|tries|tried)$/i.test(
+        token,
+      ),
   );
 }
 
@@ -2637,7 +3033,11 @@ function labelLooksLocalClauseFragment(label: string | null) {
   // labels that read like mini-clauses, actions, or dangling comparison tails
   // while still allowing true durable gerund/noun phrases like "Color Mixing",
   // "Study Planning", "Balancing Chemical Equations", and "Monitoring Understanding".
-  if (/^(?:keep|keeps|kept|already|still|just|really|mostly|kind of|sort of)\b/i.test(normalized)) {
+  if (
+    /^(?:keep|keeps|kept|already|still|just|really|mostly|kind of|sort of)\b/i.test(
+      normalized,
+    )
+  ) {
     return true;
   }
 
@@ -2645,35 +3045,63 @@ function labelLooksLocalClauseFragment(label: string | null) {
   // topic labels. This catches shapes like "I'm doing homework on triangles"
   // or "section on waves in class" without naming the desired target label.
   if (
-    /^(?:i\s+(?:am|m)?\s*)?(?:doing|working on|studying|reviewing)\b/i.test(normalized) ||
-    /^(?:we(?:'re| are| were)?\s+)?(?:doing|covering|learning|studying|reviewing|starting|started)\b/i.test(normalized) ||
-    /^(?:section|unit|chapter|homework|worksheet|lecture|class|textbook|notes?)\b/i.test(normalized) ||
-    /\b(?:homework|worksheet|section|unit|chapter|class|lecture|textbook|notes?)\b.*\b(?:right now|this week|in class)\b/i.test(normalized)
+    /^(?:i\s+(?:am|m)?\s*)?(?:doing|working on|studying|reviewing)\b/i.test(
+      normalized,
+    ) ||
+    /^(?:we(?:'re| are| were)?\s+)?(?:doing|covering|learning|studying|reviewing|starting|started)\b/i.test(
+      normalized,
+    ) ||
+    /^(?:section|unit|chapter|homework|worksheet|lecture|class|textbook|notes?)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:homework|worksheet|section|unit|chapter|class|lecture|textbook|notes?)\b.*\b(?:right now|this week|in class)\b/i.test(
+      normalized,
+    )
   ) {
     return true;
   }
 
-  if (/\b(?:if|when|where|because|while|once|until|instead|instead of|rather than|like everyone|as if)\b/i.test(normalized)) {
+  if (
+    /\b(?:if|when|where|because|while|once|until|instead|instead of|rather than|like everyone|as if)\b/i.test(
+      normalized,
+    )
+  ) {
     return true;
   }
 
-  if (/\b(?:harder|obvious way|hidden step|randomly|performative|fake|fine for|at once|behind me)\b/i.test(normalized)) {
+  if (
+    /\b(?:harder|obvious way|hidden step|randomly|performative|fake|fine for|at once|behind me)\b/i.test(
+      normalized,
+    )
+  ) {
     return true;
   }
 
-  const hasFiniteOrLocalVerb = /\b(?:stayed|seem(?:s|ed)?|involved|happens?|makes?|made|look(?:s|ed)?|sound(?:s|ed)?|feel(?:s|t)?|count(?:s|ed)?|called|says?|said|asked|asks|show(?:s|ed)?|fit(?:s)?|fit into|lost|nodded|pretending|meant|means|supposed|go(?:es)?|went|start(?:s|ed)?|stop(?:s|ped)?|mixing harder|keep mixing|know interest)\b/i.test(normalized);
+  const hasFiniteOrLocalVerb =
+    /\b(?:stayed|seem(?:s|ed)?|involved|happens?|makes?|made|look(?:s|ed)?|sound(?:s|ed)?|feel(?:s|t)?|count(?:s|ed)?|called|says?|said|asked|asks|show(?:s|ed)?|fit(?:s)?|fit into|lost|nodded|pretending|meant|means|supposed|go(?:es)?|went|start(?:s|ed)?|stop(?:s|ped)?|mixing harder|keep mixing|know interest)\b/i.test(
+      normalized,
+    );
 
-  const startsLikeLocalSubject = /^(?:the|a|an|this|that|those|these|both|one|someone|everyone|people|teacher|worksheet|recipe|article|sentence|assignment|score|game|chords?|levels?|barrier|energy|picture|sticker|object|pass|run|function|ui)\b/i.test(normalized);
+  const startsLikeLocalSubject =
+    /^(?:the|a|an|this|that|those|these|both|one|someone|everyone|people|teacher|worksheet|recipe|article|sentence|assignment|score|game|chords?|levels?|barrier|energy|picture|sticker|object|pass|run|function|ui)\b/i.test(
+      normalized,
+    );
 
   const hasDurableConnectorShape = /\b(?:vs|of|in|on)\b/i.test(normalized);
-  const isShortNamedish = cachedTokenize(label).length <= 4 && !hasFiniteOrLocalVerb;
+  const isShortNamedish =
+    cachedTokenize(label).length <= 4 && !hasFiniteOrLocalVerb;
 
-  if (/^(?:answering|correcting|guessing|trying|reading|looking|following|knowing|thinking|feeling)$/i.test(normalized)) {
+  if (
+    /^(?:answering|correcting|guessing|trying|reading|looking|following|knowing|thinking|feeling)$/i.test(
+      normalized,
+    )
+  ) {
     return true;
   }
 
   if (hasFiniteOrLocalVerb && startsLikeLocalSubject) return true;
-  if (hasFiniteOrLocalVerb && !hasDurableConnectorShape && !isShortNamedish) return true;
+  if (hasFiniteOrLocalVerb && !hasDurableConnectorShape && !isShortNamedish)
+    return true;
 
   return false;
 }
@@ -2691,12 +3119,17 @@ function candidateLooksMalformedTopicLabel(candidate: TopicCandidate) {
   // These are mostly discourse/action fragments. They can be useful evidence,
   // but they should not win PFAP final arbitration as durable topics.
   if (
-    /^(?:few of|blur together in|food webs make|already know|everyone uses|what makes|where i|when i|until it|type of case|hidden step|rule logic|answering|while answering|while i am answering)$/i.test(normalized)
+    /^(?:few of|blur together in|food webs make|already know|everyone uses|what makes|where i|when i|until it|type of case|hidden step|rule logic|answering|while answering|while i am answering)$/i.test(
+      normalized,
+    )
   ) {
     return true;
   }
 
-  if (labelLooksLocalClauseFragment(label) && !candidateLooksCleanExplicitConcept(candidate)) {
+  if (
+    labelLooksLocalClauseFragment(label) &&
+    !candidateLooksCleanExplicitConcept(candidate)
+  ) {
     return true;
   }
 
@@ -2706,8 +3139,15 @@ function candidateLooksMalformedTopicLabel(candidate: TopicCandidate) {
   return false;
 }
 
-function comparisonCandidateHasRealAnchors(candidate: TopicCandidate, message: string) {
-  if (candidate.kind !== "comparison_pair" && candidate.questionSynthesisFrame !== "comparison" && candidate.questionSynthesisFrame !== "selection") {
+function comparisonCandidateHasRealAnchors(
+  candidate: TopicCandidate,
+  message: string,
+) {
+  if (
+    candidate.kind !== "comparison_pair" &&
+    candidate.questionSynthesisFrame !== "comparison" &&
+    candidate.questionSynthesisFrame !== "selection"
+  ) {
     return true;
   }
 
@@ -2720,20 +3160,24 @@ function comparisonCandidateHasRealAnchors(candidate: TopicCandidate, message: s
   if (!/\bvs\b/.test(normalizedLabel)) return false;
   if (labelHasBadBoundaryShape(label)) return false;
 
-  const [leftRaw, rightRaw] = normalizedLabel.split(/\bvs\b/i).map((part) => part.trim());
+  const [leftRaw, rightRaw] = normalizedLabel
+    .split(/\bvs\b/i)
+    .map((part) => part.trim());
   if (!leftRaw || !rightRaw) return false;
 
   const leftTokens = cachedSemanticTokens(leftRaw);
   const rightTokens = cachedSemanticTokens(rightRaw);
   if (leftTokens.length === 0 || rightTokens.length === 0) return false;
 
-  const badSide = /^(?:blur together|same|different|comparison|difference|which one|when to use|use|using|instead|rather than|in)$/i;
+  const badSide =
+    /^(?:blur together|same|different|comparison|difference|which one|when to use|use|using|instead|rather than|in)$/i;
   if (badSide.test(leftRaw) || badSide.test(rightRaw)) return false;
 
   // Either the candidate itself carried clean anchors, or both sides are
   // recoverable from the message surface.
   const carriedAnchors = Boolean(candidate.leftText && candidate.rightText);
-  const surfaceAnchors = leftTokens.some((token) => normalizedMessage.includes(token)) &&
+  const surfaceAnchors =
+    leftTokens.some((token) => normalizedMessage.includes(token)) &&
     rightTokens.some((token) => normalizedMessage.includes(token));
 
   return carriedAnchors || surfaceAnchors;
@@ -2743,7 +3187,7 @@ function candidateLooksPFAPEligible(
   candidate: TopicCandidate,
   message: string,
   profile: DiscourseProfile,
-  allCandidates: TopicCandidate[] = []
+  allCandidates: TopicCandidate[] = [],
 ) {
   if (!candidate.shouldCompeteAsTopic) return false;
   if (candidate.isSubpartReference) return false;
@@ -2755,15 +3199,25 @@ function candidateLooksPFAPEligible(
   // Some tail-heavy candidates are still valid when the candidate has already
   // been reduced to a known/protected durable phrase, but generic tail-heavy
   // fragments should never get PFAP protection.
-  if (candidateLooksTailHeavy(candidate) && !candidateLooksProtectedDurableLabel(candidate)) {
+  if (
+    candidateLooksTailHeavy(candidate) &&
+    !candidateLooksProtectedDurableLabel(candidate)
+  ) {
     return false;
   }
 
-  if (candidateLooksNoisyResidue(candidate) && !candidateLooksProtectedDurableLabel(candidate)) {
+  if (
+    candidateLooksNoisyResidue(candidate) &&
+    !candidateLooksProtectedDurableLabel(candidate)
+  ) {
     return false;
   }
 
-  if (candidateHasHighResidueRisk(candidate) && !candidateLooksConceptPhrase(candidate) && !candidateLooksQuestionSynthesis(candidate)) {
+  if (
+    candidateHasHighResidueRisk(candidate) &&
+    !candidateLooksConceptPhrase(candidate) &&
+    !candidateLooksQuestionSynthesis(candidate)
+  ) {
     return false;
   }
 
@@ -2779,11 +3233,16 @@ function candidateLooksPFAPEligible(
     candidate.kind === "concept_phrase" ||
     candidate.kind === "of_phrase" ||
     candidate.kind === "named_concept" ||
-    (candidateLooksQuestionSynthesis(candidate) && !candidateLooksQcsOverSynthesized(candidate, allCandidates))
+    (candidateLooksQuestionSynthesis(candidate) &&
+      !candidateLooksQcsOverSynthesized(candidate, allCandidates))
   );
 }
 
-function pfapTier(candidate: TopicCandidate, message: string, profile: DiscourseProfile) {
+function pfapTier(
+  candidate: TopicCandidate,
+  message: string,
+  profile: DiscourseProfile,
+) {
   const label = getCandidateDisplayLabel(candidate);
   const localFragmentPenalty = labelLooksLocalClauseFragment(label) ? -34 : 0;
 
@@ -2798,17 +3257,29 @@ function pfapTier(candidate: TopicCandidate, message: string, profile: Discourse
     candidate.kind === "named_concept"
   ) {
     tier = 96;
-  } else if (candidate.kind === "comparison_pair" && comparisonCandidateHasRealAnchors(candidate, message)) {
+  } else if (
+    candidate.kind === "comparison_pair" &&
+    comparisonCandidateHasRealAnchors(candidate, message)
+  ) {
     tier = 92;
-  } else if (candidate.kind === "domain_shaped" || candidateLooksDomainShapedByProfile(candidate, profile)) {
+  } else if (
+    candidate.kind === "domain_shaped" ||
+    candidateLooksDomainShapedByProfile(candidate, profile)
+  ) {
     tier = 88;
   } else if (candidateLooksPairedTarget(candidate)) {
     tier = 84;
-  } else if (candidateLooksStrongLateBottleneck(candidate, message, profile) && candidateLooksProtectedDurableLabel(candidate)) {
+  } else if (
+    candidateLooksStrongLateBottleneck(candidate, message, profile) &&
+    candidateLooksProtectedDurableLabel(candidate)
+  ) {
     tier = 82;
   } else if (candidateLooksProtectedDurableLabel(candidate)) {
     tier = 78;
-  } else if (candidate.kind === "concept_phrase" || candidateLooksConceptPhrase(candidate)) {
+  } else if (
+    candidate.kind === "concept_phrase" ||
+    candidateLooksConceptPhrase(candidate)
+  ) {
     tier = 70;
   } else if (candidateLooksStrongLateBottleneck(candidate, message, profile)) {
     tier = 62;
@@ -2822,25 +3293,35 @@ function pfapTier(candidate: TopicCandidate, message: string, profile: Discourse
 function chooseProtectedFinalCandidate(
   candidates: TopicCandidate[],
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ): TopicCandidate | null {
   if (!candidates.length) return null;
   if (messageExplicitlyRejectsPersistentTopic(message)) return null;
   if (profile.hasNullOnlyEmotionalShape) return null;
 
-  const lateBottleneck = chooseLateExplicitBottleneckOverride(candidates, message, profile);
+  const lateBottleneck = chooseLateExplicitBottleneckOverride(
+    candidates,
+    message,
+    profile,
+  );
   if (lateBottleneck) return lateBottleneck;
 
-  const cleanComparison = chooseCleanComparisonCandidate(candidates, message, profile);
+  const cleanComparison = chooseCleanComparisonCandidate(
+    candidates,
+    message,
+    profile,
+  );
   if (cleanComparison) return cleanComparison;
 
-  const eligible = candidates.filter((candidate) => candidateLooksPFAPEligible(candidate, message, profile, candidates));
+  const eligible = candidates.filter((candidate) =>
+    candidateLooksPFAPEligible(candidate, message, profile, candidates),
+  );
   if (!eligible.length) return null;
 
-  return eligible
-    .slice()
-    .sort((a, b) => {
-      const tierDelta = pfapTier(b, message, profile) - pfapTier(a, message, profile);
+  return (
+    eligible.slice().sort((a, b) => {
+      const tierDelta =
+        pfapTier(b, message, profile) - pfapTier(a, message, profile);
       if (tierDelta !== 0) return tierDelta;
 
       const familyDelta =
@@ -2849,27 +3330,53 @@ function chooseProtectedFinalCandidate(
       if (familyDelta !== 0) return familyDelta;
 
       const specificityDelta =
-        (cachedScoreSpecificity(getCandidateDisplayLabel(b)) === "very_specific" ? 2 : cachedScoreSpecificity(getCandidateDisplayLabel(b)) === "good" ? 1 : 0) -
-        (cachedScoreSpecificity(getCandidateDisplayLabel(a)) === "very_specific" ? 2 : cachedScoreSpecificity(getCandidateDisplayLabel(a)) === "good" ? 1 : 0);
+        (cachedScoreSpecificity(getCandidateDisplayLabel(b)) === "very_specific"
+          ? 2
+          : cachedScoreSpecificity(getCandidateDisplayLabel(b)) === "good"
+            ? 1
+            : 0) -
+        (cachedScoreSpecificity(getCandidateDisplayLabel(a)) === "very_specific"
+          ? 2
+          : cachedScoreSpecificity(getCandidateDisplayLabel(a)) === "good"
+            ? 1
+            : 0);
       if (specificityDelta !== 0) return specificityDelta;
 
       return b.score - a.score;
-    })[0] ?? null;
+    })[0] ?? null
+  );
 }
 
 function cleanComparisonSideForPFAP(text: string) {
   const cleaned = cachedNormalizeSurface(text)
     .replace(/^(?:it\s+(?:was|is)|it'?s|really\s+just|just)\s+/i, "")
-    .replace(/^(?:the|a|an|this|that|these|those|both|one|which|whether|if|use|using|choose|choosing|pick|picking|tell|know|decide|i|we|you|they)\s+/i, "")
-    .replace(/\s+(?:are|is|feel|feels|seem|seems|look|looks|sound|sounds|still|basically|kind of|sort of|stop|stops|stopped)$/i, "")
-    .replace(/\s+\b(?:if|when|where|because|while|once|until|instead|rather than)\b.*$/i, "")
-    .replace(/\s+\b(?:in|on)\s+(?:word problems?|questions?|practice|notes?|homework|the notes)\b.*$/i, "")
+    .replace(
+      /^(?:the|a|an|this|that|these|those|both|one|which|whether|if|use|using|choose|choosing|pick|picking|tell|know|decide|i|we|you|they)\s+/i,
+      "",
+    )
+    .replace(
+      /\s+(?:are|is|feel|feels|seem|seems|look|looks|sound|sounds|still|basically|kind of|sort of|stop|stops|stopped)$/i,
+      "",
+    )
+    .replace(
+      /\s+\b(?:if|when|where|because|while|once|until|instead|rather than)\b.*$/i,
+      "",
+    )
+    .replace(
+      /\s+\b(?:in|on)\s+(?:word problems?|questions?|practice|notes?|homework|the notes)\b.*$/i,
+      "",
+    )
     .replace(/\s+/g, " ")
     .trim();
 
   const loose = cachedNormalizeLoose(cleaned);
   if (!loose) return null;
-  if (/^(?:same|different|confusing|comparison|difference|which one|instead|rather than|in|of|and|or)$/i.test(loose)) return null;
+  if (
+    /^(?:same|different|confusing|comparison|difference|which one|instead|rather than|in|of|and|or)$/i.test(
+      loose,
+    )
+  )
+    return null;
   if (cachedTokenize(cleaned).length > 4) return null;
 
   return cleaned;
@@ -2883,7 +3390,8 @@ function cleanComparisonLabelForPFAP(label: string | null, message: string) {
   if (oneIsComparison?.[1] && oneIsComparison?.[2]) {
     const left = cleanComparisonSideForPFAP(oneIsComparison[1]);
     const right = cleanComparisonSideForPFAP(oneIsComparison[2]);
-    if (left && right) return `${shapeDisplayLabel(left) ?? left} vs ${shapeDisplayLabel(right) ?? right}`;
+    if (left && right)
+      return `${shapeDisplayLabel(left) ?? left} vs ${shapeDisplayLabel(right) ?? right}`;
   }
 
   const parts = label.split(/\bvs\b/i);
@@ -2902,10 +3410,18 @@ function cleanComparisonLabelForPFAP(label: string | null, message: string) {
   const leftLoose = cachedNormalizeLoose(shapedLeft);
   const rightLoose = cachedNormalizeLoose(shapedRight);
   if (leftLoose && rightLoose) {
-    const leftPluralPattern = new RegExp(`\\b${leftLoose.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}s\\b`, "i");
-    const rightPluralPattern = new RegExp(`\\b${rightLoose.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}s\\b`, "i");
-    if (!/s$/i.test(shapedLeft) && leftPluralPattern.test(normalizedMessage)) shapedLeft += "s";
-    if (!/s$/i.test(shapedRight) && rightPluralPattern.test(normalizedMessage)) shapedRight += "s";
+    const leftPluralPattern = new RegExp(
+      `\\b${leftLoose.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}s\\b`,
+      "i",
+    );
+    const rightPluralPattern = new RegExp(
+      `\\b${rightLoose.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}s\\b`,
+      "i",
+    );
+    if (!/s$/i.test(shapedLeft) && leftPluralPattern.test(normalizedMessage))
+      shapedLeft += "s";
+    if (!/s$/i.test(shapedRight) && rightPluralPattern.test(normalizedMessage))
+      shapedRight += "s";
   }
 
   const cleaned = `${shapedLeft} vs ${shapedRight}`;
@@ -2932,7 +3448,9 @@ function addDomainSuffixToComparisonForPFAP(label: string, message: string) {
 
   if (
     normalizedLabel === "baroque vs renaissance" &&
-    /\b(?:art|art history|painting|paintings|artist|artists|style|styles)\b/i.test(normalizedMessage)
+    /\b(?:art|art history|painting|paintings|artist|artists|style|styles)\b/i.test(
+      normalizedMessage,
+    )
   ) {
     return "Baroque vs Renaissance Art";
   }
@@ -2955,7 +3473,10 @@ function comparisonLabelHasSurfaceSupport(label: string, message: string) {
   );
 }
 
-function candidateLooksCleanComparison(candidate: TopicCandidate, message: string) {
+function candidateLooksCleanComparison(
+  candidate: TopicCandidate,
+  message: string,
+) {
   const label = getCandidateDisplayLabel(candidate);
   if (!label || !/\bvs\b/i.test(label)) return false;
 
@@ -2976,15 +3497,21 @@ function labelLooksPracticalSkillOrTechnique(label: string | null) {
   if (!label) return false;
   const normalized = cachedNormalizeLoose(label);
 
-  return /\b(?:skills?|techniques?|technique|control|development|planning|structure|analysis|recognition|regulation|handling|checks?|parking|notation|perspective|values?|writing|drawing|cooking|study|interview|resume|proof|method|process)\b/i.test(normalized);
+  return /\b(?:skills?|techniques?|technique|control|development|planning|structure|analysis|recognition|regulation|handling|checks?|parking|notation|perspective|values?|writing|drawing|cooking|study|interview|resume|proof|method|process)\b/i.test(
+    normalized,
+  );
 }
 
 function messageFramesComparisonAsLocalExample(message: string) {
   const normalized = cachedNormalizeLoose(message);
 
   return (
-    /\b(?:difference between|tell (?:them )?apart|distinguish between|which one|when to use|use)\b/i.test(normalized) &&
-    /\b(?:whole|overall|bigger|main|actual|real)\b.{0,50}\b(?:skill|skills|technique|techniques|thing|part|bottleneck|issue|problem|freeze|stuck|lost|hard)\b/i.test(normalized)
+    /\b(?:difference between|tell (?:them )?apart|distinguish between|which one|when to use|use)\b/i.test(
+      normalized,
+    ) &&
+    /\b(?:whole|overall|bigger|main|actual|real)\b.{0,50}\b(?:skill|skills|technique|techniques|thing|part|bottleneck|issue|problem|freeze|stuck|lost|hard)\b/i.test(
+      normalized,
+    )
   );
 }
 
@@ -2992,19 +3519,27 @@ function comparisonCandidateShouldYieldToBroaderSkill(
   candidate: TopicCandidate,
   allCandidates: TopicCandidate[],
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
   if (!candidateLooksCleanComparison(candidate, message)) return false;
   if (!messageFramesComparisonAsLocalExample(message)) return false;
 
-  const comparisonLabel = cleanComparisonLabelForPFAP(getCandidateDisplayLabel(candidate), message) ?? getCandidateDisplayLabel(candidate) ?? "";
+  const comparisonLabel =
+    cleanComparisonLabelForPFAP(getCandidateDisplayLabel(candidate), message) ??
+    getCandidateDisplayLabel(candidate) ??
+    "";
   const comparisonTokens = cachedSemanticTokens(comparisonLabel);
 
   return allCandidates.some((other) => {
     if (other === candidate) return false;
     if (!other.shouldCompeteAsTopic || other.isSubpartReference) return false;
-    if (candidateLooksWeakNounChunk(other) || candidateLooksMalformedTopicLabel(other)) return false;
-    if (!candidateLooksPFAPEligible(other, message, profile, allCandidates)) return false;
+    if (
+      candidateLooksWeakNounChunk(other) ||
+      candidateLooksMalformedTopicLabel(other)
+    )
+      return false;
+    if (!candidateLooksPFAPEligible(other, message, profile, allCandidates))
+      return false;
     if (candidateLooksCleanComparison(other, message)) return false;
 
     const otherLabel = getCandidateDisplayLabel(other);
@@ -3018,7 +3553,6 @@ function comparisonCandidateShouldYieldToBroaderSkill(
   });
 }
 
-
 function messageHasSetupComparisonThenLateBottleneck(message: string) {
   const normalized = cachedNormalizeLoose(message);
 
@@ -3026,15 +3560,19 @@ function messageHasSetupComparisonThenLateBottleneck(message: string) {
   // as the requested comparison. The learner often says an easy surface pair
   // first, then names the real topic after a contrast boundary.
   return (
-    /\b(?:just|only|simply|fine|easy|straightforward|clear)\b.{0,90}\bvs\b/i.test(normalized) &&
-    /\b(?:but|except|actually|where|when|until|after looking again)\b.{0,140}\b(?:fit|fits|bigger picture|actual|real|thing|part|issue|problem|bottleneck|lost|stuck|confused|understand|understanding|click|breaks|falls apart)\b/i.test(normalized)
+    /\b(?:just|only|simply|fine|easy|straightforward|clear)\b.{0,90}\bvs\b/i.test(
+      normalized,
+    ) &&
+    /\b(?:but|except|actually|where|when|until|after looking again)\b.{0,140}\b(?:fit|fits|bigger picture|actual|real|thing|part|issue|problem|bottleneck|lost|stuck|confused|understand|understanding|click|breaks|falls apart)\b/i.test(
+      normalized,
+    )
   );
 }
 
 function candidateLooksUnsafeLateBottleneckOverride(
   candidate: TopicCandidate,
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
   const label = getCandidateDisplayLabel(candidate);
   if (!label) return true;
@@ -3048,7 +3586,7 @@ function candidateLooksUnsafeLateBottleneckOverride(
   // These are actions/states around learning, not durable teachable topics.
   if (
     /^(?:answering|corrects?|someone corrects me|while i am answering|while answering|most of it|all of it|the whole thing|whole thing|the thing|the part|that part|this part|it|that)$/i.test(
-      normalizedLabel
+      normalizedLabel,
     )
   ) {
     return true;
@@ -3057,7 +3595,7 @@ function candidateLooksUnsafeLateBottleneckOverride(
   if (
     tokenCount <= 2 &&
     /\b(?:answering|correcting|guessing|trying|reading|looking|following|knowing|understanding|thinking|feeling)$/i.test(
-      normalizedLabel
+      normalizedLabel,
     ) &&
     !candidateLooksProtectedDurableLabel(candidate) &&
     !candidateLooksDomainShapedByProfile(candidate, profile)
@@ -3070,7 +3608,9 @@ function candidateLooksUnsafeLateBottleneckOverride(
   // mark those unsafe here; they are repaired in canonicalizePFAPLabel.
   if (
     /^(?:se|principal|premium|offside)$/i.test(normalizedLabel) &&
-    /\b(?:spanish|loan|loans|mortgage|insurance|soccer)\b/i.test(normalizedMessage)
+    /\b(?:spanish|loan|loans|mortgage|insurance|soccer)\b/i.test(
+      normalizedMessage,
+    )
   ) {
     return false;
   }
@@ -3082,22 +3622,32 @@ function candidateLooksLateExplicitBottleneckTopic(
   candidate: TopicCandidate,
   message: string,
   profile: DiscourseProfile,
-  allCandidates: TopicCandidate[]
+  allCandidates: TopicCandidate[],
 ) {
-  if (!candidateLooksPFAPEligible(candidate, message, profile, allCandidates)) return false;
+  if (!candidateLooksPFAPEligible(candidate, message, profile, allCandidates))
+    return false;
   if (candidateLooksCleanComparison(candidate, message)) return false;
   if (candidateLooksMalformedTopicLabel(candidate)) return false;
 
   const label = getCandidateDisplayLabel(candidate);
   if (!label) return false;
-  if (candidateLooksUnsafeLateBottleneckOverride(candidate, message, profile)) return false;
+  if (candidateLooksUnsafeLateBottleneckOverride(candidate, message, profile))
+    return false;
 
   const source = cachedNormalizeLoose(candidate.sourceClause);
-  const afterContrast = candidateAfterContrast(candidate, profile) || candidateHasQualifier(candidate, "late_focus_target");
+  const afterContrast =
+    candidateAfterContrast(candidate, profile) ||
+    candidateHasQualifier(candidate, "late_focus_target");
   const explicitBottleneckLanguage =
-    /\b(?:actual|real|main|whole|bigger|specific)\b.{0,50}\b(?:thing|part|issue|problem|bottleneck|skill|skills|technique|topic|concept)\b/i.test(source) ||
-    /\b(?:thing|part|issue|problem|bottleneck|skill|skills|technique|topic|concept)\b.{0,70}\b(?:need help|need to understand|confused about|confuses me|making me|makes me|freeze|stuck|lost|confused|hard|not click|doesnt click|doesn't click)\b/i.test(source) ||
-    /\b(?:where|when)\b.{0,70}\b(?:i|get|gets|start|starts|lose|lost|stuck|confused|stop|stopped|breaks|falls apart|have to make|supposed to picture)\b/i.test(source) ||
+    /\b(?:actual|real|main|whole|bigger|specific)\b.{0,50}\b(?:thing|part|issue|problem|bottleneck|skill|skills|technique|topic|concept)\b/i.test(
+      source,
+    ) ||
+    /\b(?:thing|part|issue|problem|bottleneck|skill|skills|technique|topic|concept)\b.{0,70}\b(?:need help|need to understand|confused about|confuses me|making me|makes me|freeze|stuck|lost|confused|hard|not click|doesnt click|doesn't click)\b/i.test(
+      source,
+    ) ||
+    /\b(?:where|when)\b.{0,70}\b(?:i|get|gets|start|starts|lose|lost|stuck|confused|stop|stopped|breaks|falls apart|have to make|supposed to picture)\b/i.test(
+      source,
+    ) ||
     /\b(?:fit|fits|fit into|bigger picture|how .+ fit)\b/i.test(source);
 
   const durableTopic =
@@ -3108,29 +3658,43 @@ function candidateLooksLateExplicitBottleneckTopic(
     candidate.kind === "domain_shaped" ||
     candidate.kind === "of_phrase";
 
-  return Boolean(durableTopic && (afterContrast || profile.hasLateBottleneckShape) && explicitBottleneckLanguage);
+  return Boolean(
+    durableTopic &&
+    (afterContrast || profile.hasLateBottleneckShape) &&
+    explicitBottleneckLanguage,
+  );
 }
 
 function chooseLateExplicitBottleneckOverride(
   candidates: TopicCandidate[],
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ): TopicCandidate | null {
-  if (!profile.hasBroadToNarrowShape && !profile.hasLateBottleneckShape) return null;
+  if (!profile.hasBroadToNarrowShape && !profile.hasLateBottleneckShape)
+    return null;
 
-  const comparisonCompetitors = candidates.filter((candidate) =>
-    candidateLooksCleanComparison(candidate, message) &&
-    !candidateLooksMalformedTopicLabel(candidate)
+  const comparisonCompetitors = candidates.filter(
+    (candidate) =>
+      candidateLooksCleanComparison(candidate, message) &&
+      !candidateLooksMalformedTopicLabel(candidate),
   );
 
   const lateTargets = candidates
-    .filter((candidate) => candidateLooksLateExplicitBottleneckTopic(candidate, message, profile, candidates))
+    .filter((candidate) =>
+      candidateLooksLateExplicitBottleneckTopic(
+        candidate,
+        message,
+        profile,
+        candidates,
+      ),
+    )
     .sort((a, b) => {
       const aAfter = candidateAfterContrast(a, profile) ? 1 : 0;
       const bAfter = candidateAfterContrast(b, profile) ? 1 : 0;
       if (aAfter !== bAfter) return bAfter - aAfter;
 
-      const tierDelta = pfapTier(b, message, profile) - pfapTier(a, message, profile);
+      const tierDelta =
+        pfapTier(b, message, profile) - pfapTier(a, message, profile);
       if (tierDelta !== 0) return tierDelta;
 
       return b.score - a.score;
@@ -3139,9 +3703,8 @@ function chooseLateExplicitBottleneckOverride(
   const bestLateTarget = lateTargets[0] ?? null;
   if (!bestLateTarget) return null;
 
-  const bestComparison = comparisonCompetitors
-    .slice()
-    .sort((a, b) => b.score - a.score)[0] ?? null;
+  const bestComparison =
+    comparisonCompetitors.slice().sort((a, b) => b.score - a.score)[0] ?? null;
 
   if (!bestComparison) {
     const label = getCandidateDisplayLabel(bestLateTarget);
@@ -3160,15 +3723,20 @@ function chooseLateExplicitBottleneckOverride(
   // Do not let a surface comparison from an earlier setup clause beat a later
   // explicit bottleneck with equal/high confidence. This preserves comparison
   // priority for true comparison requests, but not for "setup → real issue" messages.
-  const comparisonBeforeLateTarget = bestComparison.clauseIndex <= bestLateTarget.clauseIndex;
-  const comparableConfidence = bestComparison.score - bestLateTarget.score <= 0.08;
+  const comparisonBeforeLateTarget =
+    bestComparison.clauseIndex <= bestLateTarget.clauseIndex;
+  const comparableConfidence =
+    bestComparison.score - bestLateTarget.score <= 0.08;
   const lateTargetStrong = bestLateTarget.score >= 0.72;
 
   if (comparisonBeforeLateTarget && comparableConfidence && lateTargetStrong) {
     return bestLateTarget;
   }
 
-  if (messageHasSetupComparisonThenLateBottleneck(message) && lateTargetStrong) {
+  if (
+    messageHasSetupComparisonThenLateBottleneck(message) &&
+    lateTargetStrong
+  ) {
     return bestLateTarget;
   }
 
@@ -3179,36 +3747,45 @@ function chooseCleanProtectedFallbackCandidate(
   candidates: TopicCandidate[],
   message: string,
   profile: DiscourseProfile,
-  excluded?: TopicCandidate | null
+  excluded?: TopicCandidate | null,
 ): TopicCandidate | null {
-  return candidates
-    .filter((candidate) => {
-      if (excluded && candidate === excluded) return false;
-      return candidateLooksPFAPEligible(candidate, message, profile, candidates) &&
-        !candidateLooksMalformedTopicLabel(candidate);
-    })
-    .sort((a, b) => {
-      const tierDelta = pfapTier(b, message, profile) - pfapTier(a, message, profile);
-      if (tierDelta !== 0) return tierDelta;
-      return b.score - a.score;
-    })[0] ?? null;
+  return (
+    candidates
+      .filter((candidate) => {
+        if (excluded && candidate === excluded) return false;
+        return (
+          candidateLooksPFAPEligible(candidate, message, profile, candidates) &&
+          !candidateLooksMalformedTopicLabel(candidate)
+        );
+      })
+      .sort((a, b) => {
+        const tierDelta =
+          pfapTier(b, message, profile) - pfapTier(a, message, profile);
+        if (tierDelta !== 0) return tierDelta;
+        return b.score - a.score;
+      })[0] ?? null
+  );
 }
 
 function messageExplicitlyTargetsComparison(message: string) {
   if (messageHasSetupComparisonThenLateBottleneck(message)) return false;
 
   return /\b(?:vs|versus|difference between|compare|contrast|tell (?:them )?apart|distinguish between|actual difference between|which one)\b/i.test(
-    cachedNormalizeLoose(message)
+    cachedNormalizeLoose(message),
   );
 }
 
 function labelLooksParticipantPairComparison(label: string | null) {
   if (!label || !/\bvs\b/i.test(label)) return false;
 
-  const parts = label.split(/\bvs\b/i).map((part) => cachedNormalizeLoose(part).trim()).filter(Boolean);
+  const parts = label
+    .split(/\bvs\b/i)
+    .map((part) => cachedNormalizeLoose(part).trim())
+    .filter(Boolean);
   if (parts.length !== 2) return false;
 
-  const actorSide = /^(?:usa|u s|us|united states|america|ussr|soviet union|russia|china|britain|england|france|germany|rome|carthage|athens|sparta|government|citizens|state|federal government|provincial government|teacher|student|predator|prey)$/i;
+  const actorSide =
+    /^(?:usa|u s|us|united states|america|ussr|soviet union|russia|china|britain|england|france|germany|rome|carthage|athens|sparta|government|citizens|state|federal government|provincial government|teacher|student|predator|prey)$/i;
   const sideLooksActorish = (side: string) => {
     if (actorSide.test(side)) return true;
     const tokens = cachedTokenize(side);
@@ -3222,10 +3799,12 @@ function comparisonCandidateShouldYieldToBroaderConcept(
   candidate: TopicCandidate,
   allCandidates: TopicCandidate[],
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
   if (!candidateLooksCleanComparison(candidate, message)) return false;
-  const comparisonLabel = cleanComparisonLabelForPFAP(getCandidateDisplayLabel(candidate), message) ?? getCandidateDisplayLabel(candidate);
+  const comparisonLabel =
+    cleanComparisonLabelForPFAP(getCandidateDisplayLabel(candidate), message) ??
+    getCandidateDisplayLabel(candidate);
   if (!labelLooksParticipantPairComparison(comparisonLabel)) return false;
 
   // If the learner explicitly asks to compare the two sides, keep the
@@ -3236,16 +3815,23 @@ function comparisonCandidateShouldYieldToBroaderConcept(
   return allCandidates.some((other) => {
     if (other === candidate) return false;
     if (!other.shouldCompeteAsTopic || other.isSubpartReference) return false;
-    if (candidateLooksWeakNounChunk(other) || candidateLooksMalformedTopicLabel(other)) return false;
+    if (
+      candidateLooksWeakNounChunk(other) ||
+      candidateLooksMalformedTopicLabel(other)
+    )
+      return false;
     if (candidateLooksCleanComparison(other, message)) return false;
-    if (!candidateLooksPFAPEligible(other, message, profile, allCandidates)) return false;
+    if (!candidateLooksPFAPEligible(other, message, profile, allCandidates))
+      return false;
 
     const label = getCandidateDisplayLabel(other);
     const normalized = cachedNormalizeLoose(label ?? "");
 
     return (
       Boolean(label) &&
-      /\b(?:war|wars|revolution|movement|system|process|effect|concept|response|regulation|development|analysis|significance|proof|precedent|federalism|college|selection|succession|osmosis|photosynthesis)\b/i.test(normalized)
+      /\b(?:war|wars|revolution|movement|system|process|effect|concept|response|regulation|development|analysis|significance|proof|precedent|federalism|college|selection|succession|osmosis|photosynthesis)\b/i.test(
+        normalized,
+      )
     );
   });
 }
@@ -3254,15 +3840,28 @@ function comparisonCandidateShouldYieldToBetterTopic(
   candidate: TopicCandidate,
   allCandidates: TopicCandidate[],
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
   return (
-    comparisonCandidateShouldYieldToBroaderSkill(candidate, allCandidates, message, profile) ||
-    comparisonCandidateShouldYieldToBroaderConcept(candidate, allCandidates, message, profile)
+    comparisonCandidateShouldYieldToBroaderSkill(
+      candidate,
+      allCandidates,
+      message,
+      profile,
+    ) ||
+    comparisonCandidateShouldYieldToBroaderConcept(
+      candidate,
+      allCandidates,
+      message,
+      profile,
+    )
   );
 }
 
-function inferComparisonLabelFromMessage(message: string, selectedLabel: string | null) {
+function inferComparisonLabelFromMessage(
+  message: string,
+  selectedLabel: string | null,
+) {
   if (!selectedLabel) return null;
 
   const normalized = cachedNormalizeSurface(message);
@@ -3274,15 +3873,21 @@ function inferComparisonLabelFromMessage(message: string, selectedLabel: string 
 
   const implicitLabel = implicitComparisonLabelFromMessage(message);
   if (implicitLabel) {
-    const parts = implicitLabel.split(/\bvs\b/i).map((part) => cachedNormalizeLoose(part).trim()).filter(Boolean);
-    const selectedMatchesImplicitSide = parts.some((part) =>
-      selected === part ||
-      selected.includes(part) ||
-      part.includes(selected)
+    const parts = implicitLabel
+      .split(/\bvs\b/i)
+      .map((part) => cachedNormalizeLoose(part).trim())
+      .filter(Boolean);
+    const selectedMatchesImplicitSide = parts.some(
+      (part) =>
+        selected === part || selected.includes(part) || part.includes(selected),
     );
     const selectedLooksComparisonResidue =
-      /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:all|just|really|exactly)\s+of\b/i.test(selected) ||
-      /\b(?:same|different|comparison|difference|interchangeable|which one|decide between|choose between|pick between)\b/i.test(selected);
+      /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:all|just|really|exactly)\s+of\b/i.test(
+        selected,
+      ) ||
+      /\b(?:same|different|comparison|difference|interchangeable|which one|decide between|choose between|pick between)\b/i.test(
+        selected,
+      );
 
     if (selectedMatchesImplicitSide || selectedLooksComparisonResidue) {
       return implicitLabel;
@@ -3315,16 +3920,24 @@ function inferComparisonLabelFromMessage(message: string, selectedLabel: string 
       selected.includes(leftLoose) ||
       selected.includes(rightLoose);
 
-    if (!selectedMatchesSide && !/\b(?:comparison|difference|rule|same|different|interchangeable)\b/.test(selected)) continue;
+    if (
+      !selectedMatchesSide &&
+      !/\b(?:comparison|difference|rule|same|different|interchangeable)\b/.test(
+        selected,
+      )
+    )
+      continue;
 
-    const label = (shapeDisplayLabel(left) ?? left) + " vs " + (shapeDisplayLabel(right) ?? right);
+    const label =
+      (shapeDisplayLabel(left) ?? left) +
+      " vs " +
+      (shapeDisplayLabel(right) ?? right);
     const cleaned = cleanComparisonLabelForPFAP(label, message) ?? label;
     return addDomainSuffixToComparisonForPFAP(cleaned, message);
   }
 
   return null;
 }
-
 
 /**
  * Patch F.7 generalization guard:
@@ -3341,19 +3954,39 @@ function implicitComparisonLabelFromMessage(message: string) {
   // A side may be a compact term ("metaphase") or a short structured term
   // ("law of cosines", "civil rights"). Keep this intentionally bounded so
   // broad clauses are not turned into comparison labels.
-  const term = "[A-Za-z][A-Za-z0-9'’\\-]*(?:\\s+(?:of|in|on|the)\\s+[A-Za-z0-9][A-Za-z0-9'’\\-]*){0,3}(?:\\s+[A-Za-z][A-Za-z0-9'’\\-]*){0,2}";
-  const boundary = "(?=\\s+(?:and\\s+(?:i|we|you|they)|because|when|where|if|but|that|which|to\\s+me|in\\s+my\\s+head)|[.!?,;:]|$)";
+  const term =
+    "[A-Za-z][A-Za-z0-9'’\\-]*(?:\\s+(?:of|in|on|the)\\s+[A-Za-z0-9][A-Za-z0-9'’\\-]*){0,3}(?:\\s+[A-Za-z][A-Za-z0-9'’\\-]*){0,2}";
+  const boundary =
+    "(?=\\s+(?:and\\s+(?:i|we|you|they)|because|when|where|if|but|that|which|to\\s+me|in\\s+my\\s+head)|[.!?,;:]|$)";
   const patterns = [
     // Patch F.9: explicit comparison requests use the same durable target
     // shape as confusion comparisons: "compare X and Y" -> "X vs Y".
     // Keep this bounded to two compact content sides so broad clauses do not
     // become comparison topics.
-    new RegExp(`\\b(?:can\\s+you|could\\s+you|would\\s+you|will\\s+you|please|help\\s+me|can\\s+we|could\\s+we)?\\s*(?:compare|contrast)\\s+(?:the\\s+)?(${term}?)\\s+(?:and|or|vs|versus)\\s+(?:the\\s+)?(${term}?)${boundary}`, "i"),
-    new RegExp(`\\b(?:decide|choose|pick)\\s+between\\s+(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)${boundary}`, "i"),
-    new RegExp(`\\b(?:not\\s+sure|don'?t\\s+know|dont\\s+know|do\\s+not\\s+know)\\s+(?:which\\s+(?:one\\s+)?(?:to\\s+use|belongs?|fits?)|when\\s+to\\s+use)\\s+(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)${boundary}`, "i"),
-    new RegExp(`\\b(?:mix(?:ing)?\\s+up|blending|confusing)\\s+(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)${boundary}`, "i"),
-    new RegExp(`\\b(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)\\s+(?:that\\s+)?(?:still\\s+)?(?:feel|feels|felt|seem|seems|seemed|look|looks|looked|sound|sounds|sounded)\\s+(?:basically\\s+|kind\\s+of\\s+|sort\\s+of\\s+)?(?:the\\s+)?same\\b`, "i"),
-    new RegExp(`\\b(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)\\s+(?:still\\s+)?(?:blur|blurs|blurred|blend|blends|blended|mix|mixes|mixed)\\s+(?:together|up)\\b`, "i"),
+    new RegExp(
+      `\\b(?:can\\s+you|could\\s+you|would\\s+you|will\\s+you|please|help\\s+me|can\\s+we|could\\s+we)?\\s*(?:compare|contrast)\\s+(?:the\\s+)?(${term}?)\\s+(?:and|or|vs|versus)\\s+(?:the\\s+)?(${term}?)${boundary}`,
+      "i",
+    ),
+    new RegExp(
+      `\\b(?:decide|choose|pick)\\s+between\\s+(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)${boundary}`,
+      "i",
+    ),
+    new RegExp(
+      `\\b(?:not\\s+sure|don'?t\\s+know|dont\\s+know|do\\s+not\\s+know)\\s+(?:which\\s+(?:one\\s+)?(?:to\\s+use|belongs?|fits?)|when\\s+to\\s+use)\\s+(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)${boundary}`,
+      "i",
+    ),
+    new RegExp(
+      `\\b(?:mix(?:ing)?\\s+up|blending|confusing)\\s+(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)${boundary}`,
+      "i",
+    ),
+    new RegExp(
+      `\\b(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)\\s+(?:that\\s+)?(?:still\\s+)?(?:feel|feels|felt|seem|seems|seemed|look|looks|looked|sound|sounds|sounded)\\s+(?:basically\\s+|kind\\s+of\\s+|sort\\s+of\\s+)?(?:the\\s+)?same\\b`,
+      "i",
+    ),
+    new RegExp(
+      `\\b(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)\\s+(?:still\\s+)?(?:blur|blurs|blurred|blend|blends|blended|mix|mixes|mixed)\\s+(?:together|up)\\b`,
+      "i",
+    ),
   ];
 
   for (const pattern of patterns) {
@@ -3378,13 +4011,19 @@ function implicitComparisonLabelFromMessage(message: string) {
   return null;
 }
 
-function candidateMatchesImplicitComparisonSide(candidate: TopicCandidate, implicitLabel: string | null) {
+function candidateMatchesImplicitComparisonSide(
+  candidate: TopicCandidate,
+  implicitLabel: string | null,
+) {
   if (!implicitLabel || !/\bvs\b/i.test(implicitLabel)) return false;
 
   const label = getCandidateDisplayLabel(candidate);
   if (!label) return false;
 
-  const parts = implicitLabel.split(/\bvs\b/i).map((part) => cachedNormalizeLoose(part).trim()).filter(Boolean);
+  const parts = implicitLabel
+    .split(/\bvs\b/i)
+    .map((part) => cachedNormalizeLoose(part).trim())
+    .filter(Boolean);
   if (parts.length !== 2) return false;
 
   const candidateLoose = cachedNormalizeLoose(label);
@@ -3409,43 +4048,68 @@ function candidateLooksComparisonScopeResidue(candidate: TopicCandidate) {
   if (!label) return false;
 
   return (
-    /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:all|just|really|exactly)\s+of\b/i.test(label) ||
-    /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:the\s+)?(?:whole|big|main|actual|real)\b/i.test(label) ||
+    /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:all|just|really|exactly)\s+of\b/i.test(
+      label,
+    ) ||
+    /^(?:not|isn'?t|isnt|wasn'?t|wasnt)\s+(?:the\s+)?(?:whole|big|main|actual|real)\b/i.test(
+      label,
+    ) ||
     /^(?:basically\s+)?(?:the\s+)?same$/i.test(label) ||
-    /^(?:felt|feel|feels|seem|seems|look|looks|sound|sounds)\s+(?:basically\s+)?(?:the\s+)?same$/i.test(label) ||
-    /^(?:which one|which one belongs|which to use|decide between|choose between|pick between)$/i.test(label)
+    /^(?:felt|feel|feels|seem|seems|look|looks|sound|sounds)\s+(?:basically\s+)?(?:the\s+)?same$/i.test(
+      label,
+    ) ||
+    /^(?:which one|which one belongs|which to use|decide between|choose between|pick between)$/i.test(
+      label,
+    )
   );
 }
 
 function chooseImplicitComparisonPairOverrideCandidate(
   candidates: TopicCandidate[],
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ): TopicCandidate | null {
   const implicitLabel = implicitComparisonLabelFromMessage(message);
   if (!implicitLabel) return null;
 
-  const cleanExistingComparison = candidates
-    .filter((candidate) => {
-      if (!candidate.shouldCompeteAsTopic || candidate.isSubpartReference) return false;
-      if (!candidateLooksCleanComparison(candidate, message)) return false;
-      if (comparisonCandidateShouldYieldToBetterTopic(candidate, candidates, message, profile)) return false;
-      const cleaned = cleanComparisonLabelForPFAP(getCandidateDisplayLabel(candidate), message);
-      return cachedNormalizeLoose(cleaned) === cachedNormalizeLoose(implicitLabel);
-    })
-    .sort((a, b) => b.score - a.score)[0] ?? null;
+  const cleanExistingComparison =
+    candidates
+      .filter((candidate) => {
+        if (!candidate.shouldCompeteAsTopic || candidate.isSubpartReference)
+          return false;
+        if (!candidateLooksCleanComparison(candidate, message)) return false;
+        if (
+          comparisonCandidateShouldYieldToBetterTopic(
+            candidate,
+            candidates,
+            message,
+            profile,
+          )
+        )
+          return false;
+        const cleaned = cleanComparisonLabelForPFAP(
+          getCandidateDisplayLabel(candidate),
+          message,
+        );
+        return (
+          cachedNormalizeLoose(cleaned) === cachedNormalizeLoose(implicitLabel)
+        );
+      })
+      .sort((a, b) => b.score - a.score)[0] ?? null;
 
   if (cleanExistingComparison) return cleanExistingComparison;
 
   const anchorCandidates = candidates
     .filter((candidate) => {
-      if (!candidate.shouldCompeteAsTopic || candidate.isSubpartReference) return false;
+      if (!candidate.shouldCompeteAsTopic || candidate.isSubpartReference)
+        return false;
       if (candidateLooksWeakNounChunk(candidate)) return false;
       if (candidateLooksMalformedTopicLabel(candidate)) return false;
       if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
       if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
       if (candidateLooksComparisonScopeResidue(candidate)) return false;
-      if (!candidateMatchesImplicitComparisonSide(candidate, implicitLabel)) return false;
+      if (!candidateMatchesImplicitComparisonSide(candidate, implicitLabel))
+        return false;
 
       return (
         candidate.kind === "named_concept" ||
@@ -3491,30 +4155,53 @@ function chooseImplicitComparisonPairOverrideCandidate(
 function chooseCleanComparisonCandidate(
   candidates: TopicCandidate[],
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ): TopicCandidate | null {
-  if (!profile.hasComparisonShape && !messageHasComparisonShape(message)) return null;
+  if (!profile.hasComparisonShape && !messageHasComparisonShape(message))
+    return null;
 
   const comparisonCandidates = candidates
     .filter((candidate) => {
-      if (!candidate.shouldCompeteAsTopic || candidate.isSubpartReference) return false;
+      if (!candidate.shouldCompeteAsTopic || candidate.isSubpartReference)
+        return false;
       if (candidateLooksWeakNounChunk(candidate)) return false;
-      if (candidateLooksNoisyResidue(candidate) || candidateLooksProblemFraming(candidate)) return false;
+      if (
+        candidateLooksNoisyResidue(candidate) ||
+        candidateLooksProblemFraming(candidate)
+      )
+        return false;
       if (!candidateLooksCleanComparison(candidate, message)) return false;
-      if (comparisonCandidateShouldYieldToBetterTopic(candidate, candidates, message, profile)) return false;
+      if (
+        comparisonCandidateShouldYieldToBetterTopic(
+          candidate,
+          candidates,
+          message,
+          profile,
+        )
+      )
+        return false;
       return true;
     })
     .sort((a, b) => {
       const aLabel = getCandidateDisplayLabel(a);
       const bLabel = getCandidateDisplayLabel(b);
-      const aClean = cleanComparisonLabelForPFAP(aLabel, message) ?? aLabel ?? "";
-      const bClean = cleanComparisonLabelForPFAP(bLabel, message) ?? bLabel ?? "";
+      const aClean =
+        cleanComparisonLabelForPFAP(aLabel, message) ?? aLabel ?? "";
+      const bClean =
+        cleanComparisonLabelForPFAP(bLabel, message) ?? bLabel ?? "";
 
-      const aExact = cachedNormalizeLoose(aClean) === cachedNormalizeLoose(aLabel ?? "") ? 1 : 0;
-      const bExact = cachedNormalizeLoose(bClean) === cachedNormalizeLoose(bLabel ?? "") ? 1 : 0;
+      const aExact =
+        cachedNormalizeLoose(aClean) === cachedNormalizeLoose(aLabel ?? "")
+          ? 1
+          : 0;
+      const bExact =
+        cachedNormalizeLoose(bClean) === cachedNormalizeLoose(bLabel ?? "")
+          ? 1
+          : 0;
       if (aExact !== bExact) return bExact - aExact;
 
-      const tierDelta = pfapTier(b, message, profile) - pfapTier(a, message, profile);
+      const tierDelta =
+        pfapTier(b, message, profile) - pfapTier(a, message, profile);
       if (tierDelta !== 0) return tierDelta;
 
       return b.score - a.score;
@@ -3522,7 +4209,6 @@ function chooseCleanComparisonCandidate(
 
   return comparisonCandidates[0] ?? null;
 }
-
 
 /**
  * Patch F.8.1 micro-guard:
@@ -3532,7 +4218,10 @@ function chooseCleanComparisonCandidate(
  * the rule narrow: it only fires when the plural phrase itself appears inside
  * a direct-help/request frame.
  */
-function canonicalizeDirectPluralSurfaceLabelForPFAP(label: string | null, message: string) {
+function canonicalizeDirectPluralSurfaceLabelForPFAP(
+  label: string | null,
+  message: string,
+) {
   if (!label) return label;
 
   const normalizedLabel = cachedNormalizeLoose(label);
@@ -3550,14 +4239,17 @@ function canonicalizeDirectPluralSurfaceLabelForPFAP(label: string | null, messa
   const directPluralPattern = new RegExp(
     `\\b(?:can|could|would)\\s+(?:we|you)\\s+(?:go over|review|explain|cover|talk about|look at)\\s+(?:the\\s+)?${escapedPlural}\\b|` +
       `\\b(?:help me understand|help me with|need help understanding|need help with|want to learn about|would like to learn about|learn about)\\s+(?:the\\s+)?${escapedPlural}\\b`,
-    "i"
+    "i",
   );
 
   if (!directPluralPattern.test(normalizedMessage)) return label;
 
   const shapedPlural = shapeDisplayLabel(pluralLoose);
   if (!shapedPlural) return label;
-  if (labelHasBadBoundaryShape(shapedPlural) || !labelHasContentBearingHead(shapedPlural)) {
+  if (
+    labelHasBadBoundaryShape(shapedPlural) ||
+    !labelHasContentBearingHead(shapedPlural)
+  ) {
     return label;
   }
 
@@ -3571,14 +4263,22 @@ function canonicalizeDirectPluralSurfaceLabelForPFAP(label: string | null, messa
  * rather than the thing the learner explicitly asked to derive/use. This keeps
  * the durable topic on X without broadly changing candidate extraction.
  */
-function canonicalizeContextFormulaWrapperLabelForPFAP(label: string | null, message: string) {
+function canonicalizeContextFormulaWrapperLabelForPFAP(
+  label: string | null,
+  message: string,
+) {
   if (!label) return label;
 
   const formulaMatch = label.match(/^formula\s+for\s+(.+?)$/i);
   if (!formulaMatch?.[1]) return label;
 
   const inner = normalizeSurface(formulaMatch[1]);
-  if (!inner || cachedTokenize(inner).length === 0 || cachedTokenize(inner).length > 5) return label;
+  if (
+    !inner ||
+    cachedTokenize(inner).length === 0 ||
+    cachedTokenize(inner).length > 5
+  )
+    return label;
 
   const normalizedMessage = cachedNormalizeLoose(message);
   const innerLoose = cachedNormalizeLoose(inner);
@@ -3587,13 +4287,13 @@ function canonicalizeContextFormulaWrapperLabelForPFAP(label: string | null, mes
   const formulaContextPattern = new RegExp(
     `\\b(?:textbook|book|worksheet|notes?|page|lesson|lecture|class|problem|example|question)\\b.{0,80}\\bformula\\s+for\\s+${escapedInner}\\b|` +
       `\\bformula\\s+for\\s+${escapedInner}\\b.{0,120}\\b(?:showed up|came up|appeared|was following|everyone else|lost|stuck|confus|ahead of me|variables?)\\b`,
-    "i"
+    "i",
   );
 
   const explicitFormulaTaskPattern = new RegExp(
     `\\b(?:derive|use|apply|rearrange|solve with|calculate with|memorize|write(?: down)?|what(?:'s| is))\\b.{0,48}\\bformula\\s+for\\s+${escapedInner}\\b|` +
       `\\bformula\\s+for\\s+${escapedInner}\\b.{0,48}\\b(?:derive|use|apply|rearrange|solve|calculate|memorize|write)\\b`,
-    "i"
+    "i",
   );
 
   if (!formulaContextPattern.test(normalizedMessage)) return label;
@@ -3601,36 +4301,181 @@ function canonicalizeContextFormulaWrapperLabelForPFAP(label: string | null, mes
 
   const shapedInner = shapeDisplayLabel(inner);
   if (!shapedInner) return label;
-  if (labelHasBadBoundaryShape(shapedInner) || !labelHasContentBearingHead(shapedInner)) {
+  if (
+    labelHasBadBoundaryShape(shapedInner) ||
+    !labelHasContentBearingHead(shapedInner)
+  ) {
     return label;
   }
 
   return shapedInner;
 }
 
-function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate | null, message: string) {
+/**
+ * Patch F.10 micro-guard:
+ * Clean noisy wrapper words that are attached to an otherwise durable label.
+ * This is intentionally a final canonical-label cleanup, not a candidate
+ * extraction or scoring change.
+ *
+ * General shapes:
+ *   "Until X" -> "X" when X is the compact came-up / bottleneck target.
+ *   "X to be honest" / "X tbh" -> "X" for casual speech residue.
+ *   "X works in Y" -> "X in Y" for mechanism-domain wrappers.
+ */
+function canonicalizeNoisyWrapperLabelForPFAP(
+  label: string | null,
+  message: string,
+) {
+  if (!label) return label;
+
+  const normalizedMessage = cachedNormalizeLoose(message);
+
+  function safeShapedInner(rawInner: string | null | undefined) {
+    const inner = normalizeSurface(rawInner ?? "");
+    if (!inner) return null;
+
+    const tokenCount = cachedTokenize(inner).length;
+    if (tokenCount === 0 || tokenCount > 7) return null;
+
+    const shaped = shapeDisplayLabel(inner);
+    if (!shaped) return null;
+    if (labelHasBadBoundaryShape(shaped) || !labelHasContentBearingHead(shaped))
+      return null;
+
+    return shaped;
+  }
+
+  // "Until Speed of Sound" -> "Speed of Sound". Keep this limited to
+  // temporal/focus wrappers that usually mean "this concept is where I broke".
+  const temporalPrefix = label.match(
+    /^(?:until|once|when|then|after)\s+(.+?)$/i,
+  );
+  if (temporalPrefix?.[1]) {
+    const shaped = safeShapedInner(temporalPrefix[1]);
+    if (shaped) {
+      const innerLoose = cachedNormalizeLoose(shaped);
+      const escapedInner = innerLoose.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const targetAppearsInFocusFrame = new RegExp(
+        `\\b(?:until|once|when|then|after)\\s+${escapedInner}\\b|` +
+          `\\b${escapedInner}\\b.{0,48}\\b(?:came up|comes up|showed up|shows up|appeared|appears)\\b`,
+        "i",
+      ).test(normalizedMessage);
+
+      if (targetAppearsInFocusFrame) return shaped;
+    }
+  }
+
+  // "Interest on Student Loans to Be Honest" -> "Interest on Student Loans".
+  const casualSuffix = label.match(/^(.+?)\s+(?:tbh|to be honest|honestly)$/i);
+  if (casualSuffix?.[1]) {
+    const shaped = safeShapedInner(casualSuffix[1]);
+    if (shaped) return shaped;
+  }
+
+  // "Icing Works in Hockey" -> "Icing in Hockey".
+  // This handles direct mechanism-domain requests while preserving the domain.
+  const worksInDomain = label.match(
+    /^(?:how\s+)?(.+?)\s+works\s+(in|on|for)\s+(.+?)$/i,
+  );
+  if (worksInDomain?.[1] && worksInDomain?.[2] && worksInDomain?.[3]) {
+    const subject = normalizeSurface(worksInDomain[1]);
+    const relation = worksInDomain[2].toLowerCase();
+    const domain = normalizeSurface(worksInDomain[3]);
+
+    if (subject && domain) {
+      const subjectTokens = cachedTokenize(subject).length;
+      const domainTokens = cachedTokenize(domain).length;
+      const relationLoose = relation === "for" ? "for" : relation;
+      const candidateLabel = `${subject} ${relationLoose} ${domain}`;
+      const shaped = safeShapedInner(candidateLabel);
+
+      const subjectLoose = cachedNormalizeLoose(subject).replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&",
+      );
+      const domainLoose = cachedNormalizeLoose(domain).replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&",
+      );
+      const messageHasMechanismDomainFrame = new RegExp(
+        `\\b(?:how|explain|understand|learn about|go over)\\b.{0,80}\\b${subjectLoose}\\b.{0,32}\\bworks?\\b.{0,24}\\b${relationLoose}\\b.{0,32}\\b${domainLoose}\\b`,
+        "i",
+      ).test(normalizedMessage);
+
+      if (
+        shaped &&
+        subjectTokens >= 1 &&
+        subjectTokens <= 4 &&
+        domainTokens >= 1 &&
+        domainTokens <= 4 &&
+        messageHasMechanismDomainFrame
+      ) {
+        return shaped;
+      }
+    }
+  }
+
+  return label;
+}
+
+function canonicalizePFAPLabel(
+  label: string | null,
+  candidate: TopicCandidate | null,
+  message: string,
+) {
   if (!label) return label;
 
   const normalizedLabel = cachedNormalizeLoose(label);
   const normalizedMessage = cachedNormalizeLoose(message);
 
-  const directPluralSurfaceLabel = canonicalizeDirectPluralSurfaceLabelForPFAP(label, message);
-  if (directPluralSurfaceLabel && cachedNormalizeLoose(directPluralSurfaceLabel) !== normalizedLabel) {
+  const directPluralSurfaceLabel = canonicalizeDirectPluralSurfaceLabelForPFAP(
+    label,
+    message,
+  );
+  if (
+    directPluralSurfaceLabel &&
+    cachedNormalizeLoose(directPluralSurfaceLabel) !== normalizedLabel
+  ) {
     return directPluralSurfaceLabel;
   }
 
-  const contextFormulaWrapperLabel = canonicalizeContextFormulaWrapperLabelForPFAP(label, message);
-  if (contextFormulaWrapperLabel && cachedNormalizeLoose(contextFormulaWrapperLabel) !== normalizedLabel) {
+  const contextFormulaWrapperLabel =
+    canonicalizeContextFormulaWrapperLabelForPFAP(label, message);
+  if (
+    contextFormulaWrapperLabel &&
+    cachedNormalizeLoose(contextFormulaWrapperLabel) !== normalizedLabel
+  ) {
     return contextFormulaWrapperLabel;
   }
 
-  const structuralRelationLabel = canonicalizeStructuralRelationLabelForPFAP(label, message);
-  if (structuralRelationLabel && cachedNormalizeLoose(structuralRelationLabel) !== normalizedLabel) {
+  const noisyWrapperLabel = canonicalizeNoisyWrapperLabelForPFAP(
+    label,
+    message,
+  );
+  if (
+    noisyWrapperLabel &&
+    cachedNormalizeLoose(noisyWrapperLabel) !== normalizedLabel
+  ) {
+    return noisyWrapperLabel;
+  }
+
+  const structuralRelationLabel = canonicalizeStructuralRelationLabelForPFAP(
+    label,
+    message,
+  );
+  if (
+    structuralRelationLabel &&
+    cachedNormalizeLoose(structuralRelationLabel) !== normalizedLabel
+  ) {
     return structuralRelationLabel;
   }
 
-  const artifactLanguageBarrierLabel = canonicalizeArtifactLanguageBarrierLabelForPFAP(label, message);
-  if (artifactLanguageBarrierLabel && cachedNormalizeLoose(artifactLanguageBarrierLabel) !== normalizedLabel) {
+  const artifactLanguageBarrierLabel =
+    canonicalizeArtifactLanguageBarrierLabelForPFAP(label, message);
+  if (
+    artifactLanguageBarrierLabel &&
+    cachedNormalizeLoose(artifactLanguageBarrierLabel) !== normalizedLabel
+  ) {
     return artifactLanguageBarrierLabel;
   }
 
@@ -3645,7 +4490,9 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
   }
 
   if (
-    /^(?:es\s+)?negative\s+feedback\s+happen(?:s)?(?:\s+in)?$/i.test(normalizedLabel) &&
+    /^(?:es\s+)?negative\s+feedback\s+happen(?:s)?(?:\s+in)?$/i.test(
+      normalizedLabel,
+    ) &&
     /\bwhy\s+does\s+negative\s+feedback\s+happen\b/i.test(normalizedMessage)
   ) {
     return "Why Negative Feedback Happens";
@@ -3666,7 +4513,9 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
   }
 
   if (
-    /^(?:law\s+of\s+cosines\s+shows?\s+up|law\s+of\s+cosines)$/i.test(normalizedLabel) &&
+    /^(?:law\s+of\s+cosines\s+shows?\s+up|law\s+of\s+cosines)$/i.test(
+      normalizedLabel,
+    ) &&
     /\blaw\s+of\s+cosines\b/i.test(normalizedMessage)
   ) {
     return "Law of Cosines";
@@ -3680,7 +4529,9 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
   }
 
   if (
-    /^(?:stable\s+way|rule\s+works?|how\s+the\s+rule\s+works)$/i.test(normalizedLabel) &&
+    /^(?:stable\s+way|rule\s+works?|how\s+the\s+rule\s+works)$/i.test(
+      normalizedLabel,
+    ) &&
     /\boffside\b/i.test(normalizedMessage) &&
     /\bsoccer\b/i.test(normalizedMessage)
   ) {
@@ -3688,7 +4539,9 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
   }
 
   if (
-    /^(?:premium\s+keeps?\s+showing\s+up(?:\s+in\s+insurance\s+explanations)?|premium\s+showing\s+up)$/i.test(normalizedLabel) &&
+    /^(?:premium\s+keeps?\s+showing\s+up(?:\s+in\s+insurance\s+explanations)?|premium\s+showing\s+up)$/i.test(
+      normalizedLabel,
+    ) &&
     /\bpremium\b/i.test(normalizedMessage) &&
     /\binsurance\b/i.test(normalizedMessage)
   ) {
@@ -3696,7 +4549,9 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
   }
 
   if (
-    /^(?:keep\s+losing\s+track\s+of\s+principal|losing\s+track\s+of\s+principal)$/i.test(normalizedLabel) &&
+    /^(?:keep\s+losing\s+track\s+of\s+principal|losing\s+track\s+of\s+principal)$/i.test(
+      normalizedLabel,
+    ) &&
     /\bprincipal\b/i.test(normalizedMessage) &&
     /\bloans?\b/i.test(normalizedMessage)
   ) {
@@ -3712,10 +4567,17 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
   if (inferredComparison) return inferredComparison;
 
   const trimmedComparison = label
-    .replace(/\s+\b(?:if|when|where|because|while|once|until|instead|rather than)\b.*$/i, "")
+    .replace(
+      /\s+\b(?:if|when|where|because|while|once|until|instead|rather than)\b.*$/i,
+      "",
+    )
     .replace(/\s+/g, " ")
     .trim();
-  if (/\bvs\b/i.test(label) && trimmedComparison !== label && !labelHasBadBoundaryShape(trimmedComparison)) {
+  if (
+    /\bvs\b/i.test(label) &&
+    trimmedComparison !== label &&
+    !labelHasBadBoundaryShape(trimmedComparison)
+  ) {
     return addDomainSuffixToComparisonForPFAP(trimmedComparison, message);
   }
 
@@ -3726,23 +4588,38 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
     if (left && right) return `${left} vs ${right}`;
   }
 
-  if (/\boffside\b/.test(normalizedLabel) && /\bsoccer\b/.test(normalizedMessage)) {
+  if (
+    /\boffside\b/.test(normalizedLabel) &&
+    /\bsoccer\b/.test(normalizedMessage)
+  ) {
     return "Offside in Soccer";
   }
 
-  if (/^systolic\s+vs\s+diastolic$/.test(normalizedLabel) && /\bblood pressure\b/.test(normalizedMessage)) {
+  if (
+    /^systolic\s+vs\s+diastolic$/.test(normalizedLabel) &&
+    /\bblood pressure\b/.test(normalizedMessage)
+  ) {
     return "Systolic vs Diastolic Blood Pressure";
   }
 
-  if (/^french revolution$/.test(normalizedLabel) && /\b(?:caused|cause|led to|triggered|why did|why)\b/.test(normalizedMessage)) {
+  if (
+    /^french revolution$/.test(normalizedLabel) &&
+    /\b(?:caused|cause|led to|triggered|why did|why)\b/.test(normalizedMessage)
+  ) {
     return "Causes of the French Revolution";
   }
 
-  if (/^analysis$/.test(normalizedLabel) && /\bprimary source\b/.test(normalizedMessage)) {
+  if (
+    /^analysis$/.test(normalizedLabel) &&
+    /\bprimary source\b/.test(normalizedMessage)
+  ) {
     return "Primary Source Analysis";
   }
 
-  if (/^consideration is required$/.test(normalizedLabel) && /\b(?:contract|contracts|promise|legally)\b/.test(normalizedMessage)) {
+  if (
+    /^consideration is required$/.test(normalizedLabel) &&
+    /\b(?:contract|contracts|promise|legally)\b/.test(normalizedMessage)
+  ) {
     return "Consideration in Contracts";
   }
 
@@ -3756,7 +4633,9 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
   // confusion case: "while I am answering ... thing I need is monitoring
   // my own understanding."
   if (
-    /^(?:answering|while answering|while i am answering)$/i.test(normalizedLabel) &&
+    /^(?:answering|while answering|while i am answering)$/i.test(
+      normalizedLabel,
+    ) &&
     /\bmonitoring\s+(?:my\s+own\s+)?understanding\b/i.test(normalizedMessage)
   ) {
     return "Monitoring Understanding";
@@ -3766,27 +4645,47 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
     return "Se in Spanish";
   }
 
-  if (/^principal$/i.test(normalizedLabel) && /\b(?:loan|loans|mortgage|mortgages)\b/i.test(normalizedMessage)) {
+  if (
+    /^principal$/i.test(normalizedLabel) &&
+    /\b(?:loan|loans|mortgage|mortgages)\b/i.test(normalizedMessage)
+  ) {
     return "Loan Principal";
   }
 
-  if (/^premium$/i.test(normalizedLabel) && /\binsurance\b/i.test(normalizedMessage)) {
+  if (
+    /^premium$/i.test(normalizedLabel) &&
+    /\binsurance\b/i.test(normalizedMessage)
+  ) {
     return "Insurance Premium";
   }
 
-  if (/^offside$/i.test(normalizedLabel) && /\bsoccer\b/i.test(normalizedMessage)) {
+  if (
+    /^offside$/i.test(normalizedLabel) &&
+    /\bsoccer\b/i.test(normalizedMessage)
+  ) {
     return "Offside in Soccer";
   }
 
-  if (/^food webs make$/.test(normalizedLabel) && /\bfood chains?\b/.test(normalizedMessage) && /\bfood webs?\b/.test(normalizedMessage)) {
+  if (
+    /^food webs make$/.test(normalizedLabel) &&
+    /\bfood chains?\b/.test(normalizedMessage) &&
+    /\bfood webs?\b/.test(normalizedMessage)
+  ) {
     return "Food Chains vs Food Webs";
   }
 
-  if (/^civil liberties$/.test(normalizedLabel) && /\bcivil rights\b/.test(normalizedMessage)) {
+  if (
+    /^civil liberties$/.test(normalizedLabel) &&
+    /\bcivil rights\b/.test(normalizedMessage)
+  ) {
     return "Civil Liberties vs Civil Rights";
   }
 
-  if (/^blur together in$/.test(normalizedLabel) && /\bmitosis\b/.test(normalizedMessage) && /\bmeiosis\b/.test(normalizedMessage)) {
+  if (
+    /^blur together in$/.test(normalizedLabel) &&
+    /\bmitosis\b/.test(normalizedMessage) &&
+    /\bmeiosis\b/.test(normalizedMessage)
+  ) {
     return "Mitosis vs Meiosis";
   }
 
@@ -3794,7 +4693,10 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
     return "Offside in Soccer";
   }
 
-  if (/^contract criteria$/.test(normalizedLabel) && /\bconsideration\b/.test(normalizedMessage)) {
+  if (
+    /^contract criteria$/.test(normalizedLabel) &&
+    /\bconsideration\b/.test(normalizedMessage)
+  ) {
     return "Consideration in Contracts";
   }
 
@@ -3824,10 +4726,13 @@ function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate |
 function chooseStructuralRelationOverrideCandidate(
   scoredCandidates: TopicCandidate[],
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ): TopicCandidate | null {
   if (!scoredCandidates.length) return null;
-  if (!profile.hasStructuralRelationShape && !messageHasStructuralRelationConfusion(message)) {
+  if (
+    !profile.hasStructuralRelationShape &&
+    !messageHasStructuralRelationConfusion(message)
+  ) {
     return null;
   }
 
@@ -3835,7 +4740,7 @@ function chooseStructuralRelationOverrideCandidate(
   const topIsLocalExample = candidateLooksLocalExampleTokenInStructuralFrame(
     currentTop,
     message,
-    profile
+    profile,
   );
   const topIsMalformedStructural =
     candidateLooksStructuralRelationTarget(currentTop, message, profile) &&
@@ -3855,21 +4760,39 @@ function chooseStructuralRelationOverrideCandidate(
   }
 
   const structuralCandidates = scoredCandidates
-    .filter((candidate) => candidateLooksStructuralRelationTarget(candidate, message, profile))
+    .filter((candidate) =>
+      candidateLooksStructuralRelationTarget(candidate, message, profile),
+    )
     .sort((a, b) => {
-      const aCanonical = canonicalizeStructuralRelationLabelForPFAP(getCandidateDisplayLabel(a), message);
-      const bCanonical = canonicalizeStructuralRelationLabelForPFAP(getCandidateDisplayLabel(b), message);
+      const aCanonical = canonicalizeStructuralRelationLabelForPFAP(
+        getCandidateDisplayLabel(a),
+        message,
+      );
+      const bCanonical = canonicalizeStructuralRelationLabelForPFAP(
+        getCandidateDisplayLabel(b),
+        message,
+      );
       const aCanonicalGain =
-        cachedNormalizeLoose(aCanonical) !== cachedNormalizeLoose(getCandidateDisplayLabel(a)) ? 1 : 0;
+        cachedNormalizeLoose(aCanonical) !==
+        cachedNormalizeLoose(getCandidateDisplayLabel(a))
+          ? 1
+          : 0;
       const bCanonicalGain =
-        cachedNormalizeLoose(bCanonical) !== cachedNormalizeLoose(getCandidateDisplayLabel(b)) ? 1 : 0;
-      if (aCanonicalGain !== bCanonicalGain) return bCanonicalGain - aCanonicalGain;
+        cachedNormalizeLoose(bCanonical) !==
+        cachedNormalizeLoose(getCandidateDisplayLabel(b))
+          ? 1
+          : 0;
+      if (aCanonicalGain !== bCanonicalGain)
+        return bCanonicalGain - aCanonicalGain;
 
       const aSpecificity = cachedScoreSpecificity(aCanonical);
       const bSpecificity = cachedScoreSpecificity(bCanonical);
-      const aSpecificityScore = aSpecificity === "very_specific" ? 2 : aSpecificity === "good" ? 1 : 0;
-      const bSpecificityScore = bSpecificity === "very_specific" ? 2 : bSpecificity === "good" ? 1 : 0;
-      if (aSpecificityScore !== bSpecificityScore) return bSpecificityScore - aSpecificityScore;
+      const aSpecificityScore =
+        aSpecificity === "very_specific" ? 2 : aSpecificity === "good" ? 1 : 0;
+      const bSpecificityScore =
+        bSpecificity === "very_specific" ? 2 : bSpecificity === "good" ? 1 : 0;
+      if (aSpecificityScore !== bSpecificityScore)
+        return bSpecificityScore - aSpecificityScore;
 
       return b.score - a.score;
     });
@@ -3889,10 +4812,13 @@ function chooseStructuralRelationOverrideCandidate(
 function chooseArtifactLanguageBarrierOverrideCandidate(
   scoredCandidates: TopicCandidate[],
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ): TopicCandidate | null {
   if (!scoredCandidates.length) return null;
-  if (!profile.hasArtifactLanguageBarrierShape && !messageHasArtifactLanguageBarrier(message)) {
+  if (
+    !profile.hasArtifactLanguageBarrierShape &&
+    !messageHasArtifactLanguageBarrier(message)
+  ) {
     return null;
   }
 
@@ -3900,15 +4826,29 @@ function chooseArtifactLanguageBarrierOverrideCandidate(
 
   // Patch F.5.1: avoid turning “the wording changes” into the topic when
   // the message is really a comparison problem (X and Y blur/mix together).
-  if (artifactLanguageBarrierShouldYieldToComparison(scoredCandidates, message)) {
+  if (
+    artifactLanguageBarrierShouldYieldToComparison(scoredCandidates, message)
+  ) {
     return null;
   }
 
-  const topIsArtifactOnly = candidateLooksArtifactOnlyInLanguageBarrier(currentTop, message, profile);
-  const topIsTailResidue = candidateLooksArtifactLanguageTailResidue(currentTop, message, profile);
+  const topIsArtifactOnly = candidateLooksArtifactOnlyInLanguageBarrier(
+    currentTop,
+    message,
+    profile,
+  );
+  const topIsTailResidue = candidateLooksArtifactLanguageTailResidue(
+    currentTop,
+    message,
+    profile,
+  );
   const topCanCanonicalize =
-    cachedNormalizeLoose(canonicalizeArtifactLanguageBarrierLabelForPFAP(getCandidateDisplayLabel(currentTop), message)) !==
-    cachedNormalizeLoose(getCandidateDisplayLabel(currentTop));
+    cachedNormalizeLoose(
+      canonicalizeArtifactLanguageBarrierLabelForPFAP(
+        getCandidateDisplayLabel(currentTop),
+        message,
+      ),
+    ) !== cachedNormalizeLoose(getCandidateDisplayLabel(currentTop));
 
   // Guard against overreach: if the current top is already a clean durable
   // concept unrelated to the artifact-language barrier, keep it.
@@ -3924,28 +4864,53 @@ function chooseArtifactLanguageBarrierOverrideCandidate(
 
   const barrierCandidates = scoredCandidates
     .filter((candidate) => {
-      const canonical = canonicalizeArtifactLanguageBarrierLabelForPFAP(getCandidateDisplayLabel(candidate), message);
+      const canonical = canonicalizeArtifactLanguageBarrierLabelForPFAP(
+        getCandidateDisplayLabel(candidate),
+        message,
+      );
       const canonicalChanged =
-        cachedNormalizeLoose(canonical) !== cachedNormalizeLoose(getCandidateDisplayLabel(candidate));
+        cachedNormalizeLoose(canonical) !==
+        cachedNormalizeLoose(getCandidateDisplayLabel(candidate));
 
       return (
         candidateLooksMeaningBarrierTarget(candidate, message, profile) ||
         canonicalChanged ||
-        candidateLooksArtifactOnlyInLanguageBarrier(candidate, message, profile) ||
+        candidateLooksArtifactOnlyInLanguageBarrier(
+          candidate,
+          message,
+          profile,
+        ) ||
         candidateLooksArtifactLanguageTailResidue(candidate, message, profile)
       );
     })
     .sort((a, b) => {
-      const aCanonical = canonicalizeArtifactLanguageBarrierLabelForPFAP(getCandidateDisplayLabel(a), message);
-      const bCanonical = canonicalizeArtifactLanguageBarrierLabelForPFAP(getCandidateDisplayLabel(b), message);
+      const aCanonical = canonicalizeArtifactLanguageBarrierLabelForPFAP(
+        getCandidateDisplayLabel(a),
+        message,
+      );
+      const bCanonical = canonicalizeArtifactLanguageBarrierLabelForPFAP(
+        getCandidateDisplayLabel(b),
+        message,
+      );
       const aCanonicalGain =
-        cachedNormalizeLoose(aCanonical) !== cachedNormalizeLoose(getCandidateDisplayLabel(a)) ? 1 : 0;
+        cachedNormalizeLoose(aCanonical) !==
+        cachedNormalizeLoose(getCandidateDisplayLabel(a))
+          ? 1
+          : 0;
       const bCanonicalGain =
-        cachedNormalizeLoose(bCanonical) !== cachedNormalizeLoose(getCandidateDisplayLabel(b)) ? 1 : 0;
-      if (aCanonicalGain !== bCanonicalGain) return bCanonicalGain - aCanonicalGain;
+        cachedNormalizeLoose(bCanonical) !==
+        cachedNormalizeLoose(getCandidateDisplayLabel(b))
+          ? 1
+          : 0;
+      if (aCanonicalGain !== bCanonicalGain)
+        return bCanonicalGain - aCanonicalGain;
 
-      const aTarget = candidateLooksMeaningBarrierTarget(a, message, profile) ? 1 : 0;
-      const bTarget = candidateLooksMeaningBarrierTarget(b, message, profile) ? 1 : 0;
+      const aTarget = candidateLooksMeaningBarrierTarget(a, message, profile)
+        ? 1
+        : 0;
+      const bTarget = candidateLooksMeaningBarrierTarget(b, message, profile)
+        ? 1
+        : 0;
       if (aTarget !== bTarget) return bTarget - aTarget;
 
       const aNoise =
@@ -3966,7 +4931,8 @@ function chooseArtifactLanguageBarrierOverrideCandidate(
   const bestBarrier = barrierCandidates[0] ?? null;
   if (!bestBarrier) return null;
 
-  if (topIsArtifactOnly || topIsTailResidue || topCanCanonicalize) return bestBarrier;
+  if (topIsArtifactOnly || topIsTailResidue || topCanCanonicalize)
+    return bestBarrier;
 
   if (bestBarrier.score + 0.1 >= currentTop.score) return bestBarrier;
 
@@ -3976,17 +4942,22 @@ function chooseArtifactLanguageBarrierOverrideCandidate(
 function candidateLooksConcreteFocusTargetForResidueSuppression(
   candidate: TopicCandidate,
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ) {
   if (!candidate.shouldCompeteAsTopic) return false;
   if (candidate.isSubpartReference) return false;
   if (candidateLooksResidueLike(candidate)) return false;
   if (candidateLooksWeakNounChunk(candidate)) return false;
   if (candidateLooksMalformedTopicLabel(candidate)) return false;
-  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile))
+    return false;
 
   const label = getCandidateDisplayLabel(candidate);
-  if (!label || labelHasBadBoundaryShape(label) || !labelHasContentBearingHead(label)) {
+  if (
+    !label ||
+    labelHasBadBoundaryShape(label) ||
+    !labelHasContentBearingHead(label)
+  ) {
     return false;
   }
 
@@ -4023,19 +4994,21 @@ function candidateLooksConcreteFocusTargetForResidueSuppression(
 
   return Boolean(
     isConcrete &&
-      (isFocused || candidateLooksAbstractButUseful(candidate, message) || profile.hasComparisonShape) &&
-      (specificity === "good" ||
-        specificity === "very_specific" ||
-        candidateLooksStructuredDurable(candidate) ||
-        candidateLooksProtectedDurableLabel(candidate) ||
-        candidateLooksMechanismLike(candidate, message))
+    (isFocused ||
+      candidateLooksAbstractButUseful(candidate, message) ||
+      profile.hasComparisonShape) &&
+    (specificity === "good" ||
+      specificity === "very_specific" ||
+      candidateLooksStructuredDurable(candidate) ||
+      candidateLooksProtectedDurableLabel(candidate) ||
+      candidateLooksMechanismLike(candidate, message)),
   );
 }
 
 function chooseResidueOverFocusSuppressionCandidate(
   scoredCandidates: TopicCandidate[],
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ): TopicCandidate | null {
   if (!scoredCandidates.length) return null;
 
@@ -4046,27 +5019,43 @@ function chooseResidueOverFocusSuppressionCandidate(
     candidateLooksBroadSetupContextCandidate(currentTop, profile) ||
     candidateLooksClauseWrapped(currentTop) ||
     candidateLooksNoisyResidue(currentTop) ||
-    (candidateHasHighResidueRisk(currentTop) && !candidateLooksConceptPhrase(currentTop));
+    (candidateHasHighResidueRisk(currentTop) &&
+      !candidateLooksConceptPhrase(currentTop));
 
-  const highRankedResidueFrame = scoredCandidates.slice(0, 4).some((candidate) =>
-    candidateLooksLearnerStateOrSetupResidue(candidate) ||
-    candidateLooksProblemFraming(candidate) ||
-    candidateLooksBroadSetupContextCandidate(candidate, profile)
-  );
+  const highRankedResidueFrame = scoredCandidates
+    .slice(0, 4)
+    .some(
+      (candidate) =>
+        candidateLooksLearnerStateOrSetupResidue(candidate) ||
+        candidateLooksProblemFraming(candidate) ||
+        candidateLooksBroadSetupContextCandidate(candidate, profile),
+    );
 
   if (!topIsResidueFrame && !highRankedResidueFrame) return null;
 
   const concreteTargets = scoredCandidates
     .filter((candidate) =>
-      candidateLooksConcreteFocusTargetForResidueSuppression(candidate, message, profile)
+      candidateLooksConcreteFocusTargetForResidueSuppression(
+        candidate,
+        message,
+        profile,
+      ),
     )
     .sort((a, b) => {
       const aComparison = a.kind === "comparison_pair" ? 1 : 0;
       const bComparison = b.kind === "comparison_pair" ? 1 : 0;
       if (aComparison !== bComparison) return bComparison - aComparison;
 
-      const aLate = candidateLooksLateConcreteLearningTarget(a, message, profile) || candidateLooksCameUpFocusTarget(a, message, profile) ? 1 : 0;
-      const bLate = candidateLooksLateConcreteLearningTarget(b, message, profile) || candidateLooksCameUpFocusTarget(b, message, profile) ? 1 : 0;
+      const aLate =
+        candidateLooksLateConcreteLearningTarget(a, message, profile) ||
+        candidateLooksCameUpFocusTarget(a, message, profile)
+          ? 1
+          : 0;
+      const bLate =
+        candidateLooksLateConcreteLearningTarget(b, message, profile) ||
+        candidateLooksCameUpFocusTarget(b, message, profile)
+          ? 1
+          : 0;
       if (aLate !== bLate) return bLate - aLate;
 
       const aProtected = candidateLooksProtectedDurableLabel(a) ? 1 : 0;
@@ -4075,9 +5064,12 @@ function chooseResidueOverFocusSuppressionCandidate(
 
       const aSpecificity = cachedScoreSpecificity(getCandidateDisplayLabel(a));
       const bSpecificity = cachedScoreSpecificity(getCandidateDisplayLabel(b));
-      const aSpecificityScore = aSpecificity === "very_specific" ? 2 : aSpecificity === "good" ? 1 : 0;
-      const bSpecificityScore = bSpecificity === "very_specific" ? 2 : bSpecificity === "good" ? 1 : 0;
-      if (aSpecificityScore !== bSpecificityScore) return bSpecificityScore - aSpecificityScore;
+      const aSpecificityScore =
+        aSpecificity === "very_specific" ? 2 : aSpecificity === "good" ? 1 : 0;
+      const bSpecificityScore =
+        bSpecificity === "very_specific" ? 2 : bSpecificity === "good" ? 1 : 0;
+      if (aSpecificityScore !== bSpecificityScore)
+        return bSpecificityScore - aSpecificityScore;
 
       return b.score - a.score;
     });
@@ -4091,7 +5083,10 @@ function chooseResidueOverFocusSuppressionCandidate(
   // scoring noun into a topic.
   if (topIsResidueFrame) return bestTarget;
   if (bestTarget.score + 0.12 >= currentTop.score) return bestTarget;
-  if (bestTarget.kind === "comparison_pair" || candidateLooksAbstractButUseful(bestTarget, message)) {
+  if (
+    bestTarget.kind === "comparison_pair" ||
+    candidateLooksAbstractButUseful(bestTarget, message)
+  ) {
     return bestTarget;
   }
 
@@ -4101,32 +5096,57 @@ function chooseResidueOverFocusSuppressionCandidate(
 function chooseWinningCandidate(
   scoredCandidates: TopicCandidate[],
   message: string,
-  profile: DiscourseProfile
+  profile: DiscourseProfile,
 ): TopicCandidate | null {
   if (!scoredCandidates.length) return null;
 
-  const lateBottleneck = chooseLateExplicitBottleneckOverride(scoredCandidates, message, profile);
+  const lateBottleneck = chooseLateExplicitBottleneckOverride(
+    scoredCandidates,
+    message,
+    profile,
+  );
   if (lateBottleneck) return lateBottleneck;
 
-  const cleanComparison = chooseCleanComparisonCandidate(scoredCandidates, message, profile);
+  const cleanComparison = chooseCleanComparisonCandidate(
+    scoredCandidates,
+    message,
+    profile,
+  );
   if (cleanComparison) return cleanComparison;
 
-  const implicitComparison = chooseImplicitComparisonPairOverrideCandidate(scoredCandidates, message, profile);
+  const implicitComparison = chooseImplicitComparisonPairOverrideCandidate(
+    scoredCandidates,
+    message,
+    profile,
+  );
   if (implicitComparison) return implicitComparison;
 
-  const structuralRelation = chooseStructuralRelationOverrideCandidate(scoredCandidates, message, profile);
+  const structuralRelation = chooseStructuralRelationOverrideCandidate(
+    scoredCandidates,
+    message,
+    profile,
+  );
   if (structuralRelation) return structuralRelation;
 
-  const artifactLanguageBarrier = chooseArtifactLanguageBarrierOverrideCandidate(scoredCandidates, message, profile);
+  const artifactLanguageBarrier =
+    chooseArtifactLanguageBarrierOverrideCandidate(
+      scoredCandidates,
+      message,
+      profile,
+    );
   if (artifactLanguageBarrier) return artifactLanguageBarrier;
 
-  const residueSuppression = chooseResidueOverFocusSuppressionCandidate(scoredCandidates, message, profile);
+  const residueSuppression = chooseResidueOverFocusSuppressionCandidate(
+    scoredCandidates,
+    message,
+    profile,
+  );
   if (residueSuppression) return residueSuppression;
 
   const protectedFinal = chooseProtectedFinalCandidate(
     scoredCandidates,
     message,
-    profile
+    profile,
   );
 
   if (protectedFinal) return protectedFinal;
@@ -4134,33 +5154,39 @@ function chooseWinningCandidate(
   const discourseOverride = chooseDiscourseOverrideCandidate(
     scoredCandidates,
     message,
-    profile
+    profile,
   );
 
   if (discourseOverride) return discourseOverride;
 
   const durableCandidates = scoredCandidates.filter(
-    (candidate) => !candidateLooksResidueLike(candidate) && !candidateLooksWeakNounChunk(candidate)
+    (candidate) =>
+      !candidateLooksResidueLike(candidate) &&
+      !candidateLooksWeakNounChunk(candidate),
   );
 
   const hasCleanProtectedCandidate = scoredCandidates.some((candidate) =>
-    candidateLooksPFAPEligible(candidate, message, profile, scoredCandidates)
+    candidateLooksPFAPEligible(candidate, message, profile, scoredCandidates),
   );
 
   const fallbackDurableCandidates = hasCleanProtectedCandidate
-    ? durableCandidates.filter((candidate) => !candidateLooksMalformedTopicLabel(candidate))
+    ? durableCandidates.filter(
+        (candidate) => !candidateLooksMalformedTopicLabel(candidate),
+      )
     : durableCandidates;
 
-  const explicitConceptCandidates = fallbackDurableCandidates.filter((candidate) =>
-    candidateLooksProtectedDurableLabel(candidate) ||
-    candidateLooksConceptPhrase(candidate) ||
-    (candidateLooksDurablePracticalConcept(candidate) && !candidateLooksQuestionSynthesis(candidate))
+  const explicitConceptCandidates = fallbackDurableCandidates.filter(
+    (candidate) =>
+      candidateLooksProtectedDurableLabel(candidate) ||
+      candidateLooksConceptPhrase(candidate) ||
+      (candidateLooksDurablePracticalConcept(candidate) &&
+        !candidateLooksQuestionSynthesis(candidate)),
   );
 
   const qcsCandidates = fallbackDurableCandidates.filter(
     (candidate) =>
       candidateLooksQuestionSynthesis(candidate) &&
-      !candidateLooksQcsOverSynthesized(candidate, fallbackDurableCandidates)
+      !candidateLooksQcsOverSynthesized(candidate, fallbackDurableCandidates),
   );
 
   const conceptCandidates = explicitConceptCandidates.length
@@ -4184,12 +5210,19 @@ function chooseWinningCandidate(
   const fallbackWinner = familyChosen ?? flatChosen;
   if (fallbackWinner && candidateLooksMalformedTopicLabel(fallbackWinner)) {
     const cleanProtectedRunner = scoredCandidates
-      .filter((candidate) =>
-        candidate !== fallbackWinner &&
-        candidateLooksPFAPEligible(candidate, message, profile, scoredCandidates)
+      .filter(
+        (candidate) =>
+          candidate !== fallbackWinner &&
+          candidateLooksPFAPEligible(
+            candidate,
+            message,
+            profile,
+            scoredCandidates,
+          ),
       )
       .sort((a, b) => {
-        const tierDelta = pfapTier(b, message, profile) - pfapTier(a, message, profile);
+        const tierDelta =
+          pfapTier(b, message, profile) - pfapTier(a, message, profile);
         if (tierDelta !== 0) return tierDelta;
         return b.score - a.score;
       })[0];
@@ -4210,7 +5243,7 @@ function chooseWinningCandidate(
 function isCreateWorthyBroadLabel(
   label: string | null,
   confidence: number,
-  specificity: TopicSpecificity
+  specificity: TopicSpecificity,
 ) {
   if (!label) return false;
   if (cachedLooksLikeSuspiciousLabel(label)) return false;
@@ -4289,11 +5322,19 @@ function buildAmbiguityFlags(args: {
     flags.push("tight_top_gap");
   }
 
-  if (interpretation.messageIntent !== "unclear" && scoredCandidates.length === 0) {
+  if (
+    interpretation.messageIntent !== "unclear" &&
+    scoredCandidates.length === 0
+  ) {
     flags.push("concept_extraction_weak");
   }
 
-  if (!reuseCandidate && canonicalLabel && confidence >= 0.55 && confidence < 0.74) {
+  if (
+    !reuseCandidate &&
+    canonicalLabel &&
+    confidence >= 0.55 &&
+    confidence < 0.74
+  ) {
     flags.push("needs_adjudication");
   }
 
@@ -4313,7 +5354,10 @@ function buildAmbiguityFlags(args: {
     flags.push("problem_framing_candidate");
   }
 
-  if (bestCandidate && candidateLooksLearnerStateOrSetupResidue(bestCandidate)) {
+  if (
+    bestCandidate &&
+    candidateLooksLearnerStateOrSetupResidue(bestCandidate)
+  ) {
     flags.push("learner_state_or_setup_residue_candidate");
   }
 
@@ -4325,13 +5369,25 @@ function buildAmbiguityFlags(args: {
     flags.push("clause_wrapped_candidate");
   }
 
-  const bestIsAnchor = bestCandidate ? candidateLooksDomainAnchor(bestCandidate) : false;
+  const bestIsAnchor = bestCandidate
+    ? candidateLooksDomainAnchor(bestCandidate)
+    : false;
 
   const strongBottleneckRunner = scoredCandidates
     .slice(1, 5)
-    .some((candidate) => candidateLooksStrongLateBottleneck(candidate, normalizedMessage, discourseProfile));
+    .some((candidate) =>
+      candidateLooksStrongLateBottleneck(
+        candidate,
+        normalizedMessage,
+        discourseProfile,
+      ),
+    );
 
-  if (discourseProfile.hasBroadToNarrowShape && bestIsAnchor && strongBottleneckRunner) {
+  if (
+    discourseProfile.hasBroadToNarrowShape &&
+    bestIsAnchor &&
+    strongBottleneckRunner
+  ) {
     flags.push("anchor_beating_bottleneck");
   }
 
@@ -4348,7 +5404,9 @@ function buildAmbiguityFlags(args: {
     discourseProfile.hasTerminologyBarrierShape &&
     bestCandidate &&
     candidateLooksDomainAnchor(bestCandidate) &&
-    scoredCandidates.slice(1, 5).some((candidate) => candidateLooksTerminologyLike(candidate))
+    scoredCandidates
+      .slice(1, 5)
+      .some((candidate) => candidateLooksTerminologyLike(candidate))
   ) {
     flags.push("anchor_beating_terminology_target");
   }
@@ -4361,7 +5419,12 @@ function buildAmbiguityFlags(args: {
     flags.push("weak_noun_chunk_winner");
   }
 
-  if (bestCandidate && candidateHasHighResidueRisk(bestCandidate) && !candidateLooksConceptPhrase(bestCandidate) && !candidateLooksQuestionSynthesis(bestCandidate)) {
+  if (
+    bestCandidate &&
+    candidateHasHighResidueRisk(bestCandidate) &&
+    !candidateLooksConceptPhrase(bestCandidate) &&
+    !candidateLooksQuestionSynthesis(bestCandidate)
+  ) {
     flags.push("high_residue_risk_winner");
   }
 
@@ -4369,31 +5432,76 @@ function buildAmbiguityFlags(args: {
     flags.push("question_synthesis_winner");
   }
 
-  if (bestCandidate && candidateLooksQcsOverSynthesized(bestCandidate, scoredCandidates)) {
+  if (
+    bestCandidate &&
+    candidateLooksQcsOverSynthesized(bestCandidate, scoredCandidates)
+  ) {
     flags.push("qcs_over_synthesis_winner");
   }
 
-  if (bestCandidate && candidateLooksLocalExampleTokenInStructuralFrame(bestCandidate, normalizedMessage, discourseProfile)) {
+  if (
+    bestCandidate &&
+    candidateLooksLocalExampleTokenInStructuralFrame(
+      bestCandidate,
+      normalizedMessage,
+      discourseProfile,
+    )
+  ) {
     flags.push("local_example_token_beating_structural_relation");
   }
 
-  if (bestCandidate && candidateLooksArtifactOnlyInLanguageBarrier(bestCandidate, normalizedMessage, discourseProfile)) {
+  if (
+    bestCandidate &&
+    candidateLooksArtifactOnlyInLanguageBarrier(
+      bestCandidate,
+      normalizedMessage,
+      discourseProfile,
+    )
+  ) {
     flags.push("artifact_only_beating_language_barrier");
   }
 
-  if (bestCandidate && candidateLooksArtifactLanguageTailResidue(bestCandidate, normalizedMessage, discourseProfile)) {
+  if (
+    bestCandidate &&
+    candidateLooksArtifactLanguageTailResidue(
+      bestCandidate,
+      normalizedMessage,
+      discourseProfile,
+    )
+  ) {
     flags.push("artifact_language_tail_winner");
   }
 
-  if (bestCandidate && candidateLooksMeaningBarrierTarget(bestCandidate, normalizedMessage, discourseProfile)) {
+  if (
+    bestCandidate &&
+    candidateLooksMeaningBarrierTarget(
+      bestCandidate,
+      normalizedMessage,
+      discourseProfile,
+    )
+  ) {
     flags.push("artifact_language_barrier_winner");
   }
 
-  if (bestCandidate && candidateLooksStructuralRelationTarget(bestCandidate, normalizedMessage, discourseProfile)) {
+  if (
+    bestCandidate &&
+    candidateLooksStructuralRelationTarget(
+      bestCandidate,
+      normalizedMessage,
+      discourseProfile,
+    )
+  ) {
     flags.push("structural_relation_winner");
   }
 
-  if (bestCandidate && candidateLooksPFAPEligible(bestCandidate, normalizedMessage, discourseProfile)) {
+  if (
+    bestCandidate &&
+    candidateLooksPFAPEligible(
+      bestCandidate,
+      normalizedMessage,
+      discourseProfile,
+    )
+  ) {
     flags.push("pfap_protected_winner");
   }
 
@@ -4463,10 +5571,14 @@ function buildConfidence(args: {
   if (bestCandidate?.kind === "of_phrase") confidence += 0.06;
   if (bestCandidate?.kind === "domain_shaped") confidence += 0.06;
   if (bestCandidate?.kind === "context_anchor") confidence += 0.03;
-  if (bestCandidate && candidateLooksDurablePracticalConcept(bestCandidate)) confidence += 0.08;
+  if (bestCandidate && candidateLooksDurablePracticalConcept(bestCandidate))
+    confidence += 0.08;
   if (bestCandidate && candidateLooksQuestionSynthesis(bestCandidate)) {
     confidence += 0.04;
-    if (bestCandidate.questionSynthesisFrame && bestCandidate.questionSynthesisFrame !== "unknown") {
+    if (
+      bestCandidate.questionSynthesisFrame &&
+      bestCandidate.questionSynthesisFrame !== "unknown"
+    ) {
       confidence += 0.02;
     }
     if (candidateLooksQcsOverSynthesized(bestCandidate, scoredCandidates)) {
@@ -4478,11 +5590,21 @@ function buildConfidence(args: {
     confidence += 0.1;
   }
 
-  if (bestCandidate && candidateLooksBottleneckTarget(bestCandidate, normalizedMessage)) {
+  if (
+    bestCandidate &&
+    candidateLooksBottleneckTarget(bestCandidate, normalizedMessage)
+  ) {
     confidence += 0.1;
   }
 
-  if (bestCandidate && candidateLooksStrongLateBottleneck(bestCandidate, normalizedMessage, discourseProfile)) {
+  if (
+    bestCandidate &&
+    candidateLooksStrongLateBottleneck(
+      bestCandidate,
+      normalizedMessage,
+      discourseProfile,
+    )
+  ) {
     confidence += 0.12;
   }
 
@@ -4494,7 +5616,10 @@ function buildConfidence(args: {
     confidence += 0.06;
   }
 
-  if (bestCandidate && candidateLooksMechanismLike(bestCandidate, normalizedMessage)) {
+  if (
+    bestCandidate &&
+    candidateLooksMechanismLike(bestCandidate, normalizedMessage)
+  ) {
     confidence += 0.06;
   }
 
@@ -4502,11 +5627,25 @@ function buildConfidence(args: {
     confidence += 0.05;
   }
 
-  if (bestCandidate && candidateLooksStructuralRelationTarget(bestCandidate, normalizedMessage, discourseProfile)) {
+  if (
+    bestCandidate &&
+    candidateLooksStructuralRelationTarget(
+      bestCandidate,
+      normalizedMessage,
+      discourseProfile,
+    )
+  ) {
     confidence += 0.1;
   }
 
-  if (bestCandidate && candidateLooksLocalExampleTokenInStructuralFrame(bestCandidate, normalizedMessage, discourseProfile)) {
+  if (
+    bestCandidate &&
+    candidateLooksLocalExampleTokenInStructuralFrame(
+      bestCandidate,
+      normalizedMessage,
+      discourseProfile,
+    )
+  ) {
     confidence -= 0.1;
   }
 
@@ -4534,22 +5673,34 @@ function buildConfidence(args: {
     confidence -= 0.28;
   }
 
-  if (bestCandidate && candidateHasHighResidueRisk(bestCandidate) && !candidateLooksConceptPhrase(bestCandidate) && !candidateLooksQuestionSynthesis(bestCandidate)) {
+  if (
+    bestCandidate &&
+    candidateHasHighResidueRisk(bestCandidate) &&
+    !candidateLooksConceptPhrase(bestCandidate) &&
+    !candidateLooksQuestionSynthesis(bestCandidate)
+  ) {
     confidence -= 0.18;
   }
 
   if (!bestCandidate?.shouldCompeteAsTopic) confidence -= 0.16;
   if (bestCandidate?.isSubpartReference) confidence -= 0.16;
   if (conceptSpan && isClauseLikeSpan(conceptSpan)) confidence -= 0.1;
-  if (bestCandidate && candidateLooksClauseWrapped(bestCandidate)) confidence -= 0.14;
-  if (bestCandidate && candidateLooksTailHeavy(bestCandidate)) confidence -= 0.08;
-  if (bestCandidate && candidateLooksNoisyResidue(bestCandidate)) confidence -= 0.16;
-  if (bestCandidate && candidateLooksProblemFraming(bestCandidate)) confidence -= 0.14;
-  if (bestCandidate && candidateLooksLearnerStateOrSetupResidue(bestCandidate)) confidence -= 0.18;
-  if (bestCandidate && candidateLooksGeneralBucket(bestCandidate)) confidence -= 0.12;
+  if (bestCandidate && candidateLooksClauseWrapped(bestCandidate))
+    confidence -= 0.14;
+  if (bestCandidate && candidateLooksTailHeavy(bestCandidate))
+    confidence -= 0.08;
+  if (bestCandidate && candidateLooksNoisyResidue(bestCandidate))
+    confidence -= 0.16;
+  if (bestCandidate && candidateLooksProblemFraming(bestCandidate))
+    confidence -= 0.14;
+  if (bestCandidate && candidateLooksLearnerStateOrSetupResidue(bestCandidate))
+    confidence -= 0.18;
+  if (bestCandidate && candidateLooksGeneralBucket(bestCandidate))
+    confidence -= 0.12;
   if (cachedLooksLikeSuspiciousLabel(canonicalLabel)) confidence -= 0.1;
   if (discourseProfile.hasNullOnlyEmotionalShape) confidence -= 0.24;
-  if (messageHasMetaNoStableTopicWithoutDurableCue(normalizedMessage)) confidence -= 0.28;
+  if (messageHasMetaNoStableTopicWithoutDurableCue(normalizedMessage))
+    confidence -= 0.28;
 
   const topFamily = bestCandidate
     ? classifyCandidateFamily(bestCandidate, normalizedMessage)
@@ -4561,9 +5712,15 @@ function buildConfidence(args: {
 
   const strongInstructionalRunner = scoredCandidates
     .slice(1, 5)
-    .filter((candidate) => candidateLooksInstructionalTarget(candidate, normalizedMessage));
+    .filter((candidate) =>
+      candidateLooksInstructionalTarget(candidate, normalizedMessage),
+    );
 
-  if (bestCandidate && candidateLooksDomainAnchor(bestCandidate) && strongInstructionalRunner.length > 0) {
+  if (
+    bestCandidate &&
+    candidateLooksDomainAnchor(bestCandidate) &&
+    strongInstructionalRunner.length > 0
+  ) {
     confidence -= 0.08;
   }
 
@@ -4571,7 +5728,10 @@ function buildConfidence(args: {
     confidence -= 0.08;
   }
 
-  if (messageLooksLikePureFollowup(normalizedMessage) && input.active_topic_name) {
+  if (
+    messageLooksLikePureFollowup(normalizedMessage) &&
+    input.active_topic_name
+  ) {
     confidence = Math.max(confidence, 0.78);
   }
 
@@ -4584,13 +5744,18 @@ function shouldSuppressWinnerAsNull(args: {
   normalizedMessage: string;
   discourseProfile: DiscourseProfile;
 }) {
-  const { bestCandidate, canonicalLabel, normalizedMessage, discourseProfile } = args;
+  const { bestCandidate, canonicalLabel, normalizedMessage, discourseProfile } =
+    args;
 
   if (!bestCandidate || !canonicalLabel) return false;
 
   const explicitlyNoTopic =
-    /\b(?:no|not|don'?t have|dont have|do not have)\b.*\b(?:specific|actual|clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalizedMessage) ||
-    /\b(?:no specific|no actual|no clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalizedMessage);
+    /\b(?:no|not|don'?t have|dont have|do not have)\b.*\b(?:specific|actual|clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(
+      normalizedMessage,
+    ) ||
+    /\b(?:no specific|no actual|no clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(
+      normalizedMessage,
+    );
 
   if (explicitlyNoTopic) return true;
 
@@ -4602,7 +5767,14 @@ function shouldSuppressWinnerAsNull(args: {
   // well-formed durable concept, generic emotion/no-concept suppression cannot
   // erase it. The null path is for truly topicless messages, not messages with
   // extracted teachable concepts like "Earned Runs" or "Shutoff Valve".
-  if (candidateLooksPFAPEligible(bestCandidate, normalizedMessage, discourseProfile, [bestCandidate])) {
+  if (
+    candidateLooksPFAPEligible(
+      bestCandidate,
+      normalizedMessage,
+      discourseProfile,
+      [bestCandidate],
+    )
+  ) {
     return false;
   }
 
@@ -4612,17 +5784,21 @@ function shouldSuppressWinnerAsNull(args: {
 
   const onlyEmotionNoConcept =
     /\b(?:lost|overwhelmed|frustrated|confused|stupid|helpless|panic|nothing makes sense|where to start)\b/i.test(
-      normalizedMessage
+      normalizedMessage,
     ) &&
     !/\b(?:of|in|on|vs|versus|difference|how|why|work|works|process|mechanism|terminology|jargon|forms|formula|law|rules?|phases?|layers?|steps?|standard deviation|opportunity cost|compound interest|reuptake|depolarization|electronegativity|crossing over|speed of sound|event loop|negative feedback|membrane potential|se|word order|pH|ph|analy[sz]e|tell whether|count as|caused|prove|should use)\b/i.test(
-      normalizedMessage
+      normalizedMessage,
     );
 
   if (onlyEmotionNoConcept) return true;
 
   if (
-    /\b(?:no|not|don'?t have|dont have|do not have)\b.*\b(?:specific|actual|clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalizedMessage) ||
-    /\b(?:no specific|no actual|no clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(normalizedMessage)
+    /\b(?:no|not|don'?t have|dont have|do not have)\b.*\b(?:specific|actual|clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(
+      normalizedMessage,
+    ) ||
+    /\b(?:no specific|no actual|no clear)\b.*\b(?:topic|concept|class thing|subject)\b/i.test(
+      normalizedMessage,
+    )
   ) {
     return true;
   }
@@ -4651,7 +5827,7 @@ function shouldSuppressWinnerAsNull(args: {
 }
 
 export function runDeterministicTopicLabeling(
-  input: TopicLabelingInput
+  input: TopicLabelingInput,
 ): TopicLabelingResult {
   const timer = createDeterministicLabelingTimer();
 
@@ -4661,10 +5837,16 @@ export function runDeterministicTopicLabeling(
   const interpretation = analyzeMessageStructure(normalizedMessage);
   timer.step("analyze_message_structure");
 
-  const discourseProfile = buildDiscourseProfile(interpretation, normalizedMessage);
+  const discourseProfile = buildDiscourseProfile(
+    interpretation,
+    normalizedMessage,
+  );
   timer.step("build_discourse_profile");
 
-  const rawCandidates = extractConceptCandidates(interpretation, normalizedMessage);
+  const rawCandidates = extractConceptCandidates(
+    interpretation,
+    normalizedMessage,
+  );
   timer.step("extract_concept_candidates");
 
   const scoredCandidates = rawCandidates
@@ -4690,7 +5872,7 @@ export function runDeterministicTopicLabeling(
   let bestCandidate = chooseWinningCandidate(
     scoredCandidates,
     normalizedMessage,
-    discourseProfile
+    discourseProfile,
   );
   timer.step("choose_winning_candidate");
 
@@ -4698,16 +5880,18 @@ export function runDeterministicTopicLabeling(
   // fragment cannot survive through any final selection path. This is a final
   // safety net for fallback leaks, not a new extraction rule.
   if (bestCandidate && candidateLooksMalformedTopicLabel(bestCandidate)) {
-    bestCandidate = chooseCleanProtectedFallbackCandidate(
-      scoredCandidates,
-      normalizedMessage,
-      discourseProfile,
-      bestCandidate
-    ) ?? bestCandidate;
+    bestCandidate =
+      chooseCleanProtectedFallbackCandidate(
+        scoredCandidates,
+        normalizedMessage,
+        discourseProfile,
+        bestCandidate,
+      ) ?? bestCandidate;
   }
   timer.step("candidate_level_malformed_safety_net");
 
-  const secondCandidate = scoredCandidates.find((c) => c !== bestCandidate) ?? null;
+  const secondCandidate =
+    scoredCandidates.find((c) => c !== bestCandidate) ?? null;
   const topGap = bestCandidate
     ? Math.max(0, bestCandidate.score - (secondCandidate?.score ?? 0))
     : 0;
@@ -4716,14 +5900,21 @@ export function runDeterministicTopicLabeling(
   if (
     messageLooksLikePureFollowup(normalizedMessage) &&
     input.active_topic_name &&
-    (!bestCandidate || cachedLooksLikeSuspiciousLabel(getCandidateDisplayLabel(bestCandidate)))
+    (!bestCandidate ||
+      cachedLooksLikeSuspiciousLabel(getCandidateDisplayLabel(bestCandidate)))
   ) {
     bestCandidate = null;
   }
 
-  let conceptSpan = normalizeCandidateSpan(bestCandidate?.coreText ?? bestCandidate?.span ?? null);
+  let conceptSpan = normalizeCandidateSpan(
+    bestCandidate?.coreText ?? bestCandidate?.span ?? null,
+  );
   let canonicalLabel = bestCandidate
-    ? canonicalizePFAPLabel(getCandidateDisplayLabel(bestCandidate), bestCandidate, normalizedMessage)
+    ? canonicalizePFAPLabel(
+        getCandidateDisplayLabel(bestCandidate),
+        bestCandidate,
+        normalizedMessage,
+      )
     : null;
   timer.step("canonicalize_initial_label");
 
@@ -4733,22 +5924,25 @@ export function runDeterministicTopicLabeling(
   if (
     bestCandidate &&
     canonicalLabel &&
-    (labelHasBadBoundaryShape(canonicalLabel) || !labelHasContentBearingHead(canonicalLabel))
+    (labelHasBadBoundaryShape(canonicalLabel) ||
+      !labelHasContentBearingHead(canonicalLabel))
   ) {
     const replacement = chooseCleanProtectedFallbackCandidate(
       scoredCandidates,
       normalizedMessage,
       discourseProfile,
-      bestCandidate
+      bestCandidate,
     );
 
     if (replacement) {
       bestCandidate = replacement;
-      conceptSpan = normalizeCandidateSpan(bestCandidate.coreText ?? bestCandidate.span ?? null);
+      conceptSpan = normalizeCandidateSpan(
+        bestCandidate.coreText ?? bestCandidate.span ?? null,
+      );
       canonicalLabel = canonicalizePFAPLabel(
         getCandidateDisplayLabel(bestCandidate),
         bestCandidate,
-        normalizedMessage
+        normalizedMessage,
       );
     }
   }
@@ -4778,7 +5972,10 @@ export function runDeterministicTopicLabeling(
   timer.step("followup_and_null_suppression");
 
   const specificity = cachedScoreSpecificity(canonicalLabel);
-  const reuseCandidate = findReuseCandidate(canonicalLabel, input.retrieval_candidates);
+  const reuseCandidate = findReuseCandidate(
+    canonicalLabel,
+    input.retrieval_candidates,
+  );
   const shouldReuse = Boolean(reuseCandidate);
   timer.step("specificity_and_reuse_decision");
 
@@ -4814,15 +6011,27 @@ export function runDeterministicTopicLabeling(
 
   const structurallyStrongCreateCandidate =
     bestCandidate != null &&
-    (candidateLooksStrongLateBottleneck(bestCandidate, normalizedMessage, discourseProfile) ||
+    (candidateLooksStrongLateBottleneck(
+      bestCandidate,
+      normalizedMessage,
+      discourseProfile,
+    ) ||
       candidateLooksPairedTarget(bestCandidate) ||
       bestCandidate.kind === "comparison_pair" ||
       bestCandidate.kind === "of_phrase" ||
       bestCandidate.kind === "domain_shaped" ||
       candidateLooksTerminologyLike(bestCandidate) ||
-      candidateLooksMeaningBarrierTarget(bestCandidate, normalizedMessage, discourseProfile) ||
+      candidateLooksMeaningBarrierTarget(
+        bestCandidate,
+        normalizedMessage,
+        discourseProfile,
+      ) ||
       candidateLooksStructuredDurable(bestCandidate) ||
-      candidateLooksStructuralRelationTarget(bestCandidate, normalizedMessage, discourseProfile) ||
+      candidateLooksStructuralRelationTarget(
+        bestCandidate,
+        normalizedMessage,
+        discourseProfile,
+      ) ||
       (bestCandidate.kind === "question_synthesis" &&
         !candidateLooksQcsOverSynthesized(bestCandidate, scoredCandidates)) ||
       bestCandidate.kind === "concept_phrase" ||
@@ -4849,7 +6058,9 @@ export function runDeterministicTopicLabeling(
     !ambiguityFlags.includes("meta_confusion_without_stable_topic") &&
     !ambiguityFlags.includes("clarify_without_topic_recommended") &&
     !ambiguityFlags.includes("qcs_over_synthesis_winner") &&
-    !ambiguityFlags.includes("local_example_token_beating_structural_relation") &&
+    !ambiguityFlags.includes(
+      "local_example_token_beating_structural_relation",
+    ) &&
     !ambiguityFlags.includes("artifact_only_beating_language_barrier") &&
     !ambiguityFlags.includes("artifact_language_tail_winner") &&
     !messageLooksLikePureFollowup(normalizedMessage) &&
@@ -4907,169 +6118,204 @@ export function runDeterministicTopicLabeling(
     diagnostics: (() => {
       const diagnostics = {
         reasoning_summary: [
-        scoredCandidates.length > 0
-          ? `Generated ${scoredCandidates.length} candidate topic spans after grouping.`
-          : "No topic candidates were extracted.",
-        discourseProfile.notes.length > 0
-          ? `Discourse profile: ${discourseProfile.notes.join(", ")}.`
-          : "No strong discourse profile flags were detected.",
-        discourseProfile.domainHints.length > 0
-          ? `Domain hints: ${discourseProfile.domainHints.join(", ")}.`
-          : "No domain hints were detected.",
-        bestCandidate
-          ? `Top candidate kind: ${bestCandidate.kind}.`
-          : "No best candidate kind was selected.",
-        bestCandidate && candidateLooksQuestionSynthesis(bestCandidate)
-          ? `QCS frame: ${bestCandidate.questionSynthesisFrame ?? "unknown"}; trigger: ${bestCandidate.questionTriggerKind ?? "unknown"}.`
-          : "No QCS winner was selected.",
-        bestCandidate
-          ? `Winning candidate family: ${classifyCandidateFamily(bestCandidate, normalizedMessage)}.`
-          : "No winning candidate family was selected.",
-        conceptSpan
-          ? `Selected concept span: ${conceptSpan}.`
-          : "Could not confidently select a concept span.",
-        canonicalLabel
-          ? `Canonical label candidate: ${canonicalLabel}.`
-          : "No canonical label candidate was formed.",
-        shouldReuse
-          ? `A reusable existing topic was found: ${reuseCandidate?.topic_name}.`
-          : shouldCreate
-            ? "The label looks specific enough to create a new topic."
-            : "The message is not yet specific enough for a persistent topic.",
-        scoredCandidates.length >= 2
-          ? `Top-candidate gap: ${topGap.toFixed(2)}.`
-          : "No serious candidate competition was detected.",
-      ],
-      rejection_reasons: [
-        ...(specificity === "too_vague"
-          ? ["Concept span is too vague for a persistent topic."]
-          : []),
-        ...(cachedLooksLikeSuspiciousLabel(canonicalLabel)
-          ? ["Canonical label looks suspicious or discourse-like."]
-          : []),
-        ...(messageLooksLikePureFollowup(normalizedMessage)
-          ? ["Message looks like a pure follow-up or meta continuation."]
-          : []),
-        ...(conceptSpan && isClauseLikeSpan(conceptSpan)
-          ? ["Concept span still looks clause-like rather than topic-like."]
-          : []),
-        ...(!bestCandidate?.shouldCompeteAsTopic
-          ? ["Top candidate behaves more like a discourse cue than a durable topic."]
-          : []),
-        ...(bestCandidate?.isSubpartReference
-          ? [
-              "Top candidate looks like a subpart reference that should usually attach to a parent topic.",
-            ]
-          : []),
-        ...(bestCandidate && candidateLooksTailHeavy(bestCandidate)
-          ? ["Top candidate still looks tail-heavy or residue-contaminated."]
-          : []),
-        ...(bestCandidate && candidateLooksProblemFraming(bestCandidate)
-          ? ["Top candidate looks more like a problem framing than the actual concept to learn."]
-          : []),
-        ...(bestCandidate && candidateLooksGeneralBucket(bestCandidate)
-          ? ["Top candidate is too general relative to the user’s likely focus."]
-          : []),
-        ...(ambiguityFlags.includes("anchor_beating_bottleneck")
-          ? ["A broad anchor may still be beating a narrower bottleneck target."]
-          : []),
-        ...(ambiguityFlags.includes("object_beating_mechanism")
-          ? ["A plain object label may still be beating a mechanism-style target."]
-          : []),
-        ...(ambiguityFlags.includes("anchor_beating_terminology_target")
-          ? ["A broad anchor may still be beating a terminology-style target."]
-          : []),
-        ...(ambiguityFlags.includes("residue_like_winner")
-          ? ["A residue-like candidate may still be winning over a better instructional target."]
-          : []),
-        ...(ambiguityFlags.includes("weak_noun_chunk_winner")
-          ? ["A weak noun-chunk candidate is not durable enough to create as a topic."]
-          : []),
-        ...(ambiguityFlags.includes("high_residue_risk_winner")
-          ? ["The winning candidate has high residue risk and should not create a topic."]
-          : []),
-        ...(ambiguityFlags.includes("null_only_emotional_overcreated")
-          ? ["The message looks emotionally complex but lacks a durable teachable target."]
-          : []),
-        ...(ambiguityFlags.includes("clarify_without_topic_recommended")
-          ? ["The message asks for help but explicitly says the learner cannot yet name the topic; recommend a non-persistent clarify step instead of creating a learning-space topic."]
-          : []),
-        ...(ambiguityFlags.includes("local_example_token_beating_structural_relation")
-          ? ["A local example token may be beating a structural relation target; prefer the relation/order/connection when that is the user's stated confusion shape."]
-          : []),
-        ...(ambiguityFlags.includes("artifact_only_beating_language_barrier")
-          ? ["A bare artifact/source label may be beating a language or wording barrier target; prefer the meaning barrier when the user's stated blocker is the words, labels, fields, or assumptions inside the artifact."]
-          : []),
-        ...(ambiguityFlags.includes("artifact_language_tail_winner")
-          ? ["A tail fragment about assumed knowledge or coded wording may be winning; prefer a domain-shaped terminology/meaning-barrier label."]
-          : []),
-      ],
-      ambiguity_flags: dedupe(ambiguityFlags),
-      scored_candidates: scoredCandidates.map((candidate) => {
-        const displayLabel = getCandidateDisplayLabel(candidate);
-        const baseCandidateDiagnostics = {
-          span: candidate.coreText,
-          normalized_span: candidate.normalizedCoreText,
-          source_clause: candidate.sourceClause,
-          source_role: candidate.sourceRole,
-          clause_index: candidate.clauseIndex,
-          question_about_topic: candidate.questionAboutTopic,
-          comparison_target: candidate.comparisonTarget,
-          qualifiers: candidate.qualifiers,
-          score: candidate.score,
-          score_breakdown: candidate.scoreBreakdown,
-          display_label: displayLabel,
-          kind: candidate.kind,
-          should_compete_as_topic: candidate.shouldCompeteAsTopic,
-          is_subpart_reference: candidate.isSubpartReference,
-          question_synthesis_frame: candidate.questionSynthesisFrame,
-          question_trigger_kind: candidate.questionTriggerKind,
-          question_word: candidate.questionWord,
-          question_verb: candidate.questionVerb,
-          question_object: candidate.questionObject,
-          question_synthesis_slots: candidate.questionSynthesisSlots,
-          synthesized_label: candidate.synthesizedLabel,
-        };
+          scoredCandidates.length > 0
+            ? `Generated ${scoredCandidates.length} candidate topic spans after grouping.`
+            : "No topic candidates were extracted.",
+          discourseProfile.notes.length > 0
+            ? `Discourse profile: ${discourseProfile.notes.join(", ")}.`
+            : "No strong discourse profile flags were detected.",
+          discourseProfile.domainHints.length > 0
+            ? `Domain hints: ${discourseProfile.domainHints.join(", ")}.`
+            : "No domain hints were detected.",
+          bestCandidate
+            ? `Top candidate kind: ${bestCandidate.kind}.`
+            : "No best candidate kind was selected.",
+          bestCandidate && candidateLooksQuestionSynthesis(bestCandidate)
+            ? `QCS frame: ${bestCandidate.questionSynthesisFrame ?? "unknown"}; trigger: ${bestCandidate.questionTriggerKind ?? "unknown"}.`
+            : "No QCS winner was selected.",
+          bestCandidate
+            ? `Winning candidate family: ${classifyCandidateFamily(bestCandidate, normalizedMessage)}.`
+            : "No winning candidate family was selected.",
+          conceptSpan
+            ? `Selected concept span: ${conceptSpan}.`
+            : "Could not confidently select a concept span.",
+          canonicalLabel
+            ? `Canonical label candidate: ${canonicalLabel}.`
+            : "No canonical label candidate was formed.",
+          shouldReuse
+            ? `A reusable existing topic was found: ${reuseCandidate?.topic_name}.`
+            : shouldCreate
+              ? "The label looks specific enough to create a new topic."
+              : "The message is not yet specific enough for a persistent topic.",
+          scoredCandidates.length >= 2
+            ? `Top-candidate gap: ${topGap.toFixed(2)}.`
+            : "No serious candidate competition was detected.",
+        ],
+        rejection_reasons: [
+          ...(specificity === "too_vague"
+            ? ["Concept span is too vague for a persistent topic."]
+            : []),
+          ...(cachedLooksLikeSuspiciousLabel(canonicalLabel)
+            ? ["Canonical label looks suspicious or discourse-like."]
+            : []),
+          ...(messageLooksLikePureFollowup(normalizedMessage)
+            ? ["Message looks like a pure follow-up or meta continuation."]
+            : []),
+          ...(conceptSpan && isClauseLikeSpan(conceptSpan)
+            ? ["Concept span still looks clause-like rather than topic-like."]
+            : []),
+          ...(!bestCandidate?.shouldCompeteAsTopic
+            ? [
+                "Top candidate behaves more like a discourse cue than a durable topic.",
+              ]
+            : []),
+          ...(bestCandidate?.isSubpartReference
+            ? [
+                "Top candidate looks like a subpart reference that should usually attach to a parent topic.",
+              ]
+            : []),
+          ...(bestCandidate && candidateLooksTailHeavy(bestCandidate)
+            ? ["Top candidate still looks tail-heavy or residue-contaminated."]
+            : []),
+          ...(bestCandidate && candidateLooksProblemFraming(bestCandidate)
+            ? [
+                "Top candidate looks more like a problem framing than the actual concept to learn.",
+              ]
+            : []),
+          ...(bestCandidate && candidateLooksGeneralBucket(bestCandidate)
+            ? [
+                "Top candidate is too general relative to the user’s likely focus.",
+              ]
+            : []),
+          ...(ambiguityFlags.includes("anchor_beating_bottleneck")
+            ? [
+                "A broad anchor may still be beating a narrower bottleneck target.",
+              ]
+            : []),
+          ...(ambiguityFlags.includes("object_beating_mechanism")
+            ? [
+                "A plain object label may still be beating a mechanism-style target.",
+              ]
+            : []),
+          ...(ambiguityFlags.includes("anchor_beating_terminology_target")
+            ? [
+                "A broad anchor may still be beating a terminology-style target.",
+              ]
+            : []),
+          ...(ambiguityFlags.includes("residue_like_winner")
+            ? [
+                "A residue-like candidate may still be winning over a better instructional target.",
+              ]
+            : []),
+          ...(ambiguityFlags.includes("weak_noun_chunk_winner")
+            ? [
+                "A weak noun-chunk candidate is not durable enough to create as a topic.",
+              ]
+            : []),
+          ...(ambiguityFlags.includes("high_residue_risk_winner")
+            ? [
+                "The winning candidate has high residue risk and should not create a topic.",
+              ]
+            : []),
+          ...(ambiguityFlags.includes("null_only_emotional_overcreated")
+            ? [
+                "The message looks emotionally complex but lacks a durable teachable target.",
+              ]
+            : []),
+          ...(ambiguityFlags.includes("clarify_without_topic_recommended")
+            ? [
+                "The message asks for help but explicitly says the learner cannot yet name the topic; recommend a non-persistent clarify step instead of creating a learning-space topic.",
+              ]
+            : []),
+          ...(ambiguityFlags.includes(
+            "local_example_token_beating_structural_relation",
+          )
+            ? [
+                "A local example token may be beating a structural relation target; prefer the relation/order/connection when that is the user's stated confusion shape.",
+              ]
+            : []),
+          ...(ambiguityFlags.includes("artifact_only_beating_language_barrier")
+            ? [
+                "A bare artifact/source label may be beating a language or wording barrier target; prefer the meaning barrier when the user's stated blocker is the words, labels, fields, or assumptions inside the artifact.",
+              ]
+            : []),
+          ...(ambiguityFlags.includes("artifact_language_tail_winner")
+            ? [
+                "A tail fragment about assumed knowledge or coded wording may be winning; prefer a domain-shaped terminology/meaning-barrier label.",
+              ]
+            : []),
+        ],
+        ambiguity_flags: dedupe(ambiguityFlags),
+        scored_candidates: scoredCandidates.map((candidate) => {
+          const displayLabel = getCandidateDisplayLabel(candidate);
+          const baseCandidateDiagnostics = {
+            span: candidate.coreText,
+            normalized_span: candidate.normalizedCoreText,
+            source_clause: candidate.sourceClause,
+            source_role: candidate.sourceRole,
+            clause_index: candidate.clauseIndex,
+            question_about_topic: candidate.questionAboutTopic,
+            comparison_target: candidate.comparisonTarget,
+            qualifiers: candidate.qualifiers,
+            score: candidate.score,
+            score_breakdown: candidate.scoreBreakdown,
+            display_label: displayLabel,
+            kind: candidate.kind,
+            should_compete_as_topic: candidate.shouldCompeteAsTopic,
+            is_subpart_reference: candidate.isSubpartReference,
+            question_synthesis_frame: candidate.questionSynthesisFrame,
+            question_trigger_kind: candidate.questionTriggerKind,
+            question_word: candidate.questionWord,
+            question_verb: candidate.questionVerb,
+            question_object: candidate.questionObject,
+            question_synthesis_slots: candidate.questionSynthesisSlots,
+            synthesized_label: candidate.synthesizedLabel,
+          };
 
-        if (!includeFullDiagnostics) {
-          return baseCandidateDiagnostics;
-        }
+          if (!includeFullDiagnostics) {
+            return baseCandidateDiagnostics;
+          }
 
-        return {
-          ...baseCandidateDiagnostics,
-          family: classifyCandidateFamily(candidate, normalizedMessage),
-          is_durable_concept: candidate.isDurableConcept,
-          is_weak_noun_chunk: candidate.isWeakNounChunk,
-          residue_risk: candidate.residueRisk,
-          concept_phrase_shape: candidate.conceptPhraseShape,
-          concept_head: candidate.conceptHead,
-          concept_modifiers: candidate.conceptModifiers,
-          tail_text: candidate.tailText,
-          domain_text: candidate.domainText,
-          question_actor: candidate.questionActor,
-          question_left_text: candidate.questionLeftText,
-          question_right_text: candidate.questionRightText,
-          question_domain_text: candidate.questionDomainText,
-        };
-      }),
-      discourse_profile: {
-        broad_anchor_zones: discourseProfile.broadAnchorZones,
-        bottleneck_zones: discourseProfile.bottleneckZones,
-        residue_zones: discourseProfile.residueZones,
-        contrast_boundary_index: discourseProfile.contrastBoundaryIndex,
-        has_broad_to_narrow_shape: discourseProfile.hasBroadToNarrowShape,
-        has_late_bottleneck_shape: discourseProfile.hasLateBottleneckShape,
-        has_language_barrier_shape: discourseProfile.hasLanguageBarrierShape,
-        has_terminology_barrier_shape: discourseProfile.hasTerminologyBarrierShape,
-        has_mechanism_request_shape: discourseProfile.hasMechanismRequestShape,
-        has_comparison_shape: discourseProfile.hasComparisonShape,
-        has_null_only_emotional_shape: discourseProfile.hasNullOnlyEmotionalShape,
-        has_structural_relation_shape: discourseProfile.hasStructuralRelationShape,
-        has_artifact_language_barrier_shape: discourseProfile.hasArtifactLanguageBarrierShape,
-        domain_hints: discourseProfile.domainHints,
-        target_hints: discourseProfile.targetHints,
-        notes: discourseProfile.notes,
-      },
+          return {
+            ...baseCandidateDiagnostics,
+            family: classifyCandidateFamily(candidate, normalizedMessage),
+            is_durable_concept: candidate.isDurableConcept,
+            is_weak_noun_chunk: candidate.isWeakNounChunk,
+            residue_risk: candidate.residueRisk,
+            concept_phrase_shape: candidate.conceptPhraseShape,
+            concept_head: candidate.conceptHead,
+            concept_modifiers: candidate.conceptModifiers,
+            tail_text: candidate.tailText,
+            domain_text: candidate.domainText,
+            question_actor: candidate.questionActor,
+            question_left_text: candidate.questionLeftText,
+            question_right_text: candidate.questionRightText,
+            question_domain_text: candidate.questionDomainText,
+          };
+        }),
+        discourse_profile: {
+          broad_anchor_zones: discourseProfile.broadAnchorZones,
+          bottleneck_zones: discourseProfile.bottleneckZones,
+          residue_zones: discourseProfile.residueZones,
+          contrast_boundary_index: discourseProfile.contrastBoundaryIndex,
+          has_broad_to_narrow_shape: discourseProfile.hasBroadToNarrowShape,
+          has_late_bottleneck_shape: discourseProfile.hasLateBottleneckShape,
+          has_language_barrier_shape: discourseProfile.hasLanguageBarrierShape,
+          has_terminology_barrier_shape:
+            discourseProfile.hasTerminologyBarrierShape,
+          has_mechanism_request_shape:
+            discourseProfile.hasMechanismRequestShape,
+          has_comparison_shape: discourseProfile.hasComparisonShape,
+          has_null_only_emotional_shape:
+            discourseProfile.hasNullOnlyEmotionalShape,
+          has_structural_relation_shape:
+            discourseProfile.hasStructuralRelationShape,
+          has_artifact_language_barrier_shape:
+            discourseProfile.hasArtifactLanguageBarrierShape,
+          domain_hints: discourseProfile.domainHints,
+          target_hints: discourseProfile.targetHints,
+          notes: discourseProfile.notes,
+        },
       };
 
       timer.step("build_diagnostics");

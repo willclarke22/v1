@@ -1,12 +1,12 @@
 
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
-Previous snapshot generatedAt: 2026-05-02T00:18:44.779Z
-Current snapshot generatedAt: 2026-05-02T00:35:18.774Z
+Previous snapshot generatedAt: 2026-05-02T00:39:04.875Z
+Current snapshot generatedAt: 2026-05-02T00:52:14.582Z
 
-overall label: 325/336 -> 327/336 (+2)
-overall e2e:   323/336 -> 326/336 (+3)
-failed:        13 -> 10 (-3)
+overall label: 327/336 -> 330/336 (+3)
+overall e2e:   326/336 -> 329/336 (+3)
+failed:        10 -> 7 (-3)
 
 Case movement:
 New passes: 3
@@ -20,54 +20,53 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
-blindv2-isolated: label 20/25 -> 21/25 (+1), e2e 20/25 -> 21/25 (+1), failed 5 -> 4 (-1)
-blindv2-sequence: label 10/11 -> 11/11 (+1), e2e 8/11 -> 10/11 (+2), failed 3 -> 1 (-2)
+blindv2-isolated: label 21/25 -> 23/25 (+2), e2e 21/25 -> 23/25 (+2), failed 4 -> 2 (-2)
+holdout-isolated: label 54/58 -> 55/58 (+1), e2e 54/58 -> 55/58 (+1), failed 4 -> 3 (-1)
 
 Category movement:
-comparison: label 13/14 -> 14/14 (+1), e2e 13/14 -> 14/14 (+1), failed 1 -> 0 (-1)
-followup_continuity: label 28/29 -> 29/29 (+1), e2e 26/29 -> 28/29 (+2), failed 3 -> 1 (-2)
+domain_shaping: label 7/8 -> 8/8 (+1), e2e 7/8 -> 8/8 (+1), failed 1 -> 0 (-1)
+noisy_natural_language: label 11/13 -> 13/13 (+2), e2e 11/13 -> 13/13 (+2), failed 2 -> 0 (-2)
 
 Failure-layer movement:
-label: 11 -> 9 (-2)
-matched_topic: 1 -> 0 (-1)
+label: 9 -> 6 (-3)
 
 Likely-failure-class movement:
-good_label_but_creation_blocked: 2 -> 1 (-1)
-uncategorized_failure: 4 -> 2 (-2)
+domain_shaping_failed: 1 -> 0 (-1)
+expected_label_present_in_message_but_not_extracted: 2 -> 1 (-1)
+uncategorized_failure: 2 -> 1 (-1)
 
 PFAP likely-issue movement:
-pfap_expected_label_partially_extracted_canonicalization_needed: 7 -> 5 (-2)
-unknown: 2 -> 1 (-1)
+pfap_expected_label_partially_extracted_canonicalization_needed: 5 -> 2 (-3)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 11 -> 9 (-2)
+failedWithProtectedCandidates: 9 -> 7 (-2)
 failedExpectedCandidateFound: 5 -> 5 (0)
 failedExpectedCandidateProtected: 4 -> 4 (0)
-failedMalformedActual: 1 -> 1 (0)
+failedMalformedActual: 1 -> 0 (-1)
 
 New passes:
 
---- comparison (1) ---
-[blindv2-isolated] comparison | blindv2-compare-002 | PASS
-message: Can you compare the sympathetic nervous system and the parasympathetic nervous system?
-expected: Sympathetic Nervous System vs Parasympathetic Nervous System
-actual:   Sympathetic Nervous System vs Parasympathetic Nervous System
+--- domain_shaping (1) ---
+[blindv2-isolated] domain_shaping | blindv2-domain-002 | PASS
+message: Can you explain how icing works in hockey?
+expected: Icing in Hockey
+actual:   Icing in Hockey
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
 
---- followup_continuity (2) ---
-[blindv2-sequence] followup_continuity | blindv2-seq-004:step-1 | PASS
-message: Can you compare kinetic energy and potential energy?
-expected: Kinetic Energy vs Potential Energy
-actual:   Kinetic Energy vs Potential Energy
+--- noisy_natural_language (2) ---
+[holdout-isolated] noisy_natural_language | holdout-noise-005 | PASS
+message: we did waves today and i was ok until speed of sound came up then i was totally guessing
+expected: Speed of Sound
+actual:   Speed of Sound
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[blindv2-sequence] followup_continuity | blindv2-seq-004:step-2 | PASS
-message: Wait, what do you mean?
-expected: <unspecified>
-actual:   Kinetic Energy vs Potential Energy
+[blindv2-isolated] noisy_natural_language | blindv2-noise-002 | PASS
+message: idk how interest works on student loans tbh
+expected: Interest on Student Loans
+actual:   Interest on Student Loans
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 

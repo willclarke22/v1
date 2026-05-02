@@ -569,12 +569,12 @@ actual:   Se in Spanish
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] noisy_natural_language | holdout-noise-005 | FAIL
+[holdout-isolated] noisy_natural_language | holdout-noise-005 | PASS
 message: we did waves today and i was ok until speed of sound came up then i was totally guessing
 expected: Speed of Sound
-actual:   Until Speed of Sound
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Speed of Sound
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [holdout-isolated] noisy_natural_language | holdout-noise-006 | PASS
 message: tax forms are whatever but the terminology is like coded language and i hate it

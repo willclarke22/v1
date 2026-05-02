@@ -1,18 +1,18 @@
 === Compact Topic Labeling Chunked Report Index ===
-overall: total=336 label=327/336 resolution=333/336 e2e=326/336 failed=10
-label-layer failures: 9
-end-to-end failures: 10
+overall: total=336 label=330/336 resolution=333/336 e2e=329/336 failed=7
+label-layer failures: 6
+end-to-end failures: 7
 displayed cases: 336 (all cases)
-generatedAt: 2026-05-02T00:38:10.358Z
+generatedAt: 2026-05-02T00:54:00.919Z
 
 === Compact Scope Summary ===
 baseline-isolated: total=78 label=77/78 resolution=77/78 e2e=77/78 failed=1
 baseline-sequence: total=21 label=21/21 resolution=21/21 e2e=21/21 failed=0
-blindv2-isolated: total=25 label=21/25 resolution=24/25 e2e=21/25 failed=4
+blindv2-isolated: total=25 label=23/25 resolution=24/25 e2e=23/25 failed=2
 blindv2-sequence: total=11 label=11/11 resolution=10/11 e2e=10/11 failed=1
 hard-isolated: total=12 label=12/12 resolution=12/12 e2e=12/12 failed=0
 hard-sequence: total=11 label=11/11 resolution=11/11 e2e=11/11 failed=0
-holdout-isolated: total=58 label=54/58 resolution=58/58 e2e=54/58 failed=4
+holdout-isolated: total=58 label=55/58 resolution=58/58 e2e=55/58 failed=3
 holdout-sequence: total=20 label=20/20 resolution=20/20 e2e=20/20 failed=0
 naturalistic-diverse: total=100 label=100/100 resolution=100/100 e2e=100/100 failed=0
 
@@ -32,7 +32,7 @@ cooking: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 direct: total=3 label=2/3 resolution=3/3 e2e=2/3 failed=1
 direct_baseline: total=6 label=6/6 resolution=6/6 e2e=6/6 failed=0
 diverse_academic: total=6 label=5/6 resolution=5/6 e2e=5/6 failed=1
-domain_shaping: total=8 label=7/8 resolution=8/8 e2e=7/8 failed=1
+domain_shaping: total=8 label=8/8 resolution=8/8 e2e=8/8 failed=0
 driving: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 emotion_topicful: total=5 label=5/5 resolution=5/5 e2e=5/5 failed=0
 emotions: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
@@ -60,7 +60,7 @@ mixed: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 music: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 nature: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 negative_followup: total=2 label=2/2 resolution=2/2 e2e=2/2 failed=0
-noisy_natural_language: total=13 label=11/13 resolution=13/13 e2e=11/13 failed=2
+noisy_natural_language: total=13 label=13/13 resolution=13/13 e2e=13/13 failed=0
 null_cases: total=11 label=11/11 resolution=11/11 e2e=11/11 failed=0
 paragraph_context: total=18 label=16/18 resolution=18/18 e2e=16/18 failed=2
 plumbing: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
