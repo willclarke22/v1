@@ -1,15 +1,15 @@
 === Compact Topic Labeling Chunked Report Index ===
-overall: total=336 label=325/336 resolution=333/336 e2e=323/336 failed=13
-label-layer failures: 11
-end-to-end failures: 13
+overall: total=336 label=327/336 resolution=333/336 e2e=326/336 failed=10
+label-layer failures: 9
+end-to-end failures: 10
 displayed cases: 336 (all cases)
-generatedAt: 2026-05-02T00:16:50.080Z
+generatedAt: 2026-05-02T00:38:10.358Z
 
 === Compact Scope Summary ===
 baseline-isolated: total=78 label=77/78 resolution=77/78 e2e=77/78 failed=1
 baseline-sequence: total=21 label=21/21 resolution=21/21 e2e=21/21 failed=0
-blindv2-isolated: total=25 label=20/25 resolution=24/25 e2e=20/25 failed=5
-blindv2-sequence: total=11 label=10/11 resolution=10/11 e2e=8/11 failed=3
+blindv2-isolated: total=25 label=21/25 resolution=24/25 e2e=21/25 failed=4
+blindv2-sequence: total=11 label=11/11 resolution=10/11 e2e=10/11 failed=1
 hard-isolated: total=12 label=12/12 resolution=12/12 e2e=12/12 failed=0
 hard-sequence: total=11 label=11/11 resolution=11/11 e2e=11/11 failed=0
 holdout-isolated: total=58 label=54/58 resolution=58/58 e2e=54/58 failed=4
@@ -24,7 +24,7 @@ buried_language_target: total=22 label=22/22 resolution=22/22 e2e=22/22 failed=0
 cars: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 chemistry: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 coding: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-comparison: total=14 label=13/14 resolution=14/14 e2e=13/14 failed=1
+comparison: total=14 label=14/14 resolution=14/14 e2e=14/14 failed=0
 comparisons: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 confusion: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 context_recovery: total=5 label=5/5 resolution=5/5 e2e=5/5 failed=0
@@ -38,7 +38,7 @@ emotion_topicful: total=5 label=5/5 resolution=5/5 e2e=5/5 failed=0
 emotions: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 existing_vs_new_narrow: total=8 label=8/8 resolution=8/8 e2e=8/8 failed=0
 finance: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
-followup_continuity: total=29 label=28/29 resolution=28/29 e2e=26/29 failed=3
+followup_continuity: total=29 label=29/29 resolution=28/29 e2e=28/29 failed=1
 geography: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 grammar: total=4 label=4/4 resolution=4/4 e2e=4/4 failed=0
 hard_broad_to_narrow: total=3 label=3/3 resolution=3/3 e2e=3/3 failed=0

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-02T00:18:44.779Z",
+  "generatedAt": "2026-05-02T00:39:04.875Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,12 +8,12 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 325,
+    "labelPassed": 327,
     "resolutionPassed": 333,
     "createPassed": 334,
-    "matchedTopicPassed": 335,
-    "endToEndPassed": 323,
-    "failed": 13
+    "matchedTopicPassed": 336,
+    "endToEndPassed": 326,
+    "failed": 10
   },
   "scopeBreakdown": {
     "baseline-isolated": {
@@ -36,21 +36,21 @@
     },
     "blindv2-isolated": {
       "total": 25,
-      "labelPassed": 20,
+      "labelPassed": 21,
       "resolutionPassed": 24,
       "createPassed": 24,
       "matchedTopicPassed": 25,
-      "endToEndPassed": 20,
-      "failed": 5
+      "endToEndPassed": 21,
+      "failed": 4
     },
     "blindv2-sequence": {
       "total": 11,
-      "labelPassed": 10,
+      "labelPassed": 11,
       "resolutionPassed": 10,
       "createPassed": 11,
-      "matchedTopicPassed": 10,
-      "endToEndPassed": 8,
-      "failed": 3
+      "matchedTopicPassed": 11,
+      "endToEndPassed": 10,
+      "failed": 1
     },
     "hard-isolated": {
       "total": 12,
@@ -101,21 +101,21 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 263,
+      "labelPassed": 264,
       "resolutionPassed": 271,
       "createPassed": 271,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 263,
-      "failed": 10
+      "endToEndPassed": 264,
+      "failed": 9
     },
     "sequence": {
       "total": 63,
-      "labelPassed": 62,
+      "labelPassed": 63,
       "resolutionPassed": 62,
       "createPassed": 63,
-      "matchedTopicPassed": 62,
-      "endToEndPassed": 60,
-      "failed": 3
+      "matchedTopicPassed": 63,
+      "endToEndPassed": 62,
+      "failed": 1
     }
   },
   "categoryBreakdown": {
@@ -184,12 +184,12 @@
     },
     "comparison": {
       "total": 14,
-      "labelPassed": 13,
+      "labelPassed": 14,
       "resolutionPassed": 14,
       "createPassed": 14,
       "matchedTopicPassed": 14,
-      "endToEndPassed": 13,
-      "failed": 1
+      "endToEndPassed": 14,
+      "failed": 0
     },
     "comparisons": {
       "total": 4,
@@ -310,12 +310,12 @@
     },
     "followup_continuity": {
       "total": 29,
-      "labelPassed": 28,
+      "labelPassed": 29,
       "resolutionPassed": 28,
       "createPassed": 29,
-      "matchedTopicPassed": 28,
-      "endToEndPassed": 26,
-      "failed": 3
+      "matchedTopicPassed": 29,
+      "endToEndPassed": 28,
+      "failed": 1
     },
     "geography": {
       "total": 4,
@@ -661,31 +661,31 @@
     }
   },
   "layerBreakdown": {
-    "label": 11,
+    "label": 9,
     "resolution": 3,
     "create_flag": 2,
-    "matched_topic": 1,
+    "matched_topic": 0,
     "forbidden": 0
   },
   "likelyFailureBreakdown": {
     "domain_shaping_failed": 1,
     "expected_label_extracted_but_lost_competition": 1,
     "expected_label_present_in_message_but_not_extracted": 2,
-    "good_label_but_creation_blocked": 2,
+    "good_label_but_creation_blocked": 1,
     "pfap_protected_candidate_lost_final_arbitration": 3,
-    "uncategorized_failure": 4
+    "uncategorized_failure": 2
   },
   "pfapBreakdown": {
-    "failedCount": 13,
-    "failedWithProtectedCandidates": 11,
+    "failedCount": 10,
+    "failedWithProtectedCandidates": 9,
     "failedExpectedCandidateFound": 5,
     "failedExpectedCandidateProtected": 4,
     "failedMalformedActual": 1,
     "likelyIssueBreakdown": {
       "pfap_expected_candidate_needs_protection_metadata": 1,
-      "pfap_expected_label_partially_extracted_canonicalization_needed": 7,
+      "pfap_expected_label_partially_extracted_canonicalization_needed": 5,
       "pfap_protected_candidate_lost_final_arbitration": 3,
-      "unknown": 2
+      "unknown": 1
     }
   },
   "results": [
@@ -7104,7 +7104,7 @@
       "description": "explicit compare request with determiners",
       "message": "Can you compare the sympathetic nervous system and the parasympathetic nervous system?",
       "expectedLabel": "Sympathetic Nervous System vs Parasympathetic Nervous System",
-      "actualLabel": "Sympathetic Nervous System",
+      "actualLabel": "Sympathetic Nervous System vs Parasympathetic Nervous System",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
@@ -7112,25 +7112,20 @@
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Sympathetic Nervous System vs Parasympathetic Nervous System\" actualLabel=\"Sympathetic Nervous System\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "blindv2-isolated::blindv2-compare-003",
@@ -7914,7 +7909,7 @@
       "description": "comparison topic create",
       "message": "Can you compare kinetic energy and potential energy?",
       "expectedLabel": "Kinetic Energy vs Potential Energy",
-      "actualLabel": "Potential Energy",
+      "actualLabel": "Kinetic Energy vs Potential Energy",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
@@ -7922,25 +7917,20 @@
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "uncategorized_failure",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Kinetic Energy vs Potential Energy\" actualLabel=\"Potential Energy\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "blindv2-sequence::blindv2-seq-004:step-2",
@@ -7950,33 +7940,28 @@
       "category": "followup_continuity",
       "description": "meta continuation after comparison",
       "message": "Wait, what do you mean?",
-      "actualLabel": "Potential Energy",
+      "actualLabel": "Kinetic Energy vs Potential Energy",
       "expectedResolutionKind": "fallback_active_topic",
       "actualResolutionKind": "fallback_active_topic",
       "expectedShouldCreate": false,
       "actualShouldCreate": false,
       "expectedMatchedTopicName": "Kinetic Energy vs Potential Energy",
-      "actualMatchedTopicName": "Potential Energy",
+      "actualMatchedTopicName": "Kinetic Energy vs Potential Energy",
       "actualConfidence": 1,
       "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
-      "matchedTopicPass": false,
+      "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "good_label_but_creation_blocked",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
       "pfapLikelyIssue": null,
       "pfapProtectedCount": 0,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
       "actualCandidateRank": null,
-      "layeredFailures": [
-        {
-          "layer": "matched_topic",
-          "message": "expectedMatchedTopicName=\"Kinetic Energy vs Potential Energy\" actualMatchedTopicName=\"Potential Energy\" normalizedExpectedMatchedTopicName=\"kinetic energy vs potential energy\" normalizedActualMatchedTopicName=\"potential energy\""
-        }
-      ]
+      "layeredFailures": []
     },
     {
       "key": "blindv2-sequence::blindv2-seq-005:step-1",

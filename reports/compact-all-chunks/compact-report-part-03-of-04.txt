@@ -298,12 +298,12 @@ actual:   Kinetic Energy vs Potential Energy
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[blindv2-isolated] comparison | blindv2-compare-002 | FAIL
+[blindv2-isolated] comparison | blindv2-compare-002 | PASS
 message: Can you compare the sympathetic nervous system and the parasympathetic nervous system?
 expected: Sympathetic Nervous System vs Parasympathetic Nervous System
-actual:   Sympathetic Nervous System
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Sympathetic Nervous System vs Parasympathetic Nervous System
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [blindv2-isolated] comparison | blindv2-compare-003 | PASS
 message: I keep forgetting when to use mean vs median.
@@ -485,20 +485,19 @@ actual:   Dopamine
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[blindv2-sequence] followup_continuity | blindv2-seq-004:step-1 | FAIL
+[blindv2-sequence] followup_continuity | blindv2-seq-004:step-1 | PASS
 message: Can you compare kinetic energy and potential energy?
 expected: Kinetic Energy vs Potential Energy
-actual:   Potential Energy
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Kinetic Energy vs Potential Energy
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
-[blindv2-sequence] followup_continuity | blindv2-seq-004:step-2 | FAIL
+[blindv2-sequence] followup_continuity | blindv2-seq-004:step-2 | PASS
 message: Wait, what do you mean?
 expected: <unspecified>
-actual:   Potential Energy
-checks: label=Y resolution=Y create=Y matched=N forbidden=Y
-layers: matched_topic | likely: good_label_but_creation_blocked | pfap: n/a
-resolution: expected=fallback_active_topic actual=fallback_active_topic | create expected=false actual=false | matched expected=Kinetic Energy vs Potential Energy actual=Potential Energy
+actual:   Kinetic Energy vs Potential Energy
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [blindv2-sequence] followup_continuity | blindv2-seq-005:step-1 | FAIL
 message: Can I get help with osmosis?

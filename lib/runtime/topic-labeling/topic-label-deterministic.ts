@@ -3344,6 +3344,11 @@ function implicitComparisonLabelFromMessage(message: string) {
   const term = "[A-Za-z][A-Za-z0-9'’\\-]*(?:\\s+(?:of|in|on|the)\\s+[A-Za-z0-9][A-Za-z0-9'’\\-]*){0,3}(?:\\s+[A-Za-z][A-Za-z0-9'’\\-]*){0,2}";
   const boundary = "(?=\\s+(?:and\\s+(?:i|we|you|they)|because|when|where|if|but|that|which|to\\s+me|in\\s+my\\s+head)|[.!?,;:]|$)";
   const patterns = [
+    // Patch F.9: explicit comparison requests use the same durable target
+    // shape as confusion comparisons: "compare X and Y" -> "X vs Y".
+    // Keep this bounded to two compact content sides so broad clauses do not
+    // become comparison topics.
+    new RegExp(`\\b(?:can\\s+you|could\\s+you|would\\s+you|will\\s+you|please|help\\s+me|can\\s+we|could\\s+we)?\\s*(?:compare|contrast)\\s+(?:the\\s+)?(${term}?)\\s+(?:and|or|vs|versus)\\s+(?:the\\s+)?(${term}?)${boundary}`, "i"),
     new RegExp(`\\b(?:decide|choose|pick)\\s+between\\s+(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)${boundary}`, "i"),
     new RegExp(`\\b(?:not\\s+sure|don'?t\\s+know|dont\\s+know|do\\s+not\\s+know)\\s+(?:which\\s+(?:one\\s+)?(?:to\\s+use|belongs?|fits?)|when\\s+to\\s+use)\\s+(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)${boundary}`, "i"),
     new RegExp(`\\b(?:mix(?:ing)?\\s+up|blending|confusing)\\s+(${term}?)\\s+(?:and|or|vs|versus)\\s+(${term}?)${boundary}`, "i"),

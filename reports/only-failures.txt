@@ -1,0 +1,104 @@
+
+=== Compact Topic Labeling Report ===
+overall: total=336 label=327/336 resolution=333/336 e2e=326/336 failed=10
+label-layer failures: 9
+end-to-end failures: 10
+displayed cases: 9 (label failures only)
+
+=== Compact Scope Summary ===
+baseline-isolated: total=78 label=77/78 resolution=77/78 e2e=77/78 failed=1
+blindv2-isolated: total=25 label=21/25 resolution=24/25 e2e=21/25 failed=4
+blindv2-sequence: total=11 label=11/11 resolution=10/11 e2e=10/11 failed=1
+holdout-isolated: total=58 label=54/58 resolution=58/58 e2e=54/58 failed=4
+naturalistic-diverse: total=100 label=100/100 resolution=100/100 e2e=100/100 failed=0
+
+=== Compact Category Summary (failing categories only) ===
+broad_to_narrow: total=16 label=15/16 resolution=15/16 e2e=15/16 failed=1
+direct: total=3 label=2/3 resolution=3/3 e2e=2/3 failed=1
+diverse_academic: total=6 label=5/6 resolution=5/6 e2e=5/6 failed=1
+domain_shaping: total=8 label=7/8 resolution=8/8 e2e=7/8 failed=1
+followup_continuity: total=29 label=29/29 resolution=28/29 e2e=28/29 failed=1
+noisy_natural_language: total=13 label=11/13 resolution=13/13 e2e=11/13 failed=2
+paragraph_context: total=18 label=16/18 resolution=18/18 e2e=16/18 failed=2
+tail_contamination: total=10 label=9/10 resolution=10/10 e2e=9/10 failed=1
+
+=== Compact Label Failures Grouped By Category ===
+
+--- broad_to_narrow (1) ---
+[blindv2-isolated] broad_to_narrow | blindv2-focus-001 | FAIL
+message: I'm learning about neurons, but the sodium-potassium pump is the actual thing I don't get.
+expected: Sodium-Potassium Pump
+actual:   <null>
+checks: label=N resolution=N create=N matched=Y forbidden=Y
+layers: label,resolution,create_flag | likely: expected_label_extracted_but_lost_competition | pfap: pfap_expected_candidate_needs_protection_metadata
+resolution: expected=created_new_candidate actual=no_match | create expected=true actual=false | matched expected=n/a actual=n/a
+
+
+--- direct (1) ---
+[blindv2-isolated] direct | blindv2-direct-002 | FAIL
+message: I would really like to learn about how llms work and why deterministic code can't solve all my problems.
+expected: How LLMs Work
+actual:   Deterministic Code Can't Solve All
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+
+--- diverse_academic (1) ---
+[baseline-isolated] diverse_academic | earth-001 | FAIL
+message: Plate tectonics is one of those things where I feel like I understand it for five seconds and then I hear subduction again and realize I don't really know what is moving where.
+expected: Subduction
+actual:   Understand It for Five Seconds
+checks: label=N resolution=N create=N matched=Y forbidden=Y
+layers: label,resolution,create_flag | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+resolution: expected=created_new_candidate actual=no_match | create expected=true actual=false | matched expected=n/a actual=n/a
+
+
+--- domain_shaping (1) ---
+[blindv2-isolated] domain_shaping | blindv2-domain-002 | FAIL
+message: Can you explain how icing works in hockey?
+expected: Icing in Hockey
+actual:   Icing Works in Hockey
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: domain_shaping_failed | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+
+--- noisy_natural_language (2) ---
+[holdout-isolated] noisy_natural_language | holdout-noise-005 | FAIL
+message: we did waves today and i was ok until speed of sound came up then i was totally guessing
+expected: Speed of Sound
+actual:   Until Speed of Sound
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+[blindv2-isolated] noisy_natural_language | blindv2-noise-002 | FAIL
+message: idk how interest works on student loans tbh
+expected: Interest on Student Loans
+actual:   Interest on Student Loans to Be Honest
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+
+--- paragraph_context (2) ---
+[holdout-isolated] paragraph_context | holdout-paragraph-003 | FAIL
+message: In class we were doing neurons, threshold, membrane potential, and firing. At first I thought I was confused about action potentials in general, but after trying the practice questions I think it is really depolarization that keeps breaking my understanding.
+expected: Depolarization
+actual:   Membrane Potential
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+
+[holdout-isolated] paragraph_context | holdout-paragraph-009 | FAIL
+message: At first I thought I needed help with mitosis in general. But when I looked at the questions I got wrong, it was not all of mitosis. It was metaphase and anaphase that still felt basically the same to me.
+expected: Metaphase vs Anaphase
+actual:   Not All of Mitosis
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+
+
+--- tail_contamination (1) ---
+[holdout-isolated] tail_contamination | holdout-tail-003 | FAIL
+message: It is really the rules of curling that I do not get, not the general sport vibe, especially once scoring comes up and I start feeling like I missed some earlier explanation.
+expected: Rules of Curling
+actual:   Rules of Curling That I Do Not Get
+checks: label=N resolution=Y create=Y matched=Y forbidden=Y
+layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
+
