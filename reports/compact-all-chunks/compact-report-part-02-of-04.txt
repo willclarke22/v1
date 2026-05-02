@@ -358,12 +358,12 @@ actual:   Refractory Period
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[holdout-isolated] paragraph_context | holdout-paragraph-009 | FAIL
+[holdout-isolated] paragraph_context | holdout-paragraph-009 | PASS
 message: At first I thought I needed help with mitosis in general. But when I looked at the questions I got wrong, it was not all of mitosis. It was metaphase and anaphase that still felt basically the same to me.
 expected: Metaphase vs Anaphase
-actual:   Not All of Mitosis
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Metaphase vs Anaphase
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 --- broad_to_narrow ---
 

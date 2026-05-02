@@ -1,12 +1,12 @@
 
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
-Previous snapshot generatedAt: 2026-05-02T00:54:47.702Z
-Current snapshot generatedAt: 2026-05-02T01:06:52.100Z
+Previous snapshot generatedAt: 2026-05-02T01:10:16.679Z
+Current snapshot generatedAt: 2026-05-02T02:31:44.369Z
 
-overall label: 330/336 -> 331/336 (+1)
-overall e2e:   329/336 -> 330/336 (+1)
-failed:        7 -> 6 (-1)
+overall label: 331/336 -> 332/336 (+1)
+overall e2e:   330/336 -> 331/336 (+1)
+failed:        6 -> 5 (-1)
 
 Case movement:
 New passes: 1
@@ -20,33 +20,33 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
-holdout-isolated: label 55/58 -> 56/58 (+1), e2e 55/58 -> 56/58 (+1), failed 3 -> 2 (-1)
+holdout-isolated: label 56/58 -> 57/58 (+1), e2e 56/58 -> 57/58 (+1), failed 2 -> 1 (-1)
 
 Category movement:
-tail_contamination: label 9/10 -> 10/10 (+1), e2e 9/10 -> 10/10 (+1), failed 1 -> 0 (-1)
+paragraph_context: label 16/18 -> 17/18 (+1), e2e 16/18 -> 17/18 (+1), failed 2 -> 1 (-1)
 
 Failure-layer movement:
-label: 6 -> 5 (-1)
+label: 5 -> 4 (-1)
 
 Likely-failure-class movement:
-pfap_protected_candidate_lost_final_arbitration: 3 -> 2 (-1)
+uncategorized_failure: 1 -> 0 (-1)
 
 PFAP likely-issue movement:
-pfap_protected_candidate_lost_final_arbitration: 3 -> 2 (-1)
+pfap_expected_label_partially_extracted_canonicalization_needed: 2 -> 1 (-1)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 7 -> 6 (-1)
-failedExpectedCandidateFound: 5 -> 4 (-1)
-failedExpectedCandidateProtected: 4 -> 3 (-1)
+failedWithProtectedCandidates: 6 -> 5 (-1)
+failedExpectedCandidateFound: 4 -> 4 (0)
+failedExpectedCandidateProtected: 3 -> 3 (0)
 failedMalformedActual: 0 -> 0 (0)
 
 New passes:
 
---- tail_contamination (1) ---
-[holdout-isolated] tail_contamination | holdout-tail-003 | PASS
-message: It is really the rules of curling that I do not get, not the general sport vibe, especially once scoring comes up and I start feeling like I missed some earlier explanation.
-expected: Rules of Curling
-actual:   Rules of Curling
+--- paragraph_context (1) ---
+[holdout-isolated] paragraph_context | holdout-paragraph-009 | PASS
+message: At first I thought I needed help with mitosis in general. But when I looked at the questions I got wrong, it was not all of mitosis. It was metaphase and anaphase that still felt basically the same to me.
+expected: Metaphase vs Anaphase
+actual:   Metaphase vs Anaphase
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 

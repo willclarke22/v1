@@ -1,15 +1,15 @@
 
 === Compact Topic Labeling Report ===
-overall: total=336 label=331/336 resolution=333/336 e2e=330/336 failed=6
-label-layer failures: 5
-end-to-end failures: 6
-displayed cases: 5 (label failures only)
+overall: total=336 label=332/336 resolution=333/336 e2e=331/336 failed=5
+label-layer failures: 4
+end-to-end failures: 5
+displayed cases: 4 (label failures only)
 
 === Compact Scope Summary ===
 baseline-isolated: total=78 label=77/78 resolution=77/78 e2e=77/78 failed=1
 blindv2-isolated: total=25 label=23/25 resolution=24/25 e2e=23/25 failed=2
 blindv2-sequence: total=11 label=11/11 resolution=10/11 e2e=10/11 failed=1
-holdout-isolated: total=58 label=56/58 resolution=58/58 e2e=56/58 failed=2
+holdout-isolated: total=58 label=57/58 resolution=58/58 e2e=57/58 failed=1
 naturalistic-diverse: total=100 label=100/100 resolution=100/100 e2e=100/100 failed=0
 
 === Compact Category Summary (failing categories only) ===
@@ -17,7 +17,7 @@ broad_to_narrow: total=16 label=15/16 resolution=15/16 e2e=15/16 failed=1
 direct: total=3 label=2/3 resolution=3/3 e2e=2/3 failed=1
 diverse_academic: total=6 label=5/6 resolution=5/6 e2e=5/6 failed=1
 followup_continuity: total=29 label=29/29 resolution=28/29 e2e=28/29 failed=1
-paragraph_context: total=18 label=16/18 resolution=18/18 e2e=16/18 failed=2
+paragraph_context: total=18 label=17/18 resolution=18/18 e2e=17/18 failed=1
 
 === Compact Label Failures Grouped By Category ===
 
@@ -50,18 +50,11 @@ layers: label,resolution,create_flag | likely: pfap_protected_candidate_lost_fin
 resolution: expected=created_new_candidate actual=no_match | create expected=true actual=false | matched expected=n/a actual=n/a
 
 
---- paragraph_context (2) ---
+--- paragraph_context (1) ---
 [holdout-isolated] paragraph_context | holdout-paragraph-003 | FAIL
 message: In class we were doing neurons, threshold, membrane potential, and firing. At first I thought I was confused about action potentials in general, but after trying the practice questions I think it is really depolarization that keeps breaking my understanding.
 expected: Depolarization
 actual:   Membrane Potential
 checks: label=N resolution=Y create=Y matched=Y forbidden=Y
 layers: label | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
-
-[holdout-isolated] paragraph_context | holdout-paragraph-009 | FAIL
-message: At first I thought I needed help with mitosis in general. But when I looked at the questions I got wrong, it was not all of mitosis. It was metaphase and anaphase that still felt basically the same to me.
-expected: Metaphase vs Anaphase
-actual:   Not All of Mitosis
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: uncategorized_failure | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
 

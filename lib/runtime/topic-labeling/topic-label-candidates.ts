@@ -116,6 +116,47 @@ function messageHasComparisonCue(text: string) {
   );
 }
 
+/**
+ * Patch F.12.2: adjacent comparison synthesis guard.
+ *
+ * Some naturalistic comparison clauses do not use a direct "X vs Y" or
+ * "difference between X and Y" form. They say things like:
+ *   "It was X and Y that still felt basically the same to me."
+ *
+ * In those cases the named sides may already be extracted independently, but
+ * the durable topic should be the relationship/comparison between them. This
+ * detector stays narrow: it only fires inside a single clause that has an
+ * explicit sameness/blending/interchangeability cue and an adjacent X-and-Y
+ * pair. It does not broaden general technical-concept extraction.
+ */
+function extractAdjacentComparisonFromSamenessClause(clause: string) {
+  const normalized = normalizeSurface(clause);
+  if (!messageHasComparisonCue(normalized)) return null;
+
+  const patterns: RegExp[] = [
+    /\b(?:it\s+(?:was|is)|they\s+(?:were|are))\s+(.+?)\s+and\s+(.+?)\s+that\s+(?:still\s+)?(?:felt?|feel|seemed?|seem)\s+(?:basically\s+)?(?:the\s+)?same\b(?:.*)?$/i,
+    /\b(?:it\s+(?:was|is)|they\s+(?:were|are))\s+(.+?)\s+and\s+(.+?)\s+that\s+(?:still\s+)?(?:felt?|feel|seemed?|seem)\s+interchangeable\b(?:.*)?$/i,
+    /\b(.+?)\s+and\s+(.+?)\s+that\s+(?:still\s+)?(?:felt?|feel|seemed?|seem)\s+(?:basically\s+)?(?:the\s+)?same\b(?:.*)?$/i,
+    /\b(.+?)\s+and\s+(.+?)\s+that\s+(?:still\s+)?(?:felt?|feel|seemed?|seem)\s+interchangeable\b(?:.*)?$/i,
+    /\b(.+?)\s+and\s+(.+?)\s+(?:still\s+)?(?:felt?|feel|seemed?|seem)\s+(?:basically\s+)?(?:the\s+)?same\b(?:.*)?$/i,
+    /\b(.+?)\s+and\s+(.+?)\s+(?:still\s+)?(?:felt?|feel|seemed?|seem)\s+interchangeable\b(?:.*)?$/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    if (!match?.[1] || !match?.[2]) continue;
+
+    const left = cleanComparisonSide(match[1]);
+    const right = cleanComparisonSide(match[2]);
+    if (!left || !right) continue;
+    if (!comparisonSidesLookSafe(left, right)) continue;
+
+    return { left, right, combined: `${left} vs ${right}` };
+  }
+
+  return null;
+}
+
 function comparisonSidesLookSafe(left: string, right: string) {
   return (
     !looksLikeBadComparisonSide(left) && !looksLikeBadComparisonSide(right)
@@ -410,6 +451,10 @@ function looksLikeTailHeavyCandidate(candidate: TopicCandidate) {
 
 function extractComparison(clause: string) {
   const normalized = normalizeSurface(clause);
+
+  const adjacentSamenessComparison =
+    extractAdjacentComparisonFromSamenessClause(normalized);
+  if (adjacentSamenessComparison) return adjacentSamenessComparison;
 
   const patterns = [
     /\b(?:difference between)\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)[.?!]*$/i,
@@ -1639,6 +1684,34 @@ function extractFocusTailCandidates(clause: ClauseInfo): TopicCandidate[] {
     regex: RegExp;
     qualifiers?: string[];
   }> = [
+    {
+      regex:
+        /\b(?:it\s+(?:was|is)|they\s+(?:were|are))\s+(.+?)\s+and\s+(.+?)\s+that\s+(?:still\s+)?(?:felt?|feel|seemed?|seem)\s+(?:basically\s+)?(?:the\s+)?same(?:.*)?$/i,
+      qualifiers: [
+        "focus_target",
+        "comparison_pair",
+        "late_focus_target",
+        "bottleneck_target",
+        "cross_clause_recovery",
+        "rescue_concept",
+        "strong_phrase_match",
+        "durable_concept",
+      ],
+    },
+    {
+      regex:
+        /\b(?:it\s+(?:was|is)|they\s+(?:were|are))\s+(.+?)\s+and\s+(.+?)\s+that\s+(?:still\s+)?(?:felt?|feel|seemed?|seem)\s+interchangeable(?:.*)?$/i,
+      qualifiers: [
+        "focus_target",
+        "comparison_pair",
+        "late_focus_target",
+        "bottleneck_target",
+        "cross_clause_recovery",
+        "rescue_concept",
+        "strong_phrase_match",
+        "durable_concept",
+      ],
+    },
     {
       regex:
         /\b(?:when to use|keep forgetting when to use)\s+(.+?)\s+vs\.?\s+(.+?)[.?!]*$/i,
