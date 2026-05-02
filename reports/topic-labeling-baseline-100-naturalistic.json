@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-02T20:12:25.384Z",
+  "generatedAt": "2026-05-02T21:53:33.344Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,22 +8,22 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 335,
-    "resolutionPassed": 334,
-    "createPassed": 335,
+    "labelPassed": 336,
+    "resolutionPassed": 335,
+    "createPassed": 336,
     "matchedTopicPassed": 336,
-    "endToEndPassed": 334,
-    "failed": 2
+    "endToEndPassed": 335,
+    "failed": 1
   },
   "scopeBreakdown": {
     "baseline-isolated": {
       "total": 78,
-      "labelPassed": 77,
-      "resolutionPassed": 77,
-      "createPassed": 77,
+      "labelPassed": 78,
+      "resolutionPassed": 78,
+      "createPassed": 78,
       "matchedTopicPassed": 78,
-      "endToEndPassed": 77,
-      "failed": 1
+      "endToEndPassed": 78,
+      "failed": 0
     },
     "baseline-sequence": {
       "total": 21,
@@ -101,12 +101,12 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 272,
-      "resolutionPassed": 272,
-      "createPassed": 272,
+      "labelPassed": 273,
+      "resolutionPassed": 273,
+      "createPassed": 273,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 272,
-      "failed": 1
+      "endToEndPassed": 273,
+      "failed": 0
     },
     "sequence": {
       "total": 63,
@@ -247,12 +247,12 @@
     },
     "diverse_academic": {
       "total": 6,
-      "labelPassed": 5,
-      "resolutionPassed": 5,
-      "createPassed": 5,
+      "labelPassed": 6,
+      "resolutionPassed": 6,
+      "createPassed": 6,
       "matchedTopicPassed": 6,
-      "endToEndPassed": 5,
-      "failed": 1
+      "endToEndPassed": 6,
+      "failed": 0
     },
     "domain_shaping": {
       "total": 8,
@@ -661,24 +661,22 @@
     }
   },
   "layerBreakdown": {
-    "label": 1,
-    "resolution": 2,
-    "create_flag": 1,
+    "label": 0,
+    "resolution": 1,
+    "create_flag": 0,
     "matched_topic": 0,
     "forbidden": 0
   },
   "likelyFailureBreakdown": {
-    "good_label_but_creation_blocked": 1,
-    "pfap_protected_candidate_lost_final_arbitration": 1
+    "good_label_but_creation_blocked": 1
   },
   "pfapBreakdown": {
-    "failedCount": 2,
-    "failedWithProtectedCandidates": 2,
-    "failedExpectedCandidateFound": 2,
-    "failedExpectedCandidateProtected": 2,
+    "failedCount": 1,
+    "failedWithProtectedCandidates": 1,
+    "failedExpectedCandidateFound": 1,
+    "failedExpectedCandidateProtected": 1,
     "failedMalformedActual": 0,
     "likelyIssueBreakdown": {
-      "pfap_protected_candidate_lost_final_arbitration": 1,
       "unknown": 1
     }
   },
@@ -2149,40 +2147,27 @@
       "description": "geology topic with natural rambling message",
       "message": "Plate tectonics is one of those things where I feel like I understand it for five seconds and then I hear subduction again and realize I don't really know what is moving where.",
       "expectedLabel": "Subduction",
-      "actualLabel": "Understand It for Five Seconds",
+      "actualLabel": "Subduction",
       "expectedResolutionKind": "created_new_candidate",
-      "actualResolutionKind": "no_match",
+      "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
-      "actualShouldCreate": false,
+      "actualShouldCreate": true,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.9600000000000001,
-      "labelPass": false,
-      "resolutionPass": false,
-      "createPass": false,
+      "actualConfidence": 0.52,
+      "labelPass": true,
+      "resolutionPass": true,
+      "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "pfap_protected_candidate_lost_final_arbitration",
-      "pfapLikelyIssue": "pfap_protected_candidate_lost_final_arbitration",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 2,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": true,
       "expectedCandidateRank": 1,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Subduction\" actualLabel=\"Understand It for Five Seconds\""
-        },
-        {
-          "layer": "resolution",
-          "message": "expectedResolutionKind=created_new_candidate actualResolutionKind=no_match"
-        },
-        {
-          "layer": "create_flag",
-          "message": "expectedShouldCreate=true actualShouldCreate=false"
-        }
-      ]
+      "actualCandidateRank": 1,
+      "layeredFailures": []
     },
     {
       "key": "baseline-isolated::bio-001",

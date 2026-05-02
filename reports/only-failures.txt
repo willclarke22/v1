@@ -1,27 +1,16 @@
 
 === Compact Topic Labeling Report ===
-overall: total=336 label=335/336 resolution=334/336 e2e=334/336 failed=2
-label-layer failures: 1
-end-to-end failures: 2
-displayed cases: 1 (label failures only)
+overall: total=336 label=336/336 resolution=335/336 e2e=335/336 failed=1
+label-layer failures: 0
+end-to-end failures: 1
+displayed cases: 0 (label failures only)
 
 === Compact Scope Summary ===
-baseline-isolated: total=78 label=77/78 resolution=77/78 e2e=77/78 failed=1
 blindv2-sequence: total=11 label=11/11 resolution=10/11 e2e=10/11 failed=1
 naturalistic-diverse: total=100 label=100/100 resolution=100/100 e2e=100/100 failed=0
 
 === Compact Category Summary (failing categories only) ===
-diverse_academic: total=6 label=5/6 resolution=5/6 e2e=5/6 failed=1
 followup_continuity: total=29 label=29/29 resolution=28/29 e2e=28/29 failed=1
 
-=== Compact Label Failures Grouped By Category ===
-
---- diverse_academic (1) ---
-[baseline-isolated] diverse_academic | earth-001 | FAIL
-message: Plate tectonics is one of those things where I feel like I understand it for five seconds and then I hear subduction again and realize I don't really know what is moving where.
-expected: Subduction
-actual:   Understand It for Five Seconds
-checks: label=N resolution=N create=N matched=Y forbidden=Y
-layers: label,resolution,create_flag | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
-resolution: expected=created_new_candidate actual=no_match | create expected=true actual=false | matched expected=n/a actual=n/a
+No cases matched the compact display filter.
 

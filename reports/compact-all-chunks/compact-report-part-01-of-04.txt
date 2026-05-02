@@ -347,13 +347,12 @@ actual:   Opportunity Cost
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[baseline-isolated] diverse_academic | earth-001 | FAIL
+[baseline-isolated] diverse_academic | earth-001 | PASS
 message: Plate tectonics is one of those things where I feel like I understand it for five seconds and then I hear subduction again and realize I don't really know what is moving where.
 expected: Subduction
-actual:   Understand It for Five Seconds
-checks: label=N resolution=N create=N matched=Y forbidden=Y
-layers: label,resolution,create_flag | likely: pfap_protected_candidate_lost_final_arbitration | pfap: pfap_protected_candidate_lost_final_arbitration
-resolution: expected=created_new_candidate actual=no_match | create expected=true actual=false | matched expected=n/a actual=n/a
+actual:   Subduction
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [baseline-isolated] diverse_academic | bio-001 | PASS
 message: I know homeostasis is the bigger topic, but the thing I actually need help with is negative feedback because that is the part that keeps sounding abstract to me.

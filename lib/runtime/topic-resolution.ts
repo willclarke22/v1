@@ -933,11 +933,206 @@ function findMatchingQuestionSynthesisCandidate(
   );
 }
 
+
+type ResolutionScoredCandidate =
+  TopicLabelingResult["diagnostics"]["scored_candidates"][number];
+
+type CanonicalLabelRepair = {
+  label: string;
+  confidence: number | null;
+  candidate: ResolutionScoredCandidate;
+};
+
+function escapeRegexLiteral(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * F.17: Some deterministic runs correctly rank/protect the real target, but
+ * still expose a transient learner-state phrase as topic_decision.canonical_label.
+ * This helper is intentionally narrow: it only repairs the resolver handoff when
+ * the selected label is a brief-understanding residue and a protected candidate
+ * appears as the explicit target of an encounter-realization frame.
+ */
+function labelLooksTransientUnderstandingResidueForResolution(
+  label: string | null,
+) {
+  if (!label) return false;
+  const normalized = normalizeLoose(label);
+  if (!normalized) return false;
+
+  return (
+    /\b(?:understand|get|follow|know)\s+(?:it|this|that|the whole thing|everything|most of it)\s+(?:for\s+(?:a\s+)?(?:second|minute|moment|bit|little bit|five seconds)|briefly|temporarily|for a while|at first)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:feel|feels|felt|seem|seems|seemed|sound|sounds|sounded|thought|think)\s+like\s+i\s+(?:understand|understood|get|got|know|knew|follow|followed)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:can|could)\s+(?:repeat|say|recite|parrot)\s+(?:it|this|that|the words|the story|the big[- ]?picture story)\s+back\b/i.test(
+      normalized,
+    )
+  );
+}
+
+function messageHasTransientUnderstandingSetupForResolution(message: string) {
+  const normalized = normalizeLoose(message);
+
+  return (
+    /\b(?:feel|feels|felt|seem|seems|seemed|sound|sounds|sounded|thought|think)\s+like\s+i\s+(?:understand|understood|get|got|know|knew|follow|followed)\b.{0,120}\b(?:then|until|once|when|but|again|realiz(?:e|ed)|realise|realised|hear|heard|see|saw|encounter|encountered|run into|ran into)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:understand|get|follow|know)\s+(?:it|this|that|the whole thing|everything|most of it)\s+(?:for\s+(?:a\s+)?(?:second|minute|moment|bit|little bit|five seconds)|briefly|temporarily|for a while|at first)\b.{0,120}\b(?:then|until|once|when|but|again|realiz(?:e|ed)|realise|realised|hear|heard|see|saw|encounter|encountered|run into|ran into)\b/i.test(
+      normalized,
+    )
+  );
+}
+
+function candidateHasProtectedBottleneckMetadataForResolution(
+  candidate: ResolutionScoredCandidate,
+) {
+  const meta = candidate as unknown as Record<string, unknown>;
+  const tier = typeof meta.tier === "string" ? meta.tier : "";
+  const score = typeof meta.score === "number" ? meta.score : 0;
+  const kind = String(candidate.kind ?? "");
+  const pfapProtected =
+    meta.pfap_protected === true ||
+    meta.pfapProtected === true ||
+    tier.includes("protected");
+  const qualifiers = Array.isArray(candidate.qualifiers)
+    ? candidate.qualifiers
+    : [];
+
+  const hasBottleneckOrConceptShape =
+    tier.includes("bottleneck") ||
+    kind === "named_concept" ||
+    kind === "focus_target" ||
+    qualifiers.includes("bottleneck_target") ||
+    qualifiers.includes("focus_target") ||
+    qualifiers.includes("late_focus_target") ||
+    qualifiers.includes("strong_phrase_match") ||
+    qualifiers.includes("durable_concept");
+
+  // In some diagnostic payloads the PFAP flag is not surfaced to the route,
+  // even though the candidate is already ranked/protected upstream. The repair
+  // remains narrow because it also requires the selected label to be transient
+  // understanding residue and the replacement to appear in an encounter frame.
+  return Boolean(hasBottleneckOrConceptShape && (pfapProtected || score >= 0.86));
+}
+
+function candidateLooksSafeEncounterRepairTarget(
+  candidate: ResolutionScoredCandidate,
+  currentLabel: string | null,
+) {
+  const candidateLabel = candidate.display_label ?? candidate.span;
+  if (!candidateLabel) return false;
+
+  const normalizedCandidate = normalizeLoose(candidateLabel);
+  const normalizedCurrent = normalizeLoose(currentLabel ?? "");
+  if (!normalizedCandidate || normalizedCandidate === normalizedCurrent) {
+    return false;
+  }
+
+  const tokens = semanticTokenize(candidateLabel);
+  if (!tokens.length || tokens.length > 4) return false;
+
+  // Keep this repair away from comparison and mechanism synthesis families.
+  if (/\b(?:vs|versus|compare|contrast|difference between|how|why)\b/i.test(candidateLabel)) {
+    return false;
+  }
+
+  if (
+    String(candidate.kind ?? "") === "comparison_pair" ||
+    String(candidate.kind ?? "") === "question_synthesis" ||
+    String(candidate.kind ?? "") === "context_anchor"
+  ) {
+    return false;
+  }
+
+  if (!candidate.should_compete_as_topic) return false;
+  if (candidate.is_subpart_reference) return false;
+
+  return candidateHasProtectedBottleneckMetadataForResolution(candidate);
+}
+
+function candidateLabelAppearsInEncounterRealizationFrame(
+  candidateLabel: string,
+  message: string,
+) {
+  const normalizedMessage = normalizeLoose(message);
+  const normalizedLabel = normalizeLoose(candidateLabel);
+  if (!normalizedMessage || !normalizedLabel) return false;
+
+  const variants = dedupe([
+    normalizedLabel,
+    normalizedLabel.replace(/^the\s+/i, "").trim(),
+  ]).filter(Boolean);
+
+  return variants.some((variant) => {
+    const escaped = escapeRegexLiteral(variant);
+    return new RegExp(
+      `\\b(?:hear|heard|see|saw|encounter|encountered|run into|ran into|get to|got to)\\s+(?:the\\s+)?${escaped}\\b(?:\\s+again)?.{0,120}\\b(?:realiz(?:e|ed)|realise|realised|don'?t really know|dont really know|do not really know|lost|stuck|confus(?:e|ed|ing)|what\\s+(?:is|was)\\s+moving|what\\s+(?:is|was)\\s+happening)\\b`,
+      "i",
+    ).test(normalizedMessage);
+  });
+}
+
+function repairCanonicalLabelFromEncounterRealization(
+  message: string,
+  labeling: TopicLabelingResult,
+): CanonicalLabelRepair | null {
+  const selectedLabel = labeling.topic_decision.canonical_label ?? null;
+
+  if (!labelLooksTransientUnderstandingResidueForResolution(selectedLabel)) {
+    return null;
+  }
+
+  if (!messageHasTransientUnderstandingSetupForResolution(message)) {
+    return null;
+  }
+
+  const candidates = labeling.diagnostics.scored_candidates
+    .filter((candidate) => {
+      const candidateLabel = candidate.display_label ?? candidate.span;
+      return Boolean(
+        candidateLabel &&
+          candidateLooksSafeEncounterRepairTarget(candidate, selectedLabel) &&
+          candidateLabelAppearsInEncounterRealizationFrame(candidateLabel, message),
+      );
+    })
+    .sort((a, b) => {
+      const metaA = a as unknown as Record<string, unknown>;
+      const metaB = b as unknown as Record<string, unknown>;
+      const scoreA = typeof metaA.score === "number" ? metaA.score : 0;
+      const scoreB = typeof metaB.score === "number" ? metaB.score : 0;
+      return scoreB - scoreA;
+    });
+
+  const winner = candidates[0] ?? null;
+  if (!winner) return null;
+
+  const label = winner.display_label ?? winner.span;
+  if (!label) return null;
+
+  return {
+    label,
+    confidence:
+      typeof (winner as unknown as Record<string, unknown>).score === "number"
+        ? ((winner as unknown as Record<string, unknown>).score as number)
+        : null,
+    candidate: winner,
+  };
+}
+
 function buildCandidateInterpretation(
   message: string,
   labeling: TopicLabelingResult
 ): CandidateInterpretation {
-  const canonicalLabel = labeling.topic_decision.canonical_label ?? null;
+  const canonicalLabelRepair = repairCanonicalLabelFromEncounterRealization(
+    message,
+    labeling,
+  );
+  const canonicalLabel =
+    canonicalLabelRepair?.label ?? labeling.topic_decision.canonical_label ?? null;
   const conceptSpan = labeling.interpretation.concept_span ?? null;
   const questionAboutTopic = labeling.interpretation.question_about_topic ?? null;
   const referencesActiveTopic = labeling.interpretation.references_active_topic ?? false;
@@ -1054,8 +1249,15 @@ function buildCandidateInterpretation(
     conceptSpan,
     questionAboutTopic,
     frame: mapIntentToFrame(labeling.interpretation.message_intent),
-    labelConfidence: labeling.topic_decision.confidence,
-    specificity: labeling.topic_decision.topic_specificity,
+    labelConfidence: Math.max(
+      labeling.topic_decision.confidence,
+      canonicalLabelRepair?.confidence ?? 0,
+    ),
+    specificity:
+      canonicalLabelRepair &&
+      labeling.topic_decision.topic_specificity === "too_vague"
+        ? "good"
+        : labeling.topic_decision.topic_specificity,
     granularityHint: computeGranularityHint(sourceForGranularity),
     referencesActiveTopic,
     switchCue,
@@ -1092,7 +1294,9 @@ function buildCandidateInterpretation(
     durableConceptLike,
     structurallyStrongLabel,
     nullOnlyEmotionalLike,
-    labelerCreateRecommended: labeling.topic_decision.should_create_new_topic,
+    labelerCreateRecommended:
+      labeling.topic_decision.should_create_new_topic ||
+      Boolean(canonicalLabelRepair),
   };
 }
 
@@ -1100,8 +1304,14 @@ function inferPrimaryMessageFrameFromLabeling(labeling: TopicLabelingResult): Me
   return mapIntentToFrame(labeling.interpretation.message_intent);
 }
 
-function canonicalizeTopicNameFromLabeling(labeling: TopicLabelingResult): string {
-  return labeling.topic_decision.canonical_label ?? "New Topic";
+function canonicalizeTopicNameFromLabeling(
+  labeling: TopicLabelingResult,
+  message?: string,
+): string {
+  const repaired = message
+    ? repairCanonicalLabelFromEncounterRealization(message, labeling)
+    : null;
+  return repaired?.label ?? labeling.topic_decision.canonical_label ?? "New Topic";
 }
 
 function inferKeywordsFromSourceText(source: string): string[] {
@@ -1115,7 +1325,7 @@ export function inferPrimaryMessageFrame(message: string): MessageFrame {
 
 export function canonicalizeTopicNameFromMessage(message: string): string {
   const labeling = buildLabelingResult(message, []);
-  return canonicalizeTopicNameFromLabeling(labeling);
+  return canonicalizeTopicNameFromLabeling(labeling, message);
 }
 
 export function titleCaseFromMessage(message: string) {
@@ -2853,11 +3063,11 @@ export function resolveTopicForMessage(
       shouldCreateNewTopic: createConfidence >= createFloor,
       resolutionKind:
         createConfidence >= createFloor ? "created_new_candidate" : "no_match",
-      resolvedLabel: labeling.topic_decision.canonical_label ?? null,
+      resolvedLabel: interpretation.canonicalLabel ?? null,
       matchConfidence:
         createConfidence >= createFloor
           ? createConfidence
-          : labeling.topic_decision.confidence,
+          : Math.max(labeling.topic_decision.confidence, interpretation.labelConfidence),
       resolutionTrace: trace,
     };
   }
@@ -2945,7 +3155,7 @@ export function buildSeededTopicFromMessage(
   existingTopics: RouteTopic[]
 ): RouteTopic {
   const labeling = buildLabelingResult(message, []);
-  const canonicalName = canonicalizeTopicNameFromLabeling(labeling);
+  const canonicalName = canonicalizeTopicNameFromLabeling(labeling, message);
   const frame = inferPrimaryMessageFrameFromLabeling(labeling);
 
   return buildSeededTopic({

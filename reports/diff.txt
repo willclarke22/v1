@@ -1,12 +1,12 @@
 
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
-Previous snapshot generatedAt: 2026-05-02T19:30:28.580Z
-Current snapshot generatedAt: 2026-05-02T20:09:10.572Z
+Previous snapshot generatedAt: 2026-05-02T20:12:25.384Z
+Current snapshot generatedAt: 2026-05-02T21:47:20.444Z
 
-overall label: 334/336 -> 335/336 (+1)
-overall e2e:   333/336 -> 334/336 (+1)
-failed:        3 -> 2 (-1)
+overall label: 335/336 -> 336/336 (+1)
+overall e2e:   334/336 -> 335/336 (+1)
+failed:        2 -> 1 (-1)
 
 Case movement:
 New passes: 1
@@ -20,35 +20,35 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
-blindv2-isolated: label 24/25 -> 25/25 (+1), e2e 24/25 -> 25/25 (+1), failed 1 -> 0 (-1)
+baseline-isolated: label 77/78 -> 78/78 (+1), e2e 77/78 -> 78/78 (+1), failed 1 -> 0 (-1)
 
 Category movement:
-broad_to_narrow: label 15/16 -> 16/16 (+1), e2e 15/16 -> 16/16 (+1), failed 1 -> 0 (-1)
+diverse_academic: label 5/6 -> 6/6 (+1), e2e 5/6 -> 6/6 (+1), failed 1 -> 0 (-1)
 
 Failure-layer movement:
-create_flag: 2 -> 1 (-1)
-label: 2 -> 1 (-1)
-resolution: 3 -> 2 (-1)
+create_flag: 1 -> 0 (-1)
+label: 1 -> 0 (-1)
+resolution: 2 -> 1 (-1)
 
 Likely-failure-class movement:
-expected_label_extracted_but_lost_competition: 1 -> 0 (-1)
+pfap_protected_candidate_lost_final_arbitration: 1 -> 0 (-1)
 
 PFAP likely-issue movement:
-pfap_expected_candidate_needs_protection_metadata: 1 -> 0 (-1)
+pfap_protected_candidate_lost_final_arbitration: 1 -> 0 (-1)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 3 -> 2 (-1)
-failedExpectedCandidateFound: 3 -> 2 (-1)
-failedExpectedCandidateProtected: 2 -> 2 (0)
+failedWithProtectedCandidates: 2 -> 1 (-1)
+failedExpectedCandidateFound: 2 -> 1 (-1)
+failedExpectedCandidateProtected: 2 -> 1 (-1)
 failedMalformedActual: 0 -> 0 (0)
 
 New passes:
 
---- broad_to_narrow (1) ---
-[blindv2-isolated] broad_to_narrow | blindv2-focus-001 | PASS
-message: I'm learning about neurons, but the sodium-potassium pump is the actual thing I don't get.
-expected: Sodium-Potassium Pump
-actual:   Sodium-Potassium Pump
+--- diverse_academic (1) ---
+[baseline-isolated] diverse_academic | earth-001 | PASS
+message: Plate tectonics is one of those things where I feel like I understand it for five seconds and then I hear subduction again and realize I don't really know what is moving where.
+expected: Subduction
+actual:   Subduction
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 

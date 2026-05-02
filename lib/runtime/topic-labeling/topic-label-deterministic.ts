@@ -464,6 +464,7 @@ function candidateLooksCleanQuestionTarget(candidate: TopicCandidate) {
 function candidateLooksCleanExplicitConcept(candidate: TopicCandidate) {
   if (candidateLooksQuestionSynthesis(candidate)) return false;
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+  if (candidateLooksTransientUnderstandingResidue(candidate)) return false;
   if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
   if (candidateLooksWeakNounChunk(candidate)) return false;
   if (
@@ -490,6 +491,7 @@ function candidateLooksProtectedDurableLabel(candidate: TopicCandidate) {
   if (!label) return false;
 
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+  if (candidateLooksTransientUnderstandingResidue(candidate)) return false;
   if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
 
   return (
@@ -583,6 +585,7 @@ function candidateLooksDurablePracticalConcept(candidate: TopicCandidate) {
   if (!label) return false;
 
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
+  if (candidateLooksTransientUnderstandingResidue(candidate)) return false;
 
   return (
     candidateLooksProtectedDurableLabel(candidate) ||
@@ -684,9 +687,6 @@ function candidateLooksProblemFraming(candidate: TopicCandidate) {
   if (!label) return false;
 
   return (
-    /^(?:the\s+)?(?:actual|real|specific|main)?\s*(?:thing|part|issue|problem|blocker|bottleneck|target)\s+(?:i\s+)?(?:don'?t|dont|do not|can'?t|cant|cannot)?\s*(?:get|understand|figure out)?$/i.test(
-      label,
-    ) ||
     /\bdeterministic code can'?t solve all\b/i.test(label) ||
     /\bsolve all my problems\b/i.test(label) ||
     /\bwhole thing confusing\b/i.test(label) ||
@@ -701,6 +701,315 @@ function candidateLooksProblemFraming(candidate: TopicCandidate) {
     /\bwhat (?:i|we) (?:am|are|'m|'re)? ?asking about\b/i.test(label) ||
     /\bstalling out\b/i.test(label)
   );
+}
+
+
+/**
+ * Patch F.16.2 generalization guard:
+ * A phrase about briefly feeling like you understand something is a diagnostic
+ * learner-state signal, not a durable learning-space topic. The target should
+ * remain the concrete concept that later exposes the breakdown.
+ *
+ * Examples of residue this catches:
+ * - "Understand It for Five Seconds"
+ * - "Feel Like I Understand It"
+ * - "Thought I Understood It"
+ * - "Can Repeat It Back"
+ * - "Sounds Like I Understand It"
+ */
+function candidateLooksTransientUnderstandingResidue(
+  candidate: TopicCandidate,
+) {
+  const label = cachedNormalizeLoose(getCandidateDisplayLabel(candidate));
+  const core = cachedNormalizeLoose(candidate.coreText);
+  const source = cachedNormalizeLoose(candidate.sourceClause);
+  const combined = `${label} ${core} ${source}`.trim();
+
+  if (!combined) return false;
+
+  const transientUnderstandingLabel =
+    /\b(?:understand|get|follow|know)\s+(?:it|this|that|the whole thing|everything|most of it)\s+(?:for\s+(?:a\s+)?(?:second|minute|moment|bit|little bit|five seconds)|briefly|temporarily|for a while|at first)\b/i.test(
+      label,
+    ) ||
+    /\b(?:feel|feels|felt|seem|seems|seemed|sound|sounds|sounded|thought|think)\s+like\s+i\s+(?:understand|understood|get|got|know|knew|follow|followed)\b/i.test(
+      label,
+    ) ||
+    /\b(?:can|could)\s+(?:repeat|say|recite|parrot)\s+(?:it|this|that|the words|the story|the big[- ]?picture story)\s+back\b/i.test(
+      label,
+    );
+
+  const sourceUsesTransientUnderstandingAsSetup =
+    /\b(?:feel|feels|felt|seem|seems|seemed|sound|sounds|sounded|thought|think)\s+like\s+i\s+(?:understand|understood|get|got|know|knew|follow|followed)\b.{0,80}\b(?:then|until|once|when|but|again|realiz(?:e|ed)|realise|realised|hear|heard|see|saw|encounter|encountered|run into|ran into)\b/i.test(
+      combined,
+    ) ||
+    /\b(?:understand|get|follow|know)\s+(?:it|this|that|the whole thing|everything|most of it)\s+(?:for\s+(?:a\s+)?(?:second|minute|moment|bit|little bit|five seconds)|briefly|temporarily|for a while|at first)\b.{0,80}\b(?:then|until|once|when|but|again|realiz(?:e|ed)|realise|realised|hear|heard|see|saw|encounter|encountered|run into|ran into)\b/i.test(
+      combined,
+    ) ||
+    /\b(?:can|could)\s+(?:repeat|say|recite|parrot)\s+(?:it|this|that|the words|the story|the big[- ]?picture story)\s+back\b.{0,96}\b(?:but|when|once|then|realiz(?:e|ed)|realise|realised|do not really know|don'?t really know|dont really know)\b/i.test(
+      combined,
+    );
+
+  return Boolean(transientUnderstandingLabel || sourceUsesTransientUnderstandingAsSetup);
+}
+
+
+/**
+ * Patch F.16.4 generalization guard:
+ * When a message says the learner only briefly feels like they understand,
+ * then later hears/sees/encounters a named concept again and realizes the
+ * understanding breaks, the named concept is the topic. The transient
+ * understanding phrase is diagnosis evidence, not a learning-space label.
+ *
+ * This is intentionally narrow: it requires the exact encounter-realization
+ * discourse frame and a compact named/focus concept inside that frame. It does
+ * not apply to comparison pairs, mechanism-question labels, or generic
+ * late-focus candidates.
+ */
+function messageHasTransientUnderstandingBeforeEncounter(message: string) {
+  const normalized = cachedNormalizeLoose(message);
+
+  return (
+    /\b(?:feel|feels|felt|seem|seems|seemed|sound|sounds|sounded|thought|think)\s+like\s+i\s+(?:understand|understood|get|got|know|knew|follow|followed)\b.{0,140}\b(?:then|until|once|when|but|again|hear|heard|see|saw|encounter|encountered|run into|ran into)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:understand|get|follow|know)\s+(?:it|this|that|the whole thing|everything|most of it)\s+(?:for\s+(?:a\s+)?(?:second|minute|moment|bit|little bit|five seconds)|briefly|temporarily|for a while|at first)\b.{0,140}\b(?:then|until|once|when|but|again|hear|heard|see|saw|encounter|encountered|run into|ran into)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:can|could)\s+(?:repeat|say|recite|parrot)\s+(?:it|this|that|the words|the story|the big[- ]?picture story)\s+back\b.{0,140}\b(?:but|when|once|then|hear|heard|see|saw|encounter|encountered|run into|ran into)\b/i.test(
+      normalized,
+    )
+  );
+}
+
+function candidateAppearsAsEncounterRealizationTarget(
+  candidate: TopicCandidate,
+  message: string,
+) {
+  const label = getCandidateDisplayLabel(candidate);
+  const labelLoose = cachedNormalizeLoose(label);
+  const coreLoose = cachedNormalizeLoose(candidate.coreText);
+  const messageLoose = cachedNormalizeLoose(message);
+
+  if (!labelLoose) return false;
+  if (candidate.kind === "comparison_pair") return false;
+  if (candidateLooksQuestionSynthesis(candidate)) return false;
+  if (candidateLooksMechanismLike(candidate, message)) return false;
+  if (candidateLooksResidueLike(candidate)) return false;
+  if (candidateLooksWeakNounChunk(candidate)) return false;
+  if (candidateLooksMalformedTopicLabel(candidate)) return false;
+
+  const isCompactNamedTarget =
+    candidate.kind === "named_concept" ||
+    candidate.kind === "focus_target" ||
+    candidateHasQualifier(candidate, "focus_target") ||
+    candidateHasQualifier(candidate, "bottleneck_target") ||
+    candidateHasQualifier(candidate, "cross_clause_recovery");
+
+  if (!isCompactNamedTarget) return false;
+
+  const terms = dedupe([labelLoose, coreLoose])
+    .map((term) => term.trim())
+    .filter((term) => {
+      const tokenCount = cachedTokenize(term).length;
+      return tokenCount > 0 && tokenCount <= 5;
+    });
+
+  return terms.some((term) => {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(
+      `\\b(?:hear|heard|see|saw|encounter|encountered|run into|ran into|get to|got to)\\s+(?:the\\s+)?${escaped}\\b(?:\\s+again)?.{0,120}\\b(?:realiz(?:e|ed)|realise|realised|don'?t\\s+really\\s+know|dont\\s+really\\s+know|do\\s+not\\s+really\\s+know|not\\s+really\\s+know|what\\s+(?:is|was)\\s+(?:moving|happening|going on))\\b`,
+      "i",
+    ).test(messageLoose);
+  });
+}
+
+function chooseEncounterRealizationAfterTransientUnderstandingCandidate(
+  scoredCandidates: TopicCandidate[],
+  message: string,
+  profile: DiscourseProfile,
+): TopicCandidate | null {
+  if (!messageHasTransientUnderstandingBeforeEncounter(message)) return null;
+  if (messageHasComparisonShape(message)) return null;
+
+  const hasTransientUnderstandingCandidate = scoredCandidates.some((candidate) =>
+    candidateLooksTransientUnderstandingResidue(candidate),
+  );
+
+  if (!hasTransientUnderstandingCandidate) return null;
+
+  const candidates = scoredCandidates
+    .filter((candidate) =>
+      candidateAppearsAsEncounterRealizationTarget(candidate, message),
+    )
+    .filter((candidate) =>
+      candidateLooksPFAPEligible(candidate, message, profile, scoredCandidates),
+    )
+    .sort((a, b) => {
+      const tierDelta = pfapTier(b, message, profile) - pfapTier(a, message, profile);
+      if (tierDelta !== 0) return tierDelta;
+
+      const namedDelta =
+        (b.kind === "named_concept" ? 1 : 0) -
+        (a.kind === "named_concept" ? 1 : 0);
+      if (namedDelta !== 0) return namedDelta;
+
+      return b.score - a.score;
+    });
+
+  const best = candidates[0] ?? null;
+  if (!best) return null;
+
+  return best.score >= 0.45 ? best : null;
+}
+
+
+/**
+ * Patch F.18 final topic_decision repair:
+ * If the selected canonical label is still a transient-understanding residue
+ * but the scored candidate list already has a clearly better encounter target
+ * at the top, repair the final deterministic winner before topic_decision is
+ * built. This is intentionally stricter than the F.16.x candidate override:
+ * it only fires for the exact transient-understanding -> hear/see/encounter X
+ * again -> realize/breakdown frame, and the replacement must be the X inside
+ * that encounter frame.
+ */
+function labelLooksTransientUnderstandingResidueText(
+  label: string | null | undefined,
+) {
+  const normalized = cachedNormalizeLoose(label);
+  if (!normalized) return false;
+
+  return (
+    /\b(?:understand|get|follow|know)\s+(?:it|this|that|the whole thing|everything|most of it)\s+(?:for\s+(?:a\s+)?(?:second|minute|moment|bit|little bit|five seconds)|briefly|temporarily|for a while|at first)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:feel|feels|felt|seem|seems|seemed|sound|sounds|sounded|thought|think)\s+like\s+i\s+(?:understand|understood|get|got|know|knew|follow|followed)\b/i.test(
+      normalized,
+    ) ||
+    /\b(?:can|could)\s+(?:repeat|say|recite|parrot)\s+(?:it|this|that|the words|the story|the big[- ]?picture story)\s+back\b/i.test(
+      normalized,
+    )
+  );
+}
+
+/**
+ * Patch F.18.1 guard:
+ * The broad residue detectors inspect candidate.sourceClause, and some
+ * recovered focus candidates intentionally carry the full message as their
+ * source. That made a valid target like "Subduction" look transient merely
+ * because the surrounding sentence said "I understand it for five seconds."
+ * For the final encounter-realization repair, only reject the candidate when
+ * its own label/core is transient residue. The surrounding source is the
+ * evidence frame, not proof that the target itself is residue.
+ */
+function candidateOwnLabelOrCoreLooksTransientUnderstandingResidue(
+  candidate: TopicCandidate,
+) {
+  const label = getCandidateDisplayLabel(candidate);
+  const core = candidate.coreText;
+
+  return (
+    labelLooksTransientUnderstandingResidueText(label) ||
+    labelLooksTransientUnderstandingResidueText(core)
+  );
+}
+
+function candidateOwnLabelOrCoreLooksMetaOrLearnerResidue(
+  candidate: TopicCandidate,
+) {
+  const label = cachedNormalizeLoose(getCandidateDisplayLabel(candidate));
+  const core = cachedNormalizeLoose(candidate.coreText);
+  const ownText = `${label} ${core}`.trim();
+
+  if (!ownText) return true;
+
+  return (
+    candidateOwnLabelOrCoreLooksTransientUnderstandingResidue(candidate) ||
+    /\b(?:useful|clear|specific|helpful) way\b/i.test(ownText) ||
+    /\bwhat (?:i|we) (?:am|are|'m|'re)? ?asking about\b/i.test(ownText) ||
+    /\bstalling out\b/i.test(ownText) ||
+    /\b(?:stable|real|clear|actual|good|solid) understanding of (?:it|this|that|the thing|everything)\b/i.test(ownText) ||
+    /\b(?:follow|understand|get) most of\b/i.test(ownText) ||
+    /\b(?:stopped?|stop|start(?:ed)?|begin|began) (?:understanding|following|knowing)\b/i.test(ownText) ||
+    /\b(?:lose|lost) track\b/i.test(ownText) ||
+    /\bwhere to (?:even )?start\b/i.test(ownText) ||
+    /\bwhole thing confusing\b/i.test(ownText) ||
+    /\bpretending i understand\b/i.test(ownText)
+  );
+}
+
+function candidateIsDirectEncounterRealizationTarget(
+  candidate: TopicCandidate,
+  message: string,
+) {
+  if (!candidate.shouldCompeteAsTopic) return false;
+  if (candidate.isSubpartReference) return false;
+  if (candidateLooksMalformedTopicLabel(candidate)) return false;
+  if (candidate.kind === "comparison_pair") return false;
+  if (candidateLooksQuestionSynthesis(candidate)) return false;
+  if (candidateLooksMechanismLike(candidate, message)) return false;
+  if (candidateLooksWeakNounChunk(candidate)) return false;
+  if (candidateOwnLabelOrCoreLooksMetaOrLearnerResidue(candidate)) return false;
+
+  const label = getCandidateDisplayLabel(candidate);
+  const labelLoose = cachedNormalizeLoose(label);
+  const coreLoose = cachedNormalizeLoose(candidate.coreText);
+  const messageLoose = cachedNormalizeLoose(message);
+
+  const isNamedOrFocused =
+    candidate.kind === "named_concept" ||
+    candidate.kind === "focus_target" ||
+    candidateHasQualifier(candidate, "focus_target") ||
+    candidateHasQualifier(candidate, "bottleneck_target") ||
+    candidateHasQualifier(candidate, "cross_clause_recovery") ||
+    candidateHasQualifier(candidate, "context_recovery");
+
+  if (!isNamedOrFocused) return false;
+
+  const terms = dedupe([labelLoose, coreLoose])
+    .map((term) => term.trim())
+    .filter((term) => {
+      const tokens = cachedTokenize(term);
+      return tokens.length > 0 && tokens.length <= 5;
+    });
+
+  if (!terms.length) return false;
+
+  return terms.some((term) => {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(
+      `\\b(?:hear|heard|see|saw|encounter|encountered|run into|ran into|get to|got to)\\s+(?:the\\s+)?${escaped}\\b(?:\\s+again)?.{0,140}\\b(?:realiz(?:e|ed)|realise|realised|don'?t\\s+really\\s+know|dont\\s+really\\s+know|do\\s+not\\s+really\\s+know|not\\s+really\\s+know|what\\s+(?:is|was)\\s+(?:moving|happening|going on))\\b`,
+      "i",
+    ).test(messageLoose);
+  });
+}
+
+function chooseFinalTopicDecisionEncounterRepairCandidate(args: {
+  currentCandidate: TopicCandidate | null;
+  canonicalLabel: string | null;
+  scoredCandidates: TopicCandidate[];
+  message: string;
+}): TopicCandidate | null {
+  const { currentCandidate, canonicalLabel, scoredCandidates, message } = args;
+
+  if (!canonicalLabel) return null;
+  if (!labelLooksTransientUnderstandingResidueText(canonicalLabel)) return null;
+  if (!messageHasTransientUnderstandingBeforeEncounter(message)) return null;
+  if (messageHasComparisonShape(message)) return null;
+
+  const currentScore = currentCandidate?.score ?? 0;
+  const currentLabelLoose = cachedNormalizeLoose(canonicalLabel);
+
+  const replacement = scoredCandidates.find((candidate) => {
+    const replacementLabel = getCandidateDisplayLabel(candidate);
+    if (!replacementLabel) return false;
+    if (cachedNormalizeLoose(replacementLabel) === currentLabelLoose) return false;
+    if (candidate.score < 0.6) return false;
+    if (candidate.score < currentScore + 0.18) return false;
+    return candidateIsDirectEncounterRealizationTarget(candidate, message);
+  });
+
+  return replacement ?? null;
 }
 
 /**
@@ -786,6 +1095,7 @@ function candidateLooksLearnerStateOrSetupResidue(candidate: TopicCandidate) {
     );
 
   return Boolean(
+    candidateLooksTransientUnderstandingResidue(candidate) ||
     setupActivityLabel ||
     learnerStateLabel ||
     broadFollowSetupLabel ||
@@ -1094,6 +1404,7 @@ function candidateLooksResidueLike(candidate: TopicCandidate) {
   if (!label) return true;
 
   if (candidateLooksMetaRequestQualityResidue(candidate)) return true;
+  if (candidateLooksTransientUnderstandingResidue(candidate)) return true;
   if (candidateLooksLearnerStateOrSetupResidue(candidate)) return true;
   if (labelLooksArtifactLanguageTailResidue(label)) return true;
 
@@ -5273,6 +5584,8 @@ function chooseResidueOverFocusSuppressionCandidate(
   return null;
 }
 
+
+
 /**
  * Patch F.14.1:
  * A late-focus override should recover the durable concept named in the
@@ -5307,9 +5620,7 @@ function candidateLooksBreakdownEventResidueForLateFocus(
       label,
     ) || /\b(?:vs|of|in|on|for)\b/i.test(label);
 
-  return Boolean(
-    labelLooksLikeEventOrState && !labelLooksLikeDurableStructuredTopic,
-  );
+  return Boolean(labelLooksLikeEventOrState && !labelLooksLikeDurableStructuredTopic);
 }
 
 /**
@@ -5338,8 +5649,7 @@ function candidateLooksExplicitLateFocusCueTarget(
   if (candidateLooksMetaRequestQualityResidue(candidate)) return false;
   if (candidateLooksLearnerStateOrSetupResidue(candidate)) return false;
   if (candidateLooksProblemFraming(candidate)) return false;
-  if (candidateLooksBroadSetupContextCandidate(candidate, profile))
-    return false;
+  if (candidateLooksBroadSetupContextCandidate(candidate, profile)) return false;
 
   const label = getCandidateDisplayLabel(candidate);
   if (!label) return false;
@@ -5492,6 +5802,7 @@ function chooseExplicitLateFocusCueOverrideCandidate(
   return null;
 }
 
+
 /**
  * Patch F.13 revised:
  * When a direct learning request names a compact durable concept and then adds
@@ -5579,9 +5890,7 @@ function candidateLooksCompactDirectRequestConcept(
     candidateLooksDurablePracticalConcept(candidate);
 
   return Boolean(
-    sourceHasDirectLearningRequest &&
-    labelAppearsInRequest &&
-    isCompactDurableConcept,
+    sourceHasDirectLearningRequest && labelAppearsInRequest && isCompactDurableConcept,
   );
 }
 
@@ -5632,6 +5941,16 @@ function chooseWinningCandidate(
   profile: DiscourseProfile,
 ): TopicCandidate | null {
   if (!scoredCandidates.length) return null;
+
+  const encounterRealizationAfterTransientUnderstanding =
+    chooseEncounterRealizationAfterTransientUnderstandingCandidate(
+      scoredCandidates,
+      message,
+      profile,
+    );
+  if (encounterRealizationAfterTransientUnderstanding) {
+    return encounterRealizationAfterTransientUnderstanding;
+  }
 
   const lateBottleneck = chooseLateExplicitBottleneckOverride(
     scoredCandidates,
@@ -5898,6 +6217,10 @@ function buildAmbiguityFlags(args: {
 
   if (bestCandidate && candidateLooksProblemFraming(bestCandidate)) {
     flags.push("problem_framing_candidate");
+  }
+
+  if (bestCandidate && candidateLooksTransientUnderstandingResidue(bestCandidate)) {
+    flags.push("transient_understanding_residue_candidate");
   }
 
   if (
@@ -6239,6 +6562,8 @@ function buildConfidence(args: {
     confidence -= 0.16;
   if (bestCandidate && candidateLooksProblemFraming(bestCandidate))
     confidence -= 0.14;
+  if (bestCandidate && candidateLooksTransientUnderstandingResidue(bestCandidate))
+    confidence -= 0.22;
   if (bestCandidate && candidateLooksLearnerStateOrSetupResidue(bestCandidate))
     confidence -= 0.18;
   if (bestCandidate && candidateLooksGeneralBucket(bestCandidate))
@@ -6493,6 +6818,27 @@ export function runDeterministicTopicLabeling(
     }
   }
   timer.step("label_level_malformed_safety_net");
+
+  const finalTopicDecisionEncounterRepair =
+    chooseFinalTopicDecisionEncounterRepairCandidate({
+      currentCandidate: bestCandidate,
+      canonicalLabel,
+      scoredCandidates,
+      message: normalizedMessage,
+    });
+
+  if (finalTopicDecisionEncounterRepair) {
+    bestCandidate = finalTopicDecisionEncounterRepair;
+    conceptSpan = normalizeCandidateSpan(
+      bestCandidate.coreText ?? bestCandidate.span ?? null,
+    );
+    canonicalLabel = canonicalizePFAPLabel(
+      getCandidateDisplayLabel(bestCandidate),
+      bestCandidate,
+      normalizedMessage,
+    );
+  }
+  timer.step("final_topic_decision_encounter_repair");
 
   if (
     !canonicalLabel &&
