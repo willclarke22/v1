@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-01T22:48:41.884Z",
+  "generatedAt": "2026-05-02T00:18:44.779Z",
   "options": {
     "suite": "all",
     "grep": null,
@@ -8,12 +8,12 @@
   },
   "summary": {
     "total": 336,
-    "labelPassed": 323,
+    "labelPassed": 325,
     "resolutionPassed": 333,
     "createPassed": 334,
     "matchedTopicPassed": 335,
-    "endToEndPassed": 321,
-    "failed": 15
+    "endToEndPassed": 323,
+    "failed": 13
   },
   "scopeBreakdown": {
     "baseline-isolated": {
@@ -36,12 +36,12 @@
     },
     "blindv2-isolated": {
       "total": 25,
-      "labelPassed": 18,
+      "labelPassed": 20,
       "resolutionPassed": 24,
       "createPassed": 24,
       "matchedTopicPassed": 25,
-      "endToEndPassed": 18,
-      "failed": 7
+      "endToEndPassed": 20,
+      "failed": 5
     },
     "blindv2-sequence": {
       "total": 11,
@@ -101,12 +101,12 @@
   "suiteBreakdown": {
     "isolated": {
       "total": 273,
-      "labelPassed": 261,
+      "labelPassed": 263,
       "resolutionPassed": 271,
       "createPassed": 271,
       "matchedTopicPassed": 273,
-      "endToEndPassed": 261,
-      "failed": 12
+      "endToEndPassed": 263,
+      "failed": 10
     },
     "sequence": {
       "total": 63,
@@ -229,12 +229,12 @@
     },
     "direct": {
       "total": 3,
-      "labelPassed": 1,
+      "labelPassed": 2,
       "resolutionPassed": 3,
       "createPassed": 3,
       "matchedTopicPassed": 3,
-      "endToEndPassed": 1,
-      "failed": 2
+      "endToEndPassed": 2,
+      "failed": 1
     },
     "direct_baseline": {
       "total": 6,
@@ -526,12 +526,12 @@
     },
     "paragraph_context": {
       "total": 18,
-      "labelPassed": 15,
+      "labelPassed": 16,
       "resolutionPassed": 18,
       "createPassed": 18,
       "matchedTopicPassed": 18,
-      "endToEndPassed": 15,
-      "failed": 3
+      "endToEndPassed": 16,
+      "failed": 2
     },
     "plumbing": {
       "total": 4,
@@ -661,7 +661,7 @@
     }
   },
   "layerBreakdown": {
-    "label": 13,
+    "label": 11,
     "resolution": 3,
     "create_flag": 2,
     "matched_topic": 1,
@@ -670,20 +670,20 @@
   "likelyFailureBreakdown": {
     "domain_shaping_failed": 1,
     "expected_label_extracted_but_lost_competition": 1,
-    "expected_label_present_in_message_but_not_extracted": 4,
+    "expected_label_present_in_message_but_not_extracted": 2,
     "good_label_but_creation_blocked": 2,
     "pfap_protected_candidate_lost_final_arbitration": 3,
     "uncategorized_failure": 4
   },
   "pfapBreakdown": {
-    "failedCount": 15,
-    "failedWithProtectedCandidates": 13,
+    "failedCount": 13,
+    "failedWithProtectedCandidates": 11,
     "failedExpectedCandidateFound": 5,
     "failedExpectedCandidateProtected": 4,
     "failedMalformedActual": 1,
     "likelyIssueBreakdown": {
       "pfap_expected_candidate_needs_protection_metadata": 1,
-      "pfap_expected_label_partially_extracted_canonicalization_needed": 9,
+      "pfap_expected_label_partially_extracted_canonicalization_needed": 7,
       "pfap_protected_candidate_lost_final_arbitration": 3,
       "unknown": 2
     }
@@ -6862,7 +6862,7 @@
       "description": "direct concrete biology topic",
       "message": "Can we go over membrane potentials?",
       "expectedLabel": "Membrane Potentials",
-      "actualLabel": "Membrane Potential",
+      "actualLabel": "Membrane Potentials",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
@@ -6870,25 +6870,20 @@
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
       "actualConfidence": 1,
-      "labelPass": false,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 0,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 1,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Membrane Potentials\" actualLabel=\"Membrane Potential\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "blindv2-isolated::blindv2-direct-002",
@@ -7540,33 +7535,28 @@
       "description": "paragraph with formula wrapper",
       "message": "My textbook has a formula for momentum, and I thought I was following everything. But once that showed up, everyone else seemed ahead of me.",
       "expectedLabel": "Momentum",
-      "actualLabel": "Formula for Momentum",
+      "actualLabel": "Momentum",
       "expectedResolutionKind": "created_new_candidate",
       "actualResolutionKind": "created_new_candidate",
       "expectedShouldCreate": true,
       "actualShouldCreate": true,
       "expectedMatchedTopicName": null,
       "actualMatchedTopicName": null,
-      "actualConfidence": 0.5640000000000001,
-      "labelPass": false,
+      "actualConfidence": 0.534,
+      "labelPass": true,
       "resolutionPass": true,
       "createPass": true,
       "matchedTopicPass": true,
       "forbiddenPass": true,
-      "endToEndPass": false,
-      "likelyFailureClass": "expected_label_present_in_message_but_not_extracted",
-      "pfapLikelyIssue": "pfap_expected_label_partially_extracted_canonicalization_needed",
+      "endToEndPass": true,
+      "likelyFailureClass": null,
+      "pfapLikelyIssue": null,
       "pfapProtectedCount": 1,
       "pfapMalformedCount": 1,
       "expectedCandidateFound": false,
       "expectedCandidateRank": null,
-      "actualCandidateRank": 2,
-      "layeredFailures": [
-        {
-          "layer": "label",
-          "message": "expectedLabel=\"Momentum\" actualLabel=\"Formula for Momentum\""
-        }
-      ]
+      "actualCandidateRank": null,
+      "layeredFailures": []
     },
     {
       "key": "blindv2-isolated::blindv2-paragraph-003",

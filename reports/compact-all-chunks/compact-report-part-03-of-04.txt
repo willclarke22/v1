@@ -244,12 +244,12 @@ layers: none | likely: n/a | pfap: n/a
 
 --- direct ---
 
-[blindv2-isolated] direct | blindv2-direct-001 | FAIL
+[blindv2-isolated] direct | blindv2-direct-001 | PASS
 message: Can we go over membrane potentials?
 expected: Membrane Potentials
-actual:   Membrane Potential
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Membrane Potentials
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [blindv2-isolated] direct | blindv2-direct-002 | FAIL
 message: I would really like to learn about how llms work and why deterministic code can't solve all my problems.
@@ -397,12 +397,12 @@ actual:   Hippocampus
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[blindv2-isolated] paragraph_context | blindv2-paragraph-002 | FAIL
+[blindv2-isolated] paragraph_context | blindv2-paragraph-002 | PASS
 message: My textbook has a formula for momentum, and I thought I was following everything. But once that showed up, everyone else seemed ahead of me.
 expected: Momentum
-actual:   Formula for Momentum
-checks: label=N resolution=Y create=Y matched=Y forbidden=Y
-layers: label | likely: expected_label_present_in_message_but_not_extracted | pfap: pfap_expected_label_partially_extracted_canonicalization_needed
+actual:   Momentum
+checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
+layers: none | likely: n/a | pfap: n/a
 
 [blindv2-isolated] paragraph_context | blindv2-paragraph-003 | PASS
 message: At first I thought the hard part was mitosis, but after looking again I think it's really just metaphase vs anaphase that I keep blending together.

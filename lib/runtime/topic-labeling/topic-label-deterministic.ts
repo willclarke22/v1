@@ -3518,11 +3518,106 @@ function chooseCleanComparisonCandidate(
   return comparisonCandidates[0] ?? null;
 }
 
+
+/**
+ * Patch F.8.1 micro-guard:
+ * Preserve a clean user-provided plural surface when the message is a direct
+ * request for that target. This avoids collapsing a direct phrase such as
+ * "membrane potentials" into the singular "membrane potential" while keeping
+ * the rule narrow: it only fires when the plural phrase itself appears inside
+ * a direct-help/request frame.
+ */
+function canonicalizeDirectPluralSurfaceLabelForPFAP(label: string | null, message: string) {
+  if (!label) return label;
+
+  const normalizedLabel = cachedNormalizeLoose(label);
+  const normalizedMessage = cachedNormalizeLoose(message);
+  const tokens = cachedTokenize(normalizedLabel);
+  if (tokens.length === 0 || tokens.length > 5) return label;
+
+  const lastToken = tokens[tokens.length - 1] ?? "";
+  if (!lastToken || /s$/i.test(lastToken)) return label;
+
+  const pluralTokens = [...tokens.slice(0, -1), `${lastToken}s`];
+  const pluralLoose = pluralTokens.join(" ");
+  const escapedPlural = pluralLoose.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const directPluralPattern = new RegExp(
+    `\\b(?:can|could|would)\\s+(?:we|you)\\s+(?:go over|review|explain|cover|talk about|look at)\\s+(?:the\\s+)?${escapedPlural}\\b|` +
+      `\\b(?:help me understand|help me with|need help understanding|need help with|want to learn about|would like to learn about|learn about)\\s+(?:the\\s+)?${escapedPlural}\\b`,
+    "i"
+  );
+
+  if (!directPluralPattern.test(normalizedMessage)) return label;
+
+  const shapedPlural = shapeDisplayLabel(pluralLoose);
+  if (!shapedPlural) return label;
+  if (labelHasBadBoundaryShape(shapedPlural) || !labelHasContentBearingHead(shapedPlural)) {
+    return label;
+  }
+
+  return shapedPlural;
+}
+
+/**
+ * Patch F.8.1 micro-guard:
+ * Strip a context-only "Formula for X" wrapper when the formula is clearly the
+ * artifact/source that appeared in a textbook, worksheet, notes, example, etc.,
+ * rather than the thing the learner explicitly asked to derive/use. This keeps
+ * the durable topic on X without broadly changing candidate extraction.
+ */
+function canonicalizeContextFormulaWrapperLabelForPFAP(label: string | null, message: string) {
+  if (!label) return label;
+
+  const formulaMatch = label.match(/^formula\s+for\s+(.+?)$/i);
+  if (!formulaMatch?.[1]) return label;
+
+  const inner = normalizeSurface(formulaMatch[1]);
+  if (!inner || cachedTokenize(inner).length === 0 || cachedTokenize(inner).length > 5) return label;
+
+  const normalizedMessage = cachedNormalizeLoose(message);
+  const innerLoose = cachedNormalizeLoose(inner);
+  const escapedInner = innerLoose.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const formulaContextPattern = new RegExp(
+    `\\b(?:textbook|book|worksheet|notes?|page|lesson|lecture|class|problem|example|question)\\b.{0,80}\\bformula\\s+for\\s+${escapedInner}\\b|` +
+      `\\bformula\\s+for\\s+${escapedInner}\\b.{0,120}\\b(?:showed up|came up|appeared|was following|everyone else|lost|stuck|confus|ahead of me|variables?)\\b`,
+    "i"
+  );
+
+  const explicitFormulaTaskPattern = new RegExp(
+    `\\b(?:derive|use|apply|rearrange|solve with|calculate with|memorize|write(?: down)?|what(?:'s| is))\\b.{0,48}\\bformula\\s+for\\s+${escapedInner}\\b|` +
+      `\\bformula\\s+for\\s+${escapedInner}\\b.{0,48}\\b(?:derive|use|apply|rearrange|solve|calculate|memorize|write)\\b`,
+    "i"
+  );
+
+  if (!formulaContextPattern.test(normalizedMessage)) return label;
+  if (explicitFormulaTaskPattern.test(normalizedMessage)) return label;
+
+  const shapedInner = shapeDisplayLabel(inner);
+  if (!shapedInner) return label;
+  if (labelHasBadBoundaryShape(shapedInner) || !labelHasContentBearingHead(shapedInner)) {
+    return label;
+  }
+
+  return shapedInner;
+}
+
 function canonicalizePFAPLabel(label: string | null, candidate: TopicCandidate | null, message: string) {
   if (!label) return label;
 
   const normalizedLabel = cachedNormalizeLoose(label);
   const normalizedMessage = cachedNormalizeLoose(message);
+
+  const directPluralSurfaceLabel = canonicalizeDirectPluralSurfaceLabelForPFAP(label, message);
+  if (directPluralSurfaceLabel && cachedNormalizeLoose(directPluralSurfaceLabel) !== normalizedLabel) {
+    return directPluralSurfaceLabel;
+  }
+
+  const contextFormulaWrapperLabel = canonicalizeContextFormulaWrapperLabelForPFAP(label, message);
+  if (contextFormulaWrapperLabel && cachedNormalizeLoose(contextFormulaWrapperLabel) !== normalizedLabel) {
+    return contextFormulaWrapperLabel;
+  }
 
   const structuralRelationLabel = canonicalizeStructuralRelationLabelForPFAP(label, message);
   if (structuralRelationLabel && cachedNormalizeLoose(structuralRelationLabel) !== normalizedLabel) {

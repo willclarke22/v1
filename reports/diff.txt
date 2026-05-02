@@ -1,12 +1,12 @@
 
 === Compact Baseline Comparison Report ===
 Compared against: C:\Users\willc\projects\MyWay\v1\reports\topic-labeling-baseline-100-naturalistic.json
-Previous snapshot generatedAt: 2026-05-01T22:23:51.022Z
-Current snapshot generatedAt: 2026-05-01T22:45:09.097Z
+Previous snapshot generatedAt: 2026-05-01T22:48:41.884Z
+Current snapshot generatedAt: 2026-05-02T00:14:01.745Z
 
-overall label: 321/336 -> 323/336 (+2)
-overall e2e:   319/336 -> 321/336 (+2)
-failed:        17 -> 15 (-2)
+overall label: 323/336 -> 325/336 (+2)
+overall e2e:   321/336 -> 323/336 (+2)
+failed:        15 -> 13 (-2)
 
 Case movement:
 New passes: 2
@@ -20,42 +20,43 @@ Removed cases from current run: 0
 - no newly failing cases were detected against the comparison snapshot.
 
 Scope movement:
-blindv2-isolated: label 17/25 -> 18/25 (+1), e2e 17/25 -> 18/25 (+1), failed 8 -> 7 (-1)
-holdout-isolated: label 53/58 -> 54/58 (+1), e2e 53/58 -> 54/58 (+1), failed 5 -> 4 (-1)
+blindv2-isolated: label 18/25 -> 20/25 (+2), e2e 18/25 -> 20/25 (+2), failed 7 -> 5 (-2)
 
 Category movement:
-comparison: label 11/14 -> 13/14 (+2), e2e 11/14 -> 13/14 (+2), failed 3 -> 1 (-2)
+direct: label 1/3 -> 2/3 (+1), e2e 1/3 -> 2/3 (+1), failed 2 -> 1 (-1)
+paragraph_context: label 15/18 -> 16/18 (+1), e2e 15/18 -> 16/18 (+1), failed 3 -> 2 (-1)
 
 Failure-layer movement:
-label: 15 -> 13 (-2)
+label: 13 -> 11 (-2)
 
 Likely-failure-class movement:
-domain_shaping_failed: 2 -> 1 (-1)
-uncategorized_failure: 5 -> 4 (-1)
+expected_label_present_in_message_but_not_extracted: 4 -> 2 (-2)
 
 PFAP likely-issue movement:
-pfap_expected_label_partially_extracted_canonicalization_needed: 11 -> 9 (-2)
+pfap_expected_label_partially_extracted_canonicalization_needed: 9 -> 7 (-2)
 
 PFAP headline movement:
-failedWithProtectedCandidates: 15 -> 13 (-2)
+failedWithProtectedCandidates: 13 -> 11 (-2)
 failedExpectedCandidateFound: 5 -> 5 (0)
 failedExpectedCandidateProtected: 4 -> 4 (0)
 failedMalformedActual: 1 -> 1 (0)
 
 New passes:
 
---- comparison (2) ---
-[holdout-isolated] comparison | holdout-compare-003 | PASS
-message: When I do triangle questions I do not usually panic at the beginning. The panic starts when I realize I have to decide between law of sines and law of cosines and I do not actually know what tells me which one belongs.
-expected: Law of Sines vs Law of Cosines
-actual:   Law of Sines vs Law of Cosines
+--- direct (1) ---
+[blindv2-isolated] direct | blindv2-direct-001 | PASS
+message: Can we go over membrane potentials?
+expected: Membrane Potentials
+actual:   Membrane Potentials
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 
-[blindv2-isolated] comparison | blindv2-compare-001 | PASS
-message: I keep mixing up kinetic energy and potential energy.
-expected: Kinetic Energy vs Potential Energy
-actual:   Kinetic Energy vs Potential Energy
+
+--- paragraph_context (1) ---
+[blindv2-isolated] paragraph_context | blindv2-paragraph-002 | PASS
+message: My textbook has a formula for momentum, and I thought I was following everything. But once that showed up, everyone else seemed ahead of me.
+expected: Momentum
+actual:   Momentum
 checks: label=Y resolution=Y create=Y matched=Y forbidden=Y
 layers: none | likely: n/a | pfap: n/a
 

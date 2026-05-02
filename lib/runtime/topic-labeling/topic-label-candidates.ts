@@ -31,18 +31,29 @@ import {
 } from "./topic-label-normalization";
 
 function stripLeadingDeterminer(text: string) {
-  return normalizeSurface(text).replace(/^(?:the|a|an)\s+/i, "").trim();
+  return normalizeSurface(text)
+    .replace(/^(?:the|a|an)\s+/i, "")
+    .trim();
 }
 
 function cleanComparisonSide(text: string) {
   return stripLeadingDeterminer(text)
-    .replace(/^(?:i\s+(?:don'?t|dont|do not)\s+know\s+)?(?:when\s+to\s+use|use|when\s+i\s+use)\s+/i, "")
+    .replace(
+      /^(?:i\s+(?:don'?t|dont|do not)\s+know\s+)?(?:when\s+to\s+use|use|when\s+i\s+use)\s+/i,
+      "",
+    )
     .replace(/^(?:i\s+keep\s+forgetting\s+)?when\s+to\s+use\s+/i, "")
-    .replace(/^(?:we\s+(?:started|covered|learned|were\s+doing|are\s+doing)|i\s+was\s+(?:doing|reviewing|confused\s+about)|i\s+thought\s+i\s+was\s+confused\s+about)\s+/i, "")
+    .replace(
+      /^(?:we\s+(?:started|covered|learned|were\s+doing|are\s+doing)|i\s+was\s+(?:doing|reviewing|confused\s+about)|i\s+thought\s+i\s+was\s+confused\s+about)\s+/i,
+      "",
+    )
     .replace(/^to\s+use\s+/i, "")
     .replace(/\s+(?:this\s+week|in\s+class|generally|overall)\b.*$/i, "")
     .replace(/\s+that\s+i\b.*$/i, "")
-    .replace(/\s+(?:still\s+)?(?:feel|seem|mess(?:es)?|confus(?:e|es|ing)|blend(?:s|ing)?|mix(?:es|ing)?)\b.*$/i, "")
+    .replace(
+      /\s+(?:still\s+)?(?:feel|seem|mess(?:es)?|confus(?:e|es|ing)|blend(?:s|ing)?|mix(?:es|ing)?)\b.*$/i,
+      "",
+    )
     .replace(/\byoure\b/gi, "you're")
     .replace(/\s+/g, " ")
     .trim();
@@ -59,10 +70,18 @@ function looksLikeBadComparisonSide(text: string) {
   // context such as "we're doing meiosis and inheritance and chromosome stuff"
   // could become a malformed comparison candidate.
   if (
-    /\b(?:we'?re|we\s+are|we\s+were|we)\s+(?:doing|covering|learning|studying|reviewing|starting|started)\b/i.test(loose) ||
-    /\b(?:right now|this week|in class|whole unit|unit|chapter|worksheet|homework|lecture)\b/i.test(loose) ||
-    /\b(?:stuff|things|all that|and all of that|generally confusing|generally|overall|in general)\b/i.test(loose) ||
-    /\b(?:at first i thought|i thought the whole|after sitting with it|sitting with it longer)\b/i.test(loose)
+    /\b(?:we'?re|we\s+are|we\s+were|we)\s+(?:doing|covering|learning|studying|reviewing|starting|started)\b/i.test(
+      loose,
+    ) ||
+    /\b(?:right now|this week|in class|whole unit|unit|chapter|worksheet|homework|lecture)\b/i.test(
+      loose,
+    ) ||
+    /\b(?:stuff|things|all that|and all of that|generally confusing|generally|overall|in general)\b/i.test(
+      loose,
+    ) ||
+    /\b(?:at first i thought|i thought the whole|after sitting with it|sitting with it longer)\b/i.test(
+      loose,
+    )
   ) {
     return true;
   }
@@ -71,7 +90,8 @@ function looksLikeBadComparisonSide(text: string) {
   // sentence residue unless they are a known/protected concept phrase.
   if (tokens.length > 6 && !phraseContainsStrongConcept(loose)) return true;
 
-  if (looksLikeLearnerResidue(loose) || looksLikeContextShell(loose)) return true;
+  if (looksLikeLearnerResidue(loose) || looksLikeContextShell(loose))
+    return true;
 
   return false;
 }
@@ -91,11 +111,15 @@ function normalizeComparisonSideForBuild(text: string) {
 }
 
 function messageHasComparisonCue(text: string) {
-  return /\b(vs|versus|difference|different|compare|contrast|mixing|mix\s+up|mixed\s+up|blending|blend\s+together|mess(?:es)?\s+me\s+up|interchangeable|same\s+in\s+my\s+head|feel\s+basically\s+the\s+same|seem\s+basically\s+the\s+same|blur\s+together|collapse\s+into|same\s+idea|which|whether|instead\s+of|tell\s+apart|distinguish|keep\s+confusing|confusing\s+.+\s+and\s+.+|confuse\s+.+\s+and\s+.+)\b/i.test(text);
+  return /\b(vs|versus|difference|different|compare|contrast|mixing|mix\s+up|mixed\s+up|blending|blend\s+together|mess(?:es)?\s+me\s+up|interchangeable|same\s+in\s+my\s+head|feel\s+basically\s+the\s+same|seem\s+basically\s+the\s+same|blur\s+together|collapse\s+into|same\s+idea|which|whether|instead\s+of|tell\s+apart|distinguish|keep\s+confusing|confusing\s+.+\s+and\s+.+|confuse\s+.+\s+and\s+.+)\b/i.test(
+    text,
+  );
 }
 
 function comparisonSidesLookSafe(left: string, right: string) {
-  return !looksLikeBadComparisonSide(left) && !looksLikeBadComparisonSide(right);
+  return (
+    !looksLikeBadComparisonSide(left) && !looksLikeBadComparisonSide(right)
+  );
 }
 
 function looksLikeTopicConnector(token: string) {
@@ -111,7 +135,7 @@ function looksLikeTopicConnector(token: string) {
 
 function looksLikeLikelyTopicHead(token: string) {
   return /^(?:rules?|phases?|layers?|steps?|parts?|types?|difference|role|function|mechanism|process|causes?|effects?|law|speed|terminology|jargon|word|words|word order|formula|equation|variables?|questions?|bullets?|size|cycles?|response|analysis|code|updates?|handling|splices?|agreement|voice|planning|anxiety|notation|recognition|scale|perspective|powers?|selection|equations?|intervals?|pressure|phases?|proof|regulation|mapping|control|skills?|defense|scoring|interviews?|salary|negotiation|interest|funds?|transmission|system|checks?|values?|boundaries?|velocity|phases?|precedent|consideration)$/i.test(
-    token
+    token,
   );
 }
 
@@ -144,7 +168,7 @@ function looksLikeAnchorOnlyPhrase(text: string) {
   if (looksLikeMechanismPhrase(normalized)) return false;
 
   return !/\bvs\b|\bdifference between\b|\bin\b|\bon\b|\bof\b|\bfor\b/i.test(
-    normalized
+    normalized,
   );
 }
 
@@ -212,7 +236,7 @@ function looksLikeWeakStandaloneChunk(text: string) {
         NEGATION_STEM_TOKENS.has(tokens[0]) ||
         FUNCTION_WORDS.has(tokens[0]) ||
         /^(?:like|weird|better|start|help|part|thing|words?|point|stuff|way|sense|idea|question|topic|section|unit)$/i.test(
-          tokens[0]
+          tokens[0],
         ))) ||
     looksLikeLearnerResidue(normalized)
   );
@@ -252,7 +276,7 @@ function clauseLooksPrimarilyAnchorLike(clause: ClauseInfo) {
   return (
     clause.role === "context" ||
     /\b(?:learning about|talking about|covered|started talking about|doing .* in class|we re doing|we're doing|in class|this week|section on|unit on|chapter on|lecture|textbook|worksheet|homework|reviewing|bigger topic|broad sense|overall|in general|the umbrella)\b/.test(
-      text
+      text,
     )
   );
 }
@@ -266,7 +290,7 @@ function clauseLooksPrimarilyBottleneckLike(clause: ClauseInfo) {
     clause.hasConfusionMarker ||
     clause.hasFocusMarker ||
     /\b(?:the thing|the part|the bit|the actual issue|actual thing|actual problem|actual target|the main bottleneck|real bottleneck|real issue|except|but|actually|mainly|mostly|especially|specifically|where i start getting lost|where i stopped following|what keeps tripping me up|throwing me off|doesn t click|doesn't click|not clicking|falls apart|breaks my understanding|stops feeling real|stops making sense)\b/.test(
-      text
+      text,
     )
   );
 }
@@ -358,7 +382,8 @@ function pruneCoreTailArtifacts(text: string) {
 }
 
 function looksLikeTailHeavyCandidate(candidate: TopicCandidate) {
-  const combined = `${candidate.coreText} ${candidate.tailText ?? ""}`.toLowerCase();
+  const combined =
+    `${candidate.coreText} ${candidate.tailText ?? ""}`.toLowerCase();
 
   return (
     /\band everyone else seems\b/i.test(combined) ||
@@ -409,7 +434,7 @@ function extractComparison(clause: string) {
   }
 
   const mixingMatch = normalized.match(
-    /\b(?:keep\s+mixing\s+up|mixing\s+up|keep\s+blending|blending|keep\s+confusing|confusing)\s+(.+?)\s+and\s+(.+?)[.?!]*$/i
+    /\b(?:keep\s+mixing\s+up|mixing\s+up|keep\s+blending|blending|keep\s+confusing|confusing)\s+(.+?)\s+and\s+(.+?)[.?!]*$/i,
   );
   if (mixingMatch?.[1] && mixingMatch?.[2]) {
     const left = cleanComparisonSide(mixingMatch[1]);
@@ -420,7 +445,7 @@ function extractComparison(clause: string) {
   }
 
   const sameInHeadMatch = normalized.match(
-    /\b(.+?)\s+and\s+(.+?)\s+(?:still\s+)?(?:feel|seem)\s+(?:basically\s+)?(?:the\s+)?same(?:\s+in\s+my\s+head)?(?:.*)?$/i
+    /\b(.+?)\s+and\s+(.+?)\s+(?:still\s+)?(?:feel|seem)\s+(?:basically\s+)?(?:the\s+)?same(?:\s+in\s+my\s+head)?(?:.*)?$/i,
   );
   if (sameInHeadMatch?.[1] && sameInHeadMatch?.[2]) {
     const left = cleanComparisonSide(sameInHeadMatch[1]);
@@ -431,7 +456,7 @@ function extractComparison(clause: string) {
   }
 
   const messMeUpMatch = normalized.match(
-    /\b(.+?)\s+and\s+(.+?)\s+(?:still\s+)?mess(?:es)?\s+me\s+up(?:.*)?$/i
+    /\b(.+?)\s+and\s+(.+?)\s+(?:still\s+)?mess(?:es)?\s+me\s+up(?:.*)?$/i,
   );
   if (messMeUpMatch?.[1] && messMeUpMatch?.[2]) {
     const left = cleanComparisonSide(messMeUpMatch[1]);
@@ -442,7 +467,7 @@ function extractComparison(clause: string) {
   }
 
   const blendingSubjectMatch = normalized.match(
-    /\b(.+?)\s+and\s+(.+?)\s+(?:that\s+i\s+)?(?:keep\s+)?(?:blend|blending|mix|mixing|confuse|confusing)(?:\s+(?:together|the\s+two|them|up|with\s+each\s+other))?(?:.*)?$/i
+    /\b(.+?)\s+and\s+(.+?)\s+(?:that\s+i\s+)?(?:keep\s+)?(?:blend|blending|mix|mixing|confuse|confusing)(?:\s+(?:together|the\s+two|them|up|with\s+each\s+other))?(?:.*)?$/i,
   );
   if (blendingSubjectMatch?.[1] && blendingSubjectMatch?.[2]) {
     const left = cleanComparisonSide(blendingSubjectMatch[1]);
@@ -457,7 +482,7 @@ function extractComparison(clause: string) {
 
 function inferKindFromQualifiers(
   qualifiers: string[],
-  fallback: TopicCandidateKind = "other"
+  fallback: TopicCandidateKind = "other",
 ): TopicCandidateKind {
   if (qualifiers.includes("question_synthesis")) return "question_synthesis";
   if (qualifiers.includes("concept_phrase")) return "concept_phrase";
@@ -468,7 +493,10 @@ function inferKindFromQualifiers(
   if (qualifiers.includes("named_concept")) return "named_concept";
   if (qualifiers.includes("paired_with_domain_anchor")) return "domain_shaped";
   if (qualifiers.includes("domain_shaped")) return "domain_shaped";
-  if (qualifiers.includes("late_focus_target") || qualifiers.includes("focus_target")) {
+  if (
+    qualifiers.includes("late_focus_target") ||
+    qualifiers.includes("focus_target")
+  ) {
     return "focus_target";
   }
 
@@ -508,7 +536,10 @@ function inferParentHint(span: string, qualifiers: string[]): string | null {
   if (qualifiers.includes("strong_phrase_match")) return null;
   if (qualifiers.includes("rescue_concept")) return null;
 
-  if ((loose === "scoring" || loose === "sweeping") && tokenize(loose).length === 1) {
+  if (
+    (loose === "scoring" || loose === "sweeping") &&
+    tokenize(loose).length === 1
+  ) {
     return "subpart_of_active_topic";
   }
 
@@ -584,7 +615,6 @@ function splitCoreAndTail(rawSpan: string, normalizedCore: string) {
     tailText: tail || null,
   };
 }
-
 
 const CONCEPT_HEAD_WORDS = new Set([
   "control",
@@ -789,7 +819,10 @@ function normalizeConceptPhrase(text: string) {
   return normalizeSurface(text)
     .replace(/^(?:the|a|an|my|our|their|your)\s+/i, "")
     .replace(/^(?:actual|real|specific|main|major)\s+/i, "")
-    .replace(/^(?:thing|part|bit|issue|problem|blocker|target)\s+(?:is\s+)?/i, "")
+    .replace(
+      /^(?:thing|part|bit|issue|problem|blocker|target)\s+(?:is\s+)?/i,
+      "",
+    )
     .replace(/^(?:what|why|how|when|where|who)\s+/i, "")
     .replace(/^(?:does|do|did|is|are|am|can|could|should|would|will)\s+/i, "")
     .replace(/\s+/g, " ")
@@ -804,15 +837,22 @@ function phraseContainsStrongConcept(text: string) {
   });
 }
 
-
 function messageExplicitlyHasNoPersistentTopic(text: string) {
   const loose = normalizeLoose(text);
 
   return (
-    /\b(?:no|not|nothing)\s+(?:specific|actual|real|clear)\s+(?:topic|concept|class thing|thing)\b/i.test(loose) ||
-    /\b(?:do not|don'?t|dont|cannot|can'?t|cant)\s+(?:even\s+)?(?:know|tell|figure out)\s+(?:what|which)\s+(?:the\s+)?(?:topic|concept|class thing)\b/i.test(loose) ||
-    /\b(?:not\s+)?(?:a|one)\s+specific\s+(?:topic|concept|thing)\b/i.test(loose) ||
-    /\b(?:just|only)\s+(?:overwhelmed|confused|lost)\s+(?:in general|overall)?\b/i.test(loose)
+    /\b(?:no|not|nothing)\s+(?:specific|actual|real|clear)\s+(?:topic|concept|class thing|thing)\b/i.test(
+      loose,
+    ) ||
+    /\b(?:do not|don'?t|dont|cannot|can'?t|cant)\s+(?:even\s+)?(?:know|tell|figure out)\s+(?:what|which)\s+(?:the\s+)?(?:topic|concept|class thing)\b/i.test(
+      loose,
+    ) ||
+    /\b(?:not\s+)?(?:a|one)\s+specific\s+(?:topic|concept|thing)\b/i.test(
+      loose,
+    ) ||
+    /\b(?:just|only)\s+(?:overwhelmed|confused|lost)\s+(?:in general|overall)?\b/i.test(
+      loose,
+    )
   );
 }
 
@@ -830,7 +870,10 @@ function isProtectedStrongConceptCandidate(candidate: TopicCandidate) {
 }
 
 function isQcsCandidate(candidate: TopicCandidate) {
-  return candidate.kind === "question_synthesis" || candidate.qualifiers.includes("question_synthesis");
+  return (
+    candidate.kind === "question_synthesis" ||
+    candidate.qualifiers.includes("question_synthesis")
+  );
 }
 
 function qcsFrame(candidate: TopicCandidate) {
@@ -846,15 +889,27 @@ function qcsLooksOverSynthesized(candidate: TopicCandidate) {
   return (
     /^causes of\b/.test(label) ||
     /^how to\b/.test(label) ||
-    /\b(?:assignment matters|not start|team switch|switch defenses|steer vs brake|dice mince vs chop)\b/.test(label) ||
-    (qcsFrame(candidate) === "cause" && /\b(?:switch|changed|started talking|class|team|someone|teacher|chapter)\b/.test(source))
+    /\b(?:assignment matters|not start|team switch|switch defenses|steer vs brake|dice mince vs chop)\b/.test(
+      label,
+    ) ||
+    (qcsFrame(candidate) === "cause" &&
+      /\b(?:switch|changed|started talking|class|team|someone|teacher|chapter)\b/.test(
+        source,
+      ))
   );
 }
 
-function qcsShouldYieldToExplicitConcept(qcs: TopicCandidate, other: TopicCandidate) {
+function qcsShouldYieldToExplicitConcept(
+  qcs: TopicCandidate,
+  other: TopicCandidate,
+) {
   if (!isQcsCandidate(qcs)) return false;
   if (!isProtectedStrongConceptCandidate(other)) return false;
-  if (other.residueRisk === "high" || other.isWeakNounChunk || other.isSubpartReference) {
+  if (
+    other.residueRisk === "high" ||
+    other.isWeakNounChunk ||
+    other.isSubpartReference
+  ) {
     return false;
   }
 
@@ -873,7 +928,9 @@ function buildRescueConceptCandidate(args: {
   return buildConceptCandidate({
     span: args.span,
     clause: args.clause,
-    kind: args.kind ?? (args.span.includes(" vs ") ? "comparison_pair" : "concept_phrase"),
+    kind:
+      args.kind ??
+      (args.span.includes(" vs ") ? "comparison_pair" : "concept_phrase"),
     domainText: args.domainText ?? null,
     qualifiers: [
       "rescue_concept",
@@ -884,7 +941,6 @@ function buildRescueConceptCandidate(args: {
     ],
   });
 }
-
 
 function extractStrongConceptPhrasesFromText(text: string) {
   const normalized = normalizeLoose(text);
@@ -914,16 +970,32 @@ function classifyConceptPhraseShape(text: string): ConceptPhraseShape {
 
   if (/\bvs\b/.test(loose)) return "comparison_like";
   if (/\b(?:in|on|for)\b/.test(loose)) return "domain_modified";
-  if (/\b(?:analysis|planning|mapping|recognition|handling|regulation|negotiation|initiation|parking|mixing|scoring)\b/.test(loose)) {
+  if (
+    /\b(?:analysis|planning|mapping|recognition|handling|regulation|negotiation|initiation|parking|mixing|scoring)\b/.test(
+      loose,
+    )
+  ) {
     return "skill_phrase";
   }
-  if (/\b(?:response|selection|succession|development|reaction|emulsification|photosynthesis|recursion|transmission)\b/.test(loose)) {
+  if (
+    /\b(?:response|selection|succession|development|reaction|emulsification|photosynthesis|recursion|transmission)\b/.test(
+      loose,
+    )
+  ) {
     return "process_phrase";
   }
-  if (/\b(?:velocity|pressure|cycles|phases|energy|proof|precedent|consideration|federalism|college|liberties|rights)\b/.test(loose)) {
+  if (
+    /\b(?:velocity|pressure|cycles|phases|energy|proof|precedent|consideration|federalism|college|liberties|rights)\b/.test(
+      loose,
+    )
+  ) {
     return "academic_phrase";
   }
-  if (/\b(?:deductible|premium|principal|apr|interest|expenses|funds|transmission|oil|valve|pipes|trap|checks)\b/.test(loose)) {
+  if (
+    /\b(?:deductible|premium|principal|apr|interest|expenses|funds|transmission|oil|valve|pipes|trap|checks)\b/.test(
+      loose,
+    )
+  ) {
     return "practical_phrase";
   }
   if (tokenize(loose).length >= 2) return "compound_noun";
@@ -939,20 +1011,35 @@ function estimateResidueRisk(text: string): "none" | "low" | "medium" | "high" {
 
   if (
     /^(?:i|you|we|they|he|she|it|this|that|these|those)\b/.test(loose) ||
-    /\b(?:i|you|we|they|he|she|it)\b.*\b(?:feel|think|know|guess|pretend|freeze|panic|hate|like|want|need)\b/.test(loose) ||
-    /\b(?:everything|someone|everyone|nothing|something|anything|whose|who|where|when|why|how)\b/.test(loose) ||
-    /\b(?:ready|behind|huge|louder|fake|stupid|dumb|annoyed|tired|weird|obvious|normal|randomly)\b/.test(loose) ||
-    /\b(?:says|said|mentioned|mentions|keeps showing|shows up|comes up|looked fine|sounds fine|sounds obvious)\b/.test(loose) ||
-    /\b(?:second there|once everything|already know|five other words|interview coming up|ui changes|type of case|far apart|draw the space around|line sounds|recipe mentions|teacher says|teacher wrote)\b/.test(loose)
+    /\b(?:i|you|we|they|he|she|it)\b.*\b(?:feel|think|know|guess|pretend|freeze|panic|hate|like|want|need)\b/.test(
+      loose,
+    ) ||
+    /\b(?:everything|someone|everyone|nothing|something|anything|whose|who|where|when|why|how)\b/.test(
+      loose,
+    ) ||
+    /\b(?:ready|behind|huge|louder|fake|stupid|dumb|annoyed|tired|weird|obvious|normal|randomly)\b/.test(
+      loose,
+    ) ||
+    /\b(?:says|said|mentioned|mentions|keeps showing|shows up|comes up|looked fine|sounds fine|sounds obvious)\b/.test(
+      loose,
+    ) ||
+    /\b(?:second there|once everything|already know|five other words|interview coming up|ui changes|type of case|far apart|draw the space around|line sounds|recipe mentions|teacher says|teacher wrote)\b/.test(
+      loose,
+    )
   ) {
     return phraseContainsStrongConcept(loose) ? "medium" : "high";
   }
 
-  if (isClauseLikeSpan(loose) || looksLikeLearnerResidue(loose) || looksLikeContextShell(loose)) {
+  if (
+    isClauseLikeSpan(loose) ||
+    looksLikeLearnerResidue(loose) ||
+    looksLikeContextShell(loose)
+  ) {
     return phraseContainsStrongConcept(loose) ? "medium" : "high";
   }
 
-  if (tokens.length === 1 && !CONCEPT_HEAD_WORDS.has(tokens[0])) return "medium";
+  if (tokens.length === 1 && !CONCEPT_HEAD_WORDS.has(tokens[0]))
+    return "medium";
   if (tokens.length > 7 && !phraseContainsStrongConcept(loose)) return "medium";
 
   return "low";
@@ -965,10 +1052,20 @@ function looksLikeDurableConceptPhrase(text: string) {
   if (!loose || tokens.length === 0) return false;
   if (phraseContainsStrongConcept(loose)) return true;
   if (/\bvs\b/.test(loose)) return true;
-  if (/\b(?:of|in|on|for)\b/.test(loose) && tokens.length >= 2 && tokens.length <= 7) return true;
+  if (
+    /\b(?:of|in|on|for)\b/.test(loose) &&
+    tokens.length >= 2 &&
+    tokens.length <= 7
+  )
+    return true;
 
   const head = getConceptHead(loose);
-  if (head && CONCEPT_HEAD_WORDS.has(head) && tokens.length >= 2 && tokens.length <= 5) {
+  if (
+    head &&
+    CONCEPT_HEAD_WORDS.has(head) &&
+    tokens.length >= 2 &&
+    tokens.length <= 5
+  ) {
     return true;
   }
 
@@ -982,7 +1079,7 @@ function cleanupWrapperArtifactsFromSpan(args: {
 }) {
   const originalMaybe = args.span ? normalizeSurface(args.span) : null;
   if (!originalMaybe) return originalMaybe;
- 
+
   const original = originalMaybe;
 
   // Keep comparison and QCS labels stable. Those are shaped intentionally by
@@ -1050,7 +1147,7 @@ function cleanupWrapperArtifactsFromSpan(args: {
   }
 
   const topicOfMatch = output.match(
-    /^(?:the\s+)?topic\s+of\s+(.+?)\s+(?:comes?|came|shows?|showed)\s+(?:up|back)(?:\s+again)?(?:.*)?$/i
+    /^(?:the\s+)?topic\s+of\s+(.+?)\s+(?:comes?|came|shows?|showed)\s+(?:up|back)(?:\s+again)?(?:.*)?$/i,
   );
   if (topicOfMatch?.[1]) {
     const accepted = accept(topicOfMatch[1]);
@@ -1078,7 +1175,9 @@ function cleanupWrapperArtifactsFromSpan(args: {
     }
   }
 
-  const leadingPrepositionMatch = output.match(/^(?:on|about|regarding)\s+(.+)$/i);
+  const leadingPrepositionMatch = output.match(
+    /^(?:on|about|regarding)\s+(.+)$/i,
+  );
   if (leadingPrepositionMatch?.[1]) {
     const accepted = accept(leadingPrepositionMatch[1]);
     if (accepted) output = accepted;
@@ -1100,7 +1199,9 @@ function candidateMetadataFor(kind: TopicCandidateKind, coreText: string) {
 
   const isWeakNounChunk =
     kind === "noun_chunk" &&
-    (!looksLikeDurableConceptPhrase(coreText) || residueRisk === "medium" || residueRisk === "high");
+    (!looksLikeDurableConceptPhrase(coreText) ||
+      residueRisk === "medium" ||
+      residueRisk === "high");
 
   return {
     conceptPhraseShape:
@@ -1128,7 +1229,11 @@ function buildConceptCandidate(args: {
   const risk = estimateResidueRisk(span);
   if (risk === "high" && !phraseContainsStrongConcept(span)) return null;
 
-  if (!looksLikeDurableConceptPhrase(span) && !phraseContainsStrongConcept(span)) return null;
+  if (
+    !looksLikeDurableConceptPhrase(span) &&
+    !phraseContainsStrongConcept(span)
+  )
+    return null;
 
   return buildCandidate({
     span,
@@ -1144,7 +1249,6 @@ function buildConceptCandidate(args: {
     shouldCompeteAsTopic: true,
   });
 }
-
 
 function buildCandidate(args: {
   span: string | null;
@@ -1238,23 +1342,35 @@ function buildCandidate(args: {
   const label = shapeDisplayLabel(normalized);
   if (!label && tokenize(normalized).length <= 2) return null;
 
-  const { coreText, tailText } = splitCoreAndTail(rawSpan ?? normalized, normalized);
+  const { coreText, tailText } = splitCoreAndTail(
+    rawSpan ?? normalized,
+    normalized,
+  );
   if (!coreText) return null;
 
   const metadata = candidateMetadataFor(kind, coreText);
 
-  if (kind === "noun_chunk" && metadata.isWeakNounChunk && metadata.residueRisk === "high") {
+  if (
+    kind === "noun_chunk" &&
+    metadata.isWeakNounChunk &&
+    metadata.residueRisk === "high"
+  ) {
     return null;
   }
 
-  if (kind === "other" && metadata.residueRisk === "high" && !metadata.isDurableConcept) {
+  if (
+    kind === "other" &&
+    metadata.residueRisk === "high" &&
+    !metadata.isDurableConcept
+  ) {
     return null;
   }
 
   const isSubpartReference = looksLikeSubpartReference(normalized, qualifiers);
   const shouldCompeteAsTopic =
     args.shouldCompeteAsTopic ??
-    (!isSubpartReference && !(kind === "noun_chunk" && metadata.isWeakNounChunk));
+    (!isSubpartReference &&
+      !(kind === "noun_chunk" && metadata.isWeakNounChunk));
 
   return {
     span: normalized,
@@ -1313,7 +1429,7 @@ function buildCandidate(args: {
 function buildSyntheticClause(
   raw: string,
   index: number,
-  role: ClauseInfo["role"] = "confusion"
+  role: ClauseInfo["role"] = "confusion",
 ): ClauseInfo {
   const normalized = normalizeLoose(raw);
 
@@ -1324,23 +1440,22 @@ function buildSyntheticClause(
     role,
     hasContrastBoundary:
       /\b(?:but|except|actually|mainly|mostly|especially|specifically|until|once|when)\b/i.test(
-        raw
+        raw,
       ),
     hasFocusMarker:
       /\b(?:actual|mainly|mostly|especially|specifically|real bottleneck|the part|the thing)\b/i.test(
-        raw
+        raw,
       ),
     hasConfusionMarker:
       /\b(?:confused|stuck|struggling|lost|don'?t get|dont get|do not get|doesn'?t click|not clicking|messing me up|throwing me off)\b/i.test(
-        raw
+        raw,
       ),
     hasQuestionMarker: /\?|\b(?:what|why|how|when|where)\b/i.test(raw),
-    hasRequestMarker: /\b(?:help|explain|go over|walk me through|teach|quiz|test)\b/i.test(
-      raw
-    ),
+    hasRequestMarker:
+      /\b(?:help|explain|go over|walk me through|teach|quiz|test)\b/i.test(raw),
     hasContextMarker:
       /\b(?:in class|textbook|worksheet|homework|unit|section|lecture|notes|learning about|doing)\b/i.test(
-        raw
+        raw,
       ),
   };
 }
@@ -1457,20 +1572,17 @@ function buildBottleneckPatterns(): Array<{
       kind: "focus_target",
     },
     {
-      regex:
-        /\b(?:don't|dont|do not)\s+(?:get|understand)\s+(.+?)[.?!]*$/i,
+      regex: /\b(?:don't|dont|do not)\s+(?:get|understand)\s+(.+?)[.?!]*$/i,
       qualifiers: ["focus_target", "bottleneck_target", "narrowed_target"],
       kind: "focus_target",
     },
     {
-      regex:
-        /\b(.+?)\s+is\s+what\s+i(?:'m| am)?\s+confused\s+about(?:.*)?$/i,
+      regex: /\b(.+?)\s+is\s+what\s+i(?:'m| am)?\s+confused\s+about(?:.*)?$/i,
       qualifiers: ["focus_target", "late_focus_target", "bottleneck_target"],
       kind: "focus_target",
     },
     {
-      regex:
-        /\b(.+?)\s+are\s+what\s+i\s+keep\s+getting\s+stuck\s+on(?:.*)?$/i,
+      regex: /\b(.+?)\s+are\s+what\s+i\s+keep\s+getting\s+stuck\s+on(?:.*)?$/i,
       qualifiers: ["focus_target", "late_focus_target", "bottleneck_target"],
       kind: "focus_target",
     },
@@ -1481,8 +1593,7 @@ function buildBottleneckPatterns(): Array<{
       kind: "focus_target",
     },
     {
-      regex:
-        /\b(.+?)\s+(?:is|are)\s+(?:not\s+)?clicking(?:\s+\w+)?(?:.*)?$/i,
+      regex: /\b(.+?)\s+(?:is|are)\s+(?:not\s+)?clicking(?:\s+\w+)?(?:.*)?$/i,
       qualifiers: ["focus_target", "late_focus_target", "bottleneck_target"],
       kind: "focus_target",
     },
@@ -1529,7 +1640,8 @@ function extractFocusTailCandidates(clause: ClauseInfo): TopicCandidate[] {
     qualifiers?: string[];
   }> = [
     {
-      regex: /\b(?:when to use|keep forgetting when to use)\s+(.+?)\s+vs\.?\s+(.+?)[.?!]*$/i,
+      regex:
+        /\b(?:when to use|keep forgetting when to use)\s+(.+?)\s+vs\.?\s+(.+?)[.?!]*$/i,
       qualifiers: [
         "focus_target",
         "comparison_pair",
@@ -1647,7 +1759,9 @@ function extractPrepositionalCandidates(clause: ClauseInfo): TopicCandidate[] {
     const match = text.match(rule.regex);
     if (!match?.[1] && !match?.[0]) continue;
 
-    const span = rule.customSpanBuilder ? rule.customSpanBuilder(match) : match[1];
+    const span = rule.customSpanBuilder
+      ? rule.customSpanBuilder(match)
+      : match[1];
 
     const candidate = buildCandidate({
       span,
@@ -1736,7 +1850,8 @@ function extractQuestionCandidates(clause: ClauseInfo): TopicCandidate[] {
     {
       regex: /^(?:how does|how do)\s+(.+?)\s+work[?]*$/i,
       conceptGroup: 1,
-      customSpanBuilder: (m) => `how ${normalizeSurface(m[1] ?? "")} works`.trim(),
+      customSpanBuilder: (m) =>
+        `how ${normalizeSurface(m[1] ?? "")} works`.trim(),
       qualifiers: ["focus_target", "mechanism_target", "narrowed_target"],
       kind: "question_target",
     },
@@ -1748,8 +1863,7 @@ function extractQuestionCandidates(clause: ClauseInfo): TopicCandidate[] {
       kind: "question_target",
     },
     {
-      regex:
-        /^(?:what(?:'s| is))\s+a?\s*(deductible)\s+in\s+(insurance)[?]*$/i,
+      regex: /^(?:what(?:'s| is))\s+a?\s*(deductible)\s+in\s+(insurance)[?]*$/i,
       conceptGroup: 1,
       customSpanBuilder: (m) =>
         `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[1] ?? "")}`.trim(),
@@ -1812,12 +1926,14 @@ function extractQuestionCandidates(clause: ClauseInfo): TopicCandidate[] {
 
     const rawSpan = rule.customSpanBuilder
       ? rule.customSpanBuilder(match)
-      : match[rule.conceptGroup] ?? null;
+      : (match[rule.conceptGroup] ?? null);
 
     const candidate = buildCandidate({
       span: rawSpan,
       clause,
-      questionAboutTopic: rule.questionBuilder ? rule.questionBuilder(match) : null,
+      questionAboutTopic: rule.questionBuilder
+        ? rule.questionBuilder(match)
+        : null,
       qualifiers: rule.qualifiers ?? ["focus_target"],
       kind: rule.kind,
     });
@@ -1862,9 +1978,9 @@ function extractRequestCandidates(clause: ClauseInfo): TopicCandidate[] {
       kind: "domain_shaped",
     },
     {
-      regex:
-        /^(?:can you explain|explain)\s+how\s+(.+?)\s+work(?:s)?[.?!]*$/i,
-      customSpanBuilder: (m) => `how ${normalizeSurface(m[1] ?? "")} works`.trim(),
+      regex: /^(?:can you explain|explain)\s+how\s+(.+?)\s+work(?:s)?[.?!]*$/i,
+      customSpanBuilder: (m) =>
+        `how ${normalizeSurface(m[1] ?? "")} works`.trim(),
       qualifiers: ["focus_target", "mechanism_target", "narrowed_target"],
       kind: "request_target",
     },
@@ -1899,7 +2015,7 @@ function extractRequestCandidates(clause: ClauseInfo): TopicCandidate[] {
 
     const rawSpan = rule.customSpanBuilder
       ? rule.customSpanBuilder(match)
-      : match[1] ?? null;
+      : (match[1] ?? null);
 
     const mechanismQualifiers =
       rawSpan && looksLikeMechanismPhrase(rawSpan) ? ["mechanism_target"] : [];
@@ -1907,7 +2023,10 @@ function extractRequestCandidates(clause: ClauseInfo): TopicCandidate[] {
     const candidate = buildCandidate({
       span: rawSpan,
       clause,
-      qualifiers: [...(rule.qualifiers ?? ["focus_target"]), ...mechanismQualifiers],
+      qualifiers: [
+        ...(rule.qualifiers ?? ["focus_target"]),
+        ...mechanismQualifiers,
+      ],
       kind: rule.kind,
       shouldCompeteAsTopic: rule.shouldCompeteAsTopic,
     });
@@ -1945,7 +2064,9 @@ function extractOfPhraseCandidates(clause: ClauseInfo): TopicCandidate[] {
   return candidates;
 }
 
-function extractStandaloneNamedConceptCandidates(clause: ClauseInfo): TopicCandidate[] {
+function extractStandaloneNamedConceptCandidates(
+  clause: ClauseInfo,
+): TopicCandidate[] {
   const candidates: TopicCandidate[] = [];
   const text = clause.raw;
 
@@ -1963,7 +2084,10 @@ function extractStandaloneNamedConceptCandidates(clause: ClauseInfo): TopicCandi
 
       const qualifiers = ["named_concept"];
 
-      if (clauseLooksPrimarilyAnchorLike(clause) && isNaturalisticDomainAnchor(span)) {
+      if (
+        clauseLooksPrimarilyAnchorLike(clause) &&
+        isNaturalisticDomainAnchor(span)
+      ) {
         qualifiers.push("domain_anchor");
       } else {
         qualifiers.push("focus_target");
@@ -1977,7 +2101,7 @@ function extractStandaloneNamedConceptCandidates(clause: ClauseInfo): TopicCandi
         qualifiers.push(
           "bottleneck_target",
           "paired_with_domain_anchor",
-          "narrowed_target"
+          "narrowed_target",
         );
       }
 
@@ -1985,7 +2109,7 @@ function extractStandaloneNamedConceptCandidates(clause: ClauseInfo): TopicCandi
         qualifiers.push(
           "bottleneck_target",
           "paired_with_domain_anchor",
-          "mechanism_target"
+          "mechanism_target",
         );
       }
 
@@ -1996,7 +2120,7 @@ function extractStandaloneNamedConceptCandidates(clause: ClauseInfo): TopicCandi
         qualifiers.push(
           "bottleneck_target",
           "paired_with_domain_anchor",
-          "narrowed_target"
+          "narrowed_target",
         );
       }
 
@@ -2079,7 +2203,9 @@ function extractEventRecoveryCandidates(clause: ClauseInfo): TopicCandidate[] {
     const match = text.match(rule.regex);
     if (!match?.[1]) continue;
 
-    const span = rule.customSpanBuilder ? rule.customSpanBuilder(match) : match[1];
+    const span = rule.customSpanBuilder
+      ? rule.customSpanBuilder(match)
+      : match[1];
     const mechanismQualifiers =
       span && looksLikeMechanismPhrase(span) ? ["mechanism_target"] : [];
 
@@ -2107,7 +2233,8 @@ function extractDomainShapedCandidates(clause: ClauseInfo): TopicCandidate[] {
   }> = [
     {
       regex: /\b(offside)\s+works?\s+in\s+(soccer)(?:[.?!]|$)/i,
-      custom: (m) => `${normalizeSurface(m[1] ?? "")} in ${normalizeSurface(m[2] ?? "")}`,
+      custom: (m) =>
+        `${normalizeSurface(m[1] ?? "")} in ${normalizeSurface(m[2] ?? "")}`,
       qualifiers: [
         "focus_target",
         "context_recovery",
@@ -2118,7 +2245,8 @@ function extractDomainShapedCandidates(clause: ClauseInfo): TopicCandidate[] {
     },
     {
       regex: /\b(icing)\s+works?\s+in\s+(hockey)(?:[.?!]|$)/i,
-      custom: (m) => `${normalizeSurface(m[1] ?? "")} in ${normalizeSurface(m[2] ?? "")}`,
+      custom: (m) =>
+        `${normalizeSurface(m[1] ?? "")} in ${normalizeSurface(m[2] ?? "")}`,
       qualifiers: [
         "focus_target",
         "context_recovery",
@@ -2129,17 +2257,20 @@ function extractDomainShapedCandidates(clause: ClauseInfo): TopicCandidate[] {
     },
     {
       regex: /\b(deductible)\s+in\s+(insurance)(?:[.?!]|$)/i,
-      custom: (m) => `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[1] ?? "")}`,
+      custom: (m) =>
+        `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[1] ?? "")}`,
       qualifiers: ["focus_target", "context_recovery", "late_focus_target"],
     },
     {
       regex: /\b(premium)\s+(?:mean|means)\s+in\s+(insurance)(?:[.?!]|$)/i,
-      custom: (m) => `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[1] ?? "")}`,
+      custom: (m) =>
+        `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[1] ?? "")}`,
       qualifiers: ["focus_target", "context_recovery", "late_focus_target"],
     },
     {
       regex: /\b(principal)\s+in\s+a\s+(loan)(?:[.?!]|$)/i,
-      custom: (m) => `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[1] ?? "")}`,
+      custom: (m) =>
+        `${normalizeSurface(m[2] ?? "")} ${normalizeSurface(m[1] ?? "")}`,
       qualifiers: ["focus_target", "context_recovery", "late_focus_target"],
     },
     {
@@ -2154,7 +2285,8 @@ function extractDomainShapedCandidates(clause: ClauseInfo): TopicCandidate[] {
     },
     {
       regex: /\b(word order)\s+in\s+(spanish)(?:[.?!]|$)/i,
-      custom: (m) => `${normalizeSurface(m[1] ?? "")} in ${normalizeSurface(m[2] ?? "")}`,
+      custom: (m) =>
+        `${normalizeSurface(m[1] ?? "")} in ${normalizeSurface(m[2] ?? "")}`,
       qualifiers: [
         "focus_target",
         "context_recovery",
@@ -2166,7 +2298,8 @@ function extractDomainShapedCandidates(clause: ClauseInfo): TopicCandidate[] {
     },
     {
       regex: /\b(se)\s+(?:in|for)\s+(spanish)(?:[.?!]|$)/i,
-      custom: (m) => `${normalizeSurface(m[1] ?? "")} in ${normalizeSurface(m[2] ?? "")}`,
+      custom: (m) =>
+        `${normalizeSurface(m[1] ?? "")} in ${normalizeSurface(m[2] ?? "")}`,
       qualifiers: [
         "focus_target",
         "context_recovery",
@@ -2235,7 +2368,9 @@ function extractMechanismCandidates(clause: ClauseInfo): TopicCandidate[] {
     const match = text.match(rule.regex);
     if (!match) continue;
 
-    const span = rule.customSpanBuilder ? rule.customSpanBuilder(match) : match[1] ?? null;
+    const span = rule.customSpanBuilder
+      ? rule.customSpanBuilder(match)
+      : (match[1] ?? null);
     const candidate = buildCandidate({
       span,
       clause,
@@ -2254,7 +2389,7 @@ function extractAnchorListCandidates(clause: ClauseInfo): TopicCandidate[] {
   const text = normalizeSurface(clause.raw);
 
   const listMatch = text.match(
-    /\b(?:learning about|talking about|went through|covered|started talking about|reading about|teacher explained)\s+(.+?)(?:,?\s+but\b|[.?!]|$)/i
+    /\b(?:learning about|talking about|went through|covered|started talking about|reading about|teacher explained)\s+(.+?)(?:,?\s+but\b|[.?!]|$)/i,
   );
 
   if (!listMatch?.[1]) return candidates;
@@ -2285,13 +2420,16 @@ function extractAnchorListCandidates(clause: ClauseInfo): TopicCandidate[] {
 
 function extractNaturalisticPairedCandidates(
   interpretation: MessageInterpretation,
-  fullMessage: string
+  fullMessage: string,
 ): TopicCandidate[] {
   const normalized = normalizeLoose(fullMessage);
   const syntheticClause = buildSyntheticClause(fullMessage, 3000, "confusion");
   const candidates: TopicCandidate[] = [];
 
-  if (/\bspanish\b/.test(normalized) && /\bword order\b|\bsentence order\b/.test(normalized)) {
+  if (
+    /\bspanish\b/.test(normalized) &&
+    /\bword order\b|\bsentence order\b/.test(normalized)
+  ) {
     const candidate = buildCandidate({
       span: "word order in spanish",
       clause: syntheticClause,
@@ -2329,7 +2467,10 @@ function extractNaturalisticPairedCandidates(
   // Patch E: targeted domain/phrase rescue candidates. These add clean
   // domain-shaped candidates when the short target and its domain are both
   // explicitly present in the same naturalistic message.
-  if (/\b(?:soccer|football)\b/.test(normalized) && /\boffside\b/.test(normalized)) {
+  if (
+    /\b(?:soccer|football)\b/.test(normalized) &&
+    /\boffside\b/.test(normalized)
+  ) {
     const candidate = buildCandidate({
       span: "offside in soccer",
       clause: syntheticClause,
@@ -2367,7 +2508,10 @@ function extractNaturalisticPairedCandidates(
     if (candidate) candidates.push(candidate);
   }
 
-  if (/\b(?:loan|loans|mortgage|mortgages)\b/.test(normalized) && /\bprincipal\b/.test(normalized)) {
+  if (
+    /\b(?:loan|loans|mortgage|mortgages)\b/.test(normalized) &&
+    /\bprincipal\b/.test(normalized)
+  ) {
     const candidate = buildCandidate({
       span: "loan principal",
       clause: syntheticClause,
@@ -2466,8 +2610,6 @@ function extractNaturalisticPairedCandidates(
   return candidates;
 }
 
-
-
 type QuestionSynthesisBuildArgs = {
   label: string;
   clause: ClauseInfo;
@@ -2488,7 +2630,10 @@ function cleanQcsSlot(text: string | null | undefined) {
   const cleaned = normalizeSurface(text)
     .replace(/^(?:the|a|an|my|our|your|their|this|that)\s+/i, "")
     .replace(/^what\s+makes\s+/i, "")
-    .replace(/^when\s+(?:i|you|we|someone|people)?\s*(?:type|use|choose|apply)\s+(?:quickly\s+)?/i, "")
+    .replace(
+      /^when\s+(?:i|you|we|someone|people)?\s*(?:type|use|choose|apply)\s+(?:quickly\s+)?/i,
+      "",
+    )
     .replace(/^chapter\s+(?:uses|mentions|says)\s+/i, "")
     .replace(/^space\s+class\s+starts?\s+talking\s+(?:about\s+)?/i, "")
     .replace(/^but\s+/i, "")
@@ -2497,7 +2642,11 @@ function cleanQcsSlot(text: string | null | undefined) {
     .replace(/\s+/g, " ")
     .trim();
 
-  if (!cleaned || looksLikeLearnerResidue(cleaned) || looksLikeWeakStandaloneChunk(cleaned)) {
+  if (
+    !cleaned ||
+    looksLikeLearnerResidue(cleaned) ||
+    looksLikeWeakStandaloneChunk(cleaned)
+  ) {
     return null;
   }
 
@@ -2519,7 +2668,9 @@ function buildQcsLabelFromAnalysisObject(object: string) {
   return `${qcsTitle(cleaned)} Analysis`;
 }
 
-function buildQcsCandidate(args: QuestionSynthesisBuildArgs): TopicCandidate | null {
+function buildQcsCandidate(
+  args: QuestionSynthesisBuildArgs,
+): TopicCandidate | null {
   const label = normalizeSurface(args.label);
   if (!label || looksLikeLearnerResidue(label)) return null;
 
@@ -2608,26 +2759,58 @@ function addQcsComparisonCandidate(args: {
 }
 
 function inferQuestionWord(text: string): QuestionSynthesisWord {
-  const match = normalizeLoose(text).match(/^(who|what|when|where|why|how|which)\b/);
+  const match = normalizeLoose(text).match(
+    /^(who|what|when|where|why|how|which)\b/,
+  );
   return (match?.[1] as QuestionSynthesisWord) ?? null;
 }
 
-function extractQuestionSynthesisCandidates(clause: ClauseInfo): TopicCandidate[] {
+function extractQuestionSynthesisCandidates(
+  clause: ClauseInfo,
+): TopicCandidate[] {
   const candidates: TopicCandidate[] = [];
   const raw = normalizeSurface(clause.raw);
   const loose = normalizeLoose(raw);
   const questionWord = inferQuestionWord(raw);
-  const triggerKind: QuestionSynthesisTriggerKind = questionWord || /\?/.test(raw)
-    ? "explicit_question"
-    : "implicit_problem";
+  const triggerKind: QuestionSynthesisTriggerKind =
+    questionWord || /\?/.test(raw) ? "explicit_question" : "implicit_problem";
 
   // Comparison / selection frames. These are intentionally subject-neutral:
   // "When should I use X", "When is X used", "I can't tell whether X or Y".
-  const comparisonPatterns: Array<{ regex: RegExp; word: QuestionSynthesisWord; verb: string; frame?: QuestionSynthesisFrame }> = [
-    { regex: /\b(?:difference between|different between)\s+(.+?)\s+(?:and|or|vs\.?|versus)\s+(.+?)(?:[?.!,]|$)/i, word: questionWord, verb: "difference", frame: "comparison" },
-    { regex: /\b(?:tell|decide|know|choose|figure out)\s+(?:whether|if|when)?\s*(?:to\s+use\s+)?(.+?)\s+(?:or|and|vs\.?|versus|instead of)\s+(.+?)(?:[?.!,]|$)/i, word: questionWord, verb: "tell whether", frame: "selection" },
-    { regex: /\b(?:use|choose|apply)\s+(.+?)\s+(?:or|vs\.?|versus|instead of)\s+(.+?)(?:[?.!,]|$)/i, word: questionWord, verb: "choose", frame: "selection" },
-    { regex: /\b(.+?)\s+and\s+(.+?)\s+(?:blur together|collapse into|feel(?:s)? interchangeable|feel(?:s)? like the same|seem(?:s)? like the same|stop feeling different|keep feeling like the same)(?:[?.!,]|$)/i, word: questionWord, verb: "compare", frame: "comparison" },
+  const comparisonPatterns: Array<{
+    regex: RegExp;
+    word: QuestionSynthesisWord;
+    verb: string;
+    frame?: QuestionSynthesisFrame;
+  }> = [
+    {
+      regex:
+        /\b(?:difference between|different between)\s+(.+?)\s+(?:and|or|vs\.?|versus)\s+(.+?)(?:[?.!,]|$)/i,
+      word: questionWord,
+      verb: "difference",
+      frame: "comparison",
+    },
+    {
+      regex:
+        /\b(?:tell|decide|know|choose|figure out)\s+(?:whether|if|when)?\s*(?:to\s+use\s+)?(.+?)\s+(?:or|and|vs\.?|versus|instead of)\s+(.+?)(?:[?.!,]|$)/i,
+      word: questionWord,
+      verb: "tell whether",
+      frame: "selection",
+    },
+    {
+      regex:
+        /\b(?:use|choose|apply)\s+(.+?)\s+(?:or|vs\.?|versus|instead of)\s+(.+?)(?:[?.!,]|$)/i,
+      word: questionWord,
+      verb: "choose",
+      frame: "selection",
+    },
+    {
+      regex:
+        /\b(.+?)\s+and\s+(.+?)\s+(?:blur together|collapse into|feel(?:s)? interchangeable|feel(?:s)? like the same|seem(?:s)? like the same|stop feeling different|keep feeling like the same)(?:[?.!,]|$)/i,
+      word: questionWord,
+      verb: "compare",
+      frame: "comparison",
+    },
   ];
 
   for (const rule of comparisonPatterns) {
@@ -2646,7 +2829,9 @@ function extractQuestionSynthesisCandidates(clause: ClauseInfo): TopicCandidate[
   }
 
   // Cause frames: "What caused X", "Why did X happen", implicit "led to X".
-  const causedMatch = raw.match(/\b(?:what\s+(?:actually\s+)?caused|what\s+led\s+to|why\s+did)\s+(.+?)(?:\s+happen|\s+start|\s+occur|[?.!,]|$)/i);
+  const causedMatch = raw.match(
+    /\b(?:what\s+(?:actually\s+)?caused|what\s+led\s+to|why\s+did)\s+(.+?)(?:\s+happen|\s+start|\s+occur|[?.!,]|$)/i,
+  );
   if (causedMatch?.[1]) {
     const object = cleanQcsSlot(causedMatch[1]);
     if (object) {
@@ -2690,13 +2875,18 @@ function extractQuestionSynthesisCandidates(clause: ClauseInfo): TopicCandidate[
   }
 
   // Criteria / definition frames: "what makes X count as Y" or named criteria in a domain.
-  const countAsMatch = raw.match(/\bwhat\s+makes\s+(.+?)\s+(?:legally\s+)?(?:count\s+as|qualify\s+as|become|valid\s+as)\s+(.+?)(?:\s+when|[?.!,]|$)/i);
+  const countAsMatch = raw.match(
+    /\bwhat\s+makes\s+(.+?)\s+(?:legally\s+)?(?:count\s+as|qualify\s+as|become|valid\s+as)\s+(.+?)(?:\s+when|[?.!,]|$)/i,
+  );
   if (countAsMatch?.[1] && countAsMatch?.[2]) {
     const object = cleanQcsSlot(countAsMatch[1]);
     const domain = cleanQcsSlot(countAsMatch[2]);
     let label: string | null = null;
 
-    if (/\bcontract\b/i.test(domain ?? "") && /\bconsideration\b/i.test(loose)) {
+    if (
+      /\bcontract\b/i.test(domain ?? "") &&
+      /\bconsideration\b/i.test(loose)
+    ) {
       label = "Consideration in Contracts";
     } else if (domain) {
       label = `${qcsTitle(domain)} Criteria`;
@@ -2734,7 +2924,11 @@ function extractQuestionSynthesisCandidates(clause: ClauseInfo): TopicCandidate[
   }
 
   // Monitoring frames: not hard-coded to first person.
-  if (/\b(?:tell|know|check|monitor|figure out)\b.*\b(?:understand|understanding)\b/i.test(loose)) {
+  if (
+    /\b(?:tell|know|check|monitor|figure out)\b.*\b(?:understand|understanding)\b/i.test(
+      loose,
+    )
+  ) {
     const candidate = buildQcsCandidate({
       label: "Monitoring Understanding",
       clause,
@@ -2749,12 +2943,44 @@ function extractQuestionSynthesisCandidates(clause: ClauseInfo): TopicCandidate[
   }
 
   // Process/skill nominalization frames with neutral actors/passives.
-  const processPatterns: Array<{ regex: RegExp; label: string; frame: QuestionSynthesisFrame; verb: string }> = [
-    { regex: /\b(?:how\s+)?(?:are|do|does|should|can)?\s*(?:chemical\s+)?equations?\s+(?:get\s+)?balanced\b|\bbalance\s+(?:a\s+)?chemical\s+equation/i, label: "Balancing Chemical Equations", frame: "process", verb: "balance" },
-    { regex: /\bmerge lanes?\b|\bmerging\b.*\b(?:highway|lane|traffic)\b/i, label: "Merge Lanes", frame: "process", verb: "merge" },
-    { regex: /\bshutoff valve\b|\bwhere\b.*\bshutoff\b.*\bvalve\b/i, label: "Shutoff Valve", frame: "role_responsibility", verb: "shut off" },
-    { regex: /\bearned runs?\b|\bwhat counted against the pitcher\b/i, label: "Earned Runs", frame: "definition", verb: "count" },
-    { regex: /\bdeuce\b.*\badvantage\b|\btennis scoring\b|\btennis\b.*\b(?:15|30|40|fifteen|thirty|forty|love|deuce|advantage|points?|scor(?:e|ing))\b|\b(?:15|30|40|fifteen|thirty|forty|love|deuce|advantage|points?|scor(?:e|ing))\b.*\btennis\b/i, label: "Tennis Scoring", frame: "process", verb: "score" },
+  const processPatterns: Array<{
+    regex: RegExp;
+    label: string;
+    frame: QuestionSynthesisFrame;
+    verb: string;
+  }> = [
+    {
+      regex:
+        /\b(?:how\s+)?(?:are|do|does|should|can)?\s*(?:chemical\s+)?equations?\s+(?:get\s+)?balanced\b|\bbalance\s+(?:a\s+)?chemical\s+equation/i,
+      label: "Balancing Chemical Equations",
+      frame: "process",
+      verb: "balance",
+    },
+    {
+      regex: /\bmerge lanes?\b|\bmerging\b.*\b(?:highway|lane|traffic)\b/i,
+      label: "Merge Lanes",
+      frame: "process",
+      verb: "merge",
+    },
+    {
+      regex: /\bshutoff valve\b|\bwhere\b.*\bshutoff\b.*\bvalve\b/i,
+      label: "Shutoff Valve",
+      frame: "role_responsibility",
+      verb: "shut off",
+    },
+    {
+      regex: /\bearned runs?\b|\bwhat counted against the pitcher\b/i,
+      label: "Earned Runs",
+      frame: "definition",
+      verb: "count",
+    },
+    {
+      regex:
+        /\bdeuce\b.*\badvantage\b|\btennis scoring\b|\btennis\b.*\b(?:15|30|40|fifteen|thirty|forty|love|deuce|advantage|points?|scor(?:e|ing))\b|\b(?:15|30|40|fifteen|thirty|forty|love|deuce|advantage|points?|scor(?:e|ing))\b.*\btennis\b/i,
+      label: "Tennis Scoring",
+      frame: "process",
+      verb: "score",
+    },
   ];
   for (const rule of processPatterns) {
     if (!rule.regex.test(loose)) continue;
@@ -2772,7 +2998,9 @@ function extractQuestionSynthesisCandidates(clause: ClauseInfo): TopicCandidate[
   }
 
   // What/does X mean frames should preserve the named object.
-  const meaningMatch = raw.match(/\b(?:what\s+does|what'?s|what\s+is)\s+(.+?)\s+(?:actually\s+)?(?:mean|means|for|about)(?:[?.!,]|$)/i);
+  const meaningMatch = raw.match(
+    /\b(?:what\s+does|what'?s|what\s+is)\s+(.+?)\s+(?:actually\s+)?(?:mean|means|for|about)(?:[?.!,]|$)/i,
+  );
   if (meaningMatch?.[1]) {
     const object = cleanQcsSlot(meaningMatch[1]);
     if (object && looksLikeDurableConceptPhrase(object)) {
@@ -2815,37 +3043,45 @@ function extractConceptPhraseCandidates(clause: ClauseInfo): TopicCandidate[] {
     qualifiers?: string[];
   }> = [
     {
-      regex: /\b(?:the actual thing|the thing|the part|the skill|the topic|the target|the real issue|the blocker)\s+(?:i\s+)?(?:need|want)?\s*(?:to\s+)?(?:understand|fix|learn|work on)?\s*(?:is|are)\s+([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){0,5})/i,
+      regex:
+        /\b(?:the actual thing|the thing|the part|the skill|the topic|the target|the real issue|the blocker)\s+(?:i\s+)?(?:need|want)?\s*(?:to\s+)?(?:understand|fix|learn|work on)?\s*(?:is|are)\s+([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){0,5})/i,
       group: 1,
       qualifiers: ["bottleneck_target", "narrowed_target"],
     },
     {
-      regex: /\b(?:i think|i guess|maybe|probably)\s+([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){1,5})\s+(?:is|are)\s+(?:the\s+)?(?:blocker|issue|problem|target|thing|part)/i,
+      regex:
+        /\b(?:i think|i guess|maybe|probably)\s+([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){1,5})\s+(?:is|are)\s+(?:the\s+)?(?:blocker|issue|problem|target|thing|part)/i,
       group: 1,
       qualifiers: ["bottleneck_target", "narrowed_target"],
     },
     {
-      regex: /\b([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){1,5})\s+(?:is|are)\s+(?:the\s+)?(?:thing|part|skill|topic|target|issue|problem|blocker)\b/i,
+      regex:
+        /\b([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){1,5})\s+(?:is|are)\s+(?:the\s+)?(?:thing|part|skill|topic|target|issue|problem|blocker)\b/i,
       group: 1,
       qualifiers: ["bottleneck_target", "narrowed_target"],
     },
     {
-      regex: /\b(?:teacher|textbook|article|recipe|feedback|chapter|worksheet|lesson|class|video|people|everyone|someone)\s+(?:says|said|wrote|mentions?|mentioned|keeps saying|keeps mentioning)\s+([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){1,5})\b/i,
+      regex:
+        /\b(?:teacher|textbook|article|recipe|feedback|chapter|worksheet|lesson|class|video|people|everyone|someone)\s+(?:says|said|wrote|mentions?|mentioned|keeps saying|keeps mentioning)\s+([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){1,5})\b/i,
       group: 1,
       qualifiers: ["context_recovery"],
     },
     {
-      regex: /\b(?:how|why|what|when|where|who)\s+(?:do|does|is|are|can|could|should|would)?\s*(?:i\s+)?(?:use|spot|know|tell|understand|explain|answer|write|make|regulate)?\s*([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){1,4})\b/i,
+      regex:
+        /\b(?:how|why|what|when|where|who)\s+(?:do|does|is|are|can|could|should|would)?\s*(?:i\s+)?(?:use|spot|know|tell|understand|explain|answer|write|make|regulate)?\s*([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){1,4})\b/i,
       group: 1,
       qualifiers: ["question_target"],
     },
     {
-      regex: /\b([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){0,3})\s+vs\.?\s+([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){0,3})\b/i,
-      custom: (m) => `${normalizeSurface(m[1] ?? "")} vs ${normalizeSurface(m[2] ?? "")}`,
+      regex:
+        /\b([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){0,3})\s+vs\.?\s+([A-Za-z][A-Za-z-]*(?:\s+[A-Za-z][A-Za-z-]*){0,3})\b/i,
+      custom: (m) =>
+        `${normalizeSurface(m[1] ?? "")} vs ${normalizeSurface(m[2] ?? "")}`,
       qualifiers: ["comparison_pair", "bottleneck_target"],
     },
     {
-      regex: /\b((?:[A-Za-z][A-Za-z-]*\s+){0,3}(?:analysis|planning|mapping|recognition|handling|regulation|negotiation|initiation|notation|scoring|parking|checks|updates|questions|bullets|interviews|skills|development|control|size|cycles|pressure|response|significance|agreement|voice|structure|scale|perspective|powers|federalism|college|selection|energy|concept|equations|expenses|funds|transmission|system|intervals|phases|proof|precedent|consideration|velocity|redshift|rumination|reappraisal))\b/i,
+      regex:
+        /\b((?:[A-Za-z][A-Za-z-]*\s+){0,3}(?:analysis|planning|mapping|recognition|handling|regulation|negotiation|initiation|notation|scoring|parking|checks|updates|questions|bullets|interviews|skills|development|control|size|cycles|pressure|response|significance|agreement|voice|structure|scale|perspective|powers|federalism|college|selection|energy|concept|equations|expenses|funds|transmission|system|intervals|phases|proof|precedent|consideration|velocity|redshift|rumination|reappraisal))\b/i,
       group: 1,
       qualifiers: ["concept_head_match"],
     },
@@ -2855,14 +3091,18 @@ function extractConceptPhraseCandidates(clause: ClauseInfo): TopicCandidate[] {
     const match = text.match(rule.regex);
     if (!match) continue;
 
-    const span = rule.custom ? rule.custom(match) : match[rule.group ?? 1] ?? null;
+    const span = rule.custom
+      ? rule.custom(match)
+      : (match[rule.group ?? 1] ?? null);
     if (!span) continue;
 
     const candidate = buildConceptCandidate({
       span,
       clause,
       qualifiers: rule.qualifiers ?? [],
-      kind: span.toLowerCase().includes(" vs ") ? "comparison_pair" : "concept_phrase",
+      kind: span.toLowerCase().includes(" vs ")
+        ? "comparison_pair"
+        : "concept_phrase",
     });
 
     if (candidate) candidates.push(candidate);
@@ -2870,7 +3110,6 @@ function extractConceptPhraseCandidates(clause: ClauseInfo): TopicCandidate[] {
 
   return candidates;
 }
-
 
 function extractNounLikeCandidates(clause: ClauseInfo): TopicCandidate[] {
   const rawTokens = tokenize(clause.raw);
@@ -2945,11 +3184,16 @@ function extractNounLikeCandidates(clause: ClauseInfo): TopicCandidate[] {
       if (junkLooseSpans.has(loose)) return false;
       if (tokens.length === 1 && FUNCTION_WORDS.has(tokens[0])) return false;
       if (looksLikeWeakStandaloneChunk(span)) return false;
-      if (estimateResidueRisk(span) === "high" && !looksLikeDurableConceptPhrase(span)) return false;
+      if (
+        estimateResidueRisk(span) === "high" &&
+        !looksLikeDurableConceptPhrase(span)
+      )
+        return false;
 
       // Noun chunks are now a weak fallback. If a chunk does not look like
       // a durable teachable phrase, it should not compete as a topic.
-      if (!looksLikeDurableConceptPhrase(span) && tokens.length < 2) return false;
+      if (!looksLikeDurableConceptPhrase(span) && tokens.length < 2)
+        return false;
       return true;
     })
     .map((span) => {
@@ -2985,7 +3229,9 @@ function extractNounLikeCandidates(clause: ClauseInfo): TopicCandidate[] {
     .filter((candidate): candidate is TopicCandidate => Boolean(candidate));
 }
 
-function extractStandaloneConceptCandidate(clause: ClauseInfo): TopicCandidate | null {
+function extractStandaloneConceptCandidate(
+  clause: ClauseInfo,
+): TopicCandidate | null {
   const tokens = tokenize(clause.raw);
 
   if (!tokens.length || tokens.length > 6) return null;
@@ -3010,7 +3256,10 @@ function extractStandaloneConceptCandidate(clause: ClauseInfo): TopicCandidate |
     qualifiers.push("domain_anchor");
   }
 
-  if (clauseLooksPrimarilyBottleneckLike(clause) && !looksLikeAnchorOnlyPhrase(clause.raw)) {
+  if (
+    clauseLooksPrimarilyBottleneckLike(clause) &&
+    !looksLikeAnchorOnlyPhrase(clause.raw)
+  ) {
     qualifiers.push("focus_target", "bottleneck_target");
   }
 
@@ -3022,7 +3271,9 @@ function extractStandaloneConceptCandidate(clause: ClauseInfo): TopicCandidate |
   });
 }
 
-function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate[] {
+function extractCrossClauseAnchorCandidates(
+  fullMessage: string,
+): TopicCandidate[] {
   const candidates: TopicCandidate[] = [];
   const normalized = normalizeLoose(fullMessage);
   const syntheticClause = buildSyntheticClause(fullMessage, 2000, "confusion");
@@ -3046,7 +3297,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "of_phrase",
     },
     {
-      trigger: /\bneurotransmission\b.*\breuptake\b|\breuptake\b.*\bneurotransmission\b|\bneurotransmitters?\b.*\breuptake\b/i,
+      trigger:
+        /\bneurotransmission\b.*\breuptake\b|\breuptake\b.*\bneurotransmission\b|\bneurotransmitters?\b.*\breuptake\b/i,
       span: "reuptake",
       qualifiers: [
         "focus_target",
@@ -3057,7 +3309,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "named_concept",
     },
     {
-      trigger: /\baction potentials?\b.*\bdepolarization\b|\bdepolarization\b.*\baction potentials?\b/i,
+      trigger:
+        /\baction potentials?\b.*\bdepolarization\b|\bdepolarization\b.*\baction potentials?\b/i,
       span: "depolarization",
       qualifiers: [
         "focus_target",
@@ -3079,7 +3332,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "named_concept",
     },
     {
-      trigger: /\btriangles?\b.*\blaw of cosines\b|\blaw of cosines\b.*\btriangles?\b/i,
+      trigger:
+        /\btriangles?\b.*\blaw of cosines\b|\blaw of cosines\b.*\btriangles?\b/i,
       span: "law of cosines",
       qualifiers: [
         "focus_target",
@@ -3091,7 +3345,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "of_phrase",
     },
     {
-      trigger: /\bpersonal finance\b.*\bcompound interest\b|\bbudgeting\b.*\bcompound interest\b|\bcompound interest\b.*\bfinance\b/i,
+      trigger:
+        /\bpersonal finance\b.*\bcompound interest\b|\bbudgeting\b.*\bcompound interest\b|\bcompound interest\b.*\bfinance\b/i,
       span: "compound interest",
       qualifiers: [
         "focus_target",
@@ -3102,7 +3357,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "named_concept",
     },
     {
-      trigger: /\bbudgeting\b.*\b(?:make|making|balance|balancing)\b.*\bbudget\b|\bbudget\b.*\bbalanc(?:e|ing)\b/i,
+      trigger:
+        /\bbudgeting\b.*\b(?:make|making|balance|balancing)\b.*\bbudget\b|\bbudget\b.*\bbalanc(?:e|ing)\b/i,
       span: "balancing a budget",
       qualifiers: [
         "focus_target",
@@ -3116,7 +3372,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "concept_phrase",
     },
     {
-      trigger: /\bprobability\b.*\bstandard deviation\b|\bstandard deviation\b.*\bprobability\b/i,
+      trigger:
+        /\bprobability\b.*\bstandard deviation\b|\bstandard deviation\b.*\bprobability\b/i,
       span: "standard deviation",
       qualifiers: [
         "focus_target",
@@ -3127,7 +3384,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "named_concept",
     },
     {
-      trigger: /\beconomics\b.*\bopportunity cost\b|\bopportunity cost\b.*\beconomics\b/i,
+      trigger:
+        /\beconomics\b.*\bopportunity cost\b|\bopportunity cost\b.*\beconomics\b/i,
       span: "opportunity cost",
       qualifiers: [
         "focus_target",
@@ -3138,7 +3396,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "named_concept",
     },
     {
-      trigger: /\bplate tectonics\b.*\bsubduction\b|\bsubduction\b.*\bplate tectonics\b/i,
+      trigger:
+        /\bplate tectonics\b.*\bsubduction\b|\bsubduction\b.*\bplate tectonics\b/i,
       span: "subduction",
       qualifiers: [
         "focus_target",
@@ -3149,7 +3408,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "named_concept",
     },
     {
-      trigger: /\bhomeostasis\b.*\bnegative feedback\b|\bnegative feedback\b.*\bhomeostasis\b/i,
+      trigger:
+        /\bhomeostasis\b.*\bnegative feedback\b|\bnegative feedback\b.*\bhomeostasis\b/i,
       span: "negative feedback",
       qualifiers: [
         "focus_target",
@@ -3160,7 +3420,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "named_concept",
     },
     {
-      trigger: /\bprogramming\b.*\bevent loop\b|\bevent loop\b.*\bprogramming\b/i,
+      trigger:
+        /\bprogramming\b.*\bevent loop\b|\bevent loop\b.*\bprogramming\b/i,
       span: "event loop",
       qualifiers: [
         "focus_target",
@@ -3171,7 +3432,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "named_concept",
     },
     {
-      trigger: /\bmusic theory\b.*\bsecondary dominants\b|\bsecondary dominants\b.*\bmusic theory\b/i,
+      trigger:
+        /\bmusic theory\b.*\bsecondary dominants\b|\bsecondary dominants\b.*\bmusic theory\b/i,
       span: "secondary dominants",
       qualifiers: [
         "focus_target",
@@ -3184,24 +3446,37 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
     {
       trigger: /\bmembrane potential\b|\bmembrane potentials\b/i,
       span: "membrane potential",
-      qualifiers: ["focus_target", "bottleneck_target", "cross_clause_recovery"],
+      qualifiers: [
+        "focus_target",
+        "bottleneck_target",
+        "cross_clause_recovery",
+      ],
       kind: "named_concept",
     },
     {
       trigger: /\bequilibrium constant\b/i,
       span: "equilibrium constant",
-      qualifiers: ["focus_target", "bottleneck_target", "cross_clause_recovery"],
+      qualifiers: [
+        "focus_target",
+        "bottleneck_target",
+        "cross_clause_recovery",
+      ],
       kind: "named_concept",
     },
     {
       trigger: /\brefractory period\b/i,
       span: "refractory period",
-      qualifiers: ["focus_target", "bottleneck_target", "cross_clause_recovery"],
+      qualifiers: [
+        "focus_target",
+        "bottleneck_target",
+        "cross_clause_recovery",
+      ],
       kind: "named_concept",
     },
 
     {
-      trigger: /\b(?:deuce|advantage|love|fifteen|15|thirty|30|forty|40|tennis)\b.*\b(?:score|scoring|points?)\b|\b(?:score|scoring|points?)\b.*\b(?:deuce|advantage|love|fifteen|15|thirty|30|forty|40|tennis)\b/i,
+      trigger:
+        /\b(?:deuce|advantage|love|fifteen|15|thirty|30|forty|40|tennis)\b.*\b(?:score|scoring|points?)\b|\b(?:score|scoring|points?)\b.*\b(?:deuce|advantage|love|fifteen|15|thirty|30|forty|40|tennis)\b/i,
       span: "tennis scoring",
       qualifiers: [
         "focus_target",
@@ -3215,7 +3490,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "concept_phrase",
     },
     {
-      trigger: /\b(?:earned|unearned)\s+runs?\b|\b(?:pitcher|baseball)\b.*\b(?:run|runs|earned)\b|\bwhat\s+counted\s+against\s+the\s+pitcher\b/i,
+      trigger:
+        /\b(?:earned|unearned)\s+runs?\b|\b(?:pitcher|baseball)\b.*\b(?:run|runs|earned)\b|\bwhat\s+counted\s+against\s+the\s+pitcher\b/i,
       span: "earned runs",
       qualifiers: [
         "focus_target",
@@ -3229,7 +3505,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "concept_phrase",
     },
     {
-      trigger: /\bmerge\s+lanes?\b|\bmerging\b.*\b(?:lane|lanes|highway|traffic)\b|\b(?:lane|lanes|highway|traffic)\b.*\bmerging\b/i,
+      trigger:
+        /\bmerge\s+lanes?\b|\bmerging\b.*\b(?:lane|lanes|highway|traffic)\b|\b(?:lane|lanes|highway|traffic)\b.*\bmerging\b/i,
       span: "merge lanes",
       qualifiers: [
         "focus_target",
@@ -3243,7 +3520,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "concept_phrase",
     },
     {
-      trigger: /\bshut\s*off\s+valve\b|\bshutoff\s+valve\b|\b(?:water|plumbing|sink|toilet)\b.*\b(?:shut\s*off|shutoff|valve)\b/i,
+      trigger:
+        /\bshut\s*off\s+valve\b|\bshutoff\s+valve\b|\b(?:water|plumbing|sink|toilet)\b.*\b(?:shut\s*off|shutoff|valve)\b/i,
       span: "shutoff valve",
       qualifiers: [
         "focus_target",
@@ -3257,7 +3535,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "concept_phrase",
     },
     {
-      trigger: /\bbalanc(?:e|ing|ed)\b.*\bchemical\s+equations?\b|\bchemical\s+equations?\b.*\bbalanc(?:e|ing|ed)\b/i,
+      trigger:
+        /\bbalanc(?:e|ing|ed)\b.*\bchemical\s+equations?\b|\bchemical\s+equations?\b.*\bbalanc(?:e|ing|ed)\b/i,
       span: "balancing chemical equations",
       qualifiers: [
         "focus_target",
@@ -3271,7 +3550,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "concept_phrase",
     },
     {
-      trigger: /\bzone\s+defen[sc]e\b|\bbasketball\b.*\bswitch(?:ed|es|ing)?\s+defen[sc]es?\b/i,
+      trigger:
+        /\bzone\s+defen[sc]e\b|\bbasketball\b.*\bswitch(?:ed|es|ing)?\s+defen[sc]es?\b/i,
       span: "zone defense",
       qualifiers: [
         "focus_target",
@@ -3285,7 +3565,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       kind: "concept_phrase",
     },
     {
-      trigger: /\b(?:soccer|football)\b.*\boffside\b|\boffside\b.*\b(?:soccer|football)\b/i,
+      trigger:
+        /\b(?:soccer|football)\b.*\boffside\b|\boffside\b.*\b(?:soccer|football)\b/i,
       span: "offside in soccer",
       qualifiers: [
         "focus_target",
@@ -3301,7 +3582,8 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
       domainText: "soccer",
     },
     {
-      trigger: /\bright\s+of\s+way\b|\bwhose\s+turn\b.*\bintersection\b|\bintersection\b.*\bwhose\s+turn\b/i,
+      trigger:
+        /\bright\s+of\s+way\b|\bwhose\s+turn\b.*\bintersection\b|\bintersection\b.*\bwhose\s+turn\b/i,
       span: "right of way",
       qualifiers: [
         "focus_target",
@@ -3336,7 +3618,7 @@ function extractCrossClauseAnchorCandidates(fullMessage: string): TopicCandidate
 function injectGeneralSyntheticCandidates(
   fullMessage: string,
   interpretation: MessageInterpretation,
-  collected: TopicCandidate[]
+  collected: TopicCandidate[],
 ) {
   const syntheticClause = buildSyntheticClause(fullMessage, 4000, "confusion");
 
@@ -3363,7 +3645,8 @@ function injectGeneralSyntheticCandidates(
     {
       left: "law of sines",
       right: "law of cosines",
-      trigger: /\blaw of sines\b.*\blaw of cosines\b|\blaw of cosines\b.*\blaw of sines\b/i,
+      trigger:
+        /\blaw of sines\b.*\blaw of cosines\b|\blaw of cosines\b.*\blaw of sines\b/i,
     },
     {
       left: "latitude",
@@ -3378,7 +3661,8 @@ function injectGeneralSyntheticCandidates(
     {
       left: "civil law",
       right: "criminal law",
-      trigger: /\bcivil law\b.*\bcriminal law\b|\bcriminal law\b.*\bcivil law\b/i,
+      trigger:
+        /\bcivil law\b.*\bcriminal law\b|\bcriminal law\b.*\bcivil law\b/i,
     },
     {
       left: "affect",
@@ -3403,22 +3687,26 @@ function injectGeneralSyntheticCandidates(
     {
       left: "electronegativity",
       right: "ionization energy",
-      trigger: /\belectronegativity\b.*\bionization energy\b|\bionization energy\b.*\belectronegativity\b/i,
+      trigger:
+        /\belectronegativity\b.*\bionization energy\b|\bionization energy\b.*\belectronegativity\b/i,
     },
     {
       left: "food chains",
       right: "food webs",
-      trigger: /\bfood chains?\b.*\bfood webs?\b|\bfood webs?\b.*\bfood chains?\b/i,
+      trigger:
+        /\bfood chains?\b.*\bfood webs?\b|\bfood webs?\b.*\bfood chains?\b/i,
     },
     {
       left: "fixed expenses",
       right: "variable expenses",
-      trigger: /\bfixed\b.*\bvariable\b.*\bexpenses?\b|\bvariable\b.*\bfixed\b.*\bexpenses?\b/i,
+      trigger:
+        /\bfixed\b.*\bvariable\b.*\bexpenses?\b|\bvariable\b.*\bfixed\b.*\bexpenses?\b/i,
     },
     {
       left: "civil liberties",
       right: "civil rights",
-      trigger: /\bcivil liberties\b.*\bcivil rights\b|\bcivil rights\b.*\bcivil liberties\b/i,
+      trigger:
+        /\bcivil liberties\b.*\bcivil rights\b|\bcivil rights\b.*\bcivil liberties\b/i,
     },
     {
       left: "gravity",
@@ -3467,7 +3755,10 @@ function injectGeneralSyntheticCandidates(
     if (synthetic) collected.push(synthetic);
   }
 
-  for (const candidate of extractNaturalisticPairedCandidates(interpretation, fullMessage)) {
+  for (const candidate of extractNaturalisticPairedCandidates(
+    interpretation,
+    fullMessage,
+  )) {
     collected.push(candidate);
   }
 }
@@ -3505,7 +3796,11 @@ function candidateStablePriority(candidate: TopicCandidate) {
   if (candidate.isSubpartReference) score -= 12;
   if (!candidate.shouldCompeteAsTopic) score -= 10;
   if (looksLikeTailHeavyCandidate(candidate)) score -= 10;
-  if (candidate.isWeakNounChunk || candidate.qualifiers.includes("weak_noun_chunk")) score -= 22;
+  if (
+    candidate.isWeakNounChunk ||
+    candidate.qualifiers.includes("weak_noun_chunk")
+  )
+    score -= 22;
   if (candidate.residueRisk === "high") score -= 22;
   if (candidate.residueRisk === "medium") score -= 10;
   if (qcsLooksOverSynthesized(candidate)) score -= 18;
@@ -3526,12 +3821,13 @@ function candidateStablePriority(candidate: TopicCandidate) {
 
 function choosePreferredOverlappingCandidate(
   current: TopicCandidate,
-  incoming: TopicCandidate
+  incoming: TopicCandidate,
 ) {
   const currentLoose = current.normalizedCoreText;
   const incomingLoose = incoming.normalizedCoreText;
   const oneContainsOther =
-    currentLoose.includes(incomingLoose) || incomingLoose.includes(currentLoose);
+    currentLoose.includes(incomingLoose) ||
+    incomingLoose.includes(currentLoose);
 
   const currentTailHeavy = looksLikeTailHeavyCandidate(current);
   const incomingTailHeavy = looksLikeTailHeavyCandidate(incoming);
@@ -3543,11 +3839,17 @@ function choosePreferredOverlappingCandidate(
   const currentQuestionSynthesis = isQcsCandidate(current);
   const incomingQuestionSynthesis = isQcsCandidate(incoming);
 
-  if (currentQuestionSynthesis && qcsShouldYieldToExplicitConcept(current, incoming)) {
+  if (
+    currentQuestionSynthesis &&
+    qcsShouldYieldToExplicitConcept(current, incoming)
+  ) {
     return incoming;
   }
 
-  if (incomingQuestionSynthesis && qcsShouldYieldToExplicitConcept(incoming, current)) {
+  if (
+    incomingQuestionSynthesis &&
+    qcsShouldYieldToExplicitConcept(incoming, current)
+  ) {
     return current;
   }
 
@@ -3562,28 +3864,45 @@ function choosePreferredOverlappingCandidate(
     const nonQcs = currentQuestionSynthesis ? incoming : current;
     const qcs = currentQuestionSynthesis ? current : incoming;
 
-    if (qcsLooksOverSynthesized(qcs) && !nonQcs.isWeakNounChunk && nonQcs.residueRisk !== "high") {
+    if (
+      qcsLooksOverSynthesized(qcs) &&
+      !nonQcs.isWeakNounChunk &&
+      nonQcs.residueRisk !== "high"
+    ) {
       return nonQcs;
     }
 
     // QCS can beat weak fallbacks/residue, but it should not automatically
     // outrank a clean non-QCS candidate.
-    if (nonQcs.isWeakNounChunk || nonQcs.residueRisk === "high" || !nonQcs.shouldCompeteAsTopic) {
+    if (
+      nonQcs.isWeakNounChunk ||
+      nonQcs.residueRisk === "high" ||
+      !nonQcs.shouldCompeteAsTopic
+    ) {
       return qcs;
     }
 
     return nonQcs;
   }
 
-  const currentDurable = Boolean(current.isDurableConcept || current.qualifiers.includes("durable_concept"));
-  const incomingDurable = Boolean(incoming.isDurableConcept || incoming.qualifiers.includes("durable_concept"));
+  const currentDurable = Boolean(
+    current.isDurableConcept || current.qualifiers.includes("durable_concept"),
+  );
+  const incomingDurable = Boolean(
+    incoming.isDurableConcept ||
+    incoming.qualifiers.includes("durable_concept"),
+  );
 
   if (currentDurable !== incomingDurable) {
     return incomingDurable ? incoming : current;
   }
 
-  const currentWeak = Boolean(current.isWeakNounChunk || current.qualifiers.includes("weak_noun_chunk"));
-  const incomingWeak = Boolean(incoming.isWeakNounChunk || incoming.qualifiers.includes("weak_noun_chunk"));
+  const currentWeak = Boolean(
+    current.isWeakNounChunk || current.qualifiers.includes("weak_noun_chunk"),
+  );
+  const incomingWeak = Boolean(
+    incoming.isWeakNounChunk || incoming.qualifiers.includes("weak_noun_chunk"),
+  );
 
   if (currentWeak !== incomingWeak) {
     return incomingWeak ? current : incoming;
@@ -3628,7 +3947,7 @@ function dedupeAndGroupCandidates(candidates: TopicCandidate[]) {
       isProtectedStrongConceptCandidate(candidate) &&
       candidate.residueRisk !== "high" &&
       !candidate.isWeakNounChunk &&
-      candidate.shouldCompeteAsTopic
+      candidate.shouldCompeteAsTopic,
   );
 
   const filteredCandidates = candidates.filter((candidate) => {
@@ -3642,18 +3961,24 @@ function dedupeAndGroupCandidates(candidates: TopicCandidate[]) {
     if (candidate.questionSynthesisFrame === "comparison") return true;
     if (candidate.questionSynthesisFrame === "selection") return true;
 
-    return !qcsLooksOverSynthesized(candidate) && !candidate.qualifiers.includes("qcs_fallback_only");
+    return (
+      !qcsLooksOverSynthesized(candidate) &&
+      !candidate.qualifiers.includes("qcs_fallback_only")
+    );
   });
 
   const grouped: TopicCandidate[] = [];
 
   for (const candidate of filteredCandidates) {
-    if (!candidate.coreText || looksLikeLearnerResidue(candidate.coreText)) continue;
+    if (!candidate.coreText || looksLikeLearnerResidue(candidate.coreText))
+      continue;
     if (candidate.isWeakNounChunk && candidate.residueRisk !== "low") continue;
 
     const existingIndex = grouped.findIndex((existing) => {
-      if (existing.normalizedCoreText === candidate.normalizedCoreText) return true;
-      if (spansSubstantiallyOverlap(existing.coreText, candidate.coreText)) return true;
+      if (existing.normalizedCoreText === candidate.normalizedCoreText)
+        return true;
+      if (spansSubstantiallyOverlap(existing.coreText, candidate.coreText))
+        return true;
       return false;
     });
 
@@ -3663,15 +3988,20 @@ function dedupeAndGroupCandidates(candidates: TopicCandidate[]) {
     }
 
     const existing = grouped[existingIndex];
-    grouped[existingIndex] = choosePreferredOverlappingCandidate(existing, candidate);
+    grouped[existingIndex] = choosePreferredOverlappingCandidate(
+      existing,
+      candidate,
+    );
   }
 
-  return grouped.sort((a, b) => candidateStablePriority(b) - candidateStablePriority(a));
+  return grouped.sort(
+    (a, b) => candidateStablePriority(b) - candidateStablePriority(a),
+  );
 }
 
 export function extractConceptCandidates(
   interpretation: MessageInterpretation,
-  fullMessage: string
+  fullMessage: string,
 ): TopicCandidate[] {
   if (messageExplicitlyHasNoPersistentTopic(fullMessage)) {
     return [];
