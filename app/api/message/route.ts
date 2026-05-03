@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { buildLearningSpace } from "@/lib/build-learning-space";
 import { insertRun, upsertTopicState } from "@/lib/persistence/myway";
 import { makeId } from "@/lib/utils/ids";
-import { querySemanticTopicCandidates } from "@/lib/vector/query-topics";
+import { querySemanticTopicCandidatesWithEmbedding } from "@/lib/vector/query-topics";
 import {
   canSyncTopicToQdrant,
   syncTopicToQdrant,
@@ -11,6 +11,7 @@ import type {
   DeliveredProbe,
   DeliveredResponse,
   EngineFuel,
+  EmbeddingVector,
   ImportantRunInputs,
   InterventionModeDecision,
   LearningSpace,
@@ -21,6 +22,7 @@ import type {
   PreviousModeOutcome,
   ProbePlan,
   RunMetadata,
+  TopicRoutingState,
   TopicState,
   VectorInfo,
 } from "@/types/contracts";
@@ -141,7 +143,21 @@ type TopicResolutionOutcome = {
   matchConfidence: number;
   usedLLMFallback: boolean;
   resolutionTrace: TopicResolutionTrace | null;
+  semanticTopicRouting: TopicRoutingState | null;
+  centroidUpdatePlan: RouteCentroidUpdatePlan | null;
   debug: TopicResolutionDebug;
+};
+
+
+type RouteCentroidUpdatePlan = {
+  topic_id: string;
+  previous_embedding_count: number;
+  new_embedding_count: number;
+  update_method: "initialize" | "running_average" | "ema" | "none";
+  alpha: number | null;
+  embedding_model: string | null;
+  updated_at: string;
+  new_centroid: EmbeddingVector | null;
 };
 
 type MessageRouteTimingStep = {
@@ -164,6 +180,9 @@ type MessageRouteLatencyDebug = {
     topic_labeling_mode: TopicLabelingMode | null;
     resolution_kind: RouteResolutionKind | null;
     used_llm_topic_fallback: boolean | null;
+    message_embedding_available: boolean | null;
+    embedding_model: string | null;
+    centroid_update_method: string | null;
   };
 };
 
@@ -550,6 +569,10 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
       topic_message_count: topic.messageCount ?? 0,
       topic_last_update: topic.lastUpdated ?? nowIso(),
       topic_centroid: topic.position,
+      topic_embedding_centroid: topic.topic_embedding_centroid ?? null,
+      topic_embedding_count: topic.topic_embedding_count ?? 0,
+      topic_embedding_model: topic.topic_embedding_model ?? null,
+      topic_embedding_updated_at: topic.topic_embedding_updated_at ?? null,
     };
   });
 }
@@ -570,7 +593,8 @@ function buildEngineFuel(
   updatedTopics: RouteTopic[],
   decision: InterventionModeDecision,
   probePlan: ProbePlan,
-  previousModeOutcome: PreviousModeOutcome
+  previousModeOutcome: PreviousModeOutcome,
+  topicRouting: TopicRoutingState | null
 ): EngineFuel {
   return {
     topics: buildTopicStates(updatedTopics),
@@ -579,6 +603,7 @@ function buildEngineFuel(
     previous_mode_outcome: previousModeOutcome,
     intervention_mode_decision: decision,
     probe_plan: probePlan,
+    topic_routing: topicRouting ?? undefined,
     attempts: [],
   };
 }
@@ -587,7 +612,7 @@ function buildRunMetadata(engineFuel: EngineFuel, runId: string): RunMetadata {
   return {
     run_id: runId,
     timestamp: nowIso(),
-    engine_version: "runtime-v1",
+    engine_version: "runtime-v3-semantic-centroid",
     previous_run_id: null,
     topic_count: engineFuel.topics.length,
     cluster_count: engineFuel.clusters.length,
@@ -640,6 +665,137 @@ function normalizeVectorInfoFallback(
       matchVectorInfo.top_k_similarity_scores.length > 0
         ? matchVectorInfo.top_k_similarity_scores
         : [createdTopic ? 0.24 : 0.52],
+  };
+}
+
+function asEmbeddingVector(value: unknown): EmbeddingVector | null {
+  if (!Array.isArray(value)) return null;
+
+  const vector = value.filter(
+    (item): item is number => typeof item === "number" && Number.isFinite(item)
+  );
+
+  if (!vector.length) return null;
+  if (vector.length !== value.length) return null;
+
+  return vector;
+}
+
+function buildCreatedTopicCentroidPlan(args: {
+  createdTopic: RouteTopic | null;
+  messageEmbedding: EmbeddingVector | null;
+  embeddingModel: string | null;
+}): RouteCentroidUpdatePlan | null {
+  const { createdTopic, messageEmbedding, embeddingModel } = args;
+  const centroid = asEmbeddingVector(messageEmbedding);
+
+  if (!createdTopic || !centroid) return null;
+
+  return {
+    topic_id: createdTopic.id,
+    previous_embedding_count: 0,
+    new_embedding_count: 1,
+    update_method: "initialize",
+    alpha: null,
+    embedding_model: embeddingModel,
+    updated_at: nowIso(),
+    new_centroid: centroid,
+  };
+}
+
+function applyCentroidUpdatePlanToTopics(
+  topics: RouteTopic[],
+  plan: RouteCentroidUpdatePlan | null
+): RouteTopic[] {
+  if (!plan || !plan.new_centroid) return topics;
+
+  return topics.map((topic) => {
+    if (topic.id !== plan.topic_id) return topic;
+
+    return {
+      ...topic,
+      topic_embedding_centroid: plan.new_centroid,
+      topic_embedding_count: plan.new_embedding_count,
+      topic_embedding_model: plan.embedding_model,
+      topic_embedding_updated_at: plan.updated_at,
+      topic_json: {
+        ...(topic.topic_json ?? {}),
+        topic_embedding_centroid: plan.new_centroid,
+        topic_embedding_count: plan.new_embedding_count,
+        topic_embedding_model: plan.embedding_model,
+        topic_embedding_updated_at: plan.updated_at,
+      },
+    };
+  });
+}
+
+function getTopicCentroidMetadata(topic: RouteTopic) {
+  return {
+    topicEmbeddingCentroid: topic.topic_embedding_centroid ?? null,
+    topicEmbeddingCount: topic.topic_embedding_count ?? 0,
+    topicEmbeddingModel: topic.topic_embedding_model ?? null,
+    topicEmbeddingUpdatedAt: topic.topic_embedding_updated_at ?? null,
+  };
+}
+
+function buildTopicRoutingStateFromMatch(args: {
+  match: {
+    semanticTopicRouting?: unknown;
+    centroidUpdatePlan?: RouteCentroidUpdatePlan | null;
+  };
+  vectorInfo: VectorInfo;
+  centroidUpdatePlan: RouteCentroidUpdatePlan | null;
+}): TopicRoutingState | null {
+  const rawRouting = args.match.semanticTopicRouting;
+
+  if (!rawRouting || typeof rawRouting !== "object") return null;
+
+  const routing = rawRouting as Record<string, unknown>;
+  const debug =
+    routing.debug && typeof routing.debug === "object"
+      ? (routing.debug as TopicRoutingState["debug"])
+      : null;
+
+  if (!debug) return null;
+
+  const reasons = Array.isArray(routing.reasons)
+    ? routing.reasons.filter((item): item is string => typeof item === "string")
+    : [];
+
+  return {
+    router_version: "semantic-centroid-v3",
+    decision_kind: debug.decision_kind,
+    policy_path: debug.policy_path,
+    selected_topic_id:
+      typeof routing.target_topic_id === "string"
+        ? routing.target_topic_id
+        : debug.selected_topic_id ?? null,
+    selected_topic_name:
+      typeof routing.target_topic_name === "string"
+        ? routing.target_topic_name
+        : debug.selected_topic_name ?? null,
+    new_topic_label:
+      typeof routing.new_topic_label === "string"
+        ? routing.new_topic_label
+        : debug.new_topic_label ?? null,
+    confidence:
+      typeof routing.confidence === "number" && Number.isFinite(routing.confidence)
+        ? routing.confidence
+        : 0,
+    reasons,
+    vector_info: args.vectorInfo,
+    debug,
+    centroid_update: args.centroidUpdatePlan
+      ? {
+          topic_id: args.centroidUpdatePlan.topic_id,
+          previous_embedding_count: args.centroidUpdatePlan.previous_embedding_count,
+          new_embedding_count: args.centroidUpdatePlan.new_embedding_count,
+          update_method: args.centroidUpdatePlan.update_method,
+          alpha: args.centroidUpdatePlan.alpha,
+          embedding_model: args.centroidUpdatePlan.embedding_model,
+          updated_at: args.centroidUpdatePlan.updated_at,
+        }
+      : null,
   };
 }
 
@@ -913,6 +1069,8 @@ function buildResolvedOutcome(args: {
   matchConfidence: number;
   usedLLMFallback: boolean;
   resolutionTrace: TopicResolutionTrace | null;
+  semanticTopicRouting?: TopicRoutingState | null;
+  centroidUpdatePlan?: RouteCentroidUpdatePlan | null;
   topicLabelingMode: TopicLabelingMode;
   llmFallbackAllowedByMode: boolean;
   llmFallbackRecommendedByPolicy: boolean;
@@ -932,6 +1090,8 @@ function buildResolvedOutcome(args: {
     matchConfidence: args.matchConfidence,
     usedLLMFallback: args.usedLLMFallback,
     resolutionTrace: args.resolutionTrace,
+    semanticTopicRouting: args.semanticTopicRouting ?? null,
+    centroidUpdatePlan: args.centroidUpdatePlan ?? null,
     debug: buildTopicResolutionDebug({
       topicLabelingMode: args.topicLabelingMode,
       llmFallbackAllowedByMode: args.llmFallbackAllowedByMode,
@@ -1025,8 +1185,19 @@ async function resolveTopicOutcome(args: {
   activeTopicId?: string | null;
   message: string;
   semanticVectorInfo: VectorInfo;
+  messageEmbedding: EmbeddingVector | null;
+  embeddingModel: string | null;
+  currentInteractionContext: ImportantRunInputs["current_interaction_context"];
 }): Promise<TopicResolutionOutcome> {
-  const { existingTopics, activeTopicId, message, semanticVectorInfo } = args;
+  const {
+    existingTopics,
+    activeTopicId,
+    message,
+    semanticVectorInfo,
+    messageEmbedding,
+    embeddingModel,
+    currentInteractionContext,
+  } = args;
   const topicLabelingMode = getTopicLabelingMode();
   const llmFallbackAllowedByMode =
     topicLabelingMode === "deterministic_plus_llm";
@@ -1040,7 +1211,12 @@ async function resolveTopicOutcome(args: {
     message,
     existingTopics,
     activeTopic,
-    semanticVectorInfo
+    semanticVectorInfo,
+    {
+      messageEmbedding,
+      embeddingModel,
+      currentInteractionContext,
+    }
   );
 
   const deterministicSnapshot =
@@ -1087,6 +1263,12 @@ async function resolveTopicOutcome(args: {
         matchConfidence: deterministicMatch.matchConfidence,
         usedLLMFallback: false,
         resolutionTrace: deterministicMatch.resolutionTrace ?? null,
+        semanticTopicRouting: buildTopicRoutingStateFromMatch({
+          match: deterministicMatch,
+          vectorInfo: deterministicMatch.vectorInfo,
+          centroidUpdatePlan: deterministicMatch.centroidUpdatePlan ?? null,
+        }),
+        centroidUpdatePlan: deterministicMatch.centroidUpdatePlan ?? null,
         topicLabelingMode,
         llmFallbackAllowedByMode,
         llmFallbackRecommendedByPolicy,
@@ -1118,6 +1300,12 @@ async function resolveTopicOutcome(args: {
         matchConfidence: deterministicMatch.matchConfidence,
         usedLLMFallback: false,
         resolutionTrace: deterministicMatch.resolutionTrace ?? null,
+        semanticTopicRouting: buildTopicRoutingStateFromMatch({
+          match: deterministicMatch,
+          vectorInfo: deterministicMatch.vectorInfo,
+          centroidUpdatePlan: deterministicMatch.centroidUpdatePlan ?? null,
+        }),
+        centroidUpdatePlan: deterministicMatch.centroidUpdatePlan ?? null,
         topicLabelingMode,
         llmFallbackAllowedByMode,
         llmFallbackRecommendedByPolicy,
@@ -1190,6 +1378,12 @@ async function resolveTopicOutcome(args: {
         matchConfidence: llmDecision.confidence,
         usedLLMFallback: true,
         resolutionTrace: deterministicMatch.resolutionTrace ?? null,
+        semanticTopicRouting: buildTopicRoutingStateFromMatch({
+          match: deterministicMatch,
+          vectorInfo: deterministicMatch.vectorInfo,
+          centroidUpdatePlan: deterministicMatch.centroidUpdatePlan ?? null,
+        }),
+        centroidUpdatePlan: deterministicMatch.centroidUpdatePlan ?? null,
         topicLabelingMode,
         llmFallbackAllowedByMode,
         llmFallbackRecommendedByPolicy,
@@ -1217,6 +1411,12 @@ async function resolveTopicOutcome(args: {
         matchConfidence: llmDecision.confidence,
         usedLLMFallback: true,
         resolutionTrace: deterministicMatch.resolutionTrace ?? null,
+        semanticTopicRouting: buildTopicRoutingStateFromMatch({
+          match: deterministicMatch,
+          vectorInfo: deterministicMatch.vectorInfo,
+          centroidUpdatePlan: deterministicMatch.centroidUpdatePlan ?? null,
+        }),
+        centroidUpdatePlan: deterministicMatch.centroidUpdatePlan ?? null,
         topicLabelingMode,
         llmFallbackAllowedByMode,
         llmFallbackRecommendedByPolicy,
@@ -1295,6 +1495,9 @@ export async function POST(request: Request) {
   let finalTopicLabelingMode: TopicLabelingMode | null = null;
   let finalResolutionKind: RouteResolutionKind | null = null;
   let finalUsedLLMFallback: boolean | null = null;
+  let finalMessageEmbeddingAvailable: boolean | null = null;
+  let finalEmbeddingModel: string | null = null;
+  let finalCentroidUpdateMethod: string | null = null;
 
   try {
     const body = (await request.json()) as MessageRouteBody;
@@ -1338,15 +1541,41 @@ export async function POST(request: Request) {
     timer.step("load_route_topics_from_supabase");
 
     let semanticVectorInfo: VectorInfo = emptyVectorInfo();
+    let messageEmbedding: EmbeddingVector | null = null;
+    let embeddingModel: string | null = null;
 
     try {
-      semanticVectorInfo = await querySemanticTopicCandidates(message, 5);
+      const semanticQuery = await querySemanticTopicCandidatesWithEmbedding(
+        message,
+        5
+      );
+      semanticVectorInfo = semanticQuery.vectorInfo;
+      messageEmbedding = semanticQuery.messageEmbedding;
+      embeddingModel = semanticQuery.embeddingModel;
+      finalMessageEmbeddingAvailable = Boolean(messageEmbedding?.length);
+      finalEmbeddingModel = embeddingModel;
     } catch (error) {
       console.warn("Semantic topic retrieval failed in POST /api/message", error);
       semanticVectorInfo = emptyVectorInfo();
+      messageEmbedding = null;
+      embeddingModel = null;
+      finalMessageEmbeddingAvailable = false;
+      finalEmbeddingModel = null;
     }
 
-    timer.step("query_semantic_topic_candidates_qdrant");
+    timer.step("query_semantic_topic_candidates_with_embedding");
+
+    const preliminaryInteractionContext: ImportantRunInputs["current_interaction_context"] = {
+      run_kind:
+        typeof body.activeTopicId === "string" && recentTurns.length > 0
+          ? "mixed"
+          : "initial_question",
+      is_response_to_delivered_probe: false,
+      prior_mode_selected: null,
+      prior_probe_was_applicable: null,
+      prior_probe_id: null,
+      prior_mode_outcome_available: recentTurns.length > 0,
+    };
 
     const topicResolution = await resolveTopicOutcome({
       existingTopics,
@@ -1354,6 +1583,9 @@ export async function POST(request: Request) {
         typeof body.activeTopicId === "string" ? body.activeTopicId : null,
       message,
       semanticVectorInfo,
+      messageEmbedding,
+      embeddingModel,
+      currentInteractionContext: preliminaryInteractionContext,
     });
 
     timer.step("resolve_topic_outcome");
@@ -1368,6 +1600,8 @@ export async function POST(request: Request) {
       matchConfidence,
       usedLLMFallback,
       resolutionTrace,
+      semanticTopicRouting,
+      centroidUpdatePlan: initialCentroidUpdatePlan,
       debug: topicResolutionDebug,
     } = topicResolution;
 
@@ -1432,14 +1666,50 @@ export async function POST(request: Request) {
     timer.step("build_interaction_context_and_attempt_shell");
 
     const updatedTopicMetrics = buildUpdatedMetrics(targetTopicId, topic);
-    const updatedTopics = routeTopics.map((routeTopic) =>
+
+    const finalCentroidUpdatePlan =
+      initialCentroidUpdatePlan ??
+      buildCreatedTopicCentroidPlan({
+        createdTopic,
+        messageEmbedding,
+        embeddingModel,
+      });
+
+    const metricUpdatedTopics = routeTopics.map((routeTopic) =>
       routeTopic.id === targetTopicId
         ? applyMetricUpdate(routeTopic, updatedTopicMetrics)
         : routeTopic
     );
 
+    const updatedTopics = applyCentroidUpdatePlanToTopics(
+      metricUpdatedTopics,
+      finalCentroidUpdatePlan
+    );
+
     const updatedResolvedTopic =
       updatedTopics.find((routeTopic) => routeTopic.id === targetTopicId) ?? topic;
+
+    finalCentroidUpdateMethod = finalCentroidUpdatePlan?.update_method ?? null;
+
+    const topicRouting = semanticTopicRouting
+      ? {
+          ...semanticTopicRouting,
+          selected_topic_id: targetTopicId,
+          selected_topic_name: updatedResolvedTopic.name,
+          centroid_update: finalCentroidUpdatePlan
+            ? {
+                topic_id: finalCentroidUpdatePlan.topic_id,
+                previous_embedding_count:
+                  finalCentroidUpdatePlan.previous_embedding_count,
+                new_embedding_count: finalCentroidUpdatePlan.new_embedding_count,
+                update_method: finalCentroidUpdatePlan.update_method,
+                alpha: finalCentroidUpdatePlan.alpha,
+                embedding_model: finalCentroidUpdatePlan.embedding_model,
+                updated_at: finalCentroidUpdatePlan.updated_at,
+              }
+            : null,
+        }
+      : null;
 
     const normalizedVectorInfo = normalizeVectorInfoFallback(
       vectorInfo,
@@ -1484,7 +1754,8 @@ export async function POST(request: Request) {
       updatedTopics,
       decision,
       probePlan,
-      previousModeOutcome
+      previousModeOutcome,
+      topicRouting
     );
 
     timer.step("build_decision_probe_delivery_and_engine_fuel");
@@ -1537,6 +1808,13 @@ export async function POST(request: Request) {
         topic_resolution_debug: topicResolutionDebug,
         topic_resolution_trace: resolutionTrace,
         semantic_vector_info: normalizedVectorInfo,
+        topic_routing: topicRouting,
+        centroid_update_plan: finalCentroidUpdatePlan,
+        topic_embedding_centroid: updatedResolvedTopic.topic_embedding_centroid ?? null,
+        topic_embedding_count: updatedResolvedTopic.topic_embedding_count ?? 0,
+        topic_embedding_model: updatedResolvedTopic.topic_embedding_model ?? null,
+        topic_embedding_updated_at:
+          updatedResolvedTopic.topic_embedding_updated_at ?? null,
       })
     );
 
@@ -1587,6 +1865,7 @@ export async function POST(request: Request) {
       nextStep:
         probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
       topicJson,
+      ...getTopicCentroidMetadata(updatedResolvedTopic),
     });
 
     timer.step("upsert_topic_state_supabase");
@@ -1603,6 +1882,7 @@ export async function POST(request: Request) {
             probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
           updatedAt: nowIso(),
           topicJson,
+          ...getTopicCentroidMetadata(updatedResolvedTopic),
         });
 
         qdrantSyncSucceeded = true;
@@ -1632,6 +1912,9 @@ export async function POST(request: Request) {
       topic_labeling_mode: finalTopicLabelingMode,
       resolution_kind: finalResolutionKind,
       used_llm_topic_fallback: finalUsedLLMFallback,
+      message_embedding_available: Boolean(messageEmbedding?.length),
+      embedding_model: embeddingModel,
+      centroid_update_method: finalCentroidUpdatePlan?.update_method ?? null,
     });
 
     console.info("[POST /api/message timing]", latencyDebug);
@@ -1639,6 +1922,7 @@ export async function POST(request: Request) {
     const response: MessageRouteResponse & {
       topic_resolution_debug: TopicResolutionDebug;
       topic_resolution_trace: TopicResolutionTrace | null;
+      topic_routing: TopicRoutingState | null;
       latency_debug: MessageRouteLatencyDebug;
     } = {
       result,
@@ -1653,6 +1937,7 @@ export async function POST(request: Request) {
       },
       topic_resolution_debug: topicResolutionDebug,
       topic_resolution_trace: resolutionTrace,
+      topic_routing: topicRouting,
       latency_debug: latencyDebug,
     };
 
@@ -1668,6 +1953,9 @@ export async function POST(request: Request) {
       topic_labeling_mode: finalTopicLabelingMode,
       resolution_kind: finalResolutionKind,
       used_llm_topic_fallback: finalUsedLLMFallback,
+      message_embedding_available: finalMessageEmbeddingAvailable,
+      embedding_model: finalEmbeddingModel,
+      centroid_update_method: finalCentroidUpdateMethod,
     });
 
     console.error("POST /api/message failed", error);

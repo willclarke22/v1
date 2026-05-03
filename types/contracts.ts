@@ -15,12 +15,18 @@
  * - delivered_response.delivered_probe = actual delivered artifact
  * - important_run_inputs.new_attempt = raw submitted attempt
  * - engine_fuel.attempts = judged attempts
+ *
+ * Semantic routing invariant:
+ * - topic_centroid remains the visual / 3D position vector for now.
+ * - topic_embedding_centroid is the semantic embedding centroid used for routing.
+ * - learning_space.position is the renderer-safe position derived from topic state.
  */
 
 export type ISO8601String = string;
 export type EntityId = string;
 
 export type Nullable<T> = T | null;
+export type EmbeddingVector = number[];
 
 /* ------------------------------------------------------------------ */
 /* ENUM / UNION TYPES */
@@ -198,6 +204,116 @@ export type RenderState = {
   saturation: number;
   is_star: boolean;
 };
+
+/* ------------------------------------------------------------------ */
+/* SEMANTIC TOPIC ROUTING */
+/* ------------------------------------------------------------------ */
+
+export type TopicRoutingDecisionKind =
+  | "stay_active"
+  | "switch_existing"
+  | "create_new"
+  | "create_and_link"
+  | "clarify_topic_intent"
+  | "no_decision";
+
+export type TopicRoutingRouterVersion =
+  | "legacy"
+  | "topic-router-v2"
+  | "semantic-centroid-v3";
+
+export type TopicRoutingPolicyPath =
+  | "strong_centroid_match"
+  | "medium_centroid_match_with_gap"
+  | "active_topic_tiny_followup"
+  | "all_centroid_matches_weak_create_new"
+  | "exact_existing_topic_match"
+  | "create_and_link_to_related_topic"
+  | "ambiguous_centroid_competition"
+  | "missing_message_embedding"
+  | "missing_topic_centroids"
+  | "legacy_fallback"
+  | "no_decision";
+
+export interface TopicRoutingThresholds {
+  strong_centroid_match: number;
+  medium_centroid_match: number;
+  weak_centroid_match: number;
+  min_similarity_gap: number;
+  active_followup_match: number;
+  create_new_below: number;
+}
+
+export interface TopicRoutingCandidateEvidence {
+  topic_id: EntityId;
+  topic_name: string;
+  similarity: number;
+  rank: number;
+  embedding_count: Nullable<number>;
+  embedding_model: Nullable<string>;
+}
+
+export interface TopicRoutingDebug {
+  router_version: TopicRoutingRouterVersion;
+  decision_kind: TopicRoutingDecisionKind;
+  policy_path: TopicRoutingPolicyPath;
+
+  selected_topic_id: Nullable<EntityId>;
+  selected_topic_name: Nullable<string>;
+  new_topic_label: Nullable<string>;
+
+  active_topic_id: Nullable<EntityId>;
+  active_topic_name: Nullable<string>;
+
+  best_topic_id: Nullable<EntityId>;
+  best_topic_name: Nullable<string>;
+  best_similarity: Nullable<number>;
+
+  second_topic_id: Nullable<EntityId>;
+  second_topic_name: Nullable<string>;
+  second_similarity: Nullable<number>;
+
+  active_topic_similarity: Nullable<number>;
+  similarity_gap: Nullable<number>;
+
+  top_candidates: TopicRoutingCandidateEvidence[];
+
+  message_embedding_available: boolean;
+  message_embedding_model: Nullable<string>;
+  topic_centroids_available: number;
+  topic_count_considered: number;
+
+  thresholds: Nullable<TopicRoutingThresholds>;
+  reasons: string[];
+}
+
+export interface TopicCentroidUpdateDebug {
+  topic_id: EntityId;
+  previous_embedding_count: number;
+  new_embedding_count: number;
+  update_method: "initialize" | "running_average" | "ema" | "none";
+  alpha: Nullable<number>;
+  embedding_model: Nullable<string>;
+  updated_at: ISO8601String;
+}
+
+export interface TopicRoutingState {
+  router_version: TopicRoutingRouterVersion;
+  decision_kind: TopicRoutingDecisionKind;
+  policy_path: TopicRoutingPolicyPath;
+
+  selected_topic_id: Nullable<EntityId>;
+  selected_topic_name: Nullable<string>;
+  new_topic_label: Nullable<string>;
+
+  confidence: number;
+  reasons: string[];
+
+  vector_info: VectorInfo;
+  debug: TopicRoutingDebug;
+
+  centroid_update: Nullable<TopicCentroidUpdateDebug>;
+}
 
 /* ------------------------------------------------------------------ */
 /* IMPORTANT RUN INPUTS */
@@ -683,7 +799,24 @@ export interface TopicState {
   topic_decay_rate: number;
   topic_link_threshold: number;
   topic_last_update: ISO8601String;
+
+  /**
+   * Visual / spatial centroid used by the 3D learning-space renderer.
+   * This is NOT the semantic embedding centroid.
+   *
+   * Kept as topic_centroid for backward compatibility with current route/output.
+   * Long-term rename candidate: topic_position or topic_visual_centroid.
+   */
   topic_centroid: [number, number, number];
+
+  /**
+   * Semantic centroid used for topic routing.
+   * This is the running embedding memory of messages assigned to this topic.
+   */
+  topic_embedding_centroid?: Nullable<EmbeddingVector>;
+  topic_embedding_count?: number;
+  topic_embedding_model?: Nullable<string>;
+  topic_embedding_updated_at?: Nullable<ISO8601String>;
 }
 
 export interface ClusterState {
@@ -702,6 +835,15 @@ export interface ClusterState {
   cluster_last_update: ISO8601String;
   list_of_clustered_topics: EntityId[];
   cluster_centroid: [number, number, number];
+
+  /**
+   * Optional future semantic centroid for cluster-level routing/retrieval.
+   * Not required for the first semantic topic router pass.
+   */
+  cluster_embedding_centroid?: Nullable<EmbeddingVector>;
+  cluster_embedding_count?: number;
+  cluster_embedding_model?: Nullable<string>;
+  cluster_embedding_updated_at?: Nullable<ISO8601String>;
 }
 
 export interface LinkedPair {
@@ -719,6 +861,12 @@ export interface EngineFuel {
   intervention_mode_decision: InterventionModeDecision;
   previous_mode_outcome: PreviousModeOutcome;
   probe_plan: ProbePlan;
+
+  /**
+   * Optional during migration.
+   * Once semantic centroid routing is fully wired, this can become required.
+   */
+  topic_routing?: TopicRoutingState;
 
   topics: TopicState[];
   clusters: ClusterState[];

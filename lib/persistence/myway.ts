@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { EmbeddingVector } from "@/types/contracts";
 
 type JsonValue =
   | string
@@ -7,6 +8,64 @@ type JsonValue =
   | null
   | { [key: string]: JsonValue }
   | JsonValue[];
+
+function isPlainObject(value: JsonValue): value is { [key: string]: JsonValue } {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function asJsonEmbeddingVector(value: EmbeddingVector | null | undefined): JsonValue {
+  if (!Array.isArray(value)) return null;
+
+  const clean = value.filter(
+    (item): item is number => typeof item === "number" && Number.isFinite(item),
+  );
+
+  if (!clean.length) return null;
+  if (clean.length !== value.length) return null;
+
+  return clean;
+}
+
+function mergeTopicEmbeddingIntoTopicJson(args: {
+  topicJson: JsonValue;
+  topicEmbeddingCentroid?: EmbeddingVector | null;
+  topicEmbeddingCount?: number | null;
+  topicEmbeddingModel?: string | null;
+  topicEmbeddingUpdatedAt?: string | null;
+}): JsonValue {
+  const {
+    topicJson,
+    topicEmbeddingCentroid,
+    topicEmbeddingCount,
+    topicEmbeddingModel,
+    topicEmbeddingUpdatedAt,
+  } = args;
+
+  const base: { [key: string]: JsonValue } = isPlainObject(topicJson)
+    ? { ...topicJson }
+    : { value: topicJson };
+
+  if (topicEmbeddingCentroid !== undefined) {
+    base.topic_embedding_centroid = asJsonEmbeddingVector(topicEmbeddingCentroid);
+  }
+
+  if (topicEmbeddingCount !== undefined) {
+    base.topic_embedding_count =
+      typeof topicEmbeddingCount === "number" && Number.isFinite(topicEmbeddingCount)
+        ? Math.max(0, Math.floor(topicEmbeddingCount))
+        : null;
+  }
+
+  if (topicEmbeddingModel !== undefined) {
+    base.topic_embedding_model = topicEmbeddingModel ?? null;
+  }
+
+  if (topicEmbeddingUpdatedAt !== undefined) {
+    base.topic_embedding_updated_at = topicEmbeddingUpdatedAt ?? null;
+  }
+
+  return base;
+}
 
 export type PersistedRunInput = {
   id: string;
@@ -45,6 +104,15 @@ export type PersistedTopicStateInput = {
   diagnosis?: string | null;
   nextStep?: string | null;
   topicJson: JsonValue;
+
+  /**
+   * Semantic topic-routing centroid.
+   * This is separate from the visual 3D topic_centroid/position.
+   */
+  topicEmbeddingCentroid?: EmbeddingVector | null;
+  topicEmbeddingCount?: number | null;
+  topicEmbeddingModel?: string | null;
+  topicEmbeddingUpdatedAt?: string | null;
 };
 
 export async function insertRun(input: PersistedRunInput) {
@@ -92,6 +160,17 @@ export async function insertAttempt(input: PersistedAttemptInput) {
 
 export async function upsertTopicState(input: PersistedTopicStateInput) {
   const supabase = createServerSupabaseClient();
+  const embeddingUpdatedAt =
+    input.topicEmbeddingUpdatedAt ??
+    (input.topicEmbeddingCentroid ? new Date().toISOString() : null);
+
+  const topicJsonWithEmbedding = mergeTopicEmbeddingIntoTopicJson({
+    topicJson: input.topicJson,
+    topicEmbeddingCentroid: input.topicEmbeddingCentroid,
+    topicEmbeddingCount: input.topicEmbeddingCount,
+    topicEmbeddingModel: input.topicEmbeddingModel,
+    topicEmbeddingUpdatedAt: embeddingUpdatedAt,
+  });
 
   const { error } = await supabase.from("topic_state").upsert(
     {
@@ -104,11 +183,23 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
       learning_score: input.learningScore ?? null,
       diagnosis: input.diagnosis ?? null,
       next_step: input.nextStep ?? null,
-      topic_json: input.topicJson,
+      topic_json: topicJsonWithEmbedding,
+
+      // These columns should be added in Supabase. read.ts also falls back to
+      // topic_json during migration, but these explicit columns make routing
+      // faster and easier to query later.
+      topic_embedding_centroid: asJsonEmbeddingVector(input.topicEmbeddingCentroid),
+      topic_embedding_count:
+        typeof input.topicEmbeddingCount === "number" &&
+        Number.isFinite(input.topicEmbeddingCount)
+          ? Math.max(0, Math.floor(input.topicEmbeddingCount))
+          : 0,
+      topic_embedding_model: input.topicEmbeddingModel ?? null,
+      topic_embedding_updated_at: embeddingUpdatedAt,
     },
     {
       onConflict: "topic_id",
-    }
+    },
   );
 
   if (error) {

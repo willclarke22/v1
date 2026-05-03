@@ -1,7 +1,7 @@
 import { mockTopics } from "@/lib/mock-topics";
 import { getLatestTopicState } from "@/lib/persistence/read";
 import { makeId } from "@/lib/utils/ids";
-import type { VectorInfo } from "@/types/contracts";
+import type { CurrentInteractionContext, EmbeddingVector, VectorInfo } from "@/types/contracts";
 import { clamp, isPosition, normalizeDiagnosis } from "./shared";
 import {
   type RetrievalCandidate,
@@ -16,9 +16,17 @@ import {
   normalizeSurface,
   semanticTokens,
 } from "./topic-labeling/topic-label-normalization";
+import { routeTopicV3 } from "./topic-routing/topic-router";
+import type { SemanticCentroidRoutingResult, TopicCentroidUpdatePlan } from "./topic-routing/topic-routing-types";
 
 type MockTopic = (typeof mockTopics)[number];
-export type RouteTopic = MockTopic;
+export type RouteTopic = MockTopic & {
+  topic_embedding_centroid?: EmbeddingVector | null;
+  topic_embedding_count?: number | null;
+  topic_embedding_model?: string | null;
+  topic_embedding_updated_at?: string | null;
+  topic_json?: Record<string, unknown> | null;
+};
 
 export type ResolutionDecisionAction =
   | "stay_on_active_topic"
@@ -39,6 +47,8 @@ export type TopicMatchResult = {
   resolvedLabel: string | null;
   matchConfidence: number;
   resolutionTrace?: TopicResolutionTrace;
+  semanticTopicRouting?: SemanticCentroidRoutingResult | null;
+  centroidUpdatePlan?: TopicCentroidUpdatePlan | null;
 };
 
 export type DeterministicTopicResolutionSnapshot = {
@@ -253,6 +263,7 @@ export type TopicResolutionTrace = {
   decisionAction: ResolutionDecisionAction;
   fallbackRecommended: boolean;
   timing?: ResolutionTimingDebug;
+  topic_router_v3?: SemanticCentroidRoutingResult["debug"];
 };
 
 const STRONG_REUSE_TOPIC_THRESHOLD = 0.66;
@@ -3073,11 +3084,154 @@ function buildFinalMatchResultFromDecision(args: {
   };
 }
 
+
+
+type ResolveTopicForMessageOptions = {
+  messageEmbedding?: EmbeddingVector | null;
+  embeddingModel?: string | null;
+  currentInteractionContext?: CurrentInteractionContext | null;
+};
+
+function attachTopicRouterV3DebugToTrace(
+  trace: TopicResolutionTrace,
+  result: SemanticCentroidRoutingResult
+): TopicResolutionTrace {
+  return {
+    ...trace,
+    topic_router_v3: result.debug,
+  };
+}
+
+function findRouteTopicByIdOrName(args: {
+  topics: RouteTopic[];
+  topicId?: string | null;
+  topicName?: string | null;
+}) {
+  const { topics, topicId, topicName } = args;
+  const normalizedName = topicName ? normalizeLoose(topicName) : null;
+
+  return (
+    topics.find((topic) => topicId && topic.id === topicId) ??
+    topics.find(
+      (topic) => normalizedName && normalizeLoose(topic.name) === normalizedName
+    ) ??
+    null
+  );
+}
+
+function buildTopicMatchResultFromRouterV3(args: {
+  result: SemanticCentroidRoutingResult;
+  fallbackVectorInfo: VectorInfo;
+  trace: TopicResolutionTrace;
+  activeTopic?: RouteTopic | null;
+  existingTopics: RouteTopic[];
+}): TopicMatchResult | null {
+  const { result, fallbackVectorInfo, trace, activeTopic, existingTopics } = args;
+  const vectorInfo = mergeVectorInfos(result.vectorInfo, fallbackVectorInfo);
+  const traceWithRouterDebug = attachTopicRouterV3DebugToTrace(trace, result);
+
+  if (result.kind === "stay_active") {
+    const targetTopic =
+      result.target_topic ??
+      findRouteTopicByIdOrName({
+        topics: existingTopics,
+        topicId: result.target_topic_id,
+        topicName: result.target_topic_name,
+      }) ??
+      activeTopic ??
+      null;
+
+    if (!targetTopic) return null;
+
+    return {
+      matchedTopic: targetTopic,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind: "fallback_active_topic",
+      resolvedLabel: targetTopic.name,
+      matchConfidence: result.confidence,
+      resolutionTrace: traceWithRouterDebug,
+      semanticTopicRouting: result,
+      centroidUpdatePlan: result.centroid_update_plan,
+    };
+  }
+
+  if (result.kind === "switch_existing") {
+    const targetTopic =
+      result.target_topic ??
+      findRouteTopicByIdOrName({
+        topics: existingTopics,
+        topicId: result.target_topic_id,
+        topicName: result.target_topic_name,
+      });
+
+    if (!targetTopic) return null;
+
+    return {
+      matchedTopic: targetTopic,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind:
+        targetTopic.id === activeTopic?.id
+          ? "fallback_active_topic"
+          : "matched_existing",
+      resolvedLabel: targetTopic.name,
+      matchConfidence: result.confidence,
+      resolutionTrace: traceWithRouterDebug,
+      semanticTopicRouting: result,
+      centroidUpdatePlan: result.centroid_update_plan,
+    };
+  }
+
+  if (result.kind === "create_new" || result.kind === "create_and_link") {
+    const resolvedLabel =
+      result.new_topic_label ??
+      result.debug.new_topic_label ??
+      result.debug.deterministic_label ??
+      null;
+
+    if (!resolvedLabel) return null;
+
+    return {
+      matchedTopic: null,
+      vectorInfo,
+      shouldCreateNewTopic: true,
+      resolutionKind: "created_new_candidate",
+      resolvedLabel,
+      matchConfidence: result.confidence,
+      resolutionTrace: traceWithRouterDebug,
+      semanticTopicRouting: result,
+      centroidUpdatePlan: result.centroid_update_plan,
+    };
+  }
+
+  if (result.kind === "clarify_topic_intent" || result.kind === "no_decision") {
+    return {
+      matchedTopic: null,
+      vectorInfo,
+      shouldCreateNewTopic: false,
+      resolutionKind: "no_match",
+      resolvedLabel:
+        result.new_topic_label ??
+        result.debug.new_topic_label ??
+        result.debug.deterministic_label ??
+        null,
+      matchConfidence: result.confidence,
+      resolutionTrace: traceWithRouterDebug,
+      semanticTopicRouting: result,
+      centroidUpdatePlan: result.centroid_update_plan,
+    };
+  }
+
+  return null;
+}
+
 export function resolveTopicForMessage(
   message: string,
   existingTopics: RouteTopic[],
   activeTopic?: RouteTopic | null,
-  semanticVectorInfo?: VectorInfo | null
+  semanticVectorInfo?: VectorInfo | null,
+  options: ResolveTopicForMessageOptions = {}
 ): TopicMatchResult {
   const normalizedSemanticVectorInfo = normalizeVectorInfo(semanticVectorInfo);
 
@@ -3096,40 +3250,21 @@ export function resolveTopicForMessage(
     trace,
   } = adjudication;
 
-  if (!existingTopics.length) {
-    const createFloor = getStructuralCreateFloor(interpretation);
-    const createConfidence =
-      (labeling.topic_decision.should_create_new_topic || interpretation.structurallyStrongLabel) &&
-      !interpretation.suspiciousLabel &&
-      !interpretation.subpartLikeLabel &&
-      !interpretation.nullOnlyEmotionalLike &&
-      (!interpretation.domainAnchorLike || interpretation.pairedTargetLike || interpretation.questionSynthesisLike || interpretation.durableConceptLike)
-        ? Math.max(labeling.topic_decision.confidence, interpretation.durableConceptLike ? getStructuralCreateFloor(interpretation) : 0)
-        : 0;
+  const explicitExistingTarget = extractExplicitExistingTopicTarget(
+    message,
+    existingTopics,
+    activeTopic
+  );
 
-    return {
-      matchedTopic: null,
-      vectorInfo,
-      shouldCreateNewTopic: createConfidence >= createFloor,
-      resolutionKind:
-        createConfidence >= createFloor ? "created_new_candidate" : "no_match",
-      resolvedLabel: interpretation.canonicalLabel ?? null,
-      matchConfidence:
-        createConfidence >= createFloor
-          ? createConfidence
-          : Math.max(labeling.topic_decision.confidence, interpretation.labelConfidence),
-      resolutionTrace: trace,
-    };
-  }
-
-  const explicitExistingTarget = extractExplicitExistingTopicTarget(message, existingTopics, activeTopic);
   if (explicitExistingTarget) {
     return {
       matchedTopic: explicitExistingTarget,
       vectorInfo,
       shouldCreateNewTopic: false,
       resolutionKind:
-        explicitExistingTarget.id === activeTopic?.id ? "fallback_active_topic" : "matched_existing",
+        explicitExistingTarget.id === activeTopic?.id
+          ? "fallback_active_topic"
+          : "matched_existing",
       resolvedLabel: explicitExistingTarget.name,
       matchConfidence: 0.95,
       resolutionTrace: trace,
@@ -3138,6 +3273,7 @@ export function resolveTopicForMessage(
 
   if (interpretation.followupSignals.returnToPrevious) {
     const previousTopic = findPreviousNonActiveTopic(existingTopics, activeTopic);
+
     if (previousTopic) {
       return {
         matchedTopic: previousTopic,
@@ -3151,12 +3287,16 @@ export function resolveTopicForMessage(
     }
   }
 
-  if (activeTopic && shouldUseHardActiveFollowupOverride(message, interpretation, labeling)) {
+  if (
+    activeTopic &&
+    shouldUseHardActiveFollowupOverride(message, interpretation, labeling)
+  ) {
     const hardFollowupFloor = interpretation.followupSignals.mixedFollowup
       ? 0.9
       : interpretation.followupSignals.subpartFollowup
         ? 0.88
-        : interpretation.followupSignals.anaphoricFollowup || interpretation.followupSignals.metaContinuation
+        : interpretation.followupSignals.anaphoricFollowup ||
+            interpretation.followupSignals.metaContinuation
           ? 0.86
           : 0.84;
 
@@ -3166,7 +3306,74 @@ export function resolveTopicForMessage(
       shouldCreateNewTopic: false,
       resolutionKind: "fallback_active_topic",
       resolvedLabel: activeTopic.name,
-      matchConfidence: Math.max(activeTopicScore?.similarity ?? 0, hardFollowupFloor, interpretation.labelConfidence),
+      matchConfidence: Math.max(
+        activeTopicScore?.similarity ?? 0,
+        hardFollowupFloor,
+        interpretation.labelConfidence
+      ),
+      resolutionTrace: trace,
+    };
+  }
+
+  if (options.messageEmbedding?.length) {
+    const routerResult = routeTopicV3({
+      rawMessage: message,
+      messageEmbedding: options.messageEmbedding,
+      embeddingModel: options.embeddingModel ?? null,
+      topics: existingTopics,
+      activeTopicId: activeTopic?.id ?? null,
+      vectorInfo,
+      labeling,
+      currentInteractionContext: options.currentInteractionContext ?? null,
+    });
+
+    const routerMatch = buildTopicMatchResultFromRouterV3({
+      result: routerResult,
+      fallbackVectorInfo: vectorInfo,
+      trace,
+      activeTopic,
+      existingTopics,
+    });
+
+    if (routerMatch && routerResult.kind !== "no_decision") {
+      return routerMatch;
+    }
+  }
+
+  if (!existingTopics.length) {
+    const createFloor = getStructuralCreateFloor(interpretation);
+    const createConfidence =
+      (labeling.topic_decision.should_create_new_topic ||
+        interpretation.structurallyStrongLabel) &&
+      !interpretation.suspiciousLabel &&
+      !interpretation.subpartLikeLabel &&
+      !interpretation.nullOnlyEmotionalLike &&
+      (!interpretation.domainAnchorLike ||
+        interpretation.pairedTargetLike ||
+        interpretation.questionSynthesisLike ||
+        interpretation.durableConceptLike)
+        ? Math.max(
+            labeling.topic_decision.confidence,
+            interpretation.durableConceptLike
+              ? getStructuralCreateFloor(interpretation)
+              : 0
+          )
+        : 0;
+
+    return {
+      matchedTopic: null,
+      vectorInfo,
+      shouldCreateNewTopic: createConfidence >= createFloor,
+      resolutionKind:
+        createConfidence >= createFloor ? "created_new_candidate" : "no_match",
+      resolvedLabel: interpretation.canonicalLabel ?? null,
+      matchConfidence:
+        createConfidence >= createFloor
+          ? createConfidence
+          : Math.max(
+              labeling.topic_decision.confidence,
+              interpretation.labelConfidence
+            ),
       resolutionTrace: trace,
     };
   }
@@ -3273,6 +3480,11 @@ function mapRowsToTopics(
       messageCount: fallbackTopic.messageCount ?? 0,
       lastUpdated: row.updated_at ?? fallbackTopic.lastUpdated ?? null,
       hasAvailableProbe: false,
+      topic_embedding_centroid: row.topic_embedding_centroid ?? null,
+      topic_embedding_count: row.topic_embedding_count ?? 0,
+      topic_embedding_model: row.topic_embedding_model ?? null,
+      topic_embedding_updated_at: row.topic_embedding_updated_at ?? null,
+      topic_json: row.topic_json ?? null,
     } as RouteTopic;
   });
 }
