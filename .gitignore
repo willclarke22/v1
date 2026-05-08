@@ -39,3 +39,27 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# MyWay ML generated artifacts
+models/
+
+# Saved sklearn / local model artifacts
+*.joblib
+
+# Hugging Face / PyTorch model weights and checkpoints
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+checkpoint-*/
+
+# Generated dataset splits, reports, and predictions
+datasets/topic-labeling-dataset/**/splits/
+datasets/topic-labeling-dataset/**/reports/
+datasets/topic-labeling-dataset/**/label-generator/predictions/
+
+# Generated label-generator split files
+datasets/topic-labeling-dataset/**/label-generator/train.jsonl
+datasets/topic-labeling-dataset/**/label-generator/validation.jsonl
+datasets/topic-labeling-dataset/**/label-generator/test.jsonl
