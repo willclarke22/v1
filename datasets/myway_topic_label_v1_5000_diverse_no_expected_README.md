@@ -1,6 +1,8 @@
-# MyWay Topic Label V1 — 2,500 Diverse Synthetic Cases, Cleaned
+# MyWay Topic Label V1 — 5,000 Diverse Synthetic Cases
 
-This is the same 2,500-case diverse V1 dataset, but with the `original_expected_label` column removed.
+This combines:
+- the original 2,500 cleaned V1 rows
+- an additional 2,500 new rows with fresh non-overlapping extracted-label topics where possible
 
 ## V1 input schema
 
@@ -45,31 +47,38 @@ reviewer_notes
 
 ## Distribution
 
-Rows: 2500
+Rows: 5000
 
 Reference type counts:
 ```json
 {
-  "active_topic_reference": 625,
-  "new_explicit_topic": 875,
-  "no_topic": 375,
-  "existing_explicit_topic": 375,
-  "unclear_topic": 250
+  "new_explicit_topic": 1750,
+  "active_topic_reference": 1250,
+  "no_topic": 750,
+  "existing_explicit_topic": 750,
+  "unclear_topic": 500
 }
 ```
 
 Previous user message length distribution:
 ```json
 {
-  "0": 195,
-  "1": 376,
-  "2": 482,
-  "3": 586,
-  "4": 505,
-  "5": 356
+  "0": 368,
+  "1": 745,
+  "2": 974,
+  "3": 1209,
+  "4": 988,
+  "5": 716
 }
 ```
 
+## Topic non-overlap note
+
+The additional 2,500 extracted-label topics were generated from a fresh bank and filtered against topics present in the original 2,500-row dataset.
+
+Additional extracted-label overlaps detected with original topic set: 0
+[]
+
 ## Caveat
 
-This remains synthetic seed data and every row is still marked for human review.
+This remains synthetic seed data. Every row is marked `needs_human_review = True`.
