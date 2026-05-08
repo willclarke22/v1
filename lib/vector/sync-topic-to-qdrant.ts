@@ -35,6 +35,84 @@ export type SyncTopicToQdrantInput = {
   topicEmbeddingUpdatedAt?: string | null;
 };
 
+export type SyncTopicToQdrantResult = {
+  ok: boolean;
+  skipped: boolean;
+  error: string | null;
+  topic_id: string;
+  topic_name: string;
+  vector_source: "topic_embedding_centroid" | "topic_text_fallback" | null;
+  qdrant_sync_timeout_ms: number;
+  qdrant_ensure_timeout_ms: number;
+  qdrant_upsert_wait: boolean;
+  duration_ms: number;
+};
+
+function roundMs(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function nowMs() {
+  return performance.now();
+}
+
+function parsePositiveInteger(value: string | undefined, fallback: number) {
+  if (!value || !value.trim()) return fallback;
+
+  const parsed = Number.parseInt(value.trim(), 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+function getQdrantSyncTimeoutMs() {
+  return parsePositiveInteger(
+    process.env.MYWAY_QDRANT_SYNC_TIMEOUT_MS ??
+      process.env.QDRANT_SYNC_TIMEOUT_MS,
+    2500
+  );
+}
+
+function getQdrantEnsureTimeoutMs() {
+  return parsePositiveInteger(
+    process.env.MYWAY_QDRANT_ENSURE_TIMEOUT_MS ??
+      process.env.QDRANT_ENSURE_TIMEOUT_MS,
+    1500
+  );
+}
+
+function getQdrantUpsertWait() {
+  const raw =
+    process.env.MYWAY_QDRANT_UPSERT_WAIT ??
+    process.env.QDRANT_UPSERT_WAIT ??
+    "false";
+
+  return raw.trim().toLowerCase() === "true";
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 function asRecord(value: unknown): Record<string, JsonValue> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
@@ -56,7 +134,7 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
   if (!Array.isArray(value)) return null;
 
   const vector = value.filter(
-    (item): item is number => typeof item === "number" && Number.isFinite(item),
+    (item): item is number => typeof item === "number" && Number.isFinite(item)
   );
 
   if (!vector.length) return null;
@@ -152,22 +230,24 @@ function resolveTopicEmbeddingFields(input: SyncTopicToQdrantInput) {
   };
 }
 
+/**
+ * This now checks only Qdrant config.
+ *
+ * EMBEDDINGS_URL is not required when a topic already has
+ * topicEmbeddingCentroid, because V3 sync can upsert that centroid directly.
+ */
 export function canSyncTopicToQdrant(): boolean {
-  return hasQdrantConfig() && Boolean(process.env.EMBEDDINGS_URL?.trim());
+  return hasQdrantConfig();
 }
 
-export async function syncTopicToQdrant(
-  input: SyncTopicToQdrantInput,
-): Promise<void> {
-  if (!canSyncTopicToQdrant()) {
-    throw new Error(
-      "Qdrant topic sync is unavailable because QDRANT or EMBEDDINGS configuration is missing.",
-    );
-  }
-
-  const qdrant = createQdrantClient();
-  await ensureTopicCollection();
-
+async function buildVectorForQdrant(input: SyncTopicToQdrantInput): Promise<{
+  vector: EmbeddingVector;
+  vectorSource: "topic_embedding_centroid" | "topic_text_fallback";
+  embeddingText: string;
+  topicEmbeddingCount: number;
+  topicEmbeddingModel: string;
+  topicEmbeddingUpdatedAt: string | null;
+}> {
   const {
     topicEmbeddingCentroid,
     topicEmbeddingCount,
@@ -185,44 +265,188 @@ export async function syncTopicToQdrant(
    * - If the topic has no centroid yet, embed the topic summary text like the
    *   old implementation did.
    */
-  const vector = topicEmbeddingCentroid ?? (await embedText(embeddingText));
+  if (topicEmbeddingCentroid?.length) {
+    return {
+      vector: topicEmbeddingCentroid,
+      vectorSource: "topic_embedding_centroid",
+      embeddingText,
+      topicEmbeddingCount,
+      topicEmbeddingModel,
+      topicEmbeddingUpdatedAt,
+    };
+  }
+
+  if (!process.env.EMBEDDINGS_URL?.trim()) {
+    throw new Error(
+      `Cannot sync topic_id "${input.topicId}" to Qdrant because it has no topicEmbeddingCentroid and EMBEDDINGS_URL is missing.`
+    );
+  }
+
+  const fallbackVector = await embedText(embeddingText);
+
+  if (!Array.isArray(fallbackVector) || fallbackVector.length === 0) {
+    throw new Error(`Invalid fallback embedding vector for topic_id "${input.topicId}"`);
+  }
+
+  return {
+    vector: fallbackVector,
+    vectorSource: "topic_text_fallback",
+    embeddingText,
+    topicEmbeddingCount: topicEmbeddingCount || 1,
+    topicEmbeddingModel,
+    topicEmbeddingUpdatedAt:
+      topicEmbeddingUpdatedAt ?? input.updatedAt ?? new Date().toISOString(),
+  };
+}
+
+/**
+ * Strict sync API.
+ *
+ * Use this when the caller wants failures to throw. In /api/message, prefer
+ * syncTopicToQdrantBestEffort(...) so Qdrant cannot fail the user-facing route.
+ */
+export async function syncTopicToQdrant(
+  input: SyncTopicToQdrantInput
+): Promise<void> {
+  if (!canSyncTopicToQdrant()) {
+    throw new Error(
+      "Qdrant topic sync is unavailable because QDRANT configuration is missing."
+    );
+  }
+
+  const qdrantSyncTimeoutMs = getQdrantSyncTimeoutMs();
+  const qdrantEnsureTimeoutMs = getQdrantEnsureTimeoutMs();
+  const qdrantUpsertWait = getQdrantUpsertWait();
+
+  const qdrant = createQdrantClient();
+
+  await withTimeout(
+    ensureTopicCollection(),
+    qdrantEnsureTimeoutMs,
+    "Qdrant ensureTopicCollection"
+  );
+
+  const {
+    vector,
+    vectorSource,
+    embeddingText,
+    topicEmbeddingCount,
+    topicEmbeddingModel,
+    topicEmbeddingUpdatedAt,
+  } = await buildVectorForQdrant(input);
 
   if (!Array.isArray(vector) || vector.length === 0) {
     throw new Error(`Invalid embedding vector for topic_id "${input.topicId}"`);
   }
 
-  await qdrant.upsert(TOPIC_COLLECTION, {
-    wait: true,
-    points: [
-      {
-        id: buildPointId(input.topicId),
-        vector,
-        payload: {
-          topic_id: input.topicId,
-          topic_name: input.topicName,
-          diagnosis: input.diagnosis ?? null,
-          next_step: input.nextStep ?? null,
-          updated_at: input.updatedAt ?? new Date().toISOString(),
-          inferred_keywords: asStringArray(
-            asRecord(input.topicJson)?.inferred_keywords,
-          ),
+  await withTimeout(
+    qdrant.upsert(TOPIC_COLLECTION, {
+      wait: qdrantUpsertWait,
+      points: [
+        {
+          id: buildPointId(input.topicId),
+          vector,
+          payload: {
+            topic_id: input.topicId,
+            topic_name: input.topicName,
+            diagnosis: input.diagnosis ?? null,
+            next_step: input.nextStep ?? null,
+            updated_at: input.updatedAt ?? new Date().toISOString(),
+            inferred_keywords: asStringArray(
+              asRecord(input.topicJson)?.inferred_keywords
+            ),
 
-          /**
-           * Debug/source fields.
-           */
-          embedding_text: embeddingText,
-          vector_source: topicEmbeddingCentroid
-            ? "topic_embedding_centroid"
-            : "topic_text_fallback",
+            /**
+             * Debug/source fields.
+             */
+            embedding_text: embeddingText,
+            vector_source: vectorSource,
 
-          /**
-           * Semantic centroid metadata used by the V3 router/debug output.
-           */
-          topic_embedding_count: topicEmbeddingCount,
-          topic_embedding_model: topicEmbeddingModel,
-          topic_embedding_updated_at: topicEmbeddingUpdatedAt,
+            /**
+             * Semantic centroid metadata used by the V3 router/debug output.
+             */
+            topic_embedding_count: topicEmbeddingCount,
+            topic_embedding_model: topicEmbeddingModel,
+            topic_embedding_updated_at: topicEmbeddingUpdatedAt,
+          },
         },
-      },
-    ],
-  });
+      ],
+    }),
+    qdrantSyncTimeoutMs,
+    "Qdrant topic upsert"
+  );
+}
+
+/**
+ * Best-effort sync API.
+ *
+ * This is the one /api/message should use next. It never throws. It returns a
+ * compact result object so the route can attach sync status to latency_debug or
+ * log it without failing the user-facing response.
+ */
+export async function syncTopicToQdrantBestEffort(
+  input: SyncTopicToQdrantInput
+): Promise<SyncTopicToQdrantResult> {
+  const startedAt = nowMs();
+  const qdrantSyncTimeoutMs = getQdrantSyncTimeoutMs();
+  const qdrantEnsureTimeoutMs = getQdrantEnsureTimeoutMs();
+  const qdrantUpsertWait = getQdrantUpsertWait();
+
+  if (!canSyncTopicToQdrant()) {
+    return {
+      ok: false,
+      skipped: true,
+      error: "missing_qdrant_config",
+      topic_id: input.topicId,
+      topic_name: input.topicName,
+      vector_source: null,
+      qdrant_sync_timeout_ms: qdrantSyncTimeoutMs,
+      qdrant_ensure_timeout_ms: qdrantEnsureTimeoutMs,
+      qdrant_upsert_wait: qdrantUpsertWait,
+      duration_ms: roundMs(nowMs() - startedAt),
+    };
+  }
+
+  let vectorSource: SyncTopicToQdrantResult["vector_source"] = null;
+
+  try {
+    const fields = resolveTopicEmbeddingFields(input);
+    vectorSource = fields.topicEmbeddingCentroid?.length
+      ? "topic_embedding_centroid"
+      : "topic_text_fallback";
+
+    await syncTopicToQdrant(input);
+
+    const result: SyncTopicToQdrantResult = {
+      ok: true,
+      skipped: false,
+      error: null,
+      topic_id: input.topicId,
+      topic_name: input.topicName,
+      vector_source: vectorSource,
+      qdrant_sync_timeout_ms: qdrantSyncTimeoutMs,
+      qdrant_ensure_timeout_ms: qdrantEnsureTimeoutMs,
+      qdrant_upsert_wait: qdrantUpsertWait,
+      duration_ms: roundMs(nowMs() - startedAt),
+    };
+
+    console.info("[syncTopicToQdrant best-effort]", result);
+    return result;
+  } catch (error) {
+    const result: SyncTopicToQdrantResult = {
+      ok: false,
+      skipped: false,
+      error: error instanceof Error ? error.message : "unknown_qdrant_sync_error",
+      topic_id: input.topicId,
+      topic_name: input.topicName,
+      vector_source: vectorSource,
+      qdrant_sync_timeout_ms: qdrantSyncTimeoutMs,
+      qdrant_ensure_timeout_ms: qdrantEnsureTimeoutMs,
+      qdrant_upsert_wait: qdrantUpsertWait,
+      duration_ms: roundMs(nowMs() - startedAt),
+    };
+
+    console.warn("[syncTopicToQdrant best-effort failed]", result);
+    return result;
+  }
 }

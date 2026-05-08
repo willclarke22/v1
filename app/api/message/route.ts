@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { buildLearningSpace } from "@/lib/build-learning-space";
 import { insertRun, upsertTopicState } from "@/lib/persistence/myway";
 import { makeId } from "@/lib/utils/ids";
-import { querySemanticTopicCandidatesWithEmbedding } from "@/lib/vector/query-topics";
+import {
+  embedMessageForSemanticRouting,
+  querySemanticTopicCandidatesFromEmbedding,
+} from "@/lib/vector/query-topics";
 import {
   canSyncTopicToQdrant,
-  syncTopicToQdrant,
+  syncTopicToQdrantBestEffort,
 } from "@/lib/vector/sync-topic-to-qdrant";
 import type {
   DeliveredProbe,
@@ -95,11 +98,18 @@ type IncomingChatTurn = {
   content?: string;
 };
 
+type IncomingViewportContext = {
+  focusedTopicId?: unknown;
+  selectedTopicId?: unknown;
+  activeTopicIdForMessage?: unknown;
+};
+
 type MessageRouteBody = MessageRouteRequest & {
   message?: string;
   chat_history?: string;
   recent_turns?: IncomingChatTurn[];
   conversation_turns?: IncomingChatTurn[];
+  viewportContext?: IncomingViewportContext;
 };
 
 type DeliveredRendererSelection = {
@@ -116,6 +126,8 @@ type RouteResolutionKind =
   | "no_match";
 
 type TopicLabelingMode = "deterministic_only" | "deterministic_plus_llm";
+
+type TopicRoutingQdrantQueryMode = "off" | "always";
 
 type TopicResolutionDebug = {
   topic_labeling_mode: TopicLabelingMode;
@@ -148,7 +160,6 @@ type TopicResolutionOutcome = {
   debug: TopicResolutionDebug;
 };
 
-
 type RouteCentroidUpdatePlan = {
   topic_id: string;
   previous_embedding_count: number;
@@ -173,9 +184,25 @@ type MessageRouteLatencyDebug = {
   metadata: {
     route: "POST /api/message";
     topic_count_loaded: number | null;
+
+    incoming_active_topic_id: string | null;
+    incoming_active_topic_found: boolean | null;
+    incoming_active_topic_name: string | null;
+    viewport_focused_topic_id: string | null;
+    viewport_selected_topic_id: string | null;
+    viewport_active_topic_id_for_message: string | null;
+
+    qdrant_query_mode: TopicRoutingQdrantQueryMode;
+    qdrant_query_attempted: boolean;
+    qdrant_query_succeeded: boolean | null;
+    qdrant_query_error: string | null;
+    qdrant_query_skipped_reason: string | null;
+
     qdrant_sync_attempted: boolean;
     qdrant_sync_succeeded: boolean | null;
     qdrant_sync_error: string | null;
+    qdrant_sync_duration_ms: number | null;
+
     confusion_insight_status: ModelSignals["status"] | null;
     topic_labeling_mode: TopicLabelingMode | null;
     resolution_kind: RouteResolutionKind | null;
@@ -233,6 +260,67 @@ function emptyVectorInfo(): VectorInfo {
     top_k_topic_ids: [],
     top_k_similarity_scores: [],
   };
+}
+
+function asOptionalString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function parsePositiveInteger(value: string | undefined, fallback: number) {
+  if (!value || !value.trim()) return fallback;
+
+  const parsed = Number.parseInt(value.trim(), 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+function getLLMFallbackTimeoutMs() {
+  return parsePositiveInteger(
+    process.env.MYWAY_TOPIC_LLM_FALLBACK_TIMEOUT_MS ??
+      process.env.TOPIC_LLM_FALLBACK_TIMEOUT_MS,
+    8000
+  );
+}
+
+function getTopicRoutingQdrantQueryMode(): TopicRoutingQdrantQueryMode {
+  const raw = process.env.MYWAY_TOPIC_ROUTING_QDRANT_QUERY_MODE
+    ?.trim()
+    .toLowerCase();
+
+  if (raw === "always") return "always";
+
+  /**
+   * Default is intentionally "off" for this pass.
+   *
+   * The route now embeds once and lets V3 perform local Supabase centroid ranking.
+   * We will add "local confidence -> optional Qdrant" after updating topic-router.ts
+   * and topic-routing-policy.ts.
+   */
+  return "off";
 }
 
 function normalizeRecentTurns(body: MessageRouteBody) {
@@ -612,7 +700,7 @@ function buildRunMetadata(engineFuel: EngineFuel, runId: string): RunMetadata {
   return {
     run_id: runId,
     timestamp: nowIso(),
-    engine_version: "runtime-v3-semantic-centroid",
+    engine_version: "runtime-v3-semantic-centroid-fast-path",
     previous_run_id: null,
     topic_count: engineFuel.topics.length,
     cluster_count: engineFuel.clusters.length,
@@ -1125,7 +1213,6 @@ function buildConservativeFallbackOutcome(args: {
 }): TopicResolutionOutcome {
   const {
     existingTopics,
-    message,
     semanticVectorInfo,
     activeTopic,
     topicLabelingMode,
@@ -1331,12 +1418,23 @@ async function resolveTopicOutcome(args: {
     });
   }
 
-  const llmDecision = await runTopicLabelingLLMAdjudication({
-    message,
-    activeTopic,
-    existingTopics,
-    deterministicResolution: deterministicSnapshot,
-  });
+  let llmDecision: TopicLabelingLLMDecision | null = null;
+
+  try {
+    llmDecision = await withTimeout(
+      runTopicLabelingLLMAdjudication({
+        message,
+        activeTopic,
+        existingTopics,
+        deterministicResolution: deterministicSnapshot,
+      }),
+      getLLMFallbackTimeoutMs(),
+      "Topic labeling LLM fallback"
+    );
+  } catch (error) {
+    console.warn("Topic labeling LLM fallback failed or timed out.", error);
+    llmDecision = null;
+  }
 
   if (llmDecision) {
     if (llmDecision.decision === "reuse_existing") {
@@ -1488,9 +1586,26 @@ export async function POST(request: Request) {
   const timer = createMessageRouteTimer();
 
   let topicCountLoaded: number | null = null;
+
+  let incomingActiveTopicId: string | null = null;
+  let incomingActiveTopicFound: boolean | null = null;
+  let incomingActiveTopicName: string | null = null;
+  let viewportFocusedTopicId: string | null = null;
+  let viewportSelectedTopicId: string | null = null;
+  let viewportActiveTopicIdForMessage: string | null = null;
+
+  const qdrantQueryMode = getTopicRoutingQdrantQueryMode();
+  let qdrantQueryAttempted = false;
+  let qdrantQuerySucceeded: boolean | null = null;
+  let qdrantQueryError: string | null = null;
+  let qdrantQuerySkippedReason: string | null =
+    qdrantQueryMode === "off" ? "qdrant_query_mode_off" : null;
+
   let qdrantSyncAttempted = false;
   let qdrantSyncSucceeded: boolean | null = null;
   let qdrantSyncError: string | null = null;
+  let qdrantSyncDurationMs: number | null = null;
+
   let finalModelSignalsStatus: ModelSignals["status"] | null = null;
   let finalTopicLabelingMode: TopicLabelingMode | null = null;
   let finalResolutionKind: RouteResolutionKind | null = null;
@@ -1513,6 +1628,13 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    incomingActiveTopicId = asOptionalString(body.activeTopicId);
+    viewportFocusedTopicId = asOptionalString(body.viewportContext?.focusedTopicId);
+    viewportSelectedTopicId = asOptionalString(body.viewportContext?.selectedTopicId);
+    viewportActiveTopicIdForMessage = asOptionalString(
+      body.viewportContext?.activeTopicIdForMessage
+    );
 
     const recentTurns = normalizeRecentTurns(body);
     const chatHistory = buildChatHistoryFromBody(body);
@@ -1538,6 +1660,15 @@ export async function POST(request: Request) {
 
     const existingTopics = await loadRouteTopics();
     topicCountLoaded = existingTopics.length;
+
+    const activeTopicFromRequest =
+      incomingActiveTopicId != null
+        ? existingTopics.find((topic) => topic.id === incomingActiveTopicId) ?? null
+        : null;
+
+    incomingActiveTopicFound = Boolean(activeTopicFromRequest);
+    incomingActiveTopicName = activeTopicFromRequest?.name ?? null;
+
     timer.step("load_route_topics_from_supabase");
 
     let semanticVectorInfo: VectorInfo = emptyVectorInfo();
@@ -1545,29 +1676,55 @@ export async function POST(request: Request) {
     let embeddingModel: string | null = null;
 
     try {
-      const semanticQuery = await querySemanticTopicCandidatesWithEmbedding(
-        message,
-        5
-      );
-      semanticVectorInfo = semanticQuery.vectorInfo;
-      messageEmbedding = semanticQuery.messageEmbedding;
-      embeddingModel = semanticQuery.embeddingModel;
+      const embeddingResult = await embedMessageForSemanticRouting(message);
+      messageEmbedding = embeddingResult.messageEmbedding;
+      embeddingModel = embeddingResult.embeddingModel;
       finalMessageEmbeddingAvailable = Boolean(messageEmbedding?.length);
       finalEmbeddingModel = embeddingModel;
     } catch (error) {
-      console.warn("Semantic topic retrieval failed in POST /api/message", error);
-      semanticVectorInfo = emptyVectorInfo();
+      console.warn("Message embedding failed in POST /api/message", error);
       messageEmbedding = null;
       embeddingModel = null;
       finalMessageEmbeddingAvailable = false;
       finalEmbeddingModel = null;
     }
 
-    timer.step("query_semantic_topic_candidates_with_embedding");
+    timer.step("embed_message_for_semantic_routing");
+
+    if (messageEmbedding?.length && qdrantQueryMode === "always") {
+      qdrantQueryAttempted = true;
+      qdrantQuerySkippedReason = null;
+
+      try {
+        const qdrantQuery = await querySemanticTopicCandidatesFromEmbedding(
+          messageEmbedding,
+          5,
+          embeddingModel
+        );
+
+        semanticVectorInfo = qdrantQuery.vectorInfo;
+        qdrantQuerySucceeded = true;
+
+        if (!qdrantQuery.candidates.length) {
+          qdrantQuerySkippedReason =
+            qdrantQuery.debug?.metadata.skipped_reason ?? "no_qdrant_candidates";
+        }
+      } catch (error) {
+        qdrantQuerySucceeded = false;
+        qdrantQueryError =
+          error instanceof Error ? error.message : "Unknown Qdrant query error";
+        qdrantQuerySkippedReason = "qdrant_query_failed";
+        semanticVectorInfo = emptyVectorInfo();
+
+        console.warn("Qdrant topic query failed in POST /api/message", error);
+      }
+    }
+
+    timer.step("optional_qdrant_topic_query");
 
     const preliminaryInteractionContext: ImportantRunInputs["current_interaction_context"] = {
       run_kind:
-        typeof body.activeTopicId === "string" && recentTurns.length > 0
+        incomingActiveTopicId && recentTurns.length > 0
           ? "mixed"
           : "initial_question",
       is_response_to_delivered_probe: false,
@@ -1579,8 +1736,7 @@ export async function POST(request: Request) {
 
     const topicResolution = await resolveTopicOutcome({
       existingTopics,
-      activeTopicId:
-        typeof body.activeTopicId === "string" ? body.activeTopicId : null,
+      activeTopicId: incomingActiveTopicId,
       message,
       semanticVectorInfo,
       messageEmbedding,
@@ -1621,7 +1777,7 @@ export async function POST(request: Request) {
       {
         run_kind: inferMessageRouteRunKind({
           recentTurns,
-          hasActiveTopicId: Boolean(body.activeTopicId),
+          hasActiveTopicId: Boolean(incomingActiveTopicId),
           clarifySeeking,
         }),
         is_response_to_delivered_probe: false,
@@ -1873,41 +2029,49 @@ export async function POST(request: Request) {
     if (canSyncTopicToQdrant()) {
       qdrantSyncAttempted = true;
 
-      try {
-        await syncTopicToQdrant({
-          topicId: updatedResolvedTopic.id,
-          topicName: updatedResolvedTopic.name,
-          diagnosis: decision.active_diagnosis,
-          nextStep:
-            probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
-          updatedAt: nowIso(),
-          topicJson,
-          ...getTopicCentroidMetadata(updatedResolvedTopic),
-        });
+      const syncResult = await syncTopicToQdrantBestEffort({
+        topicId: updatedResolvedTopic.id,
+        topicName: updatedResolvedTopic.name,
+        diagnosis: decision.active_diagnosis,
+        nextStep:
+          probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
+        updatedAt: nowIso(),
+        topicJson,
+        ...getTopicCentroidMetadata(updatedResolvedTopic),
+      });
 
-        qdrantSyncSucceeded = true;
-      } catch (error) {
-        qdrantSyncSucceeded = false;
-        qdrantSyncError =
-          error instanceof Error ? error.message : "Unknown Qdrant sync error";
-
-        console.warn(
-          "Topic was saved to Supabase but failed to sync to Qdrant.",
-          error
-        );
-      }
+      qdrantSyncSucceeded = syncResult.ok;
+      qdrantSyncError = syncResult.error;
+      qdrantSyncDurationMs = syncResult.duration_ms;
     } else {
       qdrantSyncSucceeded = null;
+      qdrantSyncError = "missing_qdrant_config";
     }
 
-    timer.step("sync_topic_to_qdrant_if_enabled");
+    timer.step("sync_topic_to_qdrant_best_effort");
 
     const latencyDebug = timer.finish({
       route: "POST /api/message",
       topic_count_loaded: topicCountLoaded,
+
+      incoming_active_topic_id: incomingActiveTopicId,
+      incoming_active_topic_found: incomingActiveTopicFound,
+      incoming_active_topic_name: incomingActiveTopicName,
+      viewport_focused_topic_id: viewportFocusedTopicId,
+      viewport_selected_topic_id: viewportSelectedTopicId,
+      viewport_active_topic_id_for_message: viewportActiveTopicIdForMessage,
+
+      qdrant_query_mode: qdrantQueryMode,
+      qdrant_query_attempted: qdrantQueryAttempted,
+      qdrant_query_succeeded: qdrantQuerySucceeded,
+      qdrant_query_error: qdrantQueryError,
+      qdrant_query_skipped_reason: qdrantQuerySkippedReason,
+
       qdrant_sync_attempted: qdrantSyncAttempted,
       qdrant_sync_succeeded: qdrantSyncSucceeded,
       qdrant_sync_error: qdrantSyncError,
+      qdrant_sync_duration_ms: qdrantSyncDurationMs,
+
       confusion_insight_status: finalModelSignalsStatus,
       topic_labeling_mode: finalTopicLabelingMode,
       resolution_kind: finalResolutionKind,
@@ -1946,9 +2110,25 @@ export async function POST(request: Request) {
     const latencyDebug = timer.finish({
       route: "POST /api/message",
       topic_count_loaded: topicCountLoaded,
+
+      incoming_active_topic_id: incomingActiveTopicId,
+      incoming_active_topic_found: incomingActiveTopicFound,
+      incoming_active_topic_name: incomingActiveTopicName,
+      viewport_focused_topic_id: viewportFocusedTopicId,
+      viewport_selected_topic_id: viewportSelectedTopicId,
+      viewport_active_topic_id_for_message: viewportActiveTopicIdForMessage,
+
+      qdrant_query_mode: qdrantQueryMode,
+      qdrant_query_attempted: qdrantQueryAttempted,
+      qdrant_query_succeeded: qdrantQuerySucceeded,
+      qdrant_query_error: qdrantQueryError,
+      qdrant_query_skipped_reason: qdrantQuerySkippedReason,
+
       qdrant_sync_attempted: qdrantSyncAttempted,
       qdrant_sync_succeeded: qdrantSyncSucceeded,
       qdrant_sync_error: qdrantSyncError,
+      qdrant_sync_duration_ms: qdrantSyncDurationMs,
+
       confusion_insight_status: finalModelSignalsStatus,
       topic_labeling_mode: finalTopicLabelingMode,
       resolution_kind: finalResolutionKind,

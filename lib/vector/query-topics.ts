@@ -36,12 +36,18 @@ type QueryTopicsTimingStep = {
   elapsed_ms: number;
 };
 
+type QueryTopicsRoute =
+  | "embedMessageForSemanticRouting"
+  | "querySemanticTopicCandidatesFromEmbedding"
+  | "querySemanticTopicCandidatesWithEmbedding"
+  | "querySemanticTopicCandidates";
+
 type QueryTopicsTimingDebug = {
   enabled: boolean;
   total_ms: number;
   steps: QueryTopicsTimingStep[];
   metadata: {
-    route: "querySemanticTopicCandidates" | "querySemanticTopicCandidatesWithEmbedding";
+    route: QueryTopicsRoute;
     requested_limit: number;
     returned_points: number;
     returned_topics: number;
@@ -49,7 +55,15 @@ type QueryTopicsTimingDebug = {
     skipped_reason: string | null;
     message_embedding_available: boolean;
     embedding_model: string | null;
+    qdrant_query_attempted: boolean;
+    qdrant_timeout_ms: number;
   };
+};
+
+export type SemanticMessageEmbeddingResult = {
+  messageEmbedding: EmbeddingVector | null;
+  embeddingModel: string | null;
+  debug?: QueryTopicsTimingDebug;
 };
 
 function emptyVectorInfo(): VectorInfo {
@@ -61,16 +75,14 @@ function emptyVectorInfo(): VectorInfo {
 }
 
 function emptySemanticTopicQueryResult(args?: {
-  route?: QueryTopicsTimingDebug["metadata"]["route"];
-  requestedLimit?: number;
-  skippedReason?: string | null;
-  hasQdrant?: boolean;
   debug?: QueryTopicsTimingDebug;
+  messageEmbedding?: EmbeddingVector | null;
+  embeddingModel?: string | null;
 }): SemanticTopicQueryResult {
   return {
     vectorInfo: emptyVectorInfo(),
-    messageEmbedding: null,
-    embeddingModel: null,
+    messageEmbedding: args?.messageEmbedding ?? null,
+    embeddingModel: args?.embeddingModel ?? null,
     candidates: [],
     debug: args?.debug,
   };
@@ -94,7 +106,7 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
   if (!Array.isArray(value)) return null;
 
   const vector = value.filter(
-    (item): item is number => typeof item === "number" && Number.isFinite(item),
+    (item): item is number => typeof item === "number" && Number.isFinite(item)
   );
 
   if (!vector.length) return null;
@@ -128,7 +140,7 @@ function createQueryTopicsTimer() {
   }
 
   function finish(
-    metadata: QueryTopicsTimingDebug["metadata"],
+    metadata: QueryTopicsTimingDebug["metadata"]
   ): QueryTopicsTimingDebug {
     return {
       enabled,
@@ -152,6 +164,26 @@ function logQueryTopicsTiming(debug: QueryTopicsTimingDebug) {
 function normalizeRequestedLimit(limit: number) {
   if (!Number.isFinite(limit)) return 5;
   return Math.max(1, Math.min(10, Math.floor(limit)));
+}
+
+function parsePositiveInteger(value: string | undefined, fallback: number) {
+  if (!value || !value.trim()) return fallback;
+
+  const parsed = Number.parseInt(value.trim(), 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+function getQdrantQueryTimeoutMs() {
+  return parsePositiveInteger(
+    process.env.MYWAY_QDRANT_QUERY_TIMEOUT_MS ??
+      process.env.QDRANT_QUERY_TIMEOUT_MS,
+    1500
+  );
 }
 
 function getEmbeddingModelName() {
@@ -200,44 +232,91 @@ function normalizeQdrantCandidates(points: unknown[]): SemanticTopicCandidate[] 
   return candidates.sort((a, b) => b.similarity - a.similarity);
 }
 
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+function buildDebug(args: {
+  timer: ReturnType<typeof createQueryTopicsTimer>;
+  route: QueryTopicsRoute;
+  requestedLimit: number;
+  returnedPoints: number;
+  returnedTopics: number;
+  hasQdrant: boolean;
+  skippedReason: string | null;
+  messageEmbeddingAvailable: boolean;
+  embeddingModel: string | null;
+  qdrantQueryAttempted: boolean;
+  qdrantTimeoutMs: number;
+}) {
+  const debug = args.timer.finish({
+    route: args.route,
+    requested_limit: args.requestedLimit,
+    returned_points: args.returnedPoints,
+    returned_topics: args.returnedTopics,
+    has_qdrant_config: args.hasQdrant,
+    skipped_reason: args.skippedReason,
+    message_embedding_available: args.messageEmbeddingAvailable,
+    embedding_model: args.embeddingModel,
+    qdrant_query_attempted: args.qdrantQueryAttempted,
+    qdrant_timeout_ms: args.qdrantTimeoutMs,
+  });
+
+  logQueryTopicsTiming(debug);
+  return debug;
+}
+
 /**
- * V3 semantic-centroid query.
+ * New split helper.
  *
- * This is the preferred function for the new router because it returns the
- * message embedding as well as the top-k Qdrant topic candidates. That lets the
- * router update the selected topic centroid without embedding the same message
- * a second time.
+ * This embeds the message once without querying Qdrant. The message route can use
+ * this first, then run local Supabase centroid ranking, and only query Qdrant if
+ * local routing evidence is weak/incomplete.
  */
-export async function querySemanticTopicCandidatesWithEmbedding(
-  message: string,
-  limit = 5,
-): Promise<SemanticTopicQueryResult> {
+export async function embedMessageForSemanticRouting(
+  message: string
+): Promise<SemanticMessageEmbeddingResult> {
   const timer = createQueryTopicsTimer();
-  const requestedLimit = normalizeRequestedLimit(limit);
-  const route = "querySemanticTopicCandidatesWithEmbedding" as const;
+  const route = "embedMessageForSemanticRouting" as const;
+  const qdrantTimeoutMs = getQdrantQueryTimeoutMs();
   const hasConfig = hasQdrantConfig();
 
   if (typeof message !== "string" || !message.trim()) {
-    const debug = timer.finish({
+    const debug = buildDebug({
+      timer,
       route,
-      requested_limit: requestedLimit,
-      returned_points: 0,
-      returned_topics: 0,
-      has_qdrant_config: hasConfig,
-      skipped_reason: "empty_message",
-      message_embedding_available: false,
-      embedding_model: null,
-    });
-
-    logQueryTopicsTiming(debug);
-
-    return emptySemanticTopicQueryResult({
-      route,
-      requestedLimit,
-      skippedReason: "empty_message",
+      requestedLimit: 0,
+      returnedPoints: 0,
+      returnedTopics: 0,
       hasQdrant: hasConfig,
-      debug,
+      skippedReason: "empty_message",
+      messageEmbeddingAvailable: false,
+      embeddingModel: null,
+      qdrantQueryAttempted: false,
+      qdrantTimeoutMs,
     });
+
+    return {
+      messageEmbedding: null,
+      embeddingModel: null,
+      debug,
+    };
   }
 
   timer.step("validate_message");
@@ -249,22 +328,27 @@ export async function querySemanticTopicCandidatesWithEmbedding(
   } catch (error) {
     timer.step("embed_text_failed");
 
-    const debug = timer.finish({
+    const debug = buildDebug({
+      timer,
       route,
-      requested_limit: requestedLimit,
-      returned_points: 0,
-      returned_topics: 0,
-      has_qdrant_config: hasConfig,
-      skipped_reason:
+      requestedLimit: 0,
+      returnedPoints: 0,
+      returnedTopics: 0,
+      hasQdrant: hasConfig,
+      skippedReason:
         error instanceof Error
           ? `embed_text_failed: ${error.message}`
           : "embed_text_failed",
-      message_embedding_available: false,
-      embedding_model: null,
+      messageEmbeddingAvailable: false,
+      embeddingModel: null,
+      qdrantQueryAttempted: false,
+      qdrantTimeoutMs,
     });
 
-    logQueryTopicsTiming(debug);
-    throw error;
+    throw Object.assign(
+      error instanceof Error ? error : new Error("embed_text_failed"),
+      { debug }
+    );
   }
 
   timer.step("embed_text");
@@ -272,68 +356,172 @@ export async function querySemanticTopicCandidatesWithEmbedding(
   const embeddingModel = getEmbeddingModelName();
 
   if (!messageEmbedding.length) {
-    const debug = timer.finish({
+    const debug = buildDebug({
+      timer,
       route,
-      requested_limit: requestedLimit,
-      returned_points: 0,
-      returned_topics: 0,
-      has_qdrant_config: hasConfig,
-      skipped_reason: "empty_embedding",
-      message_embedding_available: false,
-      embedding_model: embeddingModel,
+      requestedLimit: 0,
+      returnedPoints: 0,
+      returnedTopics: 0,
+      hasQdrant: hasConfig,
+      skippedReason: "empty_embedding",
+      messageEmbeddingAvailable: false,
+      embeddingModel,
+      qdrantQueryAttempted: false,
+      qdrantTimeoutMs,
     });
 
-    logQueryTopicsTiming(debug);
-
     return {
-      vectorInfo: emptyVectorInfo(),
       messageEmbedding: null,
       embeddingModel,
-      candidates: [],
       debug,
     };
   }
 
-  if (!hasConfig) {
-    const debug = timer.finish({
+  const debug = buildDebug({
+    timer,
+    route,
+    requestedLimit: 0,
+    returnedPoints: 0,
+    returnedTopics: 0,
+    hasQdrant: hasConfig,
+    skippedReason: null,
+    messageEmbeddingAvailable: true,
+    embeddingModel,
+    qdrantQueryAttempted: false,
+    qdrantTimeoutMs,
+  });
+
+  return {
+    messageEmbedding,
+    embeddingModel,
+    debug,
+  };
+}
+
+/**
+ * New split helper.
+ *
+ * This queries Qdrant using an embedding we already computed. This lets the
+ * message route do:
+ *
+ * 1. embed once
+ * 2. try local Supabase centroid ranking
+ * 3. query Qdrant only if needed
+ */
+export async function querySemanticTopicCandidatesFromEmbedding(
+  messageEmbedding: EmbeddingVector | null,
+  limit = 5,
+  embeddingModel: string | null = getEmbeddingModelName()
+): Promise<SemanticTopicQueryResult> {
+  const timer = createQueryTopicsTimer();
+  const requestedLimit = normalizeRequestedLimit(limit);
+  const route = "querySemanticTopicCandidatesFromEmbedding" as const;
+  const hasConfig = hasQdrantConfig();
+  const qdrantTimeoutMs = getQdrantQueryTimeoutMs();
+
+  if (!messageEmbedding?.length) {
+    const debug = buildDebug({
+      timer,
       route,
-      requested_limit: requestedLimit,
-      returned_points: 0,
-      returned_topics: 0,
-      has_qdrant_config: false,
-      skipped_reason: "missing_qdrant_config",
-      message_embedding_available: true,
-      embedding_model: embeddingModel,
+      requestedLimit,
+      returnedPoints: 0,
+      returnedTopics: 0,
+      hasQdrant: hasConfig,
+      skippedReason: "missing_message_embedding",
+      messageEmbeddingAvailable: false,
+      embeddingModel,
+      qdrantQueryAttempted: false,
+      qdrantTimeoutMs,
     });
 
-    logQueryTopicsTiming(debug);
+    return emptySemanticTopicQueryResult({
+      debug,
+      messageEmbedding: null,
+      embeddingModel,
+    });
+  }
 
-    return {
-      vectorInfo: emptyVectorInfo(),
+  timer.step("validate_message_embedding");
+
+  if (!hasConfig) {
+    const debug = buildDebug({
+      timer,
+      route,
+      requestedLimit,
+      returnedPoints: 0,
+      returnedTopics: 0,
+      hasQdrant: false,
+      skippedReason: "missing_qdrant_config",
+      messageEmbeddingAvailable: true,
+      embeddingModel,
+      qdrantQueryAttempted: false,
+      qdrantTimeoutMs,
+    });
+
+    return emptySemanticTopicQueryResult({
+      debug,
       messageEmbedding,
       embeddingModel,
-      candidates: [],
-      debug,
-    };
+    });
   }
 
   timer.step("check_qdrant_config");
 
-  const qdrant = createQdrantClient();
-  timer.step("create_qdrant_client");
+  let result: Awaited<
+    ReturnType<ReturnType<typeof createQdrantClient>["query"]>
+  >;
 
-  const result = await qdrant.query(TOPIC_COLLECTION, {
-    query: messageEmbedding,
-    limit: requestedLimit,
-    // Keep this payload small. Supabase remains the source of truth, but these
-    // fields help route-level debugging and avoid unnecessary topic_json pulls.
-    with_payload: [
-      "topic_id",
-      "topic_name",
-      "topic_embedding_count",
-      "topic_embedding_model",
-    ],
-  });
+  try {
+    const qdrant = createQdrantClient();
+    timer.step("create_qdrant_client");
+
+    result = await withTimeout(
+      qdrant.query(TOPIC_COLLECTION, {
+        query: messageEmbedding,
+        limit: requestedLimit,
+        // Keep this payload small. Supabase remains the source of truth, but these
+        // fields help route-level debugging and avoid unnecessary topic_json pulls.
+        with_payload: [
+          "topic_id",
+          "topic_name",
+          "topic_embedding_count",
+          "topic_embedding_model",
+        ],
+      }),
+      qdrantTimeoutMs,
+      "Qdrant topic query"
+    );
+  } catch (error) {
+    timer.step("qdrant_query_failed");
+
+    const isTimeout =
+      error instanceof Error &&
+      error.message.toLowerCase().includes("timed out");
+
+    const debug = buildDebug({
+      timer,
+      route,
+      requestedLimit,
+      returnedPoints: 0,
+      returnedTopics: 0,
+      hasQdrant: true,
+      skippedReason: isTimeout
+        ? "qdrant_query_timeout"
+        : error instanceof Error
+          ? `qdrant_query_failed: ${error.message}`
+          : "qdrant_query_failed",
+      messageEmbeddingAvailable: true,
+      embeddingModel,
+      qdrantQueryAttempted: true,
+      qdrantTimeoutMs,
+    });
+
+    return emptySemanticTopicQueryResult({
+      debug,
+      messageEmbedding,
+      embeddingModel,
+    });
+  }
 
   timer.step("qdrant_query");
 
@@ -343,18 +531,19 @@ export async function querySemanticTopicCandidatesWithEmbedding(
 
   timer.step("normalize_results");
 
-  const debug = timer.finish({
+  const debug = buildDebug({
+    timer,
     route,
-    requested_limit: requestedLimit,
-    returned_points: points.length,
-    returned_topics: candidates.length,
-    has_qdrant_config: true,
-    skipped_reason: null,
-    message_embedding_available: true,
-    embedding_model: embeddingModel,
+    requestedLimit,
+    returnedPoints: points.length,
+    returnedTopics: candidates.length,
+    hasQdrant: true,
+    skippedReason: null,
+    messageEmbeddingAvailable: true,
+    embeddingModel,
+    qdrantQueryAttempted: true,
+    qdrantTimeoutMs,
   });
-
-  logQueryTopicsTiming(debug);
 
   return {
     vectorInfo,
@@ -366,15 +555,103 @@ export async function querySemanticTopicCandidatesWithEmbedding(
 }
 
 /**
+ * V3 semantic-centroid query.
+ *
+ * Backward-compatible combined helper.
+ *
+ * This keeps existing route code working while we migrate /api/message to the
+ * faster hybrid flow:
+ *
+ * embed once -> local Supabase centroid ranking -> optional Qdrant query.
+ */
+export async function querySemanticTopicCandidatesWithEmbedding(
+  message: string,
+  limit = 5
+): Promise<SemanticTopicQueryResult> {
+  const route = "querySemanticTopicCandidatesWithEmbedding" as const;
+  const requestedLimit = normalizeRequestedLimit(limit);
+  const hasConfig = hasQdrantConfig();
+  const qdrantTimeoutMs = getQdrantQueryTimeoutMs();
+
+  let embeddingResult: SemanticMessageEmbeddingResult;
+
+  try {
+    embeddingResult = await embedMessageForSemanticRouting(message);
+  } catch (error) {
+    const debug =
+      error && typeof error === "object" && "debug" in error
+        ? (error as { debug?: QueryTopicsTimingDebug }).debug
+        : undefined;
+
+    if (debug) {
+      return emptySemanticTopicQueryResult({
+        debug: {
+          ...debug,
+          metadata: {
+            ...debug.metadata,
+            route,
+            requested_limit: requestedLimit,
+            has_qdrant_config: hasConfig,
+            qdrant_timeout_ms: qdrantTimeoutMs,
+          },
+        },
+      });
+    }
+
+    throw error;
+  }
+
+  if (!embeddingResult.messageEmbedding?.length) {
+    return emptySemanticTopicQueryResult({
+      debug: embeddingResult.debug
+        ? {
+            ...embeddingResult.debug,
+            metadata: {
+              ...embeddingResult.debug.metadata,
+              route,
+              requested_limit: requestedLimit,
+              has_qdrant_config: hasConfig,
+              qdrant_timeout_ms: qdrantTimeoutMs,
+            },
+          }
+        : undefined,
+      messageEmbedding: null,
+      embeddingModel: embeddingResult.embeddingModel,
+    });
+  }
+
+  const qdrantResult = await querySemanticTopicCandidatesFromEmbedding(
+    embeddingResult.messageEmbedding,
+    requestedLimit,
+    embeddingResult.embeddingModel
+  );
+
+  return {
+    ...qdrantResult,
+    debug: qdrantResult.debug
+      ? {
+          ...qdrantResult.debug,
+          metadata: {
+            ...qdrantResult.debug.metadata,
+            route,
+          },
+        }
+      : qdrantResult.debug,
+  };
+}
+
+/**
  * Backward-compatible wrapper.
  *
  * Existing code can keep calling this while the message route is migrated.
- * New semantic-centroid routing should call querySemanticTopicCandidatesWithEmbedding
- * instead, so the message embedding can be reused for centroid updates.
+ * New semantic-centroid routing should prefer:
+ *
+ * embedMessageForSemanticRouting
+ * querySemanticTopicCandidatesFromEmbedding
  */
 export async function querySemanticTopicCandidates(
   message: string,
-  limit = 5,
+  limit = 5
 ): Promise<VectorInfo> {
   const result = await querySemanticTopicCandidatesWithEmbedding(message, limit);
   return result.vectorInfo;

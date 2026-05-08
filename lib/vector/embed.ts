@@ -27,10 +27,14 @@ type EmbedTimingDebug = {
     vector_size: number | null;
     service_timing: EmbeddingServiceTiming | null;
     skipped_reason: string | null;
+    timeout_ms: number;
+    base_url_present: boolean;
   };
 };
 
 const EMBED_TEXT_CACHE_LIMIT = 200;
+const DEFAULT_EMBEDDING_TIMEOUT_MS = 8000;
+
 const embedTextCache = new Map<string, number[]>();
 
 function roundMs(value: number) {
@@ -144,11 +148,73 @@ function validateVectors(vectors: unknown): number[][] {
   });
 }
 
+function parsePositiveInteger(value: string | undefined, fallback: number) {
+  if (!value || !value.trim()) return fallback;
+
+  const parsed = Number.parseInt(value.trim(), 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+function getEmbeddingTimeoutMs() {
+  return parsePositiveInteger(
+    process.env.MYWAY_EMBEDDING_TIMEOUT_MS ?? process.env.EMBEDDING_TIMEOUT_MS,
+    DEFAULT_EMBEDDING_TIMEOUT_MS
+  );
+}
+
+function normalizeBaseUrl(baseUrl: string) {
+  return baseUrl.trim().replace(/\/+$/g, "");
+}
+
+function isAbortError(error: unknown) {
+  return (
+    error instanceof DOMException && error.name === "AbortError"
+  ) || (
+    error instanceof Error && error.name === "AbortError"
+  );
+}
+
+async function fetchEmbeddingService(args: {
+  baseUrl: string;
+  normalizedTexts: string[];
+  timeoutMs: number;
+}): Promise<Response> {
+  const { baseUrl, normalizedTexts, timeoutMs } = args;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(`${normalizeBaseUrl(baseUrl)}/embed`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ texts: normalizedTexts }),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw new Error(`Embedding service timed out after ${timeoutMs}ms`);
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export async function embedTexts(texts: string[]): Promise<number[][]> {
   const timer = createEmbedTimer();
   const baseUrl = process.env.EMBEDDINGS_URL;
+  const timeoutMs = getEmbeddingTimeoutMs();
 
-  if (!baseUrl) {
+  if (!baseUrl || !baseUrl.trim()) {
     const debug = timer.finish({
       route: "embedTexts",
       text_count: Array.isArray(texts) ? texts.length : 0,
@@ -156,7 +222,10 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
       vector_size: null,
       service_timing: null,
       skipped_reason: "missing_embeddings_url",
+      timeout_ms: timeoutMs,
+      base_url_present: false,
     });
+
     logEmbedTiming(debug);
     throw new Error("Missing EMBEDDINGS_URL");
   }
@@ -171,6 +240,7 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
 
     if (cachedVector) {
       timer.step("cache_hit");
+
       const debug = timer.finish({
         route: "embedTexts",
         text_count: 1,
@@ -178,7 +248,10 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
         vector_size: cachedVector.length,
         service_timing: null,
         skipped_reason: "cache_hit",
+        timeout_ms: timeoutMs,
+        base_url_present: true,
       });
+
       logEmbedTiming(debug);
       return [cachedVector];
     }
@@ -186,19 +259,49 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
 
   timer.step("cache_check");
 
-  const res = await fetch(`${baseUrl}/embed`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ texts: normalizedTexts }),
-    cache: "no-store",
-  });
+  let res: Response;
+
+  try {
+    res = await fetchEmbeddingService({
+      baseUrl,
+      normalizedTexts,
+      timeoutMs,
+    });
+  } catch (error) {
+    timer.step("fetch_embedding_service_failed");
+
+    const isTimeout =
+      error instanceof Error &&
+      error.message.toLowerCase().includes("timed out");
+
+    const debug = timer.finish({
+      route: "embedTexts",
+      text_count: normalizedTexts.length,
+      vector_count: 0,
+      vector_size: null,
+      service_timing: null,
+      skipped_reason: isTimeout
+        ? "embedding_service_timeout"
+        : "embedding_service_fetch_error",
+      timeout_ms: timeoutMs,
+      base_url_present: true,
+    });
+
+    logEmbedTiming(debug);
+
+    if (error instanceof Error) {
+      throw error;
+    }
+
+    throw new Error("Embedding service request failed");
+  }
+
   timer.step("fetch_embedding_service");
 
   if (!res.ok) {
     const text = await res.text();
     timer.step("read_error_response");
+
     const debug = timer.finish({
       route: "embedTexts",
       text_count: normalizedTexts.length,
@@ -206,7 +309,10 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
       vector_size: null,
       service_timing: null,
       skipped_reason: `embedding_service_failed_${res.status}`,
+      timeout_ms: timeoutMs,
+      base_url_present: true,
     });
+
     logEmbedTiming(debug);
     throw new Error(`Embedding service failed: ${res.status} ${text}`);
   }
@@ -223,6 +329,7 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
       if (vector) setCachedTextVector(text, vector);
     });
   }
+
   timer.step("cache_vectors");
 
   const debug = timer.finish({
@@ -232,7 +339,10 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
     vector_size: vectors[0]?.length ?? null,
     service_timing: data.timing ?? null,
     skipped_reason: null,
+    timeout_ms: timeoutMs,
+    base_url_present: true,
   });
+
   logEmbedTiming(debug);
 
   return vectors;

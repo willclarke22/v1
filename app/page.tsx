@@ -113,6 +113,13 @@ function resolveArrivalMode(data: MessageRouteResponse): SceneArrivalMode {
   return data.scene_update?.arrival_mode === "warp" ? "warp" : "focus";
 }
 
+function resolveActiveTopicIdForMessage(args: {
+  selectedTopicId: string | null;
+  focusedTopicId: string | null;
+}) {
+  return args.selectedTopicId ?? args.focusedTopicId ?? null;
+}
+
 export default function Home() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
@@ -299,6 +306,11 @@ export default function Home() {
       shellPanels.setIsLeftPanelOpen(true);
       shellPanels.setLeftPanelTab("myway");
 
+      const activeTopicIdForMessage = resolveActiveTopicIdForMessage({
+        selectedTopicId,
+        focusedTopicId,
+      });
+
       const response = await fetch("/api/message", {
         method: "POST",
         headers: {
@@ -307,9 +319,11 @@ export default function Home() {
         body: JSON.stringify({
           messageText: message,
           message,
-          activeTopicId: focusedTopicId ?? selectedTopicId,
+          activeTopicId: activeTopicIdForMessage,
           viewportContext: {
             focusedTopicId,
+            selectedTopicId,
+            activeTopicIdForMessage,
           },
         }),
       });
@@ -346,12 +360,7 @@ export default function Home() {
 
       if (resolvedTopicId) {
         setSelectedTopicId(resolvedTopicId);
-
-        if (arrivalMode === "warp") {
-          focusTopic(resolvedTopicId);
-        } else {
-          focusTopic(resolvedTopicId);
-        }
+        focusTopic(resolvedTopicId);
       } else if (nextTopics?.length) {
         setSelectedTopicId(nextTopics[0].id);
       }
