@@ -58,6 +58,11 @@ import {
   isNarrowerThanExistingBroadTopic,
   isStructurallyStrongTopicLabel,
 } from "@/lib/runtime/topic-labeling/topic-label-contract";
+import {
+  buildTopicLabelerV3Request,
+  callTopicLabelerV3,
+  type TopicLabelerV3ClientResult,
+} from "@/lib/runtime/topic-labeling/model-topic-labeler-v3";
 
 type RawLearningSpaceTopic = {
   topic_id?: string;
@@ -210,6 +215,15 @@ type MessageRouteLatencyDebug = {
     message_embedding_available: boolean | null;
     embedding_model: string | null;
     centroid_update_method: string | null;
+
+    topic_labeler_v3_compare_enabled: boolean;
+    topic_labeler_v3_attempted: boolean;
+    topic_labeler_v3_succeeded: boolean | null;
+    topic_labeler_v3_error: string | null;
+    topic_labeler_v3_latency_ms: number | null;
+    topic_labeler_v3_route_decision: string | null;
+    topic_labeler_v3_extracted_label: string | null;
+    topic_labeler_v3_matched_topic_name: string | null;
   };
 };
 
@@ -321,6 +335,63 @@ function getTopicRoutingQdrantQueryMode(): TopicRoutingQdrantQueryMode {
    * and topic-routing-policy.ts.
    */
   return "off";
+}
+
+function getTopicLabelerV3CompareEnabled() {
+  const raw =
+    process.env.TOPIC_LABELER_MODE?.trim().toLowerCase() ??
+    process.env.MYWAY_TOPIC_LABELER_MODE?.trim().toLowerCase() ??
+    "";
+
+  return raw === "compare" || raw === "model_v3_compare";
+}
+
+function buildRecentUserMessagesForTopicLabelerV3(
+  recentTurns: Array<{ role: "user" | "assistant"; text: string }>
+) {
+  return recentTurns
+    .filter((turn) => turn.role === "user")
+    .map((turn) => turn.text.trim())
+    .filter(Boolean)
+    .slice(-5);
+}
+
+function getTopicLabelerV3CompareSummary(
+  result: TopicLabelerV3ClientResult | null
+) {
+  if (!result) {
+    return {
+      attempted: false,
+      succeeded: null,
+      error: null,
+      latency_ms: null,
+      route_decision: null,
+      extracted_label: null,
+      matched_topic_name: null,
+    };
+  }
+
+  if (!result.ok) {
+    return {
+      attempted: true,
+      succeeded: false,
+      error: result.error,
+      latency_ms: result.latency_ms,
+      route_decision: null,
+      extracted_label: null,
+      matched_topic_name: null,
+    };
+  }
+
+  return {
+    attempted: true,
+    succeeded: true,
+    error: null,
+    latency_ms: result.latency_ms,
+    route_decision: result.response.route.route_decision,
+    extracted_label: result.response.model_prediction.extracted_label,
+    matched_topic_name: result.response.route.matched_topic_name,
+  };
 }
 
 function normalizeRecentTurns(body: MessageRouteBody) {
@@ -1614,6 +1685,9 @@ export async function POST(request: Request) {
   let finalEmbeddingModel: string | null = null;
   let finalCentroidUpdateMethod: string | null = null;
 
+  const topicLabelerV3CompareEnabled = getTopicLabelerV3CompareEnabled();
+  let topicLabelerV3CompareResult: TopicLabelerV3ClientResult | null = null;
+
   try {
     const body = (await request.json()) as MessageRouteBody;
     timer.step("parse_request_json");
@@ -1670,6 +1744,30 @@ export async function POST(request: Request) {
     incomingActiveTopicName = activeTopicFromRequest?.name ?? null;
 
     timer.step("load_route_topics_from_supabase");
+
+    if (topicLabelerV3CompareEnabled) {
+      const topicLabelerV3Request = buildTopicLabelerV3Request({
+        message,
+        activeTopicName: incomingActiveTopicName,
+        currentTopicNames: existingTopics.map((topic) => topic.name),
+        previousUserMessages: buildRecentUserMessagesForTopicLabelerV3(
+          recentTurns
+        ),
+      });
+
+      topicLabelerV3CompareResult = await callTopicLabelerV3(
+        topicLabelerV3Request,
+        { timeoutMs: 15_000 }
+      );
+
+      console.info("[topic-labeler-v3 compare: model result]", {
+        request: topicLabelerV3Request,
+        result: topicLabelerV3CompareResult,
+        note: "Compare mode only. Current deterministic route remains authoritative.",
+      });
+    }
+
+    timer.step("topic_labeler_v3_compare");
 
     let semanticVectorInfo: VectorInfo = emptyVectorInfo();
     let messageEmbedding: EmbeddingVector | null = null;
@@ -1764,6 +1862,21 @@ export async function POST(request: Request) {
     finalTopicLabelingMode = topicResolutionDebug.topic_labeling_mode;
     finalResolutionKind = resolutionKind;
     finalUsedLLMFallback = usedLLMFallback;
+
+    if (topicLabelerV3CompareEnabled) {
+      console.info("[topic-labeler-v3 compare: deterministic vs model]", {
+        deterministic_authoritative_result: {
+          resolution_kind: resolutionKind,
+          resolved_label: resolvedLabel,
+          target_topic_id: topic.id,
+          target_topic_name: topic.name,
+          created_topic_name: createdTopic?.name ?? null,
+          match_confidence: matchConfidence,
+          used_llm_topic_fallback: usedLLMFallback,
+        },
+        model_v3_compare_result: topicLabelerV3CompareResult,
+      });
+    }
 
     const targetTopicId = topic.id;
     const resolvedMessageFrame = getResolvedMessageFrame(resolutionTrace);
@@ -1965,6 +2078,7 @@ export async function POST(request: Request) {
         topic_resolution_trace: resolutionTrace,
         semantic_vector_info: normalizedVectorInfo,
         topic_routing: topicRouting,
+        topic_labeler_v3_compare: topicLabelerV3CompareResult,
         centroid_update_plan: finalCentroidUpdatePlan,
         topic_embedding_centroid: updatedResolvedTopic.topic_embedding_centroid ?? null,
         topic_embedding_count: updatedResolvedTopic.topic_embedding_count ?? 0,
@@ -2079,6 +2193,25 @@ export async function POST(request: Request) {
       message_embedding_available: Boolean(messageEmbedding?.length),
       embedding_model: embeddingModel,
       centroid_update_method: finalCentroidUpdatePlan?.update_method ?? null,
+
+      topic_labeler_v3_compare_enabled: topicLabelerV3CompareEnabled,
+      topic_labeler_v3_attempted:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult).attempted,
+      topic_labeler_v3_succeeded:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult).succeeded,
+      topic_labeler_v3_error:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult).error,
+      topic_labeler_v3_latency_ms:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult).latency_ms,
+      topic_labeler_v3_route_decision:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult)
+          .route_decision,
+      topic_labeler_v3_extracted_label:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult)
+          .extracted_label,
+      topic_labeler_v3_matched_topic_name:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult)
+          .matched_topic_name,
     });
 
     console.info("[POST /api/message timing]", latencyDebug);
@@ -2087,6 +2220,7 @@ export async function POST(request: Request) {
       topic_resolution_debug: TopicResolutionDebug;
       topic_resolution_trace: TopicResolutionTrace | null;
       topic_routing: TopicRoutingState | null;
+      topic_labeler_v3_compare: TopicLabelerV3ClientResult | null;
       latency_debug: MessageRouteLatencyDebug;
     } = {
       result,
@@ -2102,6 +2236,7 @@ export async function POST(request: Request) {
       topic_resolution_debug: topicResolutionDebug,
       topic_resolution_trace: resolutionTrace,
       topic_routing: topicRouting,
+      topic_labeler_v3_compare: topicLabelerV3CompareResult,
       latency_debug: latencyDebug,
     };
 
@@ -2136,6 +2271,25 @@ export async function POST(request: Request) {
       message_embedding_available: finalMessageEmbeddingAvailable,
       embedding_model: finalEmbeddingModel,
       centroid_update_method: finalCentroidUpdateMethod,
+
+      topic_labeler_v3_compare_enabled: topicLabelerV3CompareEnabled,
+      topic_labeler_v3_attempted:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult).attempted,
+      topic_labeler_v3_succeeded:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult).succeeded,
+      topic_labeler_v3_error:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult).error,
+      topic_labeler_v3_latency_ms:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult).latency_ms,
+      topic_labeler_v3_route_decision:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult)
+          .route_decision,
+      topic_labeler_v3_extracted_label:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult)
+          .extracted_label,
+      topic_labeler_v3_matched_topic_name:
+        getTopicLabelerV3CompareSummary(topicLabelerV3CompareResult)
+          .matched_topic_name,
     });
 
     console.error("POST /api/message failed", error);
