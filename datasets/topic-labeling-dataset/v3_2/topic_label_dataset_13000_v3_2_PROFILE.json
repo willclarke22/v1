@@ -1,0 +1,50 @@
+{
+  "dataset_name": "topic_label_dataset_13000_v3_2",
+  "created_from": "topic_label_dataset_12000_v3_1",
+  "purpose": "Taxonomy-correction and early-activity augmentation for MyWay topic reference classifier.",
+  "total_rows": 13000,
+  "base_rows_preserved": 12000,
+  "new_rows_added": 1000,
+  "base_distribution": {
+    "explicit_topic_reference": 6000,
+    "no_topic": 1800,
+    "active_topic_reference": 3000,
+    "unclear_topic": 1200
+  },
+  "added_distribution": {
+    "explicit_topic_reference": 450,
+    "active_topic_reference": 350,
+    "no_topic": 180,
+    "unclear_topic": 20
+  },
+  "final_distribution": {
+    "explicit_topic_reference": 6450,
+    "no_topic": 1980,
+    "active_topic_reference": 3350,
+    "unclear_topic": 1220
+  },
+  "added_scenario_counts": {
+    "cold_start_concrete_explicit_topic": 220,
+    "one_topic_explicit_shift": 80,
+    "few_or_many_topic_explicit_shift": 80,
+    "return_to_existing_explicit_topic": 70,
+    "active_deictic_or_simplify_followup": 350,
+    "no_active_no_concrete_topic_even_with_prior_topic_list": 33,
+    "cold_start_no_concrete_topic": 147,
+    "true_ambiguous_between_named_topics": 20
+  },
+  "taxonomy_guidance": {
+    "explicit_topic_reference": "Use when the message names or clearly points at a concrete learnable concept/topic, including cold start with no current topics.",
+    "active_topic_reference": "Use when the message refers back to the active topic using deictic/vague wording such as it/that/this/easier/another example.",
+    "no_topic": "Use when there is no usable topic and no active-topic reference, especially cold-start vague stuck messages.",
+    "unclear_topic": "Use rarely, only when the message contains multiple possible named targets or a prior-topic reference that cannot be resolved safely."
+  },
+  "cold_start_rule": "If active_topic_name is null and current_topic_names is empty: concrete concept present => explicit_topic_reference; no concrete concept => no_topic; multiple ambiguous named concepts => unclear_topic rarely.",
+  "added_empty_context_rows": 367,
+  "notes": [
+    "Original 12,000 V3.1 rows are preserved unchanged in this package.",
+    "The 1,000 V3.2 additions intentionally make unclear_topic rare in new data.",
+    "The additions include direct regression examples for engines, derivatives, trigonometry, and wave-particle messages.",
+    "All added rows are marked needs_human_review=True for auditability."
+  ]
+}

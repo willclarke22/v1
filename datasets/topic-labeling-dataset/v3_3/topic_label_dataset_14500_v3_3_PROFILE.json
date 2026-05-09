@@ -1,0 +1,57 @@
+{
+  "dataset_name": "topic_label_dataset_14500_v3_3",
+  "base_dataset": "topic_label_dataset_13000_v3_2",
+  "base_rows_preserved": 13000,
+  "new_rows_added": 1503,
+  "total_rows": 14503,
+  "label_counts": {
+    "explicit_topic_reference": 7101,
+    "no_topic": 2030,
+    "active_topic_reference": 4052,
+    "unclear_topic": 1320
+  },
+  "addition_label_counts": {
+    "active_topic_reference": 702,
+    "explicit_topic_reference": 651,
+    "unclear_topic": 100,
+    "no_topic": 50
+  },
+  "addition_scenario_counts": {
+    "active_deictic_followup": 702,
+    "followup_opener_explicit_shift": 651,
+    "true_named_ambiguity": 100,
+    "cold_start_no_concrete_topic": 50
+  },
+  "source_counts": {
+    "v3_2_base_preserved": 13000,
+    "v3_3_discourse_boundary_addition": 1503
+  },
+  "taxonomy_notes": [
+    "explicit_topic_reference: concrete named or nameable topic target, including topic shifts after follow-up-looking openers.",
+    "active_topic_reference: deictic/vague follow-up to active topic using this/that/it/easier/look-like/example/etc.",
+    "no_topic: no active topic and no concrete target concept.",
+    "unclear_topic: rare; true ambiguity between multiple possible named targets."
+  ],
+  "regression_targets": [
+    {
+      "message": "Can you explain that easier?",
+      "expected": "active_topic_reference"
+    },
+    {
+      "message": "What would that look like?",
+      "expected": "active_topic_reference"
+    },
+    {
+      "message": "This helped, but now I want to understand reinforcement learning.",
+      "expected": "explicit_topic_reference"
+    },
+    {
+      "message": "I am confused about engines.",
+      "expected": "explicit_topic_reference"
+    },
+    {
+      "message": "Where would someone even start with derivatives?",
+      "expected": "explicit_topic_reference"
+    }
+  ]
+}
