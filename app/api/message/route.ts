@@ -67,6 +67,14 @@ import {
   buildModelTopicRoutePolicyDecision,
   type ModelTopicRoutePolicyDecision,
 } from "@/lib/runtime/topic-labeling-model/topic-labeler-policy";
+import {
+  buildModelFirstTopicResolutionOutcome,
+  buildModelRouteContinuationPolicy,
+  isModelPolicySafePositiveDecision,
+  type ModelFirstTopicResolutionOutcome,
+  type ModelRouteContinuationPolicy,
+  type SemanticEnrichmentStatus,
+} from "@/lib/runtime/topic-labeling-model/model-topic-resolution";
 
 type RawLearningSpaceTopic = {
   topic_id?: string;
@@ -239,6 +247,20 @@ type MessageRouteLatencyDebug = {
     model_topic_policy_reasons: string[] | null;
     model_topic_policy_used_as_authority: boolean | null;
     topic_authority_source: string | null;
+
+    model_route_continuation_policy_kind: string | null;
+    model_route_learner_message_intent: string | null;
+    model_route_should_create_learning_topic: boolean | null;
+    model_route_should_update_learning_space: boolean | null;
+    model_route_should_treat_as_learning_evidence: boolean | null;
+    model_route_should_myway_choose_target: boolean | null;
+    model_route_should_ask_user_to_choose: boolean | null;
+
+    semantic_enrichment_status: string | null;
+    needs_embedding_centroid: boolean | null;
+    embedding_skip_reason: string | null;
+    layout_status: string | null;
+    should_schedule_enrichment: boolean | null;
   };
 };
 
@@ -407,6 +429,13 @@ function getTopicLabelerV3CompareSummary(
     extracted_label: result.response.model_prediction.extracted_label,
     matched_topic_name: result.response.route.matched_topic_name,
   };
+}
+
+
+function shouldSkipMessageEmbeddingForModelPolicy(
+  decision: ModelTopicRoutePolicyDecision | null
+) {
+  return isModelPolicySafePositiveDecision(decision);
 }
 
 function normalizeRecentTurns(body: MessageRouteBody) {
@@ -1286,43 +1315,109 @@ function buildResolvedOutcome(args: {
 }
 
 
-type SafeAuthoritativeModelTopicRoutePolicyDecision =
-  ModelTopicRoutePolicyDecision & {
-    usable: true;
-    decision_kind: "create_new" | "switch_existing" | "stay_active";
-  };
 
-function isModelPolicySafeAuthoritativeDecision(
-  decision: ModelTopicRoutePolicyDecision | null
-): decision is SafeAuthoritativeModelTopicRoutePolicyDecision {
-  if (!decision?.usable) return false;
+function adaptModelFirstTopicResolutionOutcome(
+  outcome: ModelFirstTopicResolutionOutcome
+): TopicResolutionOutcome {
+  return buildResolvedOutcome({
+    topic: outcome.topic,
+    createdTopic: outcome.createdTopic,
+    routeTopics: outcome.routeTopics,
+    resolutionKind: outcome.resolutionKind,
+    vectorInfo: outcome.vectorInfo,
+    resolvedLabel: outcome.resolvedLabel,
+    matchConfidence: outcome.matchConfidence,
+    usedLLMFallback: false,
+    resolutionTrace: outcome.resolutionTrace,
+    semanticTopicRouting: outcome.semanticTopicRouting,
+    centroidUpdatePlan: outcome.centroidUpdatePlan,
+    topicLabelingMode: "model_v3_3_primary",
+    llmFallbackAllowedByMode: false,
+    llmFallbackRecommendedByPolicy: false,
+    llmFallbackAttempted: false,
+    deterministicTrustedWithoutLLM: false,
+    deterministicCreateBlockedAsSuspicious: false,
+    structurallyStrongResolvedLabel: false,
+    narrowerThanActiveBroadTopic: false,
+  });
+}
+
+
+function shouldUseModelContinuationPolicyInsteadOfDeterministic(
+  policy: ModelRouteContinuationPolicy | null
+) {
+  if (!policy) return false;
 
   return (
-    decision.decision_kind === "create_new" ||
-    decision.decision_kind === "switch_existing" ||
-    decision.decision_kind === "stay_active"
+    policy.kind === "invite_word_vomit" ||
+    policy.kind === "choose_best_learning_target" ||
+    policy.kind === "stay_active_after_model_failure" ||
+    policy.kind === "ask_lightweight_retry" ||
+    policy.kind === "no_learning_space_change"
   );
 }
 
-function buildModelAuthoritativeTopicResolutionOutcome(args: {
+function buildRouteTopicForContinuationOnly(args: {
   existingTopics: RouteTopic[];
+  fallbackLabel: string;
+}): RouteTopic {
+  return buildRouteTopicFromResolvedLabel({
+    existingTopics: args.existingTopics,
+    resolvedLabel: args.fallbackLabel,
+  });
+}
+
+function buildContinuationPolicyTopicResolutionOutcome(args: {
+  existingTopics: RouteTopic[];
+  activeTopic: RouteTopic | null;
+  modelRouteContinuationPolicy: ModelRouteContinuationPolicy;
   modelPolicyDecision: ModelTopicRoutePolicyDecision | null;
   semanticVectorInfo: VectorInfo;
-}): TopicResolutionOutcome | null {
-  const { existingTopics, modelPolicyDecision, semanticVectorInfo } = args;
+}): TopicResolutionOutcome {
+  const {
+    existingTopics,
+    activeTopic,
+    modelRouteContinuationPolicy,
+    modelPolicyDecision,
+    semanticVectorInfo,
+  } = args;
 
-  if (!isModelPolicySafeAuthoritativeDecision(modelPolicyDecision)) {
-    return null;
-  }
+  const chosenTarget = modelRouteContinuationPolicy.chosen_target?.trim() || null;
 
-  if (modelPolicyDecision.decision_kind === "create_new") {
-    const resolvedLabel = modelPolicyDecision.extracted_label;
+  if (
+    modelRouteContinuationPolicy.kind === "choose_best_learning_target" &&
+    chosenTarget
+  ) {
+    const looseChosen = normalizeTextLoose(chosenTarget);
+    const existingMatch =
+      existingTopics.find(
+        (topic) => normalizeTextLoose(topic.name) === looseChosen
+      ) ?? null;
 
-    if (!resolvedLabel) return null;
+    if (existingMatch) {
+      return buildResolvedOutcome({
+        topic: existingMatch,
+        createdTopic: null,
+        routeTopics: existingTopics,
+        resolutionKind:
+          activeTopic?.id === existingMatch.id
+            ? "fallback_active_topic"
+            : "matched_existing",
+        vectorInfo: semanticVectorInfo,
+        resolvedLabel: existingMatch.name,
+        matchConfidence: 0.62,
+        usedLLMFallback: false,
+        resolutionTrace: null,
+        topicLabelingMode: "model_v3_3_primary",
+        llmFallbackAllowedByMode: false,
+        llmFallbackRecommendedByPolicy: false,
+        llmFallbackAttempted: false,
+      });
+    }
 
     const createdTopic = buildRouteTopicFromResolvedLabel({
       existingTopics,
-      resolvedLabel,
+      resolvedLabel: chosenTarget,
     });
 
     return buildResolvedOutcome({
@@ -1331,80 +1426,105 @@ function buildModelAuthoritativeTopicResolutionOutcome(args: {
       routeTopics: [...existingTopics, createdTopic],
       resolutionKind: "created_new_candidate",
       vectorInfo: semanticVectorInfo,
-      resolvedLabel,
-      matchConfidence: 0.86,
+      resolvedLabel: chosenTarget,
+      matchConfidence: 0.62,
       usedLLMFallback: false,
       resolutionTrace: null,
-      semanticTopicRouting: null,
-      centroidUpdatePlan: null,
       topicLabelingMode: "model_v3_3_primary",
       llmFallbackAllowedByMode: false,
       llmFallbackRecommendedByPolicy: false,
       llmFallbackAttempted: false,
-      deterministicTrustedWithoutLLM: false,
-      deterministicCreateBlockedAsSuspicious: false,
-      structurallyStrongResolvedLabel: false,
-      narrowerThanActiveBroadTopic: false,
     });
   }
 
-  if (modelPolicyDecision.decision_kind === "switch_existing") {
-    const targetTopic = modelPolicyDecision.target_topic;
-
-    if (!targetTopic) return null;
-
+  if (activeTopic) {
     return buildResolvedOutcome({
-      topic: targetTopic,
-      createdTopic: null,
-      routeTopics: existingTopics,
-      resolutionKind: "matched_existing",
-      vectorInfo: semanticVectorInfo,
-      resolvedLabel: modelPolicyDecision.extracted_label ?? targetTopic.name,
-      matchConfidence: 0.84,
-      usedLLMFallback: false,
-      resolutionTrace: null,
-      semanticTopicRouting: null,
-      centroidUpdatePlan: null,
-      topicLabelingMode: "model_v3_3_primary",
-      llmFallbackAllowedByMode: false,
-      llmFallbackRecommendedByPolicy: false,
-      llmFallbackAttempted: false,
-      deterministicTrustedWithoutLLM: false,
-      deterministicCreateBlockedAsSuspicious: false,
-      structurallyStrongResolvedLabel: false,
-      narrowerThanActiveBroadTopic: false,
-    });
-  }
-
-  if (modelPolicyDecision.decision_kind === "stay_active") {
-    const targetTopic = modelPolicyDecision.target_topic;
-
-    if (!targetTopic) return null;
-
-    return buildResolvedOutcome({
-      topic: targetTopic,
+      topic: activeTopic,
       createdTopic: null,
       routeTopics: existingTopics,
       resolutionKind: "fallback_active_topic",
       vectorInfo: semanticVectorInfo,
-      resolvedLabel: targetTopic.name,
-      matchConfidence: 0.82,
+      resolvedLabel: activeTopic.name,
+      matchConfidence:
+        modelRouteContinuationPolicy.kind === "stay_active_after_model_failure"
+          ? 0.3
+          : 0.22,
       usedLLMFallback: false,
       resolutionTrace: null,
-      semanticTopicRouting: null,
-      centroidUpdatePlan: null,
       topicLabelingMode: "model_v3_3_primary",
       llmFallbackAllowedByMode: false,
       llmFallbackRecommendedByPolicy: false,
       llmFallbackAttempted: false,
-      deterministicTrustedWithoutLLM: false,
-      deterministicCreateBlockedAsSuspicious: false,
-      structurallyStrongResolvedLabel: false,
-      narrowerThanActiveBroadTopic: false,
     });
   }
 
-  return null;
+  const fallbackTopic = buildRouteTopicForContinuationOnly({
+    existingTopics,
+    fallbackLabel:
+      modelRouteContinuationPolicy.kind === "invite_word_vomit"
+        ? "Orientation"
+        : "Unresolved Topic Intent",
+  });
+
+  return buildResolvedOutcome({
+    topic: fallbackTopic,
+    createdTopic: null,
+    routeTopics: existingTopics,
+    resolutionKind: "no_match",
+    vectorInfo: semanticVectorInfo,
+    resolvedLabel: null,
+    matchConfidence: 0,
+    usedLLMFallback: false,
+    resolutionTrace: null,
+    topicLabelingMode: "model_v3_3_primary",
+    llmFallbackAllowedByMode: false,
+    llmFallbackRecommendedByPolicy: false,
+    llmFallbackAttempted: false,
+  });
+}
+
+function shouldPersistLearningSpaceForContinuation(
+  policy: ModelRouteContinuationPolicy | null
+) {
+  return policy?.should_update_learning_space !== false;
+}
+
+function shouldOverrideLearnerMessageWithContinuationPolicy(
+  policy: ModelRouteContinuationPolicy | null
+) {
+  if (!policy?.suggested_learner_message) return false;
+
+  return (
+    policy.kind === "invite_word_vomit" ||
+    policy.kind === "choose_best_learning_target" ||
+    policy.kind === "stay_active_after_model_failure" ||
+    policy.kind === "ask_lightweight_retry"
+  );
+}
+
+
+function buildSemanticEnrichmentStatusForContinuationPolicy(args: {
+  policy: ModelRouteContinuationPolicy;
+  modelPolicyDecision: ModelTopicRoutePolicyDecision | null;
+}): SemanticEnrichmentStatus {
+  const { policy, modelPolicyDecision } = args;
+  const isModelFailure =
+    !modelPolicyDecision ||
+    modelPolicyDecision.decision_kind === "unusable_model_result";
+
+  return {
+    status: isModelFailure ? "blocked_model_failure" : "not_needed",
+    needs_embedding_centroid: false,
+    centroid_source: null,
+    embedding_skip_reason: isModelFailure
+      ? "model_failure_or_timeout"
+      : "not_a_real_learning_topic",
+    layout_status: policy.should_update_learning_space
+      ? "temporary_position"
+      : "no_learning_space_change",
+    should_schedule_enrichment: false,
+    enrichment_prompt_text: null,
+  };
 }
 
 function buildConservativeFallbackOutcome(args: {
@@ -1827,6 +1947,8 @@ export async function POST(request: Request) {
   let modelTopicRoutePolicyDecision: ModelTopicRoutePolicyDecision | null = null;
   let modelTopicPolicyUsedAsAuthority = false;
   let topicAuthoritySource: string | null = null;
+  let modelRouteContinuationPolicy: ModelRouteContinuationPolicy | null = null;
+  let semanticEnrichmentStatus: SemanticEnrichmentStatus | null = null;
 
   try {
     const body = (await request.json()) as MessageRouteBody;
@@ -1915,6 +2037,11 @@ export async function POST(request: Request) {
       existingTopics,
     });
 
+    modelRouteContinuationPolicy = buildModelRouteContinuationPolicy({
+      activeTopic: activeTopicFromRequest,
+      modelPolicyDecision: modelTopicRoutePolicyDecision,
+    });
+
     console.info("[topic-labeler-v3 policy decision]", {
       usable: modelTopicRoutePolicyDecision.usable,
       decision_kind: modelTopicRoutePolicyDecision.decision_kind,
@@ -1922,7 +2049,8 @@ export async function POST(request: Request) {
       matched_topic_name: modelTopicRoutePolicyDecision.matched_topic_name,
       matched_topic_id: modelTopicRoutePolicyDecision.matched_topic_id,
       reasons: modelTopicRoutePolicyDecision.reasons,
-      note: "Policy may be authoritative for create_new, switch_existing, or stay_active. Clarify/no-topic still falls back.",
+      continuation_policy: modelRouteContinuationPolicy,
+      note: "Policy may be authoritative for create_new, switch_existing, or stay_active. Clarify/no-topic now has an explicit continuation policy.",
     });
 
     timer.step("model_topic_policy_decision");
@@ -1931,18 +2059,34 @@ export async function POST(request: Request) {
     let messageEmbedding: EmbeddingVector | null = null;
     let embeddingModel: string | null = null;
 
-    try {
-      const embeddingResult = await embedMessageForSemanticRouting(message);
-      messageEmbedding = embeddingResult.messageEmbedding;
-      embeddingModel = embeddingResult.embeddingModel;
-      finalMessageEmbeddingAvailable = Boolean(messageEmbedding?.length);
-      finalEmbeddingModel = embeddingModel;
-    } catch (error) {
-      console.warn("Message embedding failed in POST /api/message", error);
+    const skipMessageEmbeddingForModelPolicy =
+      shouldSkipMessageEmbeddingForModelPolicy(modelTopicRoutePolicyDecision);
+
+    if (skipMessageEmbeddingForModelPolicy) {
       messageEmbedding = null;
       embeddingModel = null;
       finalMessageEmbeddingAvailable = false;
       finalEmbeddingModel = null;
+
+      console.info("[message embedding skipped]", {
+        reason: "model_policy_safe_authoritative_decision",
+        decision_kind: modelTopicRoutePolicyDecision?.decision_kind ?? null,
+        extracted_label: modelTopicRoutePolicyDecision?.extracted_label ?? null,
+      });
+    } else {
+      try {
+        const embeddingResult = await embedMessageForSemanticRouting(message);
+        messageEmbedding = embeddingResult.messageEmbedding;
+        embeddingModel = embeddingResult.embeddingModel;
+        finalMessageEmbeddingAvailable = Boolean(messageEmbedding?.length);
+        finalEmbeddingModel = embeddingModel;
+      } catch (error) {
+        console.warn("Message embedding failed in POST /api/message", error);
+        messageEmbedding = null;
+        embeddingModel = null;
+        finalMessageEmbeddingAvailable = false;
+        finalEmbeddingModel = null;
+      }
     }
 
     timer.step("embed_message_for_semantic_routing");
@@ -1990,19 +2134,57 @@ export async function POST(request: Request) {
       prior_mode_outcome_available: recentTurns.length > 0,
     };
 
-    const modelAuthoritativeTopicResolution =
-      buildModelAuthoritativeTopicResolutionOutcome({
-        existingTopics,
-        modelPolicyDecision: modelTopicRoutePolicyDecision,
-        semanticVectorInfo,
-      });
+    const modelFirstTopicResolution = buildModelFirstTopicResolutionOutcome({
+      existingTopics,
+      activeTopic: activeTopicFromRequest,
+      modelPolicyDecision: modelTopicRoutePolicyDecision,
+      semanticVectorInfo,
+      messageEmbedding,
+      embeddingModel,
+      initialMessage: message,
+      embeddingSkippedForFastRoute: skipMessageEmbeddingForModelPolicy,
+    });
+
+    const modelAuthoritativeTopicResolution = modelFirstTopicResolution
+      ? adaptModelFirstTopicResolutionOutcome(modelFirstTopicResolution)
+      : null;
+
+    if (modelFirstTopicResolution) {
+      modelRouteContinuationPolicy =
+        modelFirstTopicResolution.modelRouteContinuationPolicy;
+      semanticEnrichmentStatus = modelFirstTopicResolution.semanticEnrichmentStatus;
+    }
 
     let topicResolution: TopicResolutionOutcome;
+
+    const shouldUseContinuationPolicyInsteadOfDeterministic =
+      !modelAuthoritativeTopicResolution &&
+      shouldUseModelContinuationPolicyInsteadOfDeterministic(
+        modelRouteContinuationPolicy
+      );
 
     if (modelAuthoritativeTopicResolution) {
       topicResolution = modelAuthoritativeTopicResolution;
       modelTopicPolicyUsedAsAuthority = true;
       topicAuthoritySource = "model_v3_3_policy";
+    } else if (
+      shouldUseContinuationPolicyInsteadOfDeterministic &&
+      modelRouteContinuationPolicy
+    ) {
+      topicResolution = buildContinuationPolicyTopicResolutionOutcome({
+        existingTopics,
+        activeTopic: activeTopicFromRequest,
+        modelRouteContinuationPolicy,
+        modelPolicyDecision: modelTopicRoutePolicyDecision,
+        semanticVectorInfo,
+      });
+      semanticEnrichmentStatus =
+        buildSemanticEnrichmentStatusForContinuationPolicy({
+          policy: modelRouteContinuationPolicy,
+          modelPolicyDecision: modelTopicRoutePolicyDecision,
+        });
+      modelTopicPolicyUsedAsAuthority = false;
+      topicAuthoritySource = "model_v3_3_continuation_policy";
     } else {
       topicResolution = await resolveTopicOutcome({
         existingTopics,
@@ -2050,6 +2232,8 @@ export async function POST(request: Request) {
           created_topic_name: createdTopic?.name ?? null,
           match_confidence: matchConfidence,
           used_llm_topic_fallback: usedLLMFallback,
+          model_route_continuation_policy: modelRouteContinuationPolicy,
+          semantic_enrichment_status: semanticEnrichmentStatus,
         },
         model_v3_compare_result: topicLabelerV3CompareResult,
       });
@@ -2189,11 +2373,28 @@ export async function POST(request: Request) {
           )
         : buildNotApplicableProbePlan(updatedResolvedTopic);
 
-    const deliveredResponse = buildDeliveredResponse(
+    let deliveredResponse = buildDeliveredResponse(
       updatedResolvedTopic,
       decision,
       probePlan
     );
+
+    if (
+      shouldOverrideLearnerMessageWithContinuationPolicy(
+        modelRouteContinuationPolicy
+      ) &&
+      modelRouteContinuationPolicy?.suggested_learner_message
+    ) {
+      deliveredResponse = {
+        ...deliveredResponse,
+        learner_message: {
+          text: modelRouteContinuationPolicy.suggested_learner_message,
+          tone: "encouraging",
+          mode: "clarify",
+        },
+        delivered_probe: null,
+      };
+    }
 
     const previousModeOutcome = buildPreviousModeOutcome(
       currentInteractionContext.run_kind
@@ -2262,6 +2463,17 @@ export async function POST(request: Request) {
         model_topic_route_policy_decision: modelTopicRoutePolicyDecision,
         model_topic_policy_used_as_authority: modelTopicPolicyUsedAsAuthority,
         topic_authority_source: topicAuthoritySource,
+        model_route_continuation_policy: modelRouteContinuationPolicy,
+        semantic_enrichment_status: semanticEnrichmentStatus,
+        needs_embedding_centroid:
+          semanticEnrichmentStatus?.needs_embedding_centroid ?? false,
+        embedding_skip_reason:
+          semanticEnrichmentStatus?.embedding_skip_reason ?? null,
+        layout_status: semanticEnrichmentStatus?.layout_status ?? null,
+        should_schedule_enrichment:
+          semanticEnrichmentStatus?.should_schedule_enrichment ?? false,
+        semantic_enrichment_prompt_text:
+          semanticEnrichmentStatus?.enrichment_prompt_text ?? null,
         centroid_update_plan: finalCentroidUpdatePlan,
         topic_embedding_centroid: updatedResolvedTopic.topic_embedding_centroid ?? null,
         topic_embedding_count: updatedResolvedTopic.topic_embedding_count ?? 0,
@@ -2290,6 +2502,10 @@ export async function POST(request: Request) {
 
     timer.step("serialize_result_topic_json_and_scene_update");
 
+    const shouldPersistLearningSpace = shouldPersistLearningSpaceForContinuation(
+      modelRouteContinuationPolicy
+    );
+
     await insertRun({
       id: runId,
       runType: "message",
@@ -2305,25 +2521,36 @@ export async function POST(request: Request) {
 
     timer.step("insert_run_supabase");
 
-    await upsertTopicState({
-      topicId: updatedResolvedTopic.id,
-      lastRunId: runId,
-      topicName: updatedResolvedTopic.name,
-      confusion: updatedTopicMetrics.confusion ?? null,
-      insight: updatedTopicMetrics.insight ?? null,
-      learningScore:
-        updatedTopics.find((t) => t.id === updatedResolvedTopic.id)?.learningScore ??
-        null,
-      diagnosis: decision.active_diagnosis,
-      nextStep:
-        probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
-      topicJson,
-      ...getTopicCentroidMetadata(updatedResolvedTopic),
-    });
+    if (shouldPersistLearningSpace) {
+      await upsertTopicState({
+        topicId: updatedResolvedTopic.id,
+        lastRunId: runId,
+        topicName: updatedResolvedTopic.name,
+        confusion: updatedTopicMetrics.confusion ?? null,
+        insight: updatedTopicMetrics.insight ?? null,
+        learningScore:
+          updatedTopics.find((t) => t.id === updatedResolvedTopic.id)?.learningScore ??
+          null,
+        diagnosis: decision.active_diagnosis,
+        nextStep:
+          probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
+        topicJson,
+        ...getTopicCentroidMetadata(updatedResolvedTopic),
+      });
+    } else {
+      console.info("[topic_state persistence skipped]", {
+        reason: "model_route_continuation_policy_no_learning_space_update",
+        continuation_policy_kind: modelRouteContinuationPolicy?.kind ?? null,
+        learner_message_intent:
+          modelRouteContinuationPolicy?.learner_message_intent ?? null,
+        target_topic_id: updatedResolvedTopic.id,
+        target_topic_name: updatedResolvedTopic.name,
+      });
+    }
 
     timer.step("upsert_topic_state_supabase");
 
-    if (canSyncTopicToQdrant()) {
+    if (shouldPersistLearningSpace && canSyncTopicToQdrant()) {
       qdrantSyncAttempted = true;
 
       const syncResult = await syncTopicToQdrantBestEffort({
@@ -2342,7 +2569,9 @@ export async function POST(request: Request) {
       qdrantSyncDurationMs = syncResult.duration_ms;
     } else {
       qdrantSyncSucceeded = null;
-      qdrantSyncError = "missing_qdrant_config";
+      qdrantSyncError = shouldPersistLearningSpace
+        ? "missing_qdrant_config"
+        : "skipped_no_learning_space_update";
     }
 
     timer.step("sync_topic_to_qdrant_best_effort");
@@ -2407,6 +2636,30 @@ export async function POST(request: Request) {
         modelTopicRoutePolicyDecision?.reasons ?? null,
       model_topic_policy_used_as_authority: modelTopicPolicyUsedAsAuthority,
       topic_authority_source: topicAuthoritySource,
+
+      model_route_continuation_policy_kind:
+        modelRouteContinuationPolicy?.kind ?? null,
+      model_route_learner_message_intent:
+        modelRouteContinuationPolicy?.learner_message_intent ?? null,
+      model_route_should_create_learning_topic:
+        modelRouteContinuationPolicy?.should_create_learning_topic ?? null,
+      model_route_should_update_learning_space:
+        modelRouteContinuationPolicy?.should_update_learning_space ?? null,
+      model_route_should_treat_as_learning_evidence:
+        modelRouteContinuationPolicy?.should_treat_as_learning_evidence ?? null,
+      model_route_should_myway_choose_target:
+        modelRouteContinuationPolicy?.should_myway_choose_target ?? null,
+      model_route_should_ask_user_to_choose:
+        modelRouteContinuationPolicy?.should_ask_user_to_choose ?? null,
+
+      semantic_enrichment_status: semanticEnrichmentStatus?.status ?? null,
+      needs_embedding_centroid:
+        semanticEnrichmentStatus?.needs_embedding_centroid ?? null,
+      embedding_skip_reason:
+        semanticEnrichmentStatus?.embedding_skip_reason ?? null,
+      layout_status: semanticEnrichmentStatus?.layout_status ?? null,
+      should_schedule_enrichment:
+        semanticEnrichmentStatus?.should_schedule_enrichment ?? null,
     });
 
     console.info("[POST /api/message timing]", latencyDebug);
@@ -2419,6 +2672,8 @@ export async function POST(request: Request) {
       model_topic_route_policy_decision: ModelTopicRoutePolicyDecision | null;
       model_topic_policy_used_as_authority: boolean;
       topic_authority_source: string | null;
+      model_route_continuation_policy: ModelRouteContinuationPolicy | null;
+      semantic_enrichment_status: SemanticEnrichmentStatus | null;
       latency_debug: MessageRouteLatencyDebug;
     } = {
       result,
@@ -2438,6 +2693,8 @@ export async function POST(request: Request) {
       model_topic_route_policy_decision: modelTopicRoutePolicyDecision,
       model_topic_policy_used_as_authority: modelTopicPolicyUsedAsAuthority,
       topic_authority_source: topicAuthoritySource,
+      model_route_continuation_policy: modelRouteContinuationPolicy,
+      semantic_enrichment_status: semanticEnrichmentStatus,
       latency_debug: latencyDebug,
     };
 
@@ -2503,6 +2760,30 @@ export async function POST(request: Request) {
         modelTopicRoutePolicyDecision?.reasons ?? null,
       model_topic_policy_used_as_authority: modelTopicPolicyUsedAsAuthority,
       topic_authority_source: topicAuthoritySource,
+
+      model_route_continuation_policy_kind:
+        modelRouteContinuationPolicy?.kind ?? null,
+      model_route_learner_message_intent:
+        modelRouteContinuationPolicy?.learner_message_intent ?? null,
+      model_route_should_create_learning_topic:
+        modelRouteContinuationPolicy?.should_create_learning_topic ?? null,
+      model_route_should_update_learning_space:
+        modelRouteContinuationPolicy?.should_update_learning_space ?? null,
+      model_route_should_treat_as_learning_evidence:
+        modelRouteContinuationPolicy?.should_treat_as_learning_evidence ?? null,
+      model_route_should_myway_choose_target:
+        modelRouteContinuationPolicy?.should_myway_choose_target ?? null,
+      model_route_should_ask_user_to_choose:
+        modelRouteContinuationPolicy?.should_ask_user_to_choose ?? null,
+
+      semantic_enrichment_status: semanticEnrichmentStatus?.status ?? null,
+      needs_embedding_centroid:
+        semanticEnrichmentStatus?.needs_embedding_centroid ?? null,
+      embedding_skip_reason:
+        semanticEnrichmentStatus?.embedding_skip_reason ?? null,
+      layout_status: semanticEnrichmentStatus?.layout_status ?? null,
+      should_schedule_enrichment:
+        semanticEnrichmentStatus?.should_schedule_enrichment ?? null,
     });
 
     console.error("POST /api/message failed", error);
