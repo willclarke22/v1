@@ -19,7 +19,7 @@ type IdleStateUpdateBody = Partial<{
   last_message_finished_at: unknown;
 }>;
 
-const IDLE_ENOUGH_AFTER_MESSAGE_MS = 3_000;
+const IDLE_ENOUGH_AFTER_MESSAGE_MS = 2_000;
 const IDLE_STATE_STALE_AFTER_MS = 60_000;
 
 const state: IdleState = {
