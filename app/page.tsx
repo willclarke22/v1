@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Sidebar, { type SidebarTab } from "@/components/layout/sidebar";
 import BottomComposer from "@/components/layout/bottom-composer";
 import TopicPanel from "@/components/layout/topic-panel";
@@ -26,8 +26,44 @@ type TopicBootstrapResponse = {
 
 type SceneArrivalMode = "warp" | "focus";
 
+type LocalDevIdleStateUpdate = {
+  composerHasText?: boolean;
+  messageInFlight?: boolean;
+  enrichmentInFlight?: boolean;
+  lastActivityAt?: string;
+  lastMessageStartedAt?: string;
+  lastMessageFinishedAt?: string;
+};
+
 function clamp(value: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
+}
+
+async function updateLocalDevIdleState(input: LocalDevIdleStateUpdate) {
+  if (process.env.NODE_ENV !== "development") return;
+
+  try {
+    await fetch("/api/local-dev/idle-state", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+      body: JSON.stringify({
+        composer_has_text: input.composerHasText,
+        message_in_flight: input.messageInFlight,
+        enrichment_in_flight: input.enrichmentInFlight,
+        last_activity_at: input.lastActivityAt,
+        last_message_started_at: input.lastMessageStartedAt,
+        last_message_finished_at: input.lastMessageFinishedAt,
+      }),
+    });
+  } catch {
+    /**
+     * Local dev idle-state reporting must never break the UI.
+     * The enrichment worker can simply treat missing/stale idle state as unsafe.
+     */
+  }
 }
 
 function deriveTopicsFromMessageResponse(
@@ -150,6 +186,16 @@ export default function Home() {
 
   const shellPanels = useShellPanels(focusedTopicId);
 
+  const handleComposerTextStateChange = useCallback(
+    (input: { composerHasText: boolean; lastActivityAt: string }) => {
+      void updateLocalDevIdleState({
+        composerHasText: input.composerHasText,
+        lastActivityAt: input.lastActivityAt,
+      });
+    },
+    []
+  );
+
   function focusTopic(topicId: string | null) {
     setFocusedTopicId(topicId);
 
@@ -237,6 +283,13 @@ export default function Home() {
       }
     }
 
+    void updateLocalDevIdleState({
+      composerHasText: false,
+      messageInFlight: false,
+      enrichmentInFlight: false,
+      lastActivityAt: new Date().toISOString(),
+    });
+
     bootstrapTopics();
 
     return () => {
@@ -301,6 +354,15 @@ export default function Home() {
   ]);
 
   async function handleSendMessage(message: string) {
+    const messageStartedAt = new Date().toISOString();
+
+    void updateLocalDevIdleState({
+      composerHasText: false,
+      messageInFlight: true,
+      lastActivityAt: messageStartedAt,
+      lastMessageStartedAt: messageStartedAt,
+    });
+
     try {
       probeFlow.startMessageFlow();
       shellPanels.setIsLeftPanelOpen(true);
@@ -371,6 +433,15 @@ export default function Home() {
       probeFlow.finishMessageFlowError();
       shellPanels.setIsLeftPanelOpen(true);
       shellPanels.setLeftPanelTab("myway");
+    } finally {
+      const messageFinishedAt = new Date().toISOString();
+
+      void updateLocalDevIdleState({
+        composerHasText: false,
+        messageInFlight: false,
+        lastActivityAt: messageFinishedAt,
+        lastMessageFinishedAt: messageFinishedAt,
+      });
     }
   }
 
@@ -487,6 +558,7 @@ export default function Home() {
               <BottomComposer
                 onSendMessage={handleSendMessage}
                 isSending={probeFlow.isSending || isBootstrappingTopics}
+                onComposerTextStateChange={handleComposerTextStateChange}
               />
             </div>
           </div>

@@ -1,6 +1,7 @@
 import re
 from difflib import SequenceMatcher
 from pathlib import Path
+from time import perf_counter
 from typing import Any, Literal
 
 import joblib
@@ -126,11 +127,27 @@ class RouteResult(BaseModel):
     reason: str
 
 
+class TopicLabelTiming(BaseModel):
+    total_ms: float
+    load_models_ms: float
+    format_classifier_input_ms: float
+    classifier_predict_ms: float
+    format_generator_input_ms: float
+    tokenizer_ms: float
+    generator_ms: float
+    decode_ms: float
+    route_matching_ms: float
+    response_build_ms: float
+    used_label_generator: bool
+    device: str
+
+
 class TopicLabelResponse(BaseModel):
     ok: bool
     model_version: str
     model_prediction: ModelPrediction
     route: RouteResult
+    timing: TopicLabelTiming | None = None
 
 
 app = FastAPI(title="MyWay Topic Labeler V3", version="0.1.0")
@@ -139,6 +156,48 @@ _reference_type_classifier = None
 _tokenizer = None
 _label_generator = None
 _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def now_ms() -> float:
+    return perf_counter() * 1000
+
+
+def round_ms(value: float) -> float:
+    return round(value, 2)
+
+
+class TimingRecorder:
+    def __init__(self) -> None:
+        self.started_at = now_ms()
+        self.load_models_ms = 0.0
+        self.format_classifier_input_ms = 0.0
+        self.classifier_predict_ms = 0.0
+        self.format_generator_input_ms = 0.0
+        self.tokenizer_ms = 0.0
+        self.generator_ms = 0.0
+        self.decode_ms = 0.0
+        self.route_matching_ms = 0.0
+        self.response_build_ms = 0.0
+        self.used_label_generator = False
+
+    def total_ms(self) -> float:
+        return now_ms() - self.started_at
+
+    def to_model(self) -> TopicLabelTiming:
+        return TopicLabelTiming(
+            total_ms=round_ms(self.total_ms()),
+            load_models_ms=round_ms(self.load_models_ms),
+            format_classifier_input_ms=round_ms(self.format_classifier_input_ms),
+            classifier_predict_ms=round_ms(self.classifier_predict_ms),
+            format_generator_input_ms=round_ms(self.format_generator_input_ms),
+            tokenizer_ms=round_ms(self.tokenizer_ms),
+            generator_ms=round_ms(self.generator_ms),
+            decode_ms=round_ms(self.decode_ms),
+            route_matching_ms=round_ms(self.route_matching_ms),
+            response_build_ms=round_ms(self.response_build_ms),
+            used_label_generator=self.used_label_generator,
+            device=str(_device),
+        )
 
 
 def normalize_text(text: str | None) -> str:
@@ -274,21 +333,41 @@ def startup_event() -> None:
     load_models()
 
 
-def predict_topic_reference_and_label(data: TopicLabelRequest) -> ModelPrediction:
+def predict_topic_reference_and_label(
+    data: TopicLabelRequest,
+    timing: TimingRecorder | None = None,
+) -> ModelPrediction:
+    load_start = now_ms()
     load_models()
+    if timing:
+        timing.load_models_ms += now_ms() - load_start
 
     assert _reference_type_classifier is not None
     assert _tokenizer is not None
     assert _label_generator is not None
 
+    format_classifier_start = now_ms()
     classifier_input = format_for_reference_type_classifier(data)
+    if timing:
+        timing.format_classifier_input_ms += now_ms() - format_classifier_start
+
+    classifier_start = now_ms()
     topic_reference_type = _reference_type_classifier.predict([classifier_input])[0]
+    if timing:
+        timing.classifier_predict_ms += now_ms() - classifier_start
 
     extracted_label: str | None = None
 
     if topic_reference_type == "explicit_topic_reference":
-        generator_input = format_for_label_generator(data)
+        if timing:
+            timing.used_label_generator = True
 
+        format_generator_start = now_ms()
+        generator_input = format_for_label_generator(data)
+        if timing:
+            timing.format_generator_input_ms += now_ms() - format_generator_start
+
+        tokenizer_start = now_ms()
         encoded = _tokenizer(
             generator_input,
             return_tensors="pt",
@@ -297,7 +376,10 @@ def predict_topic_reference_and_label(data: TopicLabelRequest) -> ModelPredictio
         )
 
         encoded = {key: value.to(_device) for key, value in encoded.items()}
+        if timing:
+            timing.tokenizer_ms += now_ms() - tokenizer_start
 
+        generator_start = now_ms()
         with torch.no_grad():
             generated = _label_generator.generate(
                 **encoded,
@@ -305,11 +387,16 @@ def predict_topic_reference_and_label(data: TopicLabelRequest) -> ModelPredictio
                 num_beams=4,
                 early_stopping=True,
             )
+        if timing:
+            timing.generator_ms += now_ms() - generator_start
 
+        decode_start = now_ms()
         extracted_label = _tokenizer.decode(
             generated[0],
             skip_special_tokens=True,
         ).strip()
+        if timing:
+            timing.decode_ms += now_ms() - decode_start
 
         if not extracted_label:
             extracted_label = None
@@ -507,12 +594,42 @@ def health() -> dict[str, Any]:
 
 @app.post("/label-topic", response_model=TopicLabelResponse)
 def label_topic(request: TopicLabelRequest) -> TopicLabelResponse:
-    prediction = predict_topic_reference_and_label(request)
-    route = route_topic(request, prediction)
+    timing = TimingRecorder()
 
-    return TopicLabelResponse(
+    prediction = predict_topic_reference_and_label(request, timing=timing)
+
+    route_start = now_ms()
+    route = route_topic(request, prediction)
+    timing.route_matching_ms += now_ms() - route_start
+
+    response_start = now_ms()
+    response = TopicLabelResponse(
         ok=True,
         model_version="topic_labeler_v3_reference_classifier_plus_message_only_t5",
         model_prediction=prediction,
         route=route,
+        timing=timing.to_model(),
     )
+    timing.response_build_ms += now_ms() - response_start
+
+    # Rebuild once after measuring response build time so the timing object
+    # includes response_build_ms.
+    response.timing = timing.to_model()
+
+    print(
+        "[topic_labeler_v3 timing]",
+        {
+            "total_ms": response.timing.total_ms if response.timing else None,
+            "classifier_predict_ms": response.timing.classifier_predict_ms if response.timing else None,
+            "generator_ms": response.timing.generator_ms if response.timing else None,
+            "route_matching_ms": response.timing.route_matching_ms if response.timing else None,
+            "used_label_generator": response.timing.used_label_generator if response.timing else None,
+            "device": response.timing.device if response.timing else None,
+            "topic_reference_type": prediction.topic_reference_type,
+            "extracted_label": prediction.extracted_label,
+            "route_decision": route.route_decision,
+        },
+        flush=True,
+    )
+
+    return response

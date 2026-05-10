@@ -1,20 +1,41 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useState } from "react";
 
 type BottomComposerProps = {
   onSendMessage: (message: string) => Promise<void> | void;
   isSending?: boolean;
+  onComposerTextStateChange?: (input: {
+    composerHasText: boolean;
+    lastActivityAt: string;
+  }) => void;
 };
 
 export default function BottomComposer({
   onSendMessage,
   isSending = false,
+  onComposerTextStateChange,
 }: BottomComposerProps) {
   const [message, setMessage] = useState("");
 
   const trimmedMessage = message.trim();
   const canSend = trimmedMessage.length > 0 && !isSending;
+
+  useEffect(() => {
+    onComposerTextStateChange?.({
+      composerHasText: trimmedMessage.length > 0,
+      lastActivityAt: new Date().toISOString(),
+    });
+  }, [trimmedMessage.length, onComposerTextStateChange]);
+
+  function updateMessage(nextMessage: string) {
+    setMessage(nextMessage);
+
+    onComposerTextStateChange?.({
+      composerHasText: nextMessage.trim().length > 0,
+      lastActivityAt: new Date().toISOString(),
+    });
+  }
 
   async function handleSubmit(e?: FormEvent) {
     e?.preventDefault();
@@ -22,13 +43,33 @@ export default function BottomComposer({
     if (!canSend) return;
 
     const messageToSend = trimmedMessage;
+
+    /**
+     * Clear immediately so idle-state sees an empty composer while the message
+     * is in flight. The parent page separately reports message_in_flight=true.
+     */
     setMessage("");
+
+    onComposerTextStateChange?.({
+      composerHasText: false,
+      lastActivityAt: new Date().toISOString(),
+    });
 
     try {
       await onSendMessage(messageToSend);
     } catch (error) {
       console.error("Failed to send message:", error);
+
+      /**
+       * Restore the message if sending fails, and report that the composer is
+       * non-empty again so enrichment workers can abort/avoid running.
+       */
       setMessage(messageToSend);
+
+      onComposerTextStateChange?.({
+        composerHasText: true,
+        lastActivityAt: new Date().toISOString(),
+      });
     }
   }
 
@@ -51,7 +92,7 @@ export default function BottomComposer({
             id="message"
             rows={3}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => updateMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask MyWay something..."
             disabled={isSending}
