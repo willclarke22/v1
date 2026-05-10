@@ -168,6 +168,22 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
   return vector;
 }
 
+function topicHasEmbeddingCentroid(topic: RouteTopic | null): boolean {
+  return Boolean(asEmbeddingVector(topic?.topic_embedding_centroid ?? null));
+}
+
+function buildCentroidEnrichmentPrompt(args: {
+  topicName: string;
+  initialMessage?: string | null;
+}) {
+  const { topicName, initialMessage } = args;
+
+  return initialMessage
+    ? `Topic: ${topicName}
+Learner context: ${initialMessage}`
+    : `Topic: ${topicName}`;
+}
+
 function buildCreatedTopicCentroidPlan(args: {
   createdTopic: RouteTopic | null;
   messageEmbedding: EmbeddingVector | null;
@@ -322,6 +338,7 @@ function buildNoLearningSpaceChangePolicy(args: {
 
 function buildSemanticEnrichmentStatus(args: {
   createdTopic: RouteTopic | null;
+  targetTopic?: RouteTopic | null;
   centroidUpdatePlan: ModelFirstRouteCentroidUpdatePlan | null;
   messageEmbedding: EmbeddingVector | null;
   embeddingSkippedForFastRoute: boolean;
@@ -331,6 +348,7 @@ function buildSemanticEnrichmentStatus(args: {
 }): SemanticEnrichmentStatus {
   const {
     createdTopic,
+    targetTopic,
     centroidUpdatePlan,
     messageEmbedding,
     embeddingSkippedForFastRoute,
@@ -351,17 +369,10 @@ function buildSemanticEnrichmentStatus(args: {
     };
   }
 
-  if (!createdTopic) {
-    return {
-      status: "not_needed",
-      needs_embedding_centroid: false,
-      centroid_source: null,
-      embedding_skip_reason: null,
-      layout_status: "semantic_position_ready",
-      should_schedule_enrichment: false,
-      enrichment_prompt_text: null,
-    };
-  }
+  const topicForSemanticCheck = createdTopic ?? targetTopic ?? null;
+  const topicName =
+    resolvedLabel ?? createdTopic?.name ?? targetTopic?.name ?? null;
+  const hasExistingCentroid = topicHasEmbeddingCentroid(topicForSemanticCheck);
 
   if (centroidUpdatePlan?.new_centroid && messageEmbedding?.length) {
     return {
@@ -375,10 +386,29 @@ function buildSemanticEnrichmentStatus(args: {
     };
   }
 
-  const topicName = resolvedLabel ?? createdTopic.name;
-  const enrichmentPromptText = initialMessage
-    ? `Topic: ${topicName}\nLearner context: ${initialMessage}`
-    : `Topic: ${topicName}`;
+  if (!topicForSemanticCheck || !topicName) {
+    return {
+      status: "not_needed",
+      needs_embedding_centroid: false,
+      centroid_source: null,
+      embedding_skip_reason: null,
+      layout_status: "no_learning_space_change",
+      should_schedule_enrichment: false,
+      enrichment_prompt_text: null,
+    };
+  }
+
+  if (hasExistingCentroid) {
+    return {
+      status: "centroid_ready",
+      needs_embedding_centroid: false,
+      centroid_source: "message_embedding",
+      embedding_skip_reason: null,
+      layout_status: "semantic_position_ready",
+      should_schedule_enrichment: false,
+      enrichment_prompt_text: null,
+    };
+  }
 
   return {
     status: embeddingSkippedForFastRoute
@@ -391,7 +421,10 @@ function buildSemanticEnrichmentStatus(args: {
       : null,
     layout_status: "temporary_position",
     should_schedule_enrichment: true,
-    enrichment_prompt_text: enrichmentPromptText,
+    enrichment_prompt_text: buildCentroidEnrichmentPrompt({
+      topicName,
+      initialMessage: initialMessage ?? null,
+    }),
   };
 }
 
@@ -594,6 +627,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
 
     const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
       createdTopic: null,
+      targetTopic: activeTopic,
       centroidUpdatePlan: null,
       messageEmbedding: messageEmbedding ?? null,
       embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
@@ -632,6 +666,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
 
     const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
       createdTopic: null,
+      targetTopic: matchedTopic,
       centroidUpdatePlan: null,
       messageEmbedding: messageEmbedding ?? null,
       embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
@@ -676,6 +711,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
 
       const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
         createdTopic: null,
+        targetTopic: existingMatch,
         centroidUpdatePlan: null,
         messageEmbedding: messageEmbedding ?? null,
         embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
@@ -721,6 +757,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
 
     const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
       createdTopic,
+      targetTopic: createdTopic,
       centroidUpdatePlan,
       messageEmbedding: messageEmbedding ?? null,
       embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
@@ -772,6 +809,7 @@ export function buildModelFirstConservativeFallbackOutcome(args: {
   if (activeTopic) {
     const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
       createdTopic: null,
+      targetTopic: activeTopic,
       centroidUpdatePlan: null,
       messageEmbedding: null,
       embeddingSkippedForFastRoute: false,

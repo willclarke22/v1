@@ -374,6 +374,16 @@ function getTopicRoutingQdrantQueryMode(): TopicRoutingQdrantQueryMode {
   return "off";
 }
 
+function shouldSyncQdrantOnMessageRoute() {
+  const raw = process.env.MYWAY_QDRANT_SYNC_ON_MESSAGE?.trim().toLowerCase();
+
+  if (raw === "off" || raw === "false" || raw === "0" || raw === "no") {
+    return false;
+  }
+
+  return true;
+}
+
 function getTopicLabelerV3CompareEnabled() {
   const raw =
     process.env.TOPIC_LABELER_MODE?.trim().toLowerCase() ??
@@ -2550,7 +2560,13 @@ export async function POST(request: Request) {
 
     timer.step("upsert_topic_state_supabase");
 
-    if (shouldPersistLearningSpace && canSyncTopicToQdrant()) {
+    const syncQdrantOnMessageRoute = shouldSyncQdrantOnMessageRoute();
+
+    if (
+      shouldPersistLearningSpace &&
+      syncQdrantOnMessageRoute &&
+      canSyncTopicToQdrant()
+    ) {
       qdrantSyncAttempted = true;
 
       const syncResult = await syncTopicToQdrantBestEffort({
@@ -2569,9 +2585,22 @@ export async function POST(request: Request) {
       qdrantSyncDurationMs = syncResult.duration_ms;
     } else {
       qdrantSyncSucceeded = null;
-      qdrantSyncError = shouldPersistLearningSpace
-        ? "missing_qdrant_config"
-        : "skipped_no_learning_space_update";
+      qdrantSyncDurationMs = null;
+
+      if (!shouldPersistLearningSpace) {
+        qdrantSyncError = "skipped_no_learning_space_update";
+      } else if (!syncQdrantOnMessageRoute) {
+        qdrantSyncError = "qdrant_sync_on_message_route_disabled";
+
+        console.info("[qdrant sync skipped on message route]", {
+          reason: qdrantSyncError,
+          topic_id: updatedResolvedTopic.id,
+          topic_name: updatedResolvedTopic.name,
+          note: "Semantic enrichment runner remains responsible for centroid/Qdrant sync.",
+        });
+      } else {
+        qdrantSyncError = "missing_qdrant_config";
+      }
     }
 
     timer.step("sync_topic_to_qdrant_best_effort");
