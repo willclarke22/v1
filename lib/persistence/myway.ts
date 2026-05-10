@@ -9,7 +9,10 @@ type JsonValue =
   | { [key: string]: JsonValue }
   | JsonValue[];
 
-function isPlainObject(value: JsonValue): value is { [key: string]: JsonValue } {
+type JsonObject = { [key: string]: JsonValue };
+type TopicPosition = [number, number, number];
+
+function isPlainObject(value: unknown): value is JsonObject {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
@@ -24,6 +27,84 @@ function asJsonEmbeddingVector(value: EmbeddingVector | null | undefined): JsonV
   if (clean.length !== value.length) return null;
 
   return clean;
+}
+
+function asNumber(value: unknown, fallback: number | null = null): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function asString(value: unknown, fallback: string | null = null): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function asBoolean(
+  value: unknown,
+  fallback: boolean | null = null,
+): boolean | null {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function asTopicPosition(value: unknown): TopicPosition | null {
+  if (!Array.isArray(value) || value.length !== 3) return null;
+
+  const clean = value.filter(
+    (item): item is number => typeof item === "number" && Number.isFinite(item),
+  );
+
+  if (clean.length !== 3) return null;
+
+  return [clean[0], clean[1], clean[2]];
+}
+
+function getJsonObjectValue(
+  object: JsonObject,
+  key: string,
+): JsonValue | undefined {
+  return object[key];
+}
+
+function getNestedSemanticObject(topicJson: JsonObject) {
+  const nested = getJsonObjectValue(topicJson, "semantic_enrichment_status");
+
+  return isPlainObject(nested) ? nested : null;
+}
+
+function readSemanticStatusFromTopicJson(topicJson: JsonObject) {
+  const topLevel = asString(getJsonObjectValue(topicJson, "semantic_enrichment_status"));
+
+  if (topLevel) return topLevel;
+
+  const nested = getNestedSemanticObject(topicJson);
+
+  return nested ? asString(getJsonObjectValue(nested, "status")) : null;
+}
+
+function readNestedSemanticString(topicJson: JsonObject, key: string) {
+  const topLevel = asString(getJsonObjectValue(topicJson, key));
+
+  if (topLevel) return topLevel;
+
+  const nested = getNestedSemanticObject(topicJson);
+
+  return nested ? asString(getJsonObjectValue(nested, key)) : null;
+}
+
+function readNestedSemanticBoolean(topicJson: JsonObject, key: string) {
+  const topLevel = asBoolean(getJsonObjectValue(topicJson, key));
+
+  if (topLevel !== null) return topLevel;
+
+  const nested = getNestedSemanticObject(topicJson);
+
+  return nested ? asBoolean(getJsonObjectValue(nested, key)) : null;
+}
+
+function readTopicPositionFromTopicJson(topicJson: JsonObject): TopicPosition | null {
+  return (
+    asTopicPosition(getJsonObjectValue(topicJson, "topic_position")) ??
+    asTopicPosition(getJsonObjectValue(topicJson, "position")) ??
+    asTopicPosition(getJsonObjectValue(topicJson, "topic_centroid"))
+  );
 }
 
 function mergeTopicEmbeddingIntoTopicJson(args: {
@@ -41,7 +122,7 @@ function mergeTopicEmbeddingIntoTopicJson(args: {
     topicEmbeddingUpdatedAt,
   } = args;
 
-  const base: { [key: string]: JsonValue } = isPlainObject(topicJson)
+  const base: JsonObject = isPlainObject(topicJson)
     ? { ...topicJson }
     : { value: topicJson };
 
@@ -65,6 +146,52 @@ function mergeTopicEmbeddingIntoTopicJson(args: {
   }
 
   return base;
+}
+
+function getTopicStateColumnMetadata(topicJsonWithEmbedding: JsonValue) {
+  const topicJson = isPlainObject(topicJsonWithEmbedding)
+    ? topicJsonWithEmbedding
+    : null;
+
+  if (!topicJson) {
+    return {
+      topicPosition: null,
+      semanticEnrichmentStatus: null,
+      needsEmbeddingCentroid: false,
+      shouldScheduleEnrichment: false,
+      semanticEnrichmentPromptText: null,
+      layoutStatus: null,
+      embeddingSkipReason: null,
+    };
+  }
+
+  const topicPosition = readTopicPositionFromTopicJson(topicJson);
+
+  const semanticEnrichmentStatus = readSemanticStatusFromTopicJson(topicJson);
+  const needsEmbeddingCentroid =
+    readNestedSemanticBoolean(topicJson, "needs_embedding_centroid") ?? false;
+  const shouldScheduleEnrichment =
+    readNestedSemanticBoolean(topicJson, "should_schedule_enrichment") ?? false;
+
+  const semanticEnrichmentPromptText =
+    asString(getJsonObjectValue(topicJson, "semantic_enrichment_prompt_text")) ??
+    readNestedSemanticString(topicJson, "enrichment_prompt_text");
+
+  const layoutStatus = readNestedSemanticString(topicJson, "layout_status");
+  const embeddingSkipReason = readNestedSemanticString(
+    topicJson,
+    "embedding_skip_reason",
+  );
+
+  return {
+    topicPosition,
+    semanticEnrichmentStatus,
+    needsEmbeddingCentroid,
+    shouldScheduleEnrichment,
+    semanticEnrichmentPromptText,
+    layoutStatus,
+    embeddingSkipReason,
+  };
 }
 
 export type PersistedRunInput = {
@@ -107,7 +234,7 @@ export type PersistedTopicStateInput = {
 
   /**
    * Semantic topic-routing centroid.
-   * This is separate from the visual 3D topic_centroid/position.
+   * This is separate from the visual 3D topic_position.
    */
   topicEmbeddingCentroid?: EmbeddingVector | null;
   topicEmbeddingCount?: number | null;
@@ -172,6 +299,8 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
     topicEmbeddingUpdatedAt: embeddingUpdatedAt,
   });
 
+  const columnMetadata = getTopicStateColumnMetadata(topicJsonWithEmbedding);
+
   const { error } = await supabase.from("topic_state").upsert(
     {
       topic_id: input.topicId,
@@ -184,6 +313,17 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
       diagnosis: input.diagnosis ?? null,
       next_step: input.nextStep ?? null,
       topic_json: topicJsonWithEmbedding,
+
+      topic_position_x: columnMetadata.topicPosition?.[0] ?? null,
+      topic_position_y: columnMetadata.topicPosition?.[1] ?? null,
+      topic_position_z: columnMetadata.topicPosition?.[2] ?? null,
+
+      semantic_enrichment_status: columnMetadata.semanticEnrichmentStatus,
+      needs_embedding_centroid: columnMetadata.needsEmbeddingCentroid,
+      should_schedule_enrichment: columnMetadata.shouldScheduleEnrichment,
+      semantic_enrichment_prompt_text: columnMetadata.semanticEnrichmentPromptText,
+      layout_status: columnMetadata.layoutStatus,
+      embedding_skip_reason: columnMetadata.embeddingSkipReason,
 
       // These columns should be added in Supabase. read.ts also falls back to
       // topic_json during migration, but these explicit columns make routing

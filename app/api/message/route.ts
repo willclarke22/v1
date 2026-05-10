@@ -442,10 +442,38 @@ function getTopicLabelerV3CompareSummary(
 }
 
 
-function shouldSkipMessageEmbeddingForModelPolicy(
-  decision: ModelTopicRoutePolicyDecision | null
-) {
-  return isModelPolicySafePositiveDecision(decision);
+function getMessageEmbeddingSkipReason(args: {
+  decision: ModelTopicRoutePolicyDecision | null;
+  continuationPolicy: ModelRouteContinuationPolicy | null;
+  topicLabelerV3Enabled: boolean;
+}): string | null {
+  const { decision, continuationPolicy, topicLabelerV3Enabled } = args;
+
+  if (isModelPolicySafePositiveDecision(decision)) {
+    return "model_policy_safe_authoritative_decision";
+  }
+
+  /**
+   * If V3 was actually attempted and it failed/timed out into a recovery policy,
+   * do not pay for synchronous semantic embedding in /api/message.
+   *
+   * In these cases we are intentionally not using semantic routing to create or
+   * switch topics; the safest behavior is to return the recovery response and
+   * avoid adding another 2-4s of embedding latency after the model has already
+   * failed.
+   */
+  if (
+    topicLabelerV3Enabled &&
+    continuationPolicy &&
+    (continuationPolicy.kind === "stay_active_after_model_failure" ||
+      continuationPolicy.kind === "ask_lightweight_retry" ||
+      continuationPolicy.kind === "invite_word_vomit" ||
+      continuationPolicy.kind === "no_learning_space_change")
+  ) {
+    return `model_continuation_policy_${continuationPolicy.kind}`;
+  }
+
+  return null;
 }
 
 function normalizeRecentTurns(body: MessageRouteBody) {
@@ -2029,7 +2057,7 @@ export async function POST(request: Request) {
 
       topicLabelerV3CompareResult = await callTopicLabelerV3(
         topicLabelerV3Request,
-        { timeoutMs: 15_000 }
+        { timeoutMs: 30_000 }
       );
 
       console.info("[topic-labeler-v3 compare: model result]", {
@@ -2069,8 +2097,12 @@ export async function POST(request: Request) {
     let messageEmbedding: EmbeddingVector | null = null;
     let embeddingModel: string | null = null;
 
-    const skipMessageEmbeddingForModelPolicy =
-      shouldSkipMessageEmbeddingForModelPolicy(modelTopicRoutePolicyDecision);
+    const messageEmbeddingSkipReason = getMessageEmbeddingSkipReason({
+      decision: modelTopicRoutePolicyDecision,
+      continuationPolicy: modelRouteContinuationPolicy,
+      topicLabelerV3Enabled: topicLabelerV3CompareEnabled,
+    });
+    const skipMessageEmbeddingForModelPolicy = messageEmbeddingSkipReason !== null;
 
     if (skipMessageEmbeddingForModelPolicy) {
       messageEmbedding = null;
@@ -2079,9 +2111,10 @@ export async function POST(request: Request) {
       finalEmbeddingModel = null;
 
       console.info("[message embedding skipped]", {
-        reason: "model_policy_safe_authoritative_decision",
+        reason: messageEmbeddingSkipReason,
         decision_kind: modelTopicRoutePolicyDecision?.decision_kind ?? null,
         extracted_label: modelTopicRoutePolicyDecision?.extracted_label ?? null,
+        continuation_policy_kind: modelRouteContinuationPolicy?.kind ?? null,
       });
     } else {
       try {

@@ -1,5 +1,5 @@
 import { mockTopics } from "@/lib/mock-topics";
-import { getLatestTopicState } from "@/lib/persistence/read";
+import { getRouteTopicState } from "@/lib/persistence/read";
 import { makeId } from "@/lib/utils/ids";
 import type { CurrentInteractionContext, EmbeddingVector, VectorInfo } from "@/types/contracts";
 import { clamp, isPosition, normalizeDiagnosis } from "./shared";
@@ -25,6 +25,19 @@ export type RouteTopic = MockTopic & {
   topic_embedding_count?: number | null;
   topic_embedding_model?: string | null;
   topic_embedding_updated_at?: string | null;
+
+  /**
+   * Semantic enrichment / layout metadata mirrored from explicit topic_state columns.
+   * These fields let the runtime avoid digging through large topic_json blobs
+   * once the persistence layer has populated dedicated columns.
+   */
+  semantic_enrichment_status?: string | null;
+  needs_embedding_centroid?: boolean | null;
+  should_schedule_enrichment?: boolean | null;
+  semantic_enrichment_prompt_text?: string | null;
+  layout_status?: string | null;
+  embedding_skip_reason?: string | null;
+
   topic_json?: Record<string, unknown> | null;
 };
 
@@ -3444,18 +3457,29 @@ function extractPositionFromTopicJson(topicJson: unknown): [number, number, numb
   }
 
   const json = topicJson as {
+    topic_position?: unknown;
+    position?: unknown;
+    topic_centroid?: unknown;
     learning_space_topic?: {
       position?: unknown;
     };
   };
+
+  if (isPosition(json.topic_position)) return json.topic_position;
+  if (isPosition(json.position)) return json.position;
+  if (isPosition(json.topic_centroid)) return json.topic_centroid;
 
   return isPosition(json.learning_space_topic?.position)
     ? json.learning_space_topic.position
     : null;
 }
 
+function getExplicitRowPosition(row: Awaited<ReturnType<typeof getRouteTopicState>>[number]) {
+  return isPosition(row.topic_position) ? row.topic_position : null;
+}
+
 function mapRowsToTopics(
-  rows: Awaited<ReturnType<typeof getLatestTopicState>>
+  rows: Awaited<ReturnType<typeof getRouteTopicState>>
 ): RouteTopic[] {
   if (!rows?.length) {
     return [];
@@ -3464,7 +3488,14 @@ function mapRowsToTopics(
   return rows.map((row, index) => {
     const fallbackTopic = mockTopics[index % mockTopics.length];
 
-    const position = extractPositionFromTopicJson(row.topic_json) ?? fallbackTopic.position;
+    /**
+     * Prefer the explicit topic_state position columns normalized by read.ts.
+     * Fall back to topic_json only for older rows/migration compatibility.
+     */
+    const position =
+      getExplicitRowPosition(row) ??
+      extractPositionFromTopicJson(row.topic_json) ??
+      fallbackTopic.position;
 
     return {
       ...fallbackTopic,
@@ -3484,6 +3515,12 @@ function mapRowsToTopics(
       topic_embedding_count: row.topic_embedding_count ?? 0,
       topic_embedding_model: row.topic_embedding_model ?? null,
       topic_embedding_updated_at: row.topic_embedding_updated_at ?? null,
+      semantic_enrichment_status: row.semantic_enrichment_status ?? null,
+      needs_embedding_centroid: row.needs_embedding_centroid ?? false,
+      should_schedule_enrichment: row.should_schedule_enrichment ?? false,
+      semantic_enrichment_prompt_text: row.semantic_enrichment_prompt_text ?? null,
+      layout_status: row.layout_status ?? null,
+      embedding_skip_reason: row.embedding_skip_reason ?? null,
       topic_json: row.topic_json ?? null,
     } as RouteTopic;
   });
@@ -3491,7 +3528,7 @@ function mapRowsToTopics(
 
 export async function loadRouteTopics(): Promise<RouteTopic[]> {
   try {
-    const rows = await getLatestTopicState();
+    const rows = await getRouteTopicState();
     const mapped = mapRowsToTopics(rows);
 
     return mapped;
