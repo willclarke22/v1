@@ -29,7 +29,7 @@ import type {
   TopicState,
   VectorInfo,
 } from "@/types/contracts";
-import type { TopicResolutionTrace } from "@/lib/runtime/topic-resolution-trace";
+import type { TopicResolutionTrace } from "@/lib/runtime/topic-routing-trace";
 
 import {
   buildSeededTopicFromResolvedLabel as buildSeededRouteTopicFromResolvedLabel,

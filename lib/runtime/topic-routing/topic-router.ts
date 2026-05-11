@@ -1,3 +1,16 @@
+/**
+ * Dormant semantic-centroid routing module.
+ *
+ * This file is not currently used by the primary /api/message topic-routing path.
+ * The active path is V3 model-first routing in lib/runtime/topic-labeling-model/*.
+ *
+ * Keep this module for a future local-centroid routing layer:
+ * V3 labeler result + topic_concept_embedding centroids
+ * -> switch/create/create-and-link decisions.
+ *
+ * Do not reintroduce the archived deterministic topic labeler here.
+ */
+
 import type {
   CurrentInteractionContext,
   EmbeddingVector,
@@ -110,28 +123,28 @@ function cleanTopicName(text: string | null | undefined) {
   return titleCaseSimple(cleaned);
 }
 
-function getDeterministicLabel(labeling?: TopicLabelingResult | null) {
+function getCandidateLabel(labeling?: TopicLabelingResult | null) {
   return cleanTopicName(labeling?.topic_decision?.canonical_label ?? null);
 }
 
-function getDeterministicConfidence(labeling?: TopicLabelingResult | null) {
+function getCandidateConfidence(labeling?: TopicLabelingResult | null) {
   const confidence = labeling?.topic_decision?.confidence;
   return typeof confidence === "number" && Number.isFinite(confidence)
     ? confidence
     : null;
 }
 
-function getDeterministicShouldCreateNew(labeling?: TopicLabelingResult | null) {
+function getCandidateShouldCreateNew(labeling?: TopicLabelingResult | null) {
   const value = labeling?.topic_decision?.should_create_new_topic;
   return typeof value === "boolean" ? value : null;
 }
 
-function getDeterministicShouldReuseExisting(labeling?: TopicLabelingResult | null) {
+function getCandidateShouldReuseExisting(labeling?: TopicLabelingResult | null) {
   const value = labeling?.topic_decision?.should_reuse_existing_topic;
   return typeof value === "boolean" ? value : null;
 }
 
-function getDeterministicAmbiguityFlags(labeling?: TopicLabelingResult | null) {
+function getCandidateAmbiguityFlags(labeling?: TopicLabelingResult | null) {
   const flags = labeling?.diagnostics?.ambiguity_flags;
   return Array.isArray(flags)
     ? flags.filter((flag): flag is string => typeof flag === "string")
@@ -148,8 +161,7 @@ function getInterpretationFallbackLabel(labeling?: TopicLabelingResult | null) {
   if (questionAboutTopic) return questionAboutTopic;
 
   const synthesizedLabel = cleanTopicName(
-  (labeling?.interpretation as { synthesized_label?: string | null } | undefined)
-    ?.synthesized_label ?? null,
+    labeling?.interpretation?.synthesized_label ?? null,
   );
   if (synthesizedLabel) return synthesizedLabel;
 
@@ -169,13 +181,13 @@ export function suggestTopicNameFromLabeling(args: {
 }): TopicNameSuggestion {
   const { rawMessage, labeling } = args;
 
-  const deterministicLabel = getDeterministicLabel(labeling);
-  if (deterministicLabel) {
+  const candidateLabel = getCandidateLabel(labeling);
+  if (candidateLabel) {
     return {
-      label: deterministicLabel,
-      source: "deterministic_labeler",
-      confidence: getDeterministicConfidence(labeling),
-      reasons: ["Deterministic labeler produced a canonical topic label."],
+      label: candidateLabel,
+      source: "candidate_labeler",
+      confidence: getCandidateConfidence(labeling),
+      reasons: ["Candidate labeler produced a canonical topic label."],
     };
   }
 
@@ -183,9 +195,9 @@ export function suggestTopicNameFromLabeling(args: {
   if (interpretationLabel) {
     return {
       label: interpretationLabel,
-      source: "deterministic_interpretation",
-      confidence: getDeterministicConfidence(labeling),
-      reasons: ["Deterministic interpretation produced a usable topic phrase."],
+      source: "candidate_interpretation",
+      confidence: getCandidateConfidence(labeling),
+      reasons: ["Candidate interpretation produced a usable topic phrase."],
     };
   }
 
@@ -196,7 +208,7 @@ export function suggestTopicNameFromLabeling(args: {
     source: fallback ? "raw_message_fallback" : "none",
     confidence: fallback ? 0.35 : null,
     reasons: fallback
-      ? ["No deterministic label was available, so the raw message was used as a temporary topic name."]
+      ? ["No candidate label was available, so the raw message was used as a temporary topic name."]
       : ["No usable topic label was available."],
   };
 }
@@ -409,12 +421,11 @@ function buildDebug(args: {
     tiny_followup_signal: tinyFollowupSignal,
     centroid_evidence: centroidEvidence,
 
-    deterministic_label: getDeterministicLabel(labeling),
-    deterministic_confidence: getDeterministicConfidence(labeling),
-    deterministic_should_create_new_topic: getDeterministicShouldCreateNew(labeling),
-    deterministic_should_reuse_existing_topic:
-      getDeterministicShouldReuseExisting(labeling),
-    deterministic_ambiguity_flags: getDeterministicAmbiguityFlags(labeling),
+    candidate_label: getCandidateLabel(labeling),
+    candidate_confidence: getCandidateConfidence(labeling),
+    candidate_should_create_new_topic: getCandidateShouldCreateNew(labeling),
+    candidate_should_reuse_existing_topic: getCandidateShouldReuseExisting(labeling),
+    candidate_ambiguity_flags: getCandidateAmbiguityFlags(labeling),
 
     thresholds,
     reasons,
@@ -538,7 +549,7 @@ function buildCentroidUpdatePlan(args: {
  * Non-responsibility:
  * - deeply parse the message wording.
  *
- * The deterministic labeler is used here only to suggest a new topic name.
+ * Optional candidate-label metadata is used here only to suggest a new topic name.
  */
 export function routeTopicV3(
   input: SemanticCentroidRouteInput,

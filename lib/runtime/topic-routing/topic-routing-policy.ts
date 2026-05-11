@@ -1,3 +1,14 @@
+/**
+ * Dormant semantic-centroid routing policy.
+ *
+ * This file is not currently used by the primary /api/message topic-routing path.
+ * It is preserved for a future routing layer that can use local concept centroids
+ * to decide whether to switch, create, or create-and-link topics.
+ *
+ * Current active topic routing is V3 model-first routing.
+ * This file should remain deterministic-labeler-free.
+ */
+
 import type {
   SemanticCentroidPolicyDecision,
   SemanticCentroidPolicyInput,

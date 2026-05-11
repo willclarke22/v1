@@ -69,7 +69,7 @@ export type TopicRoutingPolicyPath =
   | SemanticCentroidPolicyPath
   /**
    * Legacy compatibility paths.
-   * These are kept only so the old V2 policy file compiles during migration.
+   * These are kept only so older V2-compatible types compile during migration.
    */
   | "exact_label_match_existing_topic"
   | "explicit_switch_to_existing_topic"
@@ -179,11 +179,11 @@ export type TopicRoutingDebug = {
   tiny_followup_signal: TopicRoutingTinyFollowupSignal;
   centroid_evidence: SemanticCentroidEvidence | null;
 
-  deterministic_label: string | null;
-  deterministic_confidence: number | null;
-  deterministic_should_create_new_topic: boolean | null;
-  deterministic_should_reuse_existing_topic: boolean | null;
-  deterministic_ambiguity_flags: string[];
+  candidate_label: string | null;
+  candidate_confidence: number | null;
+  candidate_should_create_new_topic: boolean | null;
+  candidate_should_reuse_existing_topic: boolean | null;
+  candidate_ambiguity_flags: string[];
 
   thresholds: SemanticCentroidRoutingThresholds | null;
   reasons: string[];
@@ -192,7 +192,6 @@ export type TopicRoutingDebug = {
    * Temporary compatibility with the old V2 debug shape.
    * Remove after topic-router.ts and topic-routing-policy.ts are replaced.
    */
-  candidate_label?: string | null;
   candidate_label_source?: TopicRoutingCandidateLabelSource;
   message_shape?: TopicRoutingMessageShape;
 };
@@ -278,8 +277,8 @@ export type SemanticCentroidRoutingResult = TopicRoutingDecision & {
 /* ------------------------------------------------------------------ */
 
 export type TopicRoutingCandidateLabelSource =
-  | "deterministic_labeler"
-  | "deterministic_interpretation"
+  | "candidate_labeler"
+  | "candidate_interpretation"
   | "raw_message_fallback"
   | "explicit_switch_target"
   | "none";
@@ -298,9 +297,9 @@ export type TopicNameSuggestion = {
 /**
  * Legacy V2 threshold shape.
  *
- * Kept temporarily because the old topic-routing-policy.ts and the compatibility
- * functions in topic-centroids.ts still reference these names. Once V3 policy is
- * fully wired, this can be deleted.
+ * Kept temporarily because compatibility helpers in topic-centroids.ts still
+ * reference these names. New semantic-centroid code should use
+ * SemanticCentroidRoutingThresholds.
  */
 export type LegacyTopicRoutingThresholds = {
   strongExistingMatch: number;
@@ -369,11 +368,11 @@ export type TopicRoutingPolicyInput = {
   candidateLabel: string | null;
   candidateLabelSource: TopicRoutingCandidateLabelSource;
 
-  deterministicLabel: string | null;
-  deterministicConfidence: number | null;
-  deterministicShouldCreateNewTopic: boolean | null;
-  deterministicShouldReuseExistingTopic: boolean | null;
-  deterministicAmbiguityFlags: string[];
+  candidateLabelForPolicy: string | null;
+  candidateConfidence: number | null;
+  candidateShouldCreateNewTopic: boolean | null;
+  candidateShouldReuseExistingTopic: boolean | null;
+  candidateAmbiguityFlags: string[];
 
   messageShape: TopicRoutingMessageShape;
   centroidEvidence: TopicCentroidEvidence;
