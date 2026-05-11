@@ -29,10 +29,6 @@ function asJsonEmbeddingVector(value: EmbeddingVector | null | undefined): JsonV
   return clean;
 }
 
-function asNumber(value: unknown, fallback: number | null = null): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-
 function asString(value: unknown, fallback: string | null = null): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
@@ -54,6 +50,12 @@ function asTopicPosition(value: unknown): TopicPosition | null {
   if (clean.length !== 3) return null;
 
   return [clean[0], clean[1], clean[2]];
+}
+
+function cleanCount(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.floor(value))
+    : 0;
 }
 
 function getJsonObjectValue(
@@ -107,42 +109,119 @@ function readTopicPositionFromTopicJson(topicJson: JsonObject): TopicPosition | 
   );
 }
 
-function mergeTopicEmbeddingIntoTopicJson(args: {
+function readSemanticPositionFromTopicJson(topicJson: JsonObject): TopicPosition | null {
+  return (
+    asTopicPosition(getJsonObjectValue(topicJson, "semantic_position")) ??
+    asTopicPosition(getJsonObjectValue(topicJson, "semantic_target_position")) ??
+    asTopicPosition(getJsonObjectValue(topicJson, "learning_space_target_position"))
+  );
+}
+
+function baseTopicJson(topicJson: JsonValue): JsonObject {
+  return isPlainObject(topicJson) ? { ...topicJson } : { value: topicJson };
+}
+
+function mergeEmbeddingFieldsIntoTopicJson(args: {
   topicJson: JsonValue;
+
   topicEmbeddingCentroid?: EmbeddingVector | null;
   topicEmbeddingCount?: number | null;
   topicEmbeddingModel?: string | null;
   topicEmbeddingUpdatedAt?: string | null;
+
+  topicConceptEmbeddingCentroid?: EmbeddingVector | null;
+  topicConceptEmbeddingCount?: number | null;
+  topicConceptEmbeddingModel?: string | null;
+  topicConceptEmbeddingUpdatedAt?: string | null;
+
+  learningPatternEmbeddingCentroid?: EmbeddingVector | null;
+  learningPatternEmbeddingCount?: number | null;
+  learningPatternEmbeddingModel?: string | null;
+  learningPatternEmbeddingUpdatedAt?: string | null;
 }): JsonValue {
-  const {
-    topicJson,
-    topicEmbeddingCentroid,
-    topicEmbeddingCount,
-    topicEmbeddingModel,
-    topicEmbeddingUpdatedAt,
-  } = args;
+  const base = baseTopicJson(args.topicJson);
 
-  const base: JsonObject = isPlainObject(topicJson)
-    ? { ...topicJson }
-    : { value: topicJson };
-
-  if (topicEmbeddingCentroid !== undefined) {
-    base.topic_embedding_centroid = asJsonEmbeddingVector(topicEmbeddingCentroid);
+  if (args.topicEmbeddingCentroid !== undefined) {
+    base.topic_embedding_centroid = asJsonEmbeddingVector(args.topicEmbeddingCentroid);
   }
 
-  if (topicEmbeddingCount !== undefined) {
-    base.topic_embedding_count =
-      typeof topicEmbeddingCount === "number" && Number.isFinite(topicEmbeddingCount)
-        ? Math.max(0, Math.floor(topicEmbeddingCount))
-        : null;
+  if (args.topicEmbeddingCount !== undefined) {
+    base.topic_embedding_count = cleanCount(args.topicEmbeddingCount);
   }
 
-  if (topicEmbeddingModel !== undefined) {
-    base.topic_embedding_model = topicEmbeddingModel ?? null;
+  if (args.topicEmbeddingModel !== undefined) {
+    base.topic_embedding_model = args.topicEmbeddingModel ?? null;
   }
 
-  if (topicEmbeddingUpdatedAt !== undefined) {
-    base.topic_embedding_updated_at = topicEmbeddingUpdatedAt ?? null;
+  if (args.topicEmbeddingUpdatedAt !== undefined) {
+    base.topic_embedding_updated_at = args.topicEmbeddingUpdatedAt ?? null;
+  }
+
+  if (args.topicConceptEmbeddingCentroid !== undefined) {
+    base.topic_concept_embedding_centroid = asJsonEmbeddingVector(
+      args.topicConceptEmbeddingCentroid,
+    );
+  }
+
+  if (args.topicConceptEmbeddingCount !== undefined) {
+    base.topic_concept_embedding_count = cleanCount(
+      args.topicConceptEmbeddingCount,
+    );
+  }
+
+  if (args.topicConceptEmbeddingModel !== undefined) {
+    base.topic_concept_embedding_model =
+      args.topicConceptEmbeddingModel ?? null;
+  }
+
+  if (args.topicConceptEmbeddingUpdatedAt !== undefined) {
+    base.topic_concept_embedding_updated_at =
+      args.topicConceptEmbeddingUpdatedAt ?? null;
+  }
+
+  if (args.learningPatternEmbeddingCentroid !== undefined) {
+    base.learning_pattern_embedding_centroid = asJsonEmbeddingVector(
+      args.learningPatternEmbeddingCentroid,
+    );
+  }
+
+  if (args.learningPatternEmbeddingCount !== undefined) {
+    base.learning_pattern_embedding_count = cleanCount(
+      args.learningPatternEmbeddingCount,
+    );
+  }
+
+  if (args.learningPatternEmbeddingModel !== undefined) {
+    base.learning_pattern_embedding_model =
+      args.learningPatternEmbeddingModel ?? null;
+  }
+
+  if (args.learningPatternEmbeddingUpdatedAt !== undefined) {
+    base.learning_pattern_embedding_updated_at =
+      args.learningPatternEmbeddingUpdatedAt ?? null;
+  }
+
+  return base;
+}
+
+function mergeSemanticPositionIntoTopicJson(args: {
+  topicJson: JsonValue;
+  semanticPosition?: TopicPosition | null;
+  semanticPositionUpdatedAt?: string | null;
+  semanticPositionMethod?: string | null;
+}): JsonValue {
+  const base = baseTopicJson(args.topicJson);
+
+  if (args.semanticPosition !== undefined) {
+    base.semantic_position = args.semanticPosition;
+  }
+
+  if (args.semanticPositionUpdatedAt !== undefined) {
+    base.semantic_position_updated_at = args.semanticPositionUpdatedAt ?? null;
+  }
+
+  if (args.semanticPositionMethod !== undefined) {
+    base.semantic_position_method = args.semanticPositionMethod ?? null;
   }
 
   return base;
@@ -156,6 +235,9 @@ function getTopicStateColumnMetadata(topicJsonWithEmbedding: JsonValue) {
   if (!topicJson) {
     return {
       topicPosition: null,
+      semanticPosition: null,
+      semanticPositionUpdatedAt: null,
+      semanticPositionMethod: null,
       semanticEnrichmentStatus: null,
       needsEmbeddingCentroid: false,
       shouldScheduleEnrichment: false,
@@ -166,6 +248,15 @@ function getTopicStateColumnMetadata(topicJsonWithEmbedding: JsonValue) {
   }
 
   const topicPosition = readTopicPositionFromTopicJson(topicJson);
+  const semanticPosition = readSemanticPositionFromTopicJson(topicJson);
+
+  const semanticPositionUpdatedAt = asString(
+    getJsonObjectValue(topicJson, "semantic_position_updated_at"),
+  );
+
+  const semanticPositionMethod = asString(
+    getJsonObjectValue(topicJson, "semantic_position_method"),
+  );
 
   const semanticEnrichmentStatus = readSemanticStatusFromTopicJson(topicJson);
   const needsEmbeddingCentroid =
@@ -185,6 +276,9 @@ function getTopicStateColumnMetadata(topicJsonWithEmbedding: JsonValue) {
 
   return {
     topicPosition,
+    semanticPosition,
+    semanticPositionUpdatedAt,
+    semanticPositionMethod,
     semanticEnrichmentStatus,
     needsEmbeddingCentroid,
     shouldScheduleEnrichment,
@@ -233,13 +327,33 @@ export type PersistedTopicStateInput = {
   topicJson: JsonValue;
 
   /**
-   * Semantic topic-routing centroid.
-   * This is separate from the visual 3D topic_position.
+   * Legacy/general embedding. For compatibility, this should mirror the
+   * concept embedding unless a caller intentionally overrides it.
    */
   topicEmbeddingCentroid?: EmbeddingVector | null;
   topicEmbeddingCount?: number | null;
   topicEmbeddingModel?: string | null;
   topicEmbeddingUpdatedAt?: string | null;
+
+  /**
+   * Concept embedding used for semantic topic layout.
+   */
+  topicConceptEmbeddingCentroid?: EmbeddingVector | null;
+  topicConceptEmbeddingCount?: number | null;
+  topicConceptEmbeddingModel?: string | null;
+  topicConceptEmbeddingUpdatedAt?: string | null;
+
+  /**
+   * Learning-pattern embedding used later for personalization/diagnosis transfer.
+   */
+  learningPatternEmbeddingCentroid?: EmbeddingVector | null;
+  learningPatternEmbeddingCount?: number | null;
+  learningPatternEmbeddingModel?: string | null;
+  learningPatternEmbeddingUpdatedAt?: string | null;
+
+  semanticPosition?: TopicPosition | null;
+  semanticPositionUpdatedAt?: string | null;
+  semanticPositionMethod?: string | null;
 };
 
 export async function insertRun(input: PersistedRunInput) {
@@ -287,19 +401,73 @@ export async function insertAttempt(input: PersistedAttemptInput) {
 
 export async function upsertTopicState(input: PersistedTopicStateInput) {
   const supabase = createServerSupabaseClient();
-  const embeddingUpdatedAt =
-    input.topicEmbeddingUpdatedAt ??
-    (input.topicEmbeddingCentroid ? new Date().toISOString() : null);
 
-  const topicJsonWithEmbedding = mergeTopicEmbeddingIntoTopicJson({
+  /**
+   * Compatibility rule:
+   * concept embedding is the canonical semantic/layout embedding.
+   * legacy topic_embedding_* mirrors concept embedding unless explicitly supplied.
+   */
+  const resolvedConceptCentroid =
+    input.topicConceptEmbeddingCentroid ?? input.topicEmbeddingCentroid ?? null;
+
+  const resolvedConceptCount =
+    input.topicConceptEmbeddingCount ?? input.topicEmbeddingCount ?? null;
+
+  const resolvedConceptModel =
+    input.topicConceptEmbeddingModel ?? input.topicEmbeddingModel ?? null;
+
+  const resolvedConceptUpdatedAt =
+    input.topicConceptEmbeddingUpdatedAt ??
+    input.topicEmbeddingUpdatedAt ??
+    (resolvedConceptCentroid ? new Date().toISOString() : null);
+
+  const resolvedLegacyCentroid =
+    input.topicEmbeddingCentroid ?? resolvedConceptCentroid;
+
+  const resolvedLegacyCount =
+    input.topicEmbeddingCount ?? resolvedConceptCount;
+
+  const resolvedLegacyModel =
+    input.topicEmbeddingModel ?? resolvedConceptModel;
+
+  const resolvedLegacyUpdatedAt =
+    input.topicEmbeddingUpdatedAt ?? resolvedConceptUpdatedAt;
+
+  const resolvedLearningPatternUpdatedAt =
+    input.learningPatternEmbeddingUpdatedAt ??
+    (input.learningPatternEmbeddingCentroid ? new Date().toISOString() : null);
+
+  const semanticPositionUpdatedAt =
+    input.semanticPositionUpdatedAt ??
+    (input.semanticPosition ? new Date().toISOString() : null);
+
+  const topicJsonWithEmbedding = mergeEmbeddingFieldsIntoTopicJson({
     topicJson: input.topicJson,
-    topicEmbeddingCentroid: input.topicEmbeddingCentroid,
-    topicEmbeddingCount: input.topicEmbeddingCount,
-    topicEmbeddingModel: input.topicEmbeddingModel,
-    topicEmbeddingUpdatedAt: embeddingUpdatedAt,
+
+    topicEmbeddingCentroid: resolvedLegacyCentroid,
+    topicEmbeddingCount: resolvedLegacyCount,
+    topicEmbeddingModel: resolvedLegacyModel,
+    topicEmbeddingUpdatedAt: resolvedLegacyUpdatedAt,
+
+    topicConceptEmbeddingCentroid: resolvedConceptCentroid,
+    topicConceptEmbeddingCount: resolvedConceptCount,
+    topicConceptEmbeddingModel: resolvedConceptModel,
+    topicConceptEmbeddingUpdatedAt: resolvedConceptUpdatedAt,
+
+    learningPatternEmbeddingCentroid: input.learningPatternEmbeddingCentroid,
+    learningPatternEmbeddingCount: input.learningPatternEmbeddingCount,
+    learningPatternEmbeddingModel: input.learningPatternEmbeddingModel,
+    learningPatternEmbeddingUpdatedAt: resolvedLearningPatternUpdatedAt,
   });
 
-  const columnMetadata = getTopicStateColumnMetadata(topicJsonWithEmbedding);
+  const topicJsonWithSemanticPosition = mergeSemanticPositionIntoTopicJson({
+    topicJson: topicJsonWithEmbedding,
+    semanticPosition: input.semanticPosition,
+    semanticPositionUpdatedAt,
+    semanticPositionMethod: input.semanticPositionMethod,
+  });
+
+  const columnMetadata = getTopicStateColumnMetadata(topicJsonWithSemanticPosition);
 
   const { error } = await supabase.from("topic_state").upsert(
     {
@@ -312,11 +480,17 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
       learning_score: input.learningScore ?? null,
       diagnosis: input.diagnosis ?? null,
       next_step: input.nextStep ?? null,
-      topic_json: topicJsonWithEmbedding,
+      topic_json: topicJsonWithSemanticPosition,
 
       topic_position_x: columnMetadata.topicPosition?.[0] ?? null,
       topic_position_y: columnMetadata.topicPosition?.[1] ?? null,
       topic_position_z: columnMetadata.topicPosition?.[2] ?? null,
+
+      semantic_position_x: columnMetadata.semanticPosition?.[0] ?? null,
+      semantic_position_y: columnMetadata.semanticPosition?.[1] ?? null,
+      semantic_position_z: columnMetadata.semanticPosition?.[2] ?? null,
+      semantic_position_updated_at: columnMetadata.semanticPositionUpdatedAt,
+      semantic_position_method: columnMetadata.semanticPositionMethod,
 
       semantic_enrichment_status: columnMetadata.semanticEnrichmentStatus,
       needs_embedding_centroid: columnMetadata.needsEmbeddingCentroid,
@@ -325,17 +499,24 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
       layout_status: columnMetadata.layoutStatus,
       embedding_skip_reason: columnMetadata.embeddingSkipReason,
 
-      // These columns should be added in Supabase. read.ts also falls back to
-      // topic_json during migration, but these explicit columns make routing
-      // faster and easier to query later.
-      topic_embedding_centroid: asJsonEmbeddingVector(input.topicEmbeddingCentroid),
-      topic_embedding_count:
-        typeof input.topicEmbeddingCount === "number" &&
-        Number.isFinite(input.topicEmbeddingCount)
-          ? Math.max(0, Math.floor(input.topicEmbeddingCount))
-          : 0,
-      topic_embedding_model: input.topicEmbeddingModel ?? null,
-      topic_embedding_updated_at: embeddingUpdatedAt,
+      topic_embedding_centroid: asJsonEmbeddingVector(resolvedLegacyCentroid),
+      topic_embedding_count: cleanCount(resolvedLegacyCount),
+      topic_embedding_model: resolvedLegacyModel,
+      topic_embedding_updated_at: resolvedLegacyUpdatedAt,
+
+      topic_concept_embedding_centroid: asJsonEmbeddingVector(resolvedConceptCentroid),
+      topic_concept_embedding_count: cleanCount(resolvedConceptCount),
+      topic_concept_embedding_model: resolvedConceptModel,
+      topic_concept_embedding_updated_at: resolvedConceptUpdatedAt,
+
+      learning_pattern_embedding_centroid: asJsonEmbeddingVector(
+        input.learningPatternEmbeddingCentroid,
+      ),
+      learning_pattern_embedding_count: cleanCount(
+        input.learningPatternEmbeddingCount,
+      ),
+      learning_pattern_embedding_model: input.learningPatternEmbeddingModel ?? null,
+      learning_pattern_embedding_updated_at: resolvedLearningPatternUpdatedAt,
     },
     {
       onConflict: "topic_id",

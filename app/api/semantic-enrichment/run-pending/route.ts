@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getLatestTopicState } from "@/lib/persistence/read";
 import { upsertTopicState } from "@/lib/persistence/myway";
 import { nowIso } from "@/lib/runtime/shared";
-import { embedText } from "@/lib/vector/embed";
+import { embedTexts } from "@/lib/vector/embed";
 import {
   canSyncTopicToQdrant,
   syncTopicToQdrantBestEffort,
@@ -36,14 +36,34 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
   return vector;
 }
 
-function hasEmbeddingCentroid(row: {
+function hasVector(value: EmbeddingVector | null, count: number) {
+  return Array.isArray(value) && value.length > 0 && count > 0;
+}
+
+function hasLegacyEmbedding(row: {
   topic_embedding_centroid: EmbeddingVector | null;
   topic_embedding_count: number;
 }) {
-  return (
-    Array.isArray(row.topic_embedding_centroid) &&
-    row.topic_embedding_centroid.length > 0 &&
-    row.topic_embedding_count > 0
+  return hasVector(row.topic_embedding_centroid, row.topic_embedding_count);
+}
+
+function hasConceptEmbedding(row: {
+  topic_concept_embedding_centroid: EmbeddingVector | null;
+  topic_concept_embedding_count: number;
+}) {
+  return hasVector(
+    row.topic_concept_embedding_centroid,
+    row.topic_concept_embedding_count,
+  );
+}
+
+function hasLearningPatternEmbedding(row: {
+  learning_pattern_embedding_centroid: EmbeddingVector | null;
+  learning_pattern_embedding_count: number;
+}) {
+  return hasVector(
+    row.learning_pattern_embedding_centroid,
+    row.learning_pattern_embedding_count,
   );
 }
 
@@ -54,6 +74,10 @@ function getTopicJson(row: { topic_json: Record<string, unknown> | null }) {
 function shouldEnrichTopic(row: {
   topic_embedding_centroid: EmbeddingVector | null;
   topic_embedding_count: number;
+  topic_concept_embedding_centroid: EmbeddingVector | null;
+  topic_concept_embedding_count: number;
+  learning_pattern_embedding_centroid: EmbeddingVector | null;
+  learning_pattern_embedding_count: number;
   topic_json: Record<string, unknown> | null;
 }) {
   const topicJson = getTopicJson(row);
@@ -68,7 +92,13 @@ function shouldEnrichTopic(row: {
     false,
   );
 
-  return !hasEmbeddingCentroid(row) || explicitNeedsCentroid || explicitSchedule;
+  return (
+    explicitNeedsCentroid ||
+    explicitSchedule ||
+    !hasConceptEmbedding(row) ||
+    !hasLearningPatternEmbedding(row) ||
+    !hasLegacyEmbedding(row)
+  );
 }
 
 function buildEnrichmentPrompt(row: {
@@ -94,21 +124,47 @@ function buildEnrichmentPrompt(row: {
   return `Topic: ${row.topic_name}`;
 }
 
+function buildConceptEmbeddingText(row: { topic_name: string }) {
+  return row.topic_name.trim();
+}
+
+function buildLearningPatternEmbeddingText(args: {
+  topicName: string;
+  enrichmentPromptText: string;
+}) {
+  return [
+    `Learning pattern for topic ${args.topicName}:`,
+    args.enrichmentPromptText,
+  ].join("\n");
+}
+
 function buildUpdatedTopicJson(args: {
   topicJson: Record<string, unknown> | null;
-  centroid: EmbeddingVector;
+
+  conceptCentroid: EmbeddingVector;
+  learningPatternCentroid: EmbeddingVector;
+
   embeddingModel: string;
   embeddingUpdatedAt: string;
+
+  conceptEmbeddingText: string;
+  learningPatternEmbeddingText: string;
   enrichmentPromptText: string;
-  nextEmbeddingCount: number;
+
+  nextConceptEmbeddingCount: number;
+  nextLearningPatternEmbeddingCount: number;
 }) {
   const {
     topicJson,
-    centroid,
+    conceptCentroid,
+    learningPatternCentroid,
     embeddingModel,
     embeddingUpdatedAt,
+    conceptEmbeddingText,
+    learningPatternEmbeddingText,
     enrichmentPromptText,
-    nextEmbeddingCount,
+    nextConceptEmbeddingCount,
+    nextLearningPatternEmbeddingCount,
   } = args;
 
   const base = getTopicJson({ topic_json: topicJson });
@@ -119,11 +175,14 @@ function buildUpdatedTopicJson(args: {
     semantic_enrichment_status: {
       status: "centroid_ready",
       needs_embedding_centroid: false,
-      centroid_source: "topic_name_plus_initial_message",
+      centroid_source: "two_embedding_system_v1",
       embedding_skip_reason: null,
       layout_status: "semantic_position_ready",
       should_schedule_enrichment: false,
       enrichment_prompt_text: enrichmentPromptText,
+
+      concept_embedding_source: "topic_label_only_v1",
+      learning_pattern_embedding_source: "enrichment_prompt_text_v1",
     },
 
     needs_embedding_centroid: false,
@@ -132,10 +191,37 @@ function buildUpdatedTopicJson(args: {
     should_schedule_enrichment: false,
     semantic_enrichment_prompt_text: enrichmentPromptText,
 
-    topic_embedding_centroid: centroid,
-    topic_embedding_count: nextEmbeddingCount,
+    /**
+     * Debug/source texts.
+     */
+    topic_concept_embedding_text: conceptEmbeddingText,
+    learning_pattern_embedding_text: learningPatternEmbeddingText,
+
+    /**
+     * Legacy/general embedding fields.
+     * For compatibility, these mirror concept embedding.
+     */
+    topic_embedding_centroid: conceptCentroid,
+    topic_embedding_count: nextConceptEmbeddingCount,
     topic_embedding_model: embeddingModel,
     topic_embedding_updated_at: embeddingUpdatedAt,
+
+    /**
+     * New concept embedding fields for semantic layout.
+     */
+    topic_concept_embedding_centroid: conceptCentroid,
+    topic_concept_embedding_count: nextConceptEmbeddingCount,
+    topic_concept_embedding_model: embeddingModel,
+    topic_concept_embedding_updated_at: embeddingUpdatedAt,
+
+    /**
+     * New learning-pattern embedding fields for future personalization /
+     * diagnosis transfer / similar-struggle matching.
+     */
+    learning_pattern_embedding_centroid: learningPatternCentroid,
+    learning_pattern_embedding_count: nextLearningPatternEmbeddingCount,
+    learning_pattern_embedding_model: embeddingModel,
+    learning_pattern_embedding_updated_at: embeddingUpdatedAt,
   };
 }
 
@@ -166,7 +252,8 @@ export async function POST(request: Request) {
     status: "enriched" | "skipped" | "error";
     reason: string | null;
     embedding_model: string | null;
-    vector_size: number | null;
+    concept_vector_size: number | null;
+    learning_pattern_vector_size: number | null;
     qdrant_sync_ok: boolean | null;
     qdrant_sync_error: string | null;
   }> = [];
@@ -175,21 +262,48 @@ export async function POST(request: Request) {
     try {
       const enrichmentPromptText = buildEnrichmentPrompt(row);
 
-      /**
-       * In this codebase, embedText(...) returns the embedding vector directly
-       * as number[], not an object like { embedding, embeddingModel }.
-       */
-      const embeddingResult = await embedText(enrichmentPromptText);
-      const centroid = asEmbeddingVector(embeddingResult);
+      const conceptEmbeddingText = buildConceptEmbeddingText({
+        topic_name: row.topic_name,
+      });
 
-      if (!centroid) {
+      const learningPatternEmbeddingText = buildLearningPatternEmbeddingText({
+        topicName: row.topic_name,
+        enrichmentPromptText,
+      });
+
+      const [conceptEmbeddingResult, learningPatternEmbeddingResult] =
+        await embedTexts([conceptEmbeddingText, learningPatternEmbeddingText]);
+
+      const conceptCentroid = asEmbeddingVector(conceptEmbeddingResult);
+      const learningPatternCentroid = asEmbeddingVector(
+        learningPatternEmbeddingResult,
+      );
+
+      if (!conceptCentroid) {
         results.push({
           topic_id: row.topic_id,
           topic_name: row.topic_name,
           status: "error",
-          reason: "embedding_result_missing_or_invalid_vector",
+          reason: "concept_embedding_result_missing_or_invalid_vector",
           embedding_model: null,
-          vector_size: null,
+          concept_vector_size: null,
+          learning_pattern_vector_size: null,
+          qdrant_sync_ok: null,
+          qdrant_sync_error: null,
+        });
+
+        continue;
+      }
+
+      if (!learningPatternCentroid) {
+        results.push({
+          topic_id: row.topic_id,
+          topic_name: row.topic_name,
+          status: "error",
+          reason: "learning_pattern_embedding_result_missing_or_invalid_vector",
+          embedding_model: null,
+          concept_vector_size: conceptCentroid.length,
+          learning_pattern_vector_size: null,
           qdrant_sync_ok: null,
           qdrant_sync_error: null,
         });
@@ -199,15 +313,32 @@ export async function POST(request: Request) {
 
       const embeddingModel = "local-embedding-service";
       const embeddingUpdatedAt = nowIso();
-      const nextEmbeddingCount = Math.max(1, row.topic_embedding_count || 0);
+
+      const nextConceptEmbeddingCount = Math.max(
+        1,
+        row.topic_concept_embedding_count || row.topic_embedding_count || 0,
+      );
+
+      const nextLearningPatternEmbeddingCount = Math.max(
+        1,
+        row.learning_pattern_embedding_count || 0,
+      );
 
       const updatedTopicJson = buildUpdatedTopicJson({
         topicJson: row.topic_json,
-        centroid,
+
+        conceptCentroid,
+        learningPatternCentroid,
+
         embeddingModel,
         embeddingUpdatedAt,
+
+        conceptEmbeddingText,
+        learningPatternEmbeddingText,
         enrichmentPromptText,
-        nextEmbeddingCount,
+
+        nextConceptEmbeddingCount,
+        nextLearningPatternEmbeddingCount,
       });
 
       await upsertTopicState({
@@ -220,10 +351,24 @@ export async function POST(request: Request) {
         diagnosis: row.diagnosis,
         nextStep: row.next_step,
         topicJson: updatedTopicJson,
-        topicEmbeddingCentroid: centroid,
-        topicEmbeddingCount: nextEmbeddingCount,
+
+        /**
+         * Legacy/general embedding mirrors concept embedding for compatibility.
+         */
+        topicEmbeddingCentroid: conceptCentroid,
+        topicEmbeddingCount: nextConceptEmbeddingCount,
         topicEmbeddingModel: embeddingModel,
         topicEmbeddingUpdatedAt: embeddingUpdatedAt,
+
+        topicConceptEmbeddingCentroid: conceptCentroid,
+        topicConceptEmbeddingCount: nextConceptEmbeddingCount,
+        topicConceptEmbeddingModel: embeddingModel,
+        topicConceptEmbeddingUpdatedAt: embeddingUpdatedAt,
+
+        learningPatternEmbeddingCentroid: learningPatternCentroid,
+        learningPatternEmbeddingCount: nextLearningPatternEmbeddingCount,
+        learningPatternEmbeddingModel: embeddingModel,
+        learningPatternEmbeddingUpdatedAt: embeddingUpdatedAt,
       });
 
       let qdrantSyncOk: boolean | null = null;
@@ -237,8 +382,13 @@ export async function POST(request: Request) {
           nextStep: row.next_step,
           updatedAt: embeddingUpdatedAt,
           topicJson: updatedTopicJson,
-          topicEmbeddingCentroid: centroid,
-          topicEmbeddingCount: nextEmbeddingCount,
+
+          /**
+           * Qdrant gets the concept embedding because Qdrant is currently part of
+           * semantic topic routing/layout, not learning-pattern matching.
+           */
+          topicEmbeddingCentroid: conceptCentroid,
+          topicEmbeddingCount: nextConceptEmbeddingCount,
           topicEmbeddingModel: embeddingModel,
           topicEmbeddingUpdatedAt: embeddingUpdatedAt,
         });
@@ -253,7 +403,8 @@ export async function POST(request: Request) {
         status: "enriched",
         reason: null,
         embedding_model: embeddingModel,
-        vector_size: centroid.length,
+        concept_vector_size: conceptCentroid.length,
+        learning_pattern_vector_size: learningPatternCentroid.length,
         qdrant_sync_ok: qdrantSyncOk,
         qdrant_sync_error: qdrantSyncError,
       });
@@ -267,7 +418,8 @@ export async function POST(request: Request) {
             ? error.message
             : "unknown_semantic_enrichment_error",
         embedding_model: null,
-        vector_size: null,
+        concept_vector_size: null,
+        learning_pattern_vector_size: null,
         qdrant_sync_ok: null,
         qdrant_sync_error: null,
       });

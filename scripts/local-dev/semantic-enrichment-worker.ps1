@@ -4,6 +4,7 @@ param(
   [string]$EmbeddingHost = "127.0.0.1",
   [int]$EmbeddingPort = 8001,
   [int]$EnrichmentLimit = 1,
+  [int]$LayoutLimit = 5,
   [int]$PollSeconds = 1,
   [int]$AbortPollSeconds = 1,
   [string]$PythonExe = ".\.venv\Scripts\python.exe",
@@ -186,14 +187,19 @@ function Test-ShouldAbortEnrichment {
   }
 }
 
-function Invoke-EnrichmentWithAbortWatch {
+function Invoke-PostRouteWithAbortWatch {
+  param(
+    [string]$RouteName,
+    [string]$Url
+  )
+
   $job = Start-Job -ScriptBlock {
-    param($AppBaseUrl, $EnrichmentLimit)
+    param($Url)
 
     Invoke-RestMethod `
       -Method POST `
-      "$AppBaseUrl/api/semantic-enrichment/run-pending?limit=$EnrichmentLimit"
-  } -ArgumentList $AppBaseUrl, $EnrichmentLimit
+      $Url
+  } -ArgumentList $Url
 
   try {
     while ($job.State -eq "Running") {
@@ -202,7 +208,7 @@ function Invoke-EnrichmentWithAbortWatch {
       $abortCheck = Test-ShouldAbortEnrichment
 
       if ($abortCheck.should_abort -eq $true) {
-        Write-WorkerLog "Abort requested while enrichment is running. Reason: $($abortCheck.reason)"
+        Write-WorkerLog "Abort requested while $RouteName is running. Reason: $($abortCheck.reason)"
         Stop-Job $job -ErrorAction SilentlyContinue
         return $null
       }
@@ -214,11 +220,30 @@ function Invoke-EnrichmentWithAbortWatch {
   }
 }
 
+function Invoke-EnrichmentWithAbortWatch {
+  $url = "$AppBaseUrl/api/semantic-enrichment/run-pending?limit=$EnrichmentLimit"
+
+  return Invoke-PostRouteWithAbortWatch `
+    -RouteName "semantic enrichment" `
+    -Url $url
+}
+
+function Invoke-LayoutWithAbortWatch {
+  $url = "$AppBaseUrl/api/semantic-layout/recompute-pending?limit=$LayoutLimit"
+
+  return Invoke-PostRouteWithAbortWatch `
+    -RouteName "semantic layout recompute" `
+    -Url $url
+}
+
 Write-WorkerLog "Semantic enrichment worker started."
 Write-WorkerLog "App: $AppBaseUrl"
 Write-WorkerLog "This worker only enriches when idle-state is safe AND pending topics exist."
+Write-WorkerLog "After enrichment, it recomputes semantic layout targets."
 Write-WorkerLog "Poll interval: $PollSeconds second(s)."
 Write-WorkerLog "Python executable: $PythonExe"
+Write-WorkerLog "Enrichment limit: $EnrichmentLimit"
+Write-WorkerLog "Layout limit: $LayoutLimit"
 
 while ($true) {
   $idle = Get-IdleState
@@ -278,13 +303,40 @@ while ($true) {
     }
 
     Write-WorkerLog "Running semantic enrichment batch with limit=$EnrichmentLimit..."
-    $result = Invoke-EnrichmentWithAbortWatch
+    $enrichmentResult = Invoke-EnrichmentWithAbortWatch
 
-    if ($null -eq $result) {
+    if ($null -eq $enrichmentResult) {
       Write-WorkerLog "Enrichment was aborted or returned no result."
+      continue
+    }
+
+    Write-WorkerLog "Enrichment result:"
+    $enrichmentResult | ConvertTo-Json -Depth 20 | Write-Host
+
+    $enrichedCount = 0
+    if ($null -ne $enrichmentResult.enriched_count) {
+      $enrichedCount = [int]$enrichmentResult.enriched_count
+    }
+
+    if ($enrichedCount -le 0) {
+      Write-WorkerLog "No topics were enriched this cycle. Skipping semantic layout recompute."
+      continue
+    }
+
+    $abortBeforeLayout = Test-ShouldAbortEnrichment
+    if ($abortBeforeLayout.should_abort -eq $true) {
+      Write-WorkerLog "Abort condition appeared before semantic layout. Reason: $($abortBeforeLayout.reason)"
+      continue
+    }
+
+    Write-WorkerLog "Running semantic layout recompute with limit=$LayoutLimit..."
+    $layoutResult = Invoke-LayoutWithAbortWatch
+
+    if ($null -eq $layoutResult) {
+      Write-WorkerLog "Semantic layout recompute was aborted or returned no result."
     } else {
-      Write-WorkerLog "Enrichment result:"
-      $result | ConvertTo-Json -Depth 20 | Write-Host
+      Write-WorkerLog "Semantic layout result:"
+      $layoutResult | ConvertTo-Json -Depth 20 | Write-Host
     }
   } catch {
     Write-WorkerLog "Worker cycle failed: $($_.Exception.Message)"
