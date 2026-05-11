@@ -4,14 +4,30 @@ import type {
   EntityId,
   VectorInfo,
 } from "@/types/contracts";
-import type { RouteTopic } from "@/lib/runtime/topic-resolution";
-import type { TopicLabelingResult } from "@/lib/runtime/topic-labeling/topic-label-contract";
+import type { RouteTopic } from "@/lib/runtime/route-topics";
 import type {
   SemanticCentroidEvidence,
   SemanticCentroidRankedTopic,
   TopicWithSemanticCentroid,
   CentroidUpdateMethod,
 } from "./topic-centroids";
+
+export type TopicLabelingResult = {
+  topic_decision?: {
+    canonical_label?: string | null;
+    should_create_new_topic?: boolean | null;
+    should_reuse_existing_topic?: boolean | null;
+    confidence?: number | null;
+  } | null;
+  diagnostics?: {
+    ambiguity_flags?: string[] | null;
+  } | null;
+  interpretation?: {
+    concept_span?: string | null;
+    question_about_topic?: string | null;
+    synthesized_label?: string | null;
+  } | null;
+};
 
 /* ------------------------------------------------------------------ */
 /* SEMANTIC CENTROID ROUTING - V3 */

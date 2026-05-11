@@ -1,5 +1,5 @@
 import type { TopicLabelerV3ClientResult } from "./model-topic-labeler-v3";
-import type { RouteTopic } from "@/lib/runtime/topic-resolution";
+import type { RouteTopic } from "@/lib/runtime/route-topics";
 
 export type ModelTopicRouteDecisionKind =
   | "create_new"

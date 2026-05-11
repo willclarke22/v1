@@ -7,8 +7,8 @@ import type {
 import {
   buildSeededTopicFromResolvedLabel,
   type RouteTopic,
-  type TopicResolutionTrace,
-} from "@/lib/runtime/topic-resolution";
+} from "@/lib/runtime/route-topics";
+import type { TopicResolutionTrace } from "@/lib/runtime/topic-resolution-trace";
 import type {
   ModelTopicRoutePolicyDecision,
   ModelTopicRouteDecisionKind,

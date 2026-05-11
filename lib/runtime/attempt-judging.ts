@@ -7,7 +7,7 @@ import type {
   VectorInfo,
 } from "@/types/contracts";
 import { clamp, normalizeDiagnosis, nowIso, normalizeText } from "./shared";
-import type { RouteTopic } from "./topic-resolution";
+import type { RouteTopic } from "./route-topics";
 
 type TopicMetricUpdate = FrontendTopicMetricUpdate;
 

@@ -40,7 +40,7 @@ import {
 import { buildRecentChatHistory } from "@/lib/runtime/chat-history";
 import { scoreConfusionInsight } from "@/lib/providers/confusion-insight";
 import { isPosition, normalizeDiagnosis, nowIso } from "@/lib/runtime/shared";
-import type { RouteTopic } from "@/lib/runtime/topic-resolution";
+import type { RouteTopic } from "@/lib/runtime/route-topics";
 
 type IncomingChatTurn = {
   role?: string;

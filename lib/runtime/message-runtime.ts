@@ -9,10 +9,8 @@ import type {
   VectorInfo,
 } from "@/types/contracts";
 import { clamp, normalizeDiagnosis, nowIso } from "./shared";
-import {
-  inferPrimaryMessageFrame,
-  type RouteTopic,
-} from "./topic-resolution";
+import { inferPrimaryMessageFrame } from "./message-frame";
+import type { RouteTopic } from "./route-topics";
 import { makeId } from "@/lib/utils/ids";
 
 type TopicMetricUpdate = FrontendTopicMetricUpdate;

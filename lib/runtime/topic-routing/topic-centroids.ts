@@ -1,5 +1,5 @@
 import type { EmbeddingVector, VectorInfo } from "@/types/contracts";
-import type { RouteTopic } from "@/lib/runtime/topic-resolution";
+import type { RouteTopic } from "@/lib/runtime/route-topics";
 import type {
   TopicCentroidEvidence,
   TopicRoutingThresholds,

@@ -8,7 +8,7 @@ import type {
   RendererGenerator,
   RendererModality,
 } from "@/types/contracts";
-import type { RouteTopic } from "./topic-resolution";
+import type { RouteTopic } from "./route-topics";
 import { inferDiagnosisFromTopic } from "./attempt-judging";
 
 type AttemptClassification =

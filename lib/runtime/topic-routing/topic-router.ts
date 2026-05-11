@@ -3,7 +3,6 @@ import type {
   EmbeddingVector,
   VectorInfo,
 } from "@/types/contracts";
-import type { TopicLabelingResult } from "@/lib/runtime/topic-labeling/topic-label-contract";
 import {
   buildVectorInfoFromCentroidRanking,
   getSemanticCentroidCountForTopic,
@@ -23,6 +22,7 @@ import type {
   SemanticCentroidRoutingResult,
   SemanticCentroidRoutingThresholds,
   TopicCentroidUpdatePlan,
+  TopicLabelingResult,
   TopicNameSuggestion,
   TopicRoutingCandidateEvidence,
   TopicRoutingDebug,
@@ -151,7 +151,7 @@ function getInterpretationFallbackLabel(labeling?: TopicLabelingResult | null) {
   (labeling?.interpretation as { synthesized_label?: string | null } | undefined)
     ?.synthesized_label ?? null,
   );
-  if (synthesizedLabel) return synthesizedLabel;;
+  if (synthesizedLabel) return synthesizedLabel;
 
   return null;
 }
