@@ -11,6 +11,8 @@ import type { EmbeddingVector } from "@/types/contracts";
 
 type JsonObject = Record<string, unknown>;
 
+type TopicStateRow = Awaited<ReturnType<typeof getLatestTopicState>>[number];
+
 function isJsonObject(value: unknown): value is JsonObject {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
@@ -40,64 +42,75 @@ function hasVector(value: EmbeddingVector | null, count: number) {
   return Array.isArray(value) && value.length > 0 && count > 0;
 }
 
-function hasLegacyEmbedding(row: {
+function hasTopicLabelEmbedding(row: {
+  topic_label_embedding_centroid: EmbeddingVector | null;
+  topic_label_embedding_count: number;
+}) {
+  return hasVector(
+    row.topic_label_embedding_centroid,
+    row.topic_label_embedding_count,
+  );
+}
+
+function hasTopicMessageEmbedding(row: {
+  topic_message_embedding_centroid: EmbeddingVector | null;
+  topic_message_embedding_count: number;
+}) {
+  return hasVector(
+    row.topic_message_embedding_centroid,
+    row.topic_message_embedding_count,
+  );
+}
+
+function hasLegacyTopicEmbedding(row: {
   topic_embedding_centroid: EmbeddingVector | null;
   topic_embedding_count: number;
 }) {
   return hasVector(row.topic_embedding_centroid, row.topic_embedding_count);
 }
 
-function hasConceptEmbedding(row: {
-  topic_concept_embedding_centroid: EmbeddingVector | null;
-  topic_concept_embedding_count: number;
-}) {
-  return hasVector(
-    row.topic_concept_embedding_centroid,
-    row.topic_concept_embedding_count,
-  );
-}
-
-function hasLearningPatternEmbedding(row: {
-  learning_pattern_embedding_centroid: EmbeddingVector | null;
-  learning_pattern_embedding_count: number;
-}) {
-  return hasVector(
-    row.learning_pattern_embedding_centroid,
-    row.learning_pattern_embedding_count,
-  );
-}
-
 function getTopicJson(row: { topic_json: Record<string, unknown> | null }) {
   return isJsonObject(row.topic_json) ? row.topic_json : {};
 }
 
-function shouldEnrichTopic(row: {
-  topic_embedding_centroid: EmbeddingVector | null;
-  topic_embedding_count: number;
-  topic_concept_embedding_centroid: EmbeddingVector | null;
-  topic_concept_embedding_count: number;
-  learning_pattern_embedding_centroid: EmbeddingVector | null;
-  learning_pattern_embedding_count: number;
-  topic_json: Record<string, unknown> | null;
-}) {
+function getNestedSemanticStatus(
+  topicJson: Record<string, unknown> | null,
+): JsonObject | null {
+  const json = isJsonObject(topicJson) ? topicJson : {};
+  const nested = json.semantic_enrichment_status;
+
+  return isJsonObject(nested) ? nested : null;
+}
+
+function shouldEnrichTopic(row: TopicStateRow) {
   const topicJson = getTopicJson(row);
+  const nestedStatus = getNestedSemanticStatus(row.topic_json);
 
-  const explicitNeedsCentroid = asBoolean(
-    topicJson.needs_embedding_centroid,
-    false,
-  );
+  const explicitNeedsCentroid =
+    asBoolean(topicJson.needs_embedding_centroid, false) ||
+    asBoolean(nestedStatus?.needs_embedding_centroid, false);
 
-  const explicitSchedule = asBoolean(
-    topicJson.should_schedule_enrichment,
-    false,
-  );
+  const explicitSchedule =
+    asBoolean(topicJson.should_schedule_enrichment, false) ||
+    asBoolean(nestedStatus?.should_schedule_enrichment, false);
 
+  const wasSkippedForFastRoute =
+    asString(nestedStatus?.status) === "skipped_for_fast_model_route";
+
+  /**
+   * Canonical enrichment requirement:
+   * - topic_label_embedding_* powers layout / Qdrant topic lookup.
+   * - topic_message_embedding_* preserves learner-message pattern evidence.
+   *
+   * Legacy topic_embedding_* is still mirrored when we write, but missing legacy
+   * fields should not by themselves make a topic pending.
+   */
   return (
     explicitNeedsCentroid ||
     explicitSchedule ||
-    !hasConceptEmbedding(row) ||
-    !hasLearningPatternEmbedding(row) ||
-    !hasLegacyEmbedding(row)
+    wasSkippedForFastRoute ||
+    !hasTopicLabelEmbedding(row) ||
+    !hasTopicMessageEmbedding(row)
   );
 }
 
@@ -111,10 +124,7 @@ function buildEnrichmentPrompt(row: {
 
   if (storedPrompt) return storedPrompt;
 
-  const nestedStatus = isJsonObject(topicJson.semantic_enrichment_status)
-    ? topicJson.semantic_enrichment_status
-    : null;
-
+  const nestedStatus = getNestedSemanticStatus(row.topic_json);
   const nestedPrompt = nestedStatus
     ? asString(nestedStatus.enrichment_prompt_text)
     : null;
@@ -124,16 +134,16 @@ function buildEnrichmentPrompt(row: {
   return `Topic: ${row.topic_name}`;
 }
 
-function buildConceptEmbeddingText(row: { topic_name: string }) {
+function buildTopicLabelEmbeddingText(row: { topic_name: string }) {
   return row.topic_name.trim();
 }
 
-function buildLearningPatternEmbeddingText(args: {
+function buildTopicMessageEmbeddingText(args: {
   topicName: string;
   enrichmentPromptText: string;
 }) {
   return [
-    `Learning pattern for topic ${args.topicName}:`,
+    `Topic message pattern for topic ${args.topicName}:`,
     args.enrichmentPromptText,
   ].join("\n");
 }
@@ -141,30 +151,30 @@ function buildLearningPatternEmbeddingText(args: {
 function buildUpdatedTopicJson(args: {
   topicJson: Record<string, unknown> | null;
 
-  conceptCentroid: EmbeddingVector;
-  learningPatternCentroid: EmbeddingVector;
+  topicLabelCentroid: EmbeddingVector;
+  topicMessageCentroid: EmbeddingVector;
 
   embeddingModel: string;
   embeddingUpdatedAt: string;
 
-  conceptEmbeddingText: string;
-  learningPatternEmbeddingText: string;
+  topicLabelEmbeddingText: string;
+  topicMessageEmbeddingText: string;
   enrichmentPromptText: string;
 
-  nextConceptEmbeddingCount: number;
-  nextLearningPatternEmbeddingCount: number;
+  nextTopicLabelEmbeddingCount: number;
+  nextTopicMessageEmbeddingCount: number;
 }) {
   const {
     topicJson,
-    conceptCentroid,
-    learningPatternCentroid,
+    topicLabelCentroid,
+    topicMessageCentroid,
     embeddingModel,
     embeddingUpdatedAt,
-    conceptEmbeddingText,
-    learningPatternEmbeddingText,
+    topicLabelEmbeddingText,
+    topicMessageEmbeddingText,
     enrichmentPromptText,
-    nextConceptEmbeddingCount,
-    nextLearningPatternEmbeddingCount,
+    nextTopicLabelEmbeddingCount,
+    nextTopicMessageEmbeddingCount,
   } = args;
 
   const base = getTopicJson({ topic_json: topicJson });
@@ -175,14 +185,23 @@ function buildUpdatedTopicJson(args: {
     semantic_enrichment_status: {
       status: "centroid_ready",
       needs_embedding_centroid: false,
-      centroid_source: "two_embedding_system_v1",
+      centroid_source: "topic_label_and_message_embedding_v1",
       embedding_skip_reason: null,
       layout_status: "semantic_position_ready",
       should_schedule_enrichment: false,
       enrichment_prompt_text: enrichmentPromptText,
 
-      concept_embedding_source: "topic_label_only_v1",
-      learning_pattern_embedding_source: "enrichment_prompt_text_v1",
+      topic_label_embedding_source: "topic_label_only_v1",
+      topic_message_embedding_source: "topic_message_enrichment_prompt_text_v1",
+
+      /**
+       * Legacy migration note.
+       *
+       * topic_embedding_* and topic_concept_embedding_* mirror
+       * topic_label_embedding_* during migration.
+       * learning_pattern_embedding_* mirrors topic_message_embedding_*.
+       */
+      legacy_aliases_written: true,
     },
 
     needs_embedding_centroid: false,
@@ -194,32 +213,47 @@ function buildUpdatedTopicJson(args: {
     /**
      * Debug/source texts.
      */
-    topic_concept_embedding_text: conceptEmbeddingText,
-    learning_pattern_embedding_text: learningPatternEmbeddingText,
+    topic_label_embedding_text: topicLabelEmbeddingText,
+    topic_message_embedding_text: topicMessageEmbeddingText,
+
+    /**
+     * Canonical topic-label embedding.
+     */
+    topic_label_embedding_centroid: topicLabelCentroid,
+    topic_label_embedding_count: nextTopicLabelEmbeddingCount,
+    topic_label_embedding_model: embeddingModel,
+    topic_label_embedding_updated_at: embeddingUpdatedAt,
+
+    /**
+     * Canonical topic-message embedding.
+     */
+    topic_message_embedding_centroid: topicMessageCentroid,
+    topic_message_embedding_count: nextTopicMessageEmbeddingCount,
+    topic_message_embedding_model: embeddingModel,
+    topic_message_embedding_updated_at: embeddingUpdatedAt,
 
     /**
      * Legacy/general embedding fields.
-     * For compatibility, these mirror concept embedding.
+     * For compatibility, these mirror topic-label embedding.
      */
-    topic_embedding_centroid: conceptCentroid,
-    topic_embedding_count: nextConceptEmbeddingCount,
+    topic_embedding_centroid: topicLabelCentroid,
+    topic_embedding_count: nextTopicLabelEmbeddingCount,
     topic_embedding_model: embeddingModel,
     topic_embedding_updated_at: embeddingUpdatedAt,
 
     /**
-     * New concept embedding fields for semantic layout.
+     * Legacy alias for topic_label_embedding_*.
      */
-    topic_concept_embedding_centroid: conceptCentroid,
-    topic_concept_embedding_count: nextConceptEmbeddingCount,
+    topic_concept_embedding_centroid: topicLabelCentroid,
+    topic_concept_embedding_count: nextTopicLabelEmbeddingCount,
     topic_concept_embedding_model: embeddingModel,
     topic_concept_embedding_updated_at: embeddingUpdatedAt,
 
     /**
-     * New learning-pattern embedding fields for future personalization /
-     * diagnosis transfer / similar-struggle matching.
+     * Legacy alias for topic_message_embedding_*.
      */
-    learning_pattern_embedding_centroid: learningPatternCentroid,
-    learning_pattern_embedding_count: nextLearningPatternEmbeddingCount,
+    learning_pattern_embedding_centroid: topicMessageCentroid,
+    learning_pattern_embedding_count: nextTopicMessageEmbeddingCount,
     learning_pattern_embedding_model: embeddingModel,
     learning_pattern_embedding_updated_at: embeddingUpdatedAt,
   };
@@ -252,8 +286,9 @@ export async function POST(request: Request) {
     status: "enriched" | "skipped" | "error";
     reason: string | null;
     embedding_model: string | null;
-    concept_vector_size: number | null;
-    learning_pattern_vector_size: number | null;
+    topic_label_vector_size: number | null;
+    topic_message_vector_size: number | null;
+    had_legacy_topic_embedding_before: boolean;
     qdrant_sync_ok: boolean | null;
     qdrant_sync_error: string | null;
   }> = [];
@@ -262,32 +297,33 @@ export async function POST(request: Request) {
     try {
       const enrichmentPromptText = buildEnrichmentPrompt(row);
 
-      const conceptEmbeddingText = buildConceptEmbeddingText({
+      const topicLabelEmbeddingText = buildTopicLabelEmbeddingText({
         topic_name: row.topic_name,
       });
 
-      const learningPatternEmbeddingText = buildLearningPatternEmbeddingText({
+      const topicMessageEmbeddingText = buildTopicMessageEmbeddingText({
         topicName: row.topic_name,
         enrichmentPromptText,
       });
 
-      const [conceptEmbeddingResult, learningPatternEmbeddingResult] =
-        await embedTexts([conceptEmbeddingText, learningPatternEmbeddingText]);
+      const [topicLabelEmbeddingResult, topicMessageEmbeddingResult] =
+        await embedTexts([topicLabelEmbeddingText, topicMessageEmbeddingText]);
 
-      const conceptCentroid = asEmbeddingVector(conceptEmbeddingResult);
-      const learningPatternCentroid = asEmbeddingVector(
-        learningPatternEmbeddingResult,
+      const topicLabelCentroid = asEmbeddingVector(topicLabelEmbeddingResult);
+      const topicMessageCentroid = asEmbeddingVector(
+        topicMessageEmbeddingResult,
       );
 
-      if (!conceptCentroid) {
+      if (!topicLabelCentroid) {
         results.push({
           topic_id: row.topic_id,
           topic_name: row.topic_name,
           status: "error",
-          reason: "concept_embedding_result_missing_or_invalid_vector",
+          reason: "topic_label_embedding_result_missing_or_invalid_vector",
           embedding_model: null,
-          concept_vector_size: null,
-          learning_pattern_vector_size: null,
+          topic_label_vector_size: null,
+          topic_message_vector_size: null,
+          had_legacy_topic_embedding_before: hasLegacyTopicEmbedding(row),
           qdrant_sync_ok: null,
           qdrant_sync_error: null,
         });
@@ -295,15 +331,16 @@ export async function POST(request: Request) {
         continue;
       }
 
-      if (!learningPatternCentroid) {
+      if (!topicMessageCentroid) {
         results.push({
           topic_id: row.topic_id,
           topic_name: row.topic_name,
           status: "error",
-          reason: "learning_pattern_embedding_result_missing_or_invalid_vector",
+          reason: "topic_message_embedding_result_missing_or_invalid_vector",
           embedding_model: null,
-          concept_vector_size: conceptCentroid.length,
-          learning_pattern_vector_size: null,
+          topic_label_vector_size: topicLabelCentroid.length,
+          topic_message_vector_size: null,
+          had_legacy_topic_embedding_before: hasLegacyTopicEmbedding(row),
           qdrant_sync_ok: null,
           qdrant_sync_error: null,
         });
@@ -314,31 +351,31 @@ export async function POST(request: Request) {
       const embeddingModel = "local-embedding-service";
       const embeddingUpdatedAt = nowIso();
 
-      const nextConceptEmbeddingCount = Math.max(
+      const nextTopicLabelEmbeddingCount = Math.max(
         1,
-        row.topic_concept_embedding_count || row.topic_embedding_count || 0,
+        row.topic_label_embedding_count || row.topic_embedding_count || 0,
       );
 
-      const nextLearningPatternEmbeddingCount = Math.max(
+      const nextTopicMessageEmbeddingCount = Math.max(
         1,
-        row.learning_pattern_embedding_count || 0,
+        row.topic_message_embedding_count || 0,
       );
 
       const updatedTopicJson = buildUpdatedTopicJson({
         topicJson: row.topic_json,
 
-        conceptCentroid,
-        learningPatternCentroid,
+        topicLabelCentroid,
+        topicMessageCentroid,
 
         embeddingModel,
         embeddingUpdatedAt,
 
-        conceptEmbeddingText,
-        learningPatternEmbeddingText,
+        topicLabelEmbeddingText,
+        topicMessageEmbeddingText,
         enrichmentPromptText,
 
-        nextConceptEmbeddingCount,
-        nextLearningPatternEmbeddingCount,
+        nextTopicLabelEmbeddingCount,
+        nextTopicMessageEmbeddingCount,
       });
 
       await upsertTopicState({
@@ -353,20 +390,39 @@ export async function POST(request: Request) {
         topicJson: updatedTopicJson,
 
         /**
-         * Legacy/general embedding mirrors concept embedding for compatibility.
+         * Canonical topic-label embedding.
          */
-        topicEmbeddingCentroid: conceptCentroid,
-        topicEmbeddingCount: nextConceptEmbeddingCount,
+        topicLabelEmbeddingCentroid: topicLabelCentroid,
+        topicLabelEmbeddingCount: nextTopicLabelEmbeddingCount,
+        topicLabelEmbeddingModel: embeddingModel,
+        topicLabelEmbeddingUpdatedAt: embeddingUpdatedAt,
+
+        /**
+         * Canonical topic-message embedding.
+         */
+        topicMessageEmbeddingCentroid: topicMessageCentroid,
+        topicMessageEmbeddingCount: nextTopicMessageEmbeddingCount,
+        topicMessageEmbeddingModel: embeddingModel,
+        topicMessageEmbeddingUpdatedAt: embeddingUpdatedAt,
+
+        /**
+         * Legacy/general embedding mirrors topic-label embedding for compatibility.
+         */
+        topicEmbeddingCentroid: topicLabelCentroid,
+        topicEmbeddingCount: nextTopicLabelEmbeddingCount,
         topicEmbeddingModel: embeddingModel,
         topicEmbeddingUpdatedAt: embeddingUpdatedAt,
 
-        topicConceptEmbeddingCentroid: conceptCentroid,
-        topicConceptEmbeddingCount: nextConceptEmbeddingCount,
+        /**
+         * Legacy aliases during migration.
+         */
+        topicConceptEmbeddingCentroid: topicLabelCentroid,
+        topicConceptEmbeddingCount: nextTopicLabelEmbeddingCount,
         topicConceptEmbeddingModel: embeddingModel,
         topicConceptEmbeddingUpdatedAt: embeddingUpdatedAt,
 
-        learningPatternEmbeddingCentroid: learningPatternCentroid,
-        learningPatternEmbeddingCount: nextLearningPatternEmbeddingCount,
+        learningPatternEmbeddingCentroid: topicMessageCentroid,
+        learningPatternEmbeddingCount: nextTopicMessageEmbeddingCount,
         learningPatternEmbeddingModel: embeddingModel,
         learningPatternEmbeddingUpdatedAt: embeddingUpdatedAt,
       });
@@ -384,11 +440,19 @@ export async function POST(request: Request) {
           topicJson: updatedTopicJson,
 
           /**
-           * Qdrant gets the concept embedding because Qdrant is currently part of
-           * semantic topic routing/layout, not learning-pattern matching.
+           * Qdrant gets the topic-label embedding because Qdrant is currently part of
+           * semantic topic lookup/layout, not topic-message matching.
            */
-          topicEmbeddingCentroid: conceptCentroid,
-          topicEmbeddingCount: nextConceptEmbeddingCount,
+          topicLabelEmbeddingCentroid: topicLabelCentroid,
+          topicLabelEmbeddingCount: nextTopicLabelEmbeddingCount,
+          topicLabelEmbeddingModel: embeddingModel,
+          topicLabelEmbeddingUpdatedAt: embeddingUpdatedAt,
+
+          /**
+           * Compatibility alias while Qdrant/vector helpers migrate.
+           */
+          topicEmbeddingCentroid: topicLabelCentroid,
+          topicEmbeddingCount: nextTopicLabelEmbeddingCount,
           topicEmbeddingModel: embeddingModel,
           topicEmbeddingUpdatedAt: embeddingUpdatedAt,
         });
@@ -403,8 +467,9 @@ export async function POST(request: Request) {
         status: "enriched",
         reason: null,
         embedding_model: embeddingModel,
-        concept_vector_size: conceptCentroid.length,
-        learning_pattern_vector_size: learningPatternCentroid.length,
+        topic_label_vector_size: topicLabelCentroid.length,
+        topic_message_vector_size: topicMessageCentroid.length,
+        had_legacy_topic_embedding_before: hasLegacyTopicEmbedding(row),
         qdrant_sync_ok: qdrantSyncOk,
         qdrant_sync_error: qdrantSyncError,
       });
@@ -418,8 +483,9 @@ export async function POST(request: Request) {
             ? error.message
             : "unknown_semantic_enrichment_error",
         embedding_model: null,
-        concept_vector_size: null,
-        learning_pattern_vector_size: null,
+        topic_label_vector_size: null,
+        topic_message_vector_size: null,
+        had_legacy_topic_embedding_before: hasLegacyTopicEmbedding(row),
         qdrant_sync_ok: null,
         qdrant_sync_error: null,
       });

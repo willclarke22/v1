@@ -16,9 +16,13 @@
  * - important_run_inputs.new_attempt = raw submitted attempt
  * - engine_fuel.attempts = judged attempts
  *
- * Semantic routing invariant:
+ * Embedding naming invariant:
  * - topic_centroid remains the visual / 3D position vector for now.
- * - topic_embedding_centroid is the semantic embedding centroid used for routing.
+ * - topic_label_embedding_centroid is the semantic embedding of the clean topic label.
+ *   It is used for layout / semantic structure / Qdrant topic lookup.
+ * - topic_message_embedding_centroid is the topic-level embedding of learner messages.
+ *   It is used later for personalization / struggle-pattern similarity.
+ * - topic_embedding_centroid remains a compatibility alias for topic_label_embedding_centroid.
  * - learning_space.position is the renderer-safe position derived from topic state.
  */
 
@@ -810,13 +814,31 @@ export interface TopicState {
   topic_centroid: [number, number, number];
 
   /**
-   * Semantic centroid used for topic routing.
-   * This is the running embedding memory of messages assigned to this topic.
+   * Compatibility semantic embedding alias.
+   * Mirrors topic_label_embedding_centroid during the current migration.
    */
   topic_embedding_centroid?: Nullable<EmbeddingVector>;
   topic_embedding_count?: number;
   topic_embedding_model?: Nullable<string>;
   topic_embedding_updated_at?: Nullable<ISO8601String>;
+
+  /**
+   * Canonical embedding of the clean topic label.
+   * Used for layout / semantic structure / Qdrant topic lookup.
+   */
+  topic_label_embedding_centroid?: Nullable<EmbeddingVector>;
+  topic_label_embedding_count?: number;
+  topic_label_embedding_model?: Nullable<string>;
+  topic_label_embedding_updated_at?: Nullable<ISO8601String>;
+
+  /**
+   * Canonical topic-level embedding of learner messages assigned to this topic.
+   * Used later for personalization / struggle-pattern similarity.
+   */
+  topic_message_embedding_centroid?: Nullable<EmbeddingVector>;
+  topic_message_embedding_count?: number;
+  topic_message_embedding_model?: Nullable<string>;
+  topic_message_embedding_updated_at?: Nullable<ISO8601String>;
 }
 
 export interface ClusterState {

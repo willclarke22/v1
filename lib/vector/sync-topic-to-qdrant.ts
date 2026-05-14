@@ -2,8 +2,8 @@ import crypto from "node:crypto";
 import { embedText } from "@/lib/vector/embed";
 import {
   createQdrantClient,
-  hasQdrantConfig,
   ensureTopicCollection,
+  hasQdrantConfig,
   TOPIC_COLLECTION,
 } from "@/lib/vector/qdrant";
 import type { EmbeddingVector } from "@/types/contracts";
@@ -16,6 +16,12 @@ type JsonValue =
   | { [key: string]: JsonValue }
   | JsonValue[];
 
+type TopicLabelVectorSource =
+  | "topic_label_embedding_centroid"
+  | "legacy_topic_concept_embedding_centroid"
+  | "legacy_topic_embedding_centroid"
+  | "topic_label_text_fallback";
+
 export type SyncTopicToQdrantInput = {
   topicId: string;
   topicName: string;
@@ -25,9 +31,31 @@ export type SyncTopicToQdrantInput = {
   topicJson?: JsonValue;
 
   /**
-   * Semantic routing centroid.
-   * If provided, this becomes the Qdrant point vector.
-   * If omitted, sync falls back to embedding topic text.
+   * Canonical topic-label embedding.
+   *
+   * This is the vector Qdrant should store for topic lookup / semantic layout.
+   */
+  topicLabelEmbeddingCentroid?: EmbeddingVector | null;
+  topicLabelEmbeddingCount?: number | null;
+  topicLabelEmbeddingModel?: string | null;
+  topicLabelEmbeddingUpdatedAt?: string | null;
+
+  /**
+   * Legacy alias for topicLabelEmbedding*.
+   *
+   * During migration, topic_concept_embedding_* had the same intended meaning
+   * as the new topic_label_embedding_* fields.
+   */
+  topicConceptEmbeddingCentroid?: EmbeddingVector | null;
+  topicConceptEmbeddingCount?: number | null;
+  topicConceptEmbeddingModel?: string | null;
+  topicConceptEmbeddingUpdatedAt?: string | null;
+
+  /**
+   * Older generic alias for topicLabelEmbedding*.
+   *
+   * Keep accepting this until every caller and persisted row has moved to
+   * topic_label_embedding_*.
    */
   topicEmbeddingCentroid?: EmbeddingVector | null;
   topicEmbeddingCount?: number | null;
@@ -41,11 +69,19 @@ export type SyncTopicToQdrantResult = {
   error: string | null;
   topic_id: string;
   topic_name: string;
-  vector_source: "topic_embedding_centroid" | "topic_text_fallback" | null;
+  vector_source: TopicLabelVectorSource | null;
   qdrant_sync_timeout_ms: number;
   qdrant_ensure_timeout_ms: number;
   qdrant_upsert_wait: boolean;
   duration_ms: number;
+};
+
+type ResolvedTopicLabelEmbeddingFields = {
+  centroid: EmbeddingVector | null;
+  count: number;
+  model: string;
+  updatedAt: string | null;
+  source: Exclude<TopicLabelVectorSource, "topic_label_text_fallback"> | null;
 };
 
 function roundMs(value: number) {
@@ -72,7 +108,7 @@ function getQdrantSyncTimeoutMs() {
   return parsePositiveInteger(
     process.env.MYWAY_QDRANT_SYNC_TIMEOUT_MS ??
       process.env.QDRANT_SYNC_TIMEOUT_MS,
-    2500
+    2500,
   );
 }
 
@@ -80,7 +116,7 @@ function getQdrantEnsureTimeoutMs() {
   return parsePositiveInteger(
     process.env.MYWAY_QDRANT_ENSURE_TIMEOUT_MS ??
       process.env.QDRANT_ENSURE_TIMEOUT_MS,
-    1500
+    1500,
   );
 }
 
@@ -96,7 +132,7 @@ function getQdrantUpsertWait() {
 async function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
-  label: string
+  label: string,
 ): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -134,7 +170,7 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
   if (!Array.isArray(value)) return null;
 
   const vector = value.filter(
-    (item): item is number => typeof item === "number" && Number.isFinite(item)
+    (item): item is number => typeof item === "number" && Number.isFinite(item),
   );
 
   if (!vector.length) return null;
@@ -152,14 +188,53 @@ function asString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function getDefaultEmbeddingModelName() {
+  return (
+    process.env.MYWAY_EMBEDDING_MODEL ??
+    process.env.EMBEDDING_MODEL ??
+    "local-embedding-service"
+  );
+}
+
 function readTopicJsonEmbedding(input: SyncTopicToQdrantInput) {
   const topicJson = asRecord(input.topicJson);
 
+  const topicLabelCentroid = asEmbeddingVector(
+    topicJson?.topic_label_embedding_centroid,
+  );
+  const legacyConceptCentroid = asEmbeddingVector(
+    topicJson?.topic_concept_embedding_centroid,
+  );
+  const legacyTopicCentroid = asEmbeddingVector(
+    topicJson?.topic_embedding_centroid,
+  );
+
+  const centroid =
+    topicLabelCentroid ?? legacyConceptCentroid ?? legacyTopicCentroid;
+
+  const source: ResolvedTopicLabelEmbeddingFields["source"] = topicLabelCentroid
+    ? "topic_label_embedding_centroid"
+    : legacyConceptCentroid
+      ? "legacy_topic_concept_embedding_centroid"
+      : legacyTopicCentroid
+        ? "legacy_topic_embedding_centroid"
+        : null;
+
   return {
-    topicEmbeddingCentroid: asEmbeddingVector(topicJson?.topic_embedding_centroid),
-    topicEmbeddingCount: asNonNegativeInteger(topicJson?.topic_embedding_count),
-    topicEmbeddingModel: asString(topicJson?.topic_embedding_model),
-    topicEmbeddingUpdatedAt: asString(topicJson?.topic_embedding_updated_at),
+    centroid,
+    source,
+    count:
+      asNonNegativeInteger(topicJson?.topic_label_embedding_count) ??
+      asNonNegativeInteger(topicJson?.topic_concept_embedding_count) ??
+      asNonNegativeInteger(topicJson?.topic_embedding_count),
+    model:
+      asString(topicJson?.topic_label_embedding_model) ??
+      asString(topicJson?.topic_concept_embedding_model) ??
+      asString(topicJson?.topic_embedding_model),
+    updatedAt:
+      asString(topicJson?.topic_label_embedding_updated_at) ??
+      asString(topicJson?.topic_concept_embedding_updated_at) ??
+      asString(topicJson?.topic_embedding_updated_at),
   };
 }
 
@@ -175,14 +250,17 @@ function buildPointId(topicId: string): string {
   ].join("-");
 }
 
-function buildEmbeddingText(input: SyncTopicToQdrantInput): string {
+function buildTopicLabelFallbackText(input: SyncTopicToQdrantInput): string {
   const topicJson = asRecord(input.topicJson);
   const inferredKeywords = asStringArray(topicJson?.inferred_keywords);
 
   const parts = [
-    `Topic: ${input.topicName}`,
-    input.diagnosis ? `Diagnosis: ${input.diagnosis}` : null,
-    input.nextStep ? `Next step: ${input.nextStep}` : null,
+    /**
+     * Keep the fallback text label-centered.
+     *
+     * Qdrant stores topic-label vectors, not learner-message pattern vectors.
+     */
+    input.topicName.trim(),
     inferredKeywords.length > 0
       ? `Keywords: ${inferredKeywords.join(", ")}`
       : null,
@@ -191,50 +269,89 @@ function buildEmbeddingText(input: SyncTopicToQdrantInput): string {
   return parts.join("\n");
 }
 
-function getEmbeddingModelName(input: SyncTopicToQdrantInput) {
-  const topicJsonEmbedding = readTopicJsonEmbedding(input);
+function resolveInputCentroidSource(input: SyncTopicToQdrantInput): {
+  centroid: EmbeddingVector | null;
+  source: ResolvedTopicLabelEmbeddingFields["source"];
+} {
+  const topicLabelCentroid = asEmbeddingVector(input.topicLabelEmbeddingCentroid);
 
-  return (
-    input.topicEmbeddingModel ??
-    topicJsonEmbedding.topicEmbeddingModel ??
-    process.env.MYWAY_EMBEDDING_MODEL ??
-    process.env.EMBEDDING_MODEL ??
-    "local-embedding-service"
+  if (topicLabelCentroid) {
+    return {
+      centroid: topicLabelCentroid,
+      source: "topic_label_embedding_centroid",
+    };
+  }
+
+  const legacyConceptCentroid = asEmbeddingVector(
+    input.topicConceptEmbeddingCentroid,
   );
-}
 
-function resolveTopicEmbeddingFields(input: SyncTopicToQdrantInput) {
-  const topicJsonEmbedding = readTopicJsonEmbedding(input);
+  if (legacyConceptCentroid) {
+    return {
+      centroid: legacyConceptCentroid,
+      source: "legacy_topic_concept_embedding_centroid",
+    };
+  }
 
-  const topicEmbeddingCentroid =
-    asEmbeddingVector(input.topicEmbeddingCentroid) ??
-    topicJsonEmbedding.topicEmbeddingCentroid;
+  const legacyTopicCentroid = asEmbeddingVector(input.topicEmbeddingCentroid);
 
-  const topicEmbeddingCount =
-    asNonNegativeInteger(input.topicEmbeddingCount) ??
-    topicJsonEmbedding.topicEmbeddingCount ??
-    (topicEmbeddingCentroid ? 1 : 0);
-
-  const topicEmbeddingModel = getEmbeddingModelName(input);
-
-  const topicEmbeddingUpdatedAt =
-    input.topicEmbeddingUpdatedAt ??
-    topicJsonEmbedding.topicEmbeddingUpdatedAt ??
-    (topicEmbeddingCentroid ? input.updatedAt ?? new Date().toISOString() : null);
+  if (legacyTopicCentroid) {
+    return {
+      centroid: legacyTopicCentroid,
+      source: "legacy_topic_embedding_centroid",
+    };
+  }
 
   return {
-    topicEmbeddingCentroid,
-    topicEmbeddingCount,
-    topicEmbeddingModel,
-    topicEmbeddingUpdatedAt,
+    centroid: null,
+    source: null,
+  };
+}
+
+function resolveTopicLabelEmbeddingFields(
+  input: SyncTopicToQdrantInput,
+): ResolvedTopicLabelEmbeddingFields {
+  const topicJsonEmbedding = readTopicJsonEmbedding(input);
+  const inputCentroid = resolveInputCentroidSource(input);
+
+  const centroid = inputCentroid.centroid ?? topicJsonEmbedding.centroid;
+  const source = inputCentroid.source ?? topicJsonEmbedding.source;
+
+  const count =
+    asNonNegativeInteger(input.topicLabelEmbeddingCount) ??
+    asNonNegativeInteger(input.topicConceptEmbeddingCount) ??
+    asNonNegativeInteger(input.topicEmbeddingCount) ??
+    topicJsonEmbedding.count ??
+    (centroid ? 1 : 0);
+
+  const model =
+    input.topicLabelEmbeddingModel ??
+    input.topicConceptEmbeddingModel ??
+    input.topicEmbeddingModel ??
+    topicJsonEmbedding.model ??
+    getDefaultEmbeddingModelName();
+
+  const updatedAt =
+    input.topicLabelEmbeddingUpdatedAt ??
+    input.topicConceptEmbeddingUpdatedAt ??
+    input.topicEmbeddingUpdatedAt ??
+    topicJsonEmbedding.updatedAt ??
+    (centroid ? input.updatedAt ?? new Date().toISOString() : null);
+
+  return {
+    centroid,
+    count,
+    model,
+    updatedAt,
+    source,
   };
 }
 
 /**
- * This now checks only Qdrant config.
+ * This checks only Qdrant config.
  *
- * EMBEDDINGS_URL is not required when a topic already has
- * topicEmbeddingCentroid, because V3 sync can upsert that centroid directly.
+ * EMBEDDINGS_URL is not required when the topic already has a
+ * topicLabelEmbeddingCentroid, because sync can upsert that centroid directly.
  */
 export function canSyncTopicToQdrant(): boolean {
   return hasQdrantConfig();
@@ -242,43 +359,39 @@ export function canSyncTopicToQdrant(): boolean {
 
 async function buildVectorForQdrant(input: SyncTopicToQdrantInput): Promise<{
   vector: EmbeddingVector;
-  vectorSource: "topic_embedding_centroid" | "topic_text_fallback";
+  vectorSource: TopicLabelVectorSource;
   embeddingText: string;
-  topicEmbeddingCount: number;
-  topicEmbeddingModel: string;
-  topicEmbeddingUpdatedAt: string | null;
+  topicLabelEmbeddingCount: number;
+  topicLabelEmbeddingModel: string;
+  topicLabelEmbeddingUpdatedAt: string | null;
 }> {
-  const {
-    topicEmbeddingCentroid,
-    topicEmbeddingCount,
-    topicEmbeddingModel,
-    topicEmbeddingUpdatedAt,
-  } = resolveTopicEmbeddingFields(input);
-
-  const embeddingText = buildEmbeddingText(input);
+  const fields = resolveTopicLabelEmbeddingFields(input);
+  const embeddingText = buildTopicLabelFallbackText(input);
 
   /**
-   * Preferred V3 behavior:
-   * - If the topic already has a semantic centroid, Qdrant stores that centroid.
+   * Preferred behavior:
+   * - If the topic already has a topic-label embedding, Qdrant stores that vector.
    *
-   * Migration fallback:
-   * - If the topic has no centroid yet, embed the topic summary text like the
-   *   old implementation did.
+   * Migration behavior:
+   * - If only a legacy alias exists, use it but report the legacy source.
+   *
+   * Last-resort fallback:
+   * - If no vector exists, embed the topic-label fallback text.
    */
-  if (topicEmbeddingCentroid?.length) {
+  if (fields.centroid?.length) {
     return {
-      vector: topicEmbeddingCentroid,
-      vectorSource: "topic_embedding_centroid",
+      vector: fields.centroid,
+      vectorSource: fields.source ?? "topic_label_embedding_centroid",
       embeddingText,
-      topicEmbeddingCount,
-      topicEmbeddingModel,
-      topicEmbeddingUpdatedAt,
+      topicLabelEmbeddingCount: fields.count,
+      topicLabelEmbeddingModel: fields.model,
+      topicLabelEmbeddingUpdatedAt: fields.updatedAt,
     };
   }
 
   if (!process.env.EMBEDDINGS_URL?.trim()) {
     throw new Error(
-      `Cannot sync topic_id "${input.topicId}" to Qdrant because it has no topicEmbeddingCentroid and EMBEDDINGS_URL is missing.`
+      `Cannot sync topic_id "${input.topicId}" to Qdrant because it has no topicLabelEmbeddingCentroid and EMBEDDINGS_URL is missing.`,
     );
   }
 
@@ -290,27 +403,27 @@ async function buildVectorForQdrant(input: SyncTopicToQdrantInput): Promise<{
 
   return {
     vector: fallbackVector,
-    vectorSource: "topic_text_fallback",
+    vectorSource: "topic_label_text_fallback",
     embeddingText,
-    topicEmbeddingCount: topicEmbeddingCount || 1,
-    topicEmbeddingModel,
-    topicEmbeddingUpdatedAt:
-      topicEmbeddingUpdatedAt ?? input.updatedAt ?? new Date().toISOString(),
+    topicLabelEmbeddingCount: fields.count || 1,
+    topicLabelEmbeddingModel: fields.model,
+    topicLabelEmbeddingUpdatedAt:
+      fields.updatedAt ?? input.updatedAt ?? new Date().toISOString(),
   };
 }
 
 /**
  * Strict sync API.
  *
- * Use this when the caller wants failures to throw. In /api/message, prefer
- * syncTopicToQdrantBestEffort(...) so Qdrant cannot fail the user-facing route.
+ * Use this when the caller wants failures to throw. In user-facing routes, prefer
+ * syncTopicToQdrantBestEffort(...) so Qdrant cannot fail the response.
  */
 export async function syncTopicToQdrant(
-  input: SyncTopicToQdrantInput
+  input: SyncTopicToQdrantInput,
 ): Promise<void> {
   if (!canSyncTopicToQdrant()) {
     throw new Error(
-      "Qdrant topic sync is unavailable because QDRANT configuration is missing."
+      "Qdrant topic sync is unavailable because QDRANT configuration is missing.",
     );
   }
 
@@ -323,16 +436,16 @@ export async function syncTopicToQdrant(
   await withTimeout(
     ensureTopicCollection(),
     qdrantEnsureTimeoutMs,
-    "Qdrant ensureTopicCollection"
+    "Qdrant ensureTopicCollection",
   );
 
   const {
     vector,
     vectorSource,
     embeddingText,
-    topicEmbeddingCount,
-    topicEmbeddingModel,
-    topicEmbeddingUpdatedAt,
+    topicLabelEmbeddingCount,
+    topicLabelEmbeddingModel,
+    topicLabelEmbeddingUpdatedAt,
   } = await buildVectorForQdrant(input);
 
   if (!Array.isArray(vector) || vector.length === 0) {
@@ -353,7 +466,7 @@ export async function syncTopicToQdrant(
             next_step: input.nextStep ?? null,
             updated_at: input.updatedAt ?? new Date().toISOString(),
             inferred_keywords: asStringArray(
-              asRecord(input.topicJson)?.inferred_keywords
+              asRecord(input.topicJson)?.inferred_keywords,
             ),
 
             /**
@@ -361,31 +474,41 @@ export async function syncTopicToQdrant(
              */
             embedding_text: embeddingText,
             vector_source: vectorSource,
+            vector_semantics: "topic_label_embedding",
 
             /**
-             * Semantic centroid metadata used by the V3 router/debug output.
+             * Canonical Qdrant payload metadata.
              */
-            topic_embedding_count: topicEmbeddingCount,
-            topic_embedding_model: topicEmbeddingModel,
-            topic_embedding_updated_at: topicEmbeddingUpdatedAt,
+            topic_label_embedding_count: topicLabelEmbeddingCount,
+            topic_label_embedding_model: topicLabelEmbeddingModel,
+            topic_label_embedding_updated_at: topicLabelEmbeddingUpdatedAt,
+
+            /**
+             * Legacy payload aliases during migration.
+             */
+            topic_embedding_count: topicLabelEmbeddingCount,
+            topic_embedding_model: topicLabelEmbeddingModel,
+            topic_embedding_updated_at: topicLabelEmbeddingUpdatedAt,
+            topic_concept_embedding_count: topicLabelEmbeddingCount,
+            topic_concept_embedding_model: topicLabelEmbeddingModel,
+            topic_concept_embedding_updated_at: topicLabelEmbeddingUpdatedAt,
           },
         },
       ],
     }),
     qdrantSyncTimeoutMs,
-    "Qdrant topic upsert"
+    "Qdrant topic upsert",
   );
 }
 
 /**
  * Best-effort sync API.
  *
- * This is the one /api/message should use next. It never throws. It returns a
- * compact result object so the route can attach sync status to latency_debug or
- * log it without failing the user-facing response.
+ * It never throws. It returns a compact result object so callers can attach sync
+ * status to debug output without failing the user-facing response.
  */
 export async function syncTopicToQdrantBestEffort(
-  input: SyncTopicToQdrantInput
+  input: SyncTopicToQdrantInput,
 ): Promise<SyncTopicToQdrantResult> {
   const startedAt = nowMs();
   const qdrantSyncTimeoutMs = getQdrantSyncTimeoutMs();
@@ -410,10 +533,10 @@ export async function syncTopicToQdrantBestEffort(
   let vectorSource: SyncTopicToQdrantResult["vector_source"] = null;
 
   try {
-    const fields = resolveTopicEmbeddingFields(input);
-    vectorSource = fields.topicEmbeddingCentroid?.length
-      ? "topic_embedding_centroid"
-      : "topic_text_fallback";
+    const fields = resolveTopicLabelEmbeddingFields(input);
+    vectorSource = fields.centroid?.length
+      ? fields.source ?? "topic_label_embedding_centroid"
+      : "topic_label_text_fallback";
 
     await syncTopicToQdrant(input);
 

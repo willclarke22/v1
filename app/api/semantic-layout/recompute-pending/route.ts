@@ -15,12 +15,16 @@ type JsonObject = { [key: string]: JsonValue };
 
 type LayoutCandidate = Awaited<ReturnType<typeof getLatestTopicState>>[number];
 
-type ResolvedConceptEmbedding = {
+type ResolvedTopicLabelEmbedding = {
   centroid: EmbeddingVector | null;
   count: number;
   model: string | null;
   updated_at: string | null;
-  source: "topic_concept_embedding" | "legacy_topic_embedding" | "missing";
+  source:
+    | "topic_label_embedding"
+    | "legacy_topic_concept_embedding"
+    | "legacy_topic_embedding"
+    | "missing";
 };
 
 type NeighborMatch = {
@@ -31,8 +35,8 @@ type NeighborMatch = {
   weight: number;
   reliability: number;
   position: TopicPosition;
-  concept_embedding_count: number;
-  concept_embedding_source: ResolvedConceptEmbedding["source"];
+  topic_label_embedding_count: number;
+  topic_label_embedding_source: ResolvedTopicLabelEmbedding["source"];
 };
 
 type LayoutThresholds = {
@@ -72,7 +76,7 @@ const TOP_K_NEIGHBORS = 5;
 /**
  * This is only for debug/visibility, not clustering.
  *
- * We keep it very low so the response can show the top concept similarities
+ * We keep it very low so the response can show the top topic-label similarities
  * even when none are strong enough to move spheres together.
  */
 const MIN_VISIBLE_CANDIDATE_SIMILARITY = -1;
@@ -120,19 +124,47 @@ function hasSemanticPosition(topic: LayoutCandidate) {
   );
 }
 
-function resolveConceptEmbedding(topic: LayoutCandidate): ResolvedConceptEmbedding {
-  const conceptCentroid = asEmbeddingVector(topic.topic_concept_embedding_centroid);
+function resolveTopicLabelEmbedding(
+  topic: LayoutCandidate,
+): ResolvedTopicLabelEmbedding {
+  const topicLabelCentroid = asEmbeddingVector(topic.topic_label_embedding_centroid);
 
-  if (conceptCentroid && topic.topic_concept_embedding_count > 0) {
+  if (topicLabelCentroid && topic.topic_label_embedding_count > 0) {
     return {
-      centroid: conceptCentroid,
-      count: topic.topic_concept_embedding_count,
-      model: topic.topic_concept_embedding_model,
-      updated_at: topic.topic_concept_embedding_updated_at,
-      source: "topic_concept_embedding",
+      centroid: topicLabelCentroid,
+      count: topic.topic_label_embedding_count,
+      model: topic.topic_label_embedding_model,
+      updated_at: topic.topic_label_embedding_updated_at,
+      source: "topic_label_embedding",
     };
   }
 
+  /**
+   * Migration fallback only.
+   *
+   * Old topic_concept_embedding_* represented what we now call
+   * topic_label_embedding_*.
+   */
+  const legacyConceptCentroid = asEmbeddingVector(
+    topic.topic_concept_embedding_centroid,
+  );
+
+  if (legacyConceptCentroid && topic.topic_concept_embedding_count > 0) {
+    return {
+      centroid: legacyConceptCentroid,
+      count: topic.topic_concept_embedding_count,
+      model: topic.topic_concept_embedding_model,
+      updated_at: topic.topic_concept_embedding_updated_at,
+      source: "legacy_topic_concept_embedding",
+    };
+  }
+
+  /**
+   * Final migration fallback only.
+   *
+   * topic_embedding_* is the old generic alias that should mirror
+   * topic_label_embedding_*.
+   */
   const legacyCentroid = asEmbeddingVector(topic.topic_embedding_centroid);
 
   if (legacyCentroid && topic.topic_embedding_count > 0) {
@@ -154,8 +186,8 @@ function resolveConceptEmbedding(topic: LayoutCandidate): ResolvedConceptEmbeddi
   };
 }
 
-function hasConceptEmbedding(topic: LayoutCandidate) {
-  const resolved = resolveConceptEmbedding(topic);
+function hasTopicLabelEmbedding(topic: LayoutCandidate) {
+  const resolved = resolveTopicLabelEmbedding(topic);
 
   return Boolean(resolved.centroid && resolved.centroid.length > 0 && resolved.count > 0);
 }
@@ -211,10 +243,10 @@ function round4(value: number) {
   return Math.round(value * 10_000) / 10_000;
 }
 
-function centroidReliability(conceptEmbeddingCount: number) {
-  if (conceptEmbeddingCount >= 5) return 1;
-  if (conceptEmbeddingCount >= 3) return 0.85;
-  if (conceptEmbeddingCount >= 2) return 0.72;
+function centroidReliability(topicLabelEmbeddingCount: number) {
+  if (topicLabelEmbeddingCount >= 5) return 1;
+  if (topicLabelEmbeddingCount >= 3) return 0.85;
+  if (topicLabelEmbeddingCount >= 2) return 0.72;
   return 0.58;
 }
 
@@ -316,7 +348,7 @@ function weightedAveragePosition(neighbors: NeighborMatch[]): TopicPosition | nu
 }
 
 function enrichedTopics(rows: LayoutCandidate[]) {
-  return rows.filter(hasConceptEmbedding);
+  return rows.filter(hasTopicLabelEmbedding);
 }
 
 function findNeighborMatches(args: {
@@ -324,17 +356,17 @@ function findNeighborMatches(args: {
   allTopics: LayoutCandidate[];
   thresholds: LayoutThresholds;
 }) {
-  const targetConceptEmbedding = resolveConceptEmbedding(args.targetTopic);
-  const targetCentroid = targetConceptEmbedding.centroid;
+  const targetTopicLabelEmbedding = resolveTopicLabelEmbedding(args.targetTopic);
+  const targetCentroid = targetTopicLabelEmbedding.centroid;
 
   if (!targetCentroid) return [];
 
   return args.allTopics
     .filter((candidate) => candidate.topic_id !== args.targetTopic.topic_id)
-    .filter(hasConceptEmbedding)
+    .filter(hasTopicLabelEmbedding)
     .map((candidate, index): NeighborMatch | null => {
-      const candidateConceptEmbedding = resolveConceptEmbedding(candidate);
-      const candidateCentroid = candidateConceptEmbedding.centroid;
+      const candidateTopicLabelEmbedding = resolveTopicLabelEmbedding(candidate);
+      const candidateCentroid = candidateTopicLabelEmbedding.centroid;
 
       if (!candidateCentroid) return null;
 
@@ -346,7 +378,7 @@ function findNeighborMatches(args: {
        */
       if (similarity < MIN_VISIBLE_CANDIDATE_SIMILARITY) return null;
 
-      const reliability = centroidReliability(candidateConceptEmbedding.count);
+      const reliability = centroidReliability(candidateTopicLabelEmbedding.count);
 
       return {
         topic_id: candidate.topic_id,
@@ -360,8 +392,8 @@ function findNeighborMatches(args: {
           reliability,
         }),
         position: getVisualPosition(candidate, index),
-        concept_embedding_count: candidateConceptEmbedding.count,
-        concept_embedding_source: candidateConceptEmbedding.source,
+        topic_label_embedding_count: candidateTopicLabelEmbedding.count,
+        topic_label_embedding_source: candidateTopicLabelEmbedding.source,
       };
     })
     .filter((match): match is NeighborMatch => Boolean(match))
@@ -408,9 +440,9 @@ function decideSemanticLayout(args: {
   if (hasVeryStrongSingleNeighbor) {
     return {
       should_cluster: true,
-      method: "semantic_confident_single_neighbor_v3_concept_embedding",
+      method: "semantic_confident_single_neighbor_v3_topic_label_embedding",
       reason:
-        "Placed near semantic neighbors because the top concept neighbor passed the strong-similarity threshold.",
+        "Placed near semantic neighbors because the top topic-label neighbor passed the strong-similarity threshold.",
       usable_neighbors: strongNeighbors.length ? strongNeighbors : [topNeighbor],
       thresholds: args.thresholds,
       top_similarity: topSimilarity === null ? null : round4(topSimilarity),
@@ -423,9 +455,9 @@ function decideSemanticLayout(args: {
   if (hasModerateNeighborWithClearMargin && topNeighbor) {
     return {
       should_cluster: true,
-      method: "semantic_moderate_with_clear_margin_v3_concept_embedding",
+      method: "semantic_moderate_with_clear_margin_v3_topic_label_embedding",
       reason:
-        "Placed near the top concept neighbor because it had moderate similarity and clearly beat the second-best neighbor.",
+        "Placed near the top topic-label neighbor because it had moderate similarity and clearly beat the second-best neighbor.",
       usable_neighbors: [topNeighbor],
       thresholds: args.thresholds,
       top_similarity: topSimilarity === null ? null : round4(topSimilarity),
@@ -438,9 +470,9 @@ function decideSemanticLayout(args: {
   if (hasMultiNeighborSupport) {
     return {
       should_cluster: true,
-      method: "semantic_multi_neighbor_support_v3_concept_embedding",
+      method: "semantic_multi_neighbor_support_v3_topic_label_embedding",
       reason:
-        "Placed near concept neighbors because multiple neighbors provided supporting similarity.",
+        "Placed near topic-label neighbors because multiple neighbors provided supporting similarity.",
       usable_neighbors: supportingNeighbors,
       thresholds: args.thresholds,
       top_similarity: topSimilarity === null ? null : round4(topSimilarity),
@@ -452,9 +484,9 @@ function decideSemanticLayout(args: {
 
   return {
     should_cluster: false,
-    method: "fallback_insufficient_concept_semantic_confidence_v3",
+    method: "fallback_insufficient_topic_label_semantic_confidence_v3",
     reason:
-      "No concept neighbor had enough confidence to justify clustering, so the topic kept a stable fallback placement.",
+      "No topic-label neighbor had enough confidence to justify clustering, so the topic kept a stable fallback placement.",
     usable_neighbors: [],
     thresholds: args.thresholds,
     top_similarity: topSimilarity === null ? null : round4(topSimilarity),
@@ -558,6 +590,7 @@ function mergeSemanticLayoutIntoTopicJson(args: {
   topic: LayoutCandidate;
   computed: ComputedSemanticPosition;
   updatedAt: string;
+  topicLabelEmbedding: ResolvedTopicLabelEmbedding;
 }) {
   const base = topicJsonObject(args.topic);
 
@@ -575,7 +608,8 @@ function mergeSemanticLayoutIntoTopicJson(args: {
     semantic_position_method: args.computed.method,
     semantic_layout: {
       method: args.computed.method,
-      embedding_source: "topic_concept_embedding_centroid",
+      embedding_source: "topic_label_embedding_centroid",
+      resolved_embedding_source: args.topicLabelEmbedding.source,
       updated_at: args.updatedAt,
       reason: args.computed.reason,
       layout_decision: {
@@ -594,8 +628,8 @@ function mergeSemanticLayoutIntoTopicJson(args: {
         similarity: neighbor.similarity,
         weight: round4(neighbor.weight),
         reliability: neighbor.reliability,
-        concept_embedding_count: neighbor.concept_embedding_count,
-        concept_embedding_source: neighbor.concept_embedding_source,
+        topic_label_embedding_count: neighbor.topic_label_embedding_count,
+        topic_label_embedding_source: neighbor.topic_label_embedding_source,
       })),
     },
     semantic_enrichment_status: {
@@ -606,7 +640,8 @@ function mergeSemanticLayoutIntoTopicJson(args: {
       layout_status: "semantic_position_ready",
       embedding_skip_reason: null,
       semantic_position_method: args.computed.method,
-      semantic_layout_embedding_source: "topic_concept_embedding_centroid",
+      semantic_layout_embedding_source: "topic_label_embedding_centroid",
+      semantic_layout_resolved_embedding_source: args.topicLabelEmbedding.source,
     },
     layout_status: "semantic_position_ready",
     needs_embedding_centroid: false,
@@ -617,7 +652,7 @@ function mergeSemanticLayoutIntoTopicJson(args: {
 
 function findPendingLayoutTopics(rows: LayoutCandidate[]) {
   return rows
-    .filter(hasConceptEmbedding)
+    .filter(hasTopicLabelEmbedding)
     .filter((topic) => !hasSemanticPosition(topic));
 }
 
@@ -628,12 +663,14 @@ export async function POST(request: Request) {
 
   try {
     const rows = await getLatestTopicState();
-    const pendingTopics = findPendingLayoutTopics(rows).slice(0, limit);
-    const totalPendingLayoutTopics = findPendingLayoutTopics(rows).length;
+    const allPendingLayoutTopics = findPendingLayoutTopics(rows);
+    const pendingTopics = allPendingLayoutTopics.slice(0, limit);
 
     const results = [];
 
     for (const [index, topic] of pendingTopics.entries()) {
+      const topicLabelEmbedding = resolveTopicLabelEmbedding(topic);
+
       const computed = computeSemanticPosition({
         targetTopic: topic,
         allTopics: rows,
@@ -645,9 +682,8 @@ export async function POST(request: Request) {
         topic,
         computed,
         updatedAt,
+        topicLabelEmbedding,
       });
-
-      const conceptEmbedding = resolveConceptEmbedding(topic);
 
       await upsertTopicState({
         topicId: topic.topic_id,
@@ -660,16 +696,45 @@ export async function POST(request: Request) {
         nextStep: topic.next_step,
         topicJson,
 
-        topicEmbeddingCentroid: conceptEmbedding.centroid,
-        topicEmbeddingCount: conceptEmbedding.count,
-        topicEmbeddingModel: conceptEmbedding.model,
-        topicEmbeddingUpdatedAt: conceptEmbedding.updated_at,
+        /**
+         * Canonical topic-label embedding.
+         *
+         * If this run only had a legacy embedding available, promote it into the
+         * canonical topic_label_embedding_* columns during writeback.
+         */
+        topicLabelEmbeddingCentroid: topicLabelEmbedding.centroid,
+        topicLabelEmbeddingCount: topicLabelEmbedding.count,
+        topicLabelEmbeddingModel: topicLabelEmbedding.model,
+        topicLabelEmbeddingUpdatedAt: topicLabelEmbedding.updated_at,
 
-        topicConceptEmbeddingCentroid: topic.topic_concept_embedding_centroid,
-        topicConceptEmbeddingCount: topic.topic_concept_embedding_count,
-        topicConceptEmbeddingModel: topic.topic_concept_embedding_model,
-        topicConceptEmbeddingUpdatedAt: topic.topic_concept_embedding_updated_at,
+        /**
+         * Legacy/general embedding mirrors topic-label embedding for compatibility.
+         */
+        topicEmbeddingCentroid: topicLabelEmbedding.centroid,
+        topicEmbeddingCount: topicLabelEmbedding.count,
+        topicEmbeddingModel: topicLabelEmbedding.model,
+        topicEmbeddingUpdatedAt: topicLabelEmbedding.updated_at,
 
+        /**
+         * Legacy topic-label alias during migration.
+         */
+        topicConceptEmbeddingCentroid: topicLabelEmbedding.centroid,
+        topicConceptEmbeddingCount: topicLabelEmbedding.count,
+        topicConceptEmbeddingModel: topicLabelEmbedding.model,
+        topicConceptEmbeddingUpdatedAt: topicLabelEmbedding.updated_at,
+
+        /**
+         * Preserve canonical topic-message embedding.
+         */
+        topicMessageEmbeddingCentroid: topic.topic_message_embedding_centroid,
+        topicMessageEmbeddingCount: topic.topic_message_embedding_count,
+        topicMessageEmbeddingModel: topic.topic_message_embedding_model,
+        topicMessageEmbeddingUpdatedAt:
+          topic.topic_message_embedding_updated_at,
+
+        /**
+         * Preserve legacy topic-message alias during migration.
+         */
         learningPatternEmbeddingCentroid: topic.learning_pattern_embedding_centroid,
         learningPatternEmbeddingCount: topic.learning_pattern_embedding_count,
         learningPatternEmbeddingModel: topic.learning_pattern_embedding_model,
@@ -687,9 +752,9 @@ export async function POST(request: Request) {
         status: "semantic_position_saved",
         semantic_position: computed.position,
         semantic_position_method: computed.method,
-        semantic_layout_embedding_source: "topic_concept_embedding_centroid",
-        concept_embedding_source: conceptEmbedding.source,
-        concept_embedding_count: conceptEmbedding.count,
+        semantic_layout_embedding_source: "topic_label_embedding_centroid",
+        resolved_embedding_source: topicLabelEmbedding.source,
+        topic_label_embedding_count: topicLabelEmbedding.count,
         visible_candidate_similarity_floor: MIN_VISIBLE_CANDIDATE_SIMILARITY,
         reason: computed.reason,
         layout_decision: {
@@ -706,8 +771,8 @@ export async function POST(request: Request) {
           topic_name: neighbor.topic_name,
           similarity: neighbor.similarity,
           reliability: neighbor.reliability,
-          concept_embedding_count: neighbor.concept_embedding_count,
-          concept_embedding_source: neighbor.concept_embedding_source,
+          topic_label_embedding_count: neighbor.topic_label_embedding_count,
+          topic_label_embedding_source: neighbor.topic_label_embedding_source,
         })),
       });
     }
@@ -718,8 +783,8 @@ export async function POST(request: Request) {
       duration_ms: Math.round((performance.now() - startedAt) * 100) / 100,
       limit,
       total_topics_seen: rows.length,
-      concept_enriched_topic_count: enrichedTopics(rows).length,
-      pending_layout_topics_found: totalPendingLayoutTopics,
+      topic_label_enriched_topic_count: enrichedTopics(rows).length,
+      pending_layout_topics_found: allPendingLayoutTopics.length,
       processed_count: pendingTopics.length,
       updated_count: results.length,
       visible_candidate_similarity_floor: MIN_VISIBLE_CANDIDATE_SIMILARITY,

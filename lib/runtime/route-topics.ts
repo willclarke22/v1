@@ -1,19 +1,56 @@
-import { mockTopics } from "@/lib/mock-topics";
 import { getRouteTopicState } from "@/lib/persistence/read";
 import { makeId } from "@/lib/utils/ids";
-import type { EmbeddingVector } from "@/types/contracts";
+import type { DiagnosisType, EmbeddingVector } from "@/types/contracts";
 import { isPosition, normalizeDiagnosis } from "./shared";
 
-type MockTopic = (typeof mockTopics)[number];
+export type RouteTopic = {
+  id: string;
+  name: string;
+  diagnosis: DiagnosisType;
+  nextStep: string;
+  confusion: number;
+  insight: number;
+  learningScore: number;
+  position: [number, number, number];
+  scale: number;
+  messageCount: number;
+  lastUpdated: string;
+  hasAvailableProbe: boolean;
 
-export type RouteTopic = MockTopic & {
+  /**
+   * Canonical topic-label embedding.
+   *
+   * Represents the clean topic label / topic identity. This is the vector family
+   * used for semantic layout and Qdrant topic lookup.
+   */
+  topic_label_embedding_centroid?: EmbeddingVector | null;
+  topic_label_embedding_count?: number | null;
+  topic_label_embedding_model?: string | null;
+  topic_label_embedding_updated_at?: string | null;
+
+  /**
+   * Canonical topic-message embedding.
+   *
+   * Represents learner-message / struggle-pattern evidence assigned to this
+   * topic. This is not used for semantic layout yet.
+   */
+  topic_message_embedding_centroid?: EmbeddingVector | null;
+  topic_message_embedding_count?: number | null;
+  topic_message_embedding_model?: string | null;
+  topic_message_embedding_updated_at?: string | null;
+
+  /**
+   * Legacy/general embedding field.
+   *
+   * During migration, this mirrors topic_label_embedding_*.
+   */
   topic_embedding_centroid?: EmbeddingVector | null;
   topic_embedding_count?: number | null;
   topic_embedding_model?: string | null;
   topic_embedding_updated_at?: string | null;
 
   /**
-   * Concept embedding used by semantic layout.
+   * Legacy alias for topic_label_embedding_*.
    */
   topic_concept_embedding_centroid?: EmbeddingVector | null;
   topic_concept_embedding_count?: number | null;
@@ -21,7 +58,7 @@ export type RouteTopic = MockTopic & {
   topic_concept_embedding_updated_at?: string | null;
 
   /**
-   * Learning-pattern embedding used later for personalization / diagnosis transfer.
+   * Legacy alias for topic_message_embedding_*.
    */
   learning_pattern_embedding_centroid?: EmbeddingVector | null;
   learning_pattern_embedding_count?: number | null;
@@ -49,6 +86,35 @@ export type SharedMessageFrame =
   | "apply_request"
   | "attempt_like"
   | "general";
+
+const DEFAULT_DIAGNOSIS: DiagnosisType = "representation_gap";
+
+type EmbeddingAliases = {
+  topic_label_embedding_centroid: EmbeddingVector | null;
+  topic_label_embedding_count: number | null;
+  topic_label_embedding_model: string | null;
+  topic_label_embedding_updated_at: string | null;
+
+  topic_message_embedding_centroid: EmbeddingVector | null;
+  topic_message_embedding_count: number | null;
+  topic_message_embedding_model: string | null;
+  topic_message_embedding_updated_at: string | null;
+
+  topic_embedding_centroid: EmbeddingVector | null;
+  topic_embedding_count: number | null;
+  topic_embedding_model: string | null;
+  topic_embedding_updated_at: string | null;
+
+  topic_concept_embedding_centroid: EmbeddingVector | null;
+  topic_concept_embedding_count: number | null;
+  topic_concept_embedding_model: string | null;
+  topic_concept_embedding_updated_at: string | null;
+
+  learning_pattern_embedding_centroid: EmbeddingVector | null;
+  learning_pattern_embedding_count: number | null;
+  learning_pattern_embedding_model: string | null;
+  learning_pattern_embedding_updated_at: string | null;
+};
 
 function dedupeStrings(values: string[]): string[] {
   return Array.from(new Set(values));
@@ -123,7 +189,7 @@ function buildSeededTopic(args: {
   return {
     id: makeId("topic"),
     name: args.name,
-    diagnosis: "representation_gap",
+    diagnosis: DEFAULT_DIAGNOSIS,
     nextStep: args.nextStep,
     confusion: 0.58,
     insight: 0.34,
@@ -133,7 +199,7 @@ function buildSeededTopic(args: {
     messageCount: 1,
     lastUpdated: new Date().toISOString(),
     hasAvailableProbe: false,
-  } as RouteTopic;
+  };
 }
 
 export function buildSeededTopicFromResolvedLabel(args: {
@@ -187,6 +253,110 @@ function resolveTopicPosition(row: {
   );
 }
 
+function resolveEmbeddingAliases(row: {
+  topic_label_embedding_centroid: EmbeddingVector | null;
+  topic_label_embedding_count: number | null;
+  topic_label_embedding_model: string | null;
+  topic_label_embedding_updated_at: string | null;
+
+  topic_message_embedding_centroid: EmbeddingVector | null;
+  topic_message_embedding_count: number | null;
+  topic_message_embedding_model: string | null;
+  topic_message_embedding_updated_at: string | null;
+
+  topic_embedding_centroid: EmbeddingVector | null;
+  topic_embedding_count: number | null;
+  topic_embedding_model: string | null;
+  topic_embedding_updated_at: string | null;
+
+  topic_concept_embedding_centroid: EmbeddingVector | null;
+  topic_concept_embedding_count: number | null;
+  topic_concept_embedding_model: string | null;
+  topic_concept_embedding_updated_at: string | null;
+
+  learning_pattern_embedding_centroid: EmbeddingVector | null;
+  learning_pattern_embedding_count: number | null;
+  learning_pattern_embedding_model: string | null;
+  learning_pattern_embedding_updated_at: string | null;
+}): EmbeddingAliases {
+  const topicLabelCentroid =
+    row.topic_label_embedding_centroid ??
+    row.topic_concept_embedding_centroid ??
+    row.topic_embedding_centroid ??
+    null;
+
+  const topicLabelCount =
+    row.topic_label_embedding_count ??
+    row.topic_concept_embedding_count ??
+    row.topic_embedding_count ??
+    null;
+
+  const topicLabelModel =
+    row.topic_label_embedding_model ??
+    row.topic_concept_embedding_model ??
+    row.topic_embedding_model ??
+    null;
+
+  const topicLabelUpdatedAt =
+    row.topic_label_embedding_updated_at ??
+    row.topic_concept_embedding_updated_at ??
+    row.topic_embedding_updated_at ??
+    null;
+
+  const topicMessageCentroid =
+    row.topic_message_embedding_centroid ??
+    row.learning_pattern_embedding_centroid ??
+    null;
+
+  const topicMessageCount =
+    row.topic_message_embedding_count ??
+    row.learning_pattern_embedding_count ??
+    null;
+
+  const topicMessageModel =
+    row.topic_message_embedding_model ??
+    row.learning_pattern_embedding_model ??
+    null;
+
+  const topicMessageUpdatedAt =
+    row.topic_message_embedding_updated_at ??
+    row.learning_pattern_embedding_updated_at ??
+    null;
+
+  return {
+    /**
+     * Canonical fields first.
+     */
+    topic_label_embedding_centroid: topicLabelCentroid,
+    topic_label_embedding_count: topicLabelCount,
+    topic_label_embedding_model: topicLabelModel,
+    topic_label_embedding_updated_at: topicLabelUpdatedAt,
+
+    topic_message_embedding_centroid: topicMessageCentroid,
+    topic_message_embedding_count: topicMessageCount,
+    topic_message_embedding_model: topicMessageModel,
+    topic_message_embedding_updated_at: topicMessageUpdatedAt,
+
+    /**
+     * Legacy aliases mirrored from canonical-resolved values.
+     */
+    topic_embedding_centroid: topicLabelCentroid,
+    topic_embedding_count: topicLabelCount,
+    topic_embedding_model: topicLabelModel,
+    topic_embedding_updated_at: topicLabelUpdatedAt,
+
+    topic_concept_embedding_centroid: topicLabelCentroid,
+    topic_concept_embedding_count: topicLabelCount,
+    topic_concept_embedding_model: topicLabelModel,
+    topic_concept_embedding_updated_at: topicLabelUpdatedAt,
+
+    learning_pattern_embedding_centroid: topicMessageCentroid,
+    learning_pattern_embedding_count: topicMessageCount,
+    learning_pattern_embedding_model: topicMessageModel,
+    learning_pattern_embedding_updated_at: topicMessageUpdatedAt,
+  };
+}
+
 export function inferKeywordsFromTopicLabel(label: string): string[] {
   return inferKeywordsFromSourceText(label);
 }
@@ -195,24 +365,25 @@ export async function loadRouteTopics(): Promise<RouteTopic[]> {
   const rows = await getRouteTopicState();
 
   if (!rows.length) {
-    return mockTopics.map((topic) => ({
-      ...topic,
-      topic_json: null,
-    })) as RouteTopic[];
+    return [];
   }
 
-  return rows.map((row, index) => {
+  const loadedTopics: RouteTopic[] = [];
+
+  for (const row of rows) {
     const position =
       resolveTopicPosition({
         topic_position: row.topic_position,
         semantic_position: row.semantic_position,
         topic_json: row.topic_json,
-      }) ?? computeNextTopicPosition(rows.slice(0, index) as unknown as RouteTopic[]);
+      }) ?? computeNextTopicPosition(loadedTopics);
 
-    return {
+    const embeddingAliases = resolveEmbeddingAliases(row);
+
+    const routeTopic: RouteTopic = {
       id: row.topic_id,
       name: row.topic_name,
-      diagnosis: normalizeDiagnosis(row.diagnosis),
+      diagnosis: normalizeDiagnosis(row.diagnosis) ?? DEFAULT_DIAGNOSIS,
       nextStep: row.next_step ?? `Explain ${row.topic_name} clearly in your own words.`,
       confusion: row.confusion ?? 0.5,
       insight: row.insight ?? 0.3,
@@ -223,20 +394,7 @@ export async function loadRouteTopics(): Promise<RouteTopic[]> {
       lastUpdated: row.updated_at,
       hasAvailableProbe: false,
 
-      topic_embedding_centroid: row.topic_embedding_centroid,
-      topic_embedding_count: row.topic_embedding_count,
-      topic_embedding_model: row.topic_embedding_model,
-      topic_embedding_updated_at: row.topic_embedding_updated_at,
-
-      topic_concept_embedding_centroid: row.topic_concept_embedding_centroid,
-      topic_concept_embedding_count: row.topic_concept_embedding_count,
-      topic_concept_embedding_model: row.topic_concept_embedding_model,
-      topic_concept_embedding_updated_at: row.topic_concept_embedding_updated_at,
-
-      learning_pattern_embedding_centroid: row.learning_pattern_embedding_centroid,
-      learning_pattern_embedding_count: row.learning_pattern_embedding_count,
-      learning_pattern_embedding_model: row.learning_pattern_embedding_model,
-      learning_pattern_embedding_updated_at: row.learning_pattern_embedding_updated_at,
+      ...embeddingAliases,
 
       semantic_enrichment_status: row.semantic_enrichment_status,
       needs_embedding_centroid: row.needs_embedding_centroid,
@@ -246,6 +404,10 @@ export async function loadRouteTopics(): Promise<RouteTopic[]> {
       embedding_skip_reason: row.embedding_skip_reason,
 
       topic_json: row.topic_json,
-    } as RouteTopic;
-  });
+    };
+
+    loadedTopics.push(routeTopic);
+  }
+
+  return loadedTopics;
 }

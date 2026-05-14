@@ -3,11 +3,17 @@ import type { EmbeddingVector } from "@/types/contracts";
 
 export type TopicPosition = [number, number, number];
 
-function asNumber(value: unknown, fallback: number | null = null): number | null {
+function asNumber(
+  value: unknown,
+  fallback: number | null = null,
+): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
-function asString(value: unknown, fallback: string | null = null): string | null {
+function asString(
+  value: unknown,
+  fallback: string | null = null,
+): string | null {
   return typeof value === "string" && value.trim() ? value : fallback;
 }
 
@@ -54,7 +60,9 @@ function readFromTopicJson<T>(
 function readSemanticStatusFromTopicJson(
   topicJson: Record<string, unknown> | null | undefined,
 ): string | null {
-  const topLevel = asString(readFromTopicJson(topicJson, "semantic_enrichment_status"));
+  const topLevel = asString(
+    readFromTopicJson(topicJson, "semantic_enrichment_status"),
+  );
 
   if (topLevel) return topLevel;
 
@@ -120,7 +128,9 @@ function readSemanticPositionFromTopicJson(
   return (
     asTopicPosition(readFromTopicJson(topicJson, "semantic_position")) ??
     asTopicPosition(readFromTopicJson(topicJson, "semantic_target_position")) ??
-    asTopicPosition(readFromTopicJson(topicJson, "learning_space_target_position"))
+    asTopicPosition(
+      readFromTopicJson(topicJson, "learning_space_target_position"),
+    )
   );
 }
 
@@ -157,7 +167,7 @@ export type TopicStateRow = {
 
   /**
    * Legacy/general embedding field.
-   * For compatibility, this should usually mirror topic_concept_embedding_*.
+   * Compatibility alias: mirrors topic_label_embedding_* during migration.
    */
   topic_embedding_centroid: EmbeddingVector | null;
   topic_embedding_count: number;
@@ -165,7 +175,17 @@ export type TopicStateRow = {
   topic_embedding_updated_at: string | null;
 
   /**
-   * Concept embedding used for semantic 3D topic layout.
+   * Canonical embedding of the clean topic label.
+   * Used for semantic 3D topic layout and Qdrant topic lookup.
+   */
+  topic_label_embedding_centroid: EmbeddingVector | null;
+  topic_label_embedding_count: number;
+  topic_label_embedding_model: string | null;
+  topic_label_embedding_updated_at: string | null;
+
+  /**
+   * Legacy compatibility alias for topic_label_embedding_*.
+   * Do not use in new code.
    */
   topic_concept_embedding_centroid: EmbeddingVector | null;
   topic_concept_embedding_count: number;
@@ -173,7 +193,17 @@ export type TopicStateRow = {
   topic_concept_embedding_updated_at: string | null;
 
   /**
-   * Learning-pattern embedding used later for personalization/diagnosis transfer.
+   * Canonical topic-level embedding of learner messages assigned to this topic.
+   * Used later for personalization / struggle-pattern similarity.
+   */
+  topic_message_embedding_centroid: EmbeddingVector | null;
+  topic_message_embedding_count: number;
+  topic_message_embedding_model: string | null;
+  topic_message_embedding_updated_at: string | null;
+
+  /**
+   * Legacy compatibility alias for topic_message_embedding_*.
+   * Do not use in new code.
    */
   learning_pattern_embedding_centroid: EmbeddingVector | null;
   learning_pattern_embedding_count: number;
@@ -215,10 +245,20 @@ type RawTopicStateRow = {
   topic_embedding_model?: unknown;
   topic_embedding_updated_at?: unknown;
 
+  topic_label_embedding_centroid?: unknown;
+  topic_label_embedding_count?: unknown;
+  topic_label_embedding_model?: unknown;
+  topic_label_embedding_updated_at?: unknown;
+
   topic_concept_embedding_centroid?: unknown;
   topic_concept_embedding_count?: unknown;
   topic_concept_embedding_model?: unknown;
   topic_concept_embedding_updated_at?: unknown;
+
+  topic_message_embedding_centroid?: unknown;
+  topic_message_embedding_count?: unknown;
+  topic_message_embedding_model?: unknown;
+  topic_message_embedding_updated_at?: unknown;
 
   learning_pattern_embedding_centroid?: unknown;
   learning_pattern_embedding_count?: unknown;
@@ -229,7 +269,9 @@ type RawTopicStateRow = {
 function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
   const topicJson = row.topic_json ?? null;
 
-  const legacyCentroidFromColumn = asEmbeddingVector(row.topic_embedding_centroid);
+  const legacyCentroidFromColumn = asEmbeddingVector(
+    row.topic_embedding_centroid,
+  );
   const legacyCentroidFromJson = asEmbeddingVector(
     readFromTopicJson(topicJson, "topic_embedding_centroid"),
   );
@@ -246,9 +288,40 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
     null,
   );
 
-  const legacyUpdatedAtFromColumn = asString(row.topic_embedding_updated_at, null);
+  const legacyUpdatedAtFromColumn = asString(
+    row.topic_embedding_updated_at,
+    null,
+  );
   const legacyUpdatedAtFromJson = asString(
     readFromTopicJson(topicJson, "topic_embedding_updated_at"),
+    null,
+  );
+
+  const labelCentroidFromColumn = asEmbeddingVector(
+    row.topic_label_embedding_centroid,
+  );
+  const labelCentroidFromJson = asEmbeddingVector(
+    readFromTopicJson(topicJson, "topic_label_embedding_centroid"),
+  );
+
+  const labelCountFromColumn = asNumber(row.topic_label_embedding_count, null);
+  const labelCountFromJson = asNumber(
+    readFromTopicJson(topicJson, "topic_label_embedding_count"),
+    null,
+  );
+
+  const labelModelFromColumn = asString(row.topic_label_embedding_model, null);
+  const labelModelFromJson = asString(
+    readFromTopicJson(topicJson, "topic_label_embedding_model"),
+    null,
+  );
+
+  const labelUpdatedAtFromColumn = asString(
+    row.topic_label_embedding_updated_at,
+    null,
+  );
+  const labelUpdatedAtFromJson = asString(
+    readFromTopicJson(topicJson, "topic_label_embedding_updated_at"),
     null,
   );
 
@@ -283,6 +356,40 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
   );
   const conceptUpdatedAtFromJson = asString(
     readFromTopicJson(topicJson, "topic_concept_embedding_updated_at"),
+    null,
+  );
+
+  const messageCentroidFromColumn = asEmbeddingVector(
+    row.topic_message_embedding_centroid,
+  );
+  const messageCentroidFromJson = asEmbeddingVector(
+    readFromTopicJson(topicJson, "topic_message_embedding_centroid"),
+  );
+
+  const messageCountFromColumn = asNumber(
+    row.topic_message_embedding_count,
+    null,
+  );
+  const messageCountFromJson = asNumber(
+    readFromTopicJson(topicJson, "topic_message_embedding_count"),
+    null,
+  );
+
+  const messageModelFromColumn = asString(
+    row.topic_message_embedding_model,
+    null,
+  );
+  const messageModelFromJson = asString(
+    readFromTopicJson(topicJson, "topic_message_embedding_model"),
+    null,
+  );
+
+  const messageUpdatedAtFromColumn = asString(
+    row.topic_message_embedding_updated_at,
+    null,
+  );
+  const messageUpdatedAtFromJson = asString(
+    readFromTopicJson(topicJson, "topic_message_embedding_updated_at"),
     null,
   );
 
@@ -322,25 +429,49 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
 
   /**
    * Migration compatibility:
-   * - old topic_embedding_* should behave as concept embedding if concept fields
-   *   are not populated yet.
-   * - concept embedding should behave as old topic_embedding_* for older code.
+   * - topic_label_embedding_* is the new canonical label/layout/Qdrant vector.
+   * - old topic_concept_embedding_* and topic_embedding_* are read as aliases.
+   * - topic_message_embedding_* is the new canonical learner-message vector.
+   * - old learning_pattern_embedding_* is read as an alias.
    */
+  const labelCentroid =
+    labelCentroidFromColumn ??
+    labelCentroidFromJson ??
+    conceptCentroidFromColumn ??
+    conceptCentroidFromJson ??
+    legacyCentroidFromColumn ??
+    legacyCentroidFromJson;
+
   const conceptCentroid =
     conceptCentroidFromColumn ??
     conceptCentroidFromJson ??
+    labelCentroidFromColumn ??
+    labelCentroidFromJson ??
     legacyCentroidFromColumn ??
     legacyCentroidFromJson;
 
   const legacyCentroid =
     legacyCentroidFromColumn ??
     legacyCentroidFromJson ??
+    labelCentroidFromColumn ??
+    labelCentroidFromJson ??
     conceptCentroidFromColumn ??
     conceptCentroidFromJson;
+
+  const labelCount =
+    labelCountFromColumn ??
+    labelCountFromJson ??
+    conceptCountFromColumn ??
+    conceptCountFromJson ??
+    legacyCountFromColumn ??
+    legacyCountFromJson ??
+    0;
 
   const conceptCount =
     conceptCountFromColumn ??
     conceptCountFromJson ??
+    labelCountFromColumn ??
+    labelCountFromJson ??
     legacyCountFromColumn ??
     legacyCountFromJson ??
     0;
@@ -348,33 +479,109 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
   const legacyCount =
     legacyCountFromColumn ??
     legacyCountFromJson ??
+    labelCountFromColumn ??
+    labelCountFromJson ??
     conceptCountFromColumn ??
     conceptCountFromJson ??
     0;
 
+  const labelModel =
+    labelModelFromColumn ??
+    labelModelFromJson ??
+    conceptModelFromColumn ??
+    conceptModelFromJson ??
+    legacyModelFromColumn ??
+    legacyModelFromJson;
+
   const conceptModel =
     conceptModelFromColumn ??
     conceptModelFromJson ??
+    labelModelFromColumn ??
+    labelModelFromJson ??
     legacyModelFromColumn ??
     legacyModelFromJson;
 
   const legacyModel =
     legacyModelFromColumn ??
     legacyModelFromJson ??
+    labelModelFromColumn ??
+    labelModelFromJson ??
     conceptModelFromColumn ??
     conceptModelFromJson;
+
+  const labelUpdatedAt =
+    labelUpdatedAtFromColumn ??
+    labelUpdatedAtFromJson ??
+    conceptUpdatedAtFromColumn ??
+    conceptUpdatedAtFromJson ??
+    legacyUpdatedAtFromColumn ??
+    legacyUpdatedAtFromJson;
 
   const conceptUpdatedAt =
     conceptUpdatedAtFromColumn ??
     conceptUpdatedAtFromJson ??
+    labelUpdatedAtFromColumn ??
+    labelUpdatedAtFromJson ??
     legacyUpdatedAtFromColumn ??
     legacyUpdatedAtFromJson;
 
   const legacyUpdatedAt =
     legacyUpdatedAtFromColumn ??
     legacyUpdatedAtFromJson ??
+    labelUpdatedAtFromColumn ??
+    labelUpdatedAtFromJson ??
     conceptUpdatedAtFromColumn ??
     conceptUpdatedAtFromJson;
+
+  const messageCentroid =
+    messageCentroidFromColumn ??
+    messageCentroidFromJson ??
+    learningPatternCentroidFromColumn ??
+    learningPatternCentroidFromJson;
+
+  const learningPatternCentroid =
+    learningPatternCentroidFromColumn ??
+    learningPatternCentroidFromJson ??
+    messageCentroidFromColumn ??
+    messageCentroidFromJson;
+
+  const messageCount =
+    messageCountFromColumn ??
+    messageCountFromJson ??
+    learningPatternCountFromColumn ??
+    learningPatternCountFromJson ??
+    0;
+
+  const learningPatternCount =
+    learningPatternCountFromColumn ??
+    learningPatternCountFromJson ??
+    messageCountFromColumn ??
+    messageCountFromJson ??
+    0;
+
+  const messageModel =
+    messageModelFromColumn ??
+    messageModelFromJson ??
+    learningPatternModelFromColumn ??
+    learningPatternModelFromJson;
+
+  const learningPatternModel =
+    learningPatternModelFromColumn ??
+    learningPatternModelFromJson ??
+    messageModelFromColumn ??
+    messageModelFromJson;
+
+  const messageUpdatedAt =
+    messageUpdatedAtFromColumn ??
+    messageUpdatedAtFromJson ??
+    learningPatternUpdatedAtFromColumn ??
+    learningPatternUpdatedAtFromJson;
+
+  const learningPatternUpdatedAt =
+    learningPatternUpdatedAtFromColumn ??
+    learningPatternUpdatedAtFromJson ??
+    messageUpdatedAtFromColumn ??
+    messageUpdatedAtFromJson;
 
   const positionXFromColumn = asNumber(row.topic_position_x, null);
   const positionYFromColumn = asNumber(row.topic_position_y, null);
@@ -384,7 +591,11 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
     positionXFromColumn !== null &&
     positionYFromColumn !== null &&
     positionZFromColumn !== null
-      ? ([positionXFromColumn, positionYFromColumn, positionZFromColumn] as TopicPosition)
+      ? ([
+          positionXFromColumn,
+          positionYFromColumn,
+          positionZFromColumn,
+        ] as TopicPosition)
       : null;
 
   const positionFromJson = readPositionFromTopicJson(topicJson);
@@ -406,9 +617,13 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
       : null;
 
   const semanticPositionFromJson = readSemanticPositionFromTopicJson(topicJson);
-  const semanticPosition = semanticPositionFromColumns ?? semanticPositionFromJson;
+  const semanticPosition =
+    semanticPositionFromColumns ?? semanticPositionFromJson;
 
-  const semanticStatusFromColumn = asString(row.semantic_enrichment_status, null);
+  const semanticStatusFromColumn = asString(
+    row.semantic_enrichment_status,
+    null,
+  );
   const semanticStatusFromJson = readSemanticStatusFromTopicJson(topicJson);
 
   const needsCentroidFromColumn = asBoolean(row.needs_embedding_centroid, null);
@@ -417,7 +632,10 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
     "needs_embedding_centroid",
   );
 
-  const shouldScheduleFromColumn = asBoolean(row.should_schedule_enrichment, null);
+  const shouldScheduleFromColumn = asBoolean(
+    row.should_schedule_enrichment,
+    null,
+  );
   const shouldScheduleFromJson = readNestedSemanticBoolean(
     topicJson,
     "should_schedule_enrichment",
@@ -426,10 +644,16 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
   const promptFromColumn = asString(row.semantic_enrichment_prompt_text, null);
   const promptFromJson =
     readNestedSemanticString(topicJson, "enrichment_prompt_text") ??
-    asString(readFromTopicJson(topicJson, "semantic_enrichment_prompt_text"), null);
+    asString(
+      readFromTopicJson(topicJson, "semantic_enrichment_prompt_text"),
+      null,
+    );
 
   const layoutStatusFromColumn = asString(row.layout_status, null);
-  const layoutStatusFromJson = readNestedSemanticString(topicJson, "layout_status");
+  const layoutStatusFromJson = readNestedSemanticString(
+    topicJson,
+    "layout_status",
+  );
 
   const skipReasonFromColumn = asString(row.embedding_skip_reason, null);
   const skipReasonFromJson = readNestedSemanticString(
@@ -481,8 +705,10 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
     semantic_position_method:
       semanticPositionMethodFromColumn ?? semanticPositionMethodFromJson,
 
-    semantic_enrichment_status: semanticStatusFromColumn ?? semanticStatusFromJson,
-    needs_embedding_centroid: needsCentroidFromColumn ?? needsCentroidFromJson ?? false,
+    semantic_enrichment_status:
+      semanticStatusFromColumn ?? semanticStatusFromJson,
+    needs_embedding_centroid:
+      needsCentroidFromColumn ?? needsCentroidFromJson ?? false,
     should_schedule_enrichment:
       shouldScheduleFromColumn ?? shouldScheduleFromJson ?? false,
     semantic_enrichment_prompt_text: promptFromColumn ?? promptFromJson,
@@ -494,21 +720,25 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
     topic_embedding_model: legacyModel,
     topic_embedding_updated_at: legacyUpdatedAt,
 
+    topic_label_embedding_centroid: labelCentroid,
+    topic_label_embedding_count: Math.max(0, labelCount),
+    topic_label_embedding_model: labelModel,
+    topic_label_embedding_updated_at: labelUpdatedAt,
+
     topic_concept_embedding_centroid: conceptCentroid,
     topic_concept_embedding_count: Math.max(0, conceptCount),
     topic_concept_embedding_model: conceptModel,
     topic_concept_embedding_updated_at: conceptUpdatedAt,
 
-    learning_pattern_embedding_centroid:
-      learningPatternCentroidFromColumn ?? learningPatternCentroidFromJson,
-    learning_pattern_embedding_count: Math.max(
-      0,
-      learningPatternCountFromColumn ?? learningPatternCountFromJson ?? 0,
-    ),
-    learning_pattern_embedding_model:
-      learningPatternModelFromColumn ?? learningPatternModelFromJson,
-    learning_pattern_embedding_updated_at:
-      learningPatternUpdatedAtFromColumn ?? learningPatternUpdatedAtFromJson,
+    topic_message_embedding_centroid: messageCentroid,
+    topic_message_embedding_count: Math.max(0, messageCount),
+    topic_message_embedding_model: messageModel,
+    topic_message_embedding_updated_at: messageUpdatedAt,
+
+    learning_pattern_embedding_centroid: learningPatternCentroid,
+    learning_pattern_embedding_count: Math.max(0, learningPatternCount),
+    learning_pattern_embedding_model: learningPatternModel,
+    learning_pattern_embedding_updated_at: learningPatternUpdatedAt,
   };
 }
 
@@ -532,7 +762,8 @@ export async function getRouteTopicState(): Promise<TopicStateRow[]> {
 
   const { data, error } = await supabase
     .from("topic_state")
-    .select(`
+    .select(
+      `
       topic_id,
       updated_at,
       last_run_id,
@@ -560,15 +791,24 @@ export async function getRouteTopicState(): Promise<TopicStateRow[]> {
       topic_embedding_count,
       topic_embedding_model,
       topic_embedding_updated_at,
+      topic_label_embedding_centroid,
+      topic_label_embedding_count,
+      topic_label_embedding_model,
+      topic_label_embedding_updated_at,
       topic_concept_embedding_centroid,
       topic_concept_embedding_count,
       topic_concept_embedding_model,
       topic_concept_embedding_updated_at,
+      topic_message_embedding_centroid,
+      topic_message_embedding_count,
+      topic_message_embedding_model,
+      topic_message_embedding_updated_at,
       learning_pattern_embedding_centroid,
       learning_pattern_embedding_count,
       learning_pattern_embedding_model,
       learning_pattern_embedding_updated_at
-    `)
+    `,
+    )
     .order("updated_at", { ascending: false });
 
   if (error) {

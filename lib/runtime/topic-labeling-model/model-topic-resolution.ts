@@ -10,8 +10,8 @@ import {
 } from "@/lib/runtime/route-topics";
 import type { TopicResolutionTrace } from "@/lib/runtime/topic-routing-trace";
 import type {
-  ModelTopicRoutePolicyDecision,
   ModelTopicRouteDecisionKind,
+  ModelTopicRoutePolicyDecision,
 } from "./topic-labeler-policy";
 
 export type ModelFirstTopicResolutionKind =
@@ -55,6 +55,8 @@ export type ModelRouteContinuationPolicy = {
 
 export type SemanticEnrichmentStatusKind =
   | "not_needed"
+  | "pending_embedding"
+  | "embedding_ready"
   | "pending_centroid"
   | "centroid_ready"
   | "skipped_for_fast_model_route"
@@ -64,9 +66,12 @@ export type SemanticEnrichmentStatus = {
   status: SemanticEnrichmentStatusKind;
   needs_embedding_centroid: boolean;
   centroid_source:
-    | "message_embedding"
-    | "topic_name_plus_initial_message"
+    | "topic_label_embedding"
+    | "topic_message_embedding"
+    | "topic_label_and_message_embedding"
     | "topic_name_only"
+    | "topic_name_plus_initial_message"
+    | "message_embedding"
     | null;
   embedding_skip_reason:
     | "model_policy_safe_authoritative_decision"
@@ -81,6 +86,13 @@ export type SemanticEnrichmentStatus = {
   enrichment_prompt_text: string | null;
 };
 
+/**
+ * Kept as a compatibility shape because message/route.ts still names this
+ * centroidUpdatePlan.
+ *
+ * Important: this plan now represents topic-message embedding updates only.
+ * It should not be used as the topic-label/layout/Qdrant embedding.
+ */
 export type ModelFirstRouteCentroidUpdatePlan = {
   topic_id: string;
   previous_embedding_count: number;
@@ -159,7 +171,7 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
   if (!Array.isArray(value)) return null;
 
   const vector = value.filter(
-    (item): item is number => typeof item === "number" && Number.isFinite(item)
+    (item): item is number => typeof item === "number" && Number.isFinite(item),
   );
 
   if (!vector.length) return null;
@@ -168,11 +180,32 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
   return vector;
 }
 
-function topicHasEmbeddingCentroid(topic: RouteTopic | null): boolean {
-  return Boolean(asEmbeddingVector(topic?.topic_embedding_centroid ?? null));
+function topicHasTopicLabelEmbedding(topic: RouteTopic | null): boolean {
+  if (!topic) return false;
+
+  return Boolean(
+    asEmbeddingVector(topic.topic_label_embedding_centroid ?? null) ??
+      asEmbeddingVector(topic.topic_concept_embedding_centroid ?? null) ??
+      asEmbeddingVector(topic.topic_embedding_centroid ?? null),
+  );
 }
 
-function buildCentroidEnrichmentPrompt(args: {
+function topicHasTopicMessageEmbedding(topic: RouteTopic | null): boolean {
+  if (!topic) return false;
+
+  return Boolean(
+    asEmbeddingVector(topic.topic_message_embedding_centroid ?? null) ??
+      asEmbeddingVector(topic.learning_pattern_embedding_centroid ?? null),
+  );
+}
+
+function topicHasCanonicalEmbeddings(topic: RouteTopic | null): boolean {
+  return (
+    topicHasTopicLabelEmbedding(topic) && topicHasTopicMessageEmbedding(topic)
+  );
+}
+
+function buildTopicMessageEnrichmentPrompt(args: {
   topicName: string;
   initialMessage?: string | null;
 }) {
@@ -184,7 +217,7 @@ Learner context: ${initialMessage}`
     : `Topic: ${topicName}`;
 }
 
-function buildCreatedTopicCentroidPlan(args: {
+function buildCreatedTopicMessageEmbeddingPlan(args: {
   createdTopic: RouteTopic | null;
   messageEmbedding: EmbeddingVector | null;
   embeddingModel: string | null;
@@ -339,7 +372,7 @@ function buildNoLearningSpaceChangePolicy(args: {
 function buildSemanticEnrichmentStatus(args: {
   createdTopic: RouteTopic | null;
   targetTopic?: RouteTopic | null;
-  centroidUpdatePlan: ModelFirstRouteCentroidUpdatePlan | null;
+  messageEmbeddingPlan: ModelFirstRouteCentroidUpdatePlan | null;
   messageEmbedding: EmbeddingVector | null;
   embeddingSkippedForFastRoute: boolean;
   blockedByModelFailure: boolean;
@@ -349,7 +382,7 @@ function buildSemanticEnrichmentStatus(args: {
   const {
     createdTopic,
     targetTopic,
-    centroidUpdatePlan,
+    messageEmbeddingPlan,
     messageEmbedding,
     embeddingSkippedForFastRoute,
     blockedByModelFailure,
@@ -372,17 +405,36 @@ function buildSemanticEnrichmentStatus(args: {
   const topicForSemanticCheck = createdTopic ?? targetTopic ?? null;
   const topicName =
     resolvedLabel ?? createdTopic?.name ?? targetTopic?.name ?? null;
-  const hasExistingCentroid = topicHasEmbeddingCentroid(topicForSemanticCheck);
+  const hasExistingCanonicalEmbeddings =
+    topicHasCanonicalEmbeddings(topicForSemanticCheck);
+  const hasTopicLabelEmbedding =
+    topicHasTopicLabelEmbedding(topicForSemanticCheck);
+  const hasTopicMessageEmbedding =
+    topicHasTopicMessageEmbedding(topicForSemanticCheck);
 
-  if (centroidUpdatePlan?.new_centroid && messageEmbedding?.length) {
+  /**
+   * A raw learner-message embedding is useful as topic_message_embedding, but it
+   * is not enough to mark semantic layout/Qdrant as ready. Layout/Qdrant require
+   * the clean topic_label_embedding created by idle enrichment.
+   */
+  if (messageEmbeddingPlan?.new_centroid && messageEmbedding?.length) {
     return {
-      status: "centroid_ready",
-      needs_embedding_centroid: false,
-      centroid_source: "message_embedding",
+      status: hasTopicLabelEmbedding ? "embedding_ready" : "pending_embedding",
+      needs_embedding_centroid: !hasTopicLabelEmbedding,
+      centroid_source: hasTopicLabelEmbedding
+        ? "topic_label_and_message_embedding"
+        : "topic_message_embedding",
       embedding_skip_reason: null,
-      layout_status: "semantic_position_ready",
-      should_schedule_enrichment: false,
-      enrichment_prompt_text: null,
+      layout_status: hasTopicLabelEmbedding
+        ? "semantic_position_ready"
+        : "temporary_position",
+      should_schedule_enrichment: !hasExistingCanonicalEmbeddings,
+      enrichment_prompt_text: hasExistingCanonicalEmbeddings || !topicName
+        ? null
+        : buildTopicMessageEnrichmentPrompt({
+            topicName,
+            initialMessage: initialMessage ?? null,
+          }),
     };
   }
 
@@ -398,11 +450,11 @@ function buildSemanticEnrichmentStatus(args: {
     };
   }
 
-  if (hasExistingCentroid) {
+  if (hasExistingCanonicalEmbeddings) {
     return {
-      status: "centroid_ready",
+      status: "embedding_ready",
       needs_embedding_centroid: false,
-      centroid_source: "message_embedding",
+      centroid_source: "topic_label_and_message_embedding",
       embedding_skip_reason: null,
       layout_status: "semantic_position_ready",
       should_schedule_enrichment: false,
@@ -413,15 +465,20 @@ function buildSemanticEnrichmentStatus(args: {
   return {
     status: embeddingSkippedForFastRoute
       ? "skipped_for_fast_model_route"
-      : "pending_centroid",
+      : "pending_embedding",
     needs_embedding_centroid: true,
-    centroid_source: "topic_name_plus_initial_message",
+    centroid_source:
+      hasTopicLabelEmbedding || hasTopicMessageEmbedding
+        ? hasTopicLabelEmbedding
+          ? "topic_label_embedding"
+          : "topic_message_embedding"
+        : "topic_name_plus_initial_message",
     embedding_skip_reason: embeddingSkippedForFastRoute
       ? "model_policy_safe_authoritative_decision"
       : null,
     layout_status: "temporary_position",
     should_schedule_enrichment: true,
-    enrichment_prompt_text: buildCentroidEnrichmentPrompt({
+    enrichment_prompt_text: buildTopicMessageEnrichmentPrompt({
       topicName,
       initialMessage: initialMessage ?? null,
     }),
@@ -515,7 +572,7 @@ function buildRouteTopicFromResolvedLabel(args: {
 }
 
 export function isModelPolicySafePositiveDecision(
-  decision: ModelTopicRoutePolicyDecision | null
+  decision: ModelTopicRoutePolicyDecision | null,
 ): decision is ModelTopicRoutePolicyDecision & {
   usable: true;
   decision_kind: "create_new" | "switch_existing" | "stay_active";
@@ -585,7 +642,7 @@ export function buildModelRouteContinuationPolicy(args: {
 
   return buildNoLearningSpaceChangePolicy({
     reason: `Unhandled model policy decision: ${String(
-      modelPolicyDecision.decision_kind
+      modelPolicyDecision.decision_kind,
     )}`,
   });
 }
@@ -628,7 +685,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
     const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
       createdTopic: null,
       targetTopic: activeTopic,
-      centroidUpdatePlan: null,
+      messageEmbeddingPlan: null,
       messageEmbedding: messageEmbedding ?? null,
       embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
       blockedByModelFailure: false,
@@ -667,7 +724,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
     const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
       createdTopic: null,
       targetTopic: matchedTopic,
-      centroidUpdatePlan: null,
+      messageEmbeddingPlan: null,
       messageEmbedding: messageEmbedding ?? null,
       embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
       blockedByModelFailure: false,
@@ -712,7 +769,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
       const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
         createdTopic: null,
         targetTopic: existingMatch,
-        centroidUpdatePlan: null,
+        messageEmbeddingPlan: null,
         messageEmbedding: messageEmbedding ?? null,
         embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
         blockedByModelFailure: false,
@@ -744,7 +801,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
       resolvedLabel,
     });
 
-    const centroidUpdatePlan = buildCreatedTopicCentroidPlan({
+    const messageEmbeddingPlan = buildCreatedTopicMessageEmbeddingPlan({
       createdTopic,
       messageEmbedding: messageEmbedding ?? null,
       embeddingModel: embeddingModel ?? null,
@@ -758,7 +815,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
     const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
       createdTopic,
       targetTopic: createdTopic,
-      centroidUpdatePlan,
+      messageEmbeddingPlan,
       messageEmbedding: messageEmbedding ?? null,
       embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
       blockedByModelFailure: false,
@@ -779,7 +836,11 @@ export function buildModelFirstTopicResolutionOutcome(args: {
       authoritySource: "model_v3_3_policy",
       continuationPolicy,
       semanticEnrichmentStatus,
-      centroidUpdatePlan,
+      /**
+       * Compatibility field name used by message/route.ts.
+       * Semantically this is now the created topic's message embedding update.
+       */
+      centroidUpdatePlan: messageEmbeddingPlan,
     });
   }
 
@@ -810,7 +871,7 @@ export function buildModelFirstConservativeFallbackOutcome(args: {
     const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
       createdTopic: null,
       targetTopic: activeTopic,
-      centroidUpdatePlan: null,
+      messageEmbeddingPlan: null,
       messageEmbedding: null,
       embeddingSkippedForFastRoute: false,
       blockedByModelFailure,
@@ -835,7 +896,7 @@ export function buildModelFirstConservativeFallbackOutcome(args: {
 
   const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
     createdTopic: null,
-    centroidUpdatePlan: null,
+    messageEmbeddingPlan: null,
     messageEmbedding: null,
     embeddingSkippedForFastRoute: false,
     blockedByModelFailure: true,

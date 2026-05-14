@@ -16,7 +16,9 @@ function isPlainObject(value: unknown): value is JsonObject {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-function asJsonEmbeddingVector(value: EmbeddingVector | null | undefined): JsonValue {
+function asJsonEmbeddingVector(
+  value: EmbeddingVector | null | undefined,
+): JsonValue {
   if (!Array.isArray(value)) return null;
 
   const clean = value.filter(
@@ -29,7 +31,10 @@ function asJsonEmbeddingVector(value: EmbeddingVector | null | undefined): JsonV
   return clean;
 }
 
-function asString(value: unknown, fallback: string | null = null): string | null {
+function asString(
+  value: unknown,
+  fallback: string | null = null,
+): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
@@ -72,7 +77,9 @@ function getNestedSemanticObject(topicJson: JsonObject) {
 }
 
 function readSemanticStatusFromTopicJson(topicJson: JsonObject) {
-  const topLevel = asString(getJsonObjectValue(topicJson, "semantic_enrichment_status"));
+  const topLevel = asString(
+    getJsonObjectValue(topicJson, "semantic_enrichment_status"),
+  );
 
   if (topLevel) return topLevel;
 
@@ -101,7 +108,9 @@ function readNestedSemanticBoolean(topicJson: JsonObject, key: string) {
   return nested ? asBoolean(getJsonObjectValue(nested, key)) : null;
 }
 
-function readTopicPositionFromTopicJson(topicJson: JsonObject): TopicPosition | null {
+function readTopicPositionFromTopicJson(
+  topicJson: JsonObject,
+): TopicPosition | null {
   return (
     asTopicPosition(getJsonObjectValue(topicJson, "topic_position")) ??
     asTopicPosition(getJsonObjectValue(topicJson, "position")) ??
@@ -109,11 +118,17 @@ function readTopicPositionFromTopicJson(topicJson: JsonObject): TopicPosition | 
   );
 }
 
-function readSemanticPositionFromTopicJson(topicJson: JsonObject): TopicPosition | null {
+function readSemanticPositionFromTopicJson(
+  topicJson: JsonObject,
+): TopicPosition | null {
   return (
     asTopicPosition(getJsonObjectValue(topicJson, "semantic_position")) ??
-    asTopicPosition(getJsonObjectValue(topicJson, "semantic_target_position")) ??
-    asTopicPosition(getJsonObjectValue(topicJson, "learning_space_target_position"))
+    asTopicPosition(
+      getJsonObjectValue(topicJson, "semantic_target_position"),
+    ) ??
+    asTopicPosition(
+      getJsonObjectValue(topicJson, "learning_space_target_position"),
+    )
   );
 }
 
@@ -129,10 +144,20 @@ function mergeEmbeddingFieldsIntoTopicJson(args: {
   topicEmbeddingModel?: string | null;
   topicEmbeddingUpdatedAt?: string | null;
 
+  topicLabelEmbeddingCentroid?: EmbeddingVector | null;
+  topicLabelEmbeddingCount?: number | null;
+  topicLabelEmbeddingModel?: string | null;
+  topicLabelEmbeddingUpdatedAt?: string | null;
+
   topicConceptEmbeddingCentroid?: EmbeddingVector | null;
   topicConceptEmbeddingCount?: number | null;
   topicConceptEmbeddingModel?: string | null;
   topicConceptEmbeddingUpdatedAt?: string | null;
+
+  topicMessageEmbeddingCentroid?: EmbeddingVector | null;
+  topicMessageEmbeddingCount?: number | null;
+  topicMessageEmbeddingModel?: string | null;
+  topicMessageEmbeddingUpdatedAt?: string | null;
 
   learningPatternEmbeddingCentroid?: EmbeddingVector | null;
   learningPatternEmbeddingCount?: number | null;
@@ -142,7 +167,9 @@ function mergeEmbeddingFieldsIntoTopicJson(args: {
   const base = baseTopicJson(args.topicJson);
 
   if (args.topicEmbeddingCentroid !== undefined) {
-    base.topic_embedding_centroid = asJsonEmbeddingVector(args.topicEmbeddingCentroid);
+    base.topic_embedding_centroid = asJsonEmbeddingVector(
+      args.topicEmbeddingCentroid,
+    );
   }
 
   if (args.topicEmbeddingCount !== undefined) {
@@ -155,6 +182,27 @@ function mergeEmbeddingFieldsIntoTopicJson(args: {
 
   if (args.topicEmbeddingUpdatedAt !== undefined) {
     base.topic_embedding_updated_at = args.topicEmbeddingUpdatedAt ?? null;
+  }
+
+  if (args.topicLabelEmbeddingCentroid !== undefined) {
+    base.topic_label_embedding_centroid = asJsonEmbeddingVector(
+      args.topicLabelEmbeddingCentroid,
+    );
+  }
+
+  if (args.topicLabelEmbeddingCount !== undefined) {
+    base.topic_label_embedding_count = cleanCount(
+      args.topicLabelEmbeddingCount,
+    );
+  }
+
+  if (args.topicLabelEmbeddingModel !== undefined) {
+    base.topic_label_embedding_model = args.topicLabelEmbeddingModel ?? null;
+  }
+
+  if (args.topicLabelEmbeddingUpdatedAt !== undefined) {
+    base.topic_label_embedding_updated_at =
+      args.topicLabelEmbeddingUpdatedAt ?? null;
   }
 
   if (args.topicConceptEmbeddingCentroid !== undefined) {
@@ -177,6 +225,28 @@ function mergeEmbeddingFieldsIntoTopicJson(args: {
   if (args.topicConceptEmbeddingUpdatedAt !== undefined) {
     base.topic_concept_embedding_updated_at =
       args.topicConceptEmbeddingUpdatedAt ?? null;
+  }
+
+  if (args.topicMessageEmbeddingCentroid !== undefined) {
+    base.topic_message_embedding_centroid = asJsonEmbeddingVector(
+      args.topicMessageEmbeddingCentroid,
+    );
+  }
+
+  if (args.topicMessageEmbeddingCount !== undefined) {
+    base.topic_message_embedding_count = cleanCount(
+      args.topicMessageEmbeddingCount,
+    );
+  }
+
+  if (args.topicMessageEmbeddingModel !== undefined) {
+    base.topic_message_embedding_model =
+      args.topicMessageEmbeddingModel ?? null;
+  }
+
+  if (args.topicMessageEmbeddingUpdatedAt !== undefined) {
+    base.topic_message_embedding_updated_at =
+      args.topicMessageEmbeddingUpdatedAt ?? null;
   }
 
   if (args.learningPatternEmbeddingCentroid !== undefined) {
@@ -265,8 +335,9 @@ function getTopicStateColumnMetadata(topicJsonWithEmbedding: JsonValue) {
     readNestedSemanticBoolean(topicJson, "should_schedule_enrichment") ?? false;
 
   const semanticEnrichmentPromptText =
-    asString(getJsonObjectValue(topicJson, "semantic_enrichment_prompt_text")) ??
-    readNestedSemanticString(topicJson, "enrichment_prompt_text");
+    asString(
+      getJsonObjectValue(topicJson, "semantic_enrichment_prompt_text"),
+    ) ?? readNestedSemanticString(topicJson, "enrichment_prompt_text");
 
   const layoutStatus = readNestedSemanticString(topicJson, "layout_status");
   const embeddingSkipReason = readNestedSemanticString(
@@ -327,8 +398,8 @@ export type PersistedTopicStateInput = {
   topicJson: JsonValue;
 
   /**
-   * Legacy/general embedding. For compatibility, this should mirror the
-   * concept embedding unless a caller intentionally overrides it.
+   * Legacy/general embedding. Compatibility alias: mirrors the
+   * topic label embedding unless a caller intentionally overrides it.
    */
   topicEmbeddingCentroid?: EmbeddingVector | null;
   topicEmbeddingCount?: number | null;
@@ -336,7 +407,16 @@ export type PersistedTopicStateInput = {
   topicEmbeddingUpdatedAt?: string | null;
 
   /**
-   * Concept embedding used for semantic topic layout.
+   * Canonical embedding of the clean topic label.
+   * Used for semantic topic layout and Qdrant topic lookup.
+   */
+  topicLabelEmbeddingCentroid?: EmbeddingVector | null;
+  topicLabelEmbeddingCount?: number | null;
+  topicLabelEmbeddingModel?: string | null;
+  topicLabelEmbeddingUpdatedAt?: string | null;
+
+  /**
+   * Legacy compatibility alias for topicLabelEmbedding*.
    */
   topicConceptEmbeddingCentroid?: EmbeddingVector | null;
   topicConceptEmbeddingCount?: number | null;
@@ -344,7 +424,15 @@ export type PersistedTopicStateInput = {
   topicConceptEmbeddingUpdatedAt?: string | null;
 
   /**
-   * Learning-pattern embedding used later for personalization/diagnosis transfer.
+   * Canonical topic-level embedding of learner messages assigned to this topic.
+   */
+  topicMessageEmbeddingCentroid?: EmbeddingVector | null;
+  topicMessageEmbeddingCount?: number | null;
+  topicMessageEmbeddingModel?: string | null;
+  topicMessageEmbeddingUpdatedAt?: string | null;
+
+  /**
+   * Legacy compatibility alias for topicMessageEmbedding*.
    */
   learningPatternEmbeddingCentroid?: EmbeddingVector | null;
   learningPatternEmbeddingCount?: number | null;
@@ -404,38 +492,91 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
 
   /**
    * Compatibility rule:
-   * concept embedding is the canonical semantic/layout embedding.
-   * legacy topic_embedding_* mirrors concept embedding unless explicitly supplied.
+   * topic_label_embedding_* is the canonical semantic/layout/Qdrant vector.
+   * legacy topic_concept_embedding_* and topic_embedding_* mirror it during
+   * migration unless explicitly supplied.
+   *
+   * topic_message_embedding_* is the canonical learner-message vector.
+   * legacy learning_pattern_embedding_* mirrors it during migration unless
+   * explicitly supplied.
    */
-  const resolvedConceptCentroid =
-    input.topicConceptEmbeddingCentroid ?? input.topicEmbeddingCentroid ?? null;
+  const resolvedLabelCentroid =
+    input.topicLabelEmbeddingCentroid ??
+    input.topicConceptEmbeddingCentroid ??
+    input.topicEmbeddingCentroid ??
+    null;
 
-  const resolvedConceptCount =
-    input.topicConceptEmbeddingCount ?? input.topicEmbeddingCount ?? null;
+  const resolvedLabelCount =
+    input.topicLabelEmbeddingCount ??
+    input.topicConceptEmbeddingCount ??
+    input.topicEmbeddingCount ??
+    null;
 
-  const resolvedConceptModel =
-    input.topicConceptEmbeddingModel ?? input.topicEmbeddingModel ?? null;
+  const resolvedLabelModel =
+    input.topicLabelEmbeddingModel ??
+    input.topicConceptEmbeddingModel ??
+    input.topicEmbeddingModel ??
+    null;
 
-  const resolvedConceptUpdatedAt =
+  const resolvedLabelUpdatedAt =
+    input.topicLabelEmbeddingUpdatedAt ??
     input.topicConceptEmbeddingUpdatedAt ??
     input.topicEmbeddingUpdatedAt ??
-    (resolvedConceptCentroid ? new Date().toISOString() : null);
+    (resolvedLabelCentroid ? new Date().toISOString() : null);
+
+  const resolvedConceptCentroid =
+    input.topicConceptEmbeddingCentroid ?? resolvedLabelCentroid;
+
+  const resolvedConceptCount =
+    input.topicConceptEmbeddingCount ?? resolvedLabelCount;
+
+  const resolvedConceptModel =
+    input.topicConceptEmbeddingModel ?? resolvedLabelModel;
+
+  const resolvedConceptUpdatedAt =
+    input.topicConceptEmbeddingUpdatedAt ?? resolvedLabelUpdatedAt;
 
   const resolvedLegacyCentroid =
-    input.topicEmbeddingCentroid ?? resolvedConceptCentroid;
+    input.topicEmbeddingCentroid ?? resolvedLabelCentroid;
 
-  const resolvedLegacyCount =
-    input.topicEmbeddingCount ?? resolvedConceptCount;
+  const resolvedLegacyCount = input.topicEmbeddingCount ?? resolvedLabelCount;
 
-  const resolvedLegacyModel =
-    input.topicEmbeddingModel ?? resolvedConceptModel;
+  const resolvedLegacyModel = input.topicEmbeddingModel ?? resolvedLabelModel;
 
   const resolvedLegacyUpdatedAt =
-    input.topicEmbeddingUpdatedAt ?? resolvedConceptUpdatedAt;
+    input.topicEmbeddingUpdatedAt ?? resolvedLabelUpdatedAt;
+
+  const resolvedMessageCentroid =
+    input.topicMessageEmbeddingCentroid ??
+    input.learningPatternEmbeddingCentroid ??
+    null;
+
+  const resolvedMessageCount =
+    input.topicMessageEmbeddingCount ??
+    input.learningPatternEmbeddingCount ??
+    null;
+
+  const resolvedMessageModel =
+    input.topicMessageEmbeddingModel ??
+    input.learningPatternEmbeddingModel ??
+    null;
+
+  const resolvedMessageUpdatedAt =
+    input.topicMessageEmbeddingUpdatedAt ??
+    input.learningPatternEmbeddingUpdatedAt ??
+    (resolvedMessageCentroid ? new Date().toISOString() : null);
+
+  const resolvedLearningPatternCentroid =
+    input.learningPatternEmbeddingCentroid ?? resolvedMessageCentroid;
+
+  const resolvedLearningPatternCount =
+    input.learningPatternEmbeddingCount ?? resolvedMessageCount;
+
+  const resolvedLearningPatternModel =
+    input.learningPatternEmbeddingModel ?? resolvedMessageModel;
 
   const resolvedLearningPatternUpdatedAt =
-    input.learningPatternEmbeddingUpdatedAt ??
-    (input.learningPatternEmbeddingCentroid ? new Date().toISOString() : null);
+    input.learningPatternEmbeddingUpdatedAt ?? resolvedMessageUpdatedAt;
 
   const semanticPositionUpdatedAt =
     input.semanticPositionUpdatedAt ??
@@ -449,14 +590,24 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
     topicEmbeddingModel: resolvedLegacyModel,
     topicEmbeddingUpdatedAt: resolvedLegacyUpdatedAt,
 
+    topicLabelEmbeddingCentroid: resolvedLabelCentroid,
+    topicLabelEmbeddingCount: resolvedLabelCount,
+    topicLabelEmbeddingModel: resolvedLabelModel,
+    topicLabelEmbeddingUpdatedAt: resolvedLabelUpdatedAt,
+
     topicConceptEmbeddingCentroid: resolvedConceptCentroid,
     topicConceptEmbeddingCount: resolvedConceptCount,
     topicConceptEmbeddingModel: resolvedConceptModel,
     topicConceptEmbeddingUpdatedAt: resolvedConceptUpdatedAt,
 
-    learningPatternEmbeddingCentroid: input.learningPatternEmbeddingCentroid,
-    learningPatternEmbeddingCount: input.learningPatternEmbeddingCount,
-    learningPatternEmbeddingModel: input.learningPatternEmbeddingModel,
+    topicMessageEmbeddingCentroid: resolvedMessageCentroid,
+    topicMessageEmbeddingCount: resolvedMessageCount,
+    topicMessageEmbeddingModel: resolvedMessageModel,
+    topicMessageEmbeddingUpdatedAt: resolvedMessageUpdatedAt,
+
+    learningPatternEmbeddingCentroid: resolvedLearningPatternCentroid,
+    learningPatternEmbeddingCount: resolvedLearningPatternCount,
+    learningPatternEmbeddingModel: resolvedLearningPatternModel,
     learningPatternEmbeddingUpdatedAt: resolvedLearningPatternUpdatedAt,
   });
 
@@ -467,7 +618,9 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
     semanticPositionMethod: input.semanticPositionMethod,
   });
 
-  const columnMetadata = getTopicStateColumnMetadata(topicJsonWithSemanticPosition);
+  const columnMetadata = getTopicStateColumnMetadata(
+    topicJsonWithSemanticPosition,
+  );
 
   const { error } = await supabase.from("topic_state").upsert(
     {
@@ -495,7 +648,8 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
       semantic_enrichment_status: columnMetadata.semanticEnrichmentStatus,
       needs_embedding_centroid: columnMetadata.needsEmbeddingCentroid,
       should_schedule_enrichment: columnMetadata.shouldScheduleEnrichment,
-      semantic_enrichment_prompt_text: columnMetadata.semanticEnrichmentPromptText,
+      semantic_enrichment_prompt_text:
+        columnMetadata.semanticEnrichmentPromptText,
       layout_status: columnMetadata.layoutStatus,
       embedding_skip_reason: columnMetadata.embeddingSkipReason,
 
@@ -504,18 +658,34 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
       topic_embedding_model: resolvedLegacyModel,
       topic_embedding_updated_at: resolvedLegacyUpdatedAt,
 
-      topic_concept_embedding_centroid: asJsonEmbeddingVector(resolvedConceptCentroid),
+      topic_label_embedding_centroid: asJsonEmbeddingVector(
+        resolvedLabelCentroid,
+      ),
+      topic_label_embedding_count: cleanCount(resolvedLabelCount),
+      topic_label_embedding_model: resolvedLabelModel,
+      topic_label_embedding_updated_at: resolvedLabelUpdatedAt,
+
+      topic_concept_embedding_centroid: asJsonEmbeddingVector(
+        resolvedConceptCentroid,
+      ),
       topic_concept_embedding_count: cleanCount(resolvedConceptCount),
       topic_concept_embedding_model: resolvedConceptModel,
       topic_concept_embedding_updated_at: resolvedConceptUpdatedAt,
 
+      topic_message_embedding_centroid: asJsonEmbeddingVector(
+        resolvedMessageCentroid,
+      ),
+      topic_message_embedding_count: cleanCount(resolvedMessageCount),
+      topic_message_embedding_model: resolvedMessageModel,
+      topic_message_embedding_updated_at: resolvedMessageUpdatedAt,
+
       learning_pattern_embedding_centroid: asJsonEmbeddingVector(
-        input.learningPatternEmbeddingCentroid,
+        resolvedLearningPatternCentroid,
       ),
       learning_pattern_embedding_count: cleanCount(
-        input.learningPatternEmbeddingCount,
+        resolvedLearningPatternCount,
       ),
-      learning_pattern_embedding_model: input.learningPatternEmbeddingModel ?? null,
+      learning_pattern_embedding_model: resolvedLearningPatternModel,
       learning_pattern_embedding_updated_at: resolvedLearningPatternUpdatedAt,
     },
     {

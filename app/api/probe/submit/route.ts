@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockTopics } from "@/lib/mock-topics";
 import { buildLearningSpace } from "@/lib/build-learning-space";
 import {
   insertAttempt,
   insertRun,
   upsertTopicState,
 } from "@/lib/persistence/myway";
-import { getLatestTopicState } from "@/lib/persistence/read";
 import { makeId } from "@/lib/utils/ids";
 import type {
   DeliveredProbe,
   DeliveredResponse,
+  EmbeddingVector,
   EngineFuel,
   ImportantRunInputs,
   InterventionModeDecision,
@@ -28,9 +27,9 @@ import {
   buildJudgedAttempt,
   buildTopicMetricUpdate,
   buildVectorInfo,
-  type ProbeAttemptPayload,
-  scoreResponse,
   inferDiagnosisFromTopic,
+  scoreResponse,
+  type ProbeAttemptPayload,
 } from "@/lib/runtime/attempt-judging";
 import {
   buildNextProbePlan,
@@ -39,8 +38,8 @@ import {
 } from "@/lib/runtime/probe-runtime";
 import { buildRecentChatHistory } from "@/lib/runtime/chat-history";
 import { scoreConfusionInsight } from "@/lib/providers/confusion-insight";
-import { isPosition, normalizeDiagnosis, nowIso } from "@/lib/runtime/shared";
-import type { RouteTopic } from "@/lib/runtime/route-topics";
+import { nowIso } from "@/lib/runtime/shared";
+import { loadRouteTopics, type RouteTopic } from "@/lib/runtime/route-topics";
 
 type IncomingChatTurn = {
   role?: string;
@@ -53,86 +52,6 @@ type ProbeSubmitBody = ProbeAttemptPayload & {
   recent_turns?: IncomingChatTurn[];
   conversation_turns?: IncomingChatTurn[];
 };
-
-function buildSeededTopicFromProbe(body: ProbeAttemptPayload): RouteTopic {
-  const baseMock = mockTopics[0];
-  const safeTopicName = body.topicName?.trim() || "New Topic";
-
-  return {
-    ...baseMock,
-    id: body.topicId || makeId("topic"),
-    name: safeTopicName,
-    diagnosis: "representation_gap",
-    nextStep:
-      body.prompt?.trim() ||
-      `Explain ${safeTopicName.toLowerCase()} more concretely.`,
-    confusion: 0.68,
-    insight: 0.28,
-    learningScore: 0.16,
-    position: [0, 0, 0],
-    scale: baseMock.scale,
-  };
-}
-
-async function loadRouteTopics(body: ProbeAttemptPayload): Promise<RouteTopic[]> {
-  const rows = await getLatestTopicState();
-
-  if (!rows.length) {
-    return [buildSeededTopicFromProbe(body)];
-  }
-
-  return rows.map((row, index) => {
-    const fallback =
-      mockTopics.find((topic) => topic.id === row.topic_id) ??
-      mockTopics[index % Math.max(mockTopics.length, 1)];
-
-    const topicJson =
-      row.topic_json && typeof row.topic_json === "object" ? row.topic_json : {};
-
-    const learningSpaceTopic =
-      "learning_space_topic" in topicJson &&
-      topicJson.learning_space_topic &&
-      typeof topicJson.learning_space_topic === "object"
-        ? (topicJson.learning_space_topic as Record<string, unknown>)
-        : null;
-
-    const storedPosition = learningSpaceTopic?.position;
-    const storedNextStep =
-      typeof topicJson.next_step === "string"
-        ? topicJson.next_step
-        : typeof row.next_step === "string" && row.next_step.trim().length > 0
-          ? row.next_step
-          : fallback?.nextStep ?? "Continue learning";
-
-    return {
-      ...(fallback ?? mockTopics[0]),
-      id: row.topic_id,
-      name: row.topic_name,
-      confusion: Math.max(
-        0,
-        Math.min(1, row.confusion ?? fallback?.confusion ?? 0.5)
-      ),
-      insight: Math.max(
-        0,
-        Math.min(1, row.insight ?? fallback?.insight ?? 0.5)
-      ),
-      learningScore: Math.max(
-        0,
-        Math.min(1, row.learning_score ?? fallback?.learningScore ?? 0.5)
-      ),
-      position: isPosition(storedPosition)
-        ? storedPosition
-        : (fallback?.position ?? [0, 0, 0]),
-      nextStep: storedNextStep,
-      diagnosis:
-        normalizeDiagnosis(row.diagnosis) ??
-        normalizeDiagnosis(
-          (fallback as { diagnosis?: unknown } | undefined)?.diagnosis
-        ) ??
-        "representation_gap",
-    };
-  });
-}
 
 function normalizeRecentTurns(body: ProbeSubmitBody) {
   const rawTurns = Array.isArray(body.recent_turns)
@@ -186,6 +105,114 @@ function buildFallbackModelSignals(errorMessage?: string): ModelSignals {
     latency_ms: null,
     status: errorMessage ? "error" : "unavailable",
     error_message: errorMessage ?? null,
+  };
+}
+
+function asEmbeddingVector(value: unknown): EmbeddingVector | null {
+  if (!Array.isArray(value)) return null;
+
+  const vector = value.filter(
+    (item): item is number => typeof item === "number" && Number.isFinite(item),
+  );
+
+  if (!vector.length) return null;
+  if (vector.length !== value.length) return null;
+
+  return vector;
+}
+
+function asPositiveCount(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : null;
+}
+
+/**
+ * Probe submission should not create or reinterpret embeddings.
+ *
+ * Its job is to preserve the topic's current embedding state while updating
+ * probe/attempt metrics. During migration, this helper promotes legacy aliases
+ * into canonical fields when canonical fields are missing, and mirrors canonical
+ * fields back into legacy aliases so older code/debug views stay safe.
+ */
+function getEmbeddingPersistenceFields(topic: RouteTopic) {
+  const topicLabelCentroid =
+    asEmbeddingVector(topic.topic_label_embedding_centroid) ??
+    asEmbeddingVector(topic.topic_concept_embedding_centroid) ??
+    asEmbeddingVector(topic.topic_embedding_centroid);
+
+  const topicLabelCount =
+    asPositiveCount(topic.topic_label_embedding_count) ??
+    asPositiveCount(topic.topic_concept_embedding_count) ??
+    asPositiveCount(topic.topic_embedding_count);
+
+  const topicLabelModel =
+    topic.topic_label_embedding_model ??
+    topic.topic_concept_embedding_model ??
+    topic.topic_embedding_model ??
+    null;
+
+  const topicLabelUpdatedAt =
+    topic.topic_label_embedding_updated_at ??
+    topic.topic_concept_embedding_updated_at ??
+    topic.topic_embedding_updated_at ??
+    null;
+
+  const topicMessageCentroid =
+    asEmbeddingVector(topic.topic_message_embedding_centroid) ??
+    asEmbeddingVector(topic.learning_pattern_embedding_centroid);
+
+  const topicMessageCount =
+    asPositiveCount(topic.topic_message_embedding_count) ??
+    asPositiveCount(topic.learning_pattern_embedding_count);
+
+  const topicMessageModel =
+    topic.topic_message_embedding_model ??
+    topic.learning_pattern_embedding_model ??
+    null;
+
+  const topicMessageUpdatedAt =
+    topic.topic_message_embedding_updated_at ??
+    topic.learning_pattern_embedding_updated_at ??
+    null;
+
+  return {
+    /**
+     * Canonical topic-label embedding.
+     */
+    topicLabelEmbeddingCentroid: topicLabelCentroid,
+    topicLabelEmbeddingCount: topicLabelCount,
+    topicLabelEmbeddingModel: topicLabelModel,
+    topicLabelEmbeddingUpdatedAt: topicLabelUpdatedAt,
+
+    /**
+     * Canonical topic-message embedding.
+     */
+    topicMessageEmbeddingCentroid: topicMessageCentroid,
+    topicMessageEmbeddingCount: topicMessageCount,
+    topicMessageEmbeddingModel: topicMessageModel,
+    topicMessageEmbeddingUpdatedAt: topicMessageUpdatedAt,
+
+    /**
+     * Legacy/general embedding mirrors topic-label embedding for compatibility.
+     */
+    topicEmbeddingCentroid: topicLabelCentroid,
+    topicEmbeddingCount: topicLabelCount,
+    topicEmbeddingModel: topicLabelModel,
+    topicEmbeddingUpdatedAt: topicLabelUpdatedAt,
+
+    /**
+     * Legacy aliases during migration.
+     */
+    topicConceptEmbeddingCentroid: topicLabelCentroid,
+    topicConceptEmbeddingCount: topicLabelCount,
+    topicConceptEmbeddingModel: topicLabelModel,
+    topicConceptEmbeddingUpdatedAt: topicLabelUpdatedAt,
+
+    learningPatternEmbeddingCentroid: topicMessageCentroid,
+    learningPatternEmbeddingCount: topicMessageCount,
+    learningPatternEmbeddingModel: topicMessageModel,
+    learningPatternEmbeddingUpdatedAt: topicMessageUpdatedAt,
   };
 }
 
@@ -258,7 +285,7 @@ function buildImportantRunInputs(args: {
 }
 
 function buildDeliveredProbeFromPlan(
-  plan: ReturnType<typeof buildNextProbePlan>
+  plan: ReturnType<typeof buildNextProbePlan>,
 ): DeliveredProbe {
   const probeType = plan.probe_type;
 
@@ -300,7 +327,7 @@ function buildDeliveredProbeFromPlan(
 function buildDeliveredResponse(
   reply: string,
   nextMode: "clarify" | "probe",
-  nextProbe: DeliveredProbe | null
+  nextProbe: DeliveredProbe | null,
 ): DeliveredResponse {
   return {
     learner_message: {
@@ -321,12 +348,53 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
     topic_learning_score: topic.learningScore,
     topic_learning_velocity: 0,
     topic_novelty_score: 0.5,
-    topic_message_count: 1,
+    topic_message_count: topic.messageCount ?? 1,
     topic_difficulty: 0.5,
     topic_decay_rate: 0.05,
     topic_link_threshold: 0.5,
     topic_last_update: nowIso(),
     topic_centroid: topic.position as [number, number, number],
+
+    /**
+     * Canonical embedding surfaces for downstream/debug consumers.
+     */
+    topic_label_embedding_centroid:
+      topic.topic_label_embedding_centroid ??
+      topic.topic_concept_embedding_centroid ??
+      topic.topic_embedding_centroid ??
+      null,
+    topic_label_embedding_count:
+      topic.topic_label_embedding_count ??
+      topic.topic_concept_embedding_count ??
+      topic.topic_embedding_count ??
+      0,
+    topic_label_embedding_model:
+      topic.topic_label_embedding_model ??
+      topic.topic_concept_embedding_model ??
+      topic.topic_embedding_model ??
+      null,
+    topic_label_embedding_updated_at:
+      topic.topic_label_embedding_updated_at ??
+      topic.topic_concept_embedding_updated_at ??
+      topic.topic_embedding_updated_at ??
+      null,
+
+    topic_message_embedding_centroid:
+      topic.topic_message_embedding_centroid ??
+      topic.learning_pattern_embedding_centroid ??
+      null,
+    topic_message_embedding_count:
+      topic.topic_message_embedding_count ??
+      topic.learning_pattern_embedding_count ??
+      0,
+    topic_message_embedding_model:
+      topic.topic_message_embedding_model ??
+      topic.learning_pattern_embedding_model ??
+      null,
+    topic_message_embedding_updated_at:
+      topic.topic_message_embedding_updated_at ??
+      topic.learning_pattern_embedding_updated_at ??
+      null,
   }));
 }
 
@@ -368,15 +436,15 @@ function buildDecision(args: {
             1,
             scoring.correctnessEstimate * 0.42 +
               scoring.evidenceStrength * 0.28 +
-              insight * 0.3
-          )
+              insight * 0.3,
+          ),
         )
       : Math.max(
           0,
           Math.min(
             1,
-            scoring.correctnessEstimate * 0.6 + scoring.evidenceStrength * 0.4
-          )
+            scoring.correctnessEstimate * 0.6 + scoring.evidenceStrength * 0.4,
+          ),
         );
 
   const evidenceQualitySignal =
@@ -389,8 +457,8 @@ function buildDecision(args: {
               scoring.evidenceStrength * 0.26 +
               scoring.judgmentConfidence * 0.2 +
               insight * 0.18 -
-              confusion * 0.12
-          )
+              confusion * 0.12,
+          ),
         )
       : Math.max(
           0,
@@ -398,8 +466,8 @@ function buildDecision(args: {
             1,
             scoring.explanationQuality * 0.45 +
               scoring.evidenceStrength * 0.35 +
-              scoring.judgmentConfidence * 0.2
-          )
+              scoring.judgmentConfidence * 0.2,
+          ),
         );
 
   const classificationBase =
@@ -421,8 +489,8 @@ function buildDecision(args: {
         scoring.evidenceStrength * 0.1 +
         scoring.judgmentConfidence * 0.12 +
         (typeof insight === "number" ? insight * 0.04 : 0) -
-        (typeof confusion === "number" ? confusion * 0.03 : 0)
-    )
+        (typeof confusion === "number" ? confusion * 0.03 : 0),
+    ),
   );
 
   const decisionReasons = [
@@ -434,25 +502,25 @@ function buildDecision(args: {
 
   if (scoring.missingElements) {
     decisionReasons.push(
-      `Important missing element detected: ${scoring.missingElements}.`
+      `Important missing element detected: ${scoring.missingElements}.`,
     );
   }
 
   if (scoring.misconceptionTags.length > 0) {
     decisionReasons.push(
-      `Detected misconception tags: ${scoring.misconceptionTags.join(", ")}.`
+      `Detected misconception tags: ${scoring.misconceptionTags.join(", ")}.`,
     );
   }
 
   if (typeof confusion === "number") {
     decisionReasons.push(
-      `Confusion signal for this attempt-like turn was ${confusion.toFixed(2)}.`
+      `Confusion signal for this attempt-like turn was ${confusion.toFixed(2)}.`,
     );
   }
 
   if (typeof insight === "number") {
     decisionReasons.push(
-      `Insight signal for this attempt-like turn was ${insight.toFixed(2)}.`
+      `Insight signal for this attempt-like turn was ${insight.toFixed(2)}.`,
     );
   }
 
@@ -471,8 +539,8 @@ function buildDecision(args: {
             0.26 +
               (scoring.classification === "structural_failure" ? 0.18 : 0) +
               (scoring.classification === "near_miss" ? 0.12 : 0) +
-              (scoring.missingElements ? 0.08 : 0)
-          )
+              (scoring.missingElements ? 0.08 : 0),
+          ),
         )
       : Math.max(
           0.35,
@@ -480,8 +548,8 @@ function buildDecision(args: {
             0.92,
             0.62 +
               (scoring.classification === "structural_failure" ? 0.08 : 0) +
-              (scoring.missingElements ? 0.06 : 0)
-          )
+              (scoring.missingElements ? 0.06 : 0),
+          ),
         ),
     probe_score: continueWithProbe
       ? Math.max(
@@ -490,8 +558,8 @@ function buildDecision(args: {
             0.94,
             0.62 +
               scoring.evidenceStrength * 0.12 +
-              (scoring.classification === "success" ? 0.08 : 0)
-          )
+              (scoring.classification === "success" ? 0.08 : 0),
+          ),
         )
       : Math.max(
           0.18,
@@ -499,8 +567,8 @@ function buildDecision(args: {
             0.7,
             0.26 +
               (scoring.classification === "guess" ? 0.05 : 0) +
-              (scoring.classification === "no_response" ? 0.04 : 0)
-          )
+              (scoring.classification === "no_response" ? 0.04 : 0),
+          ),
         ),
     signal_summary: {
       raw_response_signal: bodyResponseSignal(scoring),
@@ -539,7 +607,7 @@ function buildRunMetadata(engineFuel: EngineFuel, runId: string): RunMetadata {
   return {
     run_id: runId,
     timestamp: nowIso(),
-    engine_version: "runtime-v1",
+    engine_version: "runtime-v1-topic-label-message-embedding",
     previous_run_id: null,
     topic_count: engineFuel.topics.length,
     cluster_count: engineFuel.clusters.length,
@@ -549,7 +617,7 @@ function buildRunMetadata(engineFuel: EngineFuel, runId: string): RunMetadata {
 
 function buildSceneUpdate(
   topicId: string,
-  learningSpace: LearningSpace
+  learningSpace: LearningSpace,
 ): ProbeSubmitRouteResponse["scene_update"] {
   return {
     target_topic_id: topicId,
@@ -571,16 +639,16 @@ export async function POST(request: NextRequest) {
     if (!body?.probeId || !body?.topicId || typeof rawResponse !== "string") {
       return NextResponse.json(
         { error: "Missing required fields: probeId, topicId, response." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const routeTopics = await loadRouteTopics(body);
+    const routeTopics = await loadRouteTopics();
 
     if (!routeTopics.length) {
       return NextResponse.json(
         { error: "No topics are available." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -589,7 +657,7 @@ export async function POST(request: NextRequest) {
     if (!topic) {
       return NextResponse.json(
         { error: "Unable to resolve a topic for this probe submission." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -606,7 +674,7 @@ export async function POST(request: NextRequest) {
       modelSignals = buildFallbackModelSignals(
         error instanceof Error
           ? error.message
-          : "Unknown confusion/insight scoring error"
+          : "Unknown confusion/insight scoring error",
       );
     }
 
@@ -634,7 +702,7 @@ export async function POST(request: NextRequest) {
 
     const updatedTopicMetrics = buildTopicMetricUpdate(body.topicId, scoring);
     const updatedTopics = routeTopics.map((t) =>
-      applyMetricUpdate(t, updatedTopicMetrics)
+      applyMetricUpdate(t, updatedTopicMetrics),
     );
 
     const judgedAttempt = buildJudgedAttempt({
@@ -699,15 +767,20 @@ export async function POST(request: NextRequest) {
       delivered_response: buildDeliveredResponse(
         replyBundle.reply,
         replyBundle.nextMode,
-        nextDeliveredProbe
+        nextDeliveredProbe,
       ),
       learning_space: learningSpace,
     };
 
     const runResultJson = JSON.parse(JSON.stringify(result));
     const attemptJson = JSON.parse(JSON.stringify(judgedAttempt));
+    const updatedPersistedTopic =
+      updatedTopics.find((t) => t.id === topic.id) ?? topic;
+    const embeddingFields = getEmbeddingPersistenceFields(updatedPersistedTopic);
+
     const topicJson = JSON.parse(
       JSON.stringify({
+        ...(topic.topic_json ?? {}),
         topic_id: topic.id,
         topic_name: topicName,
         next_step: nextProbePlan.text_plan.instructional_goal ?? topic.nextStep,
@@ -718,7 +791,45 @@ export async function POST(request: NextRequest) {
         next_delivered_probe: nextDeliveredProbe,
         learning_space_topic:
           learningSpace.topics?.find((t) => t.topic_id === topic.id) ?? null,
-      })
+
+        /**
+         * Preserve/promote embedding fields in topic_json too, so a probe submit
+         * cannot accidentally drop migration-visible embedding metadata.
+         */
+        topic_label_embedding_centroid: embeddingFields.topicLabelEmbeddingCentroid,
+        topic_label_embedding_count: embeddingFields.topicLabelEmbeddingCount,
+        topic_label_embedding_model: embeddingFields.topicLabelEmbeddingModel,
+        topic_label_embedding_updated_at:
+          embeddingFields.topicLabelEmbeddingUpdatedAt,
+
+        topic_message_embedding_centroid:
+          embeddingFields.topicMessageEmbeddingCentroid,
+        topic_message_embedding_count: embeddingFields.topicMessageEmbeddingCount,
+        topic_message_embedding_model: embeddingFields.topicMessageEmbeddingModel,
+        topic_message_embedding_updated_at:
+          embeddingFields.topicMessageEmbeddingUpdatedAt,
+
+        topic_embedding_centroid: embeddingFields.topicEmbeddingCentroid,
+        topic_embedding_count: embeddingFields.topicEmbeddingCount,
+        topic_embedding_model: embeddingFields.topicEmbeddingModel,
+        topic_embedding_updated_at: embeddingFields.topicEmbeddingUpdatedAt,
+
+        topic_concept_embedding_centroid:
+          embeddingFields.topicConceptEmbeddingCentroid,
+        topic_concept_embedding_count: embeddingFields.topicConceptEmbeddingCount,
+        topic_concept_embedding_model: embeddingFields.topicConceptEmbeddingModel,
+        topic_concept_embedding_updated_at:
+          embeddingFields.topicConceptEmbeddingUpdatedAt,
+
+        learning_pattern_embedding_centroid:
+          embeddingFields.learningPatternEmbeddingCentroid,
+        learning_pattern_embedding_count:
+          embeddingFields.learningPatternEmbeddingCount,
+        learning_pattern_embedding_model:
+          embeddingFields.learningPatternEmbeddingModel,
+        learning_pattern_embedding_updated_at:
+          embeddingFields.learningPatternEmbeddingUpdatedAt,
+      }),
     );
 
     const sceneUpdate = buildSceneUpdate(topic.id, learningSpace);
@@ -754,11 +865,12 @@ export async function POST(request: NextRequest) {
       topicName: topicName,
       confusion: updatedTopicMetrics.confusion ?? null,
       insight: updatedTopicMetrics.insight ?? null,
-      learningScore:
-        updatedTopics.find((t) => t.id === topic.id)?.learningScore ?? null,
+      learningScore: updatedPersistedTopic.learningScore ?? null,
       diagnosis: decision.active_diagnosis,
       nextStep: nextProbePlan.text_plan.instructional_goal ?? topic.nextStep,
       topicJson,
+
+      ...embeddingFields,
     });
 
     const response: ProbeSubmitRouteResponse = {
@@ -784,7 +896,7 @@ export async function POST(request: NextRequest) {
             ? error.message
             : "Failed to process probe submission.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

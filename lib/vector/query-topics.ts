@@ -9,8 +9,25 @@ import type { EmbeddingVector, VectorInfo } from "@/types/contracts";
 type QdrantTopicPayload = {
   topic_id?: unknown;
   topic_name?: unknown;
+
+  /**
+   * Canonical topic-label embedding metadata.
+   */
+  topic_label_embedding_count?: unknown;
+  topic_label_embedding_model?: unknown;
+  topic_label_embedding_updated_at?: unknown;
+  vector_source?: unknown;
+  vector_semantics?: unknown;
+
+  /**
+   * Legacy payload aliases during migration.
+   */
   topic_embedding_count?: unknown;
   topic_embedding_model?: unknown;
+  topic_embedding_updated_at?: unknown;
+  topic_concept_embedding_count?: unknown;
+  topic_concept_embedding_model?: unknown;
+  topic_concept_embedding_updated_at?: unknown;
 };
 
 export type SemanticTopicCandidate = {
@@ -18,6 +35,22 @@ export type SemanticTopicCandidate = {
   topic_name: string;
   similarity: number;
   rank: number;
+
+  /**
+   * Canonical metadata for the stored Qdrant topic vector.
+   */
+  topic_label_embedding_count: number | null;
+  topic_label_embedding_model: string | null;
+  topic_label_embedding_updated_at: string | null;
+  vector_source: string | null;
+  vector_semantics: string | null;
+
+  /**
+   * Legacy aliases during migration.
+   *
+   * Keep these until callers/debug surfaces are fully moved to
+   * topic_label_embedding_*.
+   */
   topic_embedding_count: number | null;
   topic_embedding_model: string | null;
 };
@@ -53,8 +86,20 @@ type QueryTopicsTimingDebug = {
     returned_topics: number;
     has_qdrant_config: boolean;
     skipped_reason: string | null;
+
+    /**
+     * Query-side vector metadata.
+     *
+     * This is the learner message vector used to search Qdrant.
+     */
     message_embedding_available: boolean;
     embedding_model: string | null;
+
+    /**
+     * Qdrant-side metadata.
+     *
+     * Qdrant topic points are expected to store topic_label_embedding vectors.
+     */
     qdrant_query_attempted: boolean;
     qdrant_timeout_ms: number;
   };
@@ -106,7 +151,7 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
   if (!Array.isArray(value)) return null;
 
   const vector = value.filter(
-    (item): item is number => typeof item === "number" && Number.isFinite(item)
+    (item): item is number => typeof item === "number" && Number.isFinite(item),
   );
 
   if (!vector.length) return null;
@@ -140,7 +185,7 @@ function createQueryTopicsTimer() {
   }
 
   function finish(
-    metadata: QueryTopicsTimingDebug["metadata"]
+    metadata: QueryTopicsTimingDebug["metadata"],
   ): QueryTopicsTimingDebug {
     return {
       enabled,
@@ -182,7 +227,7 @@ function getQdrantQueryTimeoutMs() {
   return parsePositiveInteger(
     process.env.MYWAY_QDRANT_QUERY_TIMEOUT_MS ??
       process.env.QDRANT_QUERY_TIMEOUT_MS,
-    1500
+    1500,
   );
 }
 
@@ -202,6 +247,30 @@ function vectorInfoFromCandidates(candidates: SemanticTopicCandidate[]): VectorI
   };
 }
 
+function getPayloadTopicLabelEmbeddingCount(payload: QdrantTopicPayload) {
+  return (
+    asNonNegativeInteger(payload.topic_label_embedding_count) ??
+    asNonNegativeInteger(payload.topic_concept_embedding_count) ??
+    asNonNegativeInteger(payload.topic_embedding_count)
+  );
+}
+
+function getPayloadTopicLabelEmbeddingModel(payload: QdrantTopicPayload) {
+  return (
+    asString(payload.topic_label_embedding_model) ??
+    asString(payload.topic_concept_embedding_model) ??
+    asString(payload.topic_embedding_model)
+  );
+}
+
+function getPayloadTopicLabelEmbeddingUpdatedAt(payload: QdrantTopicPayload) {
+  return (
+    asString(payload.topic_label_embedding_updated_at) ??
+    asString(payload.topic_concept_embedding_updated_at) ??
+    asString(payload.topic_embedding_updated_at)
+  );
+}
+
 function normalizeQdrantCandidates(points: unknown[]): SemanticTopicCandidate[] {
   const candidates: SemanticTopicCandidate[] = [];
 
@@ -219,13 +288,27 @@ function normalizeQdrantCandidates(points: unknown[]): SemanticTopicCandidate[] 
 
     if (!topicId) continue;
 
+    const topicLabelEmbeddingCount = getPayloadTopicLabelEmbeddingCount(payload);
+    const topicLabelEmbeddingModel = getPayloadTopicLabelEmbeddingModel(payload);
+
     candidates.push({
       topic_id: topicId,
       topic_name: topicName ?? topicId,
       similarity: score ?? 0,
       rank: index,
-      topic_embedding_count: asNonNegativeInteger(payload.topic_embedding_count),
-      topic_embedding_model: asString(payload.topic_embedding_model),
+
+      topic_label_embedding_count: topicLabelEmbeddingCount,
+      topic_label_embedding_model: topicLabelEmbeddingModel,
+      topic_label_embedding_updated_at:
+        getPayloadTopicLabelEmbeddingUpdatedAt(payload),
+      vector_source: asString(payload.vector_source),
+      vector_semantics: asString(payload.vector_semantics),
+
+      /**
+       * Legacy aliases during migration.
+       */
+      topic_embedding_count: topicLabelEmbeddingCount,
+      topic_embedding_model: topicLabelEmbeddingModel,
     });
   }
 
@@ -235,7 +318,7 @@ function normalizeQdrantCandidates(points: unknown[]): SemanticTopicCandidate[] 
 async function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
-  label: string
+  label: string,
 ): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
@@ -283,14 +366,13 @@ function buildDebug(args: {
 }
 
 /**
- * New split helper.
+ * Embeds the learner's message once without querying Qdrant.
  *
- * This embeds the message once without querying Qdrant. The message route can use
- * this first, then run local Supabase centroid ranking, and only query Qdrant if
- * local routing evidence is weak/incomplete.
+ * This is the query-side vector. It is not the vector stored on topic rows.
+ * Topic rows/Qdrant points use topic_label_embedding vectors.
  */
 export async function embedMessageForSemanticRouting(
-  message: string
+  message: string,
 ): Promise<SemanticMessageEmbeddingResult> {
   const timer = createQueryTopicsTimer();
   const route = "embedMessageForSemanticRouting" as const;
@@ -347,7 +429,7 @@ export async function embedMessageForSemanticRouting(
 
     throw Object.assign(
       error instanceof Error ? error : new Error("embed_text_failed"),
-      { debug }
+      { debug },
     );
   }
 
@@ -399,19 +481,17 @@ export async function embedMessageForSemanticRouting(
 }
 
 /**
- * New split helper.
+ * Queries Qdrant with a learner-message embedding.
  *
- * This queries Qdrant using an embedding we already computed. This lets the
- * message route do:
+ * Qdrant candidate vectors are expected to represent topic_label_embedding.
+ * So the similarity means:
  *
- * 1. embed once
- * 2. try local Supabase centroid ranking
- * 3. query Qdrant only if needed
+ * learner message embedding -> stored topic-label embedding
  */
 export async function querySemanticTopicCandidatesFromEmbedding(
   messageEmbedding: EmbeddingVector | null,
   limit = 5,
-  embeddingModel: string | null = getEmbeddingModelName()
+  embeddingModel: string | null = getEmbeddingModelName(),
 ): Promise<SemanticTopicQueryResult> {
   const timer = createQueryTopicsTimer();
   const requestedLimit = normalizeRequestedLimit(limit);
@@ -479,17 +559,28 @@ export async function querySemanticTopicCandidatesFromEmbedding(
       qdrant.query(TOPIC_COLLECTION, {
         query: messageEmbedding,
         limit: requestedLimit,
-        // Keep this payload small. Supabase remains the source of truth, but these
-        // fields help route-level debugging and avoid unnecessary topic_json pulls.
+        // Supabase remains the source of truth. This payload is only for
+        // route-level debugging and lightweight candidate evidence.
         with_payload: [
           "topic_id",
           "topic_name",
+          "topic_label_embedding_count",
+          "topic_label_embedding_model",
+          "topic_label_embedding_updated_at",
+          "vector_source",
+          "vector_semantics",
+
+          // Legacy migration aliases.
           "topic_embedding_count",
           "topic_embedding_model",
+          "topic_embedding_updated_at",
+          "topic_concept_embedding_count",
+          "topic_concept_embedding_model",
+          "topic_concept_embedding_updated_at",
         ],
       }),
       qdrantTimeoutMs,
-      "Qdrant topic query"
+      "Qdrant topic query",
     );
   } catch (error) {
     timer.step("qdrant_query_failed");
@@ -555,18 +646,15 @@ export async function querySemanticTopicCandidatesFromEmbedding(
 }
 
 /**
- * V3 semantic-centroid query.
- *
  * Backward-compatible combined helper.
  *
- * This keeps existing route code working while we migrate /api/message to the
- * faster hybrid flow:
- *
- * embed once -> local Supabase centroid ranking -> optional Qdrant query.
+ * Flow:
+ *   embed learner message once
+ *   -> query Qdrant topic-label vectors
  */
 export async function querySemanticTopicCandidatesWithEmbedding(
   message: string,
-  limit = 5
+  limit = 5,
 ): Promise<SemanticTopicQueryResult> {
   const route = "querySemanticTopicCandidatesWithEmbedding" as const;
   const requestedLimit = normalizeRequestedLimit(limit);
@@ -623,7 +711,7 @@ export async function querySemanticTopicCandidatesWithEmbedding(
   const qdrantResult = await querySemanticTopicCandidatesFromEmbedding(
     embeddingResult.messageEmbedding,
     requestedLimit,
-    embeddingResult.embeddingModel
+    embeddingResult.embeddingModel,
   );
 
   return {
@@ -643,15 +731,15 @@ export async function querySemanticTopicCandidatesWithEmbedding(
 /**
  * Backward-compatible wrapper.
  *
- * Existing code can keep calling this while the message route is migrated.
- * New semantic-centroid routing should prefer:
+ * Existing code can keep calling this while route code migrates. New routing
+ * code should prefer:
  *
  * embedMessageForSemanticRouting
  * querySemanticTopicCandidatesFromEmbedding
  */
 export async function querySemanticTopicCandidates(
   message: string,
-  limit = 5
+  limit = 5,
 ): Promise<VectorInfo> {
   const result = await querySemanticTopicCandidatesWithEmbedding(message, limit);
   return result.vectorInfo;
