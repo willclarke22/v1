@@ -130,51 +130,37 @@ function asPositiveCount(value: number | null | undefined) {
 /**
  * Probe submission should not create or reinterpret embeddings.
  *
- * Its job is to preserve the topic's current embedding state while updating
- * probe/attempt metrics. During migration, this helper promotes legacy aliases
- * into canonical fields when canonical fields are missing, and mirrors canonical
- * fields back into legacy aliases so older code/debug views stay safe.
+ * Its job is to preserve the topic's current canonical embedding state while
+ * updating probe/attempt metrics.
+ *
+ * Hard-cutover wave 2:
+ * - topic_label_embedding_* is canonical for topic/layout/Qdrant identity.
+ * - topic_message_embedding_* is canonical for learner-message pattern evidence.
+ * - topic_embedding_* has been removed.
  */
 function getEmbeddingPersistenceFields(topic: RouteTopic) {
-  const topicLabelCentroid =
-    asEmbeddingVector(topic.topic_label_embedding_centroid) ??
-    asEmbeddingVector(topic.topic_concept_embedding_centroid) ??
-    asEmbeddingVector(topic.topic_embedding_centroid);
+  const topicLabelCentroid = asEmbeddingVector(
+    topic.topic_label_embedding_centroid,
+  );
 
-  const topicLabelCount =
-    asPositiveCount(topic.topic_label_embedding_count) ??
-    asPositiveCount(topic.topic_concept_embedding_count) ??
-    asPositiveCount(topic.topic_embedding_count);
+  const topicLabelCount = asPositiveCount(topic.topic_label_embedding_count);
 
-  const topicLabelModel =
-    topic.topic_label_embedding_model ??
-    topic.topic_concept_embedding_model ??
-    topic.topic_embedding_model ??
-    null;
+  const topicLabelModel = topic.topic_label_embedding_model ?? null;
 
-  const topicLabelUpdatedAt =
-    topic.topic_label_embedding_updated_at ??
-    topic.topic_concept_embedding_updated_at ??
-    topic.topic_embedding_updated_at ??
-    null;
+  const topicLabelUpdatedAt = topic.topic_label_embedding_updated_at ?? null;
 
-  const topicMessageCentroid =
-    asEmbeddingVector(topic.topic_message_embedding_centroid) ??
-    asEmbeddingVector(topic.learning_pattern_embedding_centroid);
+  const topicMessageCentroid = asEmbeddingVector(
+    topic.topic_message_embedding_centroid,
+  );
 
-  const topicMessageCount =
-    asPositiveCount(topic.topic_message_embedding_count) ??
-    asPositiveCount(topic.learning_pattern_embedding_count);
+  const topicMessageCount = asPositiveCount(
+    topic.topic_message_embedding_count,
+  );
 
-  const topicMessageModel =
-    topic.topic_message_embedding_model ??
-    topic.learning_pattern_embedding_model ??
-    null;
+  const topicMessageModel = topic.topic_message_embedding_model ?? null;
 
   const topicMessageUpdatedAt =
-    topic.topic_message_embedding_updated_at ??
-    topic.learning_pattern_embedding_updated_at ??
-    null;
+    topic.topic_message_embedding_updated_at ?? null;
 
   return {
     /**
@@ -192,27 +178,6 @@ function getEmbeddingPersistenceFields(topic: RouteTopic) {
     topicMessageEmbeddingCount: topicMessageCount,
     topicMessageEmbeddingModel: topicMessageModel,
     topicMessageEmbeddingUpdatedAt: topicMessageUpdatedAt,
-
-    /**
-     * Legacy/general embedding mirrors topic-label embedding for compatibility.
-     */
-    topicEmbeddingCentroid: topicLabelCentroid,
-    topicEmbeddingCount: topicLabelCount,
-    topicEmbeddingModel: topicLabelModel,
-    topicEmbeddingUpdatedAt: topicLabelUpdatedAt,
-
-    /**
-     * Legacy aliases during migration.
-     */
-    topicConceptEmbeddingCentroid: topicLabelCentroid,
-    topicConceptEmbeddingCount: topicLabelCount,
-    topicConceptEmbeddingModel: topicLabelModel,
-    topicConceptEmbeddingUpdatedAt: topicLabelUpdatedAt,
-
-    learningPatternEmbeddingCentroid: topicMessageCentroid,
-    learningPatternEmbeddingCount: topicMessageCount,
-    learningPatternEmbeddingModel: topicMessageModel,
-    learningPatternEmbeddingUpdatedAt: topicMessageUpdatedAt,
   };
 }
 
@@ -340,62 +305,42 @@ function buildDeliveredResponse(
 }
 
 function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
-  return updatedTopics.map((topic) => ({
-    topic_id: topic.id,
-    topic_name: topic.name,
-    topic_confusion_average: topic.confusion,
-    topic_insight_average: topic.insight,
-    topic_learning_score: topic.learningScore,
-    topic_learning_velocity: 0,
-    topic_novelty_score: 0.5,
-    topic_message_count: topic.messageCount ?? 1,
-    topic_difficulty: 0.5,
-    topic_decay_rate: 0.05,
-    topic_link_threshold: 0.5,
-    topic_last_update: nowIso(),
-    topic_centroid: topic.position as [number, number, number],
+  return updatedTopics.map((topic) => {
+    return {
+      topic_id: topic.id,
+      topic_name: topic.name,
+      topic_confusion_average: topic.confusion,
+      topic_insight_average: topic.insight,
+      topic_learning_score: topic.learningScore,
+      topic_learning_velocity: 0,
+      topic_novelty_score: 0.5,
+      topic_message_count: topic.messageCount ?? 1,
+      topic_difficulty: 0.5,
+      topic_decay_rate: 0.05,
+      topic_link_threshold: 0.5,
+      topic_last_update: nowIso(),
+      topic_centroid: topic.position as [number, number, number],
 
-    /**
-     * Canonical embedding surfaces for downstream/debug consumers.
-     */
-    topic_label_embedding_centroid:
-      topic.topic_label_embedding_centroid ??
-      topic.topic_concept_embedding_centroid ??
-      topic.topic_embedding_centroid ??
-      null,
-    topic_label_embedding_count:
-      topic.topic_label_embedding_count ??
-      topic.topic_concept_embedding_count ??
-      topic.topic_embedding_count ??
-      0,
-    topic_label_embedding_model:
-      topic.topic_label_embedding_model ??
-      topic.topic_concept_embedding_model ??
-      topic.topic_embedding_model ??
-      null,
-    topic_label_embedding_updated_at:
-      topic.topic_label_embedding_updated_at ??
-      topic.topic_concept_embedding_updated_at ??
-      topic.topic_embedding_updated_at ??
-      null,
+      /**
+       * Canonical embedding surfaces for downstream/debug consumers.
+       */
+      topic_label_embedding_centroid:
+        topic.topic_label_embedding_centroid ?? null,
+      topic_label_embedding_count: topic.topic_label_embedding_count ?? 0,
+      topic_label_embedding_model:
+        topic.topic_label_embedding_model ?? null,
+      topic_label_embedding_updated_at:
+        topic.topic_label_embedding_updated_at ?? null,
 
-    topic_message_embedding_centroid:
-      topic.topic_message_embedding_centroid ??
-      topic.learning_pattern_embedding_centroid ??
-      null,
-    topic_message_embedding_count:
-      topic.topic_message_embedding_count ??
-      topic.learning_pattern_embedding_count ??
-      0,
-    topic_message_embedding_model:
-      topic.topic_message_embedding_model ??
-      topic.learning_pattern_embedding_model ??
-      null,
-    topic_message_embedding_updated_at:
-      topic.topic_message_embedding_updated_at ??
-      topic.learning_pattern_embedding_updated_at ??
-      null,
-  }));
+      topic_message_embedding_centroid:
+        topic.topic_message_embedding_centroid ?? null,
+      topic_message_embedding_count: topic.topic_message_embedding_count ?? 0,
+      topic_message_embedding_model:
+        topic.topic_message_embedding_model ?? null,
+      topic_message_embedding_updated_at:
+        topic.topic_message_embedding_updated_at ?? null,
+    };
+  });
 }
 
 function buildPreviousModeOutcome(): PreviousModeOutcome {
@@ -607,7 +552,7 @@ function buildRunMetadata(engineFuel: EngineFuel, runId: string): RunMetadata {
   return {
     run_id: runId,
     timestamp: nowIso(),
-    engine_version: "runtime-v1-topic-label-message-embedding",
+    engine_version: "runtime-v1-hard-cutover-wave2",
     previous_run_id: null,
     topic_count: engineFuel.topics.length,
     cluster_count: engineFuel.clusters.length,
@@ -793,8 +738,8 @@ export async function POST(request: NextRequest) {
           learningSpace.topics?.find((t) => t.topic_id === topic.id) ?? null,
 
         /**
-         * Preserve/promote embedding fields in topic_json too, so a probe submit
-         * cannot accidentally drop migration-visible embedding metadata.
+         * Preserve canonical embedding fields in topic_json so a probe submit
+         * cannot accidentally drop embedding metadata during wave 2.
          */
         topic_label_embedding_centroid: embeddingFields.topicLabelEmbeddingCentroid,
         topic_label_embedding_count: embeddingFields.topicLabelEmbeddingCount,
@@ -808,27 +753,6 @@ export async function POST(request: NextRequest) {
         topic_message_embedding_model: embeddingFields.topicMessageEmbeddingModel,
         topic_message_embedding_updated_at:
           embeddingFields.topicMessageEmbeddingUpdatedAt,
-
-        topic_embedding_centroid: embeddingFields.topicEmbeddingCentroid,
-        topic_embedding_count: embeddingFields.topicEmbeddingCount,
-        topic_embedding_model: embeddingFields.topicEmbeddingModel,
-        topic_embedding_updated_at: embeddingFields.topicEmbeddingUpdatedAt,
-
-        topic_concept_embedding_centroid:
-          embeddingFields.topicConceptEmbeddingCentroid,
-        topic_concept_embedding_count: embeddingFields.topicConceptEmbeddingCount,
-        topic_concept_embedding_model: embeddingFields.topicConceptEmbeddingModel,
-        topic_concept_embedding_updated_at:
-          embeddingFields.topicConceptEmbeddingUpdatedAt,
-
-        learning_pattern_embedding_centroid:
-          embeddingFields.learningPatternEmbeddingCentroid,
-        learning_pattern_embedding_count:
-          embeddingFields.learningPatternEmbeddingCount,
-        learning_pattern_embedding_model:
-          embeddingFields.learningPatternEmbeddingModel,
-        learning_pattern_embedding_updated_at:
-          embeddingFields.learningPatternEmbeddingUpdatedAt,
       }),
     );
 

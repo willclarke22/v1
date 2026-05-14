@@ -62,13 +62,6 @@ function hasTopicMessageEmbedding(row: {
   );
 }
 
-function hasLegacyTopicEmbedding(row: {
-  topic_embedding_centroid: EmbeddingVector | null;
-  topic_embedding_count: number;
-}) {
-  return hasVector(row.topic_embedding_centroid, row.topic_embedding_count);
-}
-
 function getTopicJson(row: { topic_json: Record<string, unknown> | null }) {
   return isJsonObject(row.topic_json) ? row.topic_json : {};
 }
@@ -98,12 +91,12 @@ function shouldEnrichTopic(row: TopicStateRow) {
     asString(nestedStatus?.status) === "skipped_for_fast_model_route";
 
   /**
-   * Canonical enrichment requirement:
+   * Wave 2 canonical enrichment requirement:
    * - topic_label_embedding_* powers layout / Qdrant topic lookup.
    * - topic_message_embedding_* preserves learner-message pattern evidence.
    *
-   * Legacy topic_embedding_* is still mirrored when we write, but missing legacy
-   * fields should not by themselves make a topic pending.
+   * topic_embedding_* has been removed and should not participate in
+   * enrichment completion or writeback.
    */
   return (
     explicitNeedsCentroid ||
@@ -179,29 +172,46 @@ function buildUpdatedTopicJson(args: {
 
   const base = getTopicJson({ topic_json: topicJson });
 
+  /**
+   * Hard-cutover wave 2 cleanup.
+   *
+   * Remove stale old embedding names from topic_json so dropped Supabase columns
+   * do not keep reappearing as JSON metadata.
+   */
+  delete base.topic_embedding_centroid;
+  delete base.topic_embedding_count;
+  delete base.topic_embedding_model;
+  delete base.topic_embedding_updated_at;
+  delete base.topic_concept_embedding_centroid;
+  delete base.topic_concept_embedding_count;
+  delete base.topic_concept_embedding_model;
+  delete base.topic_concept_embedding_updated_at;
+  delete base.learning_pattern_embedding_centroid;
+  delete base.learning_pattern_embedding_count;
+  delete base.learning_pattern_embedding_model;
+  delete base.learning_pattern_embedding_updated_at;
+
   return {
     ...base,
 
     semantic_enrichment_status: {
       status: "centroid_ready",
       needs_embedding_centroid: false,
-      centroid_source: "topic_label_and_message_embedding_v1",
+      centroid_source: "topic_label_and_message_embedding_v2",
       embedding_skip_reason: null,
       layout_status: "semantic_position_ready",
       should_schedule_enrichment: false,
       enrichment_prompt_text: enrichmentPromptText,
 
-      topic_label_embedding_source: "topic_label_only_v1",
-      topic_message_embedding_source: "topic_message_enrichment_prompt_text_v1",
+      topic_label_embedding_source: "topic_label_only_v2",
+      topic_message_embedding_source: "topic_message_enrichment_prompt_text_v2",
 
       /**
-       * Legacy migration note.
+       * Wave 2 migration note.
        *
-       * topic_embedding_* and topic_concept_embedding_* mirror
-       * topic_label_embedding_* during migration.
-       * learning_pattern_embedding_* mirrors topic_message_embedding_*.
+       * Only topic_label_embedding_* and topic_message_embedding_* are written.
        */
-      legacy_aliases_written: true,
+      canonical_embedding_names_only: true,
     },
 
     needs_embedding_centroid: false,
@@ -231,31 +241,6 @@ function buildUpdatedTopicJson(args: {
     topic_message_embedding_count: nextTopicMessageEmbeddingCount,
     topic_message_embedding_model: embeddingModel,
     topic_message_embedding_updated_at: embeddingUpdatedAt,
-
-    /**
-     * Legacy/general embedding fields.
-     * For compatibility, these mirror topic-label embedding.
-     */
-    topic_embedding_centroid: topicLabelCentroid,
-    topic_embedding_count: nextTopicLabelEmbeddingCount,
-    topic_embedding_model: embeddingModel,
-    topic_embedding_updated_at: embeddingUpdatedAt,
-
-    /**
-     * Legacy alias for topic_label_embedding_*.
-     */
-    topic_concept_embedding_centroid: topicLabelCentroid,
-    topic_concept_embedding_count: nextTopicLabelEmbeddingCount,
-    topic_concept_embedding_model: embeddingModel,
-    topic_concept_embedding_updated_at: embeddingUpdatedAt,
-
-    /**
-     * Legacy alias for topic_message_embedding_*.
-     */
-    learning_pattern_embedding_centroid: topicMessageCentroid,
-    learning_pattern_embedding_count: nextTopicMessageEmbeddingCount,
-    learning_pattern_embedding_model: embeddingModel,
-    learning_pattern_embedding_updated_at: embeddingUpdatedAt,
   };
 }
 
@@ -288,7 +273,6 @@ export async function POST(request: Request) {
     embedding_model: string | null;
     topic_label_vector_size: number | null;
     topic_message_vector_size: number | null;
-    had_legacy_topic_embedding_before: boolean;
     qdrant_sync_ok: boolean | null;
     qdrant_sync_error: string | null;
   }> = [];
@@ -323,7 +307,6 @@ export async function POST(request: Request) {
           embedding_model: null,
           topic_label_vector_size: null,
           topic_message_vector_size: null,
-          had_legacy_topic_embedding_before: hasLegacyTopicEmbedding(row),
           qdrant_sync_ok: null,
           qdrant_sync_error: null,
         });
@@ -340,7 +323,6 @@ export async function POST(request: Request) {
           embedding_model: null,
           topic_label_vector_size: topicLabelCentroid.length,
           topic_message_vector_size: null,
-          had_legacy_topic_embedding_before: hasLegacyTopicEmbedding(row),
           qdrant_sync_ok: null,
           qdrant_sync_error: null,
         });
@@ -353,7 +335,7 @@ export async function POST(request: Request) {
 
       const nextTopicLabelEmbeddingCount = Math.max(
         1,
-        row.topic_label_embedding_count || row.topic_embedding_count || 0,
+        row.topic_label_embedding_count || 0,
       );
 
       const nextTopicMessageEmbeddingCount = Math.max(
@@ -404,27 +386,6 @@ export async function POST(request: Request) {
         topicMessageEmbeddingCount: nextTopicMessageEmbeddingCount,
         topicMessageEmbeddingModel: embeddingModel,
         topicMessageEmbeddingUpdatedAt: embeddingUpdatedAt,
-
-        /**
-         * Legacy/general embedding mirrors topic-label embedding for compatibility.
-         */
-        topicEmbeddingCentroid: topicLabelCentroid,
-        topicEmbeddingCount: nextTopicLabelEmbeddingCount,
-        topicEmbeddingModel: embeddingModel,
-        topicEmbeddingUpdatedAt: embeddingUpdatedAt,
-
-        /**
-         * Legacy aliases during migration.
-         */
-        topicConceptEmbeddingCentroid: topicLabelCentroid,
-        topicConceptEmbeddingCount: nextTopicLabelEmbeddingCount,
-        topicConceptEmbeddingModel: embeddingModel,
-        topicConceptEmbeddingUpdatedAt: embeddingUpdatedAt,
-
-        learningPatternEmbeddingCentroid: topicMessageCentroid,
-        learningPatternEmbeddingCount: nextTopicMessageEmbeddingCount,
-        learningPatternEmbeddingModel: embeddingModel,
-        learningPatternEmbeddingUpdatedAt: embeddingUpdatedAt,
       });
 
       let qdrantSyncOk: boolean | null = null;
@@ -447,14 +408,6 @@ export async function POST(request: Request) {
           topicLabelEmbeddingCount: nextTopicLabelEmbeddingCount,
           topicLabelEmbeddingModel: embeddingModel,
           topicLabelEmbeddingUpdatedAt: embeddingUpdatedAt,
-
-          /**
-           * Compatibility alias while Qdrant/vector helpers migrate.
-           */
-          topicEmbeddingCentroid: topicLabelCentroid,
-          topicEmbeddingCount: nextTopicLabelEmbeddingCount,
-          topicEmbeddingModel: embeddingModel,
-          topicEmbeddingUpdatedAt: embeddingUpdatedAt,
         });
 
         qdrantSyncOk = syncResult.ok;
@@ -469,7 +422,6 @@ export async function POST(request: Request) {
         embedding_model: embeddingModel,
         topic_label_vector_size: topicLabelCentroid.length,
         topic_message_vector_size: topicMessageCentroid.length,
-        had_legacy_topic_embedding_before: hasLegacyTopicEmbedding(row),
         qdrant_sync_ok: qdrantSyncOk,
         qdrant_sync_error: qdrantSyncError,
       });
@@ -485,7 +437,6 @@ export async function POST(request: Request) {
         embedding_model: null,
         topic_label_vector_size: null,
         topic_message_vector_size: null,
-        had_legacy_topic_embedding_before: hasLegacyTopicEmbedding(row),
         qdrant_sync_ok: null,
         qdrant_sync_error: null,
       });

@@ -775,16 +775,20 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
       topic_message_count: topic.messageCount ?? 0,
       topic_last_update: topic.lastUpdated ?? nowIso(),
       topic_centroid: topic.position,
-      topic_embedding_centroid:
-        topic.topic_label_embedding_centroid ?? topic.topic_embedding_centroid ?? null,
-      topic_embedding_count:
-        topic.topic_label_embedding_count ?? topic.topic_embedding_count ?? 0,
-      topic_embedding_model:
-        topic.topic_label_embedding_model ?? topic.topic_embedding_model ?? null,
-      topic_embedding_updated_at:
-        topic.topic_label_embedding_updated_at ??
-        topic.topic_embedding_updated_at ??
-        null,
+
+      topic_label_embedding_centroid:
+        topic.topic_label_embedding_centroid ?? null,
+      topic_label_embedding_count: topic.topic_label_embedding_count ?? 0,
+      topic_label_embedding_model: topic.topic_label_embedding_model ?? null,
+      topic_label_embedding_updated_at:
+        topic.topic_label_embedding_updated_at ?? null,
+
+      topic_message_embedding_centroid:
+        topic.topic_message_embedding_centroid ?? null,
+      topic_message_embedding_count: topic.topic_message_embedding_count ?? 0,
+      topic_message_embedding_model: topic.topic_message_embedding_model ?? null,
+      topic_message_embedding_updated_at:
+        topic.topic_message_embedding_updated_at ?? null,
     };
   });
 }
@@ -930,70 +934,36 @@ function applyMessageEmbeddingUpdatePlanToTopics(
       topic_message_embedding_count: plan.new_embedding_count,
       topic_message_embedding_model: plan.embedding_model,
       topic_message_embedding_updated_at: plan.updated_at,
-      learning_pattern_embedding_centroid: plan.new_centroid,
-      learning_pattern_embedding_count: plan.new_embedding_count,
-      learning_pattern_embedding_model: plan.embedding_model,
-      learning_pattern_embedding_updated_at: plan.updated_at,
       topic_json: {
         ...(topic.topic_json ?? {}),
         topic_message_embedding_centroid: plan.new_centroid,
         topic_message_embedding_count: plan.new_embedding_count,
         topic_message_embedding_model: plan.embedding_model,
         topic_message_embedding_updated_at: plan.updated_at,
-        learning_pattern_embedding_centroid: plan.new_centroid,
-        learning_pattern_embedding_count: plan.new_embedding_count,
-        learning_pattern_embedding_model: plan.embedding_model,
-        learning_pattern_embedding_updated_at: plan.updated_at,
       },
     };
   });
 }
 
-function getTopicEmbeddingPersistenceMetadata(topic: RouteTopic) {
+function getCanonicalEmbeddingPersistenceMetadata(topic: RouteTopic) {
   return {
-    /**
-     * topic_embedding_* remains a legacy alias for topic_label_embedding_* during
-     * migration. Do not populate it from raw message embeddings here.
-     */
-    topicEmbeddingCentroid: topic.topic_embedding_centroid ?? null,
-    topicEmbeddingCount: topic.topic_embedding_count ?? 0,
-    topicEmbeddingModel: topic.topic_embedding_model ?? null,
-    topicEmbeddingUpdatedAt: topic.topic_embedding_updated_at ?? null,
-
-    topicLabelEmbeddingCentroid: topic.topic_label_embedding_centroid ?? null,
-    topicLabelEmbeddingCount: topic.topic_label_embedding_count ?? null,
-    topicLabelEmbeddingModel: topic.topic_label_embedding_model ?? null,
-    topicLabelEmbeddingUpdatedAt: topic.topic_label_embedding_updated_at ?? null,
-
-    topicConceptEmbeddingCentroid: topic.topic_concept_embedding_centroid ?? null,
-    topicConceptEmbeddingCount: topic.topic_concept_embedding_count ?? null,
-    topicConceptEmbeddingModel: topic.topic_concept_embedding_model ?? null,
-    topicConceptEmbeddingUpdatedAt:
-      topic.topic_concept_embedding_updated_at ?? null,
+    topicLabelEmbeddingCentroid:
+      topic.topic_label_embedding_centroid ?? null,
+    topicLabelEmbeddingCount:
+      topic.topic_label_embedding_count ?? null,
+    topicLabelEmbeddingModel:
+      topic.topic_label_embedding_model ?? null,
+    topicLabelEmbeddingUpdatedAt:
+      topic.topic_label_embedding_updated_at ?? null,
 
     topicMessageEmbeddingCentroid:
       topic.topic_message_embedding_centroid ?? null,
-    topicMessageEmbeddingCount: topic.topic_message_embedding_count ?? null,
-    topicMessageEmbeddingModel: topic.topic_message_embedding_model ?? null,
+    topicMessageEmbeddingCount:
+      topic.topic_message_embedding_count ?? null,
+    topicMessageEmbeddingModel:
+      topic.topic_message_embedding_model ?? null,
     topicMessageEmbeddingUpdatedAt:
       topic.topic_message_embedding_updated_at ?? null,
-
-    learningPatternEmbeddingCentroid:
-      topic.learning_pattern_embedding_centroid ??
-      topic.topic_message_embedding_centroid ??
-      null,
-    learningPatternEmbeddingCount:
-      topic.learning_pattern_embedding_count ??
-      topic.topic_message_embedding_count ??
-      null,
-    learningPatternEmbeddingModel:
-      topic.learning_pattern_embedding_model ??
-      topic.topic_message_embedding_model ??
-      null,
-    learningPatternEmbeddingUpdatedAt:
-      topic.learning_pattern_embedding_updated_at ??
-      topic.topic_message_embedding_updated_at ??
-      null,
   };
 }
 
@@ -1973,15 +1943,6 @@ export async function POST(request: Request) {
         topic_message_embedding_updated_at:
           updatedResolvedTopic.topic_message_embedding_updated_at ?? null,
 
-        /**
-         * Legacy alias fields. topic_embedding_* should mirror the label
-         * embedding, not the raw message embedding.
-         */
-        topic_embedding_centroid: updatedResolvedTopic.topic_embedding_centroid ?? null,
-        topic_embedding_count: updatedResolvedTopic.topic_embedding_count ?? 0,
-        topic_embedding_model: updatedResolvedTopic.topic_embedding_model ?? null,
-        topic_embedding_updated_at:
-          updatedResolvedTopic.topic_embedding_updated_at ?? null,
       })
     );
 
@@ -2037,7 +1998,7 @@ export async function POST(request: Request) {
         nextStep:
           probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
         topicJson,
-        ...getTopicEmbeddingPersistenceMetadata(updatedResolvedTopic),
+        ...getCanonicalEmbeddingPersistenceMetadata(updatedResolvedTopic),
       });
     } else {
       console.info("[topic_state persistence skipped]", {
@@ -2069,7 +2030,7 @@ export async function POST(request: Request) {
           probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
         updatedAt: nowIso(),
         topicJson,
-        ...getTopicEmbeddingPersistenceMetadata(updatedResolvedTopic),
+        ...getCanonicalEmbeddingPersistenceMetadata(updatedResolvedTopic),
       });
 
       qdrantSyncSucceeded = syncResult.ok;

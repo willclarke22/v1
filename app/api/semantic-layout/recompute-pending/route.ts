@@ -20,11 +20,7 @@ type ResolvedTopicLabelEmbedding = {
   count: number;
   model: string | null;
   updated_at: string | null;
-  source:
-    | "topic_label_embedding"
-    | "legacy_topic_concept_embedding"
-    | "legacy_topic_embedding"
-    | "missing";
+  source: "topic_label_embedding" | "missing";
 };
 
 type NeighborMatch = {
@@ -136,44 +132,6 @@ function resolveTopicLabelEmbedding(
       model: topic.topic_label_embedding_model,
       updated_at: topic.topic_label_embedding_updated_at,
       source: "topic_label_embedding",
-    };
-  }
-
-  /**
-   * Migration fallback only.
-   *
-   * Old topic_concept_embedding_* represented what we now call
-   * topic_label_embedding_*.
-   */
-  const legacyConceptCentroid = asEmbeddingVector(
-    topic.topic_concept_embedding_centroid,
-  );
-
-  if (legacyConceptCentroid && topic.topic_concept_embedding_count > 0) {
-    return {
-      centroid: legacyConceptCentroid,
-      count: topic.topic_concept_embedding_count,
-      model: topic.topic_concept_embedding_model,
-      updated_at: topic.topic_concept_embedding_updated_at,
-      source: "legacy_topic_concept_embedding",
-    };
-  }
-
-  /**
-   * Final migration fallback only.
-   *
-   * topic_embedding_* is the old generic alias that should mirror
-   * topic_label_embedding_*.
-   */
-  const legacyCentroid = asEmbeddingVector(topic.topic_embedding_centroid);
-
-  if (legacyCentroid && topic.topic_embedding_count > 0) {
-    return {
-      centroid: legacyCentroid,
-      count: topic.topic_embedding_count,
-      model: topic.topic_embedding_model,
-      updated_at: topic.topic_embedding_updated_at,
-      source: "legacy_topic_embedding",
     };
   }
 
@@ -594,6 +552,22 @@ function mergeSemanticLayoutIntoTopicJson(args: {
 }) {
   const base = topicJsonObject(args.topic);
 
+  /**
+   * Wave 2 cleanup: remove any stale old embedding aliases from topic_json.
+   */
+  delete base.topic_embedding_centroid;
+  delete base.topic_embedding_count;
+  delete base.topic_embedding_model;
+  delete base.topic_embedding_updated_at;
+  delete base.topic_concept_embedding_centroid;
+  delete base.topic_concept_embedding_count;
+  delete base.topic_concept_embedding_model;
+  delete base.topic_concept_embedding_updated_at;
+  delete base.learning_pattern_embedding_centroid;
+  delete base.learning_pattern_embedding_count;
+  delete base.learning_pattern_embedding_model;
+  delete base.learning_pattern_embedding_updated_at;
+
   const existingSemanticStatus =
     base.semantic_enrichment_status &&
     typeof base.semantic_enrichment_status === "object" &&
@@ -698,30 +672,11 @@ export async function POST(request: Request) {
 
         /**
          * Canonical topic-label embedding.
-         *
-         * If this run only had a legacy embedding available, promote it into the
-         * canonical topic_label_embedding_* columns during writeback.
          */
         topicLabelEmbeddingCentroid: topicLabelEmbedding.centroid,
         topicLabelEmbeddingCount: topicLabelEmbedding.count,
         topicLabelEmbeddingModel: topicLabelEmbedding.model,
         topicLabelEmbeddingUpdatedAt: topicLabelEmbedding.updated_at,
-
-        /**
-         * Legacy/general embedding mirrors topic-label embedding for compatibility.
-         */
-        topicEmbeddingCentroid: topicLabelEmbedding.centroid,
-        topicEmbeddingCount: topicLabelEmbedding.count,
-        topicEmbeddingModel: topicLabelEmbedding.model,
-        topicEmbeddingUpdatedAt: topicLabelEmbedding.updated_at,
-
-        /**
-         * Legacy topic-label alias during migration.
-         */
-        topicConceptEmbeddingCentroid: topicLabelEmbedding.centroid,
-        topicConceptEmbeddingCount: topicLabelEmbedding.count,
-        topicConceptEmbeddingModel: topicLabelEmbedding.model,
-        topicConceptEmbeddingUpdatedAt: topicLabelEmbedding.updated_at,
 
         /**
          * Preserve canonical topic-message embedding.
@@ -731,15 +686,6 @@ export async function POST(request: Request) {
         topicMessageEmbeddingModel: topic.topic_message_embedding_model,
         topicMessageEmbeddingUpdatedAt:
           topic.topic_message_embedding_updated_at,
-
-        /**
-         * Preserve legacy topic-message alias during migration.
-         */
-        learningPatternEmbeddingCentroid: topic.learning_pattern_embedding_centroid,
-        learningPatternEmbeddingCount: topic.learning_pattern_embedding_count,
-        learningPatternEmbeddingModel: topic.learning_pattern_embedding_model,
-        learningPatternEmbeddingUpdatedAt:
-          topic.learning_pattern_embedding_updated_at,
 
         semanticPosition: computed.position,
         semanticPositionUpdatedAt: updatedAt,

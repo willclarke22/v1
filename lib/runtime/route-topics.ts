@@ -40,32 +40,6 @@ export type RouteTopic = {
   topic_message_embedding_updated_at?: string | null;
 
   /**
-   * Legacy/general embedding field.
-   *
-   * During migration, this mirrors topic_label_embedding_*.
-   */
-  topic_embedding_centroid?: EmbeddingVector | null;
-  topic_embedding_count?: number | null;
-  topic_embedding_model?: string | null;
-  topic_embedding_updated_at?: string | null;
-
-  /**
-   * Legacy alias for topic_label_embedding_*.
-   */
-  topic_concept_embedding_centroid?: EmbeddingVector | null;
-  topic_concept_embedding_count?: number | null;
-  topic_concept_embedding_model?: string | null;
-  topic_concept_embedding_updated_at?: string | null;
-
-  /**
-   * Legacy alias for topic_message_embedding_*.
-   */
-  learning_pattern_embedding_centroid?: EmbeddingVector | null;
-  learning_pattern_embedding_count?: number | null;
-  learning_pattern_embedding_model?: string | null;
-  learning_pattern_embedding_updated_at?: string | null;
-
-  /**
    * Semantic enrichment / layout metadata mirrored from explicit topic_state columns.
    */
   semantic_enrichment_status?: string | null;
@@ -99,21 +73,6 @@ type EmbeddingAliases = {
   topic_message_embedding_count: number | null;
   topic_message_embedding_model: string | null;
   topic_message_embedding_updated_at: string | null;
-
-  topic_embedding_centroid: EmbeddingVector | null;
-  topic_embedding_count: number | null;
-  topic_embedding_model: string | null;
-  topic_embedding_updated_at: string | null;
-
-  topic_concept_embedding_centroid: EmbeddingVector | null;
-  topic_concept_embedding_count: number | null;
-  topic_concept_embedding_model: string | null;
-  topic_concept_embedding_updated_at: string | null;
-
-  learning_pattern_embedding_centroid: EmbeddingVector | null;
-  learning_pattern_embedding_count: number | null;
-  learning_pattern_embedding_model: string | null;
-  learning_pattern_embedding_updated_at: string | null;
 };
 
 function dedupeStrings(values: string[]): string[] {
@@ -263,97 +222,20 @@ function resolveEmbeddingAliases(row: {
   topic_message_embedding_count: number | null;
   topic_message_embedding_model: string | null;
   topic_message_embedding_updated_at: string | null;
-
-  topic_embedding_centroid: EmbeddingVector | null;
-  topic_embedding_count: number | null;
-  topic_embedding_model: string | null;
-  topic_embedding_updated_at: string | null;
-
-  topic_concept_embedding_centroid: EmbeddingVector | null;
-  topic_concept_embedding_count: number | null;
-  topic_concept_embedding_model: string | null;
-  topic_concept_embedding_updated_at: string | null;
-
-  learning_pattern_embedding_centroid: EmbeddingVector | null;
-  learning_pattern_embedding_count: number | null;
-  learning_pattern_embedding_model: string | null;
-  learning_pattern_embedding_updated_at: string | null;
 }): EmbeddingAliases {
-  const topicLabelCentroid =
-    row.topic_label_embedding_centroid ??
-    row.topic_concept_embedding_centroid ??
-    row.topic_embedding_centroid ??
-    null;
-
-  const topicLabelCount =
-    row.topic_label_embedding_count ??
-    row.topic_concept_embedding_count ??
-    row.topic_embedding_count ??
-    null;
-
-  const topicLabelModel =
-    row.topic_label_embedding_model ??
-    row.topic_concept_embedding_model ??
-    row.topic_embedding_model ??
-    null;
-
-  const topicLabelUpdatedAt =
-    row.topic_label_embedding_updated_at ??
-    row.topic_concept_embedding_updated_at ??
-    row.topic_embedding_updated_at ??
-    null;
-
-  const topicMessageCentroid =
-    row.topic_message_embedding_centroid ??
-    row.learning_pattern_embedding_centroid ??
-    null;
-
-  const topicMessageCount =
-    row.topic_message_embedding_count ??
-    row.learning_pattern_embedding_count ??
-    null;
-
-  const topicMessageModel =
-    row.topic_message_embedding_model ??
-    row.learning_pattern_embedding_model ??
-    null;
-
-  const topicMessageUpdatedAt =
-    row.topic_message_embedding_updated_at ??
-    row.learning_pattern_embedding_updated_at ??
-    null;
-
   return {
-    /**
-     * Canonical fields first.
-     */
-    topic_label_embedding_centroid: topicLabelCentroid,
-    topic_label_embedding_count: topicLabelCount,
-    topic_label_embedding_model: topicLabelModel,
-    topic_label_embedding_updated_at: topicLabelUpdatedAt,
+    topic_label_embedding_centroid: row.topic_label_embedding_centroid ?? null,
+    topic_label_embedding_count: row.topic_label_embedding_count ?? null,
+    topic_label_embedding_model: row.topic_label_embedding_model ?? null,
+    topic_label_embedding_updated_at:
+      row.topic_label_embedding_updated_at ?? null,
 
-    topic_message_embedding_centroid: topicMessageCentroid,
-    topic_message_embedding_count: topicMessageCount,
-    topic_message_embedding_model: topicMessageModel,
-    topic_message_embedding_updated_at: topicMessageUpdatedAt,
-
-    /**
-     * Legacy aliases mirrored from canonical-resolved values.
-     */
-    topic_embedding_centroid: topicLabelCentroid,
-    topic_embedding_count: topicLabelCount,
-    topic_embedding_model: topicLabelModel,
-    topic_embedding_updated_at: topicLabelUpdatedAt,
-
-    topic_concept_embedding_centroid: topicLabelCentroid,
-    topic_concept_embedding_count: topicLabelCount,
-    topic_concept_embedding_model: topicLabelModel,
-    topic_concept_embedding_updated_at: topicLabelUpdatedAt,
-
-    learning_pattern_embedding_centroid: topicMessageCentroid,
-    learning_pattern_embedding_count: topicMessageCount,
-    learning_pattern_embedding_model: topicMessageModel,
-    learning_pattern_embedding_updated_at: topicMessageUpdatedAt,
+    topic_message_embedding_centroid:
+      row.topic_message_embedding_centroid ?? null,
+    topic_message_embedding_count: row.topic_message_embedding_count ?? null,
+    topic_message_embedding_model: row.topic_message_embedding_model ?? null,
+    topic_message_embedding_updated_at:
+      row.topic_message_embedding_updated_at ?? null,
   };
 }
 

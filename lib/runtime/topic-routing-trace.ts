@@ -1,5 +1,4 @@
 import type { VectorInfo } from "@/types/contracts";
-import type { SemanticCentroidRoutingResult } from "./topic-routing/topic-routing-types";
 
 export type ResolutionDecisionAction =
   | "stay_on_active_topic"
@@ -71,6 +70,30 @@ export type ResolutionHypothesisKind =
   | "create_new"
   | "ambiguous";
 
+/**
+ * Lightweight local trace shape for the archived/dormant topic-routing V3 path.
+ *
+ * This intentionally replaces the old dependency on:
+ *   ./topic-routing/topic-routing-types
+ *
+ * That old folder is no longer used by the primary /api/message routing path
+ * and can now be archived without breaking this trace contract.
+ */
+export type TopicRouterV3Debug = {
+  enabled?: boolean;
+  route?: string;
+  route_version?: string;
+  decision_kind?: string;
+  selected_topic_id?: string | null;
+  selected_topic_name?: string | null;
+  created_topic_name?: string | null;
+  confidence?: number | null;
+  reasons?: string[];
+  warnings?: string[];
+  vector_info?: VectorInfo | null;
+  [key: string]: unknown;
+};
+
 export type TopicResolutionTrace = {
   interpretation: {
     canonicalLabel: string | null;
@@ -138,7 +161,14 @@ export type TopicResolutionTrace = {
   decisionAction: ResolutionDecisionAction;
   fallbackRecommended: boolean;
   timing?: ResolutionTimingDebug;
-  topic_router_v3?: SemanticCentroidRoutingResult["debug"];
+
+  /**
+   * Optional archived-router debug payload.
+   *
+   * Kept for compatibility with older traces, but no longer imports types from
+   * the dormant topic-routing folder.
+   */
+  topic_router_v3?: TopicRouterV3Debug;
 };
 
 export function emptyTopicResolutionTrace(): TopicResolutionTrace {

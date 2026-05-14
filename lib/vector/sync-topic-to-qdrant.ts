@@ -18,8 +18,6 @@ type JsonValue =
 
 type TopicLabelVectorSource =
   | "topic_label_embedding_centroid"
-  | "legacy_topic_concept_embedding_centroid"
-  | "legacy_topic_embedding_centroid"
   | "topic_label_text_fallback";
 
 export type SyncTopicToQdrantInput = {
@@ -33,34 +31,12 @@ export type SyncTopicToQdrantInput = {
   /**
    * Canonical topic-label embedding.
    *
-   * This is the vector Qdrant should store for topic lookup / semantic layout.
+   * This is the vector Qdrant stores for topic lookup / semantic layout.
    */
   topicLabelEmbeddingCentroid?: EmbeddingVector | null;
   topicLabelEmbeddingCount?: number | null;
   topicLabelEmbeddingModel?: string | null;
   topicLabelEmbeddingUpdatedAt?: string | null;
-
-  /**
-   * Legacy alias for topicLabelEmbedding*.
-   *
-   * During migration, topic_concept_embedding_* had the same intended meaning
-   * as the new topic_label_embedding_* fields.
-   */
-  topicConceptEmbeddingCentroid?: EmbeddingVector | null;
-  topicConceptEmbeddingCount?: number | null;
-  topicConceptEmbeddingModel?: string | null;
-  topicConceptEmbeddingUpdatedAt?: string | null;
-
-  /**
-   * Older generic alias for topicLabelEmbedding*.
-   *
-   * Keep accepting this until every caller and persisted row has moved to
-   * topic_label_embedding_*.
-   */
-  topicEmbeddingCentroid?: EmbeddingVector | null;
-  topicEmbeddingCount?: number | null;
-  topicEmbeddingModel?: string | null;
-  topicEmbeddingUpdatedAt?: string | null;
 };
 
 export type SyncTopicToQdrantResult = {
@@ -81,7 +57,7 @@ type ResolvedTopicLabelEmbeddingFields = {
   count: number;
   model: string;
   updatedAt: string | null;
-  source: Exclude<TopicLabelVectorSource, "topic_label_text_fallback"> | null;
+  source: "topic_label_embedding_centroid" | null;
 };
 
 function roundMs(value: number) {
@@ -202,39 +178,15 @@ function readTopicJsonEmbedding(input: SyncTopicToQdrantInput) {
   const topicLabelCentroid = asEmbeddingVector(
     topicJson?.topic_label_embedding_centroid,
   );
-  const legacyConceptCentroid = asEmbeddingVector(
-    topicJson?.topic_concept_embedding_centroid,
-  );
-  const legacyTopicCentroid = asEmbeddingVector(
-    topicJson?.topic_embedding_centroid,
-  );
-
-  const centroid =
-    topicLabelCentroid ?? legacyConceptCentroid ?? legacyTopicCentroid;
-
-  const source: ResolvedTopicLabelEmbeddingFields["source"] = topicLabelCentroid
-    ? "topic_label_embedding_centroid"
-    : legacyConceptCentroid
-      ? "legacy_topic_concept_embedding_centroid"
-      : legacyTopicCentroid
-        ? "legacy_topic_embedding_centroid"
-        : null;
 
   return {
-    centroid,
-    source,
-    count:
-      asNonNegativeInteger(topicJson?.topic_label_embedding_count) ??
-      asNonNegativeInteger(topicJson?.topic_concept_embedding_count) ??
-      asNonNegativeInteger(topicJson?.topic_embedding_count),
-    model:
-      asString(topicJson?.topic_label_embedding_model) ??
-      asString(topicJson?.topic_concept_embedding_model) ??
-      asString(topicJson?.topic_embedding_model),
-    updatedAt:
-      asString(topicJson?.topic_label_embedding_updated_at) ??
-      asString(topicJson?.topic_concept_embedding_updated_at) ??
-      asString(topicJson?.topic_embedding_updated_at),
+    centroid: topicLabelCentroid,
+    source: topicLabelCentroid
+      ? ("topic_label_embedding_centroid" as const)
+      : null,
+    count: asNonNegativeInteger(topicJson?.topic_label_embedding_count),
+    model: asString(topicJson?.topic_label_embedding_model),
+    updatedAt: asString(topicJson?.topic_label_embedding_updated_at),
   };
 }
 
@@ -282,26 +234,6 @@ function resolveInputCentroidSource(input: SyncTopicToQdrantInput): {
     };
   }
 
-  const legacyConceptCentroid = asEmbeddingVector(
-    input.topicConceptEmbeddingCentroid,
-  );
-
-  if (legacyConceptCentroid) {
-    return {
-      centroid: legacyConceptCentroid,
-      source: "legacy_topic_concept_embedding_centroid",
-    };
-  }
-
-  const legacyTopicCentroid = asEmbeddingVector(input.topicEmbeddingCentroid);
-
-  if (legacyTopicCentroid) {
-    return {
-      centroid: legacyTopicCentroid,
-      source: "legacy_topic_embedding_centroid",
-    };
-  }
-
   return {
     centroid: null,
     source: null,
@@ -319,22 +251,16 @@ function resolveTopicLabelEmbeddingFields(
 
   const count =
     asNonNegativeInteger(input.topicLabelEmbeddingCount) ??
-    asNonNegativeInteger(input.topicConceptEmbeddingCount) ??
-    asNonNegativeInteger(input.topicEmbeddingCount) ??
     topicJsonEmbedding.count ??
     (centroid ? 1 : 0);
 
   const model =
     input.topicLabelEmbeddingModel ??
-    input.topicConceptEmbeddingModel ??
-    input.topicEmbeddingModel ??
     topicJsonEmbedding.model ??
     getDefaultEmbeddingModelName();
 
   const updatedAt =
     input.topicLabelEmbeddingUpdatedAt ??
-    input.topicConceptEmbeddingUpdatedAt ??
-    input.topicEmbeddingUpdatedAt ??
     topicJsonEmbedding.updatedAt ??
     (centroid ? input.updatedAt ?? new Date().toISOString() : null);
 
@@ -371,9 +297,6 @@ async function buildVectorForQdrant(input: SyncTopicToQdrantInput): Promise<{
   /**
    * Preferred behavior:
    * - If the topic already has a topic-label embedding, Qdrant stores that vector.
-   *
-   * Migration behavior:
-   * - If only a legacy alias exists, use it but report the legacy source.
    *
    * Last-resort fallback:
    * - If no vector exists, embed the topic-label fallback text.
@@ -482,16 +405,6 @@ export async function syncTopicToQdrant(
             topic_label_embedding_count: topicLabelEmbeddingCount,
             topic_label_embedding_model: topicLabelEmbeddingModel,
             topic_label_embedding_updated_at: topicLabelEmbeddingUpdatedAt,
-
-            /**
-             * Legacy payload aliases during migration.
-             */
-            topic_embedding_count: topicLabelEmbeddingCount,
-            topic_embedding_model: topicLabelEmbeddingModel,
-            topic_embedding_updated_at: topicLabelEmbeddingUpdatedAt,
-            topic_concept_embedding_count: topicLabelEmbeddingCount,
-            topic_concept_embedding_model: topicLabelEmbeddingModel,
-            topic_concept_embedding_updated_at: topicLabelEmbeddingUpdatedAt,
           },
         },
       ],

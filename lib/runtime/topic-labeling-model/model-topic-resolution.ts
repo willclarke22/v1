@@ -183,19 +183,14 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
 function topicHasTopicLabelEmbedding(topic: RouteTopic | null): boolean {
   if (!topic) return false;
 
-  return Boolean(
-    asEmbeddingVector(topic.topic_label_embedding_centroid ?? null) ??
-      asEmbeddingVector(topic.topic_concept_embedding_centroid ?? null) ??
-      asEmbeddingVector(topic.topic_embedding_centroid ?? null),
-  );
+  return Boolean(asEmbeddingVector(topic.topic_label_embedding_centroid ?? null));
 }
 
 function topicHasTopicMessageEmbedding(topic: RouteTopic | null): boolean {
   if (!topic) return false;
 
   return Boolean(
-    asEmbeddingVector(topic.topic_message_embedding_centroid ?? null) ??
-      asEmbeddingVector(topic.learning_pattern_embedding_centroid ?? null),
+    asEmbeddingVector(topic.topic_message_embedding_centroid ?? null),
   );
 }
 

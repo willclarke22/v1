@@ -22,7 +22,6 @@
  *   It is used for layout / semantic structure / Qdrant topic lookup.
  * - topic_message_embedding_centroid is the topic-level embedding of learner messages.
  *   It is used later for personalization / struggle-pattern similarity.
- * - topic_embedding_centroid remains a compatibility alias for topic_label_embedding_centroid.
  * - learning_space.position is the renderer-safe position derived from topic state.
  */
 
@@ -812,15 +811,6 @@ export interface TopicState {
    * Long-term rename candidate: topic_position or topic_visual_centroid.
    */
   topic_centroid: [number, number, number];
-
-  /**
-   * Compatibility semantic embedding alias.
-   * Mirrors topic_label_embedding_centroid during the current migration.
-   */
-  topic_embedding_centroid?: Nullable<EmbeddingVector>;
-  topic_embedding_count?: number;
-  topic_embedding_model?: Nullable<string>;
-  topic_embedding_updated_at?: Nullable<ISO8601String>;
 
   /**
    * Canonical embedding of the clean topic label.

@@ -18,16 +18,6 @@ type QdrantTopicPayload = {
   topic_label_embedding_updated_at?: unknown;
   vector_source?: unknown;
   vector_semantics?: unknown;
-
-  /**
-   * Legacy payload aliases during migration.
-   */
-  topic_embedding_count?: unknown;
-  topic_embedding_model?: unknown;
-  topic_embedding_updated_at?: unknown;
-  topic_concept_embedding_count?: unknown;
-  topic_concept_embedding_model?: unknown;
-  topic_concept_embedding_updated_at?: unknown;
 };
 
 export type SemanticTopicCandidate = {
@@ -44,15 +34,6 @@ export type SemanticTopicCandidate = {
   topic_label_embedding_updated_at: string | null;
   vector_source: string | null;
   vector_semantics: string | null;
-
-  /**
-   * Legacy aliases during migration.
-   *
-   * Keep these until callers/debug surfaces are fully moved to
-   * topic_label_embedding_*.
-   */
-  topic_embedding_count: number | null;
-  topic_embedding_model: string | null;
 };
 
 export type SemanticTopicQueryResult = {
@@ -248,27 +229,15 @@ function vectorInfoFromCandidates(candidates: SemanticTopicCandidate[]): VectorI
 }
 
 function getPayloadTopicLabelEmbeddingCount(payload: QdrantTopicPayload) {
-  return (
-    asNonNegativeInteger(payload.topic_label_embedding_count) ??
-    asNonNegativeInteger(payload.topic_concept_embedding_count) ??
-    asNonNegativeInteger(payload.topic_embedding_count)
-  );
+  return asNonNegativeInteger(payload.topic_label_embedding_count);
 }
 
 function getPayloadTopicLabelEmbeddingModel(payload: QdrantTopicPayload) {
-  return (
-    asString(payload.topic_label_embedding_model) ??
-    asString(payload.topic_concept_embedding_model) ??
-    asString(payload.topic_embedding_model)
-  );
+  return asString(payload.topic_label_embedding_model);
 }
 
 function getPayloadTopicLabelEmbeddingUpdatedAt(payload: QdrantTopicPayload) {
-  return (
-    asString(payload.topic_label_embedding_updated_at) ??
-    asString(payload.topic_concept_embedding_updated_at) ??
-    asString(payload.topic_embedding_updated_at)
-  );
+  return asString(payload.topic_label_embedding_updated_at);
 }
 
 function normalizeQdrantCandidates(points: unknown[]): SemanticTopicCandidate[] {
@@ -288,27 +257,18 @@ function normalizeQdrantCandidates(points: unknown[]): SemanticTopicCandidate[] 
 
     if (!topicId) continue;
 
-    const topicLabelEmbeddingCount = getPayloadTopicLabelEmbeddingCount(payload);
-    const topicLabelEmbeddingModel = getPayloadTopicLabelEmbeddingModel(payload);
-
     candidates.push({
       topic_id: topicId,
       topic_name: topicName ?? topicId,
       similarity: score ?? 0,
       rank: index,
 
-      topic_label_embedding_count: topicLabelEmbeddingCount,
-      topic_label_embedding_model: topicLabelEmbeddingModel,
+      topic_label_embedding_count: getPayloadTopicLabelEmbeddingCount(payload),
+      topic_label_embedding_model: getPayloadTopicLabelEmbeddingModel(payload),
       topic_label_embedding_updated_at:
         getPayloadTopicLabelEmbeddingUpdatedAt(payload),
       vector_source: asString(payload.vector_source),
       vector_semantics: asString(payload.vector_semantics),
-
-      /**
-       * Legacy aliases during migration.
-       */
-      topic_embedding_count: topicLabelEmbeddingCount,
-      topic_embedding_model: topicLabelEmbeddingModel,
     });
   }
 
@@ -569,14 +529,6 @@ export async function querySemanticTopicCandidatesFromEmbedding(
           "topic_label_embedding_updated_at",
           "vector_source",
           "vector_semantics",
-
-          // Legacy migration aliases.
-          "topic_embedding_count",
-          "topic_embedding_model",
-          "topic_embedding_updated_at",
-          "topic_concept_embedding_count",
-          "topic_concept_embedding_model",
-          "topic_concept_embedding_updated_at",
         ],
       }),
       qdrantTimeoutMs,

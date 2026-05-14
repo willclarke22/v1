@@ -25,17 +25,6 @@ function hasTopicMessageEmbedding(row: {
   );
 }
 
-function hasLegacyTopicEmbedding(row: {
-  topic_embedding_centroid: unknown;
-  topic_embedding_count: number;
-}) {
-  return (
-    Array.isArray(row.topic_embedding_centroid) &&
-    row.topic_embedding_centroid.length > 0 &&
-    row.topic_embedding_count > 0
-  );
-}
-
 function getNestedSemanticStatus(row: TopicStateRow): Record<string, unknown> | null {
   const topicJson = row.topic_json;
 
@@ -74,14 +63,13 @@ function shouldEnrichTopic(row: TopicStateRow) {
   }
 
   /**
-   * Canonical enrichment requirement.
+   * Wave 2 canonical enrichment requirement.
    *
    * topic_label_embedding_* powers label/layout/Qdrant topic structure.
-   * topic_message_embedding_* stores the learner-message pattern for later
-   * personalization / diagnosis-transfer work.
+   * topic_message_embedding_* stores learner-message pattern evidence.
    *
-   * Legacy topic_embedding_* is reported for migration visibility, but missing
-   * legacy fields should not by themselves make a topic pending.
+   * topic_embedding_* has been removed and should not participate in pending
+   * status anymore.
    */
   return !hasLabelEmbedding || !hasMessageEmbedding;
 }
@@ -99,7 +87,6 @@ export async function GET() {
       pending_topics: pendingRows.slice(0, 10).map((row) => {
         const hasLabelEmbedding = hasTopicLabelEmbedding(row);
         const hasMessageEmbedding = hasTopicMessageEmbedding(row);
-        const hasLegacyEmbedding = hasLegacyTopicEmbedding(row);
 
         return {
           topic_id: row.topic_id,
@@ -114,14 +101,8 @@ export async function GET() {
           topic_label_embedding_count: row.topic_label_embedding_count,
           topic_message_embedding_count: row.topic_message_embedding_count,
 
-          /**
-           * Legacy migration visibility only.
-           */
-          topic_embedding_count: row.topic_embedding_count,
-
           has_topic_label_embedding: hasLabelEmbedding,
           has_topic_message_embedding: hasMessageEmbedding,
-          has_legacy_topic_embedding: hasLegacyEmbedding,
 
           missing_canonical_embeddings: {
             topic_label_embedding: !hasLabelEmbedding,
