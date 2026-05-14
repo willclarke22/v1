@@ -86,13 +86,6 @@ export type SemanticEnrichmentStatus = {
   enrichment_prompt_text: string | null;
 };
 
-/**
- * Kept as a compatibility shape because message/route.ts still names this
- * centroidUpdatePlan.
- *
- * Important: this plan now represents topic-message embedding updates only.
- * It should not be used as the topic-label/layout/Qdrant embedding.
- */
 export type ModelFirstRouteCentroidUpdatePlan = {
   topic_id: string;
   previous_embedding_count: number;
@@ -138,6 +131,7 @@ export type ModelFirstTopicResolutionOutcome = {
 
 function emptyVectorInfo(): VectorInfo {
   return {
+    top_k_topic_labels: [],
     top_k_topic_names: [],
     top_k_topic_ids: [],
     top_k_similarity_scores: [],
@@ -156,14 +150,48 @@ function normalizeTextLoose(text: string) {
     .trim();
 }
 
+function getRouteTopicLabel(topic: RouteTopic | null): string | null {
+  if (!topic) return null;
+
+  const topicWithCanonicalLabel = topic as RouteTopic & {
+    topic_label?: string | null;
+    topic_name?: string | null;
+  };
+
+  return (
+    topicWithCanonicalLabel.topic_label?.trim() ||
+    topicWithCanonicalLabel.topic_name?.trim() ||
+    topic.name?.trim() ||
+    null
+  );
+}
+
+function getPolicyMatchedTopicLabel(
+  decision: ModelTopicRoutePolicyDecision | null,
+): string | null {
+  if (!decision) return null;
+
+  const decisionWithCanonicalLabel = decision as ModelTopicRoutePolicyDecision & {
+    matched_topic_label?: string | null;
+  };
+
+  return (
+    decisionWithCanonicalLabel.matched_topic_label?.trim() ||
+    decision.matched_topic_name?.trim() ||
+    null
+  );
+}
+
 function findTopicByName(existingTopics: RouteTopic[], name: string | null) {
   if (!name) return null;
 
   const target = normalizeTextLoose(name);
 
   return (
-    existingTopics.find((topic) => normalizeTextLoose(topic.name) === target) ??
-    null
+    existingTopics.find((topic) => {
+      const topicLabel = getRouteTopicLabel(topic);
+      return topicLabel ? normalizeTextLoose(topicLabel) === target : false;
+    }) ?? null
   );
 }
 
@@ -201,15 +229,15 @@ function topicHasCanonicalEmbeddings(topic: RouteTopic | null): boolean {
 }
 
 function buildTopicMessageEnrichmentPrompt(args: {
-  topicName: string;
+  topicLabel: string;
   initialMessage?: string | null;
 }) {
-  const { topicName, initialMessage } = args;
+  const { topicLabel, initialMessage } = args;
 
   return initialMessage
-    ? `Topic: ${topicName}
+    ? `Topic: ${topicLabel}
 Learner context: ${initialMessage}`
-    : `Topic: ${topicName}`;
+    : `Topic: ${topicLabel}`;
 }
 
 function buildCreatedTopicMessageEmbeddingPlan(args: {
@@ -237,10 +265,10 @@ function buildCreatedTopicMessageEmbeddingPlan(args: {
 function buildAuthoritativeContinuationPolicy(args: {
   decisionKind: "create_new" | "switch_existing" | "stay_active";
   resolvedLabel: string | null;
-  activeTopicName: string | null;
+  activeTopicLabel: string | null;
 }): ModelRouteContinuationPolicy {
-  const { decisionKind, resolvedLabel, activeTopicName } = args;
-  const chosenTarget = resolvedLabel ?? activeTopicName;
+  const { decisionKind, resolvedLabel, activeTopicLabel } = args;
+  const chosenTarget = resolvedLabel ?? activeTopicLabel;
 
   return {
     kind: "route_authoritatively",
@@ -312,8 +340,9 @@ function buildModelFailureContinuationPolicy(args: {
   reason: string;
 }): ModelRouteContinuationPolicy {
   const { activeTopic, reason } = args;
+  const activeTopicLabel = getRouteTopicLabel(activeTopic);
 
-  if (activeTopic) {
+  if (activeTopic && activeTopicLabel) {
     return {
       kind: "stay_active_after_model_failure",
       should_create_learning_topic: false,
@@ -325,8 +354,8 @@ function buildModelFailureContinuationPolicy(args: {
       suggested_learner_message:
         "I’m having trouble classifying that cleanly right now, so I’m going to keep us anchored on the current topic for the moment. Add one more sentence, even messy, and I’ll re-check the target.",
       rationale: `The model result was unusable (${reason}). MyWay should avoid creating a permanent topic and stay anchored to the active topic.`,
-      candidate_targets: [activeTopic.name],
-      chosen_target: activeTopic.name,
+      candidate_targets: [activeTopicLabel],
+      chosen_target: activeTopicLabel,
     };
   }
 
@@ -398,8 +427,12 @@ function buildSemanticEnrichmentStatus(args: {
   }
 
   const topicForSemanticCheck = createdTopic ?? targetTopic ?? null;
-  const topicName =
-    resolvedLabel ?? createdTopic?.name ?? targetTopic?.name ?? null;
+  const topicLabel =
+    resolvedLabel ??
+    getRouteTopicLabel(createdTopic) ??
+    getRouteTopicLabel(targetTopic ?? null) ??
+    null;
+
   const hasExistingCanonicalEmbeddings =
     topicHasCanonicalEmbeddings(topicForSemanticCheck);
   const hasTopicLabelEmbedding =
@@ -407,11 +440,6 @@ function buildSemanticEnrichmentStatus(args: {
   const hasTopicMessageEmbedding =
     topicHasTopicMessageEmbedding(topicForSemanticCheck);
 
-  /**
-   * A raw learner-message embedding is useful as topic_message_embedding, but it
-   * is not enough to mark semantic layout/Qdrant as ready. Layout/Qdrant require
-   * the clean topic_label_embedding created by idle enrichment.
-   */
   if (messageEmbeddingPlan?.new_centroid && messageEmbedding?.length) {
     return {
       status: hasTopicLabelEmbedding ? "embedding_ready" : "pending_embedding",
@@ -424,16 +452,17 @@ function buildSemanticEnrichmentStatus(args: {
         ? "semantic_position_ready"
         : "temporary_position",
       should_schedule_enrichment: !hasExistingCanonicalEmbeddings,
-      enrichment_prompt_text: hasExistingCanonicalEmbeddings || !topicName
-        ? null
-        : buildTopicMessageEnrichmentPrompt({
-            topicName,
-            initialMessage: initialMessage ?? null,
-          }),
+      enrichment_prompt_text:
+        hasExistingCanonicalEmbeddings || !topicLabel
+          ? null
+          : buildTopicMessageEnrichmentPrompt({
+              topicLabel,
+              initialMessage: initialMessage ?? null,
+            }),
     };
   }
 
-  if (!topicForSemanticCheck || !topicName) {
+  if (!topicForSemanticCheck || !topicLabel) {
     return {
       status: "not_needed",
       needs_embedding_centroid: false,
@@ -474,7 +503,7 @@ function buildSemanticEnrichmentStatus(args: {
     layout_status: "temporary_position",
     should_schedule_enrichment: true,
     enrichment_prompt_text: buildTopicMessageEnrichmentPrompt({
-      topicName,
+      topicLabel,
       initialMessage: initialMessage ?? null,
     }),
   };
@@ -586,17 +615,19 @@ export function buildModelRouteContinuationPolicy(args: {
   modelPolicyDecision: ModelTopicRoutePolicyDecision | null;
 }): ModelRouteContinuationPolicy {
   const { activeTopic, modelPolicyDecision } = args;
+  const activeTopicLabel = getRouteTopicLabel(activeTopic);
+  const matchedTopicLabel = getPolicyMatchedTopicLabel(modelPolicyDecision);
 
   if (isModelPolicySafePositiveDecision(modelPolicyDecision)) {
     return buildAuthoritativeContinuationPolicy({
       decisionKind: modelPolicyDecision.decision_kind,
       resolvedLabel:
         modelPolicyDecision.extracted_label ??
-        modelPolicyDecision.matched_topic_name ??
-        modelPolicyDecision.target_topic?.name ??
-        activeTopic?.name ??
+        matchedTopicLabel ??
+        getRouteTopicLabel(modelPolicyDecision.target_topic ?? null) ??
+        activeTopicLabel ??
         null,
-      activeTopicName: activeTopic?.name ?? null,
+      activeTopicLabel,
     });
   }
 
@@ -614,16 +645,16 @@ export function buildModelRouteContinuationPolicy(args: {
   if (modelPolicyDecision.decision_kind === "clarify_topic_intent") {
     const candidateTargets = [
       modelPolicyDecision.extracted_label,
-      modelPolicyDecision.matched_topic_name,
-      modelPolicyDecision.target_topic?.name,
+      matchedTopicLabel,
+      getRouteTopicLabel(modelPolicyDecision.target_topic ?? null),
     ].filter((item): item is string => Boolean(item));
 
     return buildClarifyTopicIntentContinuationPolicy({
       candidateTargets,
       chosenTarget:
-        modelPolicyDecision.target_topic?.name ??
+        getRouteTopicLabel(modelPolicyDecision.target_topic ?? null) ??
         modelPolicyDecision.extracted_label ??
-        modelPolicyDecision.matched_topic_name ??
+        matchedTopicLabel ??
         null,
     });
   }
@@ -672,6 +703,8 @@ export function buildModelFirstTopicResolutionOutcome(args: {
   if (modelPolicyDecision.decision_kind === "stay_active") {
     if (!activeTopic) return null;
 
+    const activeTopicLabel = getRouteTopicLabel(activeTopic) ?? activeTopic.name;
+
     const continuationPolicy = buildModelRouteContinuationPolicy({
       activeTopic,
       modelPolicyDecision,
@@ -685,7 +718,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
       embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
       blockedByModelFailure: false,
       initialMessage: initialMessage ?? null,
-      resolvedLabel: activeTopic.name,
+      resolvedLabel: activeTopicLabel,
     });
 
     return buildOutcome({
@@ -694,7 +727,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
       routeTopics: existingTopics,
       resolutionKind: "fallback_active_topic",
       vectorInfo,
-      resolvedLabel: activeTopic.name,
+      resolvedLabel: activeTopicLabel,
       matchConfidence: 0.86,
       modelPolicyDecision,
       modelPolicyUsedAsAuthority: true,
@@ -707,9 +740,14 @@ export function buildModelFirstTopicResolutionOutcome(args: {
   if (modelPolicyDecision.decision_kind === "switch_existing") {
     const matchedTopic =
       modelPolicyDecision.target_topic ??
-      findTopicByName(existingTopics, modelPolicyDecision.matched_topic_name);
+      findTopicByName(
+        existingTopics,
+        getPolicyMatchedTopicLabel(modelPolicyDecision),
+      );
 
     if (!matchedTopic) return null;
+
+    const matchedTopicLabel = getRouteTopicLabel(matchedTopic) ?? matchedTopic.name;
 
     const continuationPolicy = buildModelRouteContinuationPolicy({
       activeTopic,
@@ -724,7 +762,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
       embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
       blockedByModelFailure: false,
       initialMessage: initialMessage ?? null,
-      resolvedLabel: modelPolicyDecision.extracted_label ?? matchedTopic.name,
+      resolvedLabel: modelPolicyDecision.extracted_label ?? matchedTopicLabel,
     });
 
     return buildOutcome({
@@ -736,7 +774,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
           ? "fallback_active_topic"
           : "matched_existing",
       vectorInfo,
-      resolvedLabel: modelPolicyDecision.extracted_label ?? matchedTopic.name,
+      resolvedLabel: modelPolicyDecision.extracted_label ?? matchedTopicLabel,
       matchConfidence: 0.88,
       modelPolicyDecision,
       modelPolicyUsedAsAuthority: true,
@@ -831,10 +869,6 @@ export function buildModelFirstTopicResolutionOutcome(args: {
       authoritySource: "model_v3_3_policy",
       continuationPolicy,
       semanticEnrichmentStatus,
-      /**
-       * Compatibility field name used by message/route.ts.
-       * Semantically this is now the created topic's message embedding update.
-       */
       centroidUpdatePlan: messageEmbeddingPlan,
     });
   }
@@ -863,6 +897,8 @@ export function buildModelFirstConservativeFallbackOutcome(args: {
     modelPolicyDecision.decision_kind === "unusable_model_result";
 
   if (activeTopic) {
+    const activeTopicLabel = getRouteTopicLabel(activeTopic) ?? activeTopic.name;
+
     const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
       createdTopic: null,
       targetTopic: activeTopic,
@@ -870,7 +906,7 @@ export function buildModelFirstConservativeFallbackOutcome(args: {
       messageEmbedding: null,
       embeddingSkippedForFastRoute: false,
       blockedByModelFailure,
-      resolvedLabel: activeTopic.name,
+      resolvedLabel: activeTopicLabel,
     });
 
     return buildOutcome({
@@ -879,7 +915,7 @@ export function buildModelFirstConservativeFallbackOutcome(args: {
       routeTopics: existingTopics,
       resolutionKind: "fallback_active_topic",
       vectorInfo,
-      resolvedLabel: activeTopic.name,
+      resolvedLabel: activeTopicLabel,
       matchConfidence: 0.32,
       modelPolicyDecision,
       modelPolicyUsedAsAuthority: false,

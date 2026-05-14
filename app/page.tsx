@@ -66,6 +66,26 @@ async function updateLocalDevIdleState(input: LocalDevIdleStateUpdate) {
   }
 }
 
+function getEngineTopicLabel(args: {
+  engineTopic: NonNullable<
+    MessageRouteResponse["result"]
+  >["engine_fuel"]["topics"][number];
+  previous?: Topic;
+}) {
+  const engineTopicWithLegacyFields = args.engineTopic as typeof args.engineTopic & {
+    topic_label?: string | null;
+    topic_name?: string | null;
+  };
+
+  return (
+    engineTopicWithLegacyFields.topic_label?.trim() ||
+    engineTopicWithLegacyFields.topic_name?.trim() ||
+    args.previous?.topic_label?.trim() ||
+    args.previous?.name?.trim() ||
+    "Untitled Topic"
+  );
+}
+
 function deriveTopicsFromMessageResponse(
   data: MessageRouteResponse,
   previousTopics: Topic[]
@@ -98,10 +118,15 @@ function deriveTopicsFromMessageResponse(
     const isTargetTopic = engineTopic.topic_id === targetTopicId;
     const hasAvailableProbe =
       deliveredProbe?.target_topic_id === engineTopic.topic_id;
+    const topicLabel = getEngineTopicLabel({ engineTopic, previous });
 
     return {
       id: engineTopic.topic_id,
-      name: engineTopic.topic_name,
+      topic_label: topicLabel,
+
+      // Temporary compatibility alias for older UI components.
+      name: topicLabel,
+
       diagnosis: isTargetTopic
         ? activeDiagnosis
         : previous?.diagnosis ?? "representation_gap",

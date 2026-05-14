@@ -42,6 +42,9 @@ export type FollowupSignals = {
 };
 
 export type TopicScoreBreakdown = {
+  /** Canonical label-match score for new traces. */
+  exactLabelMatch?: number;
+  /** @deprecated Use exactLabelMatch instead. */
   exactNameMatch: number;
   containedMatch: number;
   conceptOverlap: number;
@@ -85,7 +88,11 @@ export type TopicRouterV3Debug = {
   route_version?: string;
   decision_kind?: string;
   selected_topic_id?: string | null;
+  selected_topic_label?: string | null;
+  /** @deprecated Use selected_topic_label instead. */
   selected_topic_name?: string | null;
+  created_topic_label?: string | null;
+  /** @deprecated Use created_topic_label instead. */
   created_topic_name?: string | null;
   confidence?: number | null;
   reasons?: string[];
@@ -134,6 +141,8 @@ export type TopicResolutionTrace = {
 
   candidates: Array<{
     topicId: string;
+    topicLabel?: string;
+    /** @deprecated Use topicLabel instead. */
     topicName: string;
     similarity: number;
     breakdown: TopicScoreBreakdown;
@@ -144,6 +153,8 @@ export type TopicResolutionTrace = {
     score: number;
     reasons: string[];
     topicId: string | null;
+    topicLabel?: string | null;
+    /** @deprecated Use topicLabel instead. */
     topicName: string | null;
     label: string | null;
   }>;
@@ -153,6 +164,8 @@ export type TopicResolutionTrace = {
     score: number;
     reasons: string[];
     topicId: string | null;
+    topicLabel?: string | null;
+    /** @deprecated Use topicLabel instead. */
     topicName: string | null;
     label: string | null;
   };
@@ -224,6 +237,7 @@ export function emptyTopicResolutionTrace(): TopicResolutionTrace {
       score: 0,
       reasons: [],
       topicId: null,
+      topicLabel: null,
       topicName: null,
       label: null,
     },
@@ -235,6 +249,8 @@ export function emptyTopicResolutionTrace(): TopicResolutionTrace {
 
 export function emptyVectorInfo(): VectorInfo {
   return {
+    top_k_topic_labels: [],
+    // Legacy alias; remove after all callers migrate.
     top_k_topic_names: [],
     top_k_topic_ids: [],
     top_k_similarity_scores: [],

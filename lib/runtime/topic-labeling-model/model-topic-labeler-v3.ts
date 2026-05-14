@@ -14,8 +14,18 @@ export type TopicLabelerV3RouteDecision =
 
 export type TopicLabelerV3Request = {
   message: string;
-  active_topic_name: string | null;
-  current_topic_names: string[];
+
+  /** Canonical MyWay app/request fields. */
+  active_topic_label: string | null;
+  current_topic_labels: string[];
+
+  /**
+   * Temporary legacy aliases for the Python V3 service.
+   * Remove after the service accepts only *_label fields.
+   */
+  active_topic_name?: string | null;
+  current_topic_names?: string[];
+
   previous_user_messages: string[];
 };
 
@@ -28,7 +38,11 @@ export type TopicLabelerV3Route = {
   route_decision: TopicLabelerV3RouteDecision;
   topic_reference_type: TopicReferenceTypeV3 | string;
   extracted_label: string | null;
-  matched_topic_name: string | null;
+  matched_topic_label: string | null;
+
+  /** @deprecated Use matched_topic_label instead. */
+  matched_topic_name?: string | null;
+
   match_type: string | null;
   score: number | null;
   sequence_similarity?: number | null;
@@ -75,16 +89,49 @@ function normalizeStringArray(value: unknown): string[] {
     .filter(Boolean);
 }
 
+function normalizeTopicLabelerV3Response(
+  response: TopicLabelerV3Response
+): TopicLabelerV3Response {
+  const route = response.route;
+
+  return {
+    ...response,
+    route: {
+      ...route,
+      matched_topic_label:
+        route.matched_topic_label ?? route.matched_topic_name ?? null,
+    },
+  };
+}
+
 export function buildTopicLabelerV3Request(input: {
   message: string;
+  activeTopicLabel?: string | null;
+  currentTopicLabels?: string[];
+
+  /** @deprecated Use activeTopicLabel instead. */
   activeTopicName?: string | null;
+
+  /** @deprecated Use currentTopicLabels instead. */
   currentTopicNames?: string[];
+
   previousUserMessages?: string[];
 }): TopicLabelerV3Request {
+  const activeTopicLabel =
+    input.activeTopicLabel?.trim() || input.activeTopicName?.trim() || null;
+  const currentTopicLabels = normalizeStringArray(
+    input.currentTopicLabels ?? input.currentTopicNames
+  );
+
   return {
     message: input.message,
-    active_topic_name: input.activeTopicName?.trim() || null,
-    current_topic_names: normalizeStringArray(input.currentTopicNames),
+    active_topic_label: activeTopicLabel,
+    current_topic_labels: currentTopicLabels,
+
+    // Legacy service compatibility. The app should prefer *_label fields.
+    active_topic_name: activeTopicLabel,
+    current_topic_names: currentTopicLabels,
+
     previous_user_messages: normalizeStringArray(input.previousUserMessages).slice(
       -5
     ),
@@ -138,7 +185,9 @@ export async function callTopicLabelerV3(
     let parsed: TopicLabelerV3Response;
 
     try {
-      parsed = JSON.parse(text) as TopicLabelerV3Response;
+      parsed = normalizeTopicLabelerV3Response(
+        JSON.parse(text) as TopicLabelerV3Response
+      );
     } catch {
       return {
         ok: false,

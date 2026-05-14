@@ -1,15 +1,31 @@
-import type { Topic } from "@/types/topic";
 import type { LearningSpace } from "@/types/contracts";
+
+type LearningSpaceInputTopic = {
+  id: string;
+  topic_label?: string | null;
+  name?: string | null;
+  confusion?: number | null;
+  insight?: number | null;
+  learningScore?: number | null;
+  position: [number, number, number];
+  scale?: number | null;
+};
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function normalizeTopicPosition(topic: Topic): [number, number, number] {
+function normalizeTopicPosition(
+  topic: LearningSpaceInputTopic
+): [number, number, number] {
   return topic.position;
 }
 
-function buildRenderState(topic: Topic) {
+function getTopicLabel(topic: LearningSpaceInputTopic) {
+  return topic.topic_label?.trim() || topic.name?.trim() || "Untitled Topic";
+}
+
+function buildRenderState(topic: LearningSpaceInputTopic) {
   const learningScore = topic.learningScore ?? 0.5;
   const confusion = topic.confusion ?? 0.3;
   const insight = topic.insight ?? 0.5;
@@ -24,18 +40,28 @@ function buildRenderState(topic: Topic) {
   };
 }
 
-export function buildLearningSpace(topics: Topic[]): LearningSpace {
+export function buildLearningSpace(
+  topics: LearningSpaceInputTopic[]
+): LearningSpace {
   return {
     space_version: "v1",
-    topics: topics.map((topic) => ({
-      topic_id: topic.id,
-      topic_name: topic.name,
-      label: topic.name,
-      position: normalizeTopicPosition(topic),
-      render_state: buildRenderState(topic),
-      satellite_count: 0,
-      satellites: [],
-    })),
+    topics: topics.map((topic) => {
+      const topicLabel = getTopicLabel(topic);
+
+      return {
+        topic_id: topic.id,
+        topic_label: topicLabel,
+
+        // Temporary legacy aliases for older renderer/UI code.
+        topic_name: topicLabel,
+        label: topicLabel,
+
+        position: normalizeTopicPosition(topic),
+        render_state: buildRenderState(topic),
+        satellite_count: 0,
+        satellites: [],
+      };
+    }),
     clusters: [],
   };
 }

@@ -77,13 +77,47 @@ function getLearningSpaceTopicPosition(
   return null;
 }
 
+function getTopicLabel(args: {
+  rowWithTopicFields: {
+    topic_label?: string | null;
+    topic_name?: string | null;
+  };
+  topicJson: Record<string, unknown>;
+}) {
+  const { rowWithTopicFields, topicJson } = args;
+
+  if (
+    typeof topicJson.topic_label === "string" &&
+    topicJson.topic_label.trim().length > 0
+  ) {
+    return topicJson.topic_label.trim();
+  }
+
+  if (
+    typeof rowWithTopicFields.topic_label === "string" &&
+    rowWithTopicFields.topic_label.trim().length > 0
+  ) {
+    return rowWithTopicFields.topic_label.trim();
+  }
+
+  if (
+    typeof rowWithTopicFields.topic_name === "string" &&
+    rowWithTopicFields.topic_name.trim().length > 0
+  ) {
+    return rowWithTopicFields.topic_name.trim();
+  }
+
+  return "Untitled Topic";
+}
+
 function mapRowsToTopics(
   rows: Awaited<ReturnType<typeof getLatestTopicState>>
 ): Topic[] {
   return rows.map((row, index) => {
     const rowWithTopicFields = row as unknown as {
       topic_id: string;
-      topic_name: string;
+      topic_label?: string | null;
+      topic_name?: string | null;
       diagnosis?: unknown;
       confusion?: number | null;
       insight?: number | null;
@@ -96,8 +130,14 @@ function mapRowsToTopics(
 
     const topicJson = getTopicJson(row);
 
+    const topicLabel = getTopicLabel({
+      rowWithTopicFields,
+      topicJson,
+    });
+
     const nextStep =
-      typeof topicJson.next_step === "string" && topicJson.next_step.trim().length > 0
+      typeof topicJson.next_step === "string" &&
+      topicJson.next_step.trim().length > 0
         ? topicJson.next_step
         : typeof rowWithTopicFields.next_step === "string" &&
             rowWithTopicFields.next_step.trim().length > 0
@@ -112,7 +152,12 @@ function mapRowsToTopics(
 
     return {
       id: rowWithTopicFields.topic_id,
-      name: rowWithTopicFields.topic_name,
+      topic_label: topicLabel,
+
+      // Temporary compatibility alias for older UI/runtime code.
+      // Prefer topic_label in new contracts and output JSON.
+      name: topicLabel,
+
       diagnosis: normalizeDiagnosis(rowWithTopicFields.diagnosis),
       nextStep,
       confusion: clamp(rowWithTopicFields.confusion ?? 0.5),

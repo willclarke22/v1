@@ -68,7 +68,9 @@ import {
 
 type RawLearningSpaceTopic = {
   topic_id?: string;
+  topic_label?: string;
   label?: string;
+  /** @deprecated Use topic_label instead. */
   topic_name?: string;
   position?: [number, number, number];
   render_state?: {
@@ -197,7 +199,7 @@ type MessageRouteLatencyDebug = {
 
     incoming_active_topic_id: string | null;
     incoming_active_topic_found: boolean | null;
-    incoming_active_topic_name: string | null;
+    incoming_active_topic_label: string | null;
     viewport_focused_topic_id: string | null;
     viewport_selected_topic_id: string | null;
     viewport_active_topic_id_for_message: string | null;
@@ -228,12 +230,12 @@ type MessageRouteLatencyDebug = {
     topic_labeler_v3_latency_ms: number | null;
     topic_labeler_v3_route_decision: string | null;
     topic_labeler_v3_extracted_label: string | null;
-    topic_labeler_v3_matched_topic_name: string | null;
+    topic_labeler_v3_matched_topic_label: string | null;
 
     model_topic_policy_usable: boolean | null;
     model_topic_policy_decision_kind: string | null;
     model_topic_policy_extracted_label: string | null;
-    model_topic_policy_matched_topic_name: string | null;
+    model_topic_policy_matched_topic_label: string | null;
     model_topic_policy_reasons: string[] | null;
     model_topic_policy_used_as_authority: boolean | null;
     topic_authority_source: string | null;
@@ -297,7 +299,7 @@ function createMessageRouteTimer() {
 
 function emptyVectorInfo(): VectorInfo {
   return {
-    top_k_topic_names: [],
+    top_k_topic_labels: [],
     top_k_topic_ids: [],
     top_k_similarity_scores: [],
   };
@@ -379,7 +381,7 @@ function getTopicLabelerV3Summary(
       latency_ms: null,
       route_decision: null,
       extracted_label: null,
-      matched_topic_name: null,
+      matched_topic_label: null,
     };
   }
 
@@ -391,7 +393,7 @@ function getTopicLabelerV3Summary(
       latency_ms: result.latency_ms,
       route_decision: null,
       extracted_label: null,
-      matched_topic_name: null,
+      matched_topic_label: null,
     };
   }
 
@@ -402,7 +404,10 @@ function getTopicLabelerV3Summary(
     latency_ms: result.latency_ms,
     route_decision: result.response.route.route_decision,
     extracted_label: result.response.model_prediction.extracted_label,
-    matched_topic_name: result.response.route.matched_topic_name,
+    matched_topic_label:
+      result.response.route.matched_topic_label ??
+      result.response.route.matched_topic_name ??
+      null,
   };
 }
 
@@ -763,7 +768,7 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
 
     return {
       topic_id: topic.id,
-      topic_name: topic.name,
+      topic_label: topic.name,
       topic_learning_score: topic.learningScore,
       topic_confusion_average: topic.confusion,
       topic_insight_average: topic.insight,
@@ -867,12 +872,16 @@ function normalizeVectorInfoFallback(
   topic: RouteTopic,
   createdTopic: boolean
 ): VectorInfo {
+  const topKTopicLabels =
+    matchVectorInfo.top_k_topic_labels?.length
+      ? matchVectorInfo.top_k_topic_labels
+      : matchVectorInfo.top_k_topic_names?.length
+        ? matchVectorInfo.top_k_topic_names
+        : [topic.name];
+
   return {
     ...matchVectorInfo,
-    top_k_topic_names:
-      matchVectorInfo.top_k_topic_names.length > 0
-        ? matchVectorInfo.top_k_topic_names
-        : [topic.name],
+    top_k_topic_labels: topKTopicLabels,
     top_k_topic_ids:
       matchVectorInfo.top_k_topic_ids.length > 0
         ? matchVectorInfo.top_k_topic_ids
@@ -993,16 +1002,17 @@ function adaptLearningSpaceToContract(
     space_version: "v1",
     topics: (rawLearningSpace.topics ?? []).map((topic, index) => {
       const fallbackTopic = updatedTopics[index] ?? updatedTopics[0];
-      const resolvedTopicName =
-        topic.topic_name ??
+      const resolvedTopicLabel =
+        topic.topic_label ??
         topic.label ??
+        topic.topic_name ??
         fallbackTopic?.name ??
         "Untitled Topic";
 
       return {
         topic_id: topic.topic_id ?? fallbackTopic?.id ?? makeId("topic"),
-        topic_name: resolvedTopicName,
-        label: resolvedTopicName,
+        topic_label: resolvedTopicLabel,
+        label: resolvedTopicLabel,
         position:
           Array.isArray(topic.position) && topic.position.length === 3
             ? (topic.position as [number, number, number])
@@ -1348,7 +1358,7 @@ export async function POST(request: Request) {
 
   let incomingActiveTopicId: string | null = null;
   let incomingActiveTopicFound: boolean | null = null;
-  let incomingActiveTopicName: string | null = null;
+  let incomingActiveTopicLabel: string | null = null;
   let viewportFocusedTopicId: string | null = null;
   let viewportSelectedTopicId: string | null = null;
   let viewportActiveTopicIdForMessage: string | null = null;
@@ -1434,15 +1444,15 @@ export async function POST(request: Request) {
         : null;
 
     incomingActiveTopicFound = Boolean(activeTopicFromRequest);
-    incomingActiveTopicName = activeTopicFromRequest?.name ?? null;
+    incomingActiveTopicLabel = activeTopicFromRequest?.name ?? null;
 
     timer.step("load_route_topics_from_supabase");
 
     if (topicLabelerV3Enabled) {
       const topicLabelerV3Request = buildTopicLabelerV3Request({
         message,
-        activeTopicName: incomingActiveTopicName,
-        currentTopicNames: existingTopics.map((topic) => topic.name),
+        activeTopicLabel: incomingActiveTopicLabel,
+        currentTopicLabels: existingTopics.map((topic) => topic.name),
         previousUserMessages: buildRecentUserMessagesForTopicLabelerV3(
           recentTurns
         ),
@@ -1477,7 +1487,7 @@ export async function POST(request: Request) {
       usable: modelTopicRoutePolicyDecision.usable,
       decision_kind: modelTopicRoutePolicyDecision.decision_kind,
       extracted_label: modelTopicRoutePolicyDecision.extracted_label,
-      matched_topic_name: modelTopicRoutePolicyDecision.matched_topic_name,
+      matched_topic_label: modelTopicRoutePolicyDecision.matched_topic_name,
       matched_topic_id: modelTopicRoutePolicyDecision.matched_topic_id,
       reasons: modelTopicRoutePolicyDecision.reasons,
       continuation_policy: modelRouteContinuationPolicy,
@@ -1677,8 +1687,8 @@ export async function POST(request: Request) {
           resolution_kind: resolutionKind,
           resolved_label: resolvedLabel,
           target_topic_id: topic.id,
-          target_topic_name: topic.name,
-          created_topic_name: createdTopic?.name ?? null,
+          target_topic_label: topic.name,
+          created_topic_label: createdTopic?.name ?? null,
           match_confidence: matchConfidence,
           used_llm_topic_fallback: usedLLMFallback,
           model_route_continuation_policy: modelRouteContinuationPolicy,
@@ -1777,7 +1787,7 @@ export async function POST(request: Request) {
       ? {
           ...semanticTopicRouting,
           selected_topic_id: targetTopicId,
-          selected_topic_name: updatedResolvedTopic.name,
+          selected_topic_label: updatedResolvedTopic.name,
           centroid_update: finalCentroidUpdatePlan
             ? {
                 topic_id: finalCentroidUpdatePlan.topic_id,
@@ -1889,7 +1899,7 @@ export async function POST(request: Request) {
     const topicJson = JSON.parse(
       JSON.stringify({
         topic_id: updatedResolvedTopic.id,
-        topic_name: updatedResolvedTopic.name,
+        topic_label: updatedResolvedTopic.name,
         next_step:
           probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
         inferred_keywords: inferKeywordsFromTopicLabel(
@@ -2007,7 +2017,7 @@ export async function POST(request: Request) {
         learner_message_intent:
           modelRouteContinuationPolicy?.learner_message_intent ?? null,
         target_topic_id: updatedResolvedTopic.id,
-        target_topic_name: updatedResolvedTopic.name,
+        target_topic_label: updatedResolvedTopic.name,
       });
     }
 
@@ -2048,7 +2058,7 @@ export async function POST(request: Request) {
         console.info("[qdrant sync skipped on message route]", {
           reason: qdrantSyncError,
           topic_id: updatedResolvedTopic.id,
-          topic_name: updatedResolvedTopic.name,
+          topic_label: updatedResolvedTopic.name,
           note: "Semantic enrichment runner remains responsible for topic_label_embedding/Qdrant sync.",
         });
       } else {
@@ -2064,7 +2074,7 @@ export async function POST(request: Request) {
 
       incoming_active_topic_id: incomingActiveTopicId,
       incoming_active_topic_found: incomingActiveTopicFound,
-      incoming_active_topic_name: incomingActiveTopicName,
+      incoming_active_topic_label: incomingActiveTopicLabel,
       viewport_focused_topic_id: viewportFocusedTopicId,
       viewport_selected_topic_id: viewportSelectedTopicId,
       viewport_active_topic_id_for_message: viewportActiveTopicIdForMessage,
@@ -2103,16 +2113,16 @@ export async function POST(request: Request) {
       topic_labeler_v3_extracted_label:
         getTopicLabelerV3Summary(topicLabelerV3Result)
           .extracted_label,
-      topic_labeler_v3_matched_topic_name:
+      topic_labeler_v3_matched_topic_label:
         getTopicLabelerV3Summary(topicLabelerV3Result)
-          .matched_topic_name,
+          .matched_topic_label,
 
       model_topic_policy_usable: modelTopicRoutePolicyDecision?.usable ?? null,
       model_topic_policy_decision_kind:
         modelTopicRoutePolicyDecision?.decision_kind ?? null,
       model_topic_policy_extracted_label:
         modelTopicRoutePolicyDecision?.extracted_label ?? null,
-      model_topic_policy_matched_topic_name:
+      model_topic_policy_matched_topic_label:
         modelTopicRoutePolicyDecision?.matched_topic_name ?? null,
       model_topic_policy_reasons:
         modelTopicRoutePolicyDecision?.reasons ?? null,
@@ -2188,7 +2198,7 @@ export async function POST(request: Request) {
 
       incoming_active_topic_id: incomingActiveTopicId,
       incoming_active_topic_found: incomingActiveTopicFound,
-      incoming_active_topic_name: incomingActiveTopicName,
+      incoming_active_topic_label: incomingActiveTopicLabel,
       viewport_focused_topic_id: viewportFocusedTopicId,
       viewport_selected_topic_id: viewportSelectedTopicId,
       viewport_active_topic_id_for_message: viewportActiveTopicIdForMessage,
@@ -2227,16 +2237,16 @@ export async function POST(request: Request) {
       topic_labeler_v3_extracted_label:
         getTopicLabelerV3Summary(topicLabelerV3Result)
           .extracted_label,
-      topic_labeler_v3_matched_topic_name:
+      topic_labeler_v3_matched_topic_label:
         getTopicLabelerV3Summary(topicLabelerV3Result)
-          .matched_topic_name,
+          .matched_topic_label,
 
       model_topic_policy_usable: modelTopicRoutePolicyDecision?.usable ?? null,
       model_topic_policy_decision_kind:
         modelTopicRoutePolicyDecision?.decision_kind ?? null,
       model_topic_policy_extracted_label:
         modelTopicRoutePolicyDecision?.extracted_label ?? null,
-      model_topic_policy_matched_topic_name:
+      model_topic_policy_matched_topic_label:
         modelTopicRoutePolicyDecision?.matched_topic_name ?? null,
       model_topic_policy_reasons:
         modelTopicRoutePolicyDecision?.reasons ?? null,

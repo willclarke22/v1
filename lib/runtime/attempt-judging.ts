@@ -56,6 +56,20 @@ type ResponseScoring = {
   structuralSignalScore: number;
 };
 
+function getRouteTopicLabel(topic: RouteTopic) {
+  const topicWithCanonicalLabel = topic as RouteTopic & {
+    topic_label?: string | null;
+    topic_name?: string | null;
+  };
+
+  return (
+    topicWithCanonicalLabel.topic_label?.trim() ||
+    topicWithCanonicalLabel.topic_name?.trim() ||
+    topic.name?.trim() ||
+    "Untitled Topic"
+  );
+}
+
 export function inferDiagnosisFromTopic(topic: RouteTopic): DiagnosisType {
   return (
     normalizeDiagnosis((topic as { diagnosis?: unknown }).diagnosis) ??
@@ -91,7 +105,9 @@ function uniqueNormalizedTokens(text: string) {
 }
 
 function extractTopicConceptTokens(topic?: RouteTopic) {
-  if (!topic?.name) return [];
+  const topicLabel = topic ? getRouteTopicLabel(topic) : null;
+
+  if (!topicLabel) return [];
 
   const stopWords = new Set([
     "the",
@@ -135,7 +151,7 @@ function extractTopicConceptTokens(topic?: RouteTopic) {
     "idea",
   ]);
 
-  return uniqueNormalizedTokens(topic.name)
+  return uniqueNormalizedTokens(topicLabel)
     .filter((token) => token.length >= 4 && !stopWords.has(token))
     .slice(0, 6);
 }
@@ -774,6 +790,7 @@ export function buildJudgedAttempt(args: {
   activeDiagnosis: DiagnosisType;
 }): JudgedAttempt {
   const { body, topic, scoring, activeDiagnosis } = args;
+  const topicLabel = getRouteTopicLabel(topic);
   const rawText =
     typeof body.response === "string"
       ? body.response
@@ -813,7 +830,7 @@ export function buildJudgedAttempt(args: {
         language_style: body.deliveryContext?.language_style ?? "plain",
         context_framing:
           body.deliveryContext?.context_framing ??
-          `Prompting the learner about ${topic.name}.`,
+          `Prompting the learner about ${topicLabel}.`,
       },
     },
     raw_response: {
@@ -892,8 +909,14 @@ export function applyMetricUpdate(
 }
 
 export function buildVectorInfo(topic: RouteTopic): VectorInfo {
+  const topicLabel = getRouteTopicLabel(topic);
+
   return {
-    top_k_topic_names: [topic.name],
+    top_k_topic_labels: [topicLabel],
+
+    // Temporary legacy alias for older debug/UI consumers.
+    top_k_topic_names: [topicLabel],
+
     top_k_topic_ids: [topic.id],
     top_k_similarity_scores: [0.92],
   };

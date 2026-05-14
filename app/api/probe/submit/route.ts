@@ -127,6 +127,20 @@ function asPositiveCount(value: number | null | undefined) {
     : null;
 }
 
+function getRouteTopicLabel(topic: RouteTopic) {
+  const topicWithCanonicalLabel = topic as RouteTopic & {
+    topic_label?: string | null;
+    topic_name?: string | null;
+  };
+
+  return (
+    topicWithCanonicalLabel.topic_label?.trim() ||
+    topicWithCanonicalLabel.topic_name?.trim() ||
+    topic.name?.trim() ||
+    "Untitled Topic"
+  );
+}
+
 /**
  * Probe submission should not create or reinterpret embeddings.
  *
@@ -189,6 +203,7 @@ function buildImportantRunInputs(args: {
   rawResponse: string;
 }): ImportantRunInputs {
   const { body, topic, vectorInfo, modelSignals, rawResponse } = args;
+  const topicLabel = getRouteTopicLabel(topic);
 
   return {
     user_message: {
@@ -234,7 +249,7 @@ function buildImportantRunInputs(args: {
         language_style: body.deliveryContext?.language_style ?? "plain",
         context_framing:
           body.deliveryContext?.context_framing ??
-          `Probe response for ${topic.name}.`,
+          `Probe response for ${topicLabel}.`,
       },
       submission_metadata: {
         latency_ms: body.metadata?.latencyMs ?? null,
@@ -306,9 +321,15 @@ function buildDeliveredResponse(
 
 function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
   return updatedTopics.map((topic) => {
+    const topicLabel = getRouteTopicLabel(topic);
+
     return {
       topic_id: topic.id,
-      topic_name: topic.name,
+      topic_label: topicLabel,
+
+      // Temporary legacy alias for older persistence/debug/UI code.
+      topic_name: topicLabel,
+
       topic_confusion_average: topic.confusion,
       topic_insight_average: topic.insight,
       topic_learning_score: topic.learningScore,
@@ -327,16 +348,14 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
       topic_label_embedding_centroid:
         topic.topic_label_embedding_centroid ?? null,
       topic_label_embedding_count: topic.topic_label_embedding_count ?? 0,
-      topic_label_embedding_model:
-        topic.topic_label_embedding_model ?? null,
+      topic_label_embedding_model: topic.topic_label_embedding_model ?? null,
       topic_label_embedding_updated_at:
         topic.topic_label_embedding_updated_at ?? null,
 
       topic_message_embedding_centroid:
         topic.topic_message_embedding_centroid ?? null,
       topic_message_embedding_count: topic.topic_message_embedding_count ?? 0,
-      topic_message_embedding_model:
-        topic.topic_message_embedding_model ?? null,
+      topic_message_embedding_model: topic.topic_message_embedding_model ?? null,
       topic_message_embedding_updated_at:
         topic.topic_message_embedding_updated_at ?? null,
     };
@@ -441,7 +460,9 @@ function buildDecision(args: {
   const decisionReasons = [
     "This run is directly downstream of a delivered probe.",
     `The judged attempt classification was ${scoring.classification}.`,
-    `Evidence strength was ${scoring.evidenceStrength.toFixed(2)} and judgment confidence was ${scoring.judgmentConfidence.toFixed(2)}.`,
+    `Evidence strength was ${scoring.evidenceStrength.toFixed(
+      2,
+    )} and judgment confidence was ${scoring.judgmentConfidence.toFixed(2)}.`,
     replyBundle.whyThisNextStep,
   ];
 
@@ -552,7 +573,7 @@ function buildRunMetadata(engineFuel: EngineFuel, runId: string): RunMetadata {
   return {
     run_id: runId,
     timestamp: nowIso(),
-    engine_version: "runtime-v1-hard-cutover-wave2",
+    engine_version: "runtime-v1-hard-cutover-wave2-topic-label-contract",
     previous_run_id: null,
     topic_count: engineFuel.topics.length,
     cluster_count: engineFuel.clusters.length,
@@ -606,6 +627,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const topicLabel = body.topicName || getRouteTopicLabel(topic);
     const chatHistory = buildChatHistoryFromBody(body);
 
     let modelSignals: ModelSignals = buildFallbackModelSignals();
@@ -623,7 +645,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const topicName = body.topicName || topic.name;
     const vectorInfo = buildVectorInfo(topic);
 
     const provisionalDiagnosis = inferDiagnosisFromTopic(topic);
@@ -635,7 +656,7 @@ export async function POST(request: NextRequest) {
     });
 
     const replyBundle = buildResponseBundle({
-      topicName,
+      topicName: topicLabel,
       classification: scoring.classification,
       explanationQuality: scoring.explanationQuality,
       insight: scoring.insight,
@@ -727,7 +748,13 @@ export async function POST(request: NextRequest) {
       JSON.stringify({
         ...(topic.topic_json ?? {}),
         topic_id: topic.id,
-        topic_name: topicName,
+
+        // Canonical label field for MyWay runtime/output contracts.
+        topic_label: topicLabel,
+
+        // Temporary legacy alias for older DB/debug/UI consumers.
+        topic_name: topicLabel,
+
         next_step: nextProbePlan.text_plan.instructional_goal ?? topic.nextStep,
         previous_probe_id: body.probeId,
         judged_attempt: judgedAttempt,
@@ -786,7 +813,11 @@ export async function POST(request: NextRequest) {
     await upsertTopicState({
       topicId: topic.id,
       lastRunId: runId,
-      topicName: topicName,
+
+      // upsertTopicState still expects topicName at the persistence boundary.
+      // Internally, this value is now the canonical topic label.
+      topicName: topicLabel,
+
       confusion: updatedTopicMetrics.confusion ?? null,
       insight: updatedTopicMetrics.insight ?? null,
       learningScore: updatedPersistedTopic.learningScore ?? null,
@@ -813,6 +844,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("POST /api/probe/submit failed", error);
+
     return NextResponse.json(
       {
         error:
