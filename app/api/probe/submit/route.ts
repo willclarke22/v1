@@ -127,6 +127,24 @@ function asPositiveCount(value: number | null | undefined) {
     : null;
 }
 
+function buildEmbeddingSummary(args: {
+  centroid?: EmbeddingVector | null;
+  count?: number | null;
+  model?: string | null;
+  updatedAt?: string | null;
+}) {
+  const centroid = asEmbeddingVector(args.centroid ?? null);
+
+  return {
+    available: Boolean(centroid?.length),
+    dimension: centroid?.length ?? 0,
+    count: args.count ?? 0,
+    model: args.model ?? null,
+    updated_at: args.updatedAt ?? null,
+    preview: centroid ? centroid.slice(0, 5) : [],
+  };
+}
+
 function getRouteTopicLabel(topic: RouteTopic) {
   return topic.topic_label.trim() || "Untitled Topic";
 }
@@ -308,19 +326,19 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
       topic_last_update: nowIso(),
       topic_centroid: topic.position as [number, number, number],
 
-      topic_label_embedding_centroid:
-        topic.topic_label_embedding_centroid ?? null,
-      topic_label_embedding_count: topic.topic_label_embedding_count ?? 0,
-      topic_label_embedding_model: topic.topic_label_embedding_model ?? null,
-      topic_label_embedding_updated_at:
-        topic.topic_label_embedding_updated_at ?? null,
+      topic_label_embedding: buildEmbeddingSummary({
+        centroid: topic.topic_label_embedding_centroid ?? null,
+        count: topic.topic_label_embedding_count ?? 0,
+        model: topic.topic_label_embedding_model ?? null,
+        updatedAt: topic.topic_label_embedding_updated_at ?? null,
+      }),
 
-      topic_message_embedding_centroid:
-        topic.topic_message_embedding_centroid ?? null,
-      topic_message_embedding_count: topic.topic_message_embedding_count ?? 0,
-      topic_message_embedding_model: topic.topic_message_embedding_model ?? null,
-      topic_message_embedding_updated_at:
-        topic.topic_message_embedding_updated_at ?? null,
+      topic_message_embedding: buildEmbeddingSummary({
+        centroid: topic.topic_message_embedding_centroid ?? null,
+        count: topic.topic_message_embedding_count ?? 0,
+        model: topic.topic_message_embedding_model ?? null,
+        updatedAt: topic.topic_message_embedding_updated_at ?? null,
+      }),
     };
   });
 }

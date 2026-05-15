@@ -22,9 +22,9 @@ export type ModelFirstTopicResolutionKind =
   | "no_match";
 
 export type ModelFirstTopicLabelingMode =
-  | "model_v3_3_primary"
-  | "model_v3_3_fallback"
-  | "model_v3_3_unusable";
+  | "topic_labeler_primary"
+  | "topic_labeler_fallback"
+  | "topic_labeler_unusable";
 
 export type ModelRouteContinuationPolicyKind =
   | "route_authoritatively"
@@ -99,7 +99,7 @@ export type ModelFirstRouteCentroidUpdatePlan = {
 
 export type ModelFirstTopicResolutionDebug = {
   topic_labeling_mode: ModelFirstTopicLabelingMode;
-  authority_source: "model_v3_3_policy" | "model_v3_3_fallback";
+  authority_source: "topic_labeler_policy" | "topic_labeler_fallback";
   model_policy_used_as_authority: boolean;
   model_policy_decision_kind: ModelTopicRouteDecisionKind | null;
   model_policy_usable: boolean | null;
@@ -487,7 +487,7 @@ function buildSemanticEnrichmentStatus(args: {
 }
 
 function buildModelResolutionDebug(args: {
-  authoritySource: "model_v3_3_policy" | "model_v3_3_fallback";
+  authoritySource: "topic_labeler_policy" | "topic_labeler_fallback";
   modelPolicyUsedAsAuthority: boolean;
   modelPolicyDecision: ModelTopicRoutePolicyDecision | null;
   resolutionKind: ModelFirstTopicResolutionKind;
@@ -499,10 +499,10 @@ function buildModelResolutionDebug(args: {
 }): ModelFirstTopicResolutionDebug {
   return {
     topic_labeling_mode: args.modelPolicyUsedAsAuthority
-      ? "model_v3_3_primary"
+      ? "topic_labeler_primary"
       : args.modelPolicyDecision
-        ? "model_v3_3_fallback"
-        : "model_v3_3_unusable",
+        ? "topic_labeler_fallback"
+        : "topic_labeler_unusable",
     authority_source: args.authoritySource,
     model_policy_used_as_authority: args.modelPolicyUsedAsAuthority,
     model_policy_decision_kind: args.modelPolicyDecision?.decision_kind ?? null,
@@ -527,7 +527,7 @@ function buildOutcome(args: {
   matchConfidence: number;
   modelPolicyDecision: ModelTopicRoutePolicyDecision | null;
   modelPolicyUsedAsAuthority: boolean;
-  authoritySource: "model_v3_3_policy" | "model_v3_3_fallback";
+  authoritySource: "topic_labeler_policy" | "topic_labeler_fallback";
   continuationPolicy: ModelRouteContinuationPolicy;
   semanticEnrichmentStatus: SemanticEnrichmentStatus;
   centroidUpdatePlan?: ModelFirstRouteCentroidUpdatePlan | null;
@@ -708,7 +708,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
       matchConfidence: 0.86,
       modelPolicyDecision,
       modelPolicyUsedAsAuthority: true,
-      authoritySource: "model_v3_3_policy",
+      authoritySource: "topic_labeler_policy",
       continuationPolicy,
       semanticEnrichmentStatus,
     });
@@ -755,7 +755,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
       matchConfidence: 0.88,
       modelPolicyDecision,
       modelPolicyUsedAsAuthority: true,
-      authoritySource: "model_v3_3_policy",
+      authoritySource: "topic_labeler_policy",
       continuationPolicy,
       semanticEnrichmentStatus,
     });
@@ -800,7 +800,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
         matchConfidence: 0.88,
         modelPolicyDecision,
         modelPolicyUsedAsAuthority: true,
-        authoritySource: "model_v3_3_policy",
+        authoritySource: "topic_labeler_policy",
         continuationPolicy,
         semanticEnrichmentStatus,
       });
@@ -843,7 +843,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
       matchConfidence: 0.86,
       modelPolicyDecision,
       modelPolicyUsedAsAuthority: true,
-      authoritySource: "model_v3_3_policy",
+      authoritySource: "topic_labeler_policy",
       continuationPolicy,
       semanticEnrichmentStatus,
       centroidUpdatePlan: messageEmbeddingPlan,
@@ -896,7 +896,7 @@ export function buildModelFirstConservativeFallbackOutcome(args: {
       matchConfidence: 0.32,
       modelPolicyDecision,
       modelPolicyUsedAsAuthority: false,
-      authoritySource: "model_v3_3_fallback",
+      authoritySource: "topic_labeler_fallback",
       continuationPolicy,
       semanticEnrichmentStatus,
     });
@@ -925,7 +925,7 @@ export function buildModelFirstConservativeFallbackOutcome(args: {
     matchConfidence: 0.0,
     modelPolicyDecision,
     modelPolicyUsedAsAuthority: false,
-    authoritySource: "model_v3_3_fallback",
+    authoritySource: "topic_labeler_fallback",
     continuationPolicy,
     semanticEnrichmentStatus,
   });

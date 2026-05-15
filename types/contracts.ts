@@ -789,6 +789,21 @@ export interface JudgedAttempt {
 /* ENGINE FUEL - PHASE 2 PRACTICAL SHAPE */
 /* ------------------------------------------------------------------ */
 
+export interface TopicEmbeddingSummary {
+  available: boolean;
+  dimension: number;
+  count: number;
+  model: Nullable<string>;
+  updated_at: Nullable<ISO8601String>;
+
+  /**
+   * First five numeric components of the full embedding centroid.
+   * The full embedding remains backend-only; this preview is intentionally
+   * small so normal client responses stay lightweight while still inspectable.
+   */
+  preview: number[];
+}
+
 export interface TopicState {
   topic_id: EntityId;
   topic_label: string;
@@ -813,22 +828,31 @@ export interface TopicState {
   topic_centroid: [number, number, number];
 
   /**
-   * Canonical embedding of the clean topic label.
-   * Used for layout / semantic structure / Qdrant topic lookup.
+   * Lightweight client-facing summary of the canonical embedding of the clean
+   * topic label. The full vector is intentionally not included in engine_fuel.
    */
-  topic_label_embedding_centroid?: Nullable<EmbeddingVector>;
-  topic_label_embedding_count?: number;
-  topic_label_embedding_model?: Nullable<string>;
-  topic_label_embedding_updated_at?: Nullable<ISO8601String>;
+  topic_label_embedding: TopicEmbeddingSummary;
 
   /**
-   * Canonical topic-level embedding of learner messages assigned to this topic.
-   * Used later for personalization / struggle-pattern similarity.
+   * Lightweight client-facing summary of the topic-level learner-message
+   * embedding. The full vector is intentionally not included in engine_fuel.
    */
-  topic_message_embedding_centroid?: Nullable<EmbeddingVector>;
-  topic_message_embedding_count?: number;
-  topic_message_embedding_model?: Nullable<string>;
-  topic_message_embedding_updated_at?: Nullable<ISO8601String>;
+  topic_message_embedding: TopicEmbeddingSummary;
+
+  /**
+   * Deprecated client-facing full-vector fields.
+   *
+   * Full embedding vectors should remain in Supabase/backend RouteTopic state
+   * and persistence layers, not in normal /api/message responses.
+   */
+  topic_label_embedding_centroid?: never;
+  topic_label_embedding_count?: never;
+  topic_label_embedding_model?: never;
+  topic_label_embedding_updated_at?: never;
+  topic_message_embedding_centroid?: never;
+  topic_message_embedding_count?: never;
+  topic_message_embedding_model?: never;
+  topic_message_embedding_updated_at?: never;
 }
 
 export interface ClusterState {

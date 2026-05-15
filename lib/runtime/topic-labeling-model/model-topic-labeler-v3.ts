@@ -1,66 +1,52 @@
-export type TopicReferenceTypeV3 =
-  | "explicit_topic_reference"
-  | "active_topic_reference"
-  | "unclear_topic"
-  | "no_topic";
+import type {
+  TopicLabelerClientResult,
+  TopicLabelerProviderId,
+  TopicLabelerRequest,
+  TopicLabelerResponse,
+  TopicLabelerRoute,
+  TopicLabelerRouteDecision,
+  TopicReferenceType,
+} from "./topic-labeler-contract";
 
-export type TopicLabelerV3RouteDecision =
-  | "stay_active"
-  | "switch_existing"
-  | "create_new"
-  | "clarify_topic_intent"
-  | "clarify_no_topic"
-  | "error_unknown_reference_type";
+export type TopicReferenceTypeV3 = TopicReferenceType;
 
-export type TopicLabelerV3Request = {
-  message: string;
-  active_topic_label: string | null;
-  current_topic_labels: string[];
-  previous_user_messages: string[];
-};
+export type TopicLabelerV3RouteDecision = TopicLabelerRouteDecision;
+
+export type TopicLabelerV3Request = TopicLabelerRequest;
 
 export type TopicLabelerV3ModelPrediction = {
-  topic_reference_type: TopicReferenceTypeV3;
-  extracted_label: string | null;
-};
-
-export type TopicLabelerV3Route = {
-  route_decision: TopicLabelerV3RouteDecision;
   topic_reference_type: TopicReferenceTypeV3 | string;
   extracted_label: string | null;
-  matched_topic_label: string | null;
-  match_type: string | null;
-  score: number | null;
-  sequence_similarity?: number | null;
-  token_f1?: number | null;
-  reason: string;
 };
 
-export type TopicLabelerV3Response = {
+export type TopicLabelerV3Route = TopicLabelerRoute;
+
+export type TopicLabelerV3RawResponse = {
   ok: boolean;
   model_version: string;
   model_prediction: TopicLabelerV3ModelPrediction;
   route: TopicLabelerV3Route;
+  timing?: unknown;
 };
 
-export type TopicLabelerV3ClientResult =
-  | {
-      ok: true;
-      source: "topic_labeler_v3";
-      response: TopicLabelerV3Response;
-      latency_ms: number;
-    }
-  | {
-      ok: false;
-      source: "topic_labeler_v3";
-      error: string;
-      latency_ms: number;
-    };
+export type TopicLabelerV3Response = TopicLabelerResponse;
 
-const DEFAULT_TOPIC_LABELER_V3_URL = "http://127.0.0.1:8003/label-topic";
+export type TopicLabelerV3ClientResult = TopicLabelerClientResult;
+
+const TOPIC_LABELER_V3_PROVIDER: TopicLabelerProviderId = "v3";
+
+/**
+ * Match the local FastAPI service command we have been using:
+ *
+ * python -m uvicorn services.topic_labeler_v3.app:app --host 127.0.0.1 --port 8002 --reload
+ *
+ * The env var still wins, so this default is only a fallback.
+ */
+const DEFAULT_TOPIC_LABELER_V3_URL = "http://127.0.0.1:8002/label-topic";
 
 function getTopicLabelerV3Url(): string {
   return (
+    process.env.MYWAY_TOPIC_LABELER_V3_URL?.trim() ||
     process.env.TOPIC_LABELER_V3_URL?.trim() ||
     DEFAULT_TOPIC_LABELER_V3_URL
   );
@@ -75,6 +61,52 @@ function normalizeStringArray(value: unknown): string[] {
     .filter(Boolean);
 }
 
+function normalizeNullableString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function normalizeNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function normalizeV3Route(rawRoute: TopicLabelerV3RawResponse["route"]): TopicLabelerRoute {
+  return {
+    route_decision: rawRoute.route_decision,
+    topic_reference_type: rawRoute.topic_reference_type,
+    extracted_label: normalizeNullableString(rawRoute.extracted_label),
+    matched_topic_label: normalizeNullableString(rawRoute.matched_topic_label),
+    match_type: normalizeNullableString(rawRoute.match_type),
+    score: normalizeNumber(rawRoute.score),
+    sequence_similarity: normalizeNumber(rawRoute.sequence_similarity),
+    token_f1: normalizeNumber(rawRoute.token_f1),
+    reason:
+      typeof rawRoute.reason === "string" && rawRoute.reason.trim()
+        ? rawRoute.reason.trim()
+        : "No route reason returned by topic labeler V3.",
+  };
+}
+
+function normalizeTopicLabelerV3Response(
+  raw: TopicLabelerV3RawResponse
+): TopicLabelerResponse {
+  return {
+    ok: Boolean(raw.ok),
+    provider: TOPIC_LABELER_V3_PROVIDER,
+    model_version:
+      typeof raw.model_version === "string" && raw.model_version.trim()
+        ? raw.model_version.trim()
+        : "topic-labeler-v3-unknown",
+    model_prediction: {
+      topic_reference_type: raw.model_prediction?.topic_reference_type,
+      extracted_label: normalizeNullableString(
+        raw.model_prediction?.extracted_label
+      ),
+    },
+    route: normalizeV3Route(raw.route),
+    raw,
+  };
+}
+
 export function buildTopicLabelerV3Request(input: {
   message: string;
   activeTopicLabel?: string | null;
@@ -85,9 +117,9 @@ export function buildTopicLabelerV3Request(input: {
     message: input.message,
     active_topic_label: input.activeTopicLabel?.trim() || null,
     current_topic_labels: normalizeStringArray(input.currentTopicLabels),
-    previous_user_messages: normalizeStringArray(input.previousUserMessages).slice(
-      -5
-    ),
+    previous_user_messages: normalizeStringArray(
+      input.previousUserMessages
+    ).slice(-5),
   };
 }
 
@@ -108,7 +140,8 @@ export async function callTopicLabelerV3(
     if (!request.message.trim()) {
       return {
         ok: false,
-        source: "topic_labeler_v3",
+        source: "topic_labeler",
+        provider: TOPIC_LABELER_V3_PROVIDER,
         error: "Cannot call topic labeler V3 with an empty message.",
         latency_ms: Date.now() - startedAt,
       };
@@ -129,20 +162,22 @@ export async function callTopicLabelerV3(
     if (!response.ok) {
       return {
         ok: false,
-        source: "topic_labeler_v3",
+        source: "topic_labeler",
+        provider: TOPIC_LABELER_V3_PROVIDER,
         error: `Topic labeler V3 returned HTTP ${response.status}: ${text}`,
         latency_ms: Date.now() - startedAt,
       };
     }
 
-    let parsed: TopicLabelerV3Response;
+    let parsed: TopicLabelerV3RawResponse;
 
     try {
-      parsed = JSON.parse(text) as TopicLabelerV3Response;
+      parsed = JSON.parse(text) as TopicLabelerV3RawResponse;
     } catch {
       return {
         ok: false,
-        source: "topic_labeler_v3",
+        source: "topic_labeler",
+        provider: TOPIC_LABELER_V3_PROVIDER,
         error: `Topic labeler V3 returned invalid JSON: ${text}`,
         latency_ms: Date.now() - startedAt,
       };
@@ -150,8 +185,9 @@ export async function callTopicLabelerV3(
 
     return {
       ok: true,
-      source: "topic_labeler_v3",
-      response: parsed,
+      source: "topic_labeler",
+      provider: TOPIC_LABELER_V3_PROVIDER,
+      response: normalizeTopicLabelerV3Response(parsed),
       latency_ms: Date.now() - startedAt,
     };
   } catch (error) {
@@ -162,7 +198,8 @@ export async function callTopicLabelerV3(
 
     return {
       ok: false,
-      source: "topic_labeler_v3",
+      source: "topic_labeler",
+      provider: TOPIC_LABELER_V3_PROVIDER,
       error: message,
       latency_ms: Date.now() - startedAt,
     };

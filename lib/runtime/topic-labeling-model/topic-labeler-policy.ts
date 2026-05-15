@@ -1,4 +1,4 @@
-import type { TopicLabelerV3ClientResult } from "./model-topic-labeler-v3";
+import type { TopicLabelerClientResult } from "./topic-labeler-contract";
 import type { RouteTopic } from "@/lib/runtime/route-topics";
 
 export type ModelTopicRouteDecisionKind =
@@ -17,7 +17,7 @@ export type ModelTopicRoutePolicyDecision = {
   matched_topic_id: string | null;
   target_topic: RouteTopic | null;
   reasons: string[];
-  raw_model_result: TopicLabelerV3ClientResult | null;
+  raw_model_result: TopicLabelerClientResult | null;
 };
 
 function normalizeLoose(text: string) {
@@ -91,7 +91,7 @@ function findTopicByLabel(existingTopics: RouteTopic[], label: string | null) {
 }
 
 export function buildModelTopicRoutePolicyDecision(args: {
-  modelResult: TopicLabelerV3ClientResult | null;
+  modelResult: TopicLabelerClientResult | null;
   activeTopic: RouteTopic | null;
   existingTopics: RouteTopic[];
 }): ModelTopicRoutePolicyDecision {
@@ -118,7 +118,9 @@ export function buildModelTopicRoutePolicyDecision(args: {
       matched_topic_label: null,
       matched_topic_id: null,
       target_topic: null,
-      reasons: [`model_result_error: ${modelResult.error}`],
+      reasons: [
+        `model_result_error from ${modelResult.provider}: ${modelResult.error}`,
+      ],
       raw_model_result: modelResult,
     };
   }
@@ -131,7 +133,7 @@ export function buildModelTopicRoutePolicyDecision(args: {
       matched_topic_label: null,
       matched_topic_id: null,
       target_topic: null,
-      reasons: ["model_response_not_ok"],
+      reasons: [`model_response_not_ok from ${modelResult.provider}`],
       raw_model_result: modelResult,
     };
   }
@@ -234,7 +236,7 @@ export function buildModelTopicRoutePolicyDecision(args: {
         decision_kind: "switch_existing",
         extracted_label: extractedLabel,
         matched_topic_label: getRouteTopicLabel(existingMatch),
-          matched_topic_id: existingMatch.id,
+        matched_topic_id: existingMatch.id,
         target_topic: existingMatch,
         reasons: [
           "model_requested_create_new_but_label_matches_existing_topic",

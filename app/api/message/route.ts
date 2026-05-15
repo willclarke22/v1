@@ -49,10 +49,13 @@ import { nowIso } from "@/lib/runtime/shared";
 import { scoreConfusionInsight } from "@/lib/providers/confusion-insight";
 import { buildRecentChatHistory } from "@/lib/runtime/chat-history";
 import {
-  buildTopicLabelerV3Request,
-  callTopicLabelerV3,
-  type TopicLabelerV3ClientResult,
-} from "@/lib/runtime/topic-labeling-model/model-topic-labeler-v3";
+  buildTopicLabelerRequest,
+  callConfiguredTopicLabeler,
+  getTopicLabelerEnabled,
+  getTopicLabelerProvider,
+  getTopicLabelerTimeoutMs,
+  type TopicLabelerClientResult,
+} from "@/lib/runtime/topic-labeling-model/topic-labeler-client";
 import {
   buildModelTopicRoutePolicyDecision,
   type ModelTopicRoutePolicyDecision,
@@ -134,7 +137,7 @@ type RouteResolutionKind =
 type TopicLabelingMode =
   | "deterministic_only"
   | "deterministic_plus_llm"
-  | "model_v3_3_primary";
+  | "topic_labeler_primary";
 
 type TopicRoutingQdrantQueryMode = "off" | "always";
 
@@ -220,14 +223,15 @@ type MessageRouteLatencyDebug = {
     embedding_model: string | null;
     centroid_update_method: string | null;
 
-    topic_labeler_v3_enabled: boolean;
-    topic_labeler_v3_attempted: boolean;
-    topic_labeler_v3_succeeded: boolean | null;
-    topic_labeler_v3_error: string | null;
-    topic_labeler_v3_latency_ms: number | null;
-    topic_labeler_v3_route_decision: string | null;
-    topic_labeler_v3_extracted_label: string | null;
-    topic_labeler_v3_matched_topic_label: string | null;
+    topic_labeler_provider: string | null;
+    topic_labeler_enabled: boolean;
+    topic_labeler_attempted: boolean;
+    topic_labeler_succeeded: boolean | null;
+    topic_labeler_error: string | null;
+    topic_labeler_latency_ms: number | null;
+    topic_labeler_route_decision: string | null;
+    topic_labeler_extracted_label: string | null;
+    topic_labeler_matched_topic_label: string | null;
 
     model_topic_policy_usable: boolean | null;
     model_topic_policy_decision_kind: string | null;
@@ -316,7 +320,7 @@ function getTopicRoutingQdrantQueryMode(): TopicRoutingQdrantQueryMode {
   /**
    * Default is intentionally "off" for this pass.
    *
-   * The route now embeds once and lets V3 perform local Supabase embedding ranking.
+   * The route now embeds once and lets the configured topic labeler perform local Supabase embedding ranking.
    * We will add "local confidence -> optional Qdrant" after updating topic-router.ts
    * and topic-routing-policy.ts.
    */
@@ -335,29 +339,7 @@ function shouldSyncQdrantOnMessageRoute() {
   return raw === "on" || raw === "true" || raw === "1" || raw === "yes";
 }
 
-function getTopicLabelerV3Enabled() {
-  const raw =
-    process.env.TOPIC_LABELER_MODE?.trim().toLowerCase() ??
-    process.env.MYWAY_TOPIC_LABELER_MODE?.trim().toLowerCase() ??
-    "";
-
-  /**
-   * V3 is the default active topic-labeling path unless explicitly disabled.
-   */
-  if (
-    raw === "off" ||
-    raw === "false" ||
-    raw === "0" ||
-    raw === "deterministic_only" ||
-    raw === "legacy_deterministic"
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
-function buildRecentUserMessagesForTopicLabelerV3(
+function buildRecentUserMessagesForTopicLabeler(
   recentTurns: Array<{ role: "user" | "assistant"; text: string }>
 ) {
   return recentTurns
@@ -367,12 +349,11 @@ function buildRecentUserMessagesForTopicLabelerV3(
     .slice(-5);
 }
 
-function getTopicLabelerV3Summary(
-  result: TopicLabelerV3ClientResult | null
-) {
+function getTopicLabelerSummary(result: TopicLabelerClientResult | null) {
   if (!result) {
     return {
       attempted: false,
+      provider: getTopicLabelerProvider(),
       succeeded: null,
       error: null,
       latency_ms: null,
@@ -385,6 +366,7 @@ function getTopicLabelerV3Summary(
   if (!result.ok) {
     return {
       attempted: true,
+      provider: result.provider,
       succeeded: false,
       error: result.error,
       latency_ms: result.latency_ms,
@@ -396,29 +378,31 @@ function getTopicLabelerV3Summary(
 
   return {
     attempted: true,
+    provider: result.provider,
     succeeded: true,
     error: null,
     latency_ms: result.latency_ms,
     route_decision: result.response.route.route_decision,
-    extracted_label: result.response.model_prediction.extracted_label,
+    extracted_label:
+      result.response.route.extracted_label ??
+      result.response.model_prediction.extracted_label,
     matched_topic_label: result.response.route.matched_topic_label ?? null,
   };
 }
 
-
 function getMessageEmbeddingSkipReason(args: {
   decision: ModelTopicRoutePolicyDecision | null;
   continuationPolicy: ModelRouteContinuationPolicy | null;
-  topicLabelerV3Enabled: boolean;
+  topicLabelerEnabled: boolean;
 }): string | null {
-  const { decision, continuationPolicy, topicLabelerV3Enabled } = args;
+  const { decision, continuationPolicy, topicLabelerEnabled } = args;
 
   if (isModelPolicySafePositiveDecision(decision)) {
     return "model_policy_safe_authoritative_decision";
   }
 
   /**
-   * If V3 was actually attempted and it failed/timed out into a recovery policy,
+   * If the configured topic labeler was actually attempted and failed/timed out into a recovery policy,
    * do not pay for synchronous semantic embedding in /api/message.
    *
    * In these cases we are intentionally not using semantic routing to create or
@@ -427,7 +411,7 @@ function getMessageEmbeddingSkipReason(args: {
    * failed.
    */
   if (
-    topicLabelerV3Enabled &&
+    topicLabelerEnabled &&
     continuationPolicy &&
     (continuationPolicy.kind === "stay_active_after_model_failure" ||
       continuationPolicy.kind === "ask_lightweight_retry" ||
@@ -750,6 +734,24 @@ function buildDeliveredResponse(
   };
 }
 
+function buildEmbeddingSummary(args: {
+  centroid?: EmbeddingVector | null;
+  count?: number | null;
+  model?: string | null;
+  updatedAt?: string | null;
+}) {
+  const centroid = asEmbeddingVector(args.centroid ?? null);
+
+  return {
+    available: Boolean(centroid?.length),
+    dimension: centroid?.length ?? 0,
+    count: args.count ?? 0,
+    model: args.model ?? null,
+    updated_at: args.updatedAt ?? null,
+    preview: centroid ? centroid.slice(0, 5) : [],
+  };
+}
+
 function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
   return updatedTopics.map((topic) => {
     const topicWithOptionalMetrics = topic as RouteTopic & {
@@ -775,19 +777,19 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
       topic_last_update: topic.lastUpdated ?? nowIso(),
       topic_centroid: topic.position,
 
-      topic_label_embedding_centroid:
-        topic.topic_label_embedding_centroid ?? null,
-      topic_label_embedding_count: topic.topic_label_embedding_count ?? 0,
-      topic_label_embedding_model: topic.topic_label_embedding_model ?? null,
-      topic_label_embedding_updated_at:
-        topic.topic_label_embedding_updated_at ?? null,
+      topic_label_embedding: buildEmbeddingSummary({
+        centroid: topic.topic_label_embedding_centroid ?? null,
+        count: topic.topic_label_embedding_count ?? 0,
+        model: topic.topic_label_embedding_model ?? null,
+        updatedAt: topic.topic_label_embedding_updated_at ?? null,
+      }),
 
-      topic_message_embedding_centroid:
-        topic.topic_message_embedding_centroid ?? null,
-      topic_message_embedding_count: topic.topic_message_embedding_count ?? 0,
-      topic_message_embedding_model: topic.topic_message_embedding_model ?? null,
-      topic_message_embedding_updated_at:
-        topic.topic_message_embedding_updated_at ?? null,
+      topic_message_embedding: buildEmbeddingSummary({
+        centroid: topic.topic_message_embedding_centroid ?? null,
+        count: topic.topic_message_embedding_count ?? 0,
+        model: topic.topic_message_embedding_model ?? null,
+        updatedAt: topic.topic_message_embedding_updated_at ?? null,
+      }),
     };
   });
 }
@@ -827,7 +829,7 @@ function buildRunMetadata(engineFuel: EngineFuel, runId: string): RunMetadata {
   return {
     run_id: runId,
     timestamp: nowIso(),
-    engine_version: "runtime-v3-topic-label-message-embedding-fast-path",
+    engine_version: "runtime-topic-labeler-provider-message-embedding-fast-path",
     previous_run_id: null,
     topic_count: engineFuel.topics.length,
     cluster_count: engineFuel.clusters.length,
@@ -1142,7 +1144,7 @@ function adaptModelFirstTopicResolutionOutcome(
     resolutionTrace: outcome.resolutionTrace,
     semanticTopicRouting: outcome.semanticTopicRouting,
     centroidUpdatePlan: outcome.centroidUpdatePlan,
-    topicLabelingMode: "model_v3_3_primary",
+    topicLabelingMode: "topic_labeler_primary",
     llmFallbackAllowedByMode: false,
     llmFallbackRecommendedByPolicy: false,
     llmFallbackAttempted: false,
@@ -1219,7 +1221,7 @@ function buildContinuationPolicyTopicResolutionOutcome(args: {
         matchConfidence: 0.62,
         usedLLMFallback: false,
         resolutionTrace: null,
-        topicLabelingMode: "model_v3_3_primary",
+        topicLabelingMode: "topic_labeler_primary",
         llmFallbackAllowedByMode: false,
         llmFallbackRecommendedByPolicy: false,
         llmFallbackAttempted: false,
@@ -1241,7 +1243,7 @@ function buildContinuationPolicyTopicResolutionOutcome(args: {
       matchConfidence: 0.62,
       usedLLMFallback: false,
       resolutionTrace: null,
-      topicLabelingMode: "model_v3_3_primary",
+      topicLabelingMode: "topic_labeler_primary",
       llmFallbackAllowedByMode: false,
       llmFallbackRecommendedByPolicy: false,
       llmFallbackAttempted: false,
@@ -1262,7 +1264,7 @@ function buildContinuationPolicyTopicResolutionOutcome(args: {
           : 0.22,
       usedLLMFallback: false,
       resolutionTrace: null,
-      topicLabelingMode: "model_v3_3_primary",
+      topicLabelingMode: "topic_labeler_primary",
       llmFallbackAllowedByMode: false,
       llmFallbackRecommendedByPolicy: false,
       llmFallbackAttempted: false,
@@ -1287,7 +1289,7 @@ function buildContinuationPolicyTopicResolutionOutcome(args: {
     matchConfidence: 0,
     usedLLMFallback: false,
     resolutionTrace: null,
-    topicLabelingMode: "model_v3_3_primary",
+    topicLabelingMode: "topic_labeler_primary",
     llmFallbackAllowedByMode: false,
     llmFallbackRecommendedByPolicy: false,
     llmFallbackAttempted: false,
@@ -1370,8 +1372,9 @@ export async function POST(request: Request) {
   let finalEmbeddingModel: string | null = null;
   let finalCentroidUpdateMethod: string | null = null;
 
-  const topicLabelerV3Enabled = getTopicLabelerV3Enabled();
-  let topicLabelerV3Result: TopicLabelerV3ClientResult | null = null;
+  const topicLabelerEnabled = getTopicLabelerEnabled();
+  const topicLabelerProvider = getTopicLabelerProvider();
+  let topicLabelerResult: TopicLabelerClientResult | null = null;
   let modelTopicRoutePolicyDecision: ModelTopicRoutePolicyDecision | null = null;
   let modelTopicPolicyUsedAsAuthority = false;
   let topicAuthoritySource: string | null = null;
@@ -1435,32 +1438,32 @@ export async function POST(request: Request) {
 
     timer.step("load_route_topics_from_supabase");
 
-    if (topicLabelerV3Enabled) {
-      const topicLabelerV3Request = buildTopicLabelerV3Request({
+    if (topicLabelerEnabled) {
+      const topicLabelerRequest = buildTopicLabelerRequest({
         message,
         activeTopicLabel: incomingActiveTopicLabel,
         currentTopicLabels: existingTopics.map((topic) => topic.topic_label),
-        previousUserMessages: buildRecentUserMessagesForTopicLabelerV3(
+        previousUserMessages: buildRecentUserMessagesForTopicLabeler(
           recentTurns
         ),
       });
 
-      topicLabelerV3Result = await callTopicLabelerV3(
-        topicLabelerV3Request,
-        { timeoutMs: 30_000 }
+      topicLabelerResult = await callConfiguredTopicLabeler(
+        topicLabelerRequest,
+        { timeoutMs: getTopicLabelerTimeoutMs() }
       );
 
-      console.info("[topic-labeler-v3 active: model result]", {
-        request: topicLabelerV3Request,
-        result: topicLabelerV3Result,
-        note: "V3/model policy is now allowed to be authoritative for safe route decisions.",
+      console.info("[topic-labeler active: model result]", {
+        request: topicLabelerRequest,
+        result: topicLabelerResult,
+        note: "The configured topic labeler/model policy is now allowed to be authoritative for safe route decisions.",
       });
     }
 
-    timer.step("topic_labeler_v3_active");
+    timer.step("topic_labeler_active");
 
     modelTopicRoutePolicyDecision = buildModelTopicRoutePolicyDecision({
-      modelResult: topicLabelerV3Result,
+      modelResult: topicLabelerResult,
       activeTopic: activeTopicFromRequest,
       existingTopics,
     });
@@ -1470,7 +1473,7 @@ export async function POST(request: Request) {
       modelPolicyDecision: modelTopicRoutePolicyDecision,
     });
 
-    console.info("[topic-labeler-v3 policy decision]", {
+    console.info("[topic-labeler policy decision]", {
       usable: modelTopicRoutePolicyDecision.usable,
       decision_kind: modelTopicRoutePolicyDecision.decision_kind,
       extracted_label: modelTopicRoutePolicyDecision.extracted_label,
@@ -1490,7 +1493,7 @@ export async function POST(request: Request) {
     const messageEmbeddingSkipReason = getMessageEmbeddingSkipReason({
       decision: modelTopicRoutePolicyDecision,
       continuationPolicy: modelRouteContinuationPolicy,
-      topicLabelerV3Enabled: topicLabelerV3Enabled,
+      topicLabelerEnabled,
     });
     const skipMessageEmbeddingForModelPolicy = messageEmbeddingSkipReason !== null;
 
@@ -1599,7 +1602,7 @@ export async function POST(request: Request) {
     if (modelAuthoritativeTopicResolution) {
       topicResolution = modelAuthoritativeTopicResolution;
       modelTopicPolicyUsedAsAuthority = true;
-      topicAuthoritySource = "model_v3_3_policy";
+      topicAuthoritySource = "topic_labeler_policy";
     } else if (
       shouldUseContinuationPolicyInsteadOfDeterministic &&
       modelRouteContinuationPolicy
@@ -1617,7 +1620,7 @@ export async function POST(request: Request) {
           modelPolicyDecision: modelTopicRoutePolicyDecision,
         });
       modelTopicPolicyUsedAsAuthority = false;
-      topicAuthoritySource = "model_v3_3_continuation_policy";
+      topicAuthoritySource = "topic_labeler_continuation_policy";
     } else {
       const modelSafeFallbackPolicy =
         modelRouteContinuationPolicy ??
@@ -1642,7 +1645,7 @@ export async function POST(request: Request) {
 
       modelRouteContinuationPolicy = modelSafeFallbackPolicy;
       modelTopicPolicyUsedAsAuthority = false;
-      topicAuthoritySource = "model_v3_3_safe_fallback_no_legacy_deterministic";
+      topicAuthoritySource = "topic_labeler_safe_fallback_no_legacy_deterministic";
     }
 
     timer.step("resolve_topic_outcome");
@@ -1666,8 +1669,8 @@ export async function POST(request: Request) {
     finalResolutionKind = resolutionKind;
     finalUsedLLMFallback = usedLLMFallback;
 
-    if (topicLabelerV3Enabled) {
-      console.info("[topic-labeler-v3 active: route authority decision]", {
+    if (topicLabelerEnabled) {
+      console.info("[topic-labeler active: route authority decision]", {
         actual_authoritative_result: {
           authority_source: topicAuthoritySource,
           model_policy_used_as_authority: modelTopicPolicyUsedAsAuthority,
@@ -1681,7 +1684,7 @@ export async function POST(request: Request) {
           model_route_continuation_policy: modelRouteContinuationPolicy,
           semantic_enrichment_status: semanticEnrichmentStatus,
         },
-        model_v3_result: topicLabelerV3Result,
+        topic_labeler_result: topicLabelerResult,
       });
     }
 
@@ -1905,7 +1908,7 @@ export async function POST(request: Request) {
         topic_resolution_trace: resolutionTrace,
         semantic_vector_info: normalizedVectorInfo,
         topic_routing: topicRouting,
-        topic_labeler_v3_active: topicLabelerV3Result,
+        topic_labeler_active: topicLabelerResult,
         model_topic_route_policy_decision: modelTopicRoutePolicyDecision,
         model_topic_policy_used_as_authority: modelTopicPolicyUsedAsAuthority,
         topic_authority_source: topicAuthoritySource,
@@ -2085,23 +2088,24 @@ export async function POST(request: Request) {
       embedding_model: embeddingModel,
       centroid_update_method: finalCentroidUpdatePlan?.update_method ?? null,
 
-      topic_labeler_v3_enabled: topicLabelerV3Enabled,
-      topic_labeler_v3_attempted:
-        getTopicLabelerV3Summary(topicLabelerV3Result).attempted,
-      topic_labeler_v3_succeeded:
-        getTopicLabelerV3Summary(topicLabelerV3Result).succeeded,
-      topic_labeler_v3_error:
-        getTopicLabelerV3Summary(topicLabelerV3Result).error,
-      topic_labeler_v3_latency_ms:
-        getTopicLabelerV3Summary(topicLabelerV3Result).latency_ms,
-      topic_labeler_v3_route_decision:
-        getTopicLabelerV3Summary(topicLabelerV3Result)
+      topic_labeler_provider: getTopicLabelerSummary(topicLabelerResult).provider ?? topicLabelerProvider,
+      topic_labeler_enabled: topicLabelerEnabled,
+      topic_labeler_attempted:
+        getTopicLabelerSummary(topicLabelerResult).attempted,
+      topic_labeler_succeeded:
+        getTopicLabelerSummary(topicLabelerResult).succeeded,
+      topic_labeler_error:
+        getTopicLabelerSummary(topicLabelerResult).error,
+      topic_labeler_latency_ms:
+        getTopicLabelerSummary(topicLabelerResult).latency_ms,
+      topic_labeler_route_decision:
+        getTopicLabelerSummary(topicLabelerResult)
           .route_decision,
-      topic_labeler_v3_extracted_label:
-        getTopicLabelerV3Summary(topicLabelerV3Result)
+      topic_labeler_extracted_label:
+        getTopicLabelerSummary(topicLabelerResult)
           .extracted_label,
-      topic_labeler_v3_matched_topic_label:
-        getTopicLabelerV3Summary(topicLabelerV3Result)
+      topic_labeler_matched_topic_label:
+        getTopicLabelerSummary(topicLabelerResult)
           .matched_topic_label,
 
       model_topic_policy_usable: modelTopicRoutePolicyDecision?.usable ?? null,
@@ -2147,7 +2151,7 @@ export async function POST(request: Request) {
       topic_resolution_debug: TopicResolutionDebug;
       topic_resolution_trace: TopicResolutionTrace | null;
       topic_routing: TopicRoutingState | null;
-      topic_labeler_v3_active: TopicLabelerV3ClientResult | null;
+      topic_labeler_active: TopicLabelerClientResult | null;
       model_topic_route_policy_decision: ModelTopicRoutePolicyDecision | null;
       model_topic_policy_used_as_authority: boolean;
       topic_authority_source: string | null;
@@ -2168,7 +2172,7 @@ export async function POST(request: Request) {
       topic_resolution_debug: topicResolutionDebug,
       topic_resolution_trace: resolutionTrace,
       topic_routing: topicRouting,
-      topic_labeler_v3_active: topicLabelerV3Result,
+      topic_labeler_active: topicLabelerResult,
       model_topic_route_policy_decision: modelTopicRoutePolicyDecision,
       model_topic_policy_used_as_authority: modelTopicPolicyUsedAsAuthority,
       topic_authority_source: topicAuthoritySource,
@@ -2209,23 +2213,24 @@ export async function POST(request: Request) {
       embedding_model: finalEmbeddingModel,
       centroid_update_method: finalCentroidUpdateMethod,
 
-      topic_labeler_v3_enabled: topicLabelerV3Enabled,
-      topic_labeler_v3_attempted:
-        getTopicLabelerV3Summary(topicLabelerV3Result).attempted,
-      topic_labeler_v3_succeeded:
-        getTopicLabelerV3Summary(topicLabelerV3Result).succeeded,
-      topic_labeler_v3_error:
-        getTopicLabelerV3Summary(topicLabelerV3Result).error,
-      topic_labeler_v3_latency_ms:
-        getTopicLabelerV3Summary(topicLabelerV3Result).latency_ms,
-      topic_labeler_v3_route_decision:
-        getTopicLabelerV3Summary(topicLabelerV3Result)
+      topic_labeler_provider: getTopicLabelerSummary(topicLabelerResult).provider ?? topicLabelerProvider,
+      topic_labeler_enabled: topicLabelerEnabled,
+      topic_labeler_attempted:
+        getTopicLabelerSummary(topicLabelerResult).attempted,
+      topic_labeler_succeeded:
+        getTopicLabelerSummary(topicLabelerResult).succeeded,
+      topic_labeler_error:
+        getTopicLabelerSummary(topicLabelerResult).error,
+      topic_labeler_latency_ms:
+        getTopicLabelerSummary(topicLabelerResult).latency_ms,
+      topic_labeler_route_decision:
+        getTopicLabelerSummary(topicLabelerResult)
           .route_decision,
-      topic_labeler_v3_extracted_label:
-        getTopicLabelerV3Summary(topicLabelerV3Result)
+      topic_labeler_extracted_label:
+        getTopicLabelerSummary(topicLabelerResult)
           .extracted_label,
-      topic_labeler_v3_matched_topic_label:
-        getTopicLabelerV3Summary(topicLabelerV3Result)
+      topic_labeler_matched_topic_label:
+        getTopicLabelerSummary(topicLabelerResult)
           .matched_topic_label,
 
       model_topic_policy_usable: modelTopicRoutePolicyDecision?.usable ?? null,
