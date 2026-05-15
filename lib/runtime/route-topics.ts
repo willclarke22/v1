@@ -5,6 +5,11 @@ import { isPosition, normalizeDiagnosis } from "./shared";
 
 export type RouteTopic = {
   id: string;
+  topic_label: string;
+
+  /**
+   * @deprecated Use topic_label instead. Kept while older UI/runtime code migrates.
+   */
   name: string;
   diagnosis: DiagnosisType;
   nextStep: string;
@@ -100,6 +105,20 @@ function inferKeywordsFromSourceText(source: string): string[] {
   ).slice(0, 8);
 }
 
+function getRowTopicLabel(row: {
+  topic_name: string;
+  topic_json?: Record<string, unknown> | null;
+}) {
+  const topicLabelFromJson =
+    row.topic_json &&
+    typeof row.topic_json.topic_label === "string" &&
+    row.topic_json.topic_label.trim()
+      ? row.topic_json.topic_label.trim()
+      : null;
+
+  return topicLabelFromJson ?? row.topic_name.trim();
+}
+
 function computeNextTopicPosition(existingTopics: RouteTopic[]): [number, number, number] {
   const count = existingTopics.length;
 
@@ -147,6 +166,7 @@ function buildSeededTopic(args: {
 
   return {
     id: makeId("topic"),
+    topic_label: args.name,
     name: args.name,
     diagnosis: DEFAULT_DIAGNOSIS,
     nextStep: args.nextStep,
@@ -261,12 +281,14 @@ export async function loadRouteTopics(): Promise<RouteTopic[]> {
       }) ?? computeNextTopicPosition(loadedTopics);
 
     const embeddingAliases = resolveEmbeddingAliases(row);
+    const topicLabel = getRowTopicLabel(row);
 
     const routeTopic: RouteTopic = {
       id: row.topic_id,
-      name: row.topic_name,
+      topic_label: topicLabel,
+      name: topicLabel,
       diagnosis: normalizeDiagnosis(row.diagnosis) ?? DEFAULT_DIAGNOSIS,
-      nextStep: row.next_step ?? `Explain ${row.topic_name} clearly in your own words.`,
+      nextStep: row.next_step ?? `Explain ${topicLabel} clearly in your own words.`,
       confusion: row.confusion ?? 0.5,
       insight: row.insight ?? 0.3,
       learningScore: row.learning_score ?? 0.2,

@@ -75,6 +75,15 @@ function getNestedSemanticStatus(
   return isJsonObject(nested) ? nested : null;
 }
 
+function getRowTopicLabel(row: {
+  topic_name: string;
+  topic_json: Record<string, unknown> | null;
+}) {
+  const topicJson = getTopicJson(row);
+  const topicLabelFromJson = asString(topicJson.topic_label);
+  return topicLabelFromJson ?? row.topic_name.trim();
+}
+
 function shouldEnrichTopic(row: TopicStateRow) {
   const topicJson = getTopicJson(row);
   const nestedStatus = getNestedSemanticStatus(row.topic_json);
@@ -124,19 +133,19 @@ function buildEnrichmentPrompt(row: {
 
   if (nestedPrompt) return nestedPrompt;
 
-  return `Topic: ${row.topic_name}`;
+  return `Topic: ${getRowTopicLabel(row)}`;
 }
 
-function buildTopicLabelEmbeddingText(row: { topic_name: string }) {
-  return row.topic_name.trim();
+function buildTopicLabelEmbeddingText(args: { topicLabel: string }) {
+  return args.topicLabel.trim();
 }
 
 function buildTopicMessageEmbeddingText(args: {
-  topicName: string;
+  topicLabel: string;
   enrichmentPromptText: string;
 }) {
   return [
-    `Topic message pattern for topic ${args.topicName}:`,
+    `Topic message pattern for topic ${args.topicLabel}:`,
     args.enrichmentPromptText,
   ].join("\n");
 }
@@ -153,6 +162,7 @@ function buildUpdatedTopicJson(args: {
   topicLabelEmbeddingText: string;
   topicMessageEmbeddingText: string;
   enrichmentPromptText: string;
+  topicLabel: string;
 
   nextTopicLabelEmbeddingCount: number;
   nextTopicMessageEmbeddingCount: number;
@@ -166,6 +176,7 @@ function buildUpdatedTopicJson(args: {
     topicLabelEmbeddingText,
     topicMessageEmbeddingText,
     enrichmentPromptText,
+    topicLabel,
     nextTopicLabelEmbeddingCount,
     nextTopicMessageEmbeddingCount,
   } = args;
@@ -193,6 +204,9 @@ function buildUpdatedTopicJson(args: {
 
   return {
     ...base,
+
+    topic_label: topicLabel,
+    topic_name: topicLabel,
 
     semantic_enrichment_status: {
       status: "centroid_ready",
@@ -267,6 +281,7 @@ export async function POST(request: Request) {
 
   const results: Array<{
     topic_id: string;
+    topic_label: string;
     topic_name: string;
     status: "enriched" | "skipped" | "error";
     reason: string | null;
@@ -278,15 +293,17 @@ export async function POST(request: Request) {
   }> = [];
 
   for (const row of pendingRows) {
+    const topicLabel = getRowTopicLabel(row);
+
     try {
       const enrichmentPromptText = buildEnrichmentPrompt(row);
 
       const topicLabelEmbeddingText = buildTopicLabelEmbeddingText({
-        topic_name: row.topic_name,
+        topicLabel,
       });
 
       const topicMessageEmbeddingText = buildTopicMessageEmbeddingText({
-        topicName: row.topic_name,
+        topicLabel,
         enrichmentPromptText,
       });
 
@@ -301,7 +318,8 @@ export async function POST(request: Request) {
       if (!topicLabelCentroid) {
         results.push({
           topic_id: row.topic_id,
-          topic_name: row.topic_name,
+          topic_label: topicLabel,
+          topic_name: topicLabel,
           status: "error",
           reason: "topic_label_embedding_result_missing_or_invalid_vector",
           embedding_model: null,
@@ -317,7 +335,8 @@ export async function POST(request: Request) {
       if (!topicMessageCentroid) {
         results.push({
           topic_id: row.topic_id,
-          topic_name: row.topic_name,
+          topic_label: topicLabel,
+          topic_name: topicLabel,
           status: "error",
           reason: "topic_message_embedding_result_missing_or_invalid_vector",
           embedding_model: null,
@@ -355,6 +374,7 @@ export async function POST(request: Request) {
         topicLabelEmbeddingText,
         topicMessageEmbeddingText,
         enrichmentPromptText,
+        topicLabel,
 
         nextTopicLabelEmbeddingCount,
         nextTopicMessageEmbeddingCount,
@@ -363,7 +383,7 @@ export async function POST(request: Request) {
       await upsertTopicState({
         topicId: row.topic_id,
         lastRunId: row.last_run_id,
-        topicName: row.topic_name,
+        topicName: topicLabel,
         confusion: row.confusion,
         insight: row.insight,
         learningScore: row.learning_score,
@@ -394,7 +414,7 @@ export async function POST(request: Request) {
       if (canSyncTopicToQdrant()) {
         const syncResult = await syncTopicToQdrantBestEffort({
           topicId: row.topic_id,
-          topicName: row.topic_name,
+          topicName: topicLabel,
           diagnosis: row.diagnosis,
           nextStep: row.next_step,
           updatedAt: embeddingUpdatedAt,
@@ -416,7 +436,8 @@ export async function POST(request: Request) {
 
       results.push({
         topic_id: row.topic_id,
-        topic_name: row.topic_name,
+        topic_label: topicLabel,
+        topic_name: topicLabel,
         status: "enriched",
         reason: null,
         embedding_model: embeddingModel,
@@ -428,7 +449,8 @@ export async function POST(request: Request) {
     } catch (error) {
       results.push({
         topic_id: row.topic_id,
-        topic_name: row.topic_name,
+        topic_label: topicLabel,
+        topic_name: topicLabel,
         status: "error",
         reason:
           error instanceof Error

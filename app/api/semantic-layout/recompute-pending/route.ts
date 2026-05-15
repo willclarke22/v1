@@ -25,6 +25,8 @@ type ResolvedTopicLabelEmbedding = {
 
 type NeighborMatch = {
   topic_id: string;
+  topic_label: string;
+  /** @deprecated Use topic_label instead. */
   topic_name: string;
   similarity: number;
   raw_similarity: number;
@@ -148,6 +150,17 @@ function hasTopicLabelEmbedding(topic: LayoutCandidate) {
   const resolved = resolveTopicLabelEmbedding(topic);
 
   return Boolean(resolved.centroid && resolved.centroid.length > 0 && resolved.count > 0);
+}
+
+function getTopicLabel(topic: LayoutCandidate): string {
+  const topicJson = topicJsonObject(topic);
+  const fromJson = topicJson.topic_label;
+
+  if (typeof fromJson === "string" && fromJson.trim()) {
+    return fromJson.trim();
+  }
+
+  return topic.topic_name.trim();
 }
 
 function getVisualPosition(topic: LayoutCandidate, fallbackIndex: number): TopicPosition {
@@ -340,7 +353,8 @@ function findNeighborMatches(args: {
 
       return {
         topic_id: candidate.topic_id,
-        topic_name: candidate.topic_name,
+        topic_label: getTopicLabel(candidate),
+        topic_name: getTopicLabel(candidate),
         similarity: round4(similarity),
         raw_similarity: similarity,
         reliability,
@@ -577,6 +591,8 @@ function mergeSemanticLayoutIntoTopicJson(args: {
 
   return {
     ...base,
+    topic_label: getTopicLabel(args.topic),
+    topic_name: getTopicLabel(args.topic),
     semantic_position: args.computed.position,
     semantic_position_updated_at: args.updatedAt,
     semantic_position_method: args.computed.method,
@@ -598,7 +614,8 @@ function mergeSemanticLayoutIntoTopicJson(args: {
       },
       neighbor_matches: args.computed.neighbor_matches.map((neighbor) => ({
         topic_id: neighbor.topic_id,
-        topic_name: neighbor.topic_name,
+        topic_label: neighbor.topic_label,
+        topic_name: neighbor.topic_label,
         similarity: neighbor.similarity,
         weight: round4(neighbor.weight),
         reliability: neighbor.reliability,
@@ -643,6 +660,7 @@ export async function POST(request: Request) {
     const results = [];
 
     for (const [index, topic] of pendingTopics.entries()) {
+      const topicLabel = getTopicLabel(topic);
       const topicLabelEmbedding = resolveTopicLabelEmbedding(topic);
 
       const computed = computeSemanticPosition({
@@ -662,7 +680,7 @@ export async function POST(request: Request) {
       await upsertTopicState({
         topicId: topic.topic_id,
         lastRunId: topic.last_run_id,
-        topicName: topic.topic_name,
+        topicName: topicLabel,
         confusion: topic.confusion,
         insight: topic.insight,
         learningScore: topic.learning_score,
@@ -694,7 +712,8 @@ export async function POST(request: Request) {
 
       results.push({
         topic_id: topic.topic_id,
-        topic_name: topic.topic_name,
+        topic_label: topicLabel,
+        topic_name: topicLabel,
         status: "semantic_position_saved",
         semantic_position: computed.position,
         semantic_position_method: computed.method,
@@ -714,7 +733,8 @@ export async function POST(request: Request) {
         },
         neighbor_matches: computed.neighbor_matches.map((neighbor) => ({
           topic_id: neighbor.topic_id,
-          topic_name: neighbor.topic_name,
+          topic_label: neighbor.topic_label,
+          topic_name: neighbor.topic_label,
           similarity: neighbor.similarity,
           reliability: neighbor.reliability,
           topic_label_embedding_count: neighbor.topic_label_embedding_count,

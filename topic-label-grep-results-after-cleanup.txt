@@ -1,0 +1,108 @@
+C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts:83: topic_name?: string | null;
+C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts:104: typeof rowWithTopicFields.topic_name === "string" &&
+C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts:105: rowWithTopicFields.topic_name.trim().length > 0
+C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts:107: return rowWithTopicFields.topic_name.trim();
+C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts:120: topic_name?: string | null;
+C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts:74: topic_name?: string;
+C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts:409: result.response.route.matched_topic_name ??
+C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts:878: : matchVectorInfo.top_k_topic_names?.length
+C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts:879: ? matchVectorInfo.top_k_topic_names
+C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts:1008: topic.topic_name ??
+C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts:1490: matched_topic_label: modelTopicRoutePolicyDecision.matched_topic_name,
+C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts:2126: modelTopicRoutePolicyDecision?.matched_topic_name ?? null,
+C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts:2250: modelTopicRoutePolicyDecision?.matched_topic_name ?? null,
+C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts:133: topic_name?: string | null;
+C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts:138: topicWithCanonicalLabel.topic_name?.trim() ||
+C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts:331: topic_name: topicLabel,
+C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts:756: topic_name: topicLabel,
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\pending-status\route.ts:93: topic_name: row.topic_name,
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\run-pending\route.ts:79: topic_name: string;
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\run-pending\route.ts:84: return topicLabelFromJson ?? row.topic_name.trim();
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\run-pending\route.ts:120: topic_name: string;
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\run-pending\route.ts:209: topic_name: topicLabel,
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\run-pending\route.ts:285: topic_name: string;
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\run-pending\route.ts:322: topic_name: topicLabel,
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\run-pending\route.ts:339: topic_name: topicLabel,
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\run-pending\route.ts:440: topic_name: topicLabel,
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\run-pending\route.ts:453: topic_name: topicLabel,
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-layout\recompute-pending\route.ts:30: topic_name: string;
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-layout\recompute-pending\route.ts:163: return topic.topic_name.trim();
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-layout\recompute-pending\route.ts:357: topic_name: getTopicLabel(candidate),
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-layout\recompute-pending\route.ts:595: topic_name: getTopicLabel(args.topic),
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-layout\recompute-pending\route.ts:618: topic_name: neighbor.topic_label,
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-layout\recompute-pending\route.ts:716: topic_name: topicLabel,
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-layout\recompute-pending\route.ts:737: topic_name: neighbor.topic_label,
+C:\Users\willc\projects\MyWay\v1\app\page.tsx:77: topic_name?: string | null;
+C:\Users\willc\projects\MyWay\v1\app\page.tsx:82: engineTopicWithLegacyFields.topic_name?.trim() ||
+C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts:465: topic_name: input.topicName,
+C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts:141: topic_name: string;
+C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts:191: topic_name: string;
+C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts:409: topic_name: row.topic_name,
+C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts:478: topic_name,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-labeler-v3.ts:26: active_topic_name?: string | null;
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-labeler-v3.ts:27: current_topic_names?: string[];
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-labeler-v3.ts:44: matched_topic_name?: string | null;
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-labeler-v3.ts:102: route.matched_topic_label ?? route.matched_topic_name ?? null,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-labeler-v3.ts:113: activeTopicName?: string | null;
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-labeler-v3.ts:116: currentTopicNames?: string[];
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-labeler-v3.ts:121: input.activeTopicLabel?.trim() || input.activeTopicName?.trim() || null;
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-labeler-v3.ts:123: input.currentTopicLabels ?? input.currentTopicNames
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-labeler-v3.ts:132: active_topic_name: activeTopicLabel,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-labeler-v3.ts:133: current_topic_names: currentTopicLabels,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-resolution.ts:72: | "topic_name_only"
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-resolution.ts:73: | "topic_name_plus_initial_message"
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-resolution.ts:135: top_k_topic_names: [],
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-resolution.ts:158: topic_name?: string | null;
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-resolution.ts:163: topicWithCanonicalLabel.topic_name?.trim() ||
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-resolution.ts:180: decision.matched_topic_name?.trim() ||
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-resolution.ts:499: : "topic_name_plus_initial_message",
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:18: matched_topic_name: string | null;
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:48: topic_name?: string | null;
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:53: topicWithCanonicalLabel.topic_name?.trim() ||
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:62: matched_topic_name?: string | null;
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:67: cleanModelLabel(routeWithCanonicalLabel.matched_topic_name)
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:128: matched_topic_name: null,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:143: matched_topic_name: null,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:158: matched_topic_name: null,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:185: matched_topic_name: matchedTopicLabel,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:199: matched_topic_name: getRouteTopicLabel(activeTopic) ?? activeTopic.name,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:215: matched_topic_name: matchedTopicLabel,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:229: matched_topic_name: getRouteTopicLabel(matchedTopic) ?? matchedTopic.name,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:245: matched_topic_name: matchedTopicLabel,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:260: matched_topic_name: matchedTopicLabel,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:277: matched_topic_name: getRouteTopicLabel(existingMatch) ?? existingMatch.name,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:293: matched_topic_name: matchedTopicLabel,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:308: matched_topic_name: null,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:323: matched_topic_name: null,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts:337: matched_topic_name: matchedTopicLabel,
+C:\Users\willc\projects\MyWay\v1\lib\runtime\attempt-judging.ts:62: topic_name?: string | null;
+C:\Users\willc\projects\MyWay\v1\lib\runtime\attempt-judging.ts:67: topicWithCanonicalLabel.topic_name?.trim() ||
+C:\Users\willc\projects\MyWay\v1\lib\runtime\attempt-judging.ts:918: top_k_topic_names: [topicLabel],
+C:\Users\willc\projects\MyWay\v1\lib\runtime\route-topics.ts:109: topic_name: string;
+C:\Users\willc\projects\MyWay\v1\lib\runtime\route-topics.ts:119: return topicLabelFromJson ?? row.topic_name.trim();
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-routing-trace.ts:93: selected_topic_name?: string | null;
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-routing-trace.ts:96: created_topic_name?: string | null;
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-routing-trace.ts:254: top_k_topic_names: [],
+C:\Users\willc\projects\MyWay\v1\lib\vector\query-topics.ts:16: topic_name?: unknown;
+C:\Users\willc\projects\MyWay\v1\lib\vector\query-topics.ts:33: topic_name: string;
+C:\Users\willc\projects\MyWay\v1\lib\vector\query-topics.ts:109: top_k_topic_names: [],
+C:\Users\willc\projects\MyWay\v1\lib\vector\query-topics.ts:243: top_k_topic_names: topicLabels,
+C:\Users\willc\projects\MyWay\v1\lib\vector\query-topics.ts:265: asString(payload.topic_name) ||
+C:\Users\willc\projects\MyWay\v1\lib\vector\query-topics.ts:293: topic_name: topicLabel,
+C:\Users\willc\projects\MyWay\v1\lib\vector\query-topics.ts:559: "topic_name",
+C:\Users\willc\projects\MyWay\v1\lib\vector\sync-topic-to-qdrant.ts:55: topic_name: string;
+C:\Users\willc\projects\MyWay\v1\lib\vector\sync-topic-to-qdrant.ts:402: topic_name: getInputTopicLabel(input),
+C:\Users\willc\projects\MyWay\v1\lib\vector\sync-topic-to-qdrant.ts:453: topic_name: getInputTopicLabel(input),
+C:\Users\willc\projects\MyWay\v1\lib\vector\sync-topic-to-qdrant.ts:478: topic_name: getInputTopicLabel(input),
+C:\Users\willc\projects\MyWay\v1\lib\vector\sync-topic-to-qdrant.ts:495: topic_name: getInputTopicLabel(input),
+C:\Users\willc\projects\MyWay\v1\lib\build-learning-space.ts:56: topic_name: topicLabel,
+C:\Users\willc\projects\MyWay\v1\types\contracts.ts:254: topic_name?: string;
+C:\Users\willc\projects\MyWay\v1\types\contracts.ts:269: selected_topic_name?: Nullable<string>;
+C:\Users\willc\projects\MyWay\v1\types\contracts.ts:275: active_topic_name?: Nullable<string>;
+C:\Users\willc\projects\MyWay\v1\types\contracts.ts:280: best_topic_name?: Nullable<string>;
+C:\Users\willc\projects\MyWay\v1\types\contracts.ts:286: second_topic_name?: Nullable<string>;
+C:\Users\willc\projects\MyWay\v1\types\contracts.ts:321: selected_topic_name?: Nullable<string>;
+C:\Users\willc\projects\MyWay\v1\types\contracts.ts:400: top_k_topic_names?: string[];
+C:\Users\willc\projects\MyWay\v1\types\contracts.ts:810: topic_name?: string;
+C:\Users\willc\projects\MyWay\v1\types\contracts.ts:921: topic_name?: string;
+C:\Users\willc\projects\MyWay\v1\types\learning-space.ts:11: topic_name?: string;

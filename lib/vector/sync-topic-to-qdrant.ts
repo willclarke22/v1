@@ -22,7 +22,13 @@ type TopicLabelVectorSource =
 
 export type SyncTopicToQdrantInput = {
   topicId: string;
-  topicName: string;
+  topicLabel?: string | null;
+
+  /**
+   * @deprecated Use topicLabel instead. Kept because the persistence boundary
+   * still calls this value topicName in a few places.
+   */
+  topicName?: string | null;
   diagnosis?: string | null;
   nextStep?: string | null;
   updatedAt?: string | null;
@@ -44,6 +50,8 @@ export type SyncTopicToQdrantResult = {
   skipped: boolean;
   error: string | null;
   topic_id: string;
+  topic_label: string;
+  /** @deprecated Use topic_label instead. */
   topic_name: string;
   vector_source: TopicLabelVectorSource | null;
   qdrant_sync_timeout_ms: number;
@@ -172,6 +180,10 @@ function getDefaultEmbeddingModelName() {
   );
 }
 
+function getInputTopicLabel(input: SyncTopicToQdrantInput): string {
+  return input.topicLabel?.trim() || input.topicName?.trim() || input.topicId;
+}
+
 function readTopicJsonEmbedding(input: SyncTopicToQdrantInput) {
   const topicJson = asRecord(input.topicJson);
 
@@ -212,7 +224,7 @@ function buildTopicLabelFallbackText(input: SyncTopicToQdrantInput): string {
      *
      * Qdrant stores topic-label vectors, not learner-message pattern vectors.
      */
-    input.topicName.trim(),
+    getInputTopicLabel(input),
     inferredKeywords.length > 0
       ? `Keywords: ${inferredKeywords.join(", ")}`
       : null,
@@ -384,7 +396,10 @@ export async function syncTopicToQdrant(
           vector,
           payload: {
             topic_id: input.topicId,
-            topic_name: input.topicName,
+            topic_label: getInputTopicLabel(input),
+
+            // Temporary legacy alias for older Qdrant/debug consumers.
+            topic_name: getInputTopicLabel(input),
             diagnosis: input.diagnosis ?? null,
             next_step: input.nextStep ?? null,
             updated_at: input.updatedAt ?? new Date().toISOString(),
@@ -434,7 +449,8 @@ export async function syncTopicToQdrantBestEffort(
       skipped: true,
       error: "missing_qdrant_config",
       topic_id: input.topicId,
-      topic_name: input.topicName,
+      topic_label: getInputTopicLabel(input),
+      topic_name: getInputTopicLabel(input),
       vector_source: null,
       qdrant_sync_timeout_ms: qdrantSyncTimeoutMs,
       qdrant_ensure_timeout_ms: qdrantEnsureTimeoutMs,
@@ -458,7 +474,8 @@ export async function syncTopicToQdrantBestEffort(
       skipped: false,
       error: null,
       topic_id: input.topicId,
-      topic_name: input.topicName,
+      topic_label: getInputTopicLabel(input),
+      topic_name: getInputTopicLabel(input),
       vector_source: vectorSource,
       qdrant_sync_timeout_ms: qdrantSyncTimeoutMs,
       qdrant_ensure_timeout_ms: qdrantEnsureTimeoutMs,
@@ -474,7 +491,8 @@ export async function syncTopicToQdrantBestEffort(
       skipped: false,
       error: error instanceof Error ? error.message : "unknown_qdrant_sync_error",
       topic_id: input.topicId,
-      topic_name: input.topicName,
+      topic_label: getInputTopicLabel(input),
+      topic_name: getInputTopicLabel(input),
       vector_source: vectorSource,
       qdrant_sync_timeout_ms: qdrantSyncTimeoutMs,
       qdrant_ensure_timeout_ms: qdrantEnsureTimeoutMs,
