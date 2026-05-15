@@ -9,7 +9,9 @@ export default function MobileTopicCard({ topic }: { topic: Topic }) {
             <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-zinc-500">
               Active Topic
             </p>
-            <h3 className="mt-2 text-xl font-semibold text-white">{topic.name}</h3>
+            <h3 className="mt-2 text-xl font-semibold text-white">
+              {topic.topic_label}
+            </h3>
           </div>
 
           <div className="rounded-full border border-purple-300/20 bg-purple-400/10 px-3 py-1 text-xs text-purple-100">
@@ -20,12 +22,16 @@ export default function MobileTopicCard({ topic }: { topic: Topic }) {
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
             <p className="text-sm font-medium text-white">Diagnosis</p>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">{topic.diagnosis}</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">
+              {topic.diagnosis}
+            </p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
             <p className="text-sm font-medium text-white">Next Step</p>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">{topic.nextStep}</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">
+              {topic.nextStep}
+            </p>
           </div>
         </div>
 

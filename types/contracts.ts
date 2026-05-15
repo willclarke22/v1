@@ -250,8 +250,6 @@ export interface TopicRoutingThresholds {
 export interface TopicRoutingCandidateEvidence {
   topic_id: EntityId;
   topic_label: string;
-  /** @deprecated Use topic_label instead. */
-  topic_name?: string;
   similarity: number;
   rank: number;
   embedding_count: Nullable<number>;
@@ -265,25 +263,17 @@ export interface TopicRoutingDebug {
 
   selected_topic_id: Nullable<EntityId>;
   selected_topic_label: Nullable<string>;
-  /** @deprecated Use selected_topic_label instead. */
-  selected_topic_name?: Nullable<string>;
   new_topic_label: Nullable<string>;
 
   active_topic_id: Nullable<EntityId>;
   active_topic_label: Nullable<string>;
-  /** @deprecated Use active_topic_label instead. */
-  active_topic_name?: Nullable<string>;
 
   best_topic_id: Nullable<EntityId>;
   best_topic_label: Nullable<string>;
-  /** @deprecated Use best_topic_label instead. */
-  best_topic_name?: Nullable<string>;
   best_similarity: Nullable<number>;
 
   second_topic_id: Nullable<EntityId>;
   second_topic_label: Nullable<string>;
-  /** @deprecated Use second_topic_label instead. */
-  second_topic_name?: Nullable<string>;
   second_similarity: Nullable<number>;
 
   active_topic_similarity: Nullable<number>;
@@ -317,8 +307,6 @@ export interface TopicRoutingState {
 
   selected_topic_id: Nullable<EntityId>;
   selected_topic_label: Nullable<string>;
-  /** @deprecated Use selected_topic_label instead. */
-  selected_topic_name?: Nullable<string>;
   new_topic_label: Nullable<string>;
 
   confidence: number;
@@ -396,8 +384,6 @@ export interface NewAttemptInput {
 
 export interface VectorInfo {
   top_k_topic_labels: string[];
-  /** @deprecated Use top_k_topic_labels instead. */
-  top_k_topic_names?: string[];
   top_k_topic_ids: string[];
   top_k_similarity_scores: number[];
 }
@@ -806,8 +792,6 @@ export interface JudgedAttempt {
 export interface TopicState {
   topic_id: EntityId;
   topic_label: string;
-  /** @deprecated Use topic_label instead. */
-  topic_name?: string;
   topic_confusion_average: number;
   topic_insight_average: number;
   topic_learning_score: number;
@@ -849,7 +833,7 @@ export interface TopicState {
 
 export interface ClusterState {
   cluster_id: EntityId;
-  cluster_name: string;
+  cluster_label: string;
   cluster_confusion_average: number;
   cluster_confusion_variance: number;
   cluster_insight_average: number;
@@ -916,9 +900,6 @@ export interface LearningSpaceSatellite {
 export interface LearningSpaceTopic {
   topic_id: EntityId;
   topic_label: string;
-  label?: string;
-  /** @deprecated Use topic_label instead. */
-  topic_name?: string;
   position: [number, number, number];
   render_state: RenderState;
   satellite_count: number;
@@ -927,7 +908,7 @@ export interface LearningSpaceTopic {
 
 export interface LearningSpaceCluster {
   cluster_id: EntityId;
-  cluster_name: string;
+  cluster_label: string;
   cluster_centroid: [number, number, number];
   member_topic_ids: EntityId[];
 }

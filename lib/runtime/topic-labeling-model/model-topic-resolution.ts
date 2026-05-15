@@ -69,8 +69,8 @@ export type SemanticEnrichmentStatus = {
     | "topic_label_embedding"
     | "topic_message_embedding"
     | "topic_label_and_message_embedding"
-    | "topic_name_only"
-    | "topic_name_plus_initial_message"
+    | "topic_label_only"
+    | "topic_label_plus_initial_message"
     | "message_embedding"
     | null;
   embedding_skip_reason:
@@ -132,8 +132,7 @@ export type ModelFirstTopicResolutionOutcome = {
 function emptyVectorInfo(): VectorInfo {
   return {
     top_k_topic_labels: [],
-    top_k_topic_names: [],
-    top_k_topic_ids: [],
+        top_k_topic_ids: [],
     top_k_similarity_scores: [],
   };
 }
@@ -151,41 +150,19 @@ function normalizeTextLoose(text: string) {
 }
 
 function getRouteTopicLabel(topic: RouteTopic | null): string | null {
-  if (!topic) return null;
-
-  const topicWithCanonicalLabel = topic as RouteTopic & {
-    topic_label?: string | null;
-    topic_name?: string | null;
-  };
-
-  return (
-    topicWithCanonicalLabel.topic_label?.trim() ||
-    topicWithCanonicalLabel.topic_name?.trim() ||
-    topic.name?.trim() ||
-    null
-  );
+  return topic?.topic_label?.trim() || null;
 }
 
 function getPolicyMatchedTopicLabel(
   decision: ModelTopicRoutePolicyDecision | null,
 ): string | null {
-  if (!decision) return null;
-
-  const decisionWithCanonicalLabel = decision as ModelTopicRoutePolicyDecision & {
-    matched_topic_label?: string | null;
-  };
-
-  return (
-    decisionWithCanonicalLabel.matched_topic_label?.trim() ||
-    decision.matched_topic_name?.trim() ||
-    null
-  );
+  return decision?.matched_topic_label?.trim() || null;
 }
 
-function findTopicByName(existingTopics: RouteTopic[], name: string | null) {
-  if (!name) return null;
+function findTopicByLabel(existingTopics: RouteTopic[], label: string | null) {
+  if (!label) return null;
 
-  const target = normalizeTextLoose(name);
+  const target = normalizeTextLoose(label);
 
   return (
     existingTopics.find((topic) => {
@@ -300,7 +277,7 @@ function buildClarifyNoTopicContinuationPolicy(): ModelRouteContinuationPolicy {
     should_myway_choose_target: false,
     learner_message_intent: "invite_messy_context",
     suggested_learner_message:
-      "I don’t need the topic name yet. Just dump whatever feels confusing — words, examples, feelings, half-thoughts, anything. I’ll help turn it into something we can work with.",
+      "I don’t need the exact topic label yet. Just dump whatever feels confusing — words, examples, feelings, half-thoughts, anything. I’ll help turn it into something we can work with.",
     rationale:
       "The model found no stable topic object yet, so MyWay should invite raw context rather than create a permanent topic.",
     candidate_targets: [],
@@ -496,7 +473,7 @@ function buildSemanticEnrichmentStatus(args: {
         ? hasTopicLabelEmbedding
           ? "topic_label_embedding"
           : "topic_message_embedding"
-        : "topic_name_plus_initial_message",
+        : "topic_label_plus_initial_message",
     embedding_skip_reason: embeddingSkippedForFastRoute
       ? "model_policy_safe_authoritative_decision"
       : null,
@@ -703,7 +680,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
   if (modelPolicyDecision.decision_kind === "stay_active") {
     if (!activeTopic) return null;
 
-    const activeTopicLabel = getRouteTopicLabel(activeTopic) ?? activeTopic.name;
+    const activeTopicLabel = getRouteTopicLabel(activeTopic);
 
     const continuationPolicy = buildModelRouteContinuationPolicy({
       activeTopic,
@@ -740,14 +717,14 @@ export function buildModelFirstTopicResolutionOutcome(args: {
   if (modelPolicyDecision.decision_kind === "switch_existing") {
     const matchedTopic =
       modelPolicyDecision.target_topic ??
-      findTopicByName(
+      findTopicByLabel(
         existingTopics,
         getPolicyMatchedTopicLabel(modelPolicyDecision),
       );
 
     if (!matchedTopic) return null;
 
-    const matchedTopicLabel = getRouteTopicLabel(matchedTopic) ?? matchedTopic.name;
+    const matchedTopicLabel = getRouteTopicLabel(matchedTopic);
 
     const continuationPolicy = buildModelRouteContinuationPolicy({
       activeTopic,
@@ -788,7 +765,7 @@ export function buildModelFirstTopicResolutionOutcome(args: {
     const resolvedLabel = modelPolicyDecision.extracted_label;
     if (!resolvedLabel) return null;
 
-    const existingMatch = findTopicByName(existingTopics, resolvedLabel);
+    const existingMatch = findTopicByLabel(existingTopics, resolvedLabel);
 
     if (existingMatch) {
       const continuationPolicy = buildModelRouteContinuationPolicy({
@@ -897,7 +874,7 @@ export function buildModelFirstConservativeFallbackOutcome(args: {
     modelPolicyDecision.decision_kind === "unusable_model_result";
 
   if (activeTopic) {
-    const activeTopicLabel = getRouteTopicLabel(activeTopic) ?? activeTopic.name;
+    const activeTopicLabel = getRouteTopicLabel(activeTopic);
 
     const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
       createdTopic: null,

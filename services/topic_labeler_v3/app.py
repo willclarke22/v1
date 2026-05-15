@@ -105,8 +105,8 @@ CANONICAL_ALIAS_MAP: dict[str, str] = {
 
 class TopicLabelRequest(BaseModel):
     message: str = Field(..., min_length=1)
-    active_topic_name: str | None = None
-    current_topic_names: list[str] = Field(default_factory=list)
+    active_topic_label: str | None = None
+    current_topic_labels: list[str] = Field(default_factory=list)
     previous_user_messages: list[str] = Field(default_factory=list)
 
 
@@ -119,7 +119,7 @@ class RouteResult(BaseModel):
     route_decision: RouteDecision
     topic_reference_type: TopicReferenceType | str
     extracted_label: str | None = None
-    matched_topic_name: str | None = None
+    matched_topic_label: str | None = None
     match_type: str | None = None
     score: float | None = None
     sequence_similarity: float | None = None
@@ -283,13 +283,13 @@ def token_f1(a: str, b: str) -> float:
 
 
 def format_for_reference_type_classifier(data: TopicLabelRequest) -> str:
-    active_topic_name = data.active_topic_name or "NONE"
+    active_topic_label = data.active_topic_label or "NONE"
 
     return "\n".join(
         [
             f"message: {data.message}",
-            f"active_topic_name: {active_topic_name}",
-            f"current_topic_names: {' | '.join(data.current_topic_names)}",
+            f"active_topic_label: {active_topic_label}",
+            f"current_topic_labels: {' | '.join(data.current_topic_labels)}",
             f"previous_user_messages: {' | '.join(data.previous_user_messages)}",
         ]
     )
@@ -312,7 +312,11 @@ def load_models() -> None:
     global _tokenizer
     global _label_generator
 
-    if _reference_type_classifier is not None and _tokenizer is not None and _label_generator is not None:
+    if (
+        _reference_type_classifier is not None
+        and _tokenizer is not None
+        and _label_generator is not None
+    ):
         return
 
     if not REFERENCE_TYPE_MODEL_PATH.exists():
@@ -407,13 +411,16 @@ def predict_topic_reference_and_label(
     )
 
 
-def find_exact_match(extracted_label: str, current_topic_names: list[str]) -> dict[str, Any] | None:
+def find_exact_match(
+    extracted_label: str,
+    current_topic_labels: list[str],
+) -> dict[str, Any] | None:
     extracted_norm = normalize_text(extracted_label)
 
-    for topic in current_topic_names:
-        if normalize_text(topic) == extracted_norm:
+    for topic_label in current_topic_labels:
+        if normalize_text(topic_label) == extracted_norm:
             return {
-                "matched_topic_name": topic,
+                "matched_topic_label": topic_label,
                 "match_type": "exact_existing_topic",
                 "score": 1.0,
             }
@@ -421,7 +428,10 @@ def find_exact_match(extracted_label: str, current_topic_names: list[str]) -> di
     return None
 
 
-def find_alias_match(extracted_label: str, current_topic_names: list[str]) -> dict[str, Any] | None:
+def find_alias_match(
+    extracted_label: str,
+    current_topic_labels: list[str],
+) -> dict[str, Any] | None:
     extracted_norm = normalize_text(extracted_label)
 
     if extracted_norm not in CANONICAL_ALIAS_MAP:
@@ -429,43 +439,49 @@ def find_alias_match(extracted_label: str, current_topic_names: list[str]) -> di
 
     canonical = CANONICAL_ALIAS_MAP[extracted_norm]
 
-    if any(normalize_text(topic) == normalize_text(canonical) for topic in current_topic_names):
+    if any(
+        normalize_text(topic_label) == normalize_text(canonical)
+        for topic_label in current_topic_labels
+    ):
         return {
-            "matched_topic_name": canonical,
+            "matched_topic_label": canonical,
             "match_type": "alias_exact_to_existing_topic",
             "score": 1.0,
         }
 
     return {
-        "matched_topic_name": canonical,
+        "matched_topic_label": canonical,
         "match_type": "alias_to_new_canonical_topic",
         "score": 0.96,
     }
 
 
-def find_fuzzy_match(extracted_label: str, current_topic_names: list[str]) -> dict[str, Any] | None:
-    best_topic = None
+def find_fuzzy_match(
+    extracted_label: str,
+    current_topic_labels: list[str],
+) -> dict[str, Any] | None:
+    best_topic_label = None
     best_score = 0.0
     best_seq = 0.0
     best_token = 0.0
 
-    for topic in current_topic_names:
-        seq = sequence_similarity(extracted_label, topic)
-        tok = token_f1(extracted_label, topic)
+    for topic_label in current_topic_labels:
+        seq = sequence_similarity(extracted_label, topic_label)
+        tok = token_f1(extracted_label, topic_label)
         score = max(seq, tok)
 
         if score > best_score:
-            best_topic = topic
+            best_topic_label = topic_label
             best_score = score
             best_seq = seq
             best_token = tok
 
-    if best_topic is None:
+    if best_topic_label is None:
         return None
 
     if best_score >= 0.88:
         return {
-            "matched_topic_name": best_topic,
+            "matched_topic_label": best_topic_label,
             "match_type": "fuzzy_existing_topic",
             "score": round(best_score, 4),
             "sequence_similarity": round(best_seq, 4),
@@ -484,7 +500,7 @@ def route_topic(data: TopicLabelRequest, prediction: ModelPrediction) -> RouteRe
             route_decision="stay_active",
             topic_reference_type=topic_reference_type,
             extracted_label=None,
-            matched_topic_name=data.active_topic_name,
+            matched_topic_label=data.active_topic_label,
             reason="Model predicted active_topic_reference, so router keeps the active topic.",
         )
 
@@ -493,7 +509,7 @@ def route_topic(data: TopicLabelRequest, prediction: ModelPrediction) -> RouteRe
             route_decision="clarify_no_topic",
             topic_reference_type=topic_reference_type,
             extracted_label=None,
-            matched_topic_name=None,
+            matched_topic_label=None,
             reason="Model predicted no_topic, so router should ask a grounding/clarifying question instead of creating a topic.",
         )
 
@@ -502,7 +518,7 @@ def route_topic(data: TopicLabelRequest, prediction: ModelPrediction) -> RouteRe
             route_decision="clarify_topic_intent",
             topic_reference_type=topic_reference_type,
             extracted_label=None,
-            matched_topic_name=None,
+            matched_topic_label=None,
             reason="Model predicted unclear_topic, so router should ask whether to stay, switch, or create.",
         )
 
@@ -511,7 +527,7 @@ def route_topic(data: TopicLabelRequest, prediction: ModelPrediction) -> RouteRe
             route_decision="error_unknown_reference_type",
             topic_reference_type=topic_reference_type,
             extracted_label=extracted_label,
-            matched_topic_name=None,
+            matched_topic_label=None,
             reason=f"Unknown topic_reference_type: {topic_reference_type}",
         )
 
@@ -520,11 +536,11 @@ def route_topic(data: TopicLabelRequest, prediction: ModelPrediction) -> RouteRe
             route_decision="clarify_topic_intent",
             topic_reference_type=topic_reference_type,
             extracted_label=None,
-            matched_topic_name=None,
+            matched_topic_label=None,
             reason="Model predicted explicit_topic_reference but produced no extracted_label.",
         )
 
-    exact = find_exact_match(extracted_label, data.current_topic_names)
+    exact = find_exact_match(extracted_label, data.current_topic_labels)
     if exact:
         return RouteResult(
             route_decision="switch_existing",
@@ -534,7 +550,7 @@ def route_topic(data: TopicLabelRequest, prediction: ModelPrediction) -> RouteRe
             **exact,
         )
 
-    alias = find_alias_match(extracted_label, data.current_topic_names)
+    alias = find_alias_match(extracted_label, data.current_topic_labels)
     if alias:
         if alias["match_type"] == "alias_exact_to_existing_topic":
             return RouteResult(
@@ -553,7 +569,7 @@ def route_topic(data: TopicLabelRequest, prediction: ModelPrediction) -> RouteRe
             **alias,
         )
 
-    fuzzy = find_fuzzy_match(extracted_label, data.current_topic_names)
+    fuzzy = find_fuzzy_match(extracted_label, data.current_topic_labels)
     if fuzzy:
         return RouteResult(
             route_decision="switch_existing",
@@ -567,7 +583,7 @@ def route_topic(data: TopicLabelRequest, prediction: ModelPrediction) -> RouteRe
         route_decision="create_new",
         topic_reference_type=topic_reference_type,
         extracted_label=extracted_label,
-        matched_topic_name=title_case_label(extracted_label),
+        matched_topic_label=title_case_label(extracted_label),
         match_type="no_existing_match",
         score=None,
         reason="Explicit topic reference had no exact, alias, or fuzzy match to current topics, so router would create a new topic.",
@@ -612,8 +628,6 @@ def label_topic(request: TopicLabelRequest) -> TopicLabelResponse:
     )
     timing.response_build_ms += now_ms() - response_start
 
-    # Rebuild once after measuring response build time so the timing object
-    # includes response_build_ms.
     response.timing = timing.to_model()
 
     print(

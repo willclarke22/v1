@@ -327,7 +327,7 @@ export type PersistedAttemptInput = {
 export type PersistedTopicStateInput = {
   topicId: string;
   lastRunId?: string | null;
-  topicName: string;
+  topicLabel: string;
   confusion?: number | null;
   insight?: number | null;
   learningScore?: number | null;
@@ -462,7 +462,7 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
       topic_id: input.topicId,
       updated_at: new Date().toISOString(),
       last_run_id: input.lastRunId ?? null,
-      topic_name: input.topicName,
+      topic_label: input.topicLabel,
       confusion: input.confusion ?? null,
       insight: input.insight ?? null,
       learning_score: input.learningScore ?? null,

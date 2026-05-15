@@ -5,9 +5,9 @@ export type ProgressSummary = {
   averageConfusion: number;
   averageInsight: number;
   averageLearningScore: number;
-  focusedTopicName: string | null;
-  strongestTopicName: string | null;
-  needsAttentionTopicName: string | null;
+  focusedTopicLabel: string | null;
+  strongestTopicLabel: string | null;
+  needsAttentionTopicLabel: string | null;
 };
 
 function roundToTwo(value: number) {
@@ -16,7 +16,7 @@ function roundToTwo(value: number) {
 
 export function deriveProgressSummary(
   topics: Topic[],
-  focusedTopicId: string | null
+  focusedTopicId: string | null,
 ): ProgressSummary {
   if (!topics.length) {
     return {
@@ -24,9 +24,9 @@ export function deriveProgressSummary(
       averageConfusion: 0,
       averageInsight: 0,
       averageLearningScore: 0,
-      focusedTopicName: null,
-      strongestTopicName: null,
-      needsAttentionTopicName: null,
+      focusedTopicLabel: null,
+      strongestTopicLabel: null,
+      needsAttentionTopicLabel: null,
     };
   }
 
@@ -37,7 +37,7 @@ export function deriveProgressSummary(
       acc.learningScore += topic.learningScore ?? 0;
       return acc;
     },
-    { confusion: 0, insight: 0, learningScore: 0 }
+    { confusion: 0, insight: 0, learningScore: 0 },
   );
 
   const strongestTopic = topics.reduce((best, current) => {
@@ -68,8 +68,8 @@ export function deriveProgressSummary(
     averageConfusion: roundToTwo(totals.confusion / topics.length),
     averageInsight: roundToTwo(totals.insight / topics.length),
     averageLearningScore: roundToTwo(totals.learningScore / topics.length),
-    focusedTopicName: focusedTopic?.name ?? null,
-    strongestTopicName: strongestTopic?.name ?? null,
-    needsAttentionTopicName: needsAttentionTopic?.name ?? null,
+    focusedTopicLabel: focusedTopic?.topic_label ?? null,
+    strongestTopicLabel: strongestTopic?.topic_label ?? null,
+    needsAttentionTopicLabel: needsAttentionTopic?.topic_label ?? null,
   };
 }

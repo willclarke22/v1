@@ -2,8 +2,7 @@ import type { LearningSpace } from "@/types/contracts";
 
 type LearningSpaceInputTopic = {
   id: string;
-  topic_label?: string | null;
-  name?: string | null;
+  topic_label: string;
   confusion?: number | null;
   insight?: number | null;
   learningScore?: number | null;
@@ -16,13 +15,13 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function normalizeTopicPosition(
-  topic: LearningSpaceInputTopic
+  topic: LearningSpaceInputTopic,
 ): [number, number, number] {
   return topic.position;
 }
 
 function getTopicLabel(topic: LearningSpaceInputTopic) {
-  return topic.topic_label?.trim() || topic.name?.trim() || "Untitled Topic";
+  return topic.topic_label.trim() || "Untitled Topic";
 }
 
 function buildRenderState(topic: LearningSpaceInputTopic) {
@@ -41,7 +40,7 @@ function buildRenderState(topic: LearningSpaceInputTopic) {
 }
 
 export function buildLearningSpace(
-  topics: LearningSpaceInputTopic[]
+  topics: LearningSpaceInputTopic[],
 ): LearningSpace {
   return {
     space_version: "v1",
@@ -51,11 +50,6 @@ export function buildLearningSpace(
       return {
         topic_id: topic.id,
         topic_label: topicLabel,
-
-        // Temporary legacy aliases for older renderer/UI code.
-        topic_name: topicLabel,
-        label: topicLabel,
-
         position: normalizeTopicPosition(topic),
         render_state: buildRenderState(topic),
         satellite_count: 0,

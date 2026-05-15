@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 export type ProbeSummary = {
   id: string;
   topicId: string;
-  topicName?: string;
+  topicLabel?: string;
   title: string;
   instruction: string;
   status: "available" | "active" | "completed";
@@ -112,7 +112,7 @@ export default function ProbeSurface({
   const probeHint = useMemo(() => getInstructionHint(probe), [probe]);
   const encouragement = useMemo(
     () => getEncouragement(response, isSubmitting),
-    [response, isSubmitting]
+    [response, isSubmitting],
   );
 
   function handleSubmit() {
@@ -195,9 +195,9 @@ export default function ProbeSurface({
                 {probe.title}
               </h2>
 
-              {probe.topicName ? (
+              {probe.topicLabel ? (
                 <p className="mt-2 text-sm text-zinc-300/80">
-                  Topic: {probe.topicName}
+                  Topic: {probe.topicLabel}
                 </p>
               ) : null}
 

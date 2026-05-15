@@ -25,7 +25,9 @@ function hasTopicMessageEmbedding(row: {
   );
 }
 
-function getNestedSemanticStatus(row: TopicStateRow): Record<string, unknown> | null {
+function getNestedSemanticStatus(
+  row: TopicStateRow,
+): Record<string, unknown> | null {
   const topicJson = row.topic_json;
 
   if (!topicJson || typeof topicJson !== "object" || Array.isArray(topicJson)) {
@@ -62,15 +64,6 @@ function shouldEnrichTopic(row: TopicStateRow) {
     return true;
   }
 
-  /**
-   * Wave 2 canonical enrichment requirement.
-   *
-   * topic_label_embedding_* powers label/layout/Qdrant topic structure.
-   * topic_message_embedding_* stores learner-message pattern evidence.
-   *
-   * topic_embedding_* has been removed and should not participate in pending
-   * status anymore.
-   */
   return !hasLabelEmbedding || !hasMessageEmbedding;
 }
 
@@ -90,7 +83,7 @@ export async function GET() {
 
         return {
           topic_id: row.topic_id,
-          topic_name: row.topic_name,
+          topic_label: row.topic_label,
 
           semantic_enrichment_status: row.semantic_enrichment_status,
           needs_embedding_centroid: row.needs_embedding_centroid,

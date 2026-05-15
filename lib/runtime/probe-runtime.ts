@@ -19,7 +19,7 @@ type AttemptClassification =
   | "no_response";
 
 type ResponseBundleArgs = {
-  topicName: string;
+  topicLabel: string;
   classification: AttemptClassification;
   explanationQuality: number;
   insight: number;
@@ -115,38 +115,38 @@ function buildPromptForProbe(args: {
 
   switch (probeType) {
     case "predict":
-      return `Without just repeating a definition, predict what would happen in a simple case involving ${topic.name}, and explain why.${missingSuffix}`;
+      return `Without just repeating a definition, predict what would happen in a simple case involving ${topic.topic_label}, and explain why.${missingSuffix}`;
 
     case "discriminate":
-      return `What is the key difference that helps distinguish ${topic.name} from a closely related idea? Explain the difference clearly.${missingSuffix}`;
+      return `What is the key difference that helps distinguish ${topic.topic_label} from a closely related idea? Explain the difference clearly.${missingSuffix}`;
 
     case "transform":
-      return `Walk through ${topic.name} as a step-by-step process. What happens first, what happens next, and why does the order matter?${missingSuffix}`;
+      return `Walk through ${topic.topic_label} as a step-by-step process. What happens first, what happens next, and why does the order matter?${missingSuffix}`;
 
     case "apply_transfer":
       return classification === "success"
-        ? `Now apply ${topic.name} in a slightly different situation. What changes, what stays the same, and why?${missingSuffix}`
-        : `Apply ${topic.name} in a new but related situation. Show how the same core idea still works.${missingSuffix}`;
+        ? `Now apply ${topic.topic_label} in a slightly different situation. What changes, what stays the same, and why?${missingSuffix}`
+        : `Apply ${topic.topic_label} in a new but related situation. Show how the same core idea still works.${missingSuffix}`;
 
     case "explain":
     default:
-      return `Can you explain ${topic.name} in a more concrete way, using a specific example or clear cause-and-effect chain?${missingSuffix}`;
+      return `Can you explain ${topic.topic_label} in a more concrete way, using a specific example or clear cause-and-effect chain?${missingSuffix}`;
   }
 }
 
 function buildTitleForProbe(topic: RouteTopic, probeType: ProbeType) {
   switch (probeType) {
     case "predict":
-      return `Predict what happens in ${topic.name}`;
+      return `Predict what happens in ${topic.topic_label}`;
     case "discriminate":
-      return `Distinguish ${topic.name} clearly`;
+      return `Distinguish ${topic.topic_label} clearly`;
     case "transform":
-      return `Walk through ${topic.name} step by step`;
+      return `Walk through ${topic.topic_label} step by step`;
     case "apply_transfer":
-      return `Apply ${topic.name} in a new situation`;
+      return `Apply ${topic.topic_label} in a new situation`;
     case "explain":
     default:
-      return `Explain ${topic.name} more concretely`;
+      return `Explain ${topic.topic_label} more concretely`;
   }
 }
 
@@ -163,7 +163,7 @@ function buildJudgingSupport(args: {
   if (probeType === "apply_transfer") {
     return {
       rubric_notes: [
-        `Judge whether the learner can carry the core idea of ${topic.name} into a changed setting without losing the underlying structure.`,
+        `Judge whether the learner can carry the core idea of ${topic.topic_label} into a changed setting without losing the underlying structure.`,
         "Prefer preserved structure over surface wording.",
       ],
       evidence_type_expected: ["apply_transfer"] as Array<
@@ -197,7 +197,7 @@ function buildJudgingSupport(args: {
   if (probeType === "predict") {
     return {
       rubric_notes: [
-        `Judge whether the learner can anticipate what happens in ${topic.name} rather than only naming it.`,
+        `Judge whether the learner can anticipate what happens in ${topic.topic_label} rather than only naming it.`,
         "Look for a prediction tied to reasoning, not just a guess.",
       ],
       evidence_type_expected: ["predict"] as Array<
@@ -228,7 +228,7 @@ function buildJudgingSupport(args: {
   if (probeType === "discriminate") {
     return {
       rubric_notes: [
-        `Judge whether the learner can distinguish ${topic.name} from nearby ideas using a decisive difference.`,
+        `Judge whether the learner can distinguish ${topic.topic_label} from nearby ideas using a decisive difference.`,
         "Prefer boundary clarity over listing multiple vague similarities.",
       ],
       evidence_type_expected: ["discriminate"] as Array<
@@ -256,7 +256,7 @@ function buildJudgingSupport(args: {
   if (probeType === "transform") {
     return {
       rubric_notes: [
-        `Judge whether the learner can transform ${topic.name} into a coherent ordered process.`,
+        `Judge whether the learner can transform ${topic.topic_label} into a coherent ordered process.`,
         "Look for correct sequencing and why the order matters.",
       ],
       evidence_type_expected: ["explain"] as Array<
@@ -287,7 +287,7 @@ function buildJudgingSupport(args: {
 
   return {
     rubric_notes: [
-      `Judge whether the learner can explain ${topic.name} with stronger structure than before.`,
+      `Judge whether the learner can explain ${topic.topic_label} with stronger structure than before.`,
       `The current diagnosis focus is ${activeDiagnosis}.`,
       missingElements
         ? `Pay special attention to the previously missing piece: ${missingElements}`
@@ -324,16 +324,16 @@ function buildJudgingSupport(args: {
 function buildTextDiagnosticGoal(topic: RouteTopic, probeType: ProbeType) {
   switch (probeType) {
     case "predict":
-      return `Check whether the learner can anticipate outcomes in ${topic.name} rather than only naming the concept.`;
+      return `Check whether the learner can anticipate outcomes in ${topic.topic_label} rather than only naming the concept.`;
     case "discriminate":
-      return `Check whether the learner can distinguish ${topic.name} from nearby ideas.`;
+      return `Check whether the learner can distinguish ${topic.topic_label} from nearby ideas.`;
     case "transform":
-      return `Check whether the learner can restructure ${topic.name} into a coherent ordered process.`;
+      return `Check whether the learner can restructure ${topic.topic_label} into a coherent ordered process.`;
     case "apply_transfer":
-      return `Check whether the learner can transfer ${topic.name} into a new case.`;
+      return `Check whether the learner can transfer ${topic.topic_label} into a new case.`;
     case "explain":
     default:
-      return `Check whether the learner can explain ${topic.name} with stronger structure.`;
+      return `Check whether the learner can explain ${topic.topic_label} with stronger structure.`;
   }
 }
 
@@ -390,7 +390,7 @@ function buildMeasurementIntent(probeType: ProbeType) {
 
 export function buildResponseBundle(args: ResponseBundleArgs) {
   const {
-    topicName,
+    topicLabel,
     classification,
     explanationQuality,
     insight,
@@ -412,7 +412,7 @@ export function buildResponseBundle(args: ResponseBundleArgs) {
 
   if (classification === "no_response") {
     return {
-      reply: `I didn’t get enough evidence yet on ${topicName}. Let’s keep the next step smaller and more concrete.`,
+      reply: `I didn’t get enough evidence yet on ${topicLabel}. Let’s keep the next step smaller and more concrete.`,
       suggestedAction: "Try a shorter guided probe",
       statusLabel: "Need more evidence",
       whyThisNextStep:
@@ -428,8 +428,8 @@ export function buildResponseBundle(args: ResponseBundleArgs) {
     return {
       reply:
         evidence >= 0.22
-          ? `You gave me a first pass on ${topicName}, but it still looks surface-level. I want to check whether the idea is really connected or still fragile.`
-          : `I’m seeing very light evidence on ${topicName} so far. Before I treat this as understanding, I want one smaller, clearer check.`,
+          ? `You gave me a first pass on ${topicLabel}, but it still looks surface-level. I want to check whether the idea is really connected or still fragile.`
+          : `I’m seeing very light evidence on ${topicLabel} so far. Before I treat this as understanding, I want one smaller, clearer check.`,
       suggestedAction: "Follow with a deeper check",
       statusLabel: "Partial signal",
       whyThisNextStep:
@@ -444,8 +444,8 @@ export function buildResponseBundle(args: ResponseBundleArgs) {
   if (classification === "structural_failure") {
     return {
       reply: missingElements
-        ? `You’re engaging with ${topicName}, but the structure is still breaking down in an important place: ${missingElements}.`
-        : `You’re engaging with ${topicName}, but the structure is still not holding together clearly enough yet.`,
+        ? `You’re engaging with ${topicLabel}, but the structure is still breaking down in an important place: ${missingElements}.`
+        : `You’re engaging with ${topicLabel}, but the structure is still not holding together clearly enough yet.`,
       suggestedAction: "Clarify the structure, then re-check",
       statusLabel: "Structure needs repair",
       whyThisNextStep:
@@ -473,8 +473,8 @@ export function buildResponseBundle(args: ResponseBundleArgs) {
       return {
         reply:
           evidence < 0.22
-            ? `I’m getting only a thin signal on ${topicName} so far. I want one more focused check before I switch out of measurement.`
-            : `You’re partly engaging with ${topicName}, but the evidence is still too thin for me to treat the structure as stable.`,
+            ? `I’m getting only a thin signal on ${topicLabel} so far. I want one more focused check before I switch out of measurement.`
+            : `You’re partly engaging with ${topicLabel}, but the evidence is still too thin for me to treat the structure as stable.`,
         suggestedAction: "Run one smaller follow-up probe",
         statusLabel: "Partial but still measuring",
         whyThisNextStep:
@@ -488,8 +488,8 @@ export function buildResponseBundle(args: ResponseBundleArgs) {
 
     return {
       reply: strongPartial
-        ? `You seem partly on track with ${topicName}. There’s some real structure there, but it still needs sharpening.`
-        : `You’re engaging with ${topicName}, but I’m not confident the structure is solid yet.`,
+        ? `You seem partly on track with ${topicLabel}. There’s some real structure there, but it still needs sharpening.`
+        : `You’re engaging with ${topicLabel}, but I’m not confident the structure is solid yet.`,
       suggestedAction: "Clarify the weak point, then re-check",
       statusLabel: "Developing understanding",
       whyThisNextStep:
@@ -505,8 +505,8 @@ export function buildResponseBundle(args: ResponseBundleArgs) {
     return {
       reply:
         judgment >= 0.7
-          ? `Nice — your response on ${topicName} shows stronger structure and reasoning. I’d move the next step toward transfer or application rather than repeating the same surface check.`
-          : `This looks promising on ${topicName}. I have enough evidence to push the next step harder and see whether the understanding holds in a new case.`,
+          ? `Nice — your response on ${topicLabel} shows stronger structure and reasoning. I’d move the next step toward transfer or application rather than repeating the same surface check.`
+          : `This looks promising on ${topicLabel}. I have enough evidence to push the next step harder and see whether the understanding holds in a new case.`,
       suggestedAction: "Advance to transfer/application",
       statusLabel: "Good evidence",
       whyThisNextStep:
@@ -519,7 +519,7 @@ export function buildResponseBundle(args: ResponseBundleArgs) {
   }
 
   return {
-    reply: `I got a response for ${topicName}, but I still need a little more evidence before I treat it as stable understanding.`,
+    reply: `I got a response for ${topicLabel}, but I still need a little more evidence before I treat it as stable understanding.`,
     suggestedAction: "Continue probing",
     statusLabel: "Ongoing assessment",
     whyThisNextStep:
@@ -601,7 +601,7 @@ export function buildNextProbePlan(args: NextProbePlanArgs): ProbePlan {
       ],
       content_selection: {
         source_mode: "generated",
-        selected_concepts: [topic.name],
+        selected_concepts: [topic.topic_label],
         selected_examples:
           finalProbeType === "apply_transfer" || finalProbeType === "predict"
             ? ["Use a simple changed case or scenario."]
@@ -625,7 +625,7 @@ export function buildNextProbePlan(args: NextProbePlanArgs): ProbePlan {
         verbosity: evidence < 0.3 ? "low" : "medium",
         pacing: "normal",
         language_style: "plain",
-        context_framing: `Stay focused on ${topic.name} and the immediate next evidence need.`,
+        context_framing: `Stay focused on ${topic.topic_label} and the immediate next evidence need.`,
         motivation_strategy: "curiosity_based",
         adaptation_reasons: [
           "Preserve measurement while making the next prompt concrete.",
@@ -737,7 +737,7 @@ export function buildNextProbePlan(args: NextProbePlanArgs): ProbePlan {
         verbosity: evidence < 0.3 ? "low" : "medium",
         pacing: "normal",
         language_style: "plain",
-        context_framing: `Stay focused on ${topic.name}.`,
+        context_framing: `Stay focused on ${topic.topic_label}.`,
       },
       rendering_contract: {
         output_form: "guided_question",

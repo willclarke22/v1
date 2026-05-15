@@ -1,0 +1,1 @@
+C:\Users\willc\projects\MyWay\v1\lib\build-learning-space.ts:25: return topic.topic_label?.trim() || topic.name?.trim() || "Untitled Topic";

@@ -37,12 +37,17 @@ function asStringArray(value: unknown): string[] {
     .filter(Boolean);
 }
 
+function getRowTopicLabel(row: TopicStateRow): string {
+  return row.topic_label?.trim() || row.topic_id;
+}
+
 function buildEmbeddingText(row: TopicStateRow): string {
   const topicJson = asRecord(row.topic_json);
   const inferredKeywords = asStringArray(topicJson?.inferred_keywords);
+  const topicLabel = getRowTopicLabel(row);
 
   const parts = [
-    `Topic: ${row.topic_name}`,
+    `Topic: ${topicLabel}`,
     row.diagnosis ? `Diagnosis: ${row.diagnosis}` : null,
     row.next_step ? `Next step: ${row.next_step}` : null,
     inferredKeywords.length > 0
@@ -53,10 +58,6 @@ function buildEmbeddingText(row: TopicStateRow): string {
   return parts.join("\n");
 }
 
-/**
- * Convert an arbitrary stable string into a deterministic UUID-shaped ID
- * that Qdrant accepts.
- */
 function buildPointId(topicId: string): string {
   const hex = crypto.createHash("sha256").update(topicId).digest("hex");
 
@@ -83,7 +84,7 @@ async function main() {
   console.log(
     ensureResult.created
       ? `Created Qdrant collection "${ensureResult.collectionName}".`
-      : `Using existing Qdrant collection "${ensureResult.collectionName}".`
+      : `Using existing Qdrant collection "${ensureResult.collectionName}".`,
   );
 
   const embeddingTexts = rows.map(buildEmbeddingText);
@@ -91,7 +92,7 @@ async function main() {
 
   if (vectors.length !== rows.length) {
     throw new Error(
-      `Embedding count mismatch: got ${vectors.length}, expected ${rows.length}`
+      `Embedding count mismatch: got ${vectors.length}, expected ${rows.length}`,
     );
   }
 
@@ -100,6 +101,7 @@ async function main() {
     const inferredKeywords = asStringArray(topicJson?.inferred_keywords);
     const embeddingText = embeddingTexts[index];
     const vector = vectors[index];
+    const topicLabel = getRowTopicLabel(row);
 
     if (!Array.isArray(vector) || vector.length === 0) {
       throw new Error(`Invalid embedding vector for topic_id "${row.topic_id}"`);
@@ -110,12 +112,13 @@ async function main() {
       vector,
       payload: {
         topic_id: row.topic_id,
-        topic_name: row.topic_name,
+        topic_label: topicLabel,
         diagnosis: row.diagnosis,
         next_step: row.next_step,
         updated_at: row.updated_at,
         inferred_keywords: inferredKeywords,
         embedding_text: embeddingText,
+        vector_semantics: "topic_label_embedding",
       },
     };
   });
@@ -126,7 +129,7 @@ async function main() {
   });
 
   console.log(
-    `Backfilled ${points.length} topic_state rows into Qdrant collection "${TOPIC_COLLECTION}".`
+    `Backfilled ${points.length} topic_state rows into Qdrant collection "${TOPIC_COLLECTION}".`,
   );
 }
 

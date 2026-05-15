@@ -23,7 +23,7 @@ const SETTLE_DELAY_MS = 220;
 
 function getTopicById(
   topics: LearningSpaceTopic[],
-  topicId: string | null
+  topicId: string | null,
 ): LearningSpaceTopic | null {
   if (!topicId) return null;
   return topics.find((topic) => topic.topic_id === topicId) ?? null;
@@ -31,11 +31,11 @@ function getTopicById(
 
 function getCurrentViewDirection(
   camera: THREE.Camera,
-  currentTarget: THREE.Vector3
+  currentTarget: THREE.Vector3,
 ) {
   const direction = new THREE.Vector3().subVectors(
     camera.position,
-    currentTarget
+    currentTarget,
   );
 
   if (direction.lengthSq() === 0) {
@@ -46,7 +46,7 @@ function getCurrentViewDirection(
 }
 
 function getTopicDisplayLabel(topic: LearningSpaceTopic) {
-  return topic.label ?? "Untitled Topic";
+  return topic.topic_label.trim() || "Untitled Topic";
 }
 
 function getScreenSpaceRadiusPx(args: {
@@ -123,7 +123,7 @@ function TopicLabel({
 
     const labelOffsetPx = Math.min(
       52,
-      Math.max(18, screenRadiusPx * 0.55 + 10)
+      Math.max(18, screenRadiusPx * 0.55 + 10),
     );
 
     const targetOpacity = shouldShow ? 1 : 0;
@@ -244,7 +244,7 @@ function TopicSphere({
   const appearProgressRef = useRef(isAppearing ? 0 : 1);
 
   const pointerDownRef = useRef<{ x: number; y: number; time: number } | null>(
-    null
+    null,
   );
   const lastTapRef = useRef<{ time: number; topicId: string } | null>(null);
   const singleClickTimeoutRef = useRef<number | null>(null);
@@ -503,12 +503,12 @@ function CameraController({
       const target = new THREE.Vector3(...topic.position);
       const probeEntryDistance = Math.max(
         0.16,
-        topic.render_state.radius * 0.46
+        topic.render_state.radius * 0.46,
       );
 
       desiredTarget.current.copy(target);
       desiredCameraPosition.current.copy(
-        target.clone().add(currentDirection.multiplyScalar(probeEntryDistance))
+        target.clone().add(currentDirection.multiplyScalar(probeEntryDistance)),
       );
 
       currentCameraAlphaRef.current = 0.14;
@@ -531,14 +531,14 @@ function CameraController({
       const zoomOutTarget = currentTarget.clone();
       const zoomOutDistance = Math.max(
         ZOOMED_OUT_DISTANCE,
-        currentTarget.length() + 6
+        currentTarget.length() + 6,
       );
 
       desiredTarget.current.copy(zoomOutTarget);
       desiredCameraPosition.current.copy(
         zoomOutTarget
           .clone()
-          .add(outwardDirection.multiplyScalar(zoomOutDistance))
+          .add(outwardDirection.multiplyScalar(zoomOutDistance)),
       );
 
       currentCameraAlphaRef.current = 0.095;
@@ -565,8 +565,7 @@ function CameraController({
 
       const focusTargetChanged =
         lastHandledFocusedTopicIdRef.current !== focusedTopicId;
-      const arrivalChanged =
-        lastHandledArrivalModeRef.current !== arrivalMode;
+      const arrivalChanged = lastHandledArrivalModeRef.current !== arrivalMode;
 
       if (focusTargetChanged || arrivalChanged) {
         const target = new THREE.Vector3(...topic.position);
@@ -575,7 +574,7 @@ function CameraController({
           const warpDistance = Math.max(5.2, topic.render_state.radius * 4.6);
           desiredTarget.current.copy(target);
           desiredCameraPosition.current.copy(
-            target.clone().add(currentDirection.multiplyScalar(warpDistance))
+            target.clone().add(currentDirection.multiplyScalar(warpDistance)),
           );
           currentCameraAlphaRef.current = 0.125;
           currentTargetAlphaRef.current = 0.13;
@@ -583,7 +582,7 @@ function CameraController({
           const focusDistance = Math.max(4.1, topic.render_state.radius * 3.7);
           desiredTarget.current.copy(target);
           desiredCameraPosition.current.copy(
-            target.clone().add(currentDirection.multiplyScalar(focusDistance))
+            target.clone().add(currentDirection.multiplyScalar(focusDistance)),
           );
           currentCameraAlphaRef.current = 0.095;
           currentTargetAlphaRef.current = 0.1;
@@ -691,7 +690,7 @@ function CameraController({
 
     camera.position.lerp(
       desiredCameraPosition.current,
-      currentCameraAlphaRef.current
+      currentCameraAlphaRef.current,
     );
     controls.target.lerp(desiredTarget.current, currentCameraAlphaRef.current);
     controls.update?.();
@@ -755,7 +754,7 @@ export default function SpaceCanvas({
   const settleTimeoutRef = useRef<number | null>(null);
 
   const [appearingTopicIds, setAppearingTopicIds] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [isUserControlling, setIsUserControlling] = useState(false);
   const [isCameraInMotion, setIsCameraInMotion] = useState(false);

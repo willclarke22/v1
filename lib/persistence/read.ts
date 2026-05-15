@@ -138,7 +138,7 @@ export type TopicStateRow = {
   topic_id: string;
   updated_at: string;
   last_run_id: string | null;
-  topic_name: string;
+  topic_label: string;
   confusion: number | null;
   insight: number | null;
   learning_score: number | null;
@@ -188,7 +188,7 @@ type RawTopicStateRow = {
   topic_id: string;
   updated_at: string;
   last_run_id: string | null;
-  topic_name: string;
+  topic_label: string;
   confusion: number | null;
   insight: number | null;
   learning_score: number | null;
@@ -406,7 +406,7 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
     topic_id: row.topic_id,
     updated_at: row.updated_at,
     last_run_id: row.last_run_id,
-    topic_name: row.topic_name,
+    topic_label: row.topic_label,
     confusion: row.confusion,
     insight: row.insight,
     learning_score: row.learning_score,
@@ -475,7 +475,7 @@ export async function getRouteTopicState(): Promise<TopicStateRow[]> {
       topic_id,
       updated_at,
       last_run_id,
-      topic_name,
+      topic_label,
       confusion,
       insight,
       learning_score,

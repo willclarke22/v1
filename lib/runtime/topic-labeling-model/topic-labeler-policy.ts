@@ -14,8 +14,6 @@ export type ModelTopicRoutePolicyDecision = {
   decision_kind: ModelTopicRouteDecisionKind;
   extracted_label: string | null;
   matched_topic_label: string | null;
-  /** @deprecated Use matched_topic_label instead. */
-  matched_topic_name: string | null;
   matched_topic_id: string | null;
   target_topic: RouteTopic | null;
   reasons: string[];
@@ -41,31 +39,12 @@ function cleanModelLabel(label: string | null | undefined): string | null {
 }
 
 function getRouteTopicLabel(topic: RouteTopic | null): string | null {
-  if (!topic) return null;
-
-  const topicWithCanonicalLabel = topic as RouteTopic & {
-    topic_label?: string | null;
-    topic_name?: string | null;
-  };
-
-  return (
-    topicWithCanonicalLabel.topic_label?.trim() ||
-    topicWithCanonicalLabel.topic_name?.trim() ||
-    topic.name?.trim() ||
-    null
-  );
+  return topic?.topic_label?.trim() || null;
 }
 
 function getModelRouteMatchedTopicLabel(route: unknown): string | null {
-  const routeWithCanonicalLabel = route as {
-    matched_topic_label?: string | null;
-    matched_topic_name?: string | null;
-  };
-
-  return (
-    cleanModelLabel(routeWithCanonicalLabel.matched_topic_label) ??
-    cleanModelLabel(routeWithCanonicalLabel.matched_topic_name)
-  );
+  const routeWithLabel = route as { matched_topic_label?: string | null };
+  return cleanModelLabel(routeWithLabel.matched_topic_label);
 }
 
 function looksLikeSuspiciousModelLabel(label: string | null) {
@@ -124,8 +103,6 @@ export function buildModelTopicRoutePolicyDecision(args: {
       decision_kind: "unusable_model_result",
       extracted_label: null,
       matched_topic_label: null,
-      /** @deprecated Use matched_topic_label instead. */
-      matched_topic_name: null,
       matched_topic_id: null,
       target_topic: null,
       reasons: ["model_result_missing"],
@@ -139,8 +116,6 @@ export function buildModelTopicRoutePolicyDecision(args: {
       decision_kind: "unusable_model_result",
       extracted_label: null,
       matched_topic_label: null,
-      /** @deprecated Use matched_topic_label instead. */
-      matched_topic_name: null,
       matched_topic_id: null,
       target_topic: null,
       reasons: [`model_result_error: ${modelResult.error}`],
@@ -154,8 +129,6 @@ export function buildModelTopicRoutePolicyDecision(args: {
       decision_kind: "unusable_model_result",
       extracted_label: null,
       matched_topic_label: null,
-      /** @deprecated Use matched_topic_label instead. */
-      matched_topic_name: null,
       matched_topic_id: null,
       target_topic: null,
       reasons: ["model_response_not_ok"],
@@ -181,8 +154,6 @@ export function buildModelTopicRoutePolicyDecision(args: {
         decision_kind: "stay_active",
         extracted_label: null,
         matched_topic_label: matchedTopicLabel,
-        /** @deprecated Use matched_topic_label instead. */
-        matched_topic_name: matchedTopicLabel,
         matched_topic_id: null,
         target_topic: null,
         reasons: ["model_requested_stay_active_but_no_active_topic"],
@@ -194,9 +165,7 @@ export function buildModelTopicRoutePolicyDecision(args: {
       usable: true,
       decision_kind: "stay_active",
       extracted_label: null,
-      matched_topic_label: getRouteTopicLabel(activeTopic) ?? activeTopic.name,
-      /** @deprecated Use matched_topic_label instead. */
-      matched_topic_name: getRouteTopicLabel(activeTopic) ?? activeTopic.name,
+      matched_topic_label: getRouteTopicLabel(activeTopic),
       matched_topic_id: activeTopic.id,
       target_topic: activeTopic,
       reasons: ["model_requested_stay_active_with_active_topic"],
@@ -211,8 +180,6 @@ export function buildModelTopicRoutePolicyDecision(args: {
         decision_kind: "switch_existing",
         extracted_label: extractedLabel,
         matched_topic_label: matchedTopicLabel,
-        /** @deprecated Use matched_topic_label instead. */
-        matched_topic_name: matchedTopicLabel,
         matched_topic_id: null,
         target_topic: null,
         reasons: ["model_requested_switch_existing_but_topic_not_found"],
@@ -224,9 +191,7 @@ export function buildModelTopicRoutePolicyDecision(args: {
       usable: true,
       decision_kind: "switch_existing",
       extracted_label: extractedLabel,
-      matched_topic_label: getRouteTopicLabel(matchedTopic) ?? matchedTopic.name,
-      /** @deprecated Use matched_topic_label instead. */
-      matched_topic_name: getRouteTopicLabel(matchedTopic) ?? matchedTopic.name,
+      matched_topic_label: getRouteTopicLabel(matchedTopic),
       matched_topic_id: matchedTopic.id,
       target_topic: matchedTopic,
       reasons: ["model_requested_switch_existing_and_topic_found"],
@@ -241,8 +206,6 @@ export function buildModelTopicRoutePolicyDecision(args: {
         decision_kind: "create_new",
         extracted_label: null,
         matched_topic_label: matchedTopicLabel,
-        /** @deprecated Use matched_topic_label instead. */
-        matched_topic_name: matchedTopicLabel,
         matched_topic_id: null,
         target_topic: null,
         reasons: ["model_requested_create_new_but_missing_label"],
@@ -256,8 +219,6 @@ export function buildModelTopicRoutePolicyDecision(args: {
         decision_kind: "create_new",
         extracted_label: extractedLabel,
         matched_topic_label: matchedTopicLabel,
-        /** @deprecated Use matched_topic_label instead. */
-        matched_topic_name: matchedTopicLabel,
         matched_topic_id: null,
         target_topic: null,
         reasons: ["model_requested_create_new_but_label_suspicious"],
@@ -272,10 +233,8 @@ export function buildModelTopicRoutePolicyDecision(args: {
         usable: true,
         decision_kind: "switch_existing",
         extracted_label: extractedLabel,
-        matched_topic_label: getRouteTopicLabel(existingMatch) ?? existingMatch.name,
-        /** @deprecated Use matched_topic_label instead. */
-        matched_topic_name: getRouteTopicLabel(existingMatch) ?? existingMatch.name,
-        matched_topic_id: existingMatch.id,
+        matched_topic_label: getRouteTopicLabel(existingMatch),
+          matched_topic_id: existingMatch.id,
         target_topic: existingMatch,
         reasons: [
           "model_requested_create_new_but_label_matches_existing_topic",
@@ -289,8 +248,6 @@ export function buildModelTopicRoutePolicyDecision(args: {
       decision_kind: "create_new",
       extracted_label: extractedLabel,
       matched_topic_label: matchedTopicLabel,
-      /** @deprecated Use matched_topic_label instead. */
-      matched_topic_name: matchedTopicLabel,
       matched_topic_id: null,
       target_topic: null,
       reasons: ["model_requested_create_new_with_clean_label"],
@@ -304,8 +261,6 @@ export function buildModelTopicRoutePolicyDecision(args: {
       decision_kind: "clarify_no_topic",
       extracted_label: null,
       matched_topic_label: null,
-      /** @deprecated Use matched_topic_label instead. */
-      matched_topic_name: null,
       matched_topic_id: null,
       target_topic: null,
       reasons: ["model_requested_clarify_no_topic"],
@@ -319,8 +274,6 @@ export function buildModelTopicRoutePolicyDecision(args: {
       decision_kind: "clarify_topic_intent",
       extracted_label: null,
       matched_topic_label: null,
-      /** @deprecated Use matched_topic_label instead. */
-      matched_topic_name: null,
       matched_topic_id: null,
       target_topic: null,
       reasons: ["model_requested_clarify_topic_intent"],
@@ -333,8 +286,6 @@ export function buildModelTopicRoutePolicyDecision(args: {
     decision_kind: "unusable_model_result",
     extracted_label: extractedLabel,
     matched_topic_label: matchedTopicLabel,
-    /** @deprecated Use matched_topic_label instead. */
-    matched_topic_name: matchedTopicLabel,
     matched_topic_id: matchedTopic?.id ?? null,
     target_topic: matchedTopic,
     reasons: [`unknown_model_route_decision: ${String(routeDecision)}`],

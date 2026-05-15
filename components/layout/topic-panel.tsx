@@ -45,13 +45,7 @@ function signalBarWidth(value: number) {
   return `${Math.max(0, Math.min(100, value * 100))}%`;
 }
 
-function SignalRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: number;
-}) {
+function SignalRow({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-sm">
@@ -81,7 +75,7 @@ export default function TopicPanel({ topic }: { topic: Topic }) {
           </p>
 
           <h2 className="mt-3 text-3xl font-semibold tracking-tight">
-            {topic.name}
+            {topic.topic_label}
           </h2>
 
           <div className="mt-4 flex flex-wrap gap-2">

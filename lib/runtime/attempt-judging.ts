@@ -13,7 +13,7 @@ type TopicMetricUpdate = FrontendTopicMetricUpdate;
 
 export type ProbeAttemptPayload = ProbeSubmitRouteRequest & {
   attemptId?: string;
-  topicName?: string;
+  topicLabel?: string;
   prompt?: string;
   responseType?: "text";
   metadata?: {
@@ -57,17 +57,7 @@ type ResponseScoring = {
 };
 
 function getRouteTopicLabel(topic: RouteTopic) {
-  const topicWithCanonicalLabel = topic as RouteTopic & {
-    topic_label?: string | null;
-    topic_name?: string | null;
-  };
-
-  return (
-    topicWithCanonicalLabel.topic_label?.trim() ||
-    topicWithCanonicalLabel.topic_name?.trim() ||
-    topic.name?.trim() ||
-    "Untitled Topic"
-  );
+  return topic.topic_label.trim() || "Untitled Topic";
 }
 
 export function inferDiagnosisFromTopic(topic: RouteTopic): DiagnosisType {
@@ -322,7 +312,9 @@ function inferStruggleType(args: {
 }) {
   if (args.classification === "no_response") return "non_response";
   if (args.classification === "guess") return "surface_recall";
-  if (args.classification === "structural_failure") return "misstructured_reasoning";
+  if (args.classification === "structural_failure") {
+    return "misstructured_reasoning";
+  }
   if (args.classification === "near_miss") {
     return args.causalChainScore >= 0.24 || args.conceptCoverage >= 0.28
       ? "productive_partial_structure"
@@ -490,9 +482,7 @@ export function scoreResponse(
       : clamp(wordCount >= 10 ? 0.45 : wordCount >= 5 ? 0.3 : 0.15, 0, 1);
 
   const taskFitScore =
-    taskTokens.length > 0
-      ? clamp(taskHits / taskTokens.length, 0, 1)
-      : 0.35;
+    taskTokens.length > 0 ? clamp(taskHits / taskTokens.length, 0, 1) : 0.35;
 
   const causalChainScore = clamp(
     reasoningHits * 0.16 +
@@ -557,7 +547,9 @@ export function scoreResponse(
     evidenceStrength = 0.14;
     judgmentConfidence = 0.84;
     classification = "guess";
-    missingElements.push("A fuller explanation or more complete evidence is needed.");
+    missingElements.push(
+      "A fuller explanation or more complete evidence is needed."
+    );
   } else {
     correctnessEstimate = clamp(
       0.16 +
@@ -630,7 +622,9 @@ export function scoreResponse(
     );
 
     if (conceptCoverage < 0.2) {
-      missingElements.push("The response does not stay grounded in the target concept.");
+      missingElements.push(
+        "The response does not stay grounded in the target concept."
+      );
     }
 
     if (causalChainScore < 0.18 && developed) {
@@ -639,7 +633,11 @@ export function scoreResponse(
       );
     }
 
-    if (activeDiagnosis === "transfer_gap" && developed && transferSignalScore < 0.12) {
+    if (
+      activeDiagnosis === "transfer_gap" &&
+      developed &&
+      transferSignalScore < 0.12
+    ) {
       missingElements.push(
         "The response does not yet adapt the idea clearly enough to a changed situation."
       );
@@ -913,10 +911,6 @@ export function buildVectorInfo(topic: RouteTopic): VectorInfo {
 
   return {
     top_k_topic_labels: [topicLabel],
-
-    // Temporary legacy alias for older debug/UI consumers.
-    top_k_topic_names: [topicLabel],
-
     top_k_topic_ids: [topic.id],
     top_k_similarity_scores: [0.92],
   };

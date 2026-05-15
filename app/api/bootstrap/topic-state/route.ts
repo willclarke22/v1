@@ -48,7 +48,8 @@ function getTopicJson(row: unknown): Record<string, unknown> {
     typeof row === "object" &&
     "topic_json" in row &&
     row.topic_json &&
-    typeof row.topic_json === "object"
+    typeof row.topic_json === "object" &&
+    !Array.isArray(row.topic_json)
   ) {
     return row.topic_json as Record<string, unknown>;
   }
@@ -57,12 +58,13 @@ function getTopicJson(row: unknown): Record<string, unknown> {
 }
 
 function getLearningSpaceTopicPosition(
-  topicJson: Record<string, unknown>
+  topicJson: Record<string, unknown>,
 ): [number, number, number] | null {
   if (
     "learning_space_topic" in topicJson &&
     topicJson.learning_space_topic &&
-    typeof topicJson.learning_space_topic === "object"
+    typeof topicJson.learning_space_topic === "object" &&
+    !Array.isArray(topicJson.learning_space_topic)
   ) {
     const learningSpaceTopic = topicJson.learning_space_topic as Record<
       string,
@@ -80,7 +82,6 @@ function getLearningSpaceTopicPosition(
 function getTopicLabel(args: {
   rowWithTopicFields: {
     topic_label?: string | null;
-    topic_name?: string | null;
   };
   topicJson: Record<string, unknown>;
 }) {
@@ -100,24 +101,16 @@ function getTopicLabel(args: {
     return rowWithTopicFields.topic_label.trim();
   }
 
-  if (
-    typeof rowWithTopicFields.topic_name === "string" &&
-    rowWithTopicFields.topic_name.trim().length > 0
-  ) {
-    return rowWithTopicFields.topic_name.trim();
-  }
-
   return "Untitled Topic";
 }
 
 function mapRowsToTopics(
-  rows: Awaited<ReturnType<typeof getLatestTopicState>>
+  rows: Awaited<ReturnType<typeof getLatestTopicState>>,
 ): Topic[] {
   return rows.map((row, index) => {
     const rowWithTopicFields = row as unknown as {
       topic_id: string;
       topic_label?: string | null;
-      topic_name?: string | null;
       diagnosis?: unknown;
       confusion?: number | null;
       insight?: number | null;
@@ -153,11 +146,6 @@ function mapRowsToTopics(
     return {
       id: rowWithTopicFields.topic_id,
       topic_label: topicLabel,
-
-      // Temporary compatibility alias for older UI/runtime code.
-      // Prefer topic_label in new contracts and output JSON.
-      name: topicLabel,
-
       diagnosis: normalizeDiagnosis(rowWithTopicFields.diagnosis),
       nextStep,
       confusion: clamp(rowWithTopicFields.confusion ?? 0.5),
@@ -205,7 +193,7 @@ export async function GET() {
             ? error.message
             : "Failed to bootstrap topic state.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

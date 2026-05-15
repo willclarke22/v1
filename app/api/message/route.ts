@@ -69,9 +69,6 @@ import {
 type RawLearningSpaceTopic = {
   topic_id?: string;
   topic_label?: string;
-  label?: string;
-  /** @deprecated Use topic_label instead. */
-  topic_name?: string;
   position?: [number, number, number];
   render_state?: {
     radius?: number;
@@ -90,7 +87,7 @@ type RawLearningSpaceTopic = {
 
 type RawLearningSpaceCluster = {
   cluster_id?: string;
-  label?: string;
+  cluster_label?: string;
   cluster_centroid?: [number, number, number];
   member_topic_ids?: string[];
 };
@@ -404,10 +401,7 @@ function getTopicLabelerV3Summary(
     latency_ms: result.latency_ms,
     route_decision: result.response.route.route_decision,
     extracted_label: result.response.model_prediction.extracted_label,
-    matched_topic_label:
-      result.response.route.matched_topic_label ??
-      result.response.route.matched_topic_name ??
-      null,
+    matched_topic_label: result.response.route.matched_topic_label ?? null,
   };
 }
 
@@ -539,7 +533,7 @@ function deriveClarifySeekingFromResolutionFrame(frame: ResolvedMessageFrame) {
 }
 
 function buildProbeReply(
-  topicName: string,
+  topicLabel: string,
   diagnosis: InterventionModeDecision["active_diagnosis"]
 ) {
   const diagnosisText =
@@ -553,11 +547,11 @@ function buildProbeReply(
             ? "the main issue may be distinguishing similar concepts"
             : "the main issue may be transferring the idea into a new setting";
 
-  return `I think your message connects most strongly to ${topicName}. Right now, ${diagnosisText}, so I’m moving us there and preparing a focused next step to reveal what you already understand.`;
+  return `I think your message connects most strongly to ${topicLabel}. Right now, ${diagnosisText}, so I’m moving us there and preparing a focused next step to reveal what you already understand.`;
 }
 
 function buildClarifyReply(
-  topicName: string,
+  topicLabel: string,
   diagnosis: InterventionModeDecision["active_diagnosis"]
 ) {
   const diagnosisText =
@@ -571,19 +565,19 @@ function buildClarifyReply(
             ? "a sharper contrast between similar ideas"
             : "help bridging the idea into a new setting";
 
-  return `I think your message connects most strongly to ${topicName}. Right now, the best next move is clarification rather than measurement, because you may first need ${diagnosisText}. I’ll stabilize the idea a bit before asking you to demonstrate it.`;
+  return `I think your message connects most strongly to ${topicLabel}. Right now, the best next move is clarification rather than measurement, because you may first need ${diagnosisText}. I’ll stabilize the idea a bit before asking you to demonstrate it.`;
 }
 
 function buildSuggestedAction(
-  topicName: string,
+  topicLabel: string,
   nextStep: string,
   mode: "clarify" | "probe"
 ) {
   if (mode === "clarify") {
-    return `First, let’s stabilize ${topicName.toLowerCase()} so the next step feels clearer: ${nextStep}`;
+    return `First, let’s stabilize ${topicLabel.toLowerCase()} so the next step feels clearer: ${nextStep}`;
   }
 
-  return `Next, let’s work on ${topicName.toLowerCase()}: ${nextStep}`;
+  return `Next, let’s work on ${topicLabel.toLowerCase()}: ${nextStep}`;
 }
 
 function buildStatusLabel(
@@ -664,28 +658,28 @@ function buildDeliveredProbe(
 
   const title =
     selected.modality === "video"
-      ? `Visualize ${topic.name}`
+      ? `Visualize ${topic.topic_label}`
       : selected.modality === "interactive"
-        ? `Try ${topic.name}`
+        ? `Try ${topic.topic_label}`
         : probePlan.probe_type === "apply_transfer"
-          ? `Apply ${topic.name} in a new situation`
+          ? `Apply ${topic.topic_label} in a new situation`
           : probePlan.probe_type === "predict"
-            ? `Predict what happens in ${topic.name}`
+            ? `Predict what happens in ${topic.topic_label}`
             : probePlan.probe_type === "discriminate"
-              ? `Distinguish ${topic.name} clearly`
+              ? `Distinguish ${topic.topic_label} clearly`
               : probePlan.probe_type === "transform"
-                ? `Walk through ${topic.name} step by step`
-                : probePlan.text_plan.instructional_goal ?? `Explain ${topic.name}`;
+                ? `Walk through ${topic.topic_label} step by step`
+                : probePlan.text_plan.instructional_goal ?? `Explain ${topic.topic_label}`;
 
   const instructions =
     selected.modality === "video"
       ? probePlan.video_payload.narration ??
         probePlan.video_payload.prompt ??
-        `Watch carefully, then respond about ${topic.name}.`
+        `Watch carefully, then respond about ${topic.topic_label}.`
       : selected.modality === "interactive"
         ? probePlan.interactive_payload.prompt ??
           "Interact with the task, then explain what you learned."
-        : probePlan.text_payload.input ?? `Explain ${topic.name} in your own words.`;
+        : probePlan.text_payload.input ?? `Explain ${topic.topic_label} in your own words.`;
 
   return {
     probe_id: probePlan.probe_id,
@@ -715,7 +709,7 @@ function buildDeliveredProbe(
     actual_context_framing:
       probePlan.text_payload.personalization_snapshot.context_framing ??
       probePlan.video_plan.personalization_application.context_framing ??
-      `Stay focused on ${topic.name} and reveal learner understanding.`,
+      `Stay focused on ${topic.topic_label} and reveal learner understanding.`,
     expected_response_type: probePlan.expected_response_type,
     stimulus_id: `stimulus-${probePlan.probe_id}`,
     payload_snapshot:
@@ -735,11 +729,11 @@ function buildDeliveredResponse(
   const reply =
     decision.mode_selected === "clarify"
       ? buildClarifyReply(
-          topic.name,
+          topic.topic_label,
           decision.active_diagnosis ?? "representation_gap"
         )
       : buildProbeReply(
-          topic.name,
+          topic.topic_label,
           decision.active_diagnosis ?? "representation_gap"
         );
 
@@ -768,7 +762,7 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
 
     return {
       topic_id: topic.id,
-      topic_label: topic.name,
+      topic_label: topic.topic_label,
       topic_learning_score: topic.learningScore,
       topic_confusion_average: topic.confusion,
       topic_insight_average: topic.insight,
@@ -872,12 +866,9 @@ function normalizeVectorInfoFallback(
   topic: RouteTopic,
   createdTopic: boolean
 ): VectorInfo {
-  const topKTopicLabels =
-    matchVectorInfo.top_k_topic_labels?.length
-      ? matchVectorInfo.top_k_topic_labels
-      : matchVectorInfo.top_k_topic_names?.length
-        ? matchVectorInfo.top_k_topic_names
-        : [topic.name];
+  const topKTopicLabels = matchVectorInfo.top_k_topic_labels.length
+    ? matchVectorInfo.top_k_topic_labels
+    : [topic.topic_label];
 
   return {
     ...matchVectorInfo,
@@ -1004,15 +995,12 @@ function adaptLearningSpaceToContract(
       const fallbackTopic = updatedTopics[index] ?? updatedTopics[0];
       const resolvedTopicLabel =
         topic.topic_label ??
-        topic.label ??
-        topic.topic_name ??
-        fallbackTopic?.name ??
+        fallbackTopic?.topic_label ??
         "Untitled Topic";
 
       return {
         topic_id: topic.topic_id ?? fallbackTopic?.id ?? makeId("topic"),
         topic_label: resolvedTopicLabel,
-        label: resolvedTopicLabel,
         position:
           Array.isArray(topic.position) && topic.position.length === 3
             ? (topic.position as [number, number, number])
@@ -1034,12 +1022,11 @@ function adaptLearningSpaceToContract(
       };
     }),
     clusters: (rawLearningSpace.clusters ?? []).map((cluster, index) => {
-      const resolvedClusterName = cluster.label ?? `Cluster ${index + 1}`;
+      const resolvedClusterLabel = cluster.cluster_label ?? `Cluster ${index + 1}`;
 
       return {
         cluster_id: cluster.cluster_id ?? `cluster-${index}`,
-        cluster_name: resolvedClusterName,
-        label: resolvedClusterName,
+        cluster_label: resolvedClusterLabel,
         cluster_centroid:
           Array.isArray(cluster.cluster_centroid) &&
           cluster.cluster_centroid.length === 3
@@ -1215,7 +1202,7 @@ function buildContinuationPolicyTopicResolutionOutcome(args: {
     const looseChosen = normalizeTextLoose(chosenTarget);
     const existingMatch =
       existingTopics.find(
-        (topic) => normalizeTextLoose(topic.name) === looseChosen
+        (topic) => normalizeTextLoose(topic.topic_label) === looseChosen
       ) ?? null;
 
     if (existingMatch) {
@@ -1228,7 +1215,7 @@ function buildContinuationPolicyTopicResolutionOutcome(args: {
             ? "fallback_active_topic"
             : "matched_existing",
         vectorInfo: semanticVectorInfo,
-        resolvedLabel: existingMatch.name,
+        resolvedLabel: existingMatch.topic_label,
         matchConfidence: 0.62,
         usedLLMFallback: false,
         resolutionTrace: null,
@@ -1268,7 +1255,7 @@ function buildContinuationPolicyTopicResolutionOutcome(args: {
       routeTopics: existingTopics,
       resolutionKind: "fallback_active_topic",
       vectorInfo: semanticVectorInfo,
-      resolvedLabel: activeTopic.name,
+      resolvedLabel: activeTopic.topic_label,
       matchConfidence:
         modelRouteContinuationPolicy.kind === "stay_active_after_model_failure"
           ? 0.3
@@ -1444,7 +1431,7 @@ export async function POST(request: Request) {
         : null;
 
     incomingActiveTopicFound = Boolean(activeTopicFromRequest);
-    incomingActiveTopicLabel = activeTopicFromRequest?.name ?? null;
+    incomingActiveTopicLabel = activeTopicFromRequest?.topic_label ?? null;
 
     timer.step("load_route_topics_from_supabase");
 
@@ -1452,7 +1439,7 @@ export async function POST(request: Request) {
       const topicLabelerV3Request = buildTopicLabelerV3Request({
         message,
         activeTopicLabel: incomingActiveTopicLabel,
-        currentTopicLabels: existingTopics.map((topic) => topic.name),
+        currentTopicLabels: existingTopics.map((topic) => topic.topic_label),
         previousUserMessages: buildRecentUserMessagesForTopicLabelerV3(
           recentTurns
         ),
@@ -1487,7 +1474,7 @@ export async function POST(request: Request) {
       usable: modelTopicRoutePolicyDecision.usable,
       decision_kind: modelTopicRoutePolicyDecision.decision_kind,
       extracted_label: modelTopicRoutePolicyDecision.extracted_label,
-      matched_topic_label: modelTopicRoutePolicyDecision.matched_topic_name,
+      matched_topic_label: modelTopicRoutePolicyDecision.matched_topic_label,
       matched_topic_id: modelTopicRoutePolicyDecision.matched_topic_id,
       reasons: modelTopicRoutePolicyDecision.reasons,
       continuation_policy: modelRouteContinuationPolicy,
@@ -1687,8 +1674,8 @@ export async function POST(request: Request) {
           resolution_kind: resolutionKind,
           resolved_label: resolvedLabel,
           target_topic_id: topic.id,
-          target_topic_label: topic.name,
-          created_topic_label: createdTopic?.name ?? null,
+          target_topic_label: topic.topic_label,
+          created_topic_label: createdTopic?.topic_label ?? null,
           match_confidence: matchConfidence,
           used_llm_topic_fallback: usedLLMFallback,
           model_route_continuation_policy: modelRouteContinuationPolicy,
@@ -1787,7 +1774,7 @@ export async function POST(request: Request) {
       ? {
           ...semanticTopicRouting,
           selected_topic_id: targetTopicId,
-          selected_topic_label: updatedResolvedTopic.name,
+          selected_topic_label: updatedResolvedTopic.topic_label,
           centroid_update: finalCentroidUpdatePlan
             ? {
                 topic_id: finalCentroidUpdatePlan.topic_id,
@@ -1899,11 +1886,11 @@ export async function POST(request: Request) {
     const topicJson = JSON.parse(
       JSON.stringify({
         topic_id: updatedResolvedTopic.id,
-        topic_label: updatedResolvedTopic.name,
+        topic_label: updatedResolvedTopic.topic_label,
         next_step:
           probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
         inferred_keywords: inferKeywordsFromTopicLabel(
-          resolvedLabel ?? updatedResolvedTopic.name
+          resolvedLabel ?? updatedResolvedTopic.topic_label
         ),
         updated_topic_metrics: updatedTopicMetrics,
         learning_space_topic:
@@ -1963,7 +1950,7 @@ export async function POST(request: Request) {
     );
 
     const suggestedAction = buildSuggestedAction(
-      updatedResolvedTopic.name,
+      updatedResolvedTopic.topic_label,
       probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
       decision.mode_selected
     );
@@ -1998,7 +1985,7 @@ export async function POST(request: Request) {
       await upsertTopicState({
         topicId: updatedResolvedTopic.id,
         lastRunId: runId,
-        topicName: updatedResolvedTopic.name,
+        topicLabel: updatedResolvedTopic.topic_label,
         confusion: updatedTopicMetrics.confusion ?? null,
         insight: updatedTopicMetrics.insight ?? null,
         learningScore:
@@ -2017,7 +2004,7 @@ export async function POST(request: Request) {
         learner_message_intent:
           modelRouteContinuationPolicy?.learner_message_intent ?? null,
         target_topic_id: updatedResolvedTopic.id,
-        target_topic_label: updatedResolvedTopic.name,
+        target_topic_label: updatedResolvedTopic.topic_label,
       });
     }
 
@@ -2034,7 +2021,7 @@ export async function POST(request: Request) {
 
       const syncResult = await syncTopicToQdrantBestEffort({
         topicId: updatedResolvedTopic.id,
-        topicName: updatedResolvedTopic.name,
+        topicLabel: updatedResolvedTopic.topic_label,
         diagnosis: decision.active_diagnosis,
         nextStep:
           probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
@@ -2058,7 +2045,7 @@ export async function POST(request: Request) {
         console.info("[qdrant sync skipped on message route]", {
           reason: qdrantSyncError,
           topic_id: updatedResolvedTopic.id,
-          topic_label: updatedResolvedTopic.name,
+          topic_label: updatedResolvedTopic.topic_label,
           note: "Semantic enrichment runner remains responsible for topic_label_embedding/Qdrant sync.",
         });
       } else {
@@ -2123,7 +2110,7 @@ export async function POST(request: Request) {
       model_topic_policy_extracted_label:
         modelTopicRoutePolicyDecision?.extracted_label ?? null,
       model_topic_policy_matched_topic_label:
-        modelTopicRoutePolicyDecision?.matched_topic_name ?? null,
+        modelTopicRoutePolicyDecision?.matched_topic_label ?? null,
       model_topic_policy_reasons:
         modelTopicRoutePolicyDecision?.reasons ?? null,
       model_topic_policy_used_as_authority: modelTopicPolicyUsedAsAuthority,
@@ -2247,7 +2234,7 @@ export async function POST(request: Request) {
       model_topic_policy_extracted_label:
         modelTopicRoutePolicyDecision?.extracted_label ?? null,
       model_topic_policy_matched_topic_label:
-        modelTopicRoutePolicyDecision?.matched_topic_name ?? null,
+        modelTopicRoutePolicyDecision?.matched_topic_label ?? null,
       model_topic_policy_reasons:
         modelTopicRoutePolicyDecision?.reasons ?? null,
       model_topic_policy_used_as_authority: modelTopicPolicyUsedAsAuthority,

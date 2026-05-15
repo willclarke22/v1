@@ -61,7 +61,7 @@ type LegacyProbeSubmitApiResponse = {
   nextProbe?: {
     probeId: string;
     topicId: string;
-    topicName?: string;
+    topicLabel?: string;
     title?: string;
     prompt: string;
     type?: string;
@@ -85,19 +85,19 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function extractLearningSpaceFromMessageResponse(
-  data: MessageRouteResponse
+  data: MessageRouteResponse,
 ): LearningSpace | null {
   return data.scene_update?.learning_space ?? data.result?.learning_space ?? null;
 }
 
 function extractLearningSpaceFromProbeSubmitResponse(
-  data: LegacyProbeSubmitApiResponse
+  data: LegacyProbeSubmitApiResponse,
 ): LearningSpace | null {
   return data.scene_update?.learning_space ?? data.result?.learning_space ?? null;
 }
 
 function extractInterventionFromMessageResponse(
-  data: MessageRouteResponse
+  data: MessageRouteResponse,
 ): FrontendInterventionSummary | null {
   return (
     data.intervention ??
@@ -132,7 +132,7 @@ function extractSuggestedActionFromMessageResponse(data: MessageRouteResponse) {
 }
 
 function extractMetricUpdateFromMessageResponse(
-  data: MessageRouteResponse
+  data: MessageRouteResponse,
 ): FrontendTopicMetricUpdate | null {
   const targetTopicId =
     data.intervention?.target_topic_id ??
@@ -145,7 +145,7 @@ function extractMetricUpdateFromMessageResponse(
   }
 
   const topic = data.result?.engine_fuel?.topics?.find(
-    (item) => item.topic_id === targetTopicId
+    (item) => item.topic_id === targetTopicId,
   );
 
   if (!topic) {
@@ -161,7 +161,7 @@ function extractMetricUpdateFromMessageResponse(
 }
 
 function mapDeliveredProbeToSummary(
-  deliveredProbe: DeliveredProbe | null | undefined
+  deliveredProbe: DeliveredProbe | null | undefined,
 ): ProbeSummary | null {
   if (!deliveredProbe?.probe_id || !deliveredProbe?.target_topic_id) {
     return null;
@@ -170,7 +170,7 @@ function mapDeliveredProbeToSummary(
   return {
     id: deliveredProbe.probe_id,
     topicId: deliveredProbe.target_topic_id,
-    topicName: undefined,
+    topicLabel: undefined,
     title: deliveredProbe.title || "Probe",
     instruction: deliveredProbe.instructions || "Continue with this probe.",
     status: "available",
@@ -182,10 +182,10 @@ function mapDeliveredProbeToSummary(
 }
 
 function extractProbeFromMessageResponse(
-  data: MessageRouteResponse
+  data: MessageRouteResponse,
 ): ProbeSummary | null {
   return mapDeliveredProbeToSummary(
-    data.result?.delivered_response?.delivered_probe
+    data.result?.delivered_response?.delivered_probe,
   );
 }
 
@@ -198,7 +198,7 @@ function extractReplyFromProbeSubmitResponse(data: LegacyProbeSubmitApiResponse)
 }
 
 function extractSuggestedActionFromProbeSubmitResponse(
-  data: LegacyProbeSubmitApiResponse
+  data: LegacyProbeSubmitApiResponse,
 ) {
   return (
     data.suggestedAction ??
@@ -208,16 +208,16 @@ function extractSuggestedActionFromProbeSubmitResponse(
 }
 
 function extractMetricUpdateFromProbeSubmitResponse(
-  data: LegacyProbeSubmitApiResponse
+  data: LegacyProbeSubmitApiResponse,
 ): FrontendTopicMetricUpdate | undefined {
   return data.updated_topic_metrics ?? data.updatedTopicMetrics ?? undefined;
 }
 
 function extractNextProbeFromProbeSubmitResponse(
-  data: LegacyProbeSubmitApiResponse
+  data: LegacyProbeSubmitApiResponse,
 ): ProbeSummary | null {
   const contractProbe = mapDeliveredProbeToSummary(
-    data.result?.delivered_response?.delivered_probe
+    data.result?.delivered_response?.delivered_probe,
   );
 
   if (contractProbe) return contractProbe;
@@ -228,11 +228,13 @@ function extractNextProbeFromProbeSubmitResponse(
 
   if (!data.nextProbe) return null;
 
+  const topicLabel = data.nextProbe.topicLabel?.trim() || undefined;
+
   return {
     id: data.nextProbe.probeId,
     topicId: data.nextProbe.topicId,
-    topicName: data.nextProbe.topicName,
-    title: data.nextProbe.title || data.nextProbe.topicName || "Next Probe",
+    topicLabel,
+    title: data.nextProbe.title || topicLabel || "Next Probe",
     instruction: data.nextProbe.prompt,
     status: "available",
     intent: null,
@@ -245,7 +247,7 @@ function extractNextProbeFromProbeSubmitResponse(
 function extractContinueProbeLoop(
   data: LegacyProbeSubmitApiResponse,
   mappedNextProbe: ProbeSummary | null,
-  nextCount: number
+  nextCount: number,
 ) {
   if (typeof data.continue_probe_loop === "boolean") {
     return (
@@ -317,10 +319,10 @@ export function useProbeFlow({
                 ? clamp(update.learningScore, 0, 1)
                 : topic.learningScore,
           };
-        })
+        }),
       );
     },
-    [setTopics]
+    [setTopics],
   );
 
   const resetProbeStateForMessage = useCallback(() => {
@@ -379,7 +381,7 @@ export function useProbeFlow({
       setConsecutiveProbeCount(0);
       setIsSending(false);
     },
-    [applyTopicMetricUpdate, focusTopic, onLearningSpaceUpdate]
+    [applyTopicMetricUpdate, focusTopic, onLearningSpaceUpdate],
   );
 
   const finishMessageFlowError = useCallback(() => {
@@ -404,12 +406,12 @@ export function useProbeFlow({
       setProbeFeedback(null);
 
       setAvailableProbe((prev) =>
-        prev && prev.id === probe.id ? { ...prev, status: "active" } : prev
+        prev && prev.id === probe.id ? { ...prev, status: "active" } : prev,
       );
 
       hidePanelsForProbeEntry();
     },
-    [focusTopic, hidePanelsForProbeEntry]
+    [focusTopic, hidePanelsForProbeEntry],
   );
 
   const handleProbeEntryComplete = useCallback(() => {
@@ -425,7 +427,7 @@ export function useProbeFlow({
     setProbeFeedback(null);
 
     setAvailableProbe((prev) =>
-      prev && prev.id === activeProbeId ? { ...prev, status: "available" } : prev
+      prev && prev.id === activeProbeId ? { ...prev, status: "available" } : prev,
     );
 
     setActiveProbeId(null);
@@ -452,7 +454,7 @@ export function useProbeFlow({
           body: JSON.stringify({
             probeId: payload.probeId,
             topicId: payload.topicId,
-            topicName: topic?.name ?? topic?.id ?? "this topic",
+            topicLabel: topic?.topic_label ?? topic?.id ?? "this topic",
             prompt: currentProbe?.instruction ?? null,
             response: payload.response,
             submittedAt: new Date().toISOString(),
@@ -479,7 +481,7 @@ export function useProbeFlow({
 
         if (!response.ok) {
           throw new Error(
-            data.error || `Probe submit failed with status ${response.status}`
+            data.error || `Probe submit failed with status ${response.status}`,
           );
         }
 
@@ -508,7 +510,7 @@ export function useProbeFlow({
         const shouldContinueProbeLoop = extractContinueProbeLoop(
           data,
           mappedNextProbe,
-          nextCount
+          nextCount,
         );
 
         setConsecutiveProbeCount(nextCount);
@@ -554,7 +556,7 @@ export function useProbeFlow({
         setAvailableProbe((prev) =>
           prev && prev.id === payload.probeId
             ? { ...prev, status: "active" }
-            : prev
+            : prev,
         );
 
         setSceneMode("probe");
@@ -572,7 +574,7 @@ export function useProbeFlow({
       openMyWayPanel,
       focusTopic,
       onLearningSpaceUpdate,
-    ]
+    ],
   );
 
   return {

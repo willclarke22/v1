@@ -75,13 +75,8 @@ function getNestedSemanticStatus(
   return isJsonObject(nested) ? nested : null;
 }
 
-function getRowTopicLabel(row: {
-  topic_name: string;
-  topic_json: Record<string, unknown> | null;
-}) {
-  const topicJson = getTopicJson(row);
-  const topicLabelFromJson = asString(topicJson.topic_label);
-  return topicLabelFromJson ?? row.topic_name.trim();
+function getRowTopicLabel(row: { topic_label: string }) {
+  return row.topic_label.trim() || "Untitled Topic";
 }
 
 function shouldEnrichTopic(row: TopicStateRow) {
@@ -99,14 +94,6 @@ function shouldEnrichTopic(row: TopicStateRow) {
   const wasSkippedForFastRoute =
     asString(nestedStatus?.status) === "skipped_for_fast_model_route";
 
-  /**
-   * Wave 2 canonical enrichment requirement:
-   * - topic_label_embedding_* powers layout / Qdrant topic lookup.
-   * - topic_message_embedding_* preserves learner-message pattern evidence.
-   *
-   * topic_embedding_* has been removed and should not participate in
-   * enrichment completion or writeback.
-   */
   return (
     explicitNeedsCentroid ||
     explicitSchedule ||
@@ -117,9 +104,10 @@ function shouldEnrichTopic(row: TopicStateRow) {
 }
 
 function buildEnrichmentPrompt(row: {
-  topic_name: string;
+  topic_label: string;
   topic_json: Record<string, unknown> | null;
 }) {
+  const topicLabel = getRowTopicLabel(row);
   const topicJson = getTopicJson(row);
 
   const storedPrompt = asString(topicJson.semantic_enrichment_prompt_text);
@@ -133,11 +121,11 @@ function buildEnrichmentPrompt(row: {
 
   if (nestedPrompt) return nestedPrompt;
 
-  return `Topic: ${getRowTopicLabel(row)}`;
+  return `Topic: ${topicLabel}`;
 }
 
-function buildTopicLabelEmbeddingText(args: { topicLabel: string }) {
-  return args.topicLabel.trim();
+function buildTopicLabelEmbeddingText(row: { topic_label: string }) {
+  return getRowTopicLabel(row);
 }
 
 function buildTopicMessageEmbeddingText(args: {
@@ -153,6 +141,7 @@ function buildTopicMessageEmbeddingText(args: {
 function buildUpdatedTopicJson(args: {
   topicJson: Record<string, unknown> | null;
 
+  topicLabel: string;
   topicLabelCentroid: EmbeddingVector;
   topicMessageCentroid: EmbeddingVector;
 
@@ -162,13 +151,13 @@ function buildUpdatedTopicJson(args: {
   topicLabelEmbeddingText: string;
   topicMessageEmbeddingText: string;
   enrichmentPromptText: string;
-  topicLabel: string;
 
   nextTopicLabelEmbeddingCount: number;
   nextTopicMessageEmbeddingCount: number;
 }) {
   const {
     topicJson,
+    topicLabel,
     topicLabelCentroid,
     topicMessageCentroid,
     embeddingModel,
@@ -176,19 +165,12 @@ function buildUpdatedTopicJson(args: {
     topicLabelEmbeddingText,
     topicMessageEmbeddingText,
     enrichmentPromptText,
-    topicLabel,
     nextTopicLabelEmbeddingCount,
     nextTopicMessageEmbeddingCount,
   } = args;
 
   const base = getTopicJson({ topic_json: topicJson });
 
-  /**
-   * Hard-cutover wave 2 cleanup.
-   *
-   * Remove stale old embedding names from topic_json so dropped Supabase columns
-   * do not keep reappearing as JSON metadata.
-   */
   delete base.topic_embedding_centroid;
   delete base.topic_embedding_count;
   delete base.topic_embedding_model;
@@ -206,7 +188,6 @@ function buildUpdatedTopicJson(args: {
     ...base,
 
     topic_label: topicLabel,
-    topic_name: topicLabel,
 
     semantic_enrichment_status: {
       status: "centroid_ready",
@@ -219,12 +200,6 @@ function buildUpdatedTopicJson(args: {
 
       topic_label_embedding_source: "topic_label_only_v2",
       topic_message_embedding_source: "topic_message_enrichment_prompt_text_v2",
-
-      /**
-       * Wave 2 migration note.
-       *
-       * Only topic_label_embedding_* and topic_message_embedding_* are written.
-       */
       canonical_embedding_names_only: true,
     },
 
@@ -234,23 +209,14 @@ function buildUpdatedTopicJson(args: {
     should_schedule_enrichment: false,
     semantic_enrichment_prompt_text: enrichmentPromptText,
 
-    /**
-     * Debug/source texts.
-     */
     topic_label_embedding_text: topicLabelEmbeddingText,
     topic_message_embedding_text: topicMessageEmbeddingText,
 
-    /**
-     * Canonical topic-label embedding.
-     */
     topic_label_embedding_centroid: topicLabelCentroid,
     topic_label_embedding_count: nextTopicLabelEmbeddingCount,
     topic_label_embedding_model: embeddingModel,
     topic_label_embedding_updated_at: embeddingUpdatedAt,
 
-    /**
-     * Canonical topic-message embedding.
-     */
     topic_message_embedding_centroid: topicMessageCentroid,
     topic_message_embedding_count: nextTopicMessageEmbeddingCount,
     topic_message_embedding_model: embeddingModel,
@@ -282,7 +248,6 @@ export async function POST(request: Request) {
   const results: Array<{
     topic_id: string;
     topic_label: string;
-    topic_name: string;
     status: "enriched" | "skipped" | "error";
     reason: string | null;
     embedding_model: string | null;
@@ -299,7 +264,7 @@ export async function POST(request: Request) {
       const enrichmentPromptText = buildEnrichmentPrompt(row);
 
       const topicLabelEmbeddingText = buildTopicLabelEmbeddingText({
-        topicLabel,
+        topic_label: topicLabel,
       });
 
       const topicMessageEmbeddingText = buildTopicMessageEmbeddingText({
@@ -319,7 +284,6 @@ export async function POST(request: Request) {
         results.push({
           topic_id: row.topic_id,
           topic_label: topicLabel,
-          topic_name: topicLabel,
           status: "error",
           reason: "topic_label_embedding_result_missing_or_invalid_vector",
           embedding_model: null,
@@ -336,7 +300,6 @@ export async function POST(request: Request) {
         results.push({
           topic_id: row.topic_id,
           topic_label: topicLabel,
-          topic_name: topicLabel,
           status: "error",
           reason: "topic_message_embedding_result_missing_or_invalid_vector",
           embedding_model: null,
@@ -365,6 +328,7 @@ export async function POST(request: Request) {
       const updatedTopicJson = buildUpdatedTopicJson({
         topicJson: row.topic_json,
 
+        topicLabel,
         topicLabelCentroid,
         topicMessageCentroid,
 
@@ -374,7 +338,6 @@ export async function POST(request: Request) {
         topicLabelEmbeddingText,
         topicMessageEmbeddingText,
         enrichmentPromptText,
-        topicLabel,
 
         nextTopicLabelEmbeddingCount,
         nextTopicMessageEmbeddingCount,
@@ -383,7 +346,7 @@ export async function POST(request: Request) {
       await upsertTopicState({
         topicId: row.topic_id,
         lastRunId: row.last_run_id,
-        topicName: topicLabel,
+        topicLabel,
         confusion: row.confusion,
         insight: row.insight,
         learningScore: row.learning_score,
@@ -391,17 +354,11 @@ export async function POST(request: Request) {
         nextStep: row.next_step,
         topicJson: updatedTopicJson,
 
-        /**
-         * Canonical topic-label embedding.
-         */
         topicLabelEmbeddingCentroid: topicLabelCentroid,
         topicLabelEmbeddingCount: nextTopicLabelEmbeddingCount,
         topicLabelEmbeddingModel: embeddingModel,
         topicLabelEmbeddingUpdatedAt: embeddingUpdatedAt,
 
-        /**
-         * Canonical topic-message embedding.
-         */
         topicMessageEmbeddingCentroid: topicMessageCentroid,
         topicMessageEmbeddingCount: nextTopicMessageEmbeddingCount,
         topicMessageEmbeddingModel: embeddingModel,
@@ -414,16 +371,12 @@ export async function POST(request: Request) {
       if (canSyncTopicToQdrant()) {
         const syncResult = await syncTopicToQdrantBestEffort({
           topicId: row.topic_id,
-          topicName: topicLabel,
+          topicLabel,
           diagnosis: row.diagnosis,
           nextStep: row.next_step,
           updatedAt: embeddingUpdatedAt,
           topicJson: updatedTopicJson,
 
-          /**
-           * Qdrant gets the topic-label embedding because Qdrant is currently part of
-           * semantic topic lookup/layout, not topic-message matching.
-           */
           topicLabelEmbeddingCentroid: topicLabelCentroid,
           topicLabelEmbeddingCount: nextTopicLabelEmbeddingCount,
           topicLabelEmbeddingModel: embeddingModel,
@@ -437,7 +390,6 @@ export async function POST(request: Request) {
       results.push({
         topic_id: row.topic_id,
         topic_label: topicLabel,
-        topic_name: topicLabel,
         status: "enriched",
         reason: null,
         embedding_model: embeddingModel,
@@ -450,7 +402,6 @@ export async function POST(request: Request) {
       results.push({
         topic_id: row.topic_id,
         topic_label: topicLabel,
-        topic_name: topicLabel,
         status: "error",
         reason:
           error instanceof Error

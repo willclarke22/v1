@@ -1,0 +1,2 @@
+C:\Users\willc\projects\MyWay\v1\lib\vector\embed.ts:176: error instanceof DOMException && error.name === "AbortError"
+C:\Users\willc\projects\MyWay\v1\lib\vector\embed.ts:178: error instanceof Error && error.name === "AbortError"

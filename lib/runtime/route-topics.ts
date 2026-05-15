@@ -6,11 +6,6 @@ import { isPosition, normalizeDiagnosis } from "./shared";
 export type RouteTopic = {
   id: string;
   topic_label: string;
-
-  /**
-   * @deprecated Use topic_label instead. Kept while older UI/runtime code migrates.
-   */
-  name: string;
   diagnosis: DiagnosisType;
   nextStep: string;
   confusion: number;
@@ -22,31 +17,16 @@ export type RouteTopic = {
   lastUpdated: string;
   hasAvailableProbe: boolean;
 
-  /**
-   * Canonical topic-label embedding.
-   *
-   * Represents the clean topic label / topic identity. This is the vector family
-   * used for semantic layout and Qdrant topic lookup.
-   */
   topic_label_embedding_centroid?: EmbeddingVector | null;
   topic_label_embedding_count?: number | null;
   topic_label_embedding_model?: string | null;
   topic_label_embedding_updated_at?: string | null;
 
-  /**
-   * Canonical topic-message embedding.
-   *
-   * Represents learner-message / struggle-pattern evidence assigned to this
-   * topic. This is not used for semantic layout yet.
-   */
   topic_message_embedding_centroid?: EmbeddingVector | null;
   topic_message_embedding_count?: number | null;
   topic_message_embedding_model?: string | null;
   topic_message_embedding_updated_at?: string | null;
 
-  /**
-   * Semantic enrichment / layout metadata mirrored from explicit topic_state columns.
-   */
   semantic_enrichment_status?: string | null;
   needs_embedding_centroid?: boolean | null;
   should_schedule_enrichment?: boolean | null;
@@ -68,7 +48,7 @@ export type SharedMessageFrame =
 
 const DEFAULT_DIAGNOSIS: DiagnosisType = "representation_gap";
 
-type EmbeddingAliases = {
+type EmbeddingFields = {
   topic_label_embedding_centroid: EmbeddingVector | null;
   topic_label_embedding_count: number | null;
   topic_label_embedding_model: string | null;
@@ -103,20 +83,6 @@ function inferKeywordsFromSourceText(source: string): string[] {
   return dedupeStrings(
     semanticTokenizeForRouteTopic(source).filter((token) => token.length > 2),
   ).slice(0, 8);
-}
-
-function getRowTopicLabel(row: {
-  topic_name: string;
-  topic_json?: Record<string, unknown> | null;
-}) {
-  const topicLabelFromJson =
-    row.topic_json &&
-    typeof row.topic_json.topic_label === "string" &&
-    row.topic_json.topic_label.trim()
-      ? row.topic_json.topic_label.trim()
-      : null;
-
-  return topicLabelFromJson ?? row.topic_name.trim();
 }
 
 function computeNextTopicPosition(existingTopics: RouteTopic[]): [number, number, number] {
@@ -158,7 +124,7 @@ function inferSeededNextStepFromConceptAndFrame(
 }
 
 function buildSeededTopic(args: {
-  name: string;
+  topicLabel: string;
   nextStep: string;
   existingTopics: RouteTopic[];
 }): RouteTopic {
@@ -166,8 +132,7 @@ function buildSeededTopic(args: {
 
   return {
     id: makeId("topic"),
-    topic_label: args.name,
-    name: args.name,
+    topic_label: args.topicLabel,
     diagnosis: DEFAULT_DIAGNOSIS,
     nextStep: args.nextStep,
     confusion: 0.58,
@@ -187,7 +152,7 @@ export function buildSeededTopicFromResolvedLabel(args: {
   frame?: SharedMessageFrame;
 }): RouteTopic {
   return buildSeededTopic({
-    name: args.resolvedLabel,
+    topicLabel: args.resolvedLabel,
     nextStep: inferSeededNextStepFromConceptAndFrame(
       args.resolvedLabel,
       args.frame ?? "explain_request",
@@ -232,7 +197,7 @@ function resolveTopicPosition(row: {
   );
 }
 
-function resolveEmbeddingAliases(row: {
+function resolveEmbeddingFields(row: {
   topic_label_embedding_centroid: EmbeddingVector | null;
   topic_label_embedding_count: number | null;
   topic_label_embedding_model: string | null;
@@ -242,7 +207,7 @@ function resolveEmbeddingAliases(row: {
   topic_message_embedding_count: number | null;
   topic_message_embedding_model: string | null;
   topic_message_embedding_updated_at: string | null;
-}): EmbeddingAliases {
+}): EmbeddingFields {
   return {
     topic_label_embedding_centroid: row.topic_label_embedding_centroid ?? null,
     topic_label_embedding_count: row.topic_label_embedding_count ?? null,
@@ -280,13 +245,12 @@ export async function loadRouteTopics(): Promise<RouteTopic[]> {
         topic_json: row.topic_json,
       }) ?? computeNextTopicPosition(loadedTopics);
 
-    const embeddingAliases = resolveEmbeddingAliases(row);
-    const topicLabel = getRowTopicLabel(row);
+    const embeddingFields = resolveEmbeddingFields(row);
+    const topicLabel = row.topic_label.trim();
 
     const routeTopic: RouteTopic = {
       id: row.topic_id,
       topic_label: topicLabel,
-      name: topicLabel,
       diagnosis: normalizeDiagnosis(row.diagnosis) ?? DEFAULT_DIAGNOSIS,
       nextStep: row.next_step ?? `Explain ${topicLabel} clearly in your own words.`,
       confusion: row.confusion ?? 0.5,
@@ -298,7 +262,7 @@ export async function loadRouteTopics(): Promise<RouteTopic[]> {
       lastUpdated: row.updated_at,
       hasAvailableProbe: false,
 
-      ...embeddingAliases,
+      ...embeddingFields,
 
       semantic_enrichment_status: row.semantic_enrichment_status,
       needs_embedding_centroid: row.needs_embedding_centroid,

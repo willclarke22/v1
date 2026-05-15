@@ -303,16 +303,16 @@ function buildLearnerFacingProbeTitle(
 ) {
   switch (probeType) {
     case "predict":
-      return `Predict what happens in ${topic.name}`;
+      return `Predict what happens in ${topic.topic_label}`;
     case "discriminate":
-      return `Distinguish ${topic.name}`;
+      return `Distinguish ${topic.topic_label}`;
     case "transform":
-      return `Walk through ${topic.name}`;
+      return `Walk through ${topic.topic_label}`;
     case "apply_transfer":
-      return `Apply ${topic.name} in a new situation`;
+      return `Apply ${topic.topic_label} in a new situation`;
     case "explain":
     default:
-      return `Explain ${topic.name}`;
+      return `Explain ${topic.topic_label}`;
   }
 }
 
@@ -322,16 +322,16 @@ function buildLearnerFacingInstructionalGoal(
 ) {
   switch (probeType) {
     case "predict":
-      return `Predict what would happen in a simple case involving ${topic.name}, and explain why.`;
+      return `Predict what would happen in a simple case involving ${topic.topic_label}, and explain why.`;
     case "discriminate":
-      return `Explain the key difference that helps distinguish ${topic.name} from a closely related idea.`;
+      return `Explain the key difference that helps distinguish ${topic.topic_label} from a closely related idea.`;
     case "transform":
-      return `Walk through ${topic.name} step by step and explain why the order matters.`;
+      return `Walk through ${topic.topic_label} step by step and explain why the order matters.`;
     case "apply_transfer":
-      return `Apply ${topic.name} in a new but related situation and explain what changes.`;
+      return `Apply ${topic.topic_label} in a new but related situation and explain what changes.`;
     case "explain":
     default:
-      return `Explain ${topic.name} in your own words, focusing on the key relationship or mechanism.`;
+      return `Explain ${topic.topic_label} in your own words, focusing on the key relationship or mechanism.`;
   }
 }
 
@@ -341,16 +341,16 @@ function buildInternalDiagnosticGoal(
 ) {
   switch (probeType) {
     case "predict":
-      return `Check whether the learner can anticipate outcomes in ${topic.name}.`;
+      return `Check whether the learner can anticipate outcomes in ${topic.topic_label}.`;
     case "discriminate":
-      return `Check whether the learner can distinguish ${topic.name} from nearby ideas.`;
+      return `Check whether the learner can distinguish ${topic.topic_label} from nearby ideas.`;
     case "transform":
-      return `Check whether the learner can express ${topic.name} as a coherent ordered process.`;
+      return `Check whether the learner can express ${topic.topic_label} as a coherent ordered process.`;
     case "apply_transfer":
-      return `Check whether the learner can transfer ${topic.name} into a changed setting.`;
+      return `Check whether the learner can transfer ${topic.topic_label} into a changed setting.`;
     case "explain":
     default:
-      return `Check whether the learner can explain ${topic.name} coherently.`;
+      return `Check whether the learner can explain ${topic.topic_label} coherently.`;
   }
 }
 
@@ -363,18 +363,18 @@ function buildInitialPromptForProbe(args: {
 
   switch (probeType) {
     case "predict":
-      return `Predict what would happen in a simple case involving ${topic.name}, and explain why.`;
+      return `Predict what would happen in a simple case involving ${topic.topic_label}, and explain why.`;
     case "discriminate":
-      return `What is the key difference that helps distinguish ${topic.name} from a closely related idea? Explain the difference clearly.`;
+      return `What is the key difference that helps distinguish ${topic.topic_label} from a closely related idea? Explain the difference clearly.`;
     case "transform":
-      return `Walk through ${topic.name} as a step-by-step process. What happens first, what happens next, and why does the order matter?`;
+      return `Walk through ${topic.topic_label} as a step-by-step process. What happens first, what happens next, and why does the order matter?`;
     case "apply_transfer":
-      return `Apply ${topic.name} in a new but related situation. What stays the same, what changes, and why?`;
+      return `Apply ${topic.topic_label} in a new but related situation. What stays the same, what changes, and why?`;
     case "explain":
     default:
       return diagnosis === "representation_gap"
-        ? `Can you explain ${topic.name} in your own words, focusing on the key relationship or mechanism?`
-        : `Can you explain ${topic.name} clearly in your own words?`;
+        ? `Can you explain ${topic.topic_label} in your own words, focusing on the key relationship or mechanism?`
+        : `Can you explain ${topic.topic_label} clearly in your own words?`;
   }
 }
 
@@ -388,7 +388,7 @@ function buildInitialJudgingSupport(args: {
   if (probeType === "predict") {
     return {
       rubric_notes: [
-        `Judge whether the learner can make a justified prediction about ${topic.name}.`,
+        `Judge whether the learner can make a justified prediction about ${topic.topic_label}.`,
         "Prefer supported prediction over guess-like wording.",
       ],
       evidence_type_expected: ["predict"] as Array<
@@ -417,7 +417,7 @@ function buildInitialJudgingSupport(args: {
   if (probeType === "discriminate") {
     return {
       rubric_notes: [
-        `Judge whether the learner can distinguish ${topic.name} from nearby ideas using a decisive difference.`,
+        `Judge whether the learner can distinguish ${topic.topic_label} from nearby ideas using a decisive difference.`,
       ],
       evidence_type_expected: ["discriminate"] as Array<
         "predict" | "explain" | "discriminate" | "apply_transfer"
@@ -445,7 +445,7 @@ function buildInitialJudgingSupport(args: {
   if (probeType === "transform") {
     return {
       rubric_notes: [
-        `Judge whether the learner can express ${topic.name} as a coherent ordered process.`,
+        `Judge whether the learner can express ${topic.topic_label} as a coherent ordered process.`,
       ],
       evidence_type_expected: ["explain"] as Array<
         "predict" | "explain" | "discriminate" | "apply_transfer"
@@ -473,7 +473,7 @@ function buildInitialJudgingSupport(args: {
   if (probeType === "apply_transfer") {
     return {
       rubric_notes: [
-        `Judge whether the learner can carry the core idea of ${topic.name} into a changed setting.`,
+        `Judge whether the learner can carry the core idea of ${topic.topic_label} into a changed setting.`,
       ],
       evidence_type_expected: ["apply_transfer"] as Array<
         "predict" | "explain" | "discriminate" | "apply_transfer"
@@ -500,7 +500,7 @@ function buildInitialJudgingSupport(args: {
 
   return {
     rubric_notes: [
-      `Judge whether the learner can explain ${topic.name} with connected reasoning.`,
+      `Judge whether the learner can explain ${topic.topic_label} with connected reasoning.`,
       `The current diagnosis focus is ${diagnosis}.`,
       "Prefer structural understanding over phrase matching.",
     ],
@@ -975,7 +975,7 @@ function computeInterventionScores(args: InterventionScoreArgs) {
   const decision_reasons =
     mode_selected === "clarify"
       ? [
-          `The message connects most strongly to ${topic.name}.`,
+          `The message connects most strongly to ${topic.topic_label}.`,
           resolutionReason,
           currentInteractionContext?.run_kind === "clarify_followup"
             ? "This still looks like clarification-oriented stabilization rather than a fair measurement moment."
@@ -986,7 +986,7 @@ function computeInterventionScores(args: InterventionScoreArgs) {
           `The current block still appears to be: ${topic.nextStep}.`,
         ]
       : [
-          `The message connects most strongly to ${topic.name}.`,
+          `The message connects most strongly to ${topic.topic_label}.`,
           resolutionReason,
           currentInteractionContext?.is_response_to_delivered_probe
             ? "This run is positioned like a response to a previously delivered probe, which increases measurement value."
@@ -1128,7 +1128,7 @@ export function buildProbePlan(
       ],
       content_selection: {
         source_mode: "generated",
-        selected_concepts: [topic.name],
+        selected_concepts: [topic.topic_label],
         selected_examples:
           probeType === "predict" || probeType === "apply_transfer"
             ? ["Use a simple changed case or scenario."]
@@ -1152,7 +1152,7 @@ export function buildProbePlan(
         verbosity: "medium",
         pacing: "normal",
         language_style: "plain",
-        context_framing: `Stay grounded in ${topic.name} and the learner's current next step.`,
+        context_framing: `Stay grounded in ${topic.topic_label} and the learner's current next step.`,
         motivation_strategy: "curiosity_based",
         adaptation_reasons: [
           "Use supportive prompting while preserving measurement value.",
@@ -1210,11 +1210,11 @@ export function buildProbePlan(
     video_plan: {
       status: preferredModality === "video" ? "planned" : "not_selected",
       pedagogical_role: "micro_explanation",
-      diagnostic_goal: `Support visual grounding for ${topic.name}.`,
+      diagnostic_goal: `Support visual grounding for ${topic.topic_label}.`,
       instructional_goal: `Make the next step more concrete before asking for a response.`,
       why_video: ["The message suggests a visual explanation may help."],
       visual_learning_goal: {
-        what_the_learner_should_notice_first: [topic.name],
+        what_the_learner_should_notice_first: [topic.topic_label],
         what_should_change_over_time: [
           "The causal or temporal progression of the concept.",
         ],
@@ -1223,7 +1223,7 @@ export function buildProbePlan(
       },
       content_selection: {
         source_mode: "generated",
-        selected_concepts: [topic.name],
+        selected_concepts: [topic.topic_label],
         selected_examples: [],
         selected_contrasts: [],
         selected_misconceptions: [],
@@ -1246,7 +1246,7 @@ export function buildProbePlan(
         tone: "encouraging",
         pacing: "normal",
         language_style: "plain",
-        context_framing: `Explain only enough to support the next attempt in ${topic.name}.`,
+        context_framing: `Explain only enough to support the next attempt in ${topic.topic_label}.`,
         visual_complexity: "moderate",
         visual_style_preference: "diagrammatic",
         adaptation_reasons: [
@@ -1266,7 +1266,7 @@ export function buildProbePlan(
     interactive_plan: {
       status: preferredModality === "interactive" ? "planned" : "placeholder",
       pedagogical_role: "manipulate_and_predict",
-      diagnostic_goal: `Eventually test whether the learner can act on ${topic.name}, not just describe it.`,
+      diagnostic_goal: `Eventually test whether the learner can act on ${topic.topic_label}, not just describe it.`,
       instructional_goal: `Preserve a future seam for richer interactive probes.`,
       why_interactive: [
         "This remains a placeholder seam during the current contract-proving phase.",
@@ -1324,7 +1324,7 @@ export function buildProbePlan(
         verbosity: "medium",
         pacing: "normal",
         language_style: "plain",
-        context_framing: `Stay focused on ${topic.name}.`,
+        context_framing: `Stay focused on ${topic.topic_label}.`,
       },
       rendering_contract: {
         output_form: "guided_question",
@@ -1348,11 +1348,11 @@ export function buildProbePlan(
       seconds: 8,
       prompt:
         preferredModality === "video"
-          ? `Create a concise educational animation about ${topic.name}. Show only enough to prepare the learner for a follow-up response task about: ${topic.nextStep}.`
+          ? `Create a concise educational animation about ${topic.topic_label}. Show only enough to prepare the learner for a follow-up response task about: ${topic.nextStep}.`
           : null,
       narration:
         preferredModality === "video"
-          ? `Guide the learner toward the key structure of ${topic.name}, then pause before giving the full answer.`
+          ? `Guide the learner toward the key structure of ${topic.topic_label}, then pause before giving the full answer.`
           : null,
       visual_constraints: [
         "Keep visuals clean and educational.",

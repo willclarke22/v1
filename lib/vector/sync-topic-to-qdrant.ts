@@ -24,21 +24,11 @@ export type SyncTopicToQdrantInput = {
   topicId: string;
   topicLabel?: string | null;
 
-  /**
-   * @deprecated Use topicLabel instead. Kept because the persistence boundary
-   * still calls this value topicName in a few places.
-   */
-  topicName?: string | null;
   diagnosis?: string | null;
   nextStep?: string | null;
   updatedAt?: string | null;
   topicJson?: JsonValue;
 
-  /**
-   * Canonical topic-label embedding.
-   *
-   * This is the vector Qdrant stores for topic lookup / semantic layout.
-   */
   topicLabelEmbeddingCentroid?: EmbeddingVector | null;
   topicLabelEmbeddingCount?: number | null;
   topicLabelEmbeddingModel?: string | null;
@@ -51,8 +41,6 @@ export type SyncTopicToQdrantResult = {
   error: string | null;
   topic_id: string;
   topic_label: string;
-  /** @deprecated Use topic_label instead. */
-  topic_name: string;
   vector_source: TopicLabelVectorSource | null;
   qdrant_sync_timeout_ms: number;
   qdrant_ensure_timeout_ms: number;
@@ -181,7 +169,7 @@ function getDefaultEmbeddingModelName() {
 }
 
 function getInputTopicLabel(input: SyncTopicToQdrantInput): string {
-  return input.topicLabel?.trim() || input.topicName?.trim() || input.topicId;
+  return input.topicLabel?.trim() || input.topicId;
 }
 
 function readTopicJsonEmbedding(input: SyncTopicToQdrantInput) {
@@ -219,11 +207,6 @@ function buildTopicLabelFallbackText(input: SyncTopicToQdrantInput): string {
   const inferredKeywords = asStringArray(topicJson?.inferred_keywords);
 
   const parts = [
-    /**
-     * Keep the fallback text label-centered.
-     *
-     * Qdrant stores topic-label vectors, not learner-message pattern vectors.
-     */
     getInputTopicLabel(input),
     inferredKeywords.length > 0
       ? `Keywords: ${inferredKeywords.join(", ")}`
@@ -285,12 +268,6 @@ function resolveTopicLabelEmbeddingFields(
   };
 }
 
-/**
- * This checks only Qdrant config.
- *
- * EMBEDDINGS_URL is not required when the topic already has a
- * topicLabelEmbeddingCentroid, because sync can upsert that centroid directly.
- */
 export function canSyncTopicToQdrant(): boolean {
   return hasQdrantConfig();
 }
@@ -306,13 +283,6 @@ async function buildVectorForQdrant(input: SyncTopicToQdrantInput): Promise<{
   const fields = resolveTopicLabelEmbeddingFields(input);
   const embeddingText = buildTopicLabelFallbackText(input);
 
-  /**
-   * Preferred behavior:
-   * - If the topic already has a topic-label embedding, Qdrant stores that vector.
-   *
-   * Last-resort fallback:
-   * - If no vector exists, embed the topic-label fallback text.
-   */
   if (fields.centroid?.length) {
     return {
       vector: fields.centroid,
@@ -333,7 +303,9 @@ async function buildVectorForQdrant(input: SyncTopicToQdrantInput): Promise<{
   const fallbackVector = await embedText(embeddingText);
 
   if (!Array.isArray(fallbackVector) || fallbackVector.length === 0) {
-    throw new Error(`Invalid fallback embedding vector for topic_id "${input.topicId}"`);
+    throw new Error(
+      `Invalid fallback embedding vector for topic_id "${input.topicId}"`,
+    );
   }
 
   return {
@@ -347,12 +319,6 @@ async function buildVectorForQdrant(input: SyncTopicToQdrantInput): Promise<{
   };
 }
 
-/**
- * Strict sync API.
- *
- * Use this when the caller wants failures to throw. In user-facing routes, prefer
- * syncTopicToQdrantBestEffort(...) so Qdrant cannot fail the response.
- */
 export async function syncTopicToQdrant(
   input: SyncTopicToQdrantInput,
 ): Promise<void> {
@@ -398,8 +364,6 @@ export async function syncTopicToQdrant(
             topic_id: input.topicId,
             topic_label: getInputTopicLabel(input),
 
-            // Temporary legacy alias for older Qdrant/debug consumers.
-            topic_name: getInputTopicLabel(input),
             diagnosis: input.diagnosis ?? null,
             next_step: input.nextStep ?? null,
             updated_at: input.updatedAt ?? new Date().toISOString(),
@@ -407,16 +371,10 @@ export async function syncTopicToQdrant(
               asRecord(input.topicJson)?.inferred_keywords,
             ),
 
-            /**
-             * Debug/source fields.
-             */
             embedding_text: embeddingText,
             vector_source: vectorSource,
             vector_semantics: "topic_label_embedding",
 
-            /**
-             * Canonical Qdrant payload metadata.
-             */
             topic_label_embedding_count: topicLabelEmbeddingCount,
             topic_label_embedding_model: topicLabelEmbeddingModel,
             topic_label_embedding_updated_at: topicLabelEmbeddingUpdatedAt,
@@ -429,12 +387,6 @@ export async function syncTopicToQdrant(
   );
 }
 
-/**
- * Best-effort sync API.
- *
- * It never throws. It returns a compact result object so callers can attach sync
- * status to debug output without failing the user-facing response.
- */
 export async function syncTopicToQdrantBestEffort(
   input: SyncTopicToQdrantInput,
 ): Promise<SyncTopicToQdrantResult> {
@@ -450,7 +402,6 @@ export async function syncTopicToQdrantBestEffort(
       error: "missing_qdrant_config",
       topic_id: input.topicId,
       topic_label: getInputTopicLabel(input),
-      topic_name: getInputTopicLabel(input),
       vector_source: null,
       qdrant_sync_timeout_ms: qdrantSyncTimeoutMs,
       qdrant_ensure_timeout_ms: qdrantEnsureTimeoutMs,
@@ -475,7 +426,6 @@ export async function syncTopicToQdrantBestEffort(
       error: null,
       topic_id: input.topicId,
       topic_label: getInputTopicLabel(input),
-      topic_name: getInputTopicLabel(input),
       vector_source: vectorSource,
       qdrant_sync_timeout_ms: qdrantSyncTimeoutMs,
       qdrant_ensure_timeout_ms: qdrantEnsureTimeoutMs,
@@ -492,7 +442,6 @@ export async function syncTopicToQdrantBestEffort(
       error: error instanceof Error ? error.message : "unknown_qdrant_sync_error",
       topic_id: input.topicId,
       topic_label: getInputTopicLabel(input),
-      topic_name: getInputTopicLabel(input),
       vector_source: vectorSource,
       qdrant_sync_timeout_ms: qdrantSyncTimeoutMs,
       qdrant_ensure_timeout_ms: qdrantEnsureTimeoutMs,

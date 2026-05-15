@@ -1,15 +1,6 @@
 export type LearningSpaceTopic = {
   topic_id: string;
-
-  /** Canonical renderer-facing topic label. */
   topic_label: string;
-
-  /** UI alias for topic_label. */
-  label?: string;
-
-  /** @deprecated Use topic_label instead. */
-  topic_name?: string;
-
   position: [number, number, number];
   render_state: {
     radius: number;

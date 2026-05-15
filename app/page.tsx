@@ -59,10 +59,7 @@ async function updateLocalDevIdleState(input: LocalDevIdleStateUpdate) {
       }),
     });
   } catch {
-    /**
-     * Local dev idle-state reporting must never break the UI.
-     * The enrichment worker can simply treat missing/stale idle state as unsafe.
-     */
+    // Local dev idle-state reporting must never break the UI.
   }
 }
 
@@ -72,23 +69,16 @@ function getEngineTopicLabel(args: {
   >["engine_fuel"]["topics"][number];
   previous?: Topic;
 }) {
-  const engineTopicWithLegacyFields = args.engineTopic as typeof args.engineTopic & {
-    topic_label?: string | null;
-    topic_name?: string | null;
-  };
-
   return (
-    engineTopicWithLegacyFields.topic_label?.trim() ||
-    engineTopicWithLegacyFields.topic_name?.trim() ||
+    args.engineTopic.topic_label?.trim() ||
     args.previous?.topic_label?.trim() ||
-    args.previous?.name?.trim() ||
     "Untitled Topic"
   );
 }
 
 function deriveTopicsFromMessageResponse(
   data: MessageRouteResponse,
-  previousTopics: Topic[]
+  previousTopics: Topic[],
 ): Topic[] | null {
   const engineTopics = data.result?.engine_fuel?.topics;
   if (!engineTopics?.length) return null;
@@ -123,10 +113,6 @@ function deriveTopicsFromMessageResponse(
     return {
       id: engineTopic.topic_id,
       topic_label: topicLabel,
-
-      // Temporary compatibility alias for older UI components.
-      name: topicLabel,
-
       diagnosis: isTargetTopic
         ? activeDiagnosis
         : previous?.diagnosis ?? "representation_gap",
@@ -134,13 +120,13 @@ function deriveTopicsFromMessageResponse(
         ? targetNextStep
         : previous?.nextStep ?? "Continue learning",
       confusion: clamp(
-        engineTopic.topic_confusion_average ?? previous?.confusion ?? 0.5
+        engineTopic.topic_confusion_average ?? previous?.confusion ?? 0.5,
       ),
       insight: clamp(
-        engineTopic.topic_insight_average ?? previous?.insight ?? 0.5
+        engineTopic.topic_insight_average ?? previous?.insight ?? 0.5,
       ),
       learningScore: clamp(
-        engineTopic.topic_learning_score ?? previous?.learningScore ?? 0.5
+        engineTopic.topic_learning_score ?? previous?.learningScore ?? 0.5,
       ),
       position:
         Array.isArray(engineTopic.topic_centroid) &&
@@ -159,7 +145,7 @@ function deriveTopicsFromMessageResponse(
 
 function resolveReturnedTopicId(
   data: MessageRouteResponse,
-  nextTopics: Topic[] | null
+  nextTopics: Topic[] | null,
 ) {
   return (
     data.intervention?.target_topic_id ??
@@ -196,7 +182,7 @@ export default function Home() {
 
   const progressSummary = useMemo(
     () => deriveProgressSummary(topics, focusedTopicId),
-    [topics, focusedTopicId]
+    [topics, focusedTopicId],
   );
 
   const selectedTopic =
@@ -210,6 +196,7 @@ export default function Home() {
     null;
 
   const shellPanels = useShellPanels(focusedTopicId);
+  const { setIsRightPanelOpenWhileUnfocused } = shellPanels;
 
   const handleComposerTextStateChange = useCallback(
     (input: { composerHasText: boolean; lastActivityAt: string }) => {
@@ -218,7 +205,7 @@ export default function Home() {
         lastActivityAt: input.lastActivityAt,
       });
     },
-    []
+    [],
   );
 
   function focusTopic(topicId: string | null) {
@@ -231,6 +218,10 @@ export default function Home() {
     }
 
     shellPanels.setIsRightPanelDismissedWhileFocused(false);
+
+    // When zooming out, keep the selected topic inspectable instead of letting
+    // the right panel collapse just because focus changed from focused -> unfocused.
+    setIsRightPanelOpenWhileUnfocused(true);
   }
 
   const probeFlow = useProbeFlow({
@@ -271,7 +262,7 @@ export default function Home() {
 
         if (!response.ok) {
           throw new Error(
-            data.error || `Bootstrap failed with status ${response.status}`
+            data.error || `Bootstrap failed with status ${response.status}`,
           );
         }
 
@@ -281,7 +272,7 @@ export default function Home() {
           setTopics(data.topics);
           setSelectedTopicId((currentSelectedTopicId) => {
             const stillExists = data.topics?.some(
-              (topic) => topic.id === currentSelectedTopicId
+              (topic) => topic.id === currentSelectedTopicId,
             );
 
             return stillExists
@@ -289,12 +280,12 @@ export default function Home() {
               : data.topics?.[0]?.id ?? null;
           });
 
-          shellPanels.setIsRightPanelOpenWhileUnfocused(false);
+          setIsRightPanelOpenWhileUnfocused(false);
         } else {
           setTopics([]);
           setSelectedTopicId(null);
           setFocusedTopicId(null);
-          shellPanels.setIsRightPanelOpenWhileUnfocused(false);
+          setIsRightPanelOpenWhileUnfocused(false);
         }
 
         setServerLearningSpace(null);
@@ -320,7 +311,7 @@ export default function Home() {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [setIsRightPanelOpenWhileUnfocused]);
 
   useEffect(() => {
     if (!topics.length) {
@@ -421,7 +412,7 @@ export default function Home() {
         throw new Error(
           "error" in data && typeof (data as { error?: unknown }).error === "string"
             ? (data as { error: string }).error
-            : `Request failed with status ${response.status}`
+            : `Request failed with status ${response.status}`,
         );
       }
 

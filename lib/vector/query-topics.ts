@@ -9,11 +9,7 @@ import type { EmbeddingVector, VectorInfo } from "@/types/contracts";
 type QdrantTopicPayload = {
   topic_id?: unknown;
 
-  // Canonical topic label payload field.
   topic_label?: unknown;
-
-  // Temporary legacy payload field.
-  topic_name?: unknown;
 
   /**
    * Canonical topic-label embedding metadata.
@@ -29,8 +25,6 @@ export type SemanticTopicCandidate = {
   topic_id: string;
   topic_label: string;
 
-  // Temporary legacy alias for older routing/debug code.
-  topic_name: string;
 
   similarity: number;
   rank: number;
@@ -104,9 +98,6 @@ export type SemanticMessageEmbeddingResult = {
 function emptyVectorInfo(): VectorInfo {
   return {
     top_k_topic_labels: [],
-
-    // Temporary legacy alias for older debug/UI consumers.
-    top_k_topic_names: [],
 
     top_k_topic_ids: [],
     top_k_similarity_scores: [],
@@ -239,9 +230,6 @@ function vectorInfoFromCandidates(candidates: SemanticTopicCandidate[]): VectorI
   return {
     top_k_topic_labels: topicLabels,
 
-    // Temporary legacy alias for older debug/UI consumers.
-    top_k_topic_names: topicLabels,
-
     top_k_topic_ids: candidates.map((candidate) => candidate.topic_id),
     top_k_similarity_scores: candidates.map((candidate) => candidate.similarity),
   };
@@ -262,7 +250,6 @@ function getPayloadTopicLabelEmbeddingUpdatedAt(payload: QdrantTopicPayload) {
 function getPayloadTopicLabel(payload: QdrantTopicPayload, fallbackTopicId: string) {
   return (
     asString(payload.topic_label) ||
-    asString(payload.topic_name) ||
     fallbackTopicId
   );
 }
@@ -289,8 +276,6 @@ function normalizeQdrantCandidates(points: unknown[]): SemanticTopicCandidate[] 
       topic_id: topicId,
       topic_label: topicLabel,
 
-      // Temporary legacy alias for older routing/debug code.
-      topic_name: topicLabel,
 
       similarity: score ?? 0,
       rank: index,
@@ -556,7 +541,6 @@ export async function querySemanticTopicCandidatesFromEmbedding(
         with_payload: [
           "topic_id",
           "topic_label",
-          "topic_name",
           "topic_label_embedding_count",
           "topic_label_embedding_model",
           "topic_label_embedding_updated_at",

@@ -128,39 +128,16 @@ function asPositiveCount(value: number | null | undefined) {
 }
 
 function getRouteTopicLabel(topic: RouteTopic) {
-  const topicWithCanonicalLabel = topic as RouteTopic & {
-    topic_label?: string | null;
-    topic_name?: string | null;
-  };
-
-  return (
-    topicWithCanonicalLabel.topic_label?.trim() ||
-    topicWithCanonicalLabel.topic_name?.trim() ||
-    topic.name?.trim() ||
-    "Untitled Topic"
-  );
+  return topic.topic_label.trim() || "Untitled Topic";
 }
 
-/**
- * Probe submission should not create or reinterpret embeddings.
- *
- * Its job is to preserve the topic's current canonical embedding state while
- * updating probe/attempt metrics.
- *
- * Hard-cutover wave 2:
- * - topic_label_embedding_* is canonical for topic/layout/Qdrant identity.
- * - topic_message_embedding_* is canonical for learner-message pattern evidence.
- * - topic_embedding_* has been removed.
- */
 function getEmbeddingPersistenceFields(topic: RouteTopic) {
   const topicLabelCentroid = asEmbeddingVector(
     topic.topic_label_embedding_centroid,
   );
 
   const topicLabelCount = asPositiveCount(topic.topic_label_embedding_count);
-
   const topicLabelModel = topic.topic_label_embedding_model ?? null;
-
   const topicLabelUpdatedAt = topic.topic_label_embedding_updated_at ?? null;
 
   const topicMessageCentroid = asEmbeddingVector(
@@ -172,22 +149,15 @@ function getEmbeddingPersistenceFields(topic: RouteTopic) {
   );
 
   const topicMessageModel = topic.topic_message_embedding_model ?? null;
-
   const topicMessageUpdatedAt =
     topic.topic_message_embedding_updated_at ?? null;
 
   return {
-    /**
-     * Canonical topic-label embedding.
-     */
     topicLabelEmbeddingCentroid: topicLabelCentroid,
     topicLabelEmbeddingCount: topicLabelCount,
     topicLabelEmbeddingModel: topicLabelModel,
     topicLabelEmbeddingUpdatedAt: topicLabelUpdatedAt,
 
-    /**
-     * Canonical topic-message embedding.
-     */
     topicMessageEmbeddingCentroid: topicMessageCentroid,
     topicMessageEmbeddingCount: topicMessageCount,
     topicMessageEmbeddingModel: topicMessageModel,
@@ -326,10 +296,6 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
     return {
       topic_id: topic.id,
       topic_label: topicLabel,
-
-      // Temporary legacy alias for older persistence/debug/UI code.
-      topic_name: topicLabel,
-
       topic_confusion_average: topic.confusion,
       topic_insight_average: topic.insight,
       topic_learning_score: topic.learningScore,
@@ -342,9 +308,6 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
       topic_last_update: nowIso(),
       topic_centroid: topic.position as [number, number, number],
 
-      /**
-       * Canonical embedding surfaces for downstream/debug consumers.
-       */
       topic_label_embedding_centroid:
         topic.topic_label_embedding_centroid ?? null,
       topic_label_embedding_count: topic.topic_label_embedding_count ?? 0,
@@ -490,7 +453,7 @@ function buildDecision(args: {
     );
   }
 
-  const decision: InterventionModeDecision = {
+  return {
     mode_selected: continueWithProbe ? "probe" : "clarify",
     target_topic_id: topic.id,
     active_diagnosis: replyBundle.activeDiagnosis,
@@ -544,8 +507,6 @@ function buildDecision(args: {
       history_signal: 0.75,
     },
   };
-
-  return decision;
 }
 
 function buildEngineFuel(args: {
@@ -573,7 +534,7 @@ function buildRunMetadata(engineFuel: EngineFuel, runId: string): RunMetadata {
   return {
     run_id: runId,
     timestamp: nowIso(),
-    engine_version: "runtime-v1-hard-cutover-wave2-topic-label-contract",
+    engine_version: "runtime-v1-hard-topic-label-contract",
     previous_run_id: null,
     topic_count: engineFuel.topics.length,
     cluster_count: engineFuel.clusters.length,
@@ -627,7 +588,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const topicLabel = body.topicName || getRouteTopicLabel(topic);
+    const topicLabel = body.topicLabel || getRouteTopicLabel(topic);
     const chatHistory = buildChatHistoryFromBody(body);
 
     let modelSignals: ModelSignals = buildFallbackModelSignals();
@@ -646,7 +607,6 @@ export async function POST(request: NextRequest) {
     }
 
     const vectorInfo = buildVectorInfo(topic);
-
     const provisionalDiagnosis = inferDiagnosisFromTopic(topic);
 
     const scoring = scoreResponse(rawResponse, {
@@ -656,7 +616,7 @@ export async function POST(request: NextRequest) {
     });
 
     const replyBundle = buildResponseBundle({
-      topicName: topicLabel,
+      topicLabel,
       classification: scoring.classification,
       explanationQuality: scoring.explanationQuality,
       insight: scoring.insight,
@@ -748,13 +708,7 @@ export async function POST(request: NextRequest) {
       JSON.stringify({
         ...(topic.topic_json ?? {}),
         topic_id: topic.id,
-
-        // Canonical label field for MyWay runtime/output contracts.
         topic_label: topicLabel,
-
-        // Temporary legacy alias for older DB/debug/UI consumers.
-        topic_name: topicLabel,
-
         next_step: nextProbePlan.text_plan.instructional_goal ?? topic.nextStep,
         previous_probe_id: body.probeId,
         judged_attempt: judgedAttempt,
@@ -764,10 +718,6 @@ export async function POST(request: NextRequest) {
         learning_space_topic:
           learningSpace.topics?.find((t) => t.topic_id === topic.id) ?? null,
 
-        /**
-         * Preserve canonical embedding fields in topic_json so a probe submit
-         * cannot accidentally drop embedding metadata during wave 2.
-         */
         topic_label_embedding_centroid: embeddingFields.topicLabelEmbeddingCentroid,
         topic_label_embedding_count: embeddingFields.topicLabelEmbeddingCount,
         topic_label_embedding_model: embeddingFields.topicLabelEmbeddingModel,
@@ -813,18 +763,13 @@ export async function POST(request: NextRequest) {
     await upsertTopicState({
       topicId: topic.id,
       lastRunId: runId,
-
-      // upsertTopicState still expects topicName at the persistence boundary.
-      // Internally, this value is now the canonical topic label.
-      topicName: topicLabel,
-
+      topicLabel,
       confusion: updatedTopicMetrics.confusion ?? null,
       insight: updatedTopicMetrics.insight ?? null,
       learningScore: updatedPersistedTopic.learningScore ?? null,
       diagnosis: decision.active_diagnosis,
       nextStep: nextProbePlan.text_plan.instructional_goal ?? topic.nextStep,
       topicJson,
-
       ...embeddingFields,
     });
 

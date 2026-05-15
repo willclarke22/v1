@@ -42,10 +42,7 @@ export type FollowupSignals = {
 };
 
 export type TopicScoreBreakdown = {
-  /** Canonical label-match score for new traces. */
-  exactLabelMatch?: number;
-  /** @deprecated Use exactLabelMatch instead. */
-  exactNameMatch: number;
+  exactLabelMatch: number;
   containedMatch: number;
   conceptOverlap: number;
   questionOverlap: number;
@@ -73,15 +70,6 @@ export type ResolutionHypothesisKind =
   | "create_new"
   | "ambiguous";
 
-/**
- * Lightweight local trace shape for the archived/dormant topic-routing V3 path.
- *
- * This intentionally replaces the old dependency on:
- *   ./topic-routing/topic-routing-types
- *
- * That old folder is no longer used by the primary /api/message routing path
- * and can now be archived without breaking this trace contract.
- */
 export type TopicRouterV3Debug = {
   enabled?: boolean;
   route?: string;
@@ -89,11 +77,7 @@ export type TopicRouterV3Debug = {
   decision_kind?: string;
   selected_topic_id?: string | null;
   selected_topic_label?: string | null;
-  /** @deprecated Use selected_topic_label instead. */
-  selected_topic_name?: string | null;
   created_topic_label?: string | null;
-  /** @deprecated Use created_topic_label instead. */
-  created_topic_name?: string | null;
   confidence?: number | null;
   reasons?: string[];
   warnings?: string[];
@@ -141,9 +125,7 @@ export type TopicResolutionTrace = {
 
   candidates: Array<{
     topicId: string;
-    topicLabel?: string;
-    /** @deprecated Use topicLabel instead. */
-    topicName: string;
+    topicLabel: string;
     similarity: number;
     breakdown: TopicScoreBreakdown;
   }>;
@@ -153,9 +135,7 @@ export type TopicResolutionTrace = {
     score: number;
     reasons: string[];
     topicId: string | null;
-    topicLabel?: string | null;
-    /** @deprecated Use topicLabel instead. */
-    topicName: string | null;
+    topicLabel: string | null;
     label: string | null;
   }>;
 
@@ -164,9 +144,7 @@ export type TopicResolutionTrace = {
     score: number;
     reasons: string[];
     topicId: string | null;
-    topicLabel?: string | null;
-    /** @deprecated Use topicLabel instead. */
-    topicName: string | null;
+    topicLabel: string | null;
     label: string | null;
   };
 
@@ -174,13 +152,6 @@ export type TopicResolutionTrace = {
   decisionAction: ResolutionDecisionAction;
   fallbackRecommended: boolean;
   timing?: ResolutionTimingDebug;
-
-  /**
-   * Optional archived-router debug payload.
-   *
-   * Kept for compatibility with older traces, but no longer imports types from
-   * the dormant topic-routing folder.
-   */
   topic_router_v3?: TopicRouterV3Debug;
 };
 
@@ -238,7 +209,6 @@ export function emptyTopicResolutionTrace(): TopicResolutionTrace {
       reasons: [],
       topicId: null,
       topicLabel: null,
-      topicName: null,
       label: null,
     },
     topGap: 0,
@@ -250,8 +220,6 @@ export function emptyTopicResolutionTrace(): TopicResolutionTrace {
 export function emptyVectorInfo(): VectorInfo {
   return {
     top_k_topic_labels: [],
-    // Legacy alias; remove after all callers migrate.
-    top_k_topic_names: [],
     top_k_topic_ids: [],
     top_k_similarity_scores: [],
   };
