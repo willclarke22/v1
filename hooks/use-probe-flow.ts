@@ -4,6 +4,10 @@ import { useCallback, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Topic } from "@/types/topic";
 import type { ProbeSummary } from "@/components/probes/probe-surface";
+import {
+  isTopicPosition3D,
+  type TopicPosition3D,
+} from "@/lib/learning-space/topic-position";
 import type {
   DeliveredProbe,
   FrontendInterventionSummary,
@@ -84,6 +88,10 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function asTopicPosition(value: unknown): TopicPosition3D | null {
+  return isTopicPosition3D(value) ? value : null;
+}
+
 function extractLearningSpaceFromMessageResponse(
   data: MessageRouteResponse,
 ): LearningSpace | null {
@@ -113,6 +121,8 @@ function extractInterventionFromMessageResponse(
             data.result.delivered_response.delivered_probe !== null
               ? "available"
               : "not_applicable",
+          status_label: "",
+          suggested_action: "",
         }
       : null)
   );
@@ -158,6 +168,50 @@ function extractMetricUpdateFromMessageResponse(
     insight: topic.topic_insight_average ?? null,
     learningScore: topic.topic_learning_score ?? null,
   };
+}
+
+function applyLearningSpaceToTopics(
+  topics: Topic[],
+  learningSpace: LearningSpace | null,
+): Topic[] {
+  if (!learningSpace?.topics?.length) {
+    return topics;
+  }
+
+  const learningSpaceTopicsById = new Map(
+    learningSpace.topics.map((topic) => [topic.topic_id, topic]),
+  );
+
+  return topics.map((topic) => {
+    const learningSpaceTopic = learningSpaceTopicsById.get(topic.id);
+
+    if (!learningSpaceTopic) {
+      return topic;
+    }
+
+    const position = asTopicPosition(learningSpaceTopic.position);
+    const semanticPosition = asTopicPosition(
+      learningSpaceTopic.layout?.semantic_position,
+    );
+
+    return {
+      ...topic,
+      position: position ?? topic.position,
+      semanticPosition: semanticPosition ?? topic.semanticPosition ?? null,
+      semanticPositionMethod:
+        learningSpaceTopic.layout?.semantic_position_method ??
+        topic.semanticPositionMethod ??
+        null,
+      semanticPositionUpdatedAt:
+        learningSpaceTopic.layout?.semantic_position_updated_at ??
+        topic.semanticPositionUpdatedAt ??
+        null,
+      positionSource:
+        learningSpaceTopic.layout?.position_source ??
+        topic.positionSource ??
+        "topic_position",
+    };
+  });
 }
 
 function mapDeliveredProbeToSummary(
@@ -325,6 +379,19 @@ export function useProbeFlow({
     [setTopics],
   );
 
+  const applyLearningSpaceUpdate = useCallback(
+    (learningSpace: LearningSpace | null) => {
+      if (!learningSpace) return;
+
+      onLearningSpaceUpdate?.(learningSpace);
+
+      setTopics((prevTopics) =>
+        applyLearningSpaceToTopics(prevTopics, learningSpace),
+      );
+    },
+    [onLearningSpaceUpdate, setTopics],
+  );
+
   const resetProbeStateForMessage = useCallback(() => {
     setAvailableProbe(null);
     setActiveProbeId(null);
@@ -349,7 +416,7 @@ export function useProbeFlow({
 
       const returnedLearningSpace = extractLearningSpaceFromMessageResponse(data);
       if (returnedLearningSpace) {
-        onLearningSpaceUpdate?.(returnedLearningSpace);
+        applyLearningSpaceUpdate(returnedLearningSpace);
       }
 
       const intervention = extractInterventionFromMessageResponse(data);
@@ -381,7 +448,7 @@ export function useProbeFlow({
       setConsecutiveProbeCount(0);
       setIsSending(false);
     },
-    [applyTopicMetricUpdate, focusTopic, onLearningSpaceUpdate],
+    [applyLearningSpaceUpdate, applyTopicMetricUpdate, focusTopic],
   );
 
   const finishMessageFlowError = useCallback(() => {
@@ -492,7 +559,7 @@ export function useProbeFlow({
 
         const returnedLearningSpace = extractLearningSpaceFromProbeSubmitResponse(data);
         if (returnedLearningSpace) {
-          onLearningSpaceUpdate?.(returnedLearningSpace);
+          applyLearningSpaceUpdate(returnedLearningSpace);
         }
 
         const replyText = extractReplyFromProbeSubmitResponse(data);
@@ -570,10 +637,10 @@ export function useProbeFlow({
       topics,
       availableProbe,
       consecutiveProbeCount,
+      applyLearningSpaceUpdate,
       applyTopicMetricUpdate,
       openMyWayPanel,
       focusTopic,
-      onLearningSpaceUpdate,
     ],
   );
 

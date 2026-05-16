@@ -1,18 +1,13 @@
+// app/api/bootstrap/topic-state/route.ts
+
 import { NextResponse } from "next/server";
 import { getLatestTopicState } from "@/lib/persistence/read";
+import { resolveTopicLayout } from "@/lib/learning-space/topic-position";
 import type { DiagnosisType } from "@/types/contracts";
 import type { Topic } from "@/types/topic";
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
-}
-
-function isPosition(value: unknown): value is [number, number, number] {
-  return (
-    Array.isArray(value) &&
-    value.length === 3 &&
-    value.every((item) => typeof item === "number")
-  );
 }
 
 function normalizeDiagnosis(raw: unknown): DiagnosisType {
@@ -57,28 +52,6 @@ function getTopicJson(row: unknown): Record<string, unknown> {
   return {};
 }
 
-function getLearningSpaceTopicPosition(
-  topicJson: Record<string, unknown>,
-): [number, number, number] | null {
-  if (
-    "learning_space_topic" in topicJson &&
-    topicJson.learning_space_topic &&
-    typeof topicJson.learning_space_topic === "object" &&
-    !Array.isArray(topicJson.learning_space_topic)
-  ) {
-    const learningSpaceTopic = topicJson.learning_space_topic as Record<
-      string,
-      unknown
-    >;
-
-    if (isPosition(learningSpaceTopic.position)) {
-      return learningSpaceTopic.position;
-    }
-  }
-
-  return null;
-}
-
 function getTopicLabel(args: {
   rowWithTopicFields: {
     topic_label?: string | null;
@@ -118,7 +91,6 @@ function mapRowsToTopics(
       next_step?: string | null;
       updated_at?: string | null;
       topic_message_count?: number | null;
-      topic_centroid?: unknown;
     };
 
     const topicJson = getTopicJson(row);
@@ -137,11 +109,15 @@ function mapRowsToTopics(
           ? rowWithTopicFields.next_step
           : "Continue learning";
 
-    const position =
-      getLearningSpaceTopicPosition(topicJson) ??
-      (isPosition(rowWithTopicFields.topic_centroid)
-        ? rowWithTopicFields.topic_centroid
-        : [index * 2.2, 0, 0]);
+    const layout = resolveTopicLayout({
+      topicId: rowWithTopicFields.topic_id,
+      index,
+      topicPosition: row.topic_position,
+      semanticPosition: row.semantic_position,
+      semanticPositionMethod: row.semantic_position_method,
+      semanticPositionUpdatedAt: row.semantic_position_updated_at,
+      topicJson,
+    });
 
     return {
       id: rowWithTopicFields.topic_id,
@@ -151,7 +127,20 @@ function mapRowsToTopics(
       confusion: clamp(rowWithTopicFields.confusion ?? 0.5),
       insight: clamp(rowWithTopicFields.insight ?? 0.5),
       learningScore: clamp(rowWithTopicFields.learning_score ?? 0.5),
-      position,
+
+      /**
+       * Current committed renderer position.
+       */
+      position: layout.position,
+
+      /**
+       * Optional semantic target metadata.
+       */
+      semanticPosition: layout.semantic_position,
+      semanticPositionMethod: layout.semantic_position_method,
+      semanticPositionUpdatedAt: layout.semantic_position_updated_at,
+      positionSource: layout.position_source,
+
       scale: 1,
       messageCount:
         typeof rowWithTopicFields.topic_message_count === "number"

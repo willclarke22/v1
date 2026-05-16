@@ -1,7 +1,15 @@
+// lib/runtime/route-topics.ts
+
 import { getRouteTopicState } from "@/lib/persistence/read";
+import {
+  computeNextTopicPosition,
+  resolveTopicLayout,
+  type TopicPosition3D,
+  type TopicPositionSource,
+} from "@/lib/learning-space/topic-position";
 import { makeId } from "@/lib/utils/ids";
 import type { DiagnosisType, EmbeddingVector } from "@/types/contracts";
-import { isPosition, normalizeDiagnosis } from "./shared";
+import { normalizeDiagnosis } from "./shared";
 
 export type RouteTopic = {
   id: string;
@@ -11,7 +19,22 @@ export type RouteTopic = {
   confusion: number;
   insight: number;
   learningScore: number;
-  position: [number, number, number];
+
+  /**
+   * Current committed renderer position.
+   * This should be derived from topic_position_x/y/z first.
+   */
+  position: TopicPosition3D;
+
+  /**
+   * Optional semantic target position.
+   * This is not automatically the rendered position.
+   */
+  semanticPosition?: TopicPosition3D | null;
+  semanticPositionMethod?: string | null;
+  semanticPositionUpdatedAt?: string | null;
+  positionSource?: TopicPositionSource;
+
   scale: number;
   messageCount: number;
   lastUpdated: string;
@@ -85,22 +108,6 @@ function inferKeywordsFromSourceText(source: string): string[] {
   ).slice(0, 8);
 }
 
-function computeNextTopicPosition(existingTopics: RouteTopic[]): [number, number, number] {
-  const count = existingTopics.length;
-
-  if (count === 0) {
-    return [0, 0, 0];
-  }
-
-  const angle = count * 1.35;
-  const radius = 2.8 + count * 0.65;
-  const x = Math.cos(angle) * radius;
-  const y = ((count % 3) - 1) * 0.9;
-  const z = Math.sin(angle) * radius * 0.75;
-
-  return [x, y, z];
-}
-
 function inferSeededNextStepFromConceptAndFrame(
   concept: string,
   frame: SharedMessageFrame,
@@ -128,7 +135,7 @@ function buildSeededTopic(args: {
   nextStep: string;
   existingTopics: RouteTopic[];
 }): RouteTopic {
-  const position = computeNextTopicPosition(args.existingTopics);
+  const position = computeNextTopicPosition(args.existingTopics.length);
 
   return {
     id: makeId("topic"),
@@ -139,10 +146,15 @@ function buildSeededTopic(args: {
     insight: 0.34,
     learningScore: 0.22,
     position,
+    semanticPosition: null,
+    semanticPositionMethod: null,
+    semanticPositionUpdatedAt: null,
+    positionSource: "deterministic_fallback",
     scale: 1,
     messageCount: 1,
     lastUpdated: new Date().toISOString(),
     hasAvailableProbe: false,
+    topic_json: null,
   };
 }
 
@@ -159,42 +171,6 @@ export function buildSeededTopicFromResolvedLabel(args: {
     ),
     existingTopics: args.existingTopics,
   });
-}
-
-function extractPositionFromTopicJson(topicJson: unknown): [number, number, number] | null {
-  if (!topicJson || typeof topicJson !== "object" || Array.isArray(topicJson)) {
-    return null;
-  }
-
-  const json = topicJson as {
-    topic_position?: unknown;
-    position?: unknown;
-    topic_centroid?: unknown;
-    learning_space_topic?: {
-      position?: unknown;
-    };
-  };
-
-  return (
-    (isPosition(json.topic_position) ? json.topic_position : null) ??
-    (isPosition(json.position) ? json.position : null) ??
-    (isPosition(json.topic_centroid) ? json.topic_centroid : null) ??
-    (isPosition(json.learning_space_topic?.position)
-      ? json.learning_space_topic.position
-      : null)
-  );
-}
-
-function resolveTopicPosition(row: {
-  topic_position?: [number, number, number] | null;
-  semantic_position?: [number, number, number] | null;
-  topic_json?: Record<string, unknown> | null;
-}): [number, number, number] | null {
-  return (
-    (isPosition(row.semantic_position) ? row.semantic_position : null) ??
-    (isPosition(row.topic_position) ? row.topic_position : null) ??
-    extractPositionFromTopicJson(row.topic_json)
-  );
 }
 
 function resolveEmbeddingFields(row: {
@@ -238,25 +214,35 @@ export async function loadRouteTopics(): Promise<RouteTopic[]> {
   const loadedTopics: RouteTopic[] = [];
 
   for (const row of rows) {
-    const position =
-      resolveTopicPosition({
-        topic_position: row.topic_position,
-        semantic_position: row.semantic_position,
-        topic_json: row.topic_json,
-      }) ?? computeNextTopicPosition(loadedTopics);
+    const layout = resolveTopicLayout({
+      topicId: row.topic_id,
+      index: loadedTopics.length,
+      topicPosition: row.topic_position,
+      semanticPosition: row.semantic_position,
+      semanticPositionMethod: row.semantic_position_method,
+      semanticPositionUpdatedAt: row.semantic_position_updated_at,
+      topicJson: row.topic_json,
+    });
 
     const embeddingFields = resolveEmbeddingFields(row);
-    const topicLabel = row.topic_label.trim();
+    const topicLabel = row.topic_label.trim() || "Untitled Topic";
 
     const routeTopic: RouteTopic = {
       id: row.topic_id,
       topic_label: topicLabel,
       diagnosis: normalizeDiagnosis(row.diagnosis) ?? DEFAULT_DIAGNOSIS,
-      nextStep: row.next_step ?? `Explain ${topicLabel} clearly in your own words.`,
+      nextStep:
+        row.next_step ?? `Explain ${topicLabel} clearly in your own words.`,
       confusion: row.confusion ?? 0.5,
       insight: row.insight ?? 0.3,
       learningScore: row.learning_score ?? 0.2,
-      position,
+
+      position: layout.position,
+      semanticPosition: layout.semantic_position,
+      semanticPositionMethod: layout.semantic_position_method,
+      semanticPositionUpdatedAt: layout.semantic_position_updated_at,
+      positionSource: layout.position_source,
+
       scale: 1,
       messageCount: 1,
       lastUpdated: row.updated_at,

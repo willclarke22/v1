@@ -1,0 +1,1247 @@
+{
+  "ok": true,
+  "route": "POST /api/semantic-layout/recompute-pending",
+  "duration_ms": 1444.13,
+  "limit": 100,
+  "force": true,
+  "total_topics_seen": 7,
+  "topic_label_enriched_topic_count": 7,
+  "pending_layout_topics_found": 7,
+  "processed_count": 7,
+  "updated_count": 7,
+  "semantic_layout_version": "semantic_continuous_force_v5",
+  "global_layout_summary": {
+    "version": "semantic_continuous_force_v5",
+    "force": true,
+    "enriched_topic_count": 7,
+    "total_topics_seen": 7,
+    "layout_parameters": {
+      "enriched_topic_count": 7,
+      "strong_attraction_similarity": 0.6,
+      "moderate_attraction_similarity": 0.42,
+      "weak_attraction_similarity": 0.18,
+      "visible_context_similarity": 0,
+      "min_repulsion_distance": 1.55,
+      "max_semantic_pull_alpha": 0.58,
+      "min_semantic_pull_alpha": 0.14,
+      "stability_anchor_strength": 0.62,
+      "min_display_force_weight": 0.01
+    },
+    "strategy": "Compute semantic target positions with continuous attraction forces from topic_label embeddings. Similar topics pull more strongly, weakly related topics pull lightly, unrelated topics mainly provide context/repulsion, and clusters are discovered later from geometry rather than assigned here.",
+    "cluster_policy": "Clusters are not assigned by this route. Emergent regions are inferred later from stable semantic geometry.",
+    "movement_policy": "This route writes semantic_position only. It does not mutate committed topic_position."
+  },
+  "results": [
+    {
+      "topic_id": "topic_60dabaa4-5788-4850-a929-c514f9af05ea",
+      "topic_label": "Action Potentials",
+      "status": "semantic_position_saved",
+      "stale_learning_space_topic_layout_refreshed": false,
+      "committed_visual_position": [
+        0,
+        0,
+        0
+      ],
+      "semantic_position": [
+        0.0225,
+        -0.1957,
+        -0.3793
+      ],
+      "semantic_pull_position": [
+        0.0225,
+        -0.1957,
+        -0.3793
+      ],
+      "pre_repulsion_position": [
+        0.0225,
+        -0.1957,
+        -0.3793
+      ],
+      "semantic_position_method": "semantic_continuous_force_v5_stable_fallback",
+      "semantic_layout_version": "semantic_continuous_force_v5",
+      "semantic_layout_embedding_source": "topic_label_embedding_centroid",
+      "resolved_embedding_source": "topic_label_embedding",
+      "topic_label_embedding_count": 1,
+      "reason": "No neighbor passed the weak attraction floor, so the topic kept a stable fallback semantic target near its current visual position.",
+      "layout_decision": {
+        "emergent_region_signal": 0,
+        "total_attraction_weight": 0,
+        "semantic_pull_alpha": 0,
+        "top_similarity": 0.1738,
+        "second_similarity": 0.0903,
+        "top_second_margin": 0.0835,
+        "repulsion_applied": false,
+        "repulsion_vector": [
+          0,
+          0,
+          0
+        ],
+        "layout_parameters": {
+          "enriched_topic_count": 7,
+          "strong_attraction_similarity": 0.6,
+          "moderate_attraction_similarity": 0.42,
+          "weak_attraction_similarity": 0.18,
+          "visible_context_similarity": 0,
+          "min_repulsion_distance": 1.55,
+          "max_semantic_pull_alpha": 0.58,
+          "min_semantic_pull_alpha": 0.14,
+          "stability_anchor_strength": 0.62,
+          "min_display_force_weight": 0.01
+        }
+      },
+      "force_neighbors": [],
+      "semantic_neighbors": [
+        {
+          "topic_id": "topic_f8fe16dd-3cea-4eb6-9381-4fea33a8e35d",
+          "topic_label": "Expected Value",
+          "similarity": 0.1738,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            4.90955198950217,
+            -0.84,
+            -2.56090518392166
+          ]
+        },
+        {
+          "topic_id": "topic_44a17fd3-ff83-4eac-8adc-ff73cecb7955",
+          "topic_label": "Probability",
+          "similarity": 0.0903,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0.411704200760767,
+            0,
+            -3.84674875607848
+          ]
+        },
+        {
+          "topic_id": "topic_fdb3a98d-8191-4b60-98e8-5d07af929a2c",
+          "topic_label": "Bayes’ Theorem",
+          "similarity": 0.0594,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            3.1263222884357,
+            0.42,
+            3.34374172709912
+          ]
+        },
+        {
+          "topic_id": "topic_c24f8d74-d6d0-4088-8a3a-8ef780ef6ae3",
+          "topic_label": "Normal Distribution",
+          "similarity": 0.0544,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -3.06008084402503,
+            -0.42,
+            2.29869347137197
+          ]
+        },
+        {
+          "topic_id": "topic_3fadd0e4-5442-4f9b-970c-a3da71ec5187",
+          "topic_label": "Circle of Fifths",
+          "similarity": 0.0039,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -1.58535446447621,
+            -0.42,
+            4.83590046099875
+          ]
+        }
+      ]
+    },
+    {
+      "topic_id": "topic_c24f8d74-d6d0-4088-8a3a-8ef780ef6ae3",
+      "topic_label": "Normal Distribution",
+      "status": "semantic_position_saved",
+      "stale_learning_space_topic_layout_refreshed": false,
+      "committed_visual_position": [
+        -3.06008084402503,
+        -0.42,
+        2.29869347137197
+      ],
+      "semantic_position": [
+        -1.1033,
+        -0.4521,
+        0.8409
+      ],
+      "semantic_pull_position": [
+        3.223,
+        -0.4909,
+        -2.3834
+      ],
+      "pre_repulsion_position": [
+        -1.0797,
+        -0.4423,
+        0.8229
+      ],
+      "semantic_position_method": "semantic_continuous_force_v5_topic_label_embedding",
+      "semantic_layout_version": "semantic_continuous_force_v5",
+      "semantic_layout_embedding_source": "topic_label_embedding_centroid",
+      "resolved_embedding_source": "topic_label_embedding",
+      "topic_label_embedding_count": 1,
+      "reason": "Computed semantic target from continuous attraction forces. Similar topics pull more strongly, weak topics pull lightly, and clusters are left to emerge from geometry.",
+      "layout_decision": {
+        "emergent_region_signal": 0.3982,
+        "total_attraction_weight": 0.1858,
+        "semantic_pull_alpha": 0.3152,
+        "top_similarity": 0.4789,
+        "second_similarity": 0.4603,
+        "top_second_margin": 0.0186,
+        "repulsion_applied": true,
+        "repulsion_vector": [
+          -0.0237,
+          -0.0097,
+          0.0181
+        ],
+        "layout_parameters": {
+          "enriched_topic_count": 7,
+          "strong_attraction_similarity": 0.6,
+          "moderate_attraction_similarity": 0.42,
+          "weak_attraction_similarity": 0.18,
+          "visible_context_similarity": 0,
+          "min_repulsion_distance": 1.55,
+          "max_semantic_pull_alpha": 0.58,
+          "min_semantic_pull_alpha": 0.14,
+          "stability_anchor_strength": 0.62,
+          "min_display_force_weight": 0.01
+        }
+      },
+      "force_neighbors": [
+        {
+          "topic_id": "topic_44a17fd3-ff83-4eac-8adc-ff73cecb7955",
+          "topic_label": "Probability",
+          "similarity": 0.4789,
+          "semantic_role": "moderate_attractor",
+          "force_weight": 0.0797,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0.411704200760767,
+            0,
+            -3.84674875607848
+          ]
+        },
+        {
+          "topic_id": "topic_f8fe16dd-3cea-4eb6-9381-4fea33a8e35d",
+          "topic_label": "Expected Value",
+          "similarity": 0.4603,
+          "semantic_role": "moderate_attractor",
+          "force_weight": 0.0701,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            4.90955198950217,
+            -0.84,
+            -2.56090518392166
+          ]
+        },
+        {
+          "topic_id": "topic_fdb3a98d-8191-4b60-98e8-5d07af929a2c",
+          "topic_label": "Bayes’ Theorem",
+          "similarity": 0.3809,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.036,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            3.1263222884357,
+            0.42,
+            3.34374172709912
+          ]
+        }
+      ],
+      "semantic_neighbors": [
+        {
+          "topic_id": "topic_44a17fd3-ff83-4eac-8adc-ff73cecb7955",
+          "topic_label": "Probability",
+          "similarity": 0.4789,
+          "semantic_role": "moderate_attractor",
+          "force_weight": 0.0797,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0.411704200760767,
+            0,
+            -3.84674875607848
+          ]
+        },
+        {
+          "topic_id": "topic_f8fe16dd-3cea-4eb6-9381-4fea33a8e35d",
+          "topic_label": "Expected Value",
+          "similarity": 0.4603,
+          "semantic_role": "moderate_attractor",
+          "force_weight": 0.0701,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            4.90955198950217,
+            -0.84,
+            -2.56090518392166
+          ]
+        },
+        {
+          "topic_id": "topic_fdb3a98d-8191-4b60-98e8-5d07af929a2c",
+          "topic_label": "Bayes’ Theorem",
+          "similarity": 0.3809,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.036,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            3.1263222884357,
+            0.42,
+            3.34374172709912
+          ]
+        },
+        {
+          "topic_id": "topic_695d8451-bc3f-4d66-8847-0378c759f421",
+          "topic_label": "DNA Replication",
+          "similarity": 0.1613,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -5.41592416923486,
+            0.84,
+            -0.785560596210695
+          ]
+        },
+        {
+          "topic_id": "topic_3fadd0e4-5442-4f9b-970c-a3da71ec5187",
+          "topic_label": "Circle of Fifths",
+          "similarity": 0.0671,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -1.58535446447621,
+            -0.42,
+            4.83590046099875
+          ]
+        },
+        {
+          "topic_id": "topic_60dabaa4-5788-4850-a929-c514f9af05ea",
+          "topic_label": "Action Potentials",
+          "similarity": 0.0544,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "topic_id": "topic_44a17fd3-ff83-4eac-8adc-ff73cecb7955",
+      "topic_label": "Probability",
+      "status": "semantic_position_saved",
+      "stale_learning_space_topic_layout_refreshed": false,
+      "committed_visual_position": [
+        0.411704200760767,
+        0,
+        -3.84674875607848
+      ],
+      "semantic_position": [
+        0.6642,
+        0.0956,
+        -1.2586
+      ],
+      "semantic_pull_position": [
+        0.954,
+        0.2157,
+        2.2438
+      ],
+      "pre_repulsion_position": [
+        0.6453,
+        0.0929,
+        -1.223
+      ],
+      "semantic_position_method": "semantic_continuous_force_v5_topic_label_embedding",
+      "semantic_layout_version": "semantic_continuous_force_v5",
+      "semantic_layout_embedding_source": "topic_label_embedding_centroid",
+      "resolved_embedding_source": "topic_label_embedding",
+      "topic_label_embedding_count": 1,
+      "reason": "Computed semantic target from continuous attraction forces. Similar topics pull more strongly, weak topics pull lightly, and clusters are left to emerge from geometry.",
+      "layout_decision": {
+        "emergent_region_signal": 0.6608,
+        "total_attraction_weight": 0.2941,
+        "semantic_pull_alpha": 0.4308,
+        "top_similarity": 0.6091,
+        "second_similarity": 0.4789,
+        "top_second_margin": 0.1302,
+        "repulsion_applied": true,
+        "repulsion_vector": [
+          0.0188,
+          0.0027,
+          -0.0357
+        ],
+        "layout_parameters": {
+          "enriched_topic_count": 7,
+          "strong_attraction_similarity": 0.6,
+          "moderate_attraction_similarity": 0.42,
+          "weak_attraction_similarity": 0.18,
+          "visible_context_similarity": 0,
+          "min_repulsion_distance": 1.55,
+          "max_semantic_pull_alpha": 0.58,
+          "min_semantic_pull_alpha": 0.14,
+          "stability_anchor_strength": 0.62,
+          "min_display_force_weight": 0.01
+        }
+      },
+      "force_neighbors": [
+        {
+          "topic_id": "topic_fdb3a98d-8191-4b60-98e8-5d07af929a2c",
+          "topic_label": "Bayes’ Theorem",
+          "similarity": 0.6091,
+          "semantic_role": "strong_attractor",
+          "force_weight": 0.1643,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            3.1263222884357,
+            0.42,
+            3.34374172709912
+          ]
+        },
+        {
+          "topic_id": "topic_c24f8d74-d6d0-4088-8a3a-8ef780ef6ae3",
+          "topic_label": "Normal Distribution",
+          "similarity": 0.4789,
+          "semantic_role": "moderate_attractor",
+          "force_weight": 0.0797,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -3.06008084402503,
+            -0.42,
+            2.29869347137197
+          ]
+        },
+        {
+          "topic_id": "topic_f8fe16dd-3cea-4eb6-9381-4fea33a8e35d",
+          "topic_label": "Expected Value",
+          "similarity": 0.4098,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.0471,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            4.90955198950217,
+            -0.84,
+            -2.56090518392166
+          ]
+        }
+      ],
+      "semantic_neighbors": [
+        {
+          "topic_id": "topic_fdb3a98d-8191-4b60-98e8-5d07af929a2c",
+          "topic_label": "Bayes’ Theorem",
+          "similarity": 0.6091,
+          "semantic_role": "strong_attractor",
+          "force_weight": 0.1643,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            3.1263222884357,
+            0.42,
+            3.34374172709912
+          ]
+        },
+        {
+          "topic_id": "topic_c24f8d74-d6d0-4088-8a3a-8ef780ef6ae3",
+          "topic_label": "Normal Distribution",
+          "similarity": 0.4789,
+          "semantic_role": "moderate_attractor",
+          "force_weight": 0.0797,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -3.06008084402503,
+            -0.42,
+            2.29869347137197
+          ]
+        },
+        {
+          "topic_id": "topic_f8fe16dd-3cea-4eb6-9381-4fea33a8e35d",
+          "topic_label": "Expected Value",
+          "similarity": 0.4098,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.0471,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            4.90955198950217,
+            -0.84,
+            -2.56090518392166
+          ]
+        },
+        {
+          "topic_id": "topic_695d8451-bc3f-4d66-8847-0378c759f421",
+          "topic_label": "DNA Replication",
+          "similarity": 0.2319,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.0024,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -5.41592416923486,
+            0.84,
+            -0.785560596210695
+          ]
+        },
+        {
+          "topic_id": "topic_3fadd0e4-5442-4f9b-970c-a3da71ec5187",
+          "topic_label": "Circle of Fifths",
+          "similarity": 0.2062,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.0006,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -1.58535446447621,
+            -0.42,
+            4.83590046099875
+          ]
+        },
+        {
+          "topic_id": "topic_60dabaa4-5788-4850-a929-c514f9af05ea",
+          "topic_label": "Action Potentials",
+          "similarity": 0.0903,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "topic_id": "topic_fdb3a98d-8191-4b60-98e8-5d07af929a2c",
+      "topic_label": "Bayes’ Theorem",
+      "status": "semantic_position_saved",
+      "stale_learning_space_topic_layout_refreshed": false,
+      "committed_visual_position": [
+        3.1263222884357,
+        0.42,
+        3.34374172709912
+      ],
+      "semantic_position": [
+        2.2366,
+        0.257,
+        1.0011
+      ],
+      "semantic_pull_position": [
+        0.6901,
+        -0.0262,
+        -3.0708
+      ],
+      "pre_repulsion_position": [
+        2.2366,
+        0.257,
+        1.0011
+      ],
+      "semantic_position_method": "semantic_continuous_force_v5_topic_label_embedding",
+      "semantic_layout_version": "semantic_continuous_force_v5",
+      "semantic_layout_embedding_source": "topic_label_embedding_centroid",
+      "resolved_embedding_source": "topic_label_embedding",
+      "topic_label_embedding_count": 1,
+      "reason": "Computed semantic target from continuous attraction forces. Similar topics pull more strongly, weak topics pull lightly, and clusters are left to emerge from geometry.",
+      "layout_decision": {
+        "emergent_region_signal": 0.5118,
+        "total_attraction_weight": 0.2113,
+        "semantic_pull_alpha": 0.3652,
+        "top_similarity": 0.6091,
+        "second_similarity": 0.3809,
+        "top_second_margin": 0.2282,
+        "repulsion_applied": false,
+        "repulsion_vector": [
+          0,
+          0,
+          0
+        ],
+        "layout_parameters": {
+          "enriched_topic_count": 7,
+          "strong_attraction_similarity": 0.6,
+          "moderate_attraction_similarity": 0.42,
+          "weak_attraction_similarity": 0.18,
+          "visible_context_similarity": 0,
+          "min_repulsion_distance": 1.55,
+          "max_semantic_pull_alpha": 0.58,
+          "min_semantic_pull_alpha": 0.14,
+          "stability_anchor_strength": 0.62,
+          "min_display_force_weight": 0.01
+        }
+      },
+      "force_neighbors": [
+        {
+          "topic_id": "topic_44a17fd3-ff83-4eac-8adc-ff73cecb7955",
+          "topic_label": "Probability",
+          "similarity": 0.6091,
+          "semantic_role": "strong_attractor",
+          "force_weight": 0.1643,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0.411704200760767,
+            0,
+            -3.84674875607848
+          ]
+        },
+        {
+          "topic_id": "topic_c24f8d74-d6d0-4088-8a3a-8ef780ef6ae3",
+          "topic_label": "Normal Distribution",
+          "similarity": 0.3809,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.036,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -3.06008084402503,
+            -0.42,
+            2.29869347137197
+          ]
+        },
+        {
+          "topic_id": "topic_f8fe16dd-3cea-4eb6-9381-4fea33a8e35d",
+          "topic_label": "Expected Value",
+          "similarity": 0.2912,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.011,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            4.90955198950217,
+            -0.84,
+            -2.56090518392166
+          ]
+        }
+      ],
+      "semantic_neighbors": [
+        {
+          "topic_id": "topic_44a17fd3-ff83-4eac-8adc-ff73cecb7955",
+          "topic_label": "Probability",
+          "similarity": 0.6091,
+          "semantic_role": "strong_attractor",
+          "force_weight": 0.1643,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0.411704200760767,
+            0,
+            -3.84674875607848
+          ]
+        },
+        {
+          "topic_id": "topic_c24f8d74-d6d0-4088-8a3a-8ef780ef6ae3",
+          "topic_label": "Normal Distribution",
+          "similarity": 0.3809,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.036,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -3.06008084402503,
+            -0.42,
+            2.29869347137197
+          ]
+        },
+        {
+          "topic_id": "topic_f8fe16dd-3cea-4eb6-9381-4fea33a8e35d",
+          "topic_label": "Expected Value",
+          "similarity": 0.2912,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.011,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            4.90955198950217,
+            -0.84,
+            -2.56090518392166
+          ]
+        },
+        {
+          "topic_id": "topic_695d8451-bc3f-4d66-8847-0378c759f421",
+          "topic_label": "DNA Replication",
+          "similarity": 0.1845,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -5.41592416923486,
+            0.84,
+            -0.785560596210695
+          ]
+        },
+        {
+          "topic_id": "topic_60dabaa4-5788-4850-a929-c514f9af05ea",
+          "topic_label": "Action Potentials",
+          "similarity": 0.0594,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "topic_id": "topic_3fadd0e4-5442-4f9b-970c-a3da71ec5187",
+          "topic_label": "Circle of Fifths",
+          "similarity": 0.0554,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -1.58535446447621,
+            -0.42,
+            4.83590046099875
+          ]
+        }
+      ]
+    },
+    {
+      "topic_id": "topic_695d8451-bc3f-4d66-8847-0378c759f421",
+      "topic_label": "DNA Replication",
+      "status": "semantic_position_saved",
+      "stale_learning_space_topic_layout_refreshed": false,
+      "committed_visual_position": [
+        -5.41592416923486,
+        0.84,
+        -0.785560596210695
+      ],
+      "semantic_position": [
+        -4.5078,
+        0.7713,
+        -1.1538
+      ],
+      "semantic_pull_position": [
+        0.9476,
+        0.3587,
+        -3.3659
+      ],
+      "pre_repulsion_position": [
+        -4.5078,
+        0.7713,
+        -1.1538
+      ],
+      "semantic_position_method": "semantic_continuous_force_v5_topic_label_embedding",
+      "semantic_layout_version": "semantic_continuous_force_v5",
+      "semantic_layout_embedding_source": "topic_label_embedding_centroid",
+      "resolved_embedding_source": "topic_label_embedding",
+      "topic_label_embedding_count": 1,
+      "reason": "Computed semantic target from continuous attraction forces. Similar topics pull more strongly, weak topics pull lightly, and clusters are left to emerge from geometry.",
+      "layout_decision": {
+        "emergent_region_signal": 0.0062,
+        "total_attraction_weight": 0.0024,
+        "semantic_pull_alpha": 0.1427,
+        "top_similarity": 0.2319,
+        "second_similarity": 0.1845,
+        "top_second_margin": 0.0474,
+        "repulsion_applied": false,
+        "repulsion_vector": [
+          0,
+          0,
+          0
+        ],
+        "layout_parameters": {
+          "enriched_topic_count": 7,
+          "strong_attraction_similarity": 0.6,
+          "moderate_attraction_similarity": 0.42,
+          "weak_attraction_similarity": 0.18,
+          "visible_context_similarity": 0,
+          "min_repulsion_distance": 1.55,
+          "max_semantic_pull_alpha": 0.58,
+          "min_semantic_pull_alpha": 0.14,
+          "stability_anchor_strength": 0.62,
+          "min_display_force_weight": 0.01
+        }
+      },
+      "force_neighbors": [],
+      "semantic_neighbors": [
+        {
+          "topic_id": "topic_44a17fd3-ff83-4eac-8adc-ff73cecb7955",
+          "topic_label": "Probability",
+          "similarity": 0.2319,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.0024,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0.411704200760767,
+            0,
+            -3.84674875607848
+          ]
+        },
+        {
+          "topic_id": "topic_fdb3a98d-8191-4b60-98e8-5d07af929a2c",
+          "topic_label": "Bayes’ Theorem",
+          "similarity": 0.1845,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            3.1263222884357,
+            0.42,
+            3.34374172709912
+          ]
+        },
+        {
+          "topic_id": "topic_c24f8d74-d6d0-4088-8a3a-8ef780ef6ae3",
+          "topic_label": "Normal Distribution",
+          "similarity": 0.1613,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -3.06008084402503,
+            -0.42,
+            2.29869347137197
+          ]
+        },
+        {
+          "topic_id": "topic_f8fe16dd-3cea-4eb6-9381-4fea33a8e35d",
+          "topic_label": "Expected Value",
+          "similarity": 0.1201,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            4.90955198950217,
+            -0.84,
+            -2.56090518392166
+          ]
+        },
+        {
+          "topic_id": "topic_3fadd0e4-5442-4f9b-970c-a3da71ec5187",
+          "topic_label": "Circle of Fifths",
+          "similarity": 0.1014,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -1.58535446447621,
+            -0.42,
+            4.83590046099875
+          ]
+        }
+      ]
+    },
+    {
+      "topic_id": "topic_f8fe16dd-3cea-4eb6-9381-4fea33a8e35d",
+      "topic_label": "Expected Value",
+      "status": "semantic_position_saved",
+      "stale_learning_space_topic_layout_refreshed": false,
+      "committed_visual_position": [
+        4.90955198950217,
+        -0.84,
+        -2.56090518392166
+      ],
+      "semantic_position": [
+        3.1024,
+        -0.5637,
+        -1.9394
+      ],
+      "semantic_pull_position": [
+        -1.8792,
+        0.1978,
+        -0.2262
+      ],
+      "pre_repulsion_position": [
+        3.1024,
+        -0.5637,
+        -1.9394
+      ],
+      "semantic_position_method": "semantic_continuous_force_v5_topic_label_embedding",
+      "semantic_layout_version": "semantic_continuous_force_v5",
+      "semantic_layout_embedding_source": "topic_label_embedding_centroid",
+      "resolved_embedding_source": "topic_label_embedding",
+      "topic_label_embedding_count": 1,
+      "reason": "Computed semantic target from continuous attraction forces. Similar topics pull more strongly, weak topics pull lightly, and clusters are left to emerge from geometry.",
+      "layout_decision": {
+        "emergent_region_signal": 0.2868,
+        "total_attraction_weight": 0.1282,
+        "semantic_pull_alpha": 0.2662,
+        "top_similarity": 0.4603,
+        "second_similarity": 0.4098,
+        "top_second_margin": 0.0505,
+        "repulsion_applied": false,
+        "repulsion_vector": [
+          0,
+          0,
+          0
+        ],
+        "layout_parameters": {
+          "enriched_topic_count": 7,
+          "strong_attraction_similarity": 0.6,
+          "moderate_attraction_similarity": 0.42,
+          "weak_attraction_similarity": 0.18,
+          "visible_context_similarity": 0,
+          "min_repulsion_distance": 1.55,
+          "max_semantic_pull_alpha": 0.58,
+          "min_semantic_pull_alpha": 0.14,
+          "stability_anchor_strength": 0.62,
+          "min_display_force_weight": 0.01
+        }
+      },
+      "force_neighbors": [
+        {
+          "topic_id": "topic_c24f8d74-d6d0-4088-8a3a-8ef780ef6ae3",
+          "topic_label": "Normal Distribution",
+          "similarity": 0.4603,
+          "semantic_role": "moderate_attractor",
+          "force_weight": 0.0701,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -3.06008084402503,
+            -0.42,
+            2.29869347137197
+          ]
+        },
+        {
+          "topic_id": "topic_44a17fd3-ff83-4eac-8adc-ff73cecb7955",
+          "topic_label": "Probability",
+          "similarity": 0.4098,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.0471,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0.411704200760767,
+            0,
+            -3.84674875607848
+          ]
+        },
+        {
+          "topic_id": "topic_fdb3a98d-8191-4b60-98e8-5d07af929a2c",
+          "topic_label": "Bayes’ Theorem",
+          "similarity": 0.2912,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.011,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            3.1263222884357,
+            0.42,
+            3.34374172709912
+          ]
+        }
+      ],
+      "semantic_neighbors": [
+        {
+          "topic_id": "topic_c24f8d74-d6d0-4088-8a3a-8ef780ef6ae3",
+          "topic_label": "Normal Distribution",
+          "similarity": 0.4603,
+          "semantic_role": "moderate_attractor",
+          "force_weight": 0.0701,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -3.06008084402503,
+            -0.42,
+            2.29869347137197
+          ]
+        },
+        {
+          "topic_id": "topic_44a17fd3-ff83-4eac-8adc-ff73cecb7955",
+          "topic_label": "Probability",
+          "similarity": 0.4098,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.0471,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0.411704200760767,
+            0,
+            -3.84674875607848
+          ]
+        },
+        {
+          "topic_id": "topic_fdb3a98d-8191-4b60-98e8-5d07af929a2c",
+          "topic_label": "Bayes’ Theorem",
+          "similarity": 0.2912,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.011,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            3.1263222884357,
+            0.42,
+            3.34374172709912
+          ]
+        },
+        {
+          "topic_id": "topic_60dabaa4-5788-4850-a929-c514f9af05ea",
+          "topic_label": "Action Potentials",
+          "similarity": 0.1738,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "topic_id": "topic_695d8451-bc3f-4d66-8847-0378c759f421",
+          "topic_label": "DNA Replication",
+          "similarity": 0.1201,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -5.41592416923486,
+            0.84,
+            -0.785560596210695
+          ]
+        },
+        {
+          "topic_id": "topic_3fadd0e4-5442-4f9b-970c-a3da71ec5187",
+          "topic_label": "Circle of Fifths",
+          "similarity": 0.1118,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -1.58535446447621,
+            -0.42,
+            4.83590046099875
+          ]
+        }
+      ]
+    },
+    {
+      "topic_id": "topic_3fadd0e4-5442-4f9b-970c-a3da71ec5187",
+      "topic_label": "Circle of Fifths",
+      "status": "semantic_position_saved",
+      "stale_learning_space_topic_layout_refreshed": false,
+      "committed_visual_position": [
+        -1.58535446447621,
+        -0.42,
+        4.83590046099875
+      ],
+      "semantic_position": [
+        -1.2915,
+        -0.383,
+        3.7147
+      ],
+      "semantic_pull_position": [
+        0.5032,
+        -0.1571,
+        -3.1326
+      ],
+      "pre_repulsion_position": [
+        -1.2915,
+        -0.383,
+        3.7147
+      ],
+      "semantic_position_method": "semantic_continuous_force_v5_topic_label_embedding",
+      "semantic_layout_version": "semantic_continuous_force_v5",
+      "semantic_layout_embedding_source": "topic_label_embedding_centroid",
+      "resolved_embedding_source": "topic_label_embedding",
+      "topic_label_embedding_count": 1,
+      "reason": "Computed semantic target from continuous attraction forces. Similar topics pull more strongly, weak topics pull lightly, and clusters are left to emerge from geometry.",
+      "layout_decision": {
+        "emergent_region_signal": 0.0016,
+        "total_attraction_weight": 0.0006,
+        "semantic_pull_alpha": 0.1407,
+        "top_similarity": 0.2062,
+        "second_similarity": 0.1118,
+        "top_second_margin": 0.0944,
+        "repulsion_applied": false,
+        "repulsion_vector": [
+          0,
+          0,
+          0
+        ],
+        "layout_parameters": {
+          "enriched_topic_count": 7,
+          "strong_attraction_similarity": 0.6,
+          "moderate_attraction_similarity": 0.42,
+          "weak_attraction_similarity": 0.18,
+          "visible_context_similarity": 0,
+          "min_repulsion_distance": 1.55,
+          "max_semantic_pull_alpha": 0.58,
+          "min_semantic_pull_alpha": 0.14,
+          "stability_anchor_strength": 0.62,
+          "min_display_force_weight": 0.01
+        }
+      },
+      "force_neighbors": [],
+      "semantic_neighbors": [
+        {
+          "topic_id": "topic_44a17fd3-ff83-4eac-8adc-ff73cecb7955",
+          "topic_label": "Probability",
+          "similarity": 0.2062,
+          "semantic_role": "weak_attractor",
+          "force_weight": 0.0006,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0.411704200760767,
+            0,
+            -3.84674875607848
+          ]
+        },
+        {
+          "topic_id": "topic_f8fe16dd-3cea-4eb6-9381-4fea33a8e35d",
+          "topic_label": "Expected Value",
+          "similarity": 0.1118,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            4.90955198950217,
+            -0.84,
+            -2.56090518392166
+          ]
+        },
+        {
+          "topic_id": "topic_695d8451-bc3f-4d66-8847-0378c759f421",
+          "topic_label": "DNA Replication",
+          "similarity": 0.1014,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -5.41592416923486,
+            0.84,
+            -0.785560596210695
+          ]
+        },
+        {
+          "topic_id": "topic_c24f8d74-d6d0-4088-8a3a-8ef780ef6ae3",
+          "topic_label": "Normal Distribution",
+          "similarity": 0.0671,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            -3.06008084402503,
+            -0.42,
+            2.29869347137197
+          ]
+        },
+        {
+          "topic_id": "topic_fdb3a98d-8191-4b60-98e8-5d07af929a2c",
+          "topic_label": "Bayes’ Theorem",
+          "similarity": 0.0554,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            3.1263222884357,
+            0.42,
+            3.34374172709912
+          ]
+        },
+        {
+          "topic_id": "topic_60dabaa4-5788-4850-a929-c514f9af05ea",
+          "topic_label": "Action Potentials",
+          "similarity": 0.0039,
+          "semantic_role": "visible_context",
+          "force_weight": 0,
+          "reliability": 0.6,
+          "topic_label_embedding_count": 1,
+          "topic_label_embedding_source": "topic_label_embedding",
+          "visual_anchor_position": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}

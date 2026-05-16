@@ -1,3 +1,5 @@
+// lib/persistence/myway.ts
+
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { EmbeddingVector } from "@/types/contracts";
 
@@ -123,17 +125,26 @@ function readSemanticPositionFromTopicJson(
 ): TopicPosition | null {
   return (
     asTopicPosition(getJsonObjectValue(topicJson, "semantic_position")) ??
-    asTopicPosition(
-      getJsonObjectValue(topicJson, "semantic_target_position"),
-    ) ??
-    asTopicPosition(
-      getJsonObjectValue(topicJson, "learning_space_target_position"),
-    )
+    asTopicPosition(getJsonObjectValue(topicJson, "semantic_target_position")) ??
+    asTopicPosition(getJsonObjectValue(topicJson, "learning_space_target_position"))
   );
 }
 
 function baseTopicJson(topicJson: JsonValue): JsonObject {
   return isPlainObject(topicJson) ? { ...topicJson } : { value: topicJson };
+}
+
+function mergeTopicPositionIntoTopicJson(args: {
+  topicJson: JsonValue;
+  topicPosition?: TopicPosition | null;
+}): JsonValue {
+  const base = baseTopicJson(args.topicJson);
+
+  if (args.topicPosition !== undefined) {
+    base.topic_position = args.topicPosition;
+  }
+
+  return base;
 }
 
 function mergeEmbeddingFieldsIntoTopicJson(args: {
@@ -336,6 +347,12 @@ export type PersistedTopicStateInput = {
   topicJson: JsonValue;
 
   /**
+   * Current committed renderer position.
+   * This writes topic_position_x/y/z and mirrors topic_position into topic_json.
+   */
+  topicPosition?: TopicPosition | null;
+
+  /**
    * Canonical embedding of the clean topic label.
    * Used for semantic topic layout and Qdrant topic lookup.
    */
@@ -352,6 +369,10 @@ export type PersistedTopicStateInput = {
   topicMessageEmbeddingModel?: string | null;
   topicMessageEmbeddingUpdatedAt?: string | null;
 
+  /**
+   * Computed semantic target position.
+   * This writes semantic_position_x/y/z and mirrors semantic_position into topic_json.
+   */
   semanticPosition?: TopicPosition | null;
   semanticPositionUpdatedAt?: string | null;
   semanticPositionMethod?: string | null;
@@ -446,8 +467,13 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
     topicMessageEmbeddingUpdatedAt: resolvedMessageUpdatedAt,
   });
 
-  const topicJsonWithSemanticPosition = mergeSemanticPositionIntoTopicJson({
+  const topicJsonWithTopicPosition = mergeTopicPositionIntoTopicJson({
     topicJson: topicJsonWithEmbedding,
+    topicPosition: input.topicPosition,
+  });
+
+  const topicJsonWithSemanticPosition = mergeSemanticPositionIntoTopicJson({
+    topicJson: topicJsonWithTopicPosition,
     semanticPosition: input.semanticPosition,
     semanticPositionUpdatedAt,
     semanticPositionMethod: input.semanticPositionMethod,

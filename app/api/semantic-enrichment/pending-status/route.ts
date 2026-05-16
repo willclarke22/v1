@@ -25,26 +25,38 @@ function hasTopicMessageEmbedding(row: {
   );
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
 function getNestedSemanticStatus(
   row: TopicStateRow,
 ): Record<string, unknown> | null {
-  const topicJson = row.topic_json;
+  const topicJson = asRecord(row.topic_json);
+  if (!topicJson) return null;
 
-  if (!topicJson || typeof topicJson !== "object" || Array.isArray(topicJson)) {
-    return null;
-  }
+  return asRecord(topicJson.semantic_enrichment_status);
+}
 
-  const semanticStatus = topicJson.semantic_enrichment_status;
+function getPendingTopicMessageEmbeddings(row: TopicStateRow) {
+  const topicJson = asRecord(row.topic_json);
+  const rawQueue = topicJson?.pending_topic_message_embeddings;
 
-  if (
-    semanticStatus &&
-    typeof semanticStatus === "object" &&
-    !Array.isArray(semanticStatus)
-  ) {
-    return semanticStatus as Record<string, unknown>;
-  }
+  if (!Array.isArray(rawQueue)) return [];
 
-  return null;
+  return rawQueue.filter((item) => {
+    const candidate = asRecord(item);
+
+    return Boolean(
+      candidate &&
+        typeof candidate.message_id === "string" &&
+        candidate.message_id.trim() &&
+        typeof candidate.text === "string" &&
+        candidate.text.trim(),
+    );
+  });
 }
 
 function shouldEnrichTopic(row: TopicStateRow) {
@@ -71,15 +83,34 @@ export async function GET() {
   try {
     const rows = await getLatestTopicState();
     const pendingRows = rows.filter(shouldEnrichTopic);
+    const pendingMessageEmbeddingRows = rows.filter(
+      (row) => getPendingTopicMessageEmbeddings(row).length > 0,
+    );
+
+    const pendingTopicMessageEmbeddingItemsFound =
+      pendingMessageEmbeddingRows.reduce(
+        (sum, row) => sum + getPendingTopicMessageEmbeddings(row).length,
+        0,
+      );
 
     return NextResponse.json({
       ok: true,
       route: "GET /api/semantic-enrichment/pending-status",
       total_topics_seen: rows.length,
+
       pending_topics_found: pendingRows.length,
+      pending_topic_message_embedding_topics_found:
+        pendingMessageEmbeddingRows.length,
+      pending_topic_message_embedding_items_found:
+        pendingTopicMessageEmbeddingItemsFound,
+      pending_work_found:
+        pendingRows.length + pendingTopicMessageEmbeddingItemsFound,
+
       pending_topics: pendingRows.slice(0, 10).map((row) => {
         const hasLabelEmbedding = hasTopicLabelEmbedding(row);
         const hasMessageEmbedding = hasTopicMessageEmbedding(row);
+        const pendingTopicMessageEmbeddings =
+          getPendingTopicMessageEmbeddings(row);
 
         return {
           topic_id: row.topic_id,
@@ -97,12 +128,27 @@ export async function GET() {
           has_topic_label_embedding: hasLabelEmbedding,
           has_topic_message_embedding: hasMessageEmbedding,
 
+          pending_topic_message_embedding_count:
+            pendingTopicMessageEmbeddings.length,
+
           missing_canonical_embeddings: {
             topic_label_embedding: !hasLabelEmbedding,
             topic_message_embedding: !hasMessageEmbedding,
           },
         };
       }),
+
+      pending_topic_message_embedding_topics: pendingMessageEmbeddingRows
+        .slice(0, 10)
+        .map((row) => ({
+          topic_id: row.topic_id,
+          topic_label: row.topic_label,
+          pending_topic_message_embedding_count:
+            getPendingTopicMessageEmbeddings(row).length,
+          topic_message_embedding_count: row.topic_message_embedding_count,
+          topic_message_embedding_updated_at:
+            row.topic_message_embedding_updated_at,
+        })),
     });
   } catch (error) {
     return NextResponse.json(

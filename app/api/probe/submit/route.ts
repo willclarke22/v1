@@ -736,6 +736,13 @@ export async function POST(request: NextRequest) {
         learning_space_topic:
           learningSpace.topics?.find((t) => t.topic_id === topic.id) ?? null,
 
+        topic_position: updatedPersistedTopic.position,
+        semantic_position: updatedPersistedTopic.semanticPosition ?? null,
+        semantic_position_method:
+          updatedPersistedTopic.semanticPositionMethod ?? null,
+        semantic_position_updated_at:
+          updatedPersistedTopic.semanticPositionUpdatedAt ?? null,
+
         topic_label_embedding_centroid: embeddingFields.topicLabelEmbeddingCentroid,
         topic_label_embedding_count: embeddingFields.topicLabelEmbeddingCount,
         topic_label_embedding_model: embeddingFields.topicLabelEmbeddingModel,
@@ -788,6 +795,11 @@ export async function POST(request: NextRequest) {
       diagnosis: decision.active_diagnosis,
       nextStep: nextProbePlan.text_plan.instructional_goal ?? topic.nextStep,
       topicJson,
+      topicPosition: updatedPersistedTopic.position,
+      semanticPosition: updatedPersistedTopic.semanticPosition ?? null,
+      semanticPositionMethod: updatedPersistedTopic.semanticPositionMethod ?? null,
+      semanticPositionUpdatedAt:
+        updatedPersistedTopic.semanticPositionUpdatedAt ?? null,
       ...embeddingFields,
     });
 

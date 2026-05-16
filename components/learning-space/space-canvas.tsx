@@ -21,6 +21,15 @@ const DEFAULT_TARGET = new THREE.Vector3(0, 0, 0);
 const ZOOMED_OUT_DISTANCE = 10.5;
 const SETTLE_DELAY_MS = 220;
 
+/**
+ * Visual-only interpolation.
+ *
+ * Canonical topic positions still come from learningSpace.topics[].position.
+ * This value only controls how quickly rendered spheres ease toward that
+ * already-computed renderer-safe position.
+ */
+const TOPIC_POSITION_LERP_ALPHA = 0.075;
+
 function getTopicById(
   topics: LearningSpaceTopic[],
   topicId: string | null,
@@ -92,20 +101,17 @@ function TopicLabel({
   isFocused,
   isAppearing,
   isSceneSettled,
+  worldPositionRef,
 }: {
   topic: LearningSpaceTopic;
   isSelected: boolean;
   isFocused: boolean;
   isAppearing: boolean;
   isSceneSettled: boolean;
+  worldPositionRef: RefObject<THREE.Vector3>;
 }) {
   const { camera, size } = useThree();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const topicPositionRef = useRef(new THREE.Vector3(...topic.position));
-
-  useEffect(() => {
-    topicPositionRef.current.set(...topic.position);
-  }, [topic.position]);
 
   useFrame(() => {
     const el = containerRef.current;
@@ -117,7 +123,7 @@ function TopicLabel({
     const screenRadiusPx = getScreenSpaceRadiusPx({
       camera,
       size,
-      worldPosition: topicPositionRef.current,
+      worldPosition: worldPositionRef.current,
       worldRadius: topic.render_state.radius,
     });
 
@@ -243,6 +249,9 @@ function TopicSphere({
   const materialRef = useRef<THREE.MeshStandardMaterial>(null);
   const appearProgressRef = useRef(isAppearing ? 0 : 1);
 
+  const currentPositionRef = useRef(new THREE.Vector3(...topic.position));
+  const targetPositionRef = useRef(new THREE.Vector3(...topic.position));
+
   const pointerDownRef = useRef<{ x: number; y: number; time: number } | null>(
     null,
   );
@@ -252,6 +261,10 @@ function TopicSphere({
   useEffect(() => {
     appearProgressRef.current = isAppearing ? 0 : 1;
   }, [isAppearing, topic.topic_id]);
+
+  useEffect(() => {
+    targetPositionRef.current.set(...topic.position);
+  }, [topic.position]);
 
   useEffect(() => {
     return () => {
@@ -270,7 +283,20 @@ function TopicSphere({
     const overshoot = 1 + Math.sin(Math.min(t, 1) * Math.PI) * 0.1;
     const finalScale = Math.max(0.001, eased * overshoot);
 
+    currentPositionRef.current.lerp(
+      targetPositionRef.current,
+      TOPIC_POSITION_LERP_ALPHA,
+    );
+
+    if (
+      currentPositionRef.current.distanceToSquared(targetPositionRef.current) <
+      0.0001
+    ) {
+      currentPositionRef.current.copy(targetPositionRef.current);
+    }
+
     if (groupRef.current) {
+      groupRef.current.position.copy(currentPositionRef.current);
       groupRef.current.scale.setScalar(finalScale);
     }
 
@@ -373,7 +399,7 @@ function TopicSphere({
 
   return (
     <Float speed={1.25} rotationIntensity={0.32} floatIntensity={0.78}>
-      <group ref={groupRef} position={topic.position}>
+      <group ref={groupRef} position={currentPositionRef.current}>
         <mesh
           ref={sphereRef}
           scale={topic.render_state.radius}
@@ -409,6 +435,7 @@ function TopicSphere({
           isFocused={isFocused}
           isAppearing={isAppearing}
           isSceneSettled={isSceneSettled}
+          worldPositionRef={currentPositionRef}
         />
 
         {topicProbe && (

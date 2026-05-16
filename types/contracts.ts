@@ -22,7 +22,14 @@
  *   It is used for layout / semantic structure / Qdrant topic lookup.
  * - topic_message_embedding_centroid is the topic-level embedding of learner messages.
  *   It is used later for personalization / struggle-pattern similarity.
- * - learning_space.position is the renderer-safe position derived from topic state.
+ * - learning_space.position is the renderer-safe current visual position derived
+ *   from topic state.
+ *
+ * Position/layout invariant:
+ * - topic_position_x/y/z = current committed renderer position.
+ * - semantic_position_x/y/z = computed semantic target position.
+ * - learning_space.topics[].position = current renderer-safe position.
+ * - learning_space.topics[].layout.semantic_position = optional semantic target.
  */
 
 export type ISO8601String = string;
@@ -616,7 +623,7 @@ export interface VideoPayload {
   endpoint: Nullable<"/v1/videos">;
   model: "sora-2" | "sora-2-pro" | null;
   size: Nullable<string>;
-  seconds: Nullable<4 | 8 | 12 | 16>;
+  seconds: Nullable<4 | 8 | 12 | 16 | 20>;
   prompt: Nullable<string>;
   narration: Nullable<string>;
   visual_constraints: string[];
@@ -915,6 +922,19 @@ export interface EngineFuel {
 /* LEARNING SPACE */
 /* ------------------------------------------------------------------ */
 
+export type TopicPositionSource =
+  | "topic_position"
+  | "semantic_position"
+  | "topic_json"
+  | "deterministic_fallback";
+
+export interface LearningSpaceTopicLayout {
+  position_source: TopicPositionSource;
+  semantic_position: Nullable<[number, number, number]>;
+  semantic_position_method: Nullable<string>;
+  semantic_position_updated_at: Nullable<ISO8601String>;
+}
+
 export interface LearningSpaceSatellite {
   satellite_id: EntityId;
   orbit_angle: number;
@@ -924,7 +944,18 @@ export interface LearningSpaceSatellite {
 export interface LearningSpaceTopic {
   topic_id: EntityId;
   topic_label: string;
+
+  /**
+   * Renderer-safe current committed visual position.
+   */
   position: [number, number, number];
+
+  /**
+   * Layout metadata for debugging and future animation/commit behavior.
+   * The renderer may inspect this, but it should not become the source of truth.
+   */
+  layout: LearningSpaceTopicLayout;
+
   render_state: RenderState;
   satellite_count: number;
   satellites: LearningSpaceSatellite[];
@@ -975,6 +1006,8 @@ export interface MessageRouteRequest {
   selectedClusterId?: Nullable<EntityId>;
   viewportContext?: {
     focusedTopicId?: Nullable<EntityId>;
+    selectedTopicId?: Nullable<EntityId>;
+    activeTopicIdForMessage?: Nullable<EntityId>;
   };
 }
 
@@ -1004,7 +1037,13 @@ export interface FrontendInterventionSummary {
   mode_selected: InterventionMode;
   target_topic_id: Nullable<EntityId>;
   active_diagnosis: Nullable<DiagnosisType>;
-  probe_available: boolean;
+
+  /**
+   * During migration, some client paths still use "available" / "not_applicable"
+   * while newer route code may prefer boolean.
+   */
+  probe_available: boolean | "available" | "not_applicable";
+
   status_label: string;
   suggested_action: string;
 }

@@ -9,6 +9,10 @@ import SpaceCanvas from "@/components/learning-space/space-canvas";
 import ProbeSurface from "@/components/probes/probe-surface";
 import { buildLearningSpace } from "@/lib/build-learning-space";
 import { deriveProgressSummary } from "@/lib/derive-progress-summary";
+import {
+  isTopicPosition3D,
+  type TopicPosition3D,
+} from "@/lib/learning-space/topic-position";
 import type { Topic } from "@/types/topic";
 import type {
   DiagnosisType,
@@ -39,6 +43,10 @@ function clamp(value: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
 }
 
+function asTopicPosition(value: unknown): TopicPosition3D | null {
+  return isTopicPosition3D(value) ? value : null;
+}
+
 async function updateLocalDevIdleState(input: LocalDevIdleStateUpdate) {
   if (process.env.NODE_ENV !== "development") return;
 
@@ -63,6 +71,16 @@ async function updateLocalDevIdleState(input: LocalDevIdleStateUpdate) {
   }
 }
 
+function getReturnedLearningSpace(data: MessageRouteResponse): LearningSpace | null {
+  return data.scene_update?.learning_space ?? data.result?.learning_space ?? null;
+}
+
+function buildLearningSpaceTopicLookup(learningSpace: LearningSpace | null) {
+  return new Map(
+    (learningSpace?.topics ?? []).map((topic) => [topic.topic_id, topic]),
+  );
+}
+
 function getEngineTopicLabel(args: {
   engineTopic: NonNullable<
     MessageRouteResponse["result"]
@@ -82,6 +100,11 @@ function deriveTopicsFromMessageResponse(
 ): Topic[] | null {
   const engineTopics = data.result?.engine_fuel?.topics;
   if (!engineTopics?.length) return null;
+
+  const returnedLearningSpace = getReturnedLearningSpace(data);
+  const learningSpaceTopicsById = buildLearningSpaceTopicLookup(
+    returnedLearningSpace,
+  );
 
   const targetTopicId =
     data.intervention?.target_topic_id ??
@@ -105,10 +128,17 @@ function deriveTopicsFromMessageResponse(
 
   return engineTopics.map((engineTopic, index) => {
     const previous = previousById.get(engineTopic.topic_id);
+    const learningSpaceTopic = learningSpaceTopicsById.get(engineTopic.topic_id);
     const isTargetTopic = engineTopic.topic_id === targetTopicId;
     const hasAvailableProbe =
       deliveredProbe?.target_topic_id === engineTopic.topic_id;
     const topicLabel = getEngineTopicLabel({ engineTopic, previous });
+
+    const position =
+      asTopicPosition(learningSpaceTopic?.position) ??
+      asTopicPosition(engineTopic.topic_centroid) ??
+      previous?.position ??
+      ([index * 2.2, 0, 0] as TopicPosition3D);
 
     return {
       id: engineTopic.topic_id,
@@ -128,11 +158,23 @@ function deriveTopicsFromMessageResponse(
       learningScore: clamp(
         engineTopic.topic_learning_score ?? previous?.learningScore ?? 0.5,
       ),
-      position:
-        Array.isArray(engineTopic.topic_centroid) &&
-        engineTopic.topic_centroid.length === 3
-          ? (engineTopic.topic_centroid as [number, number, number])
-          : previous?.position ?? [index * 2.2, 0, 0],
+      position,
+      semanticPosition:
+        asTopicPosition(learningSpaceTopic?.layout?.semantic_position) ??
+        previous?.semanticPosition ??
+        null,
+      semanticPositionMethod:
+        learningSpaceTopic?.layout?.semantic_position_method ??
+        previous?.semanticPositionMethod ??
+        null,
+      semanticPositionUpdatedAt:
+        learningSpaceTopic?.layout?.semantic_position_updated_at ??
+        previous?.semanticPositionUpdatedAt ??
+        null,
+      positionSource:
+        learningSpaceTopic?.layout?.position_source ??
+        previous?.positionSource ??
+        "topic_position",
       scale: previous?.scale,
       messageCount:
         engineTopic.topic_message_count ?? previous?.messageCount ?? 0,
@@ -422,8 +464,7 @@ export default function Home() {
         setTopics(nextTopics);
       }
 
-      const returnedLearningSpace =
-        data.scene_update?.learning_space ?? data.result?.learning_space ?? null;
+      const returnedLearningSpace = getReturnedLearningSpace(data);
 
       if (returnedLearningSpace) {
         setServerLearningSpace(returnedLearningSpace);

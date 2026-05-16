@@ -4,7 +4,8 @@ param(
   [string]$EmbeddingHost = "127.0.0.1",
   [int]$EmbeddingPort = 8001,
   [int]$EnrichmentLimit = 1,
-  [int]$LayoutLimit = 5,
+  [int]$MessageEmbeddingLimit = 5,
+  [int]$LayoutLimit = 25,
   [int]$PollSeconds = 1,
   [int]$AbortPollSeconds = 1,
   [string]$PythonExe = ".\.venv\Scripts\python.exe",
@@ -228,8 +229,22 @@ function Invoke-EnrichmentWithAbortWatch {
     -Url $url
 }
 
+function Invoke-TopicMessageEmbeddingsWithAbortWatch {
+  $url = "$AppBaseUrl/api/topic-message-embeddings/run-pending?limit=$MessageEmbeddingLimit"
+
+  return Invoke-PostRouteWithAbortWatch `
+    -RouteName "topic-message embeddings" `
+    -Url $url
+}
+
 function Invoke-LayoutWithAbortWatch {
+  param([bool]$Force = $false)
+
   $url = "$AppBaseUrl/api/semantic-layout/recompute-pending?limit=$LayoutLimit"
+
+  if ($Force) {
+    $url = "$url&force=true"
+  }
 
   return Invoke-PostRouteWithAbortWatch `
     -RouteName "semantic layout recompute" `
@@ -238,11 +253,12 @@ function Invoke-LayoutWithAbortWatch {
 
 Write-WorkerLog "Semantic enrichment worker started."
 Write-WorkerLog "App: $AppBaseUrl"
-Write-WorkerLog "This worker only enriches when idle-state is safe AND pending topics exist."
-Write-WorkerLog "After enrichment, it recomputes semantic layout targets."
+Write-WorkerLog "This worker runs when idle-state is safe AND embedding-backed work is pending."
+Write-WorkerLog "It processes queued topic-message embeddings, semantic enrichment, and semantic layout targets."
 Write-WorkerLog "Poll interval: $PollSeconds second(s)."
 Write-WorkerLog "Python executable: $PythonExe"
 Write-WorkerLog "Enrichment limit: $EnrichmentLimit"
+Write-WorkerLog "Message embedding limit: $MessageEmbeddingLimit"
 Write-WorkerLog "Layout limit: $LayoutLimit"
 
 while ($true) {
@@ -273,13 +289,25 @@ while ($true) {
     continue
   }
 
-  if ([int]$pending.pending_topics_found -le 0) {
-    Write-WorkerLog "Idle, but no pending topics. Not starting embedding service."
+  $pendingTopicsFound = 0
+  if ($null -ne $pending.pending_topics_found) {
+    $pendingTopicsFound = [int]$pending.pending_topics_found
+  }
+
+  $pendingMessageEmbeddingItemsFound = 0
+  if ($null -ne $pending.pending_topic_message_embedding_items_found) {
+    $pendingMessageEmbeddingItemsFound = [int]$pending.pending_topic_message_embedding_items_found
+  }
+
+  $pendingWorkFound = $pendingTopicsFound + $pendingMessageEmbeddingItemsFound
+
+  if ($pendingWorkFound -le 0) {
+    Write-WorkerLog "Idle, but no embedding-backed work is pending. Not starting embedding service."
     Start-Sleep -Seconds $PollSeconds
     continue
   }
 
-  Write-WorkerLog "Pending topics found: $($pending.pending_topics_found). Preparing enrichment."
+  Write-WorkerLog "Pending work found: enrichment_topics=$pendingTopicsFound, topic_message_embedding_items=$pendingMessageEmbeddingItemsFound. Preparing worker cycle."
 
   $embeddingProcess = $null
 
@@ -302,24 +330,61 @@ while ($true) {
       continue
     }
 
-    Write-WorkerLog "Running semantic enrichment batch with limit=$EnrichmentLimit..."
-    $enrichmentResult = Invoke-EnrichmentWithAbortWatch
+    $topicMessageEmbeddingProcessedCount = 0
+    $topicMessageEmbeddingUpdatedTopicCount = 0
 
-    if ($null -eq $enrichmentResult) {
-      Write-WorkerLog "Enrichment was aborted or returned no result."
+    if ($pendingMessageEmbeddingItemsFound -gt 0) {
+      Write-WorkerLog "Running topic-message embedding batch with limit=$MessageEmbeddingLimit..."
+      $topicMessageEmbeddingResult = Invoke-TopicMessageEmbeddingsWithAbortWatch
+
+      if ($null -eq $topicMessageEmbeddingResult) {
+        Write-WorkerLog "Topic-message embedding batch was aborted or returned no result."
+      } else {
+        Write-WorkerLog "Topic-message embedding result:"
+        $topicMessageEmbeddingResult | ConvertTo-Json -Depth 20 | Write-Host
+
+        if ($null -ne $topicMessageEmbeddingResult.processed_message_count) {
+          $topicMessageEmbeddingProcessedCount = [int]$topicMessageEmbeddingResult.processed_message_count
+        }
+
+        if ($null -ne $topicMessageEmbeddingResult.updated_topic_count) {
+          $topicMessageEmbeddingUpdatedTopicCount = [int]$topicMessageEmbeddingResult.updated_topic_count
+        }
+      }
+    } else {
+      Write-WorkerLog "No pending topic-message embeddings this cycle."
+    }
+
+    $abortBeforeEnrichment = Test-ShouldAbortEnrichment
+    if ($abortBeforeEnrichment.should_abort -eq $true) {
+      Write-WorkerLog "Abort condition appeared before semantic enrichment. Reason: $($abortBeforeEnrichment.reason)"
       continue
     }
 
-    Write-WorkerLog "Enrichment result:"
-    $enrichmentResult | ConvertTo-Json -Depth 20 | Write-Host
-
     $enrichedCount = 0
-    if ($null -ne $enrichmentResult.enriched_count) {
-      $enrichedCount = [int]$enrichmentResult.enriched_count
+
+    if ($pendingTopicsFound -gt 0) {
+      Write-WorkerLog "Running semantic enrichment batch with limit=$EnrichmentLimit..."
+      $enrichmentResult = Invoke-EnrichmentWithAbortWatch
+
+      if ($null -eq $enrichmentResult) {
+        Write-WorkerLog "Enrichment was aborted or returned no result."
+      } else {
+        Write-WorkerLog "Enrichment result:"
+        $enrichmentResult | ConvertTo-Json -Depth 20 | Write-Host
+
+        if ($null -ne $enrichmentResult.enriched_count) {
+          $enrichedCount = [int]$enrichmentResult.enriched_count
+        }
+      }
+    } else {
+      Write-WorkerLog "No pending semantic enrichment topics this cycle."
     }
 
-    if ($enrichedCount -le 0) {
-      Write-WorkerLog "No topics were enriched this cycle. Skipping semantic layout recompute."
+    $shouldRunLayout = ($enrichedCount -gt 0) -or ($topicMessageEmbeddingProcessedCount -gt 0)
+
+    if (-not $shouldRunLayout) {
+      Write-WorkerLog "No embeddings were updated this cycle. Skipping semantic layout recompute."
       continue
     }
 
@@ -329,8 +394,15 @@ while ($true) {
       continue
     }
 
-    Write-WorkerLog "Running semantic layout recompute with limit=$LayoutLimit..."
-    $layoutResult = Invoke-LayoutWithAbortWatch
+    $forceLayout = $topicMessageEmbeddingProcessedCount -gt 0
+
+    if ($forceLayout) {
+      Write-WorkerLog "Running forced semantic layout recompute because topic-message embeddings changed. limit=$LayoutLimit..."
+    } else {
+      Write-WorkerLog "Running semantic layout recompute with limit=$LayoutLimit..."
+    }
+
+    $layoutResult = Invoke-LayoutWithAbortWatch -Force $forceLayout
 
     if ($null -eq $layoutResult) {
       Write-WorkerLog "Semantic layout recompute was aborted or returned no result."

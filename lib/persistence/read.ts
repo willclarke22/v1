@@ -1,20 +1,48 @@
+// lib/persistence/read.ts
+
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { EmbeddingVector } from "@/types/contracts";
+import {
+  isTopicPosition3D,
+  readSemanticPositionFromJson,
+  readTopicPositionFromJson,
+  type TopicPosition3D,
+} from "@/lib/learning-space/topic-position";
 
-export type TopicPosition = [number, number, number];
+export type TopicPosition = TopicPosition3D;
 
 function asNumber(
   value: unknown,
   fallback: number | null = null,
 ): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
 }
 
 function asString(
   value: unknown,
   fallback: string | null = null,
 ): string | null {
-  return typeof value === "string" && value.trim() ? value : fallback;
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  return fallback;
 }
 
 function asBoolean(
@@ -38,15 +66,7 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
 }
 
 function asTopicPosition(value: unknown): TopicPosition | null {
-  if (!Array.isArray(value) || value.length !== 3) return null;
-
-  const vector = value.filter(
-    (item): item is number => typeof item === "number" && Number.isFinite(item),
-  );
-
-  if (vector.length !== 3) return null;
-
-  return [vector[0], vector[1], vector[2]];
+  return isTopicPosition3D(value) ? value : null;
 }
 
 function readFromTopicJson<T>(
@@ -112,26 +132,20 @@ function readNestedSemanticBoolean(
   return asBoolean(nested[key]);
 }
 
-function readPositionFromTopicJson(
-  topicJson: Record<string, unknown> | null | undefined,
-): TopicPosition | null {
-  return (
-    asTopicPosition(readFromTopicJson(topicJson, "topic_position")) ??
-    asTopicPosition(readFromTopicJson(topicJson, "position")) ??
-    asTopicPosition(readFromTopicJson(topicJson, "topic_centroid"))
-  );
-}
+function readPositionFromColumns(args: {
+  x?: unknown;
+  y?: unknown;
+  z?: unknown;
+}): TopicPosition | null {
+  const x = asNumber(args.x, null);
+  const y = asNumber(args.y, null);
+  const z = asNumber(args.z, null);
 
-function readSemanticPositionFromTopicJson(
-  topicJson: Record<string, unknown> | null | undefined,
-): TopicPosition | null {
-  return (
-    asTopicPosition(readFromTopicJson(topicJson, "semantic_position")) ??
-    asTopicPosition(readFromTopicJson(topicJson, "semantic_target_position")) ??
-    asTopicPosition(
-      readFromTopicJson(topicJson, "learning_space_target_position"),
-    )
-  );
+  if (x === null || y === null || z === null) {
+    return null;
+  }
+
+  return [x, y, z];
 }
 
 export type TopicStateRow = {
@@ -146,11 +160,17 @@ export type TopicStateRow = {
   next_step: string | null;
   topic_json: Record<string, unknown> | null;
 
+  /**
+   * Current committed renderer position.
+   */
   topic_position: TopicPosition | null;
   topic_position_x: number | null;
   topic_position_y: number | null;
   topic_position_z: number | null;
 
+  /**
+   * Computed semantic target position.
+   */
   semantic_position: TopicPosition | null;
   semantic_position_x: number | null;
   semantic_position_y: number | null;
@@ -226,6 +246,92 @@ type RawTopicStateRow = {
 
 function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
   const topicJson = row.topic_json ?? null;
+
+  const topicPositionFromColumns = readPositionFromColumns({
+    x: row.topic_position_x,
+    y: row.topic_position_y,
+    z: row.topic_position_z,
+  });
+
+  const topicPositionFromJson = readTopicPositionFromJson(topicJson);
+
+  const semanticPositionFromColumns = readPositionFromColumns({
+    x: row.semantic_position_x,
+    y: row.semantic_position_y,
+    z: row.semantic_position_z,
+  });
+
+  const semanticPositionFromJson = readSemanticPositionFromJson(topicJson);
+
+  /**
+   * Read-side invariant:
+   * - topic_position is the committed visual position.
+   * - semantic_position is the semantic target.
+   *
+   * Do not collapse semantic_position into topic_position here. The route/topic
+   * layer decides fallback order through resolveTopicLayout().
+   */
+  const topicPosition = topicPositionFromColumns ?? topicPositionFromJson;
+  const semanticPosition = semanticPositionFromColumns ?? semanticPositionFromJson;
+
+  const semanticPositionUpdatedAtFromColumn = asString(
+    row.semantic_position_updated_at,
+    null,
+  );
+  const semanticPositionUpdatedAtFromJson = asString(
+    readFromTopicJson(topicJson, "semantic_position_updated_at"),
+    null,
+  );
+
+  const semanticPositionMethodFromColumn = asString(
+    row.semantic_position_method,
+    null,
+  );
+  const semanticPositionMethodFromJson = asString(
+    readFromTopicJson(topicJson, "semantic_position_method"),
+    null,
+  );
+
+  const semanticStatusFromColumn = asString(
+    row.semantic_enrichment_status,
+    null,
+  );
+  const semanticStatusFromJson = readSemanticStatusFromTopicJson(topicJson);
+
+  const needsCentroidFromColumn = asBoolean(
+    row.needs_embedding_centroid,
+    null,
+  );
+  const needsCentroidFromJson = readNestedSemanticBoolean(
+    topicJson,
+    "needs_embedding_centroid",
+  );
+
+  const shouldScheduleFromColumn = asBoolean(
+    row.should_schedule_enrichment,
+    null,
+  );
+  const shouldScheduleFromJson = readNestedSemanticBoolean(
+    topicJson,
+    "should_schedule_enrichment",
+  );
+
+  const promptFromColumn = asString(row.semantic_enrichment_prompt_text, null);
+  const promptFromJson =
+    asString(readFromTopicJson(topicJson, "semantic_enrichment_prompt_text")) ??
+    readNestedSemanticString(topicJson, "enrichment_prompt_text");
+
+  const layoutStatusFromColumn = asString(row.layout_status, null);
+  const layoutStatusFromJson = readNestedSemanticString(
+    topicJson,
+    "layout_status",
+  );
+
+  const skipReasonFromColumn = asString(row.embedding_skip_reason, null);
+  const skipReasonFromJson = readNestedSemanticString(
+    topicJson,
+    "embedding_skip_reason",
+  );
 
   const labelCentroidFromColumn = asEmbeddingVector(
     row.topic_label_embedding_centroid,
@@ -306,110 +412,14 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
   const messageUpdatedAt =
     messageUpdatedAtFromColumn ?? messageUpdatedAtFromJson;
 
-  const positionXFromColumn = asNumber(row.topic_position_x, null);
-  const positionYFromColumn = asNumber(row.topic_position_y, null);
-  const positionZFromColumn = asNumber(row.topic_position_z, null);
-
-  const positionFromColumns =
-    positionXFromColumn !== null &&
-    positionYFromColumn !== null &&
-    positionZFromColumn !== null
-      ? ([
-          positionXFromColumn,
-          positionYFromColumn,
-          positionZFromColumn,
-        ] as TopicPosition)
-      : null;
-
-  const positionFromJson = readPositionFromTopicJson(topicJson);
-  const topicPosition = positionFromColumns ?? positionFromJson;
-
-  const semanticPositionXFromColumn = asNumber(row.semantic_position_x, null);
-  const semanticPositionYFromColumn = asNumber(row.semantic_position_y, null);
-  const semanticPositionZFromColumn = asNumber(row.semantic_position_z, null);
-
-  const semanticPositionFromColumns =
-    semanticPositionXFromColumn !== null &&
-    semanticPositionYFromColumn !== null &&
-    semanticPositionZFromColumn !== null
-      ? ([
-          semanticPositionXFromColumn,
-          semanticPositionYFromColumn,
-          semanticPositionZFromColumn,
-        ] as TopicPosition)
-      : null;
-
-  const semanticPositionFromJson = readSemanticPositionFromTopicJson(topicJson);
-  const semanticPosition =
-    semanticPositionFromColumns ?? semanticPositionFromJson;
-
-  const semanticStatusFromColumn = asString(
-    row.semantic_enrichment_status,
-    null,
-  );
-  const semanticStatusFromJson = readSemanticStatusFromTopicJson(topicJson);
-
-  const needsCentroidFromColumn = asBoolean(row.needs_embedding_centroid, null);
-  const needsCentroidFromJson = readNestedSemanticBoolean(
-    topicJson,
-    "needs_embedding_centroid",
-  );
-
-  const shouldScheduleFromColumn = asBoolean(
-    row.should_schedule_enrichment,
-    null,
-  );
-  const shouldScheduleFromJson = readNestedSemanticBoolean(
-    topicJson,
-    "should_schedule_enrichment",
-  );
-
-  const promptFromColumn = asString(row.semantic_enrichment_prompt_text, null);
-  const promptFromJson =
-    readNestedSemanticString(topicJson, "enrichment_prompt_text") ??
-    asString(
-      readFromTopicJson(topicJson, "semantic_enrichment_prompt_text"),
-      null,
-    );
-
-  const layoutStatusFromColumn = asString(row.layout_status, null);
-  const layoutStatusFromJson = readNestedSemanticString(
-    topicJson,
-    "layout_status",
-  );
-
-  const skipReasonFromColumn = asString(row.embedding_skip_reason, null);
-  const skipReasonFromJson = readNestedSemanticString(
-    topicJson,
-    "embedding_skip_reason",
-  );
-
-  const semanticPositionUpdatedAtFromColumn = asString(
-    row.semantic_position_updated_at,
-    null,
-  );
-  const semanticPositionUpdatedAtFromJson = asString(
-    readFromTopicJson(topicJson, "semantic_position_updated_at"),
-    null,
-  );
-
-  const semanticPositionMethodFromColumn = asString(
-    row.semantic_position_method,
-    null,
-  );
-  const semanticPositionMethodFromJson = asString(
-    readFromTopicJson(topicJson, "semantic_position_method"),
-    null,
-  );
-
   return {
     topic_id: row.topic_id,
     updated_at: row.updated_at,
     last_run_id: row.last_run_id,
     topic_label: row.topic_label,
-    confusion: row.confusion,
-    insight: row.insight,
-    learning_score: row.learning_score,
+    confusion: asNumber(row.confusion, null),
+    insight: asNumber(row.insight, null),
+    learning_score: asNumber(row.learning_score, null),
     diagnosis: row.diagnosis,
     next_step: row.next_step,
     topic_json: topicJson,
@@ -481,6 +491,7 @@ export async function getRouteTopicState(): Promise<TopicStateRow[]> {
       learning_score,
       diagnosis,
       next_step,
+      topic_json,
       topic_position_x,
       topic_position_y,
       topic_position_z,
@@ -511,10 +522,5 @@ export async function getRouteTopicState(): Promise<TopicStateRow[]> {
     throw new Error(`Failed to read route topic_state: ${error.message}`);
   }
 
-  return ((data ?? []) as RawTopicStateRow[]).map((row) =>
-    normalizeTopicStateRow({
-      ...row,
-      topic_json: null,
-    }),
-  );
+  return ((data ?? []) as RawTopicStateRow[]).map(normalizeTopicStateRow);
 }

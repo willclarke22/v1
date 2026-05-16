@@ -73,6 +73,16 @@ type RawLearningSpaceTopic = {
   topic_id?: string;
   topic_label?: string;
   position?: [number, number, number];
+  layout?: {
+    position_source?:
+      | "topic_position"
+      | "semantic_position"
+      | "topic_json"
+      | "deterministic_fallback";
+    semantic_position?: [number, number, number] | null;
+    semantic_position_method?: string | null;
+    semantic_position_updated_at?: string | null;
+  };
   render_state?: {
     radius?: number;
     surface_noise?: number;
@@ -181,6 +191,22 @@ type RouteCentroidUpdatePlan = {
   embedding_model: string | null;
   updated_at: string;
   new_centroid: EmbeddingVector | null;
+};
+
+type PendingTopicMessageEmbedding = {
+  message_id: string;
+  run_id: string | null;
+  text: string;
+  created_at: string;
+  source: "message_route";
+  routing: {
+    target_topic_id: string;
+    target_topic_label: string;
+    resolution_kind: RouteResolutionKind;
+    resolved_label: string | null;
+    match_confidence: number;
+    authority_source: string | null;
+  };
 };
 
 type MessageRouteTimingStep = {
@@ -899,25 +925,273 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
   return vector;
 }
 
-function buildCreatedTopicMessageEmbeddingPlan(args: {
-  createdTopic: RouteTopic | null;
+function buildRunningAverageCentroid(args: {
+  existingCentroid: EmbeddingVector;
+  existingCount: number;
+  newEmbedding: EmbeddingVector;
+}): EmbeddingVector | null {
+  const { existingCentroid, existingCount, newEmbedding } = args;
+
+  if (existingCentroid.length !== newEmbedding.length) {
+    return null;
+  }
+
+  const safeExistingCount = Math.max(0, Math.floor(existingCount));
+  const nextCount = safeExistingCount + 1;
+
+  if (nextCount <= 1) {
+    return newEmbedding;
+  }
+
+  return existingCentroid.map((existingValue, index) => {
+    const newValue = newEmbedding[index];
+
+    return (existingValue * safeExistingCount + newValue) / nextCount;
+  });
+}
+
+function buildTargetTopicMessageEmbeddingPlan(args: {
+  targetTopic: RouteTopic | null;
   messageEmbedding: EmbeddingVector | null;
   embeddingModel: string | null;
 }): RouteCentroidUpdatePlan | null {
-  const { createdTopic, messageEmbedding, embeddingModel } = args;
-  const centroid = asEmbeddingVector(messageEmbedding);
+  const { targetTopic, messageEmbedding, embeddingModel } = args;
+  const newMessageEmbedding = asEmbeddingVector(messageEmbedding);
 
-  if (!createdTopic || !centroid) return null;
+  if (!targetTopic || !newMessageEmbedding) return null;
+
+  const existingCentroid = asEmbeddingVector(
+    targetTopic.topic_message_embedding_centroid ?? null
+  );
+
+  const previousEmbeddingCount =
+    typeof targetTopic.topic_message_embedding_count === "number" &&
+    Number.isFinite(targetTopic.topic_message_embedding_count)
+      ? Math.max(0, Math.floor(targetTopic.topic_message_embedding_count))
+      : 0;
+
+  const canUseRunningAverage =
+    Boolean(existingCentroid?.length) &&
+    previousEmbeddingCount > 0 &&
+    existingCentroid?.length === newMessageEmbedding.length;
+
+  if (!canUseRunningAverage) {
+    return {
+      topic_id: targetTopic.id,
+      previous_embedding_count: previousEmbeddingCount,
+      new_embedding_count: 1,
+      update_method: "initialize",
+      alpha: null,
+      embedding_model: embeddingModel,
+      updated_at: nowIso(),
+      new_centroid: newMessageEmbedding,
+    };
+  }
+
+  const nextEmbeddingCount = previousEmbeddingCount + 1;
+  const averagedCentroid = buildRunningAverageCentroid({
+    existingCentroid,
+    existingCount: previousEmbeddingCount,
+    newEmbedding: newMessageEmbedding,
+  });
+
+  if (!averagedCentroid) {
+    return {
+      topic_id: targetTopic.id,
+      previous_embedding_count: previousEmbeddingCount,
+      new_embedding_count: 1,
+      update_method: "initialize",
+      alpha: null,
+      embedding_model: embeddingModel,
+      updated_at: nowIso(),
+      new_centroid: newMessageEmbedding,
+    };
+  }
 
   return {
-    topic_id: createdTopic.id,
-    previous_embedding_count: 0,
-    new_embedding_count: 1,
-    update_method: "initialize",
-    alpha: null,
+    topic_id: targetTopic.id,
+    previous_embedding_count: previousEmbeddingCount,
+    new_embedding_count: nextEmbeddingCount,
+    update_method: "running_average",
+    alpha: 1 / nextEmbeddingCount,
     embedding_model: embeddingModel,
     updated_at: nowIso(),
-    new_centroid: centroid,
+    new_centroid: averagedCentroid,
+  };
+}
+
+function isUsableCentroidUpdatePlan(
+  plan: RouteCentroidUpdatePlan | null,
+  targetTopicId: string,
+): plan is RouteCentroidUpdatePlan {
+  if (!plan) return false;
+  if (plan.topic_id !== targetTopicId) return false;
+  if (plan.update_method === "none") return false;
+  if (plan.new_embedding_count <= plan.previous_embedding_count) return false;
+
+  return Boolean(asEmbeddingVector(plan.new_centroid)?.length);
+}
+
+function describeCentroidUpdatePlan(plan: RouteCentroidUpdatePlan | null) {
+  if (!plan) {
+    return {
+      present: false,
+      topic_id: null,
+      update_method: null,
+      previous_embedding_count: null,
+      new_embedding_count: null,
+      has_new_centroid: false,
+    };
+  }
+
+  return {
+    present: true,
+    topic_id: plan.topic_id,
+    update_method: plan.update_method,
+    previous_embedding_count: plan.previous_embedding_count,
+    new_embedding_count: plan.new_embedding_count,
+    has_new_centroid: Boolean(asEmbeddingVector(plan.new_centroid)?.length),
+  };
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? { ...(value as Record<string, unknown>) }
+    : {};
+}
+
+function getPendingTopicMessageEmbeddings(
+  topicJson: unknown,
+): PendingTopicMessageEmbedding[] {
+  const base = asRecord(topicJson);
+  const rawQueue = base.pending_topic_message_embeddings;
+
+  if (!Array.isArray(rawQueue)) return [];
+
+  return rawQueue
+    .map((item): PendingTopicMessageEmbedding | null => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        return null;
+      }
+
+      const candidate = item as Record<string, unknown>;
+      const messageId =
+        typeof candidate.message_id === "string" && candidate.message_id.trim()
+          ? candidate.message_id.trim()
+          : null;
+      const text =
+        typeof candidate.text === "string" && candidate.text.trim()
+          ? candidate.text.trim()
+          : null;
+      const createdAt =
+        typeof candidate.created_at === "string" && candidate.created_at.trim()
+          ? candidate.created_at.trim()
+          : null;
+      const routing = asRecord(candidate.routing);
+      const targetTopicId =
+        typeof routing.target_topic_id === "string" &&
+        routing.target_topic_id.trim()
+          ? routing.target_topic_id.trim()
+          : null;
+      const targetTopicLabel =
+        typeof routing.target_topic_label === "string" &&
+        routing.target_topic_label.trim()
+          ? routing.target_topic_label.trim()
+          : null;
+
+      if (!messageId || !text || !createdAt || !targetTopicId || !targetTopicLabel) {
+        return null;
+      }
+
+      return {
+        message_id: messageId,
+        run_id:
+          typeof candidate.run_id === "string" && candidate.run_id.trim()
+            ? candidate.run_id.trim()
+            : null,
+        text,
+        created_at: createdAt,
+        source: "message_route",
+        routing: {
+          target_topic_id: targetTopicId,
+          target_topic_label: targetTopicLabel,
+          resolution_kind:
+            routing.resolution_kind === "matched_existing" ||
+            routing.resolution_kind === "created_new_candidate" ||
+            routing.resolution_kind === "fallback_active_topic" ||
+            routing.resolution_kind === "fallback_existing_topic" ||
+            routing.resolution_kind === "no_match"
+              ? routing.resolution_kind
+              : "fallback_existing_topic",
+          resolved_label:
+            typeof routing.resolved_label === "string" && routing.resolved_label.trim()
+              ? routing.resolved_label.trim()
+              : null,
+          match_confidence:
+            typeof routing.match_confidence === "number" &&
+            Number.isFinite(routing.match_confidence)
+              ? routing.match_confidence
+              : 0,
+          authority_source:
+            typeof routing.authority_source === "string" &&
+            routing.authority_source.trim()
+              ? routing.authority_source.trim()
+              : null,
+        },
+      };
+    })
+    .filter((item): item is PendingTopicMessageEmbedding => Boolean(item));
+}
+
+function buildPendingTopicMessageEmbedding(args: {
+  message: string;
+  runId: string;
+  targetTopicId: string;
+  targetTopicLabel: string;
+  resolutionKind: RouteResolutionKind;
+  resolvedLabel: string | null;
+  matchConfidence: number;
+  authoritySource: string | null;
+}): PendingTopicMessageEmbedding {
+  return {
+    message_id: makeId("msgemb"),
+    run_id: args.runId,
+    text: args.message,
+    created_at: nowIso(),
+    source: "message_route",
+    routing: {
+      target_topic_id: args.targetTopicId,
+      target_topic_label: args.targetTopicLabel,
+      resolution_kind: args.resolutionKind,
+      resolved_label: args.resolvedLabel,
+      match_confidence: args.matchConfidence,
+      authority_source: args.authoritySource,
+    },
+  };
+}
+
+function appendPendingTopicMessageEmbedding(args: {
+  topicJson: Record<string, unknown>;
+  pendingItem: PendingTopicMessageEmbedding;
+}) {
+  const existingQueue = getPendingTopicMessageEmbeddings(args.topicJson);
+  const nextQueue = [...existingQueue, args.pendingItem].slice(-50);
+
+  return {
+    ...args.topicJson,
+    pending_topic_message_embeddings: nextQueue,
+    topic_message_embedding_pending_count: nextQueue.length,
+    topic_message_embedding_queue_status: "pending",
+    layout_status: "topic_message_embedding_pending",
+    should_schedule_enrichment: true,
+    semantic_enrichment_status: {
+      ...asRecord(args.topicJson.semantic_enrichment_status),
+      status: "message_embedding_pending",
+      needs_embedding_centroid: false,
+      should_schedule_enrichment: true,
+      layout_status: "topic_message_embedding_pending",
+      embedding_skip_reason: null,
+    },
   };
 }
 
@@ -1000,13 +1274,31 @@ function adaptLearningSpaceToContract(
         fallbackTopic?.topic_label ??
         "Untitled Topic";
 
+      const position =
+        Array.isArray(topic.position) && topic.position.length === 3
+          ? (topic.position as [number, number, number])
+          : fallbackTopic?.position ?? [0, 0, 0];
+
       return {
         topic_id: topic.topic_id ?? fallbackTopic?.id ?? makeId("topic"),
         topic_label: resolvedTopicLabel,
-        position:
-          Array.isArray(topic.position) && topic.position.length === 3
-            ? (topic.position as [number, number, number])
-            : fallbackTopic?.position ?? [0, 0, 0],
+        position,
+        layout: {
+          position_source:
+            topic.layout?.position_source ??
+            fallbackTopic?.positionSource ??
+            "topic_position",
+          semantic_position:
+            topic.layout?.semantic_position ?? fallbackTopic?.semanticPosition ?? null,
+          semantic_position_method:
+            topic.layout?.semantic_position_method ??
+            fallbackTopic?.semanticPositionMethod ??
+            null,
+          semantic_position_updated_at:
+            topic.layout?.semantic_position_updated_at ??
+            fallbackTopic?.semanticPositionUpdatedAt ??
+            null,
+        },
         render_state: {
           radius: topic.render_state?.radius ?? 0.8,
           surface_noise: topic.render_state?.surface_noise ?? 0.3,
@@ -1749,13 +2041,75 @@ export async function POST(request: Request) {
 
     const updatedTopicMetrics = buildUpdatedMetrics(targetTopicId, topic);
 
-    const finalCentroidUpdatePlan =
-      initialCentroidUpdatePlan ??
-      buildCreatedTopicMessageEmbeddingPlan({
-        createdTopic,
-        messageEmbedding,
-        embeddingModel,
+    const shouldPersistLearningSpace = shouldPersistLearningSpaceForContinuation(
+      modelRouteContinuationPolicy
+    );
+
+    /**
+     * Routing and evidence are intentionally split.
+     *
+     * /api/message should stay responsive and should not start or require the
+     * embedding service for authoritative topic-labeler routes. If a routing
+     * embedding already exists, we can use it immediately. Otherwise we queue
+     * the learner message as pending topic-message evidence for the local
+     * semantic worker to process when the laptop is idle.
+     */
+    timer.step("queue_or_use_topic_message_embedding_evidence");
+
+    const fallbackCentroidUpdatePlan = buildTargetTopicMessageEmbeddingPlan({
+      targetTopic: topic,
+      messageEmbedding,
+      embeddingModel,
+    });
+
+    const finalCentroidUpdatePlan = isUsableCentroidUpdatePlan(
+      initialCentroidUpdatePlan,
+      targetTopicId,
+    )
+      ? initialCentroidUpdatePlan
+      : fallbackCentroidUpdatePlan;
+
+    if (initialCentroidUpdatePlan && finalCentroidUpdatePlan !== initialCentroidUpdatePlan) {
+      console.info("[centroid update plan fallback selected]", {
+        reason: "initial_centroid_update_plan_unusable",
+        target_topic_id: targetTopicId,
+        target_topic_label: topic.topic_label,
+        initial_plan: describeCentroidUpdatePlan(initialCentroidUpdatePlan),
+        fallback_plan: describeCentroidUpdatePlan(fallbackCentroidUpdatePlan),
       });
+    }
+
+    const runId = makeId("run");
+    const shouldQueueTopicMessageEmbeddingEvidence =
+      shouldPersistLearningSpace &&
+      !finalCentroidUpdatePlan &&
+      resolutionKind !== "no_match" &&
+      modelRouteContinuationPolicy?.should_treat_as_learning_evidence !== false;
+
+    const pendingTopicMessageEmbeddingEvidence =
+      shouldQueueTopicMessageEmbeddingEvidence
+        ? buildPendingTopicMessageEmbedding({
+            message,
+            runId,
+            targetTopicId,
+            targetTopicLabel: topic.topic_label,
+            resolutionKind,
+            resolvedLabel,
+            matchConfidence,
+            authoritySource: topicAuthoritySource,
+          })
+        : null;
+
+    if (pendingTopicMessageEmbeddingEvidence) {
+      console.info("[topic message embedding queued for worker]", {
+        target_topic_id: targetTopicId,
+        target_topic_label: topic.topic_label,
+        resolution_kind: resolutionKind,
+        reason: "no_synchronous_message_embedding_available",
+        routing_embedding_skipped: skipMessageEmbeddingForModelPolicy,
+        routing_embedding_skip_reason: messageEmbeddingSkipReason,
+      });
+    }
 
     const metricUpdatedTopics = routeTopics.map((routeTopic) =>
       routeTopic.id === targetTopicId
@@ -1867,8 +2221,6 @@ export async function POST(request: Request) {
 
     timer.step("build_learning_space");
 
-    const runId = makeId("run");
-
     const result: MyWayRunResult = {
       run_metadata: buildRunMetadata(engineFuel, runId),
       important_run_inputs: buildImportantRunInputs(
@@ -1886,10 +2238,15 @@ export async function POST(request: Request) {
 
     const runResultJson = JSON.parse(JSON.stringify(result));
 
-    const topicJson = JSON.parse(
-      JSON.stringify({
+    const topicJsonBase = {
+        ...asRecord(updatedResolvedTopic.topic_json),
         topic_id: updatedResolvedTopic.id,
         topic_label: updatedResolvedTopic.topic_label,
+        topic_position: updatedResolvedTopic.position,
+        semantic_position: updatedResolvedTopic.semanticPosition ?? null,
+        semantic_position_method: updatedResolvedTopic.semanticPositionMethod ?? null,
+        semantic_position_updated_at:
+          updatedResolvedTopic.semanticPositionUpdatedAt ?? null,
         next_step:
           probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
         inferred_keywords: inferKeywordsFromTopicLabel(
@@ -1943,7 +2300,17 @@ export async function POST(request: Request) {
         topic_message_embedding_updated_at:
           updatedResolvedTopic.topic_message_embedding_updated_at ?? null,
 
-      })
+      };
+
+    const topicJsonWithPendingMessageEmbedding = pendingTopicMessageEmbeddingEvidence
+      ? appendPendingTopicMessageEmbedding({
+          topicJson: topicJsonBase,
+          pendingItem: pendingTopicMessageEmbeddingEvidence,
+        })
+      : topicJsonBase;
+
+    const topicJson = JSON.parse(
+      JSON.stringify(topicJsonWithPendingMessageEmbedding)
     );
 
     const sceneUpdate = buildSceneUpdate(
@@ -1964,10 +2331,6 @@ export async function POST(request: Request) {
     );
 
     timer.step("serialize_result_topic_json_and_scene_update");
-
-    const shouldPersistLearningSpace = shouldPersistLearningSpaceForContinuation(
-      modelRouteContinuationPolicy
-    );
 
     await insertRun({
       id: runId,
@@ -1998,6 +2361,11 @@ export async function POST(request: Request) {
         nextStep:
           probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
         topicJson,
+        topicPosition: updatedResolvedTopic.position,
+        semanticPosition: updatedResolvedTopic.semanticPosition ?? null,
+        semanticPositionMethod: updatedResolvedTopic.semanticPositionMethod ?? null,
+        semanticPositionUpdatedAt:
+          updatedResolvedTopic.semanticPositionUpdatedAt ?? null,
         ...getCanonicalEmbeddingPersistenceMetadata(updatedResolvedTopic),
       });
     } else {
@@ -2084,8 +2452,8 @@ export async function POST(request: Request) {
       topic_labeling_mode: finalTopicLabelingMode,
       resolution_kind: finalResolutionKind,
       used_llm_topic_fallback: finalUsedLLMFallback,
-      message_embedding_available: Boolean(messageEmbedding?.length),
-      embedding_model: embeddingModel,
+      message_embedding_available: finalMessageEmbeddingAvailable,
+      embedding_model: finalEmbeddingModel,
       centroid_update_method: finalCentroidUpdatePlan?.update_method ?? null,
 
       topic_labeler_provider: getTopicLabelerSummary(topicLabelerResult).provider ?? topicLabelerProvider,

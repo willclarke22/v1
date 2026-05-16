@@ -1,3 +1,5 @@
+// app/api/semantic-enrichment/run-pending/route.ts
+
 import { NextResponse } from "next/server";
 import { getLatestTopicState } from "@/lib/persistence/read";
 import { upsertTopicState } from "@/lib/persistence/myway";
@@ -255,6 +257,8 @@ export async function POST(request: Request) {
     topic_message_vector_size: number | null;
     qdrant_sync_ok: boolean | null;
     qdrant_sync_error: string | null;
+    topic_position_preserved: boolean;
+    semantic_position_preserved: boolean;
   }> = [];
 
   for (const row of pendingRows) {
@@ -291,6 +295,8 @@ export async function POST(request: Request) {
           topic_message_vector_size: null,
           qdrant_sync_ok: null,
           qdrant_sync_error: null,
+          topic_position_preserved: Boolean(row.topic_position),
+          semantic_position_preserved: Boolean(row.semantic_position),
         });
 
         continue;
@@ -307,6 +313,8 @@ export async function POST(request: Request) {
           topic_message_vector_size: null,
           qdrant_sync_ok: null,
           qdrant_sync_error: null,
+          topic_position_preserved: Boolean(row.topic_position),
+          semantic_position_preserved: Boolean(row.semantic_position),
         });
 
         continue;
@@ -354,6 +362,17 @@ export async function POST(request: Request) {
         nextStep: row.next_step,
         topicJson: updatedTopicJson,
 
+        /**
+         * Preserve layout columns while enrichment updates embeddings.
+         *
+         * Enrichment should not change committed visual position or semantic
+         * target position; semantic-layout/recompute-pending owns target layout.
+         */
+        topicPosition: row.topic_position,
+        semanticPosition: row.semantic_position,
+        semanticPositionMethod: row.semantic_position_method,
+        semanticPositionUpdatedAt: row.semantic_position_updated_at,
+
         topicLabelEmbeddingCentroid: topicLabelCentroid,
         topicLabelEmbeddingCount: nextTopicLabelEmbeddingCount,
         topicLabelEmbeddingModel: embeddingModel,
@@ -397,6 +416,8 @@ export async function POST(request: Request) {
         topic_message_vector_size: topicMessageCentroid.length,
         qdrant_sync_ok: qdrantSyncOk,
         qdrant_sync_error: qdrantSyncError,
+        topic_position_preserved: Boolean(row.topic_position),
+        semantic_position_preserved: Boolean(row.semantic_position),
       });
     } catch (error) {
       results.push({
@@ -412,6 +433,8 @@ export async function POST(request: Request) {
         topic_message_vector_size: null,
         qdrant_sync_ok: null,
         qdrant_sync_error: null,
+        topic_position_preserved: Boolean(row.topic_position),
+        semantic_position_preserved: Boolean(row.semantic_position),
       });
     }
   }
