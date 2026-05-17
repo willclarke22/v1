@@ -19,10 +19,37 @@ export type LearningSpaceTopic = {
   layout: TopicLayoutMetadata;
 
   render_state: {
+    /**
+     * Visible sphere radius. This controls the rendered body size.
+     */
     radius: number;
+
+    /**
+     * Minimum world-space clearance the layout/renderer should reserve for this
+     * topic. This may be larger than radius because future shape noise, badges,
+     * rings, probe markers, local bobbing, and satellites can occupy visual
+     * space beyond the sphere.
+     */
+    collision_radius: number;
+
+    /**
+     * Visual roughness/blobiness proxy. Currently derived from confusion.
+     */
     surface_noise: number;
+
+    /**
+     * Visual activation/motion proxy. This should remain subtle and renderer-safe.
+     */
     spin_rate: number;
+
+    /**
+     * Visual richness/color-presence proxy. Currently derived from insight.
+     */
     saturation: number;
+
+    /**
+     * Reserved high-mastery visual state.
+     */
     is_star: boolean;
   };
 

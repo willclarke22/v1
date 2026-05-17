@@ -208,7 +208,18 @@ export type UploadedContentType =
   | "other";
 
 export type RenderState = {
+  /**
+   * Visible sphere radius. This controls the rendered body size.
+   */
   radius: number;
+
+  /**
+   * Minimum world-space clearance the layout/renderer should reserve for this topic.
+   * This can be larger than radius because local bobbing, surface noise, rings,
+   * probe badges, labels, and satellites may occupy visual space beyond the sphere.
+   */
+  collision_radius: number;
+
   surface_noise: number;
   spin_rate: number;
   saturation: number;
@@ -963,7 +974,14 @@ export interface LearningSpaceTopic {
 
 export interface LearningSpaceCluster {
   cluster_id: EntityId;
-  cluster_label: string;
+
+  /**
+   * Optional compatibility label for older API/debug surfaces. The renderer-safe
+   * learning-space contract does not require a cluster label, but routes may
+   * still include one when available.
+   */
+  cluster_label?: string;
+
   cluster_centroid: [number, number, number];
   member_topic_ids: EntityId[];
 }

@@ -85,6 +85,7 @@ type RawLearningSpaceTopic = {
   };
   render_state?: {
     radius?: number;
+    collision_radius?: number;
     surface_noise?: number;
     spin_rate?: number;
     saturation?: number;
@@ -1279,6 +1280,8 @@ function adaptLearningSpaceToContract(
           ? (topic.position as [number, number, number])
           : fallbackTopic?.position ?? [0, 0, 0];
 
+      const radius = topic.render_state?.radius ?? 0.8;
+
       return {
         topic_id: topic.topic_id ?? fallbackTopic?.id ?? makeId("topic"),
         topic_label: resolvedTopicLabel,
@@ -1300,7 +1303,8 @@ function adaptLearningSpaceToContract(
             null,
         },
         render_state: {
-          radius: topic.render_state?.radius ?? 0.8,
+          radius,
+          collision_radius: topic.render_state?.collision_radius ?? radius + 0.24,
           surface_noise: topic.render_state?.surface_noise ?? 0.3,
           spin_rate: topic.render_state?.spin_rate ?? 0.25,
           saturation: topic.render_state?.saturation ?? 0.7,

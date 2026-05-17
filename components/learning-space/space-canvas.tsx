@@ -1,9 +1,10 @@
 "use client";
 
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
-import { Float, Html, Stars, TrackballControls } from "@react-three/drei";
+import { Html, Stars, TrackballControls } from "@react-three/drei";
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ElementRef,
@@ -16,19 +17,122 @@ import type { ProbeSummary } from "@/components/probes/probe-surface";
 type TrackballControlsRef = ElementRef<typeof TrackballControls>;
 type SceneArrivalMode = "warp" | "focus";
 
-const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 0, 10.5);
+const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 0, 46);
 const DEFAULT_TARGET = new THREE.Vector3(0, 0, 0);
-const ZOOMED_OUT_DISTANCE = 10.5;
+const ZOOMED_OUT_DISTANCE = 46;
+
+/**
+ * Renderer-only expansion.
+ *
+ * Supabase topic_position / semantic_position stay in canonical semantic-map
+ * units. The canvas expands those coordinates for a more spacious,
+ * NASA-Eyes-like overview without corrupting persisted layout math.
+ *
+ * Keep X/Z meaningfully larger than Y so the learning space remains a readable
+ * semantic solar-system plane instead of becoming an arbitrary 3D cloud.
+ */
+const VISUAL_SPACE_SCALE_XZ = 5.15;
+const VISUAL_SPACE_SCALE_Y = 1.42;
+
+/**
+ * NASA-Eyes-style composition shaping.
+ *
+ * The first pass now uses a larger mostly-linear X/Z scale so pairwise semantic
+ * relationships are preserved as much as possible. This radial boost is kept
+ * deliberately gentle: it helps far topics feel like they live in a larger
+ * solar-system space, but it should not become the main source of semantic
+ * distance. The backend semantic layout still owns topic relationships.
+ *
+ * This is renderer-only. It does not modify topic_position or semantic_position.
+ */
+const RADIAL_EXPANSION_START = 1.35;
+const RADIAL_EXPANSION_LINEAR_GAIN = 0.045;
+const RADIAL_EXPANSION_CURVE_GAIN = 0.018;
+const RADIAL_EXPANSION_CURVE_POWER = 1.18;
+const RADIAL_EXPANSION_MAX_BOOST = 0.48;
+
+/**
+ * Renderer-only body scale.
+ *
+ * The learning-space contract still owns render_state.radius. These factors
+ * only decide how large the bodies appear in this particular scene composition.
+ * Smaller background bodies create a stronger sense of navigable space, while
+ * the selected/focused body can become visually dominant like a planet view.
+ */
+const OVERVIEW_TOPIC_BODY_SCALE = 0.74;
+const SELECTED_TOPIC_BODY_SCALE = 0.94;
+const FOCUSED_TOPIC_BODY_SCALE = 1.28;
+const FOCUSED_BACKGROUND_TOPIC_BODY_SCALE = 0.5;
+const FOCUSED_SELECTED_BACKGROUND_TOPIC_BODY_SCALE = 0.68;
+
 const SETTLE_DELAY_MS = 220;
 
 /**
- * Visual-only interpolation.
+ * Visual-only movement policy.
  *
  * Canonical topic positions still come from learningSpace.topics[].position.
- * This value only controls how quickly rendered spheres ease toward that
- * already-computed renderer-safe position.
+ * These values only control how the renderer eases toward that already-committed
+ * renderer-safe position.
  */
-const TOPIC_POSITION_LERP_ALPHA = 0.075;
+const OVERVIEW_TOPIC_POSITION_LERP_ALPHA = 0.065;
+const FOCUSED_TOPIC_POSITION_LERP_ALPHA = 0.048;
+const BACKGROUND_TOPIC_POSITION_LERP_ALPHA = 0.026;
+const PROBE_TOPIC_POSITION_LERP_ALPHA = 0;
+
+/**
+ * Elegant semantic drift trail policy.
+ *
+ * The trail should feel like a subtle memory of movement, not a busy sci-fi
+ * effect. It appears only after a meaningful committed position change and
+ * fades away automatically.
+ */
+const MOVEMENT_TRAIL_MIN_DISTANCE = 0.18;
+const MOVEMENT_TRAIL_FADE_RATE = 0.958;
+const MOVEMENT_TRAIL_TARGET_REACHED_FADE_RATE = 0.92;
+const MOVEMENT_TRAIL_MIN_OPACITY = 0.01;
+const MOVEMENT_TRAIL_OVERVIEW_OPACITY = 0.22;
+const MOVEMENT_TRAIL_FOCUSED_OPACITY = 0.18;
+const MOVEMENT_TRAIL_BACKGROUND_OPACITY = 0.08;
+
+/**
+ * Camera tether policy.
+ *
+ * This is deliberately gentler than a user-triggered warp/focus. Topic movement
+ * should not yank the camera around; only the currently focused/selected topic
+ * is softly followed.
+ */
+const CAMERA_TETHER_MIN_TOPIC_MOVE = 0.035;
+const FOCUSED_TOPIC_TETHER_CAMERA_ALPHA = 0.045;
+const FOCUSED_TOPIC_TETHER_TARGET_ALPHA = 0.055;
+const SELECTED_TOPIC_TETHER_TARGET_ALPHA = 0.045;
+
+/**
+ * Collision-safe local liveliness.
+ *
+ * Topic center positions remain controlled by semantic layout + backend commit.
+ * This small local bob is reserved inside render_state.collision_radius, so it
+ * should not break the non-overlap contract. Keep this subtle: MyWay should
+ * feel alive without making topic placement visually untrustworthy.
+ */
+const LOCAL_BOB_MAX_AMPLITUDE = 0.055;
+const LOCAL_BOB_RESERVE_USAGE = 0.52;
+const LOCAL_BOB_MIN_RESERVE = 0.045;
+const LOCAL_BOB_XZ_FACTOR = 0.22;
+const LOCAL_BOB_LERP_ALPHA = 0.08;
+const LOCAL_BOB_BASE_SPEED = 0.62;
+const LOCAL_BOB_SPEED_VARIATION = 0.28;
+
+/**
+ * Map-label policy.
+ *
+ * Labels are useful for overview navigation, but they become redundant once a
+ * topic is close enough to read through the focused/right-panel context.
+ * Hide labels in focused scenes and whenever a topic body becomes large enough
+ * on screen from manual mouse-wheel zoom.
+ */
+const LABEL_HIDE_SCREEN_RADIUS_PX = 44;
+const LABEL_MAX_WIDTH_OVERVIEW = 172;
+const LABEL_MAX_WIDTH_PROMINENT = 220;
 
 function getTopicById(
   topics: LearningSpaceTopic[],
@@ -56,6 +160,126 @@ function getCurrentViewDirection(
 
 function getTopicDisplayLabel(topic: LearningSpaceTopic) {
   return topic.topic_label.trim() || "Untitled Topic";
+}
+
+function stableHash(text: string) {
+  let hash = 2166136261;
+
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
+}
+
+function stableUnitInterval(text: string) {
+  return stableHash(text) / 4_294_967_295;
+}
+
+function getRadialExpansionBoost(planarDistance: number) {
+  const beyondStart = Math.max(0, planarDistance - RADIAL_EXPANSION_START);
+
+  if (beyondStart <= 0) {
+    return 1;
+  }
+
+  const boost =
+    beyondStart * RADIAL_EXPANSION_LINEAR_GAIN +
+    Math.pow(beyondStart, RADIAL_EXPANSION_CURVE_POWER) *
+      RADIAL_EXPANSION_CURVE_GAIN;
+
+  return 1 + Math.min(RADIAL_EXPANSION_MAX_BOOST, boost);
+}
+
+function getTopicVisualRadius(args: {
+  topic: LearningSpaceTopic;
+  isSelected: boolean;
+  isFocused: boolean;
+  isAnyTopicFocused: boolean;
+}) {
+  const baseRadius = args.topic.render_state.radius;
+
+  if (args.isFocused) {
+    return baseRadius * FOCUSED_TOPIC_BODY_SCALE;
+  }
+
+  if (args.isAnyTopicFocused) {
+    return (
+      baseRadius *
+      (args.isSelected
+        ? FOCUSED_SELECTED_BACKGROUND_TOPIC_BODY_SCALE
+        : FOCUSED_BACKGROUND_TOPIC_BODY_SCALE)
+    );
+  }
+
+  return baseRadius * (args.isSelected ? SELECTED_TOPIC_BODY_SCALE : OVERVIEW_TOPIC_BODY_SCALE);
+}
+
+function getTopicCameraRadius(topic: LearningSpaceTopic) {
+  return topic.render_state.radius * FOCUSED_TOPIC_BODY_SCALE;
+}
+
+function getCollisionSafeBobAmplitude(args: {
+  topic: LearningSpaceTopic;
+  isFocused: boolean;
+  isAnyTopicFocused: boolean;
+  isEnteringProbe: boolean;
+}) {
+  if (args.isEnteringProbe) return 0;
+
+  const radius = args.topic.render_state.radius;
+  const collisionRadius =
+    typeof args.topic.render_state.collision_radius === "number" &&
+    Number.isFinite(args.topic.render_state.collision_radius)
+      ? args.topic.render_state.collision_radius
+      : radius + LOCAL_BOB_MIN_RESERVE;
+
+  /**
+   * Only use a fraction of the spacing envelope beyond the visible radius.
+   * The remaining reserve leaves room for rings, badges, future blobiness, and
+   * small numeric/layout imperfections.
+   */
+  const availableReserve = Math.max(
+    0,
+    collisionRadius - radius - LOCAL_BOB_MIN_RESERVE,
+  );
+
+  const modeFactor = args.isFocused ? 0.72 : args.isAnyTopicFocused ? 0.42 : 1;
+
+  return (
+    Math.min(
+      LOCAL_BOB_MAX_AMPLITUDE,
+      availableReserve * LOCAL_BOB_RESERVE_USAGE,
+    ) * modeFactor
+  );
+}
+
+function toRenderPosition(position: LearningSpaceTopic["position"]) {
+  const rawX = position[0];
+  const rawY = position[1];
+  const rawZ = position[2];
+
+  const planarDistance = Math.sqrt(rawX * rawX + rawZ * rawZ);
+  const radialBoost = getRadialExpansionBoost(planarDistance);
+
+  return new THREE.Vector3(
+    rawX * VISUAL_SPACE_SCALE_XZ * radialBoost,
+    rawY * VISUAL_SPACE_SCALE_Y,
+    rawZ * VISUAL_SPACE_SCALE_XZ * radialBoost,
+  );
+}
+
+function getTopicPositionVector(topic: LearningSpaceTopic) {
+  return toRenderPosition(topic.position);
+}
+
+function getTopicPositionKey(topic: LearningSpaceTopic) {
+  const renderPosition = getTopicPositionVector(topic);
+
+  return [renderPosition.x, renderPosition.y, renderPosition.z]
+    .map((value) => value.toFixed(4))
+    .join(",");
 }
 
 function getScreenSpaceRadiusPx(args: {
@@ -95,20 +319,46 @@ function getScreenSpaceRadiusPx(args: {
   return 0;
 }
 
+function getTopicMovementAlpha(args: {
+  isFocused: boolean;
+  isAnyTopicFocused: boolean;
+  isEnteringProbe: boolean;
+}) {
+  if (args.isEnteringProbe) return PROBE_TOPIC_POSITION_LERP_ALPHA;
+  if (args.isFocused) return FOCUSED_TOPIC_POSITION_LERP_ALPHA;
+  if (args.isAnyTopicFocused) return BACKGROUND_TOPIC_POSITION_LERP_ALPHA;
+  return OVERVIEW_TOPIC_POSITION_LERP_ALPHA;
+}
+
+function getTrailInitialOpacity(args: {
+  isFocused: boolean;
+  isAnyTopicFocused: boolean;
+}) {
+  if (args.isFocused) return MOVEMENT_TRAIL_FOCUSED_OPACITY;
+  if (args.isAnyTopicFocused) return MOVEMENT_TRAIL_BACKGROUND_OPACITY;
+  return MOVEMENT_TRAIL_OVERVIEW_OPACITY;
+}
+
 function TopicLabel({
   topic,
   isSelected,
   isFocused,
   isAppearing,
   isSceneSettled,
+  isAnyTopicFocused,
+  isEnteringProbe,
   worldPositionRef,
+  visualRadius,
 }: {
   topic: LearningSpaceTopic;
   isSelected: boolean;
   isFocused: boolean;
   isAppearing: boolean;
   isSceneSettled: boolean;
+  isAnyTopicFocused: boolean;
+  isEnteringProbe: boolean;
   worldPositionRef: RefObject<THREE.Vector3>;
+  visualRadius: number;
 }) {
   const { camera, size } = useThree();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -117,23 +367,44 @@ function TopicLabel({
     const el = containerRef.current;
     if (!el) return;
 
-    const shouldShow =
-      isSceneSettled && (isSelected || isFocused || isAppearing);
-
     const screenRadiusPx = getScreenSpaceRadiusPx({
       camera,
       size,
       worldPosition: worldPositionRef.current,
-      worldRadius: topic.render_state.radius,
+      worldRadius: visualRadius,
     });
 
+    /**
+     * Mode A label policy, refined:
+     * - show all labels in overview when the scene is settled
+     * - hide labels during camera/user motion
+     * - hide labels in focused/double-click scenes because the right panel owns
+     *   the focused topic title
+     * - hide labels when manual zoom makes a topic large enough on screen
+     */
+    const isCloseEnoughToReadWithoutMapLabel =
+      screenRadiusPx >= LABEL_HIDE_SCREEN_RADIUS_PX;
+
+    const shouldShow =
+      isSceneSettled &&
+      !isEnteringProbe &&
+      !isAnyTopicFocused &&
+      !isCloseEnoughToReadWithoutMapLabel;
+
     const labelOffsetPx = Math.min(
-      52,
-      Math.max(18, screenRadiusPx * 0.55 + 10),
+      68,
+      Math.max(22, screenRadiusPx * 0.62 + 14),
     );
 
-    const targetOpacity = shouldShow ? 1 : 0;
-    const targetScale = shouldShow ? 1 : 0.96;
+    const targetOpacity = shouldShow
+      ? isSelected
+        ? 0.96
+        : isAppearing
+          ? 0.9
+          : 0.78
+      : 0;
+
+    const targetScale = shouldShow ? (isSelected ? 1.02 : 0.94) : 0.92;
     const targetBlur = shouldShow ? 0 : 3;
     const targetYOffset = shouldShow ? -labelOffsetPx : -(labelOffsetPx - 6);
 
@@ -142,11 +413,12 @@ function TopicLabel({
     el.style.transform = `translate3d(0, ${targetYOffset}px, 0) scale(${targetScale})`;
   });
 
+  const isProminent = isFocused || isSelected;
+
   return (
     <Html
       position={[0, 0, 0]}
       center
-      distanceFactor={10}
       style={{
         pointerEvents: "none",
       }}
@@ -155,19 +427,24 @@ function TopicLabel({
         ref={containerRef}
         style={{
           opacity: 0,
-          transform: "translate3d(0, -18px, 0) scale(0.96)",
+          transform: "translate3d(0, -22px, 0) scale(0.92)",
           filter: "blur(3px)",
           transition:
             "opacity 180ms ease, transform 220ms ease, filter 220ms ease",
           willChange: "transform, opacity, filter",
+          maxWidth: isProminent
+            ? LABEL_MAX_WIDTH_PROMINENT
+            : LABEL_MAX_WIDTH_OVERVIEW,
+          textShadow:
+            "0 2px 8px rgba(0,0,0,0.96), 0 0 18px rgba(0,0,0,0.86)",
         }}
-        className={`rounded-full border px-3 py-1 text-[11px] backdrop-blur-md ${
-          isFocused || isSelected
-            ? "border-purple-300/40 bg-purple-400/18 text-white shadow-[0_0_24px_rgba(168,85,247,0.12)]"
-            : "border-white/10 bg-black/55 text-zinc-200"
+        className={`px-1 text-[11px] font-medium leading-tight tracking-[0.01em] ${
+          isProminent ? "text-white" : "text-zinc-100/90"
         }`}
       >
-        {getTopicDisplayLabel(topic)}
+        <span className="block truncate whitespace-nowrap">
+          {getTopicDisplayLabel(topic)}
+        </span>
       </div>
     </Html>
   );
@@ -217,6 +494,28 @@ function ProbeMarker({
   );
 }
 
+function MovementTrail({
+  geometryRef,
+  materialRef,
+}: {
+  geometryRef: RefObject<THREE.BufferGeometry | null>;
+  materialRef: RefObject<THREE.LineBasicMaterial | null>;
+}) {
+  return (
+    <line>
+      <bufferGeometry ref={geometryRef} />
+      <lineBasicMaterial
+        ref={materialRef}
+        color="#a78bfa"
+        transparent
+        opacity={0}
+        depthWrite={false}
+        depthTest
+      />
+    </line>
+  );
+}
+
 function TopicSphere({
   topic,
   isSelected,
@@ -225,6 +524,7 @@ function TopicSphere({
   topicProbe,
   isAppearing,
   isSceneSettled,
+  isEnteringProbe,
   onSelect,
   onFocusTopic,
   onUnfocus,
@@ -237,6 +537,7 @@ function TopicSphere({
   topicProbe: ProbeSummary | null;
   isAppearing: boolean;
   isSceneSettled: boolean;
+  isEnteringProbe: boolean;
   onSelect: (id: string) => void;
   onFocusTopic: (id: string) => void;
   onUnfocus: () => void;
@@ -245,12 +546,27 @@ function TopicSphere({
   const isAnyTopicFocused = focusedTopicId !== null;
 
   const groupRef = useRef<THREE.Group>(null);
+  const visualGroupRef = useRef<THREE.Group>(null);
   const sphereRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.MeshStandardMaterial>(null);
   const appearProgressRef = useRef(isAppearing ? 0 : 1);
 
-  const currentPositionRef = useRef(new THREE.Vector3(...topic.position));
-  const targetPositionRef = useRef(new THREE.Vector3(...topic.position));
+  const initialRenderPosition = getTopicPositionVector(topic);
+
+  const currentPositionRef = useRef(initialRenderPosition.clone());
+  const targetPositionRef = useRef(initialRenderPosition.clone());
+
+  const bobPhaseRef = useRef(stableUnitInterval(topic.topic_id) * Math.PI * 2);
+  const bobSpeedRef = useRef(
+    LOCAL_BOB_BASE_SPEED +
+      stableUnitInterval(`${topic.topic_id}:bob-speed`) *
+        LOCAL_BOB_SPEED_VARIATION,
+  );
+
+  const trailStartPositionRef = useRef(initialRenderPosition.clone());
+  const trailOpacityRef = useRef(0);
+  const trailGeometryRef = useRef<THREE.BufferGeometry | null>(null);
+  const trailMaterialRef = useRef<THREE.LineBasicMaterial | null>(null);
 
   const pointerDownRef = useRef<{ x: number; y: number; time: number } | null>(
     null,
@@ -258,13 +574,43 @@ function TopicSphere({
   const lastTapRef = useRef<{ time: number; topicId: string } | null>(null);
   const singleClickTimeoutRef = useRef<number | null>(null);
 
+  const movementAlpha = getTopicMovementAlpha({
+    isFocused,
+    isAnyTopicFocused,
+    isEnteringProbe,
+  });
+
+  const visualRadius = getTopicVisualRadius({
+    topic,
+    isSelected,
+    isFocused,
+    isAnyTopicFocused,
+  });
+
   useEffect(() => {
     appearProgressRef.current = isAppearing ? 0 : 1;
   }, [isAppearing, topic.topic_id]);
 
   useEffect(() => {
-    targetPositionRef.current.set(...topic.position);
-  }, [topic.position]);
+    const nextTarget = getTopicPositionVector(topic);
+    const currentTarget = targetPositionRef.current;
+    const targetDistance = currentTarget.distanceTo(nextTarget);
+    const currentDistance = currentPositionRef.current.distanceTo(nextTarget);
+
+    if (
+      !isEnteringProbe &&
+      targetDistance >= MOVEMENT_TRAIL_MIN_DISTANCE &&
+      currentDistance >= MOVEMENT_TRAIL_MIN_DISTANCE
+    ) {
+      trailStartPositionRef.current.copy(currentPositionRef.current);
+      trailOpacityRef.current = getTrailInitialOpacity({
+        isFocused,
+        isAnyTopicFocused,
+      });
+    }
+
+    targetPositionRef.current.copy(nextTarget);
+  }, [topic.position, isEnteringProbe, isFocused, isAnyTopicFocused]);
 
   useEffect(() => {
     return () => {
@@ -274,7 +620,7 @@ function TopicSphere({
     };
   }, []);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const current = appearProgressRef.current;
     appearProgressRef.current = current + (1 - current) * 0.05;
 
@@ -283,21 +629,64 @@ function TopicSphere({
     const overshoot = 1 + Math.sin(Math.min(t, 1) * Math.PI) * 0.1;
     const finalScale = Math.max(0.001, eased * overshoot);
 
-    currentPositionRef.current.lerp(
+    if (movementAlpha > 0) {
+      currentPositionRef.current.lerp(targetPositionRef.current, movementAlpha);
+
+      if (
+        currentPositionRef.current.distanceToSquared(targetPositionRef.current) <
+        0.0001
+      ) {
+        currentPositionRef.current.copy(targetPositionRef.current);
+      }
+    }
+
+    const distanceToTarget = currentPositionRef.current.distanceTo(
       targetPositionRef.current,
-      TOPIC_POSITION_LERP_ALPHA,
     );
 
-    if (
-      currentPositionRef.current.distanceToSquared(targetPositionRef.current) <
-      0.0001
-    ) {
-      currentPositionRef.current.copy(targetPositionRef.current);
+    if (isEnteringProbe) {
+      trailOpacityRef.current = 0;
+    } else if (distanceToTarget < 0.04) {
+      trailOpacityRef.current *= MOVEMENT_TRAIL_TARGET_REACHED_FADE_RATE;
+    } else {
+      trailOpacityRef.current *= MOVEMENT_TRAIL_FADE_RATE;
+    }
+
+    if (trailOpacityRef.current < MOVEMENT_TRAIL_MIN_OPACITY) {
+      trailOpacityRef.current = 0;
+    }
+
+    if (trailGeometryRef.current && trailMaterialRef.current) {
+      trailGeometryRef.current.setFromPoints([
+        trailStartPositionRef.current,
+        currentPositionRef.current,
+      ]);
+
+      trailMaterialRef.current.opacity = trailOpacityRef.current * eased;
+      trailMaterialRef.current.visible = trailOpacityRef.current > 0;
     }
 
     if (groupRef.current) {
       groupRef.current.position.copy(currentPositionRef.current);
       groupRef.current.scale.setScalar(finalScale);
+    }
+
+    if (visualGroupRef.current) {
+      const bobAmplitude = getCollisionSafeBobAmplitude({
+        topic,
+        isFocused,
+        isAnyTopicFocused,
+        isEnteringProbe,
+      });
+      const bobAngle =
+        state.clock.elapsedTime * bobSpeedRef.current + bobPhaseRef.current;
+      const targetBob = new THREE.Vector3(
+        Math.sin(bobAngle * 0.71) * bobAmplitude * LOCAL_BOB_XZ_FACTOR,
+        Math.sin(bobAngle) * bobAmplitude,
+        Math.cos(bobAngle * 0.53) * bobAmplitude * LOCAL_BOB_XZ_FACTOR,
+      );
+
+      visualGroupRef.current.position.lerp(targetBob, LOCAL_BOB_LERP_ALPHA);
     }
 
     if (sphereRef.current) {
@@ -306,13 +695,15 @@ function TopicSphere({
 
     if (materialRef.current) {
       materialRef.current.opacity =
-        (isAnyTopicFocused && !isFocused ? 0.72 : 1) * eased;
+        (isAnyTopicFocused && !isFocused ? 0.46 : 1) * eased;
 
       const baseGlow = isFocused ? 1.45 : isSelected ? 1.05 : 0.35;
       const appearanceBoost = isAppearing ? 0.5 * (1 - t) : 0;
+      const movementGlow =
+        trailOpacityRef.current > 0 && !isAnyTopicFocused ? 0.16 : 0;
 
       materialRef.current.emissiveIntensity =
-        (baseGlow + appearanceBoost) * (0.35 + eased * 0.65);
+        (baseGlow + appearanceBoost + movementGlow) * (0.35 + eased * 0.65);
     }
   });
 
@@ -398,55 +789,65 @@ function TopicSphere({
     !!topicProbe && (isFocused || isSelected) && isSceneSettled;
 
   return (
-    <Float speed={1.25} rotationIntensity={0.32} floatIntensity={0.78}>
+    <>
+      <MovementTrail
+        geometryRef={trailGeometryRef}
+        materialRef={trailMaterialRef}
+      />
+
       <group ref={groupRef} position={currentPositionRef.current}>
-        <mesh
-          ref={sphereRef}
-          scale={topic.render_state.radius}
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-          onPointerOver={(event) => {
-            event.stopPropagation();
-            document.body.style.cursor = "pointer";
-          }}
-          onPointerOut={(event) => {
-            event.stopPropagation();
-            document.body.style.cursor = "default";
-          }}
-        >
-          <sphereGeometry args={[1, 40, 40]} />
-          <meshStandardMaterial
-            ref={materialRef}
-            color={isSelected ? "#ffffff" : "#d4d4d8"}
-            emissive={
-              isFocused ? "#c084fc" : isSelected ? "#a855f7" : "#3f3f46"
-            }
-            emissiveIntensity={isFocused ? 1.45 : isSelected ? 1.05 : 0.35}
-            metalness={0.18}
-            roughness={0.42}
-            opacity={isAnyTopicFocused && !isFocused ? 0.72 : 1}
-            transparent
-          />
-        </mesh>
+        <group ref={visualGroupRef}>
+          <mesh
+            ref={sphereRef}
+            scale={visualRadius}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerOver={(event) => {
+              event.stopPropagation();
+              document.body.style.cursor = "pointer";
+            }}
+            onPointerOut={(event) => {
+              event.stopPropagation();
+              document.body.style.cursor = "default";
+            }}
+          >
+            <sphereGeometry args={[1, 40, 40]} />
+            <meshStandardMaterial
+              ref={materialRef}
+              color={isSelected ? "#ffffff" : "#d4d4d8"}
+              emissive={
+                isFocused ? "#c084fc" : isSelected ? "#a855f7" : "#3f3f46"
+              }
+              emissiveIntensity={isFocused ? 1.45 : isSelected ? 1.05 : 0.35}
+              metalness={0.18}
+              roughness={0.42}
+              opacity={isAnyTopicFocused && !isFocused ? 0.46 : 1}
+              transparent
+            />
+          </mesh>
 
-        <TopicLabel
-          topic={topic}
-          isSelected={isSelected}
-          isFocused={isFocused}
-          isAppearing={isAppearing}
-          isSceneSettled={isSceneSettled}
-          worldPositionRef={currentPositionRef}
-        />
-
-        {topicProbe && (
-          <ProbeMarker
-            probe={topicProbe}
-            isVisible={showProbeMarker}
-            onOpenProbe={onOpenProbe}
+          <TopicLabel
+            topic={topic}
+            isSelected={isSelected}
+            isFocused={isFocused}
+            isAppearing={isAppearing}
+            isSceneSettled={isSceneSettled}
+            isAnyTopicFocused={isAnyTopicFocused}
+            isEnteringProbe={isEnteringProbe}
+            worldPositionRef={currentPositionRef}
+            visualRadius={visualRadius}
           />
-        )}
+
+          {topicProbe && (
+            <ProbeMarker
+              probe={topicProbe}
+              isVisible={showProbeMarker}
+              onOpenProbe={onOpenProbe}
+            />
+          )}
+        </group>
       </group>
-    </Float>
+    </>
   );
 }
 
@@ -480,6 +881,8 @@ function CameraController({
   const lastHandledSelectedTopicIdRef = useRef<string | null>(null);
   const lastHandledFocusedTopicIdRef = useRef<string | null>(null);
   const lastHandledArrivalModeRef = useRef<SceneArrivalMode | null>(null);
+  const lastHandledSelectedTopicPositionKeyRef = useRef<string | null>(null);
+  const lastHandledFocusedTopicPositionKeyRef = useRef<string | null>(null);
 
   const cameraAnimatingRef = useRef(false);
   const targetAnimatingRef = useRef(false);
@@ -527,11 +930,9 @@ function CameraController({
         return;
       }
 
-      const target = new THREE.Vector3(...topic.position);
-      const probeEntryDistance = Math.max(
-        0.16,
-        topic.render_state.radius * 0.46,
-      );
+      const target = getTopicPositionVector(topic);
+      const cameraRadius = getTopicCameraRadius(topic);
+      const probeEntryDistance = Math.max(0.18, cameraRadius * 0.5);
 
       desiredTarget.current.copy(target);
       desiredCameraPosition.current.copy(
@@ -550,6 +951,16 @@ function CameraController({
       lastHandledSelectedTopicIdRef.current = selectedTopicId;
       lastHandledFocusedTopicIdRef.current = focusedTopicId;
       lastHandledArrivalModeRef.current = arrivalMode;
+      lastHandledSelectedTopicPositionKeyRef.current = selectedTopicId
+        ? getTopicById(topics, selectedTopicId)
+          ? getTopicPositionKey(getTopicById(topics, selectedTopicId)!)
+          : null
+        : null;
+      lastHandledFocusedTopicPositionKeyRef.current = focusedTopicId
+        ? getTopicById(topics, focusedTopicId)
+          ? getTopicPositionKey(getTopicById(topics, focusedTopicId)!)
+          : null
+        : null;
       return;
     }
 
@@ -580,6 +991,12 @@ function CameraController({
       lastHandledSelectedTopicIdRef.current = selectedTopicId;
       lastHandledFocusedTopicIdRef.current = focusedTopicId;
       lastHandledArrivalModeRef.current = arrivalMode;
+      lastHandledSelectedTopicPositionKeyRef.current = selectedTopicId
+        ? getTopicById(topics, selectedTopicId)
+          ? getTopicPositionKey(getTopicById(topics, selectedTopicId)!)
+          : null
+        : null;
+      lastHandledFocusedTopicPositionKeyRef.current = null;
       return;
     }
 
@@ -590,15 +1007,21 @@ function CameraController({
         return;
       }
 
+      const target = getTopicPositionVector(topic);
+      const topicPositionKey = getTopicPositionKey(topic);
+
       const focusTargetChanged =
         lastHandledFocusedTopicIdRef.current !== focusedTopicId;
       const arrivalChanged = lastHandledArrivalModeRef.current !== arrivalMode;
+      const focusPositionChanged =
+        lastHandledFocusedTopicPositionKeyRef.current !== null &&
+        lastHandledFocusedTopicPositionKeyRef.current !== topicPositionKey &&
+        desiredTarget.current.distanceTo(target) >= CAMERA_TETHER_MIN_TOPIC_MOVE;
 
       if (focusTargetChanged || arrivalChanged) {
-        const target = new THREE.Vector3(...topic.position);
-
         if (arrivalMode === "warp") {
-          const warpDistance = Math.max(5.2, topic.render_state.radius * 4.6);
+          const cameraRadius = getTopicCameraRadius(topic);
+          const warpDistance = Math.max(5.6, cameraRadius * 4.15);
           desiredTarget.current.copy(target);
           desiredCameraPosition.current.copy(
             target.clone().add(currentDirection.multiplyScalar(warpDistance)),
@@ -606,7 +1029,8 @@ function CameraController({
           currentCameraAlphaRef.current = 0.125;
           currentTargetAlphaRef.current = 0.13;
         } else {
-          const focusDistance = Math.max(4.1, topic.render_state.radius * 3.7);
+          const cameraRadius = getTopicCameraRadius(topic);
+          const focusDistance = Math.max(4.2, cameraRadius * 3.35);
           desiredTarget.current.copy(target);
           desiredCameraPosition.current.copy(
             target.clone().add(currentDirection.multiplyScalar(focusDistance)),
@@ -625,23 +1049,65 @@ function CameraController({
         lastHandledSelectedTopicIdRef.current = selectedTopicId;
         lastHandledFocusedTopicIdRef.current = focusedTopicId;
         lastHandledArrivalModeRef.current = arrivalMode;
+        lastHandledFocusedTopicPositionKeyRef.current = topicPositionKey;
+        lastHandledSelectedTopicPositionKeyRef.current = selectedTopicId
+          ? getTopicById(topics, selectedTopicId)
+            ? getTopicPositionKey(getTopicById(topics, selectedTopicId)!)
+            : null
+          : null;
         return;
+      }
+
+      if (focusPositionChanged && !isEnteringProbe) {
+        const tetherDistance = Math.max(
+          camera.position.distanceTo(currentTarget),
+          getTopicCameraRadius(topic) * 3.35,
+        );
+
+        desiredTarget.current.copy(target);
+        desiredCameraPosition.current.copy(
+          target.clone().add(currentDirection.multiplyScalar(tetherDistance)),
+        );
+
+        currentCameraAlphaRef.current = FOCUSED_TOPIC_TETHER_CAMERA_ALPHA;
+        currentTargetAlphaRef.current = FOCUSED_TOPIC_TETHER_TARGET_ALPHA;
+        pendingProbeEntryCompleteRef.current = false;
+        cameraAnimatingRef.current = true;
+        targetAnimatingRef.current = true;
+        controls.enabled = false;
+        setCameraMoving(true);
+
+        previousFocusedTopicIdRef.current = focusedTopicId;
+        lastHandledSelectedTopicIdRef.current = selectedTopicId;
+        lastHandledFocusedTopicIdRef.current = focusedTopicId;
+        lastHandledArrivalModeRef.current = arrivalMode;
+        lastHandledFocusedTopicPositionKeyRef.current = topicPositionKey;
+        return;
+      }
+
+      if (lastHandledFocusedTopicPositionKeyRef.current === null) {
+        lastHandledFocusedTopicPositionKeyRef.current = topicPositionKey;
       }
     }
 
-    if (selectedTopicId) {
+    if (selectedTopicId && !focusedTopicId) {
       const topic = getTopicById(topics, selectedTopicId);
       if (!topic) {
         previousFocusedTopicIdRef.current = focusedTopicId;
         return;
       }
 
+      const target = getTopicPositionVector(topic);
+      const topicPositionKey = getTopicPositionKey(topic);
+
       const selectedTargetChanged =
         lastHandledSelectedTopicIdRef.current !== selectedTopicId;
+      const selectedPositionChanged =
+        lastHandledSelectedTopicPositionKeyRef.current !== null &&
+        lastHandledSelectedTopicPositionKeyRef.current !== topicPositionKey &&
+        desiredTarget.current.distanceTo(target) >= CAMERA_TETHER_MIN_TOPIC_MOVE;
 
       if (selectedTargetChanged) {
-        const target = new THREE.Vector3(...topic.position);
-
         desiredTarget.current.copy(target);
 
         currentCameraAlphaRef.current = 0.095;
@@ -655,7 +1121,29 @@ function CameraController({
         lastHandledSelectedTopicIdRef.current = selectedTopicId;
         lastHandledFocusedTopicIdRef.current = focusedTopicId;
         lastHandledArrivalModeRef.current = arrivalMode;
+        lastHandledSelectedTopicPositionKeyRef.current = topicPositionKey;
         return;
+      }
+
+      if (selectedPositionChanged && !isEnteringProbe) {
+        desiredTarget.current.copy(target);
+
+        currentTargetAlphaRef.current = SELECTED_TOPIC_TETHER_TARGET_ALPHA;
+        pendingProbeEntryCompleteRef.current = false;
+        targetAnimatingRef.current = true;
+        cameraAnimatingRef.current = false;
+        setCameraMoving(true);
+
+        previousFocusedTopicIdRef.current = focusedTopicId;
+        lastHandledSelectedTopicIdRef.current = selectedTopicId;
+        lastHandledFocusedTopicIdRef.current = focusedTopicId;
+        lastHandledArrivalModeRef.current = arrivalMode;
+        lastHandledSelectedTopicPositionKeyRef.current = topicPositionKey;
+        return;
+      }
+
+      if (lastHandledSelectedTopicPositionKeyRef.current === null) {
+        lastHandledSelectedTopicPositionKeyRef.current = topicPositionKey;
       }
     }
 
@@ -680,6 +1168,8 @@ function CameraController({
       lastHandledSelectedTopicIdRef.current = selectedTopicId;
       lastHandledFocusedTopicIdRef.current = focusedTopicId;
       lastHandledArrivalModeRef.current = arrivalMode;
+      lastHandledSelectedTopicPositionKeyRef.current = null;
+      lastHandledFocusedTopicPositionKeyRef.current = null;
     }
   }, [
     topics,
@@ -787,6 +1277,11 @@ export default function SpaceCanvas({
   const [isCameraInMotion, setIsCameraInMotion] = useState(false);
   const [isSceneSettled, setIsSceneSettled] = useState(true);
 
+  const topicIdsKey = useMemo(
+    () => learningSpace.topics.map((topic) => topic.topic_id).join("|"),
+    [learningSpace.topics],
+  );
+
   useEffect(() => {
     const currentIds = learningSpace.topics.map((topic) => topic.topic_id);
     const nextAppearingIds = new Set<string>();
@@ -815,7 +1310,7 @@ export default function SpaceCanvas({
     }, 2600);
 
     return () => window.clearTimeout(timeout);
-  }, [learningSpace.topics]);
+  }, [topicIdsKey, learningSpace.topics]);
 
   useEffect(() => {
     const isMoving = isUserControlling || isCameraInMotion || isEnteringProbe;
@@ -851,7 +1346,7 @@ export default function SpaceCanvas({
       }}
     >
       <div className="absolute inset-0 z-0">
-        <Canvas camera={{ position: [0, 0, 10.5], fov: 50 }}>
+        <Canvas camera={{ position: [0, 0, 46], fov: 50 }}>
           <color attach="background" args={["#000000"]} />
 
           <ambientLight intensity={1.1} />
@@ -859,13 +1354,13 @@ export default function SpaceCanvas({
           <pointLight position={[-4, -2, 4]} intensity={1.2} />
 
           <Stars
-            radius={80}
-            depth={40}
-            count={2500}
-            factor={3}
+            radius={390}
+            depth={210}
+            count={5200}
+            factor={3.25}
             saturation={0}
             fade
-            speed={0.35}
+            speed={0.24}
           />
 
           {learningSpace.topics.map((topic) => {
@@ -886,6 +1381,7 @@ export default function SpaceCanvas({
                 topicProbe={topicProbe}
                 isAppearing={appearingTopicIds.has(topic.topic_id)}
                 isSceneSettled={isSceneSettled}
+                isEnteringProbe={isEnteringProbe}
                 onSelect={(id) => onSelectTopic(id)}
                 onFocusTopic={(id) => onFocusTopicChange?.(id)}
                 onUnfocus={() => onFocusTopicChange?.(null)}
@@ -910,7 +1406,7 @@ export default function SpaceCanvas({
             ref={controlsRef}
             noPan
             minDistance={0.06}
-            maxDistance={18}
+            maxDistance={180}
             rotateSpeed={3.2}
             zoomSpeed={1.2}
             dynamicDampingFactor={0.12}

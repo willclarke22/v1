@@ -251,10 +251,24 @@ function Invoke-LayoutWithAbortWatch {
     -Url $url
 }
 
+function Invoke-LayoutCommitWithAbortWatch {
+  param([bool]$Force = $false)
+
+  $url = "$AppBaseUrl/api/semantic-layout/commit-pending?limit=$LayoutLimit"
+
+  if ($Force) {
+    $url = "$url&force=true"
+  }
+
+  return Invoke-PostRouteWithAbortWatch `
+    -RouteName "semantic layout commit" `
+    -Url $url
+}
+
 Write-WorkerLog "Semantic enrichment worker started."
 Write-WorkerLog "App: $AppBaseUrl"
-Write-WorkerLog "This worker runs when idle-state is safe AND embedding-backed work is pending."
-Write-WorkerLog "It processes queued topic-message embeddings, semantic enrichment, and semantic layout targets."
+Write-WorkerLog "This worker runs when idle-state is safe. Layout commits can run even when no embedding-backed work is pending."
+Write-WorkerLog "It processes queued topic-message embeddings, semantic enrichment, semantic layout targets, and semantic layout commits."
 Write-WorkerLog "Poll interval: $PollSeconds second(s)."
 Write-WorkerLog "Python executable: $PythonExe"
 Write-WorkerLog "Enrichment limit: $EnrichmentLimit"
@@ -301,13 +315,28 @@ while ($true) {
 
   $pendingWorkFound = $pendingTopicsFound + $pendingMessageEmbeddingItemsFound
 
+  Write-WorkerLog "Idle-safe cycle. First checking for pending semantic layout commits..."
+
+  try {
+    $preCommitResult = Invoke-LayoutCommitWithAbortWatch
+
+    if ($null -eq $preCommitResult) {
+      Write-WorkerLog "Pre-cycle semantic layout commit was aborted or returned no result."
+    } else {
+      Write-WorkerLog "Pre-cycle semantic layout commit result:"
+      $preCommitResult | ConvertTo-Json -Depth 20 | Write-Host
+    }
+  } catch {
+    Write-WorkerLog "Pre-cycle semantic layout commit failed: $($_.Exception.Message)"
+  }
+
   if ($pendingWorkFound -le 0) {
-    Write-WorkerLog "Idle, but no embedding-backed work is pending. Not starting embedding service."
+    Write-WorkerLog "Idle, but no embedding-backed work is pending. Layout commit check already ran; not starting embedding service."
     Start-Sleep -Seconds $PollSeconds
     continue
   }
 
-  Write-WorkerLog "Pending work found: enrichment_topics=$pendingTopicsFound, topic_message_embedding_items=$pendingMessageEmbeddingItemsFound. Preparing worker cycle."
+  Write-WorkerLog "Pending embedding-backed work found: enrichment_topics=$pendingTopicsFound, topic_message_embedding_items=$pendingMessageEmbeddingItemsFound. Preparing embedding worker cycle."
 
   $embeddingProcess = $null
 
@@ -384,7 +413,17 @@ while ($true) {
     $shouldRunLayout = ($enrichedCount -gt 0) -or ($topicMessageEmbeddingProcessedCount -gt 0)
 
     if (-not $shouldRunLayout) {
-      Write-WorkerLog "No embeddings were updated this cycle. Skipping semantic layout recompute."
+      Write-WorkerLog "No embeddings were updated this cycle. Running a final semantic layout commit check, then skipping recompute."
+
+      $finalCommitWithoutRecompute = Invoke-LayoutCommitWithAbortWatch
+
+      if ($null -eq $finalCommitWithoutRecompute) {
+        Write-WorkerLog "Final semantic layout commit check was aborted or returned no result."
+      } else {
+        Write-WorkerLog "Final semantic layout commit check result:"
+        $finalCommitWithoutRecompute | ConvertTo-Json -Depth 20 | Write-Host
+      }
+
       continue
     }
 
@@ -405,10 +444,40 @@ while ($true) {
     $layoutResult = Invoke-LayoutWithAbortWatch -Force $forceLayout
 
     if ($null -eq $layoutResult) {
-      Write-WorkerLog "Semantic layout recompute was aborted or returned no result."
+      Write-WorkerLog "Semantic layout recompute was aborted or returned no result. Skipping layout commit."
+      continue
+    }
+
+    Write-WorkerLog "Semantic layout result:"
+    $layoutResult | ConvertTo-Json -Depth 20 | Write-Host
+
+    $layoutComputedCount = 0
+    if ($null -ne $layoutResult.computed_count) {
+      $layoutComputedCount = [int]$layoutResult.computed_count
+    } elseif ($null -ne $layoutResult.updated_count) {
+      $layoutComputedCount = [int]$layoutResult.updated_count
+    } elseif ($null -ne $layoutResult.semantic_positions_written_count) {
+      $layoutComputedCount = [int]$layoutResult.semantic_positions_written_count
+    }
+
+    if ($layoutComputedCount -le 0) {
+      Write-WorkerLog "Semantic layout recompute returned no newly computed/updated semantic positions. Still running commit, because existing semantic targets may already be waiting."
+    }
+
+    $abortBeforeLayoutCommit = Test-ShouldAbortEnrichment
+    if ($abortBeforeLayoutCommit.should_abort -eq $true) {
+      Write-WorkerLog "Abort condition appeared before semantic layout commit. Reason: $($abortBeforeLayoutCommit.reason)"
+      continue
+    }
+
+    Write-WorkerLog "Running semantic layout commit with limit=$LayoutLimit..."
+    $layoutCommitResult = Invoke-LayoutCommitWithAbortWatch
+
+    if ($null -eq $layoutCommitResult) {
+      Write-WorkerLog "Semantic layout commit was aborted or returned no result."
     } else {
-      Write-WorkerLog "Semantic layout result:"
-      $layoutResult | ConvertTo-Json -Depth 20 | Write-Host
+      Write-WorkerLog "Semantic layout commit result:"
+      $layoutCommitResult | ConvertTo-Json -Depth 20 | Write-Host
     }
   } catch {
     Write-WorkerLog "Worker cycle failed: $($_.Exception.Message)"

@@ -695,7 +695,7 @@ export async function POST(request: NextRequest) {
       judgedAttempt,
     });
 
-    const learningSpace = buildLearningSpace(updatedTopics) as LearningSpace;
+    const learningSpace: LearningSpace = buildLearningSpace(updatedTopics);
     const runId = makeId("run");
 
     const result: MyWayRunResult = {

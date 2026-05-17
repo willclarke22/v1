@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sidebar, { type SidebarTab } from "@/components/layout/sidebar";
 import BottomComposer from "@/components/layout/bottom-composer";
 import TopicPanel from "@/components/layout/topic-panel";
@@ -13,10 +13,12 @@ import {
   isTopicPosition3D,
   type TopicPosition3D,
 } from "@/lib/learning-space/topic-position";
+import { supabase } from "@/lib/supabase/client";
 import type { Topic } from "@/types/topic";
+import type { LearningSpace as RendererLearningSpace } from "@/types/learning-space";
 import type {
   DiagnosisType,
-  LearningSpace,
+  LearningSpace as ContractLearningSpace,
   MessageRouteResponse,
 } from "@/types/contracts";
 import { useProbeFlow } from "@/hooks/use-probe-flow";
@@ -39,12 +41,66 @@ type LocalDevIdleStateUpdate = {
   lastMessageFinishedAt?: string;
 };
 
+const REALTIME_REFRESH_DEBOUNCE_MS = 650;
+const FALLBACK_TOPIC_STATE_REFRESH_INTERVAL_MS = 20_000;
+
 function clamp(value: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
 }
 
 function asTopicPosition(value: unknown): TopicPosition3D | null {
   return isTopicPosition3D(value) ? value : null;
+}
+
+function topicPositionKey(position: TopicPosition3D | null | undefined) {
+  if (!position) return "null";
+  return position.map((value) => value.toFixed(4)).join(",");
+}
+
+function topicStateSignature(topics: Topic[]) {
+  return topics
+    .map((topic) =>
+      [
+        topic.id,
+        topic.topic_label,
+        topicPositionKey(topic.position),
+        topicPositionKey(topic.semanticPosition),
+        topic.semanticPositionMethod ?? "null",
+        topic.semanticPositionUpdatedAt ?? "null",
+        topic.confusion.toFixed(4),
+        topic.insight.toFixed(4),
+        topic.learningScore.toFixed(4),
+        topic.messageCount ?? 0,
+        topic.lastUpdated ?? "null",
+      ].join(":"),
+    )
+    .join("|");
+}
+
+function mergeBootstrappedTopicsWithPrevious(args: {
+  nextTopics: Topic[];
+  previousTopics: Topic[];
+}) {
+  const previousById = new Map(
+    args.previousTopics.map((topic) => [topic.id, topic]),
+  );
+
+  return args.nextTopics.map((topic) => {
+    const previous = previousById.get(topic.id);
+
+    if (!previous) return topic;
+
+    return {
+      ...topic,
+
+      /**
+       * /api/bootstrap/topic-state is canonical for persisted positions/metrics,
+       * but it does not know about short-lived UI probe availability. Preserve
+       * that local UI hint so background refresh does not erase the probe badge.
+       */
+      hasAvailableProbe: previous.hasAvailableProbe || topic.hasAvailableProbe,
+    };
+  });
 }
 
 async function updateLocalDevIdleState(input: LocalDevIdleStateUpdate) {
@@ -71,11 +127,98 @@ async function updateLocalDevIdleState(input: LocalDevIdleStateUpdate) {
   }
 }
 
-function getReturnedLearningSpace(data: MessageRouteResponse): LearningSpace | null {
+async function fetchBootstrappedTopics(): Promise<TopicBootstrapResponse> {
+  const response = await fetch("/api/bootstrap/topic-state", {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  const data: TopicBootstrapResponse = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || `Bootstrap failed with status ${response.status}`,
+    );
+  }
+
+  return data;
+}
+
+function getReturnedLearningSpace(
+  data: MessageRouteResponse,
+): ContractLearningSpace | null {
   return data.scene_update?.learning_space ?? data.result?.learning_space ?? null;
 }
 
-function buildLearningSpaceTopicLookup(learningSpace: LearningSpace | null) {
+function round3(value: number) {
+  return Math.round(value * 1000) / 1000;
+}
+
+function getNumber(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function deriveCollisionRadius(renderState: {
+  radius?: number;
+  collision_radius?: number;
+  surface_noise?: number;
+}) {
+  const radius = getNumber(renderState.radius, 1);
+
+  if (
+    typeof renderState.collision_radius === "number" &&
+    Number.isFinite(renderState.collision_radius)
+  ) {
+    return round3(Math.max(renderState.collision_radius, radius));
+  }
+
+  const surfaceNoise = clamp(getNumber(renderState.surface_noise, 0.3));
+
+  /**
+   * Backfill for learning_space payloads returned by older route contracts.
+   * buildLearningSpace now emits collision_radius directly, but /api/message may
+   * still return a contracts.LearningSpace whose RenderState lacks it.
+   */
+  return round3(
+    Math.max(radius + 0.14, radius * (1 + surfaceNoise * 0.14) + 0.22),
+  );
+}
+
+function toRendererLearningSpace(
+  learningSpace: ContractLearningSpace | RendererLearningSpace | null,
+): RendererLearningSpace | null {
+  if (!learningSpace) return null;
+
+  return {
+    space_version: "v1",
+    clusters: learningSpace.clusters ?? [],
+    topics: (learningSpace.topics ?? []).map((topic) => {
+      const renderState = topic.render_state ?? {
+        radius: 1,
+        surface_noise: 0.3,
+        spin_rate: 0.003,
+        saturation: 0.6,
+        is_star: false,
+      };
+
+      return {
+        ...topic,
+        render_state: {
+          radius: getNumber(renderState.radius, 1),
+          collision_radius: deriveCollisionRadius(renderState),
+          surface_noise: getNumber(renderState.surface_noise, 0.3),
+          spin_rate: getNumber(renderState.spin_rate, 0.003),
+          saturation: getNumber(renderState.saturation, 0.6),
+          is_star: Boolean(renderState.is_star),
+        },
+      };
+    }),
+  } satisfies RendererLearningSpace;
+}
+
+function buildLearningSpaceTopicLookup(
+  learningSpace: ContractLearningSpace | RendererLearningSpace | null,
+) {
   return new Map(
     (learningSpace?.topics ?? []).map((topic) => [topic.topic_id, topic]),
   );
@@ -211,16 +354,38 @@ function resolveActiveTopicIdForMessage(args: {
 
 export default function Home() {
   const [topics, setTopics] = useState<Topic[]>([]);
+  const topicsRef = useRef<Topic[]>([]);
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [focusedTopicId, setFocusedTopicId] = useState<string | null>(null);
   const [serverLearningSpace, setServerLearningSpace] =
-    useState<LearningSpace | null>(null);
+    useState<RendererLearningSpace | null>(null);
   const [isBootstrappingTopics, setIsBootstrappingTopics] = useState(true);
   const [sceneArrivalMode, setSceneArrivalMode] =
     useState<SceneArrivalMode>("focus");
 
-  const localLearningSpace = useMemo(() => buildLearningSpace(topics), [topics]);
-  const learningSpace = serverLearningSpace ?? localLearningSpace;
+  const topicRefreshInFlightRef = useRef(false);
+  const realtimeRefreshTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    topicsRef.current = topics;
+  }, [topics]);
+
+  const localLearningSpace = useMemo<RendererLearningSpace>(() => {
+    const builtLearningSpace = toRendererLearningSpace(buildLearningSpace(topics));
+
+    if (builtLearningSpace) {
+      return builtLearningSpace;
+    }
+
+    return {
+      space_version: "v1",
+      topics: [],
+      clusters: [],
+    } satisfies RendererLearningSpace;
+  }, [topics]);
+
+  const learningSpace: RendererLearningSpace =
+    serverLearningSpace ?? localLearningSpace;
 
   const progressSummary = useMemo(
     () => deriveProgressSummary(topics, focusedTopicId),
@@ -278,7 +443,9 @@ export default function Home() {
       shellPanels.setIsLeftPanelOpen(false);
       shellPanels.setIsRightPanelDismissedWhileFocused(true);
     },
-    onLearningSpaceUpdate: setServerLearningSpace,
+    onLearningSpaceUpdate: (nextLearningSpace) => {
+      setServerLearningSpace(toRendererLearningSpace(nextLearningSpace));
+    },
   });
 
   const activeProbe = probeFlow.activeProbe;
@@ -290,48 +457,129 @@ export default function Home() {
     ? !shellPanels.isRightPanelDismissedWhileFocused
     : shellPanels.isRightPanelOpenWhileUnfocused && !!selectedTopic;
 
+  const canRefreshTopicState =
+    !isBootstrappingTopics &&
+    !probeFlow.isSending &&
+    !probeFlow.isEnteringProbe &&
+    probeFlow.sceneMode !== "probe";
+
+  const refreshTopicStateFromBootstrap = useCallback(
+    async (args: {
+      reason: "bootstrap" | "realtime" | "fallback_poll";
+      preservePanelState: boolean;
+    }) => {
+      const data = await fetchBootstrappedTopics();
+
+      const nextTopics = Array.isArray(data.topics) ? data.topics : [];
+
+      if (nextTopics.length > 0) {
+        setTopics((previousTopics) => {
+          const mergedTopics = mergeBootstrappedTopicsWithPrevious({
+            nextTopics,
+            previousTopics,
+          });
+
+          const previousSignature = topicStateSignature(previousTopics);
+          const nextSignature = topicStateSignature(mergedTopics);
+
+          if (previousSignature === nextSignature) {
+            return previousTopics;
+          }
+
+          return mergedTopics;
+        });
+
+        setSelectedTopicId((currentSelectedTopicId) => {
+          const stillExists = nextTopics.some(
+            (topic) => topic.id === currentSelectedTopicId,
+          );
+
+          return stillExists
+            ? currentSelectedTopicId
+            : nextTopics[0]?.id ?? null;
+        });
+
+        setFocusedTopicId((currentFocusedTopicId) => {
+          if (!currentFocusedTopicId) return currentFocusedTopicId;
+
+          const stillExists = nextTopics.some(
+            (topic) => topic.id === currentFocusedTopicId,
+          );
+
+          return stillExists ? currentFocusedTopicId : null;
+        });
+
+        if (!args.preservePanelState) {
+          setIsRightPanelOpenWhileUnfocused(false);
+        }
+      } else {
+        setTopics([]);
+        setSelectedTopicId(null);
+        setFocusedTopicId(null);
+
+        if (!args.preservePanelState) {
+          setIsRightPanelOpenWhileUnfocused(false);
+        }
+      }
+
+      /**
+       * Important:
+       * Worker commits update Supabase after /api/message has already returned.
+       * Clearing serverLearningSpace lets the page derive LearningSpace from the
+       * freshly fetched Topic[] so SpaceCanvas receives updated topic.position and
+       * can visually ease toward it.
+       */
+      setServerLearningSpace(null);
+
+      if (args.reason === "bootstrap") {
+        setSceneArrivalMode("focus");
+      }
+    },
+    [setIsRightPanelOpenWhileUnfocused],
+  );
+
+  const runTopicStateRefresh = useCallback(
+    async (reason: "realtime" | "fallback_poll") => {
+      if (!canRefreshTopicState || topicRefreshInFlightRef.current) return;
+
+      topicRefreshInFlightRef.current = true;
+
+      try {
+        await refreshTopicStateFromBootstrap({
+          reason,
+          preservePanelState: true,
+        });
+      } catch (error) {
+        console.error(`${reason} topic-state refresh failed:`, error);
+      } finally {
+        topicRefreshInFlightRef.current = false;
+      }
+    },
+    [canRefreshTopicState, refreshTopicStateFromBootstrap],
+  );
+
+  const scheduleRealtimeTopicStateRefresh = useCallback(() => {
+    if (!canRefreshTopicState) return;
+
+    if (realtimeRefreshTimeoutRef.current !== null) {
+      window.clearTimeout(realtimeRefreshTimeoutRef.current);
+    }
+
+    realtimeRefreshTimeoutRef.current = window.setTimeout(() => {
+      realtimeRefreshTimeoutRef.current = null;
+      void runTopicStateRefresh("realtime");
+    }, REALTIME_REFRESH_DEBOUNCE_MS);
+  }, [canRefreshTopicState, runTopicStateRefresh]);
+
   useEffect(() => {
     let isCancelled = false;
 
     async function bootstrapTopics() {
       try {
-        const response = await fetch("/api/bootstrap/topic-state", {
-          method: "GET",
-          cache: "no-store",
+        await refreshTopicStateFromBootstrap({
+          reason: "bootstrap",
+          preservePanelState: false,
         });
-
-        const data: TopicBootstrapResponse = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.error || `Bootstrap failed with status ${response.status}`,
-          );
-        }
-
-        if (isCancelled) return;
-
-        if (Array.isArray(data.topics) && data.topics.length > 0) {
-          setTopics(data.topics);
-          setSelectedTopicId((currentSelectedTopicId) => {
-            const stillExists = data.topics?.some(
-              (topic) => topic.id === currentSelectedTopicId,
-            );
-
-            return stillExists
-              ? currentSelectedTopicId
-              : data.topics?.[0]?.id ?? null;
-          });
-
-          setIsRightPanelOpenWhileUnfocused(false);
-        } else {
-          setTopics([]);
-          setSelectedTopicId(null);
-          setFocusedTopicId(null);
-          setIsRightPanelOpenWhileUnfocused(false);
-        }
-
-        setServerLearningSpace(null);
-        setSceneArrivalMode("focus");
       } catch (error) {
         console.error("Topic bootstrap failed:", error);
       } finally {
@@ -348,12 +596,60 @@ export default function Home() {
       lastActivityAt: new Date().toISOString(),
     });
 
-    bootstrapTopics();
+    void bootstrapTopics();
 
     return () => {
       isCancelled = true;
     };
-  }, [setIsRightPanelOpenWhileUnfocused]);
+  }, [refreshTopicStateFromBootstrap]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("myway-topic-state-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "topic_state",
+        },
+        (payload) => {
+          console.log("[topic_state realtime] change received", {
+            eventType: payload.eventType,
+            table: payload.table,
+            schema: payload.schema,
+          });
+
+          scheduleRealtimeTopicStateRefresh();
+        },
+      )
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR") {
+          console.warn(
+            "Supabase Realtime channel error for topic_state. Fallback polling will continue.",
+          );
+        }
+      });
+
+    return () => {
+      if (realtimeRefreshTimeoutRef.current !== null) {
+        window.clearTimeout(realtimeRefreshTimeoutRef.current);
+        realtimeRefreshTimeoutRef.current = null;
+      }
+
+      void supabase.removeChannel(channel);
+    };
+  }, [scheduleRealtimeTopicStateRefresh]);
+
+  useEffect(() => {
+    if (isBootstrappingTopics) return;
+
+    const intervalId = window.setInterval(() => {
+      void runTopicStateRefresh("fallback_poll");
+    }, FALLBACK_TOPIC_STATE_REFRESH_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [isBootstrappingTopics, runTopicStateRefresh]);
 
   useEffect(() => {
     if (!topics.length) {
@@ -452,7 +748,8 @@ export default function Home() {
 
       if (!response.ok) {
         throw new Error(
-          "error" in data && typeof (data as { error?: unknown }).error === "string"
+          "error" in data &&
+            typeof (data as { error?: unknown }).error === "string"
             ? (data as { error: string }).error
             : `Request failed with status ${response.status}`,
         );
@@ -464,7 +761,9 @@ export default function Home() {
         setTopics(nextTopics);
       }
 
-      const returnedLearningSpace = getReturnedLearningSpace(data);
+      const returnedLearningSpace = toRendererLearningSpace(
+        getReturnedLearningSpace(data),
+      );
 
       if (returnedLearningSpace) {
         setServerLearningSpace(returnedLearningSpace);
