@@ -110,6 +110,9 @@ type RawLearningSpace = {
   space_version?: "v1";
   topics?: RawLearningSpaceTopic[];
   clusters?: RawLearningSpaceCluster[];
+  relationships?: LearningSpace["relationships"];
+  viewpoints?: LearningSpace["viewpoints"];
+  projection?: LearningSpace["projection"];
 };
 
 type IncomingChatTurn = {
@@ -1335,6 +1338,20 @@ function adaptLearningSpaceToContract(
           : [],
       };
     }),
+    relationships: rawLearningSpace.relationships ?? [],
+    viewpoints: rawLearningSpace.viewpoints ?? [],
+    projection:
+      rawLearningSpace.projection ?? {
+        projection_id: "message_route_learning_space_normalization",
+        projection_method: "committed_topic_position",
+        dimensionality: 3,
+        relationship_basis: [],
+        generated_at: null,
+        confidence: null,
+        notes: [
+          "Fallback projection metadata added while normalizing older learning_space payloads.",
+        ],
+      },
   };
 }
 

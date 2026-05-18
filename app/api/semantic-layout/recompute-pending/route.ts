@@ -7,6 +7,11 @@ import {
 } from "@/lib/persistence/read";
 import { upsertTopicState } from "@/lib/persistence/myway";
 import type { EmbeddingVector } from "@/types/contracts";
+import type {
+  LearningSpaceProjectionMetadata,
+  LearningSpaceRelationship,
+  LearningSpaceViewpoint,
+} from "@/types/learning-space";
 import {
   computeDeterministicTopicPosition,
   isTopicPosition3D,
@@ -102,8 +107,8 @@ type LayoutParameters = {
   max_visual_collision_radius: number;
   repulsion_strength: number;
   repulsion_iterations: number;
-  max_planar_y_magnitude: number;
-  y_axis_dampening: number;
+  max_planar_y_magnitude: number; // v15: bounded true-3D Y extent
+  y_axis_dampening: number; // v15: normally 1; kept for contract/debug compatibility
   max_semantic_pull_alpha: number;
   min_semantic_pull_alpha: number;
   stability_anchor_strength: number;
@@ -261,10 +266,10 @@ const RENDER_BASE_SCALE_FACTOR = 0.9;
 const RENDER_LEARNING_SCORE_RADIUS_FACTOR = 1.0;
 const CONFUSION_SHAPE_EXPANSION_MAX = 0.18;
 const FUTURE_BADGE_AND_SATELLITE_BUFFER = 0.18;
-const MAX_CANONICAL_Y_MAGNITUDE = 1.25;
+const MAX_CANONICAL_Y_MAGNITUDE = 5.4;
 
 const SEMANTIC_LAYOUT_VERSION =
-  "semantic_solar_plane_v13_rank_preserving_continuous_layout";
+  "semantic_space_v15_true_3d_relationship_exploration";
 
 /**
  * Diagnostic only. The layout itself uses all available pairwise similarities.
@@ -386,6 +391,76 @@ function getVisualPosition(
   if (semanticPosition) return semanticPosition;
 
   return fallbackRingPosition(fallbackIndex, OUTER_RING_RADIUS);
+}
+
+function deterministicFallbackHeight(topic: LayoutCandidate, index: number) {
+  const label = getTopicLabel(topic);
+  let hash = 2166136261;
+
+  for (let charIndex = 0; charIndex < label.length; charIndex += 1) {
+    hash ^= label.charCodeAt(charIndex);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  hash ^= index + 1;
+  hash = Math.imul(hash, 16777619);
+
+  const unit = (hash >>> 0) / 4_294_967_295;
+  return (unit * 2 - 1) * Math.min(2.4, MAX_CANONICAL_Y_MAGNITUDE * 0.45);
+}
+
+function embeddingDerivedHeight(topic: LayoutCandidate, index: number) {
+  const embedding = resolveTopicLabelEmbedding(topic).centroid;
+
+  if (!embedding?.length) {
+    return deterministicFallbackHeight(topic, index);
+  }
+
+  /**
+   * Use a deterministic projection of the embedding itself to seed true 3D
+   * structure. The pairwise stress solver can then refine Y instead of being
+   * trapped in the old y=0 plane by symmetry.
+   */
+  const probeIndexes = [0, 7, 17, 31, 53, 89, 131, 197, 257, 311, 367];
+  let weighted = 0;
+  let weightTotal = 0;
+
+  for (let probeIndex = 0; probeIndex < probeIndexes.length; probeIndex += 1) {
+    const vectorIndex = probeIndexes[probeIndex] % embedding.length;
+    const weight = probeIndex % 2 === 0 ? 1 : -0.82;
+    weighted += embedding[vectorIndex] * weight;
+    weightTotal += Math.abs(weight);
+  }
+
+  const labelNudge = deterministicFallbackHeight(topic, index) * 0.18;
+  const projected = Math.tanh((weighted / Math.max(0.001, weightTotal)) * 11);
+
+  return clamp(
+    projected * Math.min(4.4, MAX_CANONICAL_Y_MAGNITUDE * 0.82) + labelNudge,
+    -MAX_CANONICAL_Y_MAGNITUDE,
+    MAX_CANONICAL_Y_MAGNITUDE,
+  );
+}
+
+function seedPositionForTrue3DLayout(args: {
+  topic: LayoutCandidate;
+  index: number;
+  position: TopicPosition;
+}) {
+  /**
+   * Existing non-zero Y positions are respected. Flat legacy positions get a
+   * deterministic embedding-derived height so the 3D solver has real depth to
+   * optimize from.
+   */
+  if (Math.abs(args.position[1]) > 0.035) {
+    return args.position;
+  }
+
+  return [
+    args.position[0],
+    embeddingDerivedHeight(args.topic, args.index),
+    args.position[2],
+  ] satisfies TopicPosition;
 }
 
 function estimateTopicRenderRadius(topic: LayoutCandidate) {
@@ -520,7 +595,7 @@ function getLayoutParameters(enrichedTopicCount: number): LayoutParameters {
     repulsion_strength: 0.82,
     repulsion_iterations: 28,
     max_planar_y_magnitude: MAX_CANONICAL_Y_MAGNITUDE,
-    y_axis_dampening: 0.22,
+    y_axis_dampening: 1,
     max_semantic_pull_alpha: 1,
     min_semantic_pull_alpha: 1,
     stability_anchor_strength: 0.2,
@@ -579,10 +654,18 @@ function scalePosition(a: TopicPosition, scalar: number): TopicPosition {
   return [a[0] * scalar, a[1] * scalar, a[2] * scalar];
 }
 
-function constrainToSemanticPlane(
+function constrainToSemanticVolume(
   position: TopicPosition,
   parameters: LayoutParameters,
 ): TopicPosition {
+  /**
+   * v15: keep the learning space genuinely 3D.
+   *
+   * Earlier versions repeatedly dampened Y toward zero, which guaranteed that
+   * topics stayed on a mostly flat semantic solar plane. For free viewpoint
+   * exploration, Y is now a real semantic/projection dimension with bounded
+   * readable depth.
+   */
   return [
     position[0],
     clamp(
@@ -696,7 +779,14 @@ function buildInitialPositions(args: {
   const positions = new Map<string, TopicPosition>();
 
   for (const [index, topic] of args.topics.entries()) {
-    positions.set(topic.topic_id, getVisualPosition(topic, index));
+    positions.set(
+      topic.topic_id,
+      seedPositionForTrue3DLayout({
+        topic,
+        index,
+        position: getVisualPosition(topic, index),
+      }),
+    );
   }
 
   return positions;
@@ -887,14 +977,14 @@ function applyPairwiseStressLayout(args: {
 
       positions.set(
         relation.topicA.topic_id,
-        constrainToSemanticPlane(
+        constrainToSemanticVolume(
           addPositions(positionA, correction),
           args.context.layoutParameters,
         ),
       );
       positions.set(
         relation.topicB.topic_id,
-        constrainToSemanticPlane(
+        constrainToSemanticVolume(
           subtractPositions(positionB, correction),
           args.context.layoutParameters,
         ),
@@ -918,7 +1008,7 @@ function applyPairwiseStressLayout(args: {
 
       positions.set(
         topic.topic_id,
-        constrainToSemanticPlane(
+        constrainToSemanticVolume(
           [
             current[0] + (anchor[0] - current[0]) * anchorAlpha,
             current[1] + (anchor[1] - current[1]) * anchorAlpha,
@@ -1010,14 +1100,14 @@ function applyRankPreservingCorrection(args: {
 
       positions.set(
         relation.topicA.topic_id,
-        constrainToSemanticPlane(
+        constrainToSemanticVolume(
           addPositions(positionA, correction),
           args.context.layoutParameters,
         ),
       );
       positions.set(
         relation.topicB.topic_id,
-        constrainToSemanticPlane(
+        constrainToSemanticVolume(
           subtractPositions(positionB, correction),
           args.context.layoutParameters,
         ),
@@ -1073,14 +1163,14 @@ function enforceGlobalReadableSpacing(args: {
 
       positions.set(
         relation.topicA.topic_id,
-        constrainToSemanticPlane(
+        constrainToSemanticVolume(
           subtractPositions(positionA, correction),
           args.context.layoutParameters,
         ),
       );
       positions.set(
         relation.topicB.topic_id,
-        constrainToSemanticPlane(
+        constrainToSemanticVolume(
           addPositions(positionB, correction),
           args.context.layoutParameters,
         ),
@@ -1308,7 +1398,7 @@ function buildComputedSemanticPositions(args: {
       position: finalPosition,
       semantic_pull_position: finalPosition,
       pre_repulsion_position: initialPosition,
-      method: "continuous_pairwise_embedding_stress_v2_rank_preserving_topic_label_embedding",
+      method: "continuous_3d_pairwise_embedding_stress_v1_free_viewpoint_topic_label_embedding",
       semantic_neighbors: semanticNeighbors,
       force_neighbors: forceNeighbors,
       semantic_distance_diagnostics: semanticDistanceDiagnostics,
@@ -1316,11 +1406,11 @@ function buildComputedSemanticPositions(args: {
         (neighbor) => neighbor.semantic_role === "near_duplicate_candidate",
       ),
       reason:
-        "Computed semantic_position by fitting all enriched topic pairs to a continuous embedding-derived desired-distance matrix, then applying a rank-preserving correction pass so more similar pairs are more likely to be closer globally. No high/medium/low buckets drive geometry; thresholds are diagnostic labels only.",
+        "Computed semantic_position as a true 3D projection by fitting enriched topic pairs to a continuous embedding-derived desired-distance matrix, then applying a rank-preserving correction pass. Y is no longer flattened; it is seeded from topic-label embeddings and refined by the 3D stress solver so free camera exploration can reveal relationships from different angles.",
       layout_decision: {
-        method: "continuous_pairwise_embedding_stress_v2_rank_preserving_topic_label_embedding",
+        method: "continuous_3d_pairwise_embedding_stress_v1_free_viewpoint_topic_label_embedding",
         reason:
-          "Continuous pairwise stress layout with rank-preserving correction: every embedding pair contributes to the geometry using cosine similarity mapped to desired distance, then high-similarity-too-far and low-similarity-too-close errors are corrected continuously.",
+          "True 3D continuous pairwise stress layout with rank-preserving correction: every embedding pair contributes to geometry using cosine similarity mapped to desired distance, then high-similarity-too-far and low-similarity-too-close errors are corrected continuously without flattening Y.",
         semantic_neighbors: semanticNeighbors,
         force_neighbors: forceNeighbors,
         layout_parameters: args.context.layoutParameters,
@@ -1400,7 +1490,7 @@ function buildRankViolation(args: {
     },
     violation_margin: round4(Math.abs(margin)),
     interpretation:
-      "A weaker-similarity pair is closer than a stronger-similarity pair. Some violations are unavoidable in a 2D/planar projection, but this should trend downward as the layout improves.",
+      "A weaker-similarity pair is closer than a stronger-similarity pair. Some violations are unavoidable when projecting high-dimensional embeddings into a readable 3D scene, but this should trend downward as the layout improves.",
   };
 }
 
@@ -1533,6 +1623,253 @@ function buildContinuousLayoutQuality(args: {
     collision_violation_count: collisionViolationCount,
     pair_count: distancesByKey.size,
   };
+}
+
+
+function buildLearningSpaceProjectionMetadata(args: {
+  context: GlobalLayoutContext;
+  layoutQuality: ContinuousLayoutQuality;
+  generatedAt: string;
+}): LearningSpaceProjectionMetadata {
+  return {
+    projection_id: `projection-${SEMANTIC_LAYOUT_VERSION}-${args.generatedAt}`,
+    projection_method:
+      "continuous_3d_pairwise_embedding_stress_rank_preserving_projection_with_relationship_contract",
+    dimensionality: 3,
+    relationship_basis: [
+      "topic_label_embedding_centroid",
+      "continuous_cosine_similarity_matrix",
+      "rank_preserving_distance_diagnostics",
+    ],
+    generated_at: args.generatedAt,
+    confidence:
+      args.layoutQuality.similarity_distance_correlation === null
+        ? null
+        : clamp(args.layoutQuality.similarity_distance_correlation, 0, 1),
+    notes: [
+      "This projection is still a readable 3D layout/projection of semantic evidence, not semantic truth itself.",
+      "Durable relationship truth is carried separately in learning_space.relationships so free camera exploration can reveal connections without forcing distance to explain everything.",
+      "v15 keeps Y as a bounded semantic/projection dimension instead of collapsing topics onto a plane.",
+      `Enriched topics considered: ${args.context.enrichedTopics.length}.`,
+    ],
+  };
+}
+
+function relationshipIdForRelation(relation: PairwiseRelation) {
+  return `rel-semantic-${relation.topicA.topic_id}--${relation.topicB.topic_id}`;
+}
+
+function buildSemanticRelationship(args: {
+  relation: PairwiseRelation;
+  positions: Map<string, TopicPosition>;
+}): LearningSpaceRelationship {
+  const { relation, positions } = args;
+  const positionA =
+    positions.get(relation.topicA.topic_id) ??
+    getVisualPosition(relation.topicA, relation.topicAIndex);
+  const positionB =
+    positions.get(relation.topicB.topic_id) ??
+    getVisualPosition(relation.topicB, relation.topicBIndex);
+  const actualDistance = distanceBetween(positionA, positionB);
+  const priority = round4(
+    clamp(
+      0.25 + relation.normalizedSimilarity * 0.75 + relation.reliability * 0.12,
+      0,
+      1,
+    ),
+  );
+
+  return {
+    relationship_id: relationshipIdForRelation(relation),
+    source_topic_id: relation.topicA.topic_id,
+    target_topic_id: relation.topicB.topic_id,
+    relationship_type: "semantic",
+    strength: round4(relation.normalizedSimilarity),
+    confidence: round4(relation.reliability),
+    evidence_source: ["topic_label_embedding_centroid"],
+    evidence_summary: `${getTopicLabel(relation.topicA)} and ${getTopicLabel(
+      relation.topicB,
+    )} are semantically related by topic-label embedding similarity ${round4(
+      relation.similarity,
+    )}.`,
+    basis: {
+      similarity: round4(relation.similarity),
+      normalized_similarity: round4(relation.normalizedSimilarity),
+      desired_distance: round4(relation.desiredDistance),
+      actual_distance: round4(actualDistance),
+      diagnostic_method:
+        "cosine_similarity_topic_label_embedding_continuous_pairwise_layout",
+    },
+    display_policy: {
+      show_in_overview: relation.normalizedSimilarity >= 0.92,
+      show_on_focus: true,
+      max_opacity: round4(
+        clamp(0.18 + relation.normalizedSimilarity * 0.52, 0.16, 0.74),
+      ),
+      visual_style: "arc",
+      priority,
+    },
+  };
+}
+
+function buildLearningSpaceRelationships(args: {
+  context: GlobalLayoutContext;
+  relations: PairwiseRelation[];
+  relationsByTopic: Map<string, PairwiseRelation[]>;
+  positions: Map<string, TopicPosition>;
+}): LearningSpaceRelationship[] {
+  const selected = new Map<string, PairwiseRelation>();
+
+  /**
+   * Keep this layer intentionally sparse. It is a relationship truth/reveal
+   * layer, not an always-on graph. Start with top semantic neighbors per topic
+   * plus the globally strongest pairs.
+   */
+  for (const topic of args.context.enrichedTopics) {
+    const relationsForTopic = args.relationsByTopic.get(topic.topic_id) ?? [];
+
+    for (const relation of relationsForTopic.slice(0, 3)) {
+      selected.set(relation.key, relation);
+    }
+  }
+
+  for (const relation of [...args.relations]
+    .sort((a, b) => b.normalizedSimilarity - a.normalizedSimilarity)
+    .slice(0, 12)) {
+    selected.set(relation.key, relation);
+  }
+
+  return [...selected.values()]
+    .sort((a, b) => {
+      if (b.normalizedSimilarity !== a.normalizedSimilarity) {
+        return b.normalizedSimilarity - a.normalizedSimilarity;
+      }
+
+      return b.similarity - a.similarity;
+    })
+    .slice(0, 40)
+    .map((relation) =>
+      buildSemanticRelationship({
+        relation,
+        positions: args.positions,
+      }),
+    );
+}
+
+function buildLearningSpaceViewpoints(args: {
+  relationships: LearningSpaceRelationship[];
+  generatedAt: string;
+}): LearningSpaceViewpoint[] {
+  const sortedRelationships = [...args.relationships].sort(
+    (a, b) => b.display_policy.priority - a.display_policy.priority,
+  );
+  const topRelationship = sortedRelationships[0] ?? null;
+  const topicNeighborhoodSeeds = new Map<string, LearningSpaceRelationship[]>();
+
+  for (const relationship of sortedRelationships) {
+    for (const topicId of [
+      relationship.source_topic_id,
+      relationship.target_topic_id,
+    ]) {
+      const list = topicNeighborhoodSeeds.get(topicId) ?? [];
+
+      if (list.length < 3) {
+        list.push(relationship);
+        topicNeighborhoodSeeds.set(topicId, list);
+      }
+    }
+  }
+
+  const viewpoints: LearningSpaceViewpoint[] = [
+    {
+      viewpoint_id: `view-overview-${args.generatedAt}`,
+      viewpoint_type: "overview",
+      label: "Learning space overview",
+      intent:
+        "Show the durable 3D semantic landscape without forcing every relationship to be visible at once.",
+      focus_topic_ids: [],
+      relationship_ids: sortedRelationships
+        .filter((relationship) => relationship.display_policy.show_in_overview)
+        .slice(0, 6)
+        .map((relationship) => relationship.relationship_id),
+      camera: {
+        position: null,
+        target: null,
+        up: null,
+        distance: null,
+      },
+      relationship_filter: {
+        relationship_types: ["semantic"],
+        max_visible_relationships: 6,
+      },
+      explanation:
+        "Overview keeps relationship overlays sparse. Focused viewpoints reveal local semantic structure.",
+    },
+  ];
+
+  if (topRelationship) {
+    viewpoints.push({
+      viewpoint_id: `view-strongest-semantic-pair-${args.generatedAt}`,
+      viewpoint_type: "bridge",
+      label: "Strongest semantic bridge",
+      intent:
+        "Frame the strongest current semantic relationship so it can be visually inspected rather than inferred from distance alone.",
+      focus_topic_ids: [
+        topRelationship.source_topic_id,
+        topRelationship.target_topic_id,
+      ],
+      relationship_ids: [topRelationship.relationship_id],
+      camera: {
+        position: null,
+        target: null,
+        up: null,
+        distance: null,
+      },
+      relationship_filter: {
+        relationship_types: ["semantic"],
+        max_visible_relationships: 1,
+      },
+      explanation:
+        topRelationship.evidence_summary ??
+        "This viewpoint reveals the strongest semantic bridge in the current projection.",
+    });
+  }
+
+  for (const [topicId, relationships] of [
+    ...topicNeighborhoodSeeds.entries(),
+  ].slice(0, 5)) {
+    viewpoints.push({
+      viewpoint_id: `view-semantic-neighborhood-${topicId}-${args.generatedAt}`,
+      viewpoint_type: "semantic_neighborhood",
+      label: "Semantic neighborhood",
+      intent:
+        "Reveal the selected topic's nearest semantic relationships from a purposeful camera framing.",
+      focus_topic_ids: [
+        topicId,
+        ...relationships.flatMap((relationship) => [
+          relationship.source_topic_id,
+          relationship.target_topic_id,
+        ]),
+      ].filter((value, index, values) => values.indexOf(value) === index),
+      relationship_ids: relationships.map(
+        (relationship) => relationship.relationship_id,
+      ),
+      camera: {
+        position: null,
+        target: null,
+        up: null,
+        distance: null,
+      },
+      relationship_filter: {
+        relationship_types: ["semantic"],
+        max_visible_relationships: 3,
+      },
+      explanation:
+        "This viewpoint should eventually rotate the camera so the selected topic and its strongest semantic neighbors are visually legible.",
+    });
+  }
+
+  return viewpoints;
 }
 
 function buildGlobalPairwiseDiagnostics(args: {
@@ -1710,7 +2047,7 @@ function hasStaleLearningSpaceTopicLayout(topic: LayoutCandidate) {
   return (
     statusVersion !== SEMANTIC_LAYOUT_VERSION ||
     layoutVersion !== SEMANTIC_LAYOUT_VERSION ||
-    method !== "continuous_pairwise_embedding_stress_v2_rank_preserving_topic_label_embedding"
+    method !== "continuous_3d_pairwise_embedding_stress_v1_free_viewpoint_topic_label_embedding"
   );
 }
 
@@ -1722,6 +2059,9 @@ function mergeSemanticLayoutIntoTopicJson(args: {
   globalLayoutSummary: JsonObject;
   normalization: PairwiseNormalization;
   layoutQuality: ContinuousLayoutQuality;
+  learningSpaceRelationships: LearningSpaceRelationship[];
+  learningSpaceViewpoints: LearningSpaceViewpoint[];
+  learningSpaceProjection: LearningSpaceProjectionMetadata;
 }) {
   const base = topicJsonObject(args.topic);
   const existingSemanticStatus =
@@ -1751,7 +2091,14 @@ function mergeSemanticLayoutIntoTopicJson(args: {
     final_spacing_enforcement_count: args.computed.final_spacing_enforcement_count,
     distance_diagnostic_policy:
       "Continuous pairwise objective: every embedding pair maps to a desired distance, followed by a rank-preserving correction pass. Diagnostics report how well final layout distances match those continuous targets and global rank ordering.",
+    relationship_count: args.learningSpaceRelationships.length,
+    viewpoint_count: args.learningSpaceViewpoints.length,
   };
+  base.learning_space_relationships = toJsonValue(
+    args.learningSpaceRelationships,
+  );
+  base.learning_space_viewpoints = toJsonValue(args.learningSpaceViewpoints);
+  base.learning_space_projection = toJsonValue(args.learningSpaceProjection);
   base.semantic_distance_diagnostics =
     args.computed.semantic_distance_diagnostics.map((diagnostic) => ({
       topic_id: diagnostic.topic_id,
@@ -1937,6 +2284,22 @@ export async function POST(request: Request) {
       positions,
       context,
     });
+    const layoutGeneratedAt = nowIso();
+    const learningSpaceRelationships = buildLearningSpaceRelationships({
+      context,
+      relations,
+      relationsByTopic,
+      positions,
+    });
+    const learningSpaceViewpoints = buildLearningSpaceViewpoints({
+      relationships: learningSpaceRelationships,
+      generatedAt: layoutGeneratedAt,
+    });
+    const learningSpaceProjection = buildLearningSpaceProjectionMetadata({
+      context,
+      layoutQuality,
+      generatedAt: layoutGeneratedAt,
+    });
 
     const globalLayoutSummary: JsonObject = {
       version: SEMANTIC_LAYOUT_VERSION,
@@ -1946,14 +2309,17 @@ export async function POST(request: Request) {
       layout_parameters: context.layoutParameters,
       normalization,
       layout_quality: layoutQuality,
+      relationship_count: learningSpaceRelationships.length,
+      viewpoint_count: learningSpaceViewpoints.length,
+      projection: toJsonValue(learningSpaceProjection),
       strategy:
-        "Compute a mostly planar semantic solar-system map by fitting all enriched topic pairs to a continuous embedding-derived desired-distance matrix. Higher cosine similarity continuously maps to shorter desired distance; lower similarity continuously maps to longer desired distance. A second continuous rank-preserving pass reduces cases where weaker pairs end up closer than stronger pairs.",
+        "Compute a true 3D semantic learning-space projection by fitting all enriched topic pairs to a continuous embedding-derived desired-distance matrix. Higher cosine similarity continuously maps to shorter desired distance; lower similarity continuously maps to longer desired distance. A second continuous rank-preserving pass reduces cases where weaker pairs end up closer than stronger pairs, while Y remains available for free camera exploration.",
       cluster_policy:
         "Clusters are not assigned by this route. Emergent regions should be inferred later from stable geometry and pairwise diagnostics.",
       movement_policy:
         "This route writes semantic_position only. commit-pending then makes topic_position truthful immediately; SpaceCanvas animates the visual migration.",
       spacing_policy:
-        "Readable spacing is enforced after the continuous pairwise stress pass. Collision spacing is secondary to semantic distance but still prevents unreadable overlap.",
+        "Readable 3D spacing is enforced after the continuous pairwise stress pass. Collision spacing is secondary to semantic distance but still prevents unreadable overlap.",
       distance_diagnostic_policy:
         "All pair similarities are continuous. Diagnostic labels such as weak/strong/visible_context are retained only for human debugging and do not create layout buckets.",
     };
@@ -1991,6 +2357,9 @@ export async function POST(request: Request) {
         globalLayoutSummary,
         normalization,
         layoutQuality,
+        learningSpaceRelationships,
+        learningSpaceViewpoints,
+        learningSpaceProjection,
       });
 
       await upsertTopicState({
@@ -2141,6 +2510,9 @@ export async function POST(request: Request) {
       updated_count: results.length,
       semantic_layout_version: SEMANTIC_LAYOUT_VERSION,
       global_layout_summary: globalLayoutSummary,
+      learning_space_relationships: learningSpaceRelationships,
+      learning_space_viewpoints: learningSpaceViewpoints,
+      learning_space_projection: learningSpaceProjection,
       global_pairwise_distance_diagnostics,
       results,
     });

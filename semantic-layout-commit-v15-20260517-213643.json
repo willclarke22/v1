@@ -1,0 +1,356 @@
+{
+  "ok": true,
+  "route": "/api/semantic-layout/commit-pending",
+  "commit_version": "semantic_position_commit_v3_continuous_layout_instant",
+  "policy": "Commit topic_position immediately to the current semantic_position. semantic_position remains the target; topic_position is the rendered source of truth; frontend animation handles motion.",
+  "limit": 25,
+  "force": true,
+  "alpha": 1,
+  "max_step_distance": 10000,
+  "epsilon": 0.035,
+  "topics_seen": 13,
+  "candidate_topics_found": 13,
+  "committed_count": 13,
+  "skipped_count": 0,
+  "duration_ms": 2497.3285,
+  "results": [
+    {
+      "topic_id": "topic_ca273547-ad8f-4c91-823f-8a4354ecd946",
+      "topic_label": "Due Process",
+      "status": "committed",
+      "previous_topic_position": [
+        0.7421,
+        0,
+        -1.0132
+      ],
+      "semantic_position": [
+        0.4234,
+        2.6568,
+        -1.3626
+      ],
+      "next_topic_position": [
+        0.4234,
+        2.6568,
+        -1.3626
+      ],
+      "distance_to_target_before": 2.6986,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    },
+    {
+      "topic_id": "topic_439fae0d-4969-43cf-8a55-d7b090699ab6",
+      "topic_label": "Room Acoustics",
+      "status": "committed",
+      "previous_topic_position": [
+        9.7167,
+        0,
+        -2.487
+      ],
+      "semantic_position": [
+        8.6183,
+        -3.5242,
+        -1.9182
+      ],
+      "next_topic_position": [
+        8.6183,
+        -3.5242,
+        -1.9182
+      ],
+      "distance_to_target_before": 3.735,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    },
+    {
+      "topic_id": "topic_db544b95-7f0d-474d-832f-89f5d065302f",
+      "topic_label": "Wireframes",
+      "status": "committed",
+      "previous_topic_position": [
+        7.1369,
+        0,
+        4.1515
+      ],
+      "semantic_position": [
+        6.6686,
+        -0.8244,
+        2.9349
+      ],
+      "next_topic_position": [
+        6.6686,
+        -0.8244,
+        2.9349
+      ],
+      "distance_to_target_before": 1.5424,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    },
+    {
+      "topic_id": "topic_fee9b5a3-0479-4124-aece-402f92119d18",
+      "topic_label": "Basic Plumbing",
+      "status": "committed",
+      "previous_topic_position": [
+        5.496,
+        0,
+        1.5714
+      ],
+      "semantic_position": [
+        4.96,
+        5.0818,
+        2.5196
+      ],
+      "next_topic_position": [
+        4.96,
+        5.0818,
+        2.5196
+      ],
+      "distance_to_target_before": 5.1972,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    },
+    {
+      "topic_id": "topic_9f167e43-f86d-438c-93b0-f2d9304ba72e",
+      "topic_label": "Async Await",
+      "status": "committed",
+      "previous_topic_position": [
+        -5.4706,
+        0,
+        -8.019
+      ],
+      "semantic_position": [
+        -3.9671,
+        -4.9205,
+        -6.2017
+      ],
+      "next_topic_position": [
+        -3.9671,
+        -4.9205,
+        -6.2017
+      ],
+      "distance_to_target_before": 5.4566,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    },
+    {
+      "topic_id": "topic_2e74f481-7ef0-4ce6-8f4a-3c8d63a7697f",
+      "topic_label": "Caching",
+      "status": "committed",
+      "previous_topic_position": [
+        -6.2498,
+        0,
+        -3.237
+      ],
+      "semantic_position": [
+        -5.2977,
+        -1.935,
+        -3.0126
+      ],
+      "next_topic_position": [
+        -5.2977,
+        -1.935,
+        -3.0126
+      ],
+      "distance_to_target_before": 2.1682,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    },
+    {
+      "topic_id": "topic_d98801f7-b645-49f2-9309-dc0633cec72d",
+      "topic_label": "Probability",
+      "status": "committed",
+      "previous_topic_position": [
+        -1.9879,
+        0,
+        -2.3834
+      ],
+      "semantic_position": [
+        -2.9518,
+        5.1139,
+        -0.903
+      ],
+      "next_topic_position": [
+        -2.9518,
+        5.1139,
+        -0.903
+      ],
+      "distance_to_target_before": 5.4104,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    },
+    {
+      "topic_id": "topic_a90623e6-25e2-4743-9be7-7d3bebe5bf1e",
+      "topic_label": "Conceptual Analysis",
+      "status": "committed",
+      "previous_topic_position": [
+        0.0296,
+        0,
+        4.7338
+      ],
+      "semantic_position": [
+        0.2094,
+        0.1459,
+        4.4092
+      ],
+      "next_topic_position": [
+        0.2094,
+        0.1459,
+        4.4092
+      ],
+      "distance_to_target_before": 0.3987,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    },
+    {
+      "topic_id": "topic_43fca3e0-9d74-4b3a-8a4c-e643d8b59e90",
+      "topic_label": "Contract Law Basics",
+      "status": "committed",
+      "previous_topic_position": [
+        -2.8824,
+        0,
+        5.5768
+      ],
+      "semantic_position": [
+        -2.5867,
+        -0.2609,
+        5.5078
+      ],
+      "next_topic_position": [
+        -2.5867,
+        -0.2609,
+        5.5078
+      ],
+      "distance_to_target_before": 0.4003,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    },
+    {
+      "topic_id": "topic_bca71656-6561-4d91-811c-298c883062ec",
+      "topic_label": "Cloud Formation",
+      "status": "committed",
+      "previous_topic_position": [
+        2.9694,
+        0,
+        -7.6341
+      ],
+      "semantic_position": [
+        2.8007,
+        0.0628,
+        -7.6055
+      ],
+      "next_topic_position": [
+        2.8007,
+        0.0628,
+        -7.6055
+      ],
+      "distance_to_target_before": 0.1823,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    },
+    {
+      "topic_id": "topic_dc79f45d-8b25-4963-8292-ee95bc19b4e5",
+      "topic_label": "Thesis Statements",
+      "status": "committed",
+      "previous_topic_position": [
+        -0.2757,
+        0,
+        7.7933
+      ],
+      "semantic_position": [
+        0.032,
+        -3.2955,
+        5.8344
+      ],
+      "next_topic_position": [
+        0.032,
+        -3.2955,
+        5.8344
+      ],
+      "distance_to_target_before": 3.8461,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    },
+    {
+      "topic_id": "topic_5cb93dae-bd41-4f3a-9439-c09df5d1d0e4",
+      "topic_label": "Chemical Equilibrium",
+      "status": "committed",
+      "previous_topic_position": [
+        -6.9082,
+        0,
+        0.3147
+      ],
+      "semantic_position": [
+        -6.6451,
+        0.3924,
+        -0.4285
+      ],
+      "next_topic_position": [
+        -6.6451,
+        0.3924,
+        -0.4285
+      ],
+      "distance_to_target_before": 0.8807,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    },
+    {
+      "topic_id": "topic_71da68d3-46e9-4bfe-9b1b-d08f13969d01",
+      "topic_label": "Chemistry",
+      "status": "committed",
+      "previous_topic_position": [
+        -2.3161,
+        0,
+        0.6321
+      ],
+      "semantic_position": [
+        -2.2641,
+        1.3069,
+        0.2263
+      ],
+      "next_topic_position": [
+        -2.2641,
+        1.3069,
+        0.2263
+      ],
+      "distance_to_target_before": 1.3694,
+      "distance_to_target_after": 0,
+      "alpha_used": 1,
+      "max_step_distance": 10000,
+      "epsilon": 0.035,
+      "reason": "Committed topic_position immediately to semantic_position. Frontend animation should handle the perceived movement."
+    }
+  ]
+}

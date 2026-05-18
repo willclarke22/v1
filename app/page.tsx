@@ -88,6 +88,9 @@ function topicStateSignature(topics: Topic[]) {
         topic.learningScore.toFixed(4),
         topic.messageCount ?? 0,
         topic.lastUpdated ?? "null",
+        topic.learningSpaceProjection?.projection_id ?? "null",
+        topic.learningSpaceRelationships?.length ?? 0,
+        topic.learningSpaceViewpoints?.length ?? 0,
       ].join(":"),
     )
     .join("|");
@@ -115,6 +118,12 @@ function mergeBootstrappedTopicsWithPrevious(args: {
        * that local UI hint so background refresh does not erase the probe badge.
        */
       hasAvailableProbe: previous.hasAvailableProbe || topic.hasAvailableProbe,
+      learningSpaceRelationships:
+        topic.learningSpaceRelationships ?? previous.learningSpaceRelationships,
+      learningSpaceViewpoints:
+        topic.learningSpaceViewpoints ?? previous.learningSpaceViewpoints,
+      learningSpaceProjection:
+        topic.learningSpaceProjection ?? previous.learningSpaceProjection,
     };
   });
 }
@@ -200,6 +209,21 @@ function deriveCollisionRadius(renderState: {
   );
 }
 
+
+function buildFallbackProjectionMetadata(): RendererLearningSpace["projection"] {
+  return {
+    projection_id: "frontend_fallback_projection",
+    projection_method: "frontend_contract_backfill",
+    dimensionality: 3,
+    relationship_basis: [],
+    generated_at: null,
+    confidence: null,
+    notes: [
+      "Frontend fallback: learning_space payload did not include projection metadata yet.",
+    ],
+  };
+}
+
 function toRendererLearningSpace(
   learningSpace: ContractLearningSpace | RendererLearningSpace | null,
 ): RendererLearningSpace | null {
@@ -208,6 +232,9 @@ function toRendererLearningSpace(
   return {
     space_version: "v1",
     clusters: learningSpace.clusters ?? [],
+    relationships: learningSpace.relationships ?? [],
+    viewpoints: learningSpace.viewpoints ?? [],
+    projection: learningSpace.projection ?? buildFallbackProjectionMetadata(),
     topics: (learningSpace.topics ?? []).map((topic) => {
       const renderState = topic.render_state ?? {
         radius: 1,
@@ -340,6 +367,16 @@ function deriveTopicsFromMessageResponse(
       lastUpdated:
         engineTopic.topic_last_update ?? previous?.lastUpdated ?? null,
       hasAvailableProbe,
+
+      /**
+       * Keep the global relationship/viewpoint/projection layer alive when
+       * /api/message returns only engine topic rows or a learning_space payload
+       * that does not yet include the richer relationship contract. This prevents
+       * semantic arcs from disappearing immediately after a normal message send.
+       */
+      learningSpaceRelationships: previous?.learningSpaceRelationships,
+      learningSpaceViewpoints: previous?.learningSpaceViewpoints,
+      learningSpaceProjection: previous?.learningSpaceProjection,
     };
   });
 }
@@ -399,6 +436,9 @@ export default function Home() {
       space_version: "v1",
       topics: [],
       clusters: [],
+      relationships: [],
+      viewpoints: [],
+      projection: buildFallbackProjectionMetadata(),
     } satisfies RendererLearningSpace;
   }, [topics]);
 

@@ -939,6 +939,99 @@ export type TopicPositionSource =
   | "topic_json"
   | "deterministic_fallback";
 
+export type LearningSpaceRelationshipType =
+  | "semantic"
+  | "shared_confusion"
+  | "prerequisite"
+  | "strategy"
+  | "temporal";
+
+export type LearningSpaceRelationshipVisualStyle =
+  | "arc"
+  | "thread"
+  | "arrow"
+  | "halo"
+  | "trail";
+
+export type LearningSpaceViewpointType =
+  | "overview"
+  | "semantic_neighborhood"
+  | "confusion_alignment"
+  | "prerequisite_chain"
+  | "bridge"
+  | "growth_path";
+
+export interface LearningSpaceRelationshipBasis {
+  similarity: Nullable<number>;
+  normalized_similarity: Nullable<number>;
+  desired_distance: Nullable<number>;
+  actual_distance: Nullable<number>;
+  diagnostic_method: Nullable<string>;
+}
+
+export interface LearningSpaceRelationshipDisplayPolicy {
+  show_in_overview: boolean;
+  show_on_focus: boolean;
+  max_opacity: number;
+  visual_style: LearningSpaceRelationshipVisualStyle;
+  priority: number;
+}
+
+export interface LearningSpaceRelationship {
+  relationship_id: EntityId;
+  source_topic_id: EntityId;
+  target_topic_id: EntityId;
+  relationship_type: LearningSpaceRelationshipType;
+
+  /**
+   * Strength is continuous and relationship-specific. For semantic links it is
+   * generally derived from embedding similarity.
+   */
+  strength: number;
+
+  /**
+   * Confidence reflects evidence quality, not relationship strength.
+   */
+  confidence: number;
+
+  evidence_source: string[];
+  evidence_summary: Nullable<string>;
+  basis: LearningSpaceRelationshipBasis;
+  display_policy: LearningSpaceRelationshipDisplayPolicy;
+}
+
+export interface LearningSpaceViewpointCamera {
+  position: Nullable<[number, number, number]>;
+  target: Nullable<[number, number, number]>;
+  up: Nullable<[number, number, number]>;
+  distance: Nullable<number>;
+}
+
+export interface LearningSpaceViewpoint {
+  viewpoint_id: EntityId;
+  viewpoint_type: LearningSpaceViewpointType;
+  label: string;
+  intent: string;
+  focus_topic_ids: EntityId[];
+  relationship_ids: EntityId[];
+  camera: LearningSpaceViewpointCamera;
+  relationship_filter: {
+    relationship_types: LearningSpaceRelationshipType[];
+    max_visible_relationships: number;
+  };
+  explanation: Nullable<string>;
+}
+
+export interface LearningSpaceProjectionMetadata {
+  projection_id: EntityId;
+  projection_method: string;
+  dimensionality: 2 | 3;
+  relationship_basis: string[];
+  generated_at: Nullable<ISO8601String>;
+  confidence: Nullable<number>;
+  notes: string[];
+}
+
 export interface LearningSpaceTopicLayout {
   position_source: TopicPositionSource;
   semantic_position: Nullable<[number, number, number]>;
@@ -990,6 +1083,9 @@ export interface LearningSpace {
   space_version: "v1";
   topics: LearningSpaceTopic[];
   clusters: LearningSpaceCluster[];
+  relationships: LearningSpaceRelationship[];
+  viewpoints: LearningSpaceViewpoint[];
+  projection: LearningSpaceProjectionMetadata;
 }
 
 /* ------------------------------------------------------------------ */

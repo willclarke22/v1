@@ -1,6 +1,11 @@
 // lib/build-learning-space.ts
 
-import type { LearningSpace } from "@/types/learning-space";
+import type {
+  LearningSpace,
+  LearningSpaceProjectionMetadata,
+  LearningSpaceRelationship,
+  LearningSpaceViewpoint,
+} from "@/types/learning-space";
 import type {
   TopicPosition3D,
   TopicPositionSource,
@@ -32,6 +37,18 @@ type LearningSpaceInputTopic = {
 
   scale?: number | null;
   messageCount?: number | null;
+
+  /**
+   * Optional global learning-space relationship/viewpoint transport.
+   *
+   * Bootstrap attaches these to each topic as a convenient transport layer from
+   * persisted topic_json -> app Topic[] -> buildLearningSpace(). They are global
+   * scene objects, not per-topic-owned objects, so buildLearningSpace dedupes
+   * them before emitting the renderer contract.
+   */
+  learningSpaceRelationships?: LearningSpaceRelationship[] | null;
+  learningSpaceViewpoints?: LearningSpaceViewpoint[] | null;
+  learningSpaceProjection?: LearningSpaceProjectionMetadata | null;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -104,9 +121,81 @@ function buildSatelliteCount(topic: LearningSpaceInputTopic) {
   return Math.min(5, Math.max(0, Math.floor(messageCount)));
 }
 
+function buildFallbackProjectionMetadata(): LearningSpaceProjectionMetadata {
+  return {
+    projection_id: "local_build_learning_space_projection",
+    projection_method: "committed_topic_position_passthrough",
+    dimensionality: 3,
+    relationship_basis: [],
+    generated_at: null,
+    confidence: null,
+    notes: [
+      "Local buildLearningSpace fallback: no backend relationship/viewpoint layer was supplied. Positions are committed topic_position values only.",
+    ],
+  };
+}
+
+function collectLearningSpaceRelationships(
+  topics: LearningSpaceInputTopic[],
+): LearningSpaceRelationship[] {
+  const relationshipsById = new Map<string, LearningSpaceRelationship>();
+
+  for (const topic of topics) {
+    for (const relationship of topic.learningSpaceRelationships ?? []) {
+      relationshipsById.set(relationship.relationship_id, relationship);
+    }
+  }
+
+  return [...relationshipsById.values()].sort((a, b) => {
+    const priorityA = a.display_policy?.priority ?? a.strength ?? 0;
+    const priorityB = b.display_policy?.priority ?? b.strength ?? 0;
+
+    if (priorityB !== priorityA) return priorityB - priorityA;
+
+    return a.relationship_id.localeCompare(b.relationship_id);
+  });
+}
+
+function collectLearningSpaceViewpoints(
+  topics: LearningSpaceInputTopic[],
+): LearningSpaceViewpoint[] {
+  const viewpointsById = new Map<string, LearningSpaceViewpoint>();
+
+  for (const topic of topics) {
+    for (const viewpoint of topic.learningSpaceViewpoints ?? []) {
+      viewpointsById.set(viewpoint.viewpoint_id, viewpoint);
+    }
+  }
+
+  return [...viewpointsById.values()].sort((a, b) => {
+    if (a.viewpoint_type !== b.viewpoint_type) {
+      if (a.viewpoint_type === "overview") return -1;
+      if (b.viewpoint_type === "overview") return 1;
+      if (a.viewpoint_type === "bridge") return -1;
+      if (b.viewpoint_type === "bridge") return 1;
+    }
+
+    return a.viewpoint_id.localeCompare(b.viewpoint_id);
+  });
+}
+
+function resolveLearningSpaceProjection(
+  topics: LearningSpaceInputTopic[],
+): LearningSpaceProjectionMetadata {
+  const projection = topics.find(
+    (topic) => topic.learningSpaceProjection,
+  )?.learningSpaceProjection;
+
+  return projection ?? buildFallbackProjectionMetadata();
+}
+
 export function buildLearningSpace(
   topics: LearningSpaceInputTopic[],
 ): LearningSpace {
+  const relationships = collectLearningSpaceRelationships(topics);
+  const viewpoints = collectLearningSpaceViewpoints(topics);
+  const projection = resolveLearningSpaceProjection(topics);
+
   return {
     space_version: "v1",
     topics: topics.map((topic) => {
@@ -133,5 +222,8 @@ export function buildLearningSpace(
       };
     }),
     clusters: [],
+    relationships,
+    viewpoints,
+    projection,
   };
 }

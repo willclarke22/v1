@@ -2,6 +2,11 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { EmbeddingVector } from "@/types/contracts";
+import type {
+  LearningSpaceProjectionMetadata,
+  LearningSpaceRelationship,
+  LearningSpaceViewpoint,
+} from "@/types/learning-space";
 import {
   isTopicPosition3D,
   readSemanticPositionFromJson,
@@ -67,6 +72,16 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
 
 function asTopicPosition(value: unknown): TopicPosition | null {
   return isTopicPosition3D(value) ? value : null;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asUnknownArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
 }
 
 function readFromTopicJson<T>(
@@ -159,6 +174,15 @@ export type TopicStateRow = {
   diagnosis: string | null;
   next_step: string | null;
   topic_json: Record<string, unknown> | null;
+
+  /**
+   * Global learning-space relationship/viewpoint layer persisted in topic_json
+   * by semantic-layout recompute. These are read-side transport fields so the
+   * bootstrap route can rebuild the scene contract after realtime refreshes.
+   */
+  learning_space_relationships: LearningSpaceRelationship[];
+  learning_space_viewpoints: LearningSpaceViewpoint[];
+  learning_space_projection: LearningSpaceProjectionMetadata | null;
 
   /**
    * Current committed renderer position.
@@ -423,6 +447,15 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
     diagnosis: row.diagnosis,
     next_step: row.next_step,
     topic_json: topicJson,
+    learning_space_relationships: asUnknownArray(
+      readFromTopicJson(topicJson, "learning_space_relationships"),
+    ) as LearningSpaceRelationship[],
+    learning_space_viewpoints: asUnknownArray(
+      readFromTopicJson(topicJson, "learning_space_viewpoints"),
+    ) as LearningSpaceViewpoint[],
+    learning_space_projection: asRecord(
+      readFromTopicJson(topicJson, "learning_space_projection"),
+    ) as LearningSpaceProjectionMetadata | null,
 
     topic_position: topicPosition,
     topic_position_x: topicPosition?.[0] ?? null,

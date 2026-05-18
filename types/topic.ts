@@ -1,5 +1,10 @@
 import type { DiagnosisType, ISO8601String } from "@/types/contracts";
 import type {
+  LearningSpaceProjectionMetadata,
+  LearningSpaceRelationship,
+  LearningSpaceViewpoint,
+} from "@/types/learning-space";
+import type {
   TopicPosition3D,
   TopicPositionSource,
 } from "@/lib/learning-space/topic-position";
@@ -32,6 +37,18 @@ export type Topic = {
   messageCount?: number;
   lastUpdated?: ISO8601String | null;
   hasAvailableProbe?: boolean;
+
+  /**
+   * Relationship/viewpoint layer carried through bootstrap refreshes.
+   *
+   * These are global learning-space structures, not topic-local facts. They are
+   * attached to each bootstrapped topic only as a transport mechanism so
+   * buildLearningSpace(topics) can reconstruct the full scene after realtime or
+   * fallback-poll refreshes.
+   */
+  learningSpaceRelationships?: LearningSpaceRelationship[];
+  learningSpaceViewpoints?: LearningSpaceViewpoint[];
+  learningSpaceProjection?: LearningSpaceProjectionMetadata | null;
 };
 
 export function getTopicLabel(topic: Pick<Topic, "topic_label">): string {

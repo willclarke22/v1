@@ -11,16 +11,20 @@ import {
   type RefObject,
 } from "react";
 import * as THREE from "three";
-import type { LearningSpace, LearningSpaceTopic } from "@/types/learning-space";
+import type {
+  LearningSpace,
+  LearningSpaceRelationship,
+  LearningSpaceTopic,
+} from "@/types/learning-space";
 import type { ProbeSummary } from "@/components/probes/probe-surface";
 
 type TrackballControlsRef = ElementRef<typeof TrackballControls>;
 type SceneArrivalMode = "warp" | "focus";
 type AnimatedTopicPositionsRef = RefObject<Map<string, THREE.Vector3>>;
 
-const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 0, 64);
+const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 18, 72);
 const DEFAULT_TARGET = new THREE.Vector3(0, 0, 0);
-const ZOOMED_OUT_DISTANCE = 64;
+const ZOOMED_OUT_DISTANCE = 72;
 
 /**
  * Renderer-only expansion.
@@ -29,11 +33,11 @@ const ZOOMED_OUT_DISTANCE = 64;
  * units. The canvas expands those coordinates for a more spacious,
  * NASA-Eyes-like overview without corrupting persisted layout math.
  *
- * Keep X/Z meaningfully larger than Y so the learning space remains a readable
- * semantic solar-system plane instead of becoming an arbitrary 3D cloud.
+ * v15: X/Z still provide the broad map, but Y now has enough scale to make
+ * the learning space genuinely explorable from different viewpoints.
  */
 const VISUAL_SPACE_SCALE_XZ = 6.85;
-const VISUAL_SPACE_SCALE_Y = 1.42;
+const VISUAL_SPACE_SCALE_Y = 4.35;
 
 /**
  * NASA-Eyes-style composition shaping.
@@ -156,6 +160,45 @@ const LOCAL_BOB_SPEED_VARIATION = 0.28;
 const LABEL_HIDE_SCREEN_RADIUS_PX = 44;
 const LABEL_MAX_WIDTH_OVERVIEW = 172;
 const LABEL_MAX_WIDTH_PROMINENT = 220;
+const SEMANTIC_RELATIONSHIP_ARC_MAX_COUNT = 3;
+const SEMANTIC_RELATIONSHIP_ARC_SEGMENTS = 36;
+const SEMANTIC_RELATIONSHIP_ARC_MIN_OPACITY = 0.1;
+const SEMANTIC_RELATIONSHIP_ARC_BASE_OPACITY = 0.18;
+const SEMANTIC_RELATIONSHIP_ARC_FOCUSED_OPACITY_BOOST = 0.12;
+const SEMANTIC_RELATIONSHIP_ARC_HOVERLESS_LIFT_MIN = 0.9;
+const SEMANTIC_RELATIONSHIP_ARC_HOVERLESS_LIFT_MAX = 4.8;
+const SEMANTIC_RELATIONSHIP_ARC_LIFT_DISTANCE_FACTOR = 0.18;
+const SEMANTIC_RELATIONSHIP_MIN_SCREEN_DISTANCE_PX = 54;
+const SEMANTIC_RELATIONSHIP_MAX_SCREEN_FRACTION = 0.82;
+const LABEL_OCCLUSION_RADIUS_MULTIPLIER = 1.08;
+const LABEL_OCCLUSION_DEPTH_PADDING = 0.18;
+const LABEL_OCCLUSION_FADE_BAND = 0.48;
+const LABEL_OCCLUSION_MAX_OPACITY_MULTIPLIER = 0;
+const LABEL_OCCLUSION_SCREEN_RADIUS_MULTIPLIER = 1.16;
+const LABEL_OCCLUSION_SCREEN_PADDING_PX = 18;
+const LABEL_OCCLUSION_SCREEN_FADE_BAND_PX = 34;
+
+/**
+ * Pass 5B: viewpoint group halo / contour prototype.
+ *
+ * This is intentionally screen-space. It does not claim the topics are at the
+ * same 3D depth; it says the current camera viewpoint makes a relationship
+ * group visually legible. For now it uses the active topic's semantic
+ * relationships. Later the same visual shell can be driven by
+ * shared_confusion, prerequisite, strategy, or diagnostic-region relationships.
+ */
+const VIEWPOINT_GROUP_HALO_MIN_TOPIC_COUNT = 3;
+const VIEWPOINT_GROUP_HALO_MAX_TOPIC_COUNT = 4;
+const VIEWPOINT_GROUP_HALO_PADDING_PX = 58;
+const VIEWPOINT_GROUP_HALO_MIN_RADIUS_PX = 62;
+const VIEWPOINT_GROUP_HALO_MAX_SCREEN_FRACTION = 0.68;
+const VIEWPOINT_GROUP_HALO_BASE_OPACITY = 0.18;
+const VIEWPOINT_GROUP_HALO_FOCUSED_OPACITY = 0.24;
+const VIEWPOINT_GROUP_HALO_FADE_IN_ALPHA = 0.055;
+const VIEWPOINT_GROUP_HALO_FADE_OUT_ALPHA = 0.14;
+const VIEWPOINT_GROUP_HALO_DASH = "7 12";
+
+
 
 function getTopicById(
   topics: LearningSpaceTopic[],
@@ -375,8 +418,307 @@ function getTrailInitialOpacity(args: {
   return MOVEMENT_TRAIL_OVERVIEW_OPACITY;
 }
 
+function getRelationshipOtherTopicId(
+  relationship: LearningSpaceRelationship,
+  topicId: string,
+) {
+  if (relationship.source_topic_id === topicId) return relationship.target_topic_id;
+  if (relationship.target_topic_id === topicId) return relationship.source_topic_id;
+  return null;
+}
+
+function relationshipTouchesTopic(
+  relationship: LearningSpaceRelationship,
+  topicId: string | null,
+) {
+  if (!topicId) return false;
+
+  return (
+    relationship.source_topic_id === topicId ||
+    relationship.target_topic_id === topicId
+  );
+}
+
+function getRelationshipSortScore(relationship: LearningSpaceRelationship) {
+  const priority = Number.isFinite(relationship.display_policy?.priority)
+    ? relationship.display_policy.priority
+    : 0;
+  const strength = Number.isFinite(relationship.strength)
+    ? relationship.strength
+    : 0;
+  const confidence = Number.isFinite(relationship.confidence)
+    ? relationship.confidence
+    : 0;
+  const similarity =
+    typeof relationship.basis?.similarity === "number" &&
+    Number.isFinite(relationship.basis.similarity)
+      ? relationship.basis.similarity
+      : 0;
+
+  return priority * 4 + strength * 2 + confidence + similarity;
+}
+
+function clampOpacity(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function buildArcPoints(args: {
+  start: THREE.Vector3;
+  end: THREE.Vector3;
+  strength: number;
+}) {
+  const distance = args.start.distanceTo(args.end);
+  const lift =
+    Math.min(
+      SEMANTIC_RELATIONSHIP_ARC_HOVERLESS_LIFT_MAX,
+      Math.max(
+        SEMANTIC_RELATIONSHIP_ARC_HOVERLESS_LIFT_MIN,
+        distance * SEMANTIC_RELATIONSHIP_ARC_LIFT_DISTANCE_FACTOR,
+      ),
+    ) *
+    (0.82 + Math.max(0, Math.min(1, args.strength)) * 0.18);
+
+  const midpoint = args.start.clone().lerp(args.end, 0.5);
+  const control = midpoint.clone().add(new THREE.Vector3(0, lift, 0));
+  const points: THREE.Vector3[] = [];
+
+  for (let index = 0; index <= SEMANTIC_RELATIONSHIP_ARC_SEGMENTS; index += 1) {
+    const t = index / SEMANTIC_RELATIONSHIP_ARC_SEGMENTS;
+    const oneMinusT = 1 - t;
+    const point = args.start
+      .clone()
+      .multiplyScalar(oneMinusT * oneMinusT)
+      .add(control.clone().multiplyScalar(2 * oneMinusT * t))
+      .add(args.end.clone().multiplyScalar(t * t));
+
+    points.push(point);
+  }
+
+  return points;
+}
+
+function getProjectedScreenPoint(args: {
+  point: THREE.Vector3;
+  camera: THREE.Camera;
+  size: { width: number; height: number };
+}) {
+  const projected = args.point.clone().project(args.camera);
+
+  return {
+    x: (projected.x * 0.5 + 0.5) * args.size.width,
+    y: (-projected.y * 0.5 + 0.5) * args.size.height,
+    z: projected.z,
+  };
+}
+
+function getCameraAngleRelationshipLegibility(args: {
+  camera: THREE.Camera;
+  size: { width: number; height: number };
+  sourcePosition: THREE.Vector3;
+  targetPosition: THREE.Vector3;
+}) {
+  /**
+   * Free-exploration rule: relationships should feel like they appear from the
+   * current viewpoint when both endpoints are in front of the camera and the
+   * relationship is visually legible in screen space. This is not a hard mode;
+   * it is a soft opacity gate driven by camera angle and line of sight.
+   */
+  const source = getProjectedScreenPoint({
+    point: args.sourcePosition,
+    camera: args.camera,
+    size: args.size,
+  });
+  const target = getProjectedScreenPoint({
+    point: args.targetPosition,
+    camera: args.camera,
+    size: args.size,
+  });
+
+  const sourceInFront = source.z > -1 && source.z < 1;
+  const targetInFront = target.z > -1 && target.z < 1;
+
+  if (!sourceInFront || !targetInFront) return 0;
+
+  const dx = source.x - target.x;
+  const dy = source.y - target.y;
+  const screenDistance = Math.sqrt(dx * dx + dy * dy);
+  const screenMax = Math.max(args.size.width, args.size.height);
+
+  const tooCloseFade = THREE.MathUtils.clamp(
+    (screenDistance - SEMANTIC_RELATIONSHIP_MIN_SCREEN_DISTANCE_PX) /
+      SEMANTIC_RELATIONSHIP_MIN_SCREEN_DISTANCE_PX,
+    0,
+    1,
+  );
+  const tooFarFade = THREE.MathUtils.clamp(
+    (screenMax * SEMANTIC_RELATIONSHIP_MAX_SCREEN_FRACTION - screenDistance) /
+      Math.max(1, screenMax * 0.22),
+    0.18,
+    1,
+  );
+
+  return tooCloseFade * tooFarFade;
+}
+
+function getLabelOcclusionStrength(args: {
+  topic: LearningSpaceTopic;
+  allTopics: LearningSpaceTopic[];
+  camera: THREE.Camera;
+  size: { width: number; height: number };
+  selectedTopicId: string | null;
+  focusedTopicId: string | null;
+  animatedTopicPositionsRef: AnimatedTopicPositionsRef;
+  labelWorldPosition: THREE.Vector3;
+  labelOffsetPx: number;
+}) {
+  /**
+   * Drei Html labels are DOM overlays, so they do not automatically disappear
+   * behind nearer topic spheres. This custom test combines:
+   *
+   * 1. a 3D camera-ray test for geometric line-of-sight occlusion, and
+   * 2. a screen-space overlap test for the actual visible label position.
+   *
+   * The screen-space check is important during close focus: a background label
+   * can appear inside the large foreground sphere even if the center-to-center
+   * ray test is not perfectly aligned with the DOM label offset.
+   */
+  const cameraPosition = args.camera.position;
+  const labelVector = args.labelWorldPosition.clone().sub(cameraPosition);
+  const labelDistance = labelVector.length();
+
+  if (labelDistance <= 0.001) return 0;
+
+  const labelProjected = getProjectedScreenPoint({
+    point: args.labelWorldPosition,
+    camera: args.camera,
+    size: args.size,
+  });
+
+  const labelScreenPoint = {
+    x: labelProjected.x,
+    y: labelProjected.y - args.labelOffsetPx,
+  };
+
+  const rayDirection = labelVector.clone().multiplyScalar(1 / labelDistance);
+  const isAnyTopicFocused = args.focusedTopicId !== null;
+  let strongestOcclusion = 0;
+
+  for (const otherTopic of args.allTopics) {
+    if (otherTopic.topic_id === args.topic.topic_id) continue;
+
+    const otherPosition = getAnimatedTopicPosition(
+      otherTopic,
+      args.animatedTopicPositionsRef,
+    );
+    const toOther = otherPosition.clone().sub(cameraPosition);
+    const otherDistance = toOther.length();
+    const alongRayDistance = toOther.dot(rayDirection);
+
+    /**
+     * Only topics clearly between the camera and this label should occlude it.
+     * A small padding avoids labels popping when two topics are almost coplanar
+     * from the current view.
+     */
+    const isBetweenCameraAndLabel =
+      alongRayDistance > LABEL_OCCLUSION_DEPTH_PADDING &&
+      alongRayDistance < labelDistance - LABEL_OCCLUSION_DEPTH_PADDING &&
+      otherDistance < labelDistance - LABEL_OCCLUSION_DEPTH_PADDING;
+
+    if (!isBetweenCameraAndLabel) continue;
+
+    const otherVisualRadius = getTopicVisualRadius({
+      topic: otherTopic,
+      isSelected: otherTopic.topic_id === args.selectedTopicId,
+      isFocused: otherTopic.topic_id === args.focusedTopicId,
+      isAnyTopicFocused,
+    });
+
+    /**
+     * Screen-space occlusion matches what the learner actually sees. If the
+     * label's visible DOM position falls inside a nearer topic's projected
+     * sphere circle, hide the label completely. This catches the close-up case
+     * where a faint background label appears through the center of the current
+     * sphere.
+     */
+    const otherProjected = getProjectedScreenPoint({
+      point: otherPosition,
+      camera: args.camera,
+      size: args.size,
+    });
+
+    if (otherProjected.z > -1 && otherProjected.z < 1) {
+      const otherScreenRadius =
+        getScreenSpaceRadiusPx({
+          camera: args.camera,
+          size: args.size,
+          worldPosition: otherPosition,
+          worldRadius:
+            otherVisualRadius * LABEL_OCCLUSION_SCREEN_RADIUS_MULTIPLIER,
+        }) + LABEL_OCCLUSION_SCREEN_PADDING_PX;
+
+      const screenDx = labelScreenPoint.x - otherProjected.x;
+      const screenDy = labelScreenPoint.y - otherProjected.y;
+      const screenDistance = Math.sqrt(screenDx * screenDx + screenDy * screenDy);
+
+      if (screenDistance <= otherScreenRadius) {
+        return 1;
+      }
+
+      const screenOcclusion = THREE.MathUtils.clamp(
+        (otherScreenRadius + LABEL_OCCLUSION_SCREEN_FADE_BAND_PX -
+          screenDistance) /
+          LABEL_OCCLUSION_SCREEN_FADE_BAND_PX,
+        0,
+        1,
+      );
+
+      strongestOcclusion = Math.max(strongestOcclusion, screenOcclusion);
+    }
+
+    const closestPointOnRay = cameraPosition
+      .clone()
+      .add(rayDirection.clone().multiplyScalar(alongRayDistance));
+    const perpendicularDistance = otherPosition.distanceTo(closestPointOnRay);
+    const occlusionRadius =
+      otherVisualRadius * LABEL_OCCLUSION_RADIUS_MULTIPLIER;
+
+    if (perpendicularDistance < occlusionRadius + LABEL_OCCLUSION_FADE_BAND) {
+      const radiusOcclusion = THREE.MathUtils.clamp(
+        (occlusionRadius + LABEL_OCCLUSION_FADE_BAND - perpendicularDistance) /
+          LABEL_OCCLUSION_FADE_BAND,
+        0,
+        1,
+      );
+
+      /**
+       * Nearer blockers should count more. This keeps the fade intuitive when a
+       * topic is barely in front of the label versus clearly blocking the view.
+       */
+      const depthOcclusion = THREE.MathUtils.clamp(
+        (labelDistance - alongRayDistance) / Math.max(1, labelDistance * 0.35),
+        0.35,
+        1,
+      );
+
+      strongestOcclusion = Math.max(
+        strongestOcclusion,
+        radiusOcclusion * depthOcclusion,
+      );
+    }
+
+    if (strongestOcclusion >= 0.995) return 1;
+  }
+
+  return strongestOcclusion;
+}
+
+
 function TopicLabel({
   topic,
+  allTopics,
+  selectedTopicId,
+  focusedTopicId,
+  animatedTopicPositionsRef,
   isSelected,
   isFocused,
   isAppearing,
@@ -387,6 +729,10 @@ function TopicLabel({
   visualRadius,
 }: {
   topic: LearningSpaceTopic;
+  allTopics: LearningSpaceTopic[];
+  selectedTopicId: string | null;
+  focusedTopicId: string | null;
+  animatedTopicPositionsRef: AnimatedTopicPositionsRef;
   isSelected: boolean;
   isFocused: boolean;
   isAppearing: boolean;
@@ -441,12 +787,33 @@ function TopicLabel({
       Math.max(22, screenRadiusPx * 0.62 + 14),
     );
 
-    const targetOpacity = shouldShow ? (isSelected ? 0.96 : 0.78) : 0;
+    const occlusionStrength = shouldShow
+      ? getLabelOcclusionStrength({
+          topic,
+          allTopics,
+          camera,
+          selectedTopicId,
+          focusedTopicId,
+          animatedTopicPositionsRef,
+          labelWorldPosition: worldPositionRef.current,
+          size,
+          labelOffsetPx,
+        })
+      : 0;
+
+    const occlusionOpacityMultiplier =
+      1 -
+      occlusionStrength * (1 - LABEL_OCCLUSION_MAX_OPACITY_MULTIPLIER);
+
+    const targetOpacity = shouldShow
+      ? (isSelected ? 0.96 : 0.78) * occlusionOpacityMultiplier
+      : 0;
 
     /**
      * Keep label visibility sticky. Semantic layout staging and migration should
      * never become a visible pre-movement warning. Labels only fade out for
-     * actual user drag, probe entry, or close-up current-topic redundancy.
+     * actual user drag, probe entry, close-up current-topic redundancy, or
+     * actual 3D line-of-sight occlusion behind another topic sphere.
      */
     const opacityAlpha = targetOpacity > labelOpacityRef.current ? 0.18 : 0.24;
     labelOpacityRef.current +=
@@ -565,8 +932,340 @@ function MovementTrail({
   );
 }
 
+function SemanticRelationshipArc({
+  relationship,
+  activeTopicId,
+  topicsById,
+  animatedTopicPositionsRef,
+  isAnyTopicFocused,
+  hideBecauseUserIsControlling,
+  isEnteringProbe,
+}: {
+  relationship: LearningSpaceRelationship;
+  activeTopicId: string;
+  topicsById: Map<string, LearningSpaceTopic>;
+  animatedTopicPositionsRef: AnimatedTopicPositionsRef;
+  isAnyTopicFocused: boolean;
+  hideBecauseUserIsControlling: boolean;
+  isEnteringProbe: boolean;
+}) {
+  const { camera, size } = useThree();
+  const geometryRef = useRef<THREE.BufferGeometry | null>(null);
+  const materialRef = useRef<THREE.LineBasicMaterial | null>(null);
+  const opacityRef = useRef(0);
+
+  const sourceTopic = topicsById.get(relationship.source_topic_id) ?? null;
+  const targetTopic = topicsById.get(relationship.target_topic_id) ?? null;
+  const otherTopicId = getRelationshipOtherTopicId(relationship, activeTopicId);
+
+  const strength =
+    typeof relationship.strength === "number" &&
+    Number.isFinite(relationship.strength)
+      ? relationship.strength
+      : 0.4;
+  const maxOpacity =
+    typeof relationship.display_policy?.max_opacity === "number" &&
+    Number.isFinite(relationship.display_policy.max_opacity)
+      ? relationship.display_policy.max_opacity
+      : 0.45;
+
+  useFrame(() => {
+    const geometry = geometryRef.current;
+    const material = materialRef.current;
+
+    if (!geometry || !material || !sourceTopic || !targetTopic || !otherTopicId) {
+      return;
+    }
+
+    const sourcePosition = getAnimatedTopicPosition(
+      sourceTopic,
+      animatedTopicPositionsRef,
+    );
+    const targetPosition = getAnimatedTopicPosition(
+      targetTopic,
+      animatedTopicPositionsRef,
+    );
+
+    geometry.setFromPoints(
+      buildArcPoints({
+        start: sourcePosition,
+        end: targetPosition,
+        strength,
+      }),
+    );
+
+    const cameraLegibility = getCameraAngleRelationshipLegibility({
+      camera,
+      size,
+      sourcePosition,
+      targetPosition,
+    });
+
+    const targetOpacity =
+      hideBecauseUserIsControlling || isEnteringProbe
+        ? 0
+        : clampOpacity(
+            Math.min(
+              maxOpacity,
+              SEMANTIC_RELATIONSHIP_ARC_BASE_OPACITY +
+                strength * 0.32 +
+                (isAnyTopicFocused
+                  ? SEMANTIC_RELATIONSHIP_ARC_FOCUSED_OPACITY_BOOST
+                  : 0),
+            ) * cameraLegibility,
+          );
+
+    const alpha = targetOpacity > opacityRef.current ? 0.085 : 0.16;
+    opacityRef.current += (targetOpacity - opacityRef.current) * alpha;
+
+    if (opacityRef.current < SEMANTIC_RELATIONSHIP_ARC_MIN_OPACITY) {
+      opacityRef.current = targetOpacity === 0 ? 0 : opacityRef.current;
+    }
+
+    material.opacity = opacityRef.current;
+    material.visible = opacityRef.current > 0.002;
+  });
+
+  if (!sourceTopic || !targetTopic || !otherTopicId) {
+    return null;
+  }
+
+  return (
+    <line>
+      <bufferGeometry ref={geometryRef} />
+      <lineBasicMaterial
+        ref={materialRef}
+        color="#f8fafc"
+        transparent
+        opacity={0}
+        depthWrite={false}
+        depthTest={false}
+      />
+    </line>
+  );
+}
+
+
+type ViewpointGroupHaloPoint = {
+  topicId: string;
+  x: number;
+  y: number;
+  z: number;
+};
+
+function getUniqueActiveRelationshipTopicIds(args: {
+  activeTopicId: string | null;
+  relationships: LearningSpaceRelationship[];
+}) {
+  if (!args.activeTopicId) return [];
+
+  const topicIds: string[] = [args.activeTopicId];
+  const seen = new Set(topicIds);
+
+  for (const relationship of args.relationships) {
+    const otherTopicId = getRelationshipOtherTopicId(
+      relationship,
+      args.activeTopicId,
+    );
+
+    if (!otherTopicId || seen.has(otherTopicId)) continue;
+
+    seen.add(otherTopicId);
+    topicIds.push(otherTopicId);
+
+    if (topicIds.length >= VIEWPOINT_GROUP_HALO_MAX_TOPIC_COUNT) break;
+  }
+
+  return topicIds;
+}
+
+function ActiveRelationshipGroupHalo({
+  activeTopicId,
+  relationships,
+  topicsById,
+  animatedTopicPositionsRef,
+  hideBecauseUserIsControlling,
+  isEnteringProbe,
+  isAnyTopicFocused,
+}: {
+  activeTopicId: string | null;
+  relationships: LearningSpaceRelationship[];
+  topicsById: Map<string, LearningSpaceTopic>;
+  animatedTopicPositionsRef: AnimatedTopicPositionsRef;
+  hideBecauseUserIsControlling: boolean;
+  isEnteringProbe: boolean;
+  isAnyTopicFocused: boolean;
+}) {
+  const { camera, size } = useThree();
+  const haloRef = useRef<SVGEllipseElement | null>(null);
+  const glowRef = useRef<SVGEllipseElement | null>(null);
+  const opacityRef = useRef(0);
+
+  useFrame(() => {
+    const halo = haloRef.current;
+    const glow = glowRef.current;
+
+    if (!halo || !glow) return;
+
+    const topicIds = getUniqueActiveRelationshipTopicIds({
+      activeTopicId,
+      relationships,
+    });
+
+    const projectedPoints: ViewpointGroupHaloPoint[] = [];
+
+    for (const topicId of topicIds) {
+      const topic = topicsById.get(topicId);
+      if (!topic) continue;
+
+      const worldPosition = getAnimatedTopicPosition(
+        topic,
+        animatedTopicPositionsRef,
+      );
+      const projected = getProjectedScreenPoint({
+        point: worldPosition,
+        camera,
+        size,
+      });
+
+      if (projected.z <= -1 || projected.z >= 1) continue;
+
+      projectedPoints.push({
+        topicId,
+        x: projected.x,
+        y: projected.y,
+        z: projected.z,
+      });
+    }
+
+    let targetOpacity = 0;
+    let cx = 0;
+    let cy = 0;
+    let rx = 0;
+    let ry = 0;
+
+    if (
+      !hideBecauseUserIsControlling &&
+      !isEnteringProbe &&
+      projectedPoints.length >= VIEWPOINT_GROUP_HALO_MIN_TOPIC_COUNT
+    ) {
+      const xs = projectedPoints.map((point) => point.x);
+      const ys = projectedPoints.map((point) => point.y);
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+      const width = maxX - minX;
+      const height = maxY - minY;
+      const maxAllowed = Math.max(size.width, size.height) *
+        VIEWPOINT_GROUP_HALO_MAX_SCREEN_FRACTION;
+
+      cx = (minX + maxX) * 0.5;
+      cy = (minY + maxY) * 0.5;
+      rx = Math.max(
+        VIEWPOINT_GROUP_HALO_MIN_RADIUS_PX,
+        width * 0.5 + VIEWPOINT_GROUP_HALO_PADDING_PX,
+      );
+      ry = Math.max(
+        VIEWPOINT_GROUP_HALO_MIN_RADIUS_PX,
+        height * 0.5 + VIEWPOINT_GROUP_HALO_PADDING_PX,
+      );
+
+      const isReadableSize =
+        rx * 2 <= maxAllowed &&
+        ry * 2 <= maxAllowed &&
+        rx > VIEWPOINT_GROUP_HALO_MIN_RADIUS_PX * 0.85 &&
+        ry > VIEWPOINT_GROUP_HALO_MIN_RADIUS_PX * 0.85;
+
+      if (isReadableSize) {
+        const relationshipStrength = relationships.reduce((total, relationship) => {
+          const strength =
+            typeof relationship.strength === "number" &&
+            Number.isFinite(relationship.strength)
+              ? relationship.strength
+              : 0.4;
+
+          return total + strength;
+        }, 0) / Math.max(1, relationships.length);
+
+        targetOpacity = clampOpacity(
+          (isAnyTopicFocused
+            ? VIEWPOINT_GROUP_HALO_FOCUSED_OPACITY
+            : VIEWPOINT_GROUP_HALO_BASE_OPACITY) *
+            (0.72 + Math.min(1, relationshipStrength) * 0.28),
+        );
+      }
+    }
+
+    const alpha =
+      targetOpacity > opacityRef.current
+        ? VIEWPOINT_GROUP_HALO_FADE_IN_ALPHA
+        : VIEWPOINT_GROUP_HALO_FADE_OUT_ALPHA;
+
+    opacityRef.current += (targetOpacity - opacityRef.current) * alpha;
+
+    if (Math.abs(opacityRef.current - targetOpacity) < 0.004) {
+      opacityRef.current = targetOpacity;
+    }
+
+    for (const ellipse of [halo, glow]) {
+      ellipse.setAttribute("cx", `${cx}`);
+      ellipse.setAttribute("cy", `${cy}`);
+      ellipse.setAttribute("rx", `${rx}`);
+      ellipse.setAttribute("ry", `${ry}`);
+      ellipse.style.opacity = `${opacityRef.current}`;
+      ellipse.style.visibility = opacityRef.current > 0.003 ? "visible" : "hidden";
+    }
+  });
+
+  return (
+    <Html
+      fullscreen
+      style={{
+        pointerEvents: "none",
+      }}
+    >
+      <svg
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full"
+        style={{
+          overflow: "visible",
+          pointerEvents: "none",
+        }}
+      >
+        <ellipse
+          ref={glowRef}
+          cx="0"
+          cy="0"
+          rx="0"
+          ry="0"
+          fill="none"
+          stroke="rgba(255,255,255,0.16)"
+          strokeWidth="14"
+          opacity="0"
+          filter="blur(6px)"
+        />
+        <ellipse
+          ref={haloRef}
+          cx="0"
+          cy="0"
+          rx="0"
+          ry="0"
+          fill="none"
+          stroke="rgba(255,255,255,0.46)"
+          strokeWidth="1.15"
+          strokeDasharray={VIEWPOINT_GROUP_HALO_DASH}
+          opacity="0"
+        />
+      </svg>
+    </Html>
+  );
+}
+
 function TopicSphere({
   topic,
+  allTopics,
+  selectedTopicId,
   isSelected,
   isFocused,
   focusedTopicId,
@@ -582,6 +1281,8 @@ function TopicSphere({
   animatedTopicPositionsRef,
 }: {
   topic: LearningSpaceTopic;
+  allTopics: LearningSpaceTopic[];
+  selectedTopicId: string | null;
   isSelected: boolean;
   isFocused: boolean;
   focusedTopicId: string | null;
@@ -917,6 +1618,10 @@ function TopicSphere({
 
           <TopicLabel
             topic={topic}
+            allTopics={allTopics}
+            selectedTopicId={selectedTopicId}
+            focusedTopicId={focusedTopicId}
+            animatedTopicPositionsRef={animatedTopicPositionsRef}
             isSelected={isSelected}
             isFocused={isFocused}
             isAppearing={isAppearing}
@@ -1418,6 +2123,34 @@ export default function SpaceCanvas({
     [learningSpace.topics],
   );
 
+  const topicsById = useMemo(() => {
+    return new Map(
+      learningSpace.topics.map((topic) => [topic.topic_id, topic]),
+    );
+  }, [learningSpace.topics]);
+
+  const activeRelationshipTopicId = focusedTopicId ?? selectedTopicId;
+
+  const visibleSemanticRelationships = useMemo(() => {
+    if (!activeRelationshipTopicId) return [];
+
+    return (learningSpace.relationships ?? [])
+      .filter((relationship) => {
+        if (relationship.relationship_type !== "semantic") return false;
+        if (!relationship.display_policy?.show_on_focus) return false;
+        if (!relationshipTouchesTopic(relationship, activeRelationshipTopicId)) {
+          return false;
+        }
+
+        return (
+          topicsById.has(relationship.source_topic_id) &&
+          topicsById.has(relationship.target_topic_id)
+        );
+      })
+      .sort((a, b) => getRelationshipSortScore(b) - getRelationshipSortScore(a))
+      .slice(0, SEMANTIC_RELATIONSHIP_ARC_MAX_COUNT);
+  }, [activeRelationshipTopicId, learningSpace.relationships, topicsById]);
+
   useEffect(() => {
     const currentIds = learningSpace.topics.map((topic) => topic.topic_id);
     const nextAppearingIds = new Set<string>();
@@ -1520,7 +2253,7 @@ export default function SpaceCanvas({
       }}
     >
       <div className="absolute inset-0 z-0">
-        <Canvas camera={{ position: [0, 0, 64], fov: 50 }}>
+        <Canvas camera={{ position: [0, 18, 72], fov: 50 }}>
           <color attach="background" args={["#000000"]} />
 
           <ambientLight intensity={1.1} />
@@ -1537,6 +2270,30 @@ export default function SpaceCanvas({
             speed={0.24}
           />
 
+          {activeRelationshipTopicId &&
+            visibleSemanticRelationships.map((relationship) => (
+              <SemanticRelationshipArc
+                key={relationship.relationship_id}
+                relationship={relationship}
+                activeTopicId={activeRelationshipTopicId}
+                topicsById={topicsById}
+                animatedTopicPositionsRef={animatedTopicPositionsRef}
+                isAnyTopicFocused={focusedTopicId !== null}
+                hideBecauseUserIsControlling={isUserControlling}
+                isEnteringProbe={isEnteringProbe}
+              />
+            ))}
+
+          <ActiveRelationshipGroupHalo
+            activeTopicId={activeRelationshipTopicId}
+            relationships={visibleSemanticRelationships}
+            topicsById={topicsById}
+            animatedTopicPositionsRef={animatedTopicPositionsRef}
+            hideBecauseUserIsControlling={isUserControlling}
+            isEnteringProbe={isEnteringProbe}
+            isAnyTopicFocused={focusedTopicId !== null}
+          />
+
           {learningSpace.topics.map((topic) => {
             const topicProbe =
               availableProbe &&
@@ -1549,6 +2306,8 @@ export default function SpaceCanvas({
               <TopicSphere
                 key={topic.topic_id}
                 topic={topic}
+                allTopics={learningSpace.topics}
+                selectedTopicId={selectedTopicId}
                 isSelected={topic.topic_id === selectedTopicId}
                 isFocused={topic.topic_id === focusedTopicId}
                 focusedTopicId={focusedTopicId}

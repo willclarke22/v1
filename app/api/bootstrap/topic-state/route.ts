@@ -5,6 +5,11 @@ import { getLatestTopicState } from "@/lib/persistence/read";
 import { resolveTopicLayout } from "@/lib/learning-space/topic-position";
 import type { DiagnosisType } from "@/types/contracts";
 import type { Topic } from "@/types/topic";
+import type {
+  LearningSpaceProjectionMetadata,
+  LearningSpaceRelationship,
+  LearningSpaceViewpoint,
+} from "@/types/learning-space";
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
@@ -52,6 +57,42 @@ function getTopicJson(row: unknown): Record<string, unknown> {
   return {};
 }
 
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function getLearningSpaceRelationshipLayer(
+  rows: Awaited<ReturnType<typeof getLatestTopicState>>,
+) {
+  for (const row of rows) {
+    const topicJson = getTopicJson(row);
+    const relationships = asArray(topicJson.learning_space_relationships);
+    const viewpoints = asArray(topicJson.learning_space_viewpoints);
+    const projection = asRecord(topicJson.learning_space_projection);
+
+    if (relationships.length > 0 || viewpoints.length > 0 || projection) {
+      return {
+        relationships: relationships as LearningSpaceRelationship[],
+        viewpoints: viewpoints as LearningSpaceViewpoint[],
+        projection: projection as LearningSpaceProjectionMetadata | null,
+      };
+    }
+  }
+
+  return {
+    relationships: [] as LearningSpaceRelationship[],
+    viewpoints: [] as LearningSpaceViewpoint[],
+    projection: null as LearningSpaceProjectionMetadata | null,
+  };
+}
+
 function getTopicLabel(args: {
   rowWithTopicFields: {
     topic_label?: string | null;
@@ -80,6 +121,8 @@ function getTopicLabel(args: {
 function mapRowsToTopics(
   rows: Awaited<ReturnType<typeof getLatestTopicState>>,
 ): Topic[] {
+  const learningSpaceLayer = getLearningSpaceRelationshipLayer(rows);
+
   return rows.map((row, index) => {
     const rowWithTopicFields = row as unknown as {
       topic_id: string;
@@ -151,6 +194,9 @@ function mapRowsToTopics(
           ? rowWithTopicFields.updated_at
           : getCreatedAt(row),
       hasAvailableProbe: false,
+      learningSpaceRelationships: learningSpaceLayer.relationships,
+      learningSpaceViewpoints: learningSpaceLayer.viewpoints,
+      learningSpaceProjection: learningSpaceLayer.projection,
     };
   });
 }
