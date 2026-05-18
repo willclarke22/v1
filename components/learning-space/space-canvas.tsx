@@ -161,7 +161,7 @@ const LABEL_HIDE_SCREEN_RADIUS_PX = 44;
 const LABEL_MAX_WIDTH_OVERVIEW = 172;
 const LABEL_MAX_WIDTH_PROMINENT = 220;
 const SEMANTIC_RELATIONSHIP_ARC_MAX_COUNT = 3;
-const SEMANTIC_RELATIONSHIP_ARC_SEGMENTS = 36;
+const SEMANTIC_RELATIONSHIP_ARC_SEGMENTS = 72;
 const SEMANTIC_RELATIONSHIP_ARC_MIN_OPACITY = 0.1;
 const SEMANTIC_RELATIONSHIP_ARC_BASE_OPACITY = 0.18;
 const SEMANTIC_RELATIONSHIP_ARC_FOCUSED_OPACITY_BOOST = 0.12;
@@ -179,26 +179,52 @@ const LABEL_OCCLUSION_SCREEN_PADDING_PX = 18;
 const LABEL_OCCLUSION_SCREEN_FADE_BAND_PX = 34;
 
 /**
- * Pass 5B: viewpoint group halo / contour prototype.
+ * Pass 5B revised: viewpoint relationship scanner.
  *
- * This is intentionally screen-space. It does not claim the topics are at the
- * same 3D depth; it says the current camera viewpoint makes a relationship
- * group visually legible. For now it uses the active topic's semantic
- * relationships. Later the same visual shell can be driven by
- * shared_confusion, prerequisite, strategy, or diagnostic-region relationships.
+ * Default state keeps the stable semantic neighborhood lines. While the user
+ * clicks and rotates, those default lines are replaced by scanner lines chosen
+ * from the current camera/view corridor. On release, the last scanner result
+ * stays briefly before the stable semantic lines return.
  */
-const VIEWPOINT_GROUP_HALO_MIN_TOPIC_COUNT = 3;
-const VIEWPOINT_GROUP_HALO_MAX_TOPIC_COUNT = 4;
-const VIEWPOINT_GROUP_HALO_PADDING_PX = 58;
-const VIEWPOINT_GROUP_HALO_MIN_RADIUS_PX = 62;
-const VIEWPOINT_GROUP_HALO_MAX_SCREEN_FRACTION = 0.68;
-const VIEWPOINT_GROUP_HALO_BASE_OPACITY = 0.18;
-const VIEWPOINT_GROUP_HALO_FOCUSED_OPACITY = 0.24;
-const VIEWPOINT_GROUP_HALO_FADE_IN_ALPHA = 0.055;
-const VIEWPOINT_GROUP_HALO_FADE_OUT_ALPHA = 0.14;
-const VIEWPOINT_GROUP_HALO_DASH = "7 12";
+const VIEWPOINT_SCANNER_RELATIONSHIP_MAX_COUNT = 3;
+const VIEWPOINT_SCANNER_SETTLE_MS = 3000;
+const VIEWPOINT_SCANNER_CORRIDOR_RADIUS_PX = 280;
+const VIEWPOINT_SCANNER_CORE_RADIUS_PX = 82;
+const VIEWPOINT_SCANNER_MAX_SCREEN_FRACTION = 0.74;
+const VIEWPOINT_SCANNER_FAR_CORRIDOR_MIN_SCORE = 0.11;
+const VIEWPOINT_SCANNER_MIN_SCORE = 0.18;
+const VIEWPOINT_SCANNER_ACTIVE_TOPIC_BIAS = 0.2;
+const RELATIONSHIP_ARC_DEFAULT_TUBE_RADIUS_MIN = 0.014;
+const RELATIONSHIP_ARC_DEFAULT_TUBE_RADIUS_MAX = 0.058;
+const RELATIONSHIP_ARC_SCANNER_TUBE_RADIUS_MIN = 0.038;
+const RELATIONSHIP_ARC_SCANNER_TUBE_RADIUS_MAX = 0.135;
+const RELATIONSHIP_ARC_SETTLED_SCAN_TUBE_RADIUS_MIN = 0.034;
+const RELATIONSHIP_ARC_SETTLED_SCAN_TUBE_RADIUS_MAX = 0.112;
+const RELATIONSHIP_ARC_TUBE_RADIAL_SEGMENTS = 8;
+const RELATIONSHIP_ARC_TUBE_SEGMENTS = 48;
 
+/**
+ * Relationship-line occlusion rule.
+ *
+ * Relationship curves are built center-to-center, but topic bodies should
+ * visually sit above them. We use the actual rendered topic sphere as the
+ * stencil writer, then render relationship tubes with a stencil test so the
+ * tubes cannot draw across any visible topic body.
+ *
+ * This removes the old screen-space black-circle mask and the separate
+ * depth-only occluder mesh. The topic sphere itself owns the mask.
+ */
+const RELATIONSHIP_ARC_ENDPOINT_COLOR_BLEND_FRACTION = 0.18;
+const VIEWPOINT_SCANNER_BLUE = "#7BAFD4";
+const VIEWPOINT_SCANNER_SETTLED_BLUE = "#B7D9EF";
+const RELATIONSHIP_DEFAULT_ENDPOINT_ACTIVE_COLOR = "#ead7ff";
+const RELATIONSHIP_DEFAULT_ENDPOINT_BACKGROUND_COLOR = "#d4d4d8";
+const TOPIC_SPHERE_RENDER_ORDER = 10;
+const RELATIONSHIP_ARC_RENDER_ORDER = 20;
+const TOPIC_STENCIL_REF = 1;
 
+type RelationshipDisplayMode = "default_semantic" | "scanning" | "settled_scan";
+type RelationshipArcVariant = "default" | "scanner" | "settled_scan";
 
 function getTopicById(
   topics: LearningSpaceTopic[],
@@ -422,8 +448,10 @@ function getRelationshipOtherTopicId(
   relationship: LearningSpaceRelationship,
   topicId: string,
 ) {
-  if (relationship.source_topic_id === topicId) return relationship.target_topic_id;
-  if (relationship.target_topic_id === topicId) return relationship.source_topic_id;
+  if (relationship.source_topic_id === topicId)
+    return relationship.target_topic_id;
+  if (relationship.target_topic_id === topicId)
+    return relationship.source_topic_id;
   return null;
 }
 
@@ -460,6 +488,146 @@ function getRelationshipSortScore(relationship: LearningSpaceRelationship) {
 
 function clampOpacity(value: number) {
   return Math.max(0, Math.min(1, value));
+}
+
+function getRelationshipLineStrength(relationship: LearningSpaceRelationship) {
+  if (
+    typeof relationship.strength === "number" &&
+    Number.isFinite(relationship.strength)
+  ) {
+    return THREE.MathUtils.clamp(relationship.strength, 0, 1);
+  }
+
+  if (
+    typeof relationship.basis?.similarity === "number" &&
+    Number.isFinite(relationship.basis.similarity)
+  ) {
+    return THREE.MathUtils.clamp(relationship.basis.similarity, 0, 1);
+  }
+
+  return 0.4;
+}
+
+function getRelationshipTubeRadius(args: {
+  variant: RelationshipArcVariant;
+  strength: number;
+}) {
+  const strength = THREE.MathUtils.clamp(args.strength, 0, 1);
+
+  /**
+   * Relationship values tend to live in a fairly narrow middle range right now,
+   * so a stronger shaping curve makes thickness differences readable without
+   * making weak relationships disappear.
+   */
+  const shapedStrength = Math.pow(strength, 0.52);
+
+  if (args.variant === "scanner") {
+    return THREE.MathUtils.lerp(
+      RELATIONSHIP_ARC_SCANNER_TUBE_RADIUS_MIN,
+      RELATIONSHIP_ARC_SCANNER_TUBE_RADIUS_MAX,
+      shapedStrength,
+    );
+  }
+
+  if (args.variant === "settled_scan") {
+    return THREE.MathUtils.lerp(
+      RELATIONSHIP_ARC_SETTLED_SCAN_TUBE_RADIUS_MIN,
+      RELATIONSHIP_ARC_SETTLED_SCAN_TUBE_RADIUS_MAX,
+      shapedStrength,
+    );
+  }
+
+  return THREE.MathUtils.lerp(
+    RELATIONSHIP_ARC_DEFAULT_TUBE_RADIUS_MIN,
+    RELATIONSHIP_ARC_DEFAULT_TUBE_RADIUS_MAX,
+    shapedStrength,
+  );
+}
+
+function getRelationshipBaseColor(variant: RelationshipArcVariant) {
+  if (variant === "scanner") return VIEWPOINT_SCANNER_BLUE;
+  if (variant === "settled_scan") return VIEWPOINT_SCANNER_SETTLED_BLUE;
+  return "#f8fafc";
+}
+
+function getRelationshipEndpointColor(args: {
+  topic: LearningSpaceTopic;
+  activeTopicId: string;
+  isAnyTopicFocused: boolean;
+}) {
+  const isActiveTopic = args.topic.topic_id === args.activeTopicId;
+
+  if (isActiveTopic) {
+    return RELATIONSHIP_DEFAULT_ENDPOINT_ACTIVE_COLOR;
+  }
+
+  if (args.isAnyTopicFocused) {
+    return "#a1a1aa";
+  }
+
+  return RELATIONSHIP_DEFAULT_ENDPOINT_BACKGROUND_COLOR;
+}
+
+function applyRelationshipArcVertexColors(args: {
+  geometry: THREE.BufferGeometry;
+  startColor: string;
+  middleColor: string;
+  endColor: string;
+}) {
+  const startColor = new THREE.Color(args.startColor);
+  const middleColor = new THREE.Color(args.middleColor);
+  const endColor = new THREE.Color(args.endColor);
+  const colorValues: number[] = [];
+  const rowLength = RELATIONSHIP_ARC_TUBE_RADIAL_SEGMENTS + 1;
+  const positionAttribute = args.geometry.getAttribute("position");
+  const vertexCount = positionAttribute.count;
+
+  for (let index = 0; index < vertexCount; index += 1) {
+    const segmentIndex = Math.floor(index / rowLength);
+    const u = THREE.MathUtils.clamp(
+      segmentIndex / RELATIONSHIP_ARC_TUBE_SEGMENTS,
+      0,
+      1,
+    );
+    let color = middleColor.clone();
+
+    if (u < RELATIONSHIP_ARC_ENDPOINT_COLOR_BLEND_FRACTION) {
+      color = startColor
+        .clone()
+        .lerp(middleColor, u / RELATIONSHIP_ARC_ENDPOINT_COLOR_BLEND_FRACTION);
+    } else if (u > 1 - RELATIONSHIP_ARC_ENDPOINT_COLOR_BLEND_FRACTION) {
+      color = middleColor
+        .clone()
+        .lerp(
+          endColor,
+          (u - (1 - RELATIONSHIP_ARC_ENDPOINT_COLOR_BLEND_FRACTION)) /
+            RELATIONSHIP_ARC_ENDPOINT_COLOR_BLEND_FRACTION,
+        );
+    }
+
+    colorValues.push(color.r, color.g, color.b);
+  }
+
+  args.geometry.setAttribute(
+    "color",
+    new THREE.Float32BufferAttribute(colorValues, 3),
+  );
+}
+
+function disposeRelationshipGroupChildren(group: THREE.Group) {
+  for (const child of [...group.children]) {
+    if (child instanceof THREE.Mesh) {
+      child.geometry.dispose();
+
+      if (Array.isArray(child.material)) {
+        child.material.forEach((material) => material.dispose());
+      } else {
+        child.material.dispose();
+      }
+    }
+
+    group.remove(child);
+  }
 }
 
 function buildArcPoints(args: {
@@ -658,14 +826,17 @@ function getLabelOcclusionStrength(args: {
 
       const screenDx = labelScreenPoint.x - otherProjected.x;
       const screenDy = labelScreenPoint.y - otherProjected.y;
-      const screenDistance = Math.sqrt(screenDx * screenDx + screenDy * screenDy);
+      const screenDistance = Math.sqrt(
+        screenDx * screenDx + screenDy * screenDy,
+      );
 
       if (screenDistance <= otherScreenRadius) {
         return 1;
       }
 
       const screenOcclusion = THREE.MathUtils.clamp(
-        (otherScreenRadius + LABEL_OCCLUSION_SCREEN_FADE_BAND_PX -
+        (otherScreenRadius +
+          LABEL_OCCLUSION_SCREEN_FADE_BAND_PX -
           screenDistance) /
           LABEL_OCCLUSION_SCREEN_FADE_BAND_PX,
         0,
@@ -711,7 +882,6 @@ function getLabelOcclusionStrength(args: {
 
   return strongestOcclusion;
 }
-
 
 function TopicLabel({
   topic,
@@ -802,8 +972,7 @@ function TopicLabel({
       : 0;
 
     const occlusionOpacityMultiplier =
-      1 -
-      occlusionStrength * (1 - LABEL_OCCLUSION_MAX_OPACITY_MULTIPLIER);
+      1 - occlusionStrength * (1 - LABEL_OCCLUSION_MAX_OPACITY_MULTIPLIER);
 
     const targetOpacity = shouldShow
       ? (isSelected ? 0.96 : 0.78) * occlusionOpacityMultiplier
@@ -940,6 +1109,7 @@ function SemanticRelationshipArc({
   isAnyTopicFocused,
   hideBecauseUserIsControlling,
   isEnteringProbe,
+  variant = "default",
 }: {
   relationship: LearningSpaceRelationship;
   activeTopicId: string;
@@ -948,34 +1118,35 @@ function SemanticRelationshipArc({
   isAnyTopicFocused: boolean;
   hideBecauseUserIsControlling: boolean;
   isEnteringProbe: boolean;
+  variant?: RelationshipArcVariant;
 }) {
   const { camera, size } = useThree();
-  const geometryRef = useRef<THREE.BufferGeometry | null>(null);
-  const materialRef = useRef<THREE.LineBasicMaterial | null>(null);
+  const groupRef = useRef<THREE.Group | null>(null);
   const opacityRef = useRef(0);
 
   const sourceTopic = topicsById.get(relationship.source_topic_id) ?? null;
   const targetTopic = topicsById.get(relationship.target_topic_id) ?? null;
   const otherTopicId = getRelationshipOtherTopicId(relationship, activeTopicId);
 
-  const strength =
-    typeof relationship.strength === "number" &&
-    Number.isFinite(relationship.strength)
-      ? relationship.strength
-      : 0.4;
+  const strength = getRelationshipLineStrength(relationship);
   const maxOpacity =
     typeof relationship.display_policy?.max_opacity === "number" &&
     Number.isFinite(relationship.display_policy.max_opacity)
       ? relationship.display_policy.max_opacity
       : 0.45;
 
-  useFrame(() => {
-    const geometry = geometryRef.current;
-    const material = materialRef.current;
+  const isScannerVariant = variant === "scanner" || variant === "settled_scan";
+  const arcColor = getRelationshipBaseColor(variant);
+  const tubeRadius = getRelationshipTubeRadius({ variant, strength });
 
-    if (!geometry || !material || !sourceTopic || !targetTopic || !otherTopicId) {
+  useFrame(() => {
+    const group = groupRef.current;
+
+    if (!group || !sourceTopic || !targetTopic || !otherTopicId) {
       return;
     }
+
+    group.renderOrder = RELATIONSHIP_ARC_RENDER_ORDER;
 
     const sourcePosition = getAnimatedTopicPosition(
       sourceTopic,
@@ -986,13 +1157,11 @@ function SemanticRelationshipArc({
       animatedTopicPositionsRef,
     );
 
-    geometry.setFromPoints(
-      buildArcPoints({
-        start: sourcePosition,
-        end: targetPosition,
-        strength,
-      }),
-    );
+    const arcPoints = buildArcPoints({
+      start: sourcePosition,
+      end: targetPosition,
+      strength,
+    });
 
     const cameraLegibility = getCameraAngleRelationshipLegibility({
       camera,
@@ -1001,6 +1170,14 @@ function SemanticRelationshipArc({
       targetPosition,
     });
 
+    const scannerOpacityBoost =
+      variant === "scanner" ? 0.18 : variant === "settled_scan" ? 0.1 : 0;
+    const scannerLegibilityFloor = isScannerVariant ? 0.42 : 0;
+    const effectiveCameraLegibility = Math.max(
+      scannerLegibilityFloor,
+      cameraLegibility,
+    );
+
     const targetOpacity =
       hideBecauseUserIsControlling || isEnteringProbe
         ? 0
@@ -1008,11 +1185,12 @@ function SemanticRelationshipArc({
             Math.min(
               maxOpacity,
               SEMANTIC_RELATIONSHIP_ARC_BASE_OPACITY +
+                scannerOpacityBoost +
                 strength * 0.32 +
                 (isAnyTopicFocused
                   ? SEMANTIC_RELATIONSHIP_ARC_FOCUSED_OPACITY_BOOST
                   : 0),
-            ) * cameraLegibility,
+            ) * effectiveCameraLegibility,
           );
 
     const alpha = targetOpacity > opacityRef.current ? 0.085 : 0.16;
@@ -1022,244 +1200,264 @@ function SemanticRelationshipArc({
       opacityRef.current = targetOpacity === 0 ? 0 : opacityRef.current;
     }
 
-    material.opacity = opacityRef.current;
-    material.visible = opacityRef.current > 0.002;
+    disposeRelationshipGroupChildren(group);
+
+    if (opacityRef.current <= 0.002 || arcPoints.length < 2) {
+      return;
+    }
+
+    const geometry = new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3(arcPoints),
+      RELATIONSHIP_ARC_TUBE_SEGMENTS,
+      tubeRadius,
+      RELATIONSHIP_ARC_TUBE_RADIAL_SEGMENTS,
+      false,
+    );
+    applyRelationshipArcVertexColors({
+      geometry,
+      startColor: getRelationshipEndpointColor({
+        topic: sourceTopic,
+        activeTopicId,
+        isAnyTopicFocused,
+      }),
+      middleColor: arcColor,
+      endColor: getRelationshipEndpointColor({
+        topic: targetTopic,
+        activeTopicId,
+        isAnyTopicFocused,
+      }),
+    });
+
+    const material = new THREE.MeshBasicMaterial({
+      color: "#ffffff",
+      vertexColors: true,
+      transparent: true,
+      opacity: opacityRef.current,
+      depthTest: true,
+      depthWrite: false,
+      stencilWrite: true,
+      stencilRef: TOPIC_STENCIL_REF,
+      stencilFunc: THREE.NotEqualStencilFunc,
+      stencilFail: THREE.KeepStencilOp,
+      stencilZFail: THREE.KeepStencilOp,
+      stencilZPass: THREE.KeepStencilOp,
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.renderOrder = RELATIONSHIP_ARC_RENDER_ORDER;
+    group.add(mesh);
   });
+
+  useEffect(() => {
+    return () => {
+      if (groupRef.current) {
+        disposeRelationshipGroupChildren(groupRef.current);
+      }
+    };
+  }, []);
 
   if (!sourceTopic || !targetTopic || !otherTopicId) {
     return null;
   }
 
-  return (
-    <line>
-      <bufferGeometry ref={geometryRef} />
-      <lineBasicMaterial
-        ref={materialRef}
-        color="#f8fafc"
-        transparent
-        opacity={0}
-        depthWrite={false}
-        depthTest={false}
-      />
-    </line>
+  return <group ref={groupRef} renderOrder={RELATIONSHIP_ARC_RENDER_ORDER} />;
+}
+
+function areStringArraysEqual(a: string[], b: string[]) {
+  if (a.length !== b.length) return false;
+
+  for (let index = 0; index < a.length; index += 1) {
+    if (a[index] !== b[index]) return false;
+  }
+
+  return true;
+}
+
+function getRelationshipByIdMap(relationships: LearningSpaceRelationship[]) {
+  return new Map(
+    relationships.map((relationship) => [
+      relationship.relationship_id,
+      relationship,
+    ]),
   );
 }
 
-
-type ViewpointGroupHaloPoint = {
-  topicId: string;
-  x: number;
-  y: number;
-  z: number;
-};
-
-function getUniqueActiveRelationshipTopicIds(args: {
-  activeTopicId: string | null;
-  relationships: LearningSpaceRelationship[];
+function getRelationshipListFromIds(args: {
+  relationshipIds: string[];
+  relationshipsById: Map<string, LearningSpaceRelationship>;
 }) {
-  if (!args.activeTopicId) return [];
-
-  const topicIds: string[] = [args.activeTopicId];
-  const seen = new Set(topicIds);
-
-  for (const relationship of args.relationships) {
-    const otherTopicId = getRelationshipOtherTopicId(
-      relationship,
-      args.activeTopicId,
+  return args.relationshipIds
+    .map((relationshipId) => args.relationshipsById.get(relationshipId) ?? null)
+    .filter((relationship): relationship is LearningSpaceRelationship =>
+      Boolean(relationship),
     );
-
-    if (!otherTopicId || seen.has(otherTopicId)) continue;
-
-    seen.add(otherTopicId);
-    topicIds.push(otherTopicId);
-
-    if (topicIds.length >= VIEWPOINT_GROUP_HALO_MAX_TOPIC_COUNT) break;
-  }
-
-  return topicIds;
 }
 
-function ActiveRelationshipGroupHalo({
+function getScannerRelationshipScore(args: {
+  relationship: LearningSpaceRelationship;
+  activeTopicId: string;
+  topicsById: Map<string, LearningSpaceTopic>;
+  camera: THREE.Camera;
+  size: { width: number; height: number };
+  animatedTopicPositionsRef: AnimatedTopicPositionsRef;
+}) {
+  const activeTopic = args.topicsById.get(args.activeTopicId);
+  const otherTopicId = getRelationshipOtherTopicId(
+    args.relationship,
+    args.activeTopicId,
+  );
+
+  if (!activeTopic || !otherTopicId) return null;
+
+  const otherTopic = args.topicsById.get(otherTopicId);
+  if (!otherTopic) return null;
+
+  const activePosition = getAnimatedTopicPosition(
+    activeTopic,
+    args.animatedTopicPositionsRef,
+  );
+  const otherPosition = getAnimatedTopicPosition(
+    otherTopic,
+    args.animatedTopicPositionsRef,
+  );
+  const activeProjected = getProjectedScreenPoint({
+    point: activePosition,
+    camera: args.camera,
+    size: args.size,
+  });
+  const otherProjected = getProjectedScreenPoint({
+    point: otherPosition,
+    camera: args.camera,
+    size: args.size,
+  });
+
+  if (
+    activeProjected.z <= -1 ||
+    activeProjected.z >= 1 ||
+    otherProjected.z <= -1 ||
+    otherProjected.z >= 1
+  ) {
+    return null;
+  }
+
+  const screenDx = otherProjected.x - activeProjected.x;
+  const screenDy = otherProjected.y - activeProjected.y;
+  const screenDistance = Math.sqrt(screenDx * screenDx + screenDy * screenDy);
+
+  const screenMax = Math.max(args.size.width, args.size.height);
+  const farCorridorRadius = Math.max(
+    VIEWPOINT_SCANNER_CORRIDOR_RADIUS_PX,
+    screenMax * VIEWPOINT_SCANNER_MAX_SCREEN_FRACTION,
+  );
+
+  if (screenDistance > farCorridorRadius) {
+    return null;
+  }
+
+  const corridorScore = THREE.MathUtils.clamp(
+    (farCorridorRadius - screenDistance) /
+      Math.max(1, farCorridorRadius - VIEWPOINT_SCANNER_CORE_RADIUS_PX),
+    0,
+    1,
+  );
+  const coreBonus =
+    screenDistance <= VIEWPOINT_SCANNER_CORE_RADIUS_PX
+      ? VIEWPOINT_SCANNER_ACTIVE_TOPIC_BIAS
+      : 0;
+  const cameraLegibility = getCameraAngleRelationshipLegibility({
+    camera: args.camera,
+    size: args.size,
+    sourcePosition: activePosition,
+    targetPosition: otherPosition,
+  });
+  const relationshipScore = getRelationshipSortScore(args.relationship);
+  const normalizedRelationshipScore = THREE.MathUtils.clamp(
+    relationshipScore / 8,
+    0,
+    1,
+  );
+  const score =
+    (normalizedRelationshipScore * 0.55 + corridorScore * 0.45 + coreBonus) *
+    Math.max(0.22, cameraLegibility);
+
+  const minimumScore =
+    screenDistance > VIEWPOINT_SCANNER_CORRIDOR_RADIUS_PX
+      ? VIEWPOINT_SCANNER_FAR_CORRIDOR_MIN_SCORE
+      : VIEWPOINT_SCANNER_MIN_SCORE;
+
+  if (score < minimumScore) return null;
+
+  return {
+    relationship: args.relationship,
+    score,
+  };
+}
+
+function ViewpointRelationshipScanner({
   activeTopicId,
   relationships,
   topicsById,
   animatedTopicPositionsRef,
-  hideBecauseUserIsControlling,
+  isScanning,
   isEnteringProbe,
-  isAnyTopicFocused,
+  onScannerRelationshipIdsChange,
 }: {
   activeTopicId: string | null;
   relationships: LearningSpaceRelationship[];
   topicsById: Map<string, LearningSpaceTopic>;
   animatedTopicPositionsRef: AnimatedTopicPositionsRef;
-  hideBecauseUserIsControlling: boolean;
+  isScanning: boolean;
   isEnteringProbe: boolean;
-  isAnyTopicFocused: boolean;
+  onScannerRelationshipIdsChange: (relationshipIds: string[]) => void;
 }) {
   const { camera, size } = useThree();
-  const haloRef = useRef<SVGEllipseElement | null>(null);
-  const glowRef = useRef<SVGEllipseElement | null>(null);
-  const opacityRef = useRef(0);
+  const lastRelationshipIdsKeyRef = useRef("");
 
   useFrame(() => {
-    const halo = haloRef.current;
-    const glow = glowRef.current;
-
-    if (!halo || !glow) return;
-
-    const topicIds = getUniqueActiveRelationshipTopicIds({
-      activeTopicId,
-      relationships,
-    });
-
-    const projectedPoints: ViewpointGroupHaloPoint[] = [];
-
-    for (const topicId of topicIds) {
-      const topic = topicsById.get(topicId);
-      if (!topic) continue;
-
-      const worldPosition = getAnimatedTopicPosition(
-        topic,
-        animatedTopicPositionsRef,
-      );
-      const projected = getProjectedScreenPoint({
-        point: worldPosition,
-        camera,
-        size,
-      });
-
-      if (projected.z <= -1 || projected.z >= 1) continue;
-
-      projectedPoints.push({
-        topicId,
-        x: projected.x,
-        y: projected.y,
-        z: projected.z,
-      });
-    }
-
-    let targetOpacity = 0;
-    let cx = 0;
-    let cy = 0;
-    let rx = 0;
-    let ry = 0;
-
-    if (
-      !hideBecauseUserIsControlling &&
-      !isEnteringProbe &&
-      projectedPoints.length >= VIEWPOINT_GROUP_HALO_MIN_TOPIC_COUNT
-    ) {
-      const xs = projectedPoints.map((point) => point.x);
-      const ys = projectedPoints.map((point) => point.y);
-      const minX = Math.min(...xs);
-      const maxX = Math.max(...xs);
-      const minY = Math.min(...ys);
-      const maxY = Math.max(...ys);
-      const width = maxX - minX;
-      const height = maxY - minY;
-      const maxAllowed = Math.max(size.width, size.height) *
-        VIEWPOINT_GROUP_HALO_MAX_SCREEN_FRACTION;
-
-      cx = (minX + maxX) * 0.5;
-      cy = (minY + maxY) * 0.5;
-      rx = Math.max(
-        VIEWPOINT_GROUP_HALO_MIN_RADIUS_PX,
-        width * 0.5 + VIEWPOINT_GROUP_HALO_PADDING_PX,
-      );
-      ry = Math.max(
-        VIEWPOINT_GROUP_HALO_MIN_RADIUS_PX,
-        height * 0.5 + VIEWPOINT_GROUP_HALO_PADDING_PX,
-      );
-
-      const isReadableSize =
-        rx * 2 <= maxAllowed &&
-        ry * 2 <= maxAllowed &&
-        rx > VIEWPOINT_GROUP_HALO_MIN_RADIUS_PX * 0.85 &&
-        ry > VIEWPOINT_GROUP_HALO_MIN_RADIUS_PX * 0.85;
-
-      if (isReadableSize) {
-        const relationshipStrength = relationships.reduce((total, relationship) => {
-          const strength =
-            typeof relationship.strength === "number" &&
-            Number.isFinite(relationship.strength)
-              ? relationship.strength
-              : 0.4;
-
-          return total + strength;
-        }, 0) / Math.max(1, relationships.length);
-
-        targetOpacity = clampOpacity(
-          (isAnyTopicFocused
-            ? VIEWPOINT_GROUP_HALO_FOCUSED_OPACITY
-            : VIEWPOINT_GROUP_HALO_BASE_OPACITY) *
-            (0.72 + Math.min(1, relationshipStrength) * 0.28),
-        );
+    if (!isScanning || isEnteringProbe || !activeTopicId) {
+      if (lastRelationshipIdsKeyRef.current !== "") {
+        lastRelationshipIdsKeyRef.current = "";
+        onScannerRelationshipIdsChange([]);
       }
+      return;
     }
 
-    const alpha =
-      targetOpacity > opacityRef.current
-        ? VIEWPOINT_GROUP_HALO_FADE_IN_ALPHA
-        : VIEWPOINT_GROUP_HALO_FADE_OUT_ALPHA;
+    const nextRelationshipIds = relationships
+      .filter((relationship) => relationship.relationship_type === "semantic")
+      .filter((relationship) =>
+        relationshipTouchesTopic(relationship, activeTopicId),
+      )
+      .map((relationship) =>
+        getScannerRelationshipScore({
+          relationship,
+          activeTopicId,
+          topicsById,
+          camera,
+          size,
+          animatedTopicPositionsRef,
+        }),
+      )
+      .filter(
+        (
+          scored,
+        ): scored is {
+          relationship: LearningSpaceRelationship;
+          score: number;
+        } => Boolean(scored),
+      )
+      .sort((a, b) => b.score - a.score)
+      .slice(0, VIEWPOINT_SCANNER_RELATIONSHIP_MAX_COUNT)
+      .map((scored) => scored.relationship.relationship_id);
 
-    opacityRef.current += (targetOpacity - opacityRef.current) * alpha;
+    const nextKey = nextRelationshipIds.join("|");
 
-    if (Math.abs(opacityRef.current - targetOpacity) < 0.004) {
-      opacityRef.current = targetOpacity;
-    }
+    if (nextKey === lastRelationshipIdsKeyRef.current) return;
 
-    for (const ellipse of [halo, glow]) {
-      ellipse.setAttribute("cx", `${cx}`);
-      ellipse.setAttribute("cy", `${cy}`);
-      ellipse.setAttribute("rx", `${rx}`);
-      ellipse.setAttribute("ry", `${ry}`);
-      ellipse.style.opacity = `${opacityRef.current}`;
-      ellipse.style.visibility = opacityRef.current > 0.003 ? "visible" : "hidden";
-    }
+    lastRelationshipIdsKeyRef.current = nextKey;
+    onScannerRelationshipIdsChange(nextRelationshipIds);
   });
 
-  return (
-    <Html
-      fullscreen
-      style={{
-        pointerEvents: "none",
-      }}
-    >
-      <svg
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full"
-        style={{
-          overflow: "visible",
-          pointerEvents: "none",
-        }}
-      >
-        <ellipse
-          ref={glowRef}
-          cx="0"
-          cy="0"
-          rx="0"
-          ry="0"
-          fill="none"
-          stroke="rgba(255,255,255,0.16)"
-          strokeWidth="14"
-          opacity="0"
-          filter="blur(6px)"
-        />
-        <ellipse
-          ref={haloRef}
-          cx="0"
-          cy="0"
-          rx="0"
-          ry="0"
-          fill="none"
-          stroke="rgba(255,255,255,0.46)"
-          strokeWidth="1.15"
-          strokeDasharray={VIEWPOINT_GROUP_HALO_DASH}
-          opacity="0"
-        />
-      </svg>
-    </Html>
-  );
+  return null;
 }
 
 function TopicSphere({
@@ -1589,6 +1787,7 @@ function TopicSphere({
         <group ref={visualGroupRef}>
           <mesh
             ref={sphereRef}
+            renderOrder={TOPIC_SPHERE_RENDER_ORDER}
             scale={visualRadius}
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
@@ -1613,6 +1812,14 @@ function TopicSphere({
               roughness={0.42}
               opacity={isAnyTopicFocused && !isFocused ? 0.46 : 1}
               transparent
+              depthWrite
+              depthTest
+              stencilWrite
+              stencilRef={TOPIC_STENCIL_REF}
+              stencilFunc={THREE.AlwaysStencilFunc}
+              stencilFail={THREE.KeepStencilOp}
+              stencilZFail={THREE.KeepStencilOp}
+              stencilZPass={THREE.ReplaceStencilOp}
             />
           </mesh>
 
@@ -2117,6 +2324,13 @@ export default function SpaceCanvas({
   const [isUserControlling, setIsUserControlling] = useState(false);
   const [isCameraInMotion, setIsCameraInMotion] = useState(false);
   const [isSceneSettled, setIsSceneSettled] = useState(true);
+  const scannerSettleTimeoutRef = useRef<number | null>(null);
+  const scannerRelationshipIdsRef = useRef<string[]>([]);
+  const [scannerRelationshipIds, setScannerRelationshipIds] = useState<
+    string[]
+  >([]);
+  const [settledScannerRelationshipIds, setSettledScannerRelationshipIds] =
+    useState<string[]>([]);
 
   const topicIdsKey = useMemo(
     () => learningSpace.topics.map((topic) => topic.topic_id).join("|"),
@@ -2138,7 +2352,9 @@ export default function SpaceCanvas({
       .filter((relationship) => {
         if (relationship.relationship_type !== "semantic") return false;
         if (!relationship.display_policy?.show_on_focus) return false;
-        if (!relationshipTouchesTopic(relationship, activeRelationshipTopicId)) {
+        if (
+          !relationshipTouchesTopic(relationship, activeRelationshipTopicId)
+        ) {
           return false;
         }
 
@@ -2150,6 +2366,95 @@ export default function SpaceCanvas({
       .sort((a, b) => getRelationshipSortScore(b) - getRelationshipSortScore(a))
       .slice(0, SEMANTIC_RELATIONSHIP_ARC_MAX_COUNT);
   }, [activeRelationshipTopicId, learningSpace.relationships, topicsById]);
+
+  const relationshipsById = useMemo(
+    () => getRelationshipByIdMap(learningSpace.relationships ?? []),
+    [learningSpace.relationships],
+  );
+
+  const scannerRelationships = useMemo(
+    () =>
+      getRelationshipListFromIds({
+        relationshipIds: scannerRelationshipIds,
+        relationshipsById,
+      }),
+    [scannerRelationshipIds, relationshipsById],
+  );
+
+  const settledScannerRelationships = useMemo(
+    () =>
+      getRelationshipListFromIds({
+        relationshipIds: settledScannerRelationshipIds,
+        relationshipsById,
+      }),
+    [settledScannerRelationshipIds, relationshipsById],
+  );
+
+  const relationshipDisplayMode: RelationshipDisplayMode = isUserControlling
+    ? "scanning"
+    : settledScannerRelationships.length > 0
+      ? "settled_scan"
+      : "default_semantic";
+
+  const displayedRelationships =
+    relationshipDisplayMode === "scanning"
+      ? scannerRelationships
+      : relationshipDisplayMode === "settled_scan"
+        ? settledScannerRelationships
+        : visibleSemanticRelationships;
+
+  const displayedRelationshipVariant: RelationshipArcVariant =
+    relationshipDisplayMode === "scanning"
+      ? "scanner"
+      : relationshipDisplayMode === "settled_scan"
+        ? "settled_scan"
+        : "default";
+
+  function clearScannerSettleTimeout() {
+    if (scannerSettleTimeoutRef.current !== null) {
+      window.clearTimeout(scannerSettleTimeoutRef.current);
+      scannerSettleTimeoutRef.current = null;
+    }
+  }
+
+  function updateScannerRelationshipIds(nextRelationshipIds: string[]) {
+    if (
+      areStringArraysEqual(
+        scannerRelationshipIdsRef.current,
+        nextRelationshipIds,
+      )
+    ) {
+      return;
+    }
+
+    scannerRelationshipIdsRef.current = nextRelationshipIds;
+    setScannerRelationshipIds(nextRelationshipIds);
+  }
+
+  function beginRelationshipScan() {
+    clearScannerSettleTimeout();
+    setSettledScannerRelationshipIds([]);
+    setIsUserControlling(true);
+  }
+
+  function endRelationshipScan() {
+    const finalScannerRelationshipIds = scannerRelationshipIdsRef.current;
+
+    clearScannerSettleTimeout();
+
+    if (finalScannerRelationshipIds.length > 0) {
+      setSettledScannerRelationshipIds(finalScannerRelationshipIds);
+
+      scannerSettleTimeoutRef.current = window.setTimeout(() => {
+        setSettledScannerRelationshipIds([]);
+        scannerSettleTimeoutRef.current = null;
+      }, VIEWPOINT_SCANNER_SETTLE_MS);
+    } else {
+      setSettledScannerRelationshipIds([]);
+    }
+
+    setIsUserControlling(false);
+  }
 
   useEffect(() => {
     const currentIds = learningSpace.topics.map((topic) => topic.topic_id);
@@ -2214,6 +2519,7 @@ export default function SpaceCanvas({
   useEffect(() => {
     return () => {
       viewPointerDownRef.current = null;
+      clearScannerSettleTimeout();
     };
   }, []);
 
@@ -2235,11 +2541,17 @@ export default function SpaceCanvas({
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance >= VIEW_DRAG_LABEL_HIDE_THRESHOLD_PX) {
-          setIsUserControlling(true);
+          beginRelationshipScan();
         }
       }}
       onPointerUpCapture={() => {
         viewPointerDownRef.current = null;
+
+        if (isUserControlling) {
+          endRelationshipScan();
+          return;
+        }
+
         setIsUserControlling(false);
       }}
       onWheelCapture={() => {
@@ -2249,11 +2561,20 @@ export default function SpaceCanvas({
       onPointerLeave={() => {
         document.body.style.cursor = "default";
         viewPointerDownRef.current = null;
+
+        if (isUserControlling) {
+          endRelationshipScan();
+          return;
+        }
+
         setIsUserControlling(false);
       }}
     >
       <div className="absolute inset-0 z-0">
-        <Canvas camera={{ position: [0, 18, 72], fov: 50 }}>
+        <Canvas
+          camera={{ position: [0, 18, 72], fov: 50 }}
+          gl={{ stencil: true }}
+        >
           <color attach="background" args={["#000000"]} />
 
           <ambientLight intensity={1.1} />
@@ -2270,29 +2591,30 @@ export default function SpaceCanvas({
             speed={0.24}
           />
 
+          <ViewpointRelationshipScanner
+            activeTopicId={activeRelationshipTopicId}
+            relationships={learningSpace.relationships ?? []}
+            topicsById={topicsById}
+            animatedTopicPositionsRef={animatedTopicPositionsRef}
+            isScanning={isUserControlling}
+            isEnteringProbe={isEnteringProbe}
+            onScannerRelationshipIdsChange={updateScannerRelationshipIds}
+          />
+
           {activeRelationshipTopicId &&
-            visibleSemanticRelationships.map((relationship) => (
+            displayedRelationships.map((relationship) => (
               <SemanticRelationshipArc
-                key={relationship.relationship_id}
+                key={`${relationshipDisplayMode}:${relationship.relationship_id}`}
                 relationship={relationship}
                 activeTopicId={activeRelationshipTopicId}
                 topicsById={topicsById}
                 animatedTopicPositionsRef={animatedTopicPositionsRef}
                 isAnyTopicFocused={focusedTopicId !== null}
-                hideBecauseUserIsControlling={isUserControlling}
+                hideBecauseUserIsControlling={false}
                 isEnteringProbe={isEnteringProbe}
+                variant={displayedRelationshipVariant}
               />
             ))}
-
-          <ActiveRelationshipGroupHalo
-            activeTopicId={activeRelationshipTopicId}
-            relationships={visibleSemanticRelationships}
-            topicsById={topicsById}
-            animatedTopicPositionsRef={animatedTopicPositionsRef}
-            hideBecauseUserIsControlling={isUserControlling}
-            isEnteringProbe={isEnteringProbe}
-            isAnyTopicFocused={focusedTopicId !== null}
-          />
 
           {learningSpace.topics.map((topic) => {
             const topicProbe =
@@ -2353,6 +2675,12 @@ export default function SpaceCanvas({
             }}
             onEnd={() => {
               viewPointerDownRef.current = null;
+
+              if (isUserControlling) {
+                endRelationshipScan();
+                return;
+              }
+
               setIsUserControlling(false);
             }}
           />
