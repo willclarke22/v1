@@ -16,10 +16,11 @@ import type { ProbeSummary } from "@/components/probes/probe-surface";
 
 type TrackballControlsRef = ElementRef<typeof TrackballControls>;
 type SceneArrivalMode = "warp" | "focus";
+type AnimatedTopicPositionsRef = RefObject<Map<string, THREE.Vector3>>;
 
-const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 0, 46);
+const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 0, 64);
 const DEFAULT_TARGET = new THREE.Vector3(0, 0, 0);
-const ZOOMED_OUT_DISTANCE = 46;
+const ZOOMED_OUT_DISTANCE = 64;
 
 /**
  * Renderer-only expansion.
@@ -31,14 +32,15 @@ const ZOOMED_OUT_DISTANCE = 46;
  * Keep X/Z meaningfully larger than Y so the learning space remains a readable
  * semantic solar-system plane instead of becoming an arbitrary 3D cloud.
  */
-const VISUAL_SPACE_SCALE_XZ = 5.15;
+const VISUAL_SPACE_SCALE_XZ = 6.85;
 const VISUAL_SPACE_SCALE_Y = 1.42;
 
 /**
  * NASA-Eyes-style composition shaping.
  *
- * The first pass now uses a larger mostly-linear X/Z scale so pairwise semantic
- * relationships are preserved as much as possible. This radial boost is kept
+ * This pass gives the map more "system scale" while preserving relationships:
+ * most of the extra spacing comes from uniform X/Z expansion, not nonlinear
+ * distortion. This radial boost is kept
  * deliberately gentle: it helps far topics feel like they live in a larger
  * solar-system space, but it should not become the main source of semantic
  * distance. The backend semantic layout still owns topic relationships.
@@ -49,7 +51,7 @@ const RADIAL_EXPANSION_START = 1.35;
 const RADIAL_EXPANSION_LINEAR_GAIN = 0.045;
 const RADIAL_EXPANSION_CURVE_GAIN = 0.018;
 const RADIAL_EXPANSION_CURVE_POWER = 1.18;
-const RADIAL_EXPANSION_MAX_BOOST = 0.48;
+const RADIAL_EXPANSION_MAX_BOOST = 0.42;
 
 /**
  * Renderer-only body scale.
@@ -68,15 +70,34 @@ const FOCUSED_SELECTED_BACKGROUND_TOPIC_BODY_SCALE = 0.68;
 const SETTLE_DELAY_MS = 220;
 
 /**
+ * Global labels should hide only for real manual view manipulation.
+ * A normal click/select, worker refresh, semantic-layout commit, or
+ * programmatic camera ride should not blank every topic label.
+ */
+const VIEW_DRAG_LABEL_HIDE_THRESHOLD_PX = 8;
+
+/**
+ * Topic arrival should feel like a gentle materialization, not a flash.
+ * These values only control the creation animation for genuinely new topic ids.
+ */
+const TOPIC_APPEARANCE_LERP_ALPHA = 0.075;
+const TOPIC_APPEARANCE_START_SCALE = 0.58;
+
+/**
  * Visual-only movement policy.
  *
  * Canonical topic positions still come from learningSpace.topics[].position.
  * These values only control how the renderer eases toward that already-committed
- * renderer-safe position.
+ * renderer-safe position. Keep these intentionally calm so semantic-layout
+ * updates feel like graceful migration rather than abrupt jumps.
+ *
+ * Keep the overview/focused/background alphas matched for now so a staged
+ * layout release feels like one synchronized migration event instead of the
+ * highlighted topic arriving before or after the rest of the map.
  */
-const OVERVIEW_TOPIC_POSITION_LERP_ALPHA = 0.065;
-const FOCUSED_TOPIC_POSITION_LERP_ALPHA = 0.048;
-const BACKGROUND_TOPIC_POSITION_LERP_ALPHA = 0.026;
+const OVERVIEW_TOPIC_POSITION_LERP_ALPHA = 0.009;
+const FOCUSED_TOPIC_POSITION_LERP_ALPHA = 0.009;
+const BACKGROUND_TOPIC_POSITION_LERP_ALPHA = 0.009;
 const PROBE_TOPIC_POSITION_LERP_ALPHA = 0;
 
 /**
@@ -84,15 +105,16 @@ const PROBE_TOPIC_POSITION_LERP_ALPHA = 0;
  *
  * The trail should feel like a subtle memory of movement, not a busy sci-fi
  * effect. It appears only after a meaningful committed position change and
- * fades away automatically.
+ * fades away automatically. White keeps it readable over the starfield without
+ * adding another semantic color language.
  */
-const MOVEMENT_TRAIL_MIN_DISTANCE = 0.18;
-const MOVEMENT_TRAIL_FADE_RATE = 0.958;
-const MOVEMENT_TRAIL_TARGET_REACHED_FADE_RATE = 0.92;
-const MOVEMENT_TRAIL_MIN_OPACITY = 0.01;
-const MOVEMENT_TRAIL_OVERVIEW_OPACITY = 0.22;
-const MOVEMENT_TRAIL_FOCUSED_OPACITY = 0.18;
-const MOVEMENT_TRAIL_BACKGROUND_OPACITY = 0.08;
+const MOVEMENT_TRAIL_MIN_DISTANCE = 0.14;
+const MOVEMENT_TRAIL_FADE_RATE = 0.985;
+const MOVEMENT_TRAIL_TARGET_REACHED_FADE_RATE = 0.982;
+const MOVEMENT_TRAIL_MIN_OPACITY = 0.012;
+const MOVEMENT_TRAIL_OVERVIEW_OPACITY = 0.72;
+const MOVEMENT_TRAIL_FOCUSED_OPACITY = 0.62;
+const MOVEMENT_TRAIL_BACKGROUND_OPACITY = 0.42;
 
 /**
  * Camera tether policy.
@@ -125,10 +147,11 @@ const LOCAL_BOB_SPEED_VARIATION = 0.28;
 /**
  * Map-label policy.
  *
- * Labels are useful for overview navigation, but they become redundant once a
- * topic is close enough to read through the focused/right-panel context.
- * Hide labels in focused scenes and whenever a topic body becomes large enough
- * on screen from manual mouse-wheel zoom.
+ * Labels are useful for navigation, but the current topic's label becomes
+ * redundant in close-up because the right panel owns that context.
+ * Do not hide all labels just because a topic is focused or because layout
+ * migration is staged; other labels should remain visible so the learner can
+ * stay oriented.
  */
 const LABEL_HIDE_SCREEN_RADIUS_PX = 44;
 const LABEL_MAX_WIDTH_OVERVIEW = 172;
@@ -213,7 +236,10 @@ function getTopicVisualRadius(args: {
     );
   }
 
-  return baseRadius * (args.isSelected ? SELECTED_TOPIC_BODY_SCALE : OVERVIEW_TOPIC_BODY_SCALE);
+  return (
+    baseRadius *
+    (args.isSelected ? SELECTED_TOPIC_BODY_SCALE : OVERVIEW_TOPIC_BODY_SCALE)
+  );
 }
 
 function getTopicCameraRadius(topic: LearningSpaceTopic) {
@@ -272,6 +298,16 @@ function toRenderPosition(position: LearningSpaceTopic["position"]) {
 
 function getTopicPositionVector(topic: LearningSpaceTopic) {
   return toRenderPosition(topic.position);
+}
+
+function getAnimatedTopicPosition(
+  topic: LearningSpaceTopic,
+  animatedTopicPositionsRef?: AnimatedTopicPositionsRef,
+) {
+  return (
+    animatedTopicPositionsRef?.current.get(topic.topic_id)?.clone() ??
+    getTopicPositionVector(topic)
+  );
 }
 
 function getTopicPositionKey(topic: LearningSpaceTopic) {
@@ -344,7 +380,7 @@ function TopicLabel({
   isSelected,
   isFocused,
   isAppearing,
-  isSceneSettled,
+  hideLabelsForViewDrag,
   isAnyTopicFocused,
   isEnteringProbe,
   worldPositionRef,
@@ -354,7 +390,7 @@ function TopicLabel({
   isSelected: boolean;
   isFocused: boolean;
   isAppearing: boolean;
-  isSceneSettled: boolean;
+  hideLabelsForViewDrag: boolean;
   isAnyTopicFocused: boolean;
   isEnteringProbe: boolean;
   worldPositionRef: RefObject<THREE.Vector3>;
@@ -362,6 +398,7 @@ function TopicLabel({
 }) {
   const { camera, size } = useThree();
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const labelOpacityRef = useRef(0.78);
 
   useFrame(() => {
     const el = containerRef.current;
@@ -375,41 +412,55 @@ function TopicLabel({
     });
 
     /**
-     * Mode A label policy, refined:
-     * - show all labels in overview when the scene is settled
-     * - hide labels during camera/user motion
-     * - hide labels in focused/double-click scenes because the right panel owns
-     *   the focused topic title
-     * - hide labels when manual zoom makes a topic large enough on screen
+     * Mode A label policy, refined again:
+     * - show labels for navigation during normal layout migration
+     * - hide labels only during actual user view dragging and probe entry
+     * - hide only the current topic label when that specific sphere is close
+     *   enough to be readable through focus/right-panel context
+     * - if the selected/focused topic becomes large from manual wheel zoom,
+     *   hide that topic's label; other topic labels remain visible
+     *
+     * Important: focusedTopicId should not become a global "hide all labels"
+     * switch. Otherwise labels disappear after a double-click focus even if the
+     * user manually zooms back out.
      */
     const isCloseEnoughToReadWithoutMapLabel =
       screenRadiusPx >= LABEL_HIDE_SCREEN_RADIUS_PX;
 
+    const isCurrentTopic = isFocused || isSelected;
+    const hideBecauseCurrentTopicIsClose =
+      isCurrentTopic && isCloseEnoughToReadWithoutMapLabel;
+
     const shouldShow =
-      isSceneSettled &&
+      !hideLabelsForViewDrag &&
       !isEnteringProbe &&
-      !isAnyTopicFocused &&
-      !isCloseEnoughToReadWithoutMapLabel;
+      !hideBecauseCurrentTopicIsClose;
 
     const labelOffsetPx = Math.min(
       68,
       Math.max(22, screenRadiusPx * 0.62 + 14),
     );
 
-    const targetOpacity = shouldShow
-      ? isSelected
-        ? 0.96
-        : isAppearing
-          ? 0.9
-          : 0.78
-      : 0;
+    const targetOpacity = shouldShow ? (isSelected ? 0.96 : 0.78) : 0;
 
-    const targetScale = shouldShow ? (isSelected ? 1.02 : 0.94) : 0.92;
-    const targetBlur = shouldShow ? 0 : 3;
-    const targetYOffset = shouldShow ? -labelOffsetPx : -(labelOffsetPx - 6);
+    /**
+     * Keep label visibility sticky. Semantic layout staging and migration should
+     * never become a visible pre-movement warning. Labels only fade out for
+     * actual user drag, probe entry, or close-up current-topic redundancy.
+     */
+    const opacityAlpha = targetOpacity > labelOpacityRef.current ? 0.18 : 0.24;
+    labelOpacityRef.current +=
+      (targetOpacity - labelOpacityRef.current) * opacityAlpha;
 
-    el.style.opacity = `${targetOpacity}`;
-    el.style.filter = `blur(${targetBlur}px)`;
+    if (Math.abs(labelOpacityRef.current - targetOpacity) < 0.005) {
+      labelOpacityRef.current = targetOpacity;
+    }
+
+    const targetScale = shouldShow ? (isSelected ? 1.02 : 0.94) : 0.96;
+    const targetYOffset = shouldShow ? -labelOffsetPx : -(labelOffsetPx - 2);
+
+    el.style.opacity = `${labelOpacityRef.current}`;
+    el.style.filter = "none";
     el.style.transform = `translate3d(0, ${targetYOffset}px, 0) scale(${targetScale})`;
   });
 
@@ -426,17 +477,15 @@ function TopicLabel({
       <div
         ref={containerRef}
         style={{
-          opacity: 0,
-          transform: "translate3d(0, -22px, 0) scale(0.92)",
-          filter: "blur(3px)",
-          transition:
-            "opacity 180ms ease, transform 220ms ease, filter 220ms ease",
-          willChange: "transform, opacity, filter",
+          opacity: 0.78,
+          transform: "translate3d(0, -22px, 0) scale(0.94)",
+          filter: "none",
+          transition: "transform 220ms ease",
+          willChange: "transform, opacity",
           maxWidth: isProminent
             ? LABEL_MAX_WIDTH_PROMINENT
             : LABEL_MAX_WIDTH_OVERVIEW,
-          textShadow:
-            "0 2px 8px rgba(0,0,0,0.96), 0 0 18px rgba(0,0,0,0.86)",
+          textShadow: "0 2px 8px rgba(0,0,0,0.96), 0 0 18px rgba(0,0,0,0.86)",
         }}
         className={`px-1 text-[11px] font-medium leading-tight tracking-[0.01em] ${
           isProminent ? "text-white" : "text-zinc-100/90"
@@ -506,11 +555,11 @@ function MovementTrail({
       <bufferGeometry ref={geometryRef} />
       <lineBasicMaterial
         ref={materialRef}
-        color="#a78bfa"
+        color="#ffffff"
         transparent
         opacity={0}
         depthWrite={false}
-        depthTest
+        depthTest={false}
       />
     </line>
   );
@@ -525,10 +574,12 @@ function TopicSphere({
   isAppearing,
   isSceneSettled,
   isEnteringProbe,
+  hideLabelsForViewDrag,
   onSelect,
   onFocusTopic,
   onUnfocus,
   onOpenProbe,
+  animatedTopicPositionsRef,
 }: {
   topic: LearningSpaceTopic;
   isSelected: boolean;
@@ -538,10 +589,12 @@ function TopicSphere({
   isAppearing: boolean;
   isSceneSettled: boolean;
   isEnteringProbe: boolean;
+  hideLabelsForViewDrag: boolean;
   onSelect: (id: string) => void;
   onFocusTopic: (id: string) => void;
   onUnfocus: () => void;
   onOpenProbe: (probe: ProbeSummary) => void;
+  animatedTopicPositionsRef: AnimatedTopicPositionsRef;
 }) {
   const isAnyTopicFocused = focusedTopicId !== null;
 
@@ -613,28 +666,53 @@ function TopicSphere({
   }, [topic.position, isEnteringProbe, isFocused, isAnyTopicFocused]);
 
   useEffect(() => {
+    animatedTopicPositionsRef.current.set(
+      topic.topic_id,
+      currentPositionRef.current.clone(),
+    );
+
     return () => {
+      animatedTopicPositionsRef.current.delete(topic.topic_id);
+
       if (singleClickTimeoutRef.current !== null) {
         window.clearTimeout(singleClickTimeoutRef.current);
       }
     };
-  }, []);
+  }, [animatedTopicPositionsRef, topic.topic_id]);
 
   useFrame((state, delta) => {
     const current = appearProgressRef.current;
-    appearProgressRef.current = current + (1 - current) * 0.05;
+    appearProgressRef.current =
+      current + (1 - current) * TOPIC_APPEARANCE_LERP_ALPHA;
+
+    if (appearProgressRef.current > 0.995) {
+      appearProgressRef.current = 1;
+    }
 
     const t = appearProgressRef.current;
     const eased = 1 - Math.pow(1 - t, 3);
-    const overshoot = 1 + Math.sin(Math.min(t, 1) * Math.PI) * 0.1;
-    const finalScale = Math.max(0.001, eased * overshoot);
+
+    /**
+     * Keep final body size identical for new and existing topics.
+     * The arrival animation only fades/scales up toward the intended size; it
+     * never overshoots above 1, which prevents new topics from looking larger
+     * than established topics after creation.
+     */
+    const finalScale = isAppearing
+      ? Math.max(
+          0.001,
+          TOPIC_APPEARANCE_START_SCALE +
+            (1 - TOPIC_APPEARANCE_START_SCALE) * eased,
+        )
+      : 1;
 
     if (movementAlpha > 0) {
       currentPositionRef.current.lerp(targetPositionRef.current, movementAlpha);
 
       if (
-        currentPositionRef.current.distanceToSquared(targetPositionRef.current) <
-        0.0001
+        currentPositionRef.current.distanceToSquared(
+          targetPositionRef.current,
+        ) < 0.0001
       ) {
         currentPositionRef.current.copy(targetPositionRef.current);
       }
@@ -657,14 +735,25 @@ function TopicSphere({
     }
 
     if (trailGeometryRef.current && trailMaterialRef.current) {
+      /**
+       * Show the full committed layout update, not only the distance already
+       * traveled this frame. This makes a layout update legible immediately:
+       * "this topic is moving from here to there." The sphere itself still
+       * eases along the path through currentPositionRef.
+       */
       trailGeometryRef.current.setFromPoints([
         trailStartPositionRef.current,
-        currentPositionRef.current,
+        targetPositionRef.current,
       ]);
 
       trailMaterialRef.current.opacity = trailOpacityRef.current * eased;
       trailMaterialRef.current.visible = trailOpacityRef.current > 0;
     }
+
+    animatedTopicPositionsRef.current.set(
+      topic.topic_id,
+      currentPositionRef.current.clone(),
+    );
 
     if (groupRef.current) {
       groupRef.current.position.copy(currentPositionRef.current);
@@ -831,7 +920,7 @@ function TopicSphere({
             isSelected={isSelected}
             isFocused={isFocused}
             isAppearing={isAppearing}
-            isSceneSettled={isSceneSettled}
+            hideLabelsForViewDrag={hideLabelsForViewDrag}
             isAnyTopicFocused={isAnyTopicFocused}
             isEnteringProbe={isEnteringProbe}
             worldPositionRef={currentPositionRef}
@@ -861,6 +950,7 @@ function CameraController({
   probeEntryTopicId,
   onProbeEntryComplete,
   onCameraMotionChange,
+  animatedTopicPositionsRef,
 }: {
   topics: LearningSpaceTopic[];
   selectedTopicId: string | null;
@@ -871,6 +961,7 @@ function CameraController({
   probeEntryTopicId: string | null;
   onProbeEntryComplete: () => void;
   onCameraMotionChange?: (moving: boolean) => void;
+  animatedTopicPositionsRef: AnimatedTopicPositionsRef;
 }) {
   const { camera } = useThree();
 
@@ -930,7 +1021,7 @@ function CameraController({
         return;
       }
 
-      const target = getTopicPositionVector(topic);
+      const target = getAnimatedTopicPosition(topic, animatedTopicPositionsRef);
       const cameraRadius = getTopicCameraRadius(topic);
       const probeEntryDistance = Math.max(0.18, cameraRadius * 0.5);
 
@@ -1007,7 +1098,7 @@ function CameraController({
         return;
       }
 
-      const target = getTopicPositionVector(topic);
+      const target = getAnimatedTopicPosition(topic, animatedTopicPositionsRef);
       const topicPositionKey = getTopicPositionKey(topic);
 
       const focusTargetChanged =
@@ -1016,7 +1107,8 @@ function CameraController({
       const focusPositionChanged =
         lastHandledFocusedTopicPositionKeyRef.current !== null &&
         lastHandledFocusedTopicPositionKeyRef.current !== topicPositionKey &&
-        desiredTarget.current.distanceTo(target) >= CAMERA_TETHER_MIN_TOPIC_MOVE;
+        desiredTarget.current.distanceTo(target) >=
+          CAMERA_TETHER_MIN_TOPIC_MOVE;
 
       if (focusTargetChanged || arrivalChanged) {
         if (arrivalMode === "warp") {
@@ -1097,7 +1189,7 @@ function CameraController({
         return;
       }
 
-      const target = getTopicPositionVector(topic);
+      const target = getAnimatedTopicPosition(topic, animatedTopicPositionsRef);
       const topicPositionKey = getTopicPositionKey(topic);
 
       const selectedTargetChanged =
@@ -1105,7 +1197,8 @@ function CameraController({
       const selectedPositionChanged =
         lastHandledSelectedTopicPositionKeyRef.current !== null &&
         lastHandledSelectedTopicPositionKeyRef.current !== topicPositionKey &&
-        desiredTarget.current.distanceTo(target) >= CAMERA_TETHER_MIN_TOPIC_MOVE;
+        desiredTarget.current.distanceTo(target) >=
+          CAMERA_TETHER_MIN_TOPIC_MOVE;
 
       if (selectedTargetChanged) {
         desiredTarget.current.copy(target);
@@ -1180,14 +1273,53 @@ function CameraController({
     probeEntryTopicId,
     camera,
     controlsRef,
+    animatedTopicPositionsRef,
   ]);
 
   useFrame(() => {
     const controls = controlsRef.current;
     if (!controls) return;
 
+    /**
+     * Ride with the topic's visible animated position during semantic migration.
+     * The backend may commit the final semantic location immediately, but the
+     * sphere moves there over time. Camera framing should follow the displayed
+     * sphere, not jump ahead to the final target.
+     */
+    if (!isEnteringProbe) {
+      const rideTopicId = focusedTopicId ?? selectedTopicId;
+      const rideTopic = getTopicById(topics, rideTopicId);
+
+      if (rideTopic) {
+        const displayedTarget = getAnimatedTopicPosition(
+          rideTopic,
+          animatedTopicPositionsRef,
+        );
+        const previousTarget = desiredTarget.current.clone();
+        const targetDelta = displayedTarget.clone().sub(previousTarget);
+
+        if (targetDelta.lengthSq() > 0.000001) {
+          desiredTarget.current.copy(displayedTarget);
+
+          if (focusedTopicId) {
+            desiredCameraPosition.current.add(targetDelta);
+          }
+
+          if (!targetAnimatingRef.current) {
+            targetAnimatingRef.current = true;
+            currentTargetAlphaRef.current = focusedTopicId
+              ? FOCUSED_TOPIC_TETHER_TARGET_ALPHA
+              : SELECTED_TOPIC_TETHER_TARGET_ALPHA;
+          }
+        }
+      }
+    }
+
     if (targetAnimatingRef.current) {
-      controls.target.lerp(desiredTarget.current, currentTargetAlphaRef.current);
+      controls.target.lerp(
+        desiredTarget.current,
+        currentTargetAlphaRef.current,
+      );
 
       if (controls.target.distanceTo(desiredTarget.current) < 0.01) {
         controls.target.copy(desiredTarget.current);
@@ -1269,6 +1401,10 @@ export default function SpaceCanvas({
   const controlsRef = useRef<TrackballControlsRef | null>(null);
   const seenTopicIdsRef = useRef<Set<string>>(new Set());
   const settleTimeoutRef = useRef<number | null>(null);
+  const viewPointerDownRef = useRef<{ x: number; y: number } | null>(null);
+  const animatedTopicPositionsRef = useRef<Map<string, THREE.Vector3>>(
+    new Map(),
+  );
 
   const [appearingTopicIds, setAppearingTopicIds] = useState<Set<string>>(
     new Set(),
@@ -1313,7 +1449,11 @@ export default function SpaceCanvas({
   }, [topicIdsKey, learningSpace.topics]);
 
   useEffect(() => {
-    const isMoving = isUserControlling || isCameraInMotion || isEnteringProbe;
+    // Labels should not flicker just because a semantic layout commit or a soft
+    // camera tether is happening. Hide/fade labels only for direct user control
+    // (rotate/scroll) and probe entry. Programmatic camera motion is ignored
+    // here so layout updates do not briefly blank the map labels.
+    const isMoving = isUserControlling || isEnteringProbe;
 
     if (settleTimeoutRef.current !== null) {
       window.clearTimeout(settleTimeoutRef.current);
@@ -1336,17 +1476,51 @@ export default function SpaceCanvas({
         settleTimeoutRef.current = null;
       }
     };
-  }, [isUserControlling, isCameraInMotion, isEnteringProbe]);
+  }, [isUserControlling, isEnteringProbe]);
+
+  useEffect(() => {
+    return () => {
+      viewPointerDownRef.current = null;
+    };
+  }, []);
 
   return (
     <section
       className="relative h-full w-full overflow-hidden bg-black"
+      onPointerDownCapture={(event) => {
+        viewPointerDownRef.current = {
+          x: event.clientX,
+          y: event.clientY,
+        };
+      }}
+      onPointerMoveCapture={(event) => {
+        const down = viewPointerDownRef.current;
+        if (!down || isUserControlling) return;
+
+        const dx = event.clientX - down.x;
+        const dy = event.clientY - down.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance >= VIEW_DRAG_LABEL_HIDE_THRESHOLD_PX) {
+          setIsUserControlling(true);
+        }
+      }}
+      onPointerUpCapture={() => {
+        viewPointerDownRef.current = null;
+        setIsUserControlling(false);
+      }}
+      onWheelCapture={() => {
+        // Wheel zoom is already handled per-topic through screen-size label
+        // hiding. Do not globally hide every map label on scroll.
+      }}
       onPointerLeave={() => {
         document.body.style.cursor = "default";
+        viewPointerDownRef.current = null;
+        setIsUserControlling(false);
       }}
     >
       <div className="absolute inset-0 z-0">
-        <Canvas camera={{ position: [0, 0, 46], fov: 50 }}>
+        <Canvas camera={{ position: [0, 0, 64], fov: 50 }}>
           <color attach="background" args={["#000000"]} />
 
           <ambientLight intensity={1.1} />
@@ -1354,10 +1528,10 @@ export default function SpaceCanvas({
           <pointLight position={[-4, -2, 4]} intensity={1.2} />
 
           <Stars
-            radius={390}
-            depth={210}
-            count={5200}
-            factor={3.25}
+            radius={920}
+            depth={520}
+            count={7600}
+            factor={3.15}
             saturation={0}
             fade
             speed={0.24}
@@ -1382,10 +1556,12 @@ export default function SpaceCanvas({
                 isAppearing={appearingTopicIds.has(topic.topic_id)}
                 isSceneSettled={isSceneSettled}
                 isEnteringProbe={isEnteringProbe}
+                hideLabelsForViewDrag={isUserControlling}
                 onSelect={(id) => onSelectTopic(id)}
                 onFocusTopic={(id) => onFocusTopicChange?.(id)}
                 onUnfocus={() => onFocusTopicChange?.(null)}
                 onOpenProbe={onOpenProbe}
+                animatedTopicPositionsRef={animatedTopicPositionsRef}
               />
             );
           })}
@@ -1400,20 +1576,24 @@ export default function SpaceCanvas({
             probeEntryTopicId={probeEntryTopicId}
             onProbeEntryComplete={onProbeEntryComplete}
             onCameraMotionChange={setIsCameraInMotion}
+            animatedTopicPositionsRef={animatedTopicPositionsRef}
           />
 
           <TrackballControls
             ref={controlsRef}
             noPan
             minDistance={0.06}
-            maxDistance={180}
+            maxDistance={520}
             rotateSpeed={3.2}
             zoomSpeed={1.2}
             dynamicDampingFactor={0.12}
             onStart={() => {
-              setIsUserControlling(true);
+              // TrackballControls can emit start events for non-drag updates.
+              // Label hiding is driven by section-level drag-distance detection
+              // instead, so semantic layout updates cannot look like rotation.
             }}
             onEnd={() => {
+              viewPointerDownRef.current = null;
               setIsUserControlling(false);
             }}
           />
@@ -1438,7 +1618,8 @@ export default function SpaceCanvas({
               Your learning space is empty.
             </p>
             <p className="mt-2 text-sm leading-6 text-zinc-400">
-              Send a message to begin, and your first topic sphere will form here.
+              Send a message to begin, and your first topic sphere will form
+              here.
             </p>
           </div>
         </div>

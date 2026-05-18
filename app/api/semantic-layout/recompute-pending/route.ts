@@ -40,69 +40,42 @@ type SemanticNeighborRole =
   | "weak_attractor"
   | "visible_context";
 
-type SemanticNeighbor = {
-  topic_id: string;
-  topic_label: string;
-  similarity: number;
-  raw_similarity: number;
-  reliability: number;
-
-  /**
-   * Continuous force weight.
-   *
-   * This is not a cluster assignment. It is only the strength of semantic pull
-   * this neighbor applies to the target topic's semantic_position.
-   */
-  force_weight: number;
-
-  /**
-   * Neighbor anchor position.
-   *
-   * This should be the neighbor's current committed visual position whenever
-   * possible, not the neighbor's semantic target position.
-   */
-  position: TopicPosition;
-
-  semantic_role: SemanticNeighborRole;
-  topic_label_embedding_count: number;
-  topic_label_embedding_source: ResolvedTopicLabelEmbedding["source"];
-};
-
 type SemanticDistanceRelationshipFit =
   | "context_only"
   | "too_close"
   | "close_to_expected"
   | "too_far";
 
+type SemanticNeighbor = {
+  topic_id: string;
+  topic_label: string;
+  similarity: number;
+  raw_similarity: number;
+  normalized_similarity: number;
+  reliability: number;
+  force_weight: number;
+  desired_distance: number;
+  actual_distance_after_layout: number;
+  position: TopicPosition;
+  semantic_role: SemanticNeighborRole;
+  topic_label_embedding_count: number;
+  topic_label_embedding_source: ResolvedTopicLabelEmbedding["source"];
+};
+
 type SemanticDistanceDiagnostic = {
   topic_id: string;
   topic_label: string;
   similarity: number;
   raw_similarity: number;
+  normalized_similarity: number;
   reliability: number;
   force_weight: number;
   semantic_role: SemanticNeighborRole;
   diagnostic_scope: "force_neighbor" | "near_duplicate" | "context_only";
   spacing_safety: "collision_safe" | "collision_violation";
-
-  /**
-   * Minimum physically readable center-to-center distance after accounting for
-   * estimated visual/collision radii and breathing room.
-   */
   collision_min_distance: number;
-
-  /**
-   * Human/debug-facing target distance implied by similarity.
-   * This is diagnostic only for now; the force layout still controls position.
-   */
   desired_distance: number;
-
-  /**
-   * Distance from this topic's newly computed semantic_position to the
-   * neighbor's current committed visual anchor.
-   */
   actual_distance_after_layout: number;
-
   distance_error: number;
   normalized_distance_error: number;
   tolerance: number;
@@ -114,8 +87,9 @@ type LayoutParameters = {
   enriched_topic_count: number;
 
   /**
-   * Diagnostic thresholds only. These label force roles; they do not decide
-   * whether a topic is "clustered."
+   * These thresholds are now diagnostic labels only. They do not drive the
+   * geometry. The geometry is continuous and pairwise, using the actual cosine
+   * similarity from embeddings.
    */
   strong_attraction_similarity: number;
   moderate_attraction_similarity: number;
@@ -123,12 +97,6 @@ type LayoutParameters = {
   visible_context_similarity: number;
   near_duplicate_similarity: number;
 
-  /**
-   * Geometry controls.
-   *
-   * min_repulsion_distance is now only a coarse floor. Actual separation is
-   * radius-aware: target_visual_radius + neighbor_visual_radius + breathing room.
-   */
   min_repulsion_distance: number;
   min_visual_breathing_room: number;
   max_visual_collision_radius: number;
@@ -139,12 +107,32 @@ type LayoutParameters = {
   max_semantic_pull_alpha: number;
   min_semantic_pull_alpha: number;
   stability_anchor_strength: number;
+  min_display_force_weight: number;
 
   /**
-   * Diagnostic/output threshold only.
-   * The layout math can still use smaller nonzero force weights.
+   * Continuous pairwise layout controls.
    */
-  min_display_force_weight: number;
+  stress_iterations: number;
+  stress_learning_rate: number;
+  stress_max_pair_step: number;
+  semantic_min_distance_padding: number;
+  semantic_max_distance: number;
+  normalization_low_percentile: number;
+  normalization_high_percentile: number;
+  similarity_curve_power: number;
+  minimum_pair_weight: number;
+  rank_diagnostic_sample_size: number;
+
+  /**
+   * Extra continuous correction pass after normal stress layout.
+   * This is not a bucketed high/medium/low layout. It reinforces the global
+   * monotonic contract: if sim(A,B) > sim(C,D), A/B should generally be closer.
+   */
+  rank_correction_iterations: number;
+  rank_correction_learning_rate: number;
+  rank_correction_max_pair_step: number;
+  rank_high_similarity_pull_boost: number;
+  rank_low_similarity_push_boost: number;
 };
 
 type SemanticLayoutDecision = {
@@ -186,6 +174,7 @@ type GlobalSemanticPairwiseDiagnostic = {
   topic_b_label: string;
   similarity: number;
   raw_similarity: number;
+  normalized_similarity: number;
   semantic_role: SemanticNeighborRole;
   diagnostic_scope: "force_candidate" | "near_duplicate" | "context_only";
   collision_min_distance: number;
@@ -204,24 +193,69 @@ type GlobalLayoutContext = {
   layoutParameters: LayoutParameters;
 };
 
+type PairwiseRelation = {
+  key: string;
+  topicA: LayoutCandidate;
+  topicB: LayoutCandidate;
+  topicAIndex: number;
+  topicBIndex: number;
+  similarity: number;
+  normalizedSimilarity: number;
+  reliability: number;
+  weight: number;
+  collisionMinDistance: number;
+  desiredDistance: number;
+  semanticRole: SemanticNeighborRole;
+};
+
+type PairwiseNormalization = {
+  low_similarity: number;
+  high_similarity: number;
+  similarity_range: number;
+  min_similarity: number;
+  max_similarity: number;
+  pair_count: number;
+};
+
+type RankViolationDiagnostic = {
+  stronger_pair: {
+    topic_a_id: string;
+    topic_a_label: string;
+    topic_b_id: string;
+    topic_b_label: string;
+    similarity: number;
+    distance: number;
+  };
+  weaker_pair: {
+    topic_a_id: string;
+    topic_a_label: string;
+    topic_b_id: string;
+    topic_b_label: string;
+    similarity: number;
+    distance: number;
+  };
+  violation_margin: number;
+  interpretation: string;
+};
+
+type ContinuousLayoutQuality = {
+  similarity_distance_correlation: number | null;
+  rank_violation_count_sampled: number;
+  rank_comparison_count_sampled: number;
+  rank_violation_rate_sampled: number | null;
+  worst_rank_violations: RankViolationDiagnostic[];
+  closest_neighbor_matches_most_similar_neighbor_count: number;
+  closest_neighbor_topic_count: number;
+  closest_neighbor_match_rate: number | null;
+  collision_violation_count: number;
+  pair_count: number;
+};
+
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 100;
 const TOP_K_NEIGHBORS = 10;
 
-/**
- * These radii are intentionally larger than the earlier layout.
- * Semantic similarity should create regions, but topics should not visually
- * overlap just because they are moderately related.
- */
-const NEIGHBOR_OFFSET_RADIUS = 1.45;
-const FALLBACK_OFFSET_RADIUS = 1.05;
 const OUTER_RING_RADIUS = 9.25;
-
-/**
- * Keep this approximately aligned with lib/build-learning-space.ts.
- * The layout route cannot import the renderer builder without creating an
- * awkward dependency, so it carries a lightweight visual-radius estimate.
- */
 const DEFAULT_RENDER_BASE_SCALE = 0.7;
 const RENDER_BASE_SCALE_FACTOR = 0.9;
 const RENDER_LEARNING_SCORE_RADIUS_FACTOR = 1.0;
@@ -230,13 +264,10 @@ const FUTURE_BADGE_AND_SATELLITE_BUFFER = 0.18;
 const MAX_CANONICAL_Y_MAGNITUDE = 1.25;
 
 const SEMANTIC_LAYOUT_VERSION =
-  "semantic_solar_plane_v9_spacing_truth_diagnostics";
+  "semantic_solar_plane_v13_rank_preserving_continuous_layout";
 
 /**
- * Human/debug-facing cutoff.
- *
- * Values below this may still contribute to the continuous semantic force math,
- * but they are too small to explain meaningful movement in force_neighbors.
+ * Diagnostic only. The layout itself uses all available pairwise similarities.
  */
 const MIN_DISPLAY_FORCE_WEIGHT = 0.01;
 
@@ -329,49 +360,30 @@ function fallbackRingPosition(
   radius = OUTER_RING_RADIUS,
 ): TopicPosition {
   const base = computeDeterministicTopicPosition(index);
-
   const length = Math.sqrt(base[0] * base[0] + base[2] * base[2]);
 
-  if (!length) {
-    return [radius, base[1], 0];
-  }
+  if (!length) return [radius, base[1], 0];
 
   const scale = radius / length;
 
   return [base[0] * scale, base[1], base[2] * scale];
 }
 
-/**
- * Resolve the current visual anchor for layout calculations.
- *
- * Important invariant:
- * - topic_position = current committed visual position
- * - semantic_position = computed semantic target
- *
- * Therefore this function intentionally prefers topic_position and topic_json
- * visual position before falling back to semantic_position.
- */
 function getVisualPosition(
   topic: LayoutCandidate,
   fallbackIndex: number,
 ): TopicPosition {
   const topicPosition = asTopicPosition(topic.topic_position);
 
-  if (topicPosition) {
-    return topicPosition;
-  }
+  if (topicPosition) return topicPosition;
 
   const jsonTopicPosition = readTopicPositionFromJson(topic.topic_json);
 
-  if (jsonTopicPosition) {
-    return jsonTopicPosition;
-  }
+  if (jsonTopicPosition) return jsonTopicPosition;
 
   const semanticPosition = asTopicPosition(topic.semantic_position);
 
-  if (semanticPosition) {
-    return semanticPosition;
-  }
+  if (semanticPosition) return semanticPosition;
 
   return fallbackRingPosition(fallbackIndex, OUTER_RING_RADIUS);
 }
@@ -389,22 +401,11 @@ function estimateTopicRenderRadius(topic: LayoutCandidate) {
 
 function estimateTopicCollisionRadius(topic: LayoutCandidate) {
   const confusion = clamp(topic.confusion ?? 0.3, 0, 1);
-  const messageCount =
-    typeof topic.topic_json === "object" && topic.topic_json !== null ? 0 : 0;
-
-  /**
-   * Mirrors lib/build-learning-space.ts at the contract level:
-   * visible radius is not enough for layout. Confusion/blobiness, rings, badges,
-   * and future satellites need a slightly larger envelope.
-   */
   const renderRadius = estimateTopicRenderRadius(topic);
   const shapeExpansion = 1 + confusion * CONFUSION_SHAPE_EXPANSION_MAX;
-  const satelliteBuffer = Math.min(0.18, Math.max(0, messageCount) * 0.018);
 
   return clamp(
-    renderRadius * shapeExpansion +
-      FUTURE_BADGE_AND_SATELLITE_BUFFER +
-      satelliteBuffer,
+    renderRadius * shapeExpansion + FUTURE_BADGE_AND_SATELLITE_BUFFER,
     renderRadius + 0.16,
     2.05,
   );
@@ -415,11 +416,6 @@ function estimateTopicVisualRadius(topic: LayoutCandidate) {
 }
 
 function semanticBreathingRoomFactor(similarity: number) {
-  /**
-   * Similar topics may sit closer than unrelated topics, but not overlap.
-   * High similarity reduces only the extra breathing room, not the physical
-   * collision radius of either sphere.
-   */
   return clamp(1 - Math.max(0, similarity) * 0.42, 0.62, 1);
 }
 
@@ -499,68 +495,52 @@ function centroidReliability(topicLabelEmbeddingCount: number) {
 }
 
 function getLayoutParameters(enrichedTopicCount: number): LayoutParameters {
-  if (enrichedTopicCount < 8) {
-    return {
-      enriched_topic_count: enrichedTopicCount,
-      strong_attraction_similarity: 0.6,
-      moderate_attraction_similarity: 0.42,
-      weak_attraction_similarity: 0.18,
-      visible_context_similarity: 0,
-      near_duplicate_similarity: 0.72,
-      min_repulsion_distance: 3.05,
-      min_visual_breathing_room: 1.05,
-      max_visual_collision_radius: 2.05,
-      repulsion_strength: 1.12,
-      repulsion_iterations: 4,
-      max_planar_y_magnitude: MAX_CANONICAL_Y_MAGNITUDE,
-      y_axis_dampening: 0.22,
-      max_semantic_pull_alpha: 0.5,
-      min_semantic_pull_alpha: 0.14,
-      stability_anchor_strength: 0.62,
-      min_display_force_weight: MIN_DISPLAY_FORCE_WEIGHT,
-    };
-  }
-
-  if (enrichedTopicCount < 30) {
-    return {
-      enriched_topic_count: enrichedTopicCount,
-      strong_attraction_similarity: 0.56,
-      moderate_attraction_similarity: 0.38,
-      weak_attraction_similarity: 0.16,
-      visible_context_similarity: 0,
-      near_duplicate_similarity: 0.72,
-      min_repulsion_distance: 3.15,
-      min_visual_breathing_room: 1.15,
-      max_visual_collision_radius: 2.05,
-      repulsion_strength: 1.18,
-      repulsion_iterations: 4,
-      max_planar_y_magnitude: MAX_CANONICAL_Y_MAGNITUDE,
-      y_axis_dampening: 0.22,
-      max_semantic_pull_alpha: 0.52,
-      min_semantic_pull_alpha: 0.12,
-      stability_anchor_strength: 0.58,
-      min_display_force_weight: MIN_DISPLAY_FORCE_WEIGHT,
-    };
-  }
+  const semanticMaxDistance =
+    enrichedTopicCount < 8
+      ? 10.4
+      : enrichedTopicCount < 30
+        ? 13.25
+        : 16.5;
 
   return {
     enriched_topic_count: enrichedTopicCount,
-    strong_attraction_similarity: 0.52,
-    moderate_attraction_similarity: 0.34,
-    weak_attraction_similarity: 0.14,
+
+    /**
+     * Debug labels only.
+     */
+    strong_attraction_similarity: 0.54,
+    moderate_attraction_similarity: 0.4,
+    weak_attraction_similarity: 0.24,
     visible_context_similarity: 0,
     near_duplicate_similarity: 0.72,
-    min_repulsion_distance: 2.95,
-    min_visual_breathing_room: 0.95,
-    max_visual_collision_radius: 2.0,
-    repulsion_strength: 1.02,
-    repulsion_iterations: 3,
+
+    min_repulsion_distance: enrichedTopicCount < 30 ? 2.55 : 2.45,
+    min_visual_breathing_room: enrichedTopicCount < 30 ? 0.72 : 0.62,
+    max_visual_collision_radius: 2.05,
+    repulsion_strength: 0.82,
+    repulsion_iterations: 28,
     max_planar_y_magnitude: MAX_CANONICAL_Y_MAGNITUDE,
-    y_axis_dampening: 0.2,
-    max_semantic_pull_alpha: 0.54,
-    min_semantic_pull_alpha: 0.1,
-    stability_anchor_strength: 0.54,
+    y_axis_dampening: 0.22,
+    max_semantic_pull_alpha: 1,
+    min_semantic_pull_alpha: 1,
+    stability_anchor_strength: 0.2,
     min_display_force_weight: MIN_DISPLAY_FORCE_WEIGHT,
+
+    stress_iterations: enrichedTopicCount < 16 ? 320 : 380,
+    stress_learning_rate: 0.062,
+    stress_max_pair_step: 0.34,
+    semantic_min_distance_padding: 0.08,
+    semantic_max_distance: semanticMaxDistance,
+    normalization_low_percentile: 0.08,
+    normalization_high_percentile: 0.92,
+    similarity_curve_power: 1.62,
+    minimum_pair_weight: 0.28,
+    rank_diagnostic_sample_size: 1400,
+    rank_correction_iterations: enrichedTopicCount < 16 ? 120 : 150,
+    rank_correction_learning_rate: 0.052,
+    rank_correction_max_pair_step: 0.3,
+    rank_high_similarity_pull_boost: 1.75,
+    rank_low_similarity_push_boost: 1.35,
   };
 }
 
@@ -585,54 +565,6 @@ function classifyNeighbor(args: {
   }
 
   return "visible_context";
-}
-
-function semanticForceWeight(args: {
-  similarity: number;
-  reliability: number;
-  parameters: LayoutParameters;
-}) {
-  if (args.similarity < args.parameters.weak_attraction_similarity) {
-    return 0;
-  }
-
-  const normalized = clamp(
-    (args.similarity - args.parameters.weak_attraction_similarity) /
-      Math.max(0.001, 1 - args.parameters.weak_attraction_similarity),
-    0,
-    1,
-  );
-
-  /**
-   * Squared curve:
-   * - weak relationships create very small pull
-   * - medium relationships matter
-   * - strong relationships dominate without hard gating
-   */
-  return normalized * normalized * args.reliability;
-}
-
-function stableHash(text: string) {
-  let hash = 2166136261;
-
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-
-  return hash >>> 0;
-}
-
-function deterministicOffset(
-  topicId: string,
-  radius = NEIGHBOR_OFFSET_RADIUS,
-): TopicPosition {
-  const hash = stableHash(topicId);
-  const angle = ((hash % 3600) / 3600) * Math.PI * 2;
-  const elevationSeed = ((Math.floor(hash / 3600) % 1000) / 1000) * 2 - 1;
-  const y = elevationSeed * 0.18;
-
-  return [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
 }
 
 function addPositions(a: TopicPosition, b: TopicPosition): TopicPosition {
@@ -662,17 +594,6 @@ function constrainToSemanticPlane(
   ];
 }
 
-function planarizeDirection(
-  direction: TopicPosition,
-  parameters: LayoutParameters,
-): TopicPosition {
-  return [
-    direction[0],
-    direction[1] * parameters.y_axis_dampening,
-    direction[2],
-  ];
-}
-
 function distanceBetween(a: TopicPosition, b: TopicPosition) {
   const dx = a[0] - b[0];
   const dy = a[1] - b[1];
@@ -681,50 +602,545 @@ function distanceBetween(a: TopicPosition, b: TopicPosition) {
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
-function desiredDistanceForSimilarity(args: {
-  similarity: number;
-  collisionMinDistance: number;
-  parameters: LayoutParameters;
-}) {
-  /**
-   * This is a diagnostic distance policy, not yet a hard layout constraint.
-   *
-   * The purpose is to make the invisible semantic-distance rule inspectable:
-   * - high similarity should imply a distance close to the collision-safe floor
-   * - medium similarity should imply a middle distance
-   * - low/negative similarity should imply a farther contextual distance
-   */
-  const similarity01 = clamp(Math.max(0, args.similarity), 0, 1);
-  const farDistance = Math.max(
-    args.collisionMinDistance + 0.75,
-    OUTER_RING_RADIUS * 0.86,
-  );
-  const inverseSimilarity = 1 - similarity01;
-  const curvedDistanceFactor = Math.pow(inverseSimilarity, 1.12);
+function pairKey(a: string, b: string) {
+  return a < b ? `${a}::${b}` : `${b}::${a}`;
+}
 
-  return (
-    args.collisionMinDistance +
-    (farDistance - args.collisionMinDistance) * curvedDistanceFactor
+function percentile(sortedValues: number[], p: number) {
+  if (!sortedValues.length) return 0;
+
+  const clamped = clamp(p, 0, 1);
+  const index = (sortedValues.length - 1) * clamped;
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+
+  if (lower === upper) return sortedValues[lower];
+
+  const fraction = index - lower;
+
+  return sortedValues[lower] * (1 - fraction) + sortedValues[upper] * fraction;
+}
+
+function normalizeSimilarity(args: {
+  similarity: number;
+  normalization: PairwiseNormalization;
+}) {
+  return clamp(
+    (args.similarity - args.normalization.low_similarity) /
+      Math.max(0.001, args.normalization.similarity_range),
+    0,
+    1,
   );
 }
 
-function getDiagnosticScope(neighbor: SemanticNeighbor) {
+function desiredDistanceForNormalizedSimilarity(args: {
+  normalizedSimilarity: number;
+  collisionMinDistance: number;
+  parameters: LayoutParameters;
+}) {
+  const semanticCloseness = Math.pow(
+    clamp(args.normalizedSimilarity, 0, 1),
+    args.parameters.similarity_curve_power,
+  );
+
+  const minDistance =
+    args.collisionMinDistance + args.parameters.semantic_min_distance_padding;
+  const maxDistance = Math.max(args.parameters.semantic_max_distance, minDistance);
+
+  return minDistance + (maxDistance - minDistance) * (1 - semanticCloseness);
+}
+
+function buildPairwiseNormalization(similarities: number[]): PairwiseNormalization {
+  const sorted = [...similarities].sort((a, b) => a - b);
+
+  if (!sorted.length) {
+    return {
+      low_similarity: 0,
+      high_similarity: 1,
+      similarity_range: 1,
+      min_similarity: 0,
+      max_similarity: 0,
+      pair_count: 0,
+    };
+  }
+
+  const minSimilarity = sorted[0];
+  const maxSimilarity = sorted[sorted.length - 1];
+  let low = percentile(sorted, 0.08);
+  let high = percentile(sorted, 0.92);
+
+  /**
+   * Keep the range real even when the current learning space has a narrow
+   * similarity distribution. This preserves continuous behavior without letting
+   * numerical noise explode the layout.
+   */
+  if (high - low < 0.12) {
+    const center = (high + low) / 2;
+    low = center - 0.06;
+    high = center + 0.06;
+  }
+
+  return {
+    low_similarity: round4(low),
+    high_similarity: round4(high),
+    similarity_range: round4(high - low),
+    min_similarity: round4(minSimilarity),
+    max_similarity: round4(maxSimilarity),
+    pair_count: sorted.length,
+  };
+}
+
+function buildInitialPositions(args: {
+  topics: LayoutCandidate[];
+}): Map<string, TopicPosition> {
+  const positions = new Map<string, TopicPosition>();
+
+  for (const [index, topic] of args.topics.entries()) {
+    positions.set(topic.topic_id, getVisualPosition(topic, index));
+  }
+
+  return positions;
+}
+
+function buildPairwiseRelations(args: {
+  context: GlobalLayoutContext;
+  normalization: PairwiseNormalization;
+}): PairwiseRelation[] {
+  const relations: PairwiseRelation[] = [];
+
+  for (
+    let outerIndex = 0;
+    outerIndex < args.context.enrichedTopics.length;
+    outerIndex += 1
+  ) {
+    const topicA = args.context.enrichedTopics[outerIndex];
+    const embeddingA = resolveTopicLabelEmbedding(topicA).centroid;
+
+    if (!embeddingA) continue;
+
+    for (
+      let innerIndex = outerIndex + 1;
+      innerIndex < args.context.enrichedTopics.length;
+      innerIndex += 1
+    ) {
+      const topicB = args.context.enrichedTopics[innerIndex];
+      const embeddingB = resolveTopicLabelEmbedding(topicB).centroid;
+
+      if (!embeddingB) continue;
+
+      const similarity = cosineSimilarity(embeddingA, embeddingB);
+      const normalizedSimilarity = normalizeSimilarity({
+        similarity,
+        normalization: args.normalization,
+      });
+      const reliability = Math.min(
+        centroidReliability(resolveTopicLabelEmbedding(topicA).count),
+        centroidReliability(resolveTopicLabelEmbedding(topicB).count),
+      );
+      const collisionMinDistance = radiusAwareMinDistance({
+        targetTopic: topicA,
+        otherTopic: topicB,
+        similarity,
+        parameters: args.context.layoutParameters,
+      });
+      const desiredDistance = desiredDistanceForNormalizedSimilarity({
+        normalizedSimilarity,
+        collisionMinDistance,
+        parameters: args.context.layoutParameters,
+      });
+
+      /**
+       * All pairs contribute continuously. Weak pairs still matter because they
+       * define far-distance structure and prevent random close neighbors.
+       * Stronger pairs simply receive more precision.
+       */
+      const weight =
+        reliability *
+        (args.context.layoutParameters.minimum_pair_weight +
+          (1 - args.context.layoutParameters.minimum_pair_weight) *
+            Math.pow(normalizedSimilarity, 1.25));
+
+      relations.push({
+        key: pairKey(topicA.topic_id, topicB.topic_id),
+        topicA,
+        topicB,
+        topicAIndex: outerIndex,
+        topicBIndex: innerIndex,
+        similarity,
+        normalizedSimilarity,
+        reliability,
+        weight,
+        collisionMinDistance,
+        desiredDistance,
+        semanticRole: classifyNeighbor({
+          similarity,
+          parameters: args.context.layoutParameters,
+        }),
+      });
+    }
+  }
+
+  return relations;
+}
+
+function buildRelationsByTopic(relations: PairwiseRelation[]) {
+  const byTopic = new Map<string, PairwiseRelation[]>();
+
+  for (const relation of relations) {
+    const aList = byTopic.get(relation.topicA.topic_id) ?? [];
+    const bList = byTopic.get(relation.topicB.topic_id) ?? [];
+
+    aList.push(relation);
+    bList.push(relation);
+
+    byTopic.set(relation.topicA.topic_id, aList);
+    byTopic.set(relation.topicB.topic_id, bList);
+  }
+
+  for (const [topicId, list] of byTopic.entries()) {
+    byTopic.set(
+      topicId,
+      list.sort((a, b) => b.similarity - a.similarity),
+    );
+  }
+
+  return byTopic;
+}
+
+function getOtherTopicFromRelation(
+  relation: PairwiseRelation,
+  topicId: string,
+) {
+  return relation.topicA.topic_id === topicId ? relation.topicB : relation.topicA;
+}
+
+function getOtherTopicIndexFromRelation(
+  relation: PairwiseRelation,
+  topicId: string,
+) {
+  return relation.topicA.topic_id === topicId
+    ? relation.topicBIndex
+    : relation.topicAIndex;
+}
+
+function meanPosition(positions: Map<string, TopicPosition>) {
+  let count = 0;
+  let total: TopicPosition = [0, 0, 0];
+
+  for (const position of positions.values()) {
+    total = addPositions(total, position);
+    count += 1;
+  }
+
+  if (!count) return [0, 0, 0] satisfies TopicPosition;
+
+  return scalePosition(total, 1 / count);
+}
+
+function recenterPositions(positions: Map<string, TopicPosition>) {
+  const center = meanPosition(positions);
+
+  for (const [topicId, position] of positions.entries()) {
+    positions.set(topicId, subtractPositions(position, center));
+  }
+}
+
+function applyPairwiseStressLayout(args: {
+  context: GlobalLayoutContext;
+  relations: PairwiseRelation[];
+  initialPositions: Map<string, TopicPosition>;
+}) {
+  const positions = new Map<string, TopicPosition>();
+
+  for (const [topicId, position] of args.initialPositions.entries()) {
+    positions.set(topicId, position);
+  }
+
+  const anchorPositions = new Map(args.initialPositions);
+
+  for (
+    let iteration = 0;
+    iteration < args.context.layoutParameters.stress_iterations;
+    iteration += 1
+  ) {
+    const progress =
+      iteration / Math.max(1, args.context.layoutParameters.stress_iterations - 1);
+    const learningRate =
+      args.context.layoutParameters.stress_learning_rate * (1 - progress * 0.52);
+
+    for (const relation of args.relations) {
+      const positionA = positions.get(relation.topicA.topic_id);
+      const positionB = positions.get(relation.topicB.topic_id);
+
+      if (!positionA || !positionB) continue;
+
+      const delta = subtractPositions(positionB, positionA);
+      const distance = Math.max(0.001, distanceBetween(positionA, positionB));
+      const direction = scalePosition(delta, 1 / distance);
+      const error = distance - relation.desiredDistance;
+      const step = clamp(
+        error * relation.weight * learningRate,
+        -args.context.layoutParameters.stress_max_pair_step,
+        args.context.layoutParameters.stress_max_pair_step,
+      );
+      const correction = scalePosition(direction, step * 0.5);
+
+      positions.set(
+        relation.topicA.topic_id,
+        constrainToSemanticPlane(
+          addPositions(positionA, correction),
+          args.context.layoutParameters,
+        ),
+      );
+      positions.set(
+        relation.topicB.topic_id,
+        constrainToSemanticPlane(
+          subtractPositions(positionB, correction),
+          args.context.layoutParameters,
+        ),
+      );
+    }
+
+    /**
+     * Low-strength stability: established topics should keep some spatial
+     * memory, but semantic truth is primary. Fresh topics with no prior
+     * semantic_position are treated as provisional and receive little anchoring.
+     */
+    for (const topic of args.context.enrichedTopics) {
+      const current = positions.get(topic.topic_id);
+      const anchor = anchorPositions.get(topic.topic_id);
+
+      if (!current || !anchor) continue;
+
+      const anchorAlpha = hasSemanticPosition(topic)
+        ? 0.0025 * args.context.layoutParameters.stability_anchor_strength
+        : 0.0004;
+
+      positions.set(
+        topic.topic_id,
+        constrainToSemanticPlane(
+          [
+            current[0] + (anchor[0] - current[0]) * anchorAlpha,
+            current[1] + (anchor[1] - current[1]) * anchorAlpha,
+            current[2] + (anchor[2] - current[2]) * anchorAlpha,
+          ],
+          args.context.layoutParameters,
+        ),
+      );
+    }
+
+    if (iteration % 10 === 0) {
+      recenterPositions(positions);
+    }
+  }
+
+  recenterPositions(positions);
+
+  return positions;
+}
+
+function applyRankPreservingCorrection(args: {
+  context: GlobalLayoutContext;
+  relations: PairwiseRelation[];
+  positions: Map<string, TopicPosition>;
+}) {
+  const positions = new Map(args.positions);
+
+  /**
+   * Sort high-similarity pairs first so the most meaningful relationships get
+   * first claim on local geometry, then let weak pairs push apart later in the
+   * same iteration. This is still continuous: every pair participates using its
+   * normalized embedding similarity and desired distance.
+   */
+  const orderedRelations = [...args.relations].sort((a, b) => {
+    const aPriority = Math.abs(a.normalizedSimilarity - 0.5);
+    const bPriority = Math.abs(b.normalizedSimilarity - 0.5);
+
+    if (bPriority !== aPriority) return bPriority - aPriority;
+    return b.normalizedSimilarity - a.normalizedSimilarity;
+  });
+
+  for (
+    let iteration = 0;
+    iteration < args.context.layoutParameters.rank_correction_iterations;
+    iteration += 1
+  ) {
+    const progress =
+      iteration /
+      Math.max(1, args.context.layoutParameters.rank_correction_iterations - 1);
+    const learningRate =
+      args.context.layoutParameters.rank_correction_learning_rate *
+      (1 - progress * 0.58);
+
+    for (const relation of orderedRelations) {
+      const positionA = positions.get(relation.topicA.topic_id);
+      const positionB = positions.get(relation.topicB.topic_id);
+
+      if (!positionA || !positionB) continue;
+
+      const delta = subtractPositions(positionB, positionA);
+      const distance = Math.max(0.001, distanceBetween(positionA, positionB));
+      const direction = scalePosition(delta, 1 / distance);
+      const error = distance - relation.desiredDistance;
+
+      /**
+       * High similarity pairs get stronger pull when too far.
+       * Low similarity pairs get stronger push when too close.
+       * Middle pairs still participate, but less aggressively.
+       */
+      const highSimilarityPull =
+        args.context.layoutParameters.rank_high_similarity_pull_boost *
+        Math.pow(relation.normalizedSimilarity, 1.35);
+      const lowSimilarityPush =
+        args.context.layoutParameters.rank_low_similarity_push_boost *
+        Math.pow(1 - relation.normalizedSimilarity, 1.2);
+      const directionalBoost = error > 0 ? highSimilarityPull : lowSimilarityPush;
+      const priority = clamp(
+        relation.weight * (0.85 + directionalBoost),
+        args.context.layoutParameters.minimum_pair_weight * 0.55,
+        2.4,
+      );
+      const rawStep = error * priority * learningRate;
+      const step = clamp(
+        rawStep,
+        -args.context.layoutParameters.rank_correction_max_pair_step,
+        args.context.layoutParameters.rank_correction_max_pair_step,
+      );
+      const correction = scalePosition(direction, step * 0.5);
+
+      positions.set(
+        relation.topicA.topic_id,
+        constrainToSemanticPlane(
+          addPositions(positionA, correction),
+          args.context.layoutParameters,
+        ),
+      );
+      positions.set(
+        relation.topicB.topic_id,
+        constrainToSemanticPlane(
+          subtractPositions(positionB, correction),
+          args.context.layoutParameters,
+        ),
+      );
+    }
+
+    if (iteration % 8 === 0) {
+      recenterPositions(positions);
+    }
+  }
+
+  recenterPositions(positions);
+
+  return positions;
+}
+
+function enforceGlobalReadableSpacing(args: {
+  context: GlobalLayoutContext;
+  relations: PairwiseRelation[];
+  positions: Map<string, TopicPosition>;
+}) {
+  const positions = new Map(args.positions);
+  let correctionCount = 0;
+  let totalCorrection: TopicPosition = [0, 0, 0];
+
+  for (
+    let iteration = 0;
+    iteration < args.context.layoutParameters.repulsion_iterations;
+    iteration += 1
+  ) {
+    let iterationCorrected = false;
+
+    for (const relation of args.relations) {
+      const positionA = positions.get(relation.topicA.topic_id);
+      const positionB = positions.get(relation.topicB.topic_id);
+
+      if (!positionA || !positionB) continue;
+
+      const minimumDistance =
+        relation.collisionMinDistance +
+        args.context.layoutParameters.semantic_min_distance_padding;
+      const distance = distanceBetween(positionA, positionB);
+
+      if (distance >= minimumDistance) continue;
+
+      const direction =
+        distance > 0.001
+          ? scalePosition(subtractPositions(positionB, positionA), 1 / distance)
+          : [1, 0, 0] satisfies TopicPosition;
+
+      const correctionDistance = (minimumDistance - Math.max(distance, 0.001)) * 0.54;
+      const correction = scalePosition(direction, correctionDistance * 0.5);
+
+      positions.set(
+        relation.topicA.topic_id,
+        constrainToSemanticPlane(
+          subtractPositions(positionA, correction),
+          args.context.layoutParameters,
+        ),
+      );
+      positions.set(
+        relation.topicB.topic_id,
+        constrainToSemanticPlane(
+          addPositions(positionB, correction),
+          args.context.layoutParameters,
+        ),
+      );
+
+      totalCorrection = addPositions(totalCorrection, correction);
+      correctionCount += 1;
+      iterationCorrected = true;
+    }
+
+    if (!iterationCorrected) break;
+  }
+
+  recenterPositions(positions);
+
+  return {
+    positions,
+    correctedCount: correctionCount,
+    correctionVector: totalCorrection,
+  };
+}
+
+function buildSemanticNeighborFromRelation(args: {
+  relation: PairwiseRelation;
+  topic: LayoutCandidate;
+  positions: Map<string, TopicPosition>;
+}) {
+  const otherTopic = getOtherTopicFromRelation(args.relation, args.topic.topic_id);
+  const otherPosition =
+    args.positions.get(otherTopic.topic_id) ??
+    getVisualPosition(otherTopic, getOtherTopicIndexFromRelation(args.relation, args.topic.topic_id));
+  const actualDistance = distanceBetween(
+    args.positions.get(args.topic.topic_id) ?? getVisualPosition(args.topic, 0),
+    otherPosition,
+  );
+  const otherEmbedding = resolveTopicLabelEmbedding(otherTopic);
+
+  return {
+    topic_id: otherTopic.topic_id,
+    topic_label: getTopicLabel(otherTopic),
+    similarity: round4(args.relation.similarity),
+    raw_similarity: args.relation.similarity,
+    normalized_similarity: round4(args.relation.normalizedSimilarity),
+    reliability: args.relation.reliability,
+    force_weight: round4(args.relation.weight),
+    desired_distance: round4(args.relation.desiredDistance),
+    actual_distance_after_layout: round4(actualDistance),
+    position: roundPosition(otherPosition),
+    semantic_role: args.relation.semanticRole,
+    topic_label_embedding_count: otherEmbedding.count,
+    topic_label_embedding_source: otherEmbedding.source,
+  } satisfies SemanticNeighbor;
+}
+
+function diagnosticScopeForNeighbor(neighbor: SemanticNeighbor) {
   if (neighbor.semantic_role === "near_duplicate_candidate") {
     return "near_duplicate" as const;
   }
 
-  if (neighbor.force_weight > 0) {
-    return "force_neighbor" as const;
-  }
-
-  return "context_only" as const;
-}
-
-function isActionableSemanticNeighbor(neighbor: SemanticNeighbor) {
-  return (
-    neighbor.force_weight > 0 ||
-    neighbor.semantic_role === "near_duplicate_candidate"
-  );
+  return "force_neighbor" as const;
 }
 
 function interpretDistanceFit(args: {
@@ -742,34 +1158,30 @@ function buildDistanceInterpretation(args: {
   topicLabel: string;
   neighborLabel: string;
   similarity: number;
+  normalizedSimilarity: number;
   desiredDistance: number;
   actualDistance: number;
   relationshipFit: SemanticDistanceRelationshipFit;
-  diagnosticScope: "force_neighbor" | "near_duplicate" | "context_only";
   spacingSafety: "collision_safe" | "collision_violation";
 }) {
   const similarityText = args.similarity.toFixed(3);
+  const normalizedText = args.normalizedSimilarity.toFixed(3);
   const desiredText = args.desiredDistance.toFixed(3);
   const actualText = args.actualDistance.toFixed(3);
-
-  if (args.relationshipFit === "context_only") {
-    return `${args.topicLabel} and ${args.neighborLabel} are context-only neighbors at similarity ${similarityText}; desired≈${desiredText}, actual≈${actualText}. Because this pair has no active force weight and is not a near-duplicate, it is not judged as too close/too far.`;
-  }
-
   const safetyText =
     args.spacingSafety === "collision_violation"
-      ? " The pair is below the collision-safe spacing floor, so this should be treated as a spacing issue."
-      : " The pair remains collision-safe.";
+      ? " The pair is below the readable spacing floor."
+      : " The pair remains readable.";
 
   if (args.relationshipFit === "close_to_expected") {
-    return `${args.topicLabel} and ${args.neighborLabel} are close to the diagnostic distance expected from similarity ${similarityText}; desired≈${desiredText}, actual≈${actualText}.${safetyText}`;
+    return `${args.topicLabel} and ${args.neighborLabel} are close to the continuous embedding-distance target; similarity=${similarityText}, normalized=${normalizedText}, desired≈${desiredText}, actual≈${actualText}.${safetyText}`;
   }
 
   if (args.relationshipFit === "too_close") {
-    return `${args.topicLabel} and ${args.neighborLabel} are closer than the diagnostic distance expected from similarity ${similarityText}; desired≈${desiredText}, actual≈${actualText}.${safetyText}`;
+    return `${args.topicLabel} and ${args.neighborLabel} are closer than the continuous embedding-distance target; similarity=${similarityText}, normalized=${normalizedText}, desired≈${desiredText}, actual≈${actualText}.${safetyText}`;
   }
 
-  return `${args.topicLabel} and ${args.neighborLabel} are farther than the diagnostic distance expected from similarity ${similarityText}; desired≈${desiredText}, actual≈${actualText}. This can happen when stability, offset placement, or collision repulsion from other topics pulls the region apart.`;
+  return `${args.topicLabel} and ${args.neighborLabel} are farther than the continuous embedding-distance target; similarity=${similarityText}, normalized=${normalizedText}, desired≈${desiredText}, actual≈${actualText}.${safetyText}`;
 }
 
 function buildSemanticDistanceDiagnostics(args: {
@@ -778,34 +1190,30 @@ function buildSemanticDistanceDiagnostics(args: {
   finalPosition: TopicPosition;
   context: GlobalLayoutContext;
   semanticNeighbors: SemanticNeighbor[];
+  relationsByKey: Map<string, PairwiseRelation>;
 }): SemanticDistanceDiagnostic[] {
   return args.semanticNeighbors.map((neighbor) => {
+    const relation = args.relationsByKey.get(
+      pairKey(args.topic.topic_id, neighbor.topic_id),
+    );
     const neighborTopic = args.context.allTopics.find(
-      (topic) => topic.topic_id === neighbor.topic_id,
+      (candidate) => candidate.topic_id === neighbor.topic_id,
     );
-
-    const collisionMinDistance = neighborTopic
-      ? radiusAwareMinDistance({
-          targetTopic: args.topic,
-          otherTopic: neighborTopic,
-          similarity: neighbor.raw_similarity,
-          parameters: args.context.layoutParameters,
-        })
-      : args.context.layoutParameters.min_repulsion_distance;
-
-    const desiredDistance = desiredDistanceForSimilarity({
-      similarity: neighbor.raw_similarity,
-      collisionMinDistance,
-      parameters: args.context.layoutParameters,
-    });
-
-    const actualDistance = distanceBetween(
-      args.finalPosition,
-      neighbor.position,
-    );
+    const collisionMinDistance =
+      relation?.collisionMinDistance ??
+      (neighborTopic
+        ? radiusAwareMinDistance({
+            targetTopic: args.topic,
+            otherTopic: neighborTopic,
+            similarity: neighbor.raw_similarity,
+            parameters: args.context.layoutParameters,
+          })
+        : args.context.layoutParameters.min_repulsion_distance);
+    const desiredDistance = relation?.desiredDistance ?? neighbor.desired_distance;
+    const actualDistance = distanceBetween(args.finalPosition, neighbor.position);
     const distanceError = actualDistance - desiredDistance;
-    const tolerance = Math.max(0.42, collisionMinDistance * 0.18);
-    const diagnosticScope = getDiagnosticScope(neighbor);
+    const tolerance = Math.max(0.38, collisionMinDistance * 0.18);
+    const diagnosticScope = diagnosticScopeForNeighbor(neighbor);
     const spacingSafety =
       actualDistance + 0.001 < collisionMinDistance
         ? "collision_violation"
@@ -815,14 +1223,13 @@ function buildSemanticDistanceDiagnostics(args: {
       tolerance,
       diagnosticScope,
     });
-    const normalizedDistanceError =
-      distanceError / Math.max(desiredDistance, 0.001);
 
     return {
       topic_id: neighbor.topic_id,
       topic_label: neighbor.topic_label,
       similarity: neighbor.similarity,
       raw_similarity: round4(neighbor.raw_similarity),
+      normalized_similarity: neighbor.normalized_similarity,
       reliability: round4(neighbor.reliability),
       force_weight: neighbor.force_weight,
       semantic_role: neighbor.semantic_role,
@@ -832,533 +1239,380 @@ function buildSemanticDistanceDiagnostics(args: {
       desired_distance: round4(desiredDistance),
       actual_distance_after_layout: round4(actualDistance),
       distance_error: round4(distanceError),
-      normalized_distance_error: round4(normalizedDistanceError),
+      normalized_distance_error: round4(
+        distanceError / Math.max(desiredDistance, 0.001),
+      ),
       tolerance: round4(tolerance),
       relationship_fit: relationshipFit,
       interpretation: buildDistanceInterpretation({
         topicLabel: args.topicLabel,
         neighborLabel: neighbor.topic_label,
         similarity: neighbor.raw_similarity,
+        normalizedSimilarity: neighbor.normalized_similarity,
         desiredDistance,
         actualDistance,
         relationshipFit,
-        diagnosticScope,
         spacingSafety,
       }),
     };
   });
 }
 
-function lerpPosition(a: TopicPosition, b: TopicPosition, alpha: number) {
-  return [
-    a[0] + (b[0] - a[0]) * alpha,
-    a[1] + (b[1] - a[1]) * alpha,
-    a[2] + (b[2] - a[2]) * alpha,
-  ] satisfies TopicPosition;
-}
+function buildComputedSemanticPositions(args: {
+  context: GlobalLayoutContext;
+  positions: Map<string, TopicPosition>;
+  initialPositions: Map<string, TopicPosition>;
+  relationsByTopic: Map<string, PairwiseRelation[]>;
+  relationsByKey: Map<string, PairwiseRelation>;
+  spacingCorrectedCount: number;
+  spacingCorrectionVector: TopicPosition;
+}): Map<string, ComputedSemanticPosition> {
+  const computedByTopic = new Map<string, ComputedSemanticPosition>();
 
-function weightedAveragePosition(
-  neighbors: SemanticNeighbor[],
-): TopicPosition | null {
-  const forceNeighbors = neighbors.filter(
-    (neighbor) => neighbor.force_weight > 0,
-  );
+  for (const [index, topic] of args.context.enrichedTopics.entries()) {
+    const finalPosition = roundPosition(
+      args.positions.get(topic.topic_id) ?? getVisualPosition(topic, index),
+    );
+    const initialPosition = roundPosition(
+      args.initialPositions.get(topic.topic_id) ?? getVisualPosition(topic, index),
+    );
+    const relations = args.relationsByTopic.get(topic.topic_id) ?? [];
+    const semanticNeighbors = relations
+      .slice(0, TOP_K_NEIGHBORS)
+      .map((relation) =>
+        buildSemanticNeighborFromRelation({
+          relation,
+          topic,
+          positions: args.positions,
+        }),
+      );
+    const forceNeighbors = semanticNeighbors.filter(
+      (neighbor) => neighbor.force_weight >= MIN_DISPLAY_FORCE_WEIGHT,
+    );
+    const topSimilarity = semanticNeighbors[0]?.raw_similarity ?? null;
+    const secondSimilarity = semanticNeighbors[1]?.raw_similarity ?? null;
+    const totalAttractionWeight = semanticNeighbors.reduce(
+      (sum, neighbor) => sum + neighbor.force_weight,
+      0,
+    );
+    const semanticDistanceDiagnostics = buildSemanticDistanceDiagnostics({
+      topic,
+      topicLabel: getTopicLabel(topic),
+      finalPosition,
+      context: args.context,
+      semanticNeighbors,
+      relationsByKey: args.relationsByKey,
+    });
 
-  if (!forceNeighbors.length) return null;
-
-  let totalWeight = 0;
-  let x = 0;
-  let y = 0;
-  let z = 0;
-
-  for (const neighbor of forceNeighbors) {
-    totalWeight += neighbor.force_weight;
-    x += neighbor.position[0] * neighbor.force_weight;
-    y += neighbor.position[1] * neighbor.force_weight;
-    z += neighbor.position[2] * neighbor.force_weight;
+    computedByTopic.set(topic.topic_id, {
+      position: finalPosition,
+      semantic_pull_position: finalPosition,
+      pre_repulsion_position: initialPosition,
+      method: "continuous_pairwise_embedding_stress_v2_rank_preserving_topic_label_embedding",
+      semantic_neighbors: semanticNeighbors,
+      force_neighbors: forceNeighbors,
+      semantic_distance_diagnostics: semanticDistanceDiagnostics,
+      near_duplicate_candidates: semanticNeighbors.filter(
+        (neighbor) => neighbor.semantic_role === "near_duplicate_candidate",
+      ),
+      reason:
+        "Computed semantic_position by fitting all enriched topic pairs to a continuous embedding-derived desired-distance matrix, then applying a rank-preserving correction pass so more similar pairs are more likely to be closer globally. No high/medium/low buckets drive geometry; thresholds are diagnostic labels only.",
+      layout_decision: {
+        method: "continuous_pairwise_embedding_stress_v2_rank_preserving_topic_label_embedding",
+        reason:
+          "Continuous pairwise stress layout with rank-preserving correction: every embedding pair contributes to the geometry using cosine similarity mapped to desired distance, then high-similarity-too-far and low-similarity-too-close errors are corrected continuously.",
+        semantic_neighbors: semanticNeighbors,
+        force_neighbors: forceNeighbors,
+        layout_parameters: args.context.layoutParameters,
+        top_similarity: topSimilarity === null ? null : round4(topSimilarity),
+        second_similarity:
+          secondSimilarity === null ? null : round4(secondSimilarity),
+        top_second_margin:
+          topSimilarity !== null && secondSimilarity !== null
+            ? round4(topSimilarity - secondSimilarity)
+            : null,
+        total_attraction_weight: round4(totalAttractionWeight),
+        semantic_pull_alpha: 1,
+        emergent_region_signal: round4(
+          clamp(totalAttractionWeight / Math.max(semanticNeighbors.length, 1), 0, 1),
+        ),
+      },
+      repulsion_applied: args.spacingCorrectedCount > 0,
+      repulsion_vector: roundPosition(args.spacingCorrectionVector),
+      final_spacing_enforcement_applied: args.spacingCorrectedCount > 0,
+      final_spacing_enforcement_vector: roundPosition(args.spacingCorrectionVector),
+      final_spacing_enforcement_count: args.spacingCorrectedCount,
+    });
   }
 
-  if (!totalWeight) return null;
-
-  return [x / totalWeight, y / totalWeight, z / totalWeight];
+  return computedByTopic;
 }
 
-function enrichedTopics(rows: LayoutCandidate[]) {
-  return rows.filter(hasTopicLabelEmbedding);
+function pearsonCorrelation(xs: number[], ys: number[]) {
+  if (xs.length !== ys.length || xs.length < 2) return null;
+
+  const xMean = xs.reduce((sum, value) => sum + value, 0) / xs.length;
+  const yMean = ys.reduce((sum, value) => sum + value, 0) / ys.length;
+  let numerator = 0;
+  let xDenominator = 0;
+  let yDenominator = 0;
+
+  for (let index = 0; index < xs.length; index += 1) {
+    const x = xs[index] - xMean;
+    const y = ys[index] - yMean;
+
+    numerator += x * y;
+    xDenominator += x * x;
+    yDenominator += y * y;
+  }
+
+  const denominator = Math.sqrt(xDenominator * yDenominator);
+
+  if (!denominator) return null;
+
+  return numerator / denominator;
 }
 
-function findSemanticNeighbors(args: {
-  targetTopic: LayoutCandidate;
+function buildRankViolation(args: {
+  stronger: PairwiseRelation;
+  strongerDistance: number;
+  weaker: PairwiseRelation;
+  weakerDistance: number;
+}): RankViolationDiagnostic {
+  const margin = args.weakerDistance - args.strongerDistance;
+
+  return {
+    stronger_pair: {
+      topic_a_id: args.stronger.topicA.topic_id,
+      topic_a_label: getTopicLabel(args.stronger.topicA),
+      topic_b_id: args.stronger.topicB.topic_id,
+      topic_b_label: getTopicLabel(args.stronger.topicB),
+      similarity: round4(args.stronger.similarity),
+      distance: round4(args.strongerDistance),
+    },
+    weaker_pair: {
+      topic_a_id: args.weaker.topicA.topic_id,
+      topic_a_label: getTopicLabel(args.weaker.topicA),
+      topic_b_id: args.weaker.topicB.topic_id,
+      topic_b_label: getTopicLabel(args.weaker.topicB),
+      similarity: round4(args.weaker.similarity),
+      distance: round4(args.weakerDistance),
+    },
+    violation_margin: round4(Math.abs(margin)),
+    interpretation:
+      "A weaker-similarity pair is closer than a stronger-similarity pair. Some violations are unavoidable in a 2D/planar projection, but this should trend downward as the layout improves.",
+  };
+}
+
+function buildContinuousLayoutQuality(args: {
+  relations: PairwiseRelation[];
+  positions: Map<string, TopicPosition>;
   context: GlobalLayoutContext;
-}) {
-  const targetTopicLabelEmbedding = resolveTopicLabelEmbedding(
-    args.targetTopic,
+}): ContinuousLayoutQuality {
+  const similarities: number[] = [];
+  const negativeDistances: number[] = [];
+  const distancesByKey = new Map<string, number>();
+  let collisionViolationCount = 0;
+
+  for (const relation of args.relations) {
+    const positionA = args.positions.get(relation.topicA.topic_id);
+    const positionB = args.positions.get(relation.topicB.topic_id);
+
+    if (!positionA || !positionB) continue;
+
+    const distance = distanceBetween(positionA, positionB);
+
+    distancesByKey.set(relation.key, distance);
+    similarities.push(relation.similarity);
+    negativeDistances.push(-distance);
+
+    if (distance + 0.001 < relation.collisionMinDistance) {
+      collisionViolationCount += 1;
+    }
+  }
+
+  const sortedBySimilarity = [...args.relations].sort(
+    (a, b) => b.similarity - a.similarity,
   );
-  const targetCentroid = targetTopicLabelEmbedding.centroid;
+  const sampleSize = Math.min(
+    args.context.layoutParameters.rank_diagnostic_sample_size,
+    sortedBySimilarity.length * Math.max(0, sortedBySimilarity.length - 1) * 0.5,
+  );
+  let comparisons = 0;
+  let violations = 0;
+  const worstViolations: RankViolationDiagnostic[] = [];
 
-  if (!targetCentroid) return [];
-
-  return args.context.enrichedTopics
-    .filter((candidate) => candidate.topic_id !== args.targetTopic.topic_id)
-    .map((candidate, index): SemanticNeighbor | null => {
-      const candidateTopicLabelEmbedding =
-        resolveTopicLabelEmbedding(candidate);
-      const candidateCentroid = candidateTopicLabelEmbedding.centroid;
-
-      if (!candidateCentroid) return null;
-
-      const similarity = cosineSimilarity(targetCentroid, candidateCentroid);
+  for (
+    let i = 0;
+    i < sortedBySimilarity.length && comparisons < sampleSize;
+    i += 1
+  ) {
+    for (
+      let j = i + 1;
+      j < sortedBySimilarity.length && comparisons < sampleSize;
+      j += 1
+    ) {
+      const stronger = sortedBySimilarity[i];
+      const weaker = sortedBySimilarity[j];
+      const strongerDistance = distancesByKey.get(stronger.key);
+      const weakerDistance = distancesByKey.get(weaker.key);
 
       if (
-        similarity < args.context.layoutParameters.visible_context_similarity
+        strongerDistance === undefined ||
+        weakerDistance === undefined ||
+        stronger.similarity <= weaker.similarity
       ) {
-        return null;
+        continue;
       }
 
-      const reliability = centroidReliability(
-        candidateTopicLabelEmbedding.count,
-      );
-      const semanticRole = classifyNeighbor({
-        similarity,
-        parameters: args.context.layoutParameters,
-      });
+      comparisons += 1;
 
-      return {
-        topic_id: candidate.topic_id,
-        topic_label: getTopicLabel(candidate),
-        similarity: round4(similarity),
-        raw_similarity: similarity,
-        reliability,
-        force_weight: round4(
-          semanticForceWeight({
-            similarity,
-            reliability,
-            parameters: args.context.layoutParameters,
-          }),
-        ),
-        position: getVisualPosition(candidate, index),
-        semantic_role: semanticRole,
-        topic_label_embedding_count: candidateTopicLabelEmbedding.count,
-        topic_label_embedding_source: candidateTopicLabelEmbedding.source,
-      };
-    })
-    .filter((match): match is SemanticNeighbor => Boolean(match))
-    .sort((a, b) => {
-      if (b.force_weight !== a.force_weight) {
-        return b.force_weight - a.force_weight;
+      if (strongerDistance > weakerDistance + 0.001) {
+        violations += 1;
+
+        const violation = buildRankViolation({
+          stronger,
+          strongerDistance,
+          weaker,
+          weakerDistance,
+        });
+
+        worstViolations.push(violation);
+        worstViolations.sort((a, b) => b.violation_margin - a.violation_margin);
+
+        if (worstViolations.length > 8) {
+          worstViolations.pop();
+        }
       }
-
-      return b.raw_similarity - a.raw_similarity;
-    })
-    .slice(0, TOP_K_NEIGHBORS);
-}
-
-function decideSemanticLayout(args: {
-  semanticNeighbors: SemanticNeighbor[];
-  parameters: LayoutParameters;
-}): SemanticLayoutDecision {
-  /**
-   * allForceNeighbors = mathematical force contributors.
-   * displayForceNeighbors = human/debug-facing explanation list.
-   *
-   * This preserves tiny continuous pulls in the geometry while preventing
-   * near-zero/noisy relationships from looking important in the output.
-   */
-  const allForceNeighbors = args.semanticNeighbors.filter(
-    (neighbor) => neighbor.force_weight > 0,
-  );
-
-  const displayForceNeighbors = allForceNeighbors.filter(
-    (neighbor) =>
-      neighbor.force_weight >= args.parameters.min_display_force_weight,
-  );
-
-  const [topNeighbor, secondNeighbor] = args.semanticNeighbors;
-  const topSimilarity = topNeighbor?.raw_similarity ?? null;
-  const secondSimilarity = secondNeighbor?.raw_similarity ?? null;
-
-  const topSecondMargin =
-    topSimilarity !== null && secondSimilarity !== null
-      ? topSimilarity - secondSimilarity
-      : null;
-
-  const totalAttractionWeight = allForceNeighbors.reduce(
-    (sum, neighbor) => sum + neighbor.force_weight,
-    0,
-  );
-
-  const strongestWeight = allForceNeighbors[0]?.force_weight ?? 0;
-
-  /**
-   * This is a continuous "region signal," not a cluster assignment.
-   * It estimates how likely this topic is part of an emergent dense semantic area.
-   */
-  const emergentRegionSignal = clamp(
-    totalAttractionWeight * 1.8 + strongestWeight * 0.8,
-    0,
-    1,
-  );
-
-  const semanticPullAlpha =
-    allForceNeighbors.length > 0
-      ? clamp(
-          args.parameters.min_semantic_pull_alpha +
-            emergentRegionSignal *
-              (args.parameters.max_semantic_pull_alpha -
-                args.parameters.min_semantic_pull_alpha),
-          args.parameters.min_semantic_pull_alpha,
-          args.parameters.max_semantic_pull_alpha,
-        )
-      : 0;
-
-  const method =
-    allForceNeighbors.length > 0
-      ? "semantic_continuous_force_v6_radius_aware_topic_label_embedding"
-      : "semantic_continuous_force_v6_radius_aware_stable_fallback";
-
-  const reason =
-    allForceNeighbors.length > 0
-      ? "Computed semantic target from continuous attraction forces, then applied radius-aware spacing so related topics can form regions without visually overlapping."
-      : "No neighbor passed the weak attraction floor, so the topic kept a stable fallback semantic target with radius-aware spacing.";
-
-  return {
-    method,
-    reason,
-    semantic_neighbors: args.semanticNeighbors,
-
-    /**
-     * Output/debug list only. The math still uses all nonzero force neighbors
-     * through semantic_neighbors when computing weighted position.
-     */
-    force_neighbors: displayForceNeighbors,
-
-    layout_parameters: args.parameters,
-    top_similarity: topSimilarity === null ? null : round4(topSimilarity),
-    second_similarity:
-      secondSimilarity === null ? null : round4(secondSimilarity),
-    top_second_margin:
-      topSecondMargin === null ? null : round4(topSecondMargin),
-    total_attraction_weight: round4(totalAttractionWeight),
-    semantic_pull_alpha: round4(semanticPullAlpha),
-    emergent_region_signal: round4(emergentRegionSignal),
-  };
-}
-function applyRepulsion(args: {
-  topic: LayoutCandidate;
-  proposedPosition: TopicPosition;
-  context: GlobalLayoutContext;
-  semanticNeighbors: SemanticNeighbor[];
-}) {
-  let currentPosition = args.proposedPosition;
-  let totalRepulsion: TopicPosition = [0, 0, 0];
-  let applied = false;
-
-  const neighborSimilarityById = new Map(
-    args.semanticNeighbors.map((neighbor) => [
-      neighbor.topic_id,
-      neighbor.raw_similarity,
-    ]),
-  );
-
-  const iterations = Math.max(
-    1,
-    args.context.layoutParameters.repulsion_iterations,
-  );
-
-  for (let iteration = 0; iteration < iterations; iteration += 1) {
-    let iterationRepulsion: TopicPosition = [0, 0, 0];
-    let iterationApplied = false;
-
-    for (const [index, other] of args.context.allTopics.entries()) {
-      if (other.topic_id === args.topic.topic_id) continue;
-
-      const otherPosition = getVisualPosition(other, index);
-      const distance = distanceBetween(currentPosition, otherPosition);
-      const similarity = neighborSimilarityById.get(other.topic_id) ?? 0;
-      const minDistance = radiusAwareMinDistance({
-        targetTopic: args.topic,
-        otherTopic: other,
-        similarity,
-        parameters: args.context.layoutParameters,
-      });
-
-      if (distance >= minDistance) continue;
-
-      /**
-       * If two anchors are exactly identical, use a deterministic direction so
-       * repulsion still produces a stable separation rather than doing nothing.
-       */
-      const rawAway =
-        distance > 0.001
-          ? planarizeDirection(
-              subtractPositions(currentPosition, otherPosition),
-              args.context.layoutParameters,
-            )
-          : deterministicOffset(
-              `${args.topic.topic_id}:${other.topic_id}`,
-              1.2,
-            );
-
-      const safeDistance = Math.max(distance, 0.001);
-
-      /**
-       * Similar topics can be closer, but visual overlap should still be treated
-       * as an error state. Dampening is therefore intentionally bounded.
-       */
-      const semanticDampening = clamp(
-        1 - Math.max(0, similarity) * 0.28,
-        0.72,
-        1,
-      );
-      const overlapRatio = (minDistance - safeDistance) / minDistance;
-      const strength =
-        overlapRatio *
-        args.context.layoutParameters.repulsion_strength *
-        semanticDampening;
-
-      const normalizedAway = scalePosition(
-        rawAway,
-        1 / Math.max(safeDistance, 0.001),
-      );
-      const contribution = scalePosition(normalizedAway, strength);
-
-      iterationRepulsion = addPositions(iterationRepulsion, contribution);
-      iterationApplied = true;
-      applied = true;
     }
-
-    if (!iterationApplied) break;
-
-    currentPosition = constrainToSemanticPlane(
-      addPositions(currentPosition, iterationRepulsion),
-      args.context.layoutParameters,
-    );
-    totalRepulsion = addPositions(totalRepulsion, iterationRepulsion);
   }
 
-  if (!applied) {
-    return {
-      position: args.proposedPosition,
-      repulsionVector: [0, 0, 0] satisfies TopicPosition,
-      applied: false,
-    };
-  }
+  let closestMatchCount = 0;
+  let closestTopicCount = 0;
 
-  return {
-    position: currentPosition,
-    repulsionVector: totalRepulsion,
-    applied: true,
-  };
-}
+  for (const topic of args.context.enrichedTopics) {
+    const topicRelations = args.relations
+      .filter(
+        (relation) =>
+          relation.topicA.topic_id === topic.topic_id ||
+          relation.topicB.topic_id === topic.topic_id,
+      )
+      .sort((a, b) => b.similarity - a.similarity);
 
+    if (!topicRelations.length) continue;
 
-type FinalSpacingEnforcementResult = {
-  position: TopicPosition;
-  enforcementVector: TopicPosition;
-  applied: boolean;
-  correctedCount: number;
-};
+    closestTopicCount += 1;
 
-function enforceCriticalNeighborSpacing(args: {
-  topic: LayoutCandidate;
-  proposedPosition: TopicPosition;
-  context: GlobalLayoutContext;
-  semanticNeighbors: SemanticNeighbor[];
-}): FinalSpacingEnforcementResult {
-  let currentPosition = args.proposedPosition;
-  let totalCorrection: TopicPosition = [0, 0, 0];
-  let applied = false;
-  let correctedCount = 0;
+    const mostSimilar = topicRelations[0];
+    const closest = [...topicRelations].sort((a, b) => {
+      const distanceA = distancesByKey.get(a.key) ?? Number.POSITIVE_INFINITY;
+      const distanceB = distancesByKey.get(b.key) ?? Number.POSITIVE_INFINITY;
 
-  const criticalNeighbors = args.semanticNeighbors.filter(
-    isActionableSemanticNeighbor,
-  );
+      return distanceA - distanceB;
+    })[0];
 
-  if (!criticalNeighbors.length) {
-    return {
-      position: args.proposedPosition,
-      enforcementVector: [0, 0, 0],
-      applied: false,
-      correctedCount: 0,
-    };
-  }
-
-  for (let iteration = 0; iteration < 3; iteration += 1) {
-    let iterationApplied = false;
-
-    for (const neighbor of criticalNeighbors) {
-      const otherTopic = args.context.allTopics.find(
-        (topic) => topic.topic_id === neighbor.topic_id,
-      );
-
-      if (!otherTopic) continue;
-
-      const distance = distanceBetween(currentPosition, neighbor.position);
-      const minimumDistance = radiusAwareMinDistance({
-        targetTopic: args.topic,
-        otherTopic,
-        similarity: neighbor.raw_similarity,
-        parameters: args.context.layoutParameters,
-      });
-
-      const requiredDistance =
-        minimumDistance +
-        (neighbor.semantic_role === "near_duplicate_candidate" ? 0.08 : 0.03);
-
-      if (distance >= requiredDistance) continue;
-
-      const rawAway =
-        distance > 0.001
-          ? planarizeDirection(
-              subtractPositions(currentPosition, neighbor.position),
-              args.context.layoutParameters,
-            )
-          : deterministicOffset(
-              `${args.topic.topic_id}:${neighbor.topic_id}:final-spacing`,
-              1.0,
-            );
-
-      const awayLength = Math.max(
-        0.001,
-        Math.sqrt(
-          rawAway[0] * rawAway[0] +
-            rawAway[1] * rawAway[1] +
-            rawAway[2] * rawAway[2],
-        ),
-      );
-
-      const correctionDistance = requiredDistance - distance;
-      const correction = scalePosition(rawAway, correctionDistance / awayLength);
-
-      currentPosition = constrainToSemanticPlane(
-        addPositions(currentPosition, correction),
-        args.context.layoutParameters,
-      );
-      totalCorrection = addPositions(totalCorrection, correction);
-      applied = true;
-      iterationApplied = true;
-      correctedCount += 1;
+    if (closest?.key === mostSimilar.key) {
+      closestMatchCount += 1;
     }
-
-    if (!iterationApplied) break;
   }
 
   return {
-    position: currentPosition,
-    enforcementVector: totalCorrection,
-    applied,
-    correctedCount,
+    similarity_distance_correlation:
+      pearsonCorrelation(similarities, negativeDistances) === null
+        ? null
+        : round4(pearsonCorrelation(similarities, negativeDistances) ?? 0),
+    rank_violation_count_sampled: violations,
+    rank_comparison_count_sampled: comparisons,
+    rank_violation_rate_sampled:
+      comparisons > 0 ? round4(violations / comparisons) : null,
+    worst_rank_violations: worstViolations,
+    closest_neighbor_matches_most_similar_neighbor_count: closestMatchCount,
+    closest_neighbor_topic_count: closestTopicCount,
+    closest_neighbor_match_rate:
+      closestTopicCount > 0 ? round4(closestMatchCount / closestTopicCount) : null,
+    collision_violation_count: collisionViolationCount,
+    pair_count: distancesByKey.size,
   };
 }
 
-function computeSemanticPosition(args: {
-  targetTopic: LayoutCandidate;
+function buildGlobalPairwiseDiagnostics(args: {
   context: GlobalLayoutContext;
-  fallbackIndex: number;
-}): ComputedSemanticPosition {
-  const semanticNeighbors = findSemanticNeighbors({
-    targetTopic: args.targetTopic,
-    context: args.context,
-  });
+  relations: PairwiseRelation[];
+  positions: Map<string, TopicPosition>;
+}): GlobalSemanticPairwiseDiagnostic[] {
+  const diagnostics = args.relations.map((relation) => {
+    const positionA =
+      args.positions.get(relation.topicA.topic_id) ??
+      getVisualPosition(relation.topicA, relation.topicAIndex);
+    const positionB =
+      args.positions.get(relation.topicB.topic_id) ??
+      getVisualPosition(relation.topicB, relation.topicBIndex);
+    const actualDistance = distanceBetween(positionA, positionB);
+    const distanceError = actualDistance - relation.desiredDistance;
+    const tolerance = Math.max(0.38, relation.collisionMinDistance * 0.18);
+    const diagnosticScope: GlobalSemanticPairwiseDiagnostic["diagnostic_scope"] =
+      relation.semanticRole === "near_duplicate_candidate"
+        ? "near_duplicate"
+        : "force_candidate";
+    const relationshipFit =
+      diagnosticScope === "near_duplicate"
+        ? interpretDistanceFit({
+            distanceError,
+            tolerance,
+            diagnosticScope: "near_duplicate",
+          })
+        : interpretDistanceFit({
+            distanceError,
+            tolerance,
+            diagnosticScope: "force_neighbor",
+          });
 
-  const decision = decideSemanticLayout({
-    semanticNeighbors,
-    parameters: args.context.layoutParameters,
-  });
-
-  const currentVisualPosition = getVisualPosition(
-    args.targetTopic,
-    args.fallbackIndex,
-  );
-
-  const forceAverage = weightedAveragePosition(
-    decision.semantic_neighbors.filter((neighbor) => neighbor.force_weight > 0),
-  );
-
-  let semanticPullPosition: TopicPosition;
-  let preRepulsionPosition: TopicPosition;
-
-  if (forceAverage) {
-    const neighborTarget = addPositions(
-      forceAverage,
-      deterministicOffset(args.targetTopic.topic_id, NEIGHBOR_OFFSET_RADIUS),
-    );
-
-    semanticPullPosition = roundPosition(
-      constrainToSemanticPlane(neighborTarget, args.context.layoutParameters),
-    );
-
-    /**
-     * Stability guard:
-     * semantic_position can move toward meaning, but the visual map should not
-     * teleport. topic_position still remains unchanged here.
-     */
-    preRepulsionPosition = constrainToSemanticPlane(
-      lerpPosition(
-        currentVisualPosition,
-        neighborTarget,
-        decision.semantic_pull_alpha,
+    return {
+      topic_a_id: relation.topicA.topic_id,
+      topic_a_label: getTopicLabel(relation.topicA),
+      topic_b_id: relation.topicB.topic_id,
+      topic_b_label: getTopicLabel(relation.topicB),
+      similarity: round4(relation.similarity),
+      raw_similarity: round4(relation.similarity),
+      normalized_similarity: round4(relation.normalizedSimilarity),
+      semantic_role: relation.semanticRole,
+      diagnostic_scope: diagnosticScope,
+      collision_min_distance: round4(relation.collisionMinDistance),
+      desired_distance: round4(relation.desiredDistance),
+      actual_distance_after_layout: round4(actualDistance),
+      distance_error: round4(distanceError),
+      normalized_distance_error: round4(
+        distanceError / Math.max(relation.desiredDistance, 0.001),
       ),
-      args.context.layoutParameters,
-    );
-  } else {
-    semanticPullPosition = addPositions(
-      currentVisualPosition,
-      deterministicOffset(args.targetTopic.topic_id, FALLBACK_OFFSET_RADIUS),
-    );
-
-    preRepulsionPosition = constrainToSemanticPlane(
-      semanticPullPosition,
-      args.context.layoutParameters,
-    );
-  }
-
-  const repelled = applyRepulsion({
-    topic: args.targetTopic,
-    proposedPosition: preRepulsionPosition,
-    context: args.context,
-    semanticNeighbors,
+      tolerance: round4(tolerance),
+      relationship_fit: relationshipFit,
+      spacing_safety:
+        actualDistance + 0.001 < relation.collisionMinDistance
+          ? "collision_violation"
+          : "collision_safe",
+    } satisfies GlobalSemanticPairwiseDiagnostic;
   });
 
-  const finalSpacing = enforceCriticalNeighborSpacing({
-    topic: args.targetTopic,
-    proposedPosition: repelled.position,
-    context: args.context,
-    semanticNeighbors: decision.semantic_neighbors,
-  });
+  return diagnostics
+    .sort((a, b) => {
+      if (a.spacing_safety !== b.spacing_safety) {
+        return a.spacing_safety === "collision_violation" ? -1 : 1;
+      }
 
-  const finalPosition = roundPosition(finalSpacing.position);
-  const semanticDistanceDiagnostics = buildSemanticDistanceDiagnostics({
-    topic: args.targetTopic,
-    topicLabel: getTopicLabel(args.targetTopic),
-    finalPosition,
-    context: args.context,
-    semanticNeighbors: decision.semantic_neighbors,
-  });
+      if (a.relationship_fit !== b.relationship_fit) {
+        const rank = {
+          too_close: 0,
+          too_far: 1,
+          close_to_expected: 2,
+          context_only: 3,
+        } satisfies Record<SemanticDistanceRelationshipFit, number>;
 
-  return {
-    position: finalPosition,
-    semantic_pull_position: roundPosition(semanticPullPosition),
-    pre_repulsion_position: roundPosition(preRepulsionPosition),
-    method: decision.method,
-    semantic_neighbors: decision.semantic_neighbors,
-    force_neighbors: decision.force_neighbors,
-    semantic_distance_diagnostics: semanticDistanceDiagnostics,
-    near_duplicate_candidates: decision.semantic_neighbors.filter(
-      (neighbor) => neighbor.semantic_role === "near_duplicate_candidate",
-    ),
-    reason: decision.reason,
-    layout_decision: decision,
-    repulsion_applied: repelled.applied || finalSpacing.applied,
-    repulsion_vector: roundPosition(
-      addPositions(repelled.repulsionVector, finalSpacing.enforcementVector),
-    ),
-    final_spacing_enforcement_applied: finalSpacing.applied,
-    final_spacing_enforcement_vector: roundPosition(
-      finalSpacing.enforcementVector,
-    ),
-    final_spacing_enforcement_count: finalSpacing.correctedCount,
-  };
+        return rank[a.relationship_fit] - rank[b.relationship_fit];
+      }
+
+      return b.similarity - a.similarity;
+    })
+    .slice(0, 60);
 }
 
 function toJsonValue(value: unknown): JsonValue {
@@ -1406,94 +1660,58 @@ function getJsonObjectChild(
   const child = object[key];
 
   if (child && typeof child === "object" && !Array.isArray(child)) {
-    return child as JsonObject;
+    return child;
   }
 
   return null;
 }
 
 function buildLearningSpaceTopicSnapshot(args: {
-  base: JsonObject;
   topic: LayoutCandidate;
   computed: ComputedSemanticPosition;
   updatedAt: string;
 }) {
-  const existingLearningSpaceTopic =
-    getJsonObjectChild(args.base, "learning_space_topic") ?? {};
-
-  const existingLayout =
-    getJsonObjectChild(existingLearningSpaceTopic, "layout") ?? {};
-
-  const currentPosition =
-    asTopicPosition(existingLearningSpaceTopic.position) ??
-    getVisualPosition(args.topic, 0);
-
-  const renderState =
-    getJsonObjectChild(existingLearningSpaceTopic, "render_state") ?? null;
-
-  const satellites = Array.isArray(existingLearningSpaceTopic.satellites)
-    ? existingLearningSpaceTopic.satellites
-    : [];
-
   return {
-    ...existingLearningSpaceTopic,
     topic_id: args.topic.topic_id,
     topic_label: getTopicLabel(args.topic),
-    position: currentPosition,
+    position: asTopicPosition(args.topic.topic_position) ?? args.computed.position,
     layout: {
-      ...existingLayout,
-      position_source:
-        typeof existingLayout.position_source === "string"
-          ? existingLayout.position_source
-          : args.topic.topic_position
-            ? "topic_position"
-            : "topic_json",
+      position_source: "topic_position",
       semantic_position: args.computed.position,
       semantic_position_method: args.computed.method,
       semantic_position_updated_at: args.updatedAt,
     },
-    ...(renderState ? { render_state: renderState } : {}),
-    satellite_count:
-      typeof existingLearningSpaceTopic.satellite_count === "number"
-        ? existingLearningSpaceTopic.satellite_count
-        : satellites.length,
-    satellites,
+    semantic_position: args.computed.position,
+    semantic_position_method: args.computed.method,
+    semantic_position_updated_at: args.updatedAt,
   } satisfies JsonObject;
 }
 
 function hasStaleLearningSpaceTopicLayout(topic: LayoutCandidate) {
-  if (!hasSemanticPosition(topic)) {
-    return false;
-  }
-
   const base = topicJsonObject(topic);
+  const semanticStatus = getJsonObjectChild(base, "semantic_enrichment_status");
+  const semanticLayout = getJsonObjectChild(base, "semantic_layout");
   const learningSpaceTopic = getJsonObjectChild(base, "learning_space_topic");
+  const layout = learningSpaceTopic
+    ? getJsonObjectChild(learningSpaceTopic, "layout")
+    : null;
 
-  if (!learningSpaceTopic) {
-    return false;
-  }
-
-  const layout = getJsonObjectChild(learningSpaceTopic, "layout");
-
-  if (!layout) {
-    return true;
-  }
-
-  const layoutSemanticPosition = asTopicPosition(layout.semantic_position);
-  const layoutMethod =
-    typeof layout.semantic_position_method === "string"
+  const statusVersion =
+    typeof semanticStatus?.semantic_layout_version === "string"
+      ? semanticStatus.semantic_layout_version
+      : null;
+  const layoutVersion =
+    typeof semanticLayout?.version === "string" ? semanticLayout.version : null;
+  const method =
+    typeof layout?.semantic_position_method === "string"
       ? layout.semantic_position_method
       : null;
-  const layoutUpdatedAt =
-    typeof layout.semantic_position_updated_at === "string"
-      ? layout.semantic_position_updated_at
-      : null;
 
-  if (!layoutSemanticPosition) return true;
-  if (!layoutMethod) return true;
-  if (!layoutUpdatedAt) return true;
-
-  return false;
+  return (
+    statusVersion !== SEMANTIC_LAYOUT_VERSION ||
+    layoutVersion !== SEMANTIC_LAYOUT_VERSION ||
+    method !== "continuous_pairwise_embedding_stress_v2_rank_preserving_topic_label_embedding"
+  );
 }
 
 function mergeSemanticLayoutIntoTopicJson(args: {
@@ -1502,174 +1720,117 @@ function mergeSemanticLayoutIntoTopicJson(args: {
   updatedAt: string;
   topicLabelEmbedding: ResolvedTopicLabelEmbedding;
   globalLayoutSummary: JsonObject;
+  normalization: PairwiseNormalization;
+  layoutQuality: ContinuousLayoutQuality;
 }) {
   const base = topicJsonObject(args.topic);
-
-  delete base.topic_embedding_centroid;
-  delete base.topic_embedding_count;
-  delete base.topic_embedding_model;
-  delete base.topic_embedding_updated_at;
-  delete base.topic_concept_embedding_centroid;
-  delete base.topic_concept_embedding_count;
-  delete base.topic_concept_embedding_model;
-  delete base.topic_concept_embedding_updated_at;
-  delete base.learning_pattern_embedding_centroid;
-  delete base.learning_pattern_embedding_count;
-  delete base.learning_pattern_embedding_model;
-  delete base.learning_pattern_embedding_updated_at;
-
   const existingSemanticStatus =
-    base.semantic_enrichment_status &&
-    typeof base.semantic_enrichment_status === "object" &&
-    !Array.isArray(base.semantic_enrichment_status)
-      ? (base.semantic_enrichment_status as JsonObject)
-      : {};
+    getJsonObjectChild(base, "semantic_enrichment_status") ?? {};
 
-  return {
-    ...base,
-    topic_label: getTopicLabel(args.topic),
+  base.topic_label = getTopicLabel(args.topic);
+  base.semantic_position = args.computed.position;
+  base.semantic_position_method = args.computed.method;
+  base.semantic_position_updated_at = args.updatedAt;
+  base.learning_space_topic = buildLearningSpaceTopicSnapshot({
+    topic: args.topic,
+    computed: args.computed,
+    updatedAt: args.updatedAt,
+  });
+  base.semantic_layout = {
+    ...args.globalLayoutSummary,
+    normalization: args.normalization,
+    layout_quality: args.layoutQuality,
     semantic_position: args.computed.position,
-    semantic_position_updated_at: args.updatedAt,
-    semantic_position_method: args.computed.method,
-    learning_space_topic: buildLearningSpaceTopicSnapshot({
-      base,
-      topic: args.topic,
-      computed: args.computed,
-      updatedAt: args.updatedAt,
-    }),
-    semantic_neighbors: args.computed.semantic_neighbors.map((neighbor) => ({
+    semantic_pull_position: args.computed.semantic_pull_position,
+    pre_repulsion_position: args.computed.pre_repulsion_position,
+    estimated_render_radius: round4(estimateTopicRenderRadius(args.topic)),
+    estimated_collision_radius: round4(estimateTopicCollisionRadius(args.topic)),
+    final_spacing_enforcement_applied:
+      args.computed.final_spacing_enforcement_applied,
+    final_spacing_enforcement_vector: args.computed.final_spacing_enforcement_vector,
+    final_spacing_enforcement_count: args.computed.final_spacing_enforcement_count,
+    distance_diagnostic_policy:
+      "Continuous pairwise objective: every embedding pair maps to a desired distance, followed by a rank-preserving correction pass. Diagnostics report how well final layout distances match those continuous targets and global rank ordering.",
+  };
+  base.semantic_distance_diagnostics =
+    args.computed.semantic_distance_diagnostics.map((diagnostic) => ({
+      topic_id: diagnostic.topic_id,
+      topic_label: diagnostic.topic_label,
+      similarity: diagnostic.similarity,
+      raw_similarity: diagnostic.raw_similarity,
+      normalized_similarity: diagnostic.normalized_similarity,
+      reliability: diagnostic.reliability,
+      semantic_role: diagnostic.semantic_role,
+      diagnostic_scope: diagnostic.diagnostic_scope,
+      spacing_safety: diagnostic.spacing_safety,
+      force_weight: diagnostic.force_weight,
+      collision_min_distance: diagnostic.collision_min_distance,
+      desired_distance: diagnostic.desired_distance,
+      actual_distance_after_layout: diagnostic.actual_distance_after_layout,
+      distance_error: diagnostic.distance_error,
+      normalized_distance_error: diagnostic.normalized_distance_error,
+      tolerance: diagnostic.tolerance,
+      relationship_fit: diagnostic.relationship_fit,
+      interpretation: diagnostic.interpretation,
+    }));
+  base.near_duplicate_candidates = args.computed.near_duplicate_candidates.map(
+    (neighbor) => ({
       topic_id: neighbor.topic_id,
       topic_label: neighbor.topic_label,
       similarity: neighbor.similarity,
-      semantic_role: neighbor.semantic_role,
+      normalized_similarity: neighbor.normalized_similarity,
       force_weight: neighbor.force_weight,
       reliability: neighbor.reliability,
+      desired_distance: neighbor.desired_distance,
+      actual_distance_after_layout: neighbor.actual_distance_after_layout,
       topic_label_embedding_count: neighbor.topic_label_embedding_count,
       topic_label_embedding_source: neighbor.topic_label_embedding_source,
-    })),
-    semantic_distance_diagnostics:
-      args.computed.semantic_distance_diagnostics.map((diagnostic) => ({
-        topic_id: diagnostic.topic_id,
-        topic_label: diagnostic.topic_label,
-        similarity: diagnostic.similarity,
-        semantic_role: diagnostic.semantic_role,
-        diagnostic_scope: diagnostic.diagnostic_scope,
-        spacing_safety: diagnostic.spacing_safety,
-        force_weight: diagnostic.force_weight,
-        collision_min_distance: diagnostic.collision_min_distance,
-        desired_distance: diagnostic.desired_distance,
-        actual_distance_after_layout: diagnostic.actual_distance_after_layout,
-        distance_error: diagnostic.distance_error,
-        normalized_distance_error: diagnostic.normalized_distance_error,
-        tolerance: diagnostic.tolerance,
-        relationship_fit: diagnostic.relationship_fit,
-        interpretation: diagnostic.interpretation,
-      })),
-    semantic_layout: {
-      version: SEMANTIC_LAYOUT_VERSION,
-      method: args.computed.method,
-      embedding_source: "topic_label_embedding_centroid",
-      resolved_embedding_source: args.topicLabelEmbedding.source,
-      updated_at: args.updatedAt,
-      reason: args.computed.reason,
-      global_layout_summary: args.globalLayoutSummary,
-      layout_decision: {
-        emergent_region_signal:
-          args.computed.layout_decision.emergent_region_signal,
-        total_attraction_weight:
-          args.computed.layout_decision.total_attraction_weight,
-        semantic_pull_alpha: args.computed.layout_decision.semantic_pull_alpha,
-        top_similarity: args.computed.layout_decision.top_similarity,
-        second_similarity: args.computed.layout_decision.second_similarity,
-        top_second_margin: args.computed.layout_decision.top_second_margin,
-        layout_parameters: args.computed.layout_decision.layout_parameters,
-        repulsion_applied: args.computed.repulsion_applied,
-        repulsion_vector: args.computed.repulsion_vector,
-        semantic_pull_position: args.computed.semantic_pull_position,
-        pre_repulsion_position: args.computed.pre_repulsion_position,
-        estimated_render_radius: round4(estimateTopicRenderRadius(args.topic)),
-        estimated_collision_radius: round4(
-          estimateTopicCollisionRadius(args.topic),
-        ),
-        final_spacing_enforcement_applied:
-          args.computed.final_spacing_enforcement_applied,
-        final_spacing_enforcement_vector:
-          args.computed.final_spacing_enforcement_vector,
-        final_spacing_enforcement_count:
-          args.computed.final_spacing_enforcement_count,
-        distance_diagnostic_policy:
-          "Diagnostic only: desired_distance maps higher similarity to shorter readable distance, while actual_distance_after_layout shows where the current force/collision layout placed the pair.",
-      },
-      semantic_distance_diagnostics:
-        args.computed.semantic_distance_diagnostics.map((diagnostic) => ({
-          topic_id: diagnostic.topic_id,
-          topic_label: diagnostic.topic_label,
-          similarity: diagnostic.similarity,
-          raw_similarity: diagnostic.raw_similarity,
-          reliability: diagnostic.reliability,
-          semantic_role: diagnostic.semantic_role,
-          diagnostic_scope: diagnostic.diagnostic_scope,
-          spacing_safety: diagnostic.spacing_safety,
-          force_weight: diagnostic.force_weight,
-          collision_min_distance: diagnostic.collision_min_distance,
-          desired_distance: diagnostic.desired_distance,
-          actual_distance_after_layout: diagnostic.actual_distance_after_layout,
-          distance_error: diagnostic.distance_error,
-          normalized_distance_error: diagnostic.normalized_distance_error,
-          tolerance: diagnostic.tolerance,
-          relationship_fit: diagnostic.relationship_fit,
-          interpretation: diagnostic.interpretation,
-        })),
-      near_duplicate_candidates: args.computed.near_duplicate_candidates.map(
-        (neighbor) => ({
-          topic_id: neighbor.topic_id,
-          topic_label: neighbor.topic_label,
-          similarity: neighbor.similarity,
-          force_weight: neighbor.force_weight,
-          reliability: neighbor.reliability,
-          topic_label_embedding_count: neighbor.topic_label_embedding_count,
-          topic_label_embedding_source: neighbor.topic_label_embedding_source,
-        }),
-      ),
-      force_neighbors: args.computed.force_neighbors.map((neighbor) => ({
-        topic_id: neighbor.topic_id,
-        topic_label: neighbor.topic_label,
-        similarity: neighbor.similarity,
-        semantic_role: neighbor.semantic_role,
-        force_weight: neighbor.force_weight,
-        reliability: neighbor.reliability,
-        topic_label_embedding_count: neighbor.topic_label_embedding_count,
-        topic_label_embedding_source: neighbor.topic_label_embedding_source,
-      })),
-      semantic_neighbors: args.computed.semantic_neighbors.map((neighbor) => ({
-        topic_id: neighbor.topic_id,
-        topic_label: neighbor.topic_label,
-        similarity: neighbor.similarity,
-        semantic_role: neighbor.semantic_role,
-        force_weight: neighbor.force_weight,
-        reliability: neighbor.reliability,
-        topic_label_embedding_count: neighbor.topic_label_embedding_count,
-        topic_label_embedding_source: neighbor.topic_label_embedding_source,
-      })),
-    },
-    semantic_enrichment_status: {
-      ...existingSemanticStatus,
-      status: "centroid_ready",
-      needs_embedding_centroid: false,
-      should_schedule_enrichment: false,
-      layout_status: "semantic_position_ready",
-      embedding_skip_reason: null,
-      semantic_position_method: args.computed.method,
-      semantic_layout_embedding_source: "topic_label_embedding_centroid",
-      semantic_layout_resolved_embedding_source:
-        args.topicLabelEmbedding.source,
-      semantic_layout_version: SEMANTIC_LAYOUT_VERSION,
-    },
-    layout_status: "semantic_position_ready",
+    }),
+  );
+  base.force_neighbors = args.computed.force_neighbors.map((neighbor) => ({
+    topic_id: neighbor.topic_id,
+    topic_label: neighbor.topic_label,
+    similarity: neighbor.similarity,
+    normalized_similarity: neighbor.normalized_similarity,
+    semantic_role: neighbor.semantic_role,
+    force_weight: neighbor.force_weight,
+    reliability: neighbor.reliability,
+    desired_distance: neighbor.desired_distance,
+    actual_distance_after_layout: neighbor.actual_distance_after_layout,
+    topic_label_embedding_count: neighbor.topic_label_embedding_count,
+    topic_label_embedding_source: neighbor.topic_label_embedding_source,
+  }));
+  base.semantic_neighbors = args.computed.semantic_neighbors.map((neighbor) => ({
+    topic_id: neighbor.topic_id,
+    topic_label: neighbor.topic_label,
+    similarity: neighbor.similarity,
+    normalized_similarity: neighbor.normalized_similarity,
+    semantic_role: neighbor.semantic_role,
+    force_weight: neighbor.force_weight,
+    reliability: neighbor.reliability,
+    desired_distance: neighbor.desired_distance,
+    actual_distance_after_layout: neighbor.actual_distance_after_layout,
+    topic_label_embedding_count: neighbor.topic_label_embedding_count,
+    topic_label_embedding_source: neighbor.topic_label_embedding_source,
+  }));
+  base.semantic_enrichment_status = {
+    ...existingSemanticStatus,
+    status: "centroid_ready",
     needs_embedding_centroid: false,
     should_schedule_enrichment: false,
+    layout_status: "semantic_position_ready",
     embedding_skip_reason: null,
-  } satisfies JsonObject;
+    semantic_position_method: args.computed.method,
+    semantic_layout_embedding_source: "topic_label_embedding_centroid",
+    semantic_layout_resolved_embedding_source: args.topicLabelEmbedding.source,
+    semantic_layout_version: SEMANTIC_LAYOUT_VERSION,
+  };
+  base.layout_status = "semantic_position_ready";
+  base.needs_embedding_centroid = false;
+  base.should_schedule_enrichment = false;
+  base.embedding_skip_reason = null;
+
+  return base;
 }
 
 function findPendingLayoutTopics(args: {
@@ -1685,6 +1846,10 @@ function findPendingLayoutTopics(args: {
   );
 }
 
+function enrichedTopics(rows: LayoutCandidate[]) {
+  return rows.filter(hasTopicLabelEmbedding);
+}
+
 function buildGlobalLayoutContext(
   rows: LayoutCandidate[],
 ): GlobalLayoutContext {
@@ -1697,128 +1862,30 @@ function buildGlobalLayoutContext(
   };
 }
 
+function buildAllPairwiseSimilarities(context: GlobalLayoutContext) {
+  const similarities: number[] = [];
 
-function buildGlobalPairwiseDiagnostics(args: {
-  rows: LayoutCandidate[];
-  context: GlobalLayoutContext;
-  processedPositions: Map<string, TopicPosition>;
-}): GlobalSemanticPairwiseDiagnostic[] {
-  const diagnostics: GlobalSemanticPairwiseDiagnostic[] = [];
-
-  for (let outerIndex = 0; outerIndex < args.context.enrichedTopics.length; outerIndex += 1) {
-    const topicA = args.context.enrichedTopics[outerIndex];
+  for (let outerIndex = 0; outerIndex < context.enrichedTopics.length; outerIndex += 1) {
+    const topicA = context.enrichedTopics[outerIndex];
     const embeddingA = resolveTopicLabelEmbedding(topicA).centroid;
 
     if (!embeddingA) continue;
 
-    for (let innerIndex = outerIndex + 1; innerIndex < args.context.enrichedTopics.length; innerIndex += 1) {
-      const topicB = args.context.enrichedTopics[innerIndex];
+    for (
+      let innerIndex = outerIndex + 1;
+      innerIndex < context.enrichedTopics.length;
+      innerIndex += 1
+    ) {
+      const topicB = context.enrichedTopics[innerIndex];
       const embeddingB = resolveTopicLabelEmbedding(topicB).centroid;
 
       if (!embeddingB) continue;
 
-      const similarity = cosineSimilarity(embeddingA, embeddingB);
-      const semanticRole = classifyNeighbor({
-        similarity,
-        parameters: args.context.layoutParameters,
-      });
-
-      const forceWeight = semanticForceWeight({
-        similarity,
-        reliability: Math.min(
-          centroidReliability(resolveTopicLabelEmbedding(topicA).count),
-          centroidReliability(resolveTopicLabelEmbedding(topicB).count),
-        ),
-        parameters: args.context.layoutParameters,
-      });
-
-      const diagnosticScope: GlobalSemanticPairwiseDiagnostic["diagnostic_scope"] =
-        semanticRole === "near_duplicate_candidate"
-          ? "near_duplicate"
-          : forceWeight > 0
-            ? "force_candidate"
-            : "context_only";
-
-      const positionA =
-        args.processedPositions.get(topicA.topic_id) ??
-        getVisualPosition(topicA, outerIndex);
-      const positionB =
-        args.processedPositions.get(topicB.topic_id) ??
-        getVisualPosition(topicB, innerIndex);
-
-      const collisionMinDistance = radiusAwareMinDistance({
-        targetTopic: topicA,
-        otherTopic: topicB,
-        similarity,
-        parameters: args.context.layoutParameters,
-      });
-
-      const desiredDistance = desiredDistanceForSimilarity({
-        similarity,
-        collisionMinDistance,
-        parameters: args.context.layoutParameters,
-      });
-
-      const actualDistance = distanceBetween(positionA, positionB);
-      const distanceError = actualDistance - desiredDistance;
-      const tolerance = Math.max(0.42, collisionMinDistance * 0.18);
-      const relationshipFit: SemanticDistanceRelationshipFit =
-        diagnosticScope === "context_only"
-          ? "context_only"
-          : interpretDistanceFit({
-              distanceError,
-              tolerance,
-              diagnosticScope:
-                diagnosticScope === "near_duplicate"
-                  ? "near_duplicate"
-                  : "force_neighbor",
-            });
-
-      diagnostics.push({
-        topic_a_id: topicA.topic_id,
-        topic_a_label: getTopicLabel(topicA),
-        topic_b_id: topicB.topic_id,
-        topic_b_label: getTopicLabel(topicB),
-        similarity: round4(similarity),
-        raw_similarity: round4(similarity),
-        semantic_role: semanticRole,
-        diagnostic_scope: diagnosticScope,
-        collision_min_distance: round4(collisionMinDistance),
-        desired_distance: round4(desiredDistance),
-        actual_distance_after_layout: round4(actualDistance),
-        distance_error: round4(distanceError),
-        normalized_distance_error: round4(
-          distanceError / Math.max(desiredDistance, 0.001),
-        ),
-        tolerance: round4(tolerance),
-        relationship_fit: relationshipFit,
-        spacing_safety:
-          actualDistance + 0.001 < collisionMinDistance
-            ? "collision_violation"
-            : "collision_safe",
-      });
+      similarities.push(cosineSimilarity(embeddingA, embeddingB));
     }
   }
 
-  return diagnostics
-    .sort((a, b) => {
-      if (a.spacing_safety !== b.spacing_safety) {
-        return a.spacing_safety === "collision_violation" ? -1 : 1;
-      }
-
-      if (a.diagnostic_scope !== b.diagnostic_scope) {
-        const rank = {
-          near_duplicate: 0,
-          force_candidate: 1,
-          context_only: 2,
-        } satisfies Record<GlobalSemanticPairwiseDiagnostic["diagnostic_scope"], number>;
-
-        return rank[a.diagnostic_scope] - rank[b.diagnostic_scope];
-      }
-
-      return b.similarity - a.similarity;
-    })
-    .slice(0, 40);
+  return similarities;
 }
 
 export async function POST(request: Request) {
@@ -1835,6 +1902,41 @@ export async function POST(request: Request) {
       force,
     });
     const pendingTopics = allPendingLayoutTopics.slice(0, limit);
+    const initialPositions = buildInitialPositions({
+      topics: context.enrichedTopics,
+    });
+    const normalization = buildPairwiseNormalization(
+      buildAllPairwiseSimilarities(context),
+    );
+    const relations = buildPairwiseRelations({
+      context,
+      normalization,
+    });
+    const relationsByTopic = buildRelationsByTopic(relations);
+    const relationsByKey = new Map(
+      relations.map((relation) => [relation.key, relation] as const),
+    );
+    const stressPositions = applyPairwiseStressLayout({
+      context,
+      relations,
+      initialPositions,
+    });
+    const rankCorrectedPositions = applyRankPreservingCorrection({
+      context,
+      relations,
+      positions: stressPositions,
+    });
+    const spacingResult = enforceGlobalReadableSpacing({
+      context,
+      relations,
+      positions: rankCorrectedPositions,
+    });
+    const positions = spacingResult.positions;
+    const layoutQuality = buildContinuousLayoutQuality({
+      relations,
+      positions,
+      context,
+    });
 
     const globalLayoutSummary: JsonObject = {
       version: SEMANTIC_LAYOUT_VERSION,
@@ -1842,17 +1944,29 @@ export async function POST(request: Request) {
       enriched_topic_count: context.enrichedTopics.length,
       total_topics_seen: rows.length,
       layout_parameters: context.layoutParameters,
+      normalization,
+      layout_quality: layoutQuality,
       strategy:
-        "Compute semantic target positions as a mostly planar semantic solar-system map. Similar topics form regions on the plane, while radius-aware collision clearance prevents rendered topic spheres from overlapping. The third dimension is restrained for parallax/readability rather than used as an arbitrary semantic axis.",
+        "Compute a mostly planar semantic solar-system map by fitting all enriched topic pairs to a continuous embedding-derived desired-distance matrix. Higher cosine similarity continuously maps to shorter desired distance; lower similarity continuously maps to longer desired distance. A second continuous rank-preserving pass reduces cases where weaker pairs end up closer than stronger pairs.",
       cluster_policy:
-        "Clusters are not assigned by this route. Emergent regions are inferred later from stable semantic geometry.",
+        "Clusters are not assigned by this route. Emergent regions should be inferred later from stable geometry and pairwise diagnostics.",
       movement_policy:
-        "This route writes semantic_position only. It does not mutate committed topic_position.",
+        "This route writes semantic_position only. commit-pending then makes topic_position truthful immediately; SpaceCanvas animates the visual migration.",
       spacing_policy:
-        "Repulsion is radius-aware: visible radius plus future shape/ring/badge/satellite buffer determines minimum center distance, so larger or blobier spheres get more room. Similar topics may be close, but should remain visibly separated unless a future compound/merge rendering intentionally replaces separate spheres.",
+        "Readable spacing is enforced after the continuous pairwise stress pass. Collision spacing is secondary to semantic distance but still prevents unreadable overlap.",
       distance_diagnostic_policy:
-        "Each processed topic reports semantic_distance_diagnostics. Context-only pairs are no longer judged as too_close/too_far; actual force neighbors and near-duplicates receive stricter spacing checks. The response also includes global_pairwise_distance_diagnostics after all processed positions are known.",
+        "All pair similarities are continuous. Diagnostic labels such as weak/strong/visible_context are retained only for human debugging and do not create layout buckets.",
     };
+
+    const computedByTopic = buildComputedSemanticPositions({
+      context,
+      positions,
+      initialPositions,
+      relationsByTopic,
+      relationsByKey,
+      spacingCorrectedCount: spacingResult.correctedCount,
+      spacingCorrectionVector: spacingResult.correctionVector,
+    });
 
     const results = [];
     const processedPositions = new Map<string, TopicPosition>();
@@ -1862,12 +1976,9 @@ export async function POST(request: Request) {
       const topicLabelEmbedding = resolveTopicLabelEmbedding(topic);
       const hadStaleLearningSpaceTopicLayout =
         hasStaleLearningSpaceTopicLayout(topic);
+      const computed = computedByTopic.get(topic.topic_id);
 
-      const computed = computeSemanticPosition({
-        targetTopic: topic,
-        context,
-        fallbackIndex: index,
-      });
+      if (!computed) continue;
 
       processedPositions.set(topic.topic_id, computed.position);
 
@@ -1878,6 +1989,8 @@ export async function POST(request: Request) {
         updatedAt,
         topicLabelEmbedding,
         globalLayoutSummary,
+        normalization,
+        layoutQuality,
       });
 
       await upsertTopicState({
@@ -1890,25 +2003,15 @@ export async function POST(request: Request) {
         diagnosis: topic.diagnosis,
         nextStep: topic.next_step,
         topicJson,
-
-        /**
-         * Intentionally do not pass topicPosition here.
-         *
-         * This route computes semantic target positions. It should not mutate
-         * committed visual positions until we add an explicit commit/ease step.
-         */
-
         topicLabelEmbeddingCentroid: topicLabelEmbedding.centroid,
         topicLabelEmbeddingCount: topicLabelEmbedding.count,
         topicLabelEmbeddingModel: topicLabelEmbedding.model,
         topicLabelEmbeddingUpdatedAt: topicLabelEmbedding.updated_at,
-
         topicMessageEmbeddingCentroid: topic.topic_message_embedding_centroid,
         topicMessageEmbeddingCount: topic.topic_message_embedding_count,
         topicMessageEmbeddingModel: topic.topic_message_embedding_model,
         topicMessageEmbeddingUpdatedAt:
           topic.topic_message_embedding_updated_at,
-
         semanticPosition: computed.position,
         semanticPositionUpdatedAt: updatedAt,
         semanticPositionMethod: computed.method,
@@ -1944,8 +2047,11 @@ export async function POST(request: Request) {
             topic_id: neighbor.topic_id,
             topic_label: neighbor.topic_label,
             similarity: neighbor.similarity,
+            normalized_similarity: neighbor.normalized_similarity,
             force_weight: neighbor.force_weight,
             reliability: neighbor.reliability,
+            desired_distance: neighbor.desired_distance,
+            actual_distance_after_layout: neighbor.actual_distance_after_layout,
           }),
         ),
         layout_decision: {
@@ -1965,9 +2071,12 @@ export async function POST(request: Request) {
           topic_id: neighbor.topic_id,
           topic_label: neighbor.topic_label,
           similarity: neighbor.similarity,
+          normalized_similarity: neighbor.normalized_similarity,
           semantic_role: neighbor.semantic_role,
           force_weight: neighbor.force_weight,
           reliability: neighbor.reliability,
+          desired_distance: neighbor.desired_distance,
+          actual_distance_after_layout: neighbor.actual_distance_after_layout,
           topic_label_embedding_count: neighbor.topic_label_embedding_count,
           topic_label_embedding_source: neighbor.topic_label_embedding_source,
           visual_anchor_position: neighbor.position,
@@ -1976,9 +2085,12 @@ export async function POST(request: Request) {
           topic_id: neighbor.topic_id,
           topic_label: neighbor.topic_label,
           similarity: neighbor.similarity,
+          normalized_similarity: neighbor.normalized_similarity,
           semantic_role: neighbor.semantic_role,
           force_weight: neighbor.force_weight,
           reliability: neighbor.reliability,
+          desired_distance: neighbor.desired_distance,
+          actual_distance_after_layout: neighbor.actual_distance_after_layout,
           topic_label_embedding_count: neighbor.topic_label_embedding_count,
           topic_label_embedding_source: neighbor.topic_label_embedding_source,
           visual_anchor_position: neighbor.position,
@@ -1989,6 +2101,7 @@ export async function POST(request: Request) {
             topic_label: diagnostic.topic_label,
             similarity: diagnostic.similarity,
             raw_similarity: diagnostic.raw_similarity,
+            normalized_similarity: diagnostic.normalized_similarity,
             reliability: diagnostic.reliability,
             semantic_role: diagnostic.semantic_role,
             diagnostic_scope: diagnostic.diagnostic_scope,
@@ -2007,11 +2120,13 @@ export async function POST(request: Request) {
       });
     }
 
-    const global_pairwise_distance_diagnostics = buildGlobalPairwiseDiagnostics({
-      rows,
-      context,
-      processedPositions,
-    });
+    const global_pairwise_distance_diagnostics = buildGlobalPairwiseDiagnostics(
+      {
+        context,
+        relations,
+        positions,
+      },
+    );
 
     return NextResponse.json({
       ok: true,

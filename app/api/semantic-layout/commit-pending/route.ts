@@ -60,7 +60,7 @@ const DEFAULT_MAX_STEP_DISTANCE = 10_000;
  */
 const DEFAULT_EPSILON = 0.035;
 
-const COMMIT_VERSION = "semantic_position_commit_v2_instant";
+const COMMIT_VERSION = "semantic_position_commit_v3_continuous_layout_instant";
 
 function nowIso() {
   return new Date().toISOString();
@@ -458,7 +458,7 @@ export async function POST(request: Request) {
       route: "/api/semantic-layout/commit-pending",
       commit_version: COMMIT_VERSION,
       policy:
-        "Commit topic_position immediately to semantic_position. semantic_position remains the target; topic_position is the rendered source of truth; frontend animation handles motion.",
+        "Commit topic_position immediately to the current semantic_position. semantic_position remains the target; topic_position is the rendered source of truth; frontend animation handles motion.",
       limit,
       force,
       alpha,

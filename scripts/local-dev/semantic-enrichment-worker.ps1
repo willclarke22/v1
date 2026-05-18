@@ -3,13 +3,14 @@ param(
   [string]$EmbeddingHealthUrl = "http://127.0.0.1:8001/health",
   [string]$EmbeddingHost = "127.0.0.1",
   [int]$EmbeddingPort = 8001,
-  [int]$EnrichmentLimit = 1,
-  [int]$MessageEmbeddingLimit = 5,
+  [int]$EnrichmentLimit = 25,
+  [int]$MessageEmbeddingLimit = 25,
   [int]$LayoutLimit = 25,
   [int]$PollSeconds = 1,
   [int]$AbortPollSeconds = 1,
   [string]$PythonExe = ".\.venv\Scripts\python.exe",
-  [int]$EmbeddingStartupTimeoutSeconds = 90
+  [int]$EmbeddingStartupTimeoutSeconds = 90,
+  [int]$MaxEmbeddingCyclesPerStartup = 3
 )
 
 $ErrorActionPreference = "Stop"
@@ -274,6 +275,7 @@ Write-WorkerLog "Python executable: $PythonExe"
 Write-WorkerLog "Enrichment limit: $EnrichmentLimit"
 Write-WorkerLog "Message embedding limit: $MessageEmbeddingLimit"
 Write-WorkerLog "Layout limit: $LayoutLimit"
+Write-WorkerLog "Max embedding cycles per startup: $MaxEmbeddingCyclesPerStartup"
 
 while ($true) {
   $idle = Get-IdleState
@@ -361,53 +363,86 @@ while ($true) {
 
     $topicMessageEmbeddingProcessedCount = 0
     $topicMessageEmbeddingUpdatedTopicCount = 0
-
-    if ($pendingMessageEmbeddingItemsFound -gt 0) {
-      Write-WorkerLog "Running topic-message embedding batch with limit=$MessageEmbeddingLimit..."
-      $topicMessageEmbeddingResult = Invoke-TopicMessageEmbeddingsWithAbortWatch
-
-      if ($null -eq $topicMessageEmbeddingResult) {
-        Write-WorkerLog "Topic-message embedding batch was aborted or returned no result."
-      } else {
-        Write-WorkerLog "Topic-message embedding result:"
-        $topicMessageEmbeddingResult | ConvertTo-Json -Depth 20 | Write-Host
-
-        if ($null -ne $topicMessageEmbeddingResult.processed_message_count) {
-          $topicMessageEmbeddingProcessedCount = [int]$topicMessageEmbeddingResult.processed_message_count
-        }
-
-        if ($null -ne $topicMessageEmbeddingResult.updated_topic_count) {
-          $topicMessageEmbeddingUpdatedTopicCount = [int]$topicMessageEmbeddingResult.updated_topic_count
-        }
-      }
-    } else {
-      Write-WorkerLog "No pending topic-message embeddings this cycle."
-    }
-
-    $abortBeforeEnrichment = Test-ShouldAbortEnrichment
-    if ($abortBeforeEnrichment.should_abort -eq $true) {
-      Write-WorkerLog "Abort condition appeared before semantic enrichment. Reason: $($abortBeforeEnrichment.reason)"
-      continue
-    }
-
     $enrichedCount = 0
 
-    if ($pendingTopicsFound -gt 0) {
-      Write-WorkerLog "Running semantic enrichment batch with limit=$EnrichmentLimit..."
-      $enrichmentResult = Invoke-EnrichmentWithAbortWatch
+    for ($batchCycle = 1; $batchCycle -le $MaxEmbeddingCyclesPerStartup; $batchCycle += 1) {
+      $cyclePending = Get-PendingStatus
 
-      if ($null -eq $enrichmentResult) {
-        Write-WorkerLog "Enrichment was aborted or returned no result."
-      } else {
-        Write-WorkerLog "Enrichment result:"
-        $enrichmentResult | ConvertTo-Json -Depth 20 | Write-Host
-
-        if ($null -ne $enrichmentResult.enriched_count) {
-          $enrichedCount = [int]$enrichmentResult.enriched_count
-        }
+      if ($null -eq $cyclePending -or $cyclePending.ok -ne $true) {
+        Write-WorkerLog "Could not refresh pending-status during embedding batch cycle $batchCycle. Ending drain loop."
+        break
       }
-    } else {
-      Write-WorkerLog "No pending semantic enrichment topics this cycle."
+
+      $cyclePendingTopicsFound = 0
+      if ($null -ne $cyclePending.pending_topics_found) {
+        $cyclePendingTopicsFound = [int]$cyclePending.pending_topics_found
+      }
+
+      $cyclePendingMessageEmbeddingItemsFound = 0
+      if ($null -ne $cyclePending.pending_topic_message_embedding_items_found) {
+        $cyclePendingMessageEmbeddingItemsFound = [int]$cyclePending.pending_topic_message_embedding_items_found
+      }
+
+      $cyclePendingWorkFound = $cyclePendingTopicsFound + $cyclePendingMessageEmbeddingItemsFound
+
+      if ($cyclePendingWorkFound -le 0) {
+        Write-WorkerLog "Embedding drain cycle $batchCycle found no remaining embedding-backed work."
+        break
+      }
+
+      Write-WorkerLog "Embedding drain cycle $batchCycle/$MaxEmbeddingCyclesPerStartup. enrichment_topics=$cyclePendingTopicsFound, topic_message_embedding_items=$cyclePendingMessageEmbeddingItemsFound."
+
+      $abortBeforeBatch = Test-ShouldAbortEnrichment
+      if ($abortBeforeBatch.should_abort -eq $true) {
+        Write-WorkerLog "Abort condition appeared before embedding drain cycle $batchCycle. Reason: $($abortBeforeBatch.reason)"
+        break
+      }
+
+      if ($cyclePendingMessageEmbeddingItemsFound -gt 0) {
+        Write-WorkerLog "Running topic-message embedding batch with limit=$MessageEmbeddingLimit..."
+        $topicMessageEmbeddingResult = Invoke-TopicMessageEmbeddingsWithAbortWatch
+
+        if ($null -eq $topicMessageEmbeddingResult) {
+          Write-WorkerLog "Topic-message embedding batch was aborted or returned no result."
+        } else {
+          Write-WorkerLog "Topic-message embedding result:"
+          $topicMessageEmbeddingResult | ConvertTo-Json -Depth 20 | Write-Host
+
+          if ($null -ne $topicMessageEmbeddingResult.processed_message_count) {
+            $topicMessageEmbeddingProcessedCount += [int]$topicMessageEmbeddingResult.processed_message_count
+          }
+
+          if ($null -ne $topicMessageEmbeddingResult.updated_topic_count) {
+            $topicMessageEmbeddingUpdatedTopicCount += [int]$topicMessageEmbeddingResult.updated_topic_count
+          }
+        }
+      } else {
+        Write-WorkerLog "No pending topic-message embeddings in drain cycle $batchCycle."
+      }
+
+      $abortBeforeEnrichment = Test-ShouldAbortEnrichment
+      if ($abortBeforeEnrichment.should_abort -eq $true) {
+        Write-WorkerLog "Abort condition appeared before semantic enrichment in drain cycle $batchCycle. Reason: $($abortBeforeEnrichment.reason)"
+        break
+      }
+
+      if ($cyclePendingTopicsFound -gt 0) {
+        Write-WorkerLog "Running semantic enrichment batch with limit=$EnrichmentLimit..."
+        $enrichmentResult = Invoke-EnrichmentWithAbortWatch
+
+        if ($null -eq $enrichmentResult) {
+          Write-WorkerLog "Enrichment was aborted or returned no result."
+        } else {
+          Write-WorkerLog "Enrichment result:"
+          $enrichmentResult | ConvertTo-Json -Depth 20 | Write-Host
+
+          if ($null -ne $enrichmentResult.enriched_count) {
+            $enrichedCount += [int]$enrichmentResult.enriched_count
+          }
+        }
+      } else {
+        Write-WorkerLog "No pending semantic enrichment topics in drain cycle $batchCycle."
+      }
     }
 
     $shouldRunLayout = ($enrichedCount -gt 0) -or ($topicMessageEmbeddingProcessedCount -gt 0)

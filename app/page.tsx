@@ -41,8 +41,24 @@ type LocalDevIdleStateUpdate = {
   lastMessageFinishedAt?: string;
 };
 
-const REALTIME_REFRESH_DEBOUNCE_MS = 650;
+type StagedTopicStateRefresh = {
+  reason: "bootstrap" | "realtime" | "fallback_poll";
+  preservePanelState: boolean;
+  nextTopics: Topic[];
+  mergedTopics: Topic[];
+};
+
+const REALTIME_REFRESH_DEBOUNCE_MS = 900;
 const FALLBACK_TOPIC_STATE_REFRESH_INTERVAL_MS = 20_000;
+
+/**
+ * Worker/realtime can produce several topic_state changes in quick succession:
+ * pre-cycle commit, enrichment, recompute, commit. Applying every refresh as it
+ * arrives makes the scene feel like it updates in pieces. This short staging
+ * window lets the latest persisted layout win, so all visible topic movement
+ * starts together as one semantic-layout event.
+ */
+const STAGED_TOPIC_STATE_REFRESH_DELAY_MS = 1_450;
 
 function clamp(value: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
@@ -365,6 +381,8 @@ export default function Home() {
 
   const topicRefreshInFlightRef = useRef(false);
   const realtimeRefreshTimeoutRef = useRef<number | null>(null);
+  const stagedTopicRefreshTimeoutRef = useRef<number | null>(null);
+  const stagedTopicRefreshRef = useRef<StagedTopicStateRefresh | null>(null);
 
   useEffect(() => {
     topicsRef.current = topics;
@@ -463,31 +481,29 @@ export default function Home() {
     !probeFlow.isEnteringProbe &&
     probeFlow.sceneMode !== "probe";
 
-  const refreshTopicStateFromBootstrap = useCallback(
-    async (args: {
-      reason: "bootstrap" | "realtime" | "fallback_poll";
-      preservePanelState: boolean;
-    }) => {
-      const data = await fetchBootstrappedTopics();
-
-      const nextTopics = Array.isArray(data.topics) ? data.topics : [];
+  const applyTopicStateRefresh = useCallback(
+    (payload: StagedTopicStateRefresh) => {
+      const { nextTopics, mergedTopics } = payload;
 
       if (nextTopics.length > 0) {
-        setTopics((previousTopics) => {
-          const mergedTopics = mergeBootstrappedTopicsWithPrevious({
-            nextTopics,
-            previousTopics,
-          });
+        const previousSignature = topicStateSignature(topicsRef.current);
+        const nextSignature = topicStateSignature(mergedTopics);
+        const topicStateChanged = previousSignature !== nextSignature;
 
-          const previousSignature = topicStateSignature(previousTopics);
-          const nextSignature = topicStateSignature(mergedTopics);
+        if (topicStateChanged) {
+          topicsRef.current = mergedTopics;
+          setTopics(mergedTopics);
 
-          if (previousSignature === nextSignature) {
-            return previousTopics;
-          }
-
-          return mergedTopics;
-        });
+          /**
+           * Keep the renderer on one continuous learning-space source. A staged
+           * apply means all changed topic positions are released into the scene
+           * together, so every affected sphere begins migrating in the same
+           * visual event instead of in multiple worker/realtime waves.
+           */
+          setServerLearningSpace(
+            toRendererLearningSpace(buildLearningSpace(mergedTopics)),
+          );
+        }
 
         setSelectedTopicId((currentSelectedTopicId) => {
           const stillExists = nextTopics.some(
@@ -509,33 +525,78 @@ export default function Home() {
           return stillExists ? currentFocusedTopicId : null;
         });
 
-        if (!args.preservePanelState) {
+        if (!payload.preservePanelState) {
           setIsRightPanelOpenWhileUnfocused(false);
         }
       } else {
-        setTopics([]);
+        const topicStateChanged = topicsRef.current.length > 0;
+
+        if (topicStateChanged) {
+          topicsRef.current = [];
+          setTopics([]);
+          setServerLearningSpace(null);
+        }
+
         setSelectedTopicId(null);
         setFocusedTopicId(null);
 
-        if (!args.preservePanelState) {
+        if (!payload.preservePanelState) {
           setIsRightPanelOpenWhileUnfocused(false);
         }
       }
 
-      /**
-       * Important:
-       * Worker commits update Supabase after /api/message has already returned.
-       * Clearing serverLearningSpace lets the page derive LearningSpace from the
-       * freshly fetched Topic[] so SpaceCanvas receives updated topic.position and
-       * can visually ease toward it.
-       */
-      setServerLearningSpace(null);
-
-      if (args.reason === "bootstrap") {
+      if (payload.reason === "bootstrap") {
         setSceneArrivalMode("focus");
       }
     },
     [setIsRightPanelOpenWhileUnfocused],
+  );
+
+  const scheduleStagedTopicRefreshApply = useCallback(
+    (payload: StagedTopicStateRefresh) => {
+      stagedTopicRefreshRef.current = payload;
+
+      if (stagedTopicRefreshTimeoutRef.current !== null) {
+        window.clearTimeout(stagedTopicRefreshTimeoutRef.current);
+        stagedTopicRefreshTimeoutRef.current = null;
+      }
+
+      const delayMs =
+        payload.reason === "bootstrap" ? 0 : STAGED_TOPIC_STATE_REFRESH_DELAY_MS;
+
+      stagedTopicRefreshTimeoutRef.current = window.setTimeout(() => {
+        const latestPayload = stagedTopicRefreshRef.current;
+        stagedTopicRefreshRef.current = null;
+        stagedTopicRefreshTimeoutRef.current = null;
+
+        if (latestPayload) {
+          applyTopicStateRefresh(latestPayload);
+        }
+      }, delayMs);
+    },
+    [applyTopicStateRefresh],
+  );
+
+  const refreshTopicStateFromBootstrap = useCallback(
+    async (args: {
+      reason: "bootstrap" | "realtime" | "fallback_poll";
+      preservePanelState: boolean;
+    }) => {
+      const data = await fetchBootstrappedTopics();
+      const nextTopics = Array.isArray(data.topics) ? data.topics : [];
+      const mergedTopics = mergeBootstrappedTopicsWithPrevious({
+        nextTopics,
+        previousTopics: topicsRef.current,
+      });
+
+      scheduleStagedTopicRefreshApply({
+        reason: args.reason,
+        preservePanelState: args.preservePanelState,
+        nextTopics,
+        mergedTopics,
+      });
+    },
+    [scheduleStagedTopicRefreshApply],
   );
 
   const runTopicStateRefresh = useCallback(
@@ -635,6 +696,12 @@ export default function Home() {
       if (realtimeRefreshTimeoutRef.current !== null) {
         window.clearTimeout(realtimeRefreshTimeoutRef.current);
         realtimeRefreshTimeoutRef.current = null;
+      }
+
+      if (stagedTopicRefreshTimeoutRef.current !== null) {
+        window.clearTimeout(stagedTopicRefreshTimeoutRef.current);
+        stagedTopicRefreshTimeoutRef.current = null;
+        stagedTopicRefreshRef.current = null;
       }
 
       void supabase.removeChannel(channel);
@@ -758,6 +825,7 @@ export default function Home() {
       const nextTopics = deriveTopicsFromMessageResponse(data, topics);
 
       if (nextTopics) {
+        topicsRef.current = nextTopics;
         setTopics(nextTopics);
       }
 
@@ -768,7 +836,7 @@ export default function Home() {
       if (returnedLearningSpace) {
         setServerLearningSpace(returnedLearningSpace);
       } else if (nextTopics) {
-        setServerLearningSpace(null);
+        setServerLearningSpace(toRendererLearningSpace(buildLearningSpace(nextTopics)));
       }
 
       const resolvedTopicId = resolveReturnedTopicId(data, nextTopics);
