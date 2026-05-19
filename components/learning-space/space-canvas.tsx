@@ -184,7 +184,8 @@ const LABEL_OCCLUSION_SCREEN_FADE_BAND_PX = 34;
  * Default state keeps the stable semantic neighborhood lines. While the user
  * clicks and rotates, those default lines are replaced by scanner lines chosen
  * from the current camera/view corridor. On release, the last scanner result
- * stays briefly before the stable semantic lines return.
+ * stays briefly in the same scanner visual style/color before the stable
+ * semantic lines return. There is no intermediate thick-white settled state.
  */
 const VIEWPOINT_SCANNER_RELATIONSHIP_MAX_COUNT = 3;
 const VIEWPOINT_SCANNER_SETTLE_MS = 3000;
@@ -216,7 +217,7 @@ const RELATIONSHIP_ARC_TUBE_SEGMENTS = 48;
  */
 const RELATIONSHIP_ARC_ENDPOINT_COLOR_BLEND_FRACTION = 0.18;
 const VIEWPOINT_SCANNER_BLUE = "#7BAFD4";
-const VIEWPOINT_SCANNER_SETTLED_BLUE = "#B7D9EF";
+const VIEWPOINT_SCANNER_SETTLED_BLUE = VIEWPOINT_SCANNER_BLUE;
 const RELATIONSHIP_DEFAULT_ENDPOINT_ACTIVE_COLOR = "#ead7ff";
 const RELATIONSHIP_DEFAULT_ENDPOINT_BACKGROUND_COLOR = "#d4d4d8";
 const TOPIC_SPHERE_RENDER_ORDER = 10;
@@ -1415,10 +1416,14 @@ function ViewpointRelationshipScanner({
 
   useFrame(() => {
     if (!isScanning || isEnteringProbe || !activeTopicId) {
-      if (lastRelationshipIdsKeyRef.current !== "") {
-        lastRelationshipIdsKeyRef.current = "";
-        onScannerRelationshipIdsChange([]);
-      }
+      /**
+       * Do not clear scanner ids here. On mouse release, SpaceCanvas copies the
+       * latest scanner ids into the settled-scanner state so the blue scanner
+       * lines can remain on screen for a few seconds. Clearing from this frame
+       * loop creates an extra state transition and can look like a flicker.
+       * The next scan is explicitly reset in beginRelationshipScan().
+       */
+      lastRelationshipIdsKeyRef.current = "";
       return;
     }
 
@@ -2404,11 +2409,10 @@ export default function SpaceCanvas({
         : visibleSemanticRelationships;
 
   const displayedRelationshipVariant: RelationshipArcVariant =
-    relationshipDisplayMode === "scanning"
+    relationshipDisplayMode === "scanning" ||
+    relationshipDisplayMode === "settled_scan"
       ? "scanner"
-      : relationshipDisplayMode === "settled_scan"
-        ? "settled_scan"
-        : "default";
+      : "default";
 
   function clearScannerSettleTimeout() {
     if (scannerSettleTimeoutRef.current !== null) {
@@ -2434,6 +2438,16 @@ export default function SpaceCanvas({
   function beginRelationshipScan() {
     clearScannerSettleTimeout();
     setSettledScannerRelationshipIds([]);
+
+    /**
+     * Start the next scan from a clean scanner set. We intentionally do this
+     * at scan start instead of clearing scanner ids on scan end. Clearing on
+     * mouse release causes an extra relationship-render transition right when
+     * the settled scanner lines should remain visually stable.
+     */
+    scannerRelationshipIdsRef.current = [];
+    setScannerRelationshipIds([]);
+
     setIsUserControlling(true);
   }
 
@@ -2604,7 +2618,7 @@ export default function SpaceCanvas({
           {activeRelationshipTopicId &&
             displayedRelationships.map((relationship) => (
               <SemanticRelationshipArc
-                key={`${relationshipDisplayMode}:${relationship.relationship_id}`}
+                key={relationship.relationship_id}
                 relationship={relationship}
                 activeTopicId={activeRelationshipTopicId}
                 topicsById={topicsById}
