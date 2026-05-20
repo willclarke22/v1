@@ -11,6 +11,39 @@ import type {
   LearningSpaceViewpoint,
 } from "@/types/learning-space";
 
+
+const DEFAULT_BOOTSTRAP_CACHE_MS = 750;
+
+type BootstrapPayload = {
+  topics: Topic[];
+  source: "empty" | "supabase" | "memory_cache";
+  cache?: {
+    ttl_ms: number;
+    age_ms: number;
+  };
+};
+
+let bootstrapCache:
+  | {
+      createdAt: number;
+      payload: BootstrapPayload;
+    }
+  | null = null;
+
+function getBootstrapCacheMs() {
+  const raw = process.env.MYWAY_BOOTSTRAP_TOPIC_STATE_CACHE_MS;
+  if (!raw) return DEFAULT_BOOTSTRAP_CACHE_MS;
+
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 0) return DEFAULT_BOOTSTRAP_CACHE_MS;
+
+  return Math.min(parsed, 5_000);
+}
+
+function cloneBootstrapPayload(payload: BootstrapPayload): BootstrapPayload {
+  return JSON.parse(JSON.stringify(payload)) as BootstrapPayload;
+}
+
 function clamp(value: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
 }
@@ -203,21 +236,54 @@ function mapRowsToTopics(
 
 export async function GET() {
   try {
-    const rows = await getLatestTopicState();
+    const cacheMs = getBootstrapCacheMs();
+    const now = Date.now();
 
-    if (!rows.length) {
+    if (
+      cacheMs > 0 &&
+      bootstrapCache &&
+      now - bootstrapCache.createdAt <= cacheMs
+    ) {
+      const cachedPayload = cloneBootstrapPayload(bootstrapCache.payload);
+
       return NextResponse.json({
-        topics: [],
-        source: "empty",
+        ...cachedPayload,
+        source: "memory_cache",
+        cache: {
+          ttl_ms: cacheMs,
+          age_ms: now - bootstrapCache.createdAt,
+        },
       });
     }
 
-    const topics = mapRowsToTopics(rows);
+    const rows = await getLatestTopicState();
 
-    return NextResponse.json({
+    if (!rows.length) {
+      const payload: BootstrapPayload = {
+        topics: [],
+        source: "empty",
+      };
+
+      bootstrapCache = {
+        createdAt: now,
+        payload: cloneBootstrapPayload(payload),
+      };
+
+      return NextResponse.json(payload);
+    }
+
+    const topics = mapRowsToTopics(rows);
+    const payload: BootstrapPayload = {
       topics,
       source: "supabase",
-    });
+    };
+
+    bootstrapCache = {
+      createdAt: now,
+      payload: cloneBootstrapPayload(payload),
+    };
+
+    return NextResponse.json(payload);
   } catch (error) {
     console.error("GET /api/bootstrap/topic-state failed:", error);
 

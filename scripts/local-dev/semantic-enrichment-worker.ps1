@@ -3,17 +3,26 @@ param(
   [string]$EmbeddingHealthUrl = "http://127.0.0.1:8001/health",
   [string]$EmbeddingHost = "127.0.0.1",
   [int]$EmbeddingPort = 8001,
+  [string]$ConfusionInsightHealthUrl = "http://127.0.0.1:8003/health",
+  [string]$ConfusionInsightHost = "127.0.0.1",
+  [int]$ConfusionInsightPort = 8003,
   [int]$EnrichmentLimit = 25,
   [int]$MessageEmbeddingLimit = 25,
+  [int]$ConfusionInsightLimit = 10,
   [int]$LayoutLimit = 25,
+  [int]$LayoutCommitCooldownSeconds = 12,
   [int]$PollSeconds = 1,
   [int]$AbortPollSeconds = 1,
   [string]$PythonExe = ".\.venv\Scripts\python.exe",
   [int]$EmbeddingStartupTimeoutSeconds = 90,
-  [int]$MaxEmbeddingCyclesPerStartup = 3
+  [int]$ConfusionInsightStartupTimeoutSeconds = 90,
+  [int]$MaxEmbeddingCyclesPerStartup = 3,
+  [int]$MaxConfusionInsightCyclesPerStartup = 3
 )
 
 $ErrorActionPreference = "Stop"
+
+$script:LastLayoutCommitAt = [DateTime]::MinValue
 
 function Write-WorkerLog {
   param([string]$Message)
@@ -165,6 +174,112 @@ function Stop-ExistingEmbeddingServiceOnPort {
   }
 }
 
+function Test-ConfusionInsightServiceHealthy {
+  try {
+    $health = Invoke-RestMethod -Method GET $ConfusionInsightHealthUrl -TimeoutSec 2
+    return [bool]($health.status -eq "ok" -or $health.ok -eq $true)
+  } catch {
+    return $false
+  }
+}
+
+function Start-ConfusionInsightService {
+  Write-WorkerLog "Starting confusion/insight service on $ConfusionInsightHost`:$ConfusionInsightPort..."
+
+  if (-not (Test-Path $PythonExe)) {
+    throw "Could not find Python executable at $PythonExe. Are you running from the project root?"
+  }
+
+  $logDir = Join-Path (Get-Location) "local-dev-logs"
+  New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+
+  $stdoutLog = Join-Path $logDir "confusion-insight-service.out.log"
+  $stderrLog = Join-Path $logDir "confusion-insight-service.err.log"
+
+  Write-WorkerLog "Confusion/insight stdout log: $stdoutLog"
+  Write-WorkerLog "Confusion/insight stderr log: $stderrLog"
+
+  $process = Start-Process `
+    -FilePath $PythonExe `
+    -ArgumentList @(
+      "-m", "uvicorn",
+      "services.confusion_insight.app:app",
+      "--host", $ConfusionInsightHost,
+      "--port", "$ConfusionInsightPort",
+      "--log-level", "info"
+    ) `
+    -WorkingDirectory (Get-Location) `
+    -PassThru `
+    -WindowStyle Hidden `
+    -RedirectStandardOutput $stdoutLog `
+    -RedirectStandardError $stderrLog
+
+  $startedAt = Get-Date
+
+  while (((Get-Date) - $startedAt).TotalSeconds -lt $ConfusionInsightStartupTimeoutSeconds) {
+    if ($process.HasExited) {
+      $stderrPreview = ""
+      if (Test-Path $stderrLog) {
+        $stderrPreview = (Get-Content $stderrLog -Tail 40 -ErrorAction SilentlyContinue) -join "`n"
+      }
+
+      throw "Confusion/insight service process exited early with code $($process.ExitCode). Recent stderr:`n$stderrPreview"
+    }
+
+    if (Test-ConfusionInsightServiceHealthy) {
+      Write-WorkerLog "Confusion/insight service is healthy."
+      return $process
+    }
+
+    Start-Sleep -Seconds 1
+  }
+
+  $stderrTimeoutPreview = ""
+  if (Test-Path $stderrLog) {
+    $stderrTimeoutPreview = (Get-Content $stderrLog -Tail 40 -ErrorAction SilentlyContinue) -join "`n"
+  }
+
+  try {
+    Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+  } catch {}
+
+  throw "Confusion/insight service did not become healthy within $ConfusionInsightStartupTimeoutSeconds seconds. Recent stderr:`n$stderrTimeoutPreview"
+}
+
+function Stop-ConfusionInsightService {
+  param($Process)
+
+  if ($null -eq $Process) {
+    return
+  }
+
+  try {
+    if (-not $Process.HasExited) {
+      Write-WorkerLog "Stopping confusion/insight service..."
+      Stop-Process -Id $Process.Id -Force -ErrorAction SilentlyContinue
+    }
+  } catch {
+    Write-WorkerLog "Could not stop confusion/insight service cleanly. $($_.Exception.Message)"
+  }
+}
+
+function Stop-ExistingConfusionInsightServiceOnPort {
+  $connections = Get-NetTCPConnection -LocalPort $ConfusionInsightPort -State Listen -ErrorAction SilentlyContinue
+
+  foreach ($connection in $connections) {
+    $pidToStop = $connection.OwningProcess
+
+    if ($pidToStop -and $pidToStop -ne $PID) {
+      try {
+        Write-WorkerLog "Stopping existing process on confusion/insight port $ConfusionInsightPort. PID=$pidToStop"
+        Stop-Process -Id $pidToStop -Force -ErrorAction SilentlyContinue
+      } catch {
+        Write-WorkerLog "Could not stop existing confusion/insight process PID=$pidToStop. $($_.Exception.Message)"
+      }
+    }
+  }
+}
+
 function Test-ShouldAbortEnrichment {
   $idle = Get-IdleState
 
@@ -238,6 +353,14 @@ function Invoke-TopicMessageEmbeddingsWithAbortWatch {
     -Url $url
 }
 
+function Invoke-ConfusionInsightWithAbortWatch {
+  $url = "$AppBaseUrl/api/confusion-insight/run-pending?limit=$ConfusionInsightLimit"
+
+  return Invoke-PostRouteWithAbortWatch `
+    -RouteName "confusion/insight scoring" `
+    -Url $url
+}
+
 function Invoke-LayoutWithAbortWatch {
   param([bool]$Force = $false)
 
@@ -266,16 +389,60 @@ function Invoke-LayoutCommitWithAbortWatch {
     -Url $url
 }
 
+function Invoke-LayoutCommitIfNeeded {
+  param(
+    [object]$PendingStatus,
+    [string]$Reason,
+    [bool]$Force = $false
+  )
+
+  $pendingLayoutCommitTopicsFound = 0
+  if ($null -ne $PendingStatus -and $null -ne $PendingStatus.pending_layout_commit_topics_found) {
+    $pendingLayoutCommitTopicsFound = [int]$PendingStatus.pending_layout_commit_topics_found
+  }
+
+  $secondsSinceLastCommit = ((Get-Date) - $script:LastLayoutCommitAt).TotalSeconds
+  $cooldownSatisfied = $secondsSinceLastCommit -ge $LayoutCommitCooldownSeconds
+
+  if (-not $Force -and $pendingLayoutCommitTopicsFound -le 0) {
+    Write-WorkerLog "Skipping semantic layout commit ($Reason): no pending layout commits reported."
+    return $null
+  }
+
+  if (-not $Force -and -not $cooldownSatisfied) {
+    $remaining = [Math]::Ceiling($LayoutCommitCooldownSeconds - $secondsSinceLastCommit)
+    Write-WorkerLog "Skipping semantic layout commit ($Reason): cooldown active for about $remaining more second(s). pending_layout_commit_topics=$pendingLayoutCommitTopicsFound."
+    return $null
+  }
+
+  Write-WorkerLog "Running semantic layout commit ($Reason) with limit=$LayoutLimit. pending_layout_commit_topics=$pendingLayoutCommitTopicsFound force=$Force..."
+
+  $layoutCommitResult = Invoke-LayoutCommitWithAbortWatch -Force:$Force
+  $script:LastLayoutCommitAt = Get-Date
+
+  if ($null -eq $layoutCommitResult) {
+    Write-WorkerLog "Semantic layout commit ($Reason) was aborted or returned no result."
+  } else {
+    Write-WorkerLog "Semantic layout commit result ($Reason):"
+    $layoutCommitResult | ConvertTo-Json -Depth 20 | Write-Host
+  }
+
+  return $layoutCommitResult
+}
+
 Write-WorkerLog "Semantic enrichment worker started."
 Write-WorkerLog "App: $AppBaseUrl"
 Write-WorkerLog "This worker runs when idle-state is safe. Layout commits can run even when no embedding-backed work is pending."
-Write-WorkerLog "It processes queued topic-message embeddings, semantic enrichment, semantic layout targets, and semantic layout commits."
+Write-WorkerLog "It processes queued confusion/insight scores, topic-message embeddings, semantic enrichment, semantic layout targets, and semantic layout commits."
 Write-WorkerLog "Poll interval: $PollSeconds second(s)."
 Write-WorkerLog "Python executable: $PythonExe"
 Write-WorkerLog "Enrichment limit: $EnrichmentLimit"
 Write-WorkerLog "Message embedding limit: $MessageEmbeddingLimit"
+Write-WorkerLog "Confusion/insight limit: $ConfusionInsightLimit"
 Write-WorkerLog "Layout limit: $LayoutLimit"
+Write-WorkerLog "Layout commit cooldown: $LayoutCommitCooldownSeconds second(s)"
 Write-WorkerLog "Max embedding cycles per startup: $MaxEmbeddingCyclesPerStartup"
+Write-WorkerLog "Max confusion/insight cycles per startup: $MaxConfusionInsightCyclesPerStartup"
 
 while ($true) {
   $idle = Get-IdleState
@@ -315,25 +482,115 @@ while ($true) {
     $pendingMessageEmbeddingItemsFound = [int]$pending.pending_topic_message_embedding_items_found
   }
 
-  $pendingWorkFound = $pendingTopicsFound + $pendingMessageEmbeddingItemsFound
+  $pendingConfusionInsightItemsFound = 0
+  if ($null -ne $pending.pending_confusion_insight_items_found) {
+    $pendingConfusionInsightItemsFound = [int]$pending.pending_confusion_insight_items_found
+  }
 
-  Write-WorkerLog "Idle-safe cycle. First checking for pending semantic layout commits..."
+  $embeddingBackedWorkFound = $pendingTopicsFound + $pendingMessageEmbeddingItemsFound
+  $pendingWorkFound = $embeddingBackedWorkFound + $pendingConfusionInsightItemsFound
+
+  Write-WorkerLog "Idle-safe cycle. Checking whether semantic layout commit is actually needed..."
 
   try {
-    $preCommitResult = Invoke-LayoutCommitWithAbortWatch
-
-    if ($null -eq $preCommitResult) {
-      Write-WorkerLog "Pre-cycle semantic layout commit was aborted or returned no result."
-    } else {
-      Write-WorkerLog "Pre-cycle semantic layout commit result:"
-      $preCommitResult | ConvertTo-Json -Depth 20 | Write-Host
-    }
+    Invoke-LayoutCommitIfNeeded `
+      -PendingStatus $pending `
+      -Reason "pre-cycle" | Out-Null
   } catch {
-    Write-WorkerLog "Pre-cycle semantic layout commit failed: $($_.Exception.Message)"
+    Write-WorkerLog "Pre-cycle semantic layout commit check failed: $($_.Exception.Message)"
   }
 
   if ($pendingWorkFound -le 0) {
-    Write-WorkerLog "Idle, but no embedding-backed work is pending. Layout commit check already ran; not starting embedding service."
+    Write-WorkerLog "Idle, but no worker-backed work is pending. Not starting model services."
+    Start-Sleep -Seconds $PollSeconds
+    continue
+  }
+
+  if ($pendingConfusionInsightItemsFound -gt 0) {
+    Write-WorkerLog "Pending confusion/insight work found: items=$pendingConfusionInsightItemsFound. Preparing confusion/insight worker cycle."
+
+    $confusionInsightProcess = $null
+
+    try {
+      Set-EnrichmentInFlight -Value $true
+
+      $abortBeforeConfusionStart = Test-ShouldAbortEnrichment
+      if ($abortBeforeConfusionStart.should_abort -eq $true) {
+        Write-WorkerLog "Abort condition appeared before confusion/insight startup. Reason: $($abortBeforeConfusionStart.reason)"
+      } else {
+        Stop-ExistingConfusionInsightServiceOnPort
+        $confusionInsightProcess = Start-ConfusionInsightService
+
+        for ($confusionCycle = 1; $confusionCycle -le $MaxConfusionInsightCyclesPerStartup; $confusionCycle += 1) {
+          $cyclePending = Get-PendingStatus
+
+          if ($null -eq $cyclePending -or $cyclePending.ok -ne $true) {
+            Write-WorkerLog "Could not refresh pending-status during confusion/insight cycle $confusionCycle. Ending drain loop."
+            break
+          }
+
+          $cyclePendingConfusionInsightItemsFound = 0
+          if ($null -ne $cyclePending.pending_confusion_insight_items_found) {
+            $cyclePendingConfusionInsightItemsFound = [int]$cyclePending.pending_confusion_insight_items_found
+          }
+
+          if ($cyclePendingConfusionInsightItemsFound -le 0) {
+            Write-WorkerLog "Confusion/insight drain cycle $confusionCycle found no remaining pending scores."
+            break
+          }
+
+          $abortBeforeConfusionBatch = Test-ShouldAbortEnrichment
+          if ($abortBeforeConfusionBatch.should_abort -eq $true) {
+            Write-WorkerLog "Abort condition appeared before confusion/insight drain cycle $confusionCycle. Reason: $($abortBeforeConfusionBatch.reason)"
+            break
+          }
+
+          Write-WorkerLog "Running confusion/insight scoring batch $confusionCycle/$MaxConfusionInsightCyclesPerStartup with limit=$ConfusionInsightLimit..."
+          $confusionInsightResult = Invoke-ConfusionInsightWithAbortWatch
+
+          if ($null -eq $confusionInsightResult) {
+            Write-WorkerLog "Confusion/insight scoring batch was aborted or returned no result."
+            break
+          }
+
+          Write-WorkerLog "Confusion/insight scoring result:"
+          $confusionInsightResult | ConvertTo-Json -Depth 20 | Write-Host
+
+          if ($null -eq $confusionInsightResult.processed_score_count -or [int]$confusionInsightResult.processed_score_count -le 0) {
+            Write-WorkerLog "Confusion/insight scoring returned no processed scores. Ending drain loop to avoid spinning."
+            break
+          }
+        }
+      }
+    } catch {
+      Write-WorkerLog "Confusion/insight worker cycle failed: $($_.Exception.Message)"
+    } finally {
+      Set-EnrichmentInFlight -Value $false
+      Stop-ConfusionInsightService -Process $confusionInsightProcess
+    }
+  }
+
+  $pending = Get-PendingStatus
+
+  if ($null -eq $pending -or $pending.ok -ne $true) {
+    Start-Sleep -Seconds $PollSeconds
+    continue
+  }
+
+  $pendingTopicsFound = 0
+  if ($null -ne $pending.pending_topics_found) {
+    $pendingTopicsFound = [int]$pending.pending_topics_found
+  }
+
+  $pendingMessageEmbeddingItemsFound = 0
+  if ($null -ne $pending.pending_topic_message_embedding_items_found) {
+    $pendingMessageEmbeddingItemsFound = [int]$pending.pending_topic_message_embedding_items_found
+  }
+
+  $embeddingBackedWorkFound = $pendingTopicsFound + $pendingMessageEmbeddingItemsFound
+
+  if ($embeddingBackedWorkFound -le 0) {
+    Write-WorkerLog "No embedding-backed work remains after confusion/insight cycle. Layout commit check already ran; not starting embedding service."
     Start-Sleep -Seconds $PollSeconds
     continue
   }
@@ -448,15 +705,16 @@ while ($true) {
     $shouldRunLayout = ($enrichedCount -gt 0) -or ($topicMessageEmbeddingProcessedCount -gt 0)
 
     if (-not $shouldRunLayout) {
-      Write-WorkerLog "No embeddings were updated this cycle. Running a final semantic layout commit check, then skipping recompute."
+      Write-WorkerLog "No embeddings were updated this cycle. Checking for pending layout commit without recompute."
 
-      $finalCommitWithoutRecompute = Invoke-LayoutCommitWithAbortWatch
+      $pendingBeforeFinalCommit = Get-PendingStatus
 
-      if ($null -eq $finalCommitWithoutRecompute) {
-        Write-WorkerLog "Final semantic layout commit check was aborted or returned no result."
+      if ($null -ne $pendingBeforeFinalCommit -and $pendingBeforeFinalCommit.ok -eq $true) {
+        Invoke-LayoutCommitIfNeeded `
+          -PendingStatus $pendingBeforeFinalCommit `
+          -Reason "final-no-recompute" | Out-Null
       } else {
-        Write-WorkerLog "Final semantic layout commit check result:"
-        $finalCommitWithoutRecompute | ConvertTo-Json -Depth 20 | Write-Host
+        Write-WorkerLog "Skipping final layout commit check because pending-status could not be refreshed."
       }
 
       continue
@@ -505,14 +763,15 @@ while ($true) {
       continue
     }
 
-    Write-WorkerLog "Running semantic layout commit with limit=$LayoutLimit..."
-    $layoutCommitResult = Invoke-LayoutCommitWithAbortWatch
+    $pendingBeforeLayoutCommit = Get-PendingStatus
 
-    if ($null -eq $layoutCommitResult) {
-      Write-WorkerLog "Semantic layout commit was aborted or returned no result."
+    if ($null -ne $pendingBeforeLayoutCommit -and $pendingBeforeLayoutCommit.ok -eq $true) {
+      Invoke-LayoutCommitIfNeeded `
+        -PendingStatus $pendingBeforeLayoutCommit `
+        -Reason "after-layout-recompute" `
+        -Force $true | Out-Null
     } else {
-      Write-WorkerLog "Semantic layout commit result:"
-      $layoutCommitResult | ConvertTo-Json -Depth 20 | Write-Host
+      Write-WorkerLog "Skipping semantic layout commit after recompute because pending-status could not be refreshed."
     }
   } catch {
     Write-WorkerLog "Worker cycle failed: $($_.Exception.Message)"

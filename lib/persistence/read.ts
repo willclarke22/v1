@@ -493,12 +493,48 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
   };
 }
 
+
+const TOPIC_STATE_READ_SELECT = `
+  topic_id,
+  updated_at,
+  last_run_id,
+  topic_label,
+  confusion,
+  insight,
+  learning_score,
+  diagnosis,
+  next_step,
+  topic_json,
+  topic_position_x,
+  topic_position_y,
+  topic_position_z,
+  semantic_position_x,
+  semantic_position_y,
+  semantic_position_z,
+  semantic_position_updated_at,
+  semantic_position_method,
+  semantic_enrichment_status,
+  needs_embedding_centroid,
+  should_schedule_enrichment,
+  semantic_enrichment_prompt_text,
+  layout_status,
+  embedding_skip_reason,
+  topic_label_embedding_centroid,
+  topic_label_embedding_count,
+  topic_label_embedding_model,
+  topic_label_embedding_updated_at,
+  topic_message_embedding_centroid,
+  topic_message_embedding_count,
+  topic_message_embedding_model,
+  topic_message_embedding_updated_at
+`;
+
 export async function getLatestTopicState(): Promise<TopicStateRow[]> {
   const supabase = createServerSupabaseClient();
 
   const { data, error } = await supabase
     .from("topic_state")
-    .select("*")
+    .select(TOPIC_STATE_READ_SELECT)
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -513,42 +549,7 @@ export async function getRouteTopicState(): Promise<TopicStateRow[]> {
 
   const { data, error } = await supabase
     .from("topic_state")
-    .select(
-      `
-      topic_id,
-      updated_at,
-      last_run_id,
-      topic_label,
-      confusion,
-      insight,
-      learning_score,
-      diagnosis,
-      next_step,
-      topic_json,
-      topic_position_x,
-      topic_position_y,
-      topic_position_z,
-      semantic_position_x,
-      semantic_position_y,
-      semantic_position_z,
-      semantic_position_updated_at,
-      semantic_position_method,
-      semantic_enrichment_status,
-      needs_embedding_centroid,
-      should_schedule_enrichment,
-      semantic_enrichment_prompt_text,
-      layout_status,
-      embedding_skip_reason,
-      topic_label_embedding_centroid,
-      topic_label_embedding_count,
-      topic_label_embedding_model,
-      topic_label_embedding_updated_at,
-      topic_message_embedding_centroid,
-      topic_message_embedding_count,
-      topic_message_embedding_model,
-      topic_message_embedding_updated_at
-    `,
-    )
+    .select(TOPIC_STATE_READ_SELECT)
     .order("updated_at", { ascending: false });
 
   if (error) {

@@ -71,6 +71,47 @@ export type SharedMessageFrame =
 
 const DEFAULT_DIAGNOSIS: DiagnosisType = "representation_gap";
 
+const DEFAULT_ROUTE_TOPICS_CACHE_MS = 1_500;
+
+let routeTopicsCache:
+  | {
+      createdAt: number;
+      topics: RouteTopic[];
+    }
+  | null = null;
+
+function getRouteTopicsCacheMs() {
+  const raw = process.env.MYWAY_ROUTE_TOPICS_CACHE_MS;
+  if (!raw) return DEFAULT_ROUTE_TOPICS_CACHE_MS;
+
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 0) return DEFAULT_ROUTE_TOPICS_CACHE_MS;
+
+  return Math.min(parsed, 5_000);
+}
+
+function cloneRouteTopic(topic: RouteTopic): RouteTopic {
+  return {
+    ...topic,
+    position: [...topic.position] as TopicPosition3D,
+    semanticPosition: topic.semanticPosition
+      ? ([...topic.semanticPosition] as TopicPosition3D)
+      : topic.semanticPosition,
+    topic_label_embedding_centroid: topic.topic_label_embedding_centroid
+      ? [...topic.topic_label_embedding_centroid]
+      : topic.topic_label_embedding_centroid,
+    topic_message_embedding_centroid: topic.topic_message_embedding_centroid
+      ? [...topic.topic_message_embedding_centroid]
+      : topic.topic_message_embedding_centroid,
+    topic_json: topic.topic_json ? { ...topic.topic_json } : topic.topic_json,
+  };
+}
+
+function cloneRouteTopics(topics: RouteTopic[]) {
+  return topics.map(cloneRouteTopic);
+}
+
+
 type EmbeddingFields = {
   topic_label_embedding_centroid: EmbeddingVector | null;
   topic_label_embedding_count: number | null;
@@ -205,9 +246,25 @@ export function inferKeywordsFromTopicLabel(label: string): string[] {
 }
 
 export async function loadRouteTopics(): Promise<RouteTopic[]> {
+  const cacheMs = getRouteTopicsCacheMs();
+  const now = Date.now();
+
+  if (
+    cacheMs > 0 &&
+    routeTopicsCache &&
+    now - routeTopicsCache.createdAt <= cacheMs
+  ) {
+    return cloneRouteTopics(routeTopicsCache.topics);
+  }
+
   const rows = await getRouteTopicState();
 
   if (!rows.length) {
+    routeTopicsCache = {
+      createdAt: now,
+      topics: [],
+    };
+
     return [];
   }
 
@@ -263,5 +320,10 @@ export async function loadRouteTopics(): Promise<RouteTopic[]> {
     loadedTopics.push(routeTopic);
   }
 
-  return loadedTopics;
+  routeTopicsCache = {
+    createdAt: now,
+    topics: cloneRouteTopics(loadedTopics),
+  };
+
+  return cloneRouteTopics(loadedTopics);
 }

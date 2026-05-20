@@ -46,7 +46,6 @@ import {
   buildUpdatedMetrics,
 } from "@/lib/runtime/message-runtime";
 import { nowIso } from "@/lib/runtime/shared";
-import { scoreConfusionInsight } from "@/lib/providers/confusion-insight";
 import { buildRecentChatHistory } from "@/lib/runtime/chat-history";
 import {
   buildTopicLabelerRequest,
@@ -201,6 +200,23 @@ type PendingTopicMessageEmbedding = {
   message_id: string;
   run_id: string | null;
   text: string;
+  created_at: string;
+  source: "message_route";
+  routing: {
+    target_topic_id: string;
+    target_topic_label: string;
+    resolution_kind: RouteResolutionKind;
+    resolved_label: string | null;
+    match_confidence: number;
+    authority_source: string | null;
+  };
+};
+
+type PendingConfusionInsightScore = {
+  score_id: string;
+  run_id: string | null;
+  text: string;
+  chat_history: string[];
   created_at: string;
   source: "message_route";
   routing: {
@@ -495,6 +511,25 @@ function buildChatHistoryFromBody(body: MessageRouteBody) {
   }
 
   return buildRecentChatHistory(recentTurns, 6);
+}
+
+function buildChatHistoryLinesForModelSignals(args: {
+  body: MessageRouteBody;
+  recentTurns: Array<{ role: "user" | "assistant"; text: string }>;
+}) {
+  const explicitChatHistory =
+    typeof args.body.chat_history === "string" && args.body.chat_history.trim()
+      ? args.body.chat_history.trim()
+      : null;
+
+  if (explicitChatHistory) {
+    return [explicitChatHistory];
+  }
+
+  return args.recentTurns
+    .slice(-8)
+    .map((turn) => `${turn.role === "assistant" ? "Assistant" : "User"}: ${turn.text}`)
+    .filter(Boolean);
 }
 
 function inferMessageRouteRunKind(args: {
@@ -1199,6 +1234,150 @@ function appendPendingTopicMessageEmbedding(args: {
   };
 }
 
+function getPendingConfusionInsightScores(
+  topicJson: unknown,
+): PendingConfusionInsightScore[] {
+  const base = asRecord(topicJson);
+  const rawQueue = base.pending_confusion_insight_scores;
+
+  if (!Array.isArray(rawQueue)) return [];
+
+  return rawQueue
+    .map((item): PendingConfusionInsightScore | null => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        return null;
+      }
+
+      const candidate = item as Record<string, unknown>;
+      const routing = asRecord(candidate.routing);
+
+      const scoreId =
+        typeof candidate.score_id === "string" && candidate.score_id.trim()
+          ? candidate.score_id.trim()
+          : null;
+      const text =
+        typeof candidate.text === "string" && candidate.text.trim()
+          ? candidate.text.trim()
+          : null;
+      const createdAt =
+        typeof candidate.created_at === "string" && candidate.created_at.trim()
+          ? candidate.created_at.trim()
+          : null;
+      const targetTopicId =
+        typeof routing.target_topic_id === "string" &&
+        routing.target_topic_id.trim()
+          ? routing.target_topic_id.trim()
+          : null;
+      const targetTopicLabel =
+        typeof routing.target_topic_label === "string" &&
+        routing.target_topic_label.trim()
+          ? routing.target_topic_label.trim()
+          : null;
+
+      if (!scoreId || !text || !createdAt || !targetTopicId || !targetTopicLabel) {
+        return null;
+      }
+
+      const rawChatHistory = candidate.chat_history;
+      const chatHistory = Array.isArray(rawChatHistory)
+        ? rawChatHistory
+            .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+            .filter(Boolean)
+            .slice(-8)
+        : [];
+
+      return {
+        score_id: scoreId,
+        run_id:
+          typeof candidate.run_id === "string" && candidate.run_id.trim()
+            ? candidate.run_id.trim()
+            : null,
+        text,
+        chat_history: chatHistory,
+        created_at: createdAt,
+        source: "message_route",
+        routing: {
+          target_topic_id: targetTopicId,
+          target_topic_label: targetTopicLabel,
+          resolution_kind:
+            routing.resolution_kind === "matched_existing" ||
+            routing.resolution_kind === "created_new_candidate" ||
+            routing.resolution_kind === "fallback_active_topic" ||
+            routing.resolution_kind === "fallback_existing_topic" ||
+            routing.resolution_kind === "no_match"
+              ? routing.resolution_kind
+              : "fallback_existing_topic",
+          resolved_label:
+            typeof routing.resolved_label === "string" && routing.resolved_label.trim()
+              ? routing.resolved_label.trim()
+              : null,
+          match_confidence:
+            typeof routing.match_confidence === "number" &&
+            Number.isFinite(routing.match_confidence)
+              ? routing.match_confidence
+              : 0,
+          authority_source:
+            typeof routing.authority_source === "string" &&
+            routing.authority_source.trim()
+              ? routing.authority_source.trim()
+              : null,
+        },
+      };
+    })
+    .filter((item): item is PendingConfusionInsightScore => Boolean(item));
+}
+
+function buildPendingConfusionInsightScore(args: {
+  message: string;
+  chatHistory: string[];
+  runId: string;
+  targetTopicId: string;
+  targetTopicLabel: string;
+  resolutionKind: RouteResolutionKind;
+  resolvedLabel: string | null;
+  matchConfidence: number;
+  authoritySource: string | null;
+}): PendingConfusionInsightScore {
+  return {
+    score_id: makeId("ciscore"),
+    run_id: args.runId,
+    text: args.message,
+    chat_history: args.chatHistory.slice(-8),
+    created_at: nowIso(),
+    source: "message_route",
+    routing: {
+      target_topic_id: args.targetTopicId,
+      target_topic_label: args.targetTopicLabel,
+      resolution_kind: args.resolutionKind,
+      resolved_label: args.resolvedLabel,
+      match_confidence: args.matchConfidence,
+      authority_source: args.authoritySource,
+    },
+  };
+}
+
+function appendPendingConfusionInsightScore(args: {
+  topicJson: Record<string, unknown>;
+  pendingItem: PendingConfusionInsightScore;
+}) {
+  const existingQueue = getPendingConfusionInsightScores(args.topicJson);
+  const nextQueue = [...existingQueue, args.pendingItem].slice(-50);
+
+  return {
+    ...args.topicJson,
+    pending_confusion_insight_scores: nextQueue,
+    confusion_insight_pending_count: nextQueue.length,
+    confusion_insight_queue_status: "pending",
+    confusion_insight_status: {
+      ...asRecord(args.topicJson.confusion_insight_status),
+      status: "pending",
+      pending_count: nextQueue.length,
+      queued_at: args.pendingItem.created_at,
+      source: "message_route",
+    },
+  };
+}
+
 function applyMessageEmbeddingUpdatePlanToTopics(
   topics: RouteTopic[],
   plan: RouteCentroidUpdatePlan | null
@@ -1718,25 +1897,27 @@ export async function POST(request: Request) {
 
     const recentTurns = normalizeRecentTurns(body);
     const chatHistory = buildChatHistoryFromBody(body);
+    const chatHistoryForModelSignals = buildChatHistoryLinesForModelSignals({
+      body,
+      recentTurns,
+    });
     timer.step("normalize_message_and_chat_history");
 
-    let modelSignals: ModelSignals = buildFallbackModelSignals();
+    const modelSignals: ModelSignals = {
+      ...buildFallbackModelSignals(),
+      error_message:
+        "Confusion/insight foreground scoring is queued for the idle worker.",
+    };
 
-    try {
-      modelSignals = await scoreConfusionInsight({
-        userMessage: message,
-        chatHistory,
-      });
-    } catch (error) {
-      modelSignals = buildFallbackModelSignals(
-        error instanceof Error
-          ? error.message
-          : "Unknown confusion/insight scoring error"
-      );
-    }
+    console.info("[confusion-insight queued for worker]", {
+      message_preview: message.slice(0, 120),
+      chat_history_items: chatHistoryForModelSignals.length,
+      status: modelSignals.status,
+      note: "The local confusion/insight model is intentionally not called inside POST /api/message.",
+    });
 
     finalModelSignalsStatus = modelSignals.status;
-    timer.step("score_confusion_insight");
+    timer.step("queue_confusion_insight_signal");
 
     const existingTopics = await loadRouteTopics();
     topicCountLoaded = existingTopics.length;
@@ -2121,6 +2302,33 @@ export async function POST(request: Request) {
           })
         : null;
 
+    const pendingConfusionInsightScore =
+      shouldPersistLearningSpace &&
+      resolutionKind !== "no_match" &&
+      modelRouteContinuationPolicy?.should_treat_as_learning_evidence !== false
+        ? buildPendingConfusionInsightScore({
+            message,
+            chatHistory: chatHistoryForModelSignals,
+            runId,
+            targetTopicId,
+            targetTopicLabel: topic.topic_label,
+            resolutionKind,
+            resolvedLabel,
+            matchConfidence,
+            authoritySource: topicAuthoritySource,
+          })
+        : null;
+
+    if (pendingConfusionInsightScore) {
+      console.info("[confusion-insight score queued for worker]", {
+        target_topic_id: targetTopicId,
+        target_topic_label: topic.topic_label,
+        resolution_kind: resolutionKind,
+        chat_history_items: chatHistoryForModelSignals.length,
+        reason: "foreground_model_competition_avoided",
+      });
+    }
+
     if (pendingTopicMessageEmbeddingEvidence) {
       console.info("[topic message embedding queued for worker]", {
         target_topic_id: targetTopicId,
@@ -2330,8 +2538,15 @@ export async function POST(request: Request) {
         })
       : topicJsonBase;
 
+    const topicJsonWithPendingConfusionInsight = pendingConfusionInsightScore
+      ? appendPendingConfusionInsightScore({
+          topicJson: topicJsonWithPendingMessageEmbedding,
+          pendingItem: pendingConfusionInsightScore,
+        })
+      : topicJsonWithPendingMessageEmbedding;
+
     const topicJson = JSON.parse(
-      JSON.stringify(topicJsonWithPendingMessageEmbedding)
+      JSON.stringify(topicJsonWithPendingConfusionInsight)
     );
 
     const sceneUpdate = buildSceneUpdate(
