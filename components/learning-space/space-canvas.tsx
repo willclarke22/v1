@@ -2681,7 +2681,7 @@ export default function SpaceCanvas({
             maxDistance={520}
             rotateSpeed={3.2}
             zoomSpeed={1.2}
-            dynamicDampingFactor={0.12}
+            dynamicDampingFactor={0.11}
             onStart={() => {
               // TrackballControls can emit start events for non-drag updates.
               // Label hiding is driven by section-level drag-distance detection
