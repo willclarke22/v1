@@ -31,14 +31,30 @@ const tabs: {
   { id: "settings", shortLabel: "Settings", icon: Settings },
 ];
 
+
+function LoadingDots() {
+  return (
+    <span
+      className="inline-flex min-h-8 items-center gap-1"
+      aria-label="Loading metric"
+    >
+      <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-200 [animation-delay:-0.2s]" />
+      <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-200 [animation-delay:-0.1s]" />
+      <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-200" />
+    </span>
+  );
+}
+
 function MetricCard({
   label,
   value,
   tone = "default",
+  isLoading = false,
 }: {
   label: string;
   value: string;
   tone?: "default" | "good" | "attention";
+  isLoading?: boolean;
 }) {
   const valueClassName =
     tone === "good"
@@ -52,8 +68,10 @@ function MetricCard({
       <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
         {label}
       </p>
-      <p className={`mt-3 text-2xl font-semibold tracking-tight ${valueClassName}`}>
-        {value}
+      <p
+        className={`mt-3 text-2xl font-semibold tracking-tight ${valueClassName}`}
+      >
+        {isLoading ? <LoadingDots /> : value}
       </p>
     </div>
   );
@@ -67,18 +85,21 @@ export default function Sidebar({
   isSending = false,
   progressSummary,
 }: SidebarProps) {
+  const hasPendingConfusionInsightSignals =
+    progressSummary.pendingSignalTopics > 0;
+
   return (
-    <aside className="relative h-full w-full overflow-hidden rounded-r-[2rem] bg-transparent text-white">
-      <div className="absolute inset-0 flex h-full flex-col bg-[linear-gradient(270deg,rgba(0,0,0,0)_0%,rgba(0,0,0,0.08)_10%,rgba(0,0,0,0.18)_22%,rgba(0,0,0,0.34)_42%,rgba(0,0,0,0.54)_100%)] backdrop-blur-[8px]">
+    <aside className="relative h-full w-full overflow-hidden rounded-r-4xl bg-transparent text-white">
+      <div className="absolute inset-0 flex h-full flex-col bg-[linear-gradient(270deg,rgba(0,0,0,0)_0%,rgba(0,0,0,0.08)_10%,rgba(0,0,0,0.18)_22%,rgba(0,0,0,0.34)_42%,rgba(0,0,0,0.54)_100%)] backdrop-blur-sm">
         <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-[linear-gradient(270deg,rgba(255,255,255,0.02)_0%,rgba(255,255,255,0.01)_22%,rgba(255,255,255,0.00)_100%)]" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-px bg-white/[0.025]" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-px bg-white/2.5" />
 
         <div className="relative flex h-full flex-col">
           <div className="border-b border-white/5 px-5 py-5">
             <h1 className="text-[2.1rem] font-semibold tracking-tight text-white">
               MyWay
             </h1>
-            <p className="mt-2 max-w-[220px] text-sm leading-6 text-zinc-400">
+            <p className="mt-2 max-w-55 text-sm leading-6 text-zinc-400">
               Adaptive learning, visualized
             </p>
           </div>
@@ -97,7 +118,7 @@ export default function Sidebar({
                     className={`inline-flex shrink-0 items-center gap-1.5 rounded-t-xl rounded-b-md border px-2.5 py-1.5 text-[10px] font-medium tracking-[0.01em] transition ${
                       isActive
                         ? "border-white/12 bg-white/[0.07] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                        : "border-white/6 bg-white/[0.015] text-zinc-400 hover:border-white/10 hover:bg-white/[0.04] hover:text-white"
+                        : "border-white/6 bg-white/1.5 text-zinc-400 hover:border-white/10 hover:bg-white/4 hover:text-white"
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" />
@@ -107,7 +128,7 @@ export default function Sidebar({
               })}
 
               <button
-                className="ml-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/6 bg-white/[0.015] text-zinc-400 transition hover:border-white/10 hover:bg-white/[0.04] hover:text-white"
+                className="ml-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/6 bg-white/1.5 text-zinc-400 transition hover:border-white/10 hover:bg-white/4 hover:text-white"
                 aria-label="Collapse sidebar"
                 type="button"
               >
@@ -154,18 +175,20 @@ export default function Sidebar({
                     value={String(progressSummary.totalTopics)}
                   />
                   <MetricCard
-                    label="Average learning score"
-                    value={progressSummary.averageLearningScore.toFixed(2)}
-                    tone="good"
-                  />
-                  <MetricCard
                     label="Average confusion"
                     value={progressSummary.averageConfusion.toFixed(2)}
                     tone="attention"
+                    isLoading={hasPendingConfusionInsightSignals}
                   />
                   <MetricCard
                     label="Average insight"
                     value={progressSummary.averageInsight.toFixed(2)}
+                    tone="good"
+                    isLoading={hasPendingConfusionInsightSignals}
+                  />
+                  <MetricCard
+                    label="Average learning score"
+                    value={progressSummary.averageLearningScore.toFixed(2)}
                     tone="good"
                   />
                 </div>
@@ -180,19 +203,19 @@ export default function Sidebar({
 
                 <div className="space-y-3">
                   <button
-                    className="w-full rounded-2xl border border-white/6 bg-white/[0.024] px-4 py-3 text-left text-sm text-zinc-200 shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur-md transition hover:bg-white/[0.04]"
+                    className="w-full rounded-2xl border border-white/6 bg-white/[0.024] px-4 py-3 text-left text-sm text-zinc-200 shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur-md transition hover:bg-white/4"
                     type="button"
                   >
                     Toggle labels
                   </button>
                   <button
-                    className="w-full rounded-2xl border border-white/6 bg-white/[0.024] px-4 py-3 text-left text-sm text-zinc-200 shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur-md transition hover:bg-white/[0.04]"
+                    className="w-full rounded-2xl border border-white/6 bg-white/[0.024] px-4 py-3 text-left text-sm text-zinc-200 shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur-md transition hover:bg-white/4"
                     type="button"
                   >
                     Toggle stars / satellites
                   </button>
                   <button
-                    className="w-full rounded-2xl border border-white/6 bg-white/[0.024] px-4 py-3 text-left text-sm text-zinc-200 shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur-md transition hover:bg-white/[0.04]"
+                    className="w-full rounded-2xl border border-white/6 bg-white/[0.024] px-4 py-3 text-left text-sm text-zinc-200 shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur-md transition hover:bg-white/4"
                     type="button"
                   >
                     Reset camera

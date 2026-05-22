@@ -14,7 +14,7 @@ import {
   type TopicPosition3D,
 } from "@/lib/learning-space/topic-position";
 import { supabase } from "@/lib/supabase/client";
-import type { Topic } from "@/types/topic";
+import type { Topic, TopicConfusionInsightStatus } from "@/types/topic";
 import type { LearningSpace as RendererLearningSpace } from "@/types/learning-space";
 import type {
   DiagnosisType,
@@ -73,6 +73,27 @@ function topicPositionKey(position: TopicPosition3D | null | undefined) {
   return position.map((value) => value.toFixed(4)).join(",");
 }
 
+function confusionInsightStatusSignature(topic: Topic) {
+  const status = topic.confusionInsightStatus;
+
+  if (!status) return "ci:null";
+
+  return [
+    "ci",
+    status.status,
+    status.isPending ? "pending" : "not_pending",
+    status.hasModelScore ? "model" : "no_model",
+    status.hasStructuredV1Score ? "structured_v1_1" : "not_structured_v1_1",
+    status.pendingCount ?? 0,
+    status.signalCount ?? 0,
+    status.lastScore?.scoreId ?? "null",
+    status.lastScore?.processedAt ?? "null",
+    status.lastScore?.modelVersion ?? "null",
+    status.lastScore?.modelConfusion?.toFixed(4) ?? "null",
+    status.lastScore?.modelInsight?.toFixed(4) ?? "null",
+  ].join(":");
+}
+
 function topicStateSignature(topics: Topic[]) {
   return topics
     .map((topic) =>
@@ -88,12 +109,29 @@ function topicStateSignature(topics: Topic[]) {
         topic.learningScore.toFixed(4),
         topic.messageCount ?? 0,
         topic.lastUpdated ?? "null",
+        confusionInsightStatusSignature(topic),
         topic.learningSpaceProjection?.projection_id ?? "null",
         topic.learningSpaceRelationships?.length ?? 0,
         topic.learningSpaceViewpoints?.length ?? 0,
       ].join(":"),
     )
     .join("|");
+}
+
+function buildPendingConfusionInsightStatus(
+  previous?: Topic,
+): TopicConfusionInsightStatus {
+  const previousStatus = previous?.confusionInsightStatus;
+
+  return {
+    status: "pending",
+    isPending: true,
+    hasModelScore: previousStatus?.hasModelScore ?? false,
+    hasStructuredV1Score: previousStatus?.hasStructuredV1Score,
+    pendingCount: Math.max(1, previousStatus?.pendingCount ?? 0),
+    signalCount: previousStatus?.signalCount ?? 0,
+    lastScore: previousStatus?.lastScore ?? null,
+  };
 }
 
 function mergeBootstrappedTopicsWithPrevious(args: {
@@ -118,6 +156,8 @@ function mergeBootstrappedTopicsWithPrevious(args: {
        * that local UI hint so background refresh does not erase the probe badge.
        */
       hasAvailableProbe: previous.hasAvailableProbe || topic.hasAvailableProbe,
+      confusionInsightStatus:
+        topic.confusionInsightStatus ?? previous.confusionInsightStatus,
       learningSpaceRelationships:
         topic.learningSpaceRelationships ?? previous.learningSpaceRelationships,
       learningSpaceViewpoints:
@@ -344,6 +384,9 @@ function deriveTopicsFromMessageResponse(
       learningScore: clamp(
         engineTopic.topic_learning_score ?? previous?.learningScore ?? 0.5,
       ),
+      confusionInsightStatus: isTargetTopic
+        ? buildPendingConfusionInsightStatus(previous)
+        : previous?.confusionInsightStatus,
       position,
       semanticPosition:
         asTopicPosition(learningSpaceTopic?.layout?.semantic_position) ??
@@ -953,14 +996,14 @@ export default function Home() {
         <>
           <div className="pointer-events-none absolute left-0 top-0 z-40 h-full">
             <div
-              className={`pointer-events-auto absolute left-0 top-0 h-full w-[280px] transform transition-transform duration-300 ${
+              className={`pointer-events-auto absolute left-0 top-0 h-full w-70 transform transition-transform duration-300 ${
                 shellPanels.isLeftPanelOpen
                   ? "translate-x-0"
                   : "-translate-x-[calc(100%-18px)]"
               }`}
             >
-              <div className="relative h-full overflow-visible rounded-r-[2rem]">
-                <div className="h-full overflow-hidden rounded-r-[2rem]">
+              <div className="relative h-full overflow-visible rounded-r-4xl">
+                <div className="h-full overflow-hidden rounded-r-4xl">
                   <Sidebar
                     activeTab={shellPanels.leftPanelTab}
                     onChangeTab={(tab: SidebarTab) =>
@@ -977,7 +1020,7 @@ export default function Home() {
                   onClick={() =>
                     shellPanels.setIsLeftPanelOpen((prev) => !prev)
                   }
-                  className="absolute right-0 top-1/2 z-50 flex h-24 w-[18px] -translate-y-1/2 translate-x-full items-center justify-center rounded-r-xl border border-l-0 border-white/8 bg-white/[0.035] text-[10px] uppercase tracking-[0.18em] text-zinc-300 shadow-[0_0_14px_rgba(0,0,0,0.14)] backdrop-blur-md transition hover:bg-white/[0.06]"
+                  className="absolute right-0 top-1/2 z-50 flex h-24 w-4.5 -translate-y-1/2 translate-x-full items-center justify-center rounded-r-xl border border-l-0 border-white/8 bg-white/[0.035] text-[10px] uppercase tracking-[0.18em] text-zinc-300 shadow-[0_0_14px_rgba(0,0,0,0.14)] backdrop-blur-md transition hover:bg-white/6"
                   type="button"
                   aria-label={
                     shellPanels.isLeftPanelOpen ? "Close menu" : "Open menu"
@@ -993,7 +1036,7 @@ export default function Home() {
 
           {selectedTopic && (
             <div
-              className={`absolute right-0 top-0 z-40 hidden h-full w-[340px] transform transition-transform duration-300 xl:block ${
+              className={`absolute right-0 top-0 z-40 hidden h-full w-85 transform transition-transform duration-300 xl:block ${
                 isRightPanelOpen
                   ? "translate-x-0"
                   : "translate-x-[calc(100%-18px)]"
@@ -1006,7 +1049,7 @@ export default function Home() {
 
                 <button
                   onClick={shellPanels.toggleRightPanel}
-                  className="absolute left-0 top-1/2 z-50 flex h-28 w-[18px] -translate-y-1/2 -translate-x-full items-center justify-center rounded-l-xl border border-r-0 border-white/10 bg-zinc-950/55 text-[10px] uppercase tracking-[0.18em] text-zinc-300 shadow-[0_0_20px_rgba(0,0,0,0.24)] backdrop-blur-md transition hover:bg-zinc-900/60"
+                  className="absolute left-0 top-1/2 z-50 flex h-28 w-4.5 -translate-y-1/2 -translate-x-full items-center justify-center rounded-l-xl border border-r-0 border-white/10 bg-zinc-950/55 text-[10px] uppercase tracking-[0.18em] text-zinc-300 shadow-[0_0_20px_rgba(0,0,0,0.24)] backdrop-blur-md transition hover:bg-zinc-900/60"
                   type="button"
                 >
                   <span className="[writing-mode:vertical-rl]">

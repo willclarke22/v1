@@ -227,8 +227,8 @@ type PendingConfusionInsightScore = {
   run_id: string | null;
   text: string;
   chat_history: string[];
-  structured_input: ConfusionInsightStructuredInput | null;
-  payload_shape: "structured_v1_1" | "legacy_text";
+  structured_input: ConfusionInsightStructuredInput;
+  payload_shape: "structured_v1_1";
   created_at: string;
   source: "message_route";
   routing: {
@@ -967,6 +967,24 @@ function asNullableFiniteNumber(value: unknown): number | null {
 }
 
 const FOREGROUND_CONFUSION_INSIGHT_EXISTING_TOPIC_ALPHA = 0.35;
+const PENDING_WORKER_QUEUE_MAX_ITEMS = 50;
+const DEFAULT_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS = 2_000;
+const MIN_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS = 250;
+const MAX_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS = 10_000;
+
+function getForegroundConfusionInsightTimeoutMs() {
+  const raw = process.env.MYWAY_CONFUSION_INSIGHT_FOREGROUND_TIMEOUT_MS;
+  const parsed = raw ? Number.parseInt(raw, 10) : null;
+
+  if (!parsed || !Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS;
+  }
+
+  return Math.min(
+    Math.max(parsed, MIN_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS),
+    MAX_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS,
+  );
+}
 
 type PersistedConfusionInsightSource =
   | "foreground_model_new_topic"
@@ -1401,6 +1419,41 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function getConfusionInsightSignalCount(topicJson: unknown) {
+  const record = asRecord(topicJson);
+  const value = record.confusion_insight_signal_count;
+
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.floor(value))
+    : 0;
+}
+
+function buildForegroundConfusionInsightSignalState(args: {
+  topicJson: unknown;
+  modelSignals: ModelSignals;
+  persisted: ReturnType<typeof derivePersistedConfusionInsightValues>;
+}) {
+  if (!hasUsableConfusionInsightSignals(args.modelSignals)) {
+    return asRecord(args.topicJson).confusion_insight_signal_state ?? null;
+  }
+
+  const signalCountBefore = getConfusionInsightSignalCount(args.topicJson);
+  const signalCountAfter = signalCountBefore + 1;
+  const processedAt = nowIso();
+
+  return {
+    status: "has_model_signal",
+    signal_count: signalCountAfter,
+    last_processed_at: processedAt,
+    last_model_version: args.modelSignals.model_version,
+    last_model_confusion: args.modelSignals.model_confusion,
+    last_model_insight: args.modelSignals.model_insight,
+    last_next_confusion: args.persisted.confusion,
+    last_next_insight: args.persisted.insight,
+    last_persistence_source: args.persisted.source,
+  };
+}
+
 function getPendingTopicMessageEmbeddings(
   topicJson: unknown,
 ): PendingTopicMessageEmbedding[] {
@@ -1523,7 +1576,7 @@ function appendPendingTopicMessageEmbedding(args: {
   pendingItem: PendingTopicMessageEmbedding;
 }) {
   const existingQueue = getPendingTopicMessageEmbeddings(args.topicJson);
-  const nextQueue = [...existingQueue, args.pendingItem].slice(-50);
+  const nextQueue = [...existingQueue, args.pendingItem].slice(-PENDING_WORKER_QUEUE_MAX_ITEMS);
 
   return {
     ...args.topicJson,
@@ -1535,10 +1588,13 @@ function appendPendingTopicMessageEmbedding(args: {
     semantic_enrichment_status: {
       ...asRecord(args.topicJson.semantic_enrichment_status),
       status: "message_embedding_pending",
+      queue_role: "worker_default_topic_message_embedding",
+      pending_topic_message_embedding_count: nextQueue.length,
       needs_embedding_centroid: false,
       should_schedule_enrichment: true,
       layout_status: "topic_message_embedding_pending",
       embedding_skip_reason: null,
+      queued_at: args.pendingItem.created_at,
     },
   };
 }
@@ -1574,10 +1630,17 @@ function getPendingConfusionInsightScores(
         typeof candidate.score_id === "string" && candidate.score_id.trim()
           ? candidate.score_id.trim()
           : null;
+      const structuredInput =
+        candidate.structured_input &&
+        typeof candidate.structured_input === "object" &&
+        !Array.isArray(candidate.structured_input)
+          ? (candidate.structured_input as ConfusionInsightStructuredInput)
+          : null;
+
       const text =
         typeof candidate.text === "string" && candidate.text.trim()
           ? candidate.text.trim()
-          : null;
+          : structuredInput?.current_evidence?.trim() ?? null;
       const createdAt =
         typeof candidate.created_at === "string" && candidate.created_at.trim()
           ? candidate.created_at.trim()
@@ -1597,6 +1660,7 @@ function getPendingConfusionInsightScores(
         !scoreId ||
         !text ||
         !createdAt ||
+        !structuredInput ||
         !targetTopicId ||
         !targetTopicLabel
       ) {
@@ -1611,13 +1675,6 @@ function getPendingConfusionInsightScores(
             .slice(-8)
         : [];
 
-      const structuredInput =
-        candidate.structured_input &&
-        typeof candidate.structured_input === "object" &&
-        !Array.isArray(candidate.structured_input)
-          ? (candidate.structured_input as ConfusionInsightStructuredInput)
-          : null;
-
       return {
         score_id: scoreId,
         run_id:
@@ -1627,7 +1684,7 @@ function getPendingConfusionInsightScores(
         text,
         chat_history: chatHistory,
         structured_input: structuredInput,
-        payload_shape: structuredInput ? "structured_v1_1" : "legacy_text",
+        payload_shape: "structured_v1_1",
         created_at: createdAt,
         source: "message_route",
         routing: {
@@ -1689,25 +1746,51 @@ function buildPendingConfusionInsightScore(args: {
   };
 }
 
+function buildConfusionInsightQueueReason(args: {
+  scoringMode: ConfusionInsightScoringMode;
+  modelSignals: ModelSignals;
+}) {
+  if (args.scoringMode === "worker") {
+    return "worker_mode_selected";
+  }
+
+  if (args.modelSignals.status !== "ok") {
+    return "foreground_scoring_failed_or_unavailable";
+  }
+
+  return null;
+}
+
 function appendPendingConfusionInsightScore(args: {
   topicJson: Record<string, unknown>;
   pendingItem: PendingConfusionInsightScore;
 }) {
   const existingQueue = getPendingConfusionInsightScores(args.topicJson);
-  const nextQueue = [...existingQueue, args.pendingItem].slice(-50);
+  const nextQueue = [...existingQueue, args.pendingItem].slice(-PENDING_WORKER_QUEUE_MAX_ITEMS);
 
   return {
     ...args.topicJson,
     pending_confusion_insight_scores: nextQueue,
     confusion_insight_pending_count: nextQueue.length,
     confusion_insight_queue_status: "pending",
-    confusion_insight_queue_role: "fallback_and_worker_scoring",
+    confusion_insight_queue_role: "worker_default_structured_v1_1",
+    confusion_insight_normal_payload_shape: "structured_v1_1",
     confusion_insight_status: {
       ...asRecord(args.topicJson.confusion_insight_status),
       status: "pending",
       pending_count: nextQueue.length,
       queued_at: args.pendingItem.created_at,
       source: "message_route",
+      payload_shape: args.pendingItem.payload_shape,
+      queue_role: "worker_default_structured_v1_1",
+      worker_owned: true,
+    },
+    confusion_insight_signal_state: {
+      ...asRecord(args.topicJson.confusion_insight_signal_state),
+      status: "pending_model_signal",
+      pending_count: nextQueue.length,
+      queued_at: args.pendingItem.created_at,
+      last_queued_score_id: args.pendingItem.score_id,
       payload_shape: args.pendingItem.payload_shape,
     },
   };
@@ -2473,7 +2556,7 @@ export async function POST(request: Request) {
       modelRouteContinuationPolicy = modelSafeFallbackPolicy;
       modelTopicPolicyUsedAsAuthority = false;
       topicAuthoritySource =
-        "topic_labeler_safe_fallback_no_legacy_deterministic";
+        "topic_labeler_safe_fallback_no_modern_deterministic";
     }
 
     timer.step("resolve_topic_outcome");
@@ -2639,6 +2722,7 @@ export async function POST(request: Request) {
     if (confusionInsightScoringMode === "foreground") {
       modelSignals = await scoreConfusionInsight({
         input: confusionInsightInput,
+        timeoutMs: getForegroundConfusionInsightTimeoutMs(),
       });
 
       console.info("[confusion-insight foreground scoring]", {
@@ -2656,7 +2740,7 @@ export async function POST(request: Request) {
       modelSignals = {
         ...buildFallbackModelSignals(),
         error_message:
-          "Confusion/insight scoring is queued for the worker by MYWAY_CONFUSION_INSIGHT_SCORING_MODE=worker.",
+          "Confusion/insight scoring is queued for the worker; /api/message stays responsive and does not require the model service in worker mode.",
       };
 
       console.info("[confusion-insight queued for worker mode]", {
@@ -2756,10 +2840,10 @@ export async function POST(request: Request) {
         resolution_kind: resolutionKind,
         chat_history_items: chatHistoryForModelSignals.length,
         payload_shape: pendingConfusionInsightScore.payload_shape,
-        reason:
-          confusionInsightScoringMode === "worker"
-            ? "worker_mode_selected"
-            : "foreground_scoring_failed_or_unavailable",
+        reason: buildConfusionInsightQueueReason({
+          scoringMode: confusionInsightScoringMode,
+          modelSignals,
+        }),
       });
     }
 
@@ -2905,6 +2989,24 @@ export async function POST(request: Request) {
 
     const runResultJson = JSON.parse(JSON.stringify(result));
 
+    const foregroundSignalCountBefore = getConfusionInsightSignalCount(
+      updatedResolvedTopic.topic_json,
+    );
+    const foregroundSignalCountAfter =
+      confusionInsightScoringMode === "foreground" &&
+      hasUsableConfusionInsightSignals(modelSignals)
+        ? foregroundSignalCountBefore + 1
+        : foregroundSignalCountBefore;
+    const foregroundSignalState =
+      confusionInsightScoringMode === "foreground"
+        ? buildForegroundConfusionInsightSignalState({
+            topicJson: updatedResolvedTopic.topic_json,
+            modelSignals,
+            persisted: persistedConfusionInsight,
+          })
+        : asRecord(updatedResolvedTopic.topic_json)
+            .confusion_insight_signal_state ?? null;
+
     const topicJsonBase = {
       ...asRecord(updatedResolvedTopic.topic_json),
       topic_id: updatedResolvedTopic.id,
@@ -2942,16 +3044,54 @@ export async function POST(request: Request) {
       confusion_insight_scoring: {
         mode: confusionInsightScoringMode,
         status: modelSignals.status,
+        foreground_timeout_ms:
+          confusionInsightScoringMode === "foreground"
+            ? getForegroundConfusionInsightTimeoutMs()
+            : null,
         queued_for_worker: Boolean(pendingConfusionInsightScore),
         queued_payload_shape:
           pendingConfusionInsightScore?.payload_shape ?? null,
+        queue_reason: pendingConfusionInsightScore
+          ? buildConfusionInsightQueueReason({
+              scoringMode: confusionInsightScoringMode,
+              modelSignals,
+            })
+          : null,
+        worker_queue_role:
+          "worker_default_structured_v1_1",
         note:
           confusionInsightScoringMode === "worker"
-            ? "Scoring is deferred to the local semantic worker for CPU-only local-dev stability."
+            ? "Scoring is deferred to the local worker for CPU-only local-dev stability and future external/GPU service reuse."
             : "Scoring was attempted in the foreground message route.",
       },
       model_confusion_average: persistedConfusionInsight.confusion,
       model_insight_average: persistedConfusionInsight.insight,
+      confusion_insight_signal_state: foregroundSignalState,
+      confusion_insight_signal_count: foregroundSignalCountAfter,
+      last_confusion_insight_score:
+        confusionInsightScoringMode === "foreground" &&
+        hasUsableConfusionInsightSignals(modelSignals)
+          ? {
+              score_id: null,
+              run_id: runId,
+              processed_at: nowIso(),
+              source: "message_route_foreground",
+              payload_shape: "structured_v1_1",
+              input_type: confusionInsightInput.input_type,
+              structured_input_used: confusionInsightInput,
+              model_confusion: modelSignals.model_confusion,
+              model_insight: modelSignals.model_insight,
+              model_version: modelSignals.model_version,
+              inference_mode: modelSignals.inference_mode,
+              latency_ms: modelSignals.latency_ms,
+              next_confusion: persistedConfusionInsight.confusion,
+              next_insight: persistedConfusionInsight.insight,
+              persistence_source: persistedConfusionInsight.source,
+              signal_count_before_run: foregroundSignalCountBefore,
+              signal_count_after_run: foregroundSignalCountAfter,
+            }
+          : asRecord(updatedResolvedTopic.topic_json)
+              .last_confusion_insight_score ?? null,
       learning_space_topic:
         learningSpace.topics.find(
           (t) => t.topic_id === updatedResolvedTopic.id,
@@ -3234,6 +3374,13 @@ export async function POST(request: Request) {
       model_route_continuation_policy: ModelRouteContinuationPolicy | null;
       semantic_enrichment_status: SemanticEnrichmentStatus | null;
       latency_debug: MessageRouteLatencyDebug;
+      worker_queue_debug: {
+        confusion_insight_queued: boolean;
+        confusion_insight_queue_reason: string | null;
+        confusion_insight_payload_shape: "structured_v1_1" | null;
+        topic_message_embedding_queued: boolean;
+        pending_queue_max_items: number;
+      };
     } = {
       result,
       scene_update: sceneUpdate,
@@ -3255,6 +3402,21 @@ export async function POST(request: Request) {
       model_route_continuation_policy: modelRouteContinuationPolicy,
       semantic_enrichment_status: semanticEnrichmentStatus,
       latency_debug: latencyDebug,
+      worker_queue_debug: {
+        confusion_insight_queued: Boolean(pendingConfusionInsightScore),
+        confusion_insight_queue_reason: pendingConfusionInsightScore
+          ? buildConfusionInsightQueueReason({
+              scoringMode: confusionInsightScoringMode,
+              modelSignals,
+            })
+          : null,
+        confusion_insight_payload_shape:
+          pendingConfusionInsightScore?.payload_shape ?? null,
+        topic_message_embedding_queued: Boolean(
+          pendingTopicMessageEmbeddingEvidence,
+        ),
+        pending_queue_max_items: PENDING_WORKER_QUEUE_MAX_ITEMS,
+      },
     };
 
     return NextResponse.json(response);

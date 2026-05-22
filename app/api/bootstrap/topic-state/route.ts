@@ -4,13 +4,19 @@ import { NextResponse } from "next/server";
 import { getLatestTopicState } from "@/lib/persistence/read";
 import { resolveTopicLayout } from "@/lib/learning-space/topic-position";
 import type { DiagnosisType } from "@/types/contracts";
-import type { Topic } from "@/types/topic";
+import type {
+  Topic,
+  TopicConfusionInsightStatus,
+  TopicModelSignalStatus,
+} from "@/types/topic";
 import type {
   LearningSpaceProjectionMetadata,
   LearningSpaceRelationship,
   LearningSpaceViewpoint,
 } from "@/types/learning-space";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const DEFAULT_BOOTSTRAP_CACHE_MS = 750;
 
@@ -90,7 +96,6 @@ function getTopicJson(row: unknown): Record<string, unknown> {
   return {};
 }
 
-
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -99,6 +104,39 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
+}
+
+function asOptionalString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function asFiniteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function hasPendingConfusionInsightScores(topicJson: Record<string, unknown>) {
+  return getPendingConfusionInsightCount(topicJson) > 0;
+}
+
+function getPendingConfusionInsightCount(topicJson: Record<string, unknown>) {
+  const rawQueue = topicJson.pending_confusion_insight_scores;
+
+  if (!Array.isArray(rawQueue)) return 0;
+
+  return rawQueue.filter((item) => {
+    const candidate = asRecord(item);
+    if (!candidate) return false;
+
+    const scoreId = asOptionalString(candidate.score_id);
+    const structuredInput = asRecord(candidate.structured_input);
+    const hasStructuredEvidence =
+      typeof structuredInput?.current_evidence === "string" &&
+      structuredInput.current_evidence.trim().length > 0;
+    const hasLegacyText =
+      typeof candidate.text === "string" && candidate.text.trim().length > 0;
+
+    return Boolean(scoreId && (hasStructuredEvidence || hasLegacyText));
+  }).length;
 }
 
 function getLearningSpaceRelationshipLayer(
@@ -149,6 +187,76 @@ function getTopicLabel(args: {
   }
 
   return "Untitled Topic";
+}
+
+function buildConfusionInsightStatus(
+  topicJson: Record<string, unknown>,
+): TopicConfusionInsightStatus {
+  const pendingCount = getPendingConfusionInsightCount(topicJson);
+  const hasPendingQueue = hasPendingConfusionInsightScores(topicJson);
+
+  const lastScoreRecord = asRecord(topicJson.last_confusion_insight_score);
+  const signalState = asRecord(topicJson.confusion_insight_signal_state);
+  const statusObject = asRecord(topicJson.confusion_insight_status);
+
+  const signalCountFromTopLevel = asFiniteNumber(
+    topicJson.confusion_insight_signal_count,
+  );
+  const signalCountFromState = asFiniteNumber(signalState?.signal_count);
+  const signalCountFromStatus = asFiniteNumber(statusObject?.signal_count);
+
+  const signalCount = Math.max(
+    0,
+    Math.floor(
+      signalCountFromTopLevel ??
+        signalCountFromState ??
+        signalCountFromStatus ??
+        0,
+    ),
+  );
+
+  const payloadShape = asOptionalString(lastScoreRecord?.payload_shape);
+  const hasModelScore = Boolean(lastScoreRecord) || signalCount > 0;
+
+  const rawStatus = asOptionalString(statusObject?.status);
+  const hasError =
+    rawStatus === "error" ||
+    rawStatus === "failed" ||
+    rawStatus === "partially_failed";
+
+  const status: TopicModelSignalStatus = hasPendingQueue
+    ? "pending"
+    : hasModelScore
+      ? "ready"
+      : hasError
+        ? "error"
+        : rawStatus === "unavailable"
+          ? "unavailable"
+          : "unknown";
+
+  return {
+    status,
+    isPending: status === "pending",
+    hasModelScore,
+    hasStructuredV1Score: payloadShape === "structured_v1_1",
+    pendingCount,
+    signalCount,
+    lastScore: lastScoreRecord
+      ? {
+          scoreId: asOptionalString(lastScoreRecord.score_id),
+          processedAt: asOptionalString(lastScoreRecord.processed_at),
+          modelVersion: asOptionalString(lastScoreRecord.model_version),
+          inferenceMode: asOptionalString(lastScoreRecord.inference_mode),
+          modelConfusion: asFiniteNumber(lastScoreRecord.model_confusion),
+          modelInsight: asFiniteNumber(lastScoreRecord.model_insight),
+          alphaApplied: asFiniteNumber(lastScoreRecord.alpha_applied),
+          persistenceSource: asOptionalString(
+            lastScoreRecord.persistence_source,
+          ),
+          payloadShape,
+        }
+      : null,
+  };
 }
 
 function mapRowsToTopics(
@@ -203,6 +311,7 @@ function mapRowsToTopics(
       confusion: clamp(rowWithTopicFields.confusion ?? 0.5),
       insight: clamp(rowWithTopicFields.insight ?? 0.5),
       learningScore: clamp(rowWithTopicFields.learning_score ?? 0.5),
+      confusionInsightStatus: buildConfusionInsightStatus(topicJson),
 
       /**
        * Current committed renderer position.

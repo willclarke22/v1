@@ -8,10 +8,70 @@ export type ProgressSummary = {
   focusedTopicLabel: string | null;
   strongestTopicLabel: string | null;
   needsAttentionTopicLabel: string | null;
+
+  /**
+   * Confusion/insight are worker-backed model signals. New topics can briefly
+   * carry provisional fallback values before the local worker scores them.
+   *
+   * These counts let the UI explain whether progress metrics are fully
+   * model-backed or still waiting on background scoring.
+   */
+  modelReadySignalTopics: number;
+  pendingSignalTopics: number;
+  provisionalSignalTopics: number;
+  signalMetricTopicCount: number;
+  signalMetricScope: "model_ready" | "all_topics_fallback" | "empty";
 };
 
 function roundToTwo(value: number) {
   return Math.round(value * 100) / 100;
+}
+
+function isModelReadySignalTopic(topic: Topic) {
+  return topic.confusionInsightStatus?.hasModelScore === true;
+}
+
+function isPendingSignalTopic(topic: Topic) {
+  return topic.confusionInsightStatus?.isPending === true;
+}
+
+function getSignalMetricTopics(topics: Topic[]) {
+  const modelReadyTopics = topics.filter(isModelReadySignalTopic);
+
+  /**
+   * Prefer model-backed confusion/insight values. During early startup or before
+   * the worker has processed any topic, fall back to all topics so the progress
+   * tab remains populated instead of showing zeros.
+   */
+  return modelReadyTopics.length > 0 ? modelReadyTopics : topics;
+}
+
+function sumTopicSignals(topics: Topic[]) {
+  return topics.reduce(
+    (acc, topic) => {
+      acc.confusion += topic.confusion ?? 0;
+      acc.insight += topic.insight ?? 0;
+      acc.learningScore += topic.learningScore ?? 0;
+      return acc;
+    },
+    { confusion: 0, insight: 0, learningScore: 0 },
+  );
+}
+
+function topicAttentionPriority(topic: Topic) {
+  /**
+   * If the topic is still waiting for a real confusion/insight model score, do
+   * not let provisional fallback values make it look like the highest-priority
+   * topic. It can become attention-worthy once the worker-backed signal arrives.
+   */
+  const provisionalPenalty = isPendingSignalTopic(topic) ? 0.35 : 0;
+
+  return (
+    topic.confusion -
+    topic.learningScore -
+    topic.insight * 0.25 -
+    provisionalPenalty
+  );
 }
 
 export function deriveProgressSummary(
@@ -27,18 +87,24 @@ export function deriveProgressSummary(
       focusedTopicLabel: null,
       strongestTopicLabel: null,
       needsAttentionTopicLabel: null,
+      modelReadySignalTopics: 0,
+      pendingSignalTopics: 0,
+      provisionalSignalTopics: 0,
+      signalMetricTopicCount: 0,
+      signalMetricScope: "empty",
     };
   }
 
-  const totals = topics.reduce(
-    (acc, topic) => {
-      acc.confusion += topic.confusion ?? 0;
-      acc.insight += topic.insight ?? 0;
-      acc.learningScore += topic.learningScore ?? 0;
-      return acc;
-    },
-    { confusion: 0, insight: 0, learningScore: 0 },
+  const modelReadySignalTopics = topics.filter(isModelReadySignalTopic).length;
+  const pendingSignalTopics = topics.filter(isPendingSignalTopic).length;
+  const provisionalSignalTopics = Math.max(
+    0,
+    topics.length - modelReadySignalTopics,
   );
+
+  const signalMetricTopics = getSignalMetricTopics(topics);
+  const signalTotals = sumTopicSignals(signalMetricTopics);
+  const allTopicTotals = sumTopicSignals(topics);
 
   const strongestTopic = topics.reduce((best, current) => {
     if (!best) return current;
@@ -48,14 +114,10 @@ export function deriveProgressSummary(
   const needsAttentionTopic = topics.reduce((mostNeedsAttention, current) => {
     if (!mostNeedsAttention) return current;
 
-    const currentPriority =
-      current.confusion - current.learningScore - current.insight * 0.25;
-    const existingPriority =
-      mostNeedsAttention.confusion -
-      mostNeedsAttention.learningScore -
-      mostNeedsAttention.insight * 0.25;
-
-    return currentPriority > existingPriority ? current : mostNeedsAttention;
+    return topicAttentionPriority(current) >
+      topicAttentionPriority(mostNeedsAttention)
+      ? current
+      : mostNeedsAttention;
   }, topics[0]);
 
   const focusedTopic =
@@ -65,11 +127,19 @@ export function deriveProgressSummary(
 
   return {
     totalTopics: topics.length,
-    averageConfusion: roundToTwo(totals.confusion / topics.length),
-    averageInsight: roundToTwo(totals.insight / topics.length),
-    averageLearningScore: roundToTwo(totals.learningScore / topics.length),
+    averageConfusion: roundToTwo(
+      signalTotals.confusion / signalMetricTopics.length,
+    ),
+    averageInsight: roundToTwo(signalTotals.insight / signalMetricTopics.length),
+    averageLearningScore: roundToTwo(allTopicTotals.learningScore / topics.length),
     focusedTopicLabel: focusedTopic?.topic_label ?? null,
     strongestTopicLabel: strongestTopic?.topic_label ?? null,
     needsAttentionTopicLabel: needsAttentionTopic?.topic_label ?? null,
+    modelReadySignalTopics,
+    pendingSignalTopics,
+    provisionalSignalTopics,
+    signalMetricTopicCount: signalMetricTopics.length,
+    signalMetricScope:
+      modelReadySignalTopics > 0 ? "model_ready" : "all_topics_fallback",
   };
 }

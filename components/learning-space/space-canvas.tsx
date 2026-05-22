@@ -158,8 +158,13 @@ const LOCAL_BOB_SPEED_VARIATION = 0.28;
  * stay oriented.
  */
 const LABEL_HIDE_SCREEN_RADIUS_PX = 44;
-const LABEL_MAX_WIDTH_OVERVIEW = 172;
-const LABEL_MAX_WIDTH_PROMINENT = 220;
+const LABEL_MAX_WIDTH_OVERVIEW = 190;
+const LABEL_MAX_WIDTH_PROMINENT = 240;
+const LABEL_OFFSET_MIN_PX = 34;
+const LABEL_OFFSET_MAX_PX = 112;
+const LABEL_OFFSET_SCREEN_RADIUS_MULTIPLIER = 0.86;
+const LABEL_OFFSET_SCREEN_RADIUS_BIAS_PX = 22;
+const LABEL_OFFSET_CURRENT_TOPIC_EXTRA_PX = 18;
 const SEMANTIC_RELATIONSHIP_ARC_MAX_COUNT = 3;
 const SEMANTIC_RELATIONSHIP_ARC_SEGMENTS = 72;
 const SEMANTIC_RELATIONSHIP_ARC_MIN_OPACITY = 0.1;
@@ -170,13 +175,19 @@ const SEMANTIC_RELATIONSHIP_ARC_HOVERLESS_LIFT_MAX = 4.8;
 const SEMANTIC_RELATIONSHIP_ARC_LIFT_DISTANCE_FACTOR = 0.18;
 const SEMANTIC_RELATIONSHIP_MIN_SCREEN_DISTANCE_PX = 54;
 const SEMANTIC_RELATIONSHIP_MAX_SCREEN_FRACTION = 0.82;
-const LABEL_OCCLUSION_RADIUS_MULTIPLIER = 1.08;
-const LABEL_OCCLUSION_DEPTH_PADDING = 0.18;
+const LABEL_OCCLUSION_RADIUS_MULTIPLIER = 1.14;
+const LABEL_OCCLUSION_DEPTH_PADDING = 0.08;
 const LABEL_OCCLUSION_FADE_BAND = 0.48;
-const LABEL_OCCLUSION_MAX_OPACITY_MULTIPLIER = 0;
-const LABEL_OCCLUSION_SCREEN_RADIUS_MULTIPLIER = 1.16;
+const LABEL_OCCLUSION_MAX_OPACITY_MULTIPLIER = 0.34;
+const LABEL_OCCLUSION_SCREEN_RADIUS_MULTIPLIER = 1.12;
 const LABEL_OCCLUSION_SCREEN_PADDING_PX = 18;
-const LABEL_OCCLUSION_SCREEN_FADE_BAND_PX = 34;
+const LABEL_OCCLUSION_SCREEN_FADE_BAND_PX = 44;
+const LABEL_OCCLUSION_SCREEN_HARD_CORE_MULTIPLIER = 0.82;
+const LABEL_DISTANCE_FADE_NEAR_MULTIPLIER = 4.2;
+const LABEL_DISTANCE_FADE_FAR_MULTIPLIER = 18;
+const LABEL_DISTANCE_FADE_BACKGROUND_MIN_OPACITY = 0.68;
+const LABEL_DISTANCE_FADE_CURRENT_MIN_OPACITY = 0.84;
+const LABEL_CURRENT_MIN_OPACITY_WHEN_VISIBLE = 0.78;
 
 /**
  * Pass 5B revised: viewpoint relationship scanner.
@@ -207,13 +218,15 @@ const RELATIONSHIP_ARC_TUBE_SEGMENTS = 48;
 /**
  * Relationship-line occlusion rule.
  *
- * Relationship curves are built center-to-center, but topic bodies should
- * visually sit above them. We use the actual rendered topic sphere as the
- * stencil writer, then render relationship tubes with a stencil test so the
- * tubes cannot draw across any visible topic body.
+ * Non-connected topics should obey normal real-world depth:
+ * if a relationship line is closer to the camera than an unrelated sphere, the
+ * line can appear in front; if the unrelated sphere is closer, it hides the
+ * line.
  *
- * This removes the old screen-space black-circle mask and the separate
- * depth-only occluder mesh. The topic sphere itself owns the mask.
+ * Connected endpoint topics are different. Relationship lines should still tuck
+ * into the topics they connect to, so each relationship creates its own tiny
+ * stencil mask for only its two endpoint topics. The actual topic spheres do not
+ * write the relationship stencil globally.
  */
 const RELATIONSHIP_ARC_ENDPOINT_COLOR_BLEND_FRACTION = 0.18;
 const VIEWPOINT_SCANNER_BLUE = "#7BAFD4";
@@ -221,8 +234,11 @@ const VIEWPOINT_SCANNER_SETTLED_BLUE = VIEWPOINT_SCANNER_BLUE;
 const RELATIONSHIP_DEFAULT_ENDPOINT_ACTIVE_COLOR = "#ead7ff";
 const RELATIONSHIP_DEFAULT_ENDPOINT_BACKGROUND_COLOR = "#d4d4d8";
 const TOPIC_SPHERE_RENDER_ORDER = 10;
+const RELATIONSHIP_ENDPOINT_STENCIL_RENDER_ORDER = 18;
 const RELATIONSHIP_ARC_RENDER_ORDER = 20;
 const TOPIC_STENCIL_REF = 1;
+const RELATIONSHIP_STENCIL_REF_MIN = 2;
+const RELATIONSHIP_STENCIL_REF_MAX = 255;
 
 type RelationshipDisplayMode = "default_semantic" | "scanning" | "settled_scan";
 type RelationshipArcVariant = "default" | "scanner" | "settled_scan";
@@ -425,6 +441,39 @@ function getScreenSpaceRadiusPx(args: {
   return 0;
 }
 
+
+function getTopicDepthFadeMultiplier(args: {
+  camera: THREE.Camera;
+  worldPosition: THREE.Vector3;
+  worldRadius: number;
+  isCurrentTopic: boolean;
+}) {
+  const distance = args.camera.position.distanceTo(args.worldPosition);
+  const safeRadius = Math.max(0.001, args.worldRadius);
+
+  /**
+   * Fade is based on camera-to-topic distance, not just absolute world Z or the
+   * topic's semantic position. That keeps the fade consistent with the user's
+   * current viewing angle while still letting far-away topics recede.
+   */
+  const nearDistance = safeRadius * LABEL_DISTANCE_FADE_NEAR_MULTIPLIER;
+  const farDistance = safeRadius * LABEL_DISTANCE_FADE_FAR_MULTIPLIER;
+
+  const distanceFade =
+    1 -
+    THREE.MathUtils.clamp(
+      (distance - nearDistance) / Math.max(1, farDistance - nearDistance),
+      0,
+      1,
+    );
+
+  const minOpacity = args.isCurrentTopic
+    ? LABEL_DISTANCE_FADE_CURRENT_MIN_OPACITY
+    : LABEL_DISTANCE_FADE_BACKGROUND_MIN_OPACITY;
+
+  return THREE.MathUtils.lerp(minOpacity, 1, distanceFade);
+}
+
 function getTopicMovementAlpha(args: {
   isFocused: boolean;
   isAnyTopicFocused: boolean;
@@ -550,6 +599,30 @@ function getRelationshipBaseColor(variant: RelationshipArcVariant) {
   if (variant === "settled_scan") return VIEWPOINT_SCANNER_SETTLED_BLUE;
   return "#f8fafc";
 }
+
+function getRelationshipStencilRef(relationshipId: string) {
+  const range = RELATIONSHIP_STENCIL_REF_MAX - RELATIONSHIP_STENCIL_REF_MIN + 1;
+
+  return (
+    RELATIONSHIP_STENCIL_REF_MIN + (stableHash(relationshipId) % range)
+  );
+}
+
+function getRelationshipEndpointVisualRadius(args: {
+  topic: LearningSpaceTopic;
+  activeTopicId: string;
+  isAnyTopicFocused: boolean;
+}) {
+  const isActiveTopic = args.topic.topic_id === args.activeTopicId;
+
+  return getTopicVisualRadius({
+    topic: args.topic,
+    isSelected: isActiveTopic,
+    isFocused: isActiveTopic && args.isAnyTopicFocused,
+    isAnyTopicFocused: args.isAnyTopicFocused,
+  });
+}
+
 
 function getRelationshipEndpointColor(args: {
   topic: LearningSpaceTopic;
@@ -831,8 +904,32 @@ function getLabelOcclusionStrength(args: {
         screenDx * screenDx + screenDy * screenDy,
       );
 
-      if (screenDistance <= otherScreenRadius) {
+      const hardCoreRadius =
+        otherScreenRadius * LABEL_OCCLUSION_SCREEN_HARD_CORE_MULTIPLIER;
+
+      if (screenDistance <= hardCoreRadius) {
+        /**
+         * Html labels render as DOM overlays, so they need an explicit hard
+         * occlusion rule. If the label's visible screen position is deep inside
+         * a foreground sphere, hide it completely. This prevents labels from
+         * being readable through the current topic body.
+         */
         return 1;
+      }
+
+      if (screenDistance <= otherScreenRadius) {
+        const closeBehindRelief = getCloseBehindOcclusionRelief({
+          topicPosition: args.labelWorldPosition,
+          blockerPosition: otherPosition,
+          blockerVisualRadius: otherVisualRadius,
+        });
+
+        /**
+         * Near the edge of a foreground sphere, keep the softer relief behavior
+         * so nearby neighboring topics do not feel like they disappear while the
+         * user rotates the view.
+         */
+        return THREE.MathUtils.lerp(0.96, 0.58, closeBehindRelief);
       }
 
       const screenOcclusion = THREE.MathUtils.clamp(
@@ -844,7 +941,16 @@ function getLabelOcclusionStrength(args: {
         1,
       );
 
-      strongestOcclusion = Math.max(strongestOcclusion, screenOcclusion);
+      const closeBehindRelief = getCloseBehindOcclusionRelief({
+        topicPosition: args.labelWorldPosition,
+        blockerPosition: otherPosition,
+        blockerVisualRadius: otherVisualRadius,
+      });
+
+      strongestOcclusion = Math.max(
+        strongestOcclusion,
+        screenOcclusion * THREE.MathUtils.lerp(1, 0.62, closeBehindRelief),
+      );
     }
 
     const closestPointOnRay = cameraPosition
@@ -872,9 +978,17 @@ function getLabelOcclusionStrength(args: {
         1,
       );
 
+      const closeBehindRelief = getCloseBehindOcclusionRelief({
+        topicPosition: args.labelWorldPosition,
+        blockerPosition: otherPosition,
+        blockerVisualRadius: otherVisualRadius,
+      });
+
       strongestOcclusion = Math.max(
         strongestOcclusion,
-        radiusOcclusion * depthOcclusion,
+        radiusOcclusion *
+          depthOcclusion *
+          THREE.MathUtils.lerp(1, 0.66, closeBehindRelief),
       );
     }
 
@@ -882,6 +996,24 @@ function getLabelOcclusionStrength(args: {
   }
 
   return strongestOcclusion;
+}
+
+
+function getCloseBehindOcclusionRelief(args: {
+  topicPosition: THREE.Vector3;
+  blockerPosition: THREE.Vector3;
+  blockerVisualRadius: number;
+}) {
+  const topicDistance = args.topicPosition.distanceTo(args.blockerPosition);
+  const closeRange = Math.max(0.001, args.blockerVisualRadius * 3.2);
+
+  /**
+   * When two topics are physically close and one is slightly behind the other,
+   * hiding the rear label entirely makes nearby neighbors feel like they vanish.
+   * This relief keeps "close-behind" labels readable while still letting true
+   * far-behind labels fade heavily.
+   */
+  return THREE.MathUtils.clamp((closeRange - topicDistance) / closeRange, 0, 1);
 }
 
 function TopicLabel({
@@ -894,6 +1026,7 @@ function TopicLabel({
   isFocused,
   isAppearing,
   hideLabelsForViewDrag,
+  forceShowLabel = false,
   isAnyTopicFocused,
   isEnteringProbe,
   worldPositionRef,
@@ -908,6 +1041,7 @@ function TopicLabel({
   isFocused: boolean;
   isAppearing: boolean;
   hideLabelsForViewDrag: boolean;
+  forceShowLabel?: boolean;
   isAnyTopicFocused: boolean;
   isEnteringProbe: boolean;
   worldPositionRef: RefObject<THREE.Vector3>;
@@ -915,7 +1049,7 @@ function TopicLabel({
 }) {
   const { camera, size } = useThree();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const labelOpacityRef = useRef(0.78);
+  const labelOpacityRef = useRef(0);
 
   useFrame(() => {
     const el = containerRef.current;
@@ -946,17 +1080,27 @@ function TopicLabel({
 
     const isCurrentTopic = isFocused || isSelected;
     const hideBecauseCurrentTopicIsClose =
-      isCurrentTopic && isCloseEnoughToReadWithoutMapLabel;
+      isFocused && isCloseEnoughToReadWithoutMapLabel;
 
     const shouldShow =
-      !hideLabelsForViewDrag &&
+      (!hideLabelsForViewDrag || forceShowLabel) &&
       !isEnteringProbe &&
       !hideBecauseCurrentTopicIsClose;
 
-    const labelOffsetPx = Math.min(
-      68,
-      Math.max(22, screenRadiusPx * 0.62 + 14),
+    const baseLabelOffsetPx = Math.min(
+      LABEL_OFFSET_MAX_PX,
+      Math.max(
+        LABEL_OFFSET_MIN_PX,
+        screenRadiusPx * LABEL_OFFSET_SCREEN_RADIUS_MULTIPLIER +
+          LABEL_OFFSET_SCREEN_RADIUS_BIAS_PX,
+      ),
     );
+    const labelOffsetPx = isCurrentTopic
+      ? Math.min(
+          LABEL_OFFSET_MAX_PX + LABEL_OFFSET_CURRENT_TOPIC_EXTRA_PX,
+          baseLabelOffsetPx + LABEL_OFFSET_CURRENT_TOPIC_EXTRA_PX,
+        )
+      : baseLabelOffsetPx;
 
     const occlusionStrength = shouldShow
       ? getLabelOcclusionStrength({
@@ -973,10 +1117,34 @@ function TopicLabel({
       : 0;
 
     const occlusionOpacityMultiplier =
-      1 - occlusionStrength * (1 - LABEL_OCCLUSION_MAX_OPACITY_MULTIPLIER);
+      occlusionStrength >= 0.995
+        ? 0
+        : 1 - occlusionStrength * (1 - LABEL_OCCLUSION_MAX_OPACITY_MULTIPLIER);
+
+    const distanceFadeMultiplier = getTopicDepthFadeMultiplier({
+      camera,
+      worldPosition: worldPositionRef.current,
+      worldRadius: visualRadius,
+      isCurrentTopic,
+    });
+
+    const baseVisibleOpacity = forceShowLabel
+      ? isSelected || isFocused
+        ? 0.98
+        : 0.88
+      : isSelected
+        ? 0.96
+        : isFocused
+          ? 0.9
+          : 0.78;
 
     const targetOpacity = shouldShow
-      ? (isSelected ? 0.96 : 0.78) * occlusionOpacityMultiplier
+      ? Math.max(
+          isCurrentTopic ? LABEL_CURRENT_MIN_OPACITY_WHEN_VISIBLE : 0,
+          baseVisibleOpacity *
+            distanceFadeMultiplier *
+            occlusionOpacityMultiplier,
+        )
       : 0;
 
     /**
@@ -993,7 +1161,7 @@ function TopicLabel({
       labelOpacityRef.current = targetOpacity;
     }
 
-    const targetScale = shouldShow ? (isSelected ? 1.02 : 0.94) : 0.96;
+    const targetScale = shouldShow ? (isProminent ? 1.04 : 0.98) : 0.98;
     const targetYOffset = shouldShow ? -labelOffsetPx : -(labelOffsetPx - 2);
 
     el.style.opacity = `${labelOpacityRef.current}`;
@@ -1014,18 +1182,21 @@ function TopicLabel({
       <div
         ref={containerRef}
         style={{
-          opacity: 0.78,
-          transform: "translate3d(0, -22px, 0) scale(0.94)",
+          opacity: 0,
+          transform: "translate3d(0, -34px, 0) scale(0.98)",
+          background: "transparent",
+          border: "none",
+          boxShadow: "none",
           filter: "none",
           transition: "transform 220ms ease",
           willChange: "transform, opacity",
           maxWidth: isProminent
             ? LABEL_MAX_WIDTH_PROMINENT
             : LABEL_MAX_WIDTH_OVERVIEW,
-          textShadow: "0 2px 8px rgba(0,0,0,0.96), 0 0 18px rgba(0,0,0,0.86)",
+          textShadow: "0 1px 3px rgba(0,0,0,0.92), 0 0 7px rgba(0,0,0,0.58)",
         }}
-        className={`px-1 text-[11px] font-medium leading-tight tracking-[0.01em] ${
-          isProminent ? "text-white" : "text-zinc-100/90"
+        className={`p-0 font-medium leading-tight tracking-[0.01em] ${
+          isProminent ? "text-[13px] text-white" : "text-[12px] text-zinc-100"
         }`}
       >
         <span className="block truncate whitespace-nowrap">
@@ -1073,7 +1244,7 @@ function ProbeMarker({
         }}
       >
         <span className="absolute inset-0 rounded-full border border-purple-200/20 opacity-70" />
-        <span className="absolute inset-[5px] rounded-full border border-white/10" />
+        <span className="absolute inset-1.25 rounded-full border border-white/10" />
         <span className="text-sm leading-none">✦</span>
       </button>
     </Html>
@@ -1099,6 +1270,56 @@ function MovementTrail({
         depthTest={false}
       />
     </line>
+  );
+}
+
+
+function RelationshipEndpointStencilMask({
+  topic,
+  activeTopicId,
+  isAnyTopicFocused,
+  animatedTopicPositionsRef,
+  stencilRef,
+}: {
+  topic: LearningSpaceTopic;
+  activeTopicId: string;
+  isAnyTopicFocused: boolean;
+  animatedTopicPositionsRef: AnimatedTopicPositionsRef;
+  stencilRef: number;
+}) {
+  const meshRef = useRef<THREE.Mesh | null>(null);
+
+  useFrame(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+
+    const position = getAnimatedTopicPosition(topic, animatedTopicPositionsRef);
+    const visualRadius = getRelationshipEndpointVisualRadius({
+      topic,
+      activeTopicId,
+      isAnyTopicFocused,
+    });
+
+    mesh.position.copy(position);
+    mesh.scale.setScalar(visualRadius * 1.012);
+    mesh.renderOrder = RELATIONSHIP_ENDPOINT_STENCIL_RENDER_ORDER;
+  });
+
+  return (
+    <mesh ref={meshRef} renderOrder={RELATIONSHIP_ENDPOINT_STENCIL_RENDER_ORDER}>
+      <sphereGeometry args={[1, 32, 32]} />
+      <meshBasicMaterial
+        colorWrite={false}
+        depthWrite={false}
+        depthTest
+        stencilWrite
+        stencilRef={stencilRef}
+        stencilFunc={THREE.AlwaysStencilFunc}
+        stencilFail={THREE.KeepStencilOp}
+        stencilZFail={THREE.KeepStencilOp}
+        stencilZPass={THREE.ReplaceStencilOp}
+      />
+    </mesh>
   );
 }
 
@@ -1139,6 +1360,7 @@ function SemanticRelationshipArc({
   const isScannerVariant = variant === "scanner" || variant === "settled_scan";
   const arcColor = getRelationshipBaseColor(variant);
   const tubeRadius = getRelationshipTubeRadius({ variant, strength });
+  const stencilRef = getRelationshipStencilRef(relationship.relationship_id);
 
   useFrame(() => {
     const group = groupRef.current;
@@ -1234,10 +1456,15 @@ function SemanticRelationshipArc({
       vertexColors: true,
       transparent: true,
       opacity: opacityRef.current,
+
+      /**
+       * Normal depth handles non-connected topics. The relationship-specific
+       * stencil handles only this relationship's two endpoint topics.
+       */
       depthTest: true,
       depthWrite: false,
-      stencilWrite: true,
-      stencilRef: TOPIC_STENCIL_REF,
+      stencilWrite: false,
+      stencilRef,
       stencilFunc: THREE.NotEqualStencilFunc,
       stencilFail: THREE.KeepStencilOp,
       stencilZFail: THREE.KeepStencilOp,
@@ -1261,7 +1488,25 @@ function SemanticRelationshipArc({
     return null;
   }
 
-  return <group ref={groupRef} renderOrder={RELATIONSHIP_ARC_RENDER_ORDER} />;
+  return (
+    <>
+      <RelationshipEndpointStencilMask
+        topic={sourceTopic}
+        activeTopicId={activeTopicId}
+        isAnyTopicFocused={isAnyTopicFocused}
+        animatedTopicPositionsRef={animatedTopicPositionsRef}
+        stencilRef={stencilRef}
+      />
+      <RelationshipEndpointStencilMask
+        topic={targetTopic}
+        activeTopicId={activeTopicId}
+        isAnyTopicFocused={isAnyTopicFocused}
+        animatedTopicPositionsRef={animatedTopicPositionsRef}
+        stencilRef={stencilRef}
+      />
+      <group ref={groupRef} renderOrder={RELATIONSHIP_ARC_RENDER_ORDER} />
+    </>
+  );
 }
 
 function areStringArraysEqual(a: string[], b: string[]) {
@@ -1477,6 +1722,7 @@ function TopicSphere({
   isSceneSettled,
   isEnteringProbe,
   hideLabelsForViewDrag,
+  forceShowLabelDuringViewDrag,
   onSelect,
   onFocusTopic,
   onUnfocus,
@@ -1494,6 +1740,7 @@ function TopicSphere({
   isSceneSettled: boolean;
   isEnteringProbe: boolean;
   hideLabelsForViewDrag: boolean;
+  forceShowLabelDuringViewDrag: boolean;
   onSelect: (id: string) => void;
   onFocusTopic: (id: string) => void;
   onUnfocus: () => void;
@@ -1819,12 +2066,6 @@ function TopicSphere({
               transparent
               depthWrite
               depthTest
-              stencilWrite
-              stencilRef={TOPIC_STENCIL_REF}
-              stencilFunc={THREE.AlwaysStencilFunc}
-              stencilFail={THREE.KeepStencilOp}
-              stencilZFail={THREE.KeepStencilOp}
-              stencilZPass={THREE.ReplaceStencilOp}
             />
           </mesh>
 
@@ -1838,6 +2079,7 @@ function TopicSphere({
             isFocused={isFocused}
             isAppearing={isAppearing}
             hideLabelsForViewDrag={hideLabelsForViewDrag}
+            forceShowLabel={forceShowLabelDuringViewDrag}
             isAnyTopicFocused={isAnyTopicFocused}
             isEnteringProbe={isEnteringProbe}
             worldPositionRef={currentPositionRef}
@@ -2414,6 +2656,39 @@ export default function SpaceCanvas({
       ? "scanner"
       : "default";
 
+  const relationshipLabelTopicIds = useMemo(() => {
+    const ids = new Set<string>();
+
+    /**
+     * During relationship scanning, most map labels can hide so the scan feels
+     * clean. The exception is the active topic and the topics touched by the
+     * currently displayed scanner relationships. That way, as a new relationship
+     * appears from the current camera angle, its endpoint topic label appears too.
+     */
+    if (
+      relationshipDisplayMode !== "scanning" &&
+      relationshipDisplayMode !== "settled_scan"
+    ) {
+      return ids;
+    }
+
+    if (activeRelationshipTopicId) {
+      ids.add(activeRelationshipTopicId);
+    }
+
+    for (const relationship of displayedRelationships) {
+      ids.add(relationship.source_topic_id);
+      ids.add(relationship.target_topic_id);
+    }
+
+    return ids;
+  }, [
+    activeRelationshipTopicId,
+    displayedRelationships,
+    relationshipDisplayMode,
+  ]);
+
+
   function clearScannerSettleTimeout() {
     if (scannerSettleTimeoutRef.current !== null) {
       window.clearTimeout(scannerSettleTimeoutRef.current);
@@ -2652,6 +2927,9 @@ export default function SpaceCanvas({
                 isSceneSettled={isSceneSettled}
                 isEnteringProbe={isEnteringProbe}
                 hideLabelsForViewDrag={isUserControlling}
+                forceShowLabelDuringViewDrag={relationshipLabelTopicIds.has(
+                  topic.topic_id,
+                )}
                 onSelect={(id) => onSelectTopic(id)}
                 onFocusTopic={(id) => onFocusTopicChange?.(id)}
                 onUnfocus={() => onFocusTopicChange?.(null)}

@@ -4,11 +4,13 @@ export type ConfusionInsightStatus =
   | "timeout"
   | "error";
 
+export type ConfusionInsightInferenceMode = "service" | "local" | null;
+
 export type ConfusionInsightSignals = {
   model_confusion: number | null;
   model_insight: number | null;
   model_version: string | null;
-  inference_mode: "service" | "local" | null;
+  inference_mode: ConfusionInsightInferenceMode;
   latency_ms: number | null;
   status: ConfusionInsightStatus;
   error_message: string | null;
@@ -116,13 +118,32 @@ const DEFAULT_CONFUSION_INSIGHT_SERVICE_URL =
   "http://127.0.0.1:8003/score";
 
 /**
- * The v1_1 model is fast once warm, but local Next/Turbopack + Python service
- * scheduling can occasionally push the first foreground request above 800ms.
- * 2s keeps the foreground path practical while preserving a clean timeout/fallback.
+ * MYWAY_* names are the canonical runtime configuration surface.
+ *
+ * The older CONFUSION_INSIGHT_* names are supported as fallbacks so this adapter
+ * can be swapped without breaking existing local .env files.
+ *
+ * GPU/external service path:
+ *   MYWAY_CONFUSION_INSIGHT_SERVICE_URL=http://gpu-host:8003
+ *
+ * Local managed worker path:
+ *   default http://127.0.0.1:8003/score
  */
+const SERVICE_URL_ENV_KEYS = [
+  "MYWAY_CONFUSION_INSIGHT_SERVICE_URL",
+  "CONFUSION_INSIGHT_SERVICE_URL",
+] as const;
+
+const TIMEOUT_MS_ENV_KEYS = [
+  "MYWAY_CONFUSION_INSIGHT_TIMEOUT_MS",
+  "CONFUSION_INSIGHT_TIMEOUT_MS",
+] as const;
+
 const DEFAULT_TIMEOUT_MS = 2_000;
 const MIN_TIMEOUT_MS = 250;
-const MAX_TIMEOUT_MS = 10_000;
+const MAX_TIMEOUT_MS = 60_000;
+const DEFAULT_SIMILARITY_THRESHOLD = 0.65;
+const MAX_RECENT_EVENTS = 5;
 
 function emptySignals(
   status: ConfusionInsightStatus,
@@ -155,20 +176,64 @@ function normalizeNullableNumber(value: unknown): number | null {
 
 function normalizeTimeoutMs(value: unknown, fallback = DEFAULT_TIMEOUT_MS) {
   if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+
   return Math.max(MIN_TIMEOUT_MS, Math.min(MAX_TIMEOUT_MS, Math.round(value)));
 }
 
+function getFirstConfiguredEnvValue(keys: readonly string[]) {
+  for (const key of keys) {
+    const value = process.env[key]?.trim();
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function normalizeServiceUrl(value: string) {
+  const trimmed = value.trim();
+
+  try {
+    const url = new URL(trimmed);
+
+    /**
+     * Accept either a full /score endpoint or a bare service origin.
+     */
+    if (url.pathname === "" || url.pathname === "/") {
+      url.pathname = "/score";
+    }
+
+    return url.toString();
+  } catch {
+    return trimmed;
+  }
+}
+
+function getConfiguredServiceUrl() {
+  const configured = getFirstConfiguredEnvValue(SERVICE_URL_ENV_KEYS);
+
+  return normalizeServiceUrl(
+    configured ?? DEFAULT_CONFUSION_INSIGHT_SERVICE_URL,
+  );
+}
+
 function getConfiguredDefaultTimeoutMs() {
-  const raw = process.env.CONFUSION_INSIGHT_TIMEOUT_MS;
+  const raw = getFirstConfiguredEnvValue(TIMEOUT_MS_ENV_KEYS);
   if (!raw) return DEFAULT_TIMEOUT_MS;
 
-  const parsed = Number(raw);
-  return normalizeTimeoutMs(parsed, DEFAULT_TIMEOUT_MS);
+  return normalizeTimeoutMs(Number(raw), DEFAULT_TIMEOUT_MS);
 }
 
 function buildLegacyStructuredInput(
   args: ScoreConfusionInsightLegacyArgs,
 ): ConfusionInsightStructuredInput {
+  /**
+   * Legacy callers are still supported, but the adapter normalizes them into the
+   * v1_1 structured shape before calling the provider. This keeps the model
+   * boundary stable while older call sites are gradually retired.
+   */
   return {
     input_type: "message",
     current_attempt_type: null,
@@ -187,7 +252,7 @@ function buildLegacyStructuredInput(
 
     most_related_topic_label: null,
     most_related_topic_similarity: null,
-    most_related_topic_similarity_threshold: 0.65,
+    most_related_topic_similarity_threshold: DEFAULT_SIMILARITY_THRESHOLD,
     most_related_topic_recent_events: [],
 
     target_topic_confusion_average: null,
@@ -233,7 +298,7 @@ function normalizeEvents(value: unknown): ConfusionInsightEvent[] {
         Boolean(item && typeof item === "object" && !Array.isArray(item)),
     )
     .map(normalizeEvent)
-    .slice(-5);
+    .slice(-MAX_RECENT_EVENTS);
 }
 
 function normalizeInputType(
@@ -291,7 +356,9 @@ function normalizeStructuredInput(
       input.previous_active_topic_label,
     ),
     target_topic_label: normalizeOptionalString(input.target_topic_label),
-    topic_transition_type: normalizeTopicTransitionType(input.topic_transition_type),
+    topic_transition_type: normalizeTopicTransitionType(
+      input.topic_transition_type,
+    ),
     topic_similarity: normalizeNullableNumber(input.topic_similarity),
 
     previous_mode: normalizePreviousMode(input.previous_mode),
@@ -308,9 +375,9 @@ function normalizeStructuredInput(
     most_related_topic_similarity: normalizeNullableNumber(
       input.most_related_topic_similarity,
     ),
-    most_related_topic_similarity_threshold: normalizeNullableNumber(
-      input.most_related_topic_similarity_threshold,
-    ),
+    most_related_topic_similarity_threshold:
+      normalizeNullableNumber(input.most_related_topic_similarity_threshold) ??
+      DEFAULT_SIMILARITY_THRESHOLD,
     most_related_topic_recent_events: normalizeEvents(
       input.most_related_topic_recent_events,
     ),
@@ -351,13 +418,85 @@ function getTimeoutMs(args: ScoreConfusionInsightArgs) {
   return normalizeTimeoutMs(args.timeoutMs, getConfiguredDefaultTimeoutMs());
 }
 
+function normalizeServiceResponseLatencyMs(
+  value: unknown,
+  fallbackLatencyMs: number,
+) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : fallbackLatencyMs;
+}
+
+function normalizeProviderInferenceMode(
+  value: unknown,
+): ConfusionInsightInferenceMode {
+  if (value === "service" || value === "local") return value;
+  return "service";
+}
+
+function normalizeProviderStatus(value: unknown): ConfusionInsightStatus {
+  if (
+    value === "ok" ||
+    value === "unavailable" ||
+    value === "timeout" ||
+    value === "error"
+  ) {
+    return value;
+  }
+
+  return "error";
+}
+
+function normalizeProviderErrorMessage(
+  value: unknown,
+  fallback: string,
+): string {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function normalizeServiceScores(data: ConfusionInsightServiceResponse) {
+  const modelConfusion =
+    clamp01(data.model_confusion) ?? clamp01(data.raw_scores?.confusion);
+  const modelInsight =
+    clamp01(data.model_insight) ?? clamp01(data.raw_scores?.insight);
+
+  return {
+    modelConfusion,
+    modelInsight,
+  };
+}
+
+function buildInvalidScoreResponse(args: {
+  data: ConfusionInsightServiceResponse;
+  latencyMs: number;
+}) {
+  const { modelConfusion, modelInsight } = normalizeServiceScores(args.data);
+
+  if (modelConfusion === null || modelInsight === null) {
+    return emptySignals(
+      "error",
+      "Confusion/insight provider returned ok status without valid model_confusion/model_insight scores.",
+      normalizeServiceResponseLatencyMs(args.data.latency_ms, args.latencyMs),
+    );
+  }
+
+  return null;
+}
+
+async function readServiceResponseJson(
+  response: Response,
+): Promise<ConfusionInsightServiceResponse | null> {
+  try {
+    return (await response.json()) as ConfusionInsightServiceResponse;
+  } catch {
+    return null;
+  }
+}
+
 export async function scoreConfusionInsight(
   args: ScoreConfusionInsightArgs,
 ): Promise<ConfusionInsightSignals> {
-  const serviceUrl =
-    process.env.CONFUSION_INSIGHT_SERVICE_URL ??
-    DEFAULT_CONFUSION_INSIGHT_SERVICE_URL;
-
+  const serviceUrl = getConfiguredServiceUrl();
   const payload = getRequestPayload(args);
   const timeoutMs = getTimeoutMs(args);
 
@@ -382,33 +521,55 @@ export async function scoreConfusionInsight(
     clearTimeout(timeout);
 
     const latencyMs = Date.now() - started;
+    const data = await readServiceResponseJson(response);
 
     if (!response.ok) {
       return emptySignals(
         "error",
-        `Confusion/insight provider returned HTTP ${response.status}.`,
+        data?.error_message ??
+          `Confusion/insight provider returned HTTP ${response.status}.`,
+        normalizeServiceResponseLatencyMs(data?.latency_ms, latencyMs),
+      );
+    }
+
+    if (!data) {
+      return emptySignals(
+        "error",
+        "Confusion/insight provider returned an unreadable JSON response.",
         latencyMs,
       );
     }
 
-    const data = (await response.json()) as ConfusionInsightServiceResponse;
+    const providerStatus = normalizeProviderStatus(data.status ?? "ok");
 
-    if (data.status !== "ok") {
+    if (providerStatus !== "ok") {
       return emptySignals(
-        "error",
-        data.error_message ??
+        providerStatus,
+        normalizeProviderErrorMessage(
+          data.error_message,
           "Confusion/insight provider returned non-ok status.",
-        typeof data.latency_ms === "number" ? data.latency_ms : latencyMs,
+        ),
+        normalizeServiceResponseLatencyMs(data.latency_ms, latencyMs),
       );
     }
 
+    const invalidScoreResponse = buildInvalidScoreResponse({
+      data,
+      latencyMs,
+    });
+
+    if (invalidScoreResponse) {
+      return invalidScoreResponse;
+    }
+
+    const { modelConfusion, modelInsight } = normalizeServiceScores(data);
+
     return {
-      model_confusion: clamp01(data.model_confusion),
-      model_insight: clamp01(data.model_insight),
+      model_confusion: modelConfusion,
+      model_insight: modelInsight,
       model_version: data.model_version ?? null,
-      inference_mode: data.inference_mode ?? "service",
-      latency_ms:
-        typeof data.latency_ms === "number" ? data.latency_ms : latencyMs,
+      inference_mode: normalizeProviderInferenceMode(data.inference_mode),
+      latency_ms: normalizeServiceResponseLatencyMs(data.latency_ms, latencyMs),
       status: "ok",
       error_message: null,
     };
