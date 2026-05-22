@@ -129,10 +129,62 @@ export type ModelFirstTopicResolutionOutcome = {
   debug: ModelFirstTopicResolutionDebug;
 };
 
+const MODEL_AUTHORITY_SOURCE = "topic_labeler_policy" as const;
+const MODEL_FALLBACK_AUTHORITY_SOURCE = "topic_labeler_fallback" as const;
+
+type ModelResolutionAuthoritySource =
+  | typeof MODEL_AUTHORITY_SOURCE
+  | typeof MODEL_FALLBACK_AUTHORITY_SOURCE;
+
+const MODEL_MATCH_CONFIDENCE = {
+  stayActive: 0.86,
+  switchExisting: 0.88,
+  createNew: 0.86,
+  conservativeActiveFallback: 0.32,
+  conservativeNoMatch: 0,
+} as const;
+
+function compactUniqueStrings(values: Array<string | null | undefined>) {
+  const seen = new Set<string>();
+  const output: string[] = [];
+
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (!trimmed) continue;
+
+    const key = normalizeTextLoose(trimmed);
+    if (!key || seen.has(key)) continue;
+
+    seen.add(key);
+    output.push(trimmed);
+  }
+
+  return output;
+}
+
+function getPolicyResolvedLabel(
+  decision: ModelTopicRoutePolicyDecision | null,
+  activeTopic: RouteTopic | null,
+) {
+  return (
+    decision?.extracted_label?.trim() ||
+    getPolicyMatchedTopicLabel(decision) ||
+    getRouteTopicLabel(decision?.target_topic ?? null) ||
+    getRouteTopicLabel(activeTopic) ||
+    null
+  );
+}
+
+function isModelFailureDecision(
+  decision: ModelTopicRoutePolicyDecision | null,
+) {
+  return !decision || decision.decision_kind === "unusable_model_result";
+}
+
 function emptyVectorInfo(): VectorInfo {
   return {
     top_k_topic_labels: [],
-        top_k_topic_ids: [],
+    top_k_topic_ids: [],
     top_k_similarity_scores: [],
   };
 }
@@ -405,39 +457,10 @@ function buildSemanticEnrichmentStatus(args: {
 
   const topicForSemanticCheck = createdTopic ?? targetTopic ?? null;
   const topicLabel =
-    resolvedLabel ??
+    resolvedLabel?.trim() ??
     getRouteTopicLabel(createdTopic) ??
     getRouteTopicLabel(targetTopic ?? null) ??
     null;
-
-  const hasExistingCanonicalEmbeddings =
-    topicHasCanonicalEmbeddings(topicForSemanticCheck);
-  const hasTopicLabelEmbedding =
-    topicHasTopicLabelEmbedding(topicForSemanticCheck);
-  const hasTopicMessageEmbedding =
-    topicHasTopicMessageEmbedding(topicForSemanticCheck);
-
-  if (messageEmbeddingPlan?.new_centroid && messageEmbedding?.length) {
-    return {
-      status: hasTopicLabelEmbedding ? "embedding_ready" : "pending_embedding",
-      needs_embedding_centroid: !hasTopicLabelEmbedding,
-      centroid_source: hasTopicLabelEmbedding
-        ? "topic_label_and_message_embedding"
-        : "topic_message_embedding",
-      embedding_skip_reason: null,
-      layout_status: hasTopicLabelEmbedding
-        ? "semantic_position_ready"
-        : "temporary_position",
-      should_schedule_enrichment: !hasExistingCanonicalEmbeddings,
-      enrichment_prompt_text:
-        hasExistingCanonicalEmbeddings || !topicLabel
-          ? null
-          : buildTopicMessageEnrichmentPrompt({
-              topicLabel,
-              initialMessage: initialMessage ?? null,
-            }),
-    };
-  }
 
   if (!topicForSemanticCheck || !topicLabel) {
     return {
@@ -451,6 +474,17 @@ function buildSemanticEnrichmentStatus(args: {
     };
   }
 
+  const hasExistingCanonicalEmbeddings =
+    topicHasCanonicalEmbeddings(topicForSemanticCheck);
+  const hasTopicLabelEmbedding =
+    topicHasTopicLabelEmbedding(topicForSemanticCheck);
+  const hasTopicMessageEmbedding =
+    topicHasTopicMessageEmbedding(topicForSemanticCheck);
+
+  const hasFreshMessageEmbedding =
+    Boolean(messageEmbeddingPlan?.new_centroid) &&
+    Boolean(asEmbeddingVector(messageEmbedding)?.length);
+
   if (hasExistingCanonicalEmbeddings) {
     return {
       status: "embedding_ready",
@@ -460,6 +494,27 @@ function buildSemanticEnrichmentStatus(args: {
       layout_status: "semantic_position_ready",
       should_schedule_enrichment: false,
       enrichment_prompt_text: null,
+    };
+  }
+
+  const enrichmentPromptText = buildTopicMessageEnrichmentPrompt({
+    topicLabel,
+    initialMessage: initialMessage ?? null,
+  });
+
+  if (hasFreshMessageEmbedding) {
+    return {
+      status: hasTopicLabelEmbedding ? "embedding_ready" : "pending_embedding",
+      needs_embedding_centroid: !hasTopicLabelEmbedding,
+      centroid_source: hasTopicLabelEmbedding
+        ? "topic_label_and_message_embedding"
+        : "topic_message_embedding",
+      embedding_skip_reason: null,
+      layout_status: hasTopicLabelEmbedding
+        ? "semantic_position_ready"
+        : "temporary_position",
+      should_schedule_enrichment: true,
+      enrichment_prompt_text: enrichmentPromptText,
     };
   }
 
@@ -479,15 +534,12 @@ function buildSemanticEnrichmentStatus(args: {
       : null,
     layout_status: "temporary_position",
     should_schedule_enrichment: true,
-    enrichment_prompt_text: buildTopicMessageEnrichmentPrompt({
-      topicLabel,
-      initialMessage: initialMessage ?? null,
-    }),
+    enrichment_prompt_text: enrichmentPromptText,
   };
 }
 
 function buildModelResolutionDebug(args: {
-  authoritySource: "topic_labeler_policy" | "topic_labeler_fallback";
+  authoritySource: ModelResolutionAuthoritySource;
   modelPolicyUsedAsAuthority: boolean;
   modelPolicyDecision: ModelTopicRoutePolicyDecision | null;
   resolutionKind: ModelFirstTopicResolutionKind;
@@ -527,7 +579,7 @@ function buildOutcome(args: {
   matchConfidence: number;
   modelPolicyDecision: ModelTopicRoutePolicyDecision | null;
   modelPolicyUsedAsAuthority: boolean;
-  authoritySource: "topic_labeler_policy" | "topic_labeler_fallback";
+  authoritySource: ModelResolutionAuthoritySource;
   continuationPolicy: ModelRouteContinuationPolicy;
   semanticEnrichmentStatus: SemanticEnrichmentStatus;
   centroidUpdatePlan?: ModelFirstRouteCentroidUpdatePlan | null;
@@ -598,12 +650,7 @@ export function buildModelRouteContinuationPolicy(args: {
   if (isModelPolicySafePositiveDecision(modelPolicyDecision)) {
     return buildAuthoritativeContinuationPolicy({
       decisionKind: modelPolicyDecision.decision_kind,
-      resolvedLabel:
-        modelPolicyDecision.extracted_label ??
-        matchedTopicLabel ??
-        getRouteTopicLabel(modelPolicyDecision.target_topic ?? null) ??
-        activeTopicLabel ??
-        null,
+      resolvedLabel: getPolicyResolvedLabel(modelPolicyDecision, activeTopic),
       activeTopicLabel,
     });
   }
@@ -620,17 +667,20 @@ export function buildModelRouteContinuationPolicy(args: {
   }
 
   if (modelPolicyDecision.decision_kind === "clarify_topic_intent") {
-    const candidateTargets = [
+    const targetTopicLabel = getRouteTopicLabel(
+      modelPolicyDecision.target_topic ?? null,
+    );
+    const candidateTargets = compactUniqueStrings([
       modelPolicyDecision.extracted_label,
       matchedTopicLabel,
-      getRouteTopicLabel(modelPolicyDecision.target_topic ?? null),
-    ].filter((item): item is string => Boolean(item));
+      targetTopicLabel,
+    ]);
 
     return buildClarifyTopicIntentContinuationPolicy({
       candidateTargets,
       chosenTarget:
-        getRouteTopicLabel(modelPolicyDecision.target_topic ?? null) ??
-        modelPolicyDecision.extracted_label ??
+        targetTopicLabel ??
+        modelPolicyDecision.extracted_label?.trim() ??
         matchedTopicLabel ??
         null,
     });
@@ -705,10 +755,10 @@ export function buildModelFirstTopicResolutionOutcome(args: {
       resolutionKind: "fallback_active_topic",
       vectorInfo,
       resolvedLabel: activeTopicLabel,
-      matchConfidence: 0.86,
+      matchConfidence: MODEL_MATCH_CONFIDENCE.stayActive,
       modelPolicyDecision,
       modelPolicyUsedAsAuthority: true,
-      authoritySource: "topic_labeler_policy",
+      authoritySource: MODEL_AUTHORITY_SOURCE,
       continuationPolicy,
       semanticEnrichmentStatus,
     });
@@ -752,10 +802,10 @@ export function buildModelFirstTopicResolutionOutcome(args: {
           : "matched_existing",
       vectorInfo,
       resolvedLabel: modelPolicyDecision.extracted_label ?? matchedTopicLabel,
-      matchConfidence: 0.88,
+      matchConfidence: MODEL_MATCH_CONFIDENCE.switchExisting,
       modelPolicyDecision,
       modelPolicyUsedAsAuthority: true,
-      authoritySource: "topic_labeler_policy",
+      authoritySource: MODEL_AUTHORITY_SOURCE,
       continuationPolicy,
       semanticEnrichmentStatus,
     });
@@ -797,10 +847,10 @@ export function buildModelFirstTopicResolutionOutcome(args: {
             : "matched_existing",
         vectorInfo,
         resolvedLabel,
-        matchConfidence: 0.88,
+        matchConfidence: MODEL_MATCH_CONFIDENCE.switchExisting,
         modelPolicyDecision,
         modelPolicyUsedAsAuthority: true,
-        authoritySource: "topic_labeler_policy",
+        authoritySource: MODEL_AUTHORITY_SOURCE,
         continuationPolicy,
         semanticEnrichmentStatus,
       });
@@ -840,10 +890,10 @@ export function buildModelFirstTopicResolutionOutcome(args: {
       resolutionKind: "created_new_candidate",
       vectorInfo,
       resolvedLabel,
-      matchConfidence: 0.86,
+      matchConfidence: MODEL_MATCH_CONFIDENCE.createNew,
       modelPolicyDecision,
       modelPolicyUsedAsAuthority: true,
-      authoritySource: "topic_labeler_policy",
+      authoritySource: MODEL_AUTHORITY_SOURCE,
       continuationPolicy,
       semanticEnrichmentStatus,
       centroidUpdatePlan: messageEmbeddingPlan,
@@ -869,9 +919,7 @@ export function buildModelFirstConservativeFallbackOutcome(args: {
     modelPolicyDecision,
   });
 
-  const blockedByModelFailure =
-    !modelPolicyDecision ||
-    modelPolicyDecision.decision_kind === "unusable_model_result";
+  const blockedByModelFailure = isModelFailureDecision(modelPolicyDecision);
 
   if (activeTopic) {
     const activeTopicLabel = getRouteTopicLabel(activeTopic);
@@ -893,10 +941,10 @@ export function buildModelFirstConservativeFallbackOutcome(args: {
       resolutionKind: "fallback_active_topic",
       vectorInfo,
       resolvedLabel: activeTopicLabel,
-      matchConfidence: 0.32,
+      matchConfidence: MODEL_MATCH_CONFIDENCE.conservativeActiveFallback,
       modelPolicyDecision,
       modelPolicyUsedAsAuthority: false,
-      authoritySource: "topic_labeler_fallback",
+      authoritySource: MODEL_FALLBACK_AUTHORITY_SOURCE,
       continuationPolicy,
       semanticEnrichmentStatus,
     });
@@ -922,10 +970,10 @@ export function buildModelFirstConservativeFallbackOutcome(args: {
     resolutionKind: "no_match",
     vectorInfo,
     resolvedLabel: null,
-    matchConfidence: 0.0,
+    matchConfidence: MODEL_MATCH_CONFIDENCE.conservativeNoMatch,
     modelPolicyDecision,
     modelPolicyUsedAsAuthority: false,
-    authoritySource: "topic_labeler_fallback",
+    authoritySource: MODEL_FALLBACK_AUTHORITY_SOURCE,
     continuationPolicy,
     semanticEnrichmentStatus,
   });

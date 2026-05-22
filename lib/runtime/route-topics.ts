@@ -70,8 +70,14 @@ export type SharedMessageFrame =
   | "general";
 
 const DEFAULT_DIAGNOSIS: DiagnosisType = "representation_gap";
-
+const DEFAULT_SEEDED_CONFUSION = 0.58;
+const DEFAULT_SEEDED_INSIGHT = 0.34;
+const DEFAULT_SEEDED_LEARNING_SCORE = 0.22;
+const DEFAULT_LOADED_CONFUSION = 0.5;
+const DEFAULT_LOADED_INSIGHT = 0.3;
+const DEFAULT_LOADED_LEARNING_SCORE = 0.2;
 const DEFAULT_ROUTE_TOPICS_CACHE_MS = 1_500;
+const MAX_ROUTE_TOPICS_CACHE_MS = 5_000;
 
 let routeTopicsCache:
   | {
@@ -87,7 +93,7 @@ function getRouteTopicsCacheMs() {
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 0) return DEFAULT_ROUTE_TOPICS_CACHE_MS;
 
-  return Math.min(parsed, 5_000);
+  return Math.min(parsed, MAX_ROUTE_TOPICS_CACHE_MS);
 }
 
 function cloneRouteTopic(topic: RouteTopic): RouteTopic {
@@ -111,7 +117,6 @@ function cloneRouteTopics(topics: RouteTopic[]) {
   return topics.map(cloneRouteTopic);
 }
 
-
 type EmbeddingFields = {
   topic_label_embedding_centroid: EmbeddingVector | null;
   topic_label_embedding_count: number | null;
@@ -126,6 +131,14 @@ type EmbeddingFields = {
 
 function dedupeStrings(values: string[]): string[] {
   return Array.from(new Set(values));
+}
+
+function cleanTopicLabel(value: string | null | undefined) {
+  return value?.trim() || "Untitled Topic";
+}
+
+function buildDefaultNextStep(topicLabel: string) {
+  return `Explain ${topicLabel} clearly in your own words.`;
 }
 
 function normalizeLooseForRouteTopic(text: string) {
@@ -183,9 +196,9 @@ function buildSeededTopic(args: {
     topic_label: args.topicLabel,
     diagnosis: DEFAULT_DIAGNOSIS,
     nextStep: args.nextStep,
-    confusion: 0.58,
-    insight: 0.34,
-    learningScore: 0.22,
+    confusion: DEFAULT_SEEDED_CONFUSION,
+    insight: DEFAULT_SEEDED_INSIGHT,
+    learningScore: DEFAULT_SEEDED_LEARNING_SCORE,
     position,
     semanticPosition: null,
     semanticPositionMethod: null,
@@ -282,17 +295,16 @@ export async function loadRouteTopics(): Promise<RouteTopic[]> {
     });
 
     const embeddingFields = resolveEmbeddingFields(row);
-    const topicLabel = row.topic_label.trim() || "Untitled Topic";
+    const topicLabel = cleanTopicLabel(row.topic_label);
 
     const routeTopic: RouteTopic = {
       id: row.topic_id,
       topic_label: topicLabel,
       diagnosis: normalizeDiagnosis(row.diagnosis) ?? DEFAULT_DIAGNOSIS,
-      nextStep:
-        row.next_step ?? `Explain ${topicLabel} clearly in your own words.`,
-      confusion: row.confusion ?? 0.5,
-      insight: row.insight ?? 0.3,
-      learningScore: row.learning_score ?? 0.2,
+      nextStep: row.next_step ?? buildDefaultNextStep(topicLabel),
+      confusion: row.confusion ?? DEFAULT_LOADED_CONFUSION,
+      insight: row.insight ?? DEFAULT_LOADED_INSIGHT,
+      learningScore: row.learning_score ?? DEFAULT_LOADED_LEARNING_SCORE,
 
       position: layout.position,
       semanticPosition: layout.semantic_position,

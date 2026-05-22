@@ -54,11 +54,69 @@ type ProbeType =
   | "transform"
   | "apply_transfer";
 
-
 type PrimaryMessageFrame = ReturnType<typeof inferPrimaryMessageFrame>;
 
 const PRIMARY_MESSAGE_FRAME_CACHE_LIMIT = 100;
 const primaryMessageFrameCache = new Map<string, PrimaryMessageFrame>();
+
+/**
+ * message-runtime.ts is intentionally service-free.
+ *
+ * The foreground /api/message route now queues worker-backed model scoring for
+ * confusion/insight. This file should only provide deterministic runtime
+ * decisions and temporary UI/provisional metric updates. Model-backed
+ * confusion/insight becomes authoritative later through the worker route.
+ */
+const DEFAULT_MODEL_SIGNAL_STATUS: ModelSignals["status"] = "unavailable";
+const PROVISIONAL_CONFUSION_HIGH_THRESHOLD = 0.75;
+const PROVISIONAL_CONFUSION_MID_THRESHOLD = 0.5;
+const PROVISIONAL_LEARNING_SCORE_HIGH_CONFUSION_THRESHOLD = 0.7;
+
+const PROVISIONAL_CONFUSION_HIGH_STEP = 0.01;
+const PROVISIONAL_CONFUSION_MID_STEP = 0.03;
+const PROVISIONAL_CONFUSION_LOW_STEP = 0.05;
+const PROVISIONAL_INSIGHT_LOW_THRESHOLD = 0.25;
+const PROVISIONAL_INSIGHT_LOW_STEP = 0.03;
+const PROVISIONAL_INSIGHT_DEFAULT_STEP = 0.05;
+const PROVISIONAL_LEARNING_SCORE_HIGH_CONFUSION_STEP = 0.01;
+const PROVISIONAL_LEARNING_SCORE_DEFAULT_STEP = 0.04;
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isUsableModelSignalValue(value: unknown): value is number {
+  return isFiniteNumber(value) && value >= 0 && value <= 1;
+}
+
+type UsableModelSignals = ModelSignals & {
+  model_confusion: number;
+  model_insight: number;
+};
+
+function hasUsableModelSignals(
+  modelSignals?: ModelSignals,
+): modelSignals is UsableModelSignals {
+  if (!modelSignals) return false;
+
+  return (
+    modelSignals.status === "ok" &&
+    isUsableModelSignalValue(modelSignals.model_confusion) &&
+    isUsableModelSignalValue(modelSignals.model_insight)
+  );
+}
+
+function getModelConfusion(modelSignals?: ModelSignals) {
+  if (!hasUsableModelSignals(modelSignals)) return null;
+
+  return modelSignals.model_confusion;
+}
+
+function getModelInsight(modelSignals?: ModelSignals) {
+  if (!hasUsableModelSignals(modelSignals)) return null;
+
+  return modelSignals.model_insight;
+}
 
 function getPrimaryMessageFrameCacheKey(message: string) {
   return message.trim().toLowerCase();
@@ -195,7 +253,7 @@ function buildDefaultModelSignals(): ModelSignals {
     model_version: null,
     inference_mode: null,
     latency_ms: null,
-    status: "unavailable",
+    status: DEFAULT_MODEL_SIGNAL_STATUS,
     error_message: null,
   };
 }
@@ -550,8 +608,8 @@ function computeReadinessSignal(args: {
         ? 0.56
         : 0.58;
 
-  const confusion = modelSignals?.model_confusion;
-  const insight = modelSignals?.model_insight;
+  const confusion = getModelConfusion(modelSignals);
+  const insight = getModelInsight(modelSignals);
 
   let adjusted = base;
 
@@ -577,11 +635,11 @@ function computeReadinessSignal(args: {
     adjusted -= 0.04;
   }
 
-  if (typeof confusion === "number") {
+  if (confusion !== null) {
     adjusted -= confusion * 0.18;
   }
 
-  if (typeof insight === "number") {
+  if (insight !== null) {
     adjusted += insight * 0.16;
   }
 
@@ -667,11 +725,11 @@ function computeEvidenceQualitySignal(args: {
   newAttempt?: NewAttempt;
 }) {
   const { modelSignals, currentInteractionContext, newAttempt } = args;
-  const confusion = modelSignals?.model_confusion;
-  const insight = modelSignals?.model_insight;
+  const confusion = getModelConfusion(modelSignals);
+  const insight = getModelInsight(modelSignals);
 
   let value =
-    typeof confusion === "number" && typeof insight === "number"
+    confusion !== null && insight !== null
       ? clamp(0.5 + insight * 0.35 - confusion * 0.3, 0, 1)
       : 0.42;
 
@@ -743,8 +801,10 @@ function computeClarifyPressureSignal(args: {
     value += 0.12;
   }
 
-  if (typeof modelSignals?.model_confusion === "number") {
-    value += modelSignals.model_confusion * 0.22;
+  const confusion = getModelConfusion(modelSignals);
+
+  if (confusion !== null) {
+    value += confusion * 0.22;
   }
 
   return clamp(value, 0, 1);
@@ -807,12 +867,15 @@ function computeProbePressureSignal(args: {
     value += 0.12;
   }
 
-  if (typeof modelSignals?.model_insight === "number") {
-    value += modelSignals.model_insight * 0.18;
+  const insight = getModelInsight(modelSignals);
+  const confusion = getModelConfusion(modelSignals);
+
+  if (insight !== null) {
+    value += insight * 0.18;
   }
 
-  if (typeof modelSignals?.model_confusion === "number") {
-    value -= modelSignals.model_confusion * 0.08;
+  if (confusion !== null) {
+    value -= confusion * 0.08;
   }
 
   return clamp(value, 0, 1);
@@ -841,8 +904,8 @@ function computeInterventionScores(args: InterventionScoreArgs) {
   const topSimilarity = vectorInfo.top_k_similarity_scores[0] ?? 0.3;
   const clarifySeeking =
     precomputedClarifySeeking ?? messageLooksClarifySeeking(message);
-  const confusion = modelSignals?.model_confusion;
-  const insight = modelSignals?.model_insight;
+  const confusion = getModelConfusion(modelSignals);
+  const insight = getModelInsight(modelSignals);
 
   const readinessSignal = computeReadinessSignal({
     preferredModality,
@@ -906,7 +969,7 @@ function computeInterventionScores(args: InterventionScoreArgs) {
     attemptReadinessSignal * 0.16 +
     evidenceQualitySignal * 0.1;
 
-  if (typeof confusion === "number") {
+  if (confusion !== null) {
     if (confusion >= 0.7) {
       clarifyScore += 0.14;
       probeScore -= 0.06;
@@ -918,7 +981,7 @@ function computeInterventionScores(args: InterventionScoreArgs) {
     }
   }
 
-  if (typeof insight === "number") {
+  if (insight !== null) {
     if (insight >= 0.6) {
       probeScore += 0.12;
     } else if (insight >= 0.45) {
@@ -980,7 +1043,7 @@ function computeInterventionScores(args: InterventionScoreArgs) {
           currentInteractionContext?.run_kind === "clarify_followup"
             ? "This still looks like clarification-oriented stabilization rather than a fair measurement moment."
             : "The current message looks more like a need for stabilization than an immediate readiness signal for measurement.",
-          typeof confusion === "number"
+          confusion !== null
             ? `Confusion signal is ${confusion.toFixed(2)}, which increases the value of clarifying before probing.`
             : "No confusion/insight score was available, so the route stayed conservative where the message itself suggested clarification.",
           `The current block still appears to be: ${topic.nextStep}.`,
@@ -993,7 +1056,7 @@ function computeInterventionScores(args: InterventionScoreArgs) {
             : currentInteractionContext?.prior_mode_selected === "clarify"
               ? "Clarification appears to have already been attempted, so there is stronger pressure to gather evidence now."
               : "The topic and interaction state together look ready for a focused measurement step.",
-          typeof insight === "number"
+          insight !== null
             ? `Insight signal is ${insight.toFixed(2)}, which supports moving toward a focused measurement step.`
             : "The message and topic state together look ready for a focused measurement step.",
           `The next unresolved learning move appears to be: ${topic.nextStep}.`,
@@ -1553,32 +1616,51 @@ export function buildNotApplicableProbePlan(topic: RouteTopic): ProbePlan {
   };
 }
 
+function deriveProvisionalConfusion(previousConfusion: number) {
+  const step =
+    previousConfusion >= PROVISIONAL_CONFUSION_HIGH_THRESHOLD
+      ? PROVISIONAL_CONFUSION_HIGH_STEP
+      : previousConfusion >= PROVISIONAL_CONFUSION_MID_THRESHOLD
+        ? PROVISIONAL_CONFUSION_MID_STEP
+        : PROVISIONAL_CONFUSION_LOW_STEP;
+
+  return clamp(previousConfusion - step, 0, 1);
+}
+
+function deriveProvisionalInsight(previousInsight: number) {
+  const step =
+    previousInsight <= PROVISIONAL_INSIGHT_LOW_THRESHOLD
+      ? PROVISIONAL_INSIGHT_LOW_STEP
+      : PROVISIONAL_INSIGHT_DEFAULT_STEP;
+
+  return clamp(previousInsight + step, 0, 1);
+}
+
+function deriveProvisionalLearningScore(topic: RouteTopic) {
+  const step =
+    topic.confusion >= PROVISIONAL_LEARNING_SCORE_HIGH_CONFUSION_THRESHOLD
+      ? PROVISIONAL_LEARNING_SCORE_HIGH_CONFUSION_STEP
+      : PROVISIONAL_LEARNING_SCORE_DEFAULT_STEP;
+
+  return clamp(topic.learningScore + step, 0, 1);
+}
+
 export function buildUpdatedMetrics(
   topicId: string,
   topic: RouteTopic
 ): TopicMetricUpdate {
-  const confusion =
-    topic.confusion >= 0.75
-      ? clamp(topic.confusion - 0.01, 0, 1)
-      : topic.confusion >= 0.5
-        ? clamp(topic.confusion - 0.03, 0, 1)
-        : clamp(topic.confusion - 0.05, 0, 1);
-
-  const insight =
-    topic.insight <= 0.25
-      ? clamp(topic.insight + 0.03, 0, 1)
-      : clamp(topic.insight + 0.05, 0, 1);
-
-  const learningScore =
-    topic.confusion >= 0.7
-      ? clamp(topic.learningScore + 0.01, 0, 1)
-      : clamp(topic.learningScore + 0.04, 0, 1);
-
+  /**
+   * These are provisional UI metrics only.
+   *
+   * They keep the scene responsive immediately after /api/message returns.
+   * Worker-backed confusion/insight scores replace or blend these later through
+   * /api/confusion-insight/run-pending.
+   */
   return {
     topicId,
-    confusion,
-    insight,
-    learningScore,
+    confusion: deriveProvisionalConfusion(topic.confusion),
+    insight: deriveProvisionalInsight(topic.insight),
+    learningScore: deriveProvisionalLearningScore(topic),
   };
 }
 

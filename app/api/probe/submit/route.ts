@@ -36,12 +36,12 @@ import {
   buildNotApplicableProbePlan,
   buildResponseBundle,
 } from "@/lib/runtime/probe-runtime";
-import {
-  scoreConfusionInsight,
-  type ConfusionInsightEvent,
-  type ConfusionInsightInputType,
-  type ConfusionInsightPreviousMode,
-  type ConfusionInsightTopicTransitionType,
+import type {
+  ConfusionInsightEvent,
+  ConfusionInsightInputType,
+  ConfusionInsightPreviousMode,
+  ConfusionInsightStructuredInput,
+  ConfusionInsightTopicTransitionType,
 } from "@/lib/runtime/score-confusion-insight";
 import { nowIso } from "@/lib/runtime/shared";
 import { loadRouteTopics, type RouteTopic } from "@/lib/runtime/route-topics";
@@ -58,6 +58,85 @@ type ProbeSubmitBody = ProbeAttemptPayload & {
   conversation_turns?: IncomingChatTurn[];
 };
 
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+type JsonObject = { [key: string]: JsonValue };
+
+type PendingConfusionInsightScore = {
+  score_id: string;
+  run_id: string;
+  source: "probe_submit_route";
+  created_at: string;
+  payload_shape: "structured_v1_1";
+  text: string;
+  routing: {
+    target_topic_id: string;
+    target_topic_label: string;
+    resolution_kind: "probe_submit_attempt";
+    resolved_label: string;
+    match_confidence: number;
+    authority_source: "probe_submit_route";
+  };
+  structured_input: ConfusionInsightStructuredInput;
+  probe: {
+    probe_id: string;
+    attempt_id: string | null;
+    response_type: string | null;
+    modality: string | null;
+  };
+};
+
+const PROBE_CONFUSION_INSIGHT_SCORING_MODE =
+  process.env.MYWAY_PROBE_CONFUSION_INSIGHT_SCORING_MODE?.trim().toLowerCase() ===
+  "foreground"
+    ? "foreground"
+    : "worker";
+
+const CONFUSION_INSIGHT_PAYLOAD_SHAPE = "structured_v1_1" as const;
+const CONFUSION_INSIGHT_WORKER_QUEUE_ROLE =
+  "worker_default_structured_v1_1_probe_submit" as const;
+
+const DEFAULT_PROBE_CONFUSION_INSIGHT_TIMEOUT_MS = 2_500;
+const MIN_PROBE_CONFUSION_INSIGHT_TIMEOUT_MS = 500;
+const MAX_PROBE_CONFUSION_INSIGHT_TIMEOUT_MS = 15_000;
+
+type UsableModelSignals = ModelSignals & {
+  model_confusion: number;
+  model_insight: number;
+};
+
+function getProbeConfusionInsightTimeoutMs() {
+  const raw = process.env.MYWAY_PROBE_CONFUSION_INSIGHT_TIMEOUT_MS;
+  const parsed = raw ? Number.parseInt(raw, 10) : null;
+
+  if (!parsed || !Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_PROBE_CONFUSION_INSIGHT_TIMEOUT_MS;
+  }
+
+  return Math.min(
+    Math.max(parsed, MIN_PROBE_CONFUSION_INSIGHT_TIMEOUT_MS),
+    MAX_PROBE_CONFUSION_INSIGHT_TIMEOUT_MS,
+  );
+}
+
+function hasUsableModelSignals(
+  modelSignals: ModelSignals,
+): modelSignals is UsableModelSignals {
+  return (
+    modelSignals.status === "ok" &&
+    typeof modelSignals.model_confusion === "number" &&
+    Number.isFinite(modelSignals.model_confusion) &&
+    typeof modelSignals.model_insight === "number" &&
+    Number.isFinite(modelSignals.model_insight)
+  );
+}
+
 function buildFallbackModelSignals(errorMessage?: string): ModelSignals {
   return {
     model_confusion: null,
@@ -69,7 +148,6 @@ function buildFallbackModelSignals(errorMessage?: string): ModelSignals {
     error_message: errorMessage ?? null,
   };
 }
-
 
 function asFiniteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -244,52 +322,91 @@ function buildTargetTopicRecentEvents(args: {
   ];
 }
 
-async function scoreProbeSubmissionConfusionInsight(args: {
+function buildProbeSubmissionConfusionInsightInput(args: {
   body: ProbeSubmitBody;
   topic: RouteTopic;
   topicLabel: string;
   rawResponse: string;
   activeDiagnosis: ReturnType<typeof inferDiagnosisFromTopic>;
-}) {
+}): ConfusionInsightStructuredInput {
   const currentEvidence = buildAttemptEvidence({
     body: args.body,
     rawResponse: args.rawResponse,
     topicLabel: args.topicLabel,
   });
 
-  return scoreConfusionInsight({
-    input: {
-      input_type: inferConfusionInsightInputType(args.body),
-      current_attempt_type: inferCurrentAttemptType(args.body),
-      current_evidence: currentEvidence,
+  return {
+    input_type: inferConfusionInsightInputType(args.body),
+    current_attempt_type: inferCurrentAttemptType(args.body),
+    current_evidence: currentEvidence,
 
-      previous_active_topic_label: args.topicLabel,
-      target_topic_label: args.topicLabel,
-      topic_transition_type: getTopicTransitionForProbeSubmit(),
-      topic_similarity: 1,
+    previous_active_topic_label: args.topicLabel,
+    target_topic_label: args.topicLabel,
+    topic_transition_type: getTopicTransitionForProbeSubmit(),
+    topic_similarity: 1,
 
-      previous_mode: getPreviousModeForProbeSubmit(),
-      is_response_to_clarify: false,
-      is_response_to_probe: true,
+    previous_mode: getPreviousModeForProbeSubmit(),
+    is_response_to_clarify: false,
+    is_response_to_probe: true,
 
-      target_topic_recent_events: buildTargetTopicRecentEvents({
-        body: args.body,
-        topicLabel: args.topicLabel,
-        activeDiagnosis: args.activeDiagnosis,
-        prompt: args.body.prompt ?? args.topic.nextStep,
-      }),
+    target_topic_recent_events: buildTargetTopicRecentEvents({
+      body: args.body,
+      topicLabel: args.topicLabel,
+      activeDiagnosis: args.activeDiagnosis,
+      prompt: args.body.prompt ?? args.topic.nextStep,
+    }),
 
-      most_related_topic_label: null,
-      most_related_topic_similarity: null,
-      most_related_topic_similarity_threshold: 0.65,
-      most_related_topic_recent_events: [],
+    most_related_topic_label: null,
+    most_related_topic_similarity: null,
+    most_related_topic_similarity_threshold: 0.65,
+    most_related_topic_recent_events: [],
 
-      target_topic_confusion_average: clamp01(asFiniteNumber(args.topic.confusion)),
-      target_topic_insight_average: clamp01(asFiniteNumber(args.topic.insight)),
-      most_related_topic_confusion_average: null,
-      most_related_topic_insight_average: null,
-    },
+    target_topic_confusion_average: clamp01(asFiniteNumber(args.topic.confusion)),
+    target_topic_insight_average: clamp01(asFiniteNumber(args.topic.insight)),
+    most_related_topic_confusion_average: null,
+    most_related_topic_insight_average: null,
+  };
+}
+
+function buildPendingProbeConfusionInsightScore(args: {
+  runId: string;
+  body: ProbeSubmitBody;
+  topic: RouteTopic;
+  topicLabel: string;
+  rawResponse: string;
+  activeDiagnosis: ReturnType<typeof inferDiagnosisFromTopic>;
+}): PendingConfusionInsightScore {
+  const structuredInput = buildProbeSubmissionConfusionInsightInput({
+    body: args.body,
+    topic: args.topic,
+    topicLabel: args.topicLabel,
+    rawResponse: args.rawResponse,
+    activeDiagnosis: args.activeDiagnosis,
   });
+
+  return {
+    score_id: makeId("ciscore"),
+    run_id: args.runId,
+    source: "probe_submit_route",
+    created_at: nowIso(),
+    payload_shape: CONFUSION_INSIGHT_PAYLOAD_SHAPE,
+    text: structuredInput.current_evidence,
+    routing: {
+      target_topic_id: args.topic.id,
+      target_topic_label: args.topicLabel,
+      resolution_kind: "probe_submit_attempt",
+      resolved_label: args.topicLabel,
+      match_confidence: 1,
+      authority_source: "probe_submit_route",
+    },
+    structured_input: structuredInput,
+    probe: {
+      probe_id: args.body.probeId,
+      attempt_id: args.body.attemptId ?? null,
+      response_type: getBodyResponseType(args.body),
+      modality: getBodyModality(args.body) ?? "text",
+    },
+  };
 }
 
 function asEmbeddingVector(value: unknown): EmbeddingVector | null {
@@ -326,6 +443,61 @@ function buildEmbeddingSummary(args: {
     model: args.model ?? null,
     updated_at: args.updatedAt ?? null,
     preview: centroid ? centroid.slice(0, 5) : [],
+  };
+}
+
+function toJsonValue(value: unknown): JsonValue {
+  return JSON.parse(JSON.stringify(value)) as JsonValue;
+}
+
+function asJsonObject(value: unknown): JsonObject {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+
+  return { ...(value as Record<string, JsonValue>) };
+}
+
+function asPendingConfusionInsightScores(
+  value: unknown,
+): PendingConfusionInsightScore[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.filter(
+    (item): item is PendingConfusionInsightScore =>
+      Boolean(item && typeof item === "object" && !Array.isArray(item)),
+  );
+}
+
+function appendPendingConfusionInsightScore(args: {
+  topicJson: Record<string, unknown> | null | undefined;
+  pendingScore: PendingConfusionInsightScore;
+}) {
+  const base = asJsonObject(args.topicJson);
+  const previousPending = asPendingConfusionInsightScores(
+    base.pending_confusion_insight_scores,
+  );
+  const nextPending = [...previousPending, args.pendingScore];
+
+  return {
+    ...base,
+    pending_confusion_insight_scores: nextPending.map(toJsonValue),
+    confusion_insight_signal_state: {
+      ...(asJsonObject(base.confusion_insight_signal_state) as JsonObject),
+      status: "pending_model_signal",
+      pending_count: nextPending.length,
+      source: "probe_submit_route",
+      payload_shape: CONFUSION_INSIGHT_PAYLOAD_SHAPE,
+      updated_at: nowIso(),
+    },
+    confusion_insight_status: {
+      ...(asJsonObject(base.confusion_insight_status) as JsonObject),
+      status: "queued_for_worker",
+      pending_count: nextPending.length,
+      queue_role: CONFUSION_INSIGHT_WORKER_QUEUE_ROLE,
+      normal_payload_shape: CONFUSION_INSIGHT_PAYLOAD_SHAPE,
+      updated_at: nowIso(),
+    },
+    confusion_insight_queue_role: CONFUSION_INSIGHT_WORKER_QUEUE_ROLE,
+    confusion_insight_payload_shape: CONFUSION_INSIGHT_PAYLOAD_SHAPE,
   };
 }
 
@@ -554,11 +726,12 @@ function buildDecision(args: {
   const { topic, scoring, replyBundle, modelSignals } = args;
   const continueWithProbe = replyBundle.nextMode === "probe";
 
-  const confusion = modelSignals.model_confusion;
-  const insight = modelSignals.model_insight;
+  const usableModelSignals = hasUsableModelSignals(modelSignals);
+  const confusion = usableModelSignals ? modelSignals.model_confusion : null;
+  const insight = usableModelSignals ? modelSignals.model_insight : null;
 
   const readinessSignal =
-    typeof insight === "number"
+    insight !== null
       ? Math.max(
           0,
           Math.min(
@@ -577,7 +750,7 @@ function buildDecision(args: {
         );
 
   const evidenceQualitySignal =
-    typeof confusion === "number" && typeof insight === "number"
+    confusion !== null && insight !== null
       ? Math.max(
           0,
           Math.min(
@@ -617,8 +790,8 @@ function buildDecision(args: {
       classificationBase +
         scoring.evidenceStrength * 0.1 +
         scoring.judgmentConfidence * 0.12 +
-        (typeof insight === "number" ? insight * 0.04 : 0) -
-        (typeof confusion === "number" ? confusion * 0.03 : 0),
+        (insight !== null ? insight * 0.04 : 0) -
+        (confusion !== null ? confusion * 0.03 : 0),
     ),
   );
 
@@ -643,13 +816,13 @@ function buildDecision(args: {
     );
   }
 
-  if (typeof confusion === "number") {
+  if (confusion !== null) {
     decisionReasons.push(
       `Confusion signal for this attempt-like turn was ${confusion.toFixed(2)}.`,
     );
   }
 
-  if (typeof insight === "number") {
+  if (insight !== null) {
     decisionReasons.push(
       `Insight signal for this attempt-like turn was ${insight.toFixed(2)}.`,
     );
@@ -736,7 +909,7 @@ function buildRunMetadata(engineFuel: EngineFuel, runId: string): RunMetadata {
   return {
     run_id: runId,
     timestamp: nowIso(),
-    engine_version: "runtime-v1-hard-topic-label-contract",
+    engine_version: "runtime-v1-probe-submit-worker-backed-confusion-insight",
     previous_run_id: null,
     topic_count: engineFuel.topics.length,
     cluster_count: engineFuel.clusters.length,
@@ -793,23 +966,23 @@ export async function POST(request: NextRequest) {
     const topicLabel = body.topicLabel || getRouteTopicLabel(topic);
     const provisionalDiagnosis = inferDiagnosisFromTopic(topic);
 
-    let modelSignals: ModelSignals = buildFallbackModelSignals();
+    const runId = makeId("run");
 
-    try {
-      modelSignals = await scoreProbeSubmissionConfusionInsight({
-        body,
-        topic,
-        topicLabel,
-        rawResponse,
-        activeDiagnosis: provisionalDiagnosis,
-      });
-    } catch (error) {
-      modelSignals = buildFallbackModelSignals(
-        error instanceof Error
-          ? error.message
-          : "Unknown confusion/insight scoring error",
-      );
-    }
+    const pendingConfusionInsightScore = buildPendingProbeConfusionInsightScore({
+      runId,
+      body,
+      topic,
+      topicLabel,
+      rawResponse,
+      activeDiagnosis: provisionalDiagnosis,
+    });
+
+    const modelSignals: ModelSignals =
+      PROBE_CONFUSION_INSIGHT_SCORING_MODE === "worker"
+        ? buildFallbackModelSignals("probe_confusion_insight_queued_for_worker")
+        : buildFallbackModelSignals(
+            "foreground_probe_confusion_insight_scoring_not_enabled_in_this_worker-first_route",
+          );
 
     const vectorInfo = buildVectorInfo(topic);
 
@@ -882,7 +1055,6 @@ export async function POST(request: NextRequest) {
     });
 
     const learningSpace: LearningSpace = buildLearningSpace(updatedTopics);
-    const runId = makeId("run");
 
     const result: MyWayRunResult = {
       run_metadata: buildRunMetadata(engineFuel, runId),
@@ -910,13 +1082,20 @@ export async function POST(request: NextRequest) {
 
     const topicJson = JSON.parse(
       JSON.stringify({
-        ...(topic.topic_json ?? {}),
+        ...appendPendingConfusionInsightScore({
+          topicJson: topic.topic_json,
+          pendingScore: pendingConfusionInsightScore,
+        }),
         topic_id: topic.id,
         topic_label: topicLabel,
         next_step: nextProbePlan.text_plan.instructional_goal ?? topic.nextStep,
         previous_probe_id: body.probeId,
         judged_attempt: judgedAttempt,
         updated_topic_metrics: updatedTopicMetrics,
+        probe_confusion_insight_signal: modelSignals,
+        probe_confusion_insight_scoring_mode: PROBE_CONFUSION_INSIGHT_SCORING_MODE,
+        probe_confusion_insight_timeout_ms: getProbeConfusionInsightTimeoutMs(),
+        probe_confusion_insight_pending_score: pendingConfusionInsightScore,
         next_probe_plan: nextProbePlan,
         next_delivered_probe: nextDeliveredProbe,
         learning_space_topic:

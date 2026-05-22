@@ -20,6 +20,23 @@ export type ModelTopicRoutePolicyDecision = {
   raw_model_result: TopicLabelerClientResult | null;
 };
 
+const MAX_CREATED_TOPIC_LABEL_TOKENS = 8;
+
+const SUSPICIOUS_CREATED_TOPIC_LABELS = new Set([
+  "can you explain that easier",
+  "what would that look like",
+  "what does that even mean",
+  "that easier",
+  "that look like",
+  "i don t know",
+  "i dont know",
+  "i am confused",
+  "i m confused",
+  "help",
+  "question",
+  "new topic",
+]);
+
 function normalizeLoose(text: string) {
   return text
     .toLowerCase()
@@ -33,9 +50,7 @@ function cleanModelLabel(label: string | null | undefined): string | null {
 
   const cleaned = label.trim().replace(/\s+/g, " ");
 
-  if (!cleaned) return null;
-
-  return cleaned;
+  return cleaned || null;
 }
 
 function getRouteTopicLabel(topic: RouteTopic | null): string | null {
@@ -44,6 +59,7 @@ function getRouteTopicLabel(topic: RouteTopic | null): string | null {
 
 function getModelRouteMatchedTopicLabel(route: unknown): string | null {
   const routeWithLabel = route as { matched_topic_label?: string | null };
+
   return cleanModelLabel(routeWithLabel.matched_topic_label);
 }
 
@@ -53,28 +69,11 @@ function looksLikeSuspiciousModelLabel(label: string | null) {
   const normalized = normalizeLoose(label);
   if (!normalized) return true;
 
-  const suspiciousLabels = new Set([
-    "can you explain that easier",
-    "what would that look like",
-    "what does that even mean",
-    "that easier",
-    "that look like",
-    "i don t know",
-    "i dont know",
-    "i am confused",
-    "i m confused",
-    "help",
-    "question",
-    "new topic",
-  ]);
-
-  if (suspiciousLabels.has(normalized)) return true;
+  if (SUSPICIOUS_CREATED_TOPIC_LABELS.has(normalized)) return true;
 
   const tokenCount = normalized.split(" ").filter(Boolean).length;
 
-  if (tokenCount > 8) return true;
-
-  return false;
+  return tokenCount > MAX_CREATED_TOPIC_LABEL_TOKENS;
 }
 
 function findTopicByLabel(existingTopics: RouteTopic[], label: string | null) {
@@ -85,9 +84,54 @@ function findTopicByLabel(existingTopics: RouteTopic[], label: string | null) {
   return (
     existingTopics.find((topic) => {
       const topicLabel = getRouteTopicLabel(topic);
+
       return topicLabel ? normalizeLoose(topicLabel) === target : false;
     }) ?? null
   );
+}
+
+function buildDecision(args: {
+  usable: boolean;
+  decisionKind: ModelTopicRouteDecisionKind;
+  extractedLabel?: string | null;
+  matchedTopic?: RouteTopic | null;
+  matchedTopicLabel?: string | null;
+  reasons: string[];
+  rawModelResult: TopicLabelerClientResult | null;
+}): ModelTopicRoutePolicyDecision {
+  const matchedTopicLabel =
+    getRouteTopicLabel(args.matchedTopic ?? null) ??
+    cleanModelLabel(args.matchedTopicLabel) ??
+    null;
+
+  return {
+    usable: args.usable,
+    decision_kind: args.decisionKind,
+    extracted_label: cleanModelLabel(args.extractedLabel),
+    matched_topic_label: matchedTopicLabel,
+    matched_topic_id: args.matchedTopic?.id ?? null,
+    target_topic: args.matchedTopic ?? null,
+    reasons: args.reasons,
+    raw_model_result: args.rawModelResult,
+  };
+}
+
+function buildUnusableDecision(args: {
+  reason: string;
+  modelResult: TopicLabelerClientResult | null;
+  extractedLabel?: string | null;
+  matchedTopicLabel?: string | null;
+  matchedTopic?: RouteTopic | null;
+}): ModelTopicRoutePolicyDecision {
+  return buildDecision({
+    usable: false,
+    decisionKind: "unusable_model_result",
+    extractedLabel: args.extractedLabel ?? null,
+    matchedTopicLabel: args.matchedTopicLabel ?? null,
+    matchedTopic: args.matchedTopic ?? null,
+    reasons: [args.reason],
+    rawModelResult: args.modelResult,
+  });
 }
 
 export function buildModelTopicRoutePolicyDecision(args: {
@@ -98,44 +142,24 @@ export function buildModelTopicRoutePolicyDecision(args: {
   const { modelResult, activeTopic, existingTopics } = args;
 
   if (!modelResult) {
-    return {
-      usable: false,
-      decision_kind: "unusable_model_result",
-      extracted_label: null,
-      matched_topic_label: null,
-      matched_topic_id: null,
-      target_topic: null,
-      reasons: ["model_result_missing"],
-      raw_model_result: modelResult,
-    };
+    return buildUnusableDecision({
+      reason: "model_result_missing",
+      modelResult,
+    });
   }
 
   if (!modelResult.ok) {
-    return {
-      usable: false,
-      decision_kind: "unusable_model_result",
-      extracted_label: null,
-      matched_topic_label: null,
-      matched_topic_id: null,
-      target_topic: null,
-      reasons: [
-        `model_result_error from ${modelResult.provider}: ${modelResult.error}`,
-      ],
-      raw_model_result: modelResult,
-    };
+    return buildUnusableDecision({
+      reason: `model_result_error from ${modelResult.provider}: ${modelResult.error}`,
+      modelResult,
+    });
   }
 
   if (!modelResult.response.ok) {
-    return {
-      usable: false,
-      decision_kind: "unusable_model_result",
-      extracted_label: null,
-      matched_topic_label: null,
-      matched_topic_id: null,
-      target_topic: null,
-      reasons: [`model_response_not_ok from ${modelResult.provider}`],
-      raw_model_result: modelResult,
-    };
+    return buildUnusableDecision({
+      reason: `model_response_not_ok from ${modelResult.provider}`,
+      modelResult,
+    });
   }
 
   const route = modelResult.response.route;
@@ -143,7 +167,7 @@ export function buildModelTopicRoutePolicyDecision(args: {
   const extractedLabel = cleanModelLabel(
     route.extracted_label ??
       modelResult.response.model_prediction.extracted_label ??
-      null
+      null,
   );
 
   const matchedTopicLabel = getModelRouteMatchedTopicLabel(route);
@@ -151,146 +175,130 @@ export function buildModelTopicRoutePolicyDecision(args: {
 
   if (routeDecision === "stay_active") {
     if (!activeTopic) {
-      return {
+      return buildDecision({
         usable: false,
-        decision_kind: "stay_active",
-        extracted_label: null,
-        matched_topic_label: matchedTopicLabel,
-        matched_topic_id: null,
-        target_topic: null,
+        decisionKind: "stay_active",
+        extractedLabel: null,
+        matchedTopicLabel,
+        matchedTopic: null,
         reasons: ["model_requested_stay_active_but_no_active_topic"],
-        raw_model_result: modelResult,
-      };
+        rawModelResult: modelResult,
+      });
     }
 
-    return {
+    return buildDecision({
       usable: true,
-      decision_kind: "stay_active",
-      extracted_label: null,
-      matched_topic_label: getRouteTopicLabel(activeTopic),
-      matched_topic_id: activeTopic.id,
-      target_topic: activeTopic,
+      decisionKind: "stay_active",
+      extractedLabel: null,
+      matchedTopic: activeTopic,
       reasons: ["model_requested_stay_active_with_active_topic"],
-      raw_model_result: modelResult,
-    };
+      rawModelResult: modelResult,
+    });
   }
 
   if (routeDecision === "switch_existing") {
     if (!matchedTopic) {
-      return {
+      return buildDecision({
         usable: false,
-        decision_kind: "switch_existing",
-        extracted_label: extractedLabel,
-        matched_topic_label: matchedTopicLabel,
-        matched_topic_id: null,
-        target_topic: null,
+        decisionKind: "switch_existing",
+        extractedLabel,
+        matchedTopicLabel,
+        matchedTopic: null,
         reasons: ["model_requested_switch_existing_but_topic_not_found"],
-        raw_model_result: modelResult,
-      };
+        rawModelResult: modelResult,
+      });
     }
 
-    return {
+    return buildDecision({
       usable: true,
-      decision_kind: "switch_existing",
-      extracted_label: extractedLabel,
-      matched_topic_label: getRouteTopicLabel(matchedTopic),
-      matched_topic_id: matchedTopic.id,
-      target_topic: matchedTopic,
+      decisionKind: "switch_existing",
+      extractedLabel,
+      matchedTopic,
       reasons: ["model_requested_switch_existing_and_topic_found"],
-      raw_model_result: modelResult,
-    };
+      rawModelResult: modelResult,
+    });
   }
 
   if (routeDecision === "create_new") {
     if (!extractedLabel) {
-      return {
+      return buildDecision({
         usable: false,
-        decision_kind: "create_new",
-        extracted_label: null,
-        matched_topic_label: matchedTopicLabel,
-        matched_topic_id: null,
-        target_topic: null,
+        decisionKind: "create_new",
+        extractedLabel: null,
+        matchedTopicLabel,
+        matchedTopic: null,
         reasons: ["model_requested_create_new_but_missing_label"],
-        raw_model_result: modelResult,
-      };
+        rawModelResult: modelResult,
+      });
     }
 
     if (looksLikeSuspiciousModelLabel(extractedLabel)) {
-      return {
+      return buildDecision({
         usable: false,
-        decision_kind: "create_new",
-        extracted_label: extractedLabel,
-        matched_topic_label: matchedTopicLabel,
-        matched_topic_id: null,
-        target_topic: null,
+        decisionKind: "create_new",
+        extractedLabel,
+        matchedTopicLabel,
+        matchedTopic: null,
         reasons: ["model_requested_create_new_but_label_suspicious"],
-        raw_model_result: modelResult,
-      };
+        rawModelResult: modelResult,
+      });
     }
 
     const existingMatch = findTopicByLabel(existingTopics, extractedLabel);
 
     if (existingMatch) {
-      return {
+      return buildDecision({
         usable: true,
-        decision_kind: "switch_existing",
-        extracted_label: extractedLabel,
-        matched_topic_label: getRouteTopicLabel(existingMatch),
-        matched_topic_id: existingMatch.id,
-        target_topic: existingMatch,
+        decisionKind: "switch_existing",
+        extractedLabel,
+        matchedTopic: existingMatch,
         reasons: [
           "model_requested_create_new_but_label_matches_existing_topic",
         ],
-        raw_model_result: modelResult,
-      };
+        rawModelResult: modelResult,
+      });
     }
 
-    return {
+    return buildDecision({
       usable: true,
-      decision_kind: "create_new",
-      extracted_label: extractedLabel,
-      matched_topic_label: matchedTopicLabel,
-      matched_topic_id: null,
-      target_topic: null,
+      decisionKind: "create_new",
+      extractedLabel,
+      matchedTopicLabel,
+      matchedTopic: null,
       reasons: ["model_requested_create_new_with_clean_label"],
-      raw_model_result: modelResult,
-    };
+      rawModelResult: modelResult,
+    });
   }
 
   if (routeDecision === "clarify_no_topic") {
-    return {
+    return buildDecision({
       usable: true,
-      decision_kind: "clarify_no_topic",
-      extracted_label: null,
-      matched_topic_label: null,
-      matched_topic_id: null,
-      target_topic: null,
+      decisionKind: "clarify_no_topic",
+      extractedLabel: null,
+      matchedTopicLabel: null,
+      matchedTopic: null,
       reasons: ["model_requested_clarify_no_topic"],
-      raw_model_result: modelResult,
-    };
+      rawModelResult: modelResult,
+    });
   }
 
   if (routeDecision === "clarify_topic_intent") {
-    return {
+    return buildDecision({
       usable: true,
-      decision_kind: "clarify_topic_intent",
-      extracted_label: null,
-      matched_topic_label: null,
-      matched_topic_id: null,
-      target_topic: null,
+      decisionKind: "clarify_topic_intent",
+      extractedLabel,
+      matchedTopicLabel,
+      matchedTopic,
       reasons: ["model_requested_clarify_topic_intent"],
-      raw_model_result: modelResult,
-    };
+      rawModelResult: modelResult,
+    });
   }
 
-  return {
-    usable: false,
-    decision_kind: "unusable_model_result",
-    extracted_label: extractedLabel,
-    matched_topic_label: matchedTopicLabel,
-    matched_topic_id: matchedTopic?.id ?? null,
-    target_topic: matchedTopic,
-    reasons: [`unknown_model_route_decision: ${String(routeDecision)}`],
-    raw_model_result: modelResult,
-  };
+  return buildUnusableDecision({
+    reason: `unknown_model_route_decision: ${String(routeDecision)}`,
+    modelResult,
+    extractedLabel,
+    matchedTopicLabel,
+    matchedTopic,
+  });
 }

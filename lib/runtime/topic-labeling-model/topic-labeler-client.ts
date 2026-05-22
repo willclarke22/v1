@@ -16,6 +16,11 @@ export type TopicLabelerMode =
   | "fallback"
   | "authoritative";
 
+const DEFAULT_TOPIC_LABELER_PROVIDER: TopicLabelerProviderId = "v3";
+const DEFAULT_TOPIC_LABELER_TIMEOUT_MS = 15_000;
+const MIN_TOPIC_LABELER_TIMEOUT_MS = 500;
+const MAX_TOPIC_LABELER_TIMEOUT_MS = 60_000;
+
 function normalizeStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
 
@@ -31,7 +36,18 @@ function normalizeProvider(raw: string | undefined): TopicLabelerProviderId {
   if (value === "v4") return "v4";
   if (value === "v5") return "v5";
 
-  return "v3";
+  return DEFAULT_TOPIC_LABELER_PROVIDER;
+}
+
+function clampTimeoutMs(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return DEFAULT_TOPIC_LABELER_TIMEOUT_MS;
+  }
+
+  return Math.min(
+    Math.max(Math.round(value), MIN_TOPIC_LABELER_TIMEOUT_MS),
+    MAX_TOPIC_LABELER_TIMEOUT_MS,
+  );
 }
 
 export function getTopicLabelerProvider(): TopicLabelerProviderId {
@@ -62,8 +78,8 @@ export function getTopicLabelerMode(): TopicLabelerMode {
   if (raw === "fallback") return "fallback";
 
   /**
-   * Current behavior before this abstraction pass:
-   * V3 is active unless explicitly disabled.
+   * Current runtime default:
+   * the local topic labeler is authoritative unless explicitly disabled.
    */
   return "authoritative";
 }
@@ -78,11 +94,7 @@ export function getTopicLabelerTimeoutMs(): number {
   const raw = process.env.MYWAY_TOPIC_LABELER_TIMEOUT_MS?.trim();
   const parsed = raw ? Number(raw) : NaN;
 
-  if (Number.isFinite(parsed) && parsed > 0) {
-    return Math.round(parsed);
-  }
-
-  return 15_000;
+  return clampTimeoutMs(parsed);
 }
 
 export function buildTopicLabelerRequest(input: {
@@ -92,15 +104,13 @@ export function buildTopicLabelerRequest(input: {
   previousUserMessages?: string[];
 }): TopicLabelerRequest {
   /**
-   * For now this delegates to the V3 request builder because V3 already uses
-   * the canonical wire shape:
-   *
+   * V3 already uses the canonical wire shape:
    * active_topic_label
    * current_topic_labels
    * previous_user_messages
    *
-   * Later, if V4/V5 need different raw service payloads, their adapters can
-   * translate from this generic request into their own service-specific shape.
+   * Future V4/V5 adapters should translate from this generic request rather
+   * than changing /api/message.
    */
   return buildTopicLabelerV3Request({
     message: input.message,
@@ -110,14 +120,27 @@ export function buildTopicLabelerRequest(input: {
   });
 }
 
+function buildUnsupportedProviderResult(args: {
+  provider: TopicLabelerProviderId;
+  startedAt: number;
+}): TopicLabelerClientResult {
+  return {
+    ok: false,
+    source: "topic_labeler",
+    provider: args.provider,
+    error: `Topic labeler provider "${args.provider}" is configured but no adapter is implemented yet.`,
+    latency_ms: Date.now() - args.startedAt,
+  };
+}
+
 export async function callConfiguredTopicLabeler(
   request: TopicLabelerRequest,
   options?: {
     timeoutMs?: number;
-  }
+  },
 ): Promise<TopicLabelerClientResult> {
   const provider = getTopicLabelerProvider();
-  const timeoutMs = options?.timeoutMs ?? getTopicLabelerTimeoutMs();
+  const timeoutMs = clampTimeoutMs(options?.timeoutMs ?? getTopicLabelerTimeoutMs());
   const startedAt = Date.now();
 
   if (provider === "v3") {
@@ -125,17 +148,14 @@ export async function callConfiguredTopicLabeler(
   }
 
   /**
-   * These provider slots are intentionally explicit.
-   * This means switching MYWAY_TOPIC_LABELER_PROVIDER=v4 will fail safely until
-   * a real V4 adapter exists, rather than silently pretending V4 is wired.
+   * Provider slots are intentionally explicit.
+   * Switching MYWAY_TOPIC_LABELER_PROVIDER=v4/v5 should fail safely until a real
+   * adapter exists, rather than silently pretending the provider is wired.
    */
-  return {
-    ok: false,
-    source: "topic_labeler",
+  return buildUnsupportedProviderResult({
     provider,
-    error: `Topic labeler provider "${provider}" is configured but no adapter is implemented yet.`,
-    latency_ms: Date.now() - startedAt,
-  };
+    startedAt,
+  });
 }
 
 export type { TopicLabelerClientResult, TopicLabelerRequest };

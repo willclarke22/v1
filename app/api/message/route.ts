@@ -6,10 +6,6 @@ import {
   embedMessageForSemanticRouting,
   querySemanticTopicCandidatesFromEmbedding,
 } from "@/lib/vector/query-topics";
-import {
-  canSyncTopicToQdrant,
-  syncTopicToQdrantBestEffort,
-} from "@/lib/vector/sync-topic-to-qdrant";
 import type {
   DeliveredProbe,
   DeliveredResponse,
@@ -46,7 +42,6 @@ import {
   buildUpdatedMetrics,
 } from "@/lib/runtime/message-runtime";
 import { nowIso } from "@/lib/runtime/shared";
-import { buildRecentChatHistory } from "@/lib/runtime/chat-history";
 import {
   scoreConfusionInsight,
   type ConfusionInsightEvent,
@@ -384,17 +379,6 @@ function getTopicRoutingQdrantQueryMode(): TopicRoutingQdrantQueryMode {
   return "off";
 }
 
-function shouldSyncQdrantOnMessageRoute() {
-  const raw = process.env.MYWAY_QDRANT_SYNC_ON_MESSAGE?.trim().toLowerCase();
-
-  /**
-   * Default is intentionally false during the topic-label/message-embedding
-   * migration. Qdrant should receive the topic_label_embedding vector from the
-   * idle semantic-enrichment runner, not a raw learner-message embedding from
-   * the foreground message route.
-   */
-  return raw === "on" || raw === "true" || raw === "1" || raw === "yes";
-}
 
 function getConfusionInsightScoringMode(): ConfusionInsightScoringMode {
   const raw =
@@ -525,19 +509,6 @@ function normalizeRecentTurns(body: MessageRouteBody) {
   }>;
 }
 
-function buildChatHistoryFromBody(body: MessageRouteBody) {
-  if (typeof body.chat_history === "string" && body.chat_history.trim()) {
-    return body.chat_history.trim();
-  }
-
-  const recentTurns = normalizeRecentTurns(body);
-
-  if (!recentTurns.length) {
-    return "";
-  }
-
-  return buildRecentChatHistory(recentTurns, 6);
-}
 
 function buildChatHistoryLinesForModelSignals(args: {
   body: MessageRouteBody;
@@ -968,6 +939,8 @@ function asNullableFiniteNumber(value: unknown): number | null {
 
 const FOREGROUND_CONFUSION_INSIGHT_EXISTING_TOPIC_ALPHA = 0.35;
 const PENDING_WORKER_QUEUE_MAX_ITEMS = 50;
+const CONFUSION_INSIGHT_PAYLOAD_SHAPE = "structured_v1_1" as const;
+const CONFUSION_INSIGHT_WORKER_QUEUE_ROLE = "worker_default_structured_v1_1";
 const DEFAULT_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS = 2_000;
 const MIN_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS = 250;
 const MAX_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS = 10_000;
@@ -1245,6 +1218,57 @@ function buildConfusionInsightInput(args: {
 
     most_related_topic_confusion_average: null,
     most_related_topic_insight_average: null,
+  };
+}
+
+async function resolveConfusionInsightSignalsForMessageRoute(args: {
+  scoringMode: ConfusionInsightScoringMode;
+  input: ConfusionInsightStructuredInput;
+  targetTopicId: string;
+  targetTopicLabel: string;
+  resolutionKind: RouteResolutionKind;
+}) {
+  if (args.scoringMode === "foreground") {
+    const modelSignals = await scoreConfusionInsight({
+      input: args.input,
+      timeoutMs: getForegroundConfusionInsightTimeoutMs(),
+    });
+
+    console.info("[confusion-insight foreground scoring]", {
+      target_topic_id: args.targetTopicId,
+      target_topic_label: args.targetTopicLabel,
+      resolution_kind: args.resolutionKind,
+      status: modelSignals.status,
+      model_confusion: modelSignals.model_confusion,
+      model_insight: modelSignals.model_insight,
+      model_version: modelSignals.model_version,
+      latency_ms: modelSignals.latency_ms,
+      error_message: modelSignals.error_message,
+    });
+
+    return {
+      modelSignals,
+      timerStep: "score_confusion_insight_foreground",
+    };
+  }
+
+  const modelSignals: ModelSignals = {
+    ...buildFallbackModelSignals(),
+    error_message:
+      "Confusion/insight scoring is queued for the worker; /api/message stays responsive and does not require the model service in worker mode.",
+  };
+
+  console.info("[confusion-insight queued for worker mode]", {
+    target_topic_id: args.targetTopicId,
+    target_topic_label: args.targetTopicLabel,
+    resolution_kind: args.resolutionKind,
+    scoring_mode: args.scoringMode,
+    payload_shape: CONFUSION_INSIGHT_PAYLOAD_SHAPE,
+  });
+
+  return {
+    modelSignals,
+    timerStep: "queue_confusion_insight_for_worker",
   };
 }
 
@@ -1684,7 +1708,7 @@ function getPendingConfusionInsightScores(
         text,
         chat_history: chatHistory,
         structured_input: structuredInput,
-        payload_shape: "structured_v1_1",
+        payload_shape: CONFUSION_INSIGHT_PAYLOAD_SHAPE,
         created_at: createdAt,
         source: "message_route",
         routing: {
@@ -1732,7 +1756,7 @@ function buildPendingConfusionInsightScore(args: {
     text: args.message,
     chat_history: args.chatHistory.slice(-8),
     structured_input: args.structuredInput,
-    payload_shape: "structured_v1_1",
+    payload_shape: CONFUSION_INSIGHT_PAYLOAD_SHAPE,
     created_at: nowIso(),
     source: "message_route",
     routing: {
@@ -1773,8 +1797,8 @@ function appendPendingConfusionInsightScore(args: {
     pending_confusion_insight_scores: nextQueue,
     confusion_insight_pending_count: nextQueue.length,
     confusion_insight_queue_status: "pending",
-    confusion_insight_queue_role: "worker_default_structured_v1_1",
-    confusion_insight_normal_payload_shape: "structured_v1_1",
+    confusion_insight_queue_role: CONFUSION_INSIGHT_WORKER_QUEUE_ROLE,
+    confusion_insight_normal_payload_shape: CONFUSION_INSIGHT_PAYLOAD_SHAPE,
     confusion_insight_status: {
       ...asRecord(args.topicJson.confusion_insight_status),
       status: "pending",
@@ -1782,7 +1806,7 @@ function appendPendingConfusionInsightScore(args: {
       queued_at: args.pendingItem.created_at,
       source: "message_route",
       payload_shape: args.pendingItem.payload_shape,
-      queue_role: "worker_default_structured_v1_1",
+      queue_role: CONFUSION_INSIGHT_WORKER_QUEUE_ROLE,
       worker_owned: true,
     },
     confusion_insight_signal_state: {
@@ -2316,7 +2340,6 @@ export async function POST(request: Request) {
     );
 
     const recentTurns = normalizeRecentTurns(body);
-    const chatHistory = buildChatHistoryFromBody(body);
     const chatHistoryForModelSignals = buildChatHistoryLinesForModelSignals({
       body,
       recentTurns,
@@ -2719,46 +2742,19 @@ export async function POST(request: Request) {
       clarifySeeking,
     });
 
-    if (confusionInsightScoringMode === "foreground") {
-      modelSignals = await scoreConfusionInsight({
+    const confusionInsightResolution =
+      await resolveConfusionInsightSignalsForMessageRoute({
+        scoringMode: confusionInsightScoringMode,
         input: confusionInsightInput,
-        timeoutMs: getForegroundConfusionInsightTimeoutMs(),
+        targetTopicId,
+        targetTopicLabel: topic.topic_label,
+        resolutionKind,
       });
 
-      console.info("[confusion-insight foreground scoring]", {
-        target_topic_id: targetTopicId,
-        target_topic_label: topic.topic_label,
-        resolution_kind: resolutionKind,
-        status: modelSignals.status,
-        model_confusion: modelSignals.model_confusion,
-        model_insight: modelSignals.model_insight,
-        model_version: modelSignals.model_version,
-        latency_ms: modelSignals.latency_ms,
-        error_message: modelSignals.error_message,
-      });
-    } else {
-      modelSignals = {
-        ...buildFallbackModelSignals(),
-        error_message:
-          "Confusion/insight scoring is queued for the worker; /api/message stays responsive and does not require the model service in worker mode.",
-      };
-
-      console.info("[confusion-insight queued for worker mode]", {
-        target_topic_id: targetTopicId,
-        target_topic_label: topic.topic_label,
-        resolution_kind: resolutionKind,
-        scoring_mode: confusionInsightScoringMode,
-        payload_shape: "structured_v1_1",
-      });
-    }
-
+    modelSignals = confusionInsightResolution.modelSignals;
     finalModelSignalsStatus = modelSignals.status;
 
-    timer.step(
-      confusionInsightScoringMode === "foreground"
-        ? "score_confusion_insight_foreground"
-        : "queue_confusion_insight_for_worker",
-    );
+    timer.step(confusionInsightResolution.timerStep);
 
     const persistedConfusionInsight = derivePersistedConfusionInsightValues({
       topic,
@@ -3057,8 +3053,7 @@ export async function POST(request: Request) {
               modelSignals,
             })
           : null,
-        worker_queue_role:
-          "worker_default_structured_v1_1",
+        worker_queue_role: CONFUSION_INSIGHT_WORKER_QUEUE_ROLE,
         note:
           confusionInsightScoringMode === "worker"
             ? "Scoring is deferred to the local worker for CPU-only local-dev stability and future external/GPU service reuse."
@@ -3076,7 +3071,7 @@ export async function POST(request: Request) {
               run_id: runId,
               processed_at: nowIso(),
               source: "message_route_foreground",
-              payload_shape: "structured_v1_1",
+              payload_shape: CONFUSION_INSIGHT_PAYLOAD_SHAPE,
               input_type: confusionInsightInput.input_type,
               structured_input_used: confusionInsightInput,
               model_confusion: modelSignals.model_confusion,
@@ -3230,51 +3225,21 @@ export async function POST(request: Request) {
 
     timer.step("upsert_topic_state_supabase");
 
-    const syncQdrantOnMessageRoute = shouldSyncQdrantOnMessageRoute();
+    qdrantSyncAttempted = false;
+    qdrantSyncSucceeded = null;
+    qdrantSyncDurationMs = null;
+    qdrantSyncError = shouldPersistLearningSpace
+      ? "qdrant_sync_owned_by_semantic_worker"
+      : "skipped_no_learning_space_update";
 
-    if (
-      shouldPersistLearningSpace &&
-      syncQdrantOnMessageRoute &&
-      canSyncTopicToQdrant()
-    ) {
-      qdrantSyncAttempted = true;
+    console.info("[qdrant sync skipped on message route]", {
+      reason: qdrantSyncError,
+      topic_id: updatedResolvedTopic.id,
+      topic_label: updatedResolvedTopic.topic_label,
+      note: "The semantic enrichment worker owns Qdrant sync so /api/message stays fast and GPU/external-service migration stays simple.",
+    });
 
-      const syncResult = await syncTopicToQdrantBestEffort({
-        topicId: updatedResolvedTopic.id,
-        topicLabel: updatedResolvedTopic.topic_label,
-        diagnosis: decision.active_diagnosis,
-        nextStep:
-          probePlan.text_plan.instructional_goal ??
-          updatedResolvedTopic.nextStep,
-        updatedAt: nowIso(),
-        topicJson,
-        ...getCanonicalEmbeddingPersistenceMetadata(updatedResolvedTopic),
-      });
-
-      qdrantSyncSucceeded = syncResult.ok;
-      qdrantSyncError = syncResult.error;
-      qdrantSyncDurationMs = syncResult.duration_ms;
-    } else {
-      qdrantSyncSucceeded = null;
-      qdrantSyncDurationMs = null;
-
-      if (!shouldPersistLearningSpace) {
-        qdrantSyncError = "skipped_no_learning_space_update";
-      } else if (!syncQdrantOnMessageRoute) {
-        qdrantSyncError = "qdrant_sync_on_message_route_disabled";
-
-        console.info("[qdrant sync skipped on message route]", {
-          reason: qdrantSyncError,
-          topic_id: updatedResolvedTopic.id,
-          topic_label: updatedResolvedTopic.topic_label,
-          note: "Semantic enrichment runner remains responsible for topic_label_embedding/Qdrant sync.",
-        });
-      } else {
-        qdrantSyncError = "missing_qdrant_config";
-      }
-    }
-
-    timer.step("sync_topic_to_qdrant_best_effort");
+    timer.step("skip_qdrant_sync_on_message_route");
 
     const latencyDebug = timer.finish({
       route: "POST /api/message",

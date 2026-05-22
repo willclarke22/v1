@@ -25,17 +25,31 @@ type TopicStateRow = Awaited<ReturnType<typeof getLatestTopicState>>[number];
 
 type PendingConfusionInsightPayloadShape = "structured_v1_1";
 
+type PendingConfusionInsightResolutionKind =
+  | "created_new_candidate"
+  | "matched_existing"
+  | "fallback_active_topic"
+  | "fallback_existing_topic"
+  | "no_match"
+  | "probe_submit_attempt"
+  | string;
+
 type PendingConfusionInsightScore = {
   score_id: string;
   run_id: string | null;
   text: string;
   structured_input: ConfusionInsightStructuredInput;
   created_at: string;
-  source: "message_route" | "probe_submit" | "fallback" | string;
+  source:
+    | "message_route"
+    | "probe_submit_route"
+    | "probe_submit"
+    | "fallback"
+    | string;
   routing: {
     target_topic_id: string;
     target_topic_label: string;
-    resolution_kind: string;
+    resolution_kind: PendingConfusionInsightResolutionKind;
     resolved_label: string | null;
     match_confidence: number;
     authority_source: string | null;
@@ -110,6 +124,16 @@ function asString(value: unknown, fallback = "") {
 
 function asOptionalString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function normalizePendingSource(value: unknown) {
+  const source = asString(value, "message_route");
+
+  /**
+   * Normalize the temporary older probe source name if any rows were queued
+   * before the worker-backed probe-submit cleanup.
+   */
+  return source === "probe_submit" ? "probe_submit_route" : source;
 }
 
 function asFiniteNumber(value: unknown): number | null {
@@ -283,11 +307,10 @@ function getPendingPayloadShape(
   return "structured_v1_1";
 }
 
-function buildStructuredInputForPendingItem(args: {
-  item: PendingConfusionInsightScore;
-  row: TopicStateRow;
-}): ConfusionInsightStructuredInput {
-  return args.item.structured_input;
+function buildStructuredInputForPendingItem(
+  item: PendingConfusionInsightScore,
+): ConfusionInsightStructuredInput {
+  return item.structured_input;
 }
 
 function getPendingConfusionInsightScores(
@@ -317,7 +340,7 @@ function getPendingConfusionInsightScores(
         text,
         structured_input: structuredInput,
         created_at: createdAt,
-        source: asString(candidate.source, "message_route"),
+        source: normalizePendingSource(candidate.source),
         routing: {
           target_topic_id: asString(routing.target_topic_id),
           target_topic_label: asString(routing.target_topic_label),
@@ -504,6 +527,7 @@ function buildFailedScoreAudit(failed: FailedConfusionInsightItem) {
     source: failed.item.source,
     routing: failed.item.routing,
     payload_shape: failed.payload_shape,
+    is_probe_submit_score: failed.item.source === "probe_submit_route",
     text_preview: failed.item.text.slice(0, 240),
     status: failed.status,
     error_message: failed.error_message,
@@ -523,6 +547,7 @@ function buildLastScoreAudit(args: {
     source: args.processed.item.source,
     routing: args.processed.item.routing,
     payload_shape: args.processed.payload_shape,
+    is_probe_submit_score: args.processed.item.source === "probe_submit_route",
     input_type: args.processed.input_type,
     structured_input_used: args.processed.structured_input_used,
     input_sanitization: args.processed.input_sanitization,
@@ -576,6 +601,7 @@ function buildUpdatedTopicJson(args: {
     run_id: processed.item.run_id,
     processed_at: args.updatedAt,
     source: processed.item.source,
+    is_probe_submit_score: processed.item.source === "probe_submit_route",
     input_type: processed.input_type,
     payload_shape: processed.payload_shape,
     text_preview: processed.item.text.slice(0, 120),
@@ -710,10 +736,7 @@ async function processTopicQueue(args: {
       : null;
 
   for (const item of toProcess) {
-    const rawStructuredInput = buildStructuredInputForPendingItem({
-      item,
-      row: args.row,
-    });
+    const rawStructuredInput = buildStructuredInputForPendingItem(item);
     const payloadShape = getPendingPayloadShape(item);
     const { input: structuredInput, sanitization } =
       sanitizeStructuredInputForScoring({
@@ -826,7 +849,10 @@ async function processTopicQueue(args: {
 
   if (!processedItems.length) {
     const updatedAt = nowIso();
-    const remainingQueue = [...failedItems.map((failed) => failed.item), ...notYetProcessed];
+    const remainingQueue = [
+      ...failedItems.map((failed) => failed.item),
+      ...notYetProcessed,
+    ];
 
     const nextTopicJson = buildUpdatedTopicJson({
       row: args.row,
@@ -889,7 +915,10 @@ async function processTopicQueue(args: {
   }
 
   const updatedAt = nowIso();
-  const remainingQueue = [...failedItems.map((failed) => failed.item), ...notYetProcessed];
+  const remainingQueue = [
+    ...failedItems.map((failed) => failed.item),
+    ...notYetProcessed,
+  ];
 
   const updatedRowForJson: TopicStateRow = {
     ...args.row,
@@ -1021,6 +1050,24 @@ export async function POST(request: Request) {
       (sum, result) => sum + result.failed_structured_v1_1_count,
       0,
     );
+    const processedProbeSubmitScoreCount = results.reduce(
+      (sum, result) =>
+        sum +
+        (result.processed_score_details ?? []).filter(
+          (detail: { is_probe_submit_score?: boolean }) =>
+            detail.is_probe_submit_score,
+        ).length,
+      0,
+    );
+    const failedProbeSubmitScoreCount = results.reduce(
+      (sum, result) =>
+        sum +
+        (result.failed_score_details ?? []).filter(
+          (detail: { is_probe_submit_score?: boolean }) =>
+            detail.is_probe_submit_score,
+        ).length,
+      0,
+    );
     const updatedTopicCount = results.filter((result) => result.updated).length;
 
     return NextResponse.json({
@@ -1031,19 +1078,26 @@ export async function POST(request: Request) {
       limit,
       score_timeout_ms: getScoreTimeoutMs(),
       normal_payload_shape: "structured_v1_1",
+      accepted_sources: ["message_route", "probe_submit_route"],
       processed_score_count: processedScoreCount,
       processed_structured_v1_1_score_count: processedStructuredV1ScoreCount,
       failed_score_count: failedScoreCount,
       failed_structured_v1_1_score_count: failedStructuredV1ScoreCount,
+      processed_probe_submit_score_count: processedProbeSubmitScoreCount,
+      failed_probe_submit_score_count: failedProbeSubmitScoreCount,
       updated_topic_count: updatedTopicCount,
       persisted_failure_audit_count: results.filter(
-        (result) => "persisted_failure_audit" in result && result.persisted_failure_audit,
+        (result) =>
+          "persisted_failure_audit" in result &&
+          result.persisted_failure_audit,
       ).length,
       should_refresh_learning_space: processedScoreCount > 0,
       worker_contract: {
         processed_score_count: processedScoreCount,
         processed_structured_v1_1_score_count: processedStructuredV1ScoreCount,
-          failed_score_count: failedScoreCount,
+        processed_probe_submit_score_count: processedProbeSubmitScoreCount,
+        failed_score_count: failedScoreCount,
+        failed_probe_submit_score_count: failedProbeSubmitScoreCount,
         updated_topic_count: updatedTopicCount,
         should_refresh_learning_space: processedScoreCount > 0,
       },
