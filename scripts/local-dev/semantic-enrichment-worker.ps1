@@ -433,7 +433,8 @@ function Invoke-LayoutCommitIfNeeded {
 Write-WorkerLog "Semantic enrichment worker started."
 Write-WorkerLog "App: $AppBaseUrl"
 Write-WorkerLog "This worker runs when idle-state is safe. Layout commits can run even when no embedding-backed work is pending."
-Write-WorkerLog "It processes queued confusion/insight scores, topic-message embeddings, semantic enrichment, semantic layout targets, and semantic layout commits."
+Write-WorkerLog "Confusion/insight scoring is worker-default in local dev; this worker drains structured v1_1 scores and legacy backfill scores."
+Write-WorkerLog "It processes worker-default structured v1_1 confusion/insight scores, legacy confusion/insight backfill scores, topic-message embeddings, semantic enrichment, semantic layout targets, and semantic layout commits."
 Write-WorkerLog "Poll interval: $PollSeconds second(s)."
 Write-WorkerLog "Python executable: $PythonExe"
 Write-WorkerLog "Enrichment limit: $EnrichmentLimit"
@@ -501,31 +502,47 @@ while ($true) {
   }
 
   if ($pendingWorkFound -le 0) {
-    Write-WorkerLog "Idle, but no worker-backed work is pending. Not starting model services."
+    Write-WorkerLog "Idle, but no worker-backed work is pending. Not starting worker-managed model services."
     Start-Sleep -Seconds $PollSeconds
     continue
   }
 
   if ($pendingConfusionInsightItemsFound -gt 0) {
-    Write-WorkerLog "Pending confusion/insight work found: items=$pendingConfusionInsightItemsFound. Preparing confusion/insight worker cycle."
+    $structuredV11Count = 0
+    if ($null -ne $pending.pending_confusion_insight_structured_v1_1_items_found) {
+      $structuredV11Count = [int]$pending.pending_confusion_insight_structured_v1_1_items_found
+    }
+
+    $legacyTextCount = 0
+    if ($null -ne $pending.pending_confusion_insight_legacy_text_items_found) {
+      $legacyTextCount = [int]$pending.pending_confusion_insight_legacy_text_items_found
+    }
+
+    Write-WorkerLog "Confusion/insight queue found: total=$pendingConfusionInsightItemsFound structured_v1_1=$structuredV11Count legacy_text=$legacyTextCount. Preparing worker drain cycle."
 
     $confusionInsightProcess = $null
+    $confusionInsightStartedByWorker = $false
 
     try {
       Set-EnrichmentInFlight -Value $true
 
       $abortBeforeConfusionStart = Test-ShouldAbortEnrichment
       if ($abortBeforeConfusionStart.should_abort -eq $true) {
-        Write-WorkerLog "Abort condition appeared before confusion/insight startup. Reason: $($abortBeforeConfusionStart.reason)"
+        Write-WorkerLog "Abort condition appeared before confusion/insight worker drain. Reason: $($abortBeforeConfusionStart.reason)"
       } else {
-        Stop-ExistingConfusionInsightServiceOnPort
-        $confusionInsightProcess = Start-ConfusionInsightService
+        if (Test-ConfusionInsightServiceHealthy) {
+          Write-WorkerLog "Confusion/insight service is already healthy on $ConfusionInsightHost`:$ConfusionInsightPort. Reusing it instead of restarting it."
+        } else {
+          Write-WorkerLog "Confusion/insight service is not healthy. Starting worker-managed service for structured v1_1 / legacy queue drain."
+          $confusionInsightProcess = Start-ConfusionInsightService
+          $confusionInsightStartedByWorker = $true
+        }
 
         for ($confusionCycle = 1; $confusionCycle -le $MaxConfusionInsightCyclesPerStartup; $confusionCycle += 1) {
           $cyclePending = Get-PendingStatus
 
           if ($null -eq $cyclePending -or $cyclePending.ok -ne $true) {
-            Write-WorkerLog "Could not refresh pending-status during confusion/insight cycle $confusionCycle. Ending drain loop."
+            Write-WorkerLog "Could not refresh pending-status during confusion/insight worker cycle $confusionCycle. Ending drain loop."
             break
           }
 
@@ -535,17 +552,17 @@ while ($true) {
           }
 
           if ($cyclePendingConfusionInsightItemsFound -le 0) {
-            Write-WorkerLog "Confusion/insight drain cycle $confusionCycle found no remaining pending scores."
+            Write-WorkerLog "Confusion/insight worker drain cycle $confusionCycle found no remaining pending scores."
             break
           }
 
           $abortBeforeConfusionBatch = Test-ShouldAbortEnrichment
           if ($abortBeforeConfusionBatch.should_abort -eq $true) {
-            Write-WorkerLog "Abort condition appeared before confusion/insight drain cycle $confusionCycle. Reason: $($abortBeforeConfusionBatch.reason)"
+            Write-WorkerLog "Abort condition appeared before confusion/insight worker drain cycle $confusionCycle. Reason: $($abortBeforeConfusionBatch.reason)"
             break
           }
 
-          Write-WorkerLog "Running confusion/insight scoring batch $confusionCycle/$MaxConfusionInsightCyclesPerStartup with limit=$ConfusionInsightLimit..."
+          Write-WorkerLog "Running confusion/insight worker scoring batch $confusionCycle/$MaxConfusionInsightCyclesPerStartup with limit=$ConfusionInsightLimit..."
           $confusionInsightResult = Invoke-ConfusionInsightWithAbortWatch
 
           if ($null -eq $confusionInsightResult) {
@@ -566,7 +583,12 @@ while ($true) {
       Write-WorkerLog "Confusion/insight worker cycle failed: $($_.Exception.Message)"
     } finally {
       Set-EnrichmentInFlight -Value $false
-      Stop-ConfusionInsightService -Process $confusionInsightProcess
+
+      if ($confusionInsightStartedByWorker -eq $true) {
+        Stop-ConfusionInsightService -Process $confusionInsightProcess
+      } else {
+        Write-WorkerLog "Leaving existing confusion/insight service running."
+      }
     }
   }
 

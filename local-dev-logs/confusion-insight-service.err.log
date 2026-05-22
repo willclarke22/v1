@@ -1,8 +1,4 @@
-INFO:     Started server process [11084]
+INFO:     Started server process [24916]
 INFO:     Waiting for application startup.
-Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-Loading weights:   0%|          | 0/273 [00:00<?, ?it/s]Loading weights:  44%|####3     | 120/273 [00:00<00:00, 1158.28it/s]Loading weights:  94%|#########3| 256/273 [00:00<00:00, 1263.48it/s]Loading weights: 100%|##########| 273/273 [00:00<00:00, 1298.07it/s]
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8003 (Press CTRL+C to quit)
-Initializing global attention on CLS token...
-Input ids are automatically padded to be a multiple of `config.attention_window`: 512

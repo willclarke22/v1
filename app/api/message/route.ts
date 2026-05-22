@@ -48,6 +48,14 @@ import {
 import { nowIso } from "@/lib/runtime/shared";
 import { buildRecentChatHistory } from "@/lib/runtime/chat-history";
 import {
+  scoreConfusionInsight,
+  type ConfusionInsightEvent,
+  type ConfusionInsightInputType,
+  type ConfusionInsightPreviousMode,
+  type ConfusionInsightStructuredInput,
+  type ConfusionInsightTopicTransitionType,
+} from "@/lib/runtime/score-confusion-insight";
+import {
   buildTopicLabelerRequest,
   callConfiguredTopicLabeler,
   getTopicLabelerEnabled,
@@ -154,6 +162,8 @@ type TopicLabelingMode =
 
 type TopicRoutingQdrantQueryMode = "off" | "always";
 
+type ConfusionInsightScoringMode = "foreground" | "worker";
+
 type TopicResolutionDebug = {
   topic_labeling_mode: TopicLabelingMode;
   llm_fallback_allowed_by_mode: boolean;
@@ -217,6 +227,8 @@ type PendingConfusionInsightScore = {
   run_id: string | null;
   text: string;
   chat_history: string[];
+  structured_input: ConfusionInsightStructuredInput | null;
+  payload_shape: "structured_v1_1" | "legacy_text";
   created_at: string;
   source: "message_route";
   routing: {
@@ -328,7 +340,7 @@ function createMessageRouteTimer() {
   }
 
   function finish(
-    metadata: MessageRouteLatencyDebug["metadata"]
+    metadata: MessageRouteLatencyDebug["metadata"],
   ): MessageRouteLatencyDebug {
     return {
       enabled,
@@ -357,9 +369,8 @@ function asOptionalString(value: unknown): string | null {
 }
 
 function getTopicRoutingQdrantQueryMode(): TopicRoutingQdrantQueryMode {
-  const raw = process.env.MYWAY_TOPIC_ROUTING_QDRANT_QUERY_MODE
-    ?.trim()
-    .toLowerCase();
+  const raw =
+    process.env.MYWAY_TOPIC_ROUTING_QDRANT_QUERY_MODE?.trim().toLowerCase();
 
   if (raw === "always") return "always";
 
@@ -385,8 +396,23 @@ function shouldSyncQdrantOnMessageRoute() {
   return raw === "on" || raw === "true" || raw === "1" || raw === "yes";
 }
 
+function getConfusionInsightScoringMode(): ConfusionInsightScoringMode {
+  const raw =
+    process.env.MYWAY_CONFUSION_INSIGHT_SCORING_MODE?.trim().toLowerCase();
+
+  if (raw === "foreground") return "foreground";
+
+  /**
+   * Default to worker mode for local-dev stability.
+   * The v1_1 model is lightweight, but running it alongside Next dev,
+   * topic-labeler, embedding service, and the semantic worker can still
+   * overload a CPU-only laptop.
+   */
+  return "worker";
+}
+
 function buildRecentUserMessagesForTopicLabeler(
-  recentTurns: Array<{ role: "user" | "assistant"; text: string }>
+  recentTurns: Array<{ role: "user" | "assistant"; text: string }>,
 ) {
   return recentTurns
     .filter((turn) => turn.role === "user")
@@ -528,7 +554,10 @@ function buildChatHistoryLinesForModelSignals(args: {
 
   return args.recentTurns
     .slice(-8)
-    .map((turn) => `${turn.role === "assistant" ? "Assistant" : "User"}: ${turn.text}`)
+    .map(
+      (turn) =>
+        `${turn.role === "assistant" ? "Assistant" : "User"}: ${turn.text}`,
+    )
     .filter(Boolean);
 }
 
@@ -546,9 +575,11 @@ function inferMessageRouteRunKind(args: {
       : ("initial_question" as const);
   }
 
-  const userTurnCount = recentTurns.filter((turn) => turn.role === "user").length;
+  const userTurnCount = recentTurns.filter(
+    (turn) => turn.role === "user",
+  ).length;
   const assistantTurnCount = recentTurns.filter(
-    (turn) => turn.role === "assistant"
+    (turn) => turn.role === "assistant",
   ).length;
 
   if (hasActiveTopicId && assistantTurnCount > 0 && userTurnCount > 0) {
@@ -562,13 +593,13 @@ type ResolvedMessageFrame = TopicResolutionTrace["interpretation"]["frame"];
 type RoutePreferredModality = "text" | "video" | "interactive";
 
 function getResolvedMessageFrame(
-  resolutionTrace: TopicResolutionTrace | null
+  resolutionTrace: TopicResolutionTrace | null,
 ): ResolvedMessageFrame {
   return resolutionTrace?.interpretation?.frame ?? "general";
 }
 
 function derivePreferredModalityFromResolutionFrame(
-  frame: ResolvedMessageFrame
+  frame: ResolvedMessageFrame,
 ): RoutePreferredModality {
   if (frame === "apply_request") {
     return "interactive";
@@ -583,7 +614,7 @@ function deriveClarifySeekingFromResolutionFrame(frame: ResolvedMessageFrame) {
 
 function buildProbeReply(
   topicLabel: string,
-  diagnosis: InterventionModeDecision["active_diagnosis"]
+  diagnosis: InterventionModeDecision["active_diagnosis"],
 ) {
   const diagnosisText =
     diagnosis === "representation_gap"
@@ -601,7 +632,7 @@ function buildProbeReply(
 
 function buildClarifyReply(
   topicLabel: string,
-  diagnosis: InterventionModeDecision["active_diagnosis"]
+  diagnosis: InterventionModeDecision["active_diagnosis"],
 ) {
   const diagnosisText =
     diagnosis === "representation_gap"
@@ -620,7 +651,7 @@ function buildClarifyReply(
 function buildSuggestedAction(
   topicLabel: string,
   nextStep: string,
-  mode: "clarify" | "probe"
+  mode: "clarify" | "probe",
 ) {
   if (mode === "clarify") {
     return `First, let’s stabilize ${topicLabel.toLowerCase()} so the next step feels clearer: ${nextStep}`;
@@ -631,7 +662,7 @@ function buildSuggestedAction(
 
 function buildStatusLabel(
   resolutionKind: RouteResolutionKind,
-  mode: "clarify" | "probe"
+  mode: "clarify" | "probe",
 ) {
   const topicLabel =
     resolutionKind === "created_new_candidate"
@@ -648,7 +679,7 @@ function buildStatusLabel(
 }
 
 function selectDeliveredRenderer(
-  probePlan: ProbePlan
+  probePlan: ProbePlan,
 ): DeliveredRendererSelection {
   if (probePlan.interactive_payload.ready_to_send) {
     return {
@@ -674,7 +705,8 @@ function selectDeliveredRenderer(
     };
   }
 
-  const preferredModality = probePlan.renderer_request.preferred_modality ?? "text";
+  const preferredModality =
+    probePlan.renderer_request.preferred_modality ?? "text";
 
   if (preferredModality === "interactive") {
     return {
@@ -701,7 +733,7 @@ function selectDeliveredRenderer(
 
 function buildDeliveredProbe(
   probePlan: ProbePlan,
-  topic: RouteTopic
+  topic: RouteTopic,
 ): DeliveredProbe {
   const selected = selectDeliveredRenderer(probePlan);
 
@@ -718,17 +750,19 @@ function buildDeliveredProbe(
               ? `Distinguish ${topic.topic_label} clearly`
               : probePlan.probe_type === "transform"
                 ? `Walk through ${topic.topic_label} step by step`
-                : probePlan.text_plan.instructional_goal ?? `Explain ${topic.topic_label}`;
+                : (probePlan.text_plan.instructional_goal ??
+                  `Explain ${topic.topic_label}`);
 
   const instructions =
     selected.modality === "video"
-      ? probePlan.video_payload.narration ??
+      ? (probePlan.video_payload.narration ??
         probePlan.video_payload.prompt ??
-        `Watch carefully, then respond about ${topic.topic_label}.`
+        `Watch carefully, then respond about ${topic.topic_label}.`)
       : selected.modality === "interactive"
-        ? probePlan.interactive_payload.prompt ??
-          "Interact with the task, then explain what you learned."
-        : probePlan.text_payload.input ?? `Explain ${topic.topic_label} in your own words.`;
+        ? (probePlan.interactive_payload.prompt ??
+          "Interact with the task, then explain what you learned.")
+        : (probePlan.text_payload.input ??
+          `Explain ${topic.topic_label} in your own words.`);
 
   return {
     probe_id: probePlan.probe_id,
@@ -773,17 +807,17 @@ function buildDeliveredProbe(
 function buildDeliveredResponse(
   topic: RouteTopic,
   decision: InterventionModeDecision,
-  probePlan: ProbePlan
+  probePlan: ProbePlan,
 ): DeliveredResponse {
   const reply =
     decision.mode_selected === "clarify"
       ? buildClarifyReply(
           topic.topic_label,
-          decision.active_diagnosis ?? "representation_gap"
+          decision.active_diagnosis ?? "representation_gap",
         )
       : buildProbeReply(
           topic.topic_label,
-          decision.active_diagnosis ?? "representation_gap"
+          decision.active_diagnosis ?? "representation_gap",
         );
 
   return {
@@ -860,7 +894,7 @@ function buildTopicStates(updatedTopics: RouteTopic[]): TopicState[] {
 }
 
 function buildPreviousModeOutcome(
-  runKind: ImportantRunInputs["current_interaction_context"]["run_kind"]
+  runKind: ImportantRunInputs["current_interaction_context"]["run_kind"],
 ): PreviousModeOutcome {
   return {
     mode_selected: runKind === "clarify_followup" ? "clarify" : "probe",
@@ -876,7 +910,7 @@ function buildEngineFuel(
   decision: InterventionModeDecision,
   probePlan: ProbePlan,
   previousModeOutcome: PreviousModeOutcome,
-  topicRouting: TopicRoutingState | null
+  topicRouting: TopicRoutingState | null,
 ): EngineFuel {
   return {
     topics: buildTopicStates(updatedTopics),
@@ -894,7 +928,8 @@ function buildRunMetadata(engineFuel: EngineFuel, runId: string): RunMetadata {
   return {
     run_id: runId,
     timestamp: nowIso(),
-    engine_version: "runtime-topic-labeler-provider-message-embedding-fast-path",
+    engine_version:
+      "runtime-topic-labeler-provider-message-embedding-confusion-insight-v1_1",
     previous_run_id: null,
     topic_count: engineFuel.topics.length,
     cluster_count: engineFuel.clusters.length,
@@ -905,13 +940,12 @@ function buildRunMetadata(engineFuel: EngineFuel, runId: string): RunMetadata {
 function buildSceneUpdate(
   topicId: string,
   learningSpace: LearningSpace,
-  resolutionKind: RouteResolutionKind
+  resolutionKind: RouteResolutionKind,
 ): MessageRouteResponse["scene_update"] {
   return {
     target_topic_id: topicId,
     camera_destination_topic_id: topicId,
-    arrival_mode:
-      resolutionKind === "created_new_candidate" ? "warp" : "focus",
+    arrival_mode: resolutionKind === "created_new_candidate" ? "warp" : "focus",
     learning_space: learningSpace,
   };
 }
@@ -928,10 +962,278 @@ function buildFallbackModelSignals(errorMessage?: string): ModelSignals {
   };
 }
 
+function asNullableFiniteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+const FOREGROUND_CONFUSION_INSIGHT_EXISTING_TOPIC_ALPHA = 0.35;
+
+type PersistedConfusionInsightSource =
+  | "foreground_model_new_topic"
+  | "foreground_model_blended_existing_topic"
+  | "fallback_metric_update";
+
+function hasUsableConfusionInsightSignals(modelSignals: ModelSignals) {
+  return (
+    modelSignals.status === "ok" &&
+    typeof modelSignals.model_confusion === "number" &&
+    Number.isFinite(modelSignals.model_confusion) &&
+    typeof modelSignals.model_insight === "number" &&
+    Number.isFinite(modelSignals.model_insight)
+  );
+}
+
+function blendConfusionInsightSignal(args: {
+  previous: number | null;
+  signal: number;
+  alpha: number;
+}) {
+  const signal = Math.max(0, Math.min(1, args.signal));
+
+  if (typeof args.previous !== "number" || !Number.isFinite(args.previous)) {
+    return signal;
+  }
+
+  const previous = Math.max(0, Math.min(1, args.previous));
+  const alpha = Math.max(0, Math.min(1, args.alpha));
+
+  return previous * (1 - alpha) + signal * alpha;
+}
+
+function derivePersistedConfusionInsightValues(args: {
+  topic: RouteTopic;
+  updatedTopicMetrics: ReturnType<typeof buildUpdatedMetrics>;
+  modelSignals: ModelSignals;
+  createdTopic: boolean;
+}) {
+  const fallbackConfusion = asNullableFiniteNumber(
+    args.updatedTopicMetrics.confusion,
+  );
+  const fallbackInsight = asNullableFiniteNumber(
+    args.updatedTopicMetrics.insight,
+  );
+
+  if (!hasUsableConfusionInsightSignals(args.modelSignals)) {
+    return {
+      confusion: fallbackConfusion,
+      insight: fallbackInsight,
+      source: "fallback_metric_update" as PersistedConfusionInsightSource,
+      model_confusion_used: null,
+      model_insight_used: null,
+      blend_alpha: null,
+    };
+  }
+
+  const rawModelConfusion = args.modelSignals.model_confusion;
+  const rawModelInsight = args.modelSignals.model_insight;
+
+  if (
+    typeof rawModelConfusion !== "number" ||
+    !Number.isFinite(rawModelConfusion) ||
+    typeof rawModelInsight !== "number" ||
+    !Number.isFinite(rawModelInsight)
+  ) {
+    return {
+      confusion: fallbackConfusion,
+      insight: fallbackInsight,
+      source: "fallback_metric_update" as PersistedConfusionInsightSource,
+      model_confusion_used: null,
+      model_insight_used: null,
+      blend_alpha: null,
+    };
+  }
+
+  const modelConfusion = Math.max(0, Math.min(1, rawModelConfusion));
+  const modelInsight = Math.max(0, Math.min(1, rawModelInsight));
+
+  if (args.createdTopic) {
+    return {
+      confusion: modelConfusion,
+      insight: modelInsight,
+      source: "foreground_model_new_topic" as PersistedConfusionInsightSource,
+      model_confusion_used: modelConfusion,
+      model_insight_used: modelInsight,
+      blend_alpha: 1,
+    };
+  }
+
+  const previousConfusion = asNullableFiniteNumber(args.topic.confusion);
+  const previousInsight = asNullableFiniteNumber(args.topic.insight);
+
+  return {
+    confusion: blendConfusionInsightSignal({
+      previous: previousConfusion,
+      signal: modelConfusion,
+      alpha: FOREGROUND_CONFUSION_INSIGHT_EXISTING_TOPIC_ALPHA,
+    }),
+    insight: blendConfusionInsightSignal({
+      previous: previousInsight,
+      signal: modelInsight,
+      alpha: FOREGROUND_CONFUSION_INSIGHT_EXISTING_TOPIC_ALPHA,
+    }),
+    source:
+      "foreground_model_blended_existing_topic" as PersistedConfusionInsightSource,
+    model_confusion_used: modelConfusion,
+    model_insight_used: modelInsight,
+    blend_alpha: FOREGROUND_CONFUSION_INSIGHT_EXISTING_TOPIC_ALPHA,
+  };
+}
+
+function deriveConfusionInsightInputType(args: {
+  currentInteractionContext: ImportantRunInputs["current_interaction_context"];
+  clarifySeeking: boolean;
+}): ConfusionInsightInputType {
+  if (
+    args.currentInteractionContext.run_kind === "clarify_followup" ||
+    args.currentInteractionContext.prior_mode_selected === "clarify" ||
+    args.clarifySeeking
+  ) {
+    return "clarify_response";
+  }
+
+  return "message";
+}
+
+function deriveConfusionInsightPreviousMode(
+  currentInteractionContext: ImportantRunInputs["current_interaction_context"],
+): ConfusionInsightPreviousMode {
+  if (currentInteractionContext.prior_mode_selected === "clarify") {
+    return "clarify";
+  }
+
+  if (currentInteractionContext.prior_mode_selected === "probe") {
+    return "probe";
+  }
+
+  return "no_previous";
+}
+
+function deriveConfusionInsightTopicTransitionType(args: {
+  resolutionKind: RouteResolutionKind;
+  matchConfidence: number;
+  createdTopic: boolean;
+}): ConfusionInsightTopicTransitionType {
+  if (args.createdTopic || args.resolutionKind === "created_new_candidate") {
+    return "new_topic";
+  }
+
+  if (
+    args.resolutionKind === "fallback_active_topic" ||
+    args.resolutionKind === "matched_existing" ||
+    args.matchConfidence >= 0.72
+  ) {
+    return "same_topic";
+  }
+
+  if (args.matchConfidence >= 0.42) {
+    return "nearby_topic";
+  }
+
+  return "far_topic";
+}
+
+function buildTargetTopicRecentEventsForConfusionInsight(args: {
+  topic: RouteTopic;
+  currentInteractionContext: ImportantRunInputs["current_interaction_context"];
+  clarifySeeking: boolean;
+}): ConfusionInsightEvent[] {
+  const priorMode = args.currentInteractionContext.prior_mode_selected;
+
+  if (!args.clarifySeeking && priorMode !== "clarify") {
+    return [];
+  }
+
+  return [
+    {
+      event_type: "clarify",
+      topic_label: args.topic.topic_label,
+      diagnosis_label: args.topic.diagnosis ?? null,
+      clarification_goal: `Interpret the learner's latest expression and decide whether ${args.topic.topic_label} needs clarification or measurement.`,
+      evidence: null,
+    },
+  ];
+}
+
+function buildConfusionInsightInput(args: {
+  message: string;
+  activeTopic: RouteTopic | null;
+  targetTopic: RouteTopic;
+  vectorInfo: VectorInfo;
+  resolutionKind: RouteResolutionKind;
+  matchConfidence: number;
+  createdTopic: boolean;
+  currentInteractionContext: ImportantRunInputs["current_interaction_context"];
+  clarifySeeking: boolean;
+}): ConfusionInsightStructuredInput {
+  const topLabels = args.vectorInfo.top_k_topic_labels;
+  const topScores = args.vectorInfo.top_k_similarity_scores;
+  const targetTopicLabel = args.targetTopic.topic_label;
+
+  const relatedIndex = topLabels.findIndex(
+    (label) => label && label !== targetTopicLabel,
+  );
+
+  const mostRelatedTopicLabel =
+    relatedIndex >= 0 ? (topLabels[relatedIndex] ?? null) : null;
+
+  const mostRelatedTopicSimilarity =
+    relatedIndex >= 0 ? asNullableFiniteNumber(topScores[relatedIndex]) : null;
+
+  return {
+    input_type: deriveConfusionInsightInputType({
+      currentInteractionContext: args.currentInteractionContext,
+      clarifySeeking: args.clarifySeeking,
+    }),
+    current_attempt_type: null,
+    current_evidence: `Learner wrote: ${args.message}`,
+
+    previous_active_topic_label: args.activeTopic?.topic_label ?? null,
+    target_topic_label: targetTopicLabel,
+    topic_transition_type: deriveConfusionInsightTopicTransitionType({
+      resolutionKind: args.resolutionKind,
+      matchConfidence: args.matchConfidence,
+      createdTopic: args.createdTopic,
+    }),
+    topic_similarity: asNullableFiniteNumber(args.matchConfidence),
+
+    previous_mode: deriveConfusionInsightPreviousMode(
+      args.currentInteractionContext,
+    ),
+    is_response_to_clarify:
+      args.currentInteractionContext.prior_mode_selected === "clarify",
+    is_response_to_probe:
+      args.currentInteractionContext.is_response_to_delivered_probe === true ||
+      args.currentInteractionContext.prior_mode_selected === "probe",
+
+    target_topic_recent_events: buildTargetTopicRecentEventsForConfusionInsight(
+      {
+        topic: args.targetTopic,
+        currentInteractionContext: args.currentInteractionContext,
+        clarifySeeking: args.clarifySeeking,
+      },
+    ),
+
+    most_related_topic_label: mostRelatedTopicLabel,
+    most_related_topic_similarity: mostRelatedTopicSimilarity,
+    most_related_topic_similarity_threshold: 0.65,
+    most_related_topic_recent_events: [],
+
+    target_topic_confusion_average: asNullableFiniteNumber(
+      args.targetTopic.confusion,
+    ),
+    target_topic_insight_average: asNullableFiniteNumber(
+      args.targetTopic.insight,
+    ),
+
+    most_related_topic_confusion_average: null,
+    most_related_topic_insight_average: null,
+  };
+}
+
 function normalizeVectorInfoFallback(
   matchVectorInfo: VectorInfo,
   topic: RouteTopic,
-  createdTopic: boolean
+  createdTopic: boolean,
 ): VectorInfo {
   const topKTopicLabels = matchVectorInfo.top_k_topic_labels.length
     ? matchVectorInfo.top_k_topic_labels
@@ -955,7 +1257,7 @@ function asEmbeddingVector(value: unknown): EmbeddingVector | null {
   if (!Array.isArray(value)) return null;
 
   const vector = value.filter(
-    (item): item is number => typeof item === "number" && Number.isFinite(item)
+    (item): item is number => typeof item === "number" && Number.isFinite(item),
   );
 
   if (!vector.length) return null;
@@ -1000,7 +1302,7 @@ function buildTargetTopicMessageEmbeddingPlan(args: {
   if (!targetTopic || !newMessageEmbedding) return null;
 
   const existingCentroid = asEmbeddingVector(
-    targetTopic.topic_message_embedding_centroid ?? null
+    targetTopic.topic_message_embedding_centroid ?? null,
   );
 
   const previousEmbeddingCount =
@@ -1138,7 +1440,13 @@ function getPendingTopicMessageEmbeddings(
           ? routing.target_topic_label.trim()
           : null;
 
-      if (!messageId || !text || !createdAt || !targetTopicId || !targetTopicLabel) {
+      if (
+        !messageId ||
+        !text ||
+        !createdAt ||
+        !targetTopicId ||
+        !targetTopicLabel
+      ) {
         return null;
       }
 
@@ -1163,7 +1471,8 @@ function getPendingTopicMessageEmbeddings(
               ? routing.resolution_kind
               : "fallback_existing_topic",
           resolved_label:
-            typeof routing.resolved_label === "string" && routing.resolved_label.trim()
+            typeof routing.resolved_label === "string" &&
+            routing.resolved_label.trim()
               ? routing.resolved_label.trim()
               : null,
           match_confidence:
@@ -1234,6 +1543,16 @@ function appendPendingTopicMessageEmbedding(args: {
   };
 }
 
+function isRouteResolutionKind(value: unknown): value is RouteResolutionKind {
+  return (
+    value === "matched_existing" ||
+    value === "created_new_candidate" ||
+    value === "fallback_active_topic" ||
+    value === "fallback_existing_topic" ||
+    value === "no_match"
+  );
+}
+
 function getPendingConfusionInsightScores(
   topicJson: unknown,
 ): PendingConfusionInsightScore[] {
@@ -1274,7 +1593,13 @@ function getPendingConfusionInsightScores(
           ? routing.target_topic_label.trim()
           : null;
 
-      if (!scoreId || !text || !createdAt || !targetTopicId || !targetTopicLabel) {
+      if (
+        !scoreId ||
+        !text ||
+        !createdAt ||
+        !targetTopicId ||
+        !targetTopicLabel
+      ) {
         return null;
       }
 
@@ -1286,6 +1611,13 @@ function getPendingConfusionInsightScores(
             .slice(-8)
         : [];
 
+      const structuredInput =
+        candidate.structured_input &&
+        typeof candidate.structured_input === "object" &&
+        !Array.isArray(candidate.structured_input)
+          ? (candidate.structured_input as ConfusionInsightStructuredInput)
+          : null;
+
       return {
         score_id: scoreId,
         run_id:
@@ -1294,21 +1626,19 @@ function getPendingConfusionInsightScores(
             : null,
         text,
         chat_history: chatHistory,
+        structured_input: structuredInput,
+        payload_shape: structuredInput ? "structured_v1_1" : "legacy_text",
         created_at: createdAt,
         source: "message_route",
         routing: {
           target_topic_id: targetTopicId,
           target_topic_label: targetTopicLabel,
-          resolution_kind:
-            routing.resolution_kind === "matched_existing" ||
-            routing.resolution_kind === "created_new_candidate" ||
-            routing.resolution_kind === "fallback_active_topic" ||
-            routing.resolution_kind === "fallback_existing_topic" ||
-            routing.resolution_kind === "no_match"
-              ? routing.resolution_kind
-              : "fallback_existing_topic",
+          resolution_kind: isRouteResolutionKind(routing.resolution_kind)
+            ? routing.resolution_kind
+            : "fallback_existing_topic",
           resolved_label:
-            typeof routing.resolved_label === "string" && routing.resolved_label.trim()
+            typeof routing.resolved_label === "string" &&
+            routing.resolved_label.trim()
               ? routing.resolved_label.trim()
               : null,
           match_confidence:
@@ -1330,6 +1660,7 @@ function getPendingConfusionInsightScores(
 function buildPendingConfusionInsightScore(args: {
   message: string;
   chatHistory: string[];
+  structuredInput: ConfusionInsightStructuredInput;
   runId: string;
   targetTopicId: string;
   targetTopicLabel: string;
@@ -1343,6 +1674,8 @@ function buildPendingConfusionInsightScore(args: {
     run_id: args.runId,
     text: args.message,
     chat_history: args.chatHistory.slice(-8),
+    structured_input: args.structuredInput,
+    payload_shape: "structured_v1_1",
     created_at: nowIso(),
     source: "message_route",
     routing: {
@@ -1368,19 +1701,21 @@ function appendPendingConfusionInsightScore(args: {
     pending_confusion_insight_scores: nextQueue,
     confusion_insight_pending_count: nextQueue.length,
     confusion_insight_queue_status: "pending",
+    confusion_insight_queue_role: "fallback_and_worker_scoring",
     confusion_insight_status: {
       ...asRecord(args.topicJson.confusion_insight_status),
       status: "pending",
       pending_count: nextQueue.length,
       queued_at: args.pendingItem.created_at,
       source: "message_route",
+      payload_shape: args.pendingItem.payload_shape,
     },
   };
 }
 
 function applyMessageEmbeddingUpdatePlanToTopics(
   topics: RouteTopic[],
-  plan: RouteCentroidUpdatePlan | null
+  plan: RouteCentroidUpdatePlan | null,
 ): RouteTopic[] {
   if (!plan || !plan.new_centroid) return topics;
 
@@ -1406,21 +1741,16 @@ function applyMessageEmbeddingUpdatePlanToTopics(
 
 function getCanonicalEmbeddingPersistenceMetadata(topic: RouteTopic) {
   return {
-    topicLabelEmbeddingCentroid:
-      topic.topic_label_embedding_centroid ?? null,
-    topicLabelEmbeddingCount:
-      topic.topic_label_embedding_count ?? null,
-    topicLabelEmbeddingModel:
-      topic.topic_label_embedding_model ?? null,
+    topicLabelEmbeddingCentroid: topic.topic_label_embedding_centroid ?? null,
+    topicLabelEmbeddingCount: topic.topic_label_embedding_count ?? null,
+    topicLabelEmbeddingModel: topic.topic_label_embedding_model ?? null,
     topicLabelEmbeddingUpdatedAt:
       topic.topic_label_embedding_updated_at ?? null,
 
     topicMessageEmbeddingCentroid:
       topic.topic_message_embedding_centroid ?? null,
-    topicMessageEmbeddingCount:
-      topic.topic_message_embedding_count ?? null,
-    topicMessageEmbeddingModel:
-      topic.topic_message_embedding_model ?? null,
+    topicMessageEmbeddingCount: topic.topic_message_embedding_count ?? null,
+    topicMessageEmbeddingModel: topic.topic_message_embedding_model ?? null,
     topicMessageEmbeddingUpdatedAt:
       topic.topic_message_embedding_updated_at ?? null,
   };
@@ -1446,21 +1776,19 @@ function buildRouteTopicFromResolvedLabel(args: {
 
 function adaptLearningSpaceToContract(
   rawLearningSpace: RawLearningSpace,
-  updatedTopics: RouteTopic[]
+  updatedTopics: RouteTopic[],
 ): LearningSpace {
   return {
     space_version: "v1",
     topics: (rawLearningSpace.topics ?? []).map((topic, index) => {
       const fallbackTopic = updatedTopics[index] ?? updatedTopics[0];
       const resolvedTopicLabel =
-        topic.topic_label ??
-        fallbackTopic?.topic_label ??
-        "Untitled Topic";
+        topic.topic_label ?? fallbackTopic?.topic_label ?? "Untitled Topic";
 
       const position =
         Array.isArray(topic.position) && topic.position.length === 3
           ? (topic.position as [number, number, number])
-          : fallbackTopic?.position ?? [0, 0, 0];
+          : (fallbackTopic?.position ?? [0, 0, 0]);
 
       const radius = topic.render_state?.radius ?? 0.8;
 
@@ -1474,7 +1802,9 @@ function adaptLearningSpaceToContract(
             fallbackTopic?.positionSource ??
             "topic_position",
           semantic_position:
-            topic.layout?.semantic_position ?? fallbackTopic?.semanticPosition ?? null,
+            topic.layout?.semantic_position ??
+            fallbackTopic?.semanticPosition ??
+            null,
           semantic_position_method:
             topic.layout?.semantic_position_method ??
             fallbackTopic?.semanticPositionMethod ??
@@ -1486,23 +1816,27 @@ function adaptLearningSpaceToContract(
         },
         render_state: {
           radius,
-          collision_radius: topic.render_state?.collision_radius ?? radius + 0.24,
+          collision_radius:
+            topic.render_state?.collision_radius ?? radius + 0.24,
           surface_noise: topic.render_state?.surface_noise ?? 0.3,
           spin_rate: topic.render_state?.spin_rate ?? 0.25,
           saturation: topic.render_state?.saturation ?? 0.7,
           is_star: topic.render_state?.is_star ?? false,
         },
         satellite_count: topic.satellite_count ?? 0,
-        satellites: (topic.satellites ?? []).map((satellite, satelliteIndex) => ({
-          satellite_id:
-            satellite.satellite_id ?? `sat-${index}-${satelliteIndex}`,
-          orbit_angle: satellite.orbit_angle ?? 0,
-          linked_attempt_id: satellite.linked_attempt_id ?? null,
-        })),
+        satellites: (topic.satellites ?? []).map(
+          (satellite, satelliteIndex) => ({
+            satellite_id:
+              satellite.satellite_id ?? `sat-${index}-${satelliteIndex}`,
+            orbit_angle: satellite.orbit_angle ?? 0,
+            linked_attempt_id: satellite.linked_attempt_id ?? null,
+          }),
+        ),
       };
     }),
     clusters: (rawLearningSpace.clusters ?? []).map((cluster, index) => {
-      const resolvedClusterLabel = cluster.cluster_label ?? `Cluster ${index + 1}`;
+      const resolvedClusterLabel =
+        cluster.cluster_label ?? `Cluster ${index + 1}`;
 
       return {
         cluster_id: cluster.cluster_id ?? `cluster-${index}`,
@@ -1519,18 +1853,17 @@ function adaptLearningSpaceToContract(
     }),
     relationships: rawLearningSpace.relationships ?? [],
     viewpoints: rawLearningSpace.viewpoints ?? [],
-    projection:
-      rawLearningSpace.projection ?? {
-        projection_id: "message_route_learning_space_normalization",
-        projection_method: "committed_topic_position",
-        dimensionality: 3,
-        relationship_basis: [],
-        generated_at: null,
-        confidence: null,
-        notes: [
-          "Fallback projection metadata added while normalizing older learning_space payloads.",
-        ],
-      },
+    projection: rawLearningSpace.projection ?? {
+      projection_id: "message_route_learning_space_normalization",
+      projection_method: "committed_topic_position",
+      dimensionality: 3,
+      relationship_basis: [],
+      generated_at: null,
+      confidence: null,
+      notes: [
+        "Fallback projection metadata added while normalizing older learning_space payloads.",
+      ],
+    },
   };
 }
 
@@ -1606,10 +1939,12 @@ function buildResolvedOutcome(args: {
       llmFallbackRecommendedByPolicy: args.llmFallbackRecommendedByPolicy,
       llmFallbackAttempted: args.llmFallbackAttempted,
       llmFallbackUsed: args.usedLLMFallback,
-      deterministicTrustedWithoutLLM: args.deterministicTrustedWithoutLLM ?? false,
+      deterministicTrustedWithoutLLM:
+        args.deterministicTrustedWithoutLLM ?? false,
       deterministicCreateBlockedAsSuspicious:
         args.deterministicCreateBlockedAsSuspicious ?? false,
-      structurallyStrongResolvedLabel: args.structurallyStrongResolvedLabel ?? false,
+      structurallyStrongResolvedLabel:
+        args.structurallyStrongResolvedLabel ?? false,
       narrowerThanActiveBroadTopic: args.narrowerThanActiveBroadTopic ?? false,
       resolutionKind: args.resolutionKind,
       resolvedLabel: args.resolvedLabel,
@@ -1619,10 +1954,8 @@ function buildResolvedOutcome(args: {
   };
 }
 
-
-
 function adaptModelFirstTopicResolutionOutcome(
-  outcome: ModelFirstTopicResolutionOutcome
+  outcome: ModelFirstTopicResolutionOutcome,
 ): TopicResolutionOutcome {
   return buildResolvedOutcome({
     topic: outcome.topic,
@@ -1647,9 +1980,8 @@ function adaptModelFirstTopicResolutionOutcome(
   });
 }
 
-
 function shouldUseModelContinuationPolicyInsteadOfDeterministic(
-  policy: ModelRouteContinuationPolicy | null
+  policy: ModelRouteContinuationPolicy | null,
 ) {
   if (!policy) return false;
 
@@ -1687,7 +2019,8 @@ function buildContinuationPolicyTopicResolutionOutcome(args: {
     semanticVectorInfo,
   } = args;
 
-  const chosenTarget = modelRouteContinuationPolicy.chosen_target?.trim() || null;
+  const chosenTarget =
+    modelRouteContinuationPolicy.chosen_target?.trim() || null;
 
   if (
     modelRouteContinuationPolicy.kind === "choose_best_learning_target" &&
@@ -1696,7 +2029,7 @@ function buildContinuationPolicyTopicResolutionOutcome(args: {
     const looseChosen = normalizeTextLoose(chosenTarget);
     const existingMatch =
       existingTopics.find(
-        (topic) => normalizeTextLoose(topic.topic_label) === looseChosen
+        (topic) => normalizeTextLoose(topic.topic_label) === looseChosen,
       ) ?? null;
 
     if (existingMatch) {
@@ -1789,13 +2122,13 @@ function buildContinuationPolicyTopicResolutionOutcome(args: {
 }
 
 function shouldPersistLearningSpaceForContinuation(
-  policy: ModelRouteContinuationPolicy | null
+  policy: ModelRouteContinuationPolicy | null,
 ) {
   return policy?.should_update_learning_space !== false;
 }
 
 function shouldOverrideLearnerMessageWithContinuationPolicy(
-  policy: ModelRouteContinuationPolicy | null
+  policy: ModelRouteContinuationPolicy | null,
 ) {
   if (!policy?.suggested_learner_message) return false;
 
@@ -1806,7 +2139,6 @@ function shouldOverrideLearnerMessageWithContinuationPolicy(
     policy.kind === "ask_lightweight_retry"
   );
 }
-
 
 function buildSemanticEnrichmentStatusForContinuationPolicy(args: {
   policy: ModelRouteContinuationPolicy;
@@ -1867,7 +2199,8 @@ export async function POST(request: Request) {
   const topicLabelerEnabled = getTopicLabelerEnabled();
   const topicLabelerProvider = getTopicLabelerProvider();
   let topicLabelerResult: TopicLabelerClientResult | null = null;
-  let modelTopicRoutePolicyDecision: ModelTopicRoutePolicyDecision | null = null;
+  let modelTopicRoutePolicyDecision: ModelTopicRoutePolicyDecision | null =
+    null;
   let modelTopicPolicyUsedAsAuthority = false;
   let topicAuthoritySource: string | null = null;
   let modelRouteContinuationPolicy: ModelRouteContinuationPolicy | null = null;
@@ -1884,15 +2217,19 @@ export async function POST(request: Request) {
 
       return NextResponse.json(
         { error: "A message is required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     incomingActiveTopicId = asOptionalString(body.activeTopicId);
-    viewportFocusedTopicId = asOptionalString(body.viewportContext?.focusedTopicId);
-    viewportSelectedTopicId = asOptionalString(body.viewportContext?.selectedTopicId);
+    viewportFocusedTopicId = asOptionalString(
+      body.viewportContext?.focusedTopicId,
+    );
+    viewportSelectedTopicId = asOptionalString(
+      body.viewportContext?.selectedTopicId,
+    );
     viewportActiveTopicIdForMessage = asOptionalString(
-      body.viewportContext?.activeTopicIdForMessage
+      body.viewportContext?.activeTopicIdForMessage,
     );
 
     const recentTurns = normalizeRecentTurns(body);
@@ -1903,28 +2240,21 @@ export async function POST(request: Request) {
     });
     timer.step("normalize_message_and_chat_history");
 
-    const modelSignals: ModelSignals = {
+    let modelSignals: ModelSignals = {
       ...buildFallbackModelSignals(),
-      error_message:
-        "Confusion/insight foreground scoring is queued for the idle worker.",
+      error_message: "Confusion/insight foreground scoring has not run yet.",
     };
 
-    console.info("[confusion-insight queued for worker]", {
-      message_preview: message.slice(0, 120),
-      chat_history_items: chatHistoryForModelSignals.length,
-      status: modelSignals.status,
-      note: "The local confusion/insight model is intentionally not called inside POST /api/message.",
-    });
-
     finalModelSignalsStatus = modelSignals.status;
-    timer.step("queue_confusion_insight_signal");
+    timer.step("initialize_confusion_insight_signal_shell");
 
     const existingTopics = await loadRouteTopics();
     topicCountLoaded = existingTopics.length;
 
     const activeTopicFromRequest =
       incomingActiveTopicId != null
-        ? existingTopics.find((topic) => topic.id === incomingActiveTopicId) ?? null
+        ? (existingTopics.find((topic) => topic.id === incomingActiveTopicId) ??
+          null)
         : null;
 
     incomingActiveTopicFound = Boolean(activeTopicFromRequest);
@@ -1937,14 +2267,13 @@ export async function POST(request: Request) {
         message,
         activeTopicLabel: incomingActiveTopicLabel,
         currentTopicLabels: existingTopics.map((topic) => topic.topic_label),
-        previousUserMessages: buildRecentUserMessagesForTopicLabeler(
-          recentTurns
-        ),
+        previousUserMessages:
+          buildRecentUserMessagesForTopicLabeler(recentTurns),
       });
 
       topicLabelerResult = await callConfiguredTopicLabeler(
         topicLabelerRequest,
-        { timeoutMs: getTopicLabelerTimeoutMs() }
+        { timeoutMs: getTopicLabelerTimeoutMs() },
       );
 
       console.info("[topic-labeler active: model result]", {
@@ -1989,7 +2318,8 @@ export async function POST(request: Request) {
       continuationPolicy: modelRouteContinuationPolicy,
       topicLabelerEnabled,
     });
-    const skipMessageEmbeddingForModelPolicy = messageEmbeddingSkipReason !== null;
+    const skipMessageEmbeddingForModelPolicy =
+      messageEmbeddingSkipReason !== null;
 
     if (skipMessageEmbeddingForModelPolicy) {
       messageEmbedding = null;
@@ -2029,7 +2359,7 @@ export async function POST(request: Request) {
         const qdrantQuery = await querySemanticTopicCandidatesFromEmbedding(
           messageEmbedding,
           5,
-          embeddingModel
+          embeddingModel,
         );
 
         semanticVectorInfo = qdrantQuery.vectorInfo;
@@ -2037,7 +2367,8 @@ export async function POST(request: Request) {
 
         if (!qdrantQuery.candidates.length) {
           qdrantQuerySkippedReason =
-            qdrantQuery.debug?.metadata.skipped_reason ?? "no_qdrant_candidates";
+            qdrantQuery.debug?.metadata.skipped_reason ??
+            "no_qdrant_candidates";
         }
       } catch (error) {
         qdrantQuerySucceeded = false;
@@ -2052,17 +2383,18 @@ export async function POST(request: Request) {
 
     timer.step("optional_qdrant_topic_query");
 
-    const preliminaryInteractionContext: ImportantRunInputs["current_interaction_context"] = {
-      run_kind:
-        incomingActiveTopicId && recentTurns.length > 0
-          ? "mixed"
-          : "initial_question",
-      is_response_to_delivered_probe: false,
-      prior_mode_selected: null,
-      prior_probe_was_applicable: null,
-      prior_probe_id: null,
-      prior_mode_outcome_available: recentTurns.length > 0,
-    };
+    const preliminaryInteractionContext: ImportantRunInputs["current_interaction_context"] =
+      {
+        run_kind:
+          incomingActiveTopicId && recentTurns.length > 0
+            ? "mixed"
+            : "initial_question",
+        is_response_to_delivered_probe: false,
+        prior_mode_selected: null,
+        prior_probe_was_applicable: null,
+        prior_probe_id: null,
+        prior_mode_outcome_available: recentTurns.length > 0,
+      };
 
     const modelFirstTopicResolution = buildModelFirstTopicResolutionOutcome({
       existingTopics,
@@ -2082,7 +2414,8 @@ export async function POST(request: Request) {
     if (modelFirstTopicResolution) {
       modelRouteContinuationPolicy =
         modelFirstTopicResolution.modelRouteContinuationPolicy;
-      semanticEnrichmentStatus = modelFirstTopicResolution.semanticEnrichmentStatus;
+      semanticEnrichmentStatus =
+        modelFirstTopicResolution.semanticEnrichmentStatus;
     }
 
     let topicResolution: TopicResolutionOutcome;
@@ -2090,7 +2423,7 @@ export async function POST(request: Request) {
     const shouldUseContinuationPolicyInsteadOfDeterministic =
       !modelAuthoritativeTopicResolution &&
       shouldUseModelContinuationPolicyInsteadOfDeterministic(
-        modelRouteContinuationPolicy
+        modelRouteContinuationPolicy,
       );
 
     if (modelAuthoritativeTopicResolution) {
@@ -2139,7 +2472,8 @@ export async function POST(request: Request) {
 
       modelRouteContinuationPolicy = modelSafeFallbackPolicy;
       modelTopicPolicyUsedAsAuthority = false;
-      topicAuthoritySource = "topic_labeler_safe_fallback_no_legacy_deterministic";
+      topicAuthoritySource =
+        "topic_labeler_safe_fallback_no_legacy_deterministic";
     }
 
     timer.step("resolve_topic_outcome");
@@ -2243,9 +2577,8 @@ export async function POST(request: Request) {
 
     const updatedTopicMetrics = buildUpdatedMetrics(targetTopicId, topic);
 
-    const shouldPersistLearningSpace = shouldPersistLearningSpaceForContinuation(
-      modelRouteContinuationPolicy
-    );
+    const shouldPersistLearningSpace =
+      shouldPersistLearningSpaceForContinuation(modelRouteContinuationPolicy);
 
     /**
      * Routing and evidence are intentionally split.
@@ -2271,7 +2604,10 @@ export async function POST(request: Request) {
       ? initialCentroidUpdatePlan
       : fallbackCentroidUpdatePlan;
 
-    if (initialCentroidUpdatePlan && finalCentroidUpdatePlan !== initialCentroidUpdatePlan) {
+    if (
+      initialCentroidUpdatePlan &&
+      finalCentroidUpdatePlan !== initialCentroidUpdatePlan
+    ) {
       console.info("[centroid update plan fallback selected]", {
         reason: "initial_centroid_update_plan_unusable",
         target_topic_id: targetTopicId,
@@ -2282,6 +2618,94 @@ export async function POST(request: Request) {
     }
 
     const runId = makeId("run");
+
+    const confusionInsightScoringMode = getConfusionInsightScoringMode();
+    const confusionInsightInput = buildConfusionInsightInput({
+      message,
+      activeTopic: activeTopicFromRequest,
+      targetTopic: topic,
+      vectorInfo: normalizeVectorInfoFallback(
+        vectorInfo,
+        topic,
+        Boolean(createdTopic),
+      ),
+      resolutionKind,
+      matchConfidence,
+      createdTopic: Boolean(createdTopic),
+      currentInteractionContext,
+      clarifySeeking,
+    });
+
+    if (confusionInsightScoringMode === "foreground") {
+      modelSignals = await scoreConfusionInsight({
+        input: confusionInsightInput,
+      });
+
+      console.info("[confusion-insight foreground scoring]", {
+        target_topic_id: targetTopicId,
+        target_topic_label: topic.topic_label,
+        resolution_kind: resolutionKind,
+        status: modelSignals.status,
+        model_confusion: modelSignals.model_confusion,
+        model_insight: modelSignals.model_insight,
+        model_version: modelSignals.model_version,
+        latency_ms: modelSignals.latency_ms,
+        error_message: modelSignals.error_message,
+      });
+    } else {
+      modelSignals = {
+        ...buildFallbackModelSignals(),
+        error_message:
+          "Confusion/insight scoring is queued for the worker by MYWAY_CONFUSION_INSIGHT_SCORING_MODE=worker.",
+      };
+
+      console.info("[confusion-insight queued for worker mode]", {
+        target_topic_id: targetTopicId,
+        target_topic_label: topic.topic_label,
+        resolution_kind: resolutionKind,
+        scoring_mode: confusionInsightScoringMode,
+        payload_shape: "structured_v1_1",
+      });
+    }
+
+    finalModelSignalsStatus = modelSignals.status;
+
+    timer.step(
+      confusionInsightScoringMode === "foreground"
+        ? "score_confusion_insight_foreground"
+        : "queue_confusion_insight_for_worker",
+    );
+
+    const persistedConfusionInsight = derivePersistedConfusionInsightValues({
+      topic,
+      updatedTopicMetrics,
+      modelSignals,
+      createdTopic: Boolean(createdTopic),
+    });
+
+    const finalUpdatedTopicMetrics = {
+      ...updatedTopicMetrics,
+      confusion: persistedConfusionInsight.confusion,
+      insight: persistedConfusionInsight.insight,
+    };
+
+    const finalMetricUpdateForFrontend = {
+      ...updatedTopicMetrics,
+      confusion: persistedConfusionInsight.confusion ?? undefined,
+      insight: persistedConfusionInsight.insight ?? undefined,
+    };
+
+    console.info("[confusion-insight persistence decision]", {
+      target_topic_id: targetTopicId,
+      target_topic_label: topic.topic_label,
+      source: persistedConfusionInsight.source,
+      model_confusion_used: persistedConfusionInsight.model_confusion_used,
+      model_insight_used: persistedConfusionInsight.model_insight_used,
+      persisted_confusion: persistedConfusionInsight.confusion,
+      persisted_insight: persistedConfusionInsight.insight,
+      blend_alpha: persistedConfusionInsight.blend_alpha,
+    });
+
     const shouldQueueTopicMessageEmbeddingEvidence =
       shouldPersistLearningSpace &&
       !finalCentroidUpdatePlan &&
@@ -2302,22 +2726,28 @@ export async function POST(request: Request) {
           })
         : null;
 
-    const pendingConfusionInsightScore =
+    const shouldQueueConfusionInsightScore =
       shouldPersistLearningSpace &&
       resolutionKind !== "no_match" &&
-      modelRouteContinuationPolicy?.should_treat_as_learning_evidence !== false
-        ? buildPendingConfusionInsightScore({
-            message,
-            chatHistory: chatHistoryForModelSignals,
-            runId,
-            targetTopicId,
-            targetTopicLabel: topic.topic_label,
-            resolutionKind,
-            resolvedLabel,
-            matchConfidence,
-            authoritySource: topicAuthoritySource,
-          })
-        : null;
+      modelRouteContinuationPolicy?.should_treat_as_learning_evidence !==
+        false &&
+      (confusionInsightScoringMode === "worker" ||
+        modelSignals.status !== "ok");
+
+    const pendingConfusionInsightScore = shouldQueueConfusionInsightScore
+      ? buildPendingConfusionInsightScore({
+          message,
+          chatHistory: chatHistoryForModelSignals,
+          structuredInput: confusionInsightInput,
+          runId,
+          targetTopicId,
+          targetTopicLabel: topic.topic_label,
+          resolutionKind,
+          resolvedLabel,
+          matchConfidence,
+          authoritySource: topicAuthoritySource,
+        })
+      : null;
 
     if (pendingConfusionInsightScore) {
       console.info("[confusion-insight score queued for worker]", {
@@ -2325,7 +2755,11 @@ export async function POST(request: Request) {
         target_topic_label: topic.topic_label,
         resolution_kind: resolutionKind,
         chat_history_items: chatHistoryForModelSignals.length,
-        reason: "foreground_model_competition_avoided",
+        payload_shape: pendingConfusionInsightScore.payload_shape,
+        reason:
+          confusionInsightScoringMode === "worker"
+            ? "worker_mode_selected"
+            : "foreground_scoring_failed_or_unavailable",
       });
     }
 
@@ -2342,17 +2776,18 @@ export async function POST(request: Request) {
 
     const metricUpdatedTopics = routeTopics.map((routeTopic) =>
       routeTopic.id === targetTopicId
-        ? applyMetricUpdate(routeTopic, updatedTopicMetrics)
-        : routeTopic
+        ? applyMetricUpdate(routeTopic, finalMetricUpdateForFrontend)
+        : routeTopic,
     );
 
     const updatedTopics = applyMessageEmbeddingUpdatePlanToTopics(
       metricUpdatedTopics,
-      finalCentroidUpdatePlan
+      finalCentroidUpdatePlan,
     );
 
     const updatedResolvedTopic =
-      updatedTopics.find((routeTopic) => routeTopic.id === targetTopicId) ?? topic;
+      updatedTopics.find((routeTopic) => routeTopic.id === targetTopicId) ??
+      topic;
 
     finalCentroidUpdateMethod = finalCentroidUpdatePlan?.update_method ?? null;
 
@@ -2366,7 +2801,8 @@ export async function POST(request: Request) {
                 topic_id: finalCentroidUpdatePlan.topic_id,
                 previous_embedding_count:
                   finalCentroidUpdatePlan.previous_embedding_count,
-                new_embedding_count: finalCentroidUpdatePlan.new_embedding_count,
+                new_embedding_count:
+                  finalCentroidUpdatePlan.new_embedding_count,
                 update_method: finalCentroidUpdatePlan.update_method,
                 alpha: finalCentroidUpdatePlan.alpha,
                 embedding_model: finalCentroidUpdatePlan.embedding_model,
@@ -2379,7 +2815,7 @@ export async function POST(request: Request) {
     const normalizedVectorInfo = normalizeVectorInfoFallback(
       vectorInfo,
       topic,
-      Boolean(createdTopic)
+      Boolean(createdTopic),
     );
 
     const decision = buildInterventionModeDecision(
@@ -2392,7 +2828,7 @@ export async function POST(request: Request) {
       currentInteractionContext,
       newAttempt,
       resolutionKind,
-      clarifySeeking
+      clarifySeeking,
     );
 
     const probePlan =
@@ -2401,19 +2837,19 @@ export async function POST(request: Request) {
             updatedResolvedTopic,
             decision,
             message,
-            preferredModality
+            preferredModality,
           )
         : buildNotApplicableProbePlan(updatedResolvedTopic);
 
     let deliveredResponse = buildDeliveredResponse(
       updatedResolvedTopic,
       decision,
-      probePlan
+      probePlan,
     );
 
     if (
       shouldOverrideLearnerMessageWithContinuationPolicy(
-        modelRouteContinuationPolicy
+        modelRouteContinuationPolicy,
       ) &&
       modelRouteContinuationPolicy?.suggested_learner_message
     ) {
@@ -2429,7 +2865,7 @@ export async function POST(request: Request) {
     }
 
     const previousModeOutcome = buildPreviousModeOutcome(
-      currentInteractionContext.run_kind
+      currentInteractionContext.run_kind,
     );
 
     const engineFuel = buildEngineFuel(
@@ -2437,15 +2873,17 @@ export async function POST(request: Request) {
       decision,
       probePlan,
       previousModeOutcome,
-      topicRouting
+      topicRouting,
     );
 
     timer.step("build_decision_probe_delivery_and_engine_fuel");
 
-    const rawLearningSpace = buildLearningSpace(updatedTopics) as RawLearningSpace;
+    const rawLearningSpace = buildLearningSpace(
+      updatedTopics,
+    ) as RawLearningSpace;
     const learningSpace = adaptLearningSpaceToContract(
       rawLearningSpace,
-      updatedTopics
+      updatedTopics,
     );
 
     timer.step("build_learning_space");
@@ -2458,7 +2896,7 @@ export async function POST(request: Request) {
         modelSignals,
         currentInteractionContext,
         newAttempt,
-        []
+        [],
       ),
       engine_fuel: engineFuel,
       delivered_response: deliveredResponse,
@@ -2468,75 +2906,108 @@ export async function POST(request: Request) {
     const runResultJson = JSON.parse(JSON.stringify(result));
 
     const topicJsonBase = {
-        ...asRecord(updatedResolvedTopic.topic_json),
-        topic_id: updatedResolvedTopic.id,
-        topic_label: updatedResolvedTopic.topic_label,
-        topic_position: updatedResolvedTopic.position,
-        semantic_position: updatedResolvedTopic.semanticPosition ?? null,
-        semantic_position_method: updatedResolvedTopic.semanticPositionMethod ?? null,
-        semantic_position_updated_at:
-          updatedResolvedTopic.semanticPositionUpdatedAt ?? null,
-        next_step:
-          probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
-        inferred_keywords: inferKeywordsFromTopicLabel(
-          resolvedLabel ?? updatedResolvedTopic.topic_label
-        ),
-        updated_topic_metrics: updatedTopicMetrics,
-        learning_space_topic:
-          learningSpace.topics.find((t) => t.topic_id === updatedResolvedTopic.id) ??
-          null,
-        planned_probe: deliveredResponse.delivered_probe ?? null,
-        resolution_kind: resolutionKind,
-        resolved_label: resolvedLabel,
-        match_confidence: matchConfidence,
-        used_llm_topic_fallback: usedLLMFallback,
-        topic_resolution_debug: topicResolutionDebug,
-        topic_resolution_trace: resolutionTrace,
-        semantic_vector_info: normalizedVectorInfo,
-        topic_routing: topicRouting,
-        topic_labeler_active: topicLabelerResult,
-        model_topic_route_policy_decision: modelTopicRoutePolicyDecision,
-        model_topic_policy_used_as_authority: modelTopicPolicyUsedAsAuthority,
-        topic_authority_source: topicAuthoritySource,
-        model_route_continuation_policy: modelRouteContinuationPolicy,
-        semantic_enrichment_status: semanticEnrichmentStatus,
-        needs_embedding_centroid:
-          semanticEnrichmentStatus?.needs_embedding_centroid ?? false,
-        embedding_skip_reason:
-          semanticEnrichmentStatus?.embedding_skip_reason ?? null,
-        layout_status: semanticEnrichmentStatus?.layout_status ?? null,
-        should_schedule_enrichment:
-          semanticEnrichmentStatus?.should_schedule_enrichment ?? false,
-        semantic_enrichment_prompt_text:
-          semanticEnrichmentStatus?.enrichment_prompt_text ?? null,
-        message_embedding_update_plan: finalCentroidUpdatePlan,
+      ...asRecord(updatedResolvedTopic.topic_json),
+      topic_id: updatedResolvedTopic.id,
+      topic_label: updatedResolvedTopic.topic_label,
+      topic_position: updatedResolvedTopic.position,
+      semantic_position: updatedResolvedTopic.semanticPosition ?? null,
+      semantic_position_method:
+        updatedResolvedTopic.semanticPositionMethod ?? null,
+      semantic_position_updated_at:
+        updatedResolvedTopic.semanticPositionUpdatedAt ?? null,
+      next_step:
+        probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
+      inferred_keywords: inferKeywordsFromTopicLabel(
+        resolvedLabel ?? updatedResolvedTopic.topic_label,
+      ),
+      updated_topic_metrics: finalUpdatedTopicMetrics,
+      foreground_confusion_insight_score: {
+        scored_at:
+          confusionInsightScoringMode === "foreground" ? nowIso() : null,
+        scoring_mode: confusionInsightScoringMode,
+        status: modelSignals.status,
+        model_confusion: modelSignals.model_confusion,
+        model_insight: modelSignals.model_insight,
+        model_version: modelSignals.model_version,
+        latency_ms: modelSignals.latency_ms,
+        error_message: modelSignals.error_message,
+        persistence_source: persistedConfusionInsight.source,
+        persisted_confusion: persistedConfusionInsight.confusion,
+        persisted_insight: persistedConfusionInsight.insight,
+        blend_alpha: persistedConfusionInsight.blend_alpha,
+        queued_for_worker: Boolean(pendingConfusionInsightScore),
+        queued_payload_shape:
+          pendingConfusionInsightScore?.payload_shape ?? null,
+      },
+      confusion_insight_scoring: {
+        mode: confusionInsightScoringMode,
+        status: modelSignals.status,
+        queued_for_worker: Boolean(pendingConfusionInsightScore),
+        queued_payload_shape:
+          pendingConfusionInsightScore?.payload_shape ?? null,
+        note:
+          confusionInsightScoringMode === "worker"
+            ? "Scoring is deferred to the local semantic worker for CPU-only local-dev stability."
+            : "Scoring was attempted in the foreground message route.",
+      },
+      model_confusion_average: persistedConfusionInsight.confusion,
+      model_insight_average: persistedConfusionInsight.insight,
+      learning_space_topic:
+        learningSpace.topics.find(
+          (t) => t.topic_id === updatedResolvedTopic.id,
+        ) ?? null,
+      planned_probe: deliveredResponse.delivered_probe ?? null,
+      resolution_kind: resolutionKind,
+      resolved_label: resolvedLabel,
+      match_confidence: matchConfidence,
+      used_llm_topic_fallback: usedLLMFallback,
+      topic_resolution_debug: topicResolutionDebug,
+      topic_resolution_trace: resolutionTrace,
+      semantic_vector_info: normalizedVectorInfo,
+      topic_routing: topicRouting,
+      topic_labeler_active: topicLabelerResult,
+      model_topic_route_policy_decision: modelTopicRoutePolicyDecision,
+      model_topic_policy_used_as_authority: modelTopicPolicyUsedAsAuthority,
+      topic_authority_source: topicAuthoritySource,
+      model_route_continuation_policy: modelRouteContinuationPolicy,
+      semantic_enrichment_status: semanticEnrichmentStatus,
+      needs_embedding_centroid:
+        semanticEnrichmentStatus?.needs_embedding_centroid ?? false,
+      embedding_skip_reason:
+        semanticEnrichmentStatus?.embedding_skip_reason ?? null,
+      layout_status: semanticEnrichmentStatus?.layout_status ?? null,
+      should_schedule_enrichment:
+        semanticEnrichmentStatus?.should_schedule_enrichment ?? false,
+      semantic_enrichment_prompt_text:
+        semanticEnrichmentStatus?.enrichment_prompt_text ?? null,
+      message_embedding_update_plan: finalCentroidUpdatePlan,
 
-        topic_label_embedding_centroid:
-          updatedResolvedTopic.topic_label_embedding_centroid ?? null,
-        topic_label_embedding_count:
-          updatedResolvedTopic.topic_label_embedding_count ?? 0,
-        topic_label_embedding_model:
-          updatedResolvedTopic.topic_label_embedding_model ?? null,
-        topic_label_embedding_updated_at:
-          updatedResolvedTopic.topic_label_embedding_updated_at ?? null,
+      topic_label_embedding_centroid:
+        updatedResolvedTopic.topic_label_embedding_centroid ?? null,
+      topic_label_embedding_count:
+        updatedResolvedTopic.topic_label_embedding_count ?? 0,
+      topic_label_embedding_model:
+        updatedResolvedTopic.topic_label_embedding_model ?? null,
+      topic_label_embedding_updated_at:
+        updatedResolvedTopic.topic_label_embedding_updated_at ?? null,
 
-        topic_message_embedding_centroid:
-          updatedResolvedTopic.topic_message_embedding_centroid ?? null,
-        topic_message_embedding_count:
-          updatedResolvedTopic.topic_message_embedding_count ?? 0,
-        topic_message_embedding_model:
-          updatedResolvedTopic.topic_message_embedding_model ?? null,
-        topic_message_embedding_updated_at:
-          updatedResolvedTopic.topic_message_embedding_updated_at ?? null,
+      topic_message_embedding_centroid:
+        updatedResolvedTopic.topic_message_embedding_centroid ?? null,
+      topic_message_embedding_count:
+        updatedResolvedTopic.topic_message_embedding_count ?? 0,
+      topic_message_embedding_model:
+        updatedResolvedTopic.topic_message_embedding_model ?? null,
+      topic_message_embedding_updated_at:
+        updatedResolvedTopic.topic_message_embedding_updated_at ?? null,
+    };
 
-      };
-
-    const topicJsonWithPendingMessageEmbedding = pendingTopicMessageEmbeddingEvidence
-      ? appendPendingTopicMessageEmbedding({
-          topicJson: topicJsonBase,
-          pendingItem: pendingTopicMessageEmbeddingEvidence,
-        })
-      : topicJsonBase;
+    const topicJsonWithPendingMessageEmbedding =
+      pendingTopicMessageEmbeddingEvidence
+        ? appendPendingTopicMessageEmbedding({
+            topicJson: topicJsonBase,
+            pendingItem: pendingTopicMessageEmbeddingEvidence,
+          })
+        : topicJsonBase;
 
     const topicJsonWithPendingConfusionInsight = pendingConfusionInsightScore
       ? appendPendingConfusionInsightScore({
@@ -2546,24 +3017,24 @@ export async function POST(request: Request) {
       : topicJsonWithPendingMessageEmbedding;
 
     const topicJson = JSON.parse(
-      JSON.stringify(topicJsonWithPendingConfusionInsight)
+      JSON.stringify(topicJsonWithPendingConfusionInsight),
     );
 
     const sceneUpdate = buildSceneUpdate(
       targetTopicId,
       learningSpace,
-      resolutionKind
+      resolutionKind,
     );
 
     const suggestedAction = buildSuggestedAction(
       updatedResolvedTopic.topic_label,
       probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
-      decision.mode_selected
+      decision.mode_selected,
     );
 
     const statusLabel = buildStatusLabel(
       resolutionKind,
-      decision.mode_selected
+      decision.mode_selected,
     );
 
     timer.step("serialize_result_topic_json_and_scene_update");
@@ -2588,18 +3059,20 @@ export async function POST(request: Request) {
         topicId: updatedResolvedTopic.id,
         lastRunId: runId,
         topicLabel: updatedResolvedTopic.topic_label,
-        confusion: updatedTopicMetrics.confusion ?? null,
-        insight: updatedTopicMetrics.insight ?? null,
+        confusion: finalUpdatedTopicMetrics.confusion ?? null,
+        insight: finalUpdatedTopicMetrics.insight ?? null,
         learningScore:
-          updatedTopics.find((t) => t.id === updatedResolvedTopic.id)?.learningScore ??
-          null,
+          updatedTopics.find((t) => t.id === updatedResolvedTopic.id)
+            ?.learningScore ?? null,
         diagnosis: decision.active_diagnosis,
         nextStep:
-          probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
+          probePlan.text_plan.instructional_goal ??
+          updatedResolvedTopic.nextStep,
         topicJson,
         topicPosition: updatedResolvedTopic.position,
         semanticPosition: updatedResolvedTopic.semanticPosition ?? null,
-        semanticPositionMethod: updatedResolvedTopic.semanticPositionMethod ?? null,
+        semanticPositionMethod:
+          updatedResolvedTopic.semanticPositionMethod ?? null,
         semanticPositionUpdatedAt:
           updatedResolvedTopic.semanticPositionUpdatedAt ?? null,
         ...getCanonicalEmbeddingPersistenceMetadata(updatedResolvedTopic),
@@ -2631,7 +3104,8 @@ export async function POST(request: Request) {
         topicLabel: updatedResolvedTopic.topic_label,
         diagnosis: decision.active_diagnosis,
         nextStep:
-          probePlan.text_plan.instructional_goal ?? updatedResolvedTopic.nextStep,
+          probePlan.text_plan.instructional_goal ??
+          updatedResolvedTopic.nextStep,
         updatedAt: nowIso(),
         topicJson,
         ...getCanonicalEmbeddingPersistenceMetadata(updatedResolvedTopic),
@@ -2692,25 +3166,23 @@ export async function POST(request: Request) {
       embedding_model: finalEmbeddingModel,
       centroid_update_method: finalCentroidUpdatePlan?.update_method ?? null,
 
-      topic_labeler_provider: getTopicLabelerSummary(topicLabelerResult).provider ?? topicLabelerProvider,
+      topic_labeler_provider:
+        getTopicLabelerSummary(topicLabelerResult).provider ??
+        topicLabelerProvider,
       topic_labeler_enabled: topicLabelerEnabled,
       topic_labeler_attempted:
         getTopicLabelerSummary(topicLabelerResult).attempted,
       topic_labeler_succeeded:
         getTopicLabelerSummary(topicLabelerResult).succeeded,
-      topic_labeler_error:
-        getTopicLabelerSummary(topicLabelerResult).error,
+      topic_labeler_error: getTopicLabelerSummary(topicLabelerResult).error,
       topic_labeler_latency_ms:
         getTopicLabelerSummary(topicLabelerResult).latency_ms,
       topic_labeler_route_decision:
-        getTopicLabelerSummary(topicLabelerResult)
-          .route_decision,
+        getTopicLabelerSummary(topicLabelerResult).route_decision,
       topic_labeler_extracted_label:
-        getTopicLabelerSummary(topicLabelerResult)
-          .extracted_label,
+        getTopicLabelerSummary(topicLabelerResult).extracted_label,
       topic_labeler_matched_topic_label:
-        getTopicLabelerSummary(topicLabelerResult)
-          .matched_topic_label,
+        getTopicLabelerSummary(topicLabelerResult).matched_topic_label,
 
       model_topic_policy_usable: modelTopicRoutePolicyDecision?.usable ?? null,
       model_topic_policy_decision_kind:
@@ -2817,25 +3289,23 @@ export async function POST(request: Request) {
       embedding_model: finalEmbeddingModel,
       centroid_update_method: finalCentroidUpdateMethod,
 
-      topic_labeler_provider: getTopicLabelerSummary(topicLabelerResult).provider ?? topicLabelerProvider,
+      topic_labeler_provider:
+        getTopicLabelerSummary(topicLabelerResult).provider ??
+        topicLabelerProvider,
       topic_labeler_enabled: topicLabelerEnabled,
       topic_labeler_attempted:
         getTopicLabelerSummary(topicLabelerResult).attempted,
       topic_labeler_succeeded:
         getTopicLabelerSummary(topicLabelerResult).succeeded,
-      topic_labeler_error:
-        getTopicLabelerSummary(topicLabelerResult).error,
+      topic_labeler_error: getTopicLabelerSummary(topicLabelerResult).error,
       topic_labeler_latency_ms:
         getTopicLabelerSummary(topicLabelerResult).latency_ms,
       topic_labeler_route_decision:
-        getTopicLabelerSummary(topicLabelerResult)
-          .route_decision,
+        getTopicLabelerSummary(topicLabelerResult).route_decision,
       topic_labeler_extracted_label:
-        getTopicLabelerSummary(topicLabelerResult)
-          .extracted_label,
+        getTopicLabelerSummary(topicLabelerResult).extracted_label,
       topic_labeler_matched_topic_label:
-        getTopicLabelerSummary(topicLabelerResult)
-          .matched_topic_label,
+        getTopicLabelerSummary(topicLabelerResult).matched_topic_label,
 
       model_topic_policy_usable: modelTopicRoutePolicyDecision?.usable ?? null,
       model_topic_policy_decision_kind:
@@ -2882,7 +3352,7 @@ export async function POST(request: Request) {
         error: "Failed to process message.",
         latency_debug: latencyDebug,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

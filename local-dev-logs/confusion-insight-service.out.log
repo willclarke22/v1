@@ -1,6 +1,2 @@
-Loading confusion/insight tokenizer...
-Loading confusion/insight model...
-Confusion/insight service ready.
-INFO:     127.0.0.1:51575 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59768 - "POST /score HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59768 - "POST /score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62022 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62209 - "POST /score HTTP/1.1" 200 OK
