@@ -166,7 +166,17 @@ export async function POST(request: NextRequest) {
       judgedAttempt,
     });
 
-    const learningSpace: LearningSpace = buildLearningSpace(updatedTopics);
+    /**
+     * Compatibility bridge:
+     *
+     * buildLearningSpace now returns the richer renderer contract from
+     * types/learning-space. Some route/result contracts still reference the older
+     * LearningSpace type from types/contracts. Runtime JSON shape is compatible
+     * for the fields consumers use, but TypeScript needs this bridge until
+     * types/contracts is updated to consume/re-export the canonical
+     * types/learning-space contract.
+     */
+    const learningSpace = buildLearningSpace(updatedTopics) as unknown as LearningSpace;
 
     const result: MyWayRunResult = {
       run_metadata: buildRunMetadata(engineFuel, runId),

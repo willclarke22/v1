@@ -1700,9 +1700,25 @@ function buildSemanticRelationship(args: {
       diagnostic_method:
         "cosine_similarity_topic_label_embedding_continuous_pairwise_layout",
     },
+    affects_layout: true,
+    visible_by_default: relation.normalizedSimilarity >= 0.92,
+    evidence_count: Math.max(
+      1,
+      Math.min(
+        resolveTopicLabelEmbedding(relation.topicA).count,
+        resolveTopicLabelEmbedding(relation.topicB).count,
+      ),
+    ),
+    reasons: [
+      "topic_label_embedding_similarity",
+      "continuous_pairwise_semantic_layout",
+    ],
+    updated_at: nowIso(),
     display_policy: {
       show_in_overview: relation.normalizedSimilarity >= 0.92,
       show_on_focus: true,
+      visible_by_default: relation.normalizedSimilarity >= 0.92,
+      affects_layout: true,
       max_opacity: round4(
         clamp(0.18 + relation.normalizedSimilarity * 0.52, 0.16, 0.74),
       ),

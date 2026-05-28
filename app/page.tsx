@@ -15,7 +15,10 @@ import {
 } from "@/lib/learning-space/topic-position";
 import { supabase } from "@/lib/supabase/client";
 import type { Topic, TopicConfusionInsightStatus } from "@/types/topic";
-import type { LearningSpace as RendererLearningSpace } from "@/types/learning-space";
+import type {
+  LearningSpace as RendererLearningSpace,
+  RelationshipViewMode,
+} from "@/types/learning-space";
 import type {
   DiagnosisType,
   LearningSpace as ContractLearningSpace,
@@ -264,6 +267,97 @@ function buildFallbackProjectionMetadata(): RendererLearningSpace["projection"] 
   };
 }
 
+function normalizeRendererRelationships(
+  relationships: unknown,
+): RendererLearningSpace["relationships"] {
+  if (!Array.isArray(relationships)) return [];
+
+  return relationships.map((relationship, index) => {
+    const candidate = relationship as Partial<
+      RendererLearningSpace["relationships"][number]
+    > & {
+      relationship_type?: string;
+      display_policy?: Partial<
+        RendererLearningSpace["relationships"][number]["display_policy"]
+      >;
+      basis?: Partial<RendererLearningSpace["relationships"][number]["basis"]>;
+    };
+
+    const relationshipType =
+      candidate.relationship_type === "semantic"
+        ? "semantic_similarity"
+        : candidate.relationship_type ?? "semantic_similarity";
+
+    const visibleByDefault =
+      candidate.visible_by_default ??
+      candidate.display_policy?.visible_by_default ??
+      candidate.display_policy?.show_in_overview ??
+      false;
+
+    const affectsLayout =
+      candidate.affects_layout ??
+      candidate.display_policy?.affects_layout ??
+      (relationshipType === "semantic_similarity");
+
+    const strength = getNumber(candidate.strength, 0);
+    const confidence = getNumber(candidate.confidence, 0.5);
+
+    return {
+      relationship_id:
+        candidate.relationship_id ??
+        `frontend-normalized-relationship-${index}`,
+      source_topic_id: candidate.source_topic_id ?? "",
+      target_topic_id: candidate.target_topic_id ?? "",
+      relationship_type: relationshipType,
+      strength,
+      confidence,
+      evidence_count:
+        typeof candidate.evidence_count === "number"
+          ? candidate.evidence_count
+          : Array.isArray(candidate.evidence_source)
+            ? candidate.evidence_source.length
+            : 1,
+      evidence_source: Array.isArray(candidate.evidence_source)
+        ? candidate.evidence_source
+        : [],
+      evidence_summary: candidate.evidence_summary ?? null,
+      affects_layout: affectsLayout,
+      visible_by_default: visibleByDefault,
+      reasons: Array.isArray(candidate.reasons) ? candidate.reasons : [],
+      updated_at: candidate.updated_at ?? null,
+      basis: {
+        similarity:
+          typeof candidate.basis?.similarity === "number"
+            ? candidate.basis.similarity
+            : null,
+        normalized_similarity:
+          typeof candidate.basis?.normalized_similarity === "number"
+            ? candidate.basis.normalized_similarity
+            : null,
+        desired_distance:
+          typeof candidate.basis?.desired_distance === "number"
+            ? candidate.basis.desired_distance
+            : null,
+        actual_distance:
+          typeof candidate.basis?.actual_distance === "number"
+            ? candidate.basis.actual_distance
+            : null,
+        diagnostic_method: candidate.basis?.diagnostic_method ?? null,
+      },
+      display_policy: {
+        show_in_overview:
+          candidate.display_policy?.show_in_overview ?? visibleByDefault,
+        show_on_focus: candidate.display_policy?.show_on_focus ?? true,
+        visible_by_default: visibleByDefault,
+        affects_layout: affectsLayout,
+        max_opacity: getNumber(candidate.display_policy?.max_opacity, 0.35),
+        visual_style: candidate.display_policy?.visual_style ?? "thread",
+        priority: getNumber(candidate.display_policy?.priority, strength),
+      },
+    };
+  });
+}
+
 function toRendererLearningSpace(
   learningSpace: ContractLearningSpace | RendererLearningSpace | null,
 ): RendererLearningSpace | null {
@@ -272,28 +366,83 @@ function toRendererLearningSpace(
   return {
     space_version: "v1",
     clusters: learningSpace.clusters ?? [],
-    relationships: learningSpace.relationships ?? [],
-    viewpoints: learningSpace.viewpoints ?? [],
+    relationships: normalizeRendererRelationships(learningSpace.relationships),
+    viewpoints: (learningSpace.viewpoints ?? []) as RendererLearningSpace["viewpoints"],
     projection: learningSpace.projection ?? buildFallbackProjectionMetadata(),
     topics: (learningSpace.topics ?? []).map((topic) => {
       const renderState = topic.render_state ?? {
         radius: 1,
+        collision_radius: 1.36,
         surface_noise: 0.3,
+        smoothness: 0.6,
         spin_rate: 0.003,
         saturation: 0.6,
         is_star: false,
+        glow_intensity: 0,
+        glow_source: "none",
       };
+
+      const radius = getNumber(renderState.radius, 1);
+      const surfaceNoise = getNumber(renderState.surface_noise, 0.3);
+      const saturation = getNumber(renderState.saturation, 0.6);
+      const glowIntensity = getNumber(
+        (renderState as { glow_intensity?: unknown }).glow_intensity,
+        0,
+      );
 
       return {
         ...topic,
-        render_state: {
-          radius: getNumber(renderState.radius, 1),
-          collision_radius: deriveCollisionRadius(renderState),
-          surface_noise: getNumber(renderState.surface_noise, 0.3),
-          spin_rate: getNumber(renderState.spin_rate, 0.003),
-          saturation: getNumber(renderState.saturation, 0.6),
-          is_star: Boolean(renderState.is_star),
+        layout: (topic as RendererLearningSpace["topics"][number]).layout ?? {
+          position_source: "topic_position",
+          semantic_position: null,
+          semantic_position_method: null,
+          semantic_position_updated_at: null,
+          current_position: topic.position,
+          rendered_target_position: topic.position,
+          layout_confidence: 0.35,
+          movement_policy: {
+            easing: "slow",
+            max_step_per_update: 0.24,
+            preserve_user_spatial_memory: true,
+          },
         },
+        render_state: {
+          radius,
+          collision_radius: deriveCollisionRadius(renderState),
+          surface_noise: surfaceNoise,
+          smoothness: getNumber(
+            (renderState as { smoothness?: unknown }).smoothness,
+            clamp(0.55 + saturation * 0.2 - surfaceNoise * 0.2),
+          ),
+          spin_rate: getNumber(renderState.spin_rate, 0.003),
+          saturation,
+          is_star: Boolean(renderState.is_star),
+          glow_intensity: glowIntensity,
+          glow_source:
+            (renderState as { glow_source?: RendererLearningSpace["topics"][number]["render_state"]["glow_source"] })
+              .glow_source ?? (glowIntensity > 0 ? "insight" : "none"),
+        },
+        surface_markers:
+          (topic as RendererLearningSpace["topics"][number]).surface_markers ?? [],
+        rings: (topic as RendererLearningSpace["topics"][number]).rings ?? [],
+        topic_panel:
+          (topic as RendererLearningSpace["topics"][number]).topic_panel ?? {
+            current_state_summary: null,
+            active_diagnosis: {
+              label: null,
+              confidence: null,
+              plain_language: null,
+            },
+            primary_block: null,
+            next_step: {
+              mode: null,
+              text: null,
+              reason: null,
+            },
+            recent_evidence_summary: [],
+            why_this_topic_matters: [],
+            available_actions: [],
+          },
       };
     }),
   } satisfies RendererLearningSpace;
@@ -458,6 +607,8 @@ export default function Home() {
   const [isBootstrappingTopics, setIsBootstrappingTopics] = useState(true);
   const [sceneArrivalMode, setSceneArrivalMode] =
     useState<SceneArrivalMode>("focus");
+  const [relationshipViewMode, setRelationshipViewMode] =
+    useState<RelationshipViewMode>("semantic_similarity");
 
   const topicRefreshInFlightRef = useRef(false);
   const realtimeRefreshTimeoutRef = useRef<number | null>(null);
@@ -964,6 +1115,7 @@ export default function Home() {
             isEnteringProbe={probeFlow.isEnteringProbe}
             probeEntryTopicId={probeFlow.probeEntryTopicId}
             arrivalMode={sceneArrivalMode}
+            relationshipViewMode={relationshipViewMode}
             onSelectTopic={(id) => {
               if (id === null) {
                 setSelectedTopicId(null);
@@ -1013,6 +1165,8 @@ export default function Home() {
                     suggestedAction={probeFlow.suggestedAction}
                     isSending={probeFlow.isSending || isBootstrappingTopics}
                     progressSummary={progressSummary}
+                    relationshipViewMode={relationshipViewMode}
+                    onChangeRelationshipViewMode={setRelationshipViewMode}
                   />
                 </div>
 

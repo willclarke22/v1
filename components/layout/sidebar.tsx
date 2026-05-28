@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { ProgressSummary } from "@/lib/derive-progress-summary";
+import type { RelationshipViewMode } from "@/types/learning-space";
 
 export type SidebarTab = "myway" | "progress" | "view-options" | "settings";
 
@@ -18,6 +19,8 @@ type SidebarProps = {
   suggestedAction?: string;
   isSending?: boolean;
   progressSummary: ProgressSummary;
+  relationshipViewMode: RelationshipViewMode;
+  onChangeRelationshipViewMode: (mode: RelationshipViewMode) => void;
 };
 
 const tabs: {
@@ -31,6 +34,70 @@ const tabs: {
   { id: "settings", shortLabel: "Settings", icon: Settings },
 ];
 
+
+
+const relationshipViewModes: {
+  id: RelationshipViewMode;
+  label: string;
+  description: string;
+  dotClassName: string;
+}[] = [
+  {
+    id: "semantic_similarity",
+    label: "Semantic",
+    description: "Show concept-neighborhood relationships.",
+    dotClassName: "bg-[#7BAFD4]",
+  },
+  {
+    id: "confusion",
+    label: "Confusion",
+    description: "Show topics with similar confusion patterns.",
+    dotClassName: "bg-rose-400",
+  },
+  {
+    id: "insight",
+    label: "Insight",
+    description: "Show topics with similar insight patterns.",
+    dotClassName: "bg-emerald-400",
+  },
+  {
+    id: "off",
+    label: "Off",
+    description: "Hide relationship lines.",
+    dotClassName: "bg-zinc-500",
+  },
+];
+
+function RelationshipModeButton({
+  option,
+  isActive,
+  onClick,
+}: {
+  option: (typeof relationshipViewModes)[number];
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={`w-full rounded-2xl border px-4 py-3 text-left shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur-md transition ${
+        isActive
+          ? "border-white/14 bg-white/[0.075] text-white"
+          : "border-white/6 bg-white/[0.024] text-zinc-300 hover:border-white/10 hover:bg-white/4 hover:text-white"
+      }`}
+      type="button"
+      onClick={onClick}
+      aria-pressed={isActive}
+    >
+      <span className="flex items-center gap-2 text-sm font-medium">
+        <span className={`h-2.5 w-2.5 rounded-full ${option.dotClassName}`} />
+        {option.label}
+      </span>
+      <span className="mt-1 block text-xs leading-5 text-zinc-500">
+        {option.description}
+      </span>
+    </button>
+  );
+}
 
 function LoadingDots() {
   return (
@@ -84,6 +151,8 @@ export default function Sidebar({
   suggestedAction = "",
   isSending = false,
   progressSummary,
+  relationshipViewMode,
+  onChangeRelationshipViewMode,
 }: SidebarProps) {
   const hasPendingConfusionInsightSignals =
     progressSummary.pendingSignalTopics > 0;
@@ -201,6 +270,27 @@ export default function Sidebar({
                   View Options
                 </p>
 
+                <div className="rounded-2xl border border-white/6 bg-white/[0.024] p-4 shadow-[0_12px_36px_rgba(0,0,0,0.13)] backdrop-blur-md">
+                  <p className="text-sm font-medium text-white">
+                    Relationship Lines
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-zinc-500">
+                    Choose what the scanner-style relationship arcs represent in
+                    the learning space.
+                  </p>
+
+                  <div className="mt-4 space-y-2.5">
+                    {relationshipViewModes.map((option) => (
+                      <RelationshipModeButton
+                        key={option.id}
+                        option={option}
+                        isActive={relationshipViewMode === option.id}
+                        onClick={() => onChangeRelationshipViewMode(option.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
                 <div className="space-y-3">
                   <button
                     className="w-full rounded-2xl border border-white/6 bg-white/[0.024] px-4 py-3 text-left text-sm text-zinc-200 shadow-[0_10px_24px_rgba(0,0,0,0.1)] backdrop-blur-md transition hover:bg-white/4"
@@ -225,8 +315,9 @@ export default function Sidebar({
                 <div className="rounded-2xl border border-white/6 bg-white/[0.024] p-4 shadow-[0_12px_36px_rgba(0,0,0,0.13)] backdrop-blur-md">
                   <p className="text-sm font-medium text-white">Scene controls</p>
                   <p className="mt-2 text-sm leading-6 text-zinc-400">
-                    This tab can later hold visual toggles for clusters, labels,
-                    overlays, and renderer options.
+                    Relationship modes are now the first active visual lens.
+                    Labels, satellites, clusters, and other overlays can be
+                    added here later.
                   </p>
                 </div>
               </div>

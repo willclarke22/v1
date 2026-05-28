@@ -118,6 +118,9 @@ export type Topic = {
    * attached to each bootstrapped topic only as a transport mechanism so
    * buildLearningSpace(topics) can reconstruct the full scene after realtime or
    * fallback-poll refreshes.
+   *
+   * In the next relationship-graph pass, these will be populated by a derived
+   * relationship builder rather than manually authored clusters/links.
    */
   learningSpaceRelationships?: LearningSpaceRelationship[];
   learningSpaceViewpoints?: LearningSpaceViewpoint[];

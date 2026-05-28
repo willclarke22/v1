@@ -15,6 +15,7 @@ import type {
   LearningSpace,
   LearningSpaceRelationship,
   LearningSpaceTopic,
+  RelationshipViewMode,
 } from "@/types/learning-space";
 import type { ProbeSummary } from "@/components/probes/probe-surface";
 
@@ -190,13 +191,19 @@ const LABEL_DISTANCE_FADE_CURRENT_MIN_OPACITY = 0.84;
 const LABEL_CURRENT_MIN_OPACITY_WHEN_VISIBLE = 0.78;
 
 /**
- * Pass 5B revised: viewpoint relationship scanner.
+ * Mode-driven relationship scanner.
  *
- * Default state keeps the stable semantic neighborhood lines. While the user
- * clicks and rotates, those default lines are replaced by scanner lines chosen
- * from the current camera/view corridor. On release, the last scanner result
- * stays briefly in the same scanner visual style/color before the stable
- * semantic lines return. There is no intermediate thick-white settled state.
+ * Relationship lines now behave as a visual lens. The active mode decides what
+ * the arcs mean:
+ *
+ * - semantic_similarity: semantic neighborhood arcs
+ * - confusion: shared confusion signal arcs
+ * - insight: shared insight signal arcs
+ * - off: no relationship arcs
+ *
+ * While the user rotates the view, scanner relationships are selected from the
+ * current camera/view corridor. On release, the last scanner result stays
+ * briefly before returning to the current mode's default focused relationships.
  */
 const VIEWPOINT_SCANNER_RELATIONSHIP_MAX_COUNT = 3;
 const VIEWPOINT_SCANNER_SETTLE_MS = 3000;
@@ -231,6 +238,11 @@ const RELATIONSHIP_ARC_TUBE_SEGMENTS = 48;
 const RELATIONSHIP_ARC_ENDPOINT_COLOR_BLEND_FRACTION = 0.18;
 const VIEWPOINT_SCANNER_BLUE = "#7BAFD4";
 const VIEWPOINT_SCANNER_SETTLED_BLUE = VIEWPOINT_SCANNER_BLUE;
+
+const CONFUSION_SIGNAL_RELATIONSHIP_RED = "#fb7185";
+const INSIGHT_SIGNAL_RELATIONSHIP_GREEN = "#34d399";
+const RELATIONSHIP_VIEW_MODE_ARC_MAX_COUNT = 3;
+
 const RELATIONSHIP_DEFAULT_ENDPOINT_ACTIVE_COLOR = "#ead7ff";
 const RELATIONSHIP_DEFAULT_ENDPOINT_BACKGROUND_COLOR = "#d4d4d8";
 const TOPIC_SPHERE_RENDER_ORDER = 10;
@@ -240,7 +252,7 @@ const TOPIC_STENCIL_REF = 1;
 const RELATIONSHIP_STENCIL_REF_MIN = 2;
 const RELATIONSHIP_STENCIL_REF_MAX = 255;
 
-type RelationshipDisplayMode = "default_semantic" | "scanning" | "settled_scan";
+type RelationshipDisplayMode = "default_mode" | "scanning" | "settled_scan";
 type RelationshipArcVariant = "default" | "scanner" | "settled_scan";
 
 function getTopicById(
@@ -517,6 +529,71 @@ function relationshipTouchesTopic(
   );
 }
 
+function isSemanticSimilarityRelationship(
+  relationship: LearningSpaceRelationship,
+) {
+  return relationship.relationship_type === "semantic_similarity";
+}
+
+function isConfusionSignalRelationship(
+  relationship: LearningSpaceRelationship,
+) {
+  return relationship.relationship_type === "shared_confusion_pattern";
+}
+
+function isInsightSignalRelationship(
+  relationship: LearningSpaceRelationship,
+) {
+  return relationship.relationship_type === "shared_insight_pattern";
+}
+
+function isDiagnosticSignalRelationship(
+  relationship: LearningSpaceRelationship,
+) {
+  return (
+    isConfusionSignalRelationship(relationship) ||
+    isInsightSignalRelationship(relationship)
+  );
+}
+
+function relationshipMatchesViewMode(
+  relationship: LearningSpaceRelationship,
+  relationshipViewMode: RelationshipViewMode,
+) {
+  if (relationshipViewMode === "semantic_similarity") {
+    return isSemanticSimilarityRelationship(relationship);
+  }
+
+  if (relationshipViewMode === "confusion") {
+    return isConfusionSignalRelationship(relationship);
+  }
+
+  if (relationshipViewMode === "insight") {
+    return isInsightSignalRelationship(relationship);
+  }
+
+  return false;
+}
+
+function shouldShowRelationshipOnFocus(args: {
+  relationship: LearningSpaceRelationship;
+  relationshipViewMode: RelationshipViewMode;
+  activeTopicId: string;
+  topicsById: Map<string, LearningSpaceTopic>;
+}) {
+  const { relationship, relationshipViewMode, activeTopicId, topicsById } = args;
+
+  if (!relationshipMatchesViewMode(relationship, relationshipViewMode)) {
+    return false;
+  }
+
+  if (!relationshipTouchesTopic(relationship, activeTopicId)) return false;
+  if (!topicsById.has(relationship.source_topic_id)) return false;
+  if (!topicsById.has(relationship.target_topic_id)) return false;
+
+  return relationship.display_policy?.show_on_focus !== false;
+}
+
 function getRelationshipSortScore(relationship: LearningSpaceRelationship) {
   const priority = Number.isFinite(relationship.display_policy?.priority)
     ? relationship.display_policy.priority
@@ -594,9 +671,26 @@ function getRelationshipTubeRadius(args: {
   );
 }
 
-function getRelationshipBaseColor(variant: RelationshipArcVariant) {
-  if (variant === "scanner") return VIEWPOINT_SCANNER_BLUE;
-  if (variant === "settled_scan") return VIEWPOINT_SCANNER_SETTLED_BLUE;
+function getRelationshipBaseColor(args: {
+  relationship: LearningSpaceRelationship;
+  variant: RelationshipArcVariant;
+}) {
+  if (isConfusionSignalRelationship(args.relationship)) {
+    return CONFUSION_SIGNAL_RELATIONSHIP_RED;
+  }
+
+  if (isInsightSignalRelationship(args.relationship)) {
+    return INSIGHT_SIGNAL_RELATIONSHIP_GREEN;
+  }
+
+  if (isSemanticSimilarityRelationship(args.relationship)) {
+    return VIEWPOINT_SCANNER_BLUE;
+  }
+
+  if (args.variant === "scanner" || args.variant === "settled_scan") {
+    return VIEWPOINT_SCANNER_BLUE;
+  }
+
   return "#f8fafc";
 }
 
@@ -1358,7 +1452,7 @@ function SemanticRelationshipArc({
       : 0.45;
 
   const isScannerVariant = variant === "scanner" || variant === "settled_scan";
-  const arcColor = getRelationshipBaseColor(variant);
+  const arcColor = getRelationshipBaseColor({ relationship, variant });
   const tubeRadius = getRelationshipTubeRadius({ variant, strength });
   const stencilRef = getRelationshipStencilRef(relationship.relationship_id);
 
@@ -1646,10 +1740,12 @@ function ViewpointRelationshipScanner({
   animatedTopicPositionsRef,
   isScanning,
   isEnteringProbe,
+  relationshipViewMode,
   onScannerRelationshipIdsChange,
 }: {
   activeTopicId: string | null;
   relationships: LearningSpaceRelationship[];
+  relationshipViewMode: RelationshipViewMode;
   topicsById: Map<string, LearningSpaceTopic>;
   animatedTopicPositionsRef: AnimatedTopicPositionsRef;
   isScanning: boolean;
@@ -1673,7 +1769,9 @@ function ViewpointRelationshipScanner({
     }
 
     const nextRelationshipIds = relationships
-      .filter((relationship) => relationship.relationship_type === "semantic")
+      .filter((relationship) =>
+        relationshipMatchesViewMode(relationship, relationshipViewMode),
+      )
       .filter((relationship) =>
         relationshipTouchesTopic(relationship, activeTopicId),
       )
@@ -2533,6 +2631,7 @@ type SpaceCanvasProps = {
   selectedTopicId: string | null;
   focusedTopicId: string | null;
   arrivalMode?: SceneArrivalMode;
+  relationshipViewMode?: RelationshipViewMode;
   availableProbe: ProbeSummary | null;
   isEnteringProbe: boolean;
   probeEntryTopicId: string | null;
@@ -2548,6 +2647,7 @@ export default function SpaceCanvas({
   selectedTopicId,
   focusedTopicId,
   arrivalMode = "focus",
+  relationshipViewMode = "semantic_similarity",
   availableProbe,
   isEnteringProbe,
   probeEntryTopicId,
@@ -2592,27 +2692,28 @@ export default function SpaceCanvas({
 
   const activeRelationshipTopicId = focusedTopicId ?? selectedTopicId;
 
-  const visibleSemanticRelationships = useMemo(() => {
-    if (!activeRelationshipTopicId) return [];
+  const visibleModeRelationships = useMemo(() => {
+    if (!activeRelationshipTopicId || relationshipViewMode === "off") {
+      return [];
+    }
 
     return (learningSpace.relationships ?? [])
-      .filter((relationship) => {
-        if (relationship.relationship_type !== "semantic") return false;
-        if (!relationship.display_policy?.show_on_focus) return false;
-        if (
-          !relationshipTouchesTopic(relationship, activeRelationshipTopicId)
-        ) {
-          return false;
-        }
-
-        return (
-          topicsById.has(relationship.source_topic_id) &&
-          topicsById.has(relationship.target_topic_id)
-        );
-      })
+      .filter((relationship) =>
+        shouldShowRelationshipOnFocus({
+          relationship,
+          relationshipViewMode,
+          activeTopicId: activeRelationshipTopicId,
+          topicsById,
+        }),
+      )
       .sort((a, b) => getRelationshipSortScore(b) - getRelationshipSortScore(a))
-      .slice(0, SEMANTIC_RELATIONSHIP_ARC_MAX_COUNT);
-  }, [activeRelationshipTopicId, learningSpace.relationships, topicsById]);
+      .slice(0, RELATIONSHIP_VIEW_MODE_ARC_MAX_COUNT);
+  }, [
+    activeRelationshipTopicId,
+    learningSpace.relationships,
+    relationshipViewMode,
+    topicsById,
+  ]);
 
   const relationshipsById = useMemo(
     () => getRelationshipByIdMap(learningSpace.relationships ?? []),
@@ -2641,20 +2742,21 @@ export default function SpaceCanvas({
     ? "scanning"
     : settledScannerRelationships.length > 0
       ? "settled_scan"
-      : "default_semantic";
+      : "default_mode";
 
   const displayedRelationships =
-    relationshipDisplayMode === "scanning"
-      ? scannerRelationships
-      : relationshipDisplayMode === "settled_scan"
-        ? settledScannerRelationships
-        : visibleSemanticRelationships;
+    relationshipViewMode === "off"
+      ? []
+      : relationshipDisplayMode === "scanning"
+        ? scannerRelationships
+        : relationshipDisplayMode === "settled_scan"
+          ? settledScannerRelationships
+          : visibleModeRelationships;
 
   const displayedRelationshipVariant: RelationshipArcVariant =
-    relationshipDisplayMode === "scanning" ||
-    relationshipDisplayMode === "settled_scan"
+    relationshipDisplayMode === "scanning"
       ? "scanner"
-      : "default";
+      : "settled_scan";
 
   const relationshipLabelTopicIds = useMemo(() => {
     const ids = new Set<string>();
@@ -2744,6 +2846,13 @@ export default function SpaceCanvas({
 
     setIsUserControlling(false);
   }
+
+  useEffect(() => {
+    clearScannerSettleTimeout();
+    scannerRelationshipIdsRef.current = [];
+    setScannerRelationshipIds([]);
+    setSettledScannerRelationshipIds([]);
+  }, [relationshipViewMode]);
 
   useEffect(() => {
     const currentIds = learningSpace.topics.map((topic) => topic.topic_id);
@@ -2883,6 +2992,7 @@ export default function SpaceCanvas({
           <ViewpointRelationshipScanner
             activeTopicId={activeRelationshipTopicId}
             relationships={learningSpace.relationships ?? []}
+            relationshipViewMode={relationshipViewMode}
             topicsById={topicsById}
             animatedTopicPositionsRef={animatedTopicPositionsRef}
             isScanning={isUserControlling}

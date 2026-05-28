@@ -2,11 +2,42 @@ import type {
   TopicLayoutMetadata,
   TopicPosition3D,
 } from "@/lib/learning-space/topic-position";
+import type { DiagnosisType, ISO8601String } from "@/types/contracts";
+
+export type RelationshipViewMode =
+  | "semantic_similarity"
+  | "confusion"
+  | "insight"
+  | "off";
 
 export type LearningSpaceRelationshipType =
+  /**
+   * Back-compat semantic link name used by earlier learning-space payloads.
+   * Prefer semantic_similarity for new relationship-graph outputs.
+   */
   | "semantic"
-  | "shared_confusion"
+
+  /**
+   * New typed relationship graph vocabulary.
+   */
+  | "semantic_similarity"
+  | "shared_diagnosis"
+  | "shared_confusion_pattern"
+  | "shared_insight_pattern"
   | "prerequisite"
+  | "blocks"
+  | "transfer_bridge"
+  | "analogy"
+  | "same_cluster"
+  | "co_attempted"
+  | "content_source_overlap"
+
+  /**
+   * Back-compat / broad relationship names used by earlier payloads.
+   * These can continue to be rendered, but new code should prefer the more
+   * specific typed relationship names above.
+   */
+  | "shared_confusion"
   | "strategy"
   | "temporal";
 
@@ -15,13 +46,20 @@ export type LearningSpaceRelationshipVisualStyle =
   | "thread"
   | "arrow"
   | "halo"
-  | "trail";
+  | "trail"
+  | "line"
+  | "dashed_line"
+  | "pulse_line";
 
 export type LearningSpaceViewpointType =
   | "overview"
   | "semantic_neighborhood"
   | "confusion_alignment"
+  | "insight_alignment"
+  | "diagnosis_alignment"
   | "prerequisite_chain"
+  | "blocking_chain"
+  | "transfer_bridge"
   | "bridge"
   | "growth_path";
 
@@ -57,6 +95,9 @@ export type LearningSpaceRelationshipBasis = {
 export type LearningSpaceRelationshipDisplayPolicy = {
   /**
    * Overview should stay calm. Most relationships should be false here.
+   *
+   * Kept for compatibility with the existing viewpoint-scanner/link renderer.
+   * Newer relationship graph code should also set visible_by_default.
    */
   show_in_overview: boolean;
 
@@ -64,6 +105,18 @@ export type LearningSpaceRelationshipDisplayPolicy = {
    * Whether the relationship can appear when either endpoint topic is focused.
    */
   show_on_focus: boolean;
+
+  /**
+   * Newer, simpler visibility flag. This says whether a link can be shown in
+   * the default scene without an explicit overlay/viewpoint.
+   */
+  visible_by_default: boolean;
+
+  /**
+   * Whether this relationship should be allowed to influence semantic/layout
+   * nudging. This does not mean the renderer must visibly draw the link.
+   */
+  affects_layout: boolean;
 
   /**
    * Upper opacity limit the renderer should respect for this relationship.
@@ -99,7 +152,13 @@ export type LearningSpaceRelationship = {
   confidence: number;
 
   /**
-   * Short source tags such as topic_label_embedding, shared_diagnosis, attempt.
+   * Number of evidence items/signals supporting this relationship.
+   */
+  evidence_count?: number;
+
+  /**
+   * Short source tags such as topic_label_embedding, topic_message_embedding,
+   * shared_diagnosis, shared_confusion, attempt, or source_overlap.
    */
   evidence_source: string[];
 
@@ -107,6 +166,21 @@ export type LearningSpaceRelationship = {
    * Optional human-facing/debug summary of why this relationship exists.
    */
   evidence_summary: string | null;
+
+  /**
+   * Top-level copy of the layout/display decision for simple consumers.
+   * display_policy carries the full renderer policy.
+   */
+  affects_layout: boolean;
+  visible_by_default: boolean;
+
+  /**
+   * Human/debug-readable reason tags. These should be stable enough to inspect
+   * without being shown directly as learner-facing copy.
+   */
+  reasons?: string[];
+
+  updated_at?: ISO8601String | null;
 
   basis: LearningSpaceRelationshipBasis;
   display_policy: LearningSpaceRelationshipDisplayPolicy;
@@ -160,6 +234,147 @@ export type LearningSpaceProjectionMetadata = {
   notes: string[];
 };
 
+export type TopicSurfaceMarkerType =
+  | "probe_available"
+  | "review_due"
+  | "new_insight"
+  | "needs_attention"
+  | "content_attached"
+  | "star_candidate";
+
+export type TopicSurfaceMarkerThumbnailStyle =
+  | "text_card"
+  | "choice_card"
+  | "drag_drop_card"
+  | "slider_card"
+  | "video_card"
+  | "audio_card"
+  | "simulation_card"
+  | "generic_card";
+
+export type TopicSurfaceMarkerModality =
+  | "text"
+  | "audio"
+  | "video"
+  | "interactive"
+  | "diagram"
+  | "simulation";
+
+export type TopicSurfaceMarkerProbeType =
+  | "explain"
+  | "predict"
+  | "discriminate"
+  | "transform"
+  | "apply_transfer"
+  | null;
+
+export type TopicSurfaceMarker = {
+  marker_id: string;
+  marker_type: TopicSurfaceMarkerType;
+  visible_by_default: boolean;
+  priority: number;
+
+  /**
+   * Surface markers are rendered as objects anchored to a topic sphere, not as
+   * free-floating UI. The renderer can choose a stable normal, then adjust to
+   * avoid labels/camera occlusion.
+   */
+  surface_anchor: {
+    anchor_mode: "sphere_surface";
+    normal_hint?: TopicPosition3D | null;
+    avoid_label_overlap: boolean;
+  };
+
+  /**
+   * Probe markers can become YouTube-like thumbnails on the sphere surface.
+   * Other marker types can omit this and use their own visual treatment.
+   */
+  preview?: {
+    title: string;
+    thumbnail_style: TopicSurfaceMarkerThumbnailStyle;
+    modality: TopicSurfaceMarkerModality;
+    probe_type: TopicSurfaceMarkerProbeType;
+    short_prompt: string | null;
+  };
+};
+
+export type TopicRingType =
+  | "active_diagnosis"
+  | "active_contract"
+  | "current_target"
+  | "probe_available"
+  | "review_due"
+  | "blocking_pressure";
+
+export type TopicRing = {
+  ring_id: string;
+  ring_type: TopicRingType;
+  strength: number;
+  confidence: number;
+  visible_by_default: boolean;
+};
+
+export type AttemptSatellite = {
+  satellite_id: string;
+  orbit_angle: number;
+  linked_attempt_id: string | null;
+
+  /**
+   * These are optional for now because current satellites are still derived from
+   * messageCount. As attempt storage matures, they should become populated from
+   * actual attempt/evidence records.
+   */
+  modality?: TopicSurfaceMarkerModality | null;
+  outcome?:
+    | "success"
+    | "near_miss"
+    | "structural_failure"
+    | "guess"
+    | "no_response"
+    | "uninterpretable"
+    | null;
+  evidence_strength?: number | null;
+  judgment_confidence?: number | null;
+  created_at?: ISO8601String | null;
+};
+
+export type TopicPanelProjection = {
+  /**
+   * Topic label/id are intentionally omitted from this learner-facing panel
+   * contract because the right sidebar already knows the selected topic label.
+   */
+  current_state_summary: string | null;
+
+  active_diagnosis: {
+    label: DiagnosisType | null;
+    confidence: number | null;
+    plain_language: string | null;
+  };
+
+  primary_block: string | null;
+
+  next_step: {
+    mode: "clarify" | "probe" | "review" | null;
+    text: string | null;
+    reason: string | null;
+  };
+
+  recent_evidence_summary: {
+    kind: "attempt" | "message_signal" | "probe" | "review";
+    summary: string;
+    strength: number | null;
+    timestamp: ISO8601String | null;
+  }[];
+
+  why_this_topic_matters: string[];
+
+  available_actions: {
+    action_type: "open_probe" | "review" | "ask_clarify" | "inspect_evidence";
+    label: string;
+    priority: number;
+  }[];
+};
+
 export type LearningSpaceTopic = {
   topic_id: string;
   topic_label: string;
@@ -173,7 +388,33 @@ export type LearningSpaceTopic = {
    * Layout metadata for debugging and future animation/commit behavior.
    * The renderer may inspect this, but it should not become the source of truth.
    */
-  layout: TopicLayoutMetadata;
+  layout: TopicLayoutMetadata & {
+    /**
+     * Current committed position copied here so future projection code can
+     * reason about current -> semantic_target -> rendered_target without
+     * changing the existing top-level `position` contract.
+     */
+    current_position: TopicPosition3D;
+
+    /**
+     * The target the renderer/layout should drift toward. In this first contract
+     * phase, this is usually semantic_position when available, otherwise the
+     * committed position.
+     */
+    rendered_target_position: TopicPosition3D;
+
+    /**
+     * Confidence that the target position is meaningful enough to influence
+     * motion. Low confidence should produce smaller nudges.
+     */
+    layout_confidence: number;
+
+    movement_policy: {
+      easing: "slow" | "normal" | "fast";
+      max_step_per_update: number;
+      preserve_user_spatial_memory: boolean;
+    };
+  };
 
   render_state: {
     /**
@@ -195,6 +436,12 @@ export type LearningSpaceTopic = {
     surface_noise: number;
 
     /**
+     * Smoothness/coherence proxy. Currently inverse-confusion blended with
+     * insight, but renderer treatment can evolve later.
+     */
+    smoothness: number;
+
+    /**
      * Visual activation/motion proxy. This should remain subtle and renderer-safe.
      */
     spin_rate: number;
@@ -208,14 +455,35 @@ export type LearningSpaceTopic = {
      * Reserved high-mastery visual state.
      */
     is_star: boolean;
+
+    /**
+     * Glow is a separate visual channel from saturation. This lets future UX
+     * represent insight/coherence/focus/star state without overloading color.
+     */
+    glow_intensity: number;
+    glow_source: "insight" | "star_state" | "focus" | "none";
   };
 
+  /**
+   * Small UI/render objects attached to the sphere surface. A probe_available
+   * marker can become a thumbnail preview of the next probe.
+   */
+  surface_markers: TopicSurfaceMarker[];
+
+  /**
+   * Rings are reserved for active state / diagnosis / contract / review visuals.
+   * Most should remain empty until their UX meaning is clear.
+   */
+  rings: TopicRing[];
+
   satellite_count: number;
-  satellites: {
-    satellite_id: string;
-    orbit_angle: number;
-    linked_attempt_id: string | null;
-  }[];
+  satellites: AttemptSatellite[];
+
+  /**
+   * Learner-facing right-panel projection. This should be elegant and sparse:
+   * the renderer/UI can show only fields that are useful and non-empty.
+   */
+  topic_panel: TopicPanelProjection;
 };
 
 export type LearningSpaceCluster = {
