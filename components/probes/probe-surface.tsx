@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ProbeContractSnapshot } from "@/types/contracts";
 
 export type ProbeSummary = {
   id: string;
@@ -13,6 +14,13 @@ export type ProbeSummary = {
   probeType?: string | null;
   expectedResponseType?: string | null;
   helperText?: string | null;
+
+  /**
+   * Exact contract snapshot attached to the delivered probe. This must be sent
+   * back with the submitted attempt so backend judging evaluates the probe the
+   * learner actually answered.
+   */
+  probeContractSnapshot?: ProbeContractSnapshot | null;
 };
 
 type ProbeSurfaceProps = {
@@ -27,6 +35,7 @@ type ProbeSurfaceProps = {
     probeId: string;
     topicId: string;
     response: string;
+    probeContractSnapshot?: ProbeContractSnapshot | null;
   }) => void;
 };
 
@@ -122,6 +131,7 @@ export default function ProbeSurface({
       probeId: probe.id,
       topicId: probe.topicId,
       response: trimmedResponse,
+      probeContractSnapshot: probe.probeContractSnapshot ?? null,
     });
   }
 

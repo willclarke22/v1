@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { ProbeAttemptPayload } from "@/lib/runtime/attempt-judging";
 import type { RouteTopic } from "@/lib/runtime/route-topics";
+import type { ProbeContractSnapshot } from "@/types/contracts";
 
 export type IncomingChatTurn = {
   role?: string;
@@ -12,6 +13,16 @@ export type ProbeSubmitBody = ProbeAttemptPayload & {
   chat_history?: string;
   recent_turns?: IncomingChatTurn[];
   conversation_turns?: IncomingChatTurn[];
+
+  /**
+   * Contract snapshot for the probe the learner actually answered.
+   *
+   * During migration both names are accepted:
+   * - answeredProbeContractSnapshot is the explicit preferred name.
+   * - probeContractSnapshot is the shorter frontend compatibility name.
+   */
+  answeredProbeContractSnapshot?: ProbeContractSnapshot | null;
+  probeContractSnapshot?: ProbeContractSnapshot | null;
 };
 
 export function readStringField(value: unknown): string | null {
@@ -34,6 +45,19 @@ export function getBodyModality(body: ProbeSubmitBody): string | null {
   };
 
   return readStringField(widenedBody.deliveryContext?.modality);
+}
+
+export function getAnsweredProbeContractSnapshot(
+  body: ProbeSubmitBody,
+): ProbeContractSnapshot | null {
+  const candidate =
+    body.answeredProbeContractSnapshot ?? body.probeContractSnapshot ?? null;
+
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+    return null;
+  }
+
+  return JSON.parse(JSON.stringify(candidate)) as ProbeContractSnapshot;
 }
 
 export function normalizeProbeRawResponse(body: ProbeSubmitBody): string {

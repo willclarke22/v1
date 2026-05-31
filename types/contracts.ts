@@ -648,6 +648,40 @@ export interface InteractivePayload {
   config: Record<string, unknown> | null;
 }
 
+/**
+ * JSON-safe snapshot of the richer engine-side Probe Contract V1.
+ *
+ * The canonical contract types live in lib/engine/probes. This shape stays
+ * intentionally loose inside the public runtime contract so types/contracts.ts
+ * does not need to import engine modules and create a circular type dependency.
+ */
+export interface ProbeContractSnapshot {
+  contract_id?: EntityId;
+  version?: string;
+  created_at?: ISO8601String;
+
+  target_topic_id?: Nullable<EntityId>;
+  target_topic_label?: string;
+  target_diagnosis?: Nullable<DiagnosisType>;
+
+  intent?: Nullable<ProbeIntent>;
+  probe_type?: Nullable<ProbeType>;
+  renderer_kind?: string;
+  assessment_target?: string;
+  difficulty?: string;
+
+  input_schema?: Record<string, unknown> | null;
+  judging_schema?: Record<string, unknown> | null;
+  renderer_config?: Record<string, unknown> | null;
+
+  diagnosis_state_snapshot?: Record<string, unknown> | null;
+
+  reasons?: string[];
+  cautions?: string[];
+
+  [key: string]: unknown;
+}
+
 export interface ProbePlan {
   status: ProbePlanStatus;
   probe_id: EntityId;
@@ -667,6 +701,15 @@ export interface ProbePlan {
   text_payload: TextPayload;
   video_payload: VideoPayload;
   interactive_payload: InteractivePayload;
+
+  /**
+   * Optional Probe Contract V1 snapshot.
+   *
+   * This lets the runtime carry "what this probe is measuring" alongside the
+   * older renderer-specific plan fields while we migrate toward richer
+   * interactive probes and contract-based judging.
+   */
+  probe_contract_snapshot: Nullable<ProbeContractSnapshot>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -699,6 +742,12 @@ export interface DeliveredProbe {
   actual_context_framing: Nullable<string>;
 
   expected_response_type: Nullable<ProbeExpectedResponseType>;
+
+  /**
+   * Optional copy of the plan's probe contract snapshot for frontend/debug
+   * surfaces. During migration this may be absent on older delivered probes.
+   */
+  probe_contract_snapshot?: Nullable<ProbeContractSnapshot>;
 
   stimulus_id: Nullable<EntityId>;
   payload_snapshot: Record<string, unknown> | null;

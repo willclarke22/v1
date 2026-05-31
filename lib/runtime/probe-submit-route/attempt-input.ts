@@ -7,8 +7,22 @@ import type {
 } from "@/types/contracts";
 import type { RouteTopic } from "@/lib/runtime/route-topics";
 import type { ProbeAttemptPayload } from "@/lib/runtime/attempt-judging";
+import type {
+  AttemptInterpretation,
+  NormalizedEvidenceInput,
+} from "@/lib/engine/evidence";
+import {
+  interpretAttemptEvidence,
+  normalizeAttemptEvidence,
+} from "@/lib/engine/evidence";
 import { nowIso } from "@/lib/runtime/shared";
 import { getRouteTopicLabel } from "./request-context";
+
+export type AttemptEvidencePackage = {
+  importantRunInputs: ImportantRunInputs;
+  normalizedEvidence: NormalizedEvidenceInput;
+  attemptInterpretation: AttemptInterpretation;
+};
 
 export function asEmbeddingVector(value: unknown): EmbeddingVector | null {
   if (!Array.isArray(value)) return null;
@@ -147,6 +161,33 @@ export function buildImportantRunInputs(args: {
     },
     vector_info: vectorInfo,
     uploaded_content: [],
+  };
+}
+
+export function buildAttemptEvidencePackage(args: {
+  body: ProbeAttemptPayload;
+  topic: RouteTopic;
+  vectorInfo: VectorInfo;
+  modelSignals: ModelSignals;
+  rawResponse: string;
+  activeDiagnosis?: string | null;
+}): AttemptEvidencePackage {
+  const importantRunInputs = buildImportantRunInputs(args);
+  const normalizedEvidence = normalizeAttemptEvidence(
+    importantRunInputs.new_attempt,
+  );
+
+  const attemptInterpretation = interpretAttemptEvidence(normalizedEvidence, {
+    modelSignals: args.modelSignals,
+    activeDiagnosis: args.activeDiagnosis ?? null,
+    probeType: null,
+    expectedResponseType: importantRunInputs.new_attempt.response_type ?? null,
+  });
+
+  return {
+    importantRunInputs,
+    normalizedEvidence,
+    attemptInterpretation,
   };
 }
 

@@ -15,6 +15,7 @@ import type {
   LearningSpace,
   MessageRouteResponse,
   MyWayRunResult,
+  ProbeContractSnapshot,
   ProbeSubmitRouteResponse,
 } from "@/types/contracts";
 
@@ -22,6 +23,7 @@ type ProbeSubmitPayload = {
   probeId: string;
   topicId: string;
   response: string;
+  probeContractSnapshot?: ProbeContractSnapshot | null;
 };
 
 type LegacyProbeSubmitApiResponse = {
@@ -232,6 +234,7 @@ function mapDeliveredProbeToSummary(
     probeType: deliveredProbe.probe_type ?? null,
     expectedResponseType: deliveredProbe.expected_response_type ?? null,
     helperText: deliveredProbe.actual_context_framing ?? null,
+    probeContractSnapshot: deliveredProbe.probe_contract_snapshot ?? null,
   };
 }
 
@@ -295,6 +298,7 @@ function extractNextProbeFromProbeSubmitResponse(
     probeType: data.nextProbe.type ?? null,
     expectedResponseType: null,
     helperText: null,
+    probeContractSnapshot: null,
   };
 }
 
@@ -524,6 +528,14 @@ export function useProbeFlow({
             topicLabel: topic?.topic_label ?? topic?.id ?? "this topic",
             prompt: currentProbe?.instruction ?? null,
             response: payload.response,
+            probeContractSnapshot:
+              currentProbe?.probeContractSnapshot ??
+              payload.probeContractSnapshot ??
+              null,
+            answeredProbeContractSnapshot:
+              currentProbe?.probeContractSnapshot ??
+              payload.probeContractSnapshot ??
+              null,
             submittedAt: new Date().toISOString(),
             responseType: "text",
             deliveryContext: {

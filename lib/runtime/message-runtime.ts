@@ -1,3 +1,4 @@
+import { buildProbeContract } from "@/lib/engine/probes";
 import type {
   DiagnosisType,
   FrontendTopicMetricUpdate,
@@ -323,6 +324,10 @@ export function buildImportantRunInputs(
     vector_info: vectorInfo,
     uploaded_content: uploadedContent ?? [],
   };
+}
+
+function asProbeContractSnapshot(value: unknown): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
 }
 
 function selectInitialProbeType(
@@ -1153,6 +1158,27 @@ export function buildProbePlan(
     probeType,
   });
 
+  /**
+   * Probe Contract V1 is attached as an inspectable measurement contract while
+   * the current delivered UI can still fall back to text.
+   *
+   * This keeps the route stable today and gives us the seam for richer
+   * multiple-choice, ordering, drag/drop, graph, simulation, audio, and video
+   * probes later.
+   */
+  const probeContractResult = buildProbeContract({
+    targetTopicId: topic.id,
+    targetTopicLabel: topic.topic_label,
+    targetDiagnosis: diagnosis,
+    intent: "diagnostic",
+    probeType,
+    rendererKind: "text_explanation",
+    expectedResponseType: "text",
+  });
+  const probeContractSnapshot = asProbeContractSnapshot(
+    probeContractResult.contract,
+  );
+
   return {
     status: "applicable",
     probe_id: probeId,
@@ -1188,6 +1214,7 @@ export function buildProbePlan(
       why_text: [
         "Text is the safest fallback renderer during contract-proving.",
         "A text prompt keeps the plan easy to judge and easy to store.",
+        "A Probe Contract V1 snapshot is attached so the measurement target, success markers, failure markers, and future renderer schema are inspectable.",
       ],
       content_selection: {
         source_mode: "generated",
@@ -1430,6 +1457,8 @@ export function buildProbePlan(
       prompt: null,
       config: null,
     },
+
+    probe_contract_snapshot: probeContractSnapshot,
   };
 }
 
@@ -1613,6 +1642,8 @@ export function buildNotApplicableProbePlan(topic: RouteTopic): ProbePlan {
       prompt: null,
       config: null,
     },
+
+    probe_contract_snapshot: null,
   };
 }
 

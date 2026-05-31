@@ -39,9 +39,20 @@ export function buildDeliveredProbeFromPlan(
     actual_context_framing:
       plan.text_payload.personalization_snapshot.context_framing ?? null,
     expected_response_type: plan.expected_response_type,
+
+    /**
+     * Preserve the exact measurement contract attached to the plan as part of
+     * the learner-facing delivered probe.
+     *
+     * Probe submit should judge the learner's response against this answered
+     * contract, not against the follow-up contract generated after submission.
+     */
+    probe_contract_snapshot: plan.probe_contract_snapshot,
+
     stimulus_id: `stimulus-${plan.probe_id}`,
     payload_snapshot: {
       text_payload: plan.text_payload,
+      probe_contract_snapshot: plan.probe_contract_snapshot,
     },
   };
 }

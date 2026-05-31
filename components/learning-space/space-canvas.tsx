@@ -22,6 +22,15 @@ import type { ProbeSummary } from "@/components/probes/probe-surface";
 type TrackballControlsRef = ElementRef<typeof TrackballControls>;
 type SceneArrivalMode = "warp" | "focus";
 type AnimatedTopicPositionsRef = RefObject<Map<string, THREE.Vector3>>;
+type PreProbeViewSnapshot = {
+  cameraPosition: THREE.Vector3;
+  cameraQuaternion: THREE.Quaternion;
+  cameraUp: THREE.Vector3;
+  cameraZoom: number;
+  target: THREE.Vector3;
+  capturedAt: number;
+};
+type PreProbeViewSnapshotRef = { current: PreProbeViewSnapshot | null };
 
 const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 18, 72);
 const DEFAULT_TARGET = new THREE.Vector3(0, 0, 0);
@@ -73,6 +82,7 @@ const FOCUSED_BACKGROUND_TOPIC_BODY_SCALE = 0.5;
 const FOCUSED_SELECTED_BACKGROUND_TOPIC_BODY_SCALE = 0.68;
 
 const SETTLE_DELAY_MS = 220;
+const TOPIC_CLICK_SEQUENCE_MS = 280;
 
 /**
  * Global labels should hide only for real manual view manipulation.
@@ -159,8 +169,8 @@ const LOCAL_BOB_SPEED_VARIATION = 0.28;
  * stay oriented.
  */
 const LABEL_HIDE_SCREEN_RADIUS_PX = 44;
-const LABEL_MAX_WIDTH_OVERVIEW = 190;
-const LABEL_MAX_WIDTH_PROMINENT = 240;
+const LABEL_MAX_WIDTH_OVERVIEW = 210;
+const LABEL_MAX_WIDTH_PROMINENT = 260;
 const LABEL_OFFSET_MIN_PX = 34;
 const LABEL_OFFSET_MAX_PX = 112;
 const LABEL_OFFSET_SCREEN_RADIUS_MULTIPLIER = 0.86;
@@ -242,6 +252,36 @@ const VIEWPOINT_SCANNER_SETTLED_BLUE = VIEWPOINT_SCANNER_BLUE;
 const CONFUSION_SIGNAL_RELATIONSHIP_RED = "#fb7185";
 const INSIGHT_SIGNAL_RELATIONSHIP_GREEN = "#34d399";
 const RELATIONSHIP_VIEW_MODE_ARC_MAX_COUNT = 3;
+
+/**
+ * Probe surface thumbnail.
+ *
+ * Temporary dev mode keeps probe-like thumbnails visible on every topic so the
+ * surface treatment can be tuned without repeatedly creating new eligible
+ * probes. Turn this back to false once the thumbnail feels right.
+ */
+const SHOW_DEBUG_PROBE_THUMBNAILS_FOR_ALL_TOPICS = true;
+
+/**
+ * The probe display should feel like the topic sphere itself becomes the
+ * thumbnail, similar to a miniature Vegas Sphere. This is intentionally
+ * viewer-facing so the probe stays upright and readable as the camera rotates.
+ *
+ * This display is visual-only for pointer behavior. Normal topic click,
+ * double-click, and drag/scanning interactions still belong to the underlying
+ * topic sphere.
+ */
+const PROBE_DISPLAY_SPHERE_SCALE = 1.002;
+const PROBE_DISPLAY_GLOW_SCALE = 1.006;
+const PROBE_DISPLAY_RENDER_ORDER = 24;
+const PROBE_DISPLAY_GLOW_RENDER_ORDER = 23;
+const PROBE_DISPLAY_TEXTURE_WIDTH = 1024;
+const PROBE_DISPLAY_TEXTURE_HEIGHT = 512;
+const PROBE_DISPLAY_GLOW_OPACITY = 0;
+const PROBE_DISPLAY_FRONT_ROTATION_Y = -Math.PI / 2;
+const PROBE_EXIT_CAMERA_ALPHA = 0.068;
+const PROBE_EXIT_TARGET_ALPHA = 0.074;
+const PROBE_MARKER_DEFAULT_NORMAL = new THREE.Vector3(0.48, 0.55, 0.68).normalize();
 
 const RELATIONSHIP_DEFAULT_ENDPOINT_ACTIVE_COLOR = "#ead7ff";
 const RELATIONSHIP_DEFAULT_ENDPOINT_BACKGROUND_COLOR = "#d4d4d8";
@@ -911,12 +951,12 @@ function getLabelOcclusionStrength(args: {
    * Drei Html labels are DOM overlays, so they do not automatically disappear
    * behind nearer topic spheres. This custom test combines:
    *
-   * 1. a 3D camera-ray test for geometric line-of-sight occlusion, and
-   * 2. a screen-space overlap test for the actual visible label position.
+   * 1. screen-space overlap against nearer/active topic bodies, and
+   * 2. a 3D camera-ray test for geometric line-of-sight occlusion.
    *
-   * The screen-space check is important during close focus: a background label
-   * can appear inside the large foreground sphere even if the center-to-center
-   * ray test is not perfectly aligned with the DOM label offset.
+   * The active-topic screen-space branch is intentionally allowed even when the
+   * camera is very close to, or partially inside, the focused sphere. This keeps
+   * labels from showing through the sphere while backing out of a probe.
    */
   const cameraPosition = args.camera.position;
   const labelVector = args.labelWorldPosition.clone().sub(cameraPosition);
@@ -942,6 +982,10 @@ function getLabelOcclusionStrength(args: {
   for (const otherTopic of args.allTopics) {
     if (otherTopic.topic_id === args.topic.topic_id) continue;
 
+    const isSelectedBlocker = otherTopic.topic_id === args.selectedTopicId;
+    const isFocusedBlocker = otherTopic.topic_id === args.focusedTopicId;
+    const isActiveBlocker = isSelectedBlocker || isFocusedBlocker;
+
     const otherPosition = getAnimatedTopicPosition(
       otherTopic,
       args.animatedTopicPositionsRef,
@@ -950,102 +994,97 @@ function getLabelOcclusionStrength(args: {
     const otherDistance = toOther.length();
     const alongRayDistance = toOther.dot(rayDirection);
 
+    const otherVisualRadius = getTopicVisualRadius({
+      topic: otherTopic,
+      isSelected: isSelectedBlocker,
+      isFocused: isFocusedBlocker,
+      isAnyTopicFocused,
+    });
+
     /**
-     * Only topics clearly between the camera and this label should occlude it.
-     * A small padding avoids labels popping when two topics are almost coplanar
-     * from the current view.
+     * Only topics clearly between the camera and this label should normally
+     * occlude it. A small padding avoids labels popping when two topics are
+     * almost coplanar from the current view.
      */
     const isBetweenCameraAndLabel =
       alongRayDistance > LABEL_OCCLUSION_DEPTH_PADDING &&
       alongRayDistance < labelDistance - LABEL_OCCLUSION_DEPTH_PADDING &&
       otherDistance < labelDistance - LABEL_OCCLUSION_DEPTH_PADDING;
 
-    if (!isBetweenCameraAndLabel) continue;
-
-    const otherVisualRadius = getTopicVisualRadius({
-      topic: otherTopic,
-      isSelected: otherTopic.topic_id === args.selectedTopicId,
-      isFocused: otherTopic.topic_id === args.focusedTopicId,
-      isAnyTopicFocused,
-    });
-
     /**
-     * Screen-space occlusion matches what the learner actually sees. If the
-     * label's visible DOM position falls inside a nearer topic's projected
-     * sphere circle, hide the label completely. This catches the close-up case
-     * where a faint background label appears through the center of the current
-     * sphere.
+     * Probe exit is a special camera state: the camera may be very close to or
+     * inside the selected/focused sphere while moving back out. In that case the
+     * sphere can visually cover labels even if its center is not cleanly between
+     * the camera and label ray, so active blockers get an extra screen-space
+     * occlusion path.
      */
-    const otherProjected = getProjectedScreenPoint({
-      point: otherPosition,
-      camera: args.camera,
-      size: args.size,
-    });
+    const isCameraInsideOrNearActiveBlocker =
+      isActiveBlocker &&
+      otherDistance <= otherVisualRadius * 2.2 &&
+      labelDistance > otherDistance + LABEL_OCCLUSION_DEPTH_PADDING;
 
-    if (otherProjected.z > -1 && otherProjected.z < 1) {
-      const otherScreenRadius =
-        getScreenSpaceRadiusPx({
-          camera: args.camera,
-          size: args.size,
-          worldPosition: otherPosition,
-          worldRadius:
-            otherVisualRadius * LABEL_OCCLUSION_SCREEN_RADIUS_MULTIPLIER,
-        }) + LABEL_OCCLUSION_SCREEN_PADDING_PX;
+    const canScreenOcclude =
+      isBetweenCameraAndLabel || isCameraInsideOrNearActiveBlocker;
 
-      const screenDx = labelScreenPoint.x - otherProjected.x;
-      const screenDy = labelScreenPoint.y - otherProjected.y;
-      const screenDistance = Math.sqrt(
-        screenDx * screenDx + screenDy * screenDy,
-      );
-
-      const hardCoreRadius =
-        otherScreenRadius * LABEL_OCCLUSION_SCREEN_HARD_CORE_MULTIPLIER;
-
-      if (screenDistance <= hardCoreRadius) {
-        /**
-         * Html labels render as DOM overlays, so they need an explicit hard
-         * occlusion rule. If the label's visible screen position is deep inside
-         * a foreground sphere, hide it completely. This prevents labels from
-         * being readable through the current topic body.
-         */
-        return 1;
-      }
-
-      if (screenDistance <= otherScreenRadius) {
-        const closeBehindRelief = getCloseBehindOcclusionRelief({
-          topicPosition: args.labelWorldPosition,
-          blockerPosition: otherPosition,
-          blockerVisualRadius: otherVisualRadius,
-        });
-
-        /**
-         * Near the edge of a foreground sphere, keep the softer relief behavior
-         * so nearby neighboring topics do not feel like they disappear while the
-         * user rotates the view.
-         */
-        return THREE.MathUtils.lerp(0.96, 0.58, closeBehindRelief);
-      }
-
-      const screenOcclusion = THREE.MathUtils.clamp(
-        (otherScreenRadius +
-          LABEL_OCCLUSION_SCREEN_FADE_BAND_PX -
-          screenDistance) /
-          LABEL_OCCLUSION_SCREEN_FADE_BAND_PX,
-        0,
-        1,
-      );
-
-      const closeBehindRelief = getCloseBehindOcclusionRelief({
-        topicPosition: args.labelWorldPosition,
-        blockerPosition: otherPosition,
-        blockerVisualRadius: otherVisualRadius,
+    if (canScreenOcclude) {
+      const otherProjected = getProjectedScreenPoint({
+        point: otherPosition,
+        camera: args.camera,
+        size: args.size,
       });
 
-      strongestOcclusion = Math.max(
-        strongestOcclusion,
-        screenOcclusion * THREE.MathUtils.lerp(1, 0.62, closeBehindRelief),
-      );
+      if (otherProjected.z > -1 && otherProjected.z < 1) {
+        const activeScreenPadding = isActiveBlocker
+          ? LABEL_OCCLUSION_SCREEN_PADDING_PX * 1.9
+          : LABEL_OCCLUSION_SCREEN_PADDING_PX;
+
+        const otherScreenRadius =
+          getScreenSpaceRadiusPx({
+            camera: args.camera,
+            size: args.size,
+            worldPosition: otherPosition,
+            worldRadius:
+              otherVisualRadius * LABEL_OCCLUSION_SCREEN_RADIUS_MULTIPLIER,
+          }) + activeScreenPadding;
+
+        const screenDx = labelScreenPoint.x - otherProjected.x;
+        const screenDy = labelScreenPoint.y - otherProjected.y;
+        const screenDistance = Math.sqrt(
+          screenDx * screenDx + screenDy * screenDy,
+        );
+
+        const hardCoreRadius =
+          otherScreenRadius *
+          (isActiveBlocker ? 0.94 : LABEL_OCCLUSION_SCREEN_HARD_CORE_MULTIPLIER);
+
+        if (screenDistance <= hardCoreRadius) {
+          /**
+           * Html labels render as DOM overlays, so they need an explicit hard
+           * occlusion rule. If the label's visible screen position is deep
+           * inside a foreground sphere, hide it completely. This is especially
+           * important when exiting a probe from inside the current topic sphere.
+           */
+          return 1;
+        }
+
+        if (screenDistance <= otherScreenRadius) {
+          return 1;
+        }
+
+        const screenOcclusion = THREE.MathUtils.clamp(
+          (otherScreenRadius +
+            LABEL_OCCLUSION_SCREEN_FADE_BAND_PX -
+            screenDistance) /
+            LABEL_OCCLUSION_SCREEN_FADE_BAND_PX,
+          0,
+          1,
+        );
+
+        strongestOcclusion = Math.max(strongestOcclusion, screenOcclusion);
+      }
     }
+
+    if (!isBetweenCameraAndLabel) continue;
 
     const closestPointOnRay = cameraPosition
       .clone()
@@ -1072,17 +1111,9 @@ function getLabelOcclusionStrength(args: {
         1,
       );
 
-      const closeBehindRelief = getCloseBehindOcclusionRelief({
-        topicPosition: args.labelWorldPosition,
-        blockerPosition: otherPosition,
-        blockerVisualRadius: otherVisualRadius,
-      });
-
       strongestOcclusion = Math.max(
         strongestOcclusion,
-        radiusOcclusion *
-          depthOcclusion *
-          THREE.MathUtils.lerp(1, 0.66, closeBehindRelief),
+        radiusOcclusion * depthOcclusion,
       );
     }
 
@@ -1092,23 +1123,6 @@ function getLabelOcclusionStrength(args: {
   return strongestOcclusion;
 }
 
-
-function getCloseBehindOcclusionRelief(args: {
-  topicPosition: THREE.Vector3;
-  blockerPosition: THREE.Vector3;
-  blockerVisualRadius: number;
-}) {
-  const topicDistance = args.topicPosition.distanceTo(args.blockerPosition);
-  const closeRange = Math.max(0.001, args.blockerVisualRadius * 3.2);
-
-  /**
-   * When two topics are physically close and one is slightly behind the other,
-   * hiding the rear label entirely makes nearby neighbors feel like they vanish.
-   * This relief keeps "close-behind" labels readable while still letting true
-   * far-behind labels fade heavily.
-   */
-  return THREE.MathUtils.clamp((closeRange - topicDistance) / closeRange, 0, 1);
-}
 
 function TopicLabel({
   topic,
@@ -1174,7 +1188,7 @@ function TopicLabel({
 
     const isCurrentTopic = isFocused || isSelected;
     const hideBecauseCurrentTopicIsClose =
-      isFocused && isCloseEnoughToReadWithoutMapLabel;
+      isCurrentTopic && isCloseEnoughToReadWithoutMapLabel;
 
     const shouldShow =
       (!hideLabelsForViewDrag || forceShowLabel) &&
@@ -1287,10 +1301,17 @@ function TopicLabel({
           maxWidth: isProminent
             ? LABEL_MAX_WIDTH_PROMINENT
             : LABEL_MAX_WIDTH_OVERVIEW,
-          textShadow: "0 1px 3px rgba(0,0,0,0.92), 0 0 7px rgba(0,0,0,0.58)",
+          fontFamily:
+            '"Oswald", "Avenir Next", "Inter", "SF Pro Display", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          fontWeight: 500,
+          letterSpacing: isProminent ? "0.055em" : "0.065em",
+          textShadow:
+            "0 1px 3px rgba(0,0,0,0.88), 0 0 10px rgba(196,181,253,0.22)",
+          WebkitFontSmoothing: "antialiased",
+          MozOsxFontSmoothing: "grayscale",
         }}
-        className={`p-0 font-medium leading-tight tracking-[0.01em] ${
-          isProminent ? "text-[13px] text-white" : "text-[12px] text-zinc-100"
+        className={`p-0 leading-tight ${
+          isProminent ? "text-[14px] text-white" : "text-[13px] text-zinc-100"
         }`}
       >
         <span className="block truncate whitespace-nowrap">
@@ -1301,47 +1322,839 @@ function TopicLabel({
   );
 }
 
+function getProbeMarkerSurfaceNormal(topic: LearningSpaceTopic) {
+  const marker = topic.surface_markers.find(
+    (candidate) => candidate.marker_type === "probe_available",
+  );
+  const normalHint = marker?.surface_anchor.normal_hint;
+
+  if (
+    Array.isArray(normalHint) &&
+    normalHint.length === 3 &&
+    normalHint.every((value) => typeof value === "number" && Number.isFinite(value))
+  ) {
+    const hintedNormal = new THREE.Vector3(
+      normalHint[0],
+      normalHint[1],
+      normalHint[2],
+    );
+
+    if (hintedNormal.lengthSq() > 0.0001) {
+      return hintedNormal.normalize();
+    }
+  }
+
+  return PROBE_MARKER_DEFAULT_NORMAL.clone();
+}
+
+function getProbeMarkerPreview(topic: LearningSpaceTopic) {
+  return topic.surface_markers.find(
+    (marker) =>
+      marker.marker_type === "probe_available" && marker.visible_by_default,
+  )?.preview;
+}
+
+type ProbeMarkerPreview = NonNullable<
+  LearningSpaceTopic["surface_markers"][number]["preview"]
+>;
+type ProbeMarkerThumbnailStyle = ProbeMarkerPreview["thumbnail_style"];
+
+function getDebugProbeThumbnailStyle(topic: LearningSpaceTopic) {
+  const styles: ProbeMarkerThumbnailStyle[] = [
+    "choice_card",
+    "slider_card",
+    "drag_drop_card",
+    "graph_card",
+    "audio_card",
+    "video_card",
+    "simulation_card",
+    "text_card",
+  ];
+  return styles[stableHash(topic.topic_id) % styles.length];
+}
+
+function getProbeThumbnailIcon(thumbnailStyle: ProbeMarkerThumbnailStyle) {
+  switch (thumbnailStyle) {
+    case "choice_card":
+      return "●";
+    case "drag_drop_card":
+      return "↗";
+    case "slider_card":
+      return "●";
+    case "graph_card":
+      return "↗";
+    case "video_card":
+      return "▶";
+    case "audio_card":
+      return "≋";
+    case "simulation_card":
+      return "⟳";
+    case "text_card":
+      return "☰";
+    case "generic_card":
+    default:
+      return "?";
+  }
+}
+
+function getProbeThumbnailLabel(thumbnailStyle: ProbeMarkerThumbnailStyle) {
+  switch (thumbnailStyle) {
+    case "choice_card":
+      return "Choice";
+    case "drag_drop_card":
+      return "Drag";
+    case "slider_card":
+      return "Predict";
+    case "graph_card":
+      return "Graph";
+    case "video_card":
+      return "Video";
+    case "audio_card":
+      return "Audio";
+    case "simulation_card":
+      return "Sim";
+    case "text_card":
+      return "Text";
+    case "generic_card":
+    default:
+      return "Task";
+  }
+}
+
+function getProbeTilePalette(thumbnailStyle: ProbeMarkerThumbnailStyle) {
+  switch (thumbnailStyle) {
+    case "choice_card":
+      return {
+        core: "#67e8f9",
+        mid: "#8b5cf6",
+        deep: "#111827",
+        accent: "#ecfeff",
+      };
+    case "drag_drop_card":
+      return {
+        core: "#f0abfc",
+        mid: "#7c3aed",
+        deep: "#12061f",
+        accent: "#fdf4ff",
+      };
+    case "slider_card":
+      return {
+        core: "#38bdf8",
+        mid: "#2563eb",
+        deep: "#08111f",
+        accent: "#e0f2fe",
+      };
+    case "graph_card":
+      return {
+        core: "#7dd3fc",
+        mid: "#22d3ee",
+        deep: "#07151e",
+        accent: "#ecfeff",
+      };
+    case "video_card":
+      return {
+        core: "#fb7185",
+        mid: "#a855f7",
+        deep: "#180611",
+        accent: "#fff1f2",
+      };
+    case "audio_card":
+      return {
+        core: "#34d399",
+        mid: "#06b6d4",
+        deep: "#041713",
+        accent: "#ecfdf5",
+      };
+    case "simulation_card":
+      return {
+        core: "#fbbf24",
+        mid: "#f97316",
+        deep: "#1c0f02",
+        accent: "#fffbeb",
+      };
+    case "text_card":
+    case "generic_card":
+    default:
+      return {
+        core: "#c4b5fd",
+        mid: "#7c3aed",
+        deep: "#10051e",
+        accent: "#f5f3ff",
+      };
+  }
+}
+
+function drawRoundedRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const safeRadius = Math.min(radius, width / 2, height / 2);
+
+  context.beginPath();
+  context.moveTo(x + safeRadius, y);
+  context.lineTo(x + width - safeRadius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + safeRadius);
+  context.lineTo(x + width, y + height - safeRadius);
+  context.quadraticCurveTo(
+    x + width,
+    y + height,
+    x + width - safeRadius,
+    y + height,
+  );
+  context.lineTo(x + safeRadius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - safeRadius);
+  context.lineTo(x, y + safeRadius);
+  context.quadraticCurveTo(x, y, x + safeRadius, y);
+  context.closePath();
+}
+
+function drawProbeSphereDisplayTexture(args: {
+  context: CanvasRenderingContext2D;
+  style: ProbeMarkerThumbnailStyle;
+  icon: string;
+  width: number;
+  height: number;
+}) {
+  const { context, style, icon, width, height } = args;
+  const palette = getProbeTilePalette(style);
+
+  context.clearRect(0, 0, width, height);
+
+  const baseGradient = context.createLinearGradient(0, 0, width, height);
+  baseGradient.addColorStop(0, palette.deep);
+  baseGradient.addColorStop(0.18, palette.mid);
+  baseGradient.addColorStop(0.5, palette.core);
+  baseGradient.addColorStop(0.82, palette.mid);
+  baseGradient.addColorStop(1, palette.deep);
+  context.fillStyle = baseGradient;
+  context.fillRect(0, 0, width, height);
+
+  const latitudeGlow = context.createLinearGradient(0, 0, 0, height);
+  latitudeGlow.addColorStop(0, "rgba(255,255,255,0.05)");
+  latitudeGlow.addColorStop(0.24, "rgba(255,255,255,0.14)");
+  latitudeGlow.addColorStop(0.5, "rgba(255,255,255,0.28)");
+  latitudeGlow.addColorStop(0.76, "rgba(255,255,255,0.14)");
+  latitudeGlow.addColorStop(1, "rgba(255,255,255,0.05)");
+  context.fillStyle = latitudeGlow;
+  context.fillRect(0, 0, width, height);
+
+  context.save();
+  context.globalAlpha = 0.14;
+  context.strokeStyle = "rgba(255,255,255,0.58)";
+  context.lineWidth = 1.2;
+  for (let y = height * 0.12; y <= height * 0.88; y += 28) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.bezierCurveTo(width * 0.2, y - 14, width * 0.8, y + 14, width, y);
+    context.stroke();
+  }
+  context.restore();
+
+  context.save();
+  context.globalAlpha = 0.18;
+  context.strokeStyle = "rgba(255,255,255,0.34)";
+  context.lineWidth = 2;
+  for (let x = -width * 0.18; x < width * 1.08; x += 42) {
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x + width * 0.18, height);
+    context.stroke();
+  }
+  context.restore();
+
+  /**
+   * Repeat the main motif around the sphere width so the surface still feels
+   * coherent even though the display is viewer-facing and texture-wrapped.
+   */
+  const motifCenters = [0.0, 0.25, 0.5, 0.75, 1.0];
+
+  motifCenters.forEach((centerX, index) => {
+    const x = width * centerX;
+    const y = height * (index === 1 ? 0.5 : 0.52);
+    const motifScale = index === 2 ? 1 : 0.82;
+
+    const bloom = context.createRadialGradient(
+      x,
+      y,
+      height * 0.04,
+      x,
+      y,
+      height * 0.34 * motifScale,
+    );
+    bloom.addColorStop(0, "rgba(255,255,255,0.46)");
+    bloom.addColorStop(0.34, "rgba(255,255,255,0.18)");
+    bloom.addColorStop(1, "rgba(255,255,255,0)");
+    context.fillStyle = bloom;
+    context.fillRect(
+      x - width * 0.2,
+      y - height * 0.22,
+      width * 0.4,
+      height * 0.44,
+    );
+
+    context.save();
+    context.globalCompositeOperation = "screen";
+    context.globalAlpha = index === 2 ? 0.92 : 0.58;
+    context.strokeStyle = palette.accent;
+    context.fillStyle = palette.accent;
+    context.shadowColor = palette.accent;
+    context.shadowBlur = index === 2 ? 22 : 14;
+    context.lineWidth = index === 2 ? 5 : 4;
+
+    if (style === "choice_card") {
+      const cellRadius = 22 * motifScale;
+      const cellGapX = 58 * motifScale;
+      const cellGapY = 52 * motifScale;
+      const cells = [
+        { label: "A", dx: -cellGapX / 2, dy: -cellGapY / 2, selected: false },
+        { label: "B", dx: cellGapX / 2, dy: -cellGapY / 2, selected: true },
+        { label: "C", dx: -cellGapX / 2, dy: cellGapY / 2, selected: false },
+        { label: "D", dx: cellGapX / 2, dy: cellGapY / 2, selected: false },
+      ];
+
+      context.font = `700 ${22 * motifScale}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+
+      cells.forEach((cell) => {
+        const cellX = x + cell.dx;
+        const cellY = y + cell.dy;
+
+        context.beginPath();
+        context.arc(cellX, cellY, cellRadius, 0, Math.PI * 2);
+
+        if (cell.selected) {
+          context.fill();
+          context.save();
+          context.globalCompositeOperation = "destination-out";
+          context.beginPath();
+          context.arc(cellX, cellY, cellRadius * 0.58, 0, Math.PI * 2);
+          context.fill();
+          context.restore();
+          context.beginPath();
+          context.arc(cellX, cellY, cellRadius, 0, Math.PI * 2);
+          context.stroke();
+        } else {
+          context.stroke();
+        }
+
+        context.save();
+        context.shadowBlur = 0;
+        context.fillStyle = palette.accent;
+        context.fillText(cell.label, cellX, cellY + 1 * motifScale);
+        context.restore();
+      });
+    } else if (style === "drag_drop_card") {
+      const tileSize = 42 * motifScale;
+      const sourceX = x - 86 * motifScale;
+      const sourceY = y - 22 * motifScale;
+      const targetX = x + 48 * motifScale;
+      const targetY = y - 44 * motifScale;
+
+      context.lineCap = "round";
+      context.lineJoin = "round";
+
+      drawRoundedRect(
+        context,
+        sourceX,
+        sourceY,
+        tileSize,
+        tileSize,
+        10 * motifScale,
+      );
+      context.fill();
+
+      context.save();
+      context.globalAlpha *= 0.78;
+      context.setLineDash([10 * motifScale, 8 * motifScale]);
+      drawRoundedRect(
+        context,
+        targetX,
+        targetY,
+        tileSize,
+        tileSize,
+        10 * motifScale,
+      );
+      context.stroke();
+      context.restore();
+
+      /**
+       * Object-to-target movement: the path leads from the filled tile into the
+       * dashed destination, while the pointer reads as the active "drag" hand.
+       */
+      context.save();
+      context.globalAlpha *= 0.9;
+      context.setLineDash([8 * motifScale, 7 * motifScale]);
+      context.beginPath();
+      context.moveTo(sourceX + tileSize + 8 * motifScale, sourceY + 9 * motifScale);
+      context.bezierCurveTo(
+        x - 12 * motifScale,
+        y - 70 * motifScale,
+        x + 34 * motifScale,
+        y - 70 * motifScale,
+        targetX + tileSize * 0.5,
+        targetY + tileSize + 6 * motifScale,
+      );
+      context.stroke();
+      context.setLineDash([]);
+      context.restore();
+
+      context.beginPath();
+      context.moveTo(targetX + tileSize * 0.5 - 12 * motifScale, targetY + tileSize + 2 * motifScale);
+      context.lineTo(targetX + tileSize * 0.5, targetY + tileSize + 17 * motifScale);
+      context.lineTo(targetX + tileSize * 0.5 + 12 * motifScale, targetY + tileSize + 2 * motifScale);
+      context.stroke();
+
+      const pointerX = x - 10 * motifScale;
+      const pointerY = y + 8 * motifScale;
+      context.beginPath();
+      context.moveTo(pointerX, pointerY);
+      context.lineTo(pointerX + 58 * motifScale, pointerY + 42 * motifScale);
+      context.lineTo(pointerX + 28 * motifScale, pointerY + 52 * motifScale);
+      context.lineTo(pointerX + 18 * motifScale, pointerY + 82 * motifScale);
+      context.lineTo(pointerX - 2 * motifScale, pointerY + 75 * motifScale);
+      context.lineTo(pointerX + 8 * motifScale, pointerY + 47 * motifScale);
+      context.lineTo(pointerX - 22 * motifScale, pointerY + 58 * motifScale);
+      context.closePath();
+      context.fill();
+    } else if (style === "slider_card") {
+      const trackX = x - 88 * motifScale;
+      const trackWidth = 176 * motifScale;
+      const rows = [
+        { y: y - 46 * motifScale, knob: 0.74, alpha: 0.88 },
+        { y, knob: 0.34, alpha: 1 },
+        { y: y + 46 * motifScale, knob: 0.56, alpha: 0.88 },
+      ];
+
+      context.lineCap = "round";
+      context.lineJoin = "round";
+
+      rows.forEach((row) => {
+        context.save();
+        context.globalAlpha *= row.alpha;
+
+        context.beginPath();
+        context.moveTo(trackX, row.y);
+        context.lineTo(trackX + trackWidth, row.y);
+        context.stroke();
+
+        const knobX = trackX + trackWidth * row.knob;
+        drawRoundedRect(
+          context,
+          knobX - 17 * motifScale,
+          row.y - 24 * motifScale,
+          34 * motifScale,
+          48 * motifScale,
+          16 * motifScale,
+        );
+        context.fill();
+
+        context.save();
+        context.globalCompositeOperation = "destination-out";
+        context.beginPath();
+        context.moveTo(knobX, row.y - 14 * motifScale);
+        context.lineTo(knobX, row.y + 14 * motifScale);
+        context.lineWidth = 4 * motifScale;
+        context.stroke();
+        context.restore();
+
+        context.restore();
+      });
+    } else if (style === "graph_card") {
+      const originX = x - 74 * motifScale;
+      const originY = y + 52 * motifScale;
+      const graphWidth = 148 * motifScale;
+      const graphHeight = 104 * motifScale;
+
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.beginPath();
+      context.moveTo(originX, originY - graphHeight);
+      context.lineTo(originX, originY);
+      context.lineTo(originX + graphWidth, originY);
+      context.stroke();
+
+      const points = [
+        [originX + 22 * motifScale, originY - 22 * motifScale],
+        [originX + 58 * motifScale, originY - 62 * motifScale],
+        [originX + 96 * motifScale, originY - 44 * motifScale],
+        [originX + 130 * motifScale, originY - 86 * motifScale],
+      ];
+
+      context.beginPath();
+      context.moveTo(points[0][0], points[0][1]);
+      for (const [pointX, pointY] of points.slice(1)) {
+        context.lineTo(pointX, pointY);
+      }
+      context.stroke();
+
+      points.forEach(([pointX, pointY]) => {
+        context.beginPath();
+        context.arc(pointX, pointY, 7 * motifScale, 0, Math.PI * 2);
+        context.fill();
+      });
+    } else if (style === "audio_card") {
+      context.lineCap = "round";
+      for (let barIndex = 0; barIndex < 9; barIndex += 1) {
+        const barX = x - 60 * motifScale + barIndex * 15 * motifScale;
+        const barHeight =
+          (14 + Math.abs(Math.sin(barIndex * 1.35)) * 34) * motifScale;
+
+        context.beginPath();
+        context.moveTo(barX, y - barHeight);
+        context.lineTo(barX, y + barHeight);
+        context.stroke();
+      }
+    } else if (style === "video_card") {
+      drawRoundedRect(
+        context,
+        x - 72 * motifScale,
+        y - 48 * motifScale,
+        144 * motifScale,
+        96 * motifScale,
+        18 * motifScale,
+      );
+      context.stroke();
+
+      context.beginPath();
+      context.moveTo(x - 16 * motifScale, y - 24 * motifScale);
+      context.lineTo(x - 16 * motifScale, y + 24 * motifScale);
+      context.lineTo(x + 28 * motifScale, y);
+      context.closePath();
+      context.fill();
+    } else if (style === "simulation_card") {
+      const panelX = x - 92 * motifScale;
+      const panelY = y - 66 * motifScale;
+      const panelWidth = 184 * motifScale;
+      const panelHeight = 132 * motifScale;
+
+      context.lineCap = "round";
+      context.lineJoin = "round";
+
+      /**
+       * MyWay simulation: a compact control console for manipulating variables
+       * and watching a system respond. The lever has a clear vertical slot and
+       * handle so it reads as an actual control, not a random connector.
+       */
+      drawRoundedRect(
+        context,
+        panelX,
+        panelY,
+        panelWidth,
+        panelHeight,
+        18 * motifScale,
+      );
+      context.stroke();
+
+      const readoutY = panelY + 22 * motifScale;
+      [0, 1, 2].forEach((index) => {
+        const readoutX = panelX + (22 + index * 54) * motifScale;
+        drawRoundedRect(
+          context,
+          readoutX,
+          readoutY,
+          36 * motifScale,
+          16 * motifScale,
+          5 * motifScale,
+        );
+        context.stroke();
+      });
+
+      const dialY = panelY + 62 * motifScale;
+      const dialXs = [
+        panelX + 38 * motifScale,
+        panelX + 92 * motifScale,
+        panelX + 146 * motifScale,
+      ];
+
+      dialXs.forEach((dialX, dialIndex) => {
+        context.beginPath();
+        context.arc(dialX, dialY, 15 * motifScale, 0, Math.PI * 2);
+        context.stroke();
+
+        for (let tick = 0; tick < 6; tick += 1) {
+          const tickAngle = Math.PI * (1.1 + tick * 0.16);
+          context.beginPath();
+          context.moveTo(
+            dialX + Math.cos(tickAngle) * 11 * motifScale,
+            dialY + Math.sin(tickAngle) * 11 * motifScale,
+          );
+          context.lineTo(
+            dialX + Math.cos(tickAngle) * 15 * motifScale,
+            dialY + Math.sin(tickAngle) * 15 * motifScale,
+          );
+          context.stroke();
+        }
+
+        const angle = (-0.74 + dialIndex * 0.28) * Math.PI;
+        context.beginPath();
+        context.moveTo(dialX, dialY);
+        context.lineTo(
+          dialX + Math.cos(angle) * 10 * motifScale,
+          dialY + Math.sin(angle) * 10 * motifScale,
+        );
+        context.stroke();
+      });
+
+      const leverSlotX = panelX + 30 * motifScale;
+      const leverSlotY = panelY + 88 * motifScale;
+      const leverSlotWidth = 20 * motifScale;
+      const leverSlotHeight = 36 * motifScale;
+
+      drawRoundedRect(
+        context,
+        leverSlotX,
+        leverSlotY,
+        leverSlotWidth,
+        leverSlotHeight,
+        8 * motifScale,
+      );
+      context.stroke();
+
+      /**
+       * Keep the lever compact and anchored to its own slot. The earlier
+       * version reached too far into the indicator-light area, so the arm now
+       * stays left of the center controls and reads as a separate input.
+       */
+      const leverBaseX = leverSlotX + leverSlotWidth * 0.5;
+      const leverBaseY = leverSlotY + leverSlotHeight * 0.72;
+      const leverKnobX = leverBaseX + 24 * motifScale;
+      const leverKnobY = leverBaseY - 17 * motifScale;
+
+      context.beginPath();
+      context.moveTo(leverBaseX, leverBaseY);
+      context.lineTo(leverKnobX, leverKnobY);
+      context.stroke();
+
+      context.beginPath();
+      context.arc(leverKnobX, leverKnobY, 9 * motifScale, 0, Math.PI * 2);
+      context.fill();
+
+      const indicatorPositions = [
+        [panelX + 112 * motifScale, panelY + 92 * motifScale, false],
+        [panelX + 152 * motifScale, panelY + 92 * motifScale, false],
+        [panelX + 112 * motifScale, panelY + 118 * motifScale, true],
+        [panelX + 152 * motifScale, panelY + 118 * motifScale, true],
+      ] as const;
+
+      indicatorPositions.forEach(([lightX, lightY, filled]) => {
+        drawRoundedRect(
+          context,
+          lightX - 7 * motifScale,
+          lightY - 7 * motifScale,
+          14 * motifScale,
+          14 * motifScale,
+          4 * motifScale,
+        );
+
+        if (filled) {
+          context.fill();
+        } else {
+          context.stroke();
+        }
+      });
+    } else if (style === "text_card") {
+      const bubbleX = x - 76 * motifScale;
+      const bubbleY = y - 48 * motifScale;
+      const bubbleWidth = 152 * motifScale;
+      const bubbleHeight = 88 * motifScale;
+
+      drawRoundedRect(
+        context,
+        bubbleX,
+        bubbleY,
+        bubbleWidth,
+        bubbleHeight,
+        24 * motifScale,
+      );
+      context.stroke();
+
+      context.beginPath();
+      context.moveTo(x - 28 * motifScale, bubbleY + bubbleHeight);
+      context.lineTo(x - 8 * motifScale, bubbleY + bubbleHeight + 20 * motifScale);
+      context.lineTo(x + 8 * motifScale, bubbleY + bubbleHeight);
+      context.stroke();
+
+      context.lineCap = "round";
+      [0, 1, 2].forEach((lineIndex) => {
+        const lineY = y - 22 * motifScale + lineIndex * 24 * motifScale;
+        const lineWidth = (lineIndex === 1 ? 84 : 106) * motifScale;
+
+        context.beginPath();
+        context.moveTo(x - lineWidth / 2, lineY);
+        context.lineTo(x + lineWidth / 2, lineY);
+        context.stroke();
+      });
+    } else {
+      context.font = `700 ${58 * motifScale}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(icon, x, y);
+    }
+
+    context.restore();
+  });
+
+  /**
+   * Softly fade the poles/outer extents so the underlying topic sphere still
+   * shows through a bit and the display feels integrated instead of pasted on.
+   */
+  context.save();
+  context.globalCompositeOperation = "destination-in";
+  const globeMask = context.createRadialGradient(
+    width * 0.5,
+    height * 0.5,
+    height * 0.12,
+    width * 0.5,
+    height * 0.5,
+    width * 0.62,
+  );
+  globeMask.addColorStop(0, "rgba(255,255,255,1)");
+  globeMask.addColorStop(0.72, "rgba(255,255,255,0.97)");
+  globeMask.addColorStop(1, "rgba(255,255,255,0.44)");
+  context.fillStyle = globeMask;
+  context.fillRect(0, 0, width, height);
+  context.restore();
+}
+
+function createProbeSphereDisplayTexture(args: {
+  style: ProbeMarkerThumbnailStyle;
+  icon: string;
+}) {
+  const canvas = document.createElement("canvas");
+  canvas.width = PROBE_DISPLAY_TEXTURE_WIDTH;
+  canvas.height = PROBE_DISPLAY_TEXTURE_HEIGHT;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return null;
+  }
+
+  drawProbeSphereDisplayTexture({
+    context,
+    style: args.style,
+    icon: args.icon,
+    width: canvas.width,
+    height: canvas.height,
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.needsUpdate = true;
+
+  return texture;
+}
+
 function ProbeMarker({
   probe,
+  topic,
+  visualRadius,
   isVisible,
   onOpenProbe,
 }: {
   probe: ProbeSummary;
+  topic: LearningSpaceTopic;
+  visualRadius: number;
   isVisible: boolean;
   onOpenProbe: (probe: ProbeSummary) => void;
 }) {
+  const { camera } = useThree();
+  const displayGroupRef = useRef<THREE.Group | null>(null);
+
+  /**
+   * The whole-sphere probe display is intentionally visual-only for pointer
+   * events. Keeping these references acknowledged avoids accidental future
+   * removal of the prop contract while preserving normal topic click / double
+   * click / drag behavior on the underlying sphere.
+   */
+  void probe;
+  void onOpenProbe;
+
+  const preview = getProbeMarkerPreview(topic);
+  const thumbnailStyle =
+    preview?.thumbnail_style ?? getDebugProbeThumbnailStyle(topic);
+  const icon = getProbeThumbnailIcon(thumbnailStyle);
+
+  const texture = useMemo(
+    () =>
+      createProbeSphereDisplayTexture({
+        style: thumbnailStyle,
+        icon,
+      }),
+    [thumbnailStyle, icon],
+  );
+
+  useEffect(() => {
+    return () => {
+      texture?.dispose();
+    };
+  }, [texture]);
+
+  /**
+   * Keep the probe display viewer-facing and upright, like a spherical display
+   * surface rather than a texture that tumbles with the world. The textured
+   * shell below has a small UV/front correction rotation so the main icon sits
+   * near the visual center instead of drifting off to the side.
+   */
+  useFrame(() => {
+    if (!displayGroupRef.current) return;
+    displayGroupRef.current.quaternion.copy(camera.quaternion);
+  });
+
+  const palette = getProbeTilePalette(thumbnailStyle);
+  const opacity = isVisible ? 0.9 : 0;
+  const glowOpacity = opacity * PROBE_DISPLAY_GLOW_OPACITY;
+  const scale = isVisible ? 1 : 0.9;
+  const shellScale = visualRadius * PROBE_DISPLAY_SPHERE_SCALE;
+  const glowScale = visualRadius * PROBE_DISPLAY_GLOW_SCALE;
+
   return (
-    <Html
-      position={[0, 0, 0]}
-      center
-      distanceFactor={10}
-      style={{
-        pointerEvents: isVisible ? "auto" : "none",
-      }}
+    <group
+      ref={displayGroupRef}
+      scale={scale}
+      renderOrder={PROBE_DISPLAY_RENDER_ORDER}
     >
-      <button
-        type="button"
-        aria-label="Open probe"
-        title="Open probe"
-        onClick={(event) => {
-          event.stopPropagation();
-          onOpenProbe(probe);
-        }}
-        onPointerDown={(event) => {
-          event.stopPropagation();
-        }}
-        className="group relative flex h-9 w-9 items-center justify-center rounded-full border border-purple-300/45 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3),rgba(168,85,247,0.28)_45%,rgba(50,18,84,0.9)_100%)] text-white shadow-[0_0_24px_rgba(168,85,247,0.28)] backdrop-blur-md transition duration-200 hover:scale-105 hover:border-purple-200/60 hover:shadow-[0_0_30px_rgba(168,85,247,0.38)]"
-        style={{
-          opacity: isVisible ? 1 : 0,
-          transform: `scale(${isVisible ? 1 : 0.82})`,
-          transition: "opacity 180ms ease, transform 220ms ease",
-        }}
+      <mesh
+        renderOrder={PROBE_DISPLAY_GLOW_RENDER_ORDER}
+        visible={glowOpacity > 0.01}
+        raycast={() => null}
       >
-        <span className="absolute inset-0 rounded-full border border-purple-200/20 opacity-70" />
-        <span className="absolute inset-1.25 rounded-full border border-white/10" />
-        <span className="text-sm leading-none">✦</span>
-      </button>
-    </Html>
+        <sphereGeometry args={[glowScale, 56, 56]} />
+        <meshBasicMaterial
+          color={palette.core}
+          transparent
+          opacity={glowOpacity}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          depthTest
+          toneMapped={false}
+        />
+      </mesh>
+
+      <mesh
+        renderOrder={PROBE_DISPLAY_RENDER_ORDER}
+        visible={opacity > 0.01}
+        rotation={[0, PROBE_DISPLAY_FRONT_ROTATION_Y, 0]}
+        raycast={() => null}
+      >
+        <sphereGeometry args={[shellScale, 56, 56]} />
+        <meshBasicMaterial
+          map={texture ?? undefined}
+          color="#ffffff"
+          transparent
+          opacity={opacity}
+          depthWrite={false}
+          depthTest
+          blending={THREE.NormalBlending}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
   );
 }
 
@@ -1825,6 +2638,8 @@ function TopicSphere({
   onFocusTopic,
   onUnfocus,
   onOpenProbe,
+  controlsRef,
+  preProbeViewSnapshotRef,
   animatedTopicPositionsRef,
 }: {
   topic: LearningSpaceTopic;
@@ -1843,8 +2658,11 @@ function TopicSphere({
   onFocusTopic: (id: string) => void;
   onUnfocus: () => void;
   onOpenProbe: (probe: ProbeSummary) => void;
+  controlsRef: RefObject<TrackballControlsRef | null>;
+  preProbeViewSnapshotRef: PreProbeViewSnapshotRef;
   animatedTopicPositionsRef: AnimatedTopicPositionsRef;
 }) {
+  const { camera } = useThree();
   const isAnyTopicFocused = focusedTopicId !== null;
 
   const groupRef = useRef<THREE.Group>(null);
@@ -1873,8 +2691,13 @@ function TopicSphere({
   const pointerDownRef = useRef<{ x: number; y: number; time: number } | null>(
     null,
   );
-  const lastTapRef = useRef<{ time: number; topicId: string } | null>(null);
+  const clickSequenceRef = useRef<{
+    time: number;
+    topicId: string;
+    count: number;
+  } | null>(null);
   const singleClickTimeoutRef = useRef<number | null>(null);
+  const doubleClickTimeoutRef = useRef<number | null>(null);
 
   const movementAlpha = getTopicMovementAlpha({
     isFocused,
@@ -2052,6 +2875,18 @@ function TopicSphere({
     }
   }
 
+  function clearPendingDoubleClick() {
+    if (doubleClickTimeoutRef.current !== null) {
+      window.clearTimeout(doubleClickTimeoutRef.current);
+      doubleClickTimeoutRef.current = null;
+    }
+  }
+
+  function clearPendingClickActions() {
+    clearPendingSingleClick();
+    clearPendingDoubleClick();
+  }
+
   function runSingleClick() {
     onSelect(topic.topic_id);
   }
@@ -2070,6 +2905,33 @@ function TopicSphere({
 
     onSelect(topic.topic_id);
     onFocusTopic(topic.topic_id);
+  }
+
+  function runTripleClick() {
+    if (!topicProbe) {
+      runDoubleClick();
+      return;
+    }
+
+    const controls = controlsRef.current;
+    if (controls) {
+      /**
+       * Capture the exact viewpoint before any selection/probe-entry state can
+       * move the camera. Probe exit restores this snapshot so the learner backs
+       * out to the same angle, zoom, and target they triple-clicked from.
+       */
+      preProbeViewSnapshotRef.current = {
+        cameraPosition: camera.position.clone(),
+        cameraQuaternion: camera.quaternion.clone(),
+        cameraUp: camera.up.clone(),
+        cameraZoom: camera.zoom,
+        target: controls.target.clone(),
+        capturedAt: performance.now(),
+      };
+    }
+
+    onSelect(topic.topic_id);
+    onOpenProbe(topicProbe);
   }
 
   function handlePointerDown(event: ThreeEvent<PointerEvent>) {
@@ -2098,33 +2960,55 @@ function TopicSphere({
     }
 
     const now = performance.now();
-    const lastTap = lastTapRef.current;
-    const isDoubleClick =
-      !!lastTap &&
-      lastTap.topicId === topic.topic_id &&
-      now - lastTap.time <= 260;
+    const previousSequence = clickSequenceRef.current;
+    const isSameTopicSequence =
+      !!previousSequence &&
+      previousSequence.topicId === topic.topic_id &&
+      now - previousSequence.time <= TOPIC_CLICK_SEQUENCE_MS;
 
-    if (isDoubleClick) {
-      clearPendingSingleClick();
-      lastTapRef.current = null;
-      runDoubleClick();
+    const nextCount = isSameTopicSequence ? previousSequence.count + 1 : 1;
+
+    clickSequenceRef.current = {
+      time: now,
+      topicId: topic.topic_id,
+      count: nextCount,
+    };
+
+    if (nextCount === 1) {
+      clearPendingClickActions();
+      singleClickTimeoutRef.current = window.setTimeout(() => {
+        runSingleClick();
+        singleClickTimeoutRef.current = null;
+        clickSequenceRef.current = null;
+      }, TOPIC_CLICK_SEQUENCE_MS);
       return;
     }
 
-    lastTapRef.current = {
-      time: now,
-      topicId: topic.topic_id,
-    };
+    if (nextCount === 2) {
+      clearPendingSingleClick();
+      clearPendingDoubleClick();
 
-    clearPendingSingleClick();
-    singleClickTimeoutRef.current = window.setTimeout(() => {
-      runSingleClick();
-      singleClickTimeoutRef.current = null;
-    }, 260);
+      /**
+       * Delay the double-click action briefly so a third click can become
+       * probe entry without stealing normal double-click focus/unfocus behavior.
+       */
+      doubleClickTimeoutRef.current = window.setTimeout(() => {
+        runDoubleClick();
+        doubleClickTimeoutRef.current = null;
+        clickSequenceRef.current = null;
+      }, TOPIC_CLICK_SEQUENCE_MS);
+      return;
+    }
+
+    clearPendingClickActions();
+    clickSequenceRef.current = null;
+    runTripleClick();
   }
 
   const showProbeMarker =
-    !!topicProbe && (isFocused || isSelected) && isSceneSettled;
+    !!topicProbe &&
+    !isEnteringProbe &&
+    (SHOW_DEBUG_PROBE_THUMBNAILS_FOR_ALL_TOPICS || isFocused || isSelected);
 
   return (
     <>
@@ -2187,6 +3071,8 @@ function TopicSphere({
           {topicProbe && (
             <ProbeMarker
               probe={topicProbe}
+              topic={topic}
+              visualRadius={visualRadius}
               isVisible={showProbeMarker}
               onOpenProbe={onOpenProbe}
             />
@@ -2206,7 +3092,10 @@ function CameraController({
   isEnteringProbe,
   probeEntryTopicId,
   onProbeEntryComplete,
+  onProbeExitRestoreStart,
+  onProbeExitRestoreComplete,
   onCameraMotionChange,
+  preProbeViewSnapshotRef,
   animatedTopicPositionsRef,
 }: {
   topics: LearningSpaceTopic[];
@@ -2217,7 +3106,10 @@ function CameraController({
   isEnteringProbe: boolean;
   probeEntryTopicId: string | null;
   onProbeEntryComplete: () => void;
+  onProbeExitRestoreStart?: () => void;
+  onProbeExitRestoreComplete?: () => void;
   onCameraMotionChange?: (moving: boolean) => void;
+  preProbeViewSnapshotRef: PreProbeViewSnapshotRef;
   animatedTopicPositionsRef: AnimatedTopicPositionsRef;
 }) {
   const { camera } = useThree();
@@ -2231,6 +3123,13 @@ function CameraController({
   const lastHandledArrivalModeRef = useRef<SceneArrivalMode | null>(null);
   const lastHandledSelectedTopicPositionKeyRef = useRef<string | null>(null);
   const lastHandledFocusedTopicPositionKeyRef = useRef<string | null>(null);
+  const previousIsEnteringProbeRef = useRef(false);
+  const preProbeCameraPositionRef = useRef<THREE.Vector3 | null>(null);
+  const preProbeCameraQuaternionRef = useRef<THREE.Quaternion | null>(null);
+  const preProbeCameraUpRef = useRef<THREE.Vector3 | null>(null);
+  const preProbeCameraZoomRef = useRef<number | null>(null);
+  const preProbeTargetRef = useRef<THREE.Vector3 | null>(null);
+  const isRestoringPreProbeViewRef = useRef(false);
 
   const cameraAnimatingRef = useRef(false);
   const targetAnimatingRef = useRef(false);
@@ -2270,8 +3169,24 @@ function CameraController({
 
     const currentTarget = controls.target.clone();
     const currentDirection = getCurrentViewDirection(camera, currentTarget);
+    const wasEnteringProbe = previousIsEnteringProbeRef.current;
+    previousIsEnteringProbeRef.current = isEnteringProbe;
 
     if (isEnteringProbe && probeEntryTopicId) {
+      if (!wasEnteringProbe) {
+        const snapshot = preProbeViewSnapshotRef.current;
+        preProbeCameraPositionRef.current =
+          snapshot?.cameraPosition.clone() ?? camera.position.clone();
+        preProbeCameraQuaternionRef.current =
+          snapshot?.cameraQuaternion.clone() ?? camera.quaternion.clone();
+        preProbeCameraUpRef.current =
+          snapshot?.cameraUp.clone() ?? camera.up.clone();
+        preProbeCameraZoomRef.current = snapshot?.cameraZoom ?? camera.zoom;
+        preProbeTargetRef.current =
+          snapshot?.target.clone() ?? controls.target.clone();
+        isRestoringPreProbeViewRef.current = false;
+      }
+
       const topic = getTopicById(topics, probeEntryTopicId);
       if (!topic) {
         previousFocusedTopicIdRef.current = focusedTopicId;
@@ -2310,6 +3225,89 @@ function CameraController({
           : null
         : null;
       return;
+    }
+
+    if (wasEnteringProbe && !isEnteringProbe) {
+      const snapshot = preProbeViewSnapshotRef.current;
+      const savedCameraPosition =
+        snapshot?.cameraPosition.clone() ?? preProbeCameraPositionRef.current;
+      const savedTarget = snapshot?.target.clone() ?? preProbeTargetRef.current;
+
+      if (savedCameraPosition && savedTarget) {
+        /**
+         * Probe exit should feel like backing out of the same sphere/view the
+         * learner entered from, not like a generic refocus from a far-away
+         * location. Restore the exact pre-probe camera position and target.
+         */
+        desiredCameraPosition.current.copy(savedCameraPosition);
+        desiredTarget.current.copy(savedTarget);
+
+        currentCameraAlphaRef.current = PROBE_EXIT_CAMERA_ALPHA;
+        currentTargetAlphaRef.current = PROBE_EXIT_TARGET_ALPHA;
+        pendingProbeEntryCompleteRef.current = false;
+        isRestoringPreProbeViewRef.current = true;
+        onProbeExitRestoreStart?.();
+        cameraAnimatingRef.current = true;
+        targetAnimatingRef.current = true;
+        controls.enabled = false;
+        setCameraMoving(true);
+
+        previousFocusedTopicIdRef.current = focusedTopicId;
+        lastHandledSelectedTopicIdRef.current = selectedTopicId;
+        lastHandledFocusedTopicIdRef.current = focusedTopicId;
+        lastHandledArrivalModeRef.current = arrivalMode;
+        lastHandledSelectedTopicPositionKeyRef.current = selectedTopicId
+          ? getTopicById(topics, selectedTopicId)
+            ? getTopicPositionKey(getTopicById(topics, selectedTopicId)!)
+            : null
+          : null;
+        lastHandledFocusedTopicPositionKeyRef.current = focusedTopicId
+          ? getTopicById(topics, focusedTopicId)
+            ? getTopicPositionKey(getTopicById(topics, focusedTopicId)!)
+            : null
+          : null;
+        return;
+      }
+
+      const restoreTopicId = focusedTopicId ?? probeEntryTopicId ?? selectedTopicId;
+      const topic = getTopicById(topics, restoreTopicId);
+
+      if (topic) {
+        const target = getAnimatedTopicPosition(topic, animatedTopicPositionsRef);
+        const cameraRadius = getTopicCameraRadius(topic);
+        const restoreDistance = Math.max(4.2, cameraRadius * 3.35);
+
+        desiredTarget.current.copy(target);
+        desiredCameraPosition.current.copy(
+          target.clone().add(currentDirection.multiplyScalar(restoreDistance)),
+        );
+
+        currentCameraAlphaRef.current = PROBE_EXIT_CAMERA_ALPHA;
+        currentTargetAlphaRef.current = PROBE_EXIT_TARGET_ALPHA;
+        pendingProbeEntryCompleteRef.current = false;
+        isRestoringPreProbeViewRef.current = true;
+        onProbeExitRestoreStart?.();
+        cameraAnimatingRef.current = true;
+        targetAnimatingRef.current = true;
+        controls.enabled = false;
+        setCameraMoving(true);
+
+        previousFocusedTopicIdRef.current = focusedTopicId;
+        lastHandledSelectedTopicIdRef.current = selectedTopicId;
+        lastHandledFocusedTopicIdRef.current = focusedTopicId;
+        lastHandledArrivalModeRef.current = arrivalMode;
+        lastHandledSelectedTopicPositionKeyRef.current = selectedTopicId
+          ? getTopicById(topics, selectedTopicId)
+            ? getTopicPositionKey(getTopicById(topics, selectedTopicId)!)
+            : null
+          : null;
+        lastHandledFocusedTopicPositionKeyRef.current = focusedTopicId
+          ? getTopicById(topics, focusedTopicId)
+            ? getTopicPositionKey(getTopicById(topics, focusedTopicId)!)
+            : null
+          : null;
+        return;
+      }
     }
 
     if (!isFocused && wasFocused) {
@@ -2531,6 +3529,7 @@ function CameraController({
     camera,
     controlsRef,
     animatedTopicPositionsRef,
+    onProbeExitRestoreStart,
   ]);
 
   useFrame(() => {
@@ -2543,7 +3542,7 @@ function CameraController({
      * sphere moves there over time. Camera framing should follow the displayed
      * sphere, not jump ahead to the final target.
      */
-    if (!isEnteringProbe) {
+    if (!isEnteringProbe && !isRestoringPreProbeViewRef.current) {
       const rideTopicId = focusedTopicId ?? selectedTopicId;
       const rideTopic = getTopicById(topics, rideTopicId);
 
@@ -2614,6 +3613,44 @@ function CameraController({
       controls.enabled = true;
       cameraAnimatingRef.current = false;
       targetAnimatingRef.current = false;
+
+      if (isRestoringPreProbeViewRef.current) {
+        const snapshot = preProbeViewSnapshotRef.current;
+        const savedQuaternion =
+          snapshot?.cameraQuaternion ?? preProbeCameraQuaternionRef.current;
+        const savedUp = snapshot?.cameraUp ?? preProbeCameraUpRef.current;
+        const savedZoom = snapshot?.cameraZoom ?? preProbeCameraZoomRef.current;
+
+        if (savedUp) {
+          camera.up.copy(savedUp);
+        }
+
+        if (typeof savedZoom === "number" && Number.isFinite(savedZoom)) {
+          camera.zoom = savedZoom;
+          camera.updateProjectionMatrix();
+        }
+
+        controls.update?.();
+
+        /**
+         * Position + target restore the functional view. Keeping the captured
+         * quaternion as a final correction preserves subtle Trackball roll when
+         * it is not overwritten by controls.update.
+         */
+        if (savedQuaternion) {
+          camera.quaternion.slerp(savedQuaternion, 0.35);
+        }
+
+        isRestoringPreProbeViewRef.current = false;
+        preProbeCameraPositionRef.current = null;
+        preProbeCameraQuaternionRef.current = null;
+        preProbeCameraUpRef.current = null;
+        preProbeCameraZoomRef.current = null;
+        preProbeTargetRef.current = null;
+        preProbeViewSnapshotRef.current = null;
+        onProbeExitRestoreComplete?.();
+      }
+
       setCameraMoving(false);
 
       if (pendingProbeEntryCompleteRef.current) {
@@ -2624,6 +3661,45 @@ function CameraController({
   });
 
   return null;
+}
+
+function buildDebugProbeSummaryForTopic(topic: LearningSpaceTopic): ProbeSummary {
+  const label = getTopicDisplayLabel(topic);
+  const style = getDebugProbeThumbnailStyle(topic);
+
+  return {
+    id: `debug-probe-${topic.topic_id}`,
+    topicId: topic.topic_id,
+    topicLabel: label,
+    title: `${getProbeThumbnailLabel(style)} check`,
+    instruction: `Temporary visual-development probe for ${label}. This lets the surface thumbnail be tested before real probe eligibility is restored.`,
+    status: "available",
+    intent: "diagnostic",
+    probeType:
+      style === "slider_card"
+        ? "predict"
+        : style === "drag_drop_card"
+          ? "apply_transfer"
+          : style === "choice_card"
+            ? "discriminate"
+            : style === "text_card"
+              ? "explain"
+              : null,
+    expectedResponseType:
+      style === "slider_card"
+        ? "predict"
+        : style === "choice_card"
+          ? "multiple_choice"
+          : style === "drag_drop_card" || style === "graph_card" || style === "simulation_card"
+            ? "interactive_action"
+            : style === "audio_card"
+              ? "audio"
+              : style === "video_card"
+                ? "video"
+                : "text",
+    helperText:
+      "Temporary dev thumbnail. Real probe availability will be restored after the surface treatment looks right.",
+  };
 }
 
 type SpaceCanvasProps = {
@@ -2664,12 +3740,14 @@ export default function SpaceCanvas({
   const animatedTopicPositionsRef = useRef<Map<string, THREE.Vector3>>(
     new Map(),
   );
+  const preProbeViewSnapshotRef = useRef<PreProbeViewSnapshot | null>(null);
 
   const [appearingTopicIds, setAppearingTopicIds] = useState<Set<string>>(
     new Set(),
   );
   const [isUserControlling, setIsUserControlling] = useState(false);
   const [isCameraInMotion, setIsCameraInMotion] = useState(false);
+  const [isProbeExitAnimating, setIsProbeExitAnimating] = useState(false);
   const [isSceneSettled, setIsSceneSettled] = useState(true);
   const scannerSettleTimeoutRef = useRef<number | null>(null);
   const scannerRelationshipIdsRef = useRef<string[]>([]);
@@ -2691,6 +3769,13 @@ export default function SpaceCanvas({
   }, [learningSpace.topics]);
 
   const activeRelationshipTopicId = focusedTopicId ?? selectedTopicId;
+  const isProbeTransitionActive = isEnteringProbe || isProbeExitAnimating;
+
+  useEffect(() => {
+    if (isEnteringProbe && isProbeExitAnimating) {
+      setIsProbeExitAnimating(false);
+    }
+  }, [isEnteringProbe, isProbeExitAnimating]);
 
   const visibleModeRelationships = useMemo(() => {
     if (!activeRelationshipTopicId || relationshipViewMode === "off") {
@@ -2996,7 +4081,7 @@ export default function SpaceCanvas({
             topicsById={topicsById}
             animatedTopicPositionsRef={animatedTopicPositionsRef}
             isScanning={isUserControlling}
-            isEnteringProbe={isEnteringProbe}
+            isEnteringProbe={isProbeTransitionActive}
             onScannerRelationshipIdsChange={updateScannerRelationshipIds}
           />
 
@@ -3010,18 +4095,24 @@ export default function SpaceCanvas({
                 animatedTopicPositionsRef={animatedTopicPositionsRef}
                 isAnyTopicFocused={focusedTopicId !== null}
                 hideBecauseUserIsControlling={false}
-                isEnteringProbe={isEnteringProbe}
+                isEnteringProbe={isProbeTransitionActive}
                 variant={displayedRelationshipVariant}
               />
             ))}
 
           {learningSpace.topics.map((topic) => {
-            const topicProbe =
+            const realTopicProbe =
               availableProbe &&
               availableProbe.topicId === topic.topic_id &&
               availableProbe.status === "available"
                 ? availableProbe
                 : null;
+
+            const topicProbe =
+              realTopicProbe ??
+              (SHOW_DEBUG_PROBE_THUMBNAILS_FOR_ALL_TOPICS
+                ? buildDebugProbeSummaryForTopic(topic)
+                : null);
 
             return (
               <TopicSphere
@@ -3035,7 +4126,7 @@ export default function SpaceCanvas({
                 topicProbe={topicProbe}
                 isAppearing={appearingTopicIds.has(topic.topic_id)}
                 isSceneSettled={isSceneSettled}
-                isEnteringProbe={isEnteringProbe}
+                isEnteringProbe={isProbeTransitionActive}
                 hideLabelsForViewDrag={isUserControlling}
                 forceShowLabelDuringViewDrag={relationshipLabelTopicIds.has(
                   topic.topic_id,
@@ -3044,6 +4135,8 @@ export default function SpaceCanvas({
                 onFocusTopic={(id) => onFocusTopicChange?.(id)}
                 onUnfocus={() => onFocusTopicChange?.(null)}
                 onOpenProbe={onOpenProbe}
+                controlsRef={controlsRef}
+                preProbeViewSnapshotRef={preProbeViewSnapshotRef}
                 animatedTopicPositionsRef={animatedTopicPositionsRef}
               />
             );
@@ -3058,7 +4151,10 @@ export default function SpaceCanvas({
             isEnteringProbe={isEnteringProbe}
             probeEntryTopicId={probeEntryTopicId}
             onProbeEntryComplete={onProbeEntryComplete}
+            onProbeExitRestoreStart={() => setIsProbeExitAnimating(true)}
+            onProbeExitRestoreComplete={() => setIsProbeExitAnimating(false)}
             onCameraMotionChange={setIsCameraInMotion}
+            preProbeViewSnapshotRef={preProbeViewSnapshotRef}
             animatedTopicPositionsRef={animatedTopicPositionsRef}
           />
 
@@ -3090,8 +4186,8 @@ export default function SpaceCanvas({
       </div>
 
       <div
-        className={`pointer-events-none absolute inset-0 z-10 transition-opacity duration-500 ${
-          isEnteringProbe ? "opacity-100" : "opacity-0"
+        className={`pointer-events-none absolute inset-0 z-10 transition-opacity duration-700 ${
+          isProbeTransitionActive ? "opacity-100" : "opacity-0"
         } bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.92)_0%,rgba(101,45,175,0.98)_42%,rgba(26,6,46,1)_100%)]`}
       />
 

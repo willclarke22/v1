@@ -247,6 +247,7 @@ export type TopicSurfaceMarkerThumbnailStyle =
   | "choice_card"
   | "drag_drop_card"
   | "slider_card"
+  | "graph_card"
   | "video_card"
   | "audio_card"
   | "simulation_card"
@@ -286,7 +287,9 @@ export type TopicSurfaceMarker = {
   };
 
   /**
-   * Probe markers can become YouTube-like thumbnails on the sphere surface.
+   * Probe markers render as small square/rectangular thumbnails attached to the
+   * sphere surface. The thumbnail_style tells the renderer which icon/treatment
+   * to use, such as choice, drag/drop, prediction, audio, video, or simulation.
    * Other marker types can omit this and use their own visual treatment.
    */
   preview?: {
@@ -295,6 +298,15 @@ export type TopicSurfaceMarker = {
     modality: TopicSurfaceMarkerModality;
     probe_type: TopicSurfaceMarkerProbeType;
     short_prompt: string | null;
+
+    /**
+     * Renderer hint for sphere-surface media tiles. These are optional because
+     * early payloads may only specify thumbnail_style.
+     */
+    render_style?: "sphere_surface_tile" | "floating_badge";
+    aspect_ratio?: "wide" | "square";
+    curvature_strength?: number | null;
+    glow_intensity?: number | null;
   };
 };
 

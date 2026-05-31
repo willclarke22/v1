@@ -21,6 +21,7 @@ import {
 import { loadRouteTopics } from "@/lib/runtime/route-topics";
 import { buildRunMetadata } from "@/lib/runtime/probe-submit-route/timing";
 import {
+  getAnsweredProbeContractSnapshot,
   getRouteTopicLabel,
   normalizeProbeRawResponse,
   validateProbeSubmitBody,
@@ -36,7 +37,8 @@ import {
   buildDeliveredResponse,
   buildSceneUpdate,
 } from "@/lib/runtime/probe-submit-route/response-bundle";
-import { buildImportantRunInputs } from "@/lib/runtime/probe-submit-route/attempt-input";
+import { buildAttemptEvidencePackage } from "@/lib/runtime/probe-submit-route/attempt-input";
+import { judgeProbeAttemptAgainstContract } from "@/lib/engine/judging";
 import {
   buildDecision,
   buildEngineFuel,
@@ -75,6 +77,7 @@ export async function POST(request: NextRequest) {
 
     const topicLabel = body.topicLabel || getRouteTopicLabel(topic);
     const provisionalDiagnosis = inferDiagnosisFromTopic(topic);
+    const answeredProbeContractSnapshot = getAnsweredProbeContractSnapshot(body);
 
     const runId = makeId("run");
 
@@ -95,6 +98,15 @@ export async function POST(request: NextRequest) {
           );
 
     const vectorInfo = buildVectorInfo(topic);
+
+    const attemptEvidencePackage = buildAttemptEvidencePackage({
+      body: { ...body, response: rawResponse },
+      topic,
+      vectorInfo,
+      modelSignals,
+      rawResponse,
+      activeDiagnosis: provisionalDiagnosis,
+    });
 
     const scoring = scoreResponse(rawResponse, {
       topic,
@@ -152,11 +164,18 @@ export async function POST(request: NextRequest) {
         ? buildDeliveredProbeFromPlan(nextProbePlan)
         : null;
 
+    const contractJudgment = judgeProbeAttemptAgainstContract({
+      attemptInterpretation: attemptEvidencePackage.attemptInterpretation,
+      probeContractSnapshot:
+        answeredProbeContractSnapshot ?? nextProbePlan.probe_contract_snapshot,
+    });
+
     const decision = buildDecision({
       topic,
       scoring,
       replyBundle,
       modelSignals,
+      attemptInterpretation: attemptEvidencePackage.attemptInterpretation,
     });
 
     const engineFuel = buildEngineFuel({
@@ -164,6 +183,7 @@ export async function POST(request: NextRequest) {
       decision,
       nextProbePlan,
       judgedAttempt,
+      attemptInterpretation: attemptEvidencePackage.attemptInterpretation,
     });
 
     /**
@@ -180,13 +200,7 @@ export async function POST(request: NextRequest) {
 
     const result: MyWayRunResult = {
       run_metadata: buildRunMetadata(engineFuel, runId),
-      important_run_inputs: buildImportantRunInputs({
-        body: { ...body, response: rawResponse },
-        topic,
-        vectorInfo,
-        modelSignals,
-        rawResponse,
-      }),
+      important_run_inputs: attemptEvidencePackage.importantRunInputs,
       engine_fuel: engineFuel,
       delivered_response: buildDeliveredResponse(
         replyBundle.reply,
@@ -205,6 +219,9 @@ export async function POST(request: NextRequest) {
       pendingConfusionInsightScore,
       bodyProbeId: body.probeId,
       judgedAttempt,
+      attemptInterpretation: attemptEvidencePackage.attemptInterpretation,
+      contractJudgment,
+      answeredProbeContractSnapshot,
       updatedTopicMetrics,
       modelSignals,
       nextProbePlan,

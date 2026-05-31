@@ -1,3 +1,4 @@
+import { buildProbeContract } from "@/lib/engine/probes";
 import { makeId } from "@/lib/utils/ids";
 import type {
   DiagnosisType,
@@ -43,6 +44,10 @@ type NextProbePlanArgs = {
 
 function clamp01(value: number) {
   return Math.max(0, Math.min(1, value));
+}
+
+function asProbeContractSnapshot(value: unknown): Record<string, unknown> {
+  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
 }
 
 function selectFollowupDiagnosis(args: {
@@ -557,6 +562,27 @@ export function buildNextProbePlan(args: NextProbePlanArgs): ProbePlan {
   const preferredGenerator: RendererGenerator = "chatgpt";
   const expectedResponseType: ProbeExpectedResponseType = "text";
 
+  /**
+   * Probe Contract V1 is attached as a measurement contract while the actual
+   * delivered renderer remains text during the current contract-proving stage.
+   *
+   * Later, this is the seam where diagnosis/probe policy can choose
+   * multiple_choice, ordering, drag_drop_match, graph_match, simulation, audio,
+   * or video renderers directly.
+   */
+  const probeContractResult = buildProbeContract({
+    targetTopicId: topic.id,
+    targetTopicLabel: topic.topic_label,
+    targetDiagnosis: activeDiagnosis,
+    intent: probeIntent,
+    probeType: finalProbeType,
+    rendererKind: "text_explanation",
+    expectedResponseType,
+  });
+  const probeContractSnapshot = asProbeContractSnapshot(
+    probeContractResult.contract,
+  );
+
   const evidence = clamp01(evidenceStrength ?? 0.35);
   const judgment = clamp01(judgmentConfidence ?? 0.45);
 
@@ -595,6 +621,7 @@ export function buildNextProbePlan(args: NextProbePlanArgs): ProbePlan {
       instructional_goal: title,
       why_text: [
         "Text remains the safest renderer during this contract-proving stage.",
+        "A Probe Contract V1 snapshot is attached so the measurement target, success markers, failure markers, and future renderer schema are inspectable.",
         evidence < 0.35
           ? "The prior evidence is still light, so a compact text probe is the safest next measurement."
           : "The next text probe can target the specific missing evidence cleanly.",
@@ -772,6 +799,8 @@ export function buildNextProbePlan(args: NextProbePlanArgs): ProbePlan {
       prompt: null,
       config: null,
     },
+
+    probe_contract_snapshot: probeContractSnapshot,
   };
 }
 
@@ -955,5 +984,7 @@ export function buildNotApplicableProbePlan(topic: RouteTopic): ProbePlan {
       prompt: null,
       config: null,
     },
+
+    probe_contract_snapshot: null,
   };
 }
