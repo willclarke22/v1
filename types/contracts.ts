@@ -221,9 +221,23 @@ export type RenderState = {
   collision_radius: number;
 
   surface_noise: number;
+
+  /**
+   * Smoothness/coherence proxy used by renderer-side atmospheric treatments.
+   * Higher values should look calmer and more coherent.
+   */
+  smoothness: number;
+
   spin_rate: number;
   saturation: number;
   is_star: boolean;
+
+  /**
+   * Glow is separate from saturation so insight/coherence can brighten a topic
+   * without turning topic hue into a semantic category.
+   */
+  glow_intensity: number;
+  glow_source: "insight" | "star_state" | "focus" | "none";
 };
 
 /* ------------------------------------------------------------------ */
@@ -1094,6 +1108,39 @@ export interface LearningSpaceSatellite {
   linked_attempt_id: Nullable<EntityId>;
 }
 
+export interface LearningWeather {
+  /**
+   * Confusion as visible cloud/haze density around the topic.
+   */
+  cloud_density: number;
+
+  /**
+   * Active unresolved instability. Higher values can render as more turbulent
+   * cloud movement or storm pressure.
+   */
+  storm_turbulence: number;
+
+  /**
+   * Insight as available light/clarity.
+   */
+  sunlight_intensity: number;
+
+  /**
+   * Productive struggle: insight emerging while confusion is still present.
+   */
+  sunlight_breakthrough: number;
+
+  /**
+   * Low-confusion, high-insight clarity.
+   */
+  sky_clarity: number;
+
+  /**
+   * Evidence-backed steadiness of the visible atmosphere.
+   */
+  atmosphere_stability: number;
+}
+
 export interface LearningSpaceTopic {
   topic_id: EntityId;
   topic_label: string;
@@ -1110,6 +1157,13 @@ export interface LearningSpaceTopic {
   layout: LearningSpaceTopicLayout;
 
   render_state: RenderState;
+
+  /**
+   * Renderer-side learner-state atmosphere.
+   * Clouds represent confusion; sunlight represents insight emerging through it.
+   */
+  learning_weather?: LearningWeather;
+
   satellite_count: number;
   satellites: LearningSpaceSatellite[];
 }

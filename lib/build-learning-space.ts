@@ -6,6 +6,7 @@ import type {
   LearningSpace,
   LearningSpaceProjectionMetadata,
   LearningSpaceRelationship,
+  LearningWeather,
   LearningSpaceViewpoint,
   TopicPanelProjection,
   TopicRing,
@@ -157,6 +158,49 @@ function buildRenderState(topic: LearningSpaceInputTopic) {
     is_star: isStar,
     glow_intensity: round(glowIntensity),
     glow_source: glowSource,
+  };
+}
+
+function buildLearningWeather(topic: LearningSpaceInputTopic): LearningWeather {
+  const confusion = clamp(safeNumber(topic.confusion, 0.3), 0, 1);
+  const insight = clamp(safeNumber(topic.insight, 0.5), 0, 1);
+  const learningScore = clamp(safeNumber(topic.learningScore, 0.5), 0, 1);
+
+  /**
+   * MyWay weather grammar v1:
+   *
+   * - confusion becomes cloud density / storm pressure
+   * - insight becomes sunlight
+   * - confusion + insight becomes sunlight breaking through clouds
+   * - low confusion + high insight becomes a clearer sky
+   * - learningScore steadies the whole atmosphere
+   *
+   * These values intentionally stay renderer-safe 0..1 numbers so the engine
+   * can later replace this derivation without changing SpaceCanvas.
+   */
+  const cloudDensity = confusion;
+  const sunlightIntensity = insight;
+  const sunlightBreakthrough = confusion * insight;
+  const skyClarity = insight * (1 - confusion);
+  const atmosphereStability = clamp(
+    learningScore * 0.72 + insight * 0.2 + (1 - confusion) * 0.08,
+    0,
+    1,
+  );
+
+  const stormTurbulence = clamp(
+    confusion * (0.78 + (1 - atmosphereStability) * 0.22) * (1 - insight * 0.18),
+    0,
+    1,
+  );
+
+  return {
+    cloud_density: round(cloudDensity),
+    storm_turbulence: round(stormTurbulence),
+    sunlight_intensity: round(sunlightIntensity),
+    sunlight_breakthrough: round(sunlightBreakthrough),
+    sky_clarity: round(skyClarity),
+    atmosphere_stability: round(atmosphereStability),
   };
 }
 
@@ -526,6 +570,7 @@ export function buildLearningSpace(
           movement_policy: buildMovementPolicy(topic),
         },
         render_state: buildRenderState(topic),
+        learning_weather: buildLearningWeather(topic),
         surface_markers: buildSurfaceMarkers(topic),
         rings: buildRings(topic),
         satellite_count: satelliteCount,

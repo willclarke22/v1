@@ -387,6 +387,45 @@ export type TopicPanelProjection = {
   }[];
 };
 
+
+export type LearningWeather = {
+  /**
+   * Cloud density is the main learner-state visual for confusion: more
+   * unresolved instability means thicker weather around the topic.
+   */
+  cloud_density: number;
+
+  /**
+   * Turbulence controls how active/uneasy the cloud layer feels. It is related
+   * to confusion, but productive insight can soften it.
+   */
+  storm_turbulence: number;
+
+  /**
+   * Sunlight intensity represents insight as light becoming available inside the
+   * topic's atmosphere.
+   */
+  sunlight_intensity: number;
+
+  /**
+   * Breakthrough is strongest when confusion and insight coexist: sun peeking
+   * through clouds instead of a fully cleared sky.
+   */
+  sunlight_breakthrough: number;
+
+  /**
+   * Clarity represents low-confusion, high-insight understanding: the weather
+   * has calmed and the sky is clearing.
+   */
+  sky_clarity: number;
+
+  /**
+   * Stability is an evidence/development proxy. It should make weather feel
+   * steadier when the topic has stronger support.
+   */
+  atmosphere_stability: number;
+};
+
 export type LearningSpaceTopic = {
   topic_id: string;
   topic_label: string;
@@ -427,6 +466,13 @@ export type LearningSpaceTopic = {
       preserve_user_spatial_memory: boolean;
     };
   };
+
+  /**
+   * Renderer-safe learner-state weather. This is the visual grammar layer for
+   * confusion as clouds/storm pressure and insight as sunlight breaking
+   * through. It is separate from semantic position/relationship lines.
+   */
+  learning_weather?: LearningWeather;
 
   render_state: {
     /**
