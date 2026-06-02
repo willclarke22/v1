@@ -271,8 +271,13 @@ const SHOW_DEBUG_PROBE_THUMBNAILS_FOR_ALL_TOPICS = true;
  * double-click, and drag/scanning interactions still belong to the underlying
  * topic sphere.
  */
-const PROBE_DISPLAY_SPHERE_SCALE = 1.002;
-const PROBE_DISPLAY_GLOW_SCALE = 1.006;
+/**
+ * Keep the probe display just far enough above the topic sphere to avoid
+ * depth-buffer fighting/shimmer at distance. This is intentionally still close
+ * enough to read as the sphere surface itself, not a separate badge.
+ */
+const PROBE_DISPLAY_SPHERE_SCALE = 1.012;
+const PROBE_DISPLAY_GLOW_SCALE = 1.018;
 const PROBE_DISPLAY_RENDER_ORDER = 24;
 const PROBE_DISPLAY_GLOW_RENDER_ORDER = 23;
 const PROBE_DISPLAY_TEXTURE_WIDTH = 1024;
@@ -2024,6 +2029,7 @@ function drawProbeSphereDisplayTexture(args: {
 function createProbeSphereDisplayTexture(args: {
   style: ProbeMarkerThumbnailStyle;
   icon: string;
+  maxAnisotropy: number;
 }) {
   const canvas = document.createElement("canvas");
   canvas.width = PROBE_DISPLAY_TEXTURE_WIDTH;
@@ -2043,8 +2049,22 @@ function createProbeSphereDisplayTexture(args: {
   });
 
   const texture = new THREE.CanvasTexture(canvas);
+
+  /**
+   * Anti-shimmer texture policy.
+   *
+   * The probe surface has tiny lines/glyphs and is viewed at steep angles when
+   * background topics are far away. Explicit mipmapping + trilinear filtering +
+   * anisotropy keeps the existing icon style, but makes GPU sampling much more
+   * stable during camera movement.
+   */
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.anisotropy = Math.max(1, Math.min(16, args.maxAnisotropy || 1));
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.needsUpdate = true;
 
   return texture;
@@ -2063,7 +2083,7 @@ function ProbeMarker({
   isVisible: boolean;
   onOpenProbe: (probe: ProbeSummary) => void;
 }) {
-  const { camera } = useThree();
+  const { camera, gl } = useThree();
   const displayGroupRef = useRef<THREE.Group | null>(null);
 
   /**
@@ -2080,13 +2100,19 @@ function ProbeMarker({
     preview?.thumbnail_style ?? getDebugProbeThumbnailStyle(topic);
   const icon = getProbeThumbnailIcon(thumbnailStyle);
 
+  const maxAnisotropy = useMemo(
+    () => gl.capabilities.getMaxAnisotropy(),
+    [gl],
+  );
+
   const texture = useMemo(
     () =>
       createProbeSphereDisplayTexture({
         style: thumbnailStyle,
         icon,
+        maxAnisotropy,
       }),
-    [thumbnailStyle, icon],
+    [thumbnailStyle, icon, maxAnisotropy],
   );
 
   useEffect(() => {
@@ -2152,6 +2178,9 @@ function ProbeMarker({
           depthTest
           blending={THREE.NormalBlending}
           toneMapped={false}
+          polygonOffset
+          polygonOffsetFactor={-2}
+          polygonOffsetUnits={-8}
         />
       </mesh>
     </group>
@@ -2631,7 +2660,8 @@ function TopicSphere({
   topicProbe,
   isAppearing,
   isSceneSettled,
-  isEnteringProbe,
+  isProbeVisualSuppressed,
+  isProbeLabelSuppressed,
   hideLabelsForViewDrag,
   forceShowLabelDuringViewDrag,
   onSelect,
@@ -2651,7 +2681,8 @@ function TopicSphere({
   topicProbe: ProbeSummary | null;
   isAppearing: boolean;
   isSceneSettled: boolean;
-  isEnteringProbe: boolean;
+  isProbeVisualSuppressed: boolean;
+  isProbeLabelSuppressed: boolean;
   hideLabelsForViewDrag: boolean;
   forceShowLabelDuringViewDrag: boolean;
   onSelect: (id: string) => void;
@@ -2702,7 +2733,7 @@ function TopicSphere({
   const movementAlpha = getTopicMovementAlpha({
     isFocused,
     isAnyTopicFocused,
-    isEnteringProbe,
+    isEnteringProbe: isProbeVisualSuppressed,
   });
 
   const visualRadius = getTopicVisualRadius({
@@ -2723,7 +2754,7 @@ function TopicSphere({
     const currentDistance = currentPositionRef.current.distanceTo(nextTarget);
 
     if (
-      !isEnteringProbe &&
+      !isProbeVisualSuppressed &&
       targetDistance >= MOVEMENT_TRAIL_MIN_DISTANCE &&
       currentDistance >= MOVEMENT_TRAIL_MIN_DISTANCE
     ) {
@@ -2735,7 +2766,7 @@ function TopicSphere({
     }
 
     targetPositionRef.current.copy(nextTarget);
-  }, [topic.position, isEnteringProbe, isFocused, isAnyTopicFocused]);
+  }, [topic.position, isProbeVisualSuppressed, isFocused, isAnyTopicFocused]);
 
   useEffect(() => {
     animatedTopicPositionsRef.current.set(
@@ -2794,7 +2825,7 @@ function TopicSphere({
       targetPositionRef.current,
     );
 
-    if (isEnteringProbe) {
+    if (isProbeVisualSuppressed) {
       trailOpacityRef.current = 0;
     } else if (distanceToTarget < 0.04) {
       trailOpacityRef.current *= MOVEMENT_TRAIL_TARGET_REACHED_FADE_RATE;
@@ -2837,7 +2868,7 @@ function TopicSphere({
         topic,
         isFocused,
         isAnyTopicFocused,
-        isEnteringProbe,
+        isEnteringProbe: isProbeVisualSuppressed,
       });
       const bobAngle =
         state.clock.elapsedTime * bobSpeedRef.current + bobPhaseRef.current;
@@ -3007,7 +3038,7 @@ function TopicSphere({
 
   const showProbeMarker =
     !!topicProbe &&
-    !isEnteringProbe &&
+    !isProbeVisualSuppressed &&
     (SHOW_DEBUG_PROBE_THUMBNAILS_FOR_ALL_TOPICS || isFocused || isSelected);
 
   return (
@@ -3063,7 +3094,7 @@ function TopicSphere({
             hideLabelsForViewDrag={hideLabelsForViewDrag}
             forceShowLabel={forceShowLabelDuringViewDrag}
             isAnyTopicFocused={isAnyTopicFocused}
-            isEnteringProbe={isEnteringProbe}
+            isEnteringProbe={isProbeLabelSuppressed}
             worldPositionRef={currentPositionRef}
             visualRadius={visualRadius}
           />
@@ -3090,6 +3121,7 @@ function CameraController({
   arrivalMode,
   controlsRef,
   isEnteringProbe,
+  isProbeImmersiveActive,
   probeEntryTopicId,
   onProbeEntryComplete,
   onProbeExitRestoreStart,
@@ -3104,6 +3136,7 @@ function CameraController({
   arrivalMode: SceneArrivalMode;
   controlsRef: RefObject<TrackballControlsRef | null>;
   isEnteringProbe: boolean;
+  isProbeImmersiveActive: boolean;
   probeEntryTopicId: string | null;
   onProbeEntryComplete: () => void;
   onProbeExitRestoreStart?: () => void;
@@ -3124,6 +3157,7 @@ function CameraController({
   const lastHandledSelectedTopicPositionKeyRef = useRef<string | null>(null);
   const lastHandledFocusedTopicPositionKeyRef = useRef<string | null>(null);
   const previousIsEnteringProbeRef = useRef(false);
+  const previousIsProbeImmersiveActiveRef = useRef(false);
   const preProbeCameraPositionRef = useRef<THREE.Vector3 | null>(null);
   const preProbeCameraQuaternionRef = useRef<THREE.Quaternion | null>(null);
   const preProbeCameraUpRef = useRef<THREE.Vector3 | null>(null);
@@ -3170,7 +3204,9 @@ function CameraController({
     const currentTarget = controls.target.clone();
     const currentDirection = getCurrentViewDirection(camera, currentTarget);
     const wasEnteringProbe = previousIsEnteringProbeRef.current;
+    const wasProbeImmersiveActive = previousIsProbeImmersiveActiveRef.current;
     previousIsEnteringProbeRef.current = isEnteringProbe;
+    previousIsProbeImmersiveActiveRef.current = isProbeImmersiveActive;
 
     if (isEnteringProbe && probeEntryTopicId) {
       if (!wasEnteringProbe) {
@@ -3227,7 +3263,7 @@ function CameraController({
       return;
     }
 
-    if (wasEnteringProbe && !isEnteringProbe) {
+    if (wasProbeImmersiveActive && !isProbeImmersiveActive) {
       const snapshot = preProbeViewSnapshotRef.current;
       const savedCameraPosition =
         snapshot?.cameraPosition.clone() ?? preProbeCameraPositionRef.current;
@@ -3525,6 +3561,7 @@ function CameraController({
     focusedTopicId,
     arrivalMode,
     isEnteringProbe,
+    isProbeImmersiveActive,
     probeEntryTopicId,
     camera,
     controlsRef,
@@ -3542,7 +3579,7 @@ function CameraController({
      * sphere moves there over time. Camera framing should follow the displayed
      * sphere, not jump ahead to the final target.
      */
-    if (!isEnteringProbe && !isRestoringPreProbeViewRef.current) {
+    if (!isProbeImmersiveActive && !isRestoringPreProbeViewRef.current) {
       const rideTopicId = focusedTopicId ?? selectedTopicId;
       const rideTopic = getTopicById(topics, rideTopicId);
 
@@ -3710,11 +3747,14 @@ type SpaceCanvasProps = {
   relationshipViewMode?: RelationshipViewMode;
   availableProbe: ProbeSummary | null;
   isEnteringProbe: boolean;
+  isProbeSurfaceActive?: boolean;
   probeEntryTopicId: string | null;
   onSelectTopic: (id: string | null) => void;
   onFocusTopicChange?: (topicId: string | null) => void;
   onOpenProbe: (probe: ProbeSummary) => void;
   onProbeEntryComplete: () => void;
+  onProbeExitRestoreStart?: () => void;
+  onProbeExitRestoreComplete?: () => void;
   isBootstrappingTopics?: boolean;
 };
 
@@ -3726,11 +3766,14 @@ export default function SpaceCanvas({
   relationshipViewMode = "semantic_similarity",
   availableProbe,
   isEnteringProbe,
+  isProbeSurfaceActive = false,
   probeEntryTopicId,
   onSelectTopic,
   onFocusTopicChange,
   onOpenProbe,
   onProbeEntryComplete,
+  onProbeExitRestoreStart,
+  onProbeExitRestoreComplete,
   isBootstrappingTopics = false,
 }: SpaceCanvasProps) {
   const controlsRef = useRef<TrackballControlsRef | null>(null);
@@ -3769,13 +3812,55 @@ export default function SpaceCanvas({
   }, [learningSpace.topics]);
 
   const activeRelationshipTopicId = focusedTopicId ?? selectedTopicId;
-  const isProbeTransitionActive = isEnteringProbe || isProbeExitAnimating;
+
+  /**
+   * Probe state is intentionally split into separate meanings:
+   *
+   * - isProbeImmersiveActive suppresses probe-surface visuals only while the
+   *   learner is entering or actually inside the probe.
+   * - isProbeTransitionActive is reserved for camera/panel restore bookkeeping.
+   *   Do not use it to hide the visible Learning Space during exit.
+   *
+   * This prevents probe exit from looking like the whole Learning Space reloads:
+   * sphere bodies, probe thumbnails, relationship lines, and topic labels are
+   * allowed to remain stable/visible as soon as the probe surface closes.
+   */
+  const isProbeImmersiveActive = isEnteringProbe || isProbeSurfaceActive;
+  const isProbeTransitionActive = isProbeImmersiveActive || isProbeExitAnimating;
+
+  /**
+   * Exit should feel like moving back out into the existing map, not like a
+   * reload. Therefore visual suppression stops as soon as the probe surface
+   * closes. The exit flag can keep panels/camera bookkeeping alive, but it does
+   * not hide labels, relationship lines, sphere colors, or probe thumbnails.
+   */
+  const suppressLearningSpaceOverlaysForProbe = isProbeImmersiveActive;
+
+  /**
+   * Keep the safety state and the visual veil state separate.
+   *
+   * isProbeTransitionActive is still useful for knowing that the camera is
+   * restoring from a probe, but it should not blank labels, relationship lines,
+   * sphere colors, or probe thumbnails. On exit, the purple veil fades
+   * immediately so the learner can see the already-mounted Learning Space during
+   * the motion instead of after the motion.
+   */
+  const probeVeilOpacityClassName = isProbeImmersiveActive
+    ? "opacity-100 duration-300 ease-out"
+    : isProbeExitAnimating
+      ? "opacity-0 duration-500 ease-out"
+      : "opacity-0 duration-500 ease-out";
 
   useEffect(() => {
-    if (isEnteringProbe && isProbeExitAnimating) {
+    if (isProbeImmersiveActive && isProbeExitAnimating) {
       setIsProbeExitAnimating(false);
+      onProbeExitRestoreComplete?.();
     }
-  }, [isEnteringProbe, isProbeExitAnimating]);
+  }, [
+    isProbeImmersiveActive,
+    isProbeExitAnimating,
+    onProbeExitRestoreComplete,
+  ]);
 
   const visibleModeRelationships = useMemo(() => {
     if (!activeRelationshipTopicId || relationshipViewMode === "off") {
@@ -4056,7 +4141,7 @@ export default function SpaceCanvas({
       <div className="absolute inset-0 z-0">
         <Canvas
           camera={{ position: [0, 18, 72], fov: 50 }}
-          gl={{ stencil: true }}
+          gl={{ stencil: true, antialias: true, powerPreference: "high-performance" }}
         >
           <color attach="background" args={["#000000"]} />
 
@@ -4081,7 +4166,7 @@ export default function SpaceCanvas({
             topicsById={topicsById}
             animatedTopicPositionsRef={animatedTopicPositionsRef}
             isScanning={isUserControlling}
-            isEnteringProbe={isProbeTransitionActive}
+            isEnteringProbe={suppressLearningSpaceOverlaysForProbe}
             onScannerRelationshipIdsChange={updateScannerRelationshipIds}
           />
 
@@ -4095,7 +4180,7 @@ export default function SpaceCanvas({
                 animatedTopicPositionsRef={animatedTopicPositionsRef}
                 isAnyTopicFocused={focusedTopicId !== null}
                 hideBecauseUserIsControlling={false}
-                isEnteringProbe={isProbeTransitionActive}
+                isEnteringProbe={suppressLearningSpaceOverlaysForProbe}
                 variant={displayedRelationshipVariant}
               />
             ))}
@@ -4126,7 +4211,8 @@ export default function SpaceCanvas({
                 topicProbe={topicProbe}
                 isAppearing={appearingTopicIds.has(topic.topic_id)}
                 isSceneSettled={isSceneSettled}
-                isEnteringProbe={isProbeTransitionActive}
+                isProbeVisualSuppressed={isProbeImmersiveActive}
+                isProbeLabelSuppressed={suppressLearningSpaceOverlaysForProbe}
                 hideLabelsForViewDrag={isUserControlling}
                 forceShowLabelDuringViewDrag={relationshipLabelTopicIds.has(
                   topic.topic_id,
@@ -4149,10 +4235,17 @@ export default function SpaceCanvas({
             arrivalMode={arrivalMode}
             controlsRef={controlsRef}
             isEnteringProbe={isEnteringProbe}
+            isProbeImmersiveActive={isProbeImmersiveActive}
             probeEntryTopicId={probeEntryTopicId}
             onProbeEntryComplete={onProbeEntryComplete}
-            onProbeExitRestoreStart={() => setIsProbeExitAnimating(true)}
-            onProbeExitRestoreComplete={() => setIsProbeExitAnimating(false)}
+            onProbeExitRestoreStart={() => {
+              setIsProbeExitAnimating(true);
+              onProbeExitRestoreStart?.();
+            }}
+            onProbeExitRestoreComplete={() => {
+              setIsProbeExitAnimating(false);
+              onProbeExitRestoreComplete?.();
+            }}
             onCameraMotionChange={setIsCameraInMotion}
             preProbeViewSnapshotRef={preProbeViewSnapshotRef}
             animatedTopicPositionsRef={animatedTopicPositionsRef}
@@ -4186,9 +4279,7 @@ export default function SpaceCanvas({
       </div>
 
       <div
-        className={`pointer-events-none absolute inset-0 z-10 transition-opacity duration-700 ${
-          isProbeTransitionActive ? "opacity-100" : "opacity-0"
-        } bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.92)_0%,rgba(101,45,175,0.98)_42%,rgba(26,6,46,1)_100%)]`}
+        className={`pointer-events-none absolute inset-0 z-10 transition-opacity ${probeVeilOpacityClassName} bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.92)_0%,rgba(101,45,175,0.98)_42%,rgba(26,6,46,1)_100%)]`}
       />
 
       <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_top,rgba(88,92,180,0.12),transparent_30%),radial-gradient(circle_at_bottom,rgba(30,30,60,0.18),transparent_40%)]" />

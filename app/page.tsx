@@ -609,6 +609,7 @@ export default function Home() {
     useState<SceneArrivalMode>("focus");
   const [relationshipViewMode, setRelationshipViewMode] =
     useState<RelationshipViewMode>("semantic_similarity");
+  const [isProbeExitRestoring, setIsProbeExitRestoring] = useState(false);
 
   const topicRefreshInFlightRef = useRef(false);
   const realtimeRefreshTimeoutRef = useRef<number | null>(null);
@@ -703,7 +704,9 @@ export default function Home() {
   const activeProbe = probeFlow.activeProbe;
   const isFocused = focusedTopicId !== null;
   const isImmersiveProbeMode =
-    probeFlow.isEnteringProbe || probeFlow.sceneMode === "probe";
+    probeFlow.isEnteringProbe ||
+    probeFlow.sceneMode === "probe" ||
+    isProbeExitRestoring;
 
   const isRightPanelOpen = isFocused
     ? !shellPanels.isRightPanelDismissedWhileFocused
@@ -713,7 +716,8 @@ export default function Home() {
     !isBootstrappingTopics &&
     !probeFlow.isSending &&
     !probeFlow.isEnteringProbe &&
-    probeFlow.sceneMode !== "probe";
+    probeFlow.sceneMode !== "probe" &&
+    !isProbeExitRestoring;
 
   const applyTopicStateRefresh = useCallback(
     (payload: StagedTopicStateRefresh) => {
@@ -1106,41 +1110,46 @@ export default function Home() {
   return (
     <main className="relative h-screen overflow-hidden bg-black text-white">
       <div className="absolute inset-0">
-        {probeFlow.sceneMode === "space" ? (
-          <SpaceCanvas
-            learningSpace={learningSpace}
-            selectedTopicId={selectedTopicId}
-            focusedTopicId={focusedTopicId}
-            availableProbe={probeFlow.availableProbe}
-            isEnteringProbe={probeFlow.isEnteringProbe}
-            probeEntryTopicId={probeFlow.probeEntryTopicId}
-            arrivalMode={sceneArrivalMode}
-            relationshipViewMode={relationshipViewMode}
-            onSelectTopic={(id) => {
-              if (id === null) {
-                setSelectedTopicId(null);
-                return;
-              }
+        <SpaceCanvas
+          learningSpace={learningSpace}
+          selectedTopicId={selectedTopicId}
+          focusedTopicId={focusedTopicId}
+          availableProbe={probeFlow.availableProbe}
+          isEnteringProbe={probeFlow.isEnteringProbe}
+          isProbeSurfaceActive={probeFlow.sceneMode === "probe"}
+          probeEntryTopicId={probeFlow.probeEntryTopicId}
+          arrivalMode={sceneArrivalMode}
+          relationshipViewMode={relationshipViewMode}
+          onSelectTopic={(id) => {
+            if (id === null) {
+              setSelectedTopicId(null);
+              return;
+            }
 
-              setSelectedTopicId(id);
+            setSelectedTopicId(id);
 
-              if (focusedTopicId && id !== focusedTopicId) {
-                focusTopic(id);
-              }
-            }}
-            onFocusTopicChange={focusTopic}
-            onOpenProbe={probeFlow.handleOpenProbe}
-            onProbeEntryComplete={probeFlow.handleProbeEntryComplete}
-            isBootstrappingTopics={isBootstrappingTopics}
-          />
-        ) : (
-          <ProbeSurface
-            probe={activeProbe}
-            probeFeedback={probeFlow.probeFeedback}
-            isSubmitting={probeFlow.isSubmittingProbe}
-            onExit={probeFlow.handleExitProbe}
-            onSubmit={probeFlow.handleSubmitProbe}
-          />
+            if (focusedTopicId && id !== focusedTopicId) {
+              focusTopic(id);
+            }
+          }}
+          onFocusTopicChange={focusTopic}
+          onOpenProbe={probeFlow.handleOpenProbe}
+          onProbeEntryComplete={probeFlow.handleProbeEntryComplete}
+          onProbeExitRestoreStart={() => setIsProbeExitRestoring(true)}
+          onProbeExitRestoreComplete={() => setIsProbeExitRestoring(false)}
+          isBootstrappingTopics={isBootstrappingTopics}
+        />
+
+        {probeFlow.sceneMode === "probe" && (
+          <div className="absolute inset-0 z-30">
+            <ProbeSurface
+              probe={activeProbe}
+              probeFeedback={probeFlow.probeFeedback}
+              isSubmitting={probeFlow.isSubmittingProbe}
+              onExit={probeFlow.handleExitProbe}
+              onSubmit={probeFlow.handleSubmitProbe}
+            />
+          </div>
         )}
       </div>
 
