@@ -19,7 +19,7 @@ import {
  *
  * Put the downloaded images here:
  *
- * public/learning-space/weather/equirectangular-test/8k_venus_surface.jpg
+ * public/learning-space/weather/equirectangular-test/8k_mars.jpg
  * public/learning-space/weather/equirectangular-test/8k_earth_clouds.jpg
  * public/learning-space/weather/equirectangular-test/8k_jupiter.jpg
  *
@@ -27,13 +27,13 @@ import {
  * normal 16:9 clips because they are designed for sphere/equirectangular use.
  */
 const EQUIRECTANGULAR_TEXTURE_URLS = [
-  "/learning-space/weather/equirectangular-test/8k_venus_surface.jpg?v=equirect-test-2",
+  "/learning-space/weather/equirectangular-test/8k_mars.jpg?v=equirect-test-2",
   "/learning-space/weather/equirectangular-test/8k_earth_clouds.jpg?v=equirect-test-2",
   "/learning-space/weather/equirectangular-test/8k_jupiter.jpg?v=equirect-test-2",
 ] as const;
 
 type TextureTestMode =
-  | "all_venus"
+  | "all_mars"
   | "all_clouds"
   | "all_jupiter"
   | "by_topic";
@@ -41,7 +41,7 @@ type TextureTestMode =
 /**
  * Choose how to apply the test textures:
  *
- * "all_venus"   -> every sphere uses the Venus surface map.
+ * "all_mars"    -> every sphere uses the Mars surface map.
  * "all_clouds"  -> every sphere uses the Earth cloud map.
  * "all_jupiter" -> every sphere uses the Jupiter surface map.
  * "by_topic"    -> topics rotate deterministically between all three textures.
@@ -83,7 +83,7 @@ function hashString(value: string) {
 }
 
 function chooseTextureUrlForTopic(topicId: string) {
-  if (TEXTURE_TEST_MODE === "all_venus") {
+  if (TEXTURE_TEST_MODE === "all_mars") {
     return EQUIRECTANGULAR_TEXTURE_URLS[0];
   }
 
