@@ -10,49 +10,90 @@ import {
 } from "../constants";
 
 /**
- * EQUIRECTANGULAR TEXTURE SURFACE TEST
+ * EQUIRECTANGULAR TEXTURE SURFACE GALLERY TEST
  *
  * Purpose:
- * - Test true equirectangular 8k still images on the topic spheres.
- * - Remove video decoding, procedural cloud masks, and procedural sun/ray layers.
- * - Judge whether high-resolution equirectangular maps wrap cleanly onto spheres.
+ * - Show every available equirectangular planet/cloud texture in the Learning Space.
+ * - Keep this simple: one texture per sphere, no blending, no overlays, no video.
+ * - Use this to judge which textures look good on MyWay topic spheres.
  *
  * Put the downloaded images here:
  *
- * public/learning-space/weather/equirectangular-test/8k_mars.jpg
+ * public/learning-space/weather/equirectangular-test/2k_neptune.jpg
+ * public/learning-space/weather/equirectangular-test/4k_ceres_fictional.jpg
+ * public/learning-space/weather/equirectangular-test/4k_eris_fictional.jpg
+ * public/learning-space/weather/equirectangular-test/4k_makemake_fictional.jpg
  * public/learning-space/weather/equirectangular-test/8k_earth_clouds.jpg
  * public/learning-space/weather/equirectangular-test/8k_jupiter.jpg
+ * public/learning-space/weather/equirectangular-test/8k_mars.jpg
+ * public/learning-space/weather/equirectangular-test/8k_mercury.jpg
+ * public/learning-space/weather/equirectangular-test/8k_saturn.jpg
+ * public/learning-space/weather/equirectangular-test/8k_sun.jpg
  *
- * These are still images, not videos. They should map much more correctly than
- * normal 16:9 clips because they are designed for sphere/equirectangular use.
+ * These are still images, not videos. They should map cleanly because they are
+ * equirectangular / sphere-ready textures.
  */
-const EQUIRECTANGULAR_TEXTURE_URLS = [
-  "/learning-space/weather/equirectangular-test/8k_mars.jpg?v=equirect-test-2",
-  "/learning-space/weather/equirectangular-test/8k_earth_clouds.jpg?v=equirect-test-2",
-  "/learning-space/weather/equirectangular-test/8k_jupiter.jpg?v=equirect-test-2",
+
+const TEXTURE_BASE_PATH = "/learning-space/weather/equirectangular-test";
+
+const EQUIRECTANGULAR_TEXTURE_URLS = {
+  neptune: `${TEXTURE_BASE_PATH}/2k_neptune.jpg?v=equirect-gallery-v1`,
+  ceres: `${TEXTURE_BASE_PATH}/4k_ceres_fictional.jpg?v=equirect-gallery-v1`,
+  eris: `${TEXTURE_BASE_PATH}/4k_eris_fictional.jpg?v=equirect-gallery-v1`,
+  makemake: `${TEXTURE_BASE_PATH}/4k_makemake_fictional.jpg?v=equirect-gallery-v1`,
+  earthClouds: `${TEXTURE_BASE_PATH}/8k_earth_clouds.jpg?v=equirect-gallery-v1`,
+  jupiter: `${TEXTURE_BASE_PATH}/8k_jupiter.jpg?v=equirect-gallery-v1`,
+  mars: `${TEXTURE_BASE_PATH}/8k_mars.jpg?v=equirect-gallery-v1`,
+  mercury: `${TEXTURE_BASE_PATH}/8k_mercury.jpg?v=equirect-gallery-v1`,
+  saturn: `${TEXTURE_BASE_PATH}/8k_saturn.jpg?v=equirect-gallery-v1`,
+  sun: `${TEXTURE_BASE_PATH}/8k_sun.jpg?v=equirect-gallery-v1`,
+} as const;
+
+const TEXTURE_ENTRIES = [
+  { key: "neptune", url: EQUIRECTANGULAR_TEXTURE_URLS.neptune },
+  { key: "ceres", url: EQUIRECTANGULAR_TEXTURE_URLS.ceres },
+  { key: "eris", url: EQUIRECTANGULAR_TEXTURE_URLS.eris },
+  { key: "makemake", url: EQUIRECTANGULAR_TEXTURE_URLS.makemake },
+  { key: "earth_clouds", url: EQUIRECTANGULAR_TEXTURE_URLS.earthClouds },
+  { key: "jupiter", url: EQUIRECTANGULAR_TEXTURE_URLS.jupiter },
+  { key: "mars", url: EQUIRECTANGULAR_TEXTURE_URLS.mars },
+  { key: "mercury", url: EQUIRECTANGULAR_TEXTURE_URLS.mercury },
+  { key: "saturn", url: EQUIRECTANGULAR_TEXTURE_URLS.saturn },
+  { key: "sun", url: EQUIRECTANGULAR_TEXTURE_URLS.sun },
 ] as const;
 
-type TextureTestMode =
-  | "all_mars"
-  | "all_clouds"
+const TEXTURE_URL_LIST = TEXTURE_ENTRIES.map((entry) => entry.url);
+
+type TextureGalleryMode =
+  | "by_topic"
+  | "all_neptune"
+  | "all_ceres"
+  | "all_eris"
+  | "all_makemake"
+  | "all_earth_clouds"
   | "all_jupiter"
-  | "by_topic";
+  | "all_mars"
+  | "all_mercury"
+  | "all_saturn"
+  | "all_sun";
 
 /**
- * Choose how to apply the test textures:
- *
- * "all_mars"    -> every sphere uses the Mars surface map.
- * "all_clouds"  -> every sphere uses the Earth cloud map.
- * "all_jupiter" -> every sphere uses the Jupiter surface map.
- * "by_topic"    -> topics rotate deterministically between all three textures.
+ * "by_topic" rotates deterministically through all textures by topic_id.
+ * Change this to one of the all_* values if you want every sphere to show
+ * the same texture for close inspection.
  */
-const TEXTURE_TEST_MODE: TextureTestMode = "by_topic";
+const TEXTURE_GALLERY_MODE: TextureGalleryMode = "by_topic";
 
 /**
- * Keep this false to judge the texture mapping itself.
- * Set true only if you want a slow globe-like drift.
+ * Keep this false to judge pure wrapping/resolution.
+ * Set true if you want a very slow globe-like drift.
  */
 const ENABLE_SURFACE_DRIFT = false;
+
+/**
+ * 128 looks nicer. Try 96 if many topics make the scene heavy.
+ */
+const SPHERE_SEGMENTS = 128;
 
 type AnimatedSurface = {
   visibility: number;
@@ -82,22 +123,19 @@ function hashString(value: string) {
   return hash >>> 0;
 }
 
-function chooseTextureUrlForTopic(topicId: string) {
-  if (TEXTURE_TEST_MODE === "all_mars") {
-    return EQUIRECTANGULAR_TEXTURE_URLS[0];
-  }
+function textureIndexFromMode(mode: TextureGalleryMode, topicId: string) {
+  if (mode === "all_neptune") return 0;
+  if (mode === "all_ceres") return 1;
+  if (mode === "all_eris") return 2;
+  if (mode === "all_makemake") return 3;
+  if (mode === "all_earth_clouds") return 4;
+  if (mode === "all_jupiter") return 5;
+  if (mode === "all_mars") return 6;
+  if (mode === "all_mercury") return 7;
+  if (mode === "all_saturn") return 8;
+  if (mode === "all_sun") return 9;
 
-  if (TEXTURE_TEST_MODE === "all_clouds") {
-    return EQUIRECTANGULAR_TEXTURE_URLS[1];
-  }
-
-  if (TEXTURE_TEST_MODE === "all_jupiter") {
-    return EQUIRECTANGULAR_TEXTURE_URLS[2];
-  }
-
-  const index =
-    hashString(topicId || "topic") % EQUIRECTANGULAR_TEXTURE_URLS.length;
-  return EQUIRECTANGULAR_TEXTURE_URLS[index];
+  return hashString(topicId || "topic") % TEXTURE_ENTRIES.length;
 }
 
 function configureEquirectangularTexture(texture: THREE.Texture) {
@@ -107,7 +145,7 @@ function configureEquirectangularTexture(texture: THREE.Texture) {
 
   /**
    * Mipmaps help reduce shimmer when zoomed out. They cost memory, but this is
-   * only a resolution/mapping test. If performance becomes poor, change
+   * only a texture gallery test. If performance becomes poor, change
    * generateMipmaps to false and minFilter to THREE.LinearFilter.
    */
   texture.generateMipmaps = true;
@@ -115,8 +153,12 @@ function configureEquirectangularTexture(texture: THREE.Texture) {
   texture.magFilter = THREE.LinearFilter;
   texture.anisotropy = 16;
   texture.needsUpdate = true;
+}
 
-  return texture;
+function configureAllTextures(textures: THREE.Texture[]) {
+  for (const texture of textures) {
+    configureEquirectangularTexture(texture);
+  }
 }
 
 export function TopicWeatherAtmosphere({
@@ -135,21 +177,27 @@ export function TopicWeatherAtmosphere({
   const surfaceMeshRef = useRef<THREE.Mesh | null>(null);
   const animatedSurfaceRef = useRef<AnimatedSurface | null>(null);
 
-  const selectedTextureUrl = useMemo(() => {
-    return chooseTextureUrlForTopic(topic.topic_id);
-  }, [topic.topic_id]);
-
-  const surfaceTexture = useLoader(THREE.TextureLoader, selectedTextureUrl);
+  const loadedTextures = useLoader(
+    THREE.TextureLoader,
+    TEXTURE_URL_LIST as unknown as string[],
+  ) as unknown as THREE.Texture[];
 
   useEffect(() => {
-    configureEquirectangularTexture(surfaceTexture);
+    configureAllTextures(loadedTextures);
 
     /**
-     * Do not dispose this texture here. useLoader caches textures by URL, and
-     * multiple spheres may share the same loaded texture. Disposing in one
-     * sphere could break the others.
+     * Do not dispose these textures here. useLoader caches textures by URL, and
+     * every topic sphere may share them. Disposing in one sphere could break
+     * the others.
      */
-  }, [surfaceTexture]);
+  }, [loadedTextures]);
+
+  const selectedTextureIndex = useMemo(() => {
+    return textureIndexFromMode(TEXTURE_GALLERY_MODE, topic.topic_id);
+  }, [topic.topic_id]);
+
+  const surfaceTexture =
+    loadedTextures[selectedTextureIndex] ?? loadedTextures[0];
 
   const weather = topic.learning_weather ?? {
     cloud_density: 0.3,
@@ -172,14 +220,14 @@ export function TopicWeatherAtmosphere({
    * this is just opacity variation for the test, not final weather logic.
    */
   const surfaceOpacityTarget = clamp(
-    0.76 +
-      clarity * 0.05 +
-      sunlight * 0.04 +
-      breakthrough * 0.025 +
-      cloudDensity * 0.025 -
-      turbulence * 0.02,
+    0.78 +
+      clarity * 0.045 +
+      sunlight * 0.035 +
+      breakthrough * 0.02 +
+      cloudDensity * 0.02 -
+      turbulence * 0.018,
     0.68,
-    0.94,
+    0.96,
   );
 
   const focusBoost = isFocused ? 1.045 : isSelected ? 1.02 : 1;
@@ -198,10 +246,10 @@ export function TopicWeatherAtmosphere({
     animated.visibility = damp(animated.visibility, isVisible ? 1 : 0, 8, delta);
 
     const targetDriftSpeed = ENABLE_SURFACE_DRIFT
-      ? 0.0006 +
-        turbulence * 0.0018 +
-        (1 - stability) * 0.0007 +
-        breakthrough * 0.0004
+      ? 0.00055 +
+        turbulence * 0.0016 +
+        (1 - stability) * 0.00065 +
+        breakthrough * 0.00035
       : 0;
 
     animated.driftSpeed = damp(
@@ -240,7 +288,7 @@ export function TopicWeatherAtmosphere({
         scale={visualRadius * TOPIC_WEATHER_SURFACE_SCALE}
         raycast={() => null}
       >
-        <sphereGeometry args={[1, 128, 128]} />
+        <sphereGeometry args={[1, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
         <meshBasicMaterial
           map={surfaceTexture}
           color="#ffffff"
