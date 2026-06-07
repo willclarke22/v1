@@ -5,45 +5,59 @@ import { useFrame, useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 import type { LearningSpaceTopic } from "@/types/learning-space";
 import {
-  TOPIC_WEATHER_SUNBREAK_RENDER_ORDER,
-  TOPIC_WEATHER_SUNBREAK_SCALE,
   TOPIC_WEATHER_SURFACE_RENDER_ORDER,
   TOPIC_WEATHER_SURFACE_SCALE,
 } from "../constants";
-import {
-  createLearningWeatherTexture,
-  type WeatherMaskImages,
-} from "./weather-textures";
 
 /**
- * The sunbreak system is procedural in weather-textures.ts now.
- * This loader should only bring in cloud source assets. Do not load
- * /learning-space/weather/sunbreak-mask.png here, because old generated
- * sun assets can contaminate the procedural sun look.
- */
-const WEATHER_MASK_URLS: string[] = [
-  "/learning-space/weather/cloud-mask-soft.png",
-  "/learning-space/weather/cloud-mask-wispy.png",
-  "/learning-space/weather/cloud-mask-dense.png",
-];
-
-type AnimatedWeather = {
-  cloudDensity: number;
-  turbulence: number;
-  sunlight: number;
-  breakthrough: number;
-  clarity: number;
-  stability: number;
-  visible: number;
-};
-
-/**
- * Hybrid v3 sunlight tuning.
+ * EQUIRECTANGULAR TEXTURE SURFACE TEST
  *
- * Diagnostic mode proved the layer works. This keeps the sunbreak readable
- * while avoiding the large center wash and the heavy outer golden rim.
+ * Purpose:
+ * - Test true equirectangular 8k still images on the topic spheres.
+ * - Remove video decoding, procedural cloud masks, and procedural sun/ray layers.
+ * - Judge whether high-resolution equirectangular maps wrap cleanly onto spheres.
+ *
+ * Put the downloaded images here:
+ *
+ * public/learning-space/weather/equirectangular-test/8k_venus_surface.jpg
+ * public/learning-space/weather/equirectangular-test/8k_earth_clouds.jpg
+ * public/learning-space/weather/equirectangular-test/8k_jupiter.jpg
+ *
+ * These are still images, not videos. They should map much more correctly than
+ * normal 16:9 clips because they are designed for sphere/equirectangular use.
  */
-const SUNBREAK_HYBRID_MODE = true;
+const EQUIRECTANGULAR_TEXTURE_URLS = [
+  "/learning-space/weather/equirectangular-test/8k_venus_surface.jpg?v=equirect-test-2",
+  "/learning-space/weather/equirectangular-test/8k_earth_clouds.jpg?v=equirect-test-2",
+  "/learning-space/weather/equirectangular-test/8k_jupiter.jpg?v=equirect-test-2",
+] as const;
+
+type TextureTestMode =
+  | "all_venus"
+  | "all_clouds"
+  | "all_jupiter"
+  | "by_topic";
+
+/**
+ * Choose how to apply the test textures:
+ *
+ * "all_venus"   -> every sphere uses the Venus surface map.
+ * "all_clouds"  -> every sphere uses the Earth cloud map.
+ * "all_jupiter" -> every sphere uses the Jupiter surface map.
+ * "by_topic"    -> topics rotate deterministically between all three textures.
+ */
+const TEXTURE_TEST_MODE: TextureTestMode = "by_topic";
+
+/**
+ * Keep this false to judge the texture mapping itself.
+ * Set true only if you want a slow globe-like drift.
+ */
+const ENABLE_SURFACE_DRIFT = false;
+
+type AnimatedSurface = {
+  visibility: number;
+  driftSpeed: number;
+};
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -51,10 +65,6 @@ function clamp(value: number, min: number, max: number) {
 
 function clamp01(value: number) {
   return clamp(value, 0, 1);
-}
-
-function lerp(a: number, b: number, t: number) {
-  return a + (b - a) * t;
 }
 
 function damp(current: number, target: number, smoothing: number, delta: number) {
@@ -72,8 +82,41 @@ function hashString(value: string) {
   return hash >>> 0;
 }
 
-function seededUnit(value: string) {
-  return (hashString(value) % 10000) / 10000;
+function chooseTextureUrlForTopic(topicId: string) {
+  if (TEXTURE_TEST_MODE === "all_venus") {
+    return EQUIRECTANGULAR_TEXTURE_URLS[0];
+  }
+
+  if (TEXTURE_TEST_MODE === "all_clouds") {
+    return EQUIRECTANGULAR_TEXTURE_URLS[1];
+  }
+
+  if (TEXTURE_TEST_MODE === "all_jupiter") {
+    return EQUIRECTANGULAR_TEXTURE_URLS[2];
+  }
+
+  const index =
+    hashString(topicId || "topic") % EQUIRECTANGULAR_TEXTURE_URLS.length;
+  return EQUIRECTANGULAR_TEXTURE_URLS[index];
+}
+
+function configureEquirectangularTexture(texture: THREE.Texture) {
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+
+  /**
+   * Mipmaps help reduce shimmer when zoomed out. They cost memory, but this is
+   * only a resolution/mapping test. If performance becomes poor, change
+   * generateMipmaps to false and minFilter to THREE.LinearFilter.
+   */
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.anisotropy = 16;
+  texture.needsUpdate = true;
+
+  return texture;
 }
 
 export function TopicWeatherAtmosphere({
@@ -90,46 +133,23 @@ export function TopicWeatherAtmosphere({
   isVisible?: boolean;
 }) {
   const surfaceMeshRef = useRef<THREE.Mesh | null>(null);
-  const sunGlowMeshRef = useRef<THREE.Mesh | null>(null);
-  const sunbreakMeshRef = useRef<THREE.Mesh | null>(null);
+  const animatedSurfaceRef = useRef<AnimatedSurface | null>(null);
 
-  /**
-   * This keeps the renderer from visually snapping when learning_weather changes.
-   * The texture is still regenerated at state-change boundaries, but the visible
-   * layer strengths ease toward the new state over frames.
-   */
-  const animatedWeatherRef = useRef<AnimatedWeather | null>(null);
-
-  /**
-   * Stable, topic-specific sun orientation. The procedural sun texture is UV
-   * based; this puts the sun layer in a more likely front/side visible zone
-   * instead of allowing the warm area to hide on the far side for long periods.
-   */
-  const sunYawOffset = useMemo(() => {
-    return SUNBREAK_HYBRID_MODE
-      ? -0.02
-      : lerp(-0.72, 0.72, seededUnit(`${topic.topic_id}:sun-yaw:v2`));
+  const selectedTextureUrl = useMemo(() => {
+    return chooseTextureUrlForTopic(topic.topic_id);
   }, [topic.topic_id]);
 
-  const sunPitchOffset = useMemo(() => {
-    return SUNBREAK_HYBRID_MODE
-      ? -0.035
-      : lerp(-0.16, 0.14, seededUnit(`${topic.topic_id}:sun-pitch:v2`));
-  }, [topic.topic_id]);
+  const surfaceTexture = useLoader(THREE.TextureLoader, selectedTextureUrl);
 
-  /**
-   * R3F's useLoader overload can infer a single Texture when the URL list is
-   * a readonly tuple. Keep the URL list mutable/string[] and cast the result to
-   * the array shape we actually request, so production type-checking stays
-   * stable under Next/Turbopack.
-   */
-  const weatherMaskTextures = useLoader(
-    THREE.TextureLoader,
-    WEATHER_MASK_URLS,
-  ) as unknown as THREE.Texture[];
+  useEffect(() => {
+    configureEquirectangularTexture(surfaceTexture);
 
-  const [cloudSoftTexture, cloudWispyTexture, cloudDenseTexture] =
-    weatherMaskTextures;
+    /**
+     * Do not dispose this texture here. useLoader caches textures by URL, and
+     * multiple spheres may share the same loaded texture. Disposing in one
+     * sphere could break the others.
+     */
+  }, [surfaceTexture]);
 
   const weather = topic.learning_weather ?? {
     cloud_density: 0.3,
@@ -147,254 +167,70 @@ export function TopicWeatherAtmosphere({
   const clarity = clamp01(weather.sky_clarity);
   const stability = clamp01(weather.atmosphere_stability);
 
-  const rawStormPressure = cloudDensity * 0.38 + turbulence * 0.62;
-  const rawSunSignal = clamp01(
-    sunlight * 0.42 +
-      breakthrough * 0.74 +
-      clarity * 0.18 -
-      rawStormPressure * 0.08,
+  /**
+   * Keep learning_weather lightly involved without hiding the texture:
+   * this is just opacity variation for the test, not final weather logic.
+   */
+  const surfaceOpacityTarget = clamp(
+    0.76 +
+      clarity * 0.05 +
+      sunlight * 0.04 +
+      breakthrough * 0.025 +
+      cloudDensity * 0.025 -
+      turbulence * 0.02,
+    0.68,
+    0.94,
   );
 
-  const focusBoost = isFocused ? 1.05 : isSelected ? 1.025 : 1;
-
-  const weatherKey = `${cloudDensity.toFixed(3)}:${turbulence.toFixed(3)}:${sunlight.toFixed(3)}:${breakthrough.toFixed(3)}:${clarity.toFixed(3)}:${stability.toFixed(3)}`;
-
-  const weatherMasks = useMemo<WeatherMaskImages>(
-    () => ({
-      cloudSoft: cloudSoftTexture?.image as CanvasImageSource | null,
-      cloudWispy: cloudWispyTexture?.image as CanvasImageSource | null,
-      cloudDense: cloudDenseTexture?.image as CanvasImageSource | null,
-    }),
-    [cloudSoftTexture, cloudWispyTexture, cloudDenseTexture],
-  );
-
-  const weatherSurfaceTexture = useMemo(
-    () =>
-      createLearningWeatherTexture({
-        topicId: topic.topic_id,
-        weather,
-        kind: "surface",
-        masks: weatherMasks,
-      }),
-    [topic.topic_id, weatherKey, weather, weatherMasks],
-  );
-
-  const sunbreakTexture = useMemo(
-    () =>
-      createLearningWeatherTexture({
-        topicId: topic.topic_id,
-        weather,
-        kind: "sunbreak",
-        masks: weatherMasks,
-      }),
-    [topic.topic_id, weatherKey, weather, weatherMasks],
-  );
-
-  useEffect(() => {
-    return () => {
-      weatherSurfaceTexture.dispose();
-    };
-  }, [weatherSurfaceTexture]);
-
-  useEffect(() => {
-    return () => {
-      sunbreakTexture.dispose();
-    };
-  }, [sunbreakTexture]);
+  const focusBoost = isFocused ? 1.045 : isSelected ? 1.02 : 1;
 
   useFrame((state, delta) => {
     const time = state.clock.elapsedTime;
 
-    if (!animatedWeatherRef.current) {
-      animatedWeatherRef.current = {
-        cloudDensity,
-        turbulence,
-        sunlight,
-        breakthrough,
-        clarity,
-        stability,
-        visible: isVisible ? 1 : 0,
+    if (!animatedSurfaceRef.current) {
+      animatedSurfaceRef.current = {
+        visibility: isVisible ? 1 : 0,
+        driftSpeed: 0.0012,
       };
     }
 
-    const animated = animatedWeatherRef.current;
+    const animated = animatedSurfaceRef.current;
+    animated.visibility = damp(animated.visibility, isVisible ? 1 : 0, 8, delta);
 
-    animated.cloudDensity = damp(animated.cloudDensity, cloudDensity, 2.2, delta);
-    animated.turbulence = damp(animated.turbulence, turbulence, 2.1, delta);
-    animated.sunlight = damp(animated.sunlight, sunlight, 2.8, delta);
-    animated.breakthrough = damp(animated.breakthrough, breakthrough, 3.2, delta);
-    animated.clarity = damp(animated.clarity, clarity, 2.4, delta);
-    animated.stability = damp(animated.stability, stability, 2.0, delta);
-    animated.visible = damp(animated.visible, isVisible ? 1 : 0, 8.0, delta);
+    const targetDriftSpeed = ENABLE_SURFACE_DRIFT
+      ? 0.0006 +
+        turbulence * 0.0018 +
+        (1 - stability) * 0.0007 +
+        breakthrough * 0.0004
+      : 0;
 
-    const aCloudDensity = animated.cloudDensity;
-    const aTurbulence = animated.turbulence;
-    const aSunlight = animated.sunlight;
-    const aBreakthrough = animated.breakthrough;
-    const aClarity = animated.clarity;
-    const aStability = animated.stability;
-
-    const stormPressure = aCloudDensity * 0.38 + aTurbulence * 0.62;
-    const sunSignal = clamp01(
-      aSunlight * 0.42 +
-        aBreakthrough * 0.74 +
-        aClarity * 0.18 -
-        stormPressure * 0.08,
+    animated.driftSpeed = damp(
+      animated.driftSpeed,
+      targetDriftSpeed,
+      2.4,
+      delta,
     );
 
-    const calm = aStability;
-    const instability = 1 - calm;
-    const targetVisibility = animated.visible;
-
     if (surfaceMeshRef.current) {
-      /**
-       * Keep the cloud surface in the Sphere-style display-skin family. The
-       * key change here is that strong breakthrough now thins the cloud layer
-       * slightly, so the procedural sun has room to show through.
-       */
-      const drift = 0.0011 + aTurbulence * 0.0042 + instability * 0.0011;
-      surfaceMeshRef.current.rotation.y += delta * drift;
-      surfaceMeshRef.current.rotation.x =
-        Math.sin(time * 0.038) * aTurbulence * 0.0045;
-      surfaceMeshRef.current.rotation.z =
-        Math.sin(time * 0.026) * instability * 0.0025;
+      if (ENABLE_SURFACE_DRIFT) {
+        surfaceMeshRef.current.rotation.y += delta * animated.driftSpeed;
+        surfaceMeshRef.current.rotation.x =
+          Math.sin(time * 0.035) * turbulence * 0.0025;
+        surfaceMeshRef.current.rotation.z =
+          Math.sin(time * 0.026) * (1 - stability) * 0.0018;
+      } else {
+        surfaceMeshRef.current.rotation.set(0, 0, 0);
+      }
 
       const material = surfaceMeshRef.current.material;
       if (material instanceof THREE.MeshBasicMaterial) {
-        const shapedCloudThin = SUNBREAK_HYBRID_MODE ? 0.02 : 0;
-
-        const cloudBody =
-          0.61 +
-          aCloudDensity * 0.17 +
-          aClarity * 0.038 +
-          stormPressure * 0.075 -
-          shapedCloudThin;
-
-        /**
-         * When sunlight_breakthrough is high, lower the top cloud layer just
-         * enough that the additive sun layers can be visible. This is the
-         * diagnostic/visibility correction missing in the previous screenshot.
-         */
-        const breakthroughThinning =
-          aBreakthrough *
-          (SUNBREAK_HYBRID_MODE
-            ? 0.085 + aSunlight * 0.05 + aClarity * 0.03
-            : 0.045 + aSunlight * 0.035 + aClarity * 0.02);
-
         const targetOpacity =
-          targetVisibility *
-          focusBoost *
-          clamp(
-            cloudBody - breakthroughThinning,
-            SUNBREAK_HYBRID_MODE ? 0.42 : 0.48,
-            SUNBREAK_HYBRID_MODE ? 0.81 : 0.88,
-          );
+          animated.visibility * focusBoost * surfaceOpacityTarget;
 
         material.opacity = damp(material.opacity, targetOpacity, 7.5, delta);
       }
     }
-
-    if (sunGlowMeshRef.current) {
-      /**
-       * Broad atmospheric glow. This should now be visible with the breakthrough
-       * test preset, but still soft enough not to look like a sticker.
-       *
-       * Use absolute-ish orientation instead of accumulating unbounded rotation,
-       * so the glow stays near a visible front-facing zone.
-       */
-      sunGlowMeshRef.current.rotation.y =
-        sunYawOffset +
-        Math.sin(time * (0.035 + aTurbulence * 0.018)) *
-          (0.028 + aBreakthrough * 0.026);
-      sunGlowMeshRef.current.rotation.x =
-        sunPitchOffset + Math.sin(time * 0.03) * aSunlight * 0.004;
-      sunGlowMeshRef.current.rotation.z =
-        Math.sin(time * 0.045) * aBreakthrough * 0.006;
-
-      const material = sunGlowMeshRef.current.material;
-      if (material instanceof THREE.MeshBasicMaterial) {
-        const pulse = 0.96 + Math.sin(time * (0.15 + sunSignal * 0.2)) * 0.04;
-
-        const glowOpacity = SUNBREAK_HYBRID_MODE
-          ? 0.06 +
-            aSunlight * 0.13 +
-            aBreakthrough * 0.31 +
-            aClarity * 0.05 -
-            stormPressure * 0.022
-          : 0.025 +
-            aSunlight * 0.11 +
-            aBreakthrough * 0.32 +
-            aClarity * 0.045 -
-            stormPressure * 0.025;
-
-        const targetOpacity =
-          targetVisibility *
-          focusBoost *
-          pulse *
-          clamp(glowOpacity, 0, SUNBREAK_HYBRID_MODE ? 0.56 : 0.52);
-
-        material.opacity = damp(material.opacity, targetOpacity, 6.4, delta);
-      }
-    }
-
-    if (sunbreakMeshRef.current) {
-      /**
-       * Sharper breakthrough/ray layer. This has been boosted for diagnostic
-       * visibility: with high sunlight_breakthrough, there should now be a warm
-       * opening or faint ray structure on the sphere.
-       */
-      sunbreakMeshRef.current.rotation.y =
-        sunYawOffset +
-        Math.sin(time * (0.055 + aBreakthrough * 0.035)) *
-          (0.035 + aBreakthrough * 0.04) -
-        aBreakthrough * 0.025;
-      sunbreakMeshRef.current.rotation.x =
-        sunPitchOffset +
-        Math.sin(time * 0.041) * aSunlight * 0.005 +
-        aBreakthrough * 0.015;
-      sunbreakMeshRef.current.rotation.z =
-        Math.sin(time * 0.064) * aBreakthrough * 0.012;
-
-      const material = sunbreakMeshRef.current.material;
-      if (material instanceof THREE.MeshBasicMaterial) {
-        const pulse =
-          0.955 + Math.sin(time * (0.22 + aBreakthrough * 0.35)) * 0.045;
-
-        const rayOpacity = SUNBREAK_HYBRID_MODE
-          ? 0.09 +
-            aSunlight * 0.11 +
-            aBreakthrough * 0.58 +
-            aClarity * 0.05 -
-            stormPressure * 0.024
-          : 0.018 +
-            aSunlight * 0.07 +
-            aBreakthrough * 0.54 +
-            aClarity * 0.035 -
-            stormPressure * 0.035;
-
-        const targetOpacity =
-          targetVisibility *
-          focusBoost *
-          pulse *
-          clamp(rayOpacity, 0, SUNBREAK_HYBRID_MODE ? 0.72 : 0.68);
-
-        material.opacity = damp(material.opacity, targetOpacity, 7.0, delta);
-      }
-    }
   });
-
-  const shapedScaleBoost = SUNBREAK_HYBRID_MODE ? 1.004 : 1;
-
-  const sunGlowScale =
-    visualRadius *
-    TOPIC_WEATHER_SUNBREAK_SCALE *
-    lerp(1.004, 1.024, rawSunSignal) *
-    shapedScaleBoost;
-  const sunbreakScale =
-    visualRadius *
-    TOPIC_WEATHER_SUNBREAK_SCALE *
-    lerp(1.004, 1.02, breakthrough) *
-    shapedScaleBoost;
 
   return (
     <group>
@@ -406,7 +242,7 @@ export function TopicWeatherAtmosphere({
       >
         <sphereGeometry args={[1, 128, 128]} />
         <meshBasicMaterial
-          map={weatherSurfaceTexture}
+          map={surfaceTexture}
           color="#ffffff"
           transparent
           opacity={0}
@@ -418,52 +254,6 @@ export function TopicWeatherAtmosphere({
           polygonOffset
           polygonOffsetFactor={-4}
           polygonOffsetUnits={-12}
-        />
-      </mesh>
-
-      <mesh
-        ref={sunGlowMeshRef}
-        renderOrder={TOPIC_WEATHER_SUNBREAK_RENDER_ORDER - 1}
-        scale={sunGlowScale}
-        raycast={() => null}
-      >
-        <sphereGeometry args={[1, 128, 128]} />
-        <meshBasicMaterial
-          map={sunbreakTexture}
-          color={SUNBREAK_HYBRID_MODE ? "#ffd48a" : "#ffd78b"}
-          transparent
-          opacity={0}
-          depthWrite={false}
-          depthTest
-          blending={THREE.AdditiveBlending}
-          side={THREE.FrontSide}
-          toneMapped={false}
-          polygonOffset
-          polygonOffsetFactor={-5}
-          polygonOffsetUnits={-15}
-        />
-      </mesh>
-
-      <mesh
-        ref={sunbreakMeshRef}
-        renderOrder={TOPIC_WEATHER_SUNBREAK_RENDER_ORDER}
-        scale={sunbreakScale}
-        raycast={() => null}
-      >
-        <sphereGeometry args={[1, 128, 128]} />
-        <meshBasicMaterial
-          map={sunbreakTexture}
-          color={SUNBREAK_HYBRID_MODE ? "#fff0b0" : "#fff0ba"}
-          transparent
-          opacity={0}
-          depthWrite={false}
-          depthTest
-          blending={THREE.AdditiveBlending}
-          side={THREE.FrontSide}
-          toneMapped={false}
-          polygonOffset
-          polygonOffsetFactor={-6}
-          polygonOffsetUnits={-18}
         />
       </mesh>
     </group>
