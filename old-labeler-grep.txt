@@ -1,3 +1,0 @@
-C:\Users\willc\projects\MyWay\v1\scripts\test-labeler-batch.py:7: LABELER_URL = "http://127.0.0.1:8002/label"
-C:\Users\willc\projects\MyWay\v1\scripts\test-labeler-batch.py:312: response = post_json(LABELER_URL, payload)
-C:\Users\willc\projects\MyWay\v1\scripts\test-labeler-batch.py:401: print(f"Testing {len(TEST_CASES)} harder blind-v2-style cases against {LABELER_URL}")

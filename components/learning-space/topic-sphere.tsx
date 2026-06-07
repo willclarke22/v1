@@ -33,7 +33,6 @@ import {
 import { MovementTrail } from "./movement-trails";
 import { ProbeMarker } from "./probe-marker";
 import { TopicLabel } from "./topic-label";
-import { TopicWeatherAtmosphere } from "./weather/topic-weather-atmosphere";
 import type {
   PreProbeViewSnapshotRef,
   TrackballControlsRef,
@@ -271,7 +270,15 @@ export function TopicSphere({
     }
 
     if (sphereRef.current) {
-      sphereRef.current.rotation.y += delta * (isFocused ? 0.34 : 0.18);
+      /**
+       * Keep the solid sphere visually stable.
+       *
+       * Rotating a MeshStandardMaterial sphere under scene lights can make the
+       * specular highlight crawl across the surface like a wave. That was useful
+       * during texture experiments, but now the clean sphere should stay calm so
+       * probe markers and relationship lines can carry the meaning.
+       */
+      sphereRef.current.rotation.set(0, 0, 0);
     }
 
     if (materialRef.current) {
@@ -279,9 +286,9 @@ export function TopicSphere({
         (isAnyTopicFocused && !isFocused ? 0.46 : 1) * eased;
 
       /**
-       * Keep the physical body quiet so the weather skin can become the main
-       * visual language. Selection/focus still gives a readable lift, but the
-       * base sphere no longer floods the surface with purple/white glow.
+       * Keep the physical body clean and readable now that the weather surface
+       * experiment has been removed. Selection/focus still gives a readable
+       * lift without competing with probe markers or relationship lines.
        */
       const baseGlow = isFocused ? 0.42 : isSelected ? 0.28 : 0.12;
       const appearanceBoost = isAppearing ? 0.18 * (1 - t) : 0;
@@ -459,30 +466,22 @@ export function TopicSphere({
               document.body.style.cursor = "default";
             }}
           >
-            <sphereGeometry args={[1, 40, 40]} />
+            <sphereGeometry args={[1, 72, 72]} />
             <meshStandardMaterial
               ref={materialRef}
-              color={isSelected ? "#c8bdf4" : "#5b5376"}
+              color={isSelected ? "#ddd6fe" : "#b7a8ee"}
               emissive={
-                isFocused ? "#7c3aed" : isSelected ? "#6d28d9" : "#1f1b2d"
+                isFocused ? "#a78bfa" : isSelected ? "#8b5cf6" : "#4c3f73"
               }
               emissiveIntensity={isFocused ? 0.42 : isSelected ? 0.28 : 0.12}
-              metalness={0.08}
-              roughness={0.58}
-              opacity={isAnyTopicFocused && !isFocused ? 0.34 : 0.72}
+              metalness={0}
+              roughness={0.88}
+              opacity={isAnyTopicFocused && !isFocused ? 0.38 : 0.84}
               transparent
               depthWrite
               depthTest
             />
           </mesh>
-
-          <TopicWeatherAtmosphere
-            topic={topic}
-            visualRadius={visualRadius}
-            isFocused={isFocused}
-            isSelected={isSelected}
-            isVisible={!isProbeVisualSuppressed}
-          />
 
           <TopicLabel
             topic={topic}

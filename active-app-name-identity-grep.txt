@@ -1,5 +1,0 @@
-C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts:90: cluster_name?: string;
-C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts:1025: const resolvedClusterName = cluster.cluster_name ?? `Cluster ${index + 1}`;
-C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts:1029: cluster_name: resolvedClusterName,
-C:\Users\willc\projects\MyWay\v1\types\contracts.ts:836: cluster_name: string;
-C:\Users\willc\projects\MyWay\v1\types\contracts.ts:911: cluster_name: string;
