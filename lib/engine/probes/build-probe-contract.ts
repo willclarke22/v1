@@ -1,6 +1,7 @@
 import type {
   DiagnosisDelta,
   DiagnosisType,
+  EntityId,
   ProbeExpectedResponseType,
   ProbeIntent,
   ProbeType,
@@ -13,13 +14,30 @@ import {
   type ProbeAssessmentTarget,
   type ProbeContract,
   type ProbeFailureMarker,
+  type ProbeGenerationMetadata,
   type ProbeInputSchema,
   type ProbeMisconceptionMapping,
+  type ProbePersonalizationApplication,
   type ProbeRendererConfig,
   type ProbeRendererKind,
+  type ProbeScaffoldLevel,
   type ProbeSuccessMarker,
   type ProbeTelemetryKey,
 } from "./probe-types";
+import type { EvidenceJudgingTier, JudgingMethod } from "@/lib/engine/judging";
+
+/**
+ * Probe Contract Builder V1.1
+ *
+ * This is still a scaffold builder, but it now makes the contract more explicit
+ * about answer capture, deterministic judging availability, expected evidence
+ * tier, and personalization metadata.
+ *
+ * Important:
+ * - This builder does not yet generate truly content-grounded probe content.
+ * - It creates contracts that are ready for content grounding and deterministic
+ *   judging once the renderer/generator layer fills in real options/items/etc.
+ */
 
 function nowIso() {
   return new Date().toISOString();
@@ -46,8 +64,19 @@ function normalizeTopicLabel(label: string) {
   return label.trim() || "this topic";
 }
 
-function defaultIntent(probeType: ProbeType): ProbeIntent {
-  if (probeType === "apply_transfer") return "verification";
+function defaultIntent(args: {
+  probeType: ProbeType;
+  diagnosis: DiagnosisType | null;
+  hasDiagnosisState: boolean;
+}): ProbeIntent {
+  /**
+   * Transfer probes can be diagnostic when transfer_gap is suspected.
+   * They become verification when no active transfer gap is being targeted.
+   */
+  if (args.probeType === "apply_transfer" && args.diagnosis !== "transfer_gap") {
+    return "verification";
+  }
+
   return "diagnostic";
 }
 
@@ -130,6 +159,83 @@ function diagnosisFromAssessmentTarget(
   if (target === "discrimination") return "discrimination_gap";
   if (target === "transfer") return "transfer_gap";
   return "representation_gap";
+}
+
+function answerCaptureKeysForRenderer(rendererKind: ProbeRendererKind): string[] {
+  switch (rendererKind) {
+    case "multiple_choice":
+      return ["selected_option_ids", "choice_selected", "confidence_rating"];
+    case "ordering":
+      return ["ordered_item_ids", "ordering_sequence", "confidence_rating"];
+    case "slider_prediction":
+      return ["slider_value", "prediction", "confidence_rating"];
+    case "drag_drop_match":
+      return ["matches", "drag_drop_positions", "confidence_rating"];
+    case "graph_match":
+      return ["selected_edge_ids", "graph_selection", "confidence_rating"];
+    case "simulation":
+      return ["actions", "simulation_actions", "final_state", "confidence_rating"];
+    case "audio_explanation":
+      return ["transcript", "audio_duration_ms"];
+    case "video_checkpoint":
+      return ["transcript", "video_checkpoint_time"];
+    case "text_explanation":
+    default:
+      return ["text", "revision_count", "confidence_rating"];
+  }
+}
+
+function deterministicJudgingAvailable(rendererKind: ProbeRendererKind) {
+  switch (rendererKind) {
+    case "multiple_choice":
+    case "ordering":
+    case "slider_prediction":
+    case "drag_drop_match":
+    case "graph_match":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function expectedJudgingMethods(rendererKind: ProbeRendererKind): JudgingMethod[] {
+  switch (rendererKind) {
+    case "multiple_choice":
+      return ["deterministic_multiple_choice", "contract_marker_estimate"];
+    case "ordering":
+      return ["deterministic_ordering", "contract_marker_estimate"];
+    case "slider_prediction":
+      return ["deterministic_slider", "contract_marker_estimate"];
+    case "drag_drop_match":
+      return ["deterministic_drag_drop", "contract_marker_estimate"];
+    case "graph_match":
+      return ["deterministic_graph_match", "contract_marker_estimate"];
+    case "text_explanation":
+      return ["llm_rubric_text", "contract_marker_estimate"];
+    case "audio_explanation":
+      return ["llm_rubric_audio_transcript", "contract_marker_estimate"];
+    case "video_checkpoint":
+      return ["llm_rubric_video_checkpoint", "contract_marker_estimate"];
+    case "simulation":
+    default:
+      return ["contract_marker_estimate"];
+  }
+}
+
+function expectedEvidenceTier(rendererKind: ProbeRendererKind): EvidenceJudgingTier {
+  if (deterministicJudgingAvailable(rendererKind)) {
+    return "deterministic_structured_judgment";
+  }
+
+  if (
+    rendererKind === "text_explanation" ||
+    rendererKind === "audio_explanation" ||
+    rendererKind === "video_checkpoint"
+  ) {
+    return "llm_rubric_judgment";
+  }
+
+  return "contract_marker_estimate";
 }
 
 function buildSuccessMarkers(
@@ -268,6 +374,7 @@ function buildInputSchema(args: {
   topicLabel: string;
 }): ProbeInputSchema {
   const expectedResponseType = expectedResponseTypeForRenderer(args.rendererKind);
+  const answer_capture_keys = answerCaptureKeysForRenderer(args.rendererKind);
 
   switch (args.rendererKind) {
     case "multiple_choice":
@@ -275,6 +382,8 @@ function buildInputSchema(args: {
         renderer_kind: "multiple_choice",
         expected_response_type: expectedResponseType,
         required: true,
+        normalized_value_kind: "choice",
+        answer_capture_keys,
         allow_multiple: false,
         options: [
           {
@@ -299,6 +408,8 @@ function buildInputSchema(args: {
         renderer_kind: "ordering",
         expected_response_type: expectedResponseType,
         required: true,
+        normalized_value_kind: "ordering",
+        answer_capture_keys,
         items: [
           {
             item_id: makeId("order-item"),
@@ -326,6 +437,8 @@ function buildInputSchema(args: {
         renderer_kind: "slider_prediction",
         expected_response_type: expectedResponseType,
         required: true,
+        normalized_value_kind: "slider",
+        answer_capture_keys,
         min: 0,
         max: 100,
         step: 1,
@@ -335,57 +448,104 @@ function buildInputSchema(args: {
         right_label: "Much more / likely",
       };
 
-    case "drag_drop_match":
+    case "drag_drop_match": {
+      const conceptItemId = makeId("drag-item");
+      const exampleItemId = makeId("drag-item");
+      const mechanismTargetId = makeId("drop-target");
+      const surfaceTargetId = makeId("drop-target");
+
       return {
         renderer_kind: "drag_drop_match",
         expected_response_type: expectedResponseType,
         required: true,
+        normalized_value_kind: "drag_drop",
+        answer_capture_keys,
         draggable_items: [
           {
-            item_id: makeId("drag-item"),
+            item_id: conceptItemId,
             label: "Concept",
             text: `A key idea from ${args.topicLabel}.`,
           },
           {
-            item_id: makeId("drag-item"),
+            item_id: exampleItemId,
             label: "Example",
             text: "A concrete example or situation.",
           },
         ],
         drop_targets: [
           {
-            target_id: makeId("drop-target"),
+            target_id: mechanismTargetId,
             label: "Mechanism",
             text: "What explains why it happens.",
           },
           {
-            target_id: makeId("drop-target"),
+            target_id: surfaceTargetId,
             label: "Surface detail",
             text: "A detail that may be related but is not the mechanism.",
           },
         ],
-        correct_matches: [],
+        /**
+         * This scaffold match exists so deterministic judging has a valid shape.
+         * A content-grounded generator should replace these placeholder matches.
+         */
+        correct_matches: [
+          {
+            item_id: conceptItemId,
+            target_id: mechanismTargetId,
+          },
+          {
+            item_id: exampleItemId,
+            target_id: surfaceTargetId,
+          },
+        ],
       };
+    }
 
-    case "graph_match":
+    case "graph_match": {
+      const causeNodeId = makeId("graph-node");
+      const mechanismNodeId = makeId("graph-node");
+      const effectNodeId = makeId("graph-node");
+      const correctEdgeId = makeId("graph-edge");
+      const nearMissEdgeId = makeId("graph-edge");
+
       return {
         renderer_kind: "graph_match",
         expected_response_type: expectedResponseType,
         required: true,
+        normalized_value_kind: "graph_match",
+        answer_capture_keys,
         graph_prompt: `Choose the relationship graph that best represents ${args.topicLabel}.`,
         nodes: [
-          { node_id: makeId("graph-node"), label: "Cause / input" },
-          { node_id: makeId("graph-node"), label: "Mechanism" },
-          { node_id: makeId("graph-node"), label: "Effect / output" },
+          { node_id: causeNodeId, label: "Cause / input" },
+          { node_id: mechanismNodeId, label: "Mechanism" },
+          { node_id: effectNodeId, label: "Effect / output" },
         ],
-        candidate_edges: [],
+        candidate_edges: [
+          {
+            edge_id: correctEdgeId,
+            source_node_id: causeNodeId,
+            target_node_id: mechanismNodeId,
+            label: "Cause leads into mechanism",
+            is_correct: true,
+          },
+          {
+            edge_id: nearMissEdgeId,
+            source_node_id: causeNodeId,
+            target_node_id: effectNodeId,
+            label: "Cause skips directly to effect",
+            is_correct: false,
+          },
+        ],
       };
+    }
 
     case "simulation":
       return {
         renderer_kind: "simulation",
         expected_response_type: expectedResponseType,
         required: true,
+        normalized_value_kind: "interaction",
+        answer_capture_keys,
         simulation_kind: "generic_concept_simulation",
         initial_state: {},
         controllable_variables: [],
@@ -399,6 +559,8 @@ function buildInputSchema(args: {
         renderer_kind: "audio_explanation",
         expected_response_type: expectedResponseType,
         required: true,
+        normalized_value_kind: "text",
+        answer_capture_keys,
         min_duration_ms: 5_000,
         max_duration_ms: 90_000,
         transcript_required: true,
@@ -409,6 +571,8 @@ function buildInputSchema(args: {
         renderer_kind: "video_checkpoint",
         expected_response_type: expectedResponseType,
         required: true,
+        normalized_value_kind: "text",
+        answer_capture_keys,
         checkpoint_time_ms: null,
         prompt_at_checkpoint: `Pause and explain what changed in ${args.topicLabel}.`,
         expected_observation: "The learner notices the target relationship or mechanism.",
@@ -420,6 +584,8 @@ function buildInputSchema(args: {
         renderer_kind: "text_explanation",
         expected_response_type: expectedResponseType,
         required: true,
+        normalized_value_kind: "text",
+        answer_capture_keys,
         min_words: 8,
         max_words: 120,
         require_example: true,
@@ -451,10 +617,29 @@ function rendererIcon(rendererKind: ProbeRendererKind) {
   }
 }
 
+function defaultScaffoldLevel(rendererKind: ProbeRendererKind): ProbeScaffoldLevel {
+  switch (rendererKind) {
+    case "multiple_choice":
+    case "ordering":
+    case "slider_prediction":
+      return "low";
+    case "drag_drop_match":
+    case "graph_match":
+    case "simulation":
+      return "medium";
+    case "audio_explanation":
+    case "video_checkpoint":
+    case "text_explanation":
+    default:
+      return "medium";
+  }
+}
+
 function buildRendererConfig(args: {
   rendererKind: ProbeRendererKind;
   topicLabel: string;
   assessmentTarget: ProbeAssessmentTarget;
+  personalization: ProbePersonalizationApplication | null;
 }): ProbeRendererConfig {
   const title =
     args.rendererKind === "multiple_choice"
@@ -475,6 +660,9 @@ function buildRendererConfig(args: {
                     ? `Pause and notice ${args.topicLabel}`
                     : `Explain ${args.topicLabel}`;
 
+  const scaffoldLevel =
+    args.personalization?.scaffold_level ?? defaultScaffoldLevel(args.rendererKind);
+
   return {
     renderer_kind: args.rendererKind,
     title,
@@ -489,7 +677,69 @@ function buildRendererConfig(args: {
       show_confidence_rating: true,
       allow_hint: true,
       allow_retry: true,
+      scaffold_level: scaffoldLevel,
+      show_explanation_box:
+        args.rendererKind === "multiple_choice" ||
+        args.rendererKind === "ordering" ||
+        args.rendererKind === "slider_prediction",
+      require_reasoning_after_structured_answer:
+        args.rendererKind === "multiple_choice" ||
+        args.rendererKind === "ordering" ||
+        args.rendererKind === "slider_prediction",
     },
+  };
+}
+
+function buildJudgingSchema(args: {
+  rendererKind: ProbeRendererKind;
+  successMarkers: ProbeSuccessMarker[];
+  failureMarkers: ProbeFailureMarker[];
+  misconceptionMappings: ProbeMisconceptionMapping[];
+}) {
+  const deterministicAvailable = deterministicJudgingAvailable(args.rendererKind);
+
+  return {
+    success_markers: args.successMarkers,
+    failure_markers: args.failureMarkers,
+    misconception_mappings: args.misconceptionMappings,
+    telemetry_to_capture: telemetryForRenderer(args.rendererKind),
+    allow_partial_credit: true,
+    minimum_evidence_strength_for_success: 0.62,
+    expected_judging_methods: expectedJudgingMethods(args.rendererKind),
+    expected_evidence_tier: expectedEvidenceTier(args.rendererKind),
+    deterministic_judging_available: deterministicAvailable,
+    rubric_judging_required: !deterministicAvailable,
+  };
+}
+
+function buildGenerationMetadata(input: BuildProbeContractInput): ProbeGenerationMetadata {
+  return {
+    generation_mode: input.generationMode ?? "generic_scaffold",
+    source_content_ids: input.sourceContentIds ?? [],
+    source_topic_ids: input.sourceTopicIds ?? [],
+    generated_by: "engine_scaffold",
+    generator_version: null,
+    content_grounding_summary:
+      input.generationMode && input.generationMode !== "generic_scaffold"
+        ? "Probe contract requested non-generic grounding, but this scaffold builder does not yet generate content-grounded items."
+        : null,
+  };
+}
+
+function buildPersonalizationApplication(
+  input: BuildProbeContractInput,
+): ProbePersonalizationApplication | null {
+  if (!input.personalization) return null;
+
+  return {
+    mode: input.personalization.mode ?? "light",
+    tone: input.personalization.tone ?? null,
+    pacing: input.personalization.pacing ?? null,
+    language_style: input.personalization.language_style ?? null,
+    scaffold_level: input.personalization.scaffold_level ?? "medium",
+    preferred_modality_reason: input.personalization.preferred_modality_reason ?? null,
+    example_context: input.personalization.example_context ?? null,
+    adaptation_reasons: input.personalization.adaptation_reasons ?? [],
   };
 }
 
@@ -499,7 +749,13 @@ export function buildProbeContract(
   const targetTopicLabel = normalizeTopicLabel(input.targetTopicLabel);
   const targetDiagnosis = input.targetDiagnosis ?? null;
   const probeType = input.probeType ?? defaultProbeType(targetDiagnosis);
-  const intent = input.intent ?? defaultIntent(probeType);
+  const intent =
+    input.intent ??
+    defaultIntent({
+      probeType,
+      diagnosis: targetDiagnosis,
+      hasDiagnosisState: Boolean(input.diagnosisState),
+    });
   const assessmentTarget = defaultAssessmentTarget(targetDiagnosis, probeType);
   const rendererKind =
     input.rendererKind ??
@@ -509,12 +765,18 @@ export function buildProbeContract(
       expectedResponseType: input.expectedResponseType ?? null,
     });
 
+  const personalizationApplication = buildPersonalizationApplication(input);
   const successMarkers = buildSuccessMarkers(targetTopicLabel, assessmentTarget);
   const failureMarkers = buildFailureMarkers(targetTopicLabel, assessmentTarget);
   const misconceptionMappings = buildMisconceptionMappings(
     failureMarkers,
     assessmentTarget,
   );
+
+  const inputSchema = buildInputSchema({
+    rendererKind,
+    topicLabel: targetTopicLabel,
+  });
 
   const contract: ProbeContract = {
     contract_id: makeId("probe-contract"),
@@ -531,35 +793,41 @@ export function buildProbeContract(
     assessment_target: assessmentTarget,
     difficulty: "medium",
 
-    input_schema: buildInputSchema({
+    input_schema: inputSchema,
+    judging_schema: buildJudgingSchema({
       rendererKind,
-      topicLabel: targetTopicLabel,
+      successMarkers,
+      failureMarkers,
+      misconceptionMappings,
     }),
-    judging_schema: {
-      success_markers: successMarkers,
-      failure_markers: failureMarkers,
-      misconception_mappings: misconceptionMappings,
-      telemetry_to_capture: telemetryForRenderer(rendererKind),
-      allow_partial_credit: true,
-      minimum_evidence_strength_for_success: 0.62,
-    },
     renderer_config: buildRendererConfig({
       rendererKind,
       topicLabel: targetTopicLabel,
       assessmentTarget,
+      personalization: personalizationApplication,
     }),
+
+    generation_metadata: buildGenerationMetadata(input),
+    personalization_application: personalizationApplication,
 
     diagnosis_state_snapshot: input.diagnosisState ?? null,
 
     reasons: [
       `Built a ${rendererKind} probe contract for ${targetTopicLabel}.`,
       `Assessment target selected as ${assessmentTarget}.`,
+      `Expected evidence tier is ${expectedEvidenceTier(rendererKind)}.`,
+      deterministicJudgingAvailable(rendererKind)
+        ? "Deterministic structured judging is available for this renderer kind."
+        : "This renderer kind will require scaffold/rubric/model judging for stronger correctness claims.",
       targetDiagnosis
         ? `Target diagnosis was ${targetDiagnosis}.`
         : "No target diagnosis was provided, so the contract used a representation-oriented default.",
     ],
     cautions: [
-      "Probe Contract V1 is scaffold logic. Renderer-specific generation and judging should replace generic placeholders over time.",
+      "Probe Contract V1.1 still uses scaffold content. A content-grounded generator should replace generic options/items/prompts over time.",
+      deterministicJudgingAvailable(rendererKind)
+        ? "Deterministic judging can evaluate the structured answer shape, but the scaffold content may still be too generic to prove deep understanding."
+        : "Open-ended probe judging still needs rubric/model support before strong correctness claims are reliable.",
     ],
   };
 

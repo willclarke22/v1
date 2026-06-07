@@ -1,12 +1,12 @@
 // lib/build-learning-space.ts
 
 import type { DiagnosisType } from "@/types/contracts";
+import type { DiagnosisState } from "@/lib/engine/diagnosis";
 import type {
   AttemptSatellite,
   LearningSpace,
   LearningSpaceProjectionMetadata,
   LearningSpaceRelationship,
-  LearningWeather,
   LearningSpaceViewpoint,
   TopicPanelProjection,
   TopicRing,
@@ -53,6 +53,20 @@ type LearningSpaceInputTopic = {
   hasAvailableProbe?: boolean | null;
 
   /**
+   * Optional engine state transported from topic_json / persistence.
+   *
+   * These are intentionally loose because buildLearningSpace is a projection
+   * boundary. The engine owns the exact diagnosis/probe schema; this file only
+   * reads stable fields when present.
+   */
+  topicJson?: Record<string, unknown> | null;
+  diagnosisState?: unknown;
+  activeDiagnosisConfidence?: number | null;
+  activeProbeContractSnapshot?: unknown;
+  nextProbeContractSnapshot?: unknown;
+  lastProbeContractSnapshot?: unknown;
+
+  /**
    * Optional global learning-space relationship/viewpoint transport.
    *
    * Bootstrap attaches these to each topic as a convenient transport layer from
@@ -75,6 +89,94 @@ function round(value: number) {
 
 function safeNumber(value: number | null | undefined, fallback: number) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function readNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function isDiagnosisState(value: unknown): value is DiagnosisState {
+  const record = asRecord(value);
+
+  return Boolean(
+    record &&
+      typeof record.version === "string" &&
+      (typeof record.active_diagnosis === "string" ||
+        record.active_diagnosis === null) &&
+      record.beliefs &&
+      typeof record.beliefs === "object" &&
+      !Array.isArray(record.beliefs) &&
+      Array.isArray(record.history),
+  );
+}
+
+function readDiagnosisState(topic: LearningSpaceInputTopic): DiagnosisState | null {
+  if (isDiagnosisState(topic.diagnosisState)) {
+    return topic.diagnosisState;
+  }
+
+  const topicJson = asRecord(topic.topicJson);
+  const jsonDiagnosisState = topicJson?.diagnosis_state;
+
+  return isDiagnosisState(jsonDiagnosisState) ? jsonDiagnosisState : null;
+}
+
+function readDiagnosisBeliefEntry(args: {
+  topic: LearningSpaceInputTopic;
+  diagnosis: DiagnosisType | null;
+}): Record<string, unknown> | null {
+  if (!args.diagnosis) return null;
+
+  const diagnosisState = readDiagnosisState(args.topic);
+  const beliefs = asRecord(diagnosisState?.beliefs);
+
+  return asRecord(beliefs?.[args.diagnosis]);
+}
+
+function readActiveDiagnosisConfidence(topic: LearningSpaceInputTopic) {
+  const diagnosis = topic.diagnosis ?? null;
+  const explicit = readNumber(topic.activeDiagnosisConfidence);
+
+  if (explicit !== null) return clamp(explicit, 0, 1);
+
+  const beliefEntry = readDiagnosisBeliefEntry({ topic, diagnosis });
+  const confidence = readNumber(beliefEntry?.confidence);
+
+  return confidence !== null ? clamp(confidence, 0, 1) : diagnosis ? 0.55 : null;
+}
+
+function readActiveDiagnosisEvidenceCount(topic: LearningSpaceInputTopic) {
+  const diagnosis = topic.diagnosis ?? null;
+  const beliefEntry = readDiagnosisBeliefEntry({ topic, diagnosis });
+  const evidenceCount = readNumber(beliefEntry?.evidence_count);
+
+  return evidenceCount !== null ? Math.max(0, Math.floor(evidenceCount)) : null;
+}
+
+function readProbeContractRendererKind(value: unknown): string | null {
+  const snapshot = asRecord(value);
+  const rendererKind = snapshot?.renderer_kind;
+
+  return typeof rendererKind === "string" && rendererKind.trim()
+    ? rendererKind.trim()
+    : null;
+}
+
+function readBestProbeContractRendererKind(topic: LearningSpaceInputTopic) {
+  return (
+    readProbeContractRendererKind(topic.activeProbeContractSnapshot) ??
+    readProbeContractRendererKind(topic.nextProbeContractSnapshot) ??
+    readProbeContractRendererKind(topic.lastProbeContractSnapshot) ??
+    readProbeContractRendererKind(topic.topicJson?.next_probe_contract) ??
+    readProbeContractRendererKind(topic.topicJson?.last_probe_contract) ??
+    readProbeContractRendererKind(topic.topicJson?.next_delivered_probe)
+  );
 }
 
 function normalizeTopicPosition(topic: LearningSpaceInputTopic): TopicPosition3D {
@@ -124,19 +226,16 @@ function buildRenderState(topic: LearningSpaceInputTopic) {
   const radius = clamp(baseScale * 0.9 + learningScore * 1.0, 0.48, 1.58);
 
   /**
-   * Visible sphere size and collision/comfort size are intentionally separate.
+   * Current visual direction:
+   * - topic spheres stay stable, simple, and sphere-like
+   * - confusion/diagnosis should show up through external overlays, markers,
+   *   rings, lenses, or relationship views instead of permanent deformation
    *
-   * radius:
-   *   what the learner sees as the physical topic body.
-   *
-   * collision_radius:
-   *   the reserved envelope around that body. It leaves room for current local
-   *   bobbing and future visual state such as blobiness, rings, surface markers,
-   *   probe thumbnails, and small satellites without letting the map feel crowded.
+   * Therefore surface_noise is kept near zero even when confusion is high.
    */
-  const collisionRadius = radius + 0.24 + confusion * 0.16;
-
-  const smoothness = clamp(0.55 + insight * 0.28 - confusion * 0.22, 0.08, 1);
+  const surfaceNoise = 0;
+  const smoothness = 0.96;
+  const collisionRadius = radius + 0.26;
   const isStar = learningScore > 0.9 && confusion < 0.15 && insight > 0.65;
   const glowIntensity = isStar
     ? 0.95
@@ -151,56 +250,13 @@ function buildRenderState(topic: LearningSpaceInputTopic) {
   return {
     radius: round(radius),
     collision_radius: round(collisionRadius),
-    surface_noise: round(confusion),
+    surface_noise: round(surfaceNoise),
     smoothness: round(smoothness),
-    spin_rate: round(0.002 + (1 - confusion) * 0.003),
-    saturation: round(clamp(0.35 + insight * 0.5, 0.2, 1)),
+    spin_rate: round(0.0015 + learningScore * 0.002),
+    saturation: round(clamp(0.42 + insight * 0.42, 0.2, 1)),
     is_star: isStar,
     glow_intensity: round(glowIntensity),
     glow_source: glowSource,
-  };
-}
-
-function buildLearningWeather(topic: LearningSpaceInputTopic): LearningWeather {
-  const confusion = clamp(safeNumber(topic.confusion, 0.3), 0, 1);
-  const insight = clamp(safeNumber(topic.insight, 0.5), 0, 1);
-  const learningScore = clamp(safeNumber(topic.learningScore, 0.5), 0, 1);
-
-  /**
-   * MyWay weather grammar v1:
-   *
-   * - confusion becomes cloud density / storm pressure
-   * - insight becomes sunlight
-   * - confusion + insight becomes sunlight breaking through clouds
-   * - low confusion + high insight becomes a clearer sky
-   * - learningScore steadies the whole atmosphere
-   *
-   * These values intentionally stay renderer-safe 0..1 numbers so the engine
-   * can later replace this derivation without changing SpaceCanvas.
-   */
-  const cloudDensity = confusion;
-  const sunlightIntensity = insight;
-  const sunlightBreakthrough = confusion * insight;
-  const skyClarity = insight * (1 - confusion);
-  const atmosphereStability = clamp(
-    learningScore * 0.72 + insight * 0.2 + (1 - confusion) * 0.08,
-    0,
-    1,
-  );
-
-  const stormTurbulence = clamp(
-    confusion * (0.78 + (1 - atmosphereStability) * 0.22) * (1 - insight * 0.18),
-    0,
-    1,
-  );
-
-  return {
-    cloud_density: round(cloudDensity),
-    storm_turbulence: round(stormTurbulence),
-    sunlight_intensity: round(sunlightIntensity),
-    sunlight_breakthrough: round(sunlightBreakthrough),
-    sky_clarity: round(skyClarity),
-    atmosphere_stability: round(atmosphereStability),
   };
 }
 
@@ -218,6 +274,14 @@ function buildSatelliteCount(topic: LearningSpaceInputTopic) {
 }
 
 function inferProbeThumbnailStyle(topic: LearningSpaceInputTopic): TopicSurfaceMarkerThumbnailStyle {
+  const rendererKind = readBestProbeContractRendererKind(topic);
+
+  if (rendererKind === "drag_drop_match") return "drag_drop_card";
+  if (rendererKind === "slider_prediction") return "slider_card";
+  if (rendererKind === "multiple_choice") return "choice_card";
+  if (rendererKind === "video_checkpoint") return "video_card";
+  if (rendererKind === "audio_explanation") return "audio_card";
+
   const nextStep = (topic.nextStep ?? "").toLowerCase();
 
   if (nextStep.includes("drag") || nextStep.includes("sort")) return "drag_drop_card";
@@ -317,6 +381,8 @@ function buildTopicPanelProjection(topic: LearningSpaceInputTopic): TopicPanelPr
   const insight = clamp(safeNumber(topic.insight, 0.5), 0, 1);
   const learningScore = clamp(safeNumber(topic.learningScore, 0.5), 0, 1);
   const diagnosis = topic.diagnosis ?? null;
+  const diagnosisConfidence = readActiveDiagnosisConfidence(topic);
+  const diagnosisEvidenceCount = readActiveDiagnosisEvidenceCount(topic);
 
   const currentStateSummary =
     confusion > 0.68
@@ -329,7 +395,7 @@ function buildTopicPanelProjection(topic: LearningSpaceInputTopic): TopicPanelPr
     current_state_summary: currentStateSummary,
     active_diagnosis: {
       label: diagnosis,
-      confidence: diagnosis ? 0.55 : null,
+      confidence: diagnosisConfidence,
       plain_language: diagnosisPlainLanguage(diagnosis),
     },
     primary_block: topic.nextStep ?? null,
@@ -340,7 +406,17 @@ function buildTopicPanelProjection(topic: LearningSpaceInputTopic): TopicPanelPr
         ? "A probe is available to gather stronger evidence."
         : "More clarification may help identify the next useful probe.",
     },
-    recent_evidence_summary: [],
+    recent_evidence_summary:
+      diagnosisEvidenceCount !== null
+        ? [
+            {
+              kind: "probe",
+              summary: `${diagnosisEvidenceCount} evidence event(s) currently support the active diagnosis estimate.`,
+              strength: diagnosisConfidence,
+              timestamp: null,
+            },
+          ]
+        : [],
     why_this_topic_matters: [],
     available_actions: topic.hasAvailableProbe
       ? [
@@ -469,7 +545,11 @@ function mergeLearningSpaceRelationships(args: {
 function buildLocalDerivedRelationships(
   topics: LearningSpaceInputTopic[],
 ): LearningSpaceRelationship[] {
-  const graphTopics: RelationshipGraphTopic[] = topics.map((topic) => ({
+  type ExtendedRelationshipGraphTopic = RelationshipGraphTopic & {
+    diagnosisState?: DiagnosisState | null;
+  };
+
+  const graphTopics: ExtendedRelationshipGraphTopic[] = topics.map((topic) => ({
     id: topic.id,
     topic_label: topic.topic_label,
     diagnosis: topic.diagnosis ?? null,
@@ -481,6 +561,7 @@ function buildLocalDerivedRelationships(
     semanticPositionMethod: topic.semanticPositionMethod ?? null,
     semanticPositionUpdatedAt: topic.semanticPositionUpdatedAt ?? null,
     messageCount: topic.messageCount ?? null,
+    diagnosisState: readDiagnosisState(topic),
   }));
 
   return buildTopicRelationships(graphTopics, {
@@ -570,7 +651,6 @@ export function buildLearningSpace(
           movement_policy: buildMovementPolicy(topic),
         },
         render_state: buildRenderState(topic),
-        learning_weather: buildLearningWeather(topic),
         surface_markers: buildSurfaceMarkers(topic),
         rings: buildRings(topic),
         satellite_count: satelliteCount,

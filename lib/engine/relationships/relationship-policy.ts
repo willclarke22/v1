@@ -5,6 +5,7 @@ import type {
 } from "@/types/learning-space";
 import type {
   BuiltTopicRelationshipType,
+  RelationshipEvidenceTier,
   RelationshipGraphBuildOptions,
 } from "./relationship-types";
 
@@ -31,8 +32,25 @@ export const DEFAULT_RELATIONSHIP_GRAPH_OPTIONS = {
   minAverageConfusionForPattern: 0.5,
   minAverageInsightForPattern: 0.38,
   minStrength: 0.58,
+
+  /**
+   * Legacy fallback gate for shared diagnosis when richer diagnosisEvidence is
+   * unavailable.
+   */
   minMessageCountForDiagnosisOnly: 2,
   allowSharedDiagnosisWithSupportingSignals: false,
+
+  /**
+   * V1.1 evidence-aware shared diagnosis gates.
+   *
+   * These are intentionally conservative. A shared diagnosis relationship
+   * should mean more than "both topics have the same fallback label."
+   */
+  minDiagnosisBeliefForSharedDiagnosis: 0.58,
+  minDiagnosisConfidenceForSharedDiagnosis: 0.2,
+  minDiagnosisEvidenceCountForSharedDiagnosis: 2,
+  allowWeakeningDiagnosisRelationships: false,
+  allowResolvedDiagnosisRelationships: false,
 } satisfies Required<Omit<RelationshipGraphBuildOptions, "generatedAt">>;
 
 export function clamp01(value: number) {
@@ -129,10 +147,35 @@ export function defaultRelationshipVisualStyle(
   }
 }
 
+export function evidenceTierRank(tier: RelationshipEvidenceTier | null | undefined) {
+  switch (tier) {
+    case "model_only":
+      return 1;
+    case "message_average":
+      return 2;
+    case "generic_attempt_interpretation":
+      return 3;
+    case "contract_marker_estimate":
+      return 4;
+    case "deterministic_structured_judgment":
+      return 5;
+    case "llm_rubric_judgment":
+      return 6;
+    case "hybrid_structured_and_rubric_judgment":
+      return 7;
+    case "repeated_judged_pattern":
+      return 8;
+    case "unknown":
+    default:
+      return 0;
+  }
+}
+
 export function relationshipPriority(args: {
   relationshipType: LearningSpaceRelationshipType;
   strength: number;
   confidence: number;
+  evidenceTier?: RelationshipEvidenceTier | null;
 }) {
   const typeBoost =
     args.relationshipType === "semantic" ||
@@ -144,12 +187,22 @@ export function relationshipPriority(args: {
           ? 0.04
           : 0;
 
-  return round4(clamp01(args.strength * 0.74 + args.confidence * 0.2 + typeBoost));
+  /**
+   * Evidence tier should not overpower strength/confidence, but stronger
+   * judged evidence should rank above weak visual-test links when values are
+   * otherwise similar.
+   */
+  const tierBoost = clamp01(evidenceTierRank(args.evidenceTier) / 8) * 0.06;
+
+  return round4(
+    clamp01(args.strength * 0.72 + args.confidence * 0.2 + typeBoost + tierBoost),
+  );
 }
 
 export function maxOpacityForRelationship(args: {
   relationshipType: LearningSpaceRelationshipType;
   strength: number;
+  evidenceTier?: RelationshipEvidenceTier | null;
 }) {
   if (
     args.relationshipType === "semantic" ||
@@ -158,7 +211,13 @@ export function maxOpacityForRelationship(args: {
     return round4(Math.max(0.16, Math.min(0.74, 0.18 + args.strength * 0.52)));
   }
 
-  return round4(Math.max(0.08, Math.min(0.42, 0.1 + args.strength * 0.28)));
+  const tierRank = evidenceTierRank(args.evidenceTier);
+  const tierOpacityBoost =
+    args.relationshipType === "shared_diagnosis" ? Math.min(0.08, tierRank * 0.01) : 0;
+
+  return round4(
+    Math.max(0.08, Math.min(0.48, 0.1 + args.strength * 0.28 + tierOpacityBoost)),
+  );
 }
 
 export function buildRelationshipDisplayPolicy(args: {
@@ -167,6 +226,7 @@ export function buildRelationshipDisplayPolicy(args: {
   confidence: number;
   affectsLayout?: boolean;
   visibleByDefault?: boolean;
+  evidenceTier?: RelationshipEvidenceTier | null;
 }): LearningSpaceRelationship["display_policy"] {
   const affectsLayout =
     args.affectsLayout ?? defaultAffectsLayout(args.relationshipType);
@@ -182,22 +242,27 @@ export function buildRelationshipDisplayPolicy(args: {
     max_opacity: maxOpacityForRelationship({
       relationshipType: args.relationshipType,
       strength: args.strength,
+      evidenceTier: args.evidenceTier,
     }),
     visual_style: defaultRelationshipVisualStyle(args.relationshipType),
     priority: relationshipPriority({
       relationshipType: args.relationshipType,
       strength: args.strength,
       confidence: args.confidence,
+      evidenceTier: args.evidenceTier,
     }),
   };
 }
 
 export function derivedRelationshipEvidenceSource(
   relationshipType: BuiltTopicRelationshipType,
+  evidenceTier?: RelationshipEvidenceTier | null,
 ) {
   switch (relationshipType) {
     case "shared_diagnosis":
-      return ["topic_diagnosis"];
+      return evidenceTier && evidenceTier !== "unknown"
+        ? ["topic_diagnosis", evidenceTier]
+        : ["topic_diagnosis"];
     case "shared_confusion_pattern":
       return ["topic_confusion_average"];
     case "shared_insight_pattern":

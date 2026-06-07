@@ -246,6 +246,21 @@ function mergeSemanticPositionIntoTopicJson(args: {
   return base;
 }
 
+function mergeDiagnosisIntoTopicJson(args: {
+  topicJson: JsonValue;
+  diagnosis?: string | null;
+}): JsonValue {
+  const base = baseTopicJson(args.topicJson);
+
+  if (args.diagnosis !== undefined) {
+    base.active_diagnosis = args.diagnosis ?? null;
+    base.diagnosis = args.diagnosis ?? null;
+  }
+
+  return base;
+}
+
+
 function getTopicStateColumnMetadata(topicJsonWithEmbedding: JsonValue) {
   const topicJson = isPlainObject(topicJsonWithEmbedding)
     ? topicJsonWithEmbedding
@@ -453,8 +468,13 @@ export async function upsertTopicState(input: PersistedTopicStateInput) {
     input.semanticPositionUpdatedAt ??
     (input.semanticPosition ? new Date().toISOString() : null);
 
-  const topicJsonWithEmbedding = mergeEmbeddingFieldsIntoTopicJson({
+  const topicJsonWithDiagnosis = mergeDiagnosisIntoTopicJson({
     topicJson: input.topicJson,
+    diagnosis: input.diagnosis,
+  });
+
+  const topicJsonWithEmbedding = mergeEmbeddingFieldsIntoTopicJson({
+    topicJson: topicJsonWithDiagnosis,
 
     topicLabelEmbeddingCentroid: resolvedLabelCentroid,
     topicLabelEmbeddingCount: resolvedLabelCount,

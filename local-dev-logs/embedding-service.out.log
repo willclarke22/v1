@@ -1,4 +1,6 @@
-INFO:     127.0.0.1:57449 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55276 - "POST /embed HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55277 - "POST /embed HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55276 - "POST /embed HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53709 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53712 - "POST /embed HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53713 - "POST /embed HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53712 - "POST /embed HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53712 - "POST /embed HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53712 - "POST /embed HTTP/1.1" 200 OK

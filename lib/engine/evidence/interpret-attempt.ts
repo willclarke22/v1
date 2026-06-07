@@ -6,7 +6,21 @@ import type {
   EvidenceModality,
   InterpretAttemptOptions,
   NormalizedEvidenceInput,
+  NormalizedEvidenceValue,
 } from "./evidence-types";
+
+/**
+ * Generic Attempt Interpretation V1.1
+ *
+ * This module estimates evidence availability, surface-level signal quality, and
+ * weak diagnostic pressure from normalized learner evidence.
+ *
+ * Important distinction:
+ * - This file does NOT decide final correctness.
+ * - Deterministic/rubric contract judging should refine correctness later.
+ * - evidence_strength means "how usable/judgeable is this evidence?", not
+ *   "how correct was the learner?"
+ */
 
 function clamp01(value: number) {
   if (!Number.isFinite(value)) return 0;
@@ -44,6 +58,64 @@ function getStructuredSpecificity(keys: string[]) {
   return clamp01(keys.length / 6);
 }
 
+function getChoiceSpecificity(value: Extract<NormalizedEvidenceValue, { kind: "choice" }>) {
+  return clamp01(
+    value.selected_option_ids.length * 0.42 + value.selected_labels.length * 0.18,
+  );
+}
+
+function getOrderingSpecificity(value: Extract<NormalizedEvidenceValue, { kind: "ordering" }>) {
+  return clamp01(value.ordered_item_ids.length / 5);
+}
+
+function getDragDropSpecificity(value: Extract<NormalizedEvidenceValue, { kind: "drag_drop" }>) {
+  return clamp01(value.matches.length / 5);
+}
+
+function getGraphMatchSpecificity(
+  value: Extract<NormalizedEvidenceValue, { kind: "graph_match" }>,
+) {
+  return clamp01(value.selected_edge_ids.length / 5);
+}
+
+function getClassificationSpecificity(
+  value: Extract<NormalizedEvidenceValue, { kind: "classification" }>,
+) {
+  const mapSize = Object.keys(value.labels_by_item_id).length;
+  return clamp01((value.selected_label ? 0.46 : 0) + mapSize / 6);
+}
+
+function getInteractionSpecificity(
+  value: Extract<NormalizedEvidenceValue, { kind: "interaction" }>,
+) {
+  return clamp01(value.action_count / 8 + (value.final_state ? 0.18 : 0));
+}
+
+function getEvidenceSpecificity(value: NormalizedEvidenceValue) {
+  switch (value.kind) {
+    case "text":
+      return getTextSpecificity(value.text);
+    case "structured":
+      return getStructuredSpecificity(value.keys);
+    case "choice":
+      return getChoiceSpecificity(value);
+    case "ordering":
+      return getOrderingSpecificity(value);
+    case "slider":
+      return value.value === null ? 0 : 0.72;
+    case "drag_drop":
+      return getDragDropSpecificity(value);
+    case "graph_match":
+      return getGraphMatchSpecificity(value);
+    case "classification":
+      return getClassificationSpecificity(value);
+    case "interaction":
+      return getInteractionSpecificity(value);
+    case "none":
+      return 0;
+  }
+}
+
 function getCompletionSignal(evidence: NormalizedEvidenceInput) {
   if (evidence.completion === "complete") return 0.9;
   if (evidence.completion === "partial") return 0.58;
@@ -58,13 +130,13 @@ function getModalityEvidenceBase(modality: EvidenceModality) {
     case "multiple_choice":
     case "classification":
     case "prediction":
-      return 0.48;
+      return 0.5;
     case "ordering":
     case "drag_drop":
     case "slider":
     case "interactive_action":
     case "simulation":
-      return 0.56;
+      return 0.58;
     case "audio":
     case "video":
       return 0.46;
@@ -80,6 +152,28 @@ function getModalityEvidenceBase(modality: EvidenceModality) {
   }
 }
 
+function valueKindEvidenceBoost(value: NormalizedEvidenceValue) {
+  switch (value.kind) {
+    case "choice":
+    case "ordering":
+    case "slider":
+    case "drag_drop":
+    case "graph_match":
+    case "classification":
+      /**
+       * Structured evidence is often more directly judgeable by deterministic
+       * contract judges. This boosts evidence availability, not correctness.
+       */
+      return 0.06;
+    case "interaction":
+      return 0.04;
+    case "structured":
+      return 0.03;
+    default:
+      return 0;
+  }
+}
+
 function buildEvidenceFeatures(
   evidence: NormalizedEvidenceInput,
   modelSignals: ModelSignals | null,
@@ -88,13 +182,7 @@ function buildEvidenceFeatures(
   const base = getModalityEvidenceBase(evidence.modality);
   const confusion = safeModelSignal(modelSignals?.model_confusion);
   const insight = safeModelSignal(modelSignals?.model_insight);
-
-  const specificity =
-    evidence.value.kind === "text"
-      ? getTextSpecificity(evidence.value.text)
-      : evidence.value.kind === "structured"
-        ? getStructuredSpecificity(evidence.value.keys)
-        : 0;
+  const specificity = getEvidenceSpecificity(evidence.value);
 
   const hintDependence =
     evidence.submission_metadata?.used_hint === true
@@ -109,13 +197,20 @@ function buildEvidenceFeatures(
       ? clamp01(1 - evidence.submission_metadata.latency_ms / 120_000)
       : null;
 
+  const evidenceStrength = clamp01(
+    base * 0.34 +
+      completionSignal * 0.38 +
+      specificity * 0.22 +
+      valueKindEvidenceBoost(evidence.value),
+  );
+
   const features: EvidenceFeatureVector = {
     response_specificity: specificity,
     hint_dependence: hintDependence,
     interaction_efficiency: interactionEfficiency,
     confusion_signal: confusion,
     insight_signal: insight,
-    evidence_strength: clamp01(base * 0.38 + completionSignal * 0.42 + specificity * 0.2),
+    evidence_strength: evidenceStrength,
   };
 
   if (evidence.modality === "text" || evidence.modality === "audio") {
@@ -131,13 +226,13 @@ function buildEvidenceFeatures(
     evidence.modality === "classification"
   ) {
     features.discrimination_accuracy = clamp01(
-      completionSignal * 0.62 + specificity * 0.18 + (insight ?? 0.35) * 0.2,
+      completionSignal * 0.5 + specificity * 0.32 + (insight ?? 0.35) * 0.18,
     );
   }
 
   if (evidence.modality === "prediction" || evidence.modality === "slider") {
     features.prediction_accuracy = clamp01(
-      completionSignal * 0.56 + specificity * 0.18 + (insight ?? 0.35) * 0.26,
+      completionSignal * 0.46 + specificity * 0.3 + (insight ?? 0.35) * 0.24,
     );
   }
 
@@ -148,10 +243,16 @@ function buildEvidenceFeatures(
     evidence.modality === "simulation"
   ) {
     features.procedure_order_quality = clamp01(
-      completionSignal * 0.48 +
-        (interactionEfficiency ?? 0.5) * 0.22 +
-        specificity * 0.14 +
+      completionSignal * 0.42 +
+        (interactionEfficiency ?? 0.5) * 0.18 +
+        specificity * 0.24 +
         (insight ?? 0.35) * 0.16,
+    );
+  }
+
+  if (evidence.modality === "simulation" || evidence.value.kind === "interaction") {
+    features.transfer_success = clamp01(
+      completionSignal * 0.34 + specificity * 0.32 + (insight ?? 0.35) * 0.18,
     );
   }
 
@@ -214,6 +315,13 @@ function deriveDiagnosisDelta(args: {
     delta.discrimination_gap = clamp01(weakness * 0.12 + evidenceWeakness * 0.08);
   }
 
+  if (args.evidence.modality === "prediction" || args.evidence.modality === "slider") {
+    delta.representation_gap = Math.max(
+      delta.representation_gap,
+      clamp01(weakness * 0.1 + evidenceWeakness * 0.06),
+    );
+  }
+
   if (args.options.probeType === "apply_transfer") {
     delta.transfer_gap = clamp01(weakness * 0.14 + evidenceWeakness * 0.08);
   }
@@ -226,6 +334,59 @@ function deriveDiagnosisDelta(args: {
   }
 
   return delta;
+}
+
+function structuredValueConfidenceBoost(value: NormalizedEvidenceValue) {
+  switch (value.kind) {
+    case "choice":
+    case "ordering":
+    case "slider":
+    case "drag_drop":
+    case "graph_match":
+    case "classification":
+      return 0.1;
+    case "interaction":
+    case "structured":
+      return 0.06;
+    default:
+      return 0;
+  }
+}
+
+function buildCautions(args: {
+  evidence: NormalizedEvidenceInput;
+  hasModelSignals: boolean;
+}) {
+  const cautions: string[] = [];
+
+  if (!args.hasModelSignals) {
+    cautions.push("No model-backed confusion/insight signals were available for this interpretation.");
+  }
+
+  if (
+    args.evidence.value.kind === "choice" ||
+    args.evidence.value.kind === "ordering" ||
+    args.evidence.value.kind === "slider" ||
+    args.evidence.value.kind === "drag_drop" ||
+    args.evidence.value.kind === "graph_match" ||
+    args.evidence.value.kind === "classification"
+  ) {
+    cautions.push("Structured evidence was normalized for deterministic judging; generic interpretation estimates evidence availability, not final correctness.");
+  }
+
+  if (args.evidence.value.kind === "structured") {
+    cautions.push("Generic structured evidence is using broad V1.1 feature extraction until renderer-specific normalization is available.");
+  }
+
+  if (args.evidence.value.kind === "interaction") {
+    cautions.push("Interactive/simulation evidence is preserved as an action trace, but renderer-specific judging is still needed for strong claims.");
+  }
+
+  if (args.evidence.value.kind === "text" && args.evidence.value.word_count < 4) {
+    cautions.push("Text evidence is very short, so interpretation confidence should remain conservative.");
+  }
+
+  return cautions;
 }
 
 export function interpretAttemptEvidence(
@@ -241,15 +402,16 @@ export function interpretAttemptEvidence(
     safeModelSignal(modelSignals?.model_insight) !== null;
 
   const judgmentConfidence = clamp01(
-    0.28 +
-      evidenceStrength * 0.42 +
-      (hasModelSignals ? 0.14 : 0) +
-      (evidence.value.kind === "structured" ? 0.08 : 0) +
+    0.26 +
+      evidenceStrength * 0.4 +
+      (hasModelSignals ? 0.12 : 0) +
+      structuredValueConfidenceBoost(evidence.value) +
       (evidence.value.kind === "text" && evidence.value.word_count >= 8 ? 0.08 : 0),
   );
 
   const reasons = [
     `Evidence modality interpreted as ${evidence.modality}.`,
+    `Evidence value kind normalized as ${evidence.value.kind}.`,
     `Evidence completion interpreted as ${evidence.completion}.`,
     `Evidence strength estimated at ${evidenceStrength.toFixed(2)}.`,
   ];
@@ -258,19 +420,14 @@ export function interpretAttemptEvidence(
     reasons.push(`Probe type context was ${options.probeType}.`);
   }
 
-  const cautions: string[] = [];
-
-  if (!hasModelSignals) {
-    cautions.push("No model-backed confusion/insight signals were available for this interpretation.");
+  if (options.expectedResponseType) {
+    reasons.push(`Expected response type context was ${options.expectedResponseType}.`);
   }
 
-  if (evidence.value.kind === "structured") {
-    cautions.push("Structured/interactive evidence is using generic V1 feature extraction until renderer-specific judging is added.");
-  }
-
-  if (evidence.value.kind === "text" && evidence.value.word_count < 4) {
-    cautions.push("Text evidence is very short, so interpretation confidence should remain conservative.");
-  }
+  const cautions = buildCautions({
+    evidence,
+    hasModelSignals,
+  });
 
   return {
     interpretation_id: null,

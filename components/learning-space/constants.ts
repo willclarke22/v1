@@ -260,22 +260,12 @@ export const PROBE_MARKER_DEFAULT_NORMAL = new THREE.Vector3(0.48, 0.55, 0.68).n
 export const RELATIONSHIP_DEFAULT_ENDPOINT_ACTIVE_COLOR = "#ead7ff";
 export const RELATIONSHIP_DEFAULT_ENDPOINT_BACKGROUND_COLOR = "#d4d4d8";
 export const TOPIC_SPHERE_RENDER_ORDER = 10;
-/**
- * Weather surface display.
- *
- * Weather is now a sphere skin, not a distant atmosphere halo. The surface
- * layer sits just above the neutral topic body and below probe icons.
- */
-export const TOPIC_WEATHER_SURFACE_RENDER_ORDER = TOPIC_SPHERE_RENDER_ORDER + 1;
-export const TOPIC_WEATHER_SUNBREAK_RENDER_ORDER = TOPIC_SPHERE_RENDER_ORDER + 2;
-export const TOPIC_WEATHER_SURFACE_SCALE = 1.006;
-export const TOPIC_WEATHER_SUNBREAK_SCALE = 1.01;
 
 /**
  * Probe availability icon.
  *
- * The probe marker is no longer a full colored sphere wrapper. Weather owns the
- * sphere skin; the probe marker is a small icon-only intervention invitation.
+ * The probe marker is a small icon-only intervention invitation. It should stay
+ * visually separate from the stable topic sphere body.
  */
 export const PROBE_ICON_RENDER_ORDER = 24;
 export const PROBE_ICON_SURFACE_OFFSET = 1.075;

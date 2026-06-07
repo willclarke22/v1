@@ -274,9 +274,9 @@ export function TopicSphere({
        * Keep the solid sphere visually stable.
        *
        * Rotating a MeshStandardMaterial sphere under scene lights can make the
-       * specular highlight crawl across the surface like a wave. That was useful
-       * during texture experiments, but now the clean sphere should stay calm so
-       * probe markers and relationship lines can carry the meaning.
+       * specular highlight crawl across the surface like a wave. The clean sphere
+       * should stay calm so probe markers and relationship lines can carry the
+       * meaning.
        */
       sphereRef.current.rotation.set(0, 0, 0);
     }
@@ -286,9 +286,8 @@ export function TopicSphere({
         (isAnyTopicFocused && !isFocused ? 0.46 : 1) * eased;
 
       /**
-       * Keep the physical body clean and readable now that the weather surface
-       * experiment has been removed. Selection/focus still gives a readable
-       * lift without competing with probe markers or relationship lines.
+       * Keep the physical body clean and readable. Selection/focus still gives a
+       * readable lift without competing with probe markers or relationship lines.
        */
       const baseGlow = isFocused ? 0.42 : isSelected ? 0.28 : 0.12;
       const appearanceBoost = isAppearing ? 0.18 * (1 - t) : 0;

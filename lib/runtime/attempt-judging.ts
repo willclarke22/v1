@@ -15,7 +15,18 @@ export type ProbeAttemptPayload = ProbeSubmitRouteRequest & {
   attemptId?: string;
   topicLabel?: string;
   prompt?: string;
-  responseType?: "text";
+  responseType?:
+    | "text"
+    | "choice"
+    | "multiple_choice"
+    | "ordering"
+    | "classify"
+    | "predict"
+    | "audio"
+    | "video"
+    | "interactive_action"
+    | "dynamic_task"
+    | "transform";
   metadata?: {
     latencyMs?: number | null;
     revisionCount?: number | null;
@@ -739,7 +750,7 @@ export function buildDiagnosisDelta(
     recall_gap:
       diagnosis === "recall_gap"
         ? success
-          ? scaled(-0.15)
+          ? 0
           : lowEvidence
             ? scaled(0.12)
             : scaled(0.05)
@@ -747,7 +758,7 @@ export function buildDiagnosisDelta(
     representation_gap:
       diagnosis === "representation_gap"
         ? success
-          ? scaled(-0.18)
+          ? 0
           : lowEvidence
             ? scaled(0.1)
             : scoring.classification === "structural_failure"
@@ -757,7 +768,7 @@ export function buildDiagnosisDelta(
     procedure_gap:
       diagnosis === "procedure_gap"
         ? success
-          ? scaled(-0.12)
+          ? 0
           : lowEvidence
             ? scaled(0.05)
             : scaled(0.03)
@@ -765,7 +776,7 @@ export function buildDiagnosisDelta(
     discrimination_gap:
       diagnosis === "discrimination_gap"
         ? success
-          ? scaled(-0.1)
+          ? 0
           : lowEvidence
             ? scaled(0.04)
             : scaled(0.02)
@@ -773,13 +784,118 @@ export function buildDiagnosisDelta(
     transfer_gap:
       diagnosis === "transfer_gap"
         ? success
-          ? scaled(-0.08)
+          ? 0
           : lowEvidence
             ? scaled(0.09)
             : scaled(0.08)
         : 0,
   };
 }
+
+function safeJsonStringify(value: unknown) {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value ?? "");
+  }
+}
+
+function buildResponseTextForLegacyScoring(response: unknown) {
+  if (typeof response === "string") return response;
+  if (response === null || response === undefined) return "";
+
+  return safeJsonStringify(response);
+}
+
+function normalizeRawResponseValueForJudgedAttempt(
+  response: unknown,
+): string | Record<string, unknown> | null {
+  if (response === null || response === undefined) return null;
+
+  if (typeof response === "string") {
+    const trimmed = response.trim();
+    return trimmed.length ? trimmed : null;
+  }
+
+  /**
+   * Preserve structured object responses in the judged_attempt audit payload.
+   *
+   * JudgedAttempt.raw_response.value currently accepts only string,
+   * Record<string, unknown>, or null. Arrays / primitives are wrapped in a
+   * record so the audit payload stays type-safe without losing the submitted
+   * value completely.
+   */
+  if (response && typeof response === "object" && !Array.isArray(response)) {
+    return response as Record<string, unknown>;
+  }
+
+  if (Array.isArray(response)) {
+    return {
+      submitted_array: response,
+    };
+  }
+
+  return {
+    submitted_value: response,
+  };
+}
+
+function inferStimulusModality(body: ProbeAttemptPayload) {
+  const modality = body.deliveryContext?.modality;
+
+  if (modality === "video") return "video";
+  if (modality === "audio") return "audio";
+  if (modality === "interactive") return "interactive";
+
+  return "text";
+}
+
+function inferStimulusGenerator(
+  body: ProbeAttemptPayload,
+): JudgedAttempt["stimulus"]["generator"] {
+  const generator = body.deliveryContext?.generator;
+
+  /**
+   * deliveryContext.generator is wider than the persisted JudgedAttempt
+   * stimulus generator union. Narrow it before assigning so the compatibility
+   * judged_attempt record remains contract-safe.
+   */
+  if (generator === "sora") {
+    return "sora";
+  }
+
+  /**
+   * "custom" is valid in some delivery contexts, but it is not part of the
+   * persisted JudgedAttempt stimulus generator union. Keep the audit record
+   * contract-safe by mapping custom/unknown generators back to "chatgpt".
+   */
+  return "chatgpt";
+}
+
+function buildConfidenceAlignment(args: {
+  rawText: string;
+  scoring: ReturnType<typeof scoreResponse>;
+}) {
+  const normalizedResponse = normalizeText(args.rawText);
+
+  if (args.scoring.classification === "success" && args.scoring.uncertaintyHits >= 2) {
+    return "underconfident";
+  }
+
+  if (
+    args.scoring.classification !== "success" &&
+    normalizedResponse.includes("definitely")
+  ) {
+    return "overconfident";
+  }
+
+  if (args.scoring.uncertaintyHits > 0) {
+    return "underconfident";
+  }
+
+  return "aligned";
+}
+
 
 export function buildJudgedAttempt(args: {
   body: ProbeAttemptPayload;
@@ -789,22 +905,13 @@ export function buildJudgedAttempt(args: {
 }): JudgedAttempt {
   const { body, topic, scoring, activeDiagnosis } = args;
   const topicLabel = getRouteTopicLabel(topic);
-  const rawText =
-    typeof body.response === "string"
-      ? body.response
-      : JSON.stringify(body.response);
+  const rawText = buildResponseTextForLegacyScoring(body.response);
+  const rawResponseValue = normalizeRawResponseValueForJudgedAttempt(body.response);
 
-  const normalizedResponse = normalizeText(rawText);
-
-  const confidenceAlignment =
-    scoring.classification === "success" && scoring.uncertaintyHits >= 2
-      ? "underconfident"
-      : scoring.classification !== "success" &&
-          normalizedResponse.includes("definitely")
-        ? "overconfident"
-        : scoring.uncertaintyHits > 0
-          ? "underconfident"
-          : "aligned";
+  const confidenceAlignment = buildConfidenceAlignment({
+    rawText,
+    scoring,
+  });
 
   return {
     attempt_id:
@@ -814,9 +921,9 @@ export function buildJudgedAttempt(args: {
     probe_id: body.probeId,
     stimulus: {
       stimulus_id: null,
-      modality: "text",
+      modality: inferStimulusModality(body),
       source: "generated",
-      generator: "chatgpt",
+      generator: inferStimulusGenerator(body),
       constraints: body.prompt ? [body.prompt] : [],
     },
     renderer: {
@@ -832,8 +939,8 @@ export function buildJudgedAttempt(args: {
       },
     },
     raw_response: {
-      type: rawText.trim().length === 0 ? "none" : "text",
-      value: rawText.trim().length === 0 ? null : rawText,
+      type: rawResponseValue === null ? "none" : "text",
+      value: rawResponseValue,
     },
     features: {
       correctness: scoring.correctnessEstimate,
@@ -876,6 +983,13 @@ export function buildJudgedAttempt(args: {
   };
 }
 
+/**
+ * Legacy/provisional topic metric update.
+ *
+ * This route-level scorer is still useful for immediate UI feedback, but it is
+ * not the final correctness source. Stronger correctness and diagnosis updates
+ * now come from lib/engine/evidence + lib/engine/judging.
+ */
 export function buildTopicMetricUpdate(
   topicId: string,
   scoring: ReturnType<typeof scoreResponse>

@@ -1,7 +1,6 @@
 import { makeId } from "@/lib/utils/ids";
 import type {
   LearningSpace,
-  LearningWeather,
   MessageRouteResponse,
 } from "@/types/contracts";
 import type { RouteTopic } from "@/lib/runtime/route-topics";
@@ -32,7 +31,6 @@ export type RawLearningSpaceTopic = {
     glow_intensity?: number;
     glow_source?: "insight" | "star_state" | "focus" | "none";
   };
-  learning_weather?: LearningWeather;
   satellite_count?: number;
   satellites?: Array<{
     satellite_id?: string;
@@ -61,46 +59,12 @@ function clamp(value: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
 }
 
-function round(value: number) {
-  return Math.round(value * 1000) / 1000;
-}
-
-function getFiniteNumber(value: unknown, fallback: number) {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-
-function getRouteTopicNumber(
-  topic: RouteTopic | undefined,
-  key: string,
-  fallback: number,
-) {
-  if (!topic) return fallback;
-
-  const value = (topic as unknown as Record<string, unknown>)[key];
-  return getFiniteNumber(value, fallback);
-}
-
-function buildFallbackLearningWeather(
-  fallbackTopic: RouteTopic | undefined,
-): LearningWeather {
-  const confusion = clamp(getRouteTopicNumber(fallbackTopic, "confusion", 0.3));
-  const insight = clamp(getRouteTopicNumber(fallbackTopic, "insight", 0.5));
-  const learningScore = clamp(
-    getRouteTopicNumber(fallbackTopic, "learningScore", 0.5),
+function isPosition3D(value: unknown): value is [number, number, number] {
+  return (
+    Array.isArray(value) &&
+    value.length === 3 &&
+    value.every((item) => typeof item === "number" && Number.isFinite(item))
   );
-
-  const sunlightBreakthrough = confusion * insight;
-  const skyClarity = insight * (1 - confusion);
-  const atmosphereStability = learningScore * (1 - confusion * 0.35);
-
-  return {
-    cloud_density: round(confusion),
-    storm_turbulence: round(confusion * (1 - insight * 0.25)),
-    sunlight_intensity: round(insight),
-    sunlight_breakthrough: round(sunlightBreakthrough),
-    sky_clarity: round(skyClarity),
-    atmosphere_stability: round(atmosphereStability),
-  };
 }
 
 export function adaptLearningSpaceToContract(
@@ -114,17 +78,16 @@ export function adaptLearningSpaceToContract(
       const resolvedTopicLabel =
         topic.topic_label ?? fallbackTopic?.topic_label ?? "Untitled Topic";
 
-      const position =
-        Array.isArray(topic.position) && topic.position.length === 3
-          ? (topic.position as [number, number, number])
-          : (fallbackTopic?.position ?? [0, 0, 0]);
+      const position = isPosition3D(topic.position)
+        ? topic.position
+        : (fallbackTopic?.position ?? [0, 0, 0]);
 
       const radius = topic.render_state?.radius ?? 0.8;
-      const surfaceNoise = topic.render_state?.surface_noise ?? 0.3;
+      const surfaceNoise = topic.render_state?.surface_noise ?? 0;
       const saturation = topic.render_state?.saturation ?? 0.7;
       const smoothness =
         topic.render_state?.smoothness ??
-        clamp(0.55 + saturation * 0.2 - surfaceNoise * 0.2, 0.08, 1);
+        clamp(0.86 + saturation * 0.1 - surfaceNoise * 0.04, 0.08, 1);
       const glowIntensity = topic.render_state?.glow_intensity ?? 0;
 
       return {
@@ -155,7 +118,7 @@ export function adaptLearningSpaceToContract(
             topic.render_state?.collision_radius ?? radius + 0.24,
           surface_noise: surfaceNoise,
           smoothness,
-          spin_rate: topic.render_state?.spin_rate ?? 0.25,
+          spin_rate: topic.render_state?.spin_rate ?? 0.002,
           saturation,
           is_star: topic.render_state?.is_star ?? false,
           glow_intensity: glowIntensity,
@@ -163,8 +126,6 @@ export function adaptLearningSpaceToContract(
             topic.render_state?.glow_source ??
             (glowIntensity > 0 ? "insight" : "none"),
         },
-        learning_weather:
-          topic.learning_weather ?? buildFallbackLearningWeather(fallbackTopic),
         satellite_count: topic.satellite_count ?? 0,
         satellites: (topic.satellites ?? []).map(
           (satellite, satelliteIndex) => ({
@@ -183,11 +144,9 @@ export function adaptLearningSpaceToContract(
       return {
         cluster_id: cluster.cluster_id ?? `cluster-${index}`,
         cluster_label: resolvedClusterLabel,
-        cluster_centroid:
-          Array.isArray(cluster.cluster_centroid) &&
-          cluster.cluster_centroid.length === 3
-            ? (cluster.cluster_centroid as [number, number, number])
-            : [0, 0, 0],
+        cluster_centroid: isPosition3D(cluster.cluster_centroid)
+          ? cluster.cluster_centroid
+          : [0, 0, 0],
         member_topic_ids: Array.isArray(cluster.member_topic_ids)
           ? cluster.member_topic_ids
           : [],

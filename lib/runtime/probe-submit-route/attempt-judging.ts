@@ -5,6 +5,7 @@ import type {
   PreviousModeOutcome,
 } from "@/types/contracts";
 import type { AttemptInterpretation } from "@/lib/engine/evidence";
+import type { ContractJudgment } from "@/lib/engine/judging";
 import type { RouteTopic } from "@/lib/runtime/route-topics";
 import type {
   buildJudgedAttempt,
@@ -17,6 +18,19 @@ import type {
 } from "@/lib/runtime/probe-runtime";
 import { hasUsableModelSignals } from "./confusion-insight-queue";
 import { buildTopicStates } from "./attempt-input";
+
+/**
+ * Probe-submit attempt judging bridge.
+ *
+ * This file does not perform the core contract judgment itself. It consumes
+ * route-level scoring, generic AttemptInterpretation, and now optional
+ * ContractJudgment metadata to build the intervention decision / EngineFuel.
+ *
+ * The important V1.1 change:
+ * ContractJudgment is allowed to influence decision confidence and reasons,
+ * but EngineFuel is not expanded yet. That keeps the public contract stable
+ * while the new judging pipeline settles.
+ */
 
 function clamp01(value: number) {
   if (!Number.isFinite(value)) return 0;
@@ -79,15 +93,101 @@ function buildInterpretationDecisionReasons(
   return reasons;
 }
 
+function buildContractJudgmentDecisionReasons(
+  contractJudgment: ContractJudgment | null | undefined,
+) {
+  if (!contractJudgment) return [];
+
+  const reasons = [
+    `Contract judgment outcome was ${contractJudgment.outcome}.`,
+    `Contract evidence tier was ${contractJudgment.evidence_tier}.`,
+    `Contract success score was ${contractJudgment.success_score.toFixed(
+      2,
+    )} and failure score was ${contractJudgment.failure_score.toFixed(2)}.`,
+    `Contract confidence was ${contractJudgment.contract_confidence.toFixed(2)}.`,
+  ];
+
+  if (contractJudgment.structured_judgment) {
+    reasons.push(
+      `Structured judgment was ${contractJudgment.structured_judgment.outcome} with performance ${contractJudgment.structured_judgment.performance_score.toFixed(
+        2,
+      )}.`,
+    );
+  }
+
+  if (contractJudgment.cautions.length > 0) {
+    reasons.push(`Contract judgment caution: ${contractJudgment.cautions[0]}`);
+  }
+
+  return reasons;
+}
+
+function contractReadinessSignal(
+  contractJudgment: ContractJudgment | null | undefined,
+) {
+  if (!contractJudgment) return null;
+
+  return clamp01(
+    contractJudgment.success_score * 0.48 +
+      (1 - contractJudgment.failure_score) * 0.2 +
+      contractJudgment.contract_confidence * 0.22 +
+      contractJudgment.evidence_strength * 0.1,
+  );
+}
+
+function contractEvidenceQualitySignal(
+  contractJudgment: ContractJudgment | null | undefined,
+) {
+  if (!contractJudgment) return null;
+
+  const structuredBoost =
+    contractJudgment.structured_judgment &&
+    contractJudgment.structured_judgment.outcome !== "not_applicable" &&
+    contractJudgment.structured_judgment.outcome !== "unjudgeable"
+      ? contractJudgment.structured_judgment.confidence * 0.12
+      : 0;
+
+  return clamp01(
+    contractJudgment.evidence_strength * 0.34 +
+      contractJudgment.contract_confidence * 0.32 +
+      Math.abs(contractJudgment.success_score - contractJudgment.failure_score) * 0.22 +
+      structuredBoost,
+  );
+}
+
+function contractDecisionConfidenceBoost(
+  contractJudgment: ContractJudgment | null | undefined,
+) {
+  if (!contractJudgment) return 0;
+
+  const outcomeBoost =
+    contractJudgment.outcome === "contract_success"
+      ? 0.05
+      : contractJudgment.outcome === "contract_failure"
+        ? 0.04
+        : contractJudgment.outcome === "contract_partial"
+          ? 0.025
+          : 0;
+
+  return clamp01(contractJudgment.contract_confidence * 0.06 + outcomeBoost);
+}
+
 export function buildDecision(args: {
   topic: RouteTopic;
   scoring: ReturnType<typeof scoreResponse>;
   replyBundle: ReturnType<typeof buildResponseBundle>;
   modelSignals: ModelSignals;
   attemptInterpretation?: AttemptInterpretation | null;
+  contractJudgment?: ContractJudgment | null;
 }): InterventionModeDecision {
-  const { topic, scoring, replyBundle, modelSignals, attemptInterpretation } =
-    args;
+  const {
+    topic,
+    scoring,
+    replyBundle,
+    modelSignals,
+    attemptInterpretation,
+    contractJudgment,
+  } = args;
   const continueWithProbe = replyBundle.nextMode === "probe";
 
   const usableModelSignals = hasUsableModelSignals(modelSignals);
@@ -113,7 +213,7 @@ export function buildDecision(args: {
           ),
         );
 
-  const readinessSignal = blendSignals({
+  const readinessWithInterpretation = blendSignals({
     current: baseReadinessSignal,
     interpretationSignal:
       attemptInterpretation === null || attemptInterpretation === undefined
@@ -121,6 +221,12 @@ export function buildDecision(args: {
         : attemptInterpretation.evidence_strength * 0.56 +
           attemptInterpretation.judgment_confidence * 0.44,
     interpretationWeight: 0.18,
+  });
+
+  const readinessSignal = blendSignals({
+    current: readinessWithInterpretation,
+    interpretationSignal: contractReadinessSignal(contractJudgment),
+    interpretationWeight: 0.22,
   });
 
   const baseEvidenceQualitySignal =
@@ -146,12 +252,18 @@ export function buildDecision(args: {
           ),
         );
 
-  const evidenceQualitySignal = blendSignals({
+  const evidenceQualityWithInterpretation = blendSignals({
     current: baseEvidenceQualitySignal,
     interpretationSignal:
       attemptInterpretation === null || attemptInterpretation === undefined
         ? null
         : attemptInterpretation.evidence_strength,
+    interpretationWeight: 0.24,
+  });
+
+  const evidenceQualitySignal = blendSignals({
+    current: evidenceQualityWithInterpretation,
+    interpretationSignal: contractEvidenceQualitySignal(contractJudgment),
     interpretationWeight: 0.24,
   });
 
@@ -174,6 +286,7 @@ export function buildDecision(args: {
         scoring.evidenceStrength * 0.1 +
         scoring.judgmentConfidence * 0.12 +
         (attemptInterpretation?.judgment_confidence ?? 0) * 0.04 +
+        contractDecisionConfidenceBoost(contractJudgment) +
         (insight !== null ? insight * 0.04 : 0) -
         (confusion !== null ? confusion * 0.03 : 0),
     ),
@@ -186,6 +299,7 @@ export function buildDecision(args: {
       2,
     )} and judgment confidence was ${scoring.judgmentConfidence.toFixed(2)}.`,
     ...buildInterpretationDecisionReasons(attemptInterpretation),
+    ...buildContractJudgmentDecisionReasons(contractJudgment),
     replyBundle.whyThisNextStep,
   ];
 
@@ -213,6 +327,13 @@ export function buildDecision(args: {
     );
   }
 
+  const contractFailurePressure =
+    contractJudgment?.outcome === "contract_failure" ? 0.06 : 0;
+  const contractPartialPressure =
+    contractJudgment?.outcome === "contract_partial" ? 0.03 : 0;
+  const contractSuccessBoost =
+    contractJudgment?.outcome === "contract_success" ? 0.06 : 0;
+
   return {
     mode_selected: continueWithProbe ? "probe" : "clarify",
     target_topic_id: topic.id,
@@ -224,12 +345,14 @@ export function buildDecision(args: {
       ? Math.max(
           0.2,
           Math.min(
-            0.8,
+            0.84,
             0.26 +
               (scoring.classification === "structural_failure" ? 0.18 : 0) +
               (scoring.classification === "near_miss" ? 0.12 : 0) +
               (scoring.missingElements ? 0.08 : 0) +
-              (attemptInterpretation?.outcome === "weak_evidence" ? 0.04 : 0),
+              (attemptInterpretation?.outcome === "weak_evidence" ? 0.04 : 0) +
+              contractFailurePressure +
+              contractPartialPressure,
           ),
         )
       : Math.max(
@@ -239,7 +362,8 @@ export function buildDecision(args: {
             0.62 +
               (scoring.classification === "structural_failure" ? 0.08 : 0) +
               (scoring.missingElements ? 0.06 : 0) +
-              (attemptInterpretation?.outcome === "weak_evidence" ? 0.03 : 0),
+              (attemptInterpretation?.outcome === "weak_evidence" ? 0.03 : 0) +
+              contractFailurePressure,
           ),
         ),
     probe_score: continueWithProbe
@@ -250,6 +374,7 @@ export function buildDecision(args: {
             0.62 +
               scoring.evidenceStrength * 0.12 +
               (attemptInterpretation?.evidence_strength ?? 0) * 0.04 +
+              contractSuccessBoost +
               (scoring.classification === "success" ? 0.08 : 0),
           ),
         )
@@ -259,7 +384,8 @@ export function buildDecision(args: {
             0.7,
             0.26 +
               (scoring.classification === "guess" ? 0.05 : 0) +
-              (scoring.classification === "no_response" ? 0.04 : 0),
+              (scoring.classification === "no_response" ? 0.04 : 0) +
+              contractPartialPressure,
           ),
         ),
     signal_summary: {
@@ -280,16 +406,18 @@ export function buildEngineFuel(args: {
     | ReturnType<typeof buildNotApplicableProbePlan>;
   judgedAttempt: ReturnType<typeof buildJudgedAttempt>;
   attemptInterpretation?: AttemptInterpretation | null;
+  contractJudgment?: ContractJudgment | null;
 }): EngineFuel {
   const { updatedTopics, decision, nextProbePlan, judgedAttempt } = args;
 
   /**
-   * The new Engine Evidence V1 interpretation is intentionally not added to the
-   * public EngineFuel contract yet. It is used inside buildDecision as a soft
-   * brain signal first; once stable, the contract can grow a dedicated
-   * attempt_interpretations field.
+   * AttemptInterpretation and ContractJudgment are intentionally not added to
+   * the public EngineFuel contract yet. They influence decisions/diagnosis in
+   * the route layer first; once stable, EngineFuel can grow dedicated
+   * attempt_interpretations / contract_judgments fields.
    */
   void args.attemptInterpretation;
+  void args.contractJudgment;
 
   return {
     topics: buildTopicStates(updatedTopics),

@@ -60,10 +60,26 @@ export function getAnsweredProbeContractSnapshot(
   return JSON.parse(JSON.stringify(candidate)) as ProbeContractSnapshot;
 }
 
+/**
+ * Returns a text representation for legacy route scoring, model queues, and run
+ * user_message content.
+ *
+ * Important:
+ * Do not feed this value back into buildAttemptEvidencePackage as
+ * body.response. The engine evidence normalizer needs the original structured
+ * response object when the probe is multiple choice, ordering, slider,
+ * drag/drop, graph match, etc.
+ */
 export function normalizeProbeRawResponse(body: ProbeSubmitBody): string {
-  return typeof body?.response === "string"
-    ? body.response
-    : JSON.stringify(body?.response ?? "");
+  if (typeof body?.response === "string") {
+    return body.response;
+  }
+
+  try {
+    return JSON.stringify(body?.response ?? "");
+  } catch {
+    return String(body?.response ?? "");
+  }
 }
 
 export function validateProbeSubmitBody(args: {

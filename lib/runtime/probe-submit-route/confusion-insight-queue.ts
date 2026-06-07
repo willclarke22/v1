@@ -11,6 +11,7 @@ import type {
   ConfusionInsightTopicTransitionType,
 } from "@/lib/runtime/score-confusion-insight";
 import {
+  getAnsweredProbeContractSnapshot,
   getBodyModality,
   getBodyResponseType,
   type ProbeSubmitBody,
@@ -47,6 +48,8 @@ export type PendingConfusionInsightScore = {
     attempt_id: string | null;
     response_type: string | null;
     modality: string | null;
+    answered_contract_id?: string | null;
+    answered_contract_renderer_kind?: string | null;
   };
 };
 
@@ -178,6 +181,83 @@ function inferConfusionInsightInputType(
   return "text_attempt";
 }
 
+function summarizeAnsweredProbeContract(body: ProbeSubmitBody) {
+  const snapshot = getAnsweredProbeContractSnapshot(body);
+
+  if (!snapshot) {
+    return {
+      available: false,
+      contract_id: null,
+      renderer_kind: null,
+      probe_type: null,
+      target_diagnosis: null,
+      assessment_target: null,
+      success_marker: null,
+      misconception_being_tested: null,
+      expected_evidence_tier: null,
+      deterministic_judging_available: null,
+    };
+  }
+
+  const successMarkers = Array.isArray(snapshot.judging_schema?.success_markers)
+    ? snapshot.judging_schema.success_markers
+    : [];
+  const misconceptionMappings = Array.isArray(
+    snapshot.judging_schema?.misconception_mappings,
+  )
+    ? snapshot.judging_schema.misconception_mappings
+    : [];
+
+  return {
+    available: true,
+    contract_id: snapshot.contract_id ?? null,
+    renderer_kind: snapshot.renderer_kind ?? null,
+    probe_type: snapshot.probe_type ?? null,
+    target_diagnosis: snapshot.target_diagnosis ?? null,
+    assessment_target: snapshot.assessment_target ?? null,
+    success_marker:
+      successMarkers
+        .map((marker) => marker.label || marker.description)
+        .filter(Boolean)
+        .slice(0, 2)
+        .join("; ") || null,
+    misconception_being_tested:
+      misconceptionMappings
+        .map((mapping) => mapping.label || mapping.description)
+        .filter(Boolean)
+        .slice(0, 2)
+        .join("; ") || null,
+    expected_evidence_tier:
+      snapshot.judging_schema?.expected_evidence_tier ?? null,
+    deterministic_judging_available:
+      snapshot.judging_schema?.deterministic_judging_available ?? null,
+  };
+}
+
+function summarizeRawResponseShape(body: ProbeSubmitBody) {
+  const response = body.response;
+
+  if (typeof response === "string") {
+    return response.trim() ? "text_response" : "empty_text_response";
+  }
+
+  if (response && typeof response === "object" && !Array.isArray(response)) {
+    const keys = Object.keys(response).sort();
+    return `structured_response_keys:${keys.join(",") || "none"}`;
+  }
+
+  if (Array.isArray(response)) {
+    return `array_response_length:${response.length}`;
+  }
+
+  if (response === null || response === undefined) {
+    return "missing_response";
+  }
+
+  return typeof response;
+}
+
+
 function inferCurrentAttemptType(body: ProbeSubmitBody): string | null {
   const modality = getBodyModality(body);
   const responseType = getBodyResponseType(body);
@@ -231,13 +311,26 @@ function buildAttemptEvidence(args: {
 }) {
   const responseType = getBodyResponseType(args.body) ?? "text";
   const modality = getBodyModality(args.body) ?? "text";
+  const contract = summarizeAnsweredProbeContract(args.body);
 
   return [
     `Probe attempt response type: ${responseType}.`,
     `Probe attempt modality: ${modality}.`,
+    `Probe response shape: ${summarizeRawResponseShape(args.body)}.`,
     `Target topic: ${args.topicLabel}.`,
+    contract.available
+      ? `Answered probe contract: ${contract.contract_id ?? "unknown"}; renderer=${contract.renderer_kind ?? "unknown"}; probe_type=${contract.probe_type ?? "unknown"}; target_diagnosis=${contract.target_diagnosis ?? "unknown"}; expected_evidence_tier=${contract.expected_evidence_tier ?? "unknown"}.`
+      : "Answered probe contract: unavailable.",
+    contract.success_marker
+      ? `Contract success marker(s): ${contract.success_marker}.`
+      : null,
+    contract.misconception_being_tested
+      ? `Misconception being tested: ${contract.misconception_being_tested}.`
+      : null,
     `Learner response: ${args.rawResponse}`,
-  ].join("\n");
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join("\n");
 }
 
 function getPreviousModeForProbeSubmit(): ConfusionInsightPreviousMode {
@@ -254,19 +347,24 @@ function buildTargetTopicRecentEvents(args: {
   activeDiagnosis: ReturnType<typeof inferDiagnosisFromTopic>;
   prompt: string;
 }): ConfusionInsightEvent[] {
+  const contract = summarizeAnsweredProbeContract(args.body);
+
   return [
     {
       event_type: "probe",
       topic_label: args.topicLabel,
-      diagnosis_label: args.activeDiagnosis,
-      probe_type: null,
+      diagnosis_label:
+        contract.target_diagnosis ?? args.activeDiagnosis,
+      probe_type: contract.probe_type,
       modality: getBodyModality(args.body) ?? "text",
       probe_prompt: args.prompt,
       learning_objective: args.body.prompt ?? null,
       expected_attempt_type: inferCurrentAttemptType(args.body),
-      success_marker: null,
-      misconception_being_tested: null,
-      evidence: null,
+      success_marker: contract.success_marker,
+      misconception_being_tested: contract.misconception_being_tested,
+      evidence: contract.available
+        ? `Answered contract ${contract.contract_id ?? "unknown"} with renderer ${contract.renderer_kind ?? "unknown"} and expected tier ${contract.expected_evidence_tier ?? "unknown"}.`
+        : null,
     },
   ];
 }
@@ -354,6 +452,10 @@ export function buildPendingProbeConfusionInsightScore(args: {
       attempt_id: args.body.attemptId ?? null,
       response_type: getBodyResponseType(args.body),
       modality: getBodyModality(args.body) ?? "text",
+      answered_contract_id:
+        summarizeAnsweredProbeContract(args.body).contract_id,
+      answered_contract_renderer_kind:
+        summarizeAnsweredProbeContract(args.body).renderer_kind,
     },
   };
 }

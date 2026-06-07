@@ -2,6 +2,7 @@ import type {
   DeliveredProbe,
   DeliveredResponse,
   InterventionModeDecision,
+  ProbeContractSnapshot,
   ProbePlan,
 } from "@/types/contracts";
 import type { RouteTopic } from "@/lib/runtime/route-topics";
@@ -12,6 +13,35 @@ export type DeliveredRendererSelection = {
   generator: "chatgpt" | "sora" | "custom";
   renderer_type: "text_renderer" | "video_renderer" | "interactive_renderer";
 };
+
+function readString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function asProbeContractSnapshot(value: unknown): ProbeContractSnapshot | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  return JSON.parse(JSON.stringify(value)) as ProbeContractSnapshot;
+}
+
+function getProbeContractSnapshot(probePlan: ProbePlan) {
+  return asProbeContractSnapshot(probePlan.probe_contract_snapshot);
+}
+
+function getRendererConfigString(
+  snapshot: ProbeContractSnapshot | null,
+  key: "title" | "prompt" | "instructions" | "thumbnail_label" | "thumbnail_icon",
+) {
+  const rendererConfig = snapshot?.renderer_config;
+
+  if (!rendererConfig || typeof rendererConfig !== "object") return null;
+
+  return readString((rendererConfig as Record<string, unknown>)[key]);
+}
+
+function contractRendererKind(snapshot: ProbeContractSnapshot | null) {
+  return readString(snapshot?.renderer_kind);
+}
 
 export function buildProbeReply(
   topicLabel: string,
@@ -82,6 +112,45 @@ export function buildStatusLabel(
 export function selectDeliveredRenderer(
   probePlan: ProbePlan,
 ): DeliveredRendererSelection {
+  const snapshot = getProbeContractSnapshot(probePlan);
+  const rendererKind = contractRendererKind(snapshot);
+
+  /**
+   * Prefer the probe contract's renderer kind when available. This keeps the
+   * delivered probe aligned with the measurement contract that will later be
+   * submitted back and judged.
+   */
+  if (
+    rendererKind === "multiple_choice" ||
+    rendererKind === "ordering" ||
+    rendererKind === "slider_prediction" ||
+    rendererKind === "drag_drop_match" ||
+    rendererKind === "graph_match" ||
+    rendererKind === "simulation"
+  ) {
+    return {
+      modality: "interactive",
+      generator: "custom",
+      renderer_type: "interactive_renderer",
+    };
+  }
+
+  if (rendererKind === "video_checkpoint") {
+    return {
+      modality: "video",
+      generator: "sora",
+      renderer_type: "video_renderer",
+    };
+  }
+
+  if (rendererKind === "audio_explanation" || rendererKind === "text_explanation") {
+    return {
+      modality: "text",
+      generator: "chatgpt",
+      renderer_type: "text_renderer",
+    };
+  }
+
   if (probePlan.interactive_payload.ready_to_send) {
     return {
       modality: "interactive",
@@ -137,9 +206,16 @@ export function buildDeliveredProbe(
   topic: RouteTopic,
 ): DeliveredProbe {
   const selected = selectDeliveredRenderer(probePlan);
+  const snapshot = getProbeContractSnapshot(probePlan);
+
+  const titleFromContract = getRendererConfigString(snapshot, "title");
+  const promptFromContract =
+    getRendererConfigString(snapshot, "prompt") ??
+    getRendererConfigString(snapshot, "instructions");
 
   const title =
-    selected.modality === "video"
+    titleFromContract ??
+    (selected.modality === "video"
       ? `Visualize ${topic.topic_label}`
       : selected.modality === "interactive"
         ? `Try ${topic.topic_label}`
@@ -152,10 +228,11 @@ export function buildDeliveredProbe(
               : probePlan.probe_type === "transform"
                 ? `Walk through ${topic.topic_label} step by step`
                 : (probePlan.text_plan.instructional_goal ??
-                  `Explain ${topic.topic_label}`);
+                  `Explain ${topic.topic_label}`));
 
   const instructions =
-    selected.modality === "video"
+    promptFromContract ??
+    (selected.modality === "video"
       ? (probePlan.video_payload.narration ??
         probePlan.video_payload.prompt ??
         `Watch carefully, then respond about ${topic.topic_label}.`)
@@ -163,7 +240,7 @@ export function buildDeliveredProbe(
         ? (probePlan.interactive_payload.prompt ??
           "Interact with the task, then explain what you learned.")
         : (probePlan.text_payload.input ??
-          `Explain ${topic.topic_label} in your own words.`);
+          `Explain ${topic.topic_label} in your own words.`));
 
   return {
     probe_id: probePlan.probe_id,
@@ -195,13 +272,30 @@ export function buildDeliveredProbe(
       probePlan.video_plan.personalization_application.context_framing ??
       `Stay focused on ${topic.topic_label} and reveal learner understanding.`,
     expected_response_type: probePlan.expected_response_type,
+
+    /**
+     * Preserve the exact measurement contract attached to the delivered probe.
+     * The submit route should judge the response against this answered contract,
+     * not against a newly generated follow-up contract.
+     */
+    probe_contract_snapshot: snapshot,
+
     stimulus_id: `stimulus-${probePlan.probe_id}`,
     payload_snapshot:
       selected.modality === "video"
-        ? { video_payload: probePlan.video_payload }
+        ? {
+            video_payload: probePlan.video_payload,
+            probe_contract_snapshot: snapshot,
+          }
         : selected.modality === "interactive"
-          ? { interactive_payload: probePlan.interactive_payload }
-          : { text_payload: probePlan.text_payload },
+          ? {
+              interactive_payload: probePlan.interactive_payload,
+              probe_contract_snapshot: snapshot,
+            }
+          : {
+              text_payload: probePlan.text_payload,
+              probe_contract_snapshot: snapshot,
+            },
   };
 }
 

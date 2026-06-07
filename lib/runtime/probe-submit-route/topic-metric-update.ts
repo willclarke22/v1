@@ -5,6 +5,14 @@ import {
   type scoreResponse,
 } from "@/lib/runtime/attempt-judging";
 
+/**
+ * Probe-submit topic metric update.
+ *
+ * No V1.1 engine changes are needed here yet. ContractJudgment affects
+ * diagnosis persistence and decision metadata first; the old topic metric update
+ * stays route-scoring based until we intentionally recalibrate confusion,
+ * insight, and learningScore from structured/rubric judgments.
+ */
 export function buildUpdatedTopicsAfterProbeSubmit(args: {
   routeTopics: RouteTopic[];
   topicId: string;

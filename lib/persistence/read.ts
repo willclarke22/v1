@@ -147,6 +147,27 @@ function readNestedSemanticBoolean(
   return asBoolean(nested[key]);
 }
 
+function readActiveDiagnosisFromTopicJson(
+  topicJson: Record<string, unknown> | null | undefined,
+): string | null {
+  const diagnosisState = readFromTopicJson<Record<string, unknown>>(
+    topicJson,
+    "diagnosis_state",
+  );
+
+  const stateActiveDiagnosis =
+    diagnosisState && typeof diagnosisState === "object"
+      ? asString(diagnosisState.active_diagnosis)
+      : null;
+
+  return (
+    stateActiveDiagnosis ??
+    asString(readFromTopicJson(topicJson, "active_diagnosis")) ??
+    asString(readFromTopicJson(topicJson, "diagnosis"))
+  );
+}
+
+
 function readPositionFromColumns(args: {
   x?: unknown;
   y?: unknown;
@@ -444,7 +465,7 @@ function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
     confusion: asNumber(row.confusion, null),
     insight: asNumber(row.insight, null),
     learning_score: asNumber(row.learning_score, null),
-    diagnosis: row.diagnosis,
+    diagnosis: readActiveDiagnosisFromTopicJson(topicJson) ?? row.diagnosis,
     next_step: row.next_step,
     topic_json: topicJson,
     learning_space_relationships: asUnknownArray(

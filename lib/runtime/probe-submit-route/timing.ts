@@ -42,7 +42,8 @@ export function buildRunMetadata(
   return {
     run_id: runId,
     timestamp: nowIso(),
-    engine_version: "runtime-v1-probe-submit-worker-backed-confusion-insight",
+    engine_version:
+      "runtime-v1_1-probe-submit-contract-judging-worker-backed-confusion-insight",
     previous_run_id: null,
     topic_count: engineFuel.topics.length,
     cluster_count: engineFuel.clusters.length,

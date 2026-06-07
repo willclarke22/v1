@@ -2,6 +2,8 @@ import type {
   EmbeddingVector,
   ImportantRunInputs,
   ModelSignals,
+  ProbeExpectedResponseType,
+  ProbeType,
   TopicState,
   VectorInfo,
 } from "@/types/contracts";
@@ -95,6 +97,77 @@ export function getEmbeddingPersistenceFields(topic: RouteTopic) {
   };
 }
 
+function isEmptyRawResponse(value: ProbeAttemptPayload["response"]) {
+  if (value === null || value === undefined) return true;
+
+  if (typeof value === "string") {
+    return value.trim().length === 0;
+  }
+
+  if (typeof value === "object") {
+    return Object.keys(value).length === 0;
+  }
+
+  return false;
+}
+
+function normalizeRawAttemptResponse(value: ProbeAttemptPayload["response"]) {
+  return typeof value === "string" || (value && typeof value === "object")
+    ? value
+    : null;
+}
+
+function expectedResponseTypeFromAttempt(
+  value: ImportantRunInputs["new_attempt"]["response_type"],
+): ProbeExpectedResponseType | null {
+  switch (value) {
+    case "choice":
+    case "multiple_choice":
+    case "ordering":
+    case "predict":
+    case "audio":
+    case "video":
+    case "interactive_action":
+    case "dynamic_task":
+    case "text":
+      return value;
+    case "classify":
+      /**
+       * There is no separate ProbeExpectedResponseType branch for classify in
+       * the current contracts. Classification is treated as structured /
+       * interactive evidence downstream.
+       */
+      return "interactive_action";
+    case "transform":
+      return "text";
+    default:
+      return null;
+  }
+}
+
+function inferredProbeTypeFromResponseType(
+  value: ImportantRunInputs["new_attempt"]["response_type"],
+): ProbeType | null {
+  switch (value) {
+    case "predict":
+      return "predict";
+    case "choice":
+    case "multiple_choice":
+    case "classify":
+      return "discriminate";
+    case "ordering":
+    case "interactive_action":
+    case "dynamic_task":
+    case "transform":
+      return "transform";
+    case "text":
+    case "audio":
+    case "video":
+    default:
+      return null;
+  }
+}
+
 export function buildImportantRunInputs(args: {
   body: ProbeAttemptPayload;
   topic: RouteTopic;
@@ -104,11 +177,13 @@ export function buildImportantRunInputs(args: {
 }): ImportantRunInputs {
   const { body, topic, vectorInfo, modelSignals, rawResponse } = args;
   const topicLabel = getRouteTopicLabel(topic);
+  const timestamp = body.submittedAt || nowIso();
+  const rawAttemptResponse = normalizeRawAttemptResponse(body.response);
 
   return {
     user_message: {
       message_id: null,
-      timestamp: body.submittedAt || nowIso(),
+      timestamp,
       content: rawResponse,
     },
     model_signals: modelSignals,
@@ -123,7 +198,7 @@ export function buildImportantRunInputs(args: {
     new_attempt: {
       status: "present",
       attempt_id: body.attemptId ?? null,
-      timestamp: body.submittedAt || nowIso(),
+      timestamp,
       originating_run_id: null,
       source_message_id: null,
       linked_probe_id: body.probeId,
@@ -132,14 +207,8 @@ export function buildImportantRunInputs(args: {
       linked_cluster_id: null,
       linked_resolution_contract_id: null,
       response_type: body.responseType ?? "text",
-      completion_status:
-        typeof body.response === "string" && body.response.trim().length === 0
-          ? "skipped"
-          : "complete",
-      raw_response:
-        typeof body.response === "string" || typeof body.response === "object"
-          ? body.response
-          : null,
+      completion_status: isEmptyRawResponse(body.response) ? "skipped" : "complete",
+      raw_response: rawAttemptResponse,
       delivery_context: {
         renderer_type: body.deliveryContext?.renderer_type ?? "text_renderer",
         generator: body.deliveryContext?.generator ?? "chatgpt",
@@ -173,15 +242,28 @@ export function buildAttemptEvidencePackage(args: {
   activeDiagnosis?: string | null;
 }): AttemptEvidencePackage {
   const importantRunInputs = buildImportantRunInputs(args);
-  const normalizedEvidence = normalizeAttemptEvidence(
+  const expectedResponseType = expectedResponseTypeFromAttempt(
+    importantRunInputs.new_attempt.response_type,
+  );
+  const probeType = inferredProbeTypeFromResponseType(
+    importantRunInputs.new_attempt.response_type,
+  );
+
+  const normalizedEvidenceBase = normalizeAttemptEvidence(
     importantRunInputs.new_attempt,
   );
+
+  const normalizedEvidence: NormalizedEvidenceInput = {
+    ...normalizedEvidenceBase,
+    expected_response_type: expectedResponseType,
+    probe_type: probeType,
+  };
 
   const attemptInterpretation = interpretAttemptEvidence(normalizedEvidence, {
     modelSignals: args.modelSignals,
     activeDiagnosis: args.activeDiagnosis ?? null,
-    probeType: null,
-    expectedResponseType: importantRunInputs.new_attempt.response_type ?? null,
+    probeType,
+    expectedResponseType,
   });
 
   return {

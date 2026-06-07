@@ -32,8 +32,6 @@ import {
   type PendingConfusionInsightScore,
 } from "./confusion-insight-queue";
 
-
-
 function asJsonRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
@@ -41,7 +39,6 @@ function asJsonRecord(value: unknown): Record<string, unknown> {
 
   return value as Record<string, unknown>;
 }
-
 
 function asProbeContractSnapshot(
   value: unknown,
@@ -51,6 +48,20 @@ function asProbeContractSnapshot(
   }
 
   return JSON.parse(JSON.stringify(value)) as ProbeContractSnapshot;
+}
+
+function asActiveDiagnosis(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function getPersistedActiveDiagnosisFromTopicJson(topicJson: JsonValue) {
+  const topicJsonRecord = asJsonRecord(topicJson);
+  const diagnosisState = asJsonRecord(topicJsonRecord.diagnosis_state);
+  const stateActiveDiagnosis = asActiveDiagnosis(diagnosisState.active_diagnosis);
+
+  if (stateActiveDiagnosis) return stateActiveDiagnosis;
+
+  return asActiveDiagnosis(topicJsonRecord.active_diagnosis);
 }
 
 function buildProbeContractPersistenceAudit(args: {
@@ -94,10 +105,9 @@ function buildProbeContractPersistenceAudit(args: {
       ? snapshot.judging_schema.failure_markers.length
       : null,
     updated_at: new Date().toISOString(),
-    source: "probe_plan_probe_contract_v1",
+    source: "probe_plan_probe_contract_v1_1",
   };
 }
-
 
 function buildContractJudgmentAudit(args: {
   contractJudgment: ContractJudgment;
@@ -113,6 +123,8 @@ function buildContractJudgmentAudit(args: {
     outcome: judgment.outcome,
     contract_confidence: judgment.contract_confidence,
     evidence_strength: judgment.evidence_strength,
+    evidence_tier: judgment.evidence_tier,
+    judging_methods: judgment.judging_methods,
     success_score: judgment.success_score,
     failure_score: judgment.failure_score,
     misconception_score: judgment.misconception_score,
@@ -120,7 +132,10 @@ function buildContractJudgmentAudit(args: {
     failure_marker_matches: judgment.failure_marker_matches,
     misconception_matches: judgment.misconception_matches,
     diagnosis_delta: judgment.diagnosis_delta,
+    resolution_delta: judgment.resolution_delta,
     suggested_active_diagnosis: judgment.suggested_active_diagnosis,
+    structured_judgment: judgment.structured_judgment,
+    rubric_judgment: judgment.rubric_judgment,
     reasons: judgment.reasons,
     cautions: judgment.cautions,
   };
@@ -175,28 +190,18 @@ export function buildProbeSubmitTopicJson(args: {
 
   const previousTopicJson = asJsonRecord(topicJsonWithPendingScore);
 
-  const contractAwareAttemptInterpretation: AttemptInterpretation = {
-    ...args.attemptInterpretation,
-    diagnosis_delta: args.contractJudgment.diagnosis_delta,
-    reasons: [
-      ...args.attemptInterpretation.reasons,
-      ...args.contractJudgment.reasons.map((reason) => `Contract judging: ${reason}`),
-    ],
-    cautions: [
-      ...args.attemptInterpretation.cautions,
-      ...args.contractJudgment.cautions.map((caution) => `Contract judging: ${caution}`),
-    ],
-  };
-
   const diagnosisStateUpdate = updateDiagnosisBeliefs({
     previousState: previousTopicJson.diagnosis_state,
     currentActiveDiagnosis:
       args.contractJudgment.suggested_active_diagnosis ??
       args.nextProbePlan.target_diagnosis ??
       null,
-    attemptInterpretation: contractAwareAttemptInterpretation,
-    source: "probe_submit_engine_evidence_v1",
+    attemptInterpretation: args.attemptInterpretation,
+    contractJudgment: args.contractJudgment,
+    source: "contract_judgment_v1_1",
   });
+
+  const persistedActiveDiagnosis = diagnosisStateUpdate.active_diagnosis;
 
   const answeredProbeContract = asProbeContractSnapshot(
     args.answeredProbeContractSnapshot,
@@ -218,6 +223,14 @@ export function buildProbeSubmitTopicJson(args: {
       ...topicJsonWithPendingScore,
       topic_id: args.topic.id,
       topic_label: args.topicLabel,
+
+      /**
+       * Keep top-level JSON diagnosis fields aligned with diagnosis_state so
+       * enrichment/Qdrant/layout/debug consumers do not read a stale label.
+       */
+      active_diagnosis: persistedActiveDiagnosis,
+      diagnosis: persistedActiveDiagnosis,
+
       next_step: args.nextProbePlan.text_plan.instructional_goal ?? args.topic.nextStep,
       previous_probe_id: args.bodyProbeId,
       answered_probe_contract: answeredProbeContract,
@@ -231,7 +244,7 @@ export function buildProbeSubmitTopicJson(args: {
           attemptInterpretation: args.attemptInterpretation,
         }),
         updated_at: new Date().toISOString(),
-        source: "probe_submit_engine_evidence_v1",
+        source: "probe_submit_engine_evidence_v1_1",
       },
 
       contract_judgment: buildContractJudgmentAudit({
@@ -242,19 +255,23 @@ export function buildProbeSubmitTopicJson(args: {
           contractJudgment: args.contractJudgment,
         }),
         updated_at: new Date().toISOString(),
-        source: "contract_judging_v1",
+        source: "contract_judging_v1_1",
       },
       contract_judgment_update: {
         outcome: args.contractJudgment.outcome,
         judged_against_contract_id: args.contractJudgment.contract_id,
         judged_against_answered_contract_available: answeredProbeContract !== null,
         contract_confidence: args.contractJudgment.contract_confidence,
+        evidence_tier: args.contractJudgment.evidence_tier,
+        judging_methods: args.contractJudgment.judging_methods,
         success_score: args.contractJudgment.success_score,
         failure_score: args.contractJudgment.failure_score,
         misconception_score: args.contractJudgment.misconception_score,
+        diagnosis_delta: args.contractJudgment.diagnosis_delta,
+        resolution_delta: args.contractJudgment.resolution_delta,
         suggested_active_diagnosis:
           args.contractJudgment.suggested_active_diagnosis,
-        source: "contract_judging_v1",
+        source: "contract_judging_v1_1",
         updated_at: new Date().toISOString(),
       },
 
@@ -263,7 +280,7 @@ export function buildProbeSubmitTopicJson(args: {
         active_diagnosis: diagnosisStateUpdate.active_diagnosis,
         changed: diagnosisStateUpdate.changed,
         reasons: diagnosisStateUpdate.reasons,
-        source: "probe_submit_engine_evidence_v1",
+        source: "contract_judgment_v1_1",
         updated_at: new Date().toISOString(),
       },
 
@@ -325,6 +342,9 @@ export async function persistProbeSubmitRun(args: {
   const runResultJson = JSON.parse(JSON.stringify(args.result));
   const attemptJson = JSON.parse(JSON.stringify(args.judgedAttempt));
   const embeddingFields = getEmbeddingPersistenceFields(args.updatedPersistedTopic);
+  const persistedActiveDiagnosis =
+    getPersistedActiveDiagnosisFromTopicJson(args.topicJson) ??
+    args.decision.active_diagnosis;
 
   await insertRun({
     id: args.runId,
@@ -333,7 +353,7 @@ export async function persistProbeSubmitRun(args: {
     sourceMessageId: args.result.important_run_inputs.user_message.message_id,
     targetTopicId: args.topic.id,
     modeSelected: args.decision.mode_selected,
-    activeDiagnosis: args.decision.active_diagnosis,
+    activeDiagnosis: persistedActiveDiagnosis,
     replyText: args.replyText,
     suggestedAction: args.suggestedAction,
     runResultJson,
@@ -358,7 +378,13 @@ export async function persistProbeSubmitRun(args: {
     confusion: args.updatedTopicMetrics.confusion ?? null,
     insight: args.updatedTopicMetrics.insight ?? null,
     learningScore: args.updatedPersistedTopic.learningScore ?? null,
-    diagnosis: args.decision.active_diagnosis,
+
+    /**
+     * Use the diagnosis_state result, not only the decision label, so the row
+     * diagnosis stays aligned with the smarter V1.1 diagnosis engine.
+     */
+    diagnosis: persistedActiveDiagnosis,
+
     nextStep: args.nextProbePlan.text_plan.instructional_goal ?? args.topic.nextStep,
     topicJson: args.topicJson,
     topicPosition: args.updatedPersistedTopic.position,

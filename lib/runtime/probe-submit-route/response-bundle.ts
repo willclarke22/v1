@@ -6,12 +6,76 @@ import type {
 } from "@/types/contracts";
 import type { buildNextProbePlan } from "@/lib/runtime/probe-runtime";
 
+function readString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function rendererTypeForPlan(plan: ReturnType<typeof buildNextProbePlan>) {
+  const rendererKind = readString(plan.probe_contract_snapshot?.renderer_kind);
+
+  switch (rendererKind) {
+    case "multiple_choice":
+      return "multiple_choice_renderer";
+    case "ordering":
+      return "ordering_renderer";
+    case "slider_prediction":
+      return "slider_prediction_renderer";
+    case "drag_drop_match":
+      return "drag_drop_match_renderer";
+    case "graph_match":
+      return "graph_match_renderer";
+    case "simulation":
+      return "simulation_renderer";
+    case "audio_explanation":
+      return "audio_renderer";
+    case "video_checkpoint":
+      return "video_renderer";
+    case "text_explanation":
+    default:
+      return "text_renderer";
+  }
+}
+
+function modalityForPlan(plan: ReturnType<typeof buildNextProbePlan>) {
+  const rendererKind = readString(plan.probe_contract_snapshot?.renderer_kind);
+
+  switch (rendererKind) {
+    case "audio_explanation":
+      return "audio";
+    case "video_checkpoint":
+      return "video";
+    case "multiple_choice":
+    case "ordering":
+    case "slider_prediction":
+    case "drag_drop_match":
+    case "graph_match":
+    case "simulation":
+      return "interactive";
+    case "text_explanation":
+    default:
+      return "text";
+  }
+}
+
+function getRendererConfigString(
+  plan: ReturnType<typeof buildNextProbePlan>,
+  key: "title" | "prompt" | "instructions",
+) {
+  const rendererConfig = plan.probe_contract_snapshot?.renderer_config;
+
+  if (!rendererConfig || typeof rendererConfig !== "object") {
+    return null;
+  }
+
+  return readString((rendererConfig as Record<string, unknown>)[key]);
+}
+
 export function buildDeliveredProbeFromPlan(
   plan: ReturnType<typeof buildNextProbePlan>,
 ): DeliveredProbe {
   const probeType = plan.probe_type;
 
-  const title =
+  const fallbackTitle =
     probeType === "apply_transfer"
       ? "Apply the idea in a new situation"
       : probeType === "predict"
@@ -22,17 +86,23 @@ export function buildDeliveredProbeFromPlan(
             ? "Walk through it step by step"
             : "Explain the idea more concretely";
 
+  const title = getRendererConfigString(plan, "title") ?? fallbackTitle;
+  const instructions =
+    getRendererConfigString(plan, "prompt") ??
+    getRendererConfigString(plan, "instructions") ??
+    plan.text_payload.input;
+
   return {
     probe_id: plan.probe_id,
     target_topic_id: plan.target_topic_id,
     target_diagnosis: plan.target_diagnosis,
     intent: plan.intent,
     probe_type: plan.probe_type,
-    renderer_type: "text_renderer",
+    renderer_type: rendererTypeForPlan(plan),
     generator: "chatgpt",
-    modality: "text",
+    modality: modalityForPlan(plan),
     title,
-    instructions: plan.text_payload.input,
+    instructions,
     actual_tone: "encouraging",
     actual_pacing: "normal",
     actual_language_style: "plain",

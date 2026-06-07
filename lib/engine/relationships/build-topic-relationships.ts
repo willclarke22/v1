@@ -10,11 +10,14 @@ import {
   round4,
 } from "./relationship-policy";
 import type {
+  RelationshipDiagnosisEvidence,
+  RelationshipEvidenceTier,
   RelationshipGraphBuildOptions,
   RelationshipGraphBuildResult,
   RelationshipGraphCandidate,
   RelationshipGraphTopic,
 } from "./relationship-types";
+import type { DiagnosisType } from "@/types/contracts";
 
 function safeNumber(value: number | null | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -22,20 +25,6 @@ function safeNumber(value: number | null | undefined): number | null {
 
 function messageCount(topic: RelationshipGraphTopic) {
   return Math.max(0, Math.floor(safeNumber(topic.messageCount) ?? 0));
-}
-
-function diagnosisConfidence(topic: RelationshipGraphTopic) {
-  if (!topic.diagnosis) return 0;
-
-  const learningScore = safeNumber(topic.learningScore) ?? 0.5;
-
-  return clamp01(0.34 + learningScore * 0.16 + Math.min(messageCount(topic), 8) * 0.05);
-}
-
-function topicSignalConfidence(topic: RelationshipGraphTopic) {
-  const learningScore = safeNumber(topic.learningScore) ?? 0.5;
-
-  return clamp01(0.32 + Math.min(messageCount(topic), 8) * 0.045 + learningScore * 0.18);
 }
 
 function pairEvidenceCount(
@@ -55,6 +44,137 @@ function canonicalPair(
   return topicA.id < topicB.id
     ? { source: topicA, target: topicB }
     : { source: topicB, target: topicA };
+}
+
+function evidenceTierRank(tier: RelationshipEvidenceTier | null | undefined) {
+  switch (tier) {
+    case "model_only":
+      return 1;
+    case "message_average":
+      return 2;
+    case "generic_attempt_interpretation":
+      return 3;
+    case "contract_marker_estimate":
+      return 4;
+    case "deterministic_structured_judgment":
+      return 5;
+    case "llm_rubric_judgment":
+      return 6;
+    case "hybrid_structured_and_rubric_judgment":
+      return 7;
+    case "repeated_judged_pattern":
+      return 8;
+    case "unknown":
+    default:
+      return 0;
+  }
+}
+
+function mapEvidenceTier(
+  tier: RelationshipDiagnosisEvidence["strongest_evidence_tier"],
+): RelationshipEvidenceTier {
+  if (!tier) return "unknown";
+
+  switch (tier) {
+    case "model_only":
+    case "generic_attempt_interpretation":
+    case "contract_marker_estimate":
+    case "deterministic_structured_judgment":
+    case "llm_rubric_judgment":
+    case "hybrid_structured_and_rubric_judgment":
+    case "repeated_judged_pattern":
+      return tier;
+    default:
+      return "unknown";
+  }
+}
+
+function strongestRelationshipEvidenceTier(
+  a: RelationshipEvidenceTier,
+  b: RelationshipEvidenceTier,
+): RelationshipEvidenceTier {
+  return evidenceTierRank(b) >= evidenceTierRank(a) ? b : a;
+}
+
+function diagnosisEvidenceFromState(
+  topic: RelationshipGraphTopic,
+): RelationshipDiagnosisEvidence | null {
+  if (topic.diagnosisEvidence) return topic.diagnosisEvidence;
+
+  const activeDiagnosis =
+    topic.diagnosisState?.active_diagnosis ?? topic.diagnosis ?? null;
+
+  if (!activeDiagnosis) return null;
+
+  const beliefEntry = topic.diagnosisState?.beliefs?.[activeDiagnosis] ?? null;
+
+  if (!beliefEntry) {
+    return {
+      active_diagnosis: activeDiagnosis,
+      belief: null,
+      confidence: null,
+      evidence_count: null,
+      resolution_pressure: null,
+      status: null,
+      strongest_evidence_tier: null,
+      last_updated_at: null,
+    };
+  }
+
+  return {
+    active_diagnosis: activeDiagnosis,
+    belief: safeNumber(beliefEntry.belief),
+    confidence: safeNumber(beliefEntry.confidence),
+    evidence_count: safeNumber(beliefEntry.evidence_count),
+    resolution_pressure: safeNumber(beliefEntry.resolution_pressure),
+    status: beliefEntry.status ?? null,
+    strongest_evidence_tier: beliefEntry.strongest_evidence_tier ?? null,
+    last_updated_at: beliefEntry.updated_at ?? null,
+  };
+}
+
+function activeDiagnosis(topic: RelationshipGraphTopic): DiagnosisType | null {
+  return diagnosisEvidenceFromState(topic)?.active_diagnosis ?? topic.diagnosis ?? null;
+}
+
+function topicDiagnosisConfidence(topic: RelationshipGraphTopic) {
+  const evidence = diagnosisEvidenceFromState(topic);
+  const explicitConfidence = safeNumber(evidence?.confidence ?? null);
+
+  if (explicitConfidence !== null) return clamp01(explicitConfidence);
+  if (!activeDiagnosis(topic)) return 0;
+
+  const learningScore = safeNumber(topic.learningScore) ?? 0.5;
+
+  return clamp01(0.34 + learningScore * 0.16 + Math.min(messageCount(topic), 8) * 0.05);
+}
+
+function topicSignalConfidence(topic: RelationshipGraphTopic, signal: "confusion" | "insight") {
+  const evidence =
+    signal === "confusion" ? topic.confusionEvidence : topic.insightEvidence;
+  const explicitConfidence = safeNumber(evidence?.confidence ?? null);
+
+  if (explicitConfidence !== null) return clamp01(explicitConfidence);
+
+  const learningScore = safeNumber(topic.learningScore) ?? 0.5;
+
+  return clamp01(0.32 + Math.min(messageCount(topic), 8) * 0.045 + learningScore * 0.18);
+}
+
+function topicSignalValue(topic: RelationshipGraphTopic, signal: "confusion" | "insight") {
+  const evidence =
+    signal === "confusion" ? topic.confusionEvidence : topic.insightEvidence;
+
+  return safeNumber(evidence?.value ?? null) ?? safeNumber(topic[signal]);
+}
+
+function topicSignalEvidenceCount(
+  topic: RelationshipGraphTopic,
+  signal: "confusion" | "insight",
+) {
+  const evidence =
+    signal === "confusion" ? topic.confusionEvidence : topic.insightEvidence;
+  return Math.max(1, Math.floor(safeNumber(evidence?.evidence_count ?? null) ?? messageCount(topic) ?? 1));
 }
 
 function areSignalsCloseEnough(args: {
@@ -91,14 +211,14 @@ function hasSupportingSignalSimilarity(args: {
   minAverageInsightForPattern: number;
 }) {
   const confusion = areSignalsCloseEnough({
-    valueA: safeNumber(args.topicA.confusion),
-    valueB: safeNumber(args.topicB.confusion),
+    valueA: topicSignalValue(args.topicA, "confusion"),
+    valueB: topicSignalValue(args.topicB, "confusion"),
     maxGap: args.maxConfusionGap,
   });
 
   const insight = areSignalsCloseEnough({
-    valueA: safeNumber(args.topicA.insight),
-    valueB: safeNumber(args.topicB.insight),
+    valueA: topicSignalValue(args.topicA, "insight"),
+    valueB: topicSignalValue(args.topicB, "insight"),
     maxGap: args.maxInsightGap,
   });
 
@@ -125,13 +245,99 @@ function hasSupportingSignalSimilarity(args: {
   };
 }
 
+function hasEvidenceAwareDiagnosisSupport(args: {
+  evidenceA: RelationshipDiagnosisEvidence | null;
+  evidenceB: RelationshipDiagnosisEvidence | null;
+  options: Required<Omit<RelationshipGraphBuildOptions, "generatedAt">>;
+}) {
+  if (!args.evidenceA || !args.evidenceB) {
+    return {
+      supported: false,
+      reason: "missing_diagnosis_evidence",
+      belief: null,
+      confidence: null,
+      evidenceCount: null,
+      evidenceTier: "unknown" as RelationshipEvidenceTier,
+      status: null,
+    };
+  }
+
+  const beliefA = safeNumber(args.evidenceA.belief) ?? 0;
+  const beliefB = safeNumber(args.evidenceB.belief) ?? 0;
+  const confidenceA = safeNumber(args.evidenceA.confidence) ?? 0;
+  const confidenceB = safeNumber(args.evidenceB.confidence) ?? 0;
+  const evidenceCountA = Math.max(0, Math.floor(safeNumber(args.evidenceA.evidence_count) ?? 0));
+  const evidenceCountB = Math.max(0, Math.floor(safeNumber(args.evidenceB.evidence_count) ?? 0));
+  const statusA = args.evidenceA.status ?? null;
+  const statusB = args.evidenceB.status ?? null;
+
+  const statusBlocked =
+    (!args.options.allowResolvedDiagnosisRelationships &&
+      (statusA === "resolved" || statusB === "resolved")) ||
+    (!args.options.allowWeakeningDiagnosisRelationships &&
+      (statusA === "weakening" || statusB === "weakening"));
+
+  if (statusBlocked) {
+    return {
+      supported: false,
+      reason: `diagnosis_status_blocked:${statusA ?? "unknown"}:${statusB ?? "unknown"}`,
+      belief: Math.min(beliefA, beliefB),
+      confidence: Math.min(confidenceA, confidenceB),
+      evidenceCount: Math.min(evidenceCountA, evidenceCountB),
+      evidenceTier: "unknown" as RelationshipEvidenceTier,
+      status: statusA ?? statusB,
+    };
+  }
+
+  const belief = Math.min(beliefA, beliefB);
+  const confidence = Math.min(confidenceA, confidenceB);
+  const evidenceCount = Math.min(evidenceCountA, evidenceCountB);
+  const tierA = mapEvidenceTier(args.evidenceA.strongest_evidence_tier);
+  const tierB = mapEvidenceTier(args.evidenceB.strongest_evidence_tier);
+  const evidenceTier = strongestRelationshipEvidenceTier(tierA, tierB);
+
+  const supported =
+    belief >= args.options.minDiagnosisBeliefForSharedDiagnosis &&
+    confidence >= args.options.minDiagnosisConfidenceForSharedDiagnosis &&
+    evidenceCount >= args.options.minDiagnosisEvidenceCountForSharedDiagnosis;
+
+  return {
+    supported,
+    reason: supported
+      ? "evidence_aware_diagnosis_gate_passed"
+      : "evidence_aware_diagnosis_gate_failed",
+    belief,
+    confidence,
+    evidenceCount,
+    evidenceTier,
+    status: statusA === statusB ? statusA : null,
+  };
+}
+
 function buildSharedDiagnosisCandidate(
   topicA: RelationshipGraphTopic,
   topicB: RelationshipGraphTopic,
   options: Required<Omit<RelationshipGraphBuildOptions, "generatedAt">>,
 ): RelationshipGraphCandidate | null {
-  if (!topicA.diagnosis || !topicB.diagnosis) return null;
-  if (topicA.diagnosis !== topicB.diagnosis) return null;
+  const diagnosisA = activeDiagnosis(topicA);
+  const diagnosisB = activeDiagnosis(topicB);
+
+  if (!diagnosisA || !diagnosisB) return null;
+  if (diagnosisA !== diagnosisB) return null;
+
+  const diagnosisEvidenceA = diagnosisEvidenceFromState(topicA);
+  const diagnosisEvidenceB = diagnosisEvidenceFromState(topicB);
+  const evidenceSupport = hasEvidenceAwareDiagnosisSupport({
+    evidenceA: diagnosisEvidenceA,
+    evidenceB: diagnosisEvidenceB,
+    options,
+  });
+
+  const hasRicherDiagnosisEvidence =
+    diagnosisEvidenceA?.belief !== null &&
+    diagnosisEvidenceA?.belief !== undefined &&
+    diagnosisEvidenceB?.belief !== null &&
+    diagnosisEvidenceB?.belief !== undefined;
 
   const minCount = options.minMessageCountForDiagnosisOnly;
   const hasEnoughDirectEvidence =
@@ -146,7 +352,12 @@ function buildSharedDiagnosisCandidate(
     minAverageInsightForPattern: options.minAverageInsightForPattern,
   });
 
+  if (hasRicherDiagnosisEvidence && !evidenceSupport.supported) {
+    return null;
+  }
+
   if (
+    !hasRicherDiagnosisEvidence &&
     !hasEnoughDirectEvidence &&
     (!options.allowSharedDiagnosisWithSupportingSignals || !support.supported)
   ) {
@@ -154,11 +365,21 @@ function buildSharedDiagnosisCandidate(
   }
 
   const { source, target } = canonicalPair(topicA, topicB);
-  const confidence = Math.min(diagnosisConfidence(topicA), diagnosisConfidence(topicB));
-  const evidenceCount = pairEvidenceCount(source, target);
-  const supportBoost = support.supported ? 0.1 : 0;
+  const confidence = hasRicherDiagnosisEvidence
+    ? clamp01(evidenceSupport.confidence ?? 0)
+    : Math.min(topicDiagnosisConfidence(topicA), topicDiagnosisConfidence(topicB));
+  const evidenceCount = hasRicherDiagnosisEvidence
+    ? Math.max(1, Math.floor(evidenceSupport.evidenceCount ?? 1))
+    : pairEvidenceCount(source, target);
+  const supportBoost = support.supported ? 0.08 : 0;
   const evidenceBoost = Math.min(evidenceCount, 5) * 0.025;
-  const strength = clamp01(0.5 + confidence * 0.24 + supportBoost + evidenceBoost);
+  const beliefBoost = hasRicherDiagnosisEvidence
+    ? clamp01(((evidenceSupport.belief ?? 0.5) - 0.5) * 0.36)
+    : 0;
+  const tierBoost = evidenceTierRank(evidenceSupport.evidenceTier) * 0.008;
+  const strength = clamp01(
+    0.5 + confidence * 0.22 + supportBoost + evidenceBoost + beliefBoost + tierBoost,
+  );
 
   return {
     relationship_type: "shared_diagnosis",
@@ -169,19 +390,42 @@ function buildSharedDiagnosisCandidate(
     strength,
     confidence,
     evidence_count: evidenceCount,
-    evidence_source: derivedRelationshipEvidenceSource("shared_diagnosis"),
+    evidence_source: derivedRelationshipEvidenceSource(
+      "shared_diagnosis",
+      evidenceSupport.evidenceTier,
+    ),
     evidence_summary: `${normalizeTopicLabel(source.topic_label)} and ${normalizeTopicLabel(
       target.topic_label,
-    )} currently share the ${topicA.diagnosis} diagnosis.`,
+    )} currently share the ${diagnosisA} diagnosis${
+      hasRicherDiagnosisEvidence
+        ? ` with belief ${round4(evidenceSupport.belief ?? 0)} and confidence ${round4(confidence)}`
+        : ""
+    }.`,
     reasons: [
       "same_active_diagnosis",
-      `diagnosis:${topicA.diagnosis}`,
-      hasEnoughDirectEvidence ? "enough_topic_evidence" : "diagnosis_supported_by_signal_similarity",
+      `diagnosis:${diagnosisA}`,
+      hasRicherDiagnosisEvidence
+        ? evidenceSupport.reason
+        : hasEnoughDirectEvidence
+          ? "enough_topic_evidence"
+          : "diagnosis_supported_by_signal_similarity",
       ...support.reasons,
     ],
     affects_layout: false,
     visible_by_default: false,
-    diagnostic_method: "same_active_topic_diagnosis_selective_v2",
+    diagnostic_method: hasRicherDiagnosisEvidence
+      ? "evidence_aware_shared_diagnosis_v1_1"
+      : "same_active_topic_diagnosis_selective_v2",
+    evidence_tier: hasRicherDiagnosisEvidence
+      ? evidenceSupport.evidenceTier
+      : "message_average",
+    diagnosis_type: diagnosisA,
+    diagnosis_belief: hasRicherDiagnosisEvidence ? evidenceSupport.belief : null,
+    diagnosis_confidence: hasRicherDiagnosisEvidence ? confidence : null,
+    diagnosis_status: hasRicherDiagnosisEvidence ? evidenceSupport.status : null,
+    signal_gap: null,
+    signal_average: null,
+    signal_similarity: null,
     participating_topic_ids: [source.id, target.id],
   };
 }
@@ -192,8 +436,8 @@ function buildSharedConfusionCandidate(
   options: Required<Omit<RelationshipGraphBuildOptions, "generatedAt">>,
 ): RelationshipGraphCandidate | null {
   const confusion = areSignalsCloseEnough({
-    valueA: safeNumber(topicA.confusion),
-    valueB: safeNumber(topicB.confusion),
+    valueA: topicSignalValue(topicA, "confusion"),
+    valueB: topicSignalValue(topicB, "confusion"),
     maxGap: options.maxConfusionGap,
   });
 
@@ -208,7 +452,17 @@ function buildSharedConfusionCandidate(
   if (confusion.average < options.minAverageConfusionForPattern) return null;
 
   const { source, target } = canonicalPair(topicA, topicB);
-  const confidence = Math.min(topicSignalConfidence(topicA), topicSignalConfidence(topicB));
+  const confidence = Math.min(
+    topicSignalConfidence(topicA, "confusion"),
+    topicSignalConfidence(topicB, "confusion"),
+  );
+  const evidenceCount = Math.max(
+    1,
+    Math.min(
+      topicSignalEvidenceCount(source, "confusion"),
+      topicSignalEvidenceCount(target, "confusion"),
+    ),
+  );
   const strength = clamp01(
     confusion.average * 0.62 + confusion.similarity * 0.32 + confidence * 0.06,
   );
@@ -221,13 +475,13 @@ function buildSharedConfusionCandidate(
     target_topic_label: normalizeTopicLabel(target.topic_label),
     strength,
     confidence,
-    evidence_count: pairEvidenceCount(source, target),
+    evidence_count: evidenceCount,
     evidence_source: derivedRelationshipEvidenceSource("shared_confusion_pattern"),
     evidence_summary: `${normalizeTopicLabel(source.topic_label)} and ${normalizeTopicLabel(
       target.topic_label,
     )} have similar elevated confusion levels (${round4(
-      safeNumber(topicA.confusion) ?? 0,
-    )} vs ${round4(safeNumber(topicB.confusion) ?? 0)}).`,
+      topicSignalValue(topicA, "confusion") ?? 0,
+    )} vs ${round4(topicSignalValue(topicB, "confusion") ?? 0)}).`,
     reasons: [
       "similar_elevated_topic_confusion_average",
       `confusion_gap:${round4(confusion.gap)}`,
@@ -236,6 +490,14 @@ function buildSharedConfusionCandidate(
     affects_layout: false,
     visible_by_default: false,
     diagnostic_method: "topic_confusion_average_gap_selective_v2",
+    evidence_tier: "message_average",
+    diagnosis_type: null,
+    diagnosis_belief: null,
+    diagnosis_confidence: null,
+    diagnosis_status: null,
+    signal_gap: confusion.gap,
+    signal_average: confusion.average,
+    signal_similarity: confusion.similarity,
     participating_topic_ids: [source.id, target.id],
   };
 }
@@ -246,8 +508,8 @@ function buildSharedInsightCandidate(
   options: Required<Omit<RelationshipGraphBuildOptions, "generatedAt">>,
 ): RelationshipGraphCandidate | null {
   const insight = areSignalsCloseEnough({
-    valueA: safeNumber(topicA.insight),
-    valueB: safeNumber(topicB.insight),
+    valueA: topicSignalValue(topicA, "insight"),
+    valueB: topicSignalValue(topicB, "insight"),
     maxGap: options.maxInsightGap,
   });
 
@@ -264,7 +526,17 @@ function buildSharedInsightCandidate(
   if (insight.average < options.minAverageInsightForPattern) return null;
 
   const { source, target } = canonicalPair(topicA, topicB);
-  const confidence = Math.min(topicSignalConfidence(topicA), topicSignalConfidence(topicB));
+  const confidence = Math.min(
+    topicSignalConfidence(topicA, "insight"),
+    topicSignalConfidence(topicB, "insight"),
+  );
+  const evidenceCount = Math.max(
+    1,
+    Math.min(
+      topicSignalEvidenceCount(source, "insight"),
+      topicSignalEvidenceCount(target, "insight"),
+    ),
+  );
   /**
    * Visual-testing calibration:
    *
@@ -285,13 +557,13 @@ function buildSharedInsightCandidate(
     target_topic_label: normalizeTopicLabel(target.topic_label),
     strength,
     confidence,
-    evidence_count: pairEvidenceCount(source, target),
+    evidence_count: evidenceCount,
     evidence_source: derivedRelationshipEvidenceSource("shared_insight_pattern"),
     evidence_summary: `${normalizeTopicLabel(source.topic_label)} and ${normalizeTopicLabel(
       target.topic_label,
     )} have similar insight levels (${round4(
-      safeNumber(topicA.insight) ?? 0,
-    )} vs ${round4(safeNumber(topicB.insight) ?? 0)}).`,
+      topicSignalValue(topicA, "insight") ?? 0,
+    )} vs ${round4(topicSignalValue(topicB, "insight") ?? 0)}).`,
     reasons: [
       "similar_topic_insight_average_visual_test",
       `insight_gap:${round4(insight.gap)}`,
@@ -300,6 +572,14 @@ function buildSharedInsightCandidate(
     affects_layout: false,
     visible_by_default: false,
     diagnostic_method: "topic_insight_average_gap_visual_test_v3",
+    evidence_tier: "message_average",
+    diagnosis_type: null,
+    diagnosis_belief: null,
+    diagnosis_confidence: null,
+    diagnosis_status: null,
+    signal_gap: insight.gap,
+    signal_average: insight.average,
+    signal_similarity: insight.similarity,
     participating_topic_ids: [source.id, target.id],
   };
 }
@@ -314,6 +594,7 @@ function candidateToRelationship(
     confidence: candidate.confidence,
     affectsLayout: candidate.affects_layout,
     visibleByDefault: candidate.visible_by_default,
+    evidenceTier: candidate.evidence_tier,
   });
 
   return {
@@ -335,7 +616,7 @@ function candidateToRelationship(
     reasons: candidate.reasons,
     updated_at: generatedAt,
     basis: {
-      similarity: round4(candidate.strength),
+      similarity: round4(candidate.signal_similarity ?? candidate.strength),
       normalized_similarity: round4(candidate.strength),
       desired_distance: null,
       actual_distance: null,
@@ -493,7 +774,6 @@ function applyTypeBudgets(relationships: LearningSpaceRelationship[]) {
 
   return selected;
 }
-
 
 export function buildTopicRelationships(
   topics: RelationshipGraphTopic[],

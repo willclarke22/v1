@@ -215,15 +215,15 @@ export type RenderState = {
 
   /**
    * Minimum world-space clearance the layout/renderer should reserve for this topic.
-   * This can be larger than radius because local bobbing, surface noise, rings,
-   * probe badges, labels, and satellites may occupy visual space beyond the sphere.
+   * This can be larger than radius because local bobbing, rings, probe markers,
+   * labels, and satellites may occupy visual space beyond the sphere.
    */
   collision_radius: number;
 
   surface_noise: number;
 
   /**
-   * Smoothness/coherence proxy used by renderer-side atmospheric treatments.
+   * Smoothness/coherence proxy for the stable topic body.
    * Higher values should look calmer and more coherent.
    */
   smoothness: number;
@@ -1108,39 +1108,6 @@ export interface LearningSpaceSatellite {
   linked_attempt_id: Nullable<EntityId>;
 }
 
-export interface LearningWeather {
-  /**
-   * Confusion as visible cloud/haze density around the topic.
-   */
-  cloud_density: number;
-
-  /**
-   * Active unresolved instability. Higher values can render as more turbulent
-   * cloud movement or storm pressure.
-   */
-  storm_turbulence: number;
-
-  /**
-   * Insight as available light/clarity.
-   */
-  sunlight_intensity: number;
-
-  /**
-   * Productive struggle: insight emerging while confusion is still present.
-   */
-  sunlight_breakthrough: number;
-
-  /**
-   * Low-confusion, high-insight clarity.
-   */
-  sky_clarity: number;
-
-  /**
-   * Evidence-backed steadiness of the visible atmosphere.
-   */
-  atmosphere_stability: number;
-}
-
 export interface LearningSpaceTopic {
   topic_id: EntityId;
   topic_label: string;
@@ -1157,12 +1124,6 @@ export interface LearningSpaceTopic {
   layout: LearningSpaceTopicLayout;
 
   render_state: RenderState;
-
-  /**
-   * Renderer-side learner-state atmosphere.
-   * Clouds represent confusion; sunlight represents insight emerging through it.
-   */
-  learning_weather?: LearningWeather;
 
   satellite_count: number;
   satellites: LearningSpaceSatellite[];

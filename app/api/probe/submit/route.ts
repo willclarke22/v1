@@ -164,8 +164,13 @@ export async function POST(request: NextRequest) {
         ? buildDeliveredProbeFromPlan(nextProbePlan)
         : null;
 
+    /**
+     * Prefer the contract that was actually answered. If the client does not
+     * send it, fall back to the next plan's snapshot as a compatibility bridge.
+     */
     const contractJudgment = judgeProbeAttemptAgainstContract({
       attemptInterpretation: attemptEvidencePackage.attemptInterpretation,
+      normalizedEvidence: attemptEvidencePackage.normalizedEvidence,
       probeContractSnapshot:
         answeredProbeContractSnapshot ?? nextProbePlan.probe_contract_snapshot,
     });
@@ -176,6 +181,7 @@ export async function POST(request: NextRequest) {
       replyBundle,
       modelSignals,
       attemptInterpretation: attemptEvidencePackage.attemptInterpretation,
+      contractJudgment,
     });
 
     const engineFuel = buildEngineFuel({
@@ -184,6 +190,7 @@ export async function POST(request: NextRequest) {
       nextProbePlan,
       judgedAttempt,
       attemptInterpretation: attemptEvidencePackage.attemptInterpretation,
+      contractJudgment,
     });
 
     /**
