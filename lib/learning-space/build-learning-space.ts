@@ -1,7 +1,7 @@
-// lib/build-learning-space.ts
+// lib/learning-space/build-learning-space.ts
 
 import type { DiagnosisType } from "@/types/contracts";
-import type { DiagnosisState } from "@/lib/engine/diagnosis";
+import type { DiagnosisState } from "@/lib/learning-space/engine-bridge";
 import type {
   AttemptSatellite,
   LearningSpace,
@@ -20,7 +20,7 @@ import type {
 import {
   buildTopicRelationships,
   type RelationshipGraphTopic,
-} from "@/lib/engine/relationships";
+} from "@/lib/learning-space/engine-bridge";
 
 type LearningSpaceInputTopic = {
   id: string;
@@ -664,3 +664,4 @@ export function buildLearningSpace(
     projection,
   };
 }
+

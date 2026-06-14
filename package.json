@@ -6,11 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "test:topic-labeling": "tsx scripts/run-topic-labeling-goldens.ts",
-    "test:source-grounded-probe": "tsx scripts/dev-test-source-grounded-probe.ts",
-    "test:source-grounded-attempt": "tsx scripts/dev-test-source-grounded-attempt-judging.ts",
-    "inspect:source-grounded-contracts": "tsx scripts/dev-inspect-source-grounded-probe-contracts.ts"
+    "lint": "eslint"
+    
   },
   "dependencies": {
     "@qdrant/js-client-rest": "^1.17.0",

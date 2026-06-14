@@ -5,10 +5,10 @@ import Sidebar, { type SidebarTab } from "@/ui/learning-space/shell/sidebar";
 import BottomComposer from "@/ui/learning-space/shell/bottom-composer";
 import TopicPanel from "@/ui/learning-space/shell/topic-panel";
 import MobileTopicCard from "@/ui/learning-space/shell/mobile-topic-card";
-import SpaceCanvas from "@/ui/learning-space/canvas/space-canvas";
+import SpaceCanvas from "@/ui/learning-space/scene/canvas";
 import ProbeSurface from "@/ui/learning-space/probes/probe-surface";
-import { buildLearningSpace } from "@/lib/build-learning-space";
-import { deriveProgressSummary } from "@/lib/derive-progress-summary";
+import { buildLearningSpace } from "@/lib/learning-space/build-learning-space";
+import { deriveProgressSummary } from "@/lib/learning-progress/derive-progress-summary";
 import {
   isTopicPosition3D,
   type TopicPosition3D,

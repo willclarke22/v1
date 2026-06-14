@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildLearningSpace } from "@/lib/build-learning-space";
+import { buildLearningSpace } from "@/lib/learning-space/build-learning-space";
 import { makeId } from "@/lib/utils/ids";
 import type {
   LearningSpace,
@@ -12,41 +12,41 @@ import {
   buildVectorInfo,
   inferDiagnosisFromTopic,
   scoreResponse,
-} from "@/lib/runtime/attempt-judging";
+} from "@/lib/learning-evaluation/attempt-judging";
 import {
   buildNextProbePlan,
   buildNotApplicableProbePlan,
   buildResponseBundle,
-} from "@/lib/runtime/probe-runtime";
-import { loadRouteTopics } from "@/lib/runtime/route-topics";
-import { buildRunMetadata } from "@/lib/runtime/probe-submit-route/timing";
+} from "@/lib/intervention-planning/probe-runtime";
+import { loadRouteTopics } from "@/lib/topic-routing/route-topics";
+import { buildRunMetadata } from "@/lib/api-routes/probe-submit/timing";
 import {
   getAnsweredProbeContractSnapshot,
   getRouteTopicLabel,
   normalizeProbeRawResponse,
   validateProbeSubmitBody,
   type ProbeSubmitBody,
-} from "@/lib/runtime/probe-submit-route/request-context";
+} from "@/lib/api-routes/probe-submit/request-context";
 import {
   buildPendingProbeConfusionInsightScore,
   buildProbeSubmitModelSignals,
-} from "@/lib/runtime/probe-submit-route/confusion-insight-queue";
+} from "@/lib/api-routes/probe-submit/confusion-insight-queue";
 import {
   buildDeliveredProbeFromPlan,
   buildDeliveredResponse,
   buildSceneUpdate,
-} from "@/lib/runtime/probe-submit-route/response-bundle";
-import { buildAttemptEvidencePackage } from "@/lib/runtime/probe-submit-route/attempt-input";
-import { judgeProbeAttemptAgainstContract } from "@/lib/engine/judging";
+} from "@/lib/api-routes/probe-submit/response-bundle";
+import { buildAttemptEvidencePackage } from "@/lib/api-routes/probe-submit/attempt-input";
 import {
   buildDecision,
   buildEngineFuel,
-} from "@/lib/runtime/probe-submit-route/attempt-judging";
-import { buildUpdatedTopicsAfterProbeSubmit } from "@/lib/runtime/probe-submit-route/topic-metric-update";
+  judgeProbeSubmitAttemptAgainstContract,
+} from "@/lib/api-routes/probe-submit/attempt-judging";
+import { buildUpdatedTopicsAfterProbeSubmit } from "@/lib/api-routes/probe-submit/topic-metric-update";
 import {
   buildProbeSubmitTopicJson,
   persistProbeSubmitRun,
-} from "@/lib/runtime/probe-submit-route/persistence";
+} from "@/lib/api-routes/probe-submit/persistence";
 
 export async function POST(request: NextRequest) {
   try {
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
      * Prefer the contract that was actually answered. If the client does not
      * send it, fall back to the next plan's snapshot as a compatibility bridge.
      */
-    const contractJudgment = judgeProbeAttemptAgainstContract({
+    const contractJudgment = judgeProbeSubmitAttemptAgainstContract({
       attemptInterpretation: attemptEvidencePackage.attemptInterpretation,
       normalizedEvidence: attemptEvidencePackage.normalizedEvidence,
       probeContractSnapshot:
@@ -275,3 +275,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+
+

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildLearningSpace } from "@/lib/build-learning-space";
+import { buildLearningSpace } from "@/lib/learning-space/build-learning-space";
 import { insertRun, upsertTopicState } from "@/lib/persistence/myway";
 import { makeId } from "@/lib/utils/ids";
 import {
@@ -15,13 +15,13 @@ import type {
   TopicRoutingState,
   VectorInfo,
 } from "@/types/contracts";
-import type { TopicResolutionTrace } from "@/lib/runtime/topic-routing-trace";
+import type { TopicResolutionTrace } from "@/lib/topic-routing/topic-routing-trace";
 
 import {
   inferKeywordsFromTopicLabel,
   loadRouteTopics,
   type RouteTopic,
-} from "@/lib/runtime/route-topics";
+} from "@/lib/topic-routing/route-topics";
 import {
   applyMetricUpdate,
   buildImportantRunInputs,
@@ -29,8 +29,8 @@ import {
   buildNotApplicableProbePlan,
   buildProbePlan,
   buildUpdatedMetrics,
-} from "@/lib/runtime/message-runtime";
-import { nowIso } from "@/lib/runtime/shared";
+} from "@/lib/intervention-planning/message-runtime";
+import { nowIso } from "@/lib/shared/runtime";
 import {
   buildTopicLabelerRequest,
   callConfiguredTopicLabeler,
@@ -38,17 +38,17 @@ import {
   getTopicLabelerProvider,
   getTopicLabelerTimeoutMs,
   type TopicLabelerClientResult,
-} from "@/lib/runtime/topic-labeling-model/topic-labeler-client";
+} from "@/lib/topic-routing/topic-labeler/client";
 import {
   buildModelTopicRoutePolicyDecision,
   type ModelTopicRoutePolicyDecision,
-} from "@/lib/runtime/topic-labeling-model/topic-labeler-policy";
+} from "@/lib/topic-routing/topic-labeler/policy";
 import {
   buildModelFirstTopicResolutionOutcome,
   buildModelRouteContinuationPolicy,
   type ModelRouteContinuationPolicy,
   type SemanticEnrichmentStatus,
-} from "@/lib/runtime/topic-labeling-model/model-topic-resolution";
+} from "@/lib/topic-routing/topic-labeler/resolution";
 import {
   appendPendingConfusionInsightScore,
   buildConfusionInsightInput,
@@ -66,34 +66,34 @@ import {
   type ConfusionInsightScoringMode,
   type PendingConfusionInsightScore,
   type RouteResolutionKind,
-} from "@/lib/runtime/message-route/confusion-insight-queue";
+} from "@/lib/api-routes/message/confusion-insight-queue";
 import {
   appendPendingTopicMessageEmbedding,
   buildPendingTopicMessageEmbedding,
   TOPIC_MESSAGE_EMBEDDING_PENDING_QUEUE_MAX_ITEMS,
   type PendingTopicMessageEmbedding,
-} from "@/lib/runtime/message-route/topic-message-embedding-queue";
+} from "@/lib/api-routes/message/topic-message-embedding-queue";
 import {
   createMessageRouteTimer,
   type MessageRouteLatencyDebug,
   type TopicLabelingMode,
   type TopicRoutingQdrantQueryMode,
-} from "@/lib/runtime/message-route/timing";
+} from "@/lib/api-routes/message/timing";
 import {
   adaptLearningSpaceToContract,
   buildSceneUpdate,
   type RawLearningSpace,
-} from "@/lib/runtime/message-route/learning-space-response";
+} from "@/lib/api-routes/message/learning-space-response";
 import {
   buildDeliveredResponse,
   buildStatusLabel,
   buildSuggestedAction,
-} from "@/lib/runtime/message-route/delivered-response";
+} from "@/lib/api-routes/message/delivered-response";
 import {
   buildEngineFuel,
   buildPreviousModeOutcome,
   buildRunMetadata,
-} from "@/lib/runtime/message-route/engine-fuel";
+} from "@/lib/api-routes/message/engine-fuel";
 import {
   asOptionalString,
   buildChatHistoryLinesForModelSignals,
@@ -101,7 +101,7 @@ import {
   inferMessageRouteRunKind,
   normalizeRecentTurns,
   type MessageRouteBody,
-} from "@/lib/runtime/message-route/request-context";
+} from "@/lib/api-routes/message/request-context";
 import {
   applyMessageEmbeddingUpdatePlanToTopics,
   buildTargetTopicMessageEmbeddingPlan,
@@ -109,7 +109,7 @@ import {
   getCanonicalEmbeddingPersistenceMetadata,
   isUsableCentroidUpdatePlan,
   type RouteCentroidUpdatePlan,
-} from "@/lib/runtime/message-route/semantic-message-embedding";
+} from "@/lib/api-routes/message/semantic-message-embedding";
 import {
   adaptModelFirstTopicResolutionOutcome,
   buildContinuationPolicyTopicResolutionOutcome,
@@ -125,7 +125,7 @@ import {
   shouldUseModelContinuationPolicyInsteadOfDeterministic,
   type TopicResolutionDebug,
   type TopicResolutionOutcome,
-} from "@/lib/runtime/message-route/topic-resolution-adapter";
+} from "@/lib/api-routes/message/topic-resolution-adapter";
 
 
 function getTopicRoutingQdrantQueryMode(): TopicRoutingQdrantQueryMode {

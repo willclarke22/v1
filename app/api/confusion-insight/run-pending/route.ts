@@ -10,7 +10,7 @@ import {
   type ConfusionInsightPreviousMode,
   type ConfusionInsightStructuredInput,
   type ConfusionInsightTopicTransitionType,
-} from "@/lib/runtime/score-confusion-insight";
+} from "@/lib/model-adapters/confusion-insight/confusion-insight-client";
 
 // Worker route.
 //

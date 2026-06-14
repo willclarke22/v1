@@ -7,7 +7,7 @@ import {
   Settings,
   Sparkles,
 } from "lucide-react";
-import type { ProgressSummary } from "@/lib/derive-progress-summary";
+import type { ProgressSummary } from "@/lib/learning-progress/derive-progress-summary";
 import type { RelationshipViewMode } from "@/types/learning-space";
 
 export type SidebarTab = "myway" | "progress" | "view-options" | "settings";

@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import { getLatestTopicState } from "@/lib/persistence/read";
 import { upsertTopicState } from "@/lib/persistence/myway";
-import { nowIso } from "@/lib/runtime/shared";
+import { nowIso } from "@/lib/shared/runtime";
 import { embedTexts } from "@/lib/vector/embed";
 import {
   canSyncTopicToQdrant,

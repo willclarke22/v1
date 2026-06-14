@@ -1,0 +1,419 @@
+App/Lib Structure Inspection
+Generated: 06/13/2026 23:10:53
+Project: C:\Users\willc\projects\MyWay\v1
+
+============================================================
+Build checkpoint
+============================================================
+
+
+> v1@0.1.0 build C:\Users\willc\projects\MyWay\v1
+> next build
+
+Γû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 13.4s
+  Running TypeScript ...
+  Finished TypeScript in 9.5s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/11) ...
+  Generating static pages using 11 workers (2/11) 
+  Generating static pages using 11 workers (5/11) 
+  Generating static pages using 11 workers (8/11) 
+Γ£ô Generating static pages using 11 workers (11/11) in 648ms
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ ╞Æ /api/bootstrap/topic-state
+Γö£ ╞Æ /api/confusion-insight/run-pending
+Γö£ ╞Æ /api/local-dev/idle-state
+Γö£ ╞Æ /api/message
+Γö£ ╞Æ /api/probe/submit
+Γö£ ╞Æ /api/semantic-enrichment/pending-status
+Γö£ ╞Æ /api/semantic-enrichment/run-pending
+Γö£ ╞Æ /api/semantic-layout/commit-pending
+Γö£ ╞Æ /api/semantic-layout/recompute-pending
+Γöö ╞Æ /api/topic-message-embeddings/run-pending
+
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
+
+============================================================
+App files
+============================================================
+
+
+FullName                                                                               Length
+--------                                                                               ------
+C:\Users\willc\projects\MyWay\v1\app\favicon.ico                                        25931
+C:\Users\willc\projects\MyWay\v1\app\globals.css                                          537
+C:\Users\willc\projects\MyWay\v1\app\layout.tsx                                           348
+C:\Users\willc\projects\MyWay\v1\app\page.tsx                                           41226
+C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts                 12057
+C:\Users\willc\projects\MyWay\v1\app\api\confusion-insight\run-pending\route.ts         38063
+C:\Users\willc\projects\MyWay\v1\app\api\local-dev\idle-state\route.ts                   6458
+C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts                               54383
+C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts                           8897
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\pending-status\route.ts    16414
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\run-pending\route.ts       14812
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-layout\commit-pending\route.ts        13694
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-layout\recompute-pending\route.ts     88360
+C:\Users\willc\projects\MyWay\v1\app\api\topic-message-embeddings\run-pending\route.ts  14119
+
+
+
+============================================================
+API route files with sizes
+============================================================
+
+
+FullName                                                                               Length
+--------                                                                               ------
+C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts                 12057
+C:\Users\willc\projects\MyWay\v1\app\api\confusion-insight\run-pending\route.ts         38063
+C:\Users\willc\projects\MyWay\v1\app\api\local-dev\idle-state\route.ts                   6458
+C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts                               54383
+C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts                           8897
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\pending-status\route.ts    16414
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-enrichment\run-pending\route.ts       14812
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-layout\commit-pending\route.ts        13694
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-layout\recompute-pending\route.ts     88360
+C:\Users\willc\projects\MyWay\v1\app\api\topic-message-embeddings\run-pending\route.ts  14119
+
+
+
+============================================================
+Lib top-level folders/files
+============================================================
+
+
+Name                       PSIsContainer Length
+----                       ------------- ------
+engine                              True 
+learning-space                      True 
+persistence                         True 
+providers                           True 
+runtime                             True 
+supabase                            True 
+utils                               True 
+vector                              True 
+build-learning-space.ts            False 60
+derive-progress-summary.ts         False 4768
+
+
+
+============================================================
+Lib runtime files
+============================================================
+
+
+FullName                                                                                    Length
+--------                                                                                    ------
+C:\Users\willc\projects\MyWay\v1\lib\runtime\attempt-evidence-runtime.ts                       580
+C:\Users\willc\projects\MyWay\v1\lib\runtime\attempt-judging.ts                              25871
+C:\Users\willc\projects\MyWay\v1\lib\runtime\chat-history.ts                                  1151
+C:\Users\willc\projects\MyWay\v1\lib\runtime\contract-judgment-runtime.ts                      519
+C:\Users\willc\projects\MyWay\v1\lib\runtime\diagnosis-runtime.ts                              494
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-frame.ts                                 3562
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-runtime.ts                              53217
+C:\Users\willc\projects\MyWay\v1\lib\runtime\probe-contract-runtime.ts                         464
+C:\Users\willc\projects\MyWay\v1\lib\runtime\probe-runtime.ts                                33881
+C:\Users\willc\projects\MyWay\v1\lib\runtime\route-topics.ts                                 10837
+C:\Users\willc\projects\MyWay\v1\lib\runtime\score-confusion-insight.ts                      17065
+C:\Users\willc\projects\MyWay\v1\lib\runtime\shared.ts                                         833
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-routing-trace.ts                           5903
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-route\confusion-insight-queue.ts        21583
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-route\delivered-response.ts             11193
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-route\engine-fuel.ts                     4266
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-route\learning-space-response.ts         6181
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-route\request-context.ts                 3169
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-route\semantic-message-embedding.ts      6476
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-route\timing.ts                          3979
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-route\topic-message-embedding-queue.ts   5155
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-route\topic-resolution-adapter.ts       15164
+C:\Users\willc\projects\MyWay\v1\lib\runtime\probe-submit-route\attempt-input.ts              9813
+C:\Users\willc\projects\MyWay\v1\lib\runtime\probe-submit-route\attempt-judging.ts           14668
+C:\Users\willc\projects\MyWay\v1\lib\runtime\probe-submit-route\confusion-insight-queue.ts   17744
+C:\Users\willc\projects\MyWay\v1\lib\runtime\probe-submit-route\persistence.ts               15664
+C:\Users\willc\projects\MyWay\v1\lib\runtime\probe-submit-route\request-context.ts            3150
+C:\Users\willc\projects\MyWay\v1\lib\runtime\probe-submit-route\response-bundle.ts            4654
+C:\Users\willc\projects\MyWay\v1\lib\runtime\probe-submit-route\timing.ts                     1257
+C:\Users\willc\projects\MyWay\v1\lib\runtime\probe-submit-route\topic-metric-update.ts         966
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-labeler-v3.ts   6290
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-resolution.ts  32748
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-client.ts     4572
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-contract.ts   1651
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\topic-labeler-policy.ts     8628
+
+
+
+============================================================
+Lib engine files
+============================================================
+
+
+FullName                                                                                                  Length
+--------                                                                                                  ------
+C:\Users\willc\projects\MyWay\v1\lib\engine\diagnosis.ts                                                     318
+C:\Users\willc\projects\MyWay\v1\lib\engine\evidence.ts                                                      317
+C:\Users\willc\projects\MyWay\v1\lib\engine\index.ts                                                         319
+C:\Users\willc\projects\MyWay\v1\lib\engine\judging.ts                                                       316
+C:\Users\willc\projects\MyWay\v1\lib\engine\probe-contract-cache.ts                                          298
+C:\Users\willc\projects\MyWay\v1\lib\engine\probe-contract-quality.ts                                        300
+C:\Users\willc\projects\MyWay\v1\lib\engine\probe-rendering.ts                                               293
+C:\Users\willc\projects\MyWay\v1\lib\engine\probe-source-policy.ts                                           297
+C:\Users\willc\projects\MyWay\v1\lib\engine\probes.ts                                                        315
+C:\Users\willc\projects\MyWay\v1\lib\engine\relationships.ts                                                 322
+C:\Users\willc\projects\MyWay\v1\lib\engine\judging\deterministic.ts                                         285
+C:\Users\willc\projects\MyWay\v1\lib\engine\judging\judge-probe-attempt.ts                                   291
+C:\Users\willc\projects\MyWay\v1\lib\engine\judging\judging-types.ts                                         285
+C:\Users\willc\projects\MyWay\v1\lib\engine\judging\rubric\index.ts                                          278
+C:\Users\willc\projects\MyWay\v1\lib\engine\judging\rubric\judge-text-explanation.ts                         301
+C:\Users\willc\projects\MyWay\v1\lib\engine\judging\rubric\rubric-types.ts                                   291
+C:\Users\willc\projects\MyWay\v1\lib\engine\logging\build-review-batch.ts                                    287
+C:\Users\willc\projects\MyWay\v1\lib\engine\logging\export-review-batch.ts                                   287
+C:\Users\willc\projects\MyWay\v1\lib\engine\logging\index.ts                                                 287
+C:\Users\willc\projects\MyWay\v1\lib\engine\logging\log-model-call.ts                                        287
+C:\Users\willc\projects\MyWay\v1\lib\engine\logging\model-call-row.ts                                        287
+C:\Users\willc\projects\MyWay\v1\lib\engine\orchestration\build-evaluated-probe-attempt-signal.ts            287
+C:\Users\willc\projects\MyWay\v1\lib\engine\orchestration\index.ts                                           287
+C:\Users\willc\projects\MyWay\v1\lib\engine\orchestration\route-engine-next-action.ts                        287
+C:\Users\willc\projects\MyWay\v1\lib\engine\orchestration\run-attempt-evaluation.ts                          287
+C:\Users\willc\projects\MyWay\v1\lib\engine\orchestration\run-diagnosis.ts                                   287
+C:\Users\willc\projects\MyWay\v1\lib\engine\orchestration\run-engine-turn.ts                                 287
+C:\Users\willc\projects\MyWay\v1\lib\engine\orchestration\run-probe-contract.ts                              287
+C:\Users\willc\projects\MyWay\v1\lib\engine\providers\index.ts                                               287
+C:\Users\willc\projects\MyWay\v1\lib\engine\providers\types.ts                                               287
+C:\Users\willc\projects\MyWay\v1\lib\engine\providers\fallback\deterministic-attempt-evaluator.ts            287
+C:\Users\willc\projects\MyWay\v1\lib\engine\providers\fallback\index.ts                                      287
+C:\Users\willc\projects\MyWay\v1\lib\engine\providers\fallback\rule-based-diagnosis-provider.ts              287
+C:\Users\willc\projects\MyWay\v1\lib\engine\providers\service-clients\attempt-evaluator-service-client.ts    287
+C:\Users\willc\projects\MyWay\v1\lib\engine\providers\service-clients\diagnosis-service-client.ts            287
+C:\Users\willc\projects\MyWay\v1\lib\engine\providers\service-clients\index.ts                               287
+C:\Users\willc\projects\MyWay\v1\lib\engine\providers\service-clients\probe-contract-service-client.ts       287
+C:\Users\willc\projects\MyWay\v1\lib\engine\renderers\index.ts                                               287
+C:\Users\willc\projects\MyWay\v1\lib\engine\renderers\probe-renderer-contract.ts                             287
+C:\Users\willc\projects\MyWay\v1\lib\engine\renderers\renderer-compatibility.ts                              287
+C:\Users\willc\projects\MyWay\v1\lib\engine\schemas\diagnosis-model.ts                                       287
+C:\Users\willc\projects\MyWay\v1\lib\engine\schemas\index.ts                                                 287
+C:\Users\willc\projects\MyWay\v1\lib\engine\schemas\probe-attempt-evaluator.ts                               287
+C:\Users\willc\projects\MyWay\v1\lib\engine\schemas\probe-contract-model.ts                                  287
+C:\Users\willc\projects\MyWay\v1\lib\engine\schemas\shared.ts                                                287
+C:\Users\willc\projects\MyWay\v1\lib\engine\state\apply-diagnosis-delta.ts                                   287
+C:\Users\willc\projects\MyWay\v1\lib\engine\state\apply-understanding-evidence.ts                            287
+C:\Users\willc\projects\MyWay\v1\lib\engine\state\index.ts                                                   287
+C:\Users\willc\projects\MyWay\v1\lib\engine\state\learning-topic-state.ts                                    287
+C:\Users\willc\projects\MyWay\v1\lib\engine\validation\index.ts                                              287
+C:\Users\willc\projects\MyWay\v1\lib\engine\validation\validate-attempt-evaluation.ts                        287
+C:\Users\willc\projects\MyWay\v1\lib\engine\validation\validate-bridge-language.ts                           287
+C:\Users\willc\projects\MyWay\v1\lib\engine\validation\validate-diagnosis-output.ts                          287
+C:\Users\willc\projects\MyWay\v1\lib\engine\validation\validate-probe-contract.ts                            287
+C:\Users\willc\projects\MyWay\v1\lib\engine\validation\validate-renderer-params.ts                           287
+
+
+
+============================================================
+Lib learning-space files
+============================================================
+
+
+FullName                                                                    Length
+--------                                                                    ------
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts  23587
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\engine-bridge.ts           708
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\index.ts                    75
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\topic-position.ts         5122
+
+
+
+============================================================
+Large active TypeScript files over 20KB
+============================================================
+
+
+FullName                                                                                    Length
+--------                                                                                    ------
+C:\Users\willc\projects\MyWay\v1\app\api\semantic-layout\recompute-pending\route.ts          88360
+C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts                                    54383
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-runtime.ts                              53217
+C:\Users\willc\projects\MyWay\v1\app\page.tsx                                                41226
+C:\Users\willc\projects\MyWay\v1\types\contracts.ts                                          38276
+C:\Users\willc\projects\MyWay\v1\app\api\confusion-insight\run-pending\route.ts              38063
+C:\Users\willc\projects\MyWay\v1\lib\runtime\probe-runtime.ts                                33881
+C:\Users\willc\projects\MyWay\v1\lib\runtime\topic-labeling-model\model-topic-resolution.ts  32748
+C:\Users\willc\projects\MyWay\v1\ui\learning-space\scene\canvas.tsx                          27155
+C:\Users\willc\projects\MyWay\v1\ui\learning-space\scene\relationship-arcs.tsx               26188
+C:\Users\willc\projects\MyWay\v1\lib\runtime\attempt-judging.ts                              25871
+C:\Users\willc\projects\MyWay\v1\ui\learning-space\scene\camera-controller.tsx               24008
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts                  23587
+C:\Users\willc\projects\MyWay\v1\lib\runtime\message-route\confusion-insight-queue.ts        21583
+C:\Users\willc\projects\MyWay\v1\hooks\use-probe-flow.ts                                     20576
+
+
+
+============================================================
+Imports from app routes into lib/runtime
+============================================================
+
+
+app\api\confusion-insight\run-pending\route.ts:13:} from "@/lib/runtime/score-confusion-insight";
+app\api\message\route.ts:18:import type { TopicResolutionTrace } from "@/lib/runtime/topic-routing-trace";
+app\api\message\route.ts:24:} from "@/lib/runtime/route-topics";
+app\api\message\route.ts:32:} from "@/lib/runtime/message-runtime";
+app\api\message\route.ts:33:import { nowIso } from "@/lib/runtime/shared";
+app\api\message\route.ts:41:} from "@/lib/runtime/topic-labeling-model/topic-labeler-client";
+app\api\message\route.ts:45:} from "@/lib/runtime/topic-labeling-model/topic-labeler-policy";
+app\api\message\route.ts:51:} from "@/lib/runtime/topic-labeling-model/model-topic-resolution";
+app\api\message\route.ts:69:} from "@/lib/runtime/message-route/confusion-insight-queue";
+app\api\message\route.ts:75:} from "@/lib/runtime/message-route/topic-message-embedding-queue";
+app\api\message\route.ts:81:} from "@/lib/runtime/message-route/timing";
+app\api\message\route.ts:86:} from "@/lib/runtime/message-route/learning-space-response";
+app\api\message\route.ts:91:} from "@/lib/runtime/message-route/delivered-response";
+app\api\message\route.ts:96:} from "@/lib/runtime/message-route/engine-fuel";
+app\api\message\route.ts:104:} from "@/lib/runtime/message-route/request-context";
+app\api\message\route.ts:112:} from "@/lib/runtime/message-route/semantic-message-embedding";
+app\api\message\route.ts:128:} from "@/lib/runtime/message-route/topic-resolution-adapter";
+app\api\probe\submit\route.ts:15:} from "@/lib/runtime/attempt-judging";
+app\api\probe\submit\route.ts:20:} from "@/lib/runtime/probe-runtime";
+app\api\probe\submit\route.ts:21:import { loadRouteTopics } from "@/lib/runtime/route-topics";
+app\api\probe\submit\route.ts:22:import { buildRunMetadata } from "@/lib/runtime/probe-submit-route/timing";
+app\api\probe\submit\route.ts:29:} from "@/lib/runtime/probe-submit-route/request-context";
+app\api\probe\submit\route.ts:33:} from "@/lib/runtime/probe-submit-route/confusion-insight-queue";
+app\api\probe\submit\route.ts:38:} from "@/lib/runtime/probe-submit-route/response-bundle";
+app\api\probe\submit\route.ts:39:import { buildAttemptEvidencePackage } from "@/lib/runtime/probe-submit-route/attempt-input";
+app\api\probe\submit\route.ts:44:} from "@/lib/runtime/probe-submit-route/attempt-judging";
+app\api\probe\submit\route.ts:45:import { buildUpdatedTopicsAfterProbeSubmit } from "@/lib/runtime/probe-submit-route/topic-metric-update";
+app\api\probe\submit\route.ts:49:} from "@/lib/runtime/probe-submit-route/persistence";
+app\api\semantic-enrichment\run-pending\route.ts:6:import { nowIso } from "@/lib/runtime/shared";
+
+
+
+============================================================
+Imports from app routes into lib/engine
+============================================================
+
+
+
+============================================================
+Runtime folder import map
+============================================================
+
+
+lib\runtime\message-route\confusion-insight-queue.ts:1:import { makeId } from "@/lib/utils/ids";
+lib\runtime\message-route\confusion-insight-queue.ts:6:} from "@/types/contracts";
+lib\runtime\message-route\confusion-insight-queue.ts:7:import type { RouteTopic } from "@/lib/runtime/route-topics";
+lib\runtime\message-route\confusion-insight-queue.ts:8:import { nowIso } from "@/lib/runtime/shared";
+lib\runtime\message-route\confusion-insight-queue.ts:16:} from "@/lib/runtime/score-confusion-insight";
+lib\runtime\message-route\delivered-response.ts:7:} from "@/types/contracts";
+lib\runtime\message-route\delivered-response.ts:8:import type { RouteTopic } from "@/lib/runtime/route-topics";
+lib\runtime\message-route\delivered-response.ts:9:import type { RouteResolutionKind } from "./confusion-insight-queue";
+lib\runtime\message-route\engine-fuel.ts:1:import { nowIso } from "@/lib/runtime/shared";
+lib\runtime\message-route\engine-fuel.ts:12:} from "@/types/contracts";
+lib\runtime\message-route\engine-fuel.ts:13:import type { RouteTopic } from "@/lib/runtime/route-topics";
+lib\runtime\message-route\learning-space-response.ts:1:import { makeId } from "@/lib/utils/ids";
+lib\runtime\message-route\learning-space-response.ts:5:} from "@/types/contracts";
+lib\runtime\message-route\learning-space-response.ts:6:import type { RouteTopic } from "@/lib/runtime/route-topics";
+lib\runtime\message-route\learning-space-response.ts:7:import type { RouteResolutionKind } from "./confusion-insight-queue";
+lib\runtime\message-route\request-context.ts:4:} from "@/types/contracts";
+lib\runtime\message-route\semantic-message-embedding.ts:1:import type { EmbeddingVector } from "@/types/contracts";
+lib\runtime\message-route\semantic-message-embedding.ts:2:import type { RouteTopic } from "@/lib/runtime/route-topics";
+lib\runtime\message-route\semantic-message-embedding.ts:3:import { nowIso } from "@/lib/runtime/shared";
+lib\runtime\message-route\timing.ts:1:import type { ModelSignals } from "@/types/contracts";
+lib\runtime\message-route\timing.ts:2:import type { RouteResolutionKind } from "./confusion-insight-queue";
+lib\runtime\message-route\topic-message-embedding-queue.ts:1:import { makeId } from "@/lib/utils/ids";
+lib\runtime\message-route\topic-message-embedding-queue.ts:2:import { nowIso } from "@/lib/runtime/shared";
+lib\runtime\message-route\topic-message-embedding-queue.ts:3:import type { RouteResolutionKind } from "./confusion-insight-queue";
+lib\runtime\message-route\topic-resolution-adapter.ts:4:} from "@/types/contracts";
+lib\runtime\message-route\topic-resolution-adapter.ts:5:import type { TopicResolutionTrace } from "@/lib/runtime/topic-routing-trace";
+lib\runtime\message-route\topic-resolution-adapter.ts:9:} from "@/lib/runtime/route-topics";
+lib\runtime\message-route\topic-resolution-adapter.ts:15:} from "@/lib/runtime/topic-labeling-model/model-topic-resolution";
+lib\runtime\message-route\topic-resolution-adapter.ts:16:import type { ModelTopicRoutePolicyDecision } from "@/lib/runtime/topic-labeling-model/topic-labeler-policy";
+lib\runtime\message-route\topic-resolution-adapter.ts:17:import type { RouteResolutionKind } from "./confusion-insight-queue";
+lib\runtime\message-route\topic-resolution-adapter.ts:18:import type { TopicLabelingMode } from "./timing";
+lib\runtime\message-route\topic-resolution-adapter.ts:19:import type { RouteCentroidUpdatePlan } from "./semantic-message-embedding";
+lib\runtime\probe-submit-route\attempt-input.ts:9:} from "@/types/contracts";
+lib\runtime\probe-submit-route\attempt-input.ts:10:import type { RouteTopic } from "@/lib/runtime/route-topics";
+lib\runtime\probe-submit-route\attempt-input.ts:11:import type { ProbeAttemptPayload } from "@/lib/runtime/attempt-judging";
+lib\runtime\probe-submit-route\attempt-input.ts:15:} from "@/lib/runtime/attempt-evidence-runtime";
+lib\runtime\probe-submit-route\attempt-input.ts:19:} from "@/lib/runtime/attempt-evidence-runtime";
+lib\runtime\probe-submit-route\attempt-input.ts:20:import { nowIso } from "@/lib/runtime/shared";
+lib\runtime\probe-submit-route\attempt-input.ts:21:import { getRouteTopicLabel } from "./request-context";
+lib\runtime\probe-submit-route\attempt-judging.ts:7:} from "@/types/contracts";
+lib\runtime\probe-submit-route\attempt-judging.ts:11:} from "@/lib/runtime/attempt-evidence-runtime";
+lib\runtime\probe-submit-route\attempt-judging.ts:15:} from "@/lib/runtime/contract-judgment-runtime";
+lib\runtime\probe-submit-route\attempt-judging.ts:16:import type { RouteTopic } from "@/lib/runtime/route-topics";
+lib\runtime\probe-submit-route\attempt-judging.ts:20:} from "@/lib/runtime/attempt-judging";
+lib\runtime\probe-submit-route\attempt-judging.ts:25:} from "@/lib/runtime/probe-runtime";
+lib\runtime\probe-submit-route\attempt-judging.ts:26:import { hasUsableModelSignals } from "./confusion-insight-queue";
+lib\runtime\probe-submit-route\attempt-judging.ts:27:import { buildTopicStates } from "./attempt-input";
+lib\runtime\probe-submit-route\confusion-insight-queue.ts:1:import { makeId } from "@/lib/utils/ids";
+lib\runtime\probe-submit-route\confusion-insight-queue.ts:2:import { nowIso } from "@/lib/runtime/shared";
+lib\runtime\probe-submit-route\confusion-insight-queue.ts:3:import type { ModelSignals } from "@/types/contracts";
+lib\runtime\probe-submit-route\confusion-insight-queue.ts:4:import type { RouteTopic } from "@/lib/runtime/route-topics";
+lib\runtime\probe-submit-route\confusion-insight-queue.ts:5:import type { inferDiagnosisFromTopic } from "@/lib/runtime/attempt-judging";
+lib\runtime\probe-submit-route\confusion-insight-queue.ts:12:} from "@/lib/runtime/score-confusion-insight";
+lib\runtime\probe-submit-route\confusion-insight-queue.ts:18:} from "./request-context";
+lib\runtime\probe-submit-route\persistence.ts:5:} from "@/lib/persistence/myway";
+lib\runtime\probe-submit-route\persistence.ts:13:} from "@/types/contracts";
+lib\runtime\probe-submit-route\persistence.ts:14:import type { AttemptInterpretation } from "@/lib/runtime/attempt-evidence-runtime";
+lib\runtime\probe-submit-route\persistence.ts:15:import { updateDiagnosisBeliefs } from "@/lib/runtime/diagnosis-runtime";
+lib\runtime\probe-submit-route\persistence.ts:16:import type { ContractJudgment } from "@/lib/runtime/contract-judgment-runtime";
+lib\runtime\probe-submit-route\persistence.ts:17:import type { RouteTopic } from "@/lib/runtime/route-topics";
+lib\runtime\probe-submit-route\persistence.ts:21:} from "@/lib/runtime/attempt-judging";
+lib\runtime\probe-submit-route\persistence.ts:25:} from "@/lib/runtime/probe-runtime";
+lib\runtime\probe-submit-route\persistence.ts:26:import { getEmbeddingPersistenceFields } from "./attempt-input";
+lib\runtime\probe-submit-route\persistence.ts:33:} from "./confusion-insight-queue";
+lib\runtime\probe-submit-route\request-context.ts:2:import type { ProbeAttemptPayload } from "@/lib/runtime/attempt-judging";
+lib\runtime\probe-submit-route\request-context.ts:3:import type { RouteTopic } from "@/lib/runtime/route-topics";
+lib\runtime\probe-submit-route\request-context.ts:4:import type { ProbeContractSnapshot } from "@/types/contracts";
+lib\runtime\probe-submit-route\response-bundle.ts:6:} from "@/types/contracts";
+lib\runtime\probe-submit-route\response-bundle.ts:7:import type { buildNextProbePlan } from "@/lib/runtime/probe-runtime";
+lib\runtime\probe-submit-route\timing.ts:1:import type { EngineFuel, RunMetadata } from "@/types/contracts";
+lib\runtime\probe-submit-route\timing.ts:2:import { nowIso } from "@/lib/runtime/shared";
+lib\runtime\probe-submit-route\topic-metric-update.ts:1:import type { RouteTopic } from "@/lib/runtime/route-topics";
+lib\runtime\probe-submit-route\topic-metric-update.ts:6:} from "@/lib/runtime/attempt-judging";
+lib\runtime\topic-labeling-model\model-topic-labeler-v3.ts:9:} from "./topic-labeler-contract";
+lib\runtime\topic-labeling-model\model-topic-resolution.ts:6:} from "@/types/contracts";
+lib\runtime\topic-labeling-model\model-topic-resolution.ts:10:} from "@/lib/runtime/route-topics";
+lib\runtime\topic-labeling-model\model-topic-resolution.ts:11:import type { TopicResolutionTrace } from "@/lib/runtime/topic-routing-trace";
+lib\runtime\topic-labeling-model\model-topic-resolution.ts:15:} from "./topic-labeler-policy";
+lib\runtime\topic-labeling-model\topic-labeler-client.ts:4:} from "./model-topic-labeler-v3";
+lib\runtime\topic-labeling-model\topic-labeler-client.ts:9:} from "./topic-labeler-contract";
+lib\runtime\topic-labeling-model\topic-labeler-policy.ts:1:import type { TopicLabelerClientResult } from "./topic-labeler-contract";
+lib\runtime\topic-labeling-model\topic-labeler-policy.ts:2:import type { RouteTopic } from "@/lib/runtime/route-topics";
+lib\runtime\attempt-evidence-runtime.ts:4:} from "@/lib/engine/evidence";
+lib\runtime\attempt-evidence-runtime.ts:9:} from "@/lib/engine/evidence";
+lib\runtime\attempt-judging.ts:8:} from "@/types/contracts";
+lib\runtime\attempt-judging.ts:9:import { clamp, normalizeDiagnosis, nowIso, normalizeText } from "./shared";
+lib\runtime\attempt-judging.ts:10:import type { RouteTopic } from "./route-topics";
+lib\runtime\contract-judgment-runtime.ts:3:} from "@/lib/engine/judging";
+lib\runtime\contract-judgment-runtime.ts:7:} from "@/lib/engine/judging";
+lib\runtime\diagnosis-runtime.ts:3:} from "@/lib/engine/diagnosis";
+lib\runtime\diagnosis-runtime.ts:7:} from "@/lib/engine/diagnosis";
+lib\runtime\message-runtime.ts:1:import { buildProbeContract } from "@/lib/runtime/probe-contract-runtime";
+lib\runtime\message-runtime.ts:11:} from "@/types/contracts";
+lib\runtime\message-runtime.ts:12:import { clamp, normalizeDiagnosis, nowIso } from "./shared";
+lib\runtime\message-runtime.ts:13:import { inferPrimaryMessageFrame } from "./message-frame";
+lib\runtime\message-runtime.ts:14:import type { RouteTopic } from "./route-topics";
+lib\runtime\message-runtime.ts:15:import { makeId } from "@/lib/utils/ids";
+lib\runtime\probe-contract-runtime.ts:1:import { buildProbeContract as buildLegacyProbeContract } from "@/lib/engine/probes";
+lib\runtime\probe-runtime.ts:1:import { buildProbeContract } from "@/lib/runtime/probe-contract-runtime";
+lib\runtime\probe-runtime.ts:2:import { makeId } from "@/lib/utils/ids";
+lib\runtime\probe-runtime.ts:11:} from "@/types/contracts";
+lib\runtime\probe-runtime.ts:12:import type { RouteTopic } from "./route-topics";
+lib\runtime\probe-runtime.ts:13:import { inferDiagnosisFromTopic } from "./attempt-judging";
+lib\runtime\route-topics.ts:3:import { getRouteTopicState } from "@/lib/persistence/read";
+lib\runtime\route-topics.ts:9:} from "@/lib/learning-space/topic-position";
+lib\runtime\route-topics.ts:10:import { makeId } from "@/lib/utils/ids";
+lib\runtime\route-topics.ts:11:import type { DiagnosisType, EmbeddingVector } from "@/types/contracts";
+lib\runtime\route-topics.ts:12:import { normalizeDiagnosis } from "./shared";
+lib\runtime\shared.ts:1:import type { DiagnosisType } from "@/types/contracts";
+lib\runtime\topic-routing-trace.ts:1:import type { VectorInfo } from "@/types/contracts";
+
+
