@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Sidebar, { type SidebarTab } from "@/components/layout/sidebar";
-import BottomComposer from "@/components/layout/bottom-composer";
-import TopicPanel from "@/components/layout/topic-panel";
-import MobileTopicCard from "@/components/layout/mobile-topic-card";
-import SpaceCanvas from "@/components/learning-space/space-canvas";
-import ProbeSurface from "@/components/probes/probe-surface";
+import Sidebar, { type SidebarTab } from "@/ui/learning-space/shell/sidebar";
+import BottomComposer from "@/ui/learning-space/shell/bottom-composer";
+import TopicPanel from "@/ui/learning-space/shell/topic-panel";
+import MobileTopicCard from "@/ui/learning-space/shell/mobile-topic-card";
+import SpaceCanvas from "@/ui/learning-space/canvas/space-canvas";
+import ProbeSurface from "@/ui/learning-space/probes/probe-surface";
 import { buildLearningSpace } from "@/lib/build-learning-space";
 import { deriveProgressSummary } from "@/lib/derive-progress-summary";
 import {
@@ -1243,3 +1243,4 @@ export default function Home() {
     </main>
   );
 }
+

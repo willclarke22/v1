@@ -85,7 +85,12 @@ export type RendererModality = "text" | "video" | "interactive";
 export type RendererGenerator = "chatgpt" | "sora" | "custom";
 
 export type ModelInferenceMode = "local" | "service";
-export type ModelSignalStatus = "ok" | "unavailable" | "timeout" | "error";
+export type ModelSignalStatus =
+  | "ok"
+  | "queued"
+  | "unavailable"
+  | "timeout"
+  | "error";
 
 export type AttemptStatus = "present" | "absent" | "not_applicable";
 export type AttemptCompletionStatus =
@@ -206,6 +211,71 @@ export type UploadedContentType =
   | "video"
   | "image"
   | "other";
+
+export type LearningSourceKind =
+  | "uploaded_document"
+  | "course_material"
+  | "manual_notes"
+  | "web_excerpt"
+  | "trusted_public_reference"
+  | "human_reviewed_reference"
+  | "generated_text"
+  | "unknown";
+
+export type LearningSourceRightsScope =
+  | "user_uploaded_private"
+  | "public_reference"
+  | "internal_reviewed"
+  | "generated_ephemeral"
+  | "unknown";
+
+export type LearningSourceTrustLevel =
+  | "human_reviewed"
+  | "trusted_public"
+  | "user_provided"
+  | "learner_notes"
+  | "unverified_public"
+  | "model_generated"
+  | "unknown";
+
+export type LearningSourceProcessingStatus =
+  | "raw"
+  | "normalized"
+  | "chunked"
+  | "indexed"
+  | "rejected";
+
+export interface LearningSourceReference {
+  source_id: EntityId;
+  source_kind: LearningSourceKind;
+  source_title: string;
+  rights_scope: LearningSourceRightsScope;
+  trust_level: LearningSourceTrustLevel;
+  summary: Nullable<string>;
+}
+
+export interface LearningSourceChunkReference {
+  source_id: EntityId;
+  chunk_id: EntityId;
+  source_title: string;
+  chunk_index: number;
+  summary: Nullable<string>;
+}
+
+export type ProbeAuthoringMode =
+  | "source_grounded_text_explanation"
+  | "source_grounded_multiple_choice_candidate"
+  | "source_grounded_ordering_candidate"
+  | "source_grounded_drag_drop_candidate"
+  | "source_grounded_graph_candidate"
+  | "low_stakes_reflection_probe"
+  | "not_authorable";
+
+export type ProbeAuthoringReadiness =
+  | "not_ready"
+  | "low_stakes_only"
+  | "candidate_ready"
+  | "trusted_ready";
 
 export type RenderState = {
   /**
@@ -425,6 +495,13 @@ export interface UploadedContentReference {
   content_type: UploadedContentType;
   source_name: string;
   summary: Nullable<string>;
+
+  /**
+   * Optional bridge to the source-processing layer. During migration, uploaded
+   * content may exist before it has been normalized into learning sources.
+   */
+  normalized_source_id?: Nullable<EntityId>;
+  normalized_chunk_ids?: EntityId[];
 }
 
 export interface ImportantRunInputs {

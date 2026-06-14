@@ -1,0 +1,4278 @@
+
+> v1@0.1.0 test:source-grounded-attempt C:\Users\willc\projects\MyWay\v1
+> tsx scripts/dev-test-source-grounded-attempt-judging.ts
+
+
+=== American Politics contract summary ===
+{
+  "domain_id": "federalism",
+  "source_id": "learning-source_b62b667c-f6fb-4d17-850a-40ff2c43d862",
+  "chunk_count": 2,
+  "authoring_context_id": "probe-authoring-context_150af165-b6b1-4c80-a3a2-ada06586351b",
+  "readiness": "candidate_ready",
+  "source_confidence": 0.68,
+  "expected_mechanism_summary": "Authority is divided between national and state governments, so conflicts can happen when responsibilities overlap.",
+  "contract_id": "probe-contract_ec7e87a1-0528-4680-a248-564025f854ba",
+  "renderer_kind": "text_explanation",
+  "target_diagnosis": "representation_gap",
+  "prompt": "Using the source \"Federalism mini source\", explain the key relationship or mechanism in American Politics. Focus on this source idea: Federalism is a system of government where authority is divided between a national government and regional governments. In the United States, the federal government has powers such as regulating interstate commerce, declΓÇª",
+  "allowed_claim_strength": "conservative",
+  "can_make_strong_correctness_claim": false,
+  "has_source_grounded_judging_scaffold": true,
+  "source_grounded_judging_scaffold": {
+    "scaffold_id": "source-judging-scaffold_52e14554-f795-47e3-bd8a-a428290c37cf",
+    "created_at": "2026-06-09T04:25:31.218Z",
+    "source_chunk_ids": [
+      "source-chunk_57c3cda3-ddb8-4250-b8f3-0e34cc31680c",
+      "source-chunk_df1c6307-8631-4244-b50f-bb5e83861a5b"
+    ],
+    "source_focus_summary": "Federalism is a system of government where authority is divided between a national government and regional governments. In the United States, the federal government has powers such as regulating interstate commerce, declΓÇª",
+    "success_hint_candidates": [
+      "The learner addresses the source focus: Federalism is a system of government where authority is divided between a national government and regional governments. In the United States, the federal government has powers such as regulating interstate commerce, declΓÇª",
+      "The learner connects their answer to American Politics rather than only giving unrelated background knowledge.",
+      "The learner explains a relationship, mechanism, or contrast instead of only repeating keywords."
+    ],
+    "failure_hint_candidates": [
+      "The learner misses or contradicts the source focus: Federalism is a system of government where authority is divided between a national government and regional governments. In the United States, the federal government has powers such as regulating interstate commerce, declΓÇª",
+      "The learner gives an answer that is off-target for American Politics.",
+      "The learner repeats source words without explaining the relationship or mechanism.",
+      "The learner makes stronger claims than the provided source can support."
+    ],
+    "misconception_hint_candidates": [
+      "Surface-word matching without a source-grounded explanation.",
+      "Treating one detail as if it explains all of American Politics.",
+      "Confusing a source example with the underlying relationship or mechanism."
+    ],
+    "confidence": 0.6200000000000001,
+    "requires_review": true,
+    "reasons": [
+      "Built provisional source-grounded judging hints for American Politics.",
+      "Primary judging source chunk was source-chunk_57c3cda3-ddb8-4250-b8f3-0e34cc31680c.",
+      "Used a source focus summary to shape judging hint candidates."
+    ],
+    "cautions": [
+      "These judging hints are provisional and should not be treated as a reviewed rubric.",
+      "These hints can guide review/debugging but should not upgrade correctness claim strength by themselves.",
+      "This judging scaffold requires review before trusted reuse."
+    ]
+  },
+  "source_grounded_input_metadata": {
+    "generationMode": "user_uploaded_content_grounded",
+    "rendererKind": "text_explanation",
+    "sourceContentIds": [
+      "learning-source_b62b667c-f6fb-4d17-850a-40ff2c43d862"
+    ],
+    "normalizedSourceChunkCount": 2,
+    "authoringContextId": "probe-authoring-context_150af165-b6b1-4c80-a3a2-ada06586351b"
+  }
+}
+
+=== American Politics / Good mechanism answer ===
+{
+  "domain_id": "federalism",
+  "topic_label": "American Politics",
+  "case_id": "good_mechanism_answer",
+  "label": "Good mechanism answer",
+  "response": "Federalism means national and state governments divide authority, so conflict can happen when both levels have responsibility over the same issue, like education or public health.",
+  "expectation_note": "Should recognize source focus, mechanism, and only cautious resolution pressure.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "addressed_relationship_or_mechanism": true,
+    "possible_surface_word_match": false,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_partial",
+    "contract_confidence": 0.5721111542518519,
+    "evidence_strength": 0.78,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.5832861866666667,
+    "failure_score": 0.32389147259259254,
+    "misconception_score": 0.36966312038400007,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 1,
+      "relationship_overlap_score": 1,
+      "mechanism_language_score": 1,
+      "confidence": 0.68,
+      "source_terms_used": [
+        "federalism",
+        "government",
+        "authority",
+        "divide",
+        "national",
+        "state",
+        "can",
+        "mean"
+      ],
+      "relationship_terms_used": [
+        "authority",
+        "divide",
+        "can"
+      ],
+      "evidence_excerpt": "Federalism means national and state governments divide authority, so conflict can happen when both levels have responsibility over the same issue, like education or public health.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 86 source-focus term(s) from scaffold/source metadata.",
+        "Derived 54 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 1.00.",
+        "Relationship/mechanism overlap was 1.00.",
+        "Mechanism language score was 1.00.",
+        "Strict relationship cue matches: authority, divide, can.",
+        "Relationship evidence score was 0.92.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.21239438973629632,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.04484988930415094,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_ec7e87a1-0528-4680-a248-564025f854ba.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.68.",
+      "Contract success score was 0.58.",
+      "Contract failure score was 0.32.",
+      "Outcome was contract_partial."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "The response had low lexical overlap with the contract markers.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was strong_evidence.",
+      "Contract outcome was contract_partial.",
+      "Evidence strength was 0.78.",
+      "Judgment confidence was 0.57.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.68.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response used the source focus and explained a mechanism, adding tiny resolution pressure for representation_gap.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5,
+          "confidence": 0.10108111154251853,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5717035588185383,
+          "confidence": 0.30756778079762964,
+          "evidence_count": 1,
+          "last_delta": 0.21239438973629632,
+          "resolution_pressure": 0.013839010829099153,
+          "last_resolution_delta": 0.050965322728079826,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.10108111154251853,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5,
+          "confidence": 0.10108111154251853,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5,
+          "confidence": 0.10108111154251853,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== American Politics / Shallow keyword answer ===
+{
+  "domain_id": "federalism",
+  "topic_label": "American Politics",
+  "case_id": "shallow_keyword_answer",
+  "label": "Shallow keyword answer",
+  "response": "Federalism is about government and powers and states.",
+  "expectation_note": "Should detect source vocabulary but mark missing mechanism/surface-word matching.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "addressed_relationship_or_mechanism": false,
+    "possible_surface_word_match": true,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_failure",
+    "contract_confidence": 0.41575075934814815,
+    "evidence_strength": 0.34,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.23331274666666674,
+    "failure_score": 0.6572549925925926,
+    "misconception_score": 0.58167402112,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": false,
+      "possible_surface_word_match": true,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 0.6666666666666666,
+      "relationship_overlap_score": 0,
+      "mechanism_language_score": 0,
+      "confidence": 0.4205333333333333,
+      "source_terms_used": [
+        "federalism",
+        "government",
+        "state",
+        "power"
+      ],
+      "relationship_terms_used": [],
+      "evidence_excerpt": "Federalism is about government and powers and states.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 86 source-focus term(s) from scaffold/source metadata.",
+        "Derived 54 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 0.67.",
+        "Relationship/mechanism overlap was 0.00.",
+        "Mechanism language score was 0.00.",
+        "Strict relationship cue matches: none.",
+        "Relationship evidence score was 0.00.",
+        "The learner response used source-focused terms or concepts.",
+        "The response may be repeating source-related vocabulary without explaining the relationship or mechanism yet."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0.08,
+      "representation_gap": 0.47173490749629626,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_ec7e87a1-0528-4680-a248-564025f854ba.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.42.",
+      "Contract success score was 0.23.",
+      "Contract failure score was 0.66.",
+      "Outcome was contract_failure."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "The response was very short, so rubric confidence is limited.",
+      "The response had low lexical overlap with the contract markers.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source-grounded signal suggests the response may be using source-related words without fully explaining the relationship or mechanism."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was weak_evidence.",
+      "Contract outcome was contract_failure.",
+      "Evidence strength was 0.34.",
+      "Judgment confidence was 0.42.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.42.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response did not clearly explain the relationship or mechanism, adding representation gap pressure.",
+      "Possible surface-word matching was detected, adding small recall/representation gap pressure.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Surface-word matching should prevent strong diagnosis resolution from this attempt.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5065679413463601,
+          "confidence": 0.17966255315437038,
+          "evidence_count": 1,
+          "last_delta": 0.09226251579830044,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.6049351609627708,
+          "confidence": 0.25966255315437037,
+          "evidence_count": 1,
+          "last_delta": 0.5102742428623834,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09423750759348148,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5,
+          "confidence": 0.09423750759348148,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5,
+          "confidence": 0.09423750759348148,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== American Politics / Overclaiming answer ===
+{
+  "domain_id": "federalism",
+  "topic_label": "American Politics",
+  "case_id": "overclaiming_answer",
+  "label": "Overclaiming answer",
+  "response": "Federalism proves that states always control everything and the federal government never has authority over education, voting, public health, or environmental rules.",
+  "expectation_note": "Should detect source focus but preserve conservative overclaim/discrimination pressure.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "possible_overclaim": true
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_partial",
+    "contract_confidence": 0.44209226334814816,
+    "evidence_strength": 0.52,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.3807729066666667,
+    "failure_score": 0.5512495525925926,
+    "misconception_score": 0.512936950528,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": true,
+      "source_focus_overlap_score": 1,
+      "relationship_overlap_score": 1,
+      "mechanism_language_score": 0.4,
+      "confidence": 0.68,
+      "source_terms_used": [
+        "federalism",
+        "government",
+        "authority",
+        "state",
+        "federal",
+        "has",
+        "alway"
+      ],
+      "relationship_terms_used": [
+        "authority",
+        "has"
+      ],
+      "evidence_excerpt": "Federalism proves that states always control everything and the federal government never has authority over education, voting, public health, or environmental rules.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 86 source-focus term(s) from scaffold/source metadata.",
+        "Derived 54 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 1.00.",
+        "Relationship/mechanism overlap was 1.00.",
+        "Mechanism language score was 0.40.",
+        "Strict relationship cue matches: authority, has.",
+        "Relationship evidence score was 0.43.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional.",
+        "The response used strong absolute language, so any source-grounded judgment should remain conservative."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.3665056127762963,
+      "procedure_gap": 0,
+      "discrimination_gap": 0.16,
+      "transfer_gap": 0.08
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.022624460023861228,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_ec7e87a1-0528-4680-a248-564025f854ba.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.68.",
+      "Contract success score was 0.38.",
+      "Contract failure score was 0.55.",
+      "Outcome was contract_partial."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "The response used strong absolute language, so any source-grounded judgment should remain conservative.",
+      "The response had low lexical overlap with the contract markers.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source-grounded signal detected possible overclaiming; downstream updates should remain conservative."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was partial_evidence.",
+      "Contract outcome was contract_partial.",
+      "Evidence strength was 0.52.",
+      "Judgment confidence was 0.44.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.68.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "Possible overclaiming beyond the source was detected, adding discrimination/transfer gap pressure.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5,
+          "confidence": 0.09666092263348149,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5867254429012099,
+          "confidence": 0.2766264584343704,
+          "evidence_count": 1,
+          "last_delta": 0.3665056127762963,
+          "resolution_pressure": 0.005672738602531582,
+          "last_resolution_delta": 0.022624460023861228,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09666092263348149,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5150808521724297,
+          "confidence": 0.19662645843437038,
+          "evidence_count": 1,
+          "last_delta": 0.18103261751091201,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5076377657565285,
+          "confidence": 0.19662645843437038,
+          "evidence_count": 1,
+          "last_delta": 0.09168478750606222,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== American Politics / Off-target answer ===
+{
+  "domain_id": "federalism",
+  "topic_label": "American Politics",
+  "case_id": "off_target_answer",
+  "label": "Off-target answer",
+  "response": "The best way to study politics is to memorize dates and watch debates on television.",
+  "expectation_note": "Should not see source focus or mechanism in an unrelated response.",
+  "expected_signal_direction": {
+    "used_source_focus": false,
+    "addressed_relationship_or_mechanism": false,
+    "possible_surface_word_match": false,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_failure",
+    "contract_confidence": 0.3746647770074074,
+    "evidence_strength": 0.18,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.20711061333333333,
+    "failure_score": 0.6928654696296295,
+    "misconception_score": 0.581761594112,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": false,
+      "addressed_relationship_or_mechanism": false,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 0.16666666666666666,
+      "relationship_overlap_score": 0,
+      "mechanism_language_score": 0,
+      "confidence": 0.27773333333333333,
+      "source_terms_used": [
+        "politic"
+      ],
+      "relationship_terms_used": [],
+      "evidence_excerpt": "The best way to study politics is to memorize dates and watch debates on television.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 86 source-focus term(s) from scaffold/source metadata.",
+        "Derived 54 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 0.17.",
+        "Relationship/mechanism overlap was 0.00.",
+        "Mechanism language score was 0.00.",
+        "Strict relationship cue matches: none.",
+        "Relationship evidence score was 0.00."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.4602159047348148,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0.1
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_ec7e87a1-0528-4680-a248-564025f854ba.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.28.",
+      "Contract success score was 0.21.",
+      "Contract failure score was 0.69.",
+      "Outcome was contract_failure."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was no_evidence.",
+      "Contract outcome was contract_failure.",
+      "Evidence strength was 0.18.",
+      "Judgment confidence was 0.37.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.28.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response did not clearly use the source focus, adding small recall/representation gap pressure.",
+      "The response did not clearly explain the relationship or mechanism, adding representation gap pressure.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5005865094566642,
+          "confidence": 0.1633465343905185,
+          "evidence_count": 1,
+          "last_delta": 0.009851798222136889,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5992134182070614,
+          "confidence": 0.2433465343905185,
+          "evidence_count": 1,
+          "last_delta": 0.48273430067112766,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09190664777007407,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5,
+          "confidence": 0.09190664777007407,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.505953323885037,
+          "confidence": 0.1633465343905185,
+          "evidence_count": 1,
+          "last_delta": 0.1,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== American Politics / Contradiction answer ===
+{
+  "domain_id": "federalism",
+  "topic_label": "American Politics",
+  "case_id": "contradiction_answer",
+  "label": "Contradiction answer",
+  "response": "Federalism means one national government controls all important power, and states do not keep their own authority.",
+  "expectation_note": "Should see source-topic terms, but contract/failure scoring should still apply pressure because the answer contradicts the source.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_partial",
+    "contract_confidence": 0.42979086127407407,
+    "evidence_strength": 0.44,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.3551562666666667,
+    "failure_score": 0.5856491496296297,
+    "misconception_score": 0.536835342336,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 1,
+      "relationship_overlap_score": 1,
+      "mechanism_language_score": 0.4,
+      "confidence": 0.68,
+      "source_terms_used": [
+        "federalism",
+        "government",
+        "authority",
+        "national",
+        "state",
+        "power",
+        "one",
+        "all",
+        "not",
+        "mean"
+      ],
+      "relationship_terms_used": [
+        "authority",
+        "one",
+        "all"
+      ],
+      "evidence_excerpt": "Federalism means one national government controls all important power, and states do not keep their own authority.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 86 source-focus term(s) from scaffold/source metadata.",
+        "Derived 54 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 1.00.",
+        "Relationship/mechanism overlap was 1.00.",
+        "Mechanism language score was 0.40.",
+        "Strict relationship cue matches: authority, one, all.",
+        "Relationship evidence score was 0.51.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.5146984205748149,
+      "procedure_gap": 0,
+      "discrimination_gap": 0.12,
+      "transfer_gap": 0
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.020515208143926905,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_ec7e87a1-0528-4680-a248-564025f854ba.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.68.",
+      "Contract success score was 0.36.",
+      "Contract failure score was 0.59.",
+      "Outcome was contract_partial."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was partial_evidence.",
+      "Contract outcome was contract_partial.",
+      "Evidence strength was 0.44.",
+      "Judgment confidence was 0.43.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.68.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response used the source focus and explained a mechanism, adding tiny resolution pressure for representation_gap.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5,
+          "confidence": 0.09557790861274074,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.596821618633319,
+          "confidence": 0.2690453602891852,
+          "evidence_count": 1,
+          "last_delta": 0.5146984205748149,
+          "resolution_pressure": 0.006550462996589872,
+          "last_resolution_delta": 0.02633176895260246,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09557790861274074,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5093467451676444,
+          "confidence": 0.18904536028918517,
+          "evidence_count": 1,
+          "last_delta": 0.12,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5,
+          "confidence": 0.09557790861274074,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Photosynthesis contract summary ===
+{
+  "domain_id": "photosynthesis",
+  "source_id": "learning-source_cfaa3a73-f3ed-441b-bdb4-d59b08308f36",
+  "chunk_count": 1,
+  "authoring_context_id": "probe-authoring-context_07cb9d54-59dd-4f65-ac93-b0532700c3d4",
+  "readiness": "candidate_ready",
+  "source_confidence": 0.68,
+  "expected_mechanism_summary": "Plants use light energy to convert carbon dioxide and water into glucose, releasing oxygen as a byproduct.",
+  "contract_id": "probe-contract_4cf861ac-b5ce-406e-8ee9-45424e3883b6",
+  "renderer_kind": "text_explanation",
+  "target_diagnosis": "representation_gap",
+  "prompt": "Using the source \"Photosynthesis mini source\", explain the key relationship or mechanism in Photosynthesis. Focus on this source idea: Photosynthesis is the process plants, algae, and some bacteria use to make sugars. In plants, chlorophyll in chloroplasts absorbs light energy. That energy helps convert carbon dioxide from the air and water from the soiΓÇª",
+  "allowed_claim_strength": "conservative",
+  "can_make_strong_correctness_claim": false,
+  "has_source_grounded_judging_scaffold": true,
+  "source_grounded_judging_scaffold": {
+    "scaffold_id": "source-judging-scaffold_5fd22cd3-f0d9-4843-86ba-5c2278fb6c3b",
+    "created_at": "2026-06-09T04:25:31.243Z",
+    "source_chunk_ids": [
+      "source-chunk_d6c9cb30-478b-477a-81e6-ef95ac421564"
+    ],
+    "source_focus_summary": "Photosynthesis is the process plants, algae, and some bacteria use to make sugars. In plants, chlorophyll in chloroplasts absorbs light energy. That energy helps convert carbon dioxide from the air and water from the soiΓÇª",
+    "success_hint_candidates": [
+      "The learner addresses the source focus: Photosynthesis is the process plants, algae, and some bacteria use to make sugars. In plants, chlorophyll in chloroplasts absorbs light energy. That energy helps convert carbon dioxide from the air and water from the soiΓÇª",
+      "The learner connects their answer to Photosynthesis rather than only giving unrelated background knowledge.",
+      "The learner explains a relationship, mechanism, or contrast instead of only repeating keywords."
+    ],
+    "failure_hint_candidates": [
+      "The learner misses or contradicts the source focus: Photosynthesis is the process plants, algae, and some bacteria use to make sugars. In plants, chlorophyll in chloroplasts absorbs light energy. That energy helps convert carbon dioxide from the air and water from the soiΓÇª",
+      "The learner gives an answer that is off-target for Photosynthesis.",
+      "The learner repeats source words without explaining the relationship or mechanism.",
+      "The learner makes stronger claims than the provided source can support."
+    ],
+    "misconception_hint_candidates": [
+      "Surface-word matching without a source-grounded explanation.",
+      "Treating one detail as if it explains all of Photosynthesis.",
+      "Confusing a source example with the underlying relationship or mechanism."
+    ],
+    "confidence": 0.6200000000000001,
+    "requires_review": true,
+    "reasons": [
+      "Built provisional source-grounded judging hints for Photosynthesis.",
+      "Primary judging source chunk was source-chunk_d6c9cb30-478b-477a-81e6-ef95ac421564.",
+      "Used a source focus summary to shape judging hint candidates."
+    ],
+    "cautions": [
+      "These judging hints are provisional and should not be treated as a reviewed rubric.",
+      "These hints can guide review/debugging but should not upgrade correctness claim strength by themselves.",
+      "This judging scaffold requires review before trusted reuse."
+    ]
+  },
+  "source_grounded_input_metadata": {
+    "generationMode": "user_uploaded_content_grounded",
+    "rendererKind": "text_explanation",
+    "sourceContentIds": [
+      "learning-source_cfaa3a73-f3ed-441b-bdb4-d59b08308f36"
+    ],
+    "normalizedSourceChunkCount": 1,
+    "authoringContextId": "probe-authoring-context_07cb9d54-59dd-4f65-ac93-b0532700c3d4"
+  }
+}
+
+=== Photosynthesis / Good mechanism answer ===
+{
+  "domain_id": "photosynthesis",
+  "topic_label": "Photosynthesis",
+  "case_id": "good_mechanism_answer",
+  "label": "Good mechanism answer",
+  "response": "Photosynthesis uses light captured by chlorophyll to help turn carbon dioxide and water into glucose, and oxygen is released as a byproduct.",
+  "expectation_note": "Should detect mechanism: light/chlorophyll supports conversion into glucose with oxygen released.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "addressed_relationship_or_mechanism": true,
+    "possible_surface_word_match": false,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_partial",
+    "contract_confidence": 0.5717674391703704,
+    "evidence_strength": 0.8,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.5775289244444445,
+    "failure_score": 0.3854824296296296,
+    "misconception_score": 0.41774573184,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 1,
+      "relationship_overlap_score": 1,
+      "mechanism_language_score": 0,
+      "confidence": 0.68,
+      "source_terms_used": [
+        "photosynthesi",
+        "chlorophyll",
+        "light",
+        "help",
+        "carbon",
+        "dioxide",
+        "water"
+      ],
+      "relationship_terms_used": [
+        "photosynthesi",
+        "chlorophyll",
+        "light",
+        "help",
+        "carbon",
+        "dioxide",
+        "water"
+      ],
+      "evidence_excerpt": "Photosynthesis uses light captured by chlorophyll to help turn carbon dioxide and water into glucose, and oxygen is released as a byproduct.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 72 source-focus term(s) from scaffold/source metadata.",
+        "Derived 54 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 1.00.",
+        "Relationship/mechanism overlap was 1.00.",
+        "Mechanism language score was 0.00.",
+        "Strict relationship cue matches: photosynthesi, chlorophyll, light, help, carbon, dioxide, water.",
+        "Relationship evidence score was 0.32.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.20705874121481482,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.04438052427331063,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_4cf861ac-b5ce-406e-8ee9-45424e3883b6.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.68.",
+      "Contract success score was 0.58.",
+      "Contract failure score was 0.39.",
+      "Outcome was contract_partial."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was strong_evidence.",
+      "Contract outcome was contract_partial.",
+      "Evidence strength was 0.80.",
+      "Judgment confidence was 0.57.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.68.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response used the source focus and explained a mechanism, adding tiny resolution pressure for representation_gap.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5,
+          "confidence": 0.10131767439170371,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.571134101846171,
+          "confidence": 0.30922372074192594,
+          "evidence_count": 1,
+          "last_delta": 0.20705874121481482,
+          "resolution_pressure": 0.01370858753613238,
+          "last_resolution_delta": 0.05049523589556841,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.10131767439170371,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5,
+          "confidence": 0.10131767439170371,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5,
+          "confidence": 0.10131767439170371,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Photosynthesis / Shallow keyword answer ===
+{
+  "domain_id": "photosynthesis",
+  "topic_label": "Photosynthesis",
+  "case_id": "shallow_keyword_answer",
+  "label": "Shallow keyword answer",
+  "response": "Photosynthesis is plants and light and oxygen and glucose.",
+  "expectation_note": "Should see biology/source terms but not a mechanism.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "addressed_relationship_or_mechanism": false,
+    "possible_surface_word_match": true,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": false,
+    "mismatches": [
+      "addressed_relationship_or_mechanism: expected false, got true",
+      "possible_surface_word_match: expected true, got false"
+    ]
+  },
+  "judgment": {
+    "outcome": "contract_failure",
+    "contract_confidence": 0.4095873327407408,
+    "evidence_strength": 0.32,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.25851616000000005,
+    "failure_score": 0.6678369896296297,
+    "misconception_score": 0.5897347092480001,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 0.5,
+      "relationship_overlap_score": 0.5,
+      "mechanism_language_score": 0,
+      "confidence": 0.4972,
+      "source_terms_used": [
+        "photosynthesi",
+        "plant",
+        "light"
+      ],
+      "relationship_terms_used": [
+        "photosynthesi",
+        "plant",
+        "light"
+      ],
+      "evidence_excerpt": "Photosynthesis is plants and light and oxygen and glucose.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 72 source-focus term(s) from scaffold/source metadata.",
+        "Derived 54 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 0.50.",
+        "Relationship/mechanism overlap was 0.50.",
+        "Mechanism language score was 0.00.",
+        "Strict relationship cue matches: photosynthesi, plant, light.",
+        "Relationship evidence score was 0.24.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0.08,
+      "representation_gap": 0.49425912649481485,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_4cf861ac-b5ce-406e-8ee9-45424e3883b6.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.50.",
+      "Contract success score was 0.26.",
+      "Contract failure score was 0.67.",
+      "Outcome was contract_failure."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was weak_evidence.",
+      "Contract outcome was contract_failure.",
+      "Evidence strength was 0.32.",
+      "Judgment confidence was 0.41.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.50.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response used the source focus and explained a mechanism, adding tiny resolution pressure for representation_gap.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.505574349330963,
+          "confidence": 0.17755111329185183,
+          "evidence_count": 1,
+          "last_delta": 0.08,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5946312717111333,
+          "confidence": 0.2575511132918518,
+          "evidence_count": 1,
+          "last_delta": 0.49425912649481485,
+          "resolution_pressure": 0.001174252329484776,
+          "last_resolution_delta": 0.004782443398755555,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09393587332740741,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5,
+          "confidence": 0.09393587332740741,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5,
+          "confidence": 0.09393587332740741,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Photosynthesis / Overclaiming answer ===
+{
+  "domain_id": "photosynthesis",
+  "topic_label": "Photosynthesis",
+  "case_id": "overclaiming_answer",
+  "label": "Overclaiming answer",
+  "response": "Photosynthesis proves that plants only need sunlight and never need water or carbon dioxide to make food.",
+  "expectation_note": "Should detect source topic plus overclaim/contradiction-like pressure.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "possible_overclaim": true
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_partial",
+    "contract_confidence": 0.4327073839407407,
+    "evidence_strength": 0.46,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.3947315200000001,
+    "failure_score": 0.5782526696296296,
+    "misconception_score": 0.532277635072,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": true,
+      "source_focus_overlap_score": 1,
+      "relationship_overlap_score": 1,
+      "mechanism_language_score": 0,
+      "confidence": 0.6799999999999999,
+      "source_terms_used": [
+        "photosynthesi",
+        "plant",
+        "make",
+        "carbon",
+        "dioxide",
+        "water"
+      ],
+      "relationship_terms_used": [
+        "photosynthesi",
+        "plant",
+        "make",
+        "carbon",
+        "dioxide",
+        "water"
+      ],
+      "evidence_excerpt": "Photosynthesis proves that plants only need sunlight and never need water or carbon dioxide to make food.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 72 source-focus term(s) from scaffold/source metadata.",
+        "Derived 54 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 1.00.",
+        "Relationship/mechanism overlap was 1.00.",
+        "Mechanism language score was 0.00.",
+        "Strict relationship cue matches: photosynthesi, plant, make, carbon, dioxide, water.",
+        "Relationship evidence score was 0.32.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional.",
+        "The response used strong absolute language, so any source-grounded judgment should remain conservative."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.4329380583348148,
+      "procedure_gap": 0,
+      "discrimination_gap": 0.18,
+      "transfer_gap": 0.08
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.022955955910023657,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_4cf861ac-b5ce-406e-8ee9-45424e3883b6.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.68.",
+      "Contract success score was 0.39.",
+      "Contract failure score was 0.58.",
+      "Outcome was contract_partial."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "The response used strong absolute language, so any source-grounded judgment should remain conservative.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source-grounded signal detected possible overclaiming; downstream updates should remain conservative.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was partial_evidence.",
+      "Contract outcome was contract_partial.",
+      "Evidence strength was 0.46.",
+      "Judgment confidence was 0.43.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.68.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "Possible overclaiming beyond the source was detected, adding discrimination/transfer gap pressure.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5,
+          "confidence": 0.09584707383940741,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.591283760993802,
+          "confidence": 0.2709295168758519,
+          "evidence_count": 1,
+          "last_delta": 0.4329380583348148,
+          "resolution_pressure": 0.00572138592423391,
+          "last_resolution_delta": 0.022955955910023657,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09584707383940741,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5159232719443754,
+          "confidence": 0.19092951687585186,
+          "evidence_count": 1,
+          "last_delta": 0.20096166782259198,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5072615548073789,
+          "confidence": 0.19092951687585186,
+          "evidence_count": 1,
+          "last_delta": 0.09164537101255112,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Photosynthesis / Off-target answer ===
+{
+  "domain_id": "photosynthesis",
+  "topic_label": "Photosynthesis",
+  "case_id": "off_target_answer",
+  "label": "Off-target answer",
+  "response": "Cells are interesting because animals can move around and choose where to find food.",
+  "expectation_note": "Should not mark a generic cell/animal answer as source-grounded photosynthesis understanding.",
+  "expected_signal_direction": {
+    "used_source_focus": false,
+    "addressed_relationship_or_mechanism": false,
+    "possible_surface_word_match": false,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_failure",
+    "contract_confidence": 0.36747719774814813,
+    "evidence_strength": 0.18,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.20960394666666665,
+    "failure_score": 0.6504364325925924,
+    "misconception_score": 0.540157728512,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": false,
+      "addressed_relationship_or_mechanism": false,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 0.16666666666666666,
+      "relationship_overlap_score": 0.16666666666666666,
+      "mechanism_language_score": 0.2,
+      "confidence": 0.35773333333333335,
+      "source_terms_used": [
+        "can"
+      ],
+      "relationship_terms_used": [
+        "can"
+      ],
+      "evidence_excerpt": "Cells are interesting because animals can move around and choose where to find food.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 72 source-focus term(s) from scaffold/source metadata.",
+        "Derived 54 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 0.17.",
+        "Relationship/mechanism overlap was 0.17.",
+        "Mechanism language score was 0.20.",
+        "Strict relationship cue matches: can.",
+        "Relationship evidence score was 0.22."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.4501120902162963,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0.1
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_4cf861ac-b5ce-406e-8ee9-45424e3883b6.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.36.",
+      "Contract success score was 0.21.",
+      "Contract failure score was 0.65.",
+      "Outcome was contract_failure."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "The response had low lexical overlap with the contract markers.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was no_evidence.",
+      "Contract outcome was contract_failure.",
+      "Evidence strength was 0.18.",
+      "Judgment confidence was 0.37.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.36.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response did not clearly use the source focus, adding small recall/representation gap pressure.",
+      "The response did not clearly explain the relationship or mechanism, adding representation gap pressure.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5006523761393398,
+          "confidence": 0.16284340384237037,
+          "evidence_count": 1,
+          "last_delta": 0.011024735256092447,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5986581976394499,
+          "confidence": 0.24284340384237035,
+          "evidence_count": 1,
+          "last_delta": 0.4753114850873647,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09183477197748148,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5,
+          "confidence": 0.09183477197748148,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5059173859887407,
+          "confidence": 0.16284340384237037,
+          "evidence_count": 1,
+          "last_delta": 0.1,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Photosynthesis / Contradiction answer ===
+{
+  "domain_id": "photosynthesis",
+  "topic_label": "Photosynthesis",
+  "case_id": "contradiction_answer",
+  "label": "Contradiction answer",
+  "response": "Plants get most of their food from soil, and carbon dioxide is not really involved in building glucose.",
+  "expectation_note": "Should see source-relevant terms but contract/failure scoring should treat the content as wrong.",
+  "expected_signal_direction": {
+    "used_source_focus": true
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_partial",
+    "contract_confidence": 0.4307184516740741,
+    "evidence_strength": 0.44,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.3519812266666667,
+    "failure_score": 0.5882715496296297,
+    "misconception_score": 0.5387928706560001,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 0.5,
+      "relationship_overlap_score": 0.5,
+      "mechanism_language_score": 0,
+      "confidence": 0.5068,
+      "source_terms_used": [
+        "plant",
+        "carbon",
+        "dioxide"
+      ],
+      "relationship_terms_used": [
+        "plant",
+        "carbon",
+        "dioxide"
+      ],
+      "evidence_excerpt": "Plants get most of their food from soil, and carbon dioxide is not really involved in building glucose.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 72 source-focus term(s) from scaffold/source metadata.",
+        "Derived 54 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 0.50.",
+        "Relationship/mechanism overlap was 0.50.",
+        "Mechanism language score was 0.00.",
+        "Strict relationship cue matches: plant, carbon, dioxide.",
+        "Relationship evidence score was 0.24.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.5153225517748149,
+      "procedure_gap": 0,
+      "discrimination_gap": 0.16,
+      "transfer_gap": 0
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.020375686325327155,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_4cf861ac-b5ce-406e-8ee9-45424e3883b6.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.51.",
+      "Contract success score was 0.35.",
+      "Contract failure score was 0.59.",
+      "Outcome was contract_partial."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was partial_evidence.",
+      "Contract outcome was contract_partial.",
+      "Evidence strength was 0.44.",
+      "Judgment confidence was 0.43.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.51.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response used the source focus and explained a mechanism, adding tiny resolution pressure for representation_gap.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5,
+          "confidence": 0.09558718451674074,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5968985961369735,
+          "confidence": 0.2691102916171852,
+          "evidence_count": 1,
+          "last_delta": 0.5153225517748149,
+          "resolution_pressure": 0.006286243838199963,
+          "last_resolution_delta": 0.025254585073842713,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09558718451674074,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5124697476133926,
+          "confidence": 0.18911029161718518,
+          "evidence_count": 1,
+          "last_delta": 0.16,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5,
+          "confidence": 0.09558718451674074,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Supply and Demand contract summary ===
+{
+  "domain_id": "supply-demand",
+  "source_id": "learning-source_b69bf8c2-8531-4c15-81c3-61b3e102b9fc",
+  "chunk_count": 1,
+  "authoring_context_id": "probe-authoring-context_e279306d-20db-40ed-bc29-4cd41e4b92d2",
+  "readiness": "candidate_ready",
+  "source_confidence": 0.68,
+  "expected_mechanism_summary": "Price tends to rise when demand increases or supply falls, and tends to fall when supply increases or demand falls.",
+  "contract_id": "probe-contract_41940e38-522d-441e-8ffc-29da82fd2951",
+  "renderer_kind": "text_explanation",
+  "target_diagnosis": "representation_gap",
+  "prompt": "Using the source \"Supply and demand mini source\", explain the key relationship or mechanism in Supply and Demand. Focus on this source idea: Supply and demand describe how buyers and sellers interact in a market. Demand refers to how much of a good buyers are willing and able to purchase at different prices. Supply refers to how much sellers are willing and aΓÇª",
+  "allowed_claim_strength": "conservative",
+  "can_make_strong_correctness_claim": false,
+  "has_source_grounded_judging_scaffold": true,
+  "source_grounded_judging_scaffold": {
+    "scaffold_id": "source-judging-scaffold_7b7996ce-598d-4d11-b5e0-8879993d3486",
+    "created_at": "2026-06-09T04:25:31.254Z",
+    "source_chunk_ids": [
+      "source-chunk_c3b3741c-5730-433b-b9ab-1af3fc62b7a1"
+    ],
+    "source_focus_summary": "Supply and demand describe how buyers and sellers interact in a market. Demand refers to how much of a good buyers are willing and able to purchase at different prices. Supply refers to how much sellers are willing and aΓÇª",
+    "success_hint_candidates": [
+      "The learner addresses the source focus: Supply and demand describe how buyers and sellers interact in a market. Demand refers to how much of a good buyers are willing and able to purchase at different prices. Supply refers to how much sellers are willing and aΓÇª",
+      "The learner connects their answer to Supply and Demand rather than only giving unrelated background knowledge.",
+      "The learner explains a relationship, mechanism, or contrast instead of only repeating keywords."
+    ],
+    "failure_hint_candidates": [
+      "The learner misses or contradicts the source focus: Supply and demand describe how buyers and sellers interact in a market. Demand refers to how much of a good buyers are willing and able to purchase at different prices. Supply refers to how much sellers are willing and aΓÇª",
+      "The learner gives an answer that is off-target for Supply and Demand.",
+      "The learner repeats source words without explaining the relationship or mechanism.",
+      "The learner makes stronger claims than the provided source can support."
+    ],
+    "misconception_hint_candidates": [
+      "Surface-word matching without a source-grounded explanation.",
+      "Treating one detail as if it explains all of Supply and Demand.",
+      "Confusing a source example with the underlying relationship or mechanism."
+    ],
+    "confidence": 0.6200000000000001,
+    "requires_review": true,
+    "reasons": [
+      "Built provisional source-grounded judging hints for Supply and Demand.",
+      "Primary judging source chunk was source-chunk_c3b3741c-5730-433b-b9ab-1af3fc62b7a1.",
+      "Used a source focus summary to shape judging hint candidates."
+    ],
+    "cautions": [
+      "These judging hints are provisional and should not be treated as a reviewed rubric.",
+      "These hints can guide review/debugging but should not upgrade correctness claim strength by themselves.",
+      "This judging scaffold requires review before trusted reuse."
+    ]
+  },
+  "source_grounded_input_metadata": {
+    "generationMode": "user_uploaded_content_grounded",
+    "rendererKind": "text_explanation",
+    "sourceContentIds": [
+      "learning-source_b69bf8c2-8531-4c15-81c3-61b3e102b9fc"
+    ],
+    "normalizedSourceChunkCount": 1,
+    "authoringContextId": "probe-authoring-context_e279306d-20db-40ed-bc29-4cd41e4b92d2"
+  }
+}
+
+=== Supply and Demand / Good mechanism answer ===
+{
+  "domain_id": "supply-demand",
+  "topic_label": "Supply and Demand",
+  "case_id": "good_mechanism_answer",
+  "label": "Good mechanism answer",
+  "response": "If demand rises and supply stays the same, buyers compete for limited goods, so price tends to rise; if supply rises while demand stays the same, price tends to fall.",
+  "expectation_note": "Should detect the causal/conditional price mechanism.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "addressed_relationship_or_mechanism": true,
+    "possible_surface_word_match": false,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_partial",
+    "contract_confidence": 0.612398457362963,
+    "evidence_strength": 0.82,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.6920775822222223,
+    "failure_score": 0.3077872237037037,
+    "misconception_score": 0.344985377536,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 0.8333333333333334,
+      "relationship_overlap_score": 0.8333333333333334,
+      "mechanism_language_score": 0.4,
+      "confidence": 0.68,
+      "source_terms_used": [
+        "supply",
+        "demand",
+        "buyer",
+        "good",
+        "for"
+      ],
+      "relationship_terms_used": [
+        "supply",
+        "demand",
+        "buyer",
+        "good",
+        "for"
+      ],
+      "evidence_excerpt": "If demand rises and supply stays the same, buyers compete for limited goods, so price tends to rise; if supply rises while demand stays the same, price tends to fall.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 70 source-focus term(s) from scaffold/source metadata.",
+        "Derived 50 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 0.83.",
+        "Relationship/mechanism overlap was 0.83.",
+        "Mechanism language score was 0.40.",
+        "Strict relationship cue matches: supply, demand, buyer, good, for.",
+        "Relationship evidence score was 0.59.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.18857868961185187,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.05696238155709401,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_41940e38-522d-441e-8ffc-29da82fd2951.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.68.",
+      "Contract success score was 0.69.",
+      "Contract failure score was 0.31.",
+      "Raw outcome was contract_success, adjusted outcome was contract_partial."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract.",
+      "Source policy converted raw outcome contract_success to contract_partial to avoid overclaiming correctness."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was strong_evidence.",
+      "Contract outcome was contract_partial.",
+      "Evidence strength was 0.82.",
+      "Judgment confidence was 0.61.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.68.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response used the source focus and explained a mechanism, adding tiny resolution pressure for representation_gap.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5,
+          "confidence": 0.10196398457362962,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5682424080739624,
+          "confidence": 0.3137478920154074,
+          "evidence_count": 1,
+          "last_delta": 0.18857868961185187,
+          "resolution_pressure": 0.017558126103717816,
+          "last_resolution_delta": 0.06316241831755623,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.10196398457362962,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5,
+          "confidence": 0.10196398457362962,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5,
+          "confidence": 0.10196398457362962,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Supply and Demand / Shallow keyword answer ===
+{
+  "domain_id": "supply-demand",
+  "topic_label": "Supply and Demand",
+  "case_id": "shallow_keyword_answer",
+  "label": "Shallow keyword answer",
+  "response": "Supply and demand are markets and buyers and sellers and prices.",
+  "expectation_note": "Should detect source terms without mechanism.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "addressed_relationship_or_mechanism": false,
+    "possible_surface_word_match": true,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": false,
+    "mismatches": [
+      "addressed_relationship_or_mechanism: expected false, got true",
+      "possible_surface_word_match: expected true, got false"
+    ]
+  },
+  "judgment": {
+    "outcome": "contract_failure",
+    "contract_confidence": 0.39992946346666663,
+    "evidence_strength": 0.32,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.32326016,
+    "failure_score": 0.6344193066666666,
+    "misconception_score": 0.558234500352,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 1,
+      "relationship_overlap_score": 1,
+      "mechanism_language_score": 0,
+      "confidence": 0.68,
+      "source_terms_used": [
+        "supply",
+        "demand",
+        "buyer",
+        "seller",
+        "market",
+        "are",
+        "pric"
+      ],
+      "relationship_terms_used": [
+        "supply",
+        "demand",
+        "buyer",
+        "seller",
+        "market",
+        "are",
+        "pric"
+      ],
+      "evidence_excerpt": "Supply and demand are markets and buyers and sellers and prices.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 70 source-focus term(s) from scaffold/source metadata.",
+        "Derived 50 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 1.00.",
+        "Relationship/mechanism overlap was 1.00.",
+        "Mechanism language score was 0.00.",
+        "Strict relationship cue matches: supply, demand, buyer, seller, market, are, pric.",
+        "Relationship evidence score was 0.32.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0.08,
+      "representation_gap": 0.4863114216533333,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_41940e38-522d-441e-8ffc-29da82fd2951.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.68.",
+      "Contract success score was 0.32.",
+      "Contract failure score was 0.63.",
+      "Outcome was contract_failure."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was weak_evidence.",
+      "Contract outcome was contract_failure.",
+      "Evidence strength was 0.32.",
+      "Judgment confidence was 0.40.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.68.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response used the source focus and explained a mechanism, adding tiny resolution pressure for representation_gap.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5055357178538666,
+          "confidence": 0.17687506244266665,
+          "evidence_count": 1,
+          "last_delta": 0.08,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5940631992537007,
+          "confidence": 0.25687506244266667,
+          "evidence_count": 1,
+          "last_delta": 0.4863114216533333,
+          "resolution_pressure": 0.0014038749199980073,
+          "last_resolution_delta": 0.00575385187328,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09383929463466667,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5,
+          "confidence": 0.09383929463466667,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5,
+          "confidence": 0.09383929463466667,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Supply and Demand / Overclaiming answer ===
+{
+  "domain_id": "supply-demand",
+  "topic_label": "Supply and Demand",
+  "case_id": "overclaiming_answer",
+  "label": "Overclaiming answer",
+  "response": "High demand always guarantees high prices, and supply never matters if enough buyers want the product.",
+  "expectation_note": "Should detect overclaiming from always/never and preserve conservative diagnosis pressure.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "possible_overclaim": true
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_partial",
+    "contract_confidence": 0.4313605802666666,
+    "evidence_strength": 0.48,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.42578592,
+    "failure_score": 0.5769895466666665,
+    "misconception_score": 0.532429923584,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": true,
+      "source_focus_overlap_score": 0.8333333333333334,
+      "relationship_overlap_score": 0.6666666666666666,
+      "mechanism_language_score": 0.2,
+      "confidence": 0.5966666666666667,
+      "source_terms_used": [
+        "supply",
+        "demand",
+        "buyer",
+        "pric",
+        "high"
+      ],
+      "relationship_terms_used": [
+        "supply",
+        "demand",
+        "buyer",
+        "pric"
+      ],
+      "evidence_excerpt": "High demand always guarantees high prices, and supply never matters if enough buyers want the product.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 70 source-focus term(s) from scaffold/source metadata.",
+        "Derived 50 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 0.83.",
+        "Relationship/mechanism overlap was 0.67.",
+        "Mechanism language score was 0.20.",
+        "Strict relationship cue matches: supply, demand, buyer, pric.",
+        "Relationship evidence score was 0.46.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional.",
+        "The response used strong absolute language, so any source-grounded judgment should remain conservative."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.4126431387733333,
+      "procedure_gap": 0,
+      "discrimination_gap": 0.18,
+      "transfer_gap": 0.08
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.02468487994836548,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_41940e38-522d-441e-8ffc-29da82fd2951.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.60.",
+      "Contract success score was 0.43.",
+      "Contract failure score was 0.58.",
+      "Outcome was contract_partial."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "The response used strong absolute language, so any source-grounded judgment should remain conservative.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source-grounded signal detected possible overclaiming; downstream updates should remain conservative.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was partial_evidence.",
+      "Contract outcome was contract_partial.",
+      "Evidence strength was 0.48.",
+      "Judgment confidence was 0.43.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.60.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "Possible overclaiming beyond the source was detected, adding discrimination/transfer gap pressure.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5,
+          "confidence": 0.09607360580266666,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5898998118671342,
+          "confidence": 0.27251524061866667,
+          "evidence_count": 1,
+          "last_delta": 0.4126431387733333,
+          "resolution_pressure": 0.006146971852840176,
+          "last_resolution_delta": 0.02468487994836548,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09607360580266666,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5160192758888417,
+          "confidence": 0.19251524061866665,
+          "evidence_count": 1,
+          "last_delta": 0.199323985986816,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5072922371357564,
+          "confidence": 0.19251524061866665,
+          "evidence_count": 1,
+          "last_delta": 0.09073554777045334,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Supply and Demand / Off-target answer ===
+{
+  "domain_id": "supply-demand",
+  "topic_label": "Supply and Demand",
+  "case_id": "off_target_answer",
+  "label": "Off-target answer",
+  "response": "A business should make its logo memorable and post more often on social media.",
+  "expectation_note": "Should not mistake generic business advice for supply/demand understanding.",
+  "expected_signal_direction": {
+    "used_source_focus": false,
+    "addressed_relationship_or_mechanism": false,
+    "possible_surface_word_match": false,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_failure",
+    "contract_confidence": 0.3789664777481482,
+    "evidence_strength": 0.18,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.17818794666666668,
+    "failure_score": 0.6908284325925925,
+    "misconception_score": 0.5796126341119999,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": false,
+      "addressed_relationship_or_mechanism": false,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 0.16666666666666666,
+      "relationship_overlap_score": 0,
+      "mechanism_language_score": 0,
+      "confidence": 0.27773333333333333,
+      "source_terms_used": [
+        "make"
+      ],
+      "relationship_terms_used": [],
+      "evidence_excerpt": "A business should make its logo memorable and post more often on social media.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 70 source-focus term(s) from scaffold/source metadata.",
+        "Derived 50 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 0.17.",
+        "Relationship/mechanism overlap was 0.00.",
+        "Mechanism language score was 0.00.",
+        "Strict relationship cue matches: none.",
+        "Relationship evidence score was 0.00."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.4597253862162963,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0.1
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_41940e38-522d-441e-8ffc-29da82fd2951.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.28.",
+      "Contract success score was 0.18.",
+      "Contract failure score was 0.69.",
+      "Outcome was contract_failure."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "The response had low lexical overlap with the contract markers.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was no_evidence.",
+      "Contract outcome was contract_failure.",
+      "Evidence strength was 0.18.",
+      "Judgment confidence was 0.38.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.28.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response did not clearly use the source focus, adding small recall/representation gap pressure.",
+      "The response did not clearly explain the relationship or mechanism, adding representation gap pressure.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5005901397051753,
+          "confidence": 0.16364765344237037,
+          "evidence_count": 1,
+          "last_delta": 0.009877092222492445,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5992569802076159,
+          "confidence": 0.24364765344237038,
+          "evidence_count": 1,
+          "last_delta": 0.48230159701056474,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09194966477748148,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5,
+          "confidence": 0.09194966477748148,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5059748323887407,
+          "confidence": 0.16364765344237037,
+          "evidence_count": 1,
+          "last_delta": 0.1,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Supply and Demand / Contradiction answer ===
+{
+  "domain_id": "supply-demand",
+  "topic_label": "Supply and Demand",
+  "case_id": "contradiction_answer",
+  "label": "Contradiction answer",
+  "response": "Prices are controlled by demand alone, so supply does not affect the final market price.",
+  "expectation_note": "Should detect source-topic terms, while judgment should still penalize the contradiction.",
+  "expected_signal_direction": {
+    "used_source_focus": true
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_partial",
+    "contract_confidence": 0.4109516961185185,
+    "evidence_strength": 0.44,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.44124256,
+    "failure_score": 0.5539906607407407,
+    "misconception_score": 0.505784845056,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 1,
+      "relationship_overlap_score": 0.8333333333333334,
+      "mechanism_language_score": 0.6,
+      "confidence": 0.68,
+      "source_terms_used": [
+        "supply",
+        "demand",
+        "market",
+        "are",
+        "pric",
+        "final"
+      ],
+      "relationship_terms_used": [
+        "supply",
+        "demand",
+        "market",
+        "are",
+        "pric"
+      ],
+      "evidence_excerpt": "Prices are controlled by demand alone, so supply does not affect the final market price.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 70 source-focus term(s) from scaffold/source metadata.",
+        "Derived 50 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 1.00.",
+        "Relationship/mechanism overlap was 0.83.",
+        "Mechanism language score was 0.60.",
+        "Strict relationship cue matches: supply, demand, market, are, pric.",
+        "Relationship evidence score was 0.73.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.4871808113303704,
+      "procedure_gap": 0,
+      "discrimination_gap": 0.16,
+      "transfer_gap": 0
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.024370668461217413,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_41940e38-522d-441e-8ffc-29da82fd2951.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.68.",
+      "Contract success score was 0.44.",
+      "Contract failure score was 0.55.",
+      "Outcome was contract_partial."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was partial_evidence.",
+      "Contract outcome was contract_partial.",
+      "Evidence strength was 0.44.",
+      "Judgment confidence was 0.41.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.68.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response used the source focus and explained a mechanism, adding tiny resolution pressure for representation_gap.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5,
+          "confidence": 0.0953895169611852,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5947374240630232,
+          "confidence": 0.2677266187282963,
+          "evidence_count": 1,
+          "last_delta": 0.4871808113303704,
+          "resolution_pressure": 0.007408857647695202,
+          "last_resolution_delta": 0.030147667023066302,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.0953895169611852,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5123116135689482,
+          "confidence": 0.18772661872829627,
+          "evidence_count": 1,
+          "last_delta": 0.16,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5,
+          "confidence": 0.0953895169611852,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Working Memory contract summary ===
+{
+  "domain_id": "working-memory",
+  "source_id": "learning-source_48ad794e-462f-4e80-a120-f8f84316018c",
+  "chunk_count": 1,
+  "authoring_context_id": "probe-authoring-context_8e3f2725-eca7-4aa6-aea1-0a764a06e9be",
+  "readiness": "candidate_ready",
+  "source_confidence": 0.68,
+  "expected_mechanism_summary": "Working memory temporarily holds and manipulates information for ongoing tasks, unlike long-term memory storage.",
+  "contract_id": "probe-contract_c2e9ad62-c33c-4509-a24e-5eaeca7de347",
+  "renderer_kind": "text_explanation",
+  "target_diagnosis": "representation_gap",
+  "prompt": "Using the source \"Working memory mini source\", explain the key relationship or mechanism in Working Memory. Focus on this source idea: Working memory is the limited-capacity system that lets a person hold information in mind and manipulate it while doing a task. For example, remembering a phone number long enough to dial it, doing mental arithmetic, orΓÇª",
+  "allowed_claim_strength": "conservative",
+  "can_make_strong_correctness_claim": false,
+  "has_source_grounded_judging_scaffold": true,
+  "source_grounded_judging_scaffold": {
+    "scaffold_id": "source-judging-scaffold_a6f2916f-237a-4573-838b-dceba3537eb4",
+    "created_at": "2026-06-09T04:25:31.282Z",
+    "source_chunk_ids": [
+      "source-chunk_48bd3fdd-a2c0-49e5-b4a3-322172adf424"
+    ],
+    "source_focus_summary": "Working memory is the limited-capacity system that lets a person hold information in mind and manipulate it while doing a task. For example, remembering a phone number long enough to dial it, doing mental arithmetic, orΓÇª",
+    "success_hint_candidates": [
+      "The learner addresses the source focus: Working memory is the limited-capacity system that lets a person hold information in mind and manipulate it while doing a task. For example, remembering a phone number long enough to dial it, doing mental arithmetic, orΓÇª",
+      "The learner connects their answer to Working Memory rather than only giving unrelated background knowledge.",
+      "The learner explains a relationship, mechanism, or contrast instead of only repeating keywords."
+    ],
+    "failure_hint_candidates": [
+      "The learner misses or contradicts the source focus: Working memory is the limited-capacity system that lets a person hold information in mind and manipulate it while doing a task. For example, remembering a phone number long enough to dial it, doing mental arithmetic, orΓÇª",
+      "The learner gives an answer that is off-target for Working Memory.",
+      "The learner repeats source words without explaining the relationship or mechanism.",
+      "The learner makes stronger claims than the provided source can support."
+    ],
+    "misconception_hint_candidates": [
+      "Surface-word matching without a source-grounded explanation.",
+      "Treating one detail as if it explains all of Working Memory.",
+      "Confusing a source example with the underlying relationship or mechanism."
+    ],
+    "confidence": 0.6200000000000001,
+    "requires_review": true,
+    "reasons": [
+      "Built provisional source-grounded judging hints for Working Memory.",
+      "Primary judging source chunk was source-chunk_48bd3fdd-a2c0-49e5-b4a3-322172adf424.",
+      "Used a source focus summary to shape judging hint candidates."
+    ],
+    "cautions": [
+      "These judging hints are provisional and should not be treated as a reviewed rubric.",
+      "These hints can guide review/debugging but should not upgrade correctness claim strength by themselves.",
+      "This judging scaffold requires review before trusted reuse."
+    ]
+  },
+  "source_grounded_input_metadata": {
+    "generationMode": "user_uploaded_content_grounded",
+    "rendererKind": "text_explanation",
+    "sourceContentIds": [
+      "learning-source_48ad794e-462f-4e80-a120-f8f84316018c"
+    ],
+    "normalizedSourceChunkCount": 1,
+    "authoringContextId": "probe-authoring-context_8e3f2725-eca7-4aa6-aea1-0a764a06e9be"
+  }
+}
+
+=== Working Memory / Good mechanism answer ===
+{
+  "domain_id": "working-memory",
+  "topic_label": "Working Memory",
+  "case_id": "good_mechanism_answer",
+  "label": "Good mechanism answer",
+  "response": "Working memory is not just storing facts; it keeps information active so you can use and manipulate it during a task, like doing mental math or following steps.",
+  "expectation_note": "Should detect the active hold/manipulate/use contrast.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "addressed_relationship_or_mechanism": true,
+    "possible_surface_word_match": false,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_partial",
+    "contract_confidence": 0.5939705562074075,
+    "evidence_strength": 0.8,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.65146848,
+    "failure_score": 0.3206525037037036,
+    "misconception_score": 0.35473822463999993,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 1,
+      "relationship_overlap_score": 1,
+      "mechanism_language_score": 0.2,
+      "confidence": 0.68,
+      "source_terms_used": [
+        "work",
+        "memory",
+        "information",
+        "manipulate",
+        "doing",
+        "task",
+        "mental",
+        "can",
+        "use"
+      ],
+      "relationship_terms_used": [
+        "work",
+        "memory",
+        "information",
+        "manipulate",
+        "doing",
+        "task",
+        "mental",
+        "can"
+      ],
+      "evidence_excerpt": "Working memory is not just storing facts; it keeps information active so you can use and manipulate it during a task, like doing mental math or following steps.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 75 source-focus term(s) from scaffold/source metadata.",
+        "Derived 55 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 1.00.",
+        "Relationship/mechanism overlap was 1.00.",
+        "Mechanism language score was 0.20.",
+        "Strict relationship cue matches: work, memory, information, manipulate, doing, task, mental, can.",
+        "Relationship evidence score was 0.46.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.19164062625185185,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.05200649602407092,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_c2e9ad62-c33c-4509-a24e-5eaeca7de347.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.68.",
+      "Contract success score was 0.65.",
+      "Contract failure score was 0.32.",
+      "Outcome was contract_partial."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was strong_evidence.",
+      "Contract outcome was contract_partial.",
+      "Evidence strength was 0.80.",
+      "Judgment confidence was 0.59.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.68.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response used the source focus and explained a mechanism, adding tiny resolution pressure for representation_gap.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5,
+          "confidence": 0.10153970556207408,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5691153136371867,
+          "confidence": 0.31077793893451855,
+          "evidence_count": 1,
+          "last_delta": 0.19164062625185185,
+          "resolution_pressure": 0.015998207087133683,
+          "last_resolution_delta": 0.05816783419210647,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.10153970556207408,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5,
+          "confidence": 0.10153970556207408,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5,
+          "confidence": 0.10153970556207408,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Working Memory / Shallow keyword answer ===
+{
+  "domain_id": "working-memory",
+  "topic_label": "Working Memory",
+  "case_id": "shallow_keyword_answer",
+  "label": "Shallow keyword answer",
+  "response": "Working memory is memory and attention and information.",
+  "expectation_note": "Should detect source vocabulary without the hold/manipulate contrast.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "addressed_relationship_or_mechanism": false,
+    "possible_surface_word_match": true,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": false,
+    "mismatches": [
+      "addressed_relationship_or_mechanism: expected false, got true",
+      "possible_surface_word_match: expected true, got false"
+    ]
+  },
+  "judgment": {
+    "outcome": "contract_failure",
+    "contract_confidence": 0.4058441386666667,
+    "evidence_strength": 0.32,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.28394816,
+    "failure_score": 0.6698740266666667,
+    "misconception_score": 0.5918836692480002,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 0.5,
+      "relationship_overlap_score": 0.5,
+      "mechanism_language_score": 0,
+      "confidence": 0.4972,
+      "source_terms_used": [
+        "work",
+        "memory",
+        "information"
+      ],
+      "relationship_terms_used": [
+        "work",
+        "memory",
+        "information"
+      ],
+      "evidence_excerpt": "Working memory is memory and attention and information.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 75 source-focus term(s) from scaffold/source metadata.",
+        "Derived 55 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 0.50.",
+        "Relationship/mechanism overlap was 0.50.",
+        "Mechanism language score was 0.00.",
+        "Strict relationship cue matches: work, memory, information.",
+        "Relationship evidence score was 0.24.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0.08,
+      "representation_gap": 0.49474964501333335,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_c2e9ad62-c33c-4509-a24e-5eaeca7de347.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.50.",
+      "Contract success score was 0.28.",
+      "Contract failure score was 0.67.",
+      "Outcome was contract_failure."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "The response was very short, so rubric confidence is limited.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was weak_evidence.",
+      "Contract outcome was contract_failure.",
+      "Evidence strength was 0.32.",
+      "Judgment confidence was 0.41.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.50.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response used the source focus and explained a mechanism, adding tiny resolution pressure for representation_gap.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5055593765546667,
+          "confidence": 0.17728908970666665,
+          "evidence_count": 1,
+          "last_delta": 0.08,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5946476651340585,
+          "confidence": 0.25728908970666664,
+          "evidence_count": 1,
+          "last_delta": 0.49474964501333335,
+          "resolution_pressure": 0.0011694627083844544,
+          "last_resolution_delta": 0.0047745826912,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09389844138666667,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5,
+          "confidence": 0.09389844138666667,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5,
+          "confidence": 0.09389844138666667,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Working Memory / Overclaiming answer ===
+{
+  "domain_id": "working-memory",
+  "topic_label": "Working Memory",
+  "case_id": "overclaiming_answer",
+  "label": "Overclaiming answer",
+  "response": "Working memory proves that people with good memory can always focus and never get distracted during hard tasks.",
+  "expectation_note": "Should detect overclaiming from always/never.",
+  "expected_signal_direction": {
+    "used_source_focus": true,
+    "possible_overclaim": true
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_partial",
+    "contract_confidence": 0.4313605802666666,
+    "evidence_strength": 0.48,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.42578592,
+    "failure_score": 0.5769895466666665,
+    "misconception_score": 0.532429923584,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": true,
+      "source_focus_overlap_score": 0.8333333333333334,
+      "relationship_overlap_score": 0.8333333333333334,
+      "mechanism_language_score": 0,
+      "confidence": 0.5966666666666667,
+      "source_terms_used": [
+        "work",
+        "memory",
+        "task",
+        "focu",
+        "can"
+      ],
+      "relationship_terms_used": [
+        "focu",
+        "work",
+        "memory",
+        "task",
+        "can"
+      ],
+      "evidence_excerpt": "Working memory proves that people with good memory can always focus and never get distracted during hard tasks.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 75 source-focus term(s) from scaffold/source metadata.",
+        "Derived 55 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 0.83.",
+        "Relationship/mechanism overlap was 0.83.",
+        "Mechanism language score was 0.00.",
+        "Strict relationship cue matches: focu, work, memory, task, can.",
+        "Relationship evidence score was 0.32.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional.",
+        "The response used strong absolute language, so any source-grounded judgment should remain conservative."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.4126431387733333,
+      "procedure_gap": 0,
+      "discrimination_gap": 0.18,
+      "transfer_gap": 0.08
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.02468487994836548,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_c2e9ad62-c33c-4509-a24e-5eaeca7de347.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.60.",
+      "Contract success score was 0.43.",
+      "Contract failure score was 0.58.",
+      "Outcome was contract_partial."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "The response used strong absolute language, so any source-grounded judgment should remain conservative.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source-grounded signal detected possible overclaiming; downstream updates should remain conservative.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was partial_evidence.",
+      "Contract outcome was contract_partial.",
+      "Evidence strength was 0.48.",
+      "Judgment confidence was 0.43.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.60.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "Possible overclaiming beyond the source was detected, adding discrimination/transfer gap pressure.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5,
+          "confidence": 0.09607360580266666,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5898998118671342,
+          "confidence": 0.27251524061866667,
+          "evidence_count": 1,
+          "last_delta": 0.4126431387733333,
+          "resolution_pressure": 0.006146971852840176,
+          "last_resolution_delta": 0.02468487994836548,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09607360580266666,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5160192758888417,
+          "confidence": 0.19251524061866665,
+          "evidence_count": 1,
+          "last_delta": 0.199323985986816,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5072922371357564,
+          "confidence": 0.19251524061866665,
+          "evidence_count": 1,
+          "last_delta": 0.09073554777045334,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Working Memory / Off-target answer ===
+{
+  "domain_id": "working-memory",
+  "topic_label": "Working Memory",
+  "case_id": "off_target_answer",
+  "label": "Off-target answer",
+  "response": "The brain has neurons, and people should sleep more before an exam.",
+  "expectation_note": "Should not mark a generic brain/study response as working-memory understanding.",
+  "expected_signal_direction": {
+    "used_source_focus": false,
+    "addressed_relationship_or_mechanism": false,
+    "possible_surface_word_match": false,
+    "possible_overclaim": false
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_failure",
+    "contract_confidence": 0.3789664777481482,
+    "evidence_strength": 0.18,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.17818794666666668,
+    "failure_score": 0.6908284325925925,
+    "misconception_score": 0.5796126341119999,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": false,
+      "addressed_relationship_or_mechanism": false,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 0,
+      "relationship_overlap_score": 0,
+      "mechanism_language_score": 0,
+      "confidence": 0.2344,
+      "source_terms_used": [],
+      "relationship_terms_used": [],
+      "evidence_excerpt": "The brain has neurons, and people should sleep more before an exam.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 75 source-focus term(s) from scaffold/source metadata.",
+        "Derived 55 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 0.00.",
+        "Relationship/mechanism overlap was 0.00.",
+        "Mechanism language score was 0.00.",
+        "Strict relationship cue matches: none.",
+        "Relationship evidence score was 0.00."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.4597253862162963,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0.1
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_c2e9ad62-c33c-4509-a24e-5eaeca7de347.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.23.",
+      "Contract success score was 0.18.",
+      "Contract failure score was 0.69.",
+      "Outcome was contract_failure."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "The response had low lexical overlap with the contract markers.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was no_evidence.",
+      "Contract outcome was contract_failure.",
+      "Evidence strength was 0.18.",
+      "Judgment confidence was 0.38.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.23.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response did not clearly use the source focus, adding small recall/representation gap pressure.",
+      "The response did not clearly explain the relationship or mechanism, adding representation gap pressure.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5005508113667818,
+          "confidence": 0.16364765344237037,
+          "evidence_count": 1,
+          "last_delta": 0.00921885888915911,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5991670868627165,
+          "confidence": 0.24364765344237038,
+          "evidence_count": 1,
+          "last_delta": 0.4807970636772314,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09194966477748148,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5,
+          "confidence": 0.09194966477748148,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5059748323887407,
+          "confidence": 0.16364765344237037,
+          "evidence_count": 1,
+          "last_delta": 0.1,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== Working Memory / Contradiction answer ===
+{
+  "domain_id": "working-memory",
+  "topic_label": "Working Memory",
+  "case_id": "contradiction_answer",
+  "label": "Contradiction answer",
+  "response": "Working memory is basically the same as long-term memory because both are just storing information for later.",
+  "expectation_note": "Should see source-relevant terms but not treat contradiction as mastery.",
+  "expected_signal_direction": {
+    "used_source_focus": true
+  },
+  "expectation_check": {
+    "pass": true,
+    "mismatches": []
+  },
+  "judgment": {
+    "outcome": "contract_partial",
+    "contract_confidence": 0.41029984426666666,
+    "evidence_strength": 0.44,
+    "evidence_tier": "heuristic_rubric_judgment",
+    "allowed_claim_strength": "conservative",
+    "can_make_strong_correctness_claim": false,
+    "judging_methods": [
+      "heuristic_rubric_text",
+      "contract_marker_estimate"
+    ],
+    "success_score": 0.44124256,
+    "failure_score": 0.5499165866666665,
+    "misconception_score": 0.5014869250560001,
+    "source_grounded_signal": {
+      "scaffold_available": true,
+      "scaffold_is_provisional": true,
+      "used_source_focus": true,
+      "addressed_relationship_or_mechanism": true,
+      "possible_surface_word_match": false,
+      "possible_overclaim": false,
+      "source_focus_overlap_score": 0.8333333333333334,
+      "relationship_overlap_score": 0.8333333333333334,
+      "mechanism_language_score": 0.2,
+      "confidence": 0.68,
+      "source_terms_used": [
+        "work",
+        "memory",
+        "information",
+        "for",
+        "long"
+      ],
+      "relationship_terms_used": [
+        "work",
+        "memory",
+        "information",
+        "for",
+        "long"
+      ],
+      "evidence_excerpt": "Working memory is basically the same as long-term memory because both are just storing information for later.",
+      "reasons": [
+        "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+        "Derived 75 source-focus term(s) from scaffold/source metadata.",
+        "Derived 55 relationship/mechanism term(s) from scaffold/source metadata.",
+        "Source focus overlap was 0.83.",
+        "Relationship/mechanism overlap was 0.83.",
+        "Mechanism language score was 0.20.",
+        "Strict relationship cue matches: work, memory, information, for, long.",
+        "Relationship evidence score was 0.46.",
+        "The learner response used source-focused terms or concepts.",
+        "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+      ],
+      "cautions": [
+        "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+        "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+        "The source-grounded judging scaffold is provisional."
+      ]
+    },
+    "diagnosis_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.4861997742933333,
+      "procedure_gap": 0,
+      "discrimination_gap": 0.16,
+      "transfer_gap": 0
+    },
+    "resolution_delta": {
+      "recall_gap": 0,
+      "representation_gap": 0.024332011690805323,
+      "procedure_gap": 0,
+      "discrimination_gap": 0,
+      "transfer_gap": 0
+    },
+    "suggested_active_diagnosis": "representation_gap",
+    "top_reasons": [
+      "Judged attempt against probe contract probe-contract_c2e9ad62-c33c-4509-a24e-5eaeca7de347.",
+      "Judging methods: heuristic_rubric_text, contract_marker_estimate.",
+      "Evidence tier: heuristic_rubric_judgment.",
+      "Allowed claim strength: conservative.",
+      "Contract source: uploaded_source.",
+      "Source-grounded signal confidence was 0.68.",
+      "Contract success score was 0.44.",
+      "Contract failure score was 0.55.",
+      "Outcome was contract_partial."
+    ],
+    "top_cautions": [
+      "This is a cheap local heuristic rubric, not a reviewed semantic judgment or LLM judgment.",
+      "A provisional source-grounded signal was included, but it must not upgrade claim strength or be treated as a reviewed answer key.",
+      "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+      "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+      "The source-grounded judging scaffold is provisional.",
+      "Text rubric judging is currently a cheap local heuristic. It should later be upgraded with source-grounded rubric/model support when stronger correctness claims are needed.",
+      "Source-grounded rubric signal was preserved for downstream diagnosis as a provisional hint, not as reviewed semantic correctness proof.",
+      "Source policy only allows conservative claims for this probe contract."
+    ]
+  },
+  "diagnosis_state_update": {
+    "active_diagnosis": "representation_gap",
+    "changed": true,
+    "reasons": [
+      "Diagnosis state updated from heuristic_rubric_judgment contract judgment.",
+      "Evidence outcome was partial_evidence.",
+      "Contract outcome was contract_partial.",
+      "Evidence strength was 0.44.",
+      "Judgment confidence was 0.41.",
+      "Source-grounded diagnosis shaping applied with signal confidence 0.68.",
+      "Applied cautious source-grounded diagnosis shaping from the contract judgment signal.",
+      "The response used the source focus and explained a mechanism, adding tiny resolution pressure for representation_gap.",
+      "Source-grounded diagnosis caution: Source-grounded diagnosis shaping is heuristic and cannot prove correctness by itself.",
+      "Source-grounded diagnosis caution: Resolution pressure was capped because source policy allows only conservative claims.",
+      "Active diagnosis stayed at representation_gap because no alternative passed the switch/clear threshold."
+    ],
+    "compact_state": {
+      "active_diagnosis": "representation_gap",
+      "beliefs": {
+        "recall_gap": {
+          "belief": 0.5,
+          "confidence": 0.09538299844266668,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "representation_gap": {
+          "belief": 0.5946686944329805,
+          "confidence": 0.26768098909866667,
+          "evidence_count": 1,
+          "last_delta": 0.4861997742933333,
+          "resolution_pressure": 0.0073958811355240885,
+          "last_resolution_delta": 0.030107641363765324,
+          "status": "active",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "procedure_gap": {
+          "belief": 0.5,
+          "confidence": 0.09538299844266668,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "discrimination_gap": {
+          "belief": 0.5123063987541333,
+          "confidence": 0.18768098909866665,
+          "evidence_count": 1,
+          "last_delta": 0.16,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        },
+        "transfer_gap": {
+          "belief": 0.5,
+          "confidence": 0.09538299844266668,
+          "evidence_count": 0,
+          "last_delta": 0,
+          "resolution_pressure": 0,
+          "last_resolution_delta": 0,
+          "status": "uncertain",
+          "strongest_evidence_tier": "heuristic_rubric_judgment"
+        }
+      }
+    }
+  },
+  "quick_check": {
+    "has_source_grounded_signal": true,
+    "remains_heuristic_rubric": true,
+    "remains_conservative": true,
+    "diagnosis_state_used_contract_judgment": true
+  }
+}
+
+=== multi-domain quick check summary ===
+{
+  "domain_count": 4,
+  "case_count": 20,
+  "all_cases_have_source_grounded_signal": true,
+  "all_cases_remain_conservative": true,
+  "all_cases_use_contract_diagnosis_update": true,
+  "all_expected_signal_directions_passed": false,
+  "failing_expectation_checks": [
+    {
+      "domain_id": "photosynthesis",
+      "case_id": "shallow_keyword_answer",
+      "label": "Shallow keyword answer",
+      "expected_signal_direction": {
+        "used_source_focus": true,
+        "addressed_relationship_or_mechanism": false,
+        "possible_surface_word_match": true,
+        "possible_overclaim": false
+      },
+      "mismatches": [
+        "addressed_relationship_or_mechanism: expected false, got true",
+        "possible_surface_word_match: expected true, got false"
+      ],
+      "source_grounded_signal": {
+        "scaffold_available": true,
+        "scaffold_is_provisional": true,
+        "used_source_focus": true,
+        "addressed_relationship_or_mechanism": true,
+        "possible_surface_word_match": false,
+        "possible_overclaim": false,
+        "source_focus_overlap_score": 0.5,
+        "relationship_overlap_score": 0.5,
+        "mechanism_language_score": 0,
+        "confidence": 0.4972,
+        "source_terms_used": [
+          "photosynthesi",
+          "plant",
+          "light"
+        ],
+        "relationship_terms_used": [
+          "photosynthesi",
+          "plant",
+          "light"
+        ],
+        "evidence_excerpt": "Photosynthesis is plants and light and oxygen and glucose.",
+        "reasons": [
+          "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+          "Derived 72 source-focus term(s) from scaffold/source metadata.",
+          "Derived 54 relationship/mechanism term(s) from scaffold/source metadata.",
+          "Source focus overlap was 0.50.",
+          "Relationship/mechanism overlap was 0.50.",
+          "Mechanism language score was 0.00.",
+          "Strict relationship cue matches: photosynthesi, plant, light.",
+          "Relationship evidence score was 0.24.",
+          "The learner response used source-focused terms or concepts.",
+          "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+        ],
+        "cautions": [
+          "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+          "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+          "The source-grounded judging scaffold is provisional."
+        ]
+      }
+    },
+    {
+      "domain_id": "supply-demand",
+      "case_id": "shallow_keyword_answer",
+      "label": "Shallow keyword answer",
+      "expected_signal_direction": {
+        "used_source_focus": true,
+        "addressed_relationship_or_mechanism": false,
+        "possible_surface_word_match": true,
+        "possible_overclaim": false
+      },
+      "mismatches": [
+        "addressed_relationship_or_mechanism: expected false, got true",
+        "possible_surface_word_match: expected true, got false"
+      ],
+      "source_grounded_signal": {
+        "scaffold_available": true,
+        "scaffold_is_provisional": true,
+        "used_source_focus": true,
+        "addressed_relationship_or_mechanism": true,
+        "possible_surface_word_match": false,
+        "possible_overclaim": false,
+        "source_focus_overlap_score": 1,
+        "relationship_overlap_score": 1,
+        "mechanism_language_score": 0,
+        "confidence": 0.68,
+        "source_terms_used": [
+          "supply",
+          "demand",
+          "buyer",
+          "seller",
+          "market",
+          "are",
+          "pric"
+        ],
+        "relationship_terms_used": [
+          "supply",
+          "demand",
+          "buyer",
+          "seller",
+          "market",
+          "are",
+          "pric"
+        ],
+        "evidence_excerpt": "Supply and demand are markets and buyers and sellers and prices.",
+        "reasons": [
+          "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+          "Derived 70 source-focus term(s) from scaffold/source metadata.",
+          "Derived 50 relationship/mechanism term(s) from scaffold/source metadata.",
+          "Source focus overlap was 1.00.",
+          "Relationship/mechanism overlap was 1.00.",
+          "Mechanism language score was 0.00.",
+          "Strict relationship cue matches: supply, demand, buyer, seller, market, are, pric.",
+          "Relationship evidence score was 0.32.",
+          "The learner response used source-focused terms or concepts.",
+          "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+        ],
+        "cautions": [
+          "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+          "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+          "The source-grounded judging scaffold is provisional."
+        ]
+      }
+    },
+    {
+      "domain_id": "working-memory",
+      "case_id": "shallow_keyword_answer",
+      "label": "Shallow keyword answer",
+      "expected_signal_direction": {
+        "used_source_focus": true,
+        "addressed_relationship_or_mechanism": false,
+        "possible_surface_word_match": true,
+        "possible_overclaim": false
+      },
+      "mismatches": [
+        "addressed_relationship_or_mechanism: expected false, got true",
+        "possible_surface_word_match: expected true, got false"
+      ],
+      "source_grounded_signal": {
+        "scaffold_available": true,
+        "scaffold_is_provisional": true,
+        "used_source_focus": true,
+        "addressed_relationship_or_mechanism": true,
+        "possible_surface_word_match": false,
+        "possible_overclaim": false,
+        "source_focus_overlap_score": 0.5,
+        "relationship_overlap_score": 0.5,
+        "mechanism_language_score": 0,
+        "confidence": 0.4972,
+        "source_terms_used": [
+          "work",
+          "memory",
+          "information"
+        ],
+        "relationship_terms_used": [
+          "work",
+          "memory",
+          "information"
+        ],
+        "evidence_excerpt": "Working memory is memory and attention and information.",
+        "reasons": [
+          "Read contract.judging_schema.source_grounded_judging_scaffold as a provisional source-awareness hint.",
+          "Derived 75 source-focus term(s) from scaffold/source metadata.",
+          "Derived 55 relationship/mechanism term(s) from scaffold/source metadata.",
+          "Source focus overlap was 0.50.",
+          "Relationship/mechanism overlap was 0.50.",
+          "Mechanism language score was 0.00.",
+          "Strict relationship cue matches: work, memory, information.",
+          "Relationship evidence score was 0.24.",
+          "The learner response used source-focused terms or concepts.",
+          "The learner response showed relationship/mechanism language or matched strict relationship-focused source terms."
+        ],
+        "cautions": [
+          "This source-grounded signal is a cheap local heuristic, not a reviewed source answer key.",
+          "Do not use this signal to upgrade claim strength or make strong correctness claims.",
+          "The source-grounded judging scaffold is provisional."
+        ]
+      }
+    }
+  ],
+  "expected_direction_notes": {
+    "good_mechanism_answer": "Should show source focus + mechanism and some cautious resolution pressure.",
+    "shallow_keyword_answer": "Should show source focus but surface-word / missing-mechanism pressure.",
+    "overclaiming_answer": "Should show overclaim/discrimination pressure without strong correctness claims.",
+    "off_target_answer": "Should not show source focus or source-grounded mechanism.",
+    "contradiction_answer": "May show source focus, but judgment/diagnosis should still preserve failure/discrimination pressure."
+  }
+}

@@ -28,9 +28,8 @@ import {
   type ProbeSubmitBody,
 } from "@/lib/runtime/probe-submit-route/request-context";
 import {
-  buildFallbackModelSignals,
   buildPendingProbeConfusionInsightScore,
-  getProbeConfusionInsightScoringMode,
+  buildProbeSubmitModelSignals,
 } from "@/lib/runtime/probe-submit-route/confusion-insight-queue";
 import {
   buildDeliveredProbeFromPlan,
@@ -90,12 +89,7 @@ export async function POST(request: NextRequest) {
       activeDiagnosis: provisionalDiagnosis,
     });
 
-    const modelSignals: ModelSignals =
-      getProbeConfusionInsightScoringMode() === "worker"
-        ? buildFallbackModelSignals("probe_confusion_insight_queued_for_worker")
-        : buildFallbackModelSignals(
-            "foreground_probe_confusion_insight_scoring_not_enabled_in_this_worker-first_route",
-          );
+    const modelSignals: ModelSignals = buildProbeSubmitModelSignals();
 
     const vectorInfo = buildVectorInfo(topic);
 

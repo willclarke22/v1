@@ -113,11 +113,28 @@ export function buildFallbackModelSignals(errorMessage?: string): ModelSignals {
   };
 }
 
+/**
+ * Worker-first probe submission intentionally does not wait for the
+ * confusion/insight model. This is not an error: the score is queued and the
+ * route should remain responsive.
+ */
+export function buildQueuedModelSignals(reason: string): ModelSignals {
+  return {
+    model_confusion: null,
+    model_insight: null,
+    model_version: "queued_for_worker",
+    inference_mode: null,
+    latency_ms: null,
+    status: "queued",
+    error_message: null,
+  };
+}
+
 export function buildProbeSubmitModelSignals(): ModelSignals {
   const scoringMode = getProbeConfusionInsightScoringMode();
 
   return scoringMode === "worker"
-    ? buildFallbackModelSignals("probe_confusion_insight_queued_for_worker")
+    ? buildQueuedModelSignals("probe_confusion_insight_queued_for_worker")
     : buildFallbackModelSignals(
         "foreground_probe_confusion_insight_scoring_not_enabled_in_this_worker-first_route",
       );

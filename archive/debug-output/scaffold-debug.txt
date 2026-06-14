@@ -1,0 +1,12 @@
+
+FullName
+--------
+C:\Users\willc\projects\MyWay\v1\lib\engine\probe-authoring\apply-source-grounded-scaffold.ts
+
+
+  lib\engine\probe-authoring\apply-source-grounded-scaffold.ts:65:  if (args.sourceFocusSummary) {
+  lib\engine\probe-authoring\apply-source-grounded-scaffold.ts:66:    return cleanOneLine(
+> lib\engine\probe-authoring\apply-source-grounded-scaffold.ts:67:      `Using ${sourcePhrase}, explain the key relationship or mechanism in ${args.topicLabel}. Focus on this source idea: ${args.sourceFocusSummary}`,
+  lib\engine\probe-authoring\apply-source-grounded-scaffold.ts:68:    );
+  lib\engine\probe-authoring\apply-source-grounded-scaffold.ts:69:  }
+

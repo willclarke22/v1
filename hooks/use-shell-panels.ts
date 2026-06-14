@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { SidebarTab } from "@/components/layout/sidebar";
+import type { SidebarTab } from "@/ui/learning-space/shell/sidebar";
 
 export function useShellPanels(focusedTopicId: string | null) {
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(false);

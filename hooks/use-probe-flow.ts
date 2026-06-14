@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Topic } from "@/types/topic";
-import type { ProbeSummary } from "@/components/probes/probe-surface";
+import type { ProbeSummary } from "@/ui/learning-space/probes/probe-surface";
 import {
   isTopicPosition3D,
   type TopicPosition3D,
@@ -676,3 +676,4 @@ export function useProbeFlow({
     handleSubmitProbe,
   };
 }
+
