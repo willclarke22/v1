@@ -1,22 +1,24 @@
-export type {
-  DiagnosisState,
-} from "@/lib/engine/diagnosis";
-
-export {
+﻿export {
   buildTopicRelationships,
+  type DiagnosisBeliefEntry,
+  type DiagnosisBeliefStatus,
+  type DiagnosisState,
+  type EvidenceJudgingTier,
   type RelationshipGraphTopic,
-} from "@/lib/engine/relationships";
+} from "@/lib/learning-space/relationship-graph";
 
 /**
  * Learning-space engine bridge.
  *
- * This is the learning-space projection boundary for legacy engine-derived
- * diagnosis state and relationship graph helpers.
+ * This boundary is now untethered from archived engine shims for renderer
+ * relationship projection.
  *
  * build-learning-space.ts should only project stable renderer fields. It should
  * not own diagnosis updates, probe judging, or model decisions.
  *
- * Today this delegates to temporary engine shims that point at archived legacy
- * engine code. Later, this file can be replaced with learning-space-specific
- * projection helpers from the new engine/state model.
+ * Keep this file as a narrow compatibility boundary so current callers can keep
+ * importing from "@/lib/learning-space/engine-bridge" while the actual
+ * relationship graph implementation lives in:
+ *
+ *   lib/learning-space/relationship-graph
  */

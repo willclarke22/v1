@@ -1,11 +1,5 @@
-/**
- * Temporary legacy compatibility shim.
- *
- * This keeps archived judging modules reachable while the new 3-model engine
- * replaces the old judging stack.
- *
- * TODO: Remove after old judging imports are replaced.
- */
-
-export * from "@/archive/old-engine/judging/judging-types";
+﻿export * from "./apply-diagnosis-delta";
+export * from "./apply-personalization-delta";
+export * from "./apply-understanding-evidence";
+export * from "./learning-topic-state";
 

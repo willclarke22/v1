@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
+import { runMessageDiagnosisEngineShadow } from "@/lib/api-routes/message/engine-shadow";
 import { buildLearningSpace } from "@/lib/learning-space/build-learning-space";
 import { insertRun, upsertTopicState } from "@/lib/persistence/myway";
 import { makeId } from "@/lib/utils/ids";
@@ -654,6 +655,20 @@ export async function POST(request: Request) {
     }
 
     const runId = makeId("run");
+
+    /**
+     * New engine shadow path:
+     *
+     * This runs the 3-model engine diagnosis boundary in parallel with the
+     * existing /api/message route. It logs/validates the new diagnosis output
+     * but does not change routing, metrics, persistence, probe planning, or the
+     * response yet.
+     */
+    await runMessageDiagnosisEngineShadow({
+      runId,
+      message,
+    });
+
 
     const confusionInsightScoringMode = getConfusionInsightScoringMode();
     const confusionInsightInput = buildConfusionInsightInput({
@@ -1413,3 +1428,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+

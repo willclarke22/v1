@@ -1,7 +1,17 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type {
+  EngineRenderableProbe,
+  ProbeAttemptType,
+  ProbeType,
+} from "@/lib/engine";
 import type { ProbeContractSnapshot } from "@/types/contracts";
+import {
+  ProbeRenderer,
+  type ProbeAnswerDraft,
+  type ProbeRendererSubmitPayload,
+} from "./index";
 
 export type ProbeSummary = {
   id: string;
@@ -21,6 +31,13 @@ export type ProbeSummary = {
    * learner actually answered.
    */
   probeContractSnapshot?: ProbeContractSnapshot | null;
+
+  /**
+   * Engine-native renderable probe carried from the delivered probe contract.
+   * Prefer this when present so the UI does not have to reconstruct the engine
+   * contract from the older ProbeContractSnapshot shape.
+   */
+  engineRenderableProbe?: EngineRenderableProbe | null;
 };
 
 type ProbeSurfaceProps = {
@@ -35,9 +52,42 @@ type ProbeSurfaceProps = {
     probeId: string;
     topicId: string;
     response: string;
+    attempt?: ProbeAnswerDraft;
+    engineRenderableProbe?: EngineRenderableProbe | null;
     probeContractSnapshot?: ProbeContractSnapshot | null;
   }) => void;
 };
+
+const PROBE_TYPES: ProbeType[] = [
+  "explain",
+  "discriminate",
+  "apply_transfer",
+  "sequence",
+  "single_choice",
+  "multi_choice",
+  "drag_drop_placements",
+  "predict",
+  "slider",
+  "graph_relationship",
+  "audio_clip_question",
+  "audio_response_question",
+  "video_click_interval",
+  "video_explanation",
+];
+
+const PROBE_ATTEMPT_TYPES: ProbeAttemptType[] = [
+  "text",
+  "single_choice",
+  "multi_choice",
+  "ordered_items",
+  "drag_drop_placements",
+  "numeric",
+  "graph",
+  "audio_response",
+  "video_click",
+  "none",
+  "unknown",
+];
 
 function getProbeStatusLabel(status: ProbeSummary["status"]) {
   if (status === "active") return "In progress";
@@ -48,6 +98,194 @@ function getProbeStatusLabel(status: ProbeSummary["status"]) {
 function formatBadgeLabel(value?: string | null) {
   if (!value) return null;
   return value.replaceAll("_", " ");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0
+    ? value
+    : null;
+}
+
+function isProbeType(value: unknown): value is ProbeType {
+  return typeof value === "string" && PROBE_TYPES.includes(value as ProbeType);
+}
+
+function isProbeAttemptType(value: unknown): value is ProbeAttemptType {
+  return (
+    typeof value === "string" &&
+    PROBE_ATTEMPT_TYPES.includes(value as ProbeAttemptType)
+  );
+}
+
+function normalizeProbeType(value: unknown): ProbeType {
+  if (isProbeType(value)) return value;
+
+  if (value === "transform") return "sequence";
+  if (value === "diagnostic") return "explain";
+  if (value === "multiple_choice") return "multi_choice";
+  if (value === "interactive_action") return "drag_drop_placements";
+  if (value === "audio") return "audio_response_question";
+  if (value === "video") return "video_explanation";
+
+  return "explain";
+}
+
+function normalizeAttemptType(
+  value: unknown,
+  probeType: ProbeType,
+): ProbeAttemptType {
+  if (isProbeAttemptType(value)) return value;
+
+  if (value === "multiple_choice") return "multi_choice";
+  if (value === "interactive_action") return "drag_drop_placements";
+  if (value === "audio") return "audio_response";
+  if (value === "video") return "none";
+
+  if (probeType === "single_choice" || probeType === "discriminate") {
+    return "single_choice";
+  }
+
+  if (probeType === "multi_choice") return "multi_choice";
+  if (probeType === "drag_drop_placements") return "drag_drop_placements";
+  if (probeType === "sequence") return "ordered_items";
+  if (probeType === "slider") return "numeric";
+  if (probeType === "graph_relationship") return "graph";
+  if (probeType === "audio_response_question") return "audio_response";
+  if (probeType === "video_click_interval") return "video_click";
+  if (probeType === "video_explanation") return "none";
+
+  return "text";
+}
+
+function getSnapshotProbeType(snapshot: unknown): ProbeType | null {
+  if (!isRecord(snapshot)) return null;
+
+  if (isProbeType(snapshot.probe_type)) return snapshot.probe_type;
+  if (isProbeType(snapshot.probeType)) return snapshot.probeType;
+
+  return null;
+}
+
+function getSnapshotAttemptType(snapshot: unknown): ProbeAttemptType | null {
+  if (!isRecord(snapshot)) return null;
+
+  if (isProbeAttemptType(snapshot.expected_attempt_type)) {
+    return snapshot.expected_attempt_type;
+  }
+
+  if (isProbeAttemptType(snapshot.expectedAttemptType)) {
+    return snapshot.expectedAttemptType;
+  }
+
+  return null;
+}
+
+function getSnapshotRendererParams(snapshot: unknown) {
+  if (!isRecord(snapshot)) return null;
+
+  const rendererParams = snapshot.renderer_params ?? snapshot.rendererParams;
+
+  return isRecord(rendererParams) ? rendererParams : null;
+}
+
+function getSnapshotAnswerKey(snapshot: unknown) {
+  if (!isRecord(snapshot)) return null;
+
+  const answerKey = snapshot.answer_key ?? snapshot.answerKey;
+
+  return isRecord(answerKey) ? answerKey : null;
+}
+
+function getSnapshotMisconceptionMarkers(snapshot: unknown) {
+  if (!isRecord(snapshot)) return [];
+
+  const markers = snapshot.misconception_markers ?? snapshot.misconceptionMarkers;
+
+  return Array.isArray(markers) ? markers : [];
+}
+
+function buildPrompt(args: {
+  probe: ProbeSummary;
+  snapshot: unknown;
+}) {
+  if (isRecord(args.snapshot) && isRecord(args.snapshot.prompt)) {
+    const prompt = args.snapshot.prompt;
+
+    const task = getString(prompt.task);
+    const fullPrompt = getString(prompt.full_prompt) ?? getString(prompt.fullPrompt);
+
+    if (task && fullPrompt) {
+      return {
+        root_problem_explanation:
+          getString(prompt.root_problem_explanation) ??
+          getString(prompt.rootProblemExplanation) ??
+          "MyWay is checking the specific part of the idea that may need repair.",
+        reshaping_explanation:
+          getString(prompt.reshaping_explanation) ??
+          getString(prompt.reshapingExplanation) ??
+          "Use the probe to make your current understanding visible.",
+        task,
+        full_prompt: fullPrompt,
+      };
+    }
+  }
+
+  return {
+    root_problem_explanation:
+      "MyWay is checking the specific part of this topic that may need repair.",
+    reshaping_explanation:
+      "Answer in the way that best shows what makes sense to you right now.",
+    task: args.probe.instruction,
+    full_prompt: args.probe.instruction,
+  };
+}
+
+function buildRenderableProbe(probe: ProbeSummary): EngineRenderableProbe {
+  if (probe.engineRenderableProbe) {
+    return probe.engineRenderableProbe;
+  }
+
+  const snapshot = probe.probeContractSnapshot ?? null;
+
+  const probeType =
+    getSnapshotProbeType(snapshot) ??
+    normalizeProbeType(probe.probeType ?? probe.expectedResponseType);
+
+  const expectedAttemptType =
+    getSnapshotAttemptType(snapshot) ??
+    normalizeAttemptType(probe.expectedResponseType, probeType);
+
+  const rendererParams = getSnapshotRendererParams(snapshot);
+  const answerKey = getSnapshotAnswerKey(snapshot);
+  const misconceptionMarkers = getSnapshotMisconceptionMarkers(snapshot);
+
+  return {
+    schema_version: "engine_renderable_probe_v1",
+    probe_type: probeType,
+    expected_attempt_type: expectedAttemptType,
+    prompt: buildPrompt({ probe, snapshot }),
+    presentation_support: undefined,
+    answer_key: answerKey as EngineRenderableProbe["answer_key"],
+    misconception_markers:
+      misconceptionMarkers as EngineRenderableProbe["misconception_markers"],
+    renderer_params: rendererParams as EngineRenderableProbe["renderer_params"],
+    delivery_context: null,
+    confidence: 0.5,
+    renderer_compatibility: {
+      renderer_kind: probeType,
+      is_renderable: true,
+      blocking_reasons: [],
+      warnings: rendererParams
+        ? []
+        : [
+            "ProbeSurface used a generic fallback renderer because no renderer_params were supplied.",
+          ],
+    },
+  };
 }
 
 function getInstructionHint(probe: ProbeSummary | null) {
@@ -82,14 +320,50 @@ function getInstructionHint(probe: ProbeSummary | null) {
   return "Answer in your own words. Aim for reasoning, not just keywords.";
 }
 
+function stringifyAttempt(attempt: ProbeAnswerDraft) {
+  if (attempt.text_response?.trim()) return attempt.text_response.trim();
+
+  if (attempt.audio_response_transcript?.trim()) {
+    return attempt.audio_response_transcript.trim();
+  }
+
+  if (attempt.selected_option_id) return attempt.selected_option_id;
+
+  if (attempt.selected_option_ids?.length) {
+    return attempt.selected_option_ids.join(", ");
+  }
+
+  if (attempt.ordered_item_ids?.length) {
+    return attempt.ordered_item_ids.join(" -> ");
+  }
+
+  if (attempt.placements && Object.keys(attempt.placements).length > 0) {
+    return JSON.stringify(attempt.placements);
+  }
+
+  if (typeof attempt.numeric_response === "number") {
+    return String(attempt.numeric_response);
+  }
+
+  if (attempt.graph_features?.length) {
+    return attempt.graph_features.join("\n");
+  }
+
+  if (typeof attempt.selected_click_seconds === "number") {
+    return String(attempt.selected_click_seconds);
+  }
+
+  return "";
+}
+
 function getEncouragement(response: string, isSubmitting: boolean) {
   if (isSubmitting) return "Submitting your response...";
   const trimmed = response.trim();
-  if (!trimmed) return "Start writing when you’re ready.";
+  if (!trimmed) return "Start when youâ€™re ready.";
   const words = trimmed.split(/\s+/).length;
   if (words < 8) return "You can submit now, or add a little more reasoning.";
   if (words < 20) return "Nice start. A bit more structure could make your thinking clearer.";
-  return "Good — this has enough substance to judge.";
+  return "Good â€” this has enough substance to judge.";
 }
 
 export default function ProbeSurface({
@@ -99,7 +373,7 @@ export default function ProbeSurface({
   onExit,
   onSubmit,
 }: ProbeSurfaceProps) {
-  const [response, setResponse] = useState("");
+  const [draftResponse, setDraftResponse] = useState("");
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -111,38 +385,42 @@ export default function ProbeSurface({
   }, []);
 
   useEffect(() => {
-    setResponse("");
+    setDraftResponse("");
   }, [probe?.id]);
 
-  const trimmedResponse = response.trim();
+  const renderableProbe = useMemo(
+    () => (probe ? buildRenderableProbe(probe) : null),
+    [probe],
+  );
+
+  const trimmedResponse = draftResponse.trim();
   const wordCount = trimmedResponse ? trimmedResponse.split(/\s+/).length : 0;
   const canSubmit = trimmedResponse.length > 0 && !isSubmitting;
 
   const probeHint = useMemo(() => getInstructionHint(probe), [probe]);
   const encouragement = useMemo(
-    () => getEncouragement(response, isSubmitting),
-    [response, isSubmitting],
+    () => getEncouragement(draftResponse, isSubmitting),
+    [draftResponse, isSubmitting],
   );
 
-  function handleSubmit() {
-    if (!probe || !trimmedResponse || isSubmitting) return;
+  function handleSubmitFromRenderer(payload: ProbeRendererSubmitPayload) {
+    if (!probe || isSubmitting) return;
+
+    const response = stringifyAttempt(payload.attempt).trim();
+    if (!response) return;
 
     onSubmit({
       probeId: probe.id,
       topicId: probe.topicId,
-      response: trimmedResponse,
+      response,
+      attempt: payload.attempt,
+      engineRenderableProbe:
+        payload.probe ?? renderableProbe ?? probe.engineRenderableProbe ?? null,
       probeContractSnapshot: probe.probeContractSnapshot ?? null,
     });
   }
 
-  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      handleSubmit();
-    }
-  }
-
-  if (!probe) {
+  if (!probe || !renderableProbe) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.82)_0%,rgba(101,45,175,0.94)_42%,rgba(18,4,34,1)_100%)] text-white">
         <div
@@ -254,17 +532,12 @@ export default function ProbeSurface({
               ) : null}
 
               <div className={probeFeedback ? "mt-6" : ""}>
-                <label className="mb-3 block text-sm font-medium text-white">
-                  Your response
-                </label>
-
-                <textarea
-                  value={response}
-                  onChange={(e) => setResponse(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Write your answer here. Press Enter to submit, or Shift+Enter for a new line."
+                <ProbeRenderer
+                  probe={renderableProbe}
                   disabled={isSubmitting}
-                  className="min-h-[240px] w-full rounded-3xl border border-white/12 bg-black/20 px-5 py-4 text-sm leading-7 text-white outline-none placeholder:text-zinc-300/45 focus:border-purple-300/45 disabled:cursor-not-allowed disabled:opacity-70"
+                  showDebug={process.env.NODE_ENV !== "production"}
+                  onDraftChange={(draft) => setDraftResponse(stringifyAttempt(draft))}
+                  onSubmit={handleSubmitFromRenderer}
                 />
               </div>
 
@@ -286,7 +559,15 @@ export default function ProbeSurface({
                 </button>
 
                 <button
-                  onClick={handleSubmit}
+                  onClick={() =>
+                    handleSubmitFromRenderer({
+                      probe: renderableProbe,
+                      attempt: {
+                        attempt_type: renderableProbe.expected_attempt_type,
+                        text_response: draftResponse,
+                      },
+                    })
+                  }
                   type="button"
                   disabled={!canSubmit}
                   className="rounded-2xl border border-purple-200/35 bg-white/10 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-50"
@@ -330,8 +611,8 @@ export default function ProbeSurface({
                 <div>
                   <p className="font-medium text-white">Submission</p>
                   <p className="mt-1 text-zinc-300/80">
-                    Press Enter to submit. Use Shift+Enter if you want a new
-                    line instead.
+                    Use the probe control to answer, then submit. Text-style
+                    probes can still be answered in your own words.
                   </p>
                 </div>
               </div>
@@ -342,3 +623,7 @@ export default function ProbeSurface({
     </div>
   );
 }
+
+
+
+

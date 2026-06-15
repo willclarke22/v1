@@ -1,0 +1,231 @@
+
+===== app =====
+Folder PATH listing for volume Local Disk
+Volume serial number is 000001A6 6633:7B82
+C:\USERS\WILLC\PROJECTS\MYWAY\V1\APP
+|   favicon.ico
+|   globals.css
+|   layout.tsx
+|   page.tsx
+|   
+\---api
+    +---bootstrap
+    |   \---topic-state
+    |           route.ts
+    |           
+    +---confusion-insight
+    |   \---run-pending
+    |           route.ts
+    |           
+    +---local-dev
+    |   +---engine-shadow-logs
+    |   |       route.ts
+    |   |       
+    |   \---idle-state
+    |           route.ts
+    |           
+    +---message
+    |       route.ts
+    |       
+    +---probe
+    |   \---submit
+    |           route.ts
+    |           
+    +---semantic-enrichment
+    |   +---pending-status
+    |   |       route.ts
+    |   |       
+    |   \---run-pending
+    |           route.ts
+    |           
+    +---semantic-layout
+    |   +---commit-pending
+    |   |       route.ts
+    |   |       
+    |   \---recompute-pending
+    |           route.ts
+    |           
+    \---topic-message-embeddings
+        \---run-pending
+                route.ts
+                
+
+===== hooks =====
+Folder PATH listing for volume Local Disk
+Volume serial number is 000001FD 6633:7B82
+C:\USERS\WILLC\PROJECTS\MYWAY\V1\HOOKS
+    use-probe-flow.ts
+    use-shell-panels.ts
+    
+No subfolders exist 
+
+
+===== ui\learning-space\probes =====
+Folder PATH listing for volume Local Disk
+Volume serial number is 000001E2 6633:7B82
+C:\USERS\WILLC\PROJECTS\MYWAY\V1\UI\LEARNING-SPACE\PROBES
+    audio-clip-probe.tsx
+    audio-response-probe.tsx
+    drag-drop-probe.tsx
+    graph-probe.tsx
+    index.ts
+    multi-choice-probe.tsx
+    probe-renderer.tsx
+    probe-shell.tsx
+    probe-surface.tsx
+    probe-ui-types.ts
+    sequence-probe.tsx
+    single-choice-probe.tsx
+    slider-probe.tsx
+    text-probe.tsx
+    video-click-probe.tsx
+    video-explanation-probe.tsx
+    
+No subfolders exist 
+
+
+===== lib\engine =====
+Folder PATH listing for volume Local Disk
+Volume serial number is 00000152 6633:7B82
+C:\USERS\WILLC\PROJECTS\MYWAY\V1\LIB\ENGINE
+|   diagnosis.ts
+|   evidence.ts
+|   index.ts
+|   judging.ts
+|   probe-contract-quality.ts
+|   probe-rendering.ts
+|   probe-source-policy.ts
+|   probes.ts
+|   relationships.ts
+|   
++---judging
+|   |   deterministic.ts
+|   |   judge-probe-attempt.ts
+|   |   judging-types.ts
+|   |   
+|   \---rubric
+|           index.ts
+|           judge-text-explanation.ts
+|           rubric-types.ts
+|           
++---logging
+|       build-review-batch.ts
+|       export-review-batch.ts
+|       index.ts
+|       log-model-call.ts
+|       model-call-row.ts
+|       
++---orchestration
+|       build-evaluated-probe-attempt-signal.ts
+|       index.ts
+|       route-engine-next-action.ts
+|       run-attempt-evaluation.ts
+|       run-diagnosis.ts
+|       run-engine-turn.ts
+|       run-probe-contract.ts
+|       
++---providers
+|   |   index.ts
+|   |   types.ts
+|   |   
+|   +---fallback
+|   |       deterministic-attempt-evaluator.ts
+|   |       index.ts
+|   |       rule-based-diagnosis-provider.ts
+|   |       
+|   \---service-clients
+|           attempt-evaluator-service-client.ts
+|           diagnosis-service-client.ts
+|           index.ts
+|           probe-contract-service-client.ts
+|           
++---renderers
+|       index.ts
+|       probe-renderer-contract.ts
+|       renderer-compatibility.ts
+|       
++---schemas
+|       diagnosis-model.ts
+|       index.ts
+|       probe-attempt-evaluator.ts
+|       probe-contract-model.ts
+|       shared.ts
+|       
++---state
+|       apply-diagnosis-delta.ts
+|       apply-personalization-delta.ts
+|       apply-understanding-evidence.ts
+|       index.ts
+|       learning-topic-state.ts
+|       
+\---validation
+        index.ts
+        shared.ts
+        validate-attempt-evaluation.ts
+        validate-bridge-language.ts
+        validate-diagnosis-output.ts
+        validate-personalization.ts
+        validate-probe-contract.ts
+        validate-renderer-params.ts
+        
+
+===== lib\api-routes =====
+Folder PATH listing for volume Local Disk
+Volume serial number is 00000151 6633:7B82
+C:\USERS\WILLC\PROJECTS\MYWAY\V1\LIB\API-ROUTES
++---message
+|       confusion-insight-queue.ts
+|       delivered-response.ts
+|       engine-fuel.ts
+|       engine-shadow.ts
+|       learning-space-response.ts
+|       request-context.ts
+|       semantic-message-embedding.ts
+|       timing.ts
+|       topic-message-embedding-queue.ts
+|       topic-resolution-adapter.ts
+|       
+\---probe-submit
+        attempt-input.ts
+        attempt-judging.ts
+        confusion-insight-queue.ts
+        engine-shadow.ts
+        persistence.ts
+        request-context.ts
+        response-bundle.ts
+        timing.ts
+        topic-metric-update.ts
+        
+
+===== lib\intervention-planning =====
+Folder PATH listing for volume Local Disk
+Volume serial number is 0000022B 6633:7B82
+C:\USERS\WILLC\PROJECTS\MYWAY\V1\LIB\INTERVENTION-PLANNING
+    message-runtime.ts
+    probe-runtime.ts
+    
+No subfolders exist 
+
+
+===== lib\legacy-engine-bridges =====
+Folder PATH listing for volume Local Disk
+Volume serial number is 00000208 6633:7B82
+C:\USERS\WILLC\PROJECTS\MYWAY\V1\LIB\LEGACY-ENGINE-BRIDGES
+    attempt-evidence.ts
+    contract-judgment.ts
+    diagnosis.ts
+    probe-contract.ts
+    
+No subfolders exist 
+
+
+===== types =====
+Folder PATH listing for volume Local Disk
+Volume serial number is 00000233 6633:7B82
+C:\USERS\WILLC\PROJECTS\MYWAY\V1\TYPES
+    contracts.ts
+    learning-space.ts
+    topic.ts
+    
+No subfolders exist 
+

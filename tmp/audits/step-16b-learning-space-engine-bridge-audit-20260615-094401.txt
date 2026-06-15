@@ -1,0 +1,1865 @@
+
+================================================================================
+FILE: lib\learning-space\engine-bridge.ts
+================================================================================
+
+export type {
+  DiagnosisState,
+} from "@/lib/engine/diagnosis";
+
+export {
+  buildTopicRelationships,
+  type RelationshipGraphTopic,
+} from "@/lib/engine/relationships";
+
+/**
+ * Learning-space engine bridge.
+ *
+ * This is the learning-space projection boundary for legacy engine-derived
+ * diagnosis state and relationship graph helpers.
+ *
+ * build-learning-space.ts should only project stable renderer fields. It should
+ * not own diagnosis updates, probe judging, or model decisions.
+ *
+ * Today this delegates to temporary engine shims that point at archived legacy
+ * engine code. Later, this file can be replaced with learning-space-specific
+ * projection helpers from the new engine/state model.
+ */
+
+================================================================================
+FILE: lib\learning-space\build-learning-space.ts
+================================================================================
+
+// lib/learning-space/build-learning-space.ts
+
+import type { DiagnosisType } from "@/types/contracts";
+import type { DiagnosisState } from "@/lib/learning-space/engine-bridge";
+import type {
+  AttemptSatellite,
+  LearningSpace,
+  LearningSpaceProjectionMetadata,
+  LearningSpaceRelationship,
+  LearningSpaceViewpoint,
+  TopicPanelProjection,
+  TopicRing,
+  TopicSurfaceMarker,
+  TopicSurfaceMarkerThumbnailStyle,
+} from "@/types/learning-space";
+import type {
+  TopicPosition3D,
+  TopicPositionSource,
+} from "@/lib/learning-space/topic-position";
+import {
+  buildTopicRelationships,
+  type RelationshipGraphTopic,
+} from "@/lib/learning-space/engine-bridge";
+
+type LearningSpaceInputTopic = {
+  id: string;
+  topic_label: string;
+  diagnosis?: DiagnosisType | null;
+  nextStep?: string | null;
+  confusion?: number | null;
+  insight?: number | null;
+  learningScore?: number | null;
+
+  /**
+   * Current committed renderer position.
+   *
+   * Important: this stays in canonical semantic-map units. SpaceCanvas applies
+   * renderer-only visual expansion so persisted topic_position values are not
+   * polluted by camera/composition scaling.
+   */
+  position: TopicPosition3D;
+
+  /**
+   * Optional semantic target position.
+   */
+  semanticPosition?: TopicPosition3D | null;
+  semanticPositionMethod?: string | null;
+  semanticPositionUpdatedAt?: string | null;
+  positionSource?: TopicPositionSource | null;
+
+  scale?: number | null;
+  messageCount?: number | null;
+  hasAvailableProbe?: boolean | null;
+
+  /**
+   * Optional engine state transported from topic_json / persistence.
+   *
+   * These are intentionally loose because buildLearningSpace is a projection
+   * boundary. The engine owns the exact diagnosis/probe schema; this file only
+   * reads stable fields when present.
+   */
+  topicJson?: Record<string, unknown> | null;
+  diagnosisState?: unknown;
+  activeDiagnosisConfidence?: number | null;
+  activeProbeContractSnapshot?: unknown;
+  nextProbeContractSnapshot?: unknown;
+  lastProbeContractSnapshot?: unknown;
+
+  /**
+   * Optional global learning-space relationship/viewpoint transport.
+   *
+   * Bootstrap attaches these to each topic as a convenient transport layer from
+   * persisted topic_json -> app Topic[] -> buildLearningSpace(). They are global
+   * scene objects, not per-topic-owned objects, so buildLearningSpace dedupes
+   * them before emitting the renderer contract.
+   */
+  learningSpaceRelationships?: LearningSpaceRelationship[] | null;
+  learningSpaceViewpoints?: LearningSpaceViewpoint[] | null;
+  learningSpaceProjection?: LearningSpaceProjectionMetadata | null;
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function round(value: number) {
+  return Math.round(value * 1000) / 1000;
+}
+
+function safeNumber(value: number | null | undefined, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function readNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function isDiagnosisState(value: unknown): value is DiagnosisState {
+  const record = asRecord(value);
+
+  return Boolean(
+    record &&
+      typeof record.version === "string" &&
+      (typeof record.active_diagnosis === "string" ||
+        record.active_diagnosis === null) &&
+      record.beliefs &&
+      typeof record.beliefs === "object" &&
+      !Array.isArray(record.beliefs) &&
+      Array.isArray(record.history),
+  );
+}
+
+function readDiagnosisState(topic: LearningSpaceInputTopic): DiagnosisState | null {
+  if (isDiagnosisState(topic.diagnosisState)) {
+    return topic.diagnosisState;
+  }
+
+  const topicJson = asRecord(topic.topicJson);
+  const jsonDiagnosisState = topicJson?.diagnosis_state;
+
+  return isDiagnosisState(jsonDiagnosisState) ? jsonDiagnosisState : null;
+}
+
+function readDiagnosisBeliefEntry(args: {
+  topic: LearningSpaceInputTopic;
+  diagnosis: DiagnosisType | null;
+}): Record<string, unknown> | null {
+  if (!args.diagnosis) return null;
+
+  const diagnosisState = readDiagnosisState(args.topic);
+  const beliefs = asRecord(diagnosisState?.beliefs);
+
+  return asRecord(beliefs?.[args.diagnosis]);
+}
+
+function readActiveDiagnosisConfidence(topic: LearningSpaceInputTopic) {
+  const diagnosis = topic.diagnosis ?? null;
+  const explicit = readNumber(topic.activeDiagnosisConfidence);
+
+  if (explicit !== null) return clamp(explicit, 0, 1);
+
+  const beliefEntry = readDiagnosisBeliefEntry({ topic, diagnosis });
+  const confidence = readNumber(beliefEntry?.confidence);
+
+  return confidence !== null ? clamp(confidence, 0, 1) : diagnosis ? 0.55 : null;
+}
+
+function readActiveDiagnosisEvidenceCount(topic: LearningSpaceInputTopic) {
+  const diagnosis = topic.diagnosis ?? null;
+  const beliefEntry = readDiagnosisBeliefEntry({ topic, diagnosis });
+  const evidenceCount = readNumber(beliefEntry?.evidence_count);
+
+  return evidenceCount !== null ? Math.max(0, Math.floor(evidenceCount)) : null;
+}
+
+function readProbeContractRendererKind(value: unknown): string | null {
+  const snapshot = asRecord(value);
+  const rendererKind = snapshot?.renderer_kind;
+
+  return typeof rendererKind === "string" && rendererKind.trim()
+    ? rendererKind.trim()
+    : null;
+}
+
+function readBestProbeContractRendererKind(topic: LearningSpaceInputTopic) {
+  return (
+    readProbeContractRendererKind(topic.activeProbeContractSnapshot) ??
+    readProbeContractRendererKind(topic.nextProbeContractSnapshot) ??
+    readProbeContractRendererKind(topic.lastProbeContractSnapshot) ??
+    readProbeContractRendererKind(topic.topicJson?.next_probe_contract) ??
+    readProbeContractRendererKind(topic.topicJson?.last_probe_contract) ??
+    readProbeContractRendererKind(topic.topicJson?.next_delivered_probe)
+  );
+}
+
+function normalizeTopicPosition(topic: LearningSpaceInputTopic): TopicPosition3D {
+  return topic.position;
+}
+
+function getTopicLabel(topic: LearningSpaceInputTopic) {
+  return topic.topic_label.trim() || "Untitled Topic";
+}
+
+function getSemanticOrCurrentTarget(topic: LearningSpaceInputTopic): TopicPosition3D {
+  return topic.semanticPosition ?? topic.position;
+}
+
+function inferLayoutConfidence(topic: LearningSpaceInputTopic) {
+  if (!topic.semanticPosition) return 0.35;
+
+  const method = topic.semanticPositionMethod ?? "";
+  if (method.includes("semantic") && method.includes("force")) return 0.78;
+  if (method.includes("semantic")) return 0.68;
+  if (method.includes("seed")) return 0.42;
+
+  return 0.55;
+}
+
+function buildMovementPolicy(topic: LearningSpaceInputTopic) {
+  const confidence = inferLayoutConfidence(topic);
+
+  return {
+    easing: confidence >= 0.7 ? "normal" : "slow",
+    max_step_per_update: round(confidence >= 0.7 ? 0.42 : 0.24),
+    preserve_user_spatial_memory: true,
+  } as const;
+}
+
+function buildRenderState(topic: LearningSpaceInputTopic) {
+  const learningScore = clamp(safeNumber(topic.learningScore, 0.5), 0, 1);
+  const confusion = clamp(safeNumber(topic.confusion, 0.3), 0, 1);
+  const insight = clamp(safeNumber(topic.insight, 0.5), 0, 1);
+  const baseScale = safeNumber(topic.scale, 0.7);
+
+  /**
+   * Radius represents evidence-backed topic development/solidity. It should not
+   * explode from one strong interaction; richer evidence_count support can be
+   * added once attempts become first-class in the projection.
+   */
+  const radius = clamp(baseScale * 0.9 + learningScore * 1.0, 0.48, 1.58);
+
+  /**
+   * Current visual direction:
+   * - topic spheres stay stable, simple, and sphere-like
+   * - confusion/diagnosis should show up through external overlays, markers,
+   *   rings, lenses, or relationship views instead of permanent deformation
+   *
+   * Therefore surface_noise is kept near zero even when confusion is high.
+   */
+  const surfaceNoise = 0;
+  const smoothness = 0.96;
+  const collisionRadius = radius + 0.26;
+  const isStar = learningScore > 0.9 && confusion < 0.15 && insight > 0.65;
+  const glowIntensity = isStar
+    ? 0.95
+    : clamp(insight * 0.72 + learningScore * 0.12 - confusion * 0.18, 0, 0.82);
+
+  const glowSource: "star_state" | "insight" | "none" = isStar
+    ? "star_state"
+    : glowIntensity > 0.08
+      ? "insight"
+      : "none";
+
+  return {
+    radius: round(radius),
+    collision_radius: round(collisionRadius),
+    surface_noise: round(surfaceNoise),
+    smoothness: round(smoothness),
+    spin_rate: round(0.0015 + learningScore * 0.002),
+    saturation: round(clamp(0.42 + insight * 0.42, 0.2, 1)),
+    is_star: isStar,
+    glow_intensity: round(glowIntensity),
+    glow_source: glowSource,
+  };
+}
+
+function buildSatelliteCount(topic: LearningSpaceInputTopic) {
+  const messageCount =
+    typeof topic.messageCount === "number" && Number.isFinite(topic.messageCount)
+      ? topic.messageCount
+      : 0;
+
+  /**
+   * Keep this capped for scalability. Later, satellites can represent attempts,
+   * not raw message count.
+   */
+  return Math.min(5, Math.max(0, Math.floor(messageCount)));
+}
+
+function inferProbeThumbnailStyle(topic: LearningSpaceInputTopic): TopicSurfaceMarkerThumbnailStyle {
+  const rendererKind = readBestProbeContractRendererKind(topic);
+
+  if (rendererKind === "drag_drop_match") return "drag_drop_card";
+  if (rendererKind === "slider_prediction") return "slider_card";
+  if (rendererKind === "multiple_choice") return "choice_card";
+  if (rendererKind === "video_checkpoint") return "video_card";
+  if (rendererKind === "audio_explanation") return "audio_card";
+
+  const nextStep = (topic.nextStep ?? "").toLowerCase();
+
+  if (nextStep.includes("drag") || nextStep.includes("sort")) return "drag_drop_card";
+  if (nextStep.includes("slider") || nextStep.includes("predict")) return "slider_card";
+  if (nextStep.includes("choice") || nextStep.includes("choose")) return "choice_card";
+  if (nextStep.includes("video")) return "video_card";
+  if (nextStep.includes("audio") || nextStep.includes("say")) return "audio_card";
+
+  return "text_card";
+}
+
+function buildSurfaceMarkers(topic: LearningSpaceInputTopic): TopicSurfaceMarker[] {
+  const markers: TopicSurfaceMarker[] = [];
+
+  if (topic.hasAvailableProbe) {
+    const thumbnailStyle = inferProbeThumbnailStyle(topic);
+
+    markers.push({
+      marker_id: `${topic.id}-surface-marker-probe`,
+      marker_type: "probe_available",
+      visible_by_default: true,
+      priority: 100,
+      surface_anchor: {
+        anchor_mode: "sphere_surface",
+        normal_hint: [0.36, 0.76, 0.54],
+        avoid_label_overlap: true,
+      },
+      preview: {
+        title:
+          thumbnailStyle === "slider_card"
+            ? "Prediction probe"
+            : thumbnailStyle === "drag_drop_card"
+              ? "Interactive probe"
+              : thumbnailStyle === "choice_card"
+                ? "Choice probe"
+                : thumbnailStyle === "video_card"
+                  ? "Video probe"
+                  : thumbnailStyle === "audio_card"
+                    ? "Audio probe"
+                    : "Probe available",
+        thumbnail_style: thumbnailStyle,
+        modality:
+          thumbnailStyle === "video_card"
+            ? "video"
+            : thumbnailStyle === "audio_card"
+              ? "audio"
+              : thumbnailStyle === "drag_drop_card" || thumbnailStyle === "slider_card"
+                ? "interactive"
+                : "text",
+        probe_type: thumbnailStyle === "slider_card" ? "predict" : null,
+        short_prompt: topic.nextStep ?? null,
+      },
+    });
+  }
+
+  return markers;
+}
+
+function buildRings(_topic: LearningSpaceInputTopic): TopicRing[] {
+  /**
+   * Ring semantics are intentionally deferred. This keeps the renderer contract
+   * ready without forcing UX decisions too early.
+   */
+  return [];
+}
+
+function buildSatellites(
+  topic: LearningSpaceInputTopic,
+  satelliteCount: number,
+): AttemptSatellite[] {
+  return Array.from({ length: satelliteCount }, (_, index) => ({
+    satellite_id: `${topic.id}-sat-${index}`,
+    orbit_angle: (index / Math.max(1, satelliteCount)) * Math.PI * 2,
+    linked_attempt_id: null,
+  }));
+}
+
+function diagnosisPlainLanguage(diagnosis: DiagnosisType | null | undefined) {
+  switch (diagnosis) {
+    case "recall_gap":
+      return "This may need a stronger memory hook or key fact retrieval.";
+    case "representation_gap":
+      return "The mental model or representation may still be unstable.";
+    case "procedure_gap":
+      return "The steps or sequence may need to become clearer.";
+    case "discrimination_gap":
+      return "Similar ideas may still be getting mixed together.";
+    case "transfer_gap":
+      return "The idea may make sense here but still be hard to apply elsewhere.";
+    default:
+      return null;
+  }
+}
+
+function buildTopicPanelProjection(topic: LearningSpaceInputTopic): TopicPanelProjection {
+  const confusion = clamp(safeNumber(topic.confusion, 0.3), 0, 1);
+  const insight = clamp(safeNumber(topic.insight, 0.5), 0, 1);
+  const learningScore = clamp(safeNumber(topic.learningScore, 0.5), 0, 1);
+  const diagnosis = topic.diagnosis ?? null;
+  const diagnosisConfidence = readActiveDiagnosisConfidence(topic);
+  const diagnosisEvidenceCount = readActiveDiagnosisEvidenceCount(topic);
+
+  const currentStateSummary =
+    confusion > 0.68
+      ? "This topic still looks unstable and may need targeted repair."
+      : insight > 0.68 && learningScore > 0.65
+        ? "This topic is starting to look coherent and evidence-backed."
+        : "This topic is still forming; more evidence will make the state clearer.";
+
+  return {
+    current_state_summary: currentStateSummary,
+    active_diagnosis: {
+      label: diagnosis,
+      confidence: diagnosisConfidence,
+      plain_language: diagnosisPlainLanguage(diagnosis),
+    },
+    primary_block: topic.nextStep ?? null,
+    next_step: {
+      mode: topic.hasAvailableProbe ? "probe" : "clarify",
+      text: topic.nextStep ?? null,
+      reason: topic.hasAvailableProbe
+        ? "A probe is available to gather stronger evidence."
+        : "More clarification may help identify the next useful probe.",
+    },
+    recent_evidence_summary:
+      diagnosisEvidenceCount !== null
+        ? [
+            {
+              kind: "probe",
+              summary: `${diagnosisEvidenceCount} evidence event(s) currently support the active diagnosis estimate.`,
+              strength: diagnosisConfidence,
+              timestamp: null,
+            },
+          ]
+        : [],
+    why_this_topic_matters: [],
+    available_actions: topic.hasAvailableProbe
+      ? [
+          {
+            action_type: "open_probe",
+            label: "Open probe",
+            priority: 100,
+          },
+          {
+            action_type: "inspect_evidence",
+            label: "Inspect evidence",
+            priority: 30,
+          },
+        ]
+      : [
+          {
+            action_type: "ask_clarify",
+            label: "Clarify this topic",
+            priority: 50,
+          },
+          {
+            action_type: "inspect_evidence",
+            label: "Inspect evidence",
+            priority: 30,
+          },
+        ],
+  };
+}
+
+function buildFallbackProjectionMetadata(): LearningSpaceProjectionMetadata {
+  return {
+    projection_id: "local_build_learning_space_projection",
+    projection_method: "committed_topic_position_passthrough",
+    dimensionality: 3,
+    relationship_basis: [
+      "local_derived_shared_diagnosis",
+      "local_derived_shared_confusion_pattern",
+      "local_derived_shared_insight_pattern",
+    ],
+    generated_at: null,
+    confidence: null,
+    notes: [
+      "Local buildLearningSpace fallback: no backend relationship/viewpoint layer was supplied. Positions are committed topic_position values only.",
+    ],
+  };
+}
+
+function normalizeRelationshipForContract(
+  relationship: LearningSpaceRelationship,
+): LearningSpaceRelationship {
+  const visibleByDefault =
+    relationship.visible_by_default ??
+    relationship.display_policy?.visible_by_default ??
+    relationship.display_policy?.show_in_overview ??
+    false;
+
+  const affectsLayout =
+    relationship.affects_layout ??
+    relationship.display_policy?.affects_layout ??
+    (relationship.relationship_type === "semantic" ||
+      relationship.relationship_type === "semantic_similarity");
+
+  return {
+    ...relationship,
+    relationship_type:
+      relationship.relationship_type === "semantic"
+        ? "semantic_similarity"
+        : relationship.relationship_type,
+    evidence_count: relationship.evidence_count ?? relationship.evidence_source?.length ?? 1,
+    affects_layout: affectsLayout,
+    visible_by_default: visibleByDefault,
+    reasons: relationship.reasons ?? [],
+    display_policy: {
+      ...relationship.display_policy,
+      show_in_overview: relationship.display_policy?.show_in_overview ?? visibleByDefault,
+      show_on_focus: relationship.display_policy?.show_on_focus ?? true,
+      visible_by_default: visibleByDefault,
+      affects_layout: affectsLayout,
+      max_opacity: relationship.display_policy?.max_opacity ?? 0.35,
+      visual_style: relationship.display_policy?.visual_style ?? "thread",
+      priority: relationship.display_policy?.priority ?? relationship.strength,
+    },
+  };
+}
+
+function relationshipSortPriority(relationship: LearningSpaceRelationship) {
+  return relationship.display_policy?.priority ?? relationship.strength ?? 0;
+}
+
+function relationshipDedupeKey(relationship: LearningSpaceRelationship) {
+  const [a, b] =
+    relationship.source_topic_id < relationship.target_topic_id
+      ? [relationship.source_topic_id, relationship.target_topic_id]
+      : [relationship.target_topic_id, relationship.source_topic_id];
+
+  return `${relationship.relationship_type}:${a}::${b}`;
+}
+
+function mergeLearningSpaceRelationships(args: {
+  transported: LearningSpaceRelationship[];
+  derived: LearningSpaceRelationship[];
+}) {
+  const relationshipsByKey = new Map<string, LearningSpaceRelationship>();
+
+  for (const relationship of [...args.derived, ...args.transported]) {
+    const normalized = normalizeRelationshipForContract(relationship);
+    const key = relationshipDedupeKey(normalized);
+    const existing = relationshipsByKey.get(key);
+
+    if (!existing || relationshipSortPriority(normalized) > relationshipSortPriority(existing)) {
+      relationshipsByKey.set(key, normalized);
+    }
+  }
+
+  return [...relationshipsByKey.values()].sort((a, b) => {
+    const priorityA = relationshipSortPriority(a);
+    const priorityB = relationshipSortPriority(b);
+
+    if (priorityB !== priorityA) return priorityB - priorityA;
+    if (b.strength !== a.strength) return b.strength - a.strength;
+
+    return a.relationship_id.localeCompare(b.relationship_id);
+  });
+}
+
+function buildLocalDerivedRelationships(
+  topics: LearningSpaceInputTopic[],
+): LearningSpaceRelationship[] {
+  type ExtendedRelationshipGraphTopic = RelationshipGraphTopic & {
+    diagnosisState?: DiagnosisState | null;
+  };
+
+  const graphTopics: ExtendedRelationshipGraphTopic[] = topics.map((topic) => ({
+    id: topic.id,
+    topic_label: topic.topic_label,
+    diagnosis: topic.diagnosis ?? null,
+    confusion: topic.confusion ?? null,
+    insight: topic.insight ?? null,
+    learningScore: topic.learningScore ?? null,
+    position: topic.position,
+    semanticPosition: topic.semanticPosition ?? null,
+    semanticPositionMethod: topic.semanticPositionMethod ?? null,
+    semanticPositionUpdatedAt: topic.semanticPositionUpdatedAt ?? null,
+    messageCount: topic.messageCount ?? null,
+    diagnosisState: readDiagnosisState(topic),
+  }));
+
+  return buildTopicRelationships(graphTopics, {
+    generatedAt: new Date().toISOString(),
+  }).relationships;
+}
+
+function collectLearningSpaceRelationships(
+  topics: LearningSpaceInputTopic[],
+): LearningSpaceRelationship[] {
+  const transported: LearningSpaceRelationship[] = [];
+
+  for (const topic of topics) {
+    for (const relationship of topic.learningSpaceRelationships ?? []) {
+      transported.push(relationship);
+    }
+  }
+
+  const derived = buildLocalDerivedRelationships(topics);
+
+  return mergeLearningSpaceRelationships({
+    transported,
+    derived,
+  });
+}
+
+function collectLearningSpaceViewpoints(
+  topics: LearningSpaceInputTopic[],
+): LearningSpaceViewpoint[] {
+  const viewpointsById = new Map<string, LearningSpaceViewpoint>();
+
+  for (const topic of topics) {
+    for (const viewpoint of topic.learningSpaceViewpoints ?? []) {
+      viewpointsById.set(viewpoint.viewpoint_id, viewpoint);
+    }
+  }
+
+  return [...viewpointsById.values()].sort((a, b) => {
+    if (a.viewpoint_type !== b.viewpoint_type) {
+      if (a.viewpoint_type === "overview") return -1;
+      if (b.viewpoint_type === "overview") return 1;
+      if (a.viewpoint_type === "bridge") return -1;
+      if (b.viewpoint_type === "bridge") return 1;
+    }
+
+    return a.viewpoint_id.localeCompare(b.viewpoint_id);
+  });
+}
+
+function resolveLearningSpaceProjection(
+  topics: LearningSpaceInputTopic[],
+): LearningSpaceProjectionMetadata {
+  const projection = topics.find(
+    (topic) => topic.learningSpaceProjection,
+  )?.learningSpaceProjection;
+
+  return projection ?? buildFallbackProjectionMetadata();
+}
+
+export function buildLearningSpace(
+  topics: LearningSpaceInputTopic[],
+): LearningSpace {
+  const relationships = collectLearningSpaceRelationships(topics);
+  const viewpoints = collectLearningSpaceViewpoints(topics);
+  const projection = resolveLearningSpaceProjection(topics);
+
+  return {
+    space_version: "v1",
+    topics: topics.map((topic) => {
+      const topicLabel = getTopicLabel(topic);
+      const satelliteCount = buildSatelliteCount(topic);
+      const currentPosition = normalizeTopicPosition(topic);
+      const renderedTargetPosition = getSemanticOrCurrentTarget(topic);
+
+      return {
+        topic_id: topic.id,
+        topic_label: topicLabel,
+        position: currentPosition,
+        layout: {
+          position_source: topic.positionSource ?? "topic_position",
+          semantic_position: topic.semanticPosition ?? null,
+          semantic_position_method: topic.semanticPositionMethod ?? null,
+          semantic_position_updated_at: topic.semanticPositionUpdatedAt ?? null,
+          current_position: currentPosition,
+          rendered_target_position: renderedTargetPosition,
+          layout_confidence: round(inferLayoutConfidence(topic)),
+          movement_policy: buildMovementPolicy(topic),
+        },
+        render_state: buildRenderState(topic),
+        surface_markers: buildSurfaceMarkers(topic),
+        rings: buildRings(topic),
+        satellite_count: satelliteCount,
+        satellites: buildSatellites(topic, satelliteCount),
+        topic_panel: buildTopicPanelProjection(topic),
+      };
+    }),
+    clusters: [],
+    relationships,
+    viewpoints,
+    projection,
+  };
+}
+
+
+================================================================================
+FILE: types\learning-space.ts
+================================================================================
+
+import type {
+  TopicLayoutMetadata,
+  TopicPosition3D,
+} from "@/lib/learning-space/topic-position";
+import type { DiagnosisType, ISO8601String } from "@/types/contracts";
+
+export type RelationshipViewMode =
+  | "semantic_similarity"
+  | "confusion"
+  | "insight"
+  | "off";
+
+export type LearningSpaceRelationshipType =
+  /**
+   * Back-compat semantic link name used by earlier learning-space payloads.
+   * Prefer semantic_similarity for new relationship-graph outputs.
+   */
+  | "semantic"
+
+  /**
+   * New typed relationship graph vocabulary.
+   */
+  | "semantic_similarity"
+  | "shared_diagnosis"
+  | "shared_confusion_pattern"
+  | "shared_insight_pattern"
+  | "prerequisite"
+  | "blocks"
+  | "transfer_bridge"
+  | "analogy"
+  | "same_cluster"
+  | "co_attempted"
+  | "content_source_overlap"
+
+  /**
+   * Back-compat / broad relationship names used by earlier payloads.
+   * These can continue to be rendered, but new code should prefer the more
+   * specific typed relationship names above.
+   */
+  | "shared_confusion"
+  | "strategy"
+  | "temporal";
+
+export type LearningSpaceRelationshipVisualStyle =
+  | "arc"
+  | "thread"
+  | "arrow"
+  | "halo"
+  | "trail"
+  | "line"
+  | "dashed_line"
+  | "pulse_line";
+
+export type LearningSpaceViewpointType =
+  | "overview"
+  | "semantic_neighborhood"
+  | "confusion_alignment"
+  | "insight_alignment"
+  | "diagnosis_alignment"
+  | "prerequisite_chain"
+  | "blocking_chain"
+  | "transfer_bridge"
+  | "bridge"
+  | "growth_path";
+
+export type LearningSpaceRelationshipBasis = {
+  /**
+   * Continuous relationship score in the relationship's native scale.
+   * For semantic relationships, this is usually cosine similarity.
+   */
+  similarity: number | null;
+
+  /**
+   * Similarity normalized inside the current learning-space snapshot.
+   * This is useful for ranking/display, but should not replace raw evidence.
+   */
+  normalized_similarity: number | null;
+
+  /**
+   * Optional backend diagnostic target distance for this relationship.
+   */
+  desired_distance: number | null;
+
+  /**
+   * Optional actual 3D/canonical distance after layout.
+   */
+  actual_distance: number | null;
+
+  /**
+   * Human/debug-readable method name for how the relationship was computed.
+   */
+  diagnostic_method: string | null;
+};
+
+export type LearningSpaceRelationshipDisplayPolicy = {
+  /**
+   * Overview should stay calm. Most relationships should be false here.
+   *
+   * Kept for compatibility with the existing viewpoint-scanner/link renderer.
+   * Newer relationship graph code should also set visible_by_default.
+   */
+  show_in_overview: boolean;
+
+  /**
+   * Whether the relationship can appear when either endpoint topic is focused.
+   */
+  show_on_focus: boolean;
+
+  /**
+   * Newer, simpler visibility flag. This says whether a link can be shown in
+   * the default scene without an explicit overlay/viewpoint.
+   */
+  visible_by_default: boolean;
+
+  /**
+   * Whether this relationship should be allowed to influence semantic/layout
+   * nudging. This does not mean the renderer must visibly draw the link.
+   */
+  affects_layout: boolean;
+
+  /**
+   * Upper opacity limit the renderer should respect for this relationship.
+   */
+  max_opacity: number;
+
+  /**
+   * Renderer hint only. It does not define the relationship's meaning.
+   */
+  visual_style: LearningSpaceRelationshipVisualStyle;
+
+  /**
+   * Higher priority relationships should be revealed first when the scene is busy.
+   */
+  priority: number;
+};
+
+export type LearningSpaceRelationship = {
+  relationship_id: string;
+  source_topic_id: string;
+  target_topic_id: string;
+  relationship_type: LearningSpaceRelationshipType;
+
+  /**
+   * Strength is continuous and relationship-specific. For semantic links it is
+   * generally derived from embedding similarity.
+   */
+  strength: number;
+
+  /**
+   * Confidence reflects evidence quality, not relationship strength.
+   */
+  confidence: number;
+
+  /**
+   * Number of evidence items/signals supporting this relationship.
+   */
+  evidence_count?: number;
+
+  /**
+   * Short source tags such as topic_label_embedding, topic_message_embedding,
+   * shared_diagnosis, shared_confusion, attempt, or source_overlap.
+   */
+  evidence_source: string[];
+
+  /**
+   * Optional human-facing/debug summary of why this relationship exists.
+   */
+  evidence_summary: string | null;
+
+  /**
+   * Top-level copy of the layout/display decision for simple consumers.
+   * display_policy carries the full renderer policy.
+   */
+  affects_layout: boolean;
+  visible_by_default: boolean;
+
+  /**
+   * Human/debug-readable reason tags. These should be stable enough to inspect
+   * without being shown directly as learner-facing copy.
+   */
+  reasons?: string[];
+
+  updated_at?: ISO8601String | null;
+
+  basis: LearningSpaceRelationshipBasis;
+  display_policy: LearningSpaceRelationshipDisplayPolicy;
+};
+
+export type LearningSpaceViewpointCamera = {
+  /**
+   * Camera values are optional in early contract phases. A viewpoint can first
+   * identify what should be revealed before the frontend knows the exact camera.
+   */
+  position: TopicPosition3D | null;
+  target: TopicPosition3D | null;
+  up: TopicPosition3D | null;
+  distance: number | null;
+};
+
+export type LearningSpaceViewpoint = {
+  viewpoint_id: string;
+  viewpoint_type: LearningSpaceViewpointType;
+  label: string;
+
+  /**
+   * Why this viewpoint exists, e.g. reveal semantic neighbors or align confusion.
+   */
+  intent: string;
+
+  focus_topic_ids: string[];
+  relationship_ids: string[];
+  camera: LearningSpaceViewpointCamera;
+
+  relationship_filter: {
+    relationship_types: LearningSpaceRelationshipType[];
+    max_visible_relationships: number;
+  };
+
+  explanation: string | null;
+};
+
+export type LearningSpaceProjectionMetadata = {
+  projection_id: string;
+  projection_method: string;
+  dimensionality: 2 | 3;
+
+  /**
+   * What evidence sources shaped this projection.
+   */
+  relationship_basis: string[];
+
+  generated_at: string | null;
+  confidence: number | null;
+  notes: string[];
+};
+
+export type TopicSurfaceMarkerType =
+  | "probe_available"
+  | "review_due"
+  | "new_insight"
+  | "needs_attention"
+  | "content_attached"
+  | "star_candidate";
+
+export type TopicSurfaceMarkerThumbnailStyle =
+  | "text_card"
+  | "choice_card"
+  | "drag_drop_card"
+  | "slider_card"
+  | "graph_card"
+  | "video_card"
+  | "audio_card"
+  | "simulation_card"
+  | "generic_card";
+
+export type TopicSurfaceMarkerModality =
+  | "text"
+  | "audio"
+  | "video"
+  | "interactive"
+  | "diagram"
+  | "simulation";
+
+export type TopicSurfaceMarkerProbeType =
+  | "explain"
+  | "predict"
+  | "discriminate"
+  | "transform"
+  | "apply_transfer"
+  | null;
+
+export type TopicSurfaceMarker = {
+  marker_id: string;
+  marker_type: TopicSurfaceMarkerType;
+  visible_by_default: boolean;
+  priority: number;
+
+  /**
+   * Surface markers are rendered as objects anchored to a topic sphere, not as
+   * free-floating UI. The renderer can choose a stable normal, then adjust to
+   * avoid labels/camera occlusion.
+   */
+  surface_anchor: {
+    anchor_mode: "sphere_surface";
+    normal_hint?: TopicPosition3D | null;
+    avoid_label_overlap: boolean;
+  };
+
+  /**
+   * Probe markers render as small square/rectangular thumbnails attached to the
+   * sphere surface. The thumbnail_style tells the renderer which icon/treatment
+   * to use, such as choice, drag/drop, prediction, audio, video, or simulation.
+   * Other marker types can omit this and use their own visual treatment.
+   */
+  preview?: {
+    title: string;
+    thumbnail_style: TopicSurfaceMarkerThumbnailStyle;
+    modality: TopicSurfaceMarkerModality;
+    probe_type: TopicSurfaceMarkerProbeType;
+    short_prompt: string | null;
+
+    /**
+     * Renderer hint for sphere-surface media tiles. These are optional because
+     * early payloads may only specify thumbnail_style.
+     */
+    render_style?: "sphere_surface_tile" | "floating_badge";
+    aspect_ratio?: "wide" | "square";
+    curvature_strength?: number | null;
+    glow_intensity?: number | null;
+  };
+};
+
+export type TopicRingType =
+  | "active_diagnosis"
+  | "active_contract"
+  | "current_target"
+  | "probe_available"
+  | "review_due"
+  | "blocking_pressure";
+
+export type TopicRing = {
+  ring_id: string;
+  ring_type: TopicRingType;
+  strength: number;
+  confidence: number;
+  visible_by_default: boolean;
+};
+
+export type AttemptSatellite = {
+  satellite_id: string;
+  orbit_angle: number;
+  linked_attempt_id: string | null;
+
+  /**
+   * These are optional for now because current satellites are still derived from
+   * messageCount. As attempt storage matures, they should become populated from
+   * actual attempt/evidence records.
+   */
+  modality?: TopicSurfaceMarkerModality | null;
+  outcome?:
+    | "success"
+    | "near_miss"
+    | "structural_failure"
+    | "guess"
+    | "no_response"
+    | "uninterpretable"
+    | null;
+  evidence_strength?: number | null;
+  judgment_confidence?: number | null;
+  created_at?: ISO8601String | null;
+};
+
+export type TopicPanelProjection = {
+  /**
+   * Topic label/id are intentionally omitted from this learner-facing panel
+   * contract because the right sidebar already knows the selected topic label.
+   */
+  current_state_summary: string | null;
+
+  active_diagnosis: {
+    label: DiagnosisType | null;
+    confidence: number | null;
+    plain_language: string | null;
+  };
+
+  primary_block: string | null;
+
+  next_step: {
+    mode: "clarify" | "probe" | "review" | null;
+    text: string | null;
+    reason: string | null;
+  };
+
+  recent_evidence_summary: {
+    kind: "attempt" | "message_signal" | "probe" | "review";
+    summary: string;
+    strength: number | null;
+    timestamp: ISO8601String | null;
+  }[];
+
+  why_this_topic_matters: string[];
+
+  available_actions: {
+    action_type: "open_probe" | "review" | "ask_clarify" | "inspect_evidence";
+    label: string;
+    priority: number;
+  }[];
+};
+
+export type LearningSpaceTopic = {
+  topic_id: string;
+  topic_label: string;
+
+  /**
+   * Renderer-safe current committed visual position.
+   */
+  position: TopicPosition3D;
+
+  /**
+   * Layout metadata for debugging and future animation/commit behavior.
+   * The renderer may inspect this, but it should not become the source of truth.
+   */
+  layout: TopicLayoutMetadata & {
+    /**
+     * Current committed position copied here so future projection code can
+     * reason about current -> semantic_target -> rendered_target without
+     * changing the existing top-level `position` contract.
+     */
+    current_position: TopicPosition3D;
+
+    /**
+     * The target the renderer/layout should drift toward. In this first contract
+     * phase, this is usually semantic_position when available, otherwise the
+     * committed position.
+     */
+    rendered_target_position: TopicPosition3D;
+
+    /**
+     * Confidence that the target position is meaningful enough to influence
+     * motion. Low confidence should produce smaller nudges.
+     */
+    layout_confidence: number;
+
+    movement_policy: {
+      easing: "slow" | "normal" | "fast";
+      max_step_per_update: number;
+      preserve_user_spatial_memory: boolean;
+    };
+  };
+
+  render_state: {
+    /**
+     * Visible sphere radius. This controls the rendered body size.
+     */
+    radius: number;
+
+    /**
+     * Minimum world-space clearance the layout/renderer should reserve for this
+     * topic. This may be larger than radius because rings, probe markers,
+     * local bobbing, labels, and satellites can occupy visual space beyond the
+     * sphere.
+     */
+    collision_radius: number;
+
+    /**
+     * Visual roughness/blobiness proxy. Current direction keeps this near zero
+     * so topics remain stable spheres; confusion should be shown through
+     * overlays, relationships, markers, rings, or panels instead.
+     */
+    surface_noise: number;
+
+    /**
+     * Smoothness/coherence proxy for the stable topic body.
+     */
+    smoothness: number;
+
+    /**
+     * Visual activation/motion proxy. This should remain subtle and renderer-safe.
+     */
+    spin_rate: number;
+
+    /**
+     * Visual richness/color-presence proxy. Currently derived from insight.
+     */
+    saturation: number;
+
+    /**
+     * Reserved high-mastery visual state.
+     */
+    is_star: boolean;
+
+    /**
+     * Glow is a separate visual channel from saturation. This lets future UX
+     * represent insight/coherence/focus/star state without overloading color.
+     */
+    glow_intensity: number;
+    glow_source: "insight" | "star_state" | "focus" | "none";
+  };
+
+  /**
+   * Small UI/render objects attached to the sphere surface. A probe_available
+   * marker can become a thumbnail preview of the next probe.
+   */
+  surface_markers: TopicSurfaceMarker[];
+
+  /**
+   * Rings are reserved for active state / diagnosis / contract / review visuals.
+   * Most should remain empty until their UX meaning is clear.
+   */
+  rings: TopicRing[];
+
+  satellite_count: number;
+  satellites: AttemptSatellite[];
+
+  /**
+   * Learner-facing right-panel projection. This should be elegant and sparse:
+   * the renderer/UI can show only fields that are useful and non-empty.
+   */
+  topic_panel: TopicPanelProjection;
+};
+
+export type LearningSpaceCluster = {
+  cluster_id: string;
+  cluster_label?: string;
+  cluster_centroid: TopicPosition3D;
+  member_topic_ids: string[];
+};
+
+export type LearningSpace = {
+  space_version: "v1";
+  topics: LearningSpaceTopic[];
+  clusters: LearningSpaceCluster[];
+
+  /**
+   * Relationship truth layer. Positions suggest relationships; relationship
+   * objects explain which connections should be revealed from viewpoints.
+   */
+  relationships: LearningSpaceRelationship[];
+
+  /**
+   * Camera/intention layer. Viewpoints reveal relationships through purposeful
+   * framing rather than always-on graph clutter.
+   */
+  viewpoints: LearningSpaceViewpoint[];
+
+  /**
+   * Debug/contract metadata for how this learning-space projection was created.
+   */
+  projection: LearningSpaceProjectionMetadata;
+};
+
+================================================================================
+FILE: types\topic.ts
+================================================================================
+
+import type { DiagnosisType, ISO8601String } from "@/types/contracts";
+import type {
+  LearningSpaceProjectionMetadata,
+  LearningSpaceRelationship,
+  LearningSpaceViewpoint,
+} from "@/types/learning-space";
+import type {
+  TopicPosition3D,
+  TopicPositionSource,
+} from "@/lib/learning-space/topic-position";
+
+export type TopicModelSignalStatus =
+  | "pending"
+  | "ready"
+  | "unavailable"
+  | "error"
+  | "unknown";
+
+export type TopicConfusionInsightStatus = {
+  /**
+   * Whether the displayed confusion / insight values are backed by a real
+   * confusion-insight model score yet.
+   *
+   * New topics may briefly show provisional fallback values while the local
+   * worker scores the structured v1_1 payload. During that window, UI should
+   * usually show a loading state instead of treating the numeric values as
+   * final model-backed signals.
+   */
+  status: TopicModelSignalStatus;
+
+  /**
+   * True when the top-level confusion/insight numbers are temporary fallback
+   * values, usually from the foreground message route before the worker has
+   * finished scoring.
+   */
+  isPending: boolean;
+
+  /**
+   * True when at least one real model-backed score has been persisted for this
+   * topic.
+   */
+  hasModelScore: boolean;
+
+  /**
+   * True when the most recent persisted score used the structured v1_1 payload.
+   */
+  hasStructuredV1Score?: boolean;
+
+  /**
+   * Number of pending confusion/insight scoring queue items still waiting for
+   * worker processing.
+   */
+  pendingCount?: number;
+
+  /**
+   * Number of real confusion/insight model signals already applied to this
+   * topic.
+   */
+  signalCount?: number;
+
+  /**
+   * Audit metadata from topic_json.last_confusion_insight_score when available.
+   */
+  lastScore?: {
+    scoreId?: string | null;
+    processedAt?: ISO8601String | null;
+    modelVersion?: string | null;
+    inferenceMode?: "service" | "local" | string | null;
+    modelConfusion?: number | null;
+    modelInsight?: number | null;
+    alphaApplied?: number | null;
+    persistenceSource?: string | null;
+    payloadShape?: "structured_v1_1" | "legacy_text" | string | null;
+  } | null;
+};
+
+export type Topic = {
+  id: string;
+  topic_label: string;
+  diagnosis: DiagnosisType;
+  nextStep: string;
+  confusion: number;
+  insight: number;
+  learningScore: number;
+
+  /**
+   * Runtime/model-signal status for confusion and insight.
+   *
+   * This lets UI distinguish real model-backed values from provisional fallback
+   * values used while worker-mode scoring is still pending.
+   */
+  confusionInsightStatus?: TopicConfusionInsightStatus;
+
+  /**
+   * Current committed renderer position.
+   * This should correspond to topic_position_x/y/z when persisted.
+   */
+  position: TopicPosition3D;
+
+  /**
+   * Optional semantic target position.
+   * This should correspond to semantic_position_x/y/z when available.
+   */
+  semanticPosition?: TopicPosition3D | null;
+  semanticPositionMethod?: string | null;
+  semanticPositionUpdatedAt?: ISO8601String | null;
+  positionSource?: TopicPositionSource;
+
+  scale?: number;
+  messageCount?: number;
+  lastUpdated?: ISO8601String | null;
+  hasAvailableProbe?: boolean;
+
+  /**
+   * Relationship/viewpoint layer carried through bootstrap refreshes.
+   *
+   * These are global learning-space structures, not topic-local facts. They are
+   * attached to each bootstrapped topic only as a transport mechanism so
+   * buildLearningSpace(topics) can reconstruct the full scene after realtime or
+   * fallback-poll refreshes.
+   *
+   * In the next relationship-graph pass, these will be populated by a derived
+   * relationship builder rather than manually authored clusters/links.
+   */
+  learningSpaceRelationships?: LearningSpaceRelationship[];
+  learningSpaceViewpoints?: LearningSpaceViewpoint[];
+  learningSpaceProjection?: LearningSpaceProjectionMetadata | null;
+};
+
+export function getTopicLabel(topic: Pick<Topic, "topic_label">): string {
+  return topic.topic_label || "Untitled Topic";
+}
+
+export function isConfusionInsightPending(topic: Pick<Topic, "confusionInsightStatus">) {
+  return topic.confusionInsightStatus?.isPending === true;
+}
+
+export function hasModelBackedConfusionInsight(
+  topic: Pick<Topic, "confusionInsightStatus">,
+) {
+  return topic.confusionInsightStatus?.hasModelScore === true;
+}
+
+================================================================================
+ACTIVE USAGE: buildTopicRelationships
+================================================================================
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:21
+  buildTopicRelationships,
+---- context before ----
+  TopicPosition3D,
+  TopicPositionSource,
+} from "@/lib/learning-space/topic-position";
+import {
+---- context after ----
+  type RelationshipGraphTopic,
+} from "@/lib/learning-space/engine-bridge";
+
+type LearningSpaceInputTopic = {
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:567
+  return buildTopicRelationships(graphTopics, {
+---- context before ----
+    messageCount: topic.messageCount ?? null,
+    diagnosisState: readDiagnosisState(topic),
+  }));
+
+---- context after ----
+    generatedAt: new Date().toISOString(),
+  }).relationships;
+}
+
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\engine-bridge.ts:6
+  buildTopicRelationships,
+---- context before ----
+  DiagnosisState,
+} from "@/lib/engine/diagnosis";
+
+export {
+---- context after ----
+  type RelationshipGraphTopic,
+} from "@/lib/engine/relationships";
+
+/**
+
+
+================================================================================
+ACTIVE USAGE: RelationshipGraphTopic
+================================================================================
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:22
+  type RelationshipGraphTopic,
+---- context before ----
+  TopicPositionSource,
+} from "@/lib/learning-space/topic-position";
+import {
+  buildTopicRelationships,
+---- context after ----
+} from "@/lib/learning-space/engine-bridge";
+
+type LearningSpaceInputTopic = {
+  id: string;
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:548
+  type ExtendedRelationshipGraphTopic = RelationshipGraphTopic & {
+---- context before ----
+
+function buildLocalDerivedRelationships(
+  topics: LearningSpaceInputTopic[],
+): LearningSpaceRelationship[] {
+---- context after ----
+    diagnosisState?: DiagnosisState | null;
+  };
+
+  const graphTopics: ExtendedRelationshipGraphTopic[] = topics.map((topic) => ({
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:552
+  const graphTopics: ExtendedRelationshipGraphTopic[] = topics.map((topic) => ({
+---- context before ----
+  type ExtendedRelationshipGraphTopic = RelationshipGraphTopic & {
+    diagnosisState?: DiagnosisState | null;
+  };
+
+---- context after ----
+    id: topic.id,
+    topic_label: topic.topic_label,
+    diagnosis: topic.diagnosis ?? null,
+    confusion: topic.confusion ?? null,
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\engine-bridge.ts:7
+  type RelationshipGraphTopic,
+---- context before ----
+} from "@/lib/engine/diagnosis";
+
+export {
+  buildTopicRelationships,
+---- context after ----
+} from "@/lib/engine/relationships";
+
+/**
+ * Learning-space engine bridge.
+
+
+================================================================================
+ACTIVE USAGE: DiagnosisState
+================================================================================
+
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\persistence.ts:59
+  const diagnosisState = asJsonRecord(topicJsonRecord.diagnosis_state);
+---- context before ----
+}
+
+function getPersistedActiveDiagnosisFromTopicJson(topicJson: JsonValue) {
+  const topicJsonRecord = asJsonRecord(topicJson);
+---- context after ----
+  const stateActiveDiagnosis = asActiveDiagnosis(diagnosisState.active_diagnosis);
+
+  if (stateActiveDiagnosis) return stateActiveDiagnosis;
+
+
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\persistence.ts:60
+  const stateActiveDiagnosis = asActiveDiagnosis(diagnosisState.active_diagnosis);
+---- context before ----
+
+function getPersistedActiveDiagnosisFromTopicJson(topicJson: JsonValue) {
+  const topicJsonRecord = asJsonRecord(topicJson);
+  const diagnosisState = asJsonRecord(topicJsonRecord.diagnosis_state);
+---- context after ----
+
+  if (stateActiveDiagnosis) return stateActiveDiagnosis;
+
+  return asActiveDiagnosis(topicJsonRecord.active_diagnosis);
+
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\persistence.ts:197
+  const diagnosisStateUpdate = updateDiagnosisBeliefs({
+---- context before ----
+  });
+
+  const previousTopicJson = asJsonRecord(topicJsonWithPendingScore);
+
+---- context after ----
+    previousState: previousTopicJson.diagnosis_state,
+    currentActiveDiagnosis:
+      args.contractJudgment.suggested_active_diagnosis ??
+      args.nextProbePlan.target_diagnosis ??
+
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\persistence.ts:208
+  const persistedActiveDiagnosis = diagnosisStateUpdate.active_diagnosis;
+---- context before ----
+    contractJudgment: args.contractJudgment,
+    source: "contract_judgment_v1_1",
+  });
+
+---- context after ----
+
+  const answeredProbeContract = asProbeContractSnapshot(
+    args.answeredProbeContractSnapshot,
+  );
+
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\persistence.ts:287
+      diagnosis_state: diagnosisStateUpdate.diagnosis_state,
+---- context before ----
+        source: "contract_judging_v1_1",
+        updated_at: new Date().toISOString(),
+      },
+
+---- context after ----
+      diagnosis_state_update: {
+        active_diagnosis: diagnosisStateUpdate.active_diagnosis,
+        changed: diagnosisStateUpdate.changed,
+        reasons: diagnosisStateUpdate.reasons,
+
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\persistence.ts:289
+        active_diagnosis: diagnosisStateUpdate.active_diagnosis,
+---- context before ----
+      },
+
+      diagnosis_state: diagnosisStateUpdate.diagnosis_state,
+      diagnosis_state_update: {
+---- context after ----
+        changed: diagnosisStateUpdate.changed,
+        reasons: diagnosisStateUpdate.reasons,
+        source: "contract_judgment_v1_1",
+        updated_at: new Date().toISOString(),
+
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\persistence.ts:290
+        changed: diagnosisStateUpdate.changed,
+---- context before ----
+
+      diagnosis_state: diagnosisStateUpdate.diagnosis_state,
+      diagnosis_state_update: {
+        active_diagnosis: diagnosisStateUpdate.active_diagnosis,
+---- context after ----
+        reasons: diagnosisStateUpdate.reasons,
+        source: "contract_judgment_v1_1",
+        updated_at: new Date().toISOString(),
+      },
+
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\persistence.ts:291
+        reasons: diagnosisStateUpdate.reasons,
+---- context before ----
+      diagnosis_state: diagnosisStateUpdate.diagnosis_state,
+      diagnosis_state_update: {
+        active_diagnosis: diagnosisStateUpdate.active_diagnosis,
+        changed: diagnosisStateUpdate.changed,
+---- context after ----
+        source: "contract_judgment_v1_1",
+        updated_at: new Date().toISOString(),
+      },
+
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:4
+import type { DiagnosisState } from "@/lib/learning-space/engine-bridge";
+---- context before ----
+// lib/learning-space/build-learning-space.ts
+
+import type { DiagnosisType } from "@/types/contracts";
+---- context after ----
+import type {
+  AttemptSatellite,
+  LearningSpace,
+  LearningSpaceProjectionMetadata,
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:63
+  diagnosisState?: unknown;
+---- context before ----
+   * boundary. The engine owns the exact diagnosis/probe schema; this file only
+   * reads stable fields when present.
+   */
+  topicJson?: Record<string, unknown> | null;
+---- context after ----
+  activeDiagnosisConfidence?: number | null;
+  activeProbeContractSnapshot?: unknown;
+  nextProbeContractSnapshot?: unknown;
+  lastProbeContractSnapshot?: unknown;
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:104
+function isDiagnosisState(value: unknown): value is DiagnosisState {
+---- context before ----
+function readNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+---- context after ----
+  const record = asRecord(value);
+
+  return Boolean(
+    record &&
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:119
+function readDiagnosisState(topic: LearningSpaceInputTopic): DiagnosisState | null {
+---- context before ----
+      Array.isArray(record.history),
+  );
+}
+
+---- context after ----
+  if (isDiagnosisState(topic.diagnosisState)) {
+    return topic.diagnosisState;
+  }
+
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:120
+  if (isDiagnosisState(topic.diagnosisState)) {
+---- context before ----
+  );
+}
+
+function readDiagnosisState(topic: LearningSpaceInputTopic): DiagnosisState | null {
+---- context after ----
+    return topic.diagnosisState;
+  }
+
+  const topicJson = asRecord(topic.topicJson);
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:121
+    return topic.diagnosisState;
+---- context before ----
+}
+
+function readDiagnosisState(topic: LearningSpaceInputTopic): DiagnosisState | null {
+  if (isDiagnosisState(topic.diagnosisState)) {
+---- context after ----
+  }
+
+  const topicJson = asRecord(topic.topicJson);
+  const jsonDiagnosisState = topicJson?.diagnosis_state;
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:125
+  const jsonDiagnosisState = topicJson?.diagnosis_state;
+---- context before ----
+    return topic.diagnosisState;
+  }
+
+  const topicJson = asRecord(topic.topicJson);
+---- context after ----
+
+  return isDiagnosisState(jsonDiagnosisState) ? jsonDiagnosisState : null;
+}
+
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:127
+  return isDiagnosisState(jsonDiagnosisState) ? jsonDiagnosisState : null;
+---- context before ----
+
+  const topicJson = asRecord(topic.topicJson);
+  const jsonDiagnosisState = topicJson?.diagnosis_state;
+
+---- context after ----
+}
+
+function readDiagnosisBeliefEntry(args: {
+  topic: LearningSpaceInputTopic;
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:136
+  const diagnosisState = readDiagnosisState(args.topic);
+---- context before ----
+  diagnosis: DiagnosisType | null;
+}): Record<string, unknown> | null {
+  if (!args.diagnosis) return null;
+
+---- context after ----
+  const beliefs = asRecord(diagnosisState?.beliefs);
+
+  return asRecord(beliefs?.[args.diagnosis]);
+}
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:137
+  const beliefs = asRecord(diagnosisState?.beliefs);
+---- context before ----
+}): Record<string, unknown> | null {
+  if (!args.diagnosis) return null;
+
+  const diagnosisState = readDiagnosisState(args.topic);
+---- context after ----
+
+  return asRecord(beliefs?.[args.diagnosis]);
+}
+
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:549
+    diagnosisState?: DiagnosisState | null;
+---- context before ----
+function buildLocalDerivedRelationships(
+  topics: LearningSpaceInputTopic[],
+): LearningSpaceRelationship[] {
+  type ExtendedRelationshipGraphTopic = RelationshipGraphTopic & {
+---- context after ----
+  };
+
+  const graphTopics: ExtendedRelationshipGraphTopic[] = topics.map((topic) => ({
+    id: topic.id,
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:564
+    diagnosisState: readDiagnosisState(topic),
+---- context before ----
+    semanticPosition: topic.semanticPosition ?? null,
+    semanticPositionMethod: topic.semanticPositionMethod ?? null,
+    semanticPositionUpdatedAt: topic.semanticPositionUpdatedAt ?? null,
+    messageCount: topic.messageCount ?? null,
+---- context after ----
+  }));
+
+  return buildTopicRelationships(graphTopics, {
+    generatedAt: new Date().toISOString(),
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\engine-bridge.ts:2
+  DiagnosisState,
+---- context before ----
+export type {
+---- context after ----
+} from "@/lib/engine/diagnosis";
+
+export {
+  buildTopicRelationships,
+
+C:\Users\willc\projects\MyWay\v1\lib\legacy-engine-bridges\diagnosis.ts:6
+  DiagnosisState,
+---- context before ----
+  updateDiagnosisBeliefs,
+} from "@/lib/engine/diagnosis";
+
+export type {
+---- context after ----
+} from "@/lib/engine/diagnosis";
+
+/**
+ * Diagnosis runtime bridge.
+
+C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts:153
+  const diagnosisState = readFromTopicJson<Record<string, unknown>>(
+---- context before ----
+
+function readActiveDiagnosisFromTopicJson(
+  topicJson: Record<string, unknown> | null | undefined,
+): string | null {
+---- context after ----
+    topicJson,
+    "diagnosis_state",
+  );
+
+
+C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts:159
+    diagnosisState && typeof diagnosisState === "object"
+---- context before ----
+    "diagnosis_state",
+  );
+
+  const stateActiveDiagnosis =
+---- context after ----
+      ? asString(diagnosisState.active_diagnosis)
+      : null;
+
+  return (
+
+C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts:160
+      ? asString(diagnosisState.active_diagnosis)
+---- context before ----
+  );
+
+  const stateActiveDiagnosis =
+    diagnosisState && typeof diagnosisState === "object"
+---- context after ----
+      : null;
+
+  return (
+    stateActiveDiagnosis ??
+
+
+================================================================================
+ACTIVE USAGE: learning-space/engine-bridge
+================================================================================
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:4
+import type { DiagnosisState } from "@/lib/learning-space/engine-bridge";
+---- context before ----
+// lib/learning-space/build-learning-space.ts
+
+import type { DiagnosisType } from "@/types/contracts";
+---- context after ----
+import type {
+  AttemptSatellite,
+  LearningSpace,
+  LearningSpaceProjectionMetadata,
+
+C:\Users\willc\projects\MyWay\v1\lib\learning-space\build-learning-space.ts:23
+} from "@/lib/learning-space/engine-bridge";
+---- context before ----
+} from "@/lib/learning-space/topic-position";
+import {
+  buildTopicRelationships,
+  type RelationshipGraphTopic,
+---- context after ----
+
+type LearningSpaceInputTopic = {
+  id: string;
+  topic_label: string;
+
+
+================================================================================
+FILE: archive\old-engine\relationships.ts
+================================================================================
+
+MISSING: archive\old-engine\relationships.ts
+
+================================================================================
+FILE: archive\old-engine\diagnosis.ts
+================================================================================
+
+MISSING: archive\old-engine\diagnosis.ts
+
+================================================================================
+FILE: archive\old-engine\relationships\index.ts
+================================================================================
+
+export * from "./relationship-types";
+export * from "./relationship-policy";
+export * from "./build-topic-relationships";
+
+================================================================================
+FILE: archive\old-engine\diagnosis\index.ts
+================================================================================
+
+export * from "./diagnosis-types";
+export * from "./update-diagnosis-beliefs";

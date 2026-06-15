@@ -1,21 +1,24 @@
-export {
+﻿export {
   interpretAttemptEvidence,
   normalizeAttemptEvidence,
-} from "@/lib/engine/evidence";
+} from "@/lib/learning-evaluation/attempt-evidence";
 
 export type {
   AttemptInterpretation,
   NormalizedEvidenceInput,
-} from "@/lib/engine/evidence";
+} from "@/lib/learning-evaluation/attempt-evidence";
 
 /**
  * Attempt evidence runtime bridge.
  *
- * This is the runtime-facing compatibility boundary for turning a submitted
- * probe attempt into normalized evidence and an attempt interpretation.
+ * This compatibility boundary no longer reaches through lib/engine/evidence or
+ * archive/old-engine for active probe-submit evidence interpretation.
  *
- * Today it delegates to the archived legacy evidence interpreter through the
- * temporary engine shim.
+ * Current behavior is intentionally preserved by copying the previous evidence
+ * interpreter into:
  *
- * Later, this file should call the real Probe Attempt Evaluator provider.
+ *   lib/learning-evaluation/attempt-evidence
+ *
+ * Later, this bridge can be replaced by Probe Attempt Evaluator output once the
+ * evaluator is allowed to influence active route behavior.
  */

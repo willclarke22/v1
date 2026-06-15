@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { runProbeSubmitEngineShadow } from "@/lib/api-routes/probe-submit/engine-shadow";
 import { buildLearningSpace } from "@/lib/learning-space/build-learning-space";
 import { makeId } from "@/lib/utils/ids";
 import type {
@@ -21,8 +22,10 @@ import {
 import { loadRouteTopics } from "@/lib/topic-routing/route-topics";
 import { buildRunMetadata } from "@/lib/api-routes/probe-submit/timing";
 import {
+  getAnsweredEngineRenderableProbe,
   getAnsweredProbeContractSnapshot,
   getRouteTopicLabel,
+  getStructuredProbeAttempt,
   normalizeProbeRawResponse,
   validateProbeSubmitBody,
   type ProbeSubmitBody,
@@ -77,6 +80,24 @@ export async function POST(request: NextRequest) {
     const topicLabel = body.topicLabel || getRouteTopicLabel(topic);
     const provisionalDiagnosis = inferDiagnosisFromTopic(topic);
     const answeredProbeContractSnapshot = getAnsweredProbeContractSnapshot(body);
+    const structuredAttempt = getStructuredProbeAttempt(body);
+    const answeredEngineRenderableProbe = getAnsweredEngineRenderableProbe({
+      body,
+      answeredProbeContractSnapshot,
+    });
+
+    /**
+     * Preserve the actual structured learner action for evidence building while
+     * keeping rawResponse as the legacy text projection for old scoring and
+     * persistence paths.
+     */
+    const attemptEvidenceBody: ProbeSubmitBody = {
+      ...body,
+      response: structuredAttempt ?? body.response ?? rawResponse,
+      structuredAttempt,
+      attempt: structuredAttempt,
+      engineRenderableProbe: answeredEngineRenderableProbe,
+    };
 
     const runId = makeId("run");
 
@@ -94,7 +115,7 @@ export async function POST(request: NextRequest) {
     const vectorInfo = buildVectorInfo(topic);
 
     const attemptEvidencePackage = buildAttemptEvidencePackage({
-      body: { ...body, response: rawResponse },
+      body: attemptEvidenceBody as Parameters<typeof buildAttemptEvidencePackage>[0]["body"],
       topic,
       vectorInfo,
       modelSignals,
@@ -169,6 +190,26 @@ export async function POST(request: NextRequest) {
         answeredProbeContractSnapshot ?? nextProbePlan.probe_contract_snapshot,
     });
 
+    /**
+     * New engine shadow path:
+     *
+     * This runs the 3-model engine attempt-evaluator boundary in parallel with
+     * the existing route behavior. It logs/validates the new engine output but
+     * does not change the response, decision, metrics, persistence, or next
+     * probe yet.
+     */
+    await runProbeSubmitEngineShadow({
+      runId,
+      body,
+      rawResponse,
+      topic,
+      topicLabel,
+      activeDiagnosis: provisionalDiagnosis,
+      answeredProbeContractSnapshot,
+      structuredAttempt,
+      answeredEngineRenderableProbe,
+      nextProbePlan,
+    });
     const decision = buildDecision({
       topic,
       scoring,
@@ -275,6 +316,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
 
 
 

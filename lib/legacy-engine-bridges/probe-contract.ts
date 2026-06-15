@@ -1,12 +1,32 @@
-import { buildProbeContract as buildLegacyProbeContract } from "@/lib/engine/probes";
+﻿import {
+  buildLegacyCompatibleProbeContract,
+  type LegacyCompatibleProbeContractInput,
+  type LegacyCompatibleProbeContractResult,
+} from "@/lib/engine/probe-delivery";
 
 /**
  * Probe contract runtime bridge.
  *
- * This is the single runtime-facing compatibility boundary for probe contract
- * generation. Today it delegates to the archived legacy probe builder through
- * the temporary engine shim.
+ * This is still the compatibility import path used by existing probe-planning
+ * code, but it no longer reaches into archive/old-engine through lib/engine/probes.
  *
- * Later, this file should call the real Probe Contract Model provider instead.
+ * Current behavior:
+ * - returns a JSON-safe ProbeContractSnapshot-compatible object
+ * - embeds the new ProbeContractModelOutput shape
+ * - embeds EngineRenderableProbe for the UI migration path
+ *
+ * Later:
+ * - replace buildLegacyCompatibleProbeContract with runProbeContract(provider)
+ *   once the live planning path is async/provider-owned.
  */
-export const buildProbeContract = buildLegacyProbeContract;
+export function buildProbeContract(
+  input: LegacyCompatibleProbeContractInput,
+): LegacyCompatibleProbeContractResult {
+  return buildLegacyCompatibleProbeContract(input);
+}
+
+export type {
+  LegacyCompatibleProbeContractInput,
+  LegacyCompatibleProbeContractResult,
+};
+

@@ -1,20 +1,23 @@
-export {
+﻿export {
   updateDiagnosisBeliefs,
-} from "@/lib/engine/diagnosis";
+} from "@/lib/learning-evaluation/diagnosis-state";
 
 export type {
   DiagnosisState,
-} from "@/lib/engine/diagnosis";
+} from "@/lib/learning-evaluation/diagnosis-state";
 
 /**
  * Diagnosis runtime bridge.
  *
- * This is the runtime-facing compatibility boundary for updating diagnosis
- * state after a message or probe attempt.
+ * This compatibility boundary no longer reaches through lib/engine/diagnosis or
+ * archive/old-engine for active probe-submit diagnosis-state persistence.
  *
- * Today it delegates to the archived legacy diagnosis updater through the
- * temporary engine shim.
+ * Current behavior is intentionally preserved by copying the previous diagnosis
+ * updater into:
  *
- * Later, this file should call the real Diagnosis Model / diagnosis-state
- * update logic.
+ *   lib/learning-evaluation/diagnosis-state
+ *
+ * Later, this bridge can be replaced by the new engine state update layer once
+ * Diagnosis Model / Probe Attempt Evaluator deltas are allowed to control active
+ * persisted diagnosis state.
  */

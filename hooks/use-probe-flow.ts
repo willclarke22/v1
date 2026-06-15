@@ -1,9 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import type { EngineRenderableProbe } from "@/lib/engine";
 import type { Topic } from "@/types/topic";
 import type { ProbeSummary } from "@/ui/learning-space/probes/probe-surface";
+import type { ProbeAnswerDraft } from "@/ui/learning-space/probes/probe-ui-types";
 import {
   isTopicPosition3D,
   type TopicPosition3D,
@@ -23,9 +25,21 @@ type ProbeSubmitPayload = {
   probeId: string;
   topicId: string;
   response: string;
+
+  /**
+   * Structured answer produced by ProbeRenderer. Keep response above as a
+   * legacy text fallback until /api/probe/submit is fully evaluator-first.
+   */
+  attempt?: ProbeAnswerDraft;
+
+  /**
+   * Engine-native probe used by the renderer. This lets the submit route later
+   * build ProbeAttemptEvaluatorInput without reconstructing the answered probe.
+   */
+  engineRenderableProbe?: EngineRenderableProbe | null;
+
   probeContractSnapshot?: ProbeContractSnapshot | null;
 };
-
 type LegacyProbeSubmitApiResponse = {
   result?: MyWayRunResult;
   scene_update?: ProbeSubmitRouteResponse["scene_update"];
@@ -85,6 +99,58 @@ type UseProbeFlowParams = {
 };
 
 const MAX_CONSECUTIVE_PROBES = 2;
+function responseTypeFromAttempt(attempt: ProbeAnswerDraft | null | undefined) {
+  switch (attempt?.attempt_type) {
+    case "single_choice":
+      return "choice";
+    case "multi_choice":
+      return "multiple_choice";
+    case "ordered_items":
+      return "ordering";
+    case "drag_drop_placements":
+      return "interactive_action";
+    case "numeric":
+      return "predict";
+    case "graph":
+      return "interactive_action";
+    case "audio_response":
+      return "audio";
+    case "video_click":
+      return "video";
+    case "none":
+      return "mixed";
+    case "text":
+    case "unknown":
+    default:
+      return "text";
+  }
+}
+
+function rendererTypeFromAttempt(attempt: ProbeAnswerDraft | null | undefined) {
+  switch (attempt?.attempt_type) {
+    case "single_choice":
+    case "multi_choice":
+      return "multiple_choice_renderer";
+    case "ordered_items":
+      return "ordering_renderer";
+    case "drag_drop_placements":
+      return "drag_drop_renderer";
+    case "numeric":
+      return "slider_renderer";
+    case "graph":
+      return "graph_renderer";
+    case "audio_response":
+      return "audio_renderer";
+    case "video_click":
+      return "video_renderer";
+    case "none":
+      return "display_renderer";
+    case "text":
+    case "unknown":
+    default:
+      return "text_renderer";
+  }
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -104,6 +170,38 @@ function extractLearningSpaceFromProbeSubmitResponse(
   data: LegacyProbeSubmitApiResponse,
 ): LearningSpace | null {
   return data.scene_update?.learning_space ?? data.result?.learning_space ?? null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isEngineRenderableProbe(value: unknown): value is EngineRenderableProbe {
+  return (
+    isRecord(value) &&
+    value.schema_version === "engine_renderable_probe_v1" &&
+    typeof value.probe_type === "string" &&
+    typeof value.expected_attempt_type === "string" &&
+    isRecord(value.prompt)
+  );
+}
+
+function getEngineRenderableProbeFromDeliveredProbe(
+  deliveredProbe: DeliveredProbe | null | undefined,
+): EngineRenderableProbe | null {
+  const snapshot = deliveredProbe?.probe_contract_snapshot;
+
+  if (!isRecord(snapshot)) {
+    return null;
+  }
+
+  const candidate = snapshot.engine_renderable_probe;
+
+  if (!isEngineRenderableProbe(candidate)) {
+    return null;
+  }
+
+  return JSON.parse(JSON.stringify(candidate)) as EngineRenderableProbe;
 }
 
 function extractInterventionFromMessageResponse(
@@ -235,6 +333,7 @@ function mapDeliveredProbeToSummary(
     expectedResponseType: deliveredProbe.expected_response_type ?? null,
     helperText: deliveredProbe.actual_context_framing ?? null,
     probeContractSnapshot: deliveredProbe.probe_contract_snapshot ?? null,
+    engineRenderableProbe: getEngineRenderableProbeFromDeliveredProbe(deliveredProbe),
   };
 }
 
@@ -299,6 +398,7 @@ function extractNextProbeFromProbeSubmitResponse(
     expectedResponseType: null,
     helperText: null,
     probeContractSnapshot: null,
+    engineRenderableProbe: null,
   };
 }
 
@@ -528,6 +628,12 @@ export function useProbeFlow({
             topicLabel: topic?.topic_label ?? topic?.id ?? "this topic",
             prompt: currentProbe?.instruction ?? null,
             response: payload.response,
+            structuredAttempt: payload.attempt ?? null,
+            attempt: payload.attempt ?? null,
+            engineRenderableProbe:
+              currentProbe?.engineRenderableProbe ??
+              payload.engineRenderableProbe ??
+              null,
             probeContractSnapshot:
               currentProbe?.probeContractSnapshot ??
               payload.probeContractSnapshot ??
@@ -537,15 +643,24 @@ export function useProbeFlow({
               payload.probeContractSnapshot ??
               null,
             submittedAt: new Date().toISOString(),
-            responseType: "text",
+            responseType: responseTypeFromAttempt(payload.attempt),
             deliveryContext: {
-              renderer_type: "text_renderer",
+              renderer_type: rendererTypeFromAttempt(payload.attempt),
               generator: "chatgpt",
               modality: "text",
               tone: "encouraging",
               pacing: "normal",
               language_style: "plain",
               context_framing: currentProbe?.instruction ?? null,
+              engine_probe_type:
+                currentProbe?.engineRenderableProbe?.probe_type ??
+                payload.engineRenderableProbe?.probe_type ??
+                null,
+              expected_attempt_type:
+                payload.attempt?.attempt_type ??
+                currentProbe?.engineRenderableProbe?.expected_attempt_type ??
+                payload.engineRenderableProbe?.expected_attempt_type ??
+                null,
             },
             metadata: {
               latencyMs: null,
@@ -676,4 +791,6 @@ export function useProbeFlow({
     handleSubmitProbe,
   };
 }
+
+
 

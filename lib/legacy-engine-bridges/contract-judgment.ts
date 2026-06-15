@@ -1,19 +1,22 @@
-export {
+﻿export {
   judgeProbeAttemptAgainstContract,
-} from "@/lib/engine/judging";
+} from "@/lib/learning-evaluation/contract-judgment";
 
 export type {
   ContractJudgment,
-} from "@/lib/engine/judging";
+} from "@/lib/learning-evaluation/contract-judgment";
 
 /**
  * Contract judgment runtime bridge.
  *
- * This is the runtime-facing compatibility boundary for judging a submitted
- * probe attempt against the probe contract that was answered.
+ * This compatibility boundary no longer reaches through lib/engine/judging or
+ * archive/old-engine for active probe-submit contract judgment.
  *
- * Today it delegates to the archived legacy contract judging stack through the
- * temporary engine shim.
+ * Current behavior is intentionally preserved by copying the previous judging
+ * stack into:
  *
- * Later, this file should call the real Probe Attempt Evaluator provider.
+ *   lib/learning-evaluation/contract-judgment
+ *
+ * Later, this bridge can be replaced by Probe Attempt Evaluator output once the
+ * evaluator is allowed to influence active route behavior.
  */
