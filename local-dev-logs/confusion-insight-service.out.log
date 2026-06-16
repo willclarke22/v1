@@ -1,2 +1,2 @@
-INFO:     127.0.0.1:56548 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57528 - "POST /score HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64323 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49360 - "POST /score HTTP/1.1" 200 OK

@@ -1,0 +1,1173 @@
+﻿MyWay lib 3-model inspection report
+Generated: 2026-06-15T18:25:54.8127707-07:00
+Project root: C:\Users\willc\projects\MyWay\v1
+
+Active source files searched: 139
+Lib TS/TSX files inspected: 77
+
+Interpretation:
+- KEEP_CORE_3MODEL = belongs to the three-model engine skeleton.
+- KEEP_ACTIVE_3MODEL_ROUTE = current stripped /api/message or /api/probe/submit helper.
+- KEEP_WORKER_OR_LAYOUT_INFRA = worker/layout/semantic space infrastructure. Do not delete just because it is not in the probe loop.
+- INSPECT_* = potentially useful but should be read before editing/removing.
+- ARCHIVE_CANDIDATE_NO_EXTERNAL_IMPORTS = no external imports found; may be safe to archive after manual review.
+
+===== TOP-LEVEL LIB FOLDER SUMMARY =====
+api-routes                        2 files      2 external refs   EXPLICIT_KEEP
+engine                           49 files     10 external refs   EXPLICIT_KEEP
+learning-progress                 1 files      2 external refs   EXPLICIT_KEEP
+learning-space                    8 files     10 external refs   EXPLICIT_KEEP
+model-adapters                    1 files      1 external refs   EXPLICIT_KEEP
+persistence                       2 files     14 external refs   EXPLICIT_KEEP
+shared                            1 files      2 external refs   EXPLICIT_KEEP
+supabase                          2 files      3 external refs   EXPLICIT_KEEP
+topic-routing                     7 files      2 external refs   EXPLICIT_KEEP
+utils                             1 files      1 external refs   NO_KEEP_LABEL
+vector                            4 files      5 external refs   EXPLICIT_KEEP
+
+===== CLASSIFICATION SUMMARY =====
+ARCHIVE_CANDIDATE_NO_EXTERNAL_IMPORTS            2
+INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS   11
+KEEP_ACTIVE_3MODEL_ROUTE                         2
+KEEP_CORE_3MODEL                                35
+KEEP_WORKER_OR_LAYOUT_INFRA                     26
+UNKNOWN_KEEP_FOR_NOW                             1
+
+===== FILE CLASSIFICATION TABLE =====
+ARCHIVE_CANDIDATE_NO_EXTERNAL_IMPORTS         refs=0   suspicious=1   lib\engine\providers\index.ts
+ARCHIVE_CANDIDATE_NO_EXTERNAL_IMPORTS         refs=0   suspicious=2   lib\engine\providers\types.ts
+INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS refs=0   suspicious=0   lib\engine\logging\build-review-batch.ts
+INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS refs=0   suspicious=0   lib\engine\logging\export-review-batch.ts
+INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS refs=0   suspicious=0   lib\engine\logging\index.ts
+INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS refs=0   suspicious=0   lib\engine\logging\log-model-call.ts
+INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS refs=0   suspicious=1   lib\engine\logging\model-call-row.ts
+INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS refs=0   suspicious=1   lib\engine\probe-delivery\index.ts
+INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS refs=0   suspicious=22  lib\engine\probe-delivery\legacy-compatible-probe-contract.ts
+INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS refs=0   suspicious=5   lib\engine\probe-delivery\types.ts
+INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS refs=0   suspicious=10  lib\engine\providers\fallback\deterministic-attempt-evaluator.ts
+INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS refs=0   suspicious=2   lib\engine\providers\fallback\index.ts
+INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS refs=0   suspicious=3   lib\engine\providers\fallback\rule-based-diagnosis-provider.ts
+KEEP_ACTIVE_3MODEL_ROUTE                      refs=2   suspicious=16  lib\api-routes\message\mock-3model-response.ts
+KEEP_ACTIVE_3MODEL_ROUTE                      refs=1   suspicious=11  lib\api-routes\probe-submit\mock-3model-response.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=2   lib\engine\index.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\orchestration\build-evaluated-probe-attempt-signal.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\orchestration\index.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=2   lib\engine\orchestration\route-engine-next-action.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\orchestration\run-attempt-evaluation.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\orchestration\run-diagnosis.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\orchestration\run-engine-turn.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\orchestration\run-probe-contract.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\providers\mock-model-artifacts\index.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\providers\mock-model-artifacts\mock-3model-scenario.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=1   lib\engine\providers\service-clients\attempt-evaluator-service-client.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\providers\service-clients\diagnosis-service-client.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\providers\service-clients\index.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\providers\service-clients\probe-contract-service-client.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=1   lib\engine\renderers\index.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=3   lib\engine\renderers\probe-renderer-contract.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=12  lib\engine\renderers\renderer-compatibility.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\schemas\diagnosis-model.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\schemas\index.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=1   lib\engine\schemas\probe-attempt-evaluator.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\schemas\probe-contract-model.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=2   lib\engine\schemas\shared.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\state\apply-diagnosis-delta.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\state\apply-personalization-delta.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\state\apply-understanding-evidence.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\state\index.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\state\learning-topic-state.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\validation\index.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\validation\shared.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\validation\validate-attempt-evaluation.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\validation\validate-bridge-language.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\validation\validate-diagnosis-output.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\validation\validate-personalization.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\validation\validate-probe-contract.ts
+KEEP_CORE_3MODEL                              refs=0   suspicious=0   lib\engine\validation\validate-renderer-params.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=2   suspicious=21  lib\learning-progress\derive-progress-summary.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=2   suspicious=24  lib\learning-space\build-learning-space.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=2   suspicious=2   lib\learning-space\engine-bridge.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=0   suspicious=0   lib\learning-space\index.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=0   suspicious=108 lib\learning-space\relationship-graph\build-topic-relationships.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=0   suspicious=0   lib\learning-space\relationship-graph\index.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=0   suspicious=20  lib\learning-space\relationship-graph\relationship-policy.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=0   suspicious=21  lib\learning-space\relationship-graph\relationship-types.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=10  suspicious=6   lib\learning-space\topic-position.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=1   suspicious=119 lib\model-adapters\confusion-insight\confusion-insight-client.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=5   suspicious=12  lib\persistence\myway.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=9   suspicious=15  lib\persistence\read.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=2   suspicious=0   lib\shared\runtime.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=1   suspicious=0   lib\supabase\client.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=2   suspicious=0   lib\supabase\server.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=4   suspicious=13  lib\topic-routing\route-topics.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=0   suspicious=6   lib\topic-routing\topic-labeler\client.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=0   suspicious=0   lib\topic-routing\topic-labeler\contract.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=0   suspicious=0   lib\topic-routing\topic-labeler\policy.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=0   suspicious=25  lib\topic-routing\topic-labeler\resolution.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=0   suspicious=1   lib\topic-routing\topic-labeler\v3-adapter.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=1   suspicious=3   lib\topic-routing\topic-routing-trace.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=4   suspicious=5   lib\vector\embed.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=3   suspicious=4   lib\vector\qdrant.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=1   suspicious=7   lib\vector\query-topics.ts
+KEEP_WORKER_OR_LAYOUT_INFRA                   refs=1   suspicious=12  lib\vector\sync-topic-to-qdrant.ts
+UNKNOWN_KEEP_FOR_NOW                          refs=1   suspicious=0   lib\utils\ids.ts
+
+===== INSPECT / ARCHIVE CANDIDATES =====
+
+----- lib\engine\providers\index.ts -----
+classification: ARCHIVE_CANDIDATE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/providers/index
+external refs: 0
+suspicious matches: 1
+suspicious line samples:
+  2: export * from "./fallback";
+imports/exports:
+  1: export * from "./types";
+  2: export * from "./fallback";
+  3: export * from "./service-clients";
+
+----- lib\engine\providers\types.ts -----
+classification: ARCHIVE_CANDIDATE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/providers/types
+external refs: 0
+suspicious matches: 2
+suspicious line samples:
+  12: | "rule_based_fallback"
+  13: | "deterministic_fallback";
+imports/exports:
+  1: import type {
+  10: export type EngineProviderKind =
+  15: export type EngineProviderCallMeta = {
+  24: export type EngineProviderResult<TOutput> = {
+  30: export type DiagnosisModelProvider = {
+  38: export type ProbeContractModelProvider = {
+  46: export type ProbeAttemptEvaluatorProvider = {
+  54: export type EngineProviderSet = {
+  60: export function buildProviderMeta(input: {
+
+----- lib\engine\logging\build-review-batch.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/logging/build-review-batch
+external refs: 0
+suspicious matches: 0
+imports/exports:
+  1: import type {
+  7: export type EngineReviewBatch = {
+  29: export type EngineReviewBatchFilters = {
+  95: export function buildReviewBatch(input: {
+  123: export function buildNeedsReviewBatch(
+
+----- lib\engine\logging\export-review-batch.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/logging/export-review-batch
+external refs: 0
+suspicious matches: 0
+imports/exports:
+  1: import type { EngineReviewBatch } from "./build-review-batch";
+  2: import type {
+  9: export type EngineTrainingExampleKind =
+  14: export type EngineTrainingExample = {
+  34: export function exportReviewBatchToJson(batch: EngineReviewBatch): string {
+  38: export function exportReviewBatchToJsonl(batch: EngineReviewBatch): string {
+  110: export function buildTrainingExamplesFromReviewBatch(
+  134: export function exportTrainingExamplesToJsonl(
+  140: export function splitTrainingExamplesByKind(
+
+----- lib\engine\logging\index.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/logging/index
+external refs: 0
+suspicious matches: 0
+imports/exports:
+  1: export * from "./build-review-batch";
+  2: export * from "./export-review-batch";
+  3: export * from "./log-model-call";
+  4: export * from "./model-call-row";
+
+----- lib\engine\logging\log-model-call.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/logging/log-model-call
+external refs: 0
+suspicious matches: 0
+imports/exports:
+  1: import type {
+  11: import { createDefaultReviewMetadata } from "./model-call-row";
+  12: import type { ValidationIssue } from "../validation";
+  14: export type ModelCallLogSink = {
+  20: export const inMemoryModelCallLogSink: ModelCallLogSink = {
+  26: export function getInMemoryModelCallRows(): EngineModelCallRow[] {
+  30: export function clearInMemoryModelCallRows(): void {
+  48: export type CreateModelCallRowInput<K extends EngineModelCallKind> = {
+  60: export function createModelCallRow<K extends EngineModelCallKind>(
+  98: export type CreateProviderErrorRowInput<K extends EngineModelCallKind> = {
+  112: export function createProviderErrorModelCallRow<K extends EngineModelCallKind>(
+  139: export async function logModelCall(
+
+----- lib\engine\logging\model-call-row.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/logging/model-call-row
+external refs: 0
+suspicious matches: 1
+suspicious line samples:
+  17: | "fallback"
+imports/exports:
+  1: import type {
+  9: import type { ValidationIssue } from "../validation";
+  11: export type EngineModelCallKind =
+  16: export type EngineModelProviderKind =
+  23: export type EngineModelCallStatus =
+  29: export type EngineReviewStatus =
+  35: export type EngineTrainingSplit =
+  41: export type EngineModelCallReviewMetadata = {
+  49: export type EngineModelCallError = {
+  55: export type EngineModelCallRowBase = {
+  86: export type DiagnosisModelCallRow = EngineModelCallRowBase & {
+  92: export type ProbeContractModelCallRow = EngineModelCallRowBase & {
+  98: export type AttemptEvaluationModelCallRow = EngineModelCallRowBase & {
+  104: export type EngineModelCallRow =
+  109: export type EngineModelCallInputByKind = {
+  115: export type EngineModelCallOutputByKind = {
+  121: export type EngineModelCallRowByKind<K extends EngineModelCallKind> =
+  130: export type EngineModelCallContext = {
+  137: export type EngineProviderMetadata = {
+  143: export function createDefaultReviewMetadata(
+
+----- lib\engine\probe-delivery\index.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/probe-delivery/index
+external refs: 0
+suspicious matches: 1
+suspicious line samples:
+  2: export * from "./legacy-compatible-probe-contract";
+imports/exports:
+  1: export * from "./types";
+  2: export * from "./legacy-compatible-probe-contract";
+
+----- lib\engine\probe-delivery\legacy-compatible-probe-contract.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/probe-delivery/legacy-compatible-probe-contract
+external refs: 0
+suspicious matches: 22
+suspicious line samples:
+  17: LegacyCompatibleProbeContractInput,
+  18: LegacyCompatibleProbeContractResult,
+  19: LegacyCompatibleProbeContractSnapshot,
+  32: diagnosis: LegacyCompatibleProbeContractInput["targetDiagnosis"],
+  49: diagnosis: LegacyCompatibleProbeContractInput["targetDiagnosis"],
+  67: probeType: LegacyCompatibleProbeContractInput["probeType"],
+  95: expectedResponseType: LegacyCompatibleProbeContractInput["expectedResponseType"],
+  119: input: LegacyCompatibleProbeContractInput,
+  154: expectedResponseType: LegacyCompatibleProbeContractInput["expectedResponseType"];
+  220: fallback: string | null | undefined,
+  222: if (fallback) return fallback;
+  347: * authoring answer keys/options/items. Text-compatible probes should stay
+imports/exports:
+  1: import type {
+  7: import {
+  16: import type {
+  411: export function buildLegacyCompatibleProbeContract(
+
+----- lib\engine\probe-delivery\types.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/probe-delivery/types
+external refs: 0
+suspicious matches: 5
+suspicious line samples:
+  16: export type LegacyCompatibleProbeContractInput = {
+  26: export type LegacyCompatibleProbeContractSnapshot = ProbeContractSnapshot & {
+  31: * frontend adapters can read them without knowing the old renderer_config
+  47: export type LegacyCompatibleProbeContractResult = {
+  48: contract: LegacyCompatibleProbeContractSnapshot;
+imports/exports:
+  1: import type {
+  8: import type {
+  14: import type { EngineRenderableProbe } from "../renderers";
+  16: export type LegacyCompatibleProbeContractInput = {
+  26: export type LegacyCompatibleProbeContractSnapshot = ProbeContractSnapshot & {
+  47: export type LegacyCompatibleProbeContractResult = {
+  54: export type ProbeDeliveryRuntimeProbeType = RuntimeProbeType;
+  55: export type ProbeDeliveryEngineProbeType = EngineProbeType;
+  56: export type ProbeDeliveryAttemptType = ProbeAttemptType;
+
+----- lib\engine\providers\fallback\deterministic-attempt-evaluator.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/providers/fallback/deterministic-attempt-evaluator
+external refs: 0
+suspicious matches: 10
+suspicious line samples:
+  10: const PROVIDER_NAME = "deterministic_attempt_evaluator_v1";
+  156: return "No answer key was provided, so deterministic evaluation could only produce weak evidence.";
+  160: return "The attempt matched the deterministic answer key.";
+  164: return "The attempt partially matched the deterministic answer key.";
+  167: return "The attempt did not match the deterministic answer key.";
+  170: export function createDeterministicAttemptEvaluator(): ProbeAttemptEvaluatorProvider {
+  173: provider_kind: "deterministic_fallback",
+  235: provider_kind: "deterministic_fallback",
+  239: "Deterministic attempt evaluation is a temporary fallback and should be replaced or verified by a richer evaluator for text-heavy probes.",
+  247: export const deterministicAttemptEvaluator = createDeterministicAttemptEvaluator();
+imports/exports:
+  1: import type {
+  7: import type { EngineProviderResult, ProbeAttemptEvaluatorProvider } from "../types";
+  8: import { buildProviderMeta } from "../types";
+  170: export function createDeterministicAttemptEvaluator(): ProbeAttemptEvaluatorProvider {
+  247: export const deterministicAttemptEvaluator = createDeterministicAttemptEvaluator();
+
+----- lib\engine\providers\fallback\index.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/providers/fallback/index
+external refs: 0
+suspicious matches: 2
+suspicious line samples:
+  1: export * from "./rule-based-diagnosis-provider";
+  2: export * from "./deterministic-attempt-evaluator";
+imports/exports:
+  1: export * from "./rule-based-diagnosis-provider";
+  2: export * from "./deterministic-attempt-evaluator";
+
+----- lib\engine\providers\fallback\rule-based-diagnosis-provider.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+module path: @/lib/engine/providers/fallback/rule-based-diagnosis-provider
+external refs: 0
+suspicious matches: 3
+suspicious line samples:
+  155: provider_kind: "rule_based_fallback",
+  187: provider_kind: "rule_based_fallback",
+  191: "Rule-based diagnosis is a temporary fallback. Treat confidence as conservative.",
+imports/exports:
+  1: import type {
+  6: import type { DiagnosisModelProvider, EngineProviderResult } from "../types";
+  7: import { buildProviderMeta } from "../types";
+  152: export function createRuleBasedDiagnosisProvider(): DiagnosisModelProvider {
+  199: export const ruleBasedDiagnosisProvider = createRuleBasedDiagnosisProvider();
+
+===== ALL FILE IMPORT/EXPORT INDEX =====
+
+----- lib\api-routes\message\mock-3model-response.ts -----
+classification: KEEP_ACTIVE_3MODEL_ROUTE
+external refs: 2
+  1: import { buildLearningSpace } from "@/lib/learning-space/build-learning-space";
+  2: import { buildMockThreeModelTurn } from "@/lib/engine/providers/mock-model-artifacts";
+  3: import type { RouteTopic } from "@/lib/topic-routing/route-topics";
+  4: import { loadRouteTopics } from "@/lib/topic-routing/route-topics";
+  5: import type {
+  17: export function shouldUseMockThreeModelMessageRoute() {
+  179: export async function buildMockThreeModelMessageRouteResponse(args: {
+
+----- lib\api-routes\probe-submit\mock-3model-response.ts -----
+classification: KEEP_ACTIVE_3MODEL_ROUTE
+external refs: 1
+  1: import { buildMockThreeModelTurn } from "@/lib/engine/providers/mock-model-artifacts";
+  2: import { buildMockThreeModelMessageRouteResponse } from "@/lib/api-routes/message/mock-3model-response";
+  58: export async function buildMockThreeModelProbeSubmitResponse(body: unknown) {
+
+----- lib\engine\index.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  16: export * from "./schemas";
+  17: export * from "./providers";
+  18: export * from "./validation";
+  19: export * from "./orchestration";
+  20: export * from "./renderers";
+  21: export * from "./state";
+  22: export * from "./logging";
+  23: export * from "./probe-delivery";
+
+----- lib\engine\logging\build-review-batch.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: import type {
+  7: export type EngineReviewBatch = {
+  29: export type EngineReviewBatchFilters = {
+  95: export function buildReviewBatch(input: {
+  123: export function buildNeedsReviewBatch(
+
+----- lib\engine\logging\export-review-batch.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: import type { EngineReviewBatch } from "./build-review-batch";
+  2: import type {
+  9: export type EngineTrainingExampleKind =
+  14: export type EngineTrainingExample = {
+  34: export function exportReviewBatchToJson(batch: EngineReviewBatch): string {
+  38: export function exportReviewBatchToJsonl(batch: EngineReviewBatch): string {
+  110: export function buildTrainingExamplesFromReviewBatch(
+  134: export function exportTrainingExamplesToJsonl(
+  140: export function splitTrainingExamplesByKind(
+
+----- lib\engine\logging\index.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: export * from "./build-review-batch";
+  2: export * from "./export-review-batch";
+  3: export * from "./log-model-call";
+  4: export * from "./model-call-row";
+
+----- lib\engine\logging\log-model-call.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: import type {
+  11: import { createDefaultReviewMetadata } from "./model-call-row";
+  12: import type { ValidationIssue } from "../validation";
+  14: export type ModelCallLogSink = {
+  20: export const inMemoryModelCallLogSink: ModelCallLogSink = {
+  26: export function getInMemoryModelCallRows(): EngineModelCallRow[] {
+  30: export function clearInMemoryModelCallRows(): void {
+  48: export type CreateModelCallRowInput<K extends EngineModelCallKind> = {
+  60: export function createModelCallRow<K extends EngineModelCallKind>(
+  98: export type CreateProviderErrorRowInput<K extends EngineModelCallKind> = {
+  112: export function createProviderErrorModelCallRow<K extends EngineModelCallKind>(
+  139: export async function logModelCall(
+
+----- lib\engine\logging\model-call-row.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: import type {
+  9: import type { ValidationIssue } from "../validation";
+  11: export type EngineModelCallKind =
+  16: export type EngineModelProviderKind =
+  23: export type EngineModelCallStatus =
+  29: export type EngineReviewStatus =
+  35: export type EngineTrainingSplit =
+  41: export type EngineModelCallReviewMetadata = {
+  49: export type EngineModelCallError = {
+  55: export type EngineModelCallRowBase = {
+  86: export type DiagnosisModelCallRow = EngineModelCallRowBase & {
+  92: export type ProbeContractModelCallRow = EngineModelCallRowBase & {
+  98: export type AttemptEvaluationModelCallRow = EngineModelCallRowBase & {
+  104: export type EngineModelCallRow =
+  109: export type EngineModelCallInputByKind = {
+  115: export type EngineModelCallOutputByKind = {
+  121: export type EngineModelCallRowByKind<K extends EngineModelCallKind> =
+  130: export type EngineModelCallContext = {
+  137: export type EngineProviderMetadata = {
+  143: export function createDefaultReviewMetadata(
+
+----- lib\engine\orchestration\build-evaluated-probe-attempt-signal.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  10: export type BuildEvaluatedProbeAttemptSignalInput = {
+  26: export function buildEvaluatedProbeAttemptSignal(
+
+----- lib\engine\orchestration\index.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: export * from "./build-evaluated-probe-attempt-signal";
+  2: export * from "./route-engine-next-action";
+  3: export * from "./run-attempt-evaluation";
+  4: export * from "./run-diagnosis";
+  5: export * from "./run-engine-turn";
+  6: export * from "./run-probe-contract";
+
+----- lib\engine\orchestration\route-engine-next-action.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  8: export type EngineRoutedNextAction =
+  13: export type EngineRouteReason =
+  21: export type EngineRouteResult = {
+  28: export function routeEngineNextAction(input: {
+
+----- lib\engine\orchestration\run-attempt-evaluation.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  5: import type {
+  9: import type { ValidationResult } from "../validation";
+  10: import { validateAttemptEvaluation } from "../validation";
+  12: export type AttemptEvaluationRunResult = {
+  19: export async function runAttemptEvaluation(input: {
+
+----- lib\engine\orchestration\run-diagnosis.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  5: import type {
+  9: import type { ValidationResult } from "../validation";
+  10: import { validateDiagnosisOutput } from "../validation";
+  12: export type DiagnosisRunResult = {
+  19: export async function runDiagnosis(input: {
+
+----- lib\engine\orchestration\run-engine-turn.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  5: import type { EngineProviderSet } from "../providers";
+  6: import type { DiagnosisRunResult } from "./run-diagnosis";
+  7: import { runDiagnosis } from "./run-diagnosis";
+  8: import type { ProbeContractRunResult } from "./run-probe-contract";
+  9: import { runProbeContract } from "./run-probe-contract";
+  10: import type { EngineRouteResult } from "./route-engine-next-action";
+  11: import { routeEngineNextAction } from "./route-engine-next-action";
+  13: export type EngineTurnProbeContractContext = Omit<
+  18: export type RunEngineTurnInput = {
+  28: export type RunEngineTurnResult = {
+  34: export async function runEngineTurn(
+
+----- lib\engine\orchestration\run-probe-contract.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  5: import type {
+  9: import type { ValidationResult } from "../validation";
+  10: import { validateProbeContract } from "../validation";
+  12: export type ProbeContractRunResult = {
+  19: export async function runProbeContract(input: {
+
+----- lib\engine\probe-delivery\index.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: export * from "./types";
+  2: export * from "./legacy-compatible-probe-contract";
+
+----- lib\engine\probe-delivery\legacy-compatible-probe-contract.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: import type {
+  7: import {
+  16: import type {
+  411: export function buildLegacyCompatibleProbeContract(
+
+----- lib\engine\probe-delivery\types.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: import type {
+  8: import type {
+  14: import type { EngineRenderableProbe } from "../renderers";
+  16: export type LegacyCompatibleProbeContractInput = {
+  26: export type LegacyCompatibleProbeContractSnapshot = ProbeContractSnapshot & {
+  47: export type LegacyCompatibleProbeContractResult = {
+  54: export type ProbeDeliveryRuntimeProbeType = RuntimeProbeType;
+  55: export type ProbeDeliveryEngineProbeType = EngineProbeType;
+  56: export type ProbeDeliveryAttemptType = ProbeAttemptType;
+
+----- lib\engine\providers\fallback\deterministic-attempt-evaluator.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: import type {
+  7: import type { EngineProviderResult, ProbeAttemptEvaluatorProvider } from "../types";
+  8: import { buildProviderMeta } from "../types";
+  170: export function createDeterministicAttemptEvaluator(): ProbeAttemptEvaluatorProvider {
+  247: export const deterministicAttemptEvaluator = createDeterministicAttemptEvaluator();
+
+----- lib\engine\providers\fallback\index.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: export * from "./rule-based-diagnosis-provider";
+  2: export * from "./deterministic-attempt-evaluator";
+
+----- lib\engine\providers\fallback\rule-based-diagnosis-provider.ts -----
+classification: INSPECT_ENGINE_SIDE_MODULE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: import type {
+  6: import type { DiagnosisModelProvider, EngineProviderResult } from "../types";
+  7: import { buildProviderMeta } from "../types";
+  152: export function createRuleBasedDiagnosisProvider(): DiagnosisModelProvider {
+  199: export const ruleBasedDiagnosisProvider = createRuleBasedDiagnosisProvider();
+
+----- lib\engine\providers\index.ts -----
+classification: ARCHIVE_CANDIDATE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: export * from "./types";
+  2: export * from "./fallback";
+  3: export * from "./service-clients";
+
+----- lib\engine\providers\mock-model-artifacts\index.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: export * from "./mock-3model-scenario";
+
+----- lib\engine\providers\mock-model-artifacts\mock-3model-scenario.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import {
+  6: import type {
+  12: import diagnosisArtifact from "../../../../models/diagnosis/mock-v0/spanish-se-discrimination";
+  13: import probeContractArtifact from "../../../../models/probe-contract/mock-v0/spanish-se-single-choice";
+  14: import attemptEvaluatorArtifact from "../../../../models/attempt-evaluator/mock-v0/spanish-se-selected-reflexive";
+  25: export type MockThreeModelScenario = {
+  32: export function loadMockThreeModelScenario(
+  49: export function buildMockRenderableProbe(
+  55: export function buildMockThreeModelTurn(scenarioId = "spanish_se_discrimination") {
+
+----- lib\engine\providers\service-clients\attempt-evaluator-service-client.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  5: import type { EngineProviderResult, ProbeAttemptEvaluatorProvider } from "../types";
+  6: import { buildProviderMeta } from "../types";
+  8: export type AttemptEvaluatorServiceClientConfig = {
+  14: export function createAttemptEvaluatorServiceClient(
+
+----- lib\engine\providers\service-clients\diagnosis-service-client.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type { DiagnosisModelInput, DiagnosisModelOutput } from "../../schemas";
+  2: import type { DiagnosisModelProvider, EngineProviderResult } from "../types";
+  3: import { buildProviderMeta } from "../types";
+  5: export type DiagnosisServiceClientConfig = {
+  11: export function createDiagnosisServiceClient(
+
+----- lib\engine\providers\service-clients\index.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: export * from "./diagnosis-service-client";
+  2: export * from "./probe-contract-service-client";
+  3: export * from "./attempt-evaluator-service-client";
+
+----- lib\engine\providers\service-clients\probe-contract-service-client.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  5: import type { EngineProviderResult, ProbeContractModelProvider } from "../types";
+  6: import { buildProviderMeta } from "../types";
+  8: export type ProbeContractServiceClientConfig = {
+  14: export function createProbeContractServiceClient(
+
+----- lib\engine\providers\types.ts -----
+classification: ARCHIVE_CANDIDATE_NO_EXTERNAL_IMPORTS
+external refs: 0
+  1: import type {
+  10: export type EngineProviderKind =
+  15: export type EngineProviderCallMeta = {
+  24: export type EngineProviderResult<TOutput> = {
+  30: export type DiagnosisModelProvider = {
+  38: export type ProbeContractModelProvider = {
+  46: export type ProbeAttemptEvaluatorProvider = {
+  54: export type EngineProviderSet = {
+  60: export function buildProviderMeta(input: {
+
+----- lib\engine\renderers\index.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: export * from "./probe-renderer-contract";
+  2: export * from "./renderer-compatibility";
+
+----- lib\engine\renderers\probe-renderer-contract.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  13: export type EngineRendererKind = ProbeType;
+  15: export type RendererCompatibilityReport = {
+  22: export type EngineRenderableProbe = {
+  45: export type LegacyProbeRendererAdapterResult = {
+
+----- lib\engine\renderers\renderer-compatibility.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  7: import type {
+  94: export function buildRendererCompatibilityReport(
+  156: export function toEngineRenderableProbe(
+  176: export function adaptProbeContractForRenderer(
+  190: export function isRendererBackedProbeType(probeType: ProbeType): boolean {
+
+----- lib\engine\schemas\diagnosis-model.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  8: export type DiagnosisModelInput = {
+  20: export type DiagnosisModelOutput = {
+
+----- lib\engine\schemas\index.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: export * from "./shared";
+  2: export * from "./diagnosis-model";
+  3: export * from "./probe-contract-model";
+  4: export * from "./probe-attempt-evaluator";
+
+----- lib\engine\schemas\probe-attempt-evaluator.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  16: export type ProbeAttemptEvaluatorInput = {
+  61: export type ProbeAttemptEvaluatorOutput = {
+
+----- lib\engine\schemas\probe-contract-model.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  19: export type ProbeContractModelInput = {
+  62: export type ProbeContractModelOutput = {
+
+----- lib\engine\schemas\shared.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  15: export type ConfidenceScore = number;
+  19: export type CorrectnessScore = number;
+  21: export type DiagnosisLabel =
+  31: export type DiagnosisNextAction =
+  37: export type AttemptEvaluatorNextAction =
+  44: export type ProbeType =
+  60: export type ProbeAttemptType =
+  73: export type BridgeLevel =
+  80: export type JargonLevel =
+  86: export type LanguagePolicy = {
+  90: export type PresentationStyle =
+  101: export type PresentationSupportKind =
+  110: export type PresentationSupport = {
+  119: export type ProbePrompt = {
+  133: export type AnswerKey = {
+  166: export type MisconceptionMarker = {
+  172: export type UnderstandingEvidence = {
+  185: export type RendererParams = {
+  242: export type PersonalizationSignalKind =
+  250: export type PersonalizationSignalDirection =
+  255: export type PersonalizationSignalScope =
+  261: export type PersonalizationOutcomeTag =
+  269: export type PersonalizationUpdateReason =
+  277: export type PersonalizationSignal = {
+  307: export type ExampleDomainSignalScope =
+  312: export type ExampleDomainSignal = {
+  329: export type PersonalizationProfileSnapshot = {
+  344: export type PersonalizationSignalUpdate = {
+  368: export type ExampleDomainUpdate = {
+  389: export type PersonalizationProfileDelta = {
+  401: export type ProbeDeliveryContext = {
+  421: export type EvaluatedProbeAttemptSignal = {
+
+----- lib\engine\state\apply-diagnosis-delta.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  6: import {
+  29: export type ApplyDiagnosisDeltaInput = {
+  75: export function applyDiagnosisDelta(
+
+----- lib\engine\state\apply-personalization-delta.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  8: import {
+  17: export type ApplyPersonalizationDeltaInput = {
+  154: export function applyPersonalizationDelta(
+
+----- lib\engine\state\apply-understanding-evidence.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  8: import {
+  17: export type EvaluatedMisconceptionHit = {
+  23: export type ApplyUnderstandingEvidenceInput = {
+  66: export function applyUnderstandingEvidence(
+
+----- lib\engine\state\index.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: export * from "./apply-diagnosis-delta";
+  2: export * from "./apply-personalization-delta";
+  3: export * from "./apply-understanding-evidence";
+  4: export * from "./learning-topic-state";
+
+----- lib\engine\state\learning-topic-state.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  9: export type DiagnosisBelief = {
+  17: export type MisconceptionState = {
+  25: export type UnderstandingState = {
+  36: export type VerificationState = {
+  43: export type LearningTopicState = {
+  64: export type TopicStateUpdateResult<TState = LearningTopicState> = {
+  70: export function clamp01(value: number): number {
+  78: export function clampPreferenceScore(value: number): number {
+  86: export function getNowIso(now?: string | null): string {
+  94: export function createEmptyLearningTopicState(input: {
+  131: export function cloneLearningTopicState(state: LearningTopicState): LearningTopicState {
+
+----- lib\engine\validation\index.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: export * from "./shared";
+  2: export * from "./validate-attempt-evaluation";
+  3: export * from "./validate-bridge-language";
+  4: export * from "./validate-diagnosis-output";
+  5: export * from "./validate-personalization";
+  6: export * from "./validate-probe-contract";
+  7: export * from "./validate-renderer-params";
+
+----- lib\engine\validation\shared.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: export type ValidationSeverity = "error" | "warning";
+  3: export type ValidationIssue = {
+  10: export type ValidationResult<T> = {
+  16: export function pushIssue(
+  26: export function hasValidationErrors(issues: ValidationIssue[]): boolean {
+  30: export function buildValidationResult<T>(
+  41: export function pathJoin(base: string, key: string | number): string {
+  49: export function isRecord(value: unknown): value is Record<string, unknown> {
+  53: export function isNonEmptyString(value: unknown): value is string {
+  57: export function isBoolean(value: unknown): value is boolean {
+  61: export function isFiniteNumber(value: unknown): value is number {
+  65: export function isScore(value: unknown): value is number {
+  69: export function isPreferenceScore(value: unknown): value is number {
+  73: export function isNonNegativeInteger(value: unknown): value is number {
+  77: export function isKnownString<T extends string>(
+  84: export function validateOptionalString(
+  100: export function validateRequiredString(
+  116: export function validateScoreField(
+  132: export function validatePreferenceScoreField(
+  148: export function validateDeltaField(
+  164: export function validateEvidenceCountField(
+
+----- lib\engine\validation\validate-attempt-evaluation.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  7: import {
+  20: import { validatePersonalizationProfileDelta } from "./validate-personalization";
+  174: export function validateAttemptEvaluation(
+
+----- lib\engine\validation\validate-bridge-language.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  7: import {
+  30: export type BridgeLanguageInput = {
+  35: export type BridgeLanguageValidationValue = {
+  40: export function validateBridgeLanguage(
+
+----- lib\engine\validation\validate-diagnosis-output.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  7: import {
+  36: export function validateDiagnosisOutput(
+
+----- lib\engine\validation\validate-personalization.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  11: import {
+  339: export function validatePersonalizationProfileSnapshot(
+  399: export function validatePersonalizationProfileDelta(
+  475: export function validateProbeDeliveryContext(
+
+----- lib\engine\validation\validate-probe-contract.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  8: import {
+  19: import { validateProbeDeliveryContext } from "./validate-personalization";
+  20: import { validateRendererParams } from "./validate-renderer-params";
+  123: export function validateProbeContract(
+  209: export function assertProbePromptShape(prompt: unknown): prompt is ProbePrompt {
+
+----- lib\engine\validation\validate-renderer-params.ts -----
+classification: KEEP_CORE_3MODEL
+external refs: 0
+  1: import type {
+  6: import {
+  119: export function validateRendererParams(
+
+----- lib\learning-progress\derive-progress-summary.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 2
+  1: import type { Topic } from "@/types/topic";
+  3: export type ProgressSummary = {
+  77: export function deriveProgressSummary(
+
+----- lib\learning-space\build-learning-space.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 2
+  3: import type { DiagnosisType } from "@/types/contracts";
+  4: import type { DiagnosisState } from "@/lib/learning-space/engine-bridge";
+  5: import type {
+  16: import type {
+  20: import {
+  624: export function buildLearningSpace(
+
+----- lib\learning-space\engine-bridge.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 2
+  1: export {
+
+----- lib\learning-space\index.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 0
+  1: export * from "./build-learning-space";
+  2: export * from "./topic-position";
+
+----- lib\learning-space\relationship-graph\build-topic-relationships.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 0
+  1: import type { LearningSpaceRelationship } from "@/types/learning-space";
+  2: import {
+  12: import type {
+  20: import type { DiagnosisType } from "@/types/contracts";
+  778: export function buildTopicRelationships(
+
+----- lib\learning-space\relationship-graph\index.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 0
+  1: export * from "./relationship-types";
+  2: export * from "./relationship-policy";
+  3: export * from "./build-topic-relationships";
+
+----- lib\learning-space\relationship-graph\relationship-policy.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 0
+  1: import type {
+  6: import type {
+  12: export const DEFAULT_RELATIONSHIP_GRAPH_OPTIONS = {
+  56: export function clamp01(value: number) {
+  61: export function round4(value: number) {
+  65: export function normalizeTopicLabel(label: string) {
+  69: export function makeRelationshipKey(args: {
+  82: export function makeRelationshipId(args: {
+  92: export function defaultAffectsLayout(
+  117: export function defaultVisibleByDefault(
+  130: export function defaultRelationshipVisualStyle(
+  150: export function evidenceTierRank(tier: RelationshipEvidenceTier | null | undefined) {
+  174: export function relationshipPriority(args: {
+  202: export function maxOpacityForRelationship(args: {
+  223: export function buildRelationshipDisplayPolicy(args: {
+  257: export function derivedRelationshipEvidenceSource(
+
+----- lib\learning-space\relationship-graph\relationship-types.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 0
+  1: import type { DiagnosisType, ISO8601String } from "@/types/contracts";
+  2: import type {
+  6: import type { TopicPosition3D } from "@/lib/learning-space/topic-position";
+  22: export type DiagnosisBeliefStatus = string;
+  24: export type RelationshipEvidenceTier =
+  39: export type EvidenceJudgingTier = RelationshipEvidenceTier;
+  47: export type DiagnosisBeliefEntry = {
+  65: export type DiagnosisState = {
+  73: export type RelationshipDiagnosisEvidence = {
+  84: export type RelationshipSignalEvidence = {
+  92: export type RelationshipGraphTopic = {
+  134: export type BuiltTopicRelationshipType = Extract<
+  141: export type RelationshipGraphBuildOptions = {
+  201: export type RelationshipGraphCandidate = {
+  250: export type RelationshipGraphBuildResult = {
+
+----- lib\learning-space\topic-position.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 10
+  3: export type TopicPosition3D = [number, number, number];
+  5: export type TopicPositionSource =
+  11: export type TopicLayoutMetadata = {
+  18: export type ResolvedTopicLayout = TopicLayoutMetadata & {
+  26: export function isTopicPosition3D(value: unknown): value is TopicPosition3D {
+  46: export function readTopicPositionFromJson(
+  68: export function readSemanticPositionFromJson(
+  80: export function computeDeterministicTopicPosition(
+  98: export function computeNextTopicPosition(existingTopicCount: number) {
+  102: export function resolveTopicLayout(args: {
+
+----- lib\model-adapters\confusion-insight\confusion-insight-client.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 1
+  1: export type ConfusionInsightStatus =
+  7: export type ConfusionInsightInferenceMode = "service" | "local" | null;
+  9: export type ConfusionInsightSignals = {
+  19: export type ConfusionInsightInputType =
+  28: export type ConfusionInsightTopicTransitionType =
+  34: export type ConfusionInsightPreviousMode =
+  39: export type ConfusionInsightEvent = {
+  59: export type ConfusionInsightStructuredInput = {
+  496: export async function scoreConfusionInsight(
+
+----- lib\persistence\myway.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 5
+  3: import { createServerSupabaseClient } from "@/lib/supabase/server";
+  4: import type { EmbeddingVector } from "@/types/contracts";
+  326: export type PersistedRunInput = {
+  339: export type PersistedAttemptInput = {
+  353: export type PersistedTopicStateInput = {
+  396: export async function insertRun(input: PersistedRunInput) {
+  417: export async function insertAttempt(input: PersistedAttemptInput) {
+  439: export async function upsertTopicState(input: PersistedTopicStateInput) {
+
+----- lib\persistence\read.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 9
+  3: import { createServerSupabaseClient } from "@/lib/supabase/server";
+  4: import type { EmbeddingVector } from "@/types/contracts";
+  5: import type {
+  10: import {
+  17: export type TopicPosition = TopicPosition3D;
+  187: export type TopicStateRow = {
+  553: export async function getLatestTopicState(): Promise<TopicStateRow[]> {
+  568: export async function getRouteTopicState(): Promise<TopicStateRow[]> {
+
+----- lib\shared\runtime.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 2
+  1: import type { DiagnosisType } from "@/types/contracts";
+  3: export function clamp(value: number, min = 0, max = 1) {
+  7: export function nowIso() {
+  11: export function normalizeDiagnosis(raw: unknown): DiagnosisType | null {
+  25: export function isPosition(value: unknown): value is [number, number, number] {
+  33: export function normalizeText(text: string) {
+
+----- lib\supabase\client.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 1
+  1: import { createClient } from "@supabase/supabase-js";
+  6: export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+----- lib\supabase\server.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 2
+  1: import { createClient } from "@supabase/supabase-js";
+  11: export function createServerSupabaseClient() {
+
+----- lib\topic-routing\route-topics.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 4
+  3: import { getRouteTopicState } from "@/lib/persistence/read";
+  4: import {
+  10: import { makeId } from "@/lib/utils/ids";
+  11: import type { DiagnosisType, EmbeddingVector } from "@/types/contracts";
+  12: import { normalizeDiagnosis } from "@/lib/shared/runtime";
+  14: export type RouteTopic = {
+  63: export type SharedMessageFrame =
+  215: export function buildSeededTopicFromResolvedLabel(args: {
+  257: export function inferKeywordsFromTopicLabel(label: string): string[] {
+  261: export async function loadRouteTopics(): Promise<RouteTopic[]> {
+
+----- lib\topic-routing\topic-labeler\client.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 0
+  1: import {
+  5: import type {
+  11: export type TopicLabelerMode =
+  53: export function getTopicLabelerProvider(): TopicLabelerProviderId {
+  57: export function getTopicLabelerMode(): TopicLabelerMode {
+  87: export function getTopicLabelerEnabled(): boolean {
+  93: export function getTopicLabelerTimeoutMs(): number {
+  100: export function buildTopicLabelerRequest(input: {
+  136: export async function callConfiguredTopicLabeler(
+  161: export type { TopicLabelerClientResult, TopicLabelerRequest };
+
+----- lib\topic-routing\topic-labeler\contract.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 0
+  1: export type TopicReferenceType =
+  7: export type TopicLabelerRouteDecision =
+  15: export type TopicLabelerProviderId = "v3" | "v4" | "v5";
+  17: export type TopicLabelerRequest = {
+  24: export type TopicLabelerModelPrediction = {
+  29: export type TopicLabelerRoute = {
+  41: export type TopicLabelerResponse = {
+  50: export type TopicLabelerClientResult =
+
+----- lib\topic-routing\topic-labeler\policy.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 0
+  1: import type { TopicLabelerClientResult } from "./contract";
+  2: import type { RouteTopic } from "@/lib/topic-routing/route-topics";
+  4: export type ModelTopicRouteDecisionKind =
+  12: export type ModelTopicRoutePolicyDecision = {
+  137: export function buildModelTopicRoutePolicyDecision(args: {
+
+----- lib\topic-routing\topic-labeler\resolution.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 0
+  1: import type {
+  7: import {
+  11: import type { TopicResolutionTrace } from "@/lib/topic-routing/topic-routing-trace";
+  12: import type {
+  17: export type ModelFirstTopicResolutionKind =
+  24: export type ModelFirstTopicLabelingMode =
+  29: export type ModelRouteContinuationPolicyKind =
+  37: export type ModelRouteContinuationPolicy = {
+  56: export type SemanticEnrichmentStatusKind =
+  65: export type SemanticEnrichmentStatus = {
+  89: export type ModelFirstRouteCentroidUpdatePlan = {
+  100: export type ModelFirstTopicResolutionDebug = {
+  115: export type ModelFirstTopicResolutionOutcome = {
+  627: export function isModelPolicySafePositiveDecision(
+  642: export function buildModelRouteContinuationPolicy(args: {
+  703: export function buildModelFirstTopicResolutionOutcome(args: {
+  906: export function buildModelFirstConservativeFallbackOutcome(args: {
+
+----- lib\topic-routing\topic-labeler\v3-adapter.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 0
+  1: import type {
+  11: export type TopicReferenceTypeV3 = TopicReferenceType;
+  13: export type TopicLabelerV3RouteDecision = TopicLabelerRouteDecision;
+  15: export type TopicLabelerV3Request = TopicLabelerRequest;
+  17: export type TopicLabelerV3ModelPrediction = {
+  22: export type TopicLabelerV3Route = TopicLabelerRoute;
+  24: export type TopicLabelerV3RawResponse = {
+  32: export type TopicLabelerV3Response = TopicLabelerResponse;
+  34: export type TopicLabelerV3ClientResult = TopicLabelerClientResult;
+  110: export function buildTopicLabelerV3Request(input: {
+  126: export async function callTopicLabelerV3(
+
+----- lib\topic-routing\topic-routing-trace.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 1
+  1: import type { VectorInfo } from "@/types/contracts";
+  3: export type ResolutionDecisionAction =
+  9: export type ResolutionTimingStep = {
+  15: export type ResolutionTimingDebug = {
+  23: export type MessageFrame =
+  32: export type GranularityHint = "broad" | "medium" | "narrow" | "unknown";
+  34: export type FollowupSignals = {
+  44: export type TopicScoreBreakdown = {
+  67: export type ResolutionHypothesisKind =
+  73: export type TopicRouterV3Debug = {
+  88: export type TopicResolutionTrace = {
+  158: export function emptyTopicResolutionTrace(): TopicResolutionTrace {
+  220: export function emptyVectorInfo(): VectorInfo {
+
+----- lib\utils\ids.ts -----
+classification: UNKNOWN_KEEP_FOR_NOW
+external refs: 1
+  1: export function makeId(prefix: string): string {
+
+----- lib\vector\embed.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 4
+  212: export async function embedTexts(texts: string[]): Promise<number[][]> {
+  351: export async function embedText(text: string): Promise<number[]> {
+
+----- lib\vector\qdrant.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 3
+  1: import { QdrantClient } from "@qdrant/js-client-rest";
+  3: export const TOPIC_COLLECTION = "myway-topics";
+  4: export const DEFAULT_TOPIC_VECTOR_SIZE = 384;
+  31: export function getTopicVectorSize() {
+  44: export const TOPIC_VECTOR_SIZE = DEFAULT_TOPIC_VECTOR_SIZE;
+  46: export function getQdrantConfig() {
+  55: export function hasQdrantConfig(): boolean {
+  65: export function createQdrantClient(): QdrantClient {
+  91: export function resetQdrantClientCacheForTests() {
+  141: export async function ensureTopicCollection(): Promise<EnsureTopicCollectionResult> {
+
+----- lib\vector\query-topics.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 1
+  1: import {
+  6: import { embedText } from "@/lib/vector/embed";
+  7: import type { EmbeddingVector, VectorInfo } from "@/types/contracts";
+  24: export type SemanticTopicCandidate = {
+  42: export type SemanticTopicQueryResult = {
+  92: export type SemanticMessageEmbeddingResult = {
+  351: export async function embedMessageForSemanticRouting(
+  468: export async function querySemanticTopicCandidatesFromEmbedding(
+  624: export async function querySemanticTopicCandidatesWithEmbedding(
+  709: export async function querySemanticTopicCandidates(
+
+----- lib\vector\sync-topic-to-qdrant.ts -----
+classification: KEEP_WORKER_OR_LAYOUT_INFRA
+external refs: 1
+  1: import crypto from "node:crypto";
+  2: import { embedText } from "@/lib/vector/embed";
+  3: import {
+  9: import type { EmbeddingVector } from "@/types/contracts";
+  23: export type SyncTopicToQdrantInput = {
+  38: export type SyncTopicToQdrantResult = {
+  271: export function canSyncTopicToQdrant(): boolean {
+  322: export async function syncTopicToQdrant(
+  390: export async function syncTopicToQdrantBestEffort(

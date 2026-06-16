@@ -1,3 +1,3 @@
 ﻿export * from "./types";
+export * from "./fallback";
 export * from "./service-clients";
-export * from "./mock-model-artifacts";

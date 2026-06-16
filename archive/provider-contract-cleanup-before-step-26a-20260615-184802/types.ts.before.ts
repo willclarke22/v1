@@ -8,7 +8,9 @@
 } from "../schemas";
 
 export type EngineProviderKind =
-  | "service_client";
+  | "service_client"
+  | "rule_based_fallback"
+  | "deterministic_fallback";
 
 export type EngineProviderCallMeta = {
   provider_name: string;
@@ -72,5 +74,3 @@ export function buildProviderMeta(input: {
     warnings: input.warnings ?? [],
   };
 }
-
-

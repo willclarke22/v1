@@ -6,7 +6,7 @@
 //
 // The engine boundary now exposes:
 // - schemas: model contracts and shared types
-// - providers: swappable service/model providers
+// - providers: swappable fallback/service/model providers
 // - validation: MyWay-owned output/policy validation
 // - orchestration: model runners and engine turn helpers
 // - renderers: renderer compatibility contracts
@@ -18,7 +18,6 @@ export * from "./validation";
 export * from "./orchestration";
 export * from "./renderers";
 export * from "./state";
-
 
 
 
