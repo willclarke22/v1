@@ -1,14 +1,16 @@
 ﻿import {
   buildEvaluatedProbeAttemptSignal,
   routeEngineNextAction,
+} from "../../orchestration";
+import {
   toEngineRenderableProbe,
-} from "@/lib/engine";
+  type EngineRenderableProbe,
+} from "../../renderers";
 import type {
   DiagnosisModelOutput,
-  EngineRenderableProbe,
   ProbeAttemptEvaluatorOutput,
   ProbeContractModelOutput,
-} from "@/lib/engine";
+} from "../../schemas";
 import diagnosisArtifact from "./fixtures/spanish-se-discrimination";
 import probeContractArtifact from "./fixtures/spanish-se-single-choice";
 import attemptEvaluatorArtifact from "./fixtures/spanish-se-selected-reflexive";
@@ -85,12 +87,12 @@ export function buildMockThreeModelTurn(scenarioId = "spanish_se_discrimination"
     title: "Check what se is doing",
     instruction: scenario.probe_contract.output.prompt.full_prompt,
     helperText:
-      "This mock probe came from models/probe-contract/mock-v0 through lib/engine.",
+      "This mock probe came from lib/engine/providers/mock-model-artifacts/fixtures through lib/engine.",
     expectedResponseType: scenario.probe_contract.output.expected_attempt_type,
     probeType: scenario.probe_contract.output.probe_type,
     probeContractSnapshot: {
       schema_version: "mock_probe_contract_snapshot_v0",
-      source: "models/probe-contract/mock-v0/spanish-se-single-choice.ts",
+      source: "lib/engine/providers/mock-model-artifacts/fixtures/spanish-se-single-choice.ts",
       engine_contract: scenario.probe_contract.output,
       engine_renderable_probe: renderableProbe,
     },
@@ -116,5 +118,6 @@ export function buildMockThreeModelTurn(scenarioId = "spanish_se_discrimination"
     evaluated_probe_attempt_signal: evaluatedProbeAttemptSignal,
   };
 }
+
 
 

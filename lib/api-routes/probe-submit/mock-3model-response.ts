@@ -34,26 +34,22 @@ function extractSubmittedAttempt(body: unknown) {
 }
 
 /**
- * Temporary 3-model probe-submit response.
+ * Temporary 3-model probe-submit route adapter.
  *
- * This replaces the old active submit path:
+ * This file is not the future evaluator itself. It adapts the mock
+ * Probe Attempt Evaluator output into the response shape the current frontend
+ * still expects.
  *
- *   legacy evidence normalization
- *   â†’ legacy evidence interpretation
- *   â†’ legacy contract judgment
- *   â†’ legacy response bundling
- *   â†’ legacy follow-up planning
- *
- * with the clean future shape:
+ * Future shape:
  *
  *   submitted attempt
- *   â†’ Probe Attempt Evaluator output
- *   â†’ engine route next action
- *   â†’ next Probe Contract / EngineRenderableProbe
+ *   -> Probe Attempt Evaluator output
+ *   -> engine route next action
+ *   -> next Probe Contract / EngineRenderableProbe
  *
- * The current evaluator/probe-contract outputs are still mock artifacts under
- * models/, but the route response now follows the new loop instead of the old
- * heuristic planning modules.
+ * The current evaluator/probe-contract outputs are mock fixtures under:
+ *
+ *   lib/engine/providers/mock-model-artifacts/fixtures
  */
 export async function buildMockThreeModelProbeSubmitResponse(body: unknown) {
   const submittedAttempt = extractSubmittedAttempt(body);
@@ -97,7 +93,7 @@ export async function buildMockThreeModelProbeSubmitResponse(body: unknown) {
 
   if (response.result?.delivered_response) {
     response.result.delivered_response.learner_message = {
-      text: "Mock evaluator result: the response points to a specific misconception, so Iâ€™m giving another focused probe.",
+      text: "Mock evaluator result: the response points to a specific misconception, so I'm giving another focused probe.",
       tone: "encouraging",
       mode: "probe",
     } as typeof response.result.delivered_response.learner_message;
@@ -114,5 +110,6 @@ export async function buildMockThreeModelProbeSubmitResponse(body: unknown) {
 
   return response;
 }
+
 
 

@@ -21,8 +21,12 @@
       evidence_strength: 0.71,
       supports_understanding: false,
       supports_gap: true,
+      may_be_lucky_guess: false,
       possible_guess: false,
+      needs_verification_probe: true,
       informational_only: false,
+      verification_reason:
+        "The learner selected the fixed/reflexive option, so MyWay should verify after a targeted follow-up.",
     },
     misconception_hits: [
       {
@@ -35,19 +39,25 @@
       discrimination_gap: 0.18,
       representation_gap: 0.06,
     },
-    bridge_evidence: {
-      bridge_level_tested: "bridge_0",
-      bridge_success: false,
-      notes: [
-        "No-jargon wording was used, but the learner still selected the fixed-meaning option.",
-      ],
-    },
     personalization_delta: {
-      teaching_move_outcomes: [
+      schema_version: "personalization_profile_delta_v1",
+      summary:
+        "A no-jargon contrast probe exposed the fixed-meaning misconception, so MyWay should keep using targeted contrasts for this diagnosis while verifying transfer.",
+      teaching_signal_updates: [
         {
-          teaching_move: "single_choice_contrast",
-          outcome: "misconception_exposed",
-          confidence: 0.74,
+          signal_id: "support_kind:contrast:diagnosis:discrimination_gap",
+          kind: "support_kind",
+          value: "contrast",
+          direction: "prefer",
+          scope: "diagnosis_label",
+          scope_key: "discrimination_gap",
+          outcome_tag: "misconception_persisted",
+          update_reason: "try_more_targeted_probe",
+          preference_score_delta: 0.05,
+          confidence_delta: 0.08,
+          evidence_count_delta: 1,
+          summary:
+            "Contrast did not repair the gap yet, but it exposed a specific misconception to target.",
         },
       ],
     },
@@ -57,3 +67,4 @@
 } as const;
 
 export default artifact;
+

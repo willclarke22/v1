@@ -69,6 +69,7 @@ export type ProbeAttemptEvaluatorOutput = {
 
   misconception_hits: Array<{
     misconception_id: string;
+    label?: string | null;
     confidence: ConfidenceScore;
   }>;
 
@@ -81,4 +82,5 @@ export type ProbeAttemptEvaluatorOutput = {
   next_action: AttemptEvaluatorNextAction;
   next_action_confidence: ConfidenceScore;
 };
+
 

@@ -1,0 +1,541 @@
+﻿import type {
+  TopicLayoutMetadata,
+  TopicPosition3D,
+} from "@/lib/learning-space/topic-position";
+import type { DiagnosisType, ISO8601String } from "@/types/contracts";
+
+export type RelationshipViewMode =
+  | "semantic_similarity"
+  | "confusion"
+  | "insight"
+  | "off";
+
+export type LearningSpaceRelationshipType =
+  /**
+   * Back-compat semantic link name used by earlier learning-space payloads.
+   * Prefer semantic_similarity for new relationship-graph outputs.
+   */
+  | "semantic"
+
+  /**
+   * New typed relationship graph vocabulary.
+   */
+  | "semantic_similarity"
+  | "shared_diagnosis"
+  | "shared_confusion_pattern"
+  | "shared_insight_pattern"
+  | "prerequisite"
+  | "blocks"
+  | "transfer_bridge"
+  | "analogy"
+  | "same_cluster"
+  | "co_attempted"
+  | "content_source_overlap"
+
+  /**
+   * Back-compat / broad relationship names used by earlier payloads.
+   * These can continue to be rendered, but new code should prefer the more
+   * specific typed relationship names above.
+   */
+  | "shared_confusion"
+  | "strategy"
+  | "temporal";
+
+export type LearningSpaceRelationshipVisualStyle =
+  | "arc"
+  | "thread"
+  | "arrow"
+  | "halo"
+  | "trail"
+  | "line"
+  | "dashed_line"
+  | "pulse_line";
+
+export type LearningSpaceViewpointType =
+  | "overview"
+  | "semantic_neighborhood"
+  | "confusion_alignment"
+  | "insight_alignment"
+  | "diagnosis_alignment"
+  | "prerequisite_chain"
+  | "blocking_chain"
+  | "transfer_bridge"
+  | "bridge"
+  | "growth_path";
+
+export type LearningSpaceRelationshipBasis = {
+  /**
+   * Continuous relationship score in the relationship's native scale.
+   * For semantic relationships, this is usually cosine similarity.
+   */
+  similarity: number | null;
+
+  /**
+   * Similarity normalized inside the current learning-space snapshot.
+   * This is useful for ranking/display, but should not replace raw evidence.
+   */
+  normalized_similarity: number | null;
+
+  /**
+   * Optional backend diagnostic target distance for this relationship.
+   */
+  desired_distance: number | null;
+
+  /**
+   * Optional actual 3D/canonical distance after layout.
+   */
+  actual_distance: number | null;
+
+  /**
+   * Human/debug-readable method name for how the relationship was computed.
+   */
+  diagnostic_method: string | null;
+};
+
+export type LearningSpaceRelationshipDisplayPolicy = {
+  /**
+   * Overview should stay calm. Most relationships should be false here.
+   *
+   * Kept for compatibility with the existing viewpoint-scanner/link renderer.
+   * Newer relationship graph code should also set visible_by_default.
+   */
+  show_in_overview: boolean;
+
+  /**
+   * Whether the relationship can appear when either endpoint topic is focused.
+   */
+  show_on_focus: boolean;
+
+  /**
+   * Newer, simpler visibility flag. This says whether a link can be shown in
+   * the default scene without an explicit overlay/viewpoint.
+   */
+  visible_by_default: boolean;
+
+  /**
+   * Whether this relationship should be allowed to influence semantic/layout
+   * nudging. This does not mean the renderer must visibly draw the link.
+   */
+  affects_layout: boolean;
+
+  /**
+   * Upper opacity limit the renderer should respect for this relationship.
+   */
+  max_opacity: number;
+
+  /**
+   * Renderer hint only. It does not define the relationship's meaning.
+   */
+  visual_style: LearningSpaceRelationshipVisualStyle;
+
+  /**
+   * Higher priority relationships should be revealed first when the scene is busy.
+   */
+  priority: number;
+};
+
+export type LearningSpaceRelationship = {
+  relationship_id: string;
+  source_topic_id: string;
+  target_topic_id: string;
+  relationship_type: LearningSpaceRelationshipType;
+
+  /**
+   * Strength is continuous and relationship-specific. For semantic links it is
+   * generally derived from embedding similarity.
+   */
+  strength: number;
+
+  /**
+   * Confidence reflects evidence quality, not relationship strength.
+   */
+  confidence: number;
+
+  /**
+   * Number of evidence items/signals supporting this relationship.
+   */
+  evidence_count?: number;
+
+  /**
+   * Short source tags such as topic_label_embedding, topic_message_embedding,
+   * shared_diagnosis, shared_confusion, attempt, or source_overlap.
+   */
+  evidence_source: string[];
+
+  /**
+   * Optional human-facing/debug summary of why this relationship exists.
+   */
+  evidence_summary: string | null;
+
+  /**
+   * Top-level copy of the layout/display decision for simple consumers.
+   * display_policy carries the full renderer policy.
+   */
+  affects_layout: boolean;
+  visible_by_default: boolean;
+
+  /**
+   * Human/debug-readable reason tags. These should be stable enough to inspect
+   * without being shown directly as learner-facing copy.
+   */
+  reasons?: string[];
+
+  updated_at?: ISO8601String | null;
+
+  basis: LearningSpaceRelationshipBasis;
+  display_policy: LearningSpaceRelationshipDisplayPolicy;
+};
+
+export type LearningSpaceViewpointCamera = {
+  /**
+   * Camera values are optional in early contract phases. A viewpoint can first
+   * identify what should be revealed before the frontend knows the exact camera.
+   */
+  position: TopicPosition3D | null;
+  target: TopicPosition3D | null;
+  up: TopicPosition3D | null;
+  distance: number | null;
+};
+
+export type LearningSpaceViewpoint = {
+  viewpoint_id: string;
+  viewpoint_type: LearningSpaceViewpointType;
+  label: string;
+
+  /**
+   * Why this viewpoint exists, e.g. reveal semantic neighbors or align confusion.
+   */
+  intent: string;
+
+  focus_topic_ids: string[];
+  relationship_ids: string[];
+  camera: LearningSpaceViewpointCamera;
+
+  relationship_filter: {
+    relationship_types: LearningSpaceRelationshipType[];
+    max_visible_relationships: number;
+  };
+
+  explanation: string | null;
+};
+
+export type LearningSpaceProjectionMetadata = {
+  projection_id: string;
+  projection_method: string;
+  dimensionality: 2 | 3;
+
+  /**
+   * What evidence sources shaped this projection.
+   */
+  relationship_basis: string[];
+
+  generated_at: string | null;
+  confidence: number | null;
+  notes: string[];
+};
+
+export type TopicSurfaceMarkerType =
+  | "probe_available"
+  | "review_due"
+  | "new_insight"
+  | "needs_attention"
+  | "content_attached"
+  | "star_candidate";
+
+export type TopicSurfaceMarkerThumbnailStyle =
+  | "text_card"
+  | "choice_card"
+  | "drag_drop_card"
+  | "slider_card"
+  | "graph_card"
+  | "video_card"
+  | "audio_card"
+  | "simulation_card"
+  | "generic_card";
+
+export type TopicSurfaceMarkerModality =
+  | "text"
+  | "audio"
+  | "video"
+  | "interactive"
+  | "diagram"
+  | "simulation";
+
+export type TopicSurfaceMarkerProbeType =
+  | "explain"
+  | "predict"
+  | "discriminate"
+  | "transform"
+  | "apply_transfer"
+  | "sequence"
+  | "single_choice"
+  | "multi_choice"
+  | "drag_drop_placements"
+  | "slider"
+  | "graph_relationship"
+  | "audio_clip_question"
+  | "audio_response_question"
+  | "video_click_interval"
+  | "video_explanation"
+  | null;
+
+export type TopicSurfaceMarker = {
+  marker_id: string;
+  marker_type: TopicSurfaceMarkerType;
+  visible_by_default: boolean;
+  priority: number;
+
+  /**
+   * Surface markers are rendered as objects anchored to a topic sphere, not as
+   * free-floating UI. The renderer can choose a stable normal, then adjust to
+   * avoid labels/camera occlusion.
+   */
+  surface_anchor: {
+    anchor_mode: "sphere_surface";
+    normal_hint?: TopicPosition3D | null;
+    avoid_label_overlap: boolean;
+  };
+
+  /**
+   * Probe markers render as small square/rectangular thumbnails attached to the
+   * sphere surface. The thumbnail_style tells the renderer which icon/treatment
+   * to use, such as choice, drag/drop, prediction, audio, video, or simulation.
+   * Other marker types can omit this and use their own visual treatment.
+   */
+  preview?: {
+    title: string;
+    thumbnail_style: TopicSurfaceMarkerThumbnailStyle;
+    modality: TopicSurfaceMarkerModality;
+    probe_type: TopicSurfaceMarkerProbeType;
+    short_prompt: string | null;
+
+    /**
+     * Renderer hint for sphere-surface media tiles. These are optional because
+     * early payloads may only specify thumbnail_style.
+     */
+    render_style?: "sphere_surface_tile" | "floating_badge";
+    aspect_ratio?: "wide" | "square";
+    curvature_strength?: number | null;
+    glow_intensity?: number | null;
+  };
+};
+
+export type TopicRingType =
+  | "active_diagnosis"
+  | "active_contract"
+  | "current_target"
+  | "probe_available"
+  | "review_due"
+  | "blocking_pressure";
+
+export type TopicRing = {
+  ring_id: string;
+  ring_type: TopicRingType;
+  strength: number;
+  confidence: number;
+  visible_by_default: boolean;
+};
+
+export type AttemptSatellite = {
+  satellite_id: string;
+  orbit_angle: number;
+  linked_attempt_id: string | null;
+
+  /**
+   * These are optional for now because current satellites are still derived from
+   * messageCount. As attempt storage matures, they should become populated from
+   * actual attempt/evidence records.
+   */
+  modality?: TopicSurfaceMarkerModality | null;
+  outcome?:
+    | "success"
+    | "near_miss"
+    | "structural_failure"
+    | "guess"
+    | "no_response"
+    | "uninterpretable"
+    | null;
+  evidence_strength?: number | null;
+  judgment_confidence?: number | null;
+  created_at?: ISO8601String | null;
+};
+
+export type TopicPanelProjection = {
+  /**
+   * Topic label/id are intentionally omitted from this learner-facing panel
+   * contract because the right sidebar already knows the selected topic label.
+   */
+  current_state_summary: string | null;
+
+  active_diagnosis: {
+    label: DiagnosisType | null;
+    confidence: number | null;
+    plain_language: string | null;
+  };
+
+  primary_block: string | null;
+
+  next_step: {
+    mode: "clarify" | "probe" | "review" | null;
+    text: string | null;
+    reason: string | null;
+  };
+
+  recent_evidence_summary: {
+    kind: "attempt" | "message_signal" | "probe" | "review";
+    summary: string;
+    strength: number | null;
+    timestamp: ISO8601String | null;
+  }[];
+
+  why_this_topic_matters: string[];
+
+  available_actions: {
+    action_type: "open_probe" | "review" | "ask_clarify" | "inspect_evidence";
+    label: string;
+    priority: number;
+  }[];
+};
+
+export type LearningSpaceTopic = {
+  topic_id: string;
+  topic_label: string;
+
+  /**
+   * Renderer-safe current committed visual position.
+   */
+  position: TopicPosition3D;
+
+  /**
+   * Layout metadata for debugging and future animation/commit behavior.
+   * The renderer may inspect this, but it should not become the source of truth.
+   */
+  layout: TopicLayoutMetadata & {
+    /**
+     * Current committed position copied here so future projection code can
+     * reason about current -> semantic_target -> rendered_target without
+     * changing the existing top-level `position` contract.
+     */
+    current_position: TopicPosition3D;
+
+    /**
+     * The target the renderer/layout should drift toward. In this first contract
+     * phase, this is usually semantic_position when available, otherwise the
+     * committed position.
+     */
+    rendered_target_position: TopicPosition3D;
+
+    /**
+     * Confidence that the target position is meaningful enough to influence
+     * motion. Low confidence should produce smaller nudges.
+     */
+    layout_confidence: number;
+
+    movement_policy: {
+      easing: "slow" | "normal" | "fast";
+      max_step_per_update: number;
+      preserve_user_spatial_memory: boolean;
+    };
+  };
+
+  render_state: {
+    /**
+     * Visible sphere radius. This controls the rendered body size.
+     */
+    radius: number;
+
+    /**
+     * Minimum world-space clearance the layout/renderer should reserve for this
+     * topic. This may be larger than radius because rings, probe markers,
+     * local bobbing, labels, and satellites can occupy visual space beyond the
+     * sphere.
+     */
+    collision_radius: number;
+
+    /**
+     * Visual roughness/blobiness proxy. Current direction keeps this near zero
+     * so topics remain stable spheres; confusion should be shown through
+     * overlays, relationships, markers, rings, or panels instead.
+     */
+    surface_noise: number;
+
+    /**
+     * Smoothness/coherence proxy for the stable topic body.
+     */
+    smoothness: number;
+
+    /**
+     * Visual activation/motion proxy. This should remain subtle and renderer-safe.
+     */
+    spin_rate: number;
+
+    /**
+     * Visual richness/color-presence proxy. Currently derived from insight.
+     */
+    saturation: number;
+
+    /**
+     * Reserved high-mastery visual state.
+     */
+    is_star: boolean;
+
+    /**
+     * Glow is a separate visual channel from saturation. This lets future UX
+     * represent insight/coherence/focus/star state without overloading color.
+     */
+    glow_intensity: number;
+    glow_source: "insight" | "star_state" | "focus" | "none";
+  };
+
+  /**
+   * Small UI/render objects attached to the sphere surface. A probe_available
+   * marker can become a thumbnail preview of the next probe.
+   */
+  surface_markers: TopicSurfaceMarker[];
+
+  /**
+   * Rings are reserved for active state / diagnosis / contract / review visuals.
+   * Most should remain empty until their UX meaning is clear.
+   */
+  rings: TopicRing[];
+
+  satellite_count: number;
+  satellites: AttemptSatellite[];
+
+  /**
+   * Learner-facing right-panel projection. This should be elegant and sparse:
+   * the renderer/UI can show only fields that are useful and non-empty.
+   */
+  topic_panel: TopicPanelProjection;
+};
+
+export type LearningSpaceCluster = {
+  cluster_id: string;
+  cluster_label?: string;
+  cluster_centroid: TopicPosition3D;
+  member_topic_ids: string[];
+};
+
+export type LearningSpace = {
+  space_version: "v1";
+  topics: LearningSpaceTopic[];
+  clusters: LearningSpaceCluster[];
+
+  /**
+   * Relationship truth layer. Positions suggest relationships; relationship
+   * objects explain which connections should be revealed from viewpoints.
+   */
+  relationships: LearningSpaceRelationship[];
+
+  /**
+   * Camera/intention layer. Viewpoints reveal relationships through purposeful
+   * framing rather than always-on graph clutter.
+   */
+  viewpoints: LearningSpaceViewpoint[];
+
+  /**
+   * Debug/contract metadata for how this learning-space projection was created.
+   */
+  projection: LearningSpaceProjectionMetadata;
+};
+

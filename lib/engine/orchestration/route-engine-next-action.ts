@@ -35,7 +35,8 @@ export function routeEngineNextAction(input: {
     const hasMisconception = attempt.misconception_hits.length > 0;
     const needsVerification =
       attempt.understanding_evidence.needs_verification_probe ||
-      attempt.understanding_evidence.may_be_lucky_guess;
+      attempt.understanding_evidence.may_be_lucky_guess ||
+      attempt.understanding_evidence.possible_guess === true;
 
     if (hasMisconception && attempt.next_action !== "target_misconception") {
       return {
@@ -97,4 +98,5 @@ export function routeEngineNextAction(input: {
     keep_topic_open: true,
   };
 }
+
 

@@ -56,6 +56,46 @@ function validateUnderstandingEvidence(
 
   validateScoreField(value.evidence_strength, issues, `${path}.evidence_strength`);
 
+  if (value.supports_understanding !== undefined && !isBoolean(value.supports_understanding)) {
+    pushIssue(
+      issues,
+      "error",
+      "invalid_supports_understanding",
+      "Expected supports_understanding to be a boolean when provided.",
+      `${path}.supports_understanding`,
+    );
+  }
+
+  if (value.supports_gap !== undefined && !isBoolean(value.supports_gap)) {
+    pushIssue(
+      issues,
+      "error",
+      "invalid_supports_gap",
+      "Expected supports_gap to be a boolean when provided.",
+      `${path}.supports_gap`,
+    );
+  }
+
+  if (value.possible_guess !== undefined && !isBoolean(value.possible_guess)) {
+    pushIssue(
+      issues,
+      "error",
+      "invalid_possible_guess",
+      "Expected possible_guess to be a boolean when provided.",
+      `${path}.possible_guess`,
+    );
+  }
+
+  if (value.informational_only !== undefined && !isBoolean(value.informational_only)) {
+    pushIssue(
+      issues,
+      "error",
+      "invalid_informational_only",
+      "Expected informational_only to be a boolean when provided.",
+      `${path}.informational_only`,
+    );
+  }
+
   if (!isBoolean(value.may_be_lucky_guess)) {
     pushIssue(
       issues,
@@ -124,6 +164,7 @@ function validateMisconceptionHits(
     }
 
     validateRequiredString(hit.misconception_id, issues, `${hitPath}.misconception_id`);
+    validateOptionalString(hit.label, issues, `${hitPath}.label`);
     validateScoreField(hit.confidence, issues, `${hitPath}.confidence`);
   });
 }
@@ -232,4 +273,5 @@ export function validateAttemptEvaluation(
 
   return buildValidationResult(output as ProbeAttemptEvaluatorOutput, issues);
 }
+
 

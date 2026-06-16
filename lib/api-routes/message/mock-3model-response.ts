@@ -108,7 +108,7 @@ function buildMockEngineFuel(args: {
   const targetTopicLabel = getRouteTopicLabel(topic);
 
   return {
-    schema_version: "mock_3model_engine_fuel_v0",
+    schema_version: "mock_3model_route_adapter_v0",
     source: "mock_3model_message_route",
     topics: [
       {
@@ -243,7 +243,7 @@ export async function buildMockThreeModelMessageRouteResponse(args: {
     }) as unknown as MyWayRunResult["engine_fuel"],
     delivered_response: {
       learner_message: {
-        text: "Mock 3-model path is active. Iâ€™m using the Diagnosis Model output to generate a focused probe from the Probe Contract Model.",
+        text: "Mock 3-model path is active. I'm using the Diagnosis Model output to generate a focused probe from the Probe Contract Model.",
         tone: "encouraging",
         mode: "probe",
       },
@@ -292,3 +292,4 @@ export async function buildMockThreeModelMessageRouteResponse(args: {
     },
   } as unknown as MessageRouteResponse;
 }
+

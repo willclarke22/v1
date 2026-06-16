@@ -1,4 +1,4 @@
-// types/contracts.ts
+﻿// types/contracts.ts
 
 /**
  * MyWay core runtime contracts
@@ -51,11 +51,14 @@ export type RunKind =
 export type InterventionMode = "clarify" | "probe";
 
 export type DiagnosisType =
+  | "unknown"
+  | "no_gap_detected"
   | "recall_gap"
   | "representation_gap"
   | "procedure_gap"
   | "discrimination_gap"
-  | "transfer_gap";
+  | "transfer_gap"
+  | "metacognitive_gap";
 
 export type ProbeIntent = "diagnostic" | "intervention" | "verification";
 
@@ -64,7 +67,17 @@ export type ProbeType =
   | "explain"
   | "discriminate"
   | "transform"
-  | "apply_transfer";
+  | "apply_transfer"
+  | "sequence"
+  | "single_choice"
+  | "multi_choice"
+  | "drag_drop_placements"
+  | "slider"
+  | "graph_relationship"
+  | "audio_clip_question"
+  | "audio_response_question"
+  | "video_click_interval"
+  | "video_explanation";
 
 export type AttemptResponseType =
   | "text"
@@ -77,7 +90,17 @@ export type AttemptResponseType =
   | "dynamic_task"
   | "audio"
   | "video"
-  | "interactive_action";
+  | "interactive_action"
+  | "single_choice"
+  | "multi_choice"
+  | "ordered_items"
+  | "drag_drop_placements"
+  | "numeric"
+  | "graph"
+  | "audio_response"
+  | "video_click"
+  | "none"
+  | "unknown";
 
 export type ProbeExpectedResponseType = AttemptResponseType | "mixed";
 
@@ -742,7 +765,7 @@ export interface InteractivePayload {
 /**
  * JSON-safe snapshot of the richer engine-side Probe Contract V1.
  *
- * The canonical contract types live in lib/engine/probes. This shape stays
+ * The canonical 3-model contract types live in lib/engine/schemas. This shape stays
  * intentionally loose inside the public runtime contract so types/contracts.ts
  * does not need to import engine modules and create a circular type dependency.
  */
@@ -917,11 +940,14 @@ export interface JudgedAttemptFeatures {
 }
 
 export interface DiagnosisDelta {
+  unknown?: number;
+  no_gap_detected?: number;
   recall_gap: number;
   representation_gap: number;
   procedure_gap: number;
   discrimination_gap: number;
   transfer_gap: number;
+  metacognitive_gap?: number;
 }
 
 export interface JudgedAttemptOutcome {
@@ -1316,3 +1342,4 @@ export interface ProbeSubmitRouteResponse {
   next_probe: DeliveredProbe | null;
   updated_topic_metrics?: FrontendTopicMetricUpdate;
 }
+

@@ -38,8 +38,9 @@
     },
     presentation_support: [
       {
-        support_kind: "contrast",
-        content:
+        kind: "contrast",
+        style_used: "concrete_examples",
+        text:
           "Compare 'se lava' with 'se venden casas': the pattern changes the job se is doing.",
       },
     ],
@@ -56,12 +57,14 @@
       {
         misconception_id: "always_reflexive",
         label: "se always means itself",
+        marker: "Learner treats se as if it always means itself.",
         description: "Learner treats every se sentence as reflexive.",
         confidence: 0.74,
       },
       {
         misconception_id: "ignore_se",
         label: "se can be ignored",
+        marker: "Learner says se can be ignored or does not change the sentence.",
         description:
           "Learner treats se as decoration rather than a meaning-changing signal.",
         confidence: 0.48,
@@ -97,8 +100,8 @@
       language_policy: {
         jargon_level: "none",
       },
-      presentation_styles_used: ["contrast", "concrete_examples"],
-      support_kinds_used: ["single_choice", "contrast"],
+      presentation_styles_used: ["concrete_examples"],
+      support_kinds_used: ["contrast"],
       example_domains_used: ["Spanish sentences"],
       personalization_signals_used: [],
     },
@@ -107,3 +110,4 @@
 } as const;
 
 export default artifact;
+

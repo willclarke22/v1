@@ -1,4 +1,4 @@
-// lib/topic-routing/route-topics.ts
+﻿// lib/topic-routing/route-topics.ts
 
 import { getRouteTopicState } from "@/lib/persistence/read";
 import {
@@ -7,9 +7,14 @@ import {
   type TopicPosition3D,
   type TopicPositionSource,
 } from "@/lib/learning-space/topic-position";
-import { makeId } from "@/lib/utils/ids";
 import type { DiagnosisType, EmbeddingVector } from "@/types/contracts";
 import { normalizeDiagnosis } from "@/lib/shared/runtime";
+
+// Local helper kept near topic-routing because this is currently its only active caller.
+// If IDs become shared across domains again, move this into a better named shared/id module.
+function makeId(prefix: string): string {
+  return `${prefix}_${crypto.randomUUID()}`;
+}
 
 export type RouteTopic = {
   id: string;

@@ -75,6 +75,11 @@ export function applyUnderstandingEvidence(
   const evidenceStrength = clamp01(input.understanding_evidence.evidence_strength);
 
   const previousScore = state.understanding.score;
+  const possibleGuess =
+    input.understanding_evidence.may_be_lucky_guess ||
+    input.understanding_evidence.possible_guess === true;
+  const needsVerification =
+    input.understanding_evidence.needs_verification_probe || possibleGuess;
 
   // Correctness alone is not stable understanding.
   // Evidence strength carries more weight than correctness.
@@ -87,8 +92,8 @@ export function applyUnderstandingEvidence(
     evidence_count: state.understanding.evidence_count + 1,
     last_correctness: correctness,
     last_evidence_strength: evidenceStrength,
-    may_be_lucky_guess: input.understanding_evidence.may_be_lucky_guess,
-    needs_verification_probe: input.understanding_evidence.needs_verification_probe,
+    may_be_lucky_guess: possibleGuess,
+    needs_verification_probe: needsVerification,
     verification_reason: input.understanding_evidence.verification_reason ?? null,
     last_updated_at: now,
   };
@@ -97,11 +102,11 @@ export function applyUnderstandingEvidence(
     `understanding:${previousScore.toFixed(3)}->${nextScore.toFixed(3)}`,
   );
 
-  if (input.understanding_evidence.needs_verification_probe) {
+  if (needsVerification) {
     state.verification = {
       pending: true,
       reason: input.understanding_evidence.verification_reason ?? null,
-      source: input.understanding_evidence.may_be_lucky_guess
+      source: possibleGuess
         ? "lucky_guess"
         : "partial_success",
       last_requested_at: now,
@@ -148,4 +153,5 @@ export function applyUnderstandingEvidence(
     warnings,
   };
 }
+
 

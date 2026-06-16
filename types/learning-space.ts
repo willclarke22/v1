@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   TopicLayoutMetadata,
   TopicPosition3D,
 } from "@/lib/learning-space/topic-position";
@@ -267,6 +267,16 @@ export type TopicSurfaceMarkerProbeType =
   | "discriminate"
   | "transform"
   | "apply_transfer"
+  | "sequence"
+  | "single_choice"
+  | "multi_choice"
+  | "drag_drop_placements"
+  | "slider"
+  | "graph_relationship"
+  | "audio_clip_question"
+  | "audio_response_question"
+  | "video_click_interval"
+  | "video_explanation"
   | null;
 
 export type TopicSurfaceMarker = {
@@ -528,3 +538,5 @@ export type LearningSpace = {
    */
   projection: LearningSpaceProjectionMetadata;
 };
+
+

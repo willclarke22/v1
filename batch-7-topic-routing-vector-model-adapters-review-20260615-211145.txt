@@ -1,0 +1,4686 @@
+
+================================================================
+FILE: lib\topic-routing\route-topics.ts
+================================================================
+
+// lib/topic-routing/route-topics.ts
+
+import { getRouteTopicState } from "@/lib/persistence/read";
+import {
+  computeNextTopicPosition,
+  resolveTopicLayout,
+  type TopicPosition3D,
+  type TopicPositionSource,
+} from "@/lib/learning-space/topic-position";
+import type { DiagnosisType, EmbeddingVector } from "@/types/contracts";
+import { normalizeDiagnosis } from "@/lib/shared/runtime";
+
+// Local helper kept near topic-routing because this is currently its only active caller.
+// If IDs become shared across domains again, move this into a better named shared/id module.
+function makeId(prefix: string): string {
+  return `${prefix}_${crypto.randomUUID()}`;
+}
+
+export type RouteTopic = {
+  id: string;
+  topic_label: string;
+  diagnosis: DiagnosisType;
+  nextStep: string;
+  confusion: number;
+  insight: number;
+  learningScore: number;
+
+  /**
+   * Current committed renderer position.
+   * This should be derived from topic_position_x/y/z first.
+   */
+  position: TopicPosition3D;
+
+  /**
+   * Optional semantic target position.
+   * This is not automatically the rendered position.
+   */
+  semanticPosition?: TopicPosition3D | null;
+  semanticPositionMethod?: string | null;
+  semanticPositionUpdatedAt?: string | null;
+  positionSource?: TopicPositionSource;
+
+  scale: number;
+  messageCount: number;
+  lastUpdated: string;
+  hasAvailableProbe: boolean;
+
+  topic_label_embedding_centroid?: EmbeddingVector | null;
+  topic_label_embedding_count?: number | null;
+  topic_label_embedding_model?: string | null;
+  topic_label_embedding_updated_at?: string | null;
+
+  topic_message_embedding_centroid?: EmbeddingVector | null;
+  topic_message_embedding_count?: number | null;
+  topic_message_embedding_model?: string | null;
+  topic_message_embedding_updated_at?: string | null;
+
+  semantic_enrichment_status?: string | null;
+  needs_embedding_centroid?: boolean | null;
+  should_schedule_enrichment?: boolean | null;
+  semantic_enrichment_prompt_text?: string | null;
+  layout_status?: string | null;
+  embedding_skip_reason?: string | null;
+
+  topic_json?: Record<string, unknown> | null;
+};
+
+export type SharedMessageFrame =
+  | "quiz_request"
+  | "confusion_help"
+  | "explain_request"
+  | "compare_request"
+  | "apply_request"
+  | "attempt_like"
+  | "general";
+
+const DEFAULT_DIAGNOSIS: DiagnosisType = "representation_gap";
+const DEFAULT_SEEDED_CONFUSION = 0.58;
+const DEFAULT_SEEDED_INSIGHT = 0.34;
+const DEFAULT_SEEDED_LEARNING_SCORE = 0.22;
+const DEFAULT_LOADED_CONFUSION = 0.5;
+const DEFAULT_LOADED_INSIGHT = 0.3;
+const DEFAULT_LOADED_LEARNING_SCORE = 0.2;
+const DEFAULT_ROUTE_TOPICS_CACHE_MS = 1_500;
+const MAX_ROUTE_TOPICS_CACHE_MS = 5_000;
+
+let routeTopicsCache:
+  | {
+      createdAt: number;
+      topics: RouteTopic[];
+    }
+  | null = null;
+
+function getRouteTopicsCacheMs() {
+  const raw = process.env.MYWAY_ROUTE_TOPICS_CACHE_MS;
+  if (!raw) return DEFAULT_ROUTE_TOPICS_CACHE_MS;
+
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 0) return DEFAULT_ROUTE_TOPICS_CACHE_MS;
+
+  return Math.min(parsed, MAX_ROUTE_TOPICS_CACHE_MS);
+}
+
+function cloneRouteTopic(topic: RouteTopic): RouteTopic {
+  return {
+    ...topic,
+    position: [...topic.position] as TopicPosition3D,
+    semanticPosition: topic.semanticPosition
+      ? ([...topic.semanticPosition] as TopicPosition3D)
+      : topic.semanticPosition,
+    topic_label_embedding_centroid: topic.topic_label_embedding_centroid
+      ? [...topic.topic_label_embedding_centroid]
+      : topic.topic_label_embedding_centroid,
+    topic_message_embedding_centroid: topic.topic_message_embedding_centroid
+      ? [...topic.topic_message_embedding_centroid]
+      : topic.topic_message_embedding_centroid,
+    topic_json: topic.topic_json ? { ...topic.topic_json } : topic.topic_json,
+  };
+}
+
+function cloneRouteTopics(topics: RouteTopic[]) {
+  return topics.map(cloneRouteTopic);
+}
+
+type EmbeddingFields = {
+  topic_label_embedding_centroid: EmbeddingVector | null;
+  topic_label_embedding_count: number | null;
+  topic_label_embedding_model: string | null;
+  topic_label_embedding_updated_at: string | null;
+
+  topic_message_embedding_centroid: EmbeddingVector | null;
+  topic_message_embedding_count: number | null;
+  topic_message_embedding_model: string | null;
+  topic_message_embedding_updated_at: string | null;
+};
+
+function dedupeStrings(values: string[]): string[] {
+  return Array.from(new Set(values));
+}
+
+function cleanTopicLabel(value: string | null | undefined) {
+  return value?.trim() || "Untitled Topic";
+}
+
+function buildDefaultNextStep(topicLabel: string) {
+  return `Explain ${topicLabel} clearly in your own words.`;
+}
+
+function normalizeLooseForRouteTopic(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function semanticTokenizeForRouteTopic(text: string): string[] {
+  return normalizeLooseForRouteTopic(text)
+    .split(" ")
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function inferKeywordsFromSourceText(source: string): string[] {
+  return dedupeStrings(
+    semanticTokenizeForRouteTopic(source).filter((token) => token.length > 2),
+  ).slice(0, 8);
+}
+
+function inferSeededNextStepFromConceptAndFrame(
+  concept: string,
+  frame: SharedMessageFrame,
+): string {
+  switch (frame) {
+    case "quiz_request":
+      return `Show what you understand about ${concept} in your own words.`;
+    case "confusion_help":
+      return `Build a clearer mental model of ${concept}.`;
+    case "compare_request":
+      return `Explain the key difference in ${concept} in your own words.`;
+    case "apply_request":
+      return `Apply ${concept} to a simple case and explain why.`;
+    case "attempt_like":
+      return `Refine your thinking about ${concept} and explain your reasoning.`;
+    case "explain_request":
+    case "general":
+    default:
+      return `Explain ${concept} clearly in your own words.`;
+  }
+}
+
+function buildSeededTopic(args: {
+  topicLabel: string;
+  nextStep: string;
+  existingTopics: RouteTopic[];
+}): RouteTopic {
+  const position = computeNextTopicPosition(args.existingTopics.length);
+
+  return {
+    id: makeId("topic"),
+    topic_label: args.topicLabel,
+    diagnosis: DEFAULT_DIAGNOSIS,
+    nextStep: args.nextStep,
+    confusion: DEFAULT_SEEDED_CONFUSION,
+    insight: DEFAULT_SEEDED_INSIGHT,
+    learningScore: DEFAULT_SEEDED_LEARNING_SCORE,
+    position,
+    semanticPosition: null,
+    semanticPositionMethod: null,
+    semanticPositionUpdatedAt: null,
+    positionSource: "deterministic_fallback",
+    scale: 1,
+    messageCount: 1,
+    lastUpdated: new Date().toISOString(),
+    hasAvailableProbe: false,
+    topic_json: null,
+  };
+}
+
+export function buildSeededTopicFromResolvedLabel(args: {
+  resolvedLabel: string;
+  existingTopics: RouteTopic[];
+  frame?: SharedMessageFrame;
+}): RouteTopic {
+  return buildSeededTopic({
+    topicLabel: args.resolvedLabel,
+    nextStep: inferSeededNextStepFromConceptAndFrame(
+      args.resolvedLabel,
+      args.frame ?? "explain_request",
+    ),
+    existingTopics: args.existingTopics,
+  });
+}
+
+function resolveEmbeddingFields(row: {
+  topic_label_embedding_centroid: EmbeddingVector | null;
+  topic_label_embedding_count: number | null;
+  topic_label_embedding_model: string | null;
+  topic_label_embedding_updated_at: string | null;
+
+  topic_message_embedding_centroid: EmbeddingVector | null;
+  topic_message_embedding_count: number | null;
+  topic_message_embedding_model: string | null;
+  topic_message_embedding_updated_at: string | null;
+}): EmbeddingFields {
+  return {
+    topic_label_embedding_centroid: row.topic_label_embedding_centroid ?? null,
+    topic_label_embedding_count: row.topic_label_embedding_count ?? null,
+    topic_label_embedding_model: row.topic_label_embedding_model ?? null,
+    topic_label_embedding_updated_at:
+      row.topic_label_embedding_updated_at ?? null,
+
+    topic_message_embedding_centroid:
+      row.topic_message_embedding_centroid ?? null,
+    topic_message_embedding_count: row.topic_message_embedding_count ?? null,
+    topic_message_embedding_model: row.topic_message_embedding_model ?? null,
+    topic_message_embedding_updated_at:
+      row.topic_message_embedding_updated_at ?? null,
+  };
+}
+
+export function inferKeywordsFromTopicLabel(label: string): string[] {
+  return inferKeywordsFromSourceText(label);
+}
+
+export async function loadRouteTopics(): Promise<RouteTopic[]> {
+  const cacheMs = getRouteTopicsCacheMs();
+  const now = Date.now();
+
+  if (
+    cacheMs > 0 &&
+    routeTopicsCache &&
+    now - routeTopicsCache.createdAt <= cacheMs
+  ) {
+    return cloneRouteTopics(routeTopicsCache.topics);
+  }
+
+  const rows = await getRouteTopicState();
+
+  if (!rows.length) {
+    routeTopicsCache = {
+      createdAt: now,
+      topics: [],
+    };
+
+    return [];
+  }
+
+  const loadedTopics: RouteTopic[] = [];
+
+  for (const row of rows) {
+    const layout = resolveTopicLayout({
+      topicId: row.topic_id,
+      index: loadedTopics.length,
+      topicPosition: row.topic_position,
+      semanticPosition: row.semantic_position,
+      semanticPositionMethod: row.semantic_position_method,
+      semanticPositionUpdatedAt: row.semantic_position_updated_at,
+      topicJson: row.topic_json,
+    });
+
+    const embeddingFields = resolveEmbeddingFields(row);
+    const topicLabel = cleanTopicLabel(row.topic_label);
+
+    const routeTopic: RouteTopic = {
+      id: row.topic_id,
+      topic_label: topicLabel,
+      diagnosis: normalizeDiagnosis(row.diagnosis) ?? DEFAULT_DIAGNOSIS,
+      nextStep: row.next_step ?? buildDefaultNextStep(topicLabel),
+      confusion: row.confusion ?? DEFAULT_LOADED_CONFUSION,
+      insight: row.insight ?? DEFAULT_LOADED_INSIGHT,
+      learningScore: row.learning_score ?? DEFAULT_LOADED_LEARNING_SCORE,
+
+      position: layout.position,
+      semanticPosition: layout.semantic_position,
+      semanticPositionMethod: layout.semantic_position_method,
+      semanticPositionUpdatedAt: layout.semantic_position_updated_at,
+      positionSource: layout.position_source,
+
+      scale: 1,
+      messageCount: 1,
+      lastUpdated: row.updated_at,
+      hasAvailableProbe: false,
+
+      ...embeddingFields,
+
+      semantic_enrichment_status: row.semantic_enrichment_status,
+      needs_embedding_centroid: row.needs_embedding_centroid,
+      should_schedule_enrichment: row.should_schedule_enrichment,
+      semantic_enrichment_prompt_text: row.semantic_enrichment_prompt_text,
+      layout_status: row.layout_status,
+      embedding_skip_reason: row.embedding_skip_reason,
+
+      topic_json: row.topic_json,
+    };
+
+    loadedTopics.push(routeTopic);
+  }
+
+  routeTopicsCache = {
+    createdAt: now,
+    topics: cloneRouteTopics(loadedTopics),
+  };
+
+  return cloneRouteTopics(loadedTopics);
+}
+
+
+================================================================
+FILE: lib\topic-routing\topic-routing-trace.ts
+================================================================
+
+import type { VectorInfo } from "@/types/contracts";
+
+export type ResolutionDecisionAction =
+  | "stay_on_active_topic"
+  | "reuse_existing_topic"
+  | "create_new_topic"
+  | "no_confident_decision";
+
+export type ResolutionTimingStep = {
+  label: string;
+  duration_ms: number;
+  elapsed_ms: number;
+};
+
+export type ResolutionTimingDebug = {
+  enabled: boolean;
+  total_ms: number;
+  cache_hits: number;
+  cache_misses: number;
+  steps: ResolutionTimingStep[];
+};
+
+export type MessageFrame =
+  | "quiz_request"
+  | "confusion_help"
+  | "explain_request"
+  | "compare_request"
+  | "apply_request"
+  | "attempt_like"
+  | "general";
+
+export type GranularityHint = "broad" | "medium" | "narrow" | "unknown";
+
+export type FollowupSignals = {
+  anaphoricFollowup: boolean;
+  subpartFollowup: boolean;
+  mixedFollowup: boolean;
+  metaContinuation: boolean;
+  returnToPrevious: boolean;
+  explicitSwitch: boolean;
+  explicitSwitchTarget: string | null;
+};
+
+export type TopicScoreBreakdown = {
+  exactLabelMatch: number;
+  containedMatch: number;
+  conceptOverlap: number;
+  questionOverlap: number;
+  semanticRetrieval: number;
+  retrievalRankBonus: number;
+  activeTopicBonus: number;
+  continuityBonus: number;
+  switchPenalty: number;
+  granularityAlignment: number;
+  confidenceBonus: number;
+  vaguePenalty: number;
+  ambiguityPenalty: number;
+  suspiciousLabelPenalty: number;
+  pairedAlignment: number;
+  bottleneckAlignment: number;
+  mechanismAlignment: number;
+  terminologyAlignment: number;
+  domainCollapsePenalty: number;
+  finalScore: number;
+};
+
+export type ResolutionHypothesisKind =
+  | "stay_active"
+  | "switch_existing"
+  | "create_new"
+  | "ambiguous";
+
+export type TopicRouterV3Debug = {
+  enabled?: boolean;
+  route?: string;
+  route_version?: string;
+  decision_kind?: string;
+  selected_topic_id?: string | null;
+  selected_topic_label?: string | null;
+  created_topic_label?: string | null;
+  confidence?: number | null;
+  reasons?: string[];
+  warnings?: string[];
+  vector_info?: VectorInfo | null;
+  [key: string]: unknown;
+};
+
+export type TopicResolutionTrace = {
+  interpretation: {
+    canonicalLabel: string | null;
+    conceptSpan: string | null;
+    questionAboutTopic: string | null;
+    frame: MessageFrame;
+    labelConfidence: number;
+    specificity: string;
+    granularityHint: GranularityHint;
+    referencesActiveTopic: boolean;
+    switchCue: boolean;
+    continuationCue: boolean;
+    subpartCue: boolean;
+    suspiciousLabel: boolean;
+    subpartLikeLabel: boolean;
+    ambiguityFlags: string[];
+    followupSignals: FollowupSignals;
+
+    pairedTargetLike: boolean;
+    bottleneckLike: boolean;
+    mechanismLike: boolean;
+    domainAnchorLike: boolean;
+    terminologyBarrierLike: boolean;
+    structureBarrierLike: boolean;
+    conceptPhraseLike: boolean;
+    questionSynthesisLike: boolean;
+    questionSynthesisFrame: string | null;
+    questionTriggerKind: string | null;
+    questionWord: string | null;
+    questionVerb: string | null;
+    questionObject: string | null;
+    synthesizedLabel: string | null;
+    durableConceptLike: boolean;
+    structurallyStrongLabel: boolean;
+    nullOnlyEmotionalLike: boolean;
+    labelerCreateRecommended: boolean;
+  };
+
+  candidates: Array<{
+    topicId: string;
+    topicLabel: string;
+    similarity: number;
+    breakdown: TopicScoreBreakdown;
+  }>;
+
+  hypotheses: Array<{
+    kind: ResolutionHypothesisKind;
+    score: number;
+    reasons: string[];
+    topicId: string | null;
+    topicLabel: string | null;
+    label: string | null;
+  }>;
+
+  winner: {
+    kind: ResolutionHypothesisKind;
+    score: number;
+    reasons: string[];
+    topicId: string | null;
+    topicLabel: string | null;
+    label: string | null;
+  };
+
+  topGap: number;
+  decisionAction: ResolutionDecisionAction;
+  fallbackRecommended: boolean;
+  timing?: ResolutionTimingDebug;
+  topic_router_v3?: TopicRouterV3Debug;
+};
+
+export function emptyTopicResolutionTrace(): TopicResolutionTrace {
+  return {
+    interpretation: {
+      canonicalLabel: null,
+      conceptSpan: null,
+      questionAboutTopic: null,
+      frame: "general",
+      labelConfidence: 0,
+      specificity: "unknown",
+      granularityHint: "unknown",
+      referencesActiveTopic: false,
+      switchCue: false,
+      continuationCue: false,
+      subpartCue: false,
+      suspiciousLabel: false,
+      subpartLikeLabel: false,
+      ambiguityFlags: [],
+      followupSignals: {
+        anaphoricFollowup: false,
+        subpartFollowup: false,
+        mixedFollowup: false,
+        metaContinuation: false,
+        returnToPrevious: false,
+        explicitSwitch: false,
+        explicitSwitchTarget: null,
+      },
+
+      pairedTargetLike: false,
+      bottleneckLike: false,
+      mechanismLike: false,
+      domainAnchorLike: false,
+      terminologyBarrierLike: false,
+      structureBarrierLike: false,
+      conceptPhraseLike: false,
+      questionSynthesisLike: false,
+      questionSynthesisFrame: null,
+      questionTriggerKind: null,
+      questionWord: null,
+      questionVerb: null,
+      questionObject: null,
+      synthesizedLabel: null,
+      durableConceptLike: false,
+      structurallyStrongLabel: false,
+      nullOnlyEmotionalLike: false,
+      labelerCreateRecommended: false,
+    },
+    candidates: [],
+    hypotheses: [],
+    winner: {
+      kind: "ambiguous",
+      score: 0,
+      reasons: [],
+      topicId: null,
+      topicLabel: null,
+      label: null,
+    },
+    topGap: 0,
+    decisionAction: "no_confident_decision",
+    fallbackRecommended: false,
+  };
+}
+
+export function emptyVectorInfo(): VectorInfo {
+  return {
+    top_k_topic_labels: [],
+    top_k_topic_ids: [],
+    top_k_similarity_scores: [],
+  };
+}
+
+
+================================================================
+FILE: lib\topic-routing\topic-labeler\client.ts
+================================================================
+
+import {
+  buildTopicLabelerV3Request,
+  callTopicLabelerV3,
+} from "./v3-adapter";
+import type {
+  TopicLabelerClientResult,
+  TopicLabelerProviderId,
+  TopicLabelerRequest,
+} from "./contract";
+
+export type TopicLabelerMode =
+  | "off"
+  | "deterministic_only"
+  | "shadow"
+  | "compare"
+  | "fallback"
+  | "authoritative";
+
+const DEFAULT_TOPIC_LABELER_PROVIDER: TopicLabelerProviderId = "v3";
+const DEFAULT_TOPIC_LABELER_TIMEOUT_MS = 15_000;
+const MIN_TOPIC_LABELER_TIMEOUT_MS = 500;
+const MAX_TOPIC_LABELER_TIMEOUT_MS = 60_000;
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeProvider(raw: string | undefined): TopicLabelerProviderId {
+  const value = raw?.trim().toLowerCase();
+
+  if (value === "v4") return "v4";
+  if (value === "v5") return "v5";
+
+  return DEFAULT_TOPIC_LABELER_PROVIDER;
+}
+
+function clampTimeoutMs(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return DEFAULT_TOPIC_LABELER_TIMEOUT_MS;
+  }
+
+  return Math.min(
+    Math.max(Math.round(value), MIN_TOPIC_LABELER_TIMEOUT_MS),
+    MAX_TOPIC_LABELER_TIMEOUT_MS,
+  );
+}
+
+export function getTopicLabelerProvider(): TopicLabelerProviderId {
+  return normalizeProvider(process.env.MYWAY_TOPIC_LABELER_PROVIDER);
+}
+
+export function getTopicLabelerMode(): TopicLabelerMode {
+  const raw =
+    process.env.MYWAY_TOPIC_LABELER_MODE?.trim().toLowerCase() ??
+    process.env.TOPIC_LABELER_MODE?.trim().toLowerCase() ??
+    "";
+
+  if (
+    raw === "off" ||
+    raw === "false" ||
+    raw === "0" ||
+    raw === "disabled"
+  ) {
+    return "off";
+  }
+
+  if (raw === "deterministic_only" || raw === "legacy_deterministic") {
+    return "deterministic_only";
+  }
+
+  if (raw === "shadow") return "shadow";
+  if (raw === "compare") return "compare";
+  if (raw === "fallback") return "fallback";
+
+  /**
+   * Current runtime default:
+   * the local topic labeler is authoritative unless explicitly disabled.
+   */
+  return "authoritative";
+}
+
+export function getTopicLabelerEnabled(): boolean {
+  const mode = getTopicLabelerMode();
+
+  return mode !== "off" && mode !== "deterministic_only";
+}
+
+export function getTopicLabelerTimeoutMs(): number {
+  const raw = process.env.MYWAY_TOPIC_LABELER_TIMEOUT_MS?.trim();
+  const parsed = raw ? Number(raw) : NaN;
+
+  return clampTimeoutMs(parsed);
+}
+
+export function buildTopicLabelerRequest(input: {
+  message: string;
+  activeTopicLabel?: string | null;
+  currentTopicLabels?: string[];
+  previousUserMessages?: string[];
+}): TopicLabelerRequest {
+  /**
+   * V3 already uses the canonical wire shape:
+   * active_topic_label
+   * current_topic_labels
+   * previous_user_messages
+   *
+   * Future V4/V5 adapters should translate from this generic request rather
+   * than changing /api/message.
+   */
+  return buildTopicLabelerV3Request({
+    message: input.message,
+    activeTopicLabel: input.activeTopicLabel ?? null,
+    currentTopicLabels: normalizeStringArray(input.currentTopicLabels),
+    previousUserMessages: normalizeStringArray(input.previousUserMessages),
+  });
+}
+
+function buildUnsupportedProviderResult(args: {
+  provider: TopicLabelerProviderId;
+  startedAt: number;
+}): TopicLabelerClientResult {
+  return {
+    ok: false,
+    source: "topic_labeler",
+    provider: args.provider,
+    error: `Topic labeler provider "${args.provider}" is configured but no adapter is implemented yet.`,
+    latency_ms: Date.now() - args.startedAt,
+  };
+}
+
+export async function callConfiguredTopicLabeler(
+  request: TopicLabelerRequest,
+  options?: {
+    timeoutMs?: number;
+  },
+): Promise<TopicLabelerClientResult> {
+  const provider = getTopicLabelerProvider();
+  const timeoutMs = clampTimeoutMs(options?.timeoutMs ?? getTopicLabelerTimeoutMs());
+  const startedAt = Date.now();
+
+  if (provider === "v3") {
+    return callTopicLabelerV3(request, { timeoutMs });
+  }
+
+  /**
+   * Provider slots are intentionally explicit.
+   * Switching MYWAY_TOPIC_LABELER_PROVIDER=v4/v5 should fail safely until a real
+   * adapter exists, rather than silently pretending the provider is wired.
+   */
+  return buildUnsupportedProviderResult({
+    provider,
+    startedAt,
+  });
+}
+
+export type { TopicLabelerClientResult, TopicLabelerRequest };
+
+
+================================================================
+FILE: lib\topic-routing\topic-labeler\contract.ts
+================================================================
+
+export type TopicReferenceType =
+  | "explicit_topic_reference"
+  | "active_topic_reference"
+  | "unclear_topic"
+  | "no_topic";
+
+export type TopicLabelerRouteDecision =
+  | "stay_active"
+  | "switch_existing"
+  | "create_new"
+  | "clarify_topic_intent"
+  | "clarify_no_topic"
+  | "error_unknown_reference_type";
+
+export type TopicLabelerProviderId = "v3" | "v4" | "v5";
+
+export type TopicLabelerRequest = {
+  message: string;
+  active_topic_label: string | null;
+  current_topic_labels: string[];
+  previous_user_messages: string[];
+};
+
+export type TopicLabelerModelPrediction = {
+  topic_reference_type: TopicReferenceType | string;
+  extracted_label: string | null;
+};
+
+export type TopicLabelerRoute = {
+  route_decision: TopicLabelerRouteDecision | string;
+  topic_reference_type: TopicReferenceType | string;
+  extracted_label: string | null;
+  matched_topic_label: string | null;
+  match_type: string | null;
+  score: number | null;
+  sequence_similarity?: number | null;
+  token_f1?: number | null;
+  reason: string;
+};
+
+export type TopicLabelerResponse = {
+  ok: boolean;
+  provider: TopicLabelerProviderId;
+  model_version: string;
+  model_prediction: TopicLabelerModelPrediction;
+  route: TopicLabelerRoute;
+  raw?: unknown;
+};
+
+export type TopicLabelerClientResult =
+  | {
+      ok: true;
+      source: "topic_labeler";
+      provider: TopicLabelerProviderId;
+      response: TopicLabelerResponse;
+      latency_ms: number;
+    }
+  | {
+      ok: false;
+      source: "topic_labeler";
+      provider: TopicLabelerProviderId;
+      error: string;
+      latency_ms: number;
+    };
+
+
+================================================================
+FILE: lib\topic-routing\topic-labeler\policy.ts
+================================================================
+
+import type { TopicLabelerClientResult } from "./contract";
+import type { RouteTopic } from "@/lib/topic-routing/route-topics";
+
+export type ModelTopicRouteDecisionKind =
+  | "create_new"
+  | "switch_existing"
+  | "stay_active"
+  | "clarify_no_topic"
+  | "clarify_topic_intent"
+  | "unusable_model_result";
+
+export type ModelTopicRoutePolicyDecision = {
+  usable: boolean;
+  decision_kind: ModelTopicRouteDecisionKind;
+  extracted_label: string | null;
+  matched_topic_label: string | null;
+  matched_topic_id: string | null;
+  target_topic: RouteTopic | null;
+  reasons: string[];
+  raw_model_result: TopicLabelerClientResult | null;
+};
+
+const MAX_CREATED_TOPIC_LABEL_TOKENS = 8;
+
+const SUSPICIOUS_CREATED_TOPIC_LABELS = new Set([
+  "can you explain that easier",
+  "what would that look like",
+  "what does that even mean",
+  "that easier",
+  "that look like",
+  "i don t know",
+  "i dont know",
+  "i am confused",
+  "i m confused",
+  "help",
+  "question",
+  "new topic",
+]);
+
+function normalizeLoose(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cleanModelLabel(label: string | null | undefined): string | null {
+  if (typeof label !== "string") return null;
+
+  const cleaned = label.trim().replace(/\s+/g, " ");
+
+  return cleaned || null;
+}
+
+function getRouteTopicLabel(topic: RouteTopic | null): string | null {
+  return topic?.topic_label?.trim() || null;
+}
+
+function getModelRouteMatchedTopicLabel(route: unknown): string | null {
+  const routeWithLabel = route as { matched_topic_label?: string | null };
+
+  return cleanModelLabel(routeWithLabel.matched_topic_label);
+}
+
+function looksLikeSuspiciousModelLabel(label: string | null) {
+  if (!label) return true;
+
+  const normalized = normalizeLoose(label);
+  if (!normalized) return true;
+
+  if (SUSPICIOUS_CREATED_TOPIC_LABELS.has(normalized)) return true;
+
+  const tokenCount = normalized.split(" ").filter(Boolean).length;
+
+  return tokenCount > MAX_CREATED_TOPIC_LABEL_TOKENS;
+}
+
+function findTopicByLabel(existingTopics: RouteTopic[], label: string | null) {
+  if (!label) return null;
+
+  const target = normalizeLoose(label);
+
+  return (
+    existingTopics.find((topic) => {
+      const topicLabel = getRouteTopicLabel(topic);
+
+      return topicLabel ? normalizeLoose(topicLabel) === target : false;
+    }) ?? null
+  );
+}
+
+function buildDecision(args: {
+  usable: boolean;
+  decisionKind: ModelTopicRouteDecisionKind;
+  extractedLabel?: string | null;
+  matchedTopic?: RouteTopic | null;
+  matchedTopicLabel?: string | null;
+  reasons: string[];
+  rawModelResult: TopicLabelerClientResult | null;
+}): ModelTopicRoutePolicyDecision {
+  const matchedTopicLabel =
+    getRouteTopicLabel(args.matchedTopic ?? null) ??
+    cleanModelLabel(args.matchedTopicLabel) ??
+    null;
+
+  return {
+    usable: args.usable,
+    decision_kind: args.decisionKind,
+    extracted_label: cleanModelLabel(args.extractedLabel),
+    matched_topic_label: matchedTopicLabel,
+    matched_topic_id: args.matchedTopic?.id ?? null,
+    target_topic: args.matchedTopic ?? null,
+    reasons: args.reasons,
+    raw_model_result: args.rawModelResult,
+  };
+}
+
+function buildUnusableDecision(args: {
+  reason: string;
+  modelResult: TopicLabelerClientResult | null;
+  extractedLabel?: string | null;
+  matchedTopicLabel?: string | null;
+  matchedTopic?: RouteTopic | null;
+}): ModelTopicRoutePolicyDecision {
+  return buildDecision({
+    usable: false,
+    decisionKind: "unusable_model_result",
+    extractedLabel: args.extractedLabel ?? null,
+    matchedTopicLabel: args.matchedTopicLabel ?? null,
+    matchedTopic: args.matchedTopic ?? null,
+    reasons: [args.reason],
+    rawModelResult: args.modelResult,
+  });
+}
+
+export function buildModelTopicRoutePolicyDecision(args: {
+  modelResult: TopicLabelerClientResult | null;
+  activeTopic: RouteTopic | null;
+  existingTopics: RouteTopic[];
+}): ModelTopicRoutePolicyDecision {
+  const { modelResult, activeTopic, existingTopics } = args;
+
+  if (!modelResult) {
+    return buildUnusableDecision({
+      reason: "model_result_missing",
+      modelResult,
+    });
+  }
+
+  if (!modelResult.ok) {
+    return buildUnusableDecision({
+      reason: `model_result_error from ${modelResult.provider}: ${modelResult.error}`,
+      modelResult,
+    });
+  }
+
+  if (!modelResult.response.ok) {
+    return buildUnusableDecision({
+      reason: `model_response_not_ok from ${modelResult.provider}`,
+      modelResult,
+    });
+  }
+
+  const route = modelResult.response.route;
+  const routeDecision = route.route_decision;
+  const extractedLabel = cleanModelLabel(
+    route.extracted_label ??
+      modelResult.response.model_prediction.extracted_label ??
+      null,
+  );
+
+  const matchedTopicLabel = getModelRouteMatchedTopicLabel(route);
+  const matchedTopic = findTopicByLabel(existingTopics, matchedTopicLabel);
+
+  if (routeDecision === "stay_active") {
+    if (!activeTopic) {
+      return buildDecision({
+        usable: false,
+        decisionKind: "stay_active",
+        extractedLabel: null,
+        matchedTopicLabel,
+        matchedTopic: null,
+        reasons: ["model_requested_stay_active_but_no_active_topic"],
+        rawModelResult: modelResult,
+      });
+    }
+
+    return buildDecision({
+      usable: true,
+      decisionKind: "stay_active",
+      extractedLabel: null,
+      matchedTopic: activeTopic,
+      reasons: ["model_requested_stay_active_with_active_topic"],
+      rawModelResult: modelResult,
+    });
+  }
+
+  if (routeDecision === "switch_existing") {
+    if (!matchedTopic) {
+      return buildDecision({
+        usable: false,
+        decisionKind: "switch_existing",
+        extractedLabel,
+        matchedTopicLabel,
+        matchedTopic: null,
+        reasons: ["model_requested_switch_existing_but_topic_not_found"],
+        rawModelResult: modelResult,
+      });
+    }
+
+    return buildDecision({
+      usable: true,
+      decisionKind: "switch_existing",
+      extractedLabel,
+      matchedTopic,
+      reasons: ["model_requested_switch_existing_and_topic_found"],
+      rawModelResult: modelResult,
+    });
+  }
+
+  if (routeDecision === "create_new") {
+    if (!extractedLabel) {
+      return buildDecision({
+        usable: false,
+        decisionKind: "create_new",
+        extractedLabel: null,
+        matchedTopicLabel,
+        matchedTopic: null,
+        reasons: ["model_requested_create_new_but_missing_label"],
+        rawModelResult: modelResult,
+      });
+    }
+
+    if (looksLikeSuspiciousModelLabel(extractedLabel)) {
+      return buildDecision({
+        usable: false,
+        decisionKind: "create_new",
+        extractedLabel,
+        matchedTopicLabel,
+        matchedTopic: null,
+        reasons: ["model_requested_create_new_but_label_suspicious"],
+        rawModelResult: modelResult,
+      });
+    }
+
+    const existingMatch = findTopicByLabel(existingTopics, extractedLabel);
+
+    if (existingMatch) {
+      return buildDecision({
+        usable: true,
+        decisionKind: "switch_existing",
+        extractedLabel,
+        matchedTopic: existingMatch,
+        reasons: [
+          "model_requested_create_new_but_label_matches_existing_topic",
+        ],
+        rawModelResult: modelResult,
+      });
+    }
+
+    return buildDecision({
+      usable: true,
+      decisionKind: "create_new",
+      extractedLabel,
+      matchedTopicLabel,
+      matchedTopic: null,
+      reasons: ["model_requested_create_new_with_clean_label"],
+      rawModelResult: modelResult,
+    });
+  }
+
+  if (routeDecision === "clarify_no_topic") {
+    return buildDecision({
+      usable: true,
+      decisionKind: "clarify_no_topic",
+      extractedLabel: null,
+      matchedTopicLabel: null,
+      matchedTopic: null,
+      reasons: ["model_requested_clarify_no_topic"],
+      rawModelResult: modelResult,
+    });
+  }
+
+  if (routeDecision === "clarify_topic_intent") {
+    return buildDecision({
+      usable: true,
+      decisionKind: "clarify_topic_intent",
+      extractedLabel,
+      matchedTopicLabel,
+      matchedTopic,
+      reasons: ["model_requested_clarify_topic_intent"],
+      rawModelResult: modelResult,
+    });
+  }
+
+  return buildUnusableDecision({
+    reason: `unknown_model_route_decision: ${String(routeDecision)}`,
+    modelResult,
+    extractedLabel,
+    matchedTopicLabel,
+    matchedTopic,
+  });
+}
+
+
+================================================================
+FILE: lib\topic-routing\topic-labeler\resolution.ts
+================================================================
+
+import type {
+  EmbeddingVector,
+  ImportantRunInputs,
+  TopicRoutingState,
+  VectorInfo,
+} from "@/types/contracts";
+import {
+  buildSeededTopicFromResolvedLabel,
+  type RouteTopic,
+} from "@/lib/topic-routing/route-topics";
+import type { TopicResolutionTrace } from "@/lib/topic-routing/topic-routing-trace";
+import type {
+  ModelTopicRouteDecisionKind,
+  ModelTopicRoutePolicyDecision,
+} from "./policy";
+
+export type ModelFirstTopicResolutionKind =
+  | "matched_existing"
+  | "created_new_candidate"
+  | "fallback_active_topic"
+  | "fallback_existing_topic"
+  | "no_match";
+
+export type ModelFirstTopicLabelingMode =
+  | "topic_labeler_primary"
+  | "topic_labeler_fallback"
+  | "topic_labeler_unusable";
+
+export type ModelRouteContinuationPolicyKind =
+  | "route_authoritatively"
+  | "invite_word_vomit"
+  | "choose_best_learning_target"
+  | "stay_active_after_model_failure"
+  | "ask_lightweight_retry"
+  | "no_learning_space_change";
+
+export type ModelRouteContinuationPolicy = {
+  kind: ModelRouteContinuationPolicyKind;
+  should_create_learning_topic: boolean;
+  should_update_learning_space: boolean;
+  should_treat_as_learning_evidence: boolean;
+  should_ask_user_to_choose: boolean;
+  should_myway_choose_target: boolean;
+  learner_message_intent:
+    | "continue_routed_topic"
+    | "invite_messy_context"
+    | "guided_target_choice"
+    | "service_recovery"
+    | "silent_internal_fallback";
+  suggested_learner_message: string | null;
+  rationale: string;
+  candidate_targets: string[];
+  chosen_target: string | null;
+};
+
+export type SemanticEnrichmentStatusKind =
+  | "not_needed"
+  | "pending_embedding"
+  | "embedding_ready"
+  | "pending_centroid"
+  | "centroid_ready"
+  | "skipped_for_fast_model_route"
+  | "blocked_model_failure";
+
+export type SemanticEnrichmentStatus = {
+  status: SemanticEnrichmentStatusKind;
+  needs_embedding_centroid: boolean;
+  centroid_source:
+    | "topic_label_embedding"
+    | "topic_message_embedding"
+    | "topic_label_and_message_embedding"
+    | "topic_label_only"
+    | "topic_label_plus_initial_message"
+    | "message_embedding"
+    | null;
+  embedding_skip_reason:
+    | "model_policy_safe_authoritative_decision"
+    | "model_failure_or_timeout"
+    | "not_a_real_learning_topic"
+    | null;
+  layout_status:
+    | "semantic_position_ready"
+    | "temporary_position"
+    | "no_learning_space_change";
+  should_schedule_enrichment: boolean;
+  enrichment_prompt_text: string | null;
+};
+
+export type ModelFirstRouteCentroidUpdatePlan = {
+  topic_id: string;
+  previous_embedding_count: number;
+  new_embedding_count: number;
+  update_method: "initialize" | "running_average" | "ema" | "none";
+  alpha: number | null;
+  embedding_model: string | null;
+  updated_at: string;
+  new_centroid: EmbeddingVector | null;
+};
+
+export type ModelFirstTopicResolutionDebug = {
+  topic_labeling_mode: ModelFirstTopicLabelingMode;
+  authority_source: "topic_labeler_policy" | "topic_labeler_fallback";
+  model_policy_used_as_authority: boolean;
+  model_policy_decision_kind: ModelTopicRouteDecisionKind | null;
+  model_policy_usable: boolean | null;
+  model_policy_reasons: string[];
+  resolution_kind: ModelFirstTopicResolutionKind;
+  resolved_label: string | null;
+  match_confidence: number;
+  resolution_trace: TopicResolutionTrace | null;
+  model_route_continuation_policy: ModelRouteContinuationPolicy;
+  semantic_enrichment_status: SemanticEnrichmentStatus;
+};
+
+export type ModelFirstTopicResolutionOutcome = {
+  topic: RouteTopic;
+  createdTopic: RouteTopic | null;
+  routeTopics: RouteTopic[];
+  resolutionKind: ModelFirstTopicResolutionKind;
+  vectorInfo: VectorInfo;
+  resolvedLabel: string | null;
+  matchConfidence: number;
+  usedLLMFallback: false;
+  resolutionTrace: TopicResolutionTrace | null;
+  semanticTopicRouting: TopicRoutingState | null;
+  centroidUpdatePlan: ModelFirstRouteCentroidUpdatePlan | null;
+  modelRouteContinuationPolicy: ModelRouteContinuationPolicy;
+  semanticEnrichmentStatus: SemanticEnrichmentStatus;
+  debug: ModelFirstTopicResolutionDebug;
+};
+
+const MODEL_AUTHORITY_SOURCE = "topic_labeler_policy" as const;
+const MODEL_FALLBACK_AUTHORITY_SOURCE = "topic_labeler_fallback" as const;
+
+type ModelResolutionAuthoritySource =
+  | typeof MODEL_AUTHORITY_SOURCE
+  | typeof MODEL_FALLBACK_AUTHORITY_SOURCE;
+
+const MODEL_MATCH_CONFIDENCE = {
+  stayActive: 0.86,
+  switchExisting: 0.88,
+  createNew: 0.86,
+  conservativeActiveFallback: 0.32,
+  conservativeNoMatch: 0,
+} as const;
+
+function compactUniqueStrings(values: Array<string | null | undefined>) {
+  const seen = new Set<string>();
+  const output: string[] = [];
+
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (!trimmed) continue;
+
+    const key = normalizeTextLoose(trimmed);
+    if (!key || seen.has(key)) continue;
+
+    seen.add(key);
+    output.push(trimmed);
+  }
+
+  return output;
+}
+
+function getPolicyResolvedLabel(
+  decision: ModelTopicRoutePolicyDecision | null,
+  activeTopic: RouteTopic | null,
+) {
+  return (
+    decision?.extracted_label?.trim() ||
+    getPolicyMatchedTopicLabel(decision) ||
+    getRouteTopicLabel(decision?.target_topic ?? null) ||
+    getRouteTopicLabel(activeTopic) ||
+    null
+  );
+}
+
+function isModelFailureDecision(
+  decision: ModelTopicRoutePolicyDecision | null,
+) {
+  return !decision || decision.decision_kind === "unusable_model_result";
+}
+
+function emptyVectorInfo(): VectorInfo {
+  return {
+    top_k_topic_labels: [],
+    top_k_topic_ids: [],
+    top_k_similarity_scores: [],
+  };
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function normalizeTextLoose(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getRouteTopicLabel(topic: RouteTopic | null): string | null {
+  return topic?.topic_label?.trim() || null;
+}
+
+function getPolicyMatchedTopicLabel(
+  decision: ModelTopicRoutePolicyDecision | null,
+): string | null {
+  return decision?.matched_topic_label?.trim() || null;
+}
+
+function findTopicByLabel(existingTopics: RouteTopic[], label: string | null) {
+  if (!label) return null;
+
+  const target = normalizeTextLoose(label);
+
+  return (
+    existingTopics.find((topic) => {
+      const topicLabel = getRouteTopicLabel(topic);
+      return topicLabel ? normalizeTextLoose(topicLabel) === target : false;
+    }) ?? null
+  );
+}
+
+function asEmbeddingVector(value: unknown): EmbeddingVector | null {
+  if (!Array.isArray(value)) return null;
+
+  const vector = value.filter(
+    (item): item is number => typeof item === "number" && Number.isFinite(item),
+  );
+
+  if (!vector.length) return null;
+  if (vector.length !== value.length) return null;
+
+  return vector;
+}
+
+function topicHasTopicLabelEmbedding(topic: RouteTopic | null): boolean {
+  if (!topic) return false;
+
+  return Boolean(asEmbeddingVector(topic.topic_label_embedding_centroid ?? null));
+}
+
+function topicHasTopicMessageEmbedding(topic: RouteTopic | null): boolean {
+  if (!topic) return false;
+
+  return Boolean(
+    asEmbeddingVector(topic.topic_message_embedding_centroid ?? null),
+  );
+}
+
+function topicHasCanonicalEmbeddings(topic: RouteTopic | null): boolean {
+  return (
+    topicHasTopicLabelEmbedding(topic) && topicHasTopicMessageEmbedding(topic)
+  );
+}
+
+function buildTopicMessageEnrichmentPrompt(args: {
+  topicLabel: string;
+  initialMessage?: string | null;
+}) {
+  const { topicLabel, initialMessage } = args;
+
+  return initialMessage
+    ? `Topic: ${topicLabel}
+Learner context: ${initialMessage}`
+    : `Topic: ${topicLabel}`;
+}
+
+function buildCreatedTopicMessageEmbeddingPlan(args: {
+  createdTopic: RouteTopic | null;
+  messageEmbedding: EmbeddingVector | null;
+  embeddingModel: string | null;
+}): ModelFirstRouteCentroidUpdatePlan | null {
+  const { createdTopic, messageEmbedding, embeddingModel } = args;
+  const centroid = asEmbeddingVector(messageEmbedding);
+
+  if (!createdTopic || !centroid) return null;
+
+  return {
+    topic_id: createdTopic.id,
+    previous_embedding_count: 0,
+    new_embedding_count: 1,
+    update_method: "initialize",
+    alpha: null,
+    embedding_model: embeddingModel,
+    updated_at: nowIso(),
+    new_centroid: centroid,
+  };
+}
+
+function buildAuthoritativeContinuationPolicy(args: {
+  decisionKind: "create_new" | "switch_existing" | "stay_active";
+  resolvedLabel: string | null;
+  activeTopicLabel: string | null;
+}): ModelRouteContinuationPolicy {
+  const { decisionKind, resolvedLabel, activeTopicLabel } = args;
+  const chosenTarget = resolvedLabel ?? activeTopicLabel;
+
+  return {
+    kind: "route_authoritatively",
+    should_create_learning_topic: decisionKind === "create_new",
+    should_update_learning_space: true,
+    should_treat_as_learning_evidence: true,
+    should_ask_user_to_choose: false,
+    should_myway_choose_target: true,
+    learner_message_intent: "continue_routed_topic",
+    suggested_learner_message: null,
+    rationale:
+      decisionKind === "stay_active"
+        ? "The model judged the message as a continuation of the active topic."
+        : decisionKind === "switch_existing"
+          ? "The model judged the message as referring to an existing topic."
+          : "The model judged the message as a clean new learning topic.",
+    candidate_targets: chosenTarget ? [chosenTarget] : [],
+    chosen_target: chosenTarget,
+  };
+}
+
+function buildClarifyNoTopicContinuationPolicy(): ModelRouteContinuationPolicy {
+  return {
+    kind: "invite_word_vomit",
+    should_create_learning_topic: false,
+    should_update_learning_space: false,
+    should_treat_as_learning_evidence: false,
+    should_ask_user_to_choose: false,
+    should_myway_choose_target: false,
+    learner_message_intent: "invite_messy_context",
+    suggested_learner_message:
+      "I don’t need the exact topic label yet. Just dump whatever feels confusing — words, examples, feelings, half-thoughts, anything. I’ll help turn it into something we can work with.",
+    rationale:
+      "The model found no stable topic object yet, so MyWay should invite raw context rather than create a permanent topic.",
+    candidate_targets: [],
+    chosen_target: null,
+  };
+}
+
+function buildClarifyTopicIntentContinuationPolicy(args: {
+  candidateTargets: string[];
+  chosenTarget: string | null;
+}): ModelRouteContinuationPolicy {
+  const { candidateTargets, chosenTarget } = args;
+  const listedTargets = candidateTargets.length
+    ? candidateTargets.join(", ")
+    : "a few possible directions";
+
+  return {
+    kind: "choose_best_learning_target",
+    should_create_learning_topic: Boolean(chosenTarget),
+    should_update_learning_space: Boolean(chosenTarget),
+    should_treat_as_learning_evidence: Boolean(chosenTarget),
+    should_ask_user_to_choose: false,
+    should_myway_choose_target: true,
+    learner_message_intent: "guided_target_choice",
+    suggested_learner_message: chosenTarget
+      ? `I see a few possible targets here: ${listedTargets}. I’m going to start with ${chosenTarget}, because that seems like the best starting point for making the rest easier.`
+      : `I see a few possible targets here: ${listedTargets}. I’m going to start with the piece that seems most foundational, then we can connect the rest after.`,
+    rationale:
+      "The model found multiple plausible topic targets. MyWay should choose the most helpful instructional starting point instead of forcing the learner to choose manually.",
+    candidate_targets: candidateTargets,
+    chosen_target: chosenTarget,
+  };
+}
+
+function buildModelFailureContinuationPolicy(args: {
+  activeTopic: RouteTopic | null;
+  reason: string;
+}): ModelRouteContinuationPolicy {
+  const { activeTopic, reason } = args;
+  const activeTopicLabel = getRouteTopicLabel(activeTopic);
+
+  if (activeTopic && activeTopicLabel) {
+    return {
+      kind: "stay_active_after_model_failure",
+      should_create_learning_topic: false,
+      should_update_learning_space: true,
+      should_treat_as_learning_evidence: false,
+      should_ask_user_to_choose: false,
+      should_myway_choose_target: false,
+      learner_message_intent: "service_recovery",
+      suggested_learner_message:
+        "I’m having trouble classifying that cleanly right now, so I’m going to keep us anchored on the current topic for the moment. Add one more sentence, even messy, and I’ll re-check the target.",
+      rationale: `The model result was unusable (${reason}). MyWay should avoid creating a permanent topic and stay anchored to the active topic.`,
+      candidate_targets: [activeTopicLabel],
+      chosen_target: activeTopicLabel,
+    };
+  }
+
+  return {
+    kind: "ask_lightweight_retry",
+    should_create_learning_topic: false,
+    should_update_learning_space: false,
+    should_treat_as_learning_evidence: false,
+    should_ask_user_to_choose: false,
+    should_myway_choose_target: false,
+    learner_message_intent: "service_recovery",
+    suggested_learner_message:
+      "I’m having trouble turning that into a stable topic right now. Add one more messy sentence about what part feels confusing, and I’ll try again.",
+    rationale: `The model result was unusable (${reason}). With no active topic, MyWay should avoid polluting the learning space.`,
+    candidate_targets: [],
+    chosen_target: null,
+  };
+}
+
+function buildNoLearningSpaceChangePolicy(args: {
+  reason: string;
+}): ModelRouteContinuationPolicy {
+  return {
+    kind: "no_learning_space_change",
+    should_create_learning_topic: false,
+    should_update_learning_space: false,
+    should_treat_as_learning_evidence: false,
+    should_ask_user_to_choose: false,
+    should_myway_choose_target: false,
+    learner_message_intent: "silent_internal_fallback",
+    suggested_learner_message: null,
+    rationale: args.reason,
+    candidate_targets: [],
+    chosen_target: null,
+  };
+}
+
+function buildSemanticEnrichmentStatus(args: {
+  createdTopic: RouteTopic | null;
+  targetTopic?: RouteTopic | null;
+  messageEmbeddingPlan: ModelFirstRouteCentroidUpdatePlan | null;
+  messageEmbedding: EmbeddingVector | null;
+  embeddingSkippedForFastRoute: boolean;
+  blockedByModelFailure: boolean;
+  initialMessage?: string | null;
+  resolvedLabel?: string | null;
+}): SemanticEnrichmentStatus {
+  const {
+    createdTopic,
+    targetTopic,
+    messageEmbeddingPlan,
+    messageEmbedding,
+    embeddingSkippedForFastRoute,
+    blockedByModelFailure,
+    initialMessage,
+    resolvedLabel,
+  } = args;
+
+  if (blockedByModelFailure) {
+    return {
+      status: "blocked_model_failure",
+      needs_embedding_centroid: false,
+      centroid_source: null,
+      embedding_skip_reason: "model_failure_or_timeout",
+      layout_status: "no_learning_space_change",
+      should_schedule_enrichment: false,
+      enrichment_prompt_text: null,
+    };
+  }
+
+  const topicForSemanticCheck = createdTopic ?? targetTopic ?? null;
+  const topicLabel =
+    resolvedLabel?.trim() ??
+    getRouteTopicLabel(createdTopic) ??
+    getRouteTopicLabel(targetTopic ?? null) ??
+    null;
+
+  if (!topicForSemanticCheck || !topicLabel) {
+    return {
+      status: "not_needed",
+      needs_embedding_centroid: false,
+      centroid_source: null,
+      embedding_skip_reason: null,
+      layout_status: "no_learning_space_change",
+      should_schedule_enrichment: false,
+      enrichment_prompt_text: null,
+    };
+  }
+
+  const hasExistingCanonicalEmbeddings =
+    topicHasCanonicalEmbeddings(topicForSemanticCheck);
+  const hasTopicLabelEmbedding =
+    topicHasTopicLabelEmbedding(topicForSemanticCheck);
+  const hasTopicMessageEmbedding =
+    topicHasTopicMessageEmbedding(topicForSemanticCheck);
+
+  const hasFreshMessageEmbedding =
+    Boolean(messageEmbeddingPlan?.new_centroid) &&
+    Boolean(asEmbeddingVector(messageEmbedding)?.length);
+
+  if (hasExistingCanonicalEmbeddings) {
+    return {
+      status: "embedding_ready",
+      needs_embedding_centroid: false,
+      centroid_source: "topic_label_and_message_embedding",
+      embedding_skip_reason: null,
+      layout_status: "semantic_position_ready",
+      should_schedule_enrichment: false,
+      enrichment_prompt_text: null,
+    };
+  }
+
+  const enrichmentPromptText = buildTopicMessageEnrichmentPrompt({
+    topicLabel,
+    initialMessage: initialMessage ?? null,
+  });
+
+  if (hasFreshMessageEmbedding) {
+    return {
+      status: hasTopicLabelEmbedding ? "embedding_ready" : "pending_embedding",
+      needs_embedding_centroid: !hasTopicLabelEmbedding,
+      centroid_source: hasTopicLabelEmbedding
+        ? "topic_label_and_message_embedding"
+        : "topic_message_embedding",
+      embedding_skip_reason: null,
+      layout_status: hasTopicLabelEmbedding
+        ? "semantic_position_ready"
+        : "temporary_position",
+      should_schedule_enrichment: true,
+      enrichment_prompt_text: enrichmentPromptText,
+    };
+  }
+
+  return {
+    status: embeddingSkippedForFastRoute
+      ? "skipped_for_fast_model_route"
+      : "pending_embedding",
+    needs_embedding_centroid: true,
+    centroid_source:
+      hasTopicLabelEmbedding || hasTopicMessageEmbedding
+        ? hasTopicLabelEmbedding
+          ? "topic_label_embedding"
+          : "topic_message_embedding"
+        : "topic_label_plus_initial_message",
+    embedding_skip_reason: embeddingSkippedForFastRoute
+      ? "model_policy_safe_authoritative_decision"
+      : null,
+    layout_status: "temporary_position",
+    should_schedule_enrichment: true,
+    enrichment_prompt_text: enrichmentPromptText,
+  };
+}
+
+function buildModelResolutionDebug(args: {
+  authoritySource: ModelResolutionAuthoritySource;
+  modelPolicyUsedAsAuthority: boolean;
+  modelPolicyDecision: ModelTopicRoutePolicyDecision | null;
+  resolutionKind: ModelFirstTopicResolutionKind;
+  resolvedLabel: string | null;
+  matchConfidence: number;
+  continuationPolicy: ModelRouteContinuationPolicy;
+  semanticEnrichmentStatus: SemanticEnrichmentStatus;
+  resolutionTrace?: TopicResolutionTrace | null;
+}): ModelFirstTopicResolutionDebug {
+  return {
+    topic_labeling_mode: args.modelPolicyUsedAsAuthority
+      ? "topic_labeler_primary"
+      : args.modelPolicyDecision
+        ? "topic_labeler_fallback"
+        : "topic_labeler_unusable",
+    authority_source: args.authoritySource,
+    model_policy_used_as_authority: args.modelPolicyUsedAsAuthority,
+    model_policy_decision_kind: args.modelPolicyDecision?.decision_kind ?? null,
+    model_policy_usable: args.modelPolicyDecision?.usable ?? null,
+    model_policy_reasons: args.modelPolicyDecision?.reasons ?? [],
+    resolution_kind: args.resolutionKind,
+    resolved_label: args.resolvedLabel,
+    match_confidence: args.matchConfidence,
+    resolution_trace: args.resolutionTrace ?? null,
+    model_route_continuation_policy: args.continuationPolicy,
+    semantic_enrichment_status: args.semanticEnrichmentStatus,
+  };
+}
+
+function buildOutcome(args: {
+  topic: RouteTopic;
+  createdTopic: RouteTopic | null;
+  routeTopics: RouteTopic[];
+  resolutionKind: ModelFirstTopicResolutionKind;
+  vectorInfo: VectorInfo;
+  resolvedLabel: string | null;
+  matchConfidence: number;
+  modelPolicyDecision: ModelTopicRoutePolicyDecision | null;
+  modelPolicyUsedAsAuthority: boolean;
+  authoritySource: ModelResolutionAuthoritySource;
+  continuationPolicy: ModelRouteContinuationPolicy;
+  semanticEnrichmentStatus: SemanticEnrichmentStatus;
+  centroidUpdatePlan?: ModelFirstRouteCentroidUpdatePlan | null;
+  semanticTopicRouting?: TopicRoutingState | null;
+  resolutionTrace?: TopicResolutionTrace | null;
+}): ModelFirstTopicResolutionOutcome {
+  return {
+    topic: args.topic,
+    createdTopic: args.createdTopic,
+    routeTopics: args.routeTopics,
+    resolutionKind: args.resolutionKind,
+    vectorInfo: args.vectorInfo,
+    resolvedLabel: args.resolvedLabel,
+    matchConfidence: args.matchConfidence,
+    usedLLMFallback: false,
+    resolutionTrace: args.resolutionTrace ?? null,
+    semanticTopicRouting: args.semanticTopicRouting ?? null,
+    centroidUpdatePlan: args.centroidUpdatePlan ?? null,
+    modelRouteContinuationPolicy: args.continuationPolicy,
+    semanticEnrichmentStatus: args.semanticEnrichmentStatus,
+    debug: buildModelResolutionDebug({
+      authoritySource: args.authoritySource,
+      modelPolicyUsedAsAuthority: args.modelPolicyUsedAsAuthority,
+      modelPolicyDecision: args.modelPolicyDecision,
+      resolutionKind: args.resolutionKind,
+      resolvedLabel: args.resolvedLabel,
+      matchConfidence: args.matchConfidence,
+      continuationPolicy: args.continuationPolicy,
+      semanticEnrichmentStatus: args.semanticEnrichmentStatus,
+      resolutionTrace: args.resolutionTrace ?? null,
+    }),
+  };
+}
+
+function buildRouteTopicFromResolvedLabel(args: {
+  existingTopics: RouteTopic[];
+  resolvedLabel: string;
+}): RouteTopic {
+  return buildSeededTopicFromResolvedLabel({
+    existingTopics: args.existingTopics,
+    resolvedLabel: args.resolvedLabel,
+  });
+}
+
+export function isModelPolicySafePositiveDecision(
+  decision: ModelTopicRoutePolicyDecision | null,
+): decision is ModelTopicRoutePolicyDecision & {
+  usable: true;
+  decision_kind: "create_new" | "switch_existing" | "stay_active";
+} {
+  if (!decision?.usable) return false;
+
+  return (
+    decision.decision_kind === "create_new" ||
+    decision.decision_kind === "switch_existing" ||
+    decision.decision_kind === "stay_active"
+  );
+}
+
+export function buildModelRouteContinuationPolicy(args: {
+  activeTopic: RouteTopic | null;
+  modelPolicyDecision: ModelTopicRoutePolicyDecision | null;
+}): ModelRouteContinuationPolicy {
+  const { activeTopic, modelPolicyDecision } = args;
+  const activeTopicLabel = getRouteTopicLabel(activeTopic);
+  const matchedTopicLabel = getPolicyMatchedTopicLabel(modelPolicyDecision);
+
+  if (isModelPolicySafePositiveDecision(modelPolicyDecision)) {
+    return buildAuthoritativeContinuationPolicy({
+      decisionKind: modelPolicyDecision.decision_kind,
+      resolvedLabel: getPolicyResolvedLabel(modelPolicyDecision, activeTopic),
+      activeTopicLabel,
+    });
+  }
+
+  if (!modelPolicyDecision) {
+    return buildModelFailureContinuationPolicy({
+      activeTopic,
+      reason: "missing_model_policy_decision",
+    });
+  }
+
+  if (modelPolicyDecision.decision_kind === "clarify_no_topic") {
+    return buildClarifyNoTopicContinuationPolicy();
+  }
+
+  if (modelPolicyDecision.decision_kind === "clarify_topic_intent") {
+    const targetTopicLabel = getRouteTopicLabel(
+      modelPolicyDecision.target_topic ?? null,
+    );
+    const candidateTargets = compactUniqueStrings([
+      modelPolicyDecision.extracted_label,
+      matchedTopicLabel,
+      targetTopicLabel,
+    ]);
+
+    return buildClarifyTopicIntentContinuationPolicy({
+      candidateTargets,
+      chosenTarget:
+        targetTopicLabel ??
+        modelPolicyDecision.extracted_label?.trim() ??
+        matchedTopicLabel ??
+        null,
+    });
+  }
+
+  if (modelPolicyDecision.decision_kind === "unusable_model_result") {
+    return buildModelFailureContinuationPolicy({
+      activeTopic,
+      reason: modelPolicyDecision.reasons.join("; ") || "unusable_model_result",
+    });
+  }
+
+  return buildNoLearningSpaceChangePolicy({
+    reason: `Unhandled model policy decision: ${String(
+      modelPolicyDecision.decision_kind,
+    )}`,
+  });
+}
+
+export function buildModelFirstTopicResolutionOutcome(args: {
+  existingTopics: RouteTopic[];
+  activeTopic: RouteTopic | null;
+  modelPolicyDecision: ModelTopicRoutePolicyDecision | null;
+  semanticVectorInfo?: VectorInfo | null;
+  messageEmbedding?: EmbeddingVector | null;
+  embeddingModel?: string | null;
+  initialMessage?: string | null;
+  embeddingSkippedForFastRoute?: boolean;
+}): ModelFirstTopicResolutionOutcome | null {
+  const {
+    existingTopics,
+    activeTopic,
+    modelPolicyDecision,
+    semanticVectorInfo,
+    messageEmbedding,
+    embeddingModel,
+    initialMessage,
+    embeddingSkippedForFastRoute,
+  } = args;
+
+  const vectorInfo = semanticVectorInfo ?? emptyVectorInfo();
+
+  if (!isModelPolicySafePositiveDecision(modelPolicyDecision)) {
+    return null;
+  }
+
+  if (modelPolicyDecision.decision_kind === "stay_active") {
+    if (!activeTopic) return null;
+
+    const activeTopicLabel = getRouteTopicLabel(activeTopic);
+
+    const continuationPolicy = buildModelRouteContinuationPolicy({
+      activeTopic,
+      modelPolicyDecision,
+    });
+
+    const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
+      createdTopic: null,
+      targetTopic: activeTopic,
+      messageEmbeddingPlan: null,
+      messageEmbedding: messageEmbedding ?? null,
+      embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
+      blockedByModelFailure: false,
+      initialMessage: initialMessage ?? null,
+      resolvedLabel: activeTopicLabel,
+    });
+
+    return buildOutcome({
+      topic: activeTopic,
+      createdTopic: null,
+      routeTopics: existingTopics,
+      resolutionKind: "fallback_active_topic",
+      vectorInfo,
+      resolvedLabel: activeTopicLabel,
+      matchConfidence: MODEL_MATCH_CONFIDENCE.stayActive,
+      modelPolicyDecision,
+      modelPolicyUsedAsAuthority: true,
+      authoritySource: MODEL_AUTHORITY_SOURCE,
+      continuationPolicy,
+      semanticEnrichmentStatus,
+    });
+  }
+
+  if (modelPolicyDecision.decision_kind === "switch_existing") {
+    const matchedTopic =
+      modelPolicyDecision.target_topic ??
+      findTopicByLabel(
+        existingTopics,
+        getPolicyMatchedTopicLabel(modelPolicyDecision),
+      );
+
+    if (!matchedTopic) return null;
+
+    const matchedTopicLabel = getRouteTopicLabel(matchedTopic);
+
+    const continuationPolicy = buildModelRouteContinuationPolicy({
+      activeTopic,
+      modelPolicyDecision,
+    });
+
+    const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
+      createdTopic: null,
+      targetTopic: matchedTopic,
+      messageEmbeddingPlan: null,
+      messageEmbedding: messageEmbedding ?? null,
+      embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
+      blockedByModelFailure: false,
+      initialMessage: initialMessage ?? null,
+      resolvedLabel: modelPolicyDecision.extracted_label ?? matchedTopicLabel,
+    });
+
+    return buildOutcome({
+      topic: matchedTopic,
+      createdTopic: null,
+      routeTopics: existingTopics,
+      resolutionKind:
+        activeTopic?.id === matchedTopic.id
+          ? "fallback_active_topic"
+          : "matched_existing",
+      vectorInfo,
+      resolvedLabel: modelPolicyDecision.extracted_label ?? matchedTopicLabel,
+      matchConfidence: MODEL_MATCH_CONFIDENCE.switchExisting,
+      modelPolicyDecision,
+      modelPolicyUsedAsAuthority: true,
+      authoritySource: MODEL_AUTHORITY_SOURCE,
+      continuationPolicy,
+      semanticEnrichmentStatus,
+    });
+  }
+
+  if (modelPolicyDecision.decision_kind === "create_new") {
+    const resolvedLabel = modelPolicyDecision.extracted_label;
+    if (!resolvedLabel) return null;
+
+    const existingMatch = findTopicByLabel(existingTopics, resolvedLabel);
+
+    if (existingMatch) {
+      const continuationPolicy = buildModelRouteContinuationPolicy({
+        activeTopic,
+        modelPolicyDecision: {
+          ...modelPolicyDecision,
+          target_topic: existingMatch,
+        },
+      });
+
+      const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
+        createdTopic: null,
+        targetTopic: existingMatch,
+        messageEmbeddingPlan: null,
+        messageEmbedding: messageEmbedding ?? null,
+        embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
+        blockedByModelFailure: false,
+        initialMessage: initialMessage ?? null,
+        resolvedLabel,
+      });
+
+      return buildOutcome({
+        topic: existingMatch,
+        createdTopic: null,
+        routeTopics: existingTopics,
+        resolutionKind:
+          activeTopic?.id === existingMatch.id
+            ? "fallback_active_topic"
+            : "matched_existing",
+        vectorInfo,
+        resolvedLabel,
+        matchConfidence: MODEL_MATCH_CONFIDENCE.switchExisting,
+        modelPolicyDecision,
+        modelPolicyUsedAsAuthority: true,
+        authoritySource: MODEL_AUTHORITY_SOURCE,
+        continuationPolicy,
+        semanticEnrichmentStatus,
+      });
+    }
+
+    const createdTopic = buildRouteTopicFromResolvedLabel({
+      existingTopics,
+      resolvedLabel,
+    });
+
+    const messageEmbeddingPlan = buildCreatedTopicMessageEmbeddingPlan({
+      createdTopic,
+      messageEmbedding: messageEmbedding ?? null,
+      embeddingModel: embeddingModel ?? null,
+    });
+
+    const continuationPolicy = buildModelRouteContinuationPolicy({
+      activeTopic,
+      modelPolicyDecision,
+    });
+
+    const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
+      createdTopic,
+      targetTopic: createdTopic,
+      messageEmbeddingPlan,
+      messageEmbedding: messageEmbedding ?? null,
+      embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
+      blockedByModelFailure: false,
+      initialMessage: initialMessage ?? null,
+      resolvedLabel,
+    });
+
+    return buildOutcome({
+      topic: createdTopic,
+      createdTopic,
+      routeTopics: [...existingTopics, createdTopic],
+      resolutionKind: "created_new_candidate",
+      vectorInfo,
+      resolvedLabel,
+      matchConfidence: MODEL_MATCH_CONFIDENCE.createNew,
+      modelPolicyDecision,
+      modelPolicyUsedAsAuthority: true,
+      authoritySource: MODEL_AUTHORITY_SOURCE,
+      continuationPolicy,
+      semanticEnrichmentStatus,
+      centroidUpdatePlan: messageEmbeddingPlan,
+    });
+  }
+
+  return null;
+}
+
+export function buildModelFirstConservativeFallbackOutcome(args: {
+  existingTopics: RouteTopic[];
+  activeTopic: RouteTopic | null;
+  modelPolicyDecision: ModelTopicRoutePolicyDecision | null;
+  semanticVectorInfo?: VectorInfo | null;
+  currentInteractionContext?: ImportantRunInputs["current_interaction_context"];
+}): ModelFirstTopicResolutionOutcome {
+  const { existingTopics, activeTopic, modelPolicyDecision, semanticVectorInfo } =
+    args;
+
+  const vectorInfo = semanticVectorInfo ?? emptyVectorInfo();
+  const continuationPolicy = buildModelRouteContinuationPolicy({
+    activeTopic,
+    modelPolicyDecision,
+  });
+
+  const blockedByModelFailure = isModelFailureDecision(modelPolicyDecision);
+
+  if (activeTopic) {
+    const activeTopicLabel = getRouteTopicLabel(activeTopic);
+
+    const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
+      createdTopic: null,
+      targetTopic: activeTopic,
+      messageEmbeddingPlan: null,
+      messageEmbedding: null,
+      embeddingSkippedForFastRoute: false,
+      blockedByModelFailure,
+      resolvedLabel: activeTopicLabel,
+    });
+
+    return buildOutcome({
+      topic: activeTopic,
+      createdTopic: null,
+      routeTopics: existingTopics,
+      resolutionKind: "fallback_active_topic",
+      vectorInfo,
+      resolvedLabel: activeTopicLabel,
+      matchConfidence: MODEL_MATCH_CONFIDENCE.conservativeActiveFallback,
+      modelPolicyDecision,
+      modelPolicyUsedAsAuthority: false,
+      authoritySource: MODEL_FALLBACK_AUTHORITY_SOURCE,
+      continuationPolicy,
+      semanticEnrichmentStatus,
+    });
+  }
+
+  const semanticEnrichmentStatus = buildSemanticEnrichmentStatus({
+    createdTopic: null,
+    messageEmbeddingPlan: null,
+    messageEmbedding: null,
+    embeddingSkippedForFastRoute: false,
+    blockedByModelFailure: true,
+  });
+
+  const fallbackTopic = buildRouteTopicFromResolvedLabel({
+    existingTopics,
+    resolvedLabel: "Untitled Topic",
+  });
+
+  return buildOutcome({
+    topic: fallbackTopic,
+    createdTopic: null,
+    routeTopics: existingTopics,
+    resolutionKind: "no_match",
+    vectorInfo,
+    resolvedLabel: null,
+    matchConfidence: MODEL_MATCH_CONFIDENCE.conservativeNoMatch,
+    modelPolicyDecision,
+    modelPolicyUsedAsAuthority: false,
+    authoritySource: MODEL_FALLBACK_AUTHORITY_SOURCE,
+    continuationPolicy,
+    semanticEnrichmentStatus,
+  });
+}
+
+
+================================================================
+FILE: lib\topic-routing\topic-labeler\v3-adapter.ts
+================================================================
+
+import type {
+  TopicLabelerClientResult,
+  TopicLabelerProviderId,
+  TopicLabelerRequest,
+  TopicLabelerResponse,
+  TopicLabelerRoute,
+  TopicLabelerRouteDecision,
+  TopicReferenceType,
+} from "./contract";
+
+export type TopicReferenceTypeV3 = TopicReferenceType;
+
+export type TopicLabelerV3RouteDecision = TopicLabelerRouteDecision;
+
+export type TopicLabelerV3Request = TopicLabelerRequest;
+
+export type TopicLabelerV3ModelPrediction = {
+  topic_reference_type: TopicReferenceTypeV3 | string;
+  extracted_label: string | null;
+};
+
+export type TopicLabelerV3Route = TopicLabelerRoute;
+
+export type TopicLabelerV3RawResponse = {
+  ok: boolean;
+  model_version: string;
+  model_prediction: TopicLabelerV3ModelPrediction;
+  route: TopicLabelerV3Route;
+  timing?: unknown;
+};
+
+export type TopicLabelerV3Response = TopicLabelerResponse;
+
+export type TopicLabelerV3ClientResult = TopicLabelerClientResult;
+
+const TOPIC_LABELER_V3_PROVIDER: TopicLabelerProviderId = "v3";
+
+/**
+ * Match the local FastAPI service command we have been using:
+ *
+ * python -m uvicorn services.topic_labeler_v3.app:app --host 127.0.0.1 --port 8002 --reload
+ *
+ * The env var still wins, so this default is only a fallback.
+ */
+const DEFAULT_TOPIC_LABELER_V3_URL = "http://127.0.0.1:8002/label-topic";
+
+function getTopicLabelerV3Url(): string {
+  return (
+    process.env.MYWAY_TOPIC_LABELER_V3_URL?.trim() ||
+    process.env.TOPIC_LABELER_V3_URL?.trim() ||
+    DEFAULT_TOPIC_LABELER_V3_URL
+  );
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeNullableString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function normalizeNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function normalizeV3Route(rawRoute: TopicLabelerV3RawResponse["route"]): TopicLabelerRoute {
+  return {
+    route_decision: rawRoute.route_decision,
+    topic_reference_type: rawRoute.topic_reference_type,
+    extracted_label: normalizeNullableString(rawRoute.extracted_label),
+    matched_topic_label: normalizeNullableString(rawRoute.matched_topic_label),
+    match_type: normalizeNullableString(rawRoute.match_type),
+    score: normalizeNumber(rawRoute.score),
+    sequence_similarity: normalizeNumber(rawRoute.sequence_similarity),
+    token_f1: normalizeNumber(rawRoute.token_f1),
+    reason:
+      typeof rawRoute.reason === "string" && rawRoute.reason.trim()
+        ? rawRoute.reason.trim()
+        : "No route reason returned by topic labeler V3.",
+  };
+}
+
+function normalizeTopicLabelerV3Response(
+  raw: TopicLabelerV3RawResponse
+): TopicLabelerResponse {
+  return {
+    ok: Boolean(raw.ok),
+    provider: TOPIC_LABELER_V3_PROVIDER,
+    model_version:
+      typeof raw.model_version === "string" && raw.model_version.trim()
+        ? raw.model_version.trim()
+        : "topic-labeler-v3-unknown",
+    model_prediction: {
+      topic_reference_type: raw.model_prediction?.topic_reference_type,
+      extracted_label: normalizeNullableString(
+        raw.model_prediction?.extracted_label
+      ),
+    },
+    route: normalizeV3Route(raw.route),
+    raw,
+  };
+}
+
+export function buildTopicLabelerV3Request(input: {
+  message: string;
+  activeTopicLabel?: string | null;
+  currentTopicLabels?: string[];
+  previousUserMessages?: string[];
+}): TopicLabelerV3Request {
+  return {
+    message: input.message,
+    active_topic_label: input.activeTopicLabel?.trim() || null,
+    current_topic_labels: normalizeStringArray(input.currentTopicLabels),
+    previous_user_messages: normalizeStringArray(
+      input.previousUserMessages
+    ).slice(-5),
+  };
+}
+
+export async function callTopicLabelerV3(
+  request: TopicLabelerV3Request,
+  options?: {
+    timeoutMs?: number;
+  }
+): Promise<TopicLabelerV3ClientResult> {
+  const startedAt = Date.now();
+  const timeoutMs = options?.timeoutMs ?? 15_000;
+  const url = getTopicLabelerV3Url();
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    if (!request.message.trim()) {
+      return {
+        ok: false,
+        source: "topic_labeler",
+        provider: TOPIC_LABELER_V3_PROVIDER,
+        error: "Cannot call topic labeler V3 with an empty message.",
+        latency_ms: Date.now() - startedAt,
+      };
+    }
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+      signal: controller.signal,
+      cache: "no-store",
+    });
+
+    const text = await response.text();
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        source: "topic_labeler",
+        provider: TOPIC_LABELER_V3_PROVIDER,
+        error: `Topic labeler V3 returned HTTP ${response.status}: ${text}`,
+        latency_ms: Date.now() - startedAt,
+      };
+    }
+
+    let parsed: TopicLabelerV3RawResponse;
+
+    try {
+      parsed = JSON.parse(text) as TopicLabelerV3RawResponse;
+    } catch {
+      return {
+        ok: false,
+        source: "topic_labeler",
+        provider: TOPIC_LABELER_V3_PROVIDER,
+        error: `Topic labeler V3 returned invalid JSON: ${text}`,
+        latency_ms: Date.now() - startedAt,
+      };
+    }
+
+    return {
+      ok: true,
+      source: "topic_labeler",
+      provider: TOPIC_LABELER_V3_PROVIDER,
+      response: normalizeTopicLabelerV3Response(parsed),
+      latency_ms: Date.now() - startedAt,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message || `Topic labeler V3 request failed after ${timeoutMs}ms.`
+        : "Unknown topic labeler V3 error.";
+
+    return {
+      ok: false,
+      source: "topic_labeler",
+      provider: TOPIC_LABELER_V3_PROVIDER,
+      error: message,
+      latency_ms: Date.now() - startedAt,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+
+================================================================
+FILE: lib\vector\embed.ts
+================================================================
+
+type EmbeddingServiceTiming = {
+  total_ms?: unknown;
+  encode_ms?: unknown;
+  serialize_ms?: unknown;
+  text_count?: unknown;
+};
+
+type EmbeddingServiceResponse = {
+  vectors?: unknown;
+  timing?: EmbeddingServiceTiming;
+};
+
+type EmbedTimingStep = {
+  label: string;
+  duration_ms: number;
+  elapsed_ms: number;
+};
+
+type EmbedTimingDebug = {
+  enabled: boolean;
+  total_ms: number;
+  steps: EmbedTimingStep[];
+  metadata: {
+    route: "embedTexts";
+    text_count: number;
+    vector_count: number;
+    vector_size: number | null;
+    service_timing: EmbeddingServiceTiming | null;
+    skipped_reason: string | null;
+    timeout_ms: number;
+    base_url_present: boolean;
+  };
+};
+
+const EMBED_TEXT_CACHE_LIMIT = 200;
+const DEFAULT_EMBEDDING_TIMEOUT_MS = 8000;
+
+const embedTextCache = new Map<string, number[]>();
+
+function roundMs(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function createEmbedTimer() {
+  const enabled = process.env.MYWAY_EMBED_TIMING !== "off";
+  const startedAt = performance.now();
+  let lastMark = startedAt;
+  const steps: EmbedTimingStep[] = [];
+
+  function step(label: string) {
+    if (!enabled) return;
+
+    const now = performance.now();
+
+    steps.push({
+      label,
+      duration_ms: roundMs(now - lastMark),
+      elapsed_ms: roundMs(now - startedAt),
+    });
+
+    lastMark = now;
+  }
+
+  function finish(metadata: EmbedTimingDebug["metadata"]): EmbedTimingDebug {
+    return {
+      enabled,
+      total_ms: roundMs(performance.now() - startedAt),
+      steps,
+      metadata,
+    };
+  }
+
+  return { step, finish };
+}
+
+function logEmbedTiming(debug: EmbedTimingDebug) {
+  if (!debug.enabled) return;
+  console.info("[embedTexts timing]", debug);
+}
+
+function normalizeCacheKey(text: string) {
+  return text.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function getCachedTextVector(text: string): number[] | null {
+  const key = normalizeCacheKey(text);
+  const cached = embedTextCache.get(key);
+  return cached ? [...cached] : null;
+}
+
+function setCachedTextVector(text: string, vector: number[]) {
+  const key = normalizeCacheKey(text);
+  if (!key) return;
+
+  embedTextCache.set(key, [...vector]);
+
+  if (embedTextCache.size > EMBED_TEXT_CACHE_LIMIT) {
+    const oldestKey = embedTextCache.keys().next().value;
+    if (oldestKey) embedTextCache.delete(oldestKey);
+  }
+}
+
+function validateAndNormalizeTexts(texts: string[]) {
+  if (!Array.isArray(texts) || texts.length === 0) {
+    throw new Error("embedTexts requires at least one text");
+  }
+
+  return texts.map((text, index) => {
+    if (typeof text !== "string") {
+      throw new Error(`embedTexts expected string at index ${index}`);
+    }
+
+    const normalized = text.trim();
+
+    if (!normalized) {
+      throw new Error(`embedTexts expected non-empty string at index ${index}`);
+    }
+
+    return normalized;
+  });
+}
+
+function validateVectors(vectors: unknown): number[][] {
+  if (!Array.isArray(vectors)) {
+    throw new Error("Embedding service returned invalid response: vectors missing");
+  }
+
+  return vectors.map((vector, index) => {
+    if (!Array.isArray(vector)) {
+      throw new Error(`Embedding service returned invalid vector at index ${index}`);
+    }
+
+    const numericVector = vector.map((value, valueIndex) => {
+      if (typeof value !== "number" || Number.isNaN(value)) {
+        throw new Error(
+          `Embedding service returned non-numeric value at vector ${index}, position ${valueIndex}`
+        );
+      }
+
+      return value;
+    });
+
+    if (numericVector.length === 0) {
+      throw new Error(`Embedding service returned empty vector at index ${index}`);
+    }
+
+    return numericVector;
+  });
+}
+
+function parsePositiveInteger(value: string | undefined, fallback: number) {
+  if (!value || !value.trim()) return fallback;
+
+  const parsed = Number.parseInt(value.trim(), 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+function getEmbeddingTimeoutMs() {
+  return parsePositiveInteger(
+    process.env.MYWAY_EMBEDDING_TIMEOUT_MS ?? process.env.EMBEDDING_TIMEOUT_MS,
+    DEFAULT_EMBEDDING_TIMEOUT_MS
+  );
+}
+
+function normalizeBaseUrl(baseUrl: string) {
+  return baseUrl.trim().replace(/\/+$/g, "");
+}
+
+function isAbortError(error: unknown) {
+  return (
+    error instanceof DOMException && error.name === "AbortError"
+  ) || (
+    error instanceof Error && error.name === "AbortError"
+  );
+}
+
+async function fetchEmbeddingService(args: {
+  baseUrl: string;
+  normalizedTexts: string[];
+  timeoutMs: number;
+}): Promise<Response> {
+  const { baseUrl, normalizedTexts, timeoutMs } = args;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(`${normalizeBaseUrl(baseUrl)}/embed`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ texts: normalizedTexts }),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw new Error(`Embedding service timed out after ${timeoutMs}ms`);
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+export async function embedTexts(texts: string[]): Promise<number[][]> {
+  const timer = createEmbedTimer();
+  const baseUrl = process.env.EMBEDDINGS_URL;
+  const timeoutMs = getEmbeddingTimeoutMs();
+
+  if (!baseUrl || !baseUrl.trim()) {
+    const debug = timer.finish({
+      route: "embedTexts",
+      text_count: Array.isArray(texts) ? texts.length : 0,
+      vector_count: 0,
+      vector_size: null,
+      service_timing: null,
+      skipped_reason: "missing_embeddings_url",
+      timeout_ms: timeoutMs,
+      base_url_present: false,
+    });
+
+    logEmbedTiming(debug);
+    throw new Error("Missing EMBEDDINGS_URL");
+  }
+
+  const normalizedTexts = validateAndNormalizeTexts(texts);
+  timer.step("validate_and_normalize_texts");
+
+  // Fast path for common single-text requests. This is especially useful when the
+  // same message is evaluated more than once during local debugging.
+  if (normalizedTexts.length === 1) {
+    const cachedVector = getCachedTextVector(normalizedTexts[0]);
+
+    if (cachedVector) {
+      timer.step("cache_hit");
+
+      const debug = timer.finish({
+        route: "embedTexts",
+        text_count: 1,
+        vector_count: 1,
+        vector_size: cachedVector.length,
+        service_timing: null,
+        skipped_reason: "cache_hit",
+        timeout_ms: timeoutMs,
+        base_url_present: true,
+      });
+
+      logEmbedTiming(debug);
+      return [cachedVector];
+    }
+  }
+
+  timer.step("cache_check");
+
+  let res: Response;
+
+  try {
+    res = await fetchEmbeddingService({
+      baseUrl,
+      normalizedTexts,
+      timeoutMs,
+    });
+  } catch (error) {
+    timer.step("fetch_embedding_service_failed");
+
+    const isTimeout =
+      error instanceof Error &&
+      error.message.toLowerCase().includes("timed out");
+
+    const debug = timer.finish({
+      route: "embedTexts",
+      text_count: normalizedTexts.length,
+      vector_count: 0,
+      vector_size: null,
+      service_timing: null,
+      skipped_reason: isTimeout
+        ? "embedding_service_timeout"
+        : "embedding_service_fetch_error",
+      timeout_ms: timeoutMs,
+      base_url_present: true,
+    });
+
+    logEmbedTiming(debug);
+
+    if (error instanceof Error) {
+      throw error;
+    }
+
+    throw new Error("Embedding service request failed");
+  }
+
+  timer.step("fetch_embedding_service");
+
+  if (!res.ok) {
+    const text = await res.text();
+    timer.step("read_error_response");
+
+    const debug = timer.finish({
+      route: "embedTexts",
+      text_count: normalizedTexts.length,
+      vector_count: 0,
+      vector_size: null,
+      service_timing: null,
+      skipped_reason: `embedding_service_failed_${res.status}`,
+      timeout_ms: timeoutMs,
+      base_url_present: true,
+    });
+
+    logEmbedTiming(debug);
+    throw new Error(`Embedding service failed: ${res.status} ${text}`);
+  }
+
+  const data = (await res.json()) as EmbeddingServiceResponse;
+  timer.step("parse_embedding_json");
+
+  const vectors = validateVectors(data.vectors);
+  timer.step("validate_vectors");
+
+  if (normalizedTexts.length === vectors.length) {
+    normalizedTexts.forEach((text, index) => {
+      const vector = vectors[index];
+      if (vector) setCachedTextVector(text, vector);
+    });
+  }
+
+  timer.step("cache_vectors");
+
+  const debug = timer.finish({
+    route: "embedTexts",
+    text_count: normalizedTexts.length,
+    vector_count: vectors.length,
+    vector_size: vectors[0]?.length ?? null,
+    service_timing: data.timing ?? null,
+    skipped_reason: null,
+    timeout_ms: timeoutMs,
+    base_url_present: true,
+  });
+
+  logEmbedTiming(debug);
+
+  return vectors;
+}
+
+export async function embedText(text: string): Promise<number[]> {
+  if (typeof text !== "string" || !text.trim()) {
+    throw new Error("embedText requires a non-empty string");
+  }
+
+  const vectors = await embedTexts([text]);
+
+  if (!vectors[0]) {
+    throw new Error("No embedding returned");
+  }
+
+  return vectors[0];
+}
+
+
+================================================================
+FILE: lib\vector\qdrant.ts
+================================================================
+
+import { QdrantClient } from "@qdrant/js-client-rest";
+
+export const TOPIC_COLLECTION = "myway-topics";
+export const DEFAULT_TOPIC_VECTOR_SIZE = 384;
+
+let cachedQdrantClient: QdrantClient | null = null;
+let cachedQdrantClientKey: string | null = null;
+
+function getOptionalEnv(name: string): string | null {
+  const value = process.env[name];
+
+  if (!value || !value.trim()) {
+    return null;
+  }
+
+  return value.trim();
+}
+
+function parsePositiveInteger(value: string | null, fallback: number) {
+  if (!value) return fallback;
+
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+export function getTopicVectorSize() {
+  return parsePositiveInteger(
+    getOptionalEnv("MYWAY_EMBEDDING_VECTOR_SIZE") ??
+      getOptionalEnv("EMBEDDING_VECTOR_SIZE"),
+    DEFAULT_TOPIC_VECTOR_SIZE,
+  );
+}
+
+/**
+ * Backward-compatible export.
+ *
+ * If you need the runtime-configured size, prefer getTopicVectorSize().
+ */
+export const TOPIC_VECTOR_SIZE = DEFAULT_TOPIC_VECTOR_SIZE;
+
+export function getQdrantConfig() {
+  return {
+    url: getOptionalEnv("QDRANT_URL"),
+    apiKey: getOptionalEnv("QDRANT_API_KEY"),
+    topicCollection: getOptionalEnv("QDRANT_TOPIC_COLLECTION") ?? TOPIC_COLLECTION,
+    topicVectorSize: getTopicVectorSize(),
+  };
+}
+
+export function hasQdrantConfig(): boolean {
+  const { url, apiKey } = getQdrantConfig();
+  return Boolean(url && apiKey);
+}
+
+function buildQdrantClientKey(url: string, apiKey: string) {
+  // Use a partial key only for in-process cache identity. Do not log this value.
+  return `${url}:${apiKey.slice(0, 8)}`;
+}
+
+export function createQdrantClient(): QdrantClient {
+  const { url, apiKey } = getQdrantConfig();
+
+  if (!url) {
+    throw new Error("Missing QDRANT_URL");
+  }
+
+  if (!apiKey) {
+    throw new Error("Missing QDRANT_API_KEY");
+  }
+
+  const clientKey = buildQdrantClientKey(url, apiKey);
+
+  if (cachedQdrantClient && cachedQdrantClientKey === clientKey) {
+    return cachedQdrantClient;
+  }
+
+  cachedQdrantClient = new QdrantClient({
+    url,
+    apiKey,
+  });
+  cachedQdrantClientKey = clientKey;
+
+  return cachedQdrantClient;
+}
+
+export function resetQdrantClientCacheForTests() {
+  cachedQdrantClient = null;
+  cachedQdrantClientKey = null;
+}
+
+type EnsureTopicCollectionResult = {
+  created: boolean;
+  collectionName: string;
+  expectedVectorSize: number;
+  existingVectorSize: number | null;
+};
+
+function extractExistingVectorSize(collectionInfo: unknown): number | null {
+  const info = collectionInfo as {
+    config?: {
+      params?: {
+        vectors?: unknown;
+      };
+    };
+  };
+
+  const vectors = info.config?.params?.vectors;
+
+  if (!vectors || typeof vectors !== "object") return null;
+
+  const directSize = (vectors as { size?: unknown }).size;
+
+  if (typeof directSize === "number" && Number.isFinite(directSize)) {
+    return directSize;
+  }
+
+  /**
+   * Named-vector Qdrant config shape, not expected here, but this makes the
+   * validation a little more defensive.
+   */
+  const firstNamedVector = Object.values(vectors as Record<string, unknown>)[0] as
+    | { size?: unknown }
+    | undefined;
+
+  if (
+    firstNamedVector &&
+    typeof firstNamedVector.size === "number" &&
+    Number.isFinite(firstNamedVector.size)
+  ) {
+    return firstNamedVector.size;
+  }
+
+  return null;
+}
+
+export async function ensureTopicCollection(): Promise<EnsureTopicCollectionResult> {
+  const qdrant = createQdrantClient();
+  const { topicCollection, topicVectorSize } = getQdrantConfig();
+
+  try {
+    const collectionInfo = await qdrant.getCollection(topicCollection);
+    const existingVectorSize = extractExistingVectorSize(collectionInfo);
+
+    if (existingVectorSize != null && existingVectorSize !== topicVectorSize) {
+      throw new Error(
+        [
+          `Qdrant collection "${topicCollection}" exists with vector size ${existingVectorSize},`,
+          `but MyWay expects vector size ${topicVectorSize}.`,
+          "This usually means the embedding model changed.",
+          "Create a new collection name or recreate the existing collection before syncing topic centroids.",
+        ].join(" "),
+      );
+    }
+
+    return {
+      created: false,
+      collectionName: topicCollection,
+      expectedVectorSize: topicVectorSize,
+      existingVectorSize,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message.toLowerCase()
+        : String(error).toLowerCase();
+
+    const looksMissing =
+      message.includes("not found") ||
+      message.includes("404") ||
+      message.includes("does not exist");
+
+    if (!looksMissing) {
+      throw error;
+    }
+  }
+
+  await qdrant.createCollection(topicCollection, {
+    vectors: {
+      size: topicVectorSize,
+      distance: "Cosine",
+    },
+  });
+
+  return {
+    created: true,
+    collectionName: topicCollection,
+    expectedVectorSize: topicVectorSize,
+    existingVectorSize: null,
+  };
+}
+
+
+================================================================
+FILE: lib\vector\query-topics.ts
+================================================================
+
+import {
+  createQdrantClient,
+  hasQdrantConfig,
+  TOPIC_COLLECTION,
+} from "@/lib/vector/qdrant";
+import { embedText } from "@/lib/vector/embed";
+import type { EmbeddingVector, VectorInfo } from "@/types/contracts";
+
+type QdrantTopicPayload = {
+  topic_id?: unknown;
+
+  topic_label?: unknown;
+
+  /**
+   * Canonical topic-label embedding metadata.
+   */
+  topic_label_embedding_count?: unknown;
+  topic_label_embedding_model?: unknown;
+  topic_label_embedding_updated_at?: unknown;
+  vector_source?: unknown;
+  vector_semantics?: unknown;
+};
+
+export type SemanticTopicCandidate = {
+  topic_id: string;
+  topic_label: string;
+
+
+  similarity: number;
+  rank: number;
+
+  /**
+   * Canonical metadata for the stored Qdrant topic vector.
+   */
+  topic_label_embedding_count: number | null;
+  topic_label_embedding_model: string | null;
+  topic_label_embedding_updated_at: string | null;
+  vector_source: string | null;
+  vector_semantics: string | null;
+};
+
+export type SemanticTopicQueryResult = {
+  vectorInfo: VectorInfo;
+  messageEmbedding: EmbeddingVector | null;
+  embeddingModel: string | null;
+  candidates: SemanticTopicCandidate[];
+  debug?: QueryTopicsTimingDebug;
+};
+
+type QueryTopicsTimingStep = {
+  label: string;
+  duration_ms: number;
+  elapsed_ms: number;
+};
+
+type QueryTopicsRoute =
+  | "embedMessageForSemanticRouting"
+  | "querySemanticTopicCandidatesFromEmbedding"
+  | "querySemanticTopicCandidatesWithEmbedding"
+  | "querySemanticTopicCandidates";
+
+type QueryTopicsTimingDebug = {
+  enabled: boolean;
+  total_ms: number;
+  steps: QueryTopicsTimingStep[];
+  metadata: {
+    route: QueryTopicsRoute;
+    requested_limit: number;
+    returned_points: number;
+    returned_topics: number;
+    has_qdrant_config: boolean;
+    skipped_reason: string | null;
+
+    /**
+     * Query-side vector metadata.
+     *
+     * This is the learner message vector used to search Qdrant.
+     */
+    message_embedding_available: boolean;
+    embedding_model: string | null;
+
+    /**
+     * Qdrant-side metadata.
+     *
+     * Qdrant topic points are expected to store topic_label_embedding vectors.
+     */
+    qdrant_query_attempted: boolean;
+    qdrant_timeout_ms: number;
+  };
+};
+
+export type SemanticMessageEmbeddingResult = {
+  messageEmbedding: EmbeddingVector | null;
+  embeddingModel: string | null;
+  debug?: QueryTopicsTimingDebug;
+};
+
+function emptyVectorInfo(): VectorInfo {
+  return {
+    top_k_topic_labels: [],
+
+    top_k_topic_ids: [],
+    top_k_similarity_scores: [],
+  };
+}
+
+function emptySemanticTopicQueryResult(args?: {
+  debug?: QueryTopicsTimingDebug;
+  messageEmbedding?: EmbeddingVector | null;
+  embeddingModel?: string | null;
+}): SemanticTopicQueryResult {
+  return {
+    vectorInfo: emptyVectorInfo(),
+    messageEmbedding: args?.messageEmbedding ?? null,
+    embeddingModel: args?.embeddingModel ?? null,
+    candidates: [],
+    debug: args?.debug,
+  };
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function asNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function asNonNegativeInteger(value: unknown): number | null {
+  const numberValue = asNumber(value);
+  if (numberValue == null) return null;
+  return Math.max(0, Math.floor(numberValue));
+}
+
+function asEmbeddingVector(value: unknown): EmbeddingVector | null {
+  if (!Array.isArray(value)) return null;
+
+  const vector = value.filter(
+    (item): item is number => typeof item === "number" && Number.isFinite(item),
+  );
+
+  if (!vector.length) return null;
+  if (vector.length !== value.length) return null;
+
+  return vector;
+}
+
+function roundMs(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function createQueryTopicsTimer() {
+  const enabled = process.env.MYWAY_VECTOR_QUERY_TIMING !== "off";
+  const startedAt = performance.now();
+  let lastMark = startedAt;
+  const steps: QueryTopicsTimingStep[] = [];
+
+  function step(label: string) {
+    if (!enabled) return;
+
+    const now = performance.now();
+
+    steps.push({
+      label,
+      duration_ms: roundMs(now - lastMark),
+      elapsed_ms: roundMs(now - startedAt),
+    });
+
+    lastMark = now;
+  }
+
+  function finish(
+    metadata: QueryTopicsTimingDebug["metadata"],
+  ): QueryTopicsTimingDebug {
+    return {
+      enabled,
+      total_ms: roundMs(performance.now() - startedAt),
+      steps,
+      metadata,
+    };
+  }
+
+  return {
+    step,
+    finish,
+  };
+}
+
+function logQueryTopicsTiming(debug: QueryTopicsTimingDebug) {
+  if (!debug.enabled) return;
+  console.info(`[${debug.metadata.route} timing]`, debug);
+}
+
+function normalizeRequestedLimit(limit: number) {
+  if (!Number.isFinite(limit)) return 5;
+  return Math.max(1, Math.min(10, Math.floor(limit)));
+}
+
+function parsePositiveInteger(value: string | undefined, fallback: number) {
+  if (!value || !value.trim()) return fallback;
+
+  const parsed = Number.parseInt(value.trim(), 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+function getQdrantQueryTimeoutMs() {
+  return parsePositiveInteger(
+    process.env.MYWAY_QDRANT_QUERY_TIMEOUT_MS ??
+      process.env.QDRANT_QUERY_TIMEOUT_MS,
+    1500,
+  );
+}
+
+function getEmbeddingModelName() {
+  return (
+    process.env.MYWAY_EMBEDDING_MODEL ??
+    process.env.EMBEDDING_MODEL ??
+    "local-embedding-service"
+  );
+}
+
+function vectorInfoFromCandidates(candidates: SemanticTopicCandidate[]): VectorInfo {
+  const topicLabels = candidates.map((candidate) => candidate.topic_label);
+
+  return {
+    top_k_topic_labels: topicLabels,
+
+    top_k_topic_ids: candidates.map((candidate) => candidate.topic_id),
+    top_k_similarity_scores: candidates.map((candidate) => candidate.similarity),
+  };
+}
+
+function getPayloadTopicLabelEmbeddingCount(payload: QdrantTopicPayload) {
+  return asNonNegativeInteger(payload.topic_label_embedding_count);
+}
+
+function getPayloadTopicLabelEmbeddingModel(payload: QdrantTopicPayload) {
+  return asString(payload.topic_label_embedding_model);
+}
+
+function getPayloadTopicLabelEmbeddingUpdatedAt(payload: QdrantTopicPayload) {
+  return asString(payload.topic_label_embedding_updated_at);
+}
+
+function getPayloadTopicLabel(payload: QdrantTopicPayload, fallbackTopicId: string) {
+  return (
+    asString(payload.topic_label) ||
+    fallbackTopicId
+  );
+}
+
+function normalizeQdrantCandidates(points: unknown[]): SemanticTopicCandidate[] {
+  const candidates: SemanticTopicCandidate[] = [];
+
+  for (const [index, pointUnknown] of points.entries()) {
+    const point = pointUnknown as {
+      payload?: unknown;
+      score?: unknown;
+    };
+
+    const payload = (point.payload ?? {}) as QdrantTopicPayload;
+
+    const topicId = asString(payload.topic_id);
+    const score = asNumber(point.score);
+
+    if (!topicId) continue;
+
+    const topicLabel = getPayloadTopicLabel(payload, topicId);
+
+    candidates.push({
+      topic_id: topicId,
+      topic_label: topicLabel,
+
+
+      similarity: score ?? 0,
+      rank: index,
+
+      topic_label_embedding_count: getPayloadTopicLabelEmbeddingCount(payload),
+      topic_label_embedding_model: getPayloadTopicLabelEmbeddingModel(payload),
+      topic_label_embedding_updated_at:
+        getPayloadTopicLabelEmbeddingUpdatedAt(payload),
+      vector_source: asString(payload.vector_source),
+      vector_semantics: asString(payload.vector_semantics),
+    });
+  }
+
+  return candidates.sort((a, b) => b.similarity - a.similarity);
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+function buildDebug(args: {
+  timer: ReturnType<typeof createQueryTopicsTimer>;
+  route: QueryTopicsRoute;
+  requestedLimit: number;
+  returnedPoints: number;
+  returnedTopics: number;
+  hasQdrant: boolean;
+  skippedReason: string | null;
+  messageEmbeddingAvailable: boolean;
+  embeddingModel: string | null;
+  qdrantQueryAttempted: boolean;
+  qdrantTimeoutMs: number;
+}) {
+  const debug = args.timer.finish({
+    route: args.route,
+    requested_limit: args.requestedLimit,
+    returned_points: args.returnedPoints,
+    returned_topics: args.returnedTopics,
+    has_qdrant_config: args.hasQdrant,
+    skipped_reason: args.skippedReason,
+    message_embedding_available: args.messageEmbeddingAvailable,
+    embedding_model: args.embeddingModel,
+    qdrant_query_attempted: args.qdrantQueryAttempted,
+    qdrant_timeout_ms: args.qdrantTimeoutMs,
+  });
+
+  logQueryTopicsTiming(debug);
+  return debug;
+}
+
+/**
+ * Embeds the learner's message once without querying Qdrant.
+ *
+ * This is the query-side vector. It is not the vector stored on topic rows.
+ * Topic rows/Qdrant points use topic_label_embedding vectors.
+ */
+export async function embedMessageForSemanticRouting(
+  message: string,
+): Promise<SemanticMessageEmbeddingResult> {
+  const timer = createQueryTopicsTimer();
+  const route = "embedMessageForSemanticRouting" as const;
+  const qdrantTimeoutMs = getQdrantQueryTimeoutMs();
+  const hasConfig = hasQdrantConfig();
+
+  if (typeof message !== "string" || !message.trim()) {
+    const debug = buildDebug({
+      timer,
+      route,
+      requestedLimit: 0,
+      returnedPoints: 0,
+      returnedTopics: 0,
+      hasQdrant: hasConfig,
+      skippedReason: "empty_message",
+      messageEmbeddingAvailable: false,
+      embeddingModel: null,
+      qdrantQueryAttempted: false,
+      qdrantTimeoutMs,
+    });
+
+    return {
+      messageEmbedding: null,
+      embeddingModel: null,
+      debug,
+    };
+  }
+
+  timer.step("validate_message");
+
+  let messageEmbedding: EmbeddingVector;
+
+  try {
+    messageEmbedding = asEmbeddingVector(await embedText(message)) ?? [];
+  } catch (error) {
+    timer.step("embed_text_failed");
+
+    const debug = buildDebug({
+      timer,
+      route,
+      requestedLimit: 0,
+      returnedPoints: 0,
+      returnedTopics: 0,
+      hasQdrant: hasConfig,
+      skippedReason:
+        error instanceof Error
+          ? `embed_text_failed: ${error.message}`
+          : "embed_text_failed",
+      messageEmbeddingAvailable: false,
+      embeddingModel: null,
+      qdrantQueryAttempted: false,
+      qdrantTimeoutMs,
+    });
+
+    throw Object.assign(
+      error instanceof Error ? error : new Error("embed_text_failed"),
+      { debug },
+    );
+  }
+
+  timer.step("embed_text");
+
+  const embeddingModel = getEmbeddingModelName();
+
+  if (!messageEmbedding.length) {
+    const debug = buildDebug({
+      timer,
+      route,
+      requestedLimit: 0,
+      returnedPoints: 0,
+      returnedTopics: 0,
+      hasQdrant: hasConfig,
+      skippedReason: "empty_embedding",
+      messageEmbeddingAvailable: false,
+      embeddingModel,
+      qdrantQueryAttempted: false,
+      qdrantTimeoutMs,
+    });
+
+    return {
+      messageEmbedding: null,
+      embeddingModel,
+      debug,
+    };
+  }
+
+  const debug = buildDebug({
+    timer,
+    route,
+    requestedLimit: 0,
+    returnedPoints: 0,
+    returnedTopics: 0,
+    hasQdrant: hasConfig,
+    skippedReason: null,
+    messageEmbeddingAvailable: true,
+    embeddingModel,
+    qdrantQueryAttempted: false,
+    qdrantTimeoutMs,
+  });
+
+  return {
+    messageEmbedding,
+    embeddingModel,
+    debug,
+  };
+}
+
+/**
+ * Queries Qdrant with a learner-message embedding.
+ *
+ * Qdrant candidate vectors are expected to represent topic_label_embedding.
+ * So the similarity means:
+ *
+ * learner message embedding -> stored topic-label embedding
+ */
+export async function querySemanticTopicCandidatesFromEmbedding(
+  messageEmbedding: EmbeddingVector | null,
+  limit = 5,
+  embeddingModel: string | null = getEmbeddingModelName(),
+): Promise<SemanticTopicQueryResult> {
+  const timer = createQueryTopicsTimer();
+  const requestedLimit = normalizeRequestedLimit(limit);
+  const route = "querySemanticTopicCandidatesFromEmbedding" as const;
+  const hasConfig = hasQdrantConfig();
+  const qdrantTimeoutMs = getQdrantQueryTimeoutMs();
+
+  if (!messageEmbedding?.length) {
+    const debug = buildDebug({
+      timer,
+      route,
+      requestedLimit,
+      returnedPoints: 0,
+      returnedTopics: 0,
+      hasQdrant: hasConfig,
+      skippedReason: "missing_message_embedding",
+      messageEmbeddingAvailable: false,
+      embeddingModel,
+      qdrantQueryAttempted: false,
+      qdrantTimeoutMs,
+    });
+
+    return emptySemanticTopicQueryResult({
+      debug,
+      messageEmbedding: null,
+      embeddingModel,
+    });
+  }
+
+  timer.step("validate_message_embedding");
+
+  if (!hasConfig) {
+    const debug = buildDebug({
+      timer,
+      route,
+      requestedLimit,
+      returnedPoints: 0,
+      returnedTopics: 0,
+      hasQdrant: false,
+      skippedReason: "missing_qdrant_config",
+      messageEmbeddingAvailable: true,
+      embeddingModel,
+      qdrantQueryAttempted: false,
+      qdrantTimeoutMs,
+    });
+
+    return emptySemanticTopicQueryResult({
+      debug,
+      messageEmbedding,
+      embeddingModel,
+    });
+  }
+
+  timer.step("check_qdrant_config");
+
+  let result: Awaited<
+    ReturnType<ReturnType<typeof createQdrantClient>["query"]>
+  >;
+
+  try {
+    const qdrant = createQdrantClient();
+    timer.step("create_qdrant_client");
+
+    result = await withTimeout(
+      qdrant.query(TOPIC_COLLECTION, {
+        query: messageEmbedding,
+        limit: requestedLimit,
+        // Supabase remains the source of truth. This payload is only for
+        // route-level debugging and lightweight candidate evidence.
+        with_payload: [
+          "topic_id",
+          "topic_label",
+          "topic_label_embedding_count",
+          "topic_label_embedding_model",
+          "topic_label_embedding_updated_at",
+          "vector_source",
+          "vector_semantics",
+        ],
+      }),
+      qdrantTimeoutMs,
+      "Qdrant topic query",
+    );
+  } catch (error) {
+    timer.step("qdrant_query_failed");
+
+    const isTimeout =
+      error instanceof Error &&
+      error.message.toLowerCase().includes("timed out");
+
+    const debug = buildDebug({
+      timer,
+      route,
+      requestedLimit,
+      returnedPoints: 0,
+      returnedTopics: 0,
+      hasQdrant: true,
+      skippedReason: isTimeout
+        ? "qdrant_query_timeout"
+        : error instanceof Error
+          ? `qdrant_query_failed: ${error.message}`
+          : "qdrant_query_failed",
+      messageEmbeddingAvailable: true,
+      embeddingModel,
+      qdrantQueryAttempted: true,
+      qdrantTimeoutMs,
+    });
+
+    return emptySemanticTopicQueryResult({
+      debug,
+      messageEmbedding,
+      embeddingModel,
+    });
+  }
+
+  timer.step("qdrant_query");
+
+  const points = Array.isArray(result.points) ? result.points : [];
+  const candidates = normalizeQdrantCandidates(points);
+  const vectorInfo = vectorInfoFromCandidates(candidates);
+
+  timer.step("normalize_results");
+
+  const debug = buildDebug({
+    timer,
+    route,
+    requestedLimit,
+    returnedPoints: points.length,
+    returnedTopics: candidates.length,
+    hasQdrant: true,
+    skippedReason: null,
+    messageEmbeddingAvailable: true,
+    embeddingModel,
+    qdrantQueryAttempted: true,
+    qdrantTimeoutMs,
+  });
+
+  return {
+    vectorInfo,
+    messageEmbedding,
+    embeddingModel,
+    candidates,
+    debug,
+  };
+}
+
+/**
+ * Backward-compatible combined helper.
+ *
+ * Flow:
+ *   embed learner message once
+ *   -> query Qdrant topic-label vectors
+ */
+export async function querySemanticTopicCandidatesWithEmbedding(
+  message: string,
+  limit = 5,
+): Promise<SemanticTopicQueryResult> {
+  const route = "querySemanticTopicCandidatesWithEmbedding" as const;
+  const requestedLimit = normalizeRequestedLimit(limit);
+  const hasConfig = hasQdrantConfig();
+  const qdrantTimeoutMs = getQdrantQueryTimeoutMs();
+
+  let embeddingResult: SemanticMessageEmbeddingResult;
+
+  try {
+    embeddingResult = await embedMessageForSemanticRouting(message);
+  } catch (error) {
+    const debug =
+      error && typeof error === "object" && "debug" in error
+        ? (error as { debug?: QueryTopicsTimingDebug }).debug
+        : undefined;
+
+    if (debug) {
+      return emptySemanticTopicQueryResult({
+        debug: {
+          ...debug,
+          metadata: {
+            ...debug.metadata,
+            route,
+            requested_limit: requestedLimit,
+            has_qdrant_config: hasConfig,
+            qdrant_timeout_ms: qdrantTimeoutMs,
+          },
+        },
+      });
+    }
+
+    throw error;
+  }
+
+  if (!embeddingResult.messageEmbedding?.length) {
+    return emptySemanticTopicQueryResult({
+      debug: embeddingResult.debug
+        ? {
+            ...embeddingResult.debug,
+            metadata: {
+              ...embeddingResult.debug.metadata,
+              route,
+              requested_limit: requestedLimit,
+              has_qdrant_config: hasConfig,
+              qdrant_timeout_ms: qdrantTimeoutMs,
+            },
+          }
+        : undefined,
+      messageEmbedding: null,
+      embeddingModel: embeddingResult.embeddingModel,
+    });
+  }
+
+  const qdrantResult = await querySemanticTopicCandidatesFromEmbedding(
+    embeddingResult.messageEmbedding,
+    requestedLimit,
+    embeddingResult.embeddingModel,
+  );
+
+  return {
+    ...qdrantResult,
+    debug: qdrantResult.debug
+      ? {
+          ...qdrantResult.debug,
+          metadata: {
+            ...qdrantResult.debug.metadata,
+            route,
+          },
+        }
+      : qdrantResult.debug,
+  };
+}
+
+/**
+ * Backward-compatible wrapper.
+ *
+ * Existing code can keep calling this while route code migrates. New routing
+ * code should prefer:
+ *
+ * embedMessageForSemanticRouting
+ * querySemanticTopicCandidatesFromEmbedding
+ */
+export async function querySemanticTopicCandidates(
+  message: string,
+  limit = 5,
+): Promise<VectorInfo> {
+  const result = await querySemanticTopicCandidatesWithEmbedding(message, limit);
+  return result.vectorInfo;
+}
+
+
+================================================================
+FILE: lib\vector\sync-topic-to-qdrant.ts
+================================================================
+
+import crypto from "node:crypto";
+import { embedText } from "@/lib/vector/embed";
+import {
+  createQdrantClient,
+  ensureTopicCollection,
+  hasQdrantConfig,
+  TOPIC_COLLECTION,
+} from "@/lib/vector/qdrant";
+import type { EmbeddingVector } from "@/types/contracts";
+
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: JsonValue }
+  | JsonValue[];
+
+type TopicLabelVectorSource =
+  | "topic_label_embedding_centroid"
+  | "topic_label_text_fallback";
+
+export type SyncTopicToQdrantInput = {
+  topicId: string;
+  topicLabel?: string | null;
+
+  diagnosis?: string | null;
+  nextStep?: string | null;
+  updatedAt?: string | null;
+  topicJson?: JsonValue;
+
+  topicLabelEmbeddingCentroid?: EmbeddingVector | null;
+  topicLabelEmbeddingCount?: number | null;
+  topicLabelEmbeddingModel?: string | null;
+  topicLabelEmbeddingUpdatedAt?: string | null;
+};
+
+export type SyncTopicToQdrantResult = {
+  ok: boolean;
+  skipped: boolean;
+  error: string | null;
+  topic_id: string;
+  topic_label: string;
+  vector_source: TopicLabelVectorSource | null;
+  qdrant_sync_timeout_ms: number;
+  qdrant_ensure_timeout_ms: number;
+  qdrant_upsert_wait: boolean;
+  duration_ms: number;
+};
+
+type ResolvedTopicLabelEmbeddingFields = {
+  centroid: EmbeddingVector | null;
+  count: number;
+  model: string;
+  updatedAt: string | null;
+  source: "topic_label_embedding_centroid" | null;
+};
+
+function roundMs(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function nowMs() {
+  return performance.now();
+}
+
+function parsePositiveInteger(value: string | undefined, fallback: number) {
+  if (!value || !value.trim()) return fallback;
+
+  const parsed = Number.parseInt(value.trim(), 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+function getQdrantSyncTimeoutMs() {
+  return parsePositiveInteger(
+    process.env.MYWAY_QDRANT_SYNC_TIMEOUT_MS ??
+      process.env.QDRANT_SYNC_TIMEOUT_MS,
+    2500,
+  );
+}
+
+function getQdrantEnsureTimeoutMs() {
+  return parsePositiveInteger(
+    process.env.MYWAY_QDRANT_ENSURE_TIMEOUT_MS ??
+      process.env.QDRANT_ENSURE_TIMEOUT_MS,
+    1500,
+  );
+}
+
+function getQdrantUpsertWait() {
+  const raw =
+    process.env.MYWAY_QDRANT_UPSERT_WAIT ??
+    process.env.QDRANT_UPSERT_WAIT ??
+    "false";
+
+  return raw.trim().toLowerCase() === "true";
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+function asRecord(value: unknown): Record<string, JsonValue> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  return value as Record<string, JsonValue>;
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function asEmbeddingVector(value: unknown): EmbeddingVector | null {
+  if (!Array.isArray(value)) return null;
+
+  const vector = value.filter(
+    (item): item is number => typeof item === "number" && Number.isFinite(item),
+  );
+
+  if (!vector.length) return null;
+  if (vector.length !== value.length) return null;
+
+  return vector;
+}
+
+function asNonNegativeInteger(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.floor(value));
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function getDefaultEmbeddingModelName() {
+  return (
+    process.env.MYWAY_EMBEDDING_MODEL ??
+    process.env.EMBEDDING_MODEL ??
+    "local-embedding-service"
+  );
+}
+
+function getInputTopicLabel(input: SyncTopicToQdrantInput): string {
+  return input.topicLabel?.trim() || input.topicId;
+}
+
+function readTopicJsonEmbedding(input: SyncTopicToQdrantInput) {
+  const topicJson = asRecord(input.topicJson);
+
+  const topicLabelCentroid = asEmbeddingVector(
+    topicJson?.topic_label_embedding_centroid,
+  );
+
+  return {
+    centroid: topicLabelCentroid,
+    source: topicLabelCentroid
+      ? ("topic_label_embedding_centroid" as const)
+      : null,
+    count: asNonNegativeInteger(topicJson?.topic_label_embedding_count),
+    model: asString(topicJson?.topic_label_embedding_model),
+    updatedAt: asString(topicJson?.topic_label_embedding_updated_at),
+  };
+}
+
+function buildPointId(topicId: string): string {
+  const hex = crypto.createHash("sha256").update(topicId).digest("hex");
+
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32),
+  ].join("-");
+}
+
+function buildTopicLabelFallbackText(input: SyncTopicToQdrantInput): string {
+  const topicJson = asRecord(input.topicJson);
+  const inferredKeywords = asStringArray(topicJson?.inferred_keywords);
+
+  const parts = [
+    getInputTopicLabel(input),
+    inferredKeywords.length > 0
+      ? `Keywords: ${inferredKeywords.join(", ")}`
+      : null,
+  ].filter((part): part is string => Boolean(part && part.trim()));
+
+  return parts.join("\n");
+}
+
+function resolveInputCentroidSource(input: SyncTopicToQdrantInput): {
+  centroid: EmbeddingVector | null;
+  source: ResolvedTopicLabelEmbeddingFields["source"];
+} {
+  const topicLabelCentroid = asEmbeddingVector(input.topicLabelEmbeddingCentroid);
+
+  if (topicLabelCentroid) {
+    return {
+      centroid: topicLabelCentroid,
+      source: "topic_label_embedding_centroid",
+    };
+  }
+
+  return {
+    centroid: null,
+    source: null,
+  };
+}
+
+function resolveTopicLabelEmbeddingFields(
+  input: SyncTopicToQdrantInput,
+): ResolvedTopicLabelEmbeddingFields {
+  const topicJsonEmbedding = readTopicJsonEmbedding(input);
+  const inputCentroid = resolveInputCentroidSource(input);
+
+  const centroid = inputCentroid.centroid ?? topicJsonEmbedding.centroid;
+  const source = inputCentroid.source ?? topicJsonEmbedding.source;
+
+  const count =
+    asNonNegativeInteger(input.topicLabelEmbeddingCount) ??
+    topicJsonEmbedding.count ??
+    (centroid ? 1 : 0);
+
+  const model =
+    input.topicLabelEmbeddingModel ??
+    topicJsonEmbedding.model ??
+    getDefaultEmbeddingModelName();
+
+  const updatedAt =
+    input.topicLabelEmbeddingUpdatedAt ??
+    topicJsonEmbedding.updatedAt ??
+    (centroid ? input.updatedAt ?? new Date().toISOString() : null);
+
+  return {
+    centroid,
+    count,
+    model,
+    updatedAt,
+    source,
+  };
+}
+
+export function canSyncTopicToQdrant(): boolean {
+  return hasQdrantConfig();
+}
+
+async function buildVectorForQdrant(input: SyncTopicToQdrantInput): Promise<{
+  vector: EmbeddingVector;
+  vectorSource: TopicLabelVectorSource;
+  embeddingText: string;
+  topicLabelEmbeddingCount: number;
+  topicLabelEmbeddingModel: string;
+  topicLabelEmbeddingUpdatedAt: string | null;
+}> {
+  const fields = resolveTopicLabelEmbeddingFields(input);
+  const embeddingText = buildTopicLabelFallbackText(input);
+
+  if (fields.centroid?.length) {
+    return {
+      vector: fields.centroid,
+      vectorSource: fields.source ?? "topic_label_embedding_centroid",
+      embeddingText,
+      topicLabelEmbeddingCount: fields.count,
+      topicLabelEmbeddingModel: fields.model,
+      topicLabelEmbeddingUpdatedAt: fields.updatedAt,
+    };
+  }
+
+  if (!process.env.EMBEDDINGS_URL?.trim()) {
+    throw new Error(
+      `Cannot sync topic_id "${input.topicId}" to Qdrant because it has no topicLabelEmbeddingCentroid and EMBEDDINGS_URL is missing.`,
+    );
+  }
+
+  const fallbackVector = await embedText(embeddingText);
+
+  if (!Array.isArray(fallbackVector) || fallbackVector.length === 0) {
+    throw new Error(
+      `Invalid fallback embedding vector for topic_id "${input.topicId}"`,
+    );
+  }
+
+  return {
+    vector: fallbackVector,
+    vectorSource: "topic_label_text_fallback",
+    embeddingText,
+    topicLabelEmbeddingCount: fields.count || 1,
+    topicLabelEmbeddingModel: fields.model,
+    topicLabelEmbeddingUpdatedAt:
+      fields.updatedAt ?? input.updatedAt ?? new Date().toISOString(),
+  };
+}
+
+export async function syncTopicToQdrant(
+  input: SyncTopicToQdrantInput,
+): Promise<void> {
+  if (!canSyncTopicToQdrant()) {
+    throw new Error(
+      "Qdrant topic sync is unavailable because QDRANT configuration is missing.",
+    );
+  }
+
+  const qdrantSyncTimeoutMs = getQdrantSyncTimeoutMs();
+  const qdrantEnsureTimeoutMs = getQdrantEnsureTimeoutMs();
+  const qdrantUpsertWait = getQdrantUpsertWait();
+
+  const qdrant = createQdrantClient();
+
+  await withTimeout(
+    ensureTopicCollection(),
+    qdrantEnsureTimeoutMs,
+    "Qdrant ensureTopicCollection",
+  );
+
+  const {
+    vector,
+    vectorSource,
+    embeddingText,
+    topicLabelEmbeddingCount,
+    topicLabelEmbeddingModel,
+    topicLabelEmbeddingUpdatedAt,
+  } = await buildVectorForQdrant(input);
+
+  if (!Array.isArray(vector) || vector.length === 0) {
+    throw new Error(`Invalid embedding vector for topic_id "${input.topicId}"`);
+  }
+
+  await withTimeout(
+    qdrant.upsert(TOPIC_COLLECTION, {
+      wait: qdrantUpsertWait,
+      points: [
+        {
+          id: buildPointId(input.topicId),
+          vector,
+          payload: {
+            topic_id: input.topicId,
+            topic_label: getInputTopicLabel(input),
+
+            diagnosis: input.diagnosis ?? null,
+            next_step: input.nextStep ?? null,
+            updated_at: input.updatedAt ?? new Date().toISOString(),
+            inferred_keywords: asStringArray(
+              asRecord(input.topicJson)?.inferred_keywords,
+            ),
+
+            embedding_text: embeddingText,
+            vector_source: vectorSource,
+            vector_semantics: "topic_label_embedding",
+
+            topic_label_embedding_count: topicLabelEmbeddingCount,
+            topic_label_embedding_model: topicLabelEmbeddingModel,
+            topic_label_embedding_updated_at: topicLabelEmbeddingUpdatedAt,
+          },
+        },
+      ],
+    }),
+    qdrantSyncTimeoutMs,
+    "Qdrant topic upsert",
+  );
+}
+
+export async function syncTopicToQdrantBestEffort(
+  input: SyncTopicToQdrantInput,
+): Promise<SyncTopicToQdrantResult> {
+  const startedAt = nowMs();
+  const qdrantSyncTimeoutMs = getQdrantSyncTimeoutMs();
+  const qdrantEnsureTimeoutMs = getQdrantEnsureTimeoutMs();
+  const qdrantUpsertWait = getQdrantUpsertWait();
+
+  if (!canSyncTopicToQdrant()) {
+    return {
+      ok: false,
+      skipped: true,
+      error: "missing_qdrant_config",
+      topic_id: input.topicId,
+      topic_label: getInputTopicLabel(input),
+      vector_source: null,
+      qdrant_sync_timeout_ms: qdrantSyncTimeoutMs,
+      qdrant_ensure_timeout_ms: qdrantEnsureTimeoutMs,
+      qdrant_upsert_wait: qdrantUpsertWait,
+      duration_ms: roundMs(nowMs() - startedAt),
+    };
+  }
+
+  let vectorSource: SyncTopicToQdrantResult["vector_source"] = null;
+
+  try {
+    const fields = resolveTopicLabelEmbeddingFields(input);
+    vectorSource = fields.centroid?.length
+      ? fields.source ?? "topic_label_embedding_centroid"
+      : "topic_label_text_fallback";
+
+    await syncTopicToQdrant(input);
+
+    const result: SyncTopicToQdrantResult = {
+      ok: true,
+      skipped: false,
+      error: null,
+      topic_id: input.topicId,
+      topic_label: getInputTopicLabel(input),
+      vector_source: vectorSource,
+      qdrant_sync_timeout_ms: qdrantSyncTimeoutMs,
+      qdrant_ensure_timeout_ms: qdrantEnsureTimeoutMs,
+      qdrant_upsert_wait: qdrantUpsertWait,
+      duration_ms: roundMs(nowMs() - startedAt),
+    };
+
+    console.info("[syncTopicToQdrant best-effort]", result);
+    return result;
+  } catch (error) {
+    const result: SyncTopicToQdrantResult = {
+      ok: false,
+      skipped: false,
+      error: error instanceof Error ? error.message : "unknown_qdrant_sync_error",
+      topic_id: input.topicId,
+      topic_label: getInputTopicLabel(input),
+      vector_source: vectorSource,
+      qdrant_sync_timeout_ms: qdrantSyncTimeoutMs,
+      qdrant_ensure_timeout_ms: qdrantEnsureTimeoutMs,
+      qdrant_upsert_wait: qdrantUpsertWait,
+      duration_ms: roundMs(nowMs() - startedAt),
+    };
+
+    console.warn("[syncTopicToQdrant best-effort failed]", result);
+    return result;
+  }
+}
+
+
+================================================================
+FILE: lib\model-adapters\confusion-insight\confusion-insight-client.ts
+================================================================
+
+export type ConfusionInsightStatus =
+  | "ok"
+  | "unavailable"
+  | "timeout"
+  | "error";
+
+export type ConfusionInsightInferenceMode = "service" | "local" | null;
+
+export type ConfusionInsightSignals = {
+  model_confusion: number | null;
+  model_insight: number | null;
+  model_version: string | null;
+  inference_mode: ConfusionInsightInferenceMode;
+  latency_ms: number | null;
+  status: ConfusionInsightStatus;
+  error_message: string | null;
+};
+
+export type ConfusionInsightInputType =
+  | "message"
+  | "clarify_response"
+  | "text_attempt"
+  | "spoken_attempt"
+  | "interactive_attempt"
+  | "video_checkpoint_attempt"
+  | "audio_checkpoint_attempt";
+
+export type ConfusionInsightTopicTransitionType =
+  | "same_topic"
+  | "nearby_topic"
+  | "far_topic"
+  | "new_topic";
+
+export type ConfusionInsightPreviousMode =
+  | "no_previous"
+  | "clarify"
+  | "probe";
+
+export type ConfusionInsightEvent = {
+  event_type: "clarify" | "probe" | "attempt" | string | null;
+  topic_label: string | null;
+  diagnosis_label: string | null;
+
+  clarification_prompt?: string | null;
+  clarification_goal?: string | null;
+
+  probe_type?: string | null;
+  modality?: string | null;
+  probe_prompt?: string | null;
+  learning_objective?: string | null;
+  expected_attempt_type?: string | null;
+  success_marker?: string | null;
+  misconception_being_tested?: string | null;
+
+  attempt_type?: string | null;
+  evidence?: string | null;
+};
+
+export type ConfusionInsightStructuredInput = {
+  input_type: ConfusionInsightInputType;
+  current_attempt_type: string | null;
+  current_evidence: string;
+
+  previous_active_topic_label: string | null;
+  target_topic_label: string | null;
+  topic_transition_type: ConfusionInsightTopicTransitionType;
+  topic_similarity: number | null;
+
+  previous_mode: ConfusionInsightPreviousMode;
+  is_response_to_clarify: boolean;
+  is_response_to_probe: boolean;
+
+  target_topic_recent_events: ConfusionInsightEvent[];
+
+  most_related_topic_label: string | null;
+  most_related_topic_similarity: number | null;
+  most_related_topic_similarity_threshold: number | null;
+  most_related_topic_recent_events: ConfusionInsightEvent[];
+
+  target_topic_confusion_average: number | null;
+  target_topic_insight_average: number | null;
+
+  most_related_topic_confusion_average: number | null;
+  most_related_topic_insight_average: number | null;
+};
+
+type ConfusionInsightServiceResponse = {
+  model_confusion?: number | null;
+  model_insight?: number | null;
+  model_version?: string | null;
+  inference_mode?: "service" | "local" | null;
+  status?: string | null;
+  latency_ms?: number | null;
+  error_message?: string | null;
+  raw_logits?: number[];
+  raw_scores?: {
+    confusion?: number | null;
+    insight?: number | null;
+  } | null;
+};
+
+type ScoreConfusionInsightStructuredArgs = {
+  input: ConfusionInsightStructuredInput;
+  timeoutMs?: number;
+};
+
+type ScoreConfusionInsightLegacyArgs = {
+  userMessage: string;
+  chatHistory?: string[];
+  timeoutMs?: number;
+};
+
+type ScoreConfusionInsightArgs =
+  | ScoreConfusionInsightStructuredArgs
+  | ScoreConfusionInsightLegacyArgs;
+
+const DEFAULT_CONFUSION_INSIGHT_SERVICE_URL =
+  "http://127.0.0.1:8003/score";
+
+/**
+ * MYWAY_* names are the canonical runtime configuration surface.
+ *
+ * The older CONFUSION_INSIGHT_* names are supported as fallbacks so this adapter
+ * can be swapped without breaking existing local .env files.
+ *
+ * GPU/external service path:
+ *   MYWAY_CONFUSION_INSIGHT_SERVICE_URL=http://gpu-host:8003
+ *
+ * Local managed worker path:
+ *   default http://127.0.0.1:8003/score
+ */
+const SERVICE_URL_ENV_KEYS = [
+  "MYWAY_CONFUSION_INSIGHT_SERVICE_URL",
+  "CONFUSION_INSIGHT_SERVICE_URL",
+] as const;
+
+const TIMEOUT_MS_ENV_KEYS = [
+  "MYWAY_CONFUSION_INSIGHT_TIMEOUT_MS",
+  "CONFUSION_INSIGHT_TIMEOUT_MS",
+] as const;
+
+const DEFAULT_TIMEOUT_MS = 2_000;
+const MIN_TIMEOUT_MS = 250;
+const MAX_TIMEOUT_MS = 60_000;
+const DEFAULT_SIMILARITY_THRESHOLD = 0.65;
+const MAX_RECENT_EVENTS = 5;
+
+function emptySignals(
+  status: ConfusionInsightStatus,
+  errorMessage: string | null,
+  latencyMs: number | null = null,
+): ConfusionInsightSignals {
+  return {
+    model_confusion: null,
+    model_insight: null,
+    model_version: null,
+    inference_mode: null,
+    latency_ms: latencyMs,
+    status,
+    error_message: errorMessage,
+  };
+}
+
+function clamp01(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.min(1, value));
+}
+
+function normalizeOptionalString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function normalizeNullableNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function normalizeTimeoutMs(value: unknown, fallback = DEFAULT_TIMEOUT_MS) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+
+  return Math.max(MIN_TIMEOUT_MS, Math.min(MAX_TIMEOUT_MS, Math.round(value)));
+}
+
+function getFirstConfiguredEnvValue(keys: readonly string[]) {
+  for (const key of keys) {
+    const value = process.env[key]?.trim();
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function normalizeServiceUrl(value: string) {
+  const trimmed = value.trim();
+
+  try {
+    const url = new URL(trimmed);
+
+    /**
+     * Accept either a full /score endpoint or a bare service origin.
+     */
+    if (url.pathname === "" || url.pathname === "/") {
+      url.pathname = "/score";
+    }
+
+    return url.toString();
+  } catch {
+    return trimmed;
+  }
+}
+
+function getConfiguredServiceUrl() {
+  const configured = getFirstConfiguredEnvValue(SERVICE_URL_ENV_KEYS);
+
+  return normalizeServiceUrl(
+    configured ?? DEFAULT_CONFUSION_INSIGHT_SERVICE_URL,
+  );
+}
+
+function getConfiguredDefaultTimeoutMs() {
+  const raw = getFirstConfiguredEnvValue(TIMEOUT_MS_ENV_KEYS);
+  if (!raw) return DEFAULT_TIMEOUT_MS;
+
+  return normalizeTimeoutMs(Number(raw), DEFAULT_TIMEOUT_MS);
+}
+
+function buildLegacyStructuredInput(
+  args: ScoreConfusionInsightLegacyArgs,
+): ConfusionInsightStructuredInput {
+  /**
+   * Legacy callers are still supported, but the adapter normalizes them into the
+   * v1_1 structured shape before calling the provider. This keeps the model
+   * boundary stable while older call sites are gradually retired.
+   */
+  return {
+    input_type: "message",
+    current_attempt_type: null,
+    current_evidence: args.userMessage.trim(),
+
+    previous_active_topic_label: null,
+    target_topic_label: null,
+    topic_transition_type: "same_topic",
+    topic_similarity: null,
+
+    previous_mode: "no_previous",
+    is_response_to_clarify: false,
+    is_response_to_probe: false,
+
+    target_topic_recent_events: [],
+
+    most_related_topic_label: null,
+    most_related_topic_similarity: null,
+    most_related_topic_similarity_threshold: DEFAULT_SIMILARITY_THRESHOLD,
+    most_related_topic_recent_events: [],
+
+    target_topic_confusion_average: null,
+    target_topic_insight_average: null,
+
+    most_related_topic_confusion_average: null,
+    most_related_topic_insight_average: null,
+  };
+}
+
+function normalizeEvent(event: ConfusionInsightEvent): ConfusionInsightEvent {
+  return {
+    event_type: normalizeOptionalString(event.event_type),
+    topic_label: normalizeOptionalString(event.topic_label),
+    diagnosis_label: normalizeOptionalString(event.diagnosis_label),
+
+    clarification_prompt: normalizeOptionalString(event.clarification_prompt),
+    clarification_goal: normalizeOptionalString(event.clarification_goal),
+
+    probe_type: normalizeOptionalString(event.probe_type),
+    modality: normalizeOptionalString(event.modality),
+    probe_prompt: normalizeOptionalString(event.probe_prompt),
+    learning_objective: normalizeOptionalString(event.learning_objective),
+    expected_attempt_type: normalizeOptionalString(
+      event.expected_attempt_type,
+    ),
+    success_marker: normalizeOptionalString(event.success_marker),
+    misconception_being_tested: normalizeOptionalString(
+      event.misconception_being_tested,
+    ),
+
+    attempt_type: normalizeOptionalString(event.attempt_type),
+    evidence: normalizeOptionalString(event.evidence),
+  };
+}
+
+function normalizeEvents(value: unknown): ConfusionInsightEvent[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter(
+      (item): item is ConfusionInsightEvent =>
+        Boolean(item && typeof item === "object" && !Array.isArray(item)),
+    )
+    .map(normalizeEvent)
+    .slice(-MAX_RECENT_EVENTS);
+}
+
+function normalizeInputType(
+  value: ConfusionInsightInputType,
+): ConfusionInsightInputType {
+  if (
+    value === "message" ||
+    value === "clarify_response" ||
+    value === "text_attempt" ||
+    value === "spoken_attempt" ||
+    value === "interactive_attempt" ||
+    value === "video_checkpoint_attempt" ||
+    value === "audio_checkpoint_attempt"
+  ) {
+    return value;
+  }
+
+  return "message";
+}
+
+function normalizeTopicTransitionType(
+  value: ConfusionInsightTopicTransitionType,
+): ConfusionInsightTopicTransitionType {
+  if (
+    value === "same_topic" ||
+    value === "nearby_topic" ||
+    value === "far_topic" ||
+    value === "new_topic"
+  ) {
+    return value;
+  }
+
+  return "same_topic";
+}
+
+function normalizePreviousMode(
+  value: ConfusionInsightPreviousMode,
+): ConfusionInsightPreviousMode {
+  if (value === "no_previous" || value === "clarify" || value === "probe") {
+    return value;
+  }
+
+  return "no_previous";
+}
+
+function normalizeStructuredInput(
+  input: ConfusionInsightStructuredInput,
+): ConfusionInsightStructuredInput {
+  return {
+    input_type: normalizeInputType(input.input_type),
+    current_attempt_type: normalizeOptionalString(input.current_attempt_type),
+    current_evidence: input.current_evidence.trim(),
+
+    previous_active_topic_label: normalizeOptionalString(
+      input.previous_active_topic_label,
+    ),
+    target_topic_label: normalizeOptionalString(input.target_topic_label),
+    topic_transition_type: normalizeTopicTransitionType(
+      input.topic_transition_type,
+    ),
+    topic_similarity: normalizeNullableNumber(input.topic_similarity),
+
+    previous_mode: normalizePreviousMode(input.previous_mode),
+    is_response_to_clarify: Boolean(input.is_response_to_clarify),
+    is_response_to_probe: Boolean(input.is_response_to_probe),
+
+    target_topic_recent_events: normalizeEvents(
+      input.target_topic_recent_events,
+    ),
+
+    most_related_topic_label: normalizeOptionalString(
+      input.most_related_topic_label,
+    ),
+    most_related_topic_similarity: normalizeNullableNumber(
+      input.most_related_topic_similarity,
+    ),
+    most_related_topic_similarity_threshold:
+      normalizeNullableNumber(input.most_related_topic_similarity_threshold) ??
+      DEFAULT_SIMILARITY_THRESHOLD,
+    most_related_topic_recent_events: normalizeEvents(
+      input.most_related_topic_recent_events,
+    ),
+
+    target_topic_confusion_average: normalizeNullableNumber(
+      input.target_topic_confusion_average,
+    ),
+    target_topic_insight_average: normalizeNullableNumber(
+      input.target_topic_insight_average,
+    ),
+
+    most_related_topic_confusion_average: normalizeNullableNumber(
+      input.most_related_topic_confusion_average,
+    ),
+    most_related_topic_insight_average: normalizeNullableNumber(
+      input.most_related_topic_insight_average,
+    ),
+  };
+}
+
+function isStructuredArgs(
+  args: ScoreConfusionInsightArgs,
+): args is ScoreConfusionInsightStructuredArgs {
+  return "input" in args;
+}
+
+function getRequestPayload(
+  args: ScoreConfusionInsightArgs,
+): ConfusionInsightStructuredInput {
+  if (isStructuredArgs(args)) {
+    return normalizeStructuredInput(args.input);
+  }
+
+  return buildLegacyStructuredInput(args);
+}
+
+function getTimeoutMs(args: ScoreConfusionInsightArgs) {
+  return normalizeTimeoutMs(args.timeoutMs, getConfiguredDefaultTimeoutMs());
+}
+
+function normalizeServiceResponseLatencyMs(
+  value: unknown,
+  fallbackLatencyMs: number,
+) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : fallbackLatencyMs;
+}
+
+function normalizeProviderInferenceMode(
+  value: unknown,
+): ConfusionInsightInferenceMode {
+  if (value === "service" || value === "local") return value;
+  return "service";
+}
+
+function normalizeProviderStatus(value: unknown): ConfusionInsightStatus {
+  if (
+    value === "ok" ||
+    value === "unavailable" ||
+    value === "timeout" ||
+    value === "error"
+  ) {
+    return value;
+  }
+
+  return "error";
+}
+
+function normalizeProviderErrorMessage(
+  value: unknown,
+  fallback: string,
+): string {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function normalizeServiceScores(data: ConfusionInsightServiceResponse) {
+  const modelConfusion =
+    clamp01(data.model_confusion) ?? clamp01(data.raw_scores?.confusion);
+  const modelInsight =
+    clamp01(data.model_insight) ?? clamp01(data.raw_scores?.insight);
+
+  return {
+    modelConfusion,
+    modelInsight,
+  };
+}
+
+function buildInvalidScoreResponse(args: {
+  data: ConfusionInsightServiceResponse;
+  latencyMs: number;
+}) {
+  const { modelConfusion, modelInsight } = normalizeServiceScores(args.data);
+
+  if (modelConfusion === null || modelInsight === null) {
+    return emptySignals(
+      "error",
+      "Confusion/insight provider returned ok status without valid model_confusion/model_insight scores.",
+      normalizeServiceResponseLatencyMs(args.data.latency_ms, args.latencyMs),
+    );
+  }
+
+  return null;
+}
+
+async function readServiceResponseJson(
+  response: Response,
+): Promise<ConfusionInsightServiceResponse | null> {
+  try {
+    return (await response.json()) as ConfusionInsightServiceResponse;
+  } catch {
+    return null;
+  }
+}
+
+export async function scoreConfusionInsight(
+  args: ScoreConfusionInsightArgs,
+): Promise<ConfusionInsightSignals> {
+  const serviceUrl = getConfiguredServiceUrl();
+  const payload = getRequestPayload(args);
+  const timeoutMs = getTimeoutMs(args);
+
+  if (!payload.current_evidence.trim()) {
+    return emptySignals("unavailable", "No current evidence provided.");
+  }
+
+  const started = Date.now();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(serviceUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify(payload),
+    });
+
+    clearTimeout(timeout);
+
+    const latencyMs = Date.now() - started;
+    const data = await readServiceResponseJson(response);
+
+    if (!response.ok) {
+      return emptySignals(
+        "error",
+        data?.error_message ??
+          `Confusion/insight provider returned HTTP ${response.status}.`,
+        normalizeServiceResponseLatencyMs(data?.latency_ms, latencyMs),
+      );
+    }
+
+    if (!data) {
+      return emptySignals(
+        "error",
+        "Confusion/insight provider returned an unreadable JSON response.",
+        latencyMs,
+      );
+    }
+
+    const providerStatus = normalizeProviderStatus(data.status ?? "ok");
+
+    if (providerStatus !== "ok") {
+      return emptySignals(
+        providerStatus,
+        normalizeProviderErrorMessage(
+          data.error_message,
+          "Confusion/insight provider returned non-ok status.",
+        ),
+        normalizeServiceResponseLatencyMs(data.latency_ms, latencyMs),
+      );
+    }
+
+    const invalidScoreResponse = buildInvalidScoreResponse({
+      data,
+      latencyMs,
+    });
+
+    if (invalidScoreResponse) {
+      return invalidScoreResponse;
+    }
+
+    const { modelConfusion, modelInsight } = normalizeServiceScores(data);
+
+    return {
+      model_confusion: modelConfusion,
+      model_insight: modelInsight,
+      model_version: data.model_version ?? null,
+      inference_mode: normalizeProviderInferenceMode(data.inference_mode),
+      latency_ms: normalizeServiceResponseLatencyMs(data.latency_ms, latencyMs),
+      status: "ok",
+      error_message: null,
+    };
+  } catch (error) {
+    clearTimeout(timeout);
+
+    const latencyMs = Date.now() - started;
+
+    if (error instanceof Error && error.name === "AbortError") {
+      return emptySignals(
+        "timeout",
+        `Confusion/insight provider timed out after ${timeoutMs}ms.`,
+        latencyMs,
+      );
+    }
+
+    return emptySignals(
+      "unavailable",
+      error instanceof Error ? error.message : "Unknown provider error.",
+      latencyMs,
+    );
+  }
+}
+
+

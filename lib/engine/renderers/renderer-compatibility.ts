@@ -7,7 +7,7 @@
 import type {
   EngineRenderableProbe,
   RendererCompatibilityReport,
-  LegacyProbeRendererAdapterResult,
+  ProbeRendererAdapterResult,
 } from "./probe-renderer-contract";
 
 function hasArrayItems(value: unknown): value is unknown[] {
@@ -175,7 +175,7 @@ export function toEngineRenderableProbe(
 
 export function adaptProbeContractForRenderer(
   probeContract: ProbeContractModelOutput,
-): LegacyProbeRendererAdapterResult {
+): ProbeRendererAdapterResult {
   const renderableProbe = toEngineRenderableProbe(probeContract);
   const { renderer_compatibility } = renderableProbe;
 
@@ -199,4 +199,5 @@ export function isRendererBackedProbeType(probeType: ProbeType): boolean {
     probeType === "video_explanation"
   );
 }
+
 

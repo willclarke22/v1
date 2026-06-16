@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // MyWay Engine Shared Schema Types
 // -----------------------------------------------------------------------------
 //
@@ -101,6 +101,7 @@ export type PresentationStyle =
 export type PresentationSupportKind =
   | "analogy"
   | "metaphor"
+  | "contrast"
   | "example"
   | "real_world_connection"
   | "visual_description"
@@ -131,12 +132,27 @@ export type ProbePrompt = {
 };
 
 export type AnswerKey = {
+  // Optional for now so older minimal contracts can remain valid.
+  // Dataset examples should normally provide kind.
+  kind?:
+    | "single_choice"
+    | "multi_choice"
+    | "text"
+    | "numeric"
+    | "ordered_items"
+    | "drag_drop_placements"
+    | "graph"
+    | "audio_clip"
+    | "video_click";
+
   // For single choice, multi choice, or audio clip questions.
   correct_option_id?: string | null;
   correct_option_ids?: string[];
+  acceptable_option_ids?: string[];
 
   // For open-ended text explanation.
   expected_ideas?: string[];
+  success_markers?: string[];
 
   // For prediction probes.
   correct_prediction?: string | number | boolean | null;
@@ -166,18 +182,37 @@ export type AnswerKey = {
 export type MisconceptionMarker = {
   misconception_id: string;
   label: string;
-  marker: string;
+
+  // Optional pattern/string that can help match an attempt to this misconception.
+  marker?: string | null;
+
+  // Optional model-authored explanation for review/data generation.
+  description?: string | null;
+
+  confidence?: ConfidenceScore | null;
 };
 
 export type UnderstandingEvidence = {
   evidence_strength: ConfidenceScore;
 
+  // True when the attempt supports stable understanding.
+  supports_understanding?: boolean;
+
+  // True when the attempt supports an active gap or misconception.
+  supports_gap?: boolean;
+
   // True when the learner got the answer right, but the attempt does not show
   // enough reasoning or transfer to trust the answer as stable understanding.
   may_be_lucky_guess: boolean;
 
+  // Alias used by newer evaluator artifacts. Keep may_be_lucky_guess as the
+  // durable MyWay field until validation/state code is updated.
+  possible_guess?: boolean;
+
   // True when MyWay should ask one more related task to verify understanding.
   needs_verification_probe: boolean;
+
+  informational_only?: boolean;
 
   verification_reason?: string | null;
 };
@@ -439,7 +474,7 @@ export type EvaluatedProbeAttemptSignal = {
 
     misconception_hits?: Array<{
       misconception_id: string;
-      label?: string;
+      label?: string | null;
       confidence: ConfidenceScore;
     }>;
 
@@ -448,4 +483,6 @@ export type EvaluatedProbeAttemptSignal = {
     personalization_delta?: PersonalizationProfileDelta | null;
   };
 };
+
+
 

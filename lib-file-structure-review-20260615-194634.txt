@@ -1,0 +1,110 @@
+LIB FILE STRUCTURE REVIEW
+Generated: 2026-06-15T19:46:34.7530035-07:00
+
+FOLDER COUNTS
+api-routes                   2 TS/TSX files      2 total files       13.2 KB
+engine                      40 TS/TSX files     41 total files      109.4 KB
+learning-progress            1 TS/TSX files      1 total files        4.7 KB
+learning-space               8 TS/TSX files      8 total files       72.3 KB
+model-adapters               1 TS/TSX files      1 total files       16.7 KB
+persistence                  2 TS/TSX files      2 total files       34.7 KB
+shared                       1 TS/TSX files      1 total files        0.8 KB
+supabase                     2 TS/TSX files      2 total files        0.8 KB
+topic-routing                7 TS/TSX files      7 total files       69.2 KB
+vector                       4 TS/TSX files      4 total files       45.2 KB
+
+FULL LIB STRUCTURE
+
+[DIR]  lib\api-routes
+[DIR]  lib\api-routes\message
+       lib\api-routes\message\mock-3model-response.ts  [9.3 KB]
+[DIR]  lib\api-routes\probe-submit
+       lib\api-routes\probe-submit\mock-3model-response.ts  [3.9 KB]
+[DIR]  lib\engine
+       lib\engine\index.ts  [0.8 KB]
+[DIR]  lib\engine\orchestration
+       lib\engine\orchestration\build-evaluated-probe-attempt-signal.ts  [1.5 KB]
+       lib\engine\orchestration\index.ts  [0.2 KB]
+       lib\engine\orchestration\route-engine-next-action.ts  [2.8 KB]
+       lib\engine\orchestration\run-attempt-evaluation.ts  [1 KB]
+       lib\engine\orchestration\run-diagnosis.ts  [0.9 KB]
+       lib\engine\orchestration\run-engine-turn.ts  [2.3 KB]
+       lib\engine\orchestration\run-probe-contract.ts  [1 KB]
+[DIR]  lib\engine\providers
+       lib\engine\providers\index.ts  [0.1 KB]
+[DIR]  lib\engine\providers\mock-model-artifacts
+[DIR]  lib\engine\providers\mock-model-artifacts\fixtures
+       lib\engine\providers\mock-model-artifacts\fixtures\spanish-se-discrimination.ts  [0.8 KB]
+       lib\engine\providers\mock-model-artifacts\fixtures\spanish-se-selected-reflexive.ts  [1.7 KB]
+       lib\engine\providers\mock-model-artifacts\fixtures\spanish-se-single-choice.ts  [3.5 KB]
+       lib\engine\providers\mock-model-artifacts\index.ts  [0 KB]
+       lib\engine\providers\mock-model-artifacts\mock-3model-scenario.ts  [4.3 KB]
+       lib\engine\providers\mock-model-artifacts\README.md  [0.6 KB]
+[DIR]  lib\engine\providers\service-clients
+       lib\engine\providers\service-clients\attempt-evaluator-service-client.ts  [2.2 KB]
+       lib\engine\providers\service-clients\diagnosis-service-client.ts  [1.8 KB]
+       lib\engine\providers\service-clients\index.ts  [0.1 KB]
+       lib\engine\providers\service-clients\probe-contract-service-client.ts  [2.2 KB]
+       lib\engine\providers\types.ts  [1.9 KB]
+[DIR]  lib\engine\renderers
+       lib\engine\renderers\index.ts  [0.1 KB]
+       lib\engine\renderers\probe-renderer-contract.ts  [1.1 KB]
+       lib\engine\renderers\renderer-compatibility.ts  [5.7 KB]
+[DIR]  lib\engine\schemas
+       lib\engine\schemas\diagnosis-model.ts  [0.6 KB]
+       lib\engine\schemas\index.ts  [0.1 KB]
+       lib\engine\schemas\probe-attempt-evaluator.ts  [2.2 KB]
+       lib\engine\schemas\probe-contract-model.ts  [2.2 KB]
+       lib\engine\schemas\shared.ts  [11.1 KB]
+[DIR]  lib\engine\state
+       lib\engine\state\apply-diagnosis-delta.ts  [3.4 KB]
+       lib\engine\state\apply-personalization-delta.ts  [6.2 KB]
+       lib\engine\state\apply-understanding-evidence.ts  [4.2 KB]
+       lib\engine\state\index.ts  [0.2 KB]
+       lib\engine\state\learning-topic-state.ts  [3.8 KB]
+[DIR]  lib\engine\validation
+       lib\engine\validation\index.ts  [0.3 KB]
+       lib\engine\validation\shared.ts  [3.9 KB]
+       lib\engine\validation\validate-attempt-evaluation.ts  [5.8 KB]
+       lib\engine\validation\validate-bridge-language.ts  [2.5 KB]
+       lib\engine\validation\validate-diagnosis-output.ts  [2.9 KB]
+       lib\engine\validation\validate-personalization.ts  [14.4 KB]
+       lib\engine\validation\validate-probe-contract.ts  [5.2 KB]
+       lib\engine\validation\validate-renderer-params.ts  [4.1 KB]
+[DIR]  lib\learning-progress
+       lib\learning-progress\derive-progress-summary.ts  [4.7 KB]
+[DIR]  lib\learning-space
+       lib\learning-space\build-learning-space.ts  [23 KB]
+       lib\learning-space\engine-bridge.ts  [0.8 KB]
+       lib\learning-space\index.ts  [0.1 KB]
+[DIR]  lib\learning-space\relationship-graph
+       lib\learning-space\relationship-graph\build-topic-relationships.ts  [27.7 KB]
+       lib\learning-space\relationship-graph\index.ts  [0.1 KB]
+       lib\learning-space\relationship-graph\relationship-policy.ts  [8 KB]
+       lib\learning-space\relationship-graph\relationship-types.ts  [7.6 KB]
+       lib\learning-space\topic-position.ts  [5 KB]
+[DIR]  lib\model-adapters
+[DIR]  lib\model-adapters\confusion-insight
+       lib\model-adapters\confusion-insight\confusion-insight-client.ts  [16.7 KB]
+[DIR]  lib\persistence
+       lib\persistence\myway.ts  [17.3 KB]
+       lib\persistence\read.ts  [17.4 KB]
+[DIR]  lib\shared
+       lib\shared\runtime.ts  [0.8 KB]
+[DIR]  lib\supabase
+       lib\supabase\client.ts  [0.2 KB]
+       lib\supabase\server.ts  [0.6 KB]
+[DIR]  lib\topic-routing
+       lib\topic-routing\route-topics.ts  [10.8 KB]
+[DIR]  lib\topic-routing\topic-labeler
+       lib\topic-routing\topic-labeler\client.ts  [4.4 KB]
+       lib\topic-routing\topic-labeler\contract.ts  [1.6 KB]
+       lib\topic-routing\topic-labeler\policy.ts  [8.4 KB]
+       lib\topic-routing\topic-labeler\resolution.ts  [32 KB]
+       lib\topic-routing\topic-labeler\v3-adapter.ts  [6.1 KB]
+       lib\topic-routing\topic-routing-trace.ts  [5.8 KB]
+[DIR]  lib\vector
+       lib\vector\embed.ts  [9.2 KB]
+       lib\vector\qdrant.ts  [5 KB]
+       lib\vector\query-topics.ts  [18.4 KB]
+       lib\vector\sync-topic-to-qdrant.ts  [12.6 KB]

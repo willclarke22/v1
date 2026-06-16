@@ -51,7 +51,7 @@ export function createAttemptEvaluatorServiceClient(
           model_name: config.model_name ?? null,
           started_at_ms: startedAtMs,
           warnings: [
-            "Attempt evaluator service client is not wired yet. Prefer deterministic fallback until service is connected.",
+            "Attempt evaluator service client is not wired yet. Returned safe clarification output.",
             config.endpoint_url
               ? `Configured endpoint was not called yet: ${config.endpoint_url}`
               : "No attempt evaluator endpoint configured.",
@@ -61,3 +61,4 @@ export function createAttemptEvaluatorServiceClient(
     },
   };
 }
+

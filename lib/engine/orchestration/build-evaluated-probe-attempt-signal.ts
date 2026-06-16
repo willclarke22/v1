@@ -43,6 +43,7 @@ export function buildEvaluatedProbeAttemptSignal(
       understanding_evidence: input.evaluation.understanding_evidence,
       misconception_hits: input.evaluation.misconception_hits.map((hit) => ({
         misconception_id: hit.misconception_id,
+        label: hit.label ?? undefined,
         confidence: hit.confidence,
       })),
       next_action: input.evaluation.next_action,
@@ -50,4 +51,6 @@ export function buildEvaluatedProbeAttemptSignal(
     },
   };
 }
+
+
 

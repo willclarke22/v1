@@ -1,4 +1,6 @@
 ﻿import type {
+  PresentationStyle,
+  PresentationSupportKind,
   ProbeAttemptType,
   ProbeContractModelOutput,
   ProbePrompt,
@@ -11,6 +13,7 @@ import {
   isRecord,
   pathJoin,
   pushIssue,
+  validateOptionalString,
   validateRequiredString,
   validateScoreField,
   type ValidationIssue,
@@ -50,6 +53,29 @@ const PROBE_ATTEMPT_TYPES = [
   "unknown",
 ] as const satisfies readonly ProbeAttemptType[];
 
+const PRESENTATION_SUPPORT_KINDS = [
+  "analogy",
+  "metaphor",
+  "contrast",
+  "example",
+  "real_world_connection",
+  "visual_description",
+  "step_by_step_frame",
+  "curiosity_hook",
+] as const satisfies readonly PresentationSupportKind[];
+
+const PRESENTATION_STYLES = [
+  "plain_direct",
+  "gentle_coaching",
+  "analogy_based",
+  "metaphor_based",
+  "concrete_examples",
+  "step_by_step",
+  "visual_description",
+  "curiosity_question",
+  "real_world_connection",
+] as const satisfies readonly PresentationStyle[];
+
 function probeUsuallyNeedsAnswerKey(probeType: ProbeType): boolean {
   return probeType !== "video_explanation" && probeType !== "audio_response_question";
 }
@@ -84,6 +110,69 @@ function validatePrompt(
   validateRequiredString(prompt.full_prompt, issues, `${path}.full_prompt`);
 }
 
+function validatePresentationSupport(
+  support: unknown,
+  issues: ValidationIssue[],
+  path: string,
+): void {
+  if (support === undefined || support === null) {
+    return;
+  }
+
+  if (!Array.isArray(support)) {
+    pushIssue(
+      issues,
+      "error",
+      "invalid_presentation_support",
+      "Expected presentation_support to be an array when provided.",
+      path,
+    );
+    return;
+  }
+
+  support.forEach((item, index) => {
+    const itemPath = pathJoin(path, index);
+
+    if (!isRecord(item)) {
+      pushIssue(
+        issues,
+        "error",
+        "invalid_presentation_support_item",
+        "Expected presentation support item to be an object.",
+        itemPath,
+      );
+      return;
+    }
+
+    if (!isKnownString(item.kind, PRESENTATION_SUPPORT_KINDS)) {
+      pushIssue(
+        issues,
+        "error",
+        "invalid_presentation_support_kind",
+        "Expected a valid presentation support kind.",
+        `${itemPath}.kind`,
+      );
+    }
+
+    if (!isKnownString(item.style_used, PRESENTATION_STYLES)) {
+      pushIssue(
+        issues,
+        "error",
+        "invalid_presentation_style_used",
+        "Expected a valid presentation style.",
+        `${itemPath}.style_used`,
+      );
+    }
+
+    validateRequiredString(item.text, issues, `${itemPath}.text`);
+    validateOptionalString(item.user_interest_used, issues, `${itemPath}.user_interest_used`);
+
+    if (item.confidence !== undefined && item.confidence !== null) {
+      validateScoreField(item.confidence, issues, `${itemPath}.confidence`);
+    }
+  });
+}
+
 function validateMisconceptionMarkers(
   markers: unknown,
   issues: ValidationIssue[],
@@ -116,7 +205,12 @@ function validateMisconceptionMarkers(
 
     validateRequiredString(marker.misconception_id, issues, `${markerPath}.misconception_id`);
     validateRequiredString(marker.label, issues, `${markerPath}.label`);
-    validateRequiredString(marker.marker, issues, `${markerPath}.marker`);
+    validateOptionalString(marker.marker, issues, `${markerPath}.marker`);
+    validateOptionalString(marker.description, issues, `${markerPath}.description`);
+
+    if (marker.confidence !== undefined && marker.confidence !== null) {
+      validateScoreField(marker.confidence, issues, `${markerPath}.confidence`);
+    }
   });
 }
 
@@ -172,6 +266,7 @@ export function validateProbeContract(
   }
 
   validatePrompt(output.prompt, issues, `${path}.prompt`);
+  validatePresentationSupport(output.presentation_support, issues, `${path}.presentation_support`);
   validateMisconceptionMarkers(output.misconception_markers, issues, `${path}.misconception_markers`);
 
   if (probeType && probeUsuallyNeedsAnswerKey(probeType) && output.answer_key == null) {
@@ -215,4 +310,5 @@ export function assertProbePromptShape(prompt: unknown): prompt is ProbePrompt {
     typeof prompt.full_prompt === "string"
   );
 }
+
 

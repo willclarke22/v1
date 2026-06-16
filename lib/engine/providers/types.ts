@@ -7,8 +7,7 @@
   ProbeContractModelOutput,
 } from "../schemas";
 
-export type EngineProviderKind =
-  | "service_client";
+export type EngineProviderKind = "service_client";
 
 export type EngineProviderCallMeta = {
   provider_name: string;
@@ -72,5 +71,6 @@ export function buildProviderMeta(input: {
     warnings: input.warnings ?? [],
   };
 }
+
 
 

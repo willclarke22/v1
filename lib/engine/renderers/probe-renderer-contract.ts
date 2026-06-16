@@ -42,10 +42,11 @@ export type EngineRenderableProbe = {
   renderer_compatibility: RendererCompatibilityReport;
 };
 
-export type LegacyProbeRendererAdapterResult = {
+export type ProbeRendererAdapterResult = {
   ok: boolean;
   renderable_probe: EngineRenderableProbe | null;
   warnings: string[];
   blocking_reasons: string[];
 };
+
 

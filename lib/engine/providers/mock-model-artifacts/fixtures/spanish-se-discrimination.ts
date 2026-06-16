@@ -15,7 +15,7 @@
     schema_version: "diagnosis_model_output_v1",
     diagnosis: "discrimination_gap",
     diagnosis_confidence: 0.86,
-    next_action: "generate_probe",
+    next_action: "generate_probe_contract",
     next_action_confidence: 0.82,
     suggested_question:
       "Can the learner tell which job se is doing in different sentence patterns?",
@@ -23,3 +23,4 @@
 } as const;
 
 export default artifact;
+
