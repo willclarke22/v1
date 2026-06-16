@@ -9,9 +9,9 @@ import type {
   ProbeAttemptEvaluatorOutput,
   ProbeContractModelOutput,
 } from "@/lib/engine";
-import diagnosisArtifact from "./fixtures/spanish-se-discrimination";
-import probeContractArtifact from "./fixtures/spanish-se-single-choice";
-import attemptEvaluatorArtifact from "./fixtures/spanish-se-selected-reflexive";
+import diagnosisArtifact from "../../../../models/diagnosis/mock-v0/spanish-se-discrimination";
+import probeContractArtifact from "../../../../models/probe-contract/mock-v0/spanish-se-single-choice";
+import attemptEvaluatorArtifact from "../../../../models/attempt-evaluator/mock-v0/spanish-se-selected-reflexive";
 
 type MockArtifact<TOutput> = {
   artifact_kind: string;
@@ -101,10 +101,10 @@ export function buildMockThreeModelTurn(scenarioId = "spanish_se_discrimination"
     status: "ok" as const,
     scenario_id: scenario.scenario_id,
     model_artifact_paths: {
-      diagnosis: "lib/engine/providers/mock-model-artifacts/fixtures/spanish-se-discrimination.ts",
-      probe_contract: "lib/engine/providers/mock-model-artifacts/fixtures/spanish-se-single-choice.ts",
+      diagnosis: "models/diagnosis/mock-v0/spanish-se-discrimination.ts",
+      probe_contract: "models/probe-contract/mock-v0/spanish-se-single-choice.ts",
       attempt_evaluator:
-        "lib/engine/providers/mock-model-artifacts/fixtures/spanish-se-selected-reflexive.ts",
+        "models/attempt-evaluator/mock-v0/spanish-se-selected-reflexive.ts",
     },
     diagnosis_output: scenario.diagnosis.output,
     diagnosis_route: diagnosisRoute,
@@ -116,5 +116,4 @@ export function buildMockThreeModelTurn(scenarioId = "spanish_se_discrimination"
     evaluated_probe_attempt_signal: evaluatedProbeAttemptSignal,
   };
 }
-
 

@@ -1,0 +1,59 @@
+﻿const artifact = {
+  artifact_kind: "mock_probe_attempt_evaluator_output",
+  artifact_version: "mock_v0",
+  scenario_id: "spanish_se_discrimination",
+  description:
+    "Mock evaluator output for a learner who picked the fixed/reflexive interpretation.",
+  input_hint: {
+    schema_version: "probe_attempt_evaluator_input_v1",
+    attempt: {
+      attempt_type: "single_choice",
+      selected_option_id: "houses_sell_themselves",
+      self_reported_confidence: 0.58,
+    },
+  },
+  output: {
+    schema_version: "probe_attempt_evaluator_output_v1",
+    correctness: 0.12,
+    correctness_summary:
+      "The selected answer treats se as if the houses sell themselves, which suggests a fixed/reflexive reading rather than using the sentence pattern.",
+    understanding_evidence: {
+      evidence_strength: 0.71,
+      supports_understanding: false,
+      supports_gap: true,
+      possible_guess: false,
+      informational_only: false,
+    },
+    misconception_hits: [
+      {
+        misconception_id: "always_reflexive",
+        label: "se always means itself",
+        confidence: 0.82,
+      },
+    ],
+    diagnosis_delta: {
+      discrimination_gap: 0.18,
+      representation_gap: 0.06,
+    },
+    bridge_evidence: {
+      bridge_level_tested: "bridge_0",
+      bridge_success: false,
+      notes: [
+        "No-jargon wording was used, but the learner still selected the fixed-meaning option.",
+      ],
+    },
+    personalization_delta: {
+      teaching_move_outcomes: [
+        {
+          teaching_move: "single_choice_contrast",
+          outcome: "misconception_exposed",
+          confidence: 0.74,
+        },
+      ],
+    },
+    next_action: "generate_followup_probe",
+    next_action_confidence: 0.83,
+  },
+} as const;
+
+export default artifact;
