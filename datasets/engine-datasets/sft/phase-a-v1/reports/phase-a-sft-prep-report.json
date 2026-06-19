@@ -1,0 +1,147 @@
+{
+  "allow_missing": false,
+  "by_model_and_split": {
+    "attempt-evaluator:test": {
+      "approx_total_tokens": 46608,
+      "chat_examples": 19,
+      "completion_chars": 58682,
+      "examples": 19,
+      "input_chars": 40761,
+      "output_chars": 29341,
+      "prompt_chars": 127747,
+      "prompt_completion_examples": 19
+    },
+    "attempt-evaluator:train": {
+      "approx_total_tokens": 485981,
+      "chat_examples": 187,
+      "completion_chars": 580792,
+      "examples": 187,
+      "input_chars": 446215,
+      "output_chars": 290396,
+      "prompt_chars": 1363132,
+      "prompt_completion_examples": 187
+    },
+    "attempt-evaluator:validation": {
+      "approx_total_tokens": 52855,
+      "chat_examples": 20,
+      "completion_chars": 61808,
+      "examples": 20,
+      "input_chars": 49556,
+      "output_chars": 30904,
+      "prompt_chars": 149609,
+      "prompt_completion_examples": 20
+    },
+    "diagnosis:test": {
+      "approx_total_tokens": 42040,
+      "chat_examples": 30,
+      "completion_chars": 12224,
+      "examples": 30,
+      "input_chars": 50200,
+      "output_chars": 6112,
+      "prompt_chars": 155935,
+      "prompt_completion_examples": 30
+    },
+    "diagnosis:train": {
+      "approx_total_tokens": 287544,
+      "chat_examples": 225,
+      "completion_chars": 91276,
+      "examples": 225,
+      "input_chars": 336650,
+      "output_chars": 45638,
+      "prompt_chars": 1058899,
+      "prompt_completion_examples": 225
+    },
+    "diagnosis:validation": {
+      "approx_total_tokens": 26307,
+      "chat_examples": 21,
+      "completion_chars": 8608,
+      "examples": 21,
+      "input_chars": 30442,
+      "output_chars": 4304,
+      "prompt_chars": 96620,
+      "prompt_completion_examples": 21
+    },
+    "probe-contract:test": {
+      "approx_total_tokens": 84218,
+      "chat_examples": 24,
+      "completion_chars": 128146,
+      "examples": 24,
+      "input_chars": 65461,
+      "output_chars": 64073,
+      "prompt_chars": 208725,
+      "prompt_completion_examples": 24
+    },
+    "probe-contract:train": {
+      "approx_total_tokens": 543187,
+      "chat_examples": 170,
+      "completion_chars": 978280,
+      "examples": 170,
+      "input_chars": 358948,
+      "output_chars": 489140,
+      "prompt_chars": 1194466,
+      "prompt_completion_examples": 170
+    },
+    "probe-contract:validation": {
+      "approx_total_tokens": 99796,
+      "chat_examples": 32,
+      "completion_chars": 171932,
+      "examples": 32,
+      "input_chars": 67997,
+      "output_chars": 85966,
+      "prompt_chars": 227250,
+      "prompt_completion_examples": 32
+    }
+  },
+  "created_at": "2026-06-19T03:01:57.544Z",
+  "formats_written": [
+    "chat",
+    "prompt_completion"
+  ],
+  "input_root": "datasets/engine-datasets/splits",
+  "missing_files": [],
+  "model_folders": [
+    "diagnosis",
+    "probe-contract",
+    "attempt-evaluator"
+  ],
+  "output_files": {
+    "chat:attempt-evaluator:test": "datasets/engine-datasets/sft/phase-a-v1/chat/attempt-evaluator/test.jsonl",
+    "chat:attempt-evaluator:train": "datasets/engine-datasets/sft/phase-a-v1/chat/attempt-evaluator/train.jsonl",
+    "chat:attempt-evaluator:validation": "datasets/engine-datasets/sft/phase-a-v1/chat/attempt-evaluator/validation.jsonl",
+    "chat:diagnosis:test": "datasets/engine-datasets/sft/phase-a-v1/chat/diagnosis/test.jsonl",
+    "chat:diagnosis:train": "datasets/engine-datasets/sft/phase-a-v1/chat/diagnosis/train.jsonl",
+    "chat:diagnosis:validation": "datasets/engine-datasets/sft/phase-a-v1/chat/diagnosis/validation.jsonl",
+    "chat:probe-contract:test": "datasets/engine-datasets/sft/phase-a-v1/chat/probe-contract/test.jsonl",
+    "chat:probe-contract:train": "datasets/engine-datasets/sft/phase-a-v1/chat/probe-contract/train.jsonl",
+    "chat:probe-contract:validation": "datasets/engine-datasets/sft/phase-a-v1/chat/probe-contract/validation.jsonl",
+    "prompt_completion:attempt-evaluator:test": "datasets/engine-datasets/sft/phase-a-v1/prompt-completion/attempt-evaluator/test.jsonl",
+    "prompt_completion:attempt-evaluator:train": "datasets/engine-datasets/sft/phase-a-v1/prompt-completion/attempt-evaluator/train.jsonl",
+    "prompt_completion:attempt-evaluator:validation": "datasets/engine-datasets/sft/phase-a-v1/prompt-completion/attempt-evaluator/validation.jsonl",
+    "prompt_completion:diagnosis:test": "datasets/engine-datasets/sft/phase-a-v1/prompt-completion/diagnosis/test.jsonl",
+    "prompt_completion:diagnosis:train": "datasets/engine-datasets/sft/phase-a-v1/prompt-completion/diagnosis/train.jsonl",
+    "prompt_completion:diagnosis:validation": "datasets/engine-datasets/sft/phase-a-v1/prompt-completion/diagnosis/validation.jsonl",
+    "prompt_completion:probe-contract:test": "datasets/engine-datasets/sft/phase-a-v1/prompt-completion/probe-contract/test.jsonl",
+    "prompt_completion:probe-contract:train": "datasets/engine-datasets/sft/phase-a-v1/prompt-completion/probe-contract/train.jsonl",
+    "prompt_completion:probe-contract:validation": "datasets/engine-datasets/sft/phase-a-v1/prompt-completion/probe-contract/validation.jsonl"
+  },
+  "output_root": "datasets/engine-datasets/sft/phase-a-v1",
+  "pretty_assistant_json": false,
+  "schema_version": "myway_phase_a_sft_prep_report_v1",
+  "script_name": "prepare-phase-a-sft-data.ts",
+  "splits": [
+    "train",
+    "validation",
+    "test"
+  ],
+  "totals": {
+    "approx_total_tokens": 1668536,
+    "chat_examples": 728,
+    "completion_chars": 2091748,
+    "examples": 728,
+    "input_chars": 1446230,
+    "output_chars": 1045874,
+    "prompt_chars": 4582383,
+    "prompt_completion_examples": 728
+  },
+  "warnings": []
+}

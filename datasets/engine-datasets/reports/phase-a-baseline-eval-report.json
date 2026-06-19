@@ -1,0 +1,176 @@
+{
+  "schema_version": "myway_phase_a_baseline_eval_report_v1",
+  "baseline_name": "phase_a_deterministic_schema_baseline_v1",
+  "started_at": "2026-06-19T02:56:23.177Z",
+  "completed_at": "2026-06-19T02:56:23.282Z",
+  "splits_evaluated": [
+    "train",
+    "validation",
+    "test"
+  ],
+  "examples_evaluated": 728,
+  "validation_error_count": 0,
+  "warning_count": 0,
+  "missing_files": [],
+  "by_model_and_split": {
+    "diagnosis:train": {
+      "model_target": "diagnosis",
+      "split": "train",
+      "total": 225,
+      "schema_valid_rate": 1,
+      "validation_error_count": 0,
+      "exact_rates": {
+        "diagnosis_exact": 0.5378,
+        "next_action_exact": 0.6356
+      },
+      "numeric_means": {
+        "diagnosis_confidence_mae": 0.1509,
+        "next_action_confidence_mae": 0.0658
+      }
+    },
+    "probe_contract:train": {
+      "model_target": "probe_contract",
+      "split": "train",
+      "total": 170,
+      "schema_valid_rate": 1,
+      "validation_error_count": 0,
+      "exact_rates": {
+        "probe_type_exact": 0.1529,
+        "expected_attempt_type_exact": 0.2294,
+        "probe_attempt_pair_valid": 1,
+        "answer_key_kind_exact": 0.2412
+      },
+      "numeric_means": {
+        "confidence_mae": 0.2541
+      }
+    },
+    "attempt_evaluator:train": {
+      "model_target": "attempt_evaluator",
+      "split": "train",
+      "total": 187,
+      "schema_valid_rate": 1,
+      "validation_error_count": 0,
+      "exact_rates": {
+        "correctness_within_0_25": 0.6578,
+        "next_action_exact": 0.2086,
+        "lucky_guess_exact": 0.861,
+        "needs_verification_exact": 0.3797
+      },
+      "numeric_means": {
+        "correctness_mae": 0.2576,
+        "misconception_hit_f1": 0.5355,
+        "next_action_confidence_mae": 0.0611
+      }
+    },
+    "diagnosis:validation": {
+      "model_target": "diagnosis",
+      "split": "validation",
+      "total": 21,
+      "schema_valid_rate": 1,
+      "validation_error_count": 0,
+      "exact_rates": {
+        "diagnosis_exact": 0.4286,
+        "next_action_exact": 0.4762
+      },
+      "numeric_means": {
+        "diagnosis_confidence_mae": 0.1543,
+        "next_action_confidence_mae": 0.0633
+      }
+    },
+    "probe_contract:validation": {
+      "model_target": "probe_contract",
+      "split": "validation",
+      "total": 32,
+      "schema_valid_rate": 1,
+      "validation_error_count": 0,
+      "exact_rates": {
+        "probe_type_exact": 0.1563,
+        "expected_attempt_type_exact": 0.25,
+        "probe_attempt_pair_valid": 1,
+        "answer_key_kind_exact": 0.2188
+      },
+      "numeric_means": {
+        "confidence_mae": 0.2559
+      }
+    },
+    "attempt_evaluator:validation": {
+      "model_target": "attempt_evaluator",
+      "split": "validation",
+      "total": 20,
+      "schema_valid_rate": 1,
+      "validation_error_count": 0,
+      "exact_rates": {
+        "correctness_within_0_25": 0.55,
+        "next_action_exact": 0.2,
+        "lucky_guess_exact": 0.75,
+        "needs_verification_exact": 0.25
+      },
+      "numeric_means": {
+        "correctness_mae": 0.2502,
+        "misconception_hit_f1": 0.4667,
+        "next_action_confidence_mae": 0.0545
+      }
+    },
+    "diagnosis:test": {
+      "model_target": "diagnosis",
+      "split": "test",
+      "total": 30,
+      "schema_valid_rate": 1,
+      "validation_error_count": 0,
+      "exact_rates": {
+        "diagnosis_exact": 0.6,
+        "next_action_exact": 0.7
+      },
+      "numeric_means": {
+        "diagnosis_confidence_mae": 0.1563,
+        "next_action_confidence_mae": 0.0637
+      }
+    },
+    "probe_contract:test": {
+      "model_target": "probe_contract",
+      "split": "test",
+      "total": 24,
+      "schema_valid_rate": 1,
+      "validation_error_count": 0,
+      "exact_rates": {
+        "probe_type_exact": 0.0417,
+        "expected_attempt_type_exact": 0.1667,
+        "probe_attempt_pair_valid": 1,
+        "answer_key_kind_exact": 0.1667
+      },
+      "numeric_means": {
+        "confidence_mae": 0.2646
+      }
+    },
+    "attempt_evaluator:test": {
+      "model_target": "attempt_evaluator",
+      "split": "test",
+      "total": 19,
+      "schema_valid_rate": 1,
+      "validation_error_count": 0,
+      "exact_rates": {
+        "correctness_within_0_25": 0.7368,
+        "next_action_exact": 0.2632,
+        "lucky_guess_exact": 0.8947,
+        "needs_verification_exact": 0.5263
+      },
+      "numeric_means": {
+        "correctness_mae": 0.2879,
+        "misconception_hit_f1": 0.5789,
+        "next_action_confidence_mae": 0.0511
+      }
+    }
+  },
+  "report_files": {
+    "report": "datasets/engine-datasets/reports/phase-a-baseline-eval-report.json",
+    "summary": "datasets/engine-datasets/reports/phase-a-baseline-eval-summary.txt",
+    "errors": "datasets/engine-datasets/reports/phase-a-baseline-errors.jsonl",
+    "predictions_dir": "datasets/engine-datasets/predictions/baseline"
+  },
+  "interpretation_notes": [
+    "This is a deterministic schema baseline, not the final model quality target.",
+    "The most important early metric is schema_valid_rate, because app integration requires renderable structured outputs.",
+    "Exact-match scores are intentionally conservative for free-form prompt and evaluator outputs.",
+    "Use this harness later to compare mock providers, local trained services, and API-backed services on the same splits."
+  ]
+}

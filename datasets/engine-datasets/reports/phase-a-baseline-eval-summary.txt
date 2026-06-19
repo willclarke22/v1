@@ -1,0 +1,85 @@
+MyWay Phase A Baseline Evaluation
+=================================
+Baseline: phase_a_deterministic_schema_baseline_v1
+Splits: train, validation, test
+Examples evaluated: 728
+Validation errors: 0
+Warnings: 0
+
+diagnosis:train
+---------------
+Total: 225
+Schema-valid rate: 1
+Validation errors: 0
+Exact/rate metrics: {"diagnosis_exact":0.5378,"next_action_exact":0.6356}
+Numeric mean metrics: {"diagnosis_confidence_mae":0.1509,"next_action_confidence_mae":0.0658}
+
+probe_contract:train
+--------------------
+Total: 170
+Schema-valid rate: 1
+Validation errors: 0
+Exact/rate metrics: {"probe_type_exact":0.1529,"expected_attempt_type_exact":0.2294,"probe_attempt_pair_valid":1,"answer_key_kind_exact":0.2412}
+Numeric mean metrics: {"confidence_mae":0.2541}
+
+attempt_evaluator:train
+-----------------------
+Total: 187
+Schema-valid rate: 1
+Validation errors: 0
+Exact/rate metrics: {"correctness_within_0_25":0.6578,"next_action_exact":0.2086,"lucky_guess_exact":0.861,"needs_verification_exact":0.3797}
+Numeric mean metrics: {"correctness_mae":0.2576,"misconception_hit_f1":0.5355,"next_action_confidence_mae":0.0611}
+
+diagnosis:validation
+--------------------
+Total: 21
+Schema-valid rate: 1
+Validation errors: 0
+Exact/rate metrics: {"diagnosis_exact":0.4286,"next_action_exact":0.4762}
+Numeric mean metrics: {"diagnosis_confidence_mae":0.1543,"next_action_confidence_mae":0.0633}
+
+probe_contract:validation
+-------------------------
+Total: 32
+Schema-valid rate: 1
+Validation errors: 0
+Exact/rate metrics: {"probe_type_exact":0.1563,"expected_attempt_type_exact":0.25,"probe_attempt_pair_valid":1,"answer_key_kind_exact":0.2188}
+Numeric mean metrics: {"confidence_mae":0.2559}
+
+attempt_evaluator:validation
+----------------------------
+Total: 20
+Schema-valid rate: 1
+Validation errors: 0
+Exact/rate metrics: {"correctness_within_0_25":0.55,"next_action_exact":0.2,"lucky_guess_exact":0.75,"needs_verification_exact":0.25}
+Numeric mean metrics: {"correctness_mae":0.2502,"misconception_hit_f1":0.4667,"next_action_confidence_mae":0.0545}
+
+diagnosis:test
+--------------
+Total: 30
+Schema-valid rate: 1
+Validation errors: 0
+Exact/rate metrics: {"diagnosis_exact":0.6,"next_action_exact":0.7}
+Numeric mean metrics: {"diagnosis_confidence_mae":0.1563,"next_action_confidence_mae":0.0637}
+
+probe_contract:test
+-------------------
+Total: 24
+Schema-valid rate: 1
+Validation errors: 0
+Exact/rate metrics: {"probe_type_exact":0.0417,"expected_attempt_type_exact":0.1667,"probe_attempt_pair_valid":1,"answer_key_kind_exact":0.1667}
+Numeric mean metrics: {"confidence_mae":0.2646}
+
+attempt_evaluator:test
+----------------------
+Total: 19
+Schema-valid rate: 1
+Validation errors: 0
+Exact/rate metrics: {"correctness_within_0_25":0.7368,"next_action_exact":0.2632,"lucky_guess_exact":0.8947,"needs_verification_exact":0.5263}
+Numeric mean metrics: {"correctness_mae":0.2879,"misconception_hit_f1":0.5789,"next_action_confidence_mae":0.0511}
+
+Notes:
+- This is a deterministic schema baseline, not the final model quality target.
+- The most important early metric is schema_valid_rate, because app integration requires renderable structured outputs.
+- Exact-match scores are intentionally conservative for free-form prompt and evaluator outputs.
+- Use this harness later to compare mock providers, local trained services, and API-backed services on the same splits.

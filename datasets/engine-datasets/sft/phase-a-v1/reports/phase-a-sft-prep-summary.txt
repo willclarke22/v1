@@ -1,0 +1,49 @@
+MyWay Phase A SFT Data Preparation
+===================================
+Created: 2026-06-19T03:01:57.544Z
+Input root: datasets/engine-datasets/splits
+Output root: datasets/engine-datasets/sft/phase-a-v1
+Models: diagnosis, probe-contract, attempt-evaluator
+Splits: train, validation, test
+Formats: chat, prompt_completion
+
+Examples: 728
+Chat examples: 728
+Prompt/completion examples: 728
+Approx total tokens across written formats: 1668536
+Warnings: 0
+Missing files: 0
+
+By model and split:
+- diagnosis:train: examples=225, chat=225, prompt_completion=225, approx_tokens=287544
+- diagnosis:validation: examples=21, chat=21, prompt_completion=21, approx_tokens=26307
+- diagnosis:test: examples=30, chat=30, prompt_completion=30, approx_tokens=42040
+- probe-contract:train: examples=170, chat=170, prompt_completion=170, approx_tokens=543187
+- probe-contract:validation: examples=32, chat=32, prompt_completion=32, approx_tokens=99796
+- probe-contract:test: examples=24, chat=24, prompt_completion=24, approx_tokens=84218
+- attempt-evaluator:train: examples=187, chat=187, prompt_completion=187, approx_tokens=485981
+- attempt-evaluator:validation: examples=20, chat=20, prompt_completion=20, approx_tokens=52855
+- attempt-evaluator:test: examples=19, chat=19, prompt_completion=19, approx_tokens=46608
+
+Output files:
+- chat:diagnosis:train: datasets/engine-datasets/sft/phase-a-v1/chat/diagnosis/train.jsonl
+- prompt_completion:diagnosis:train: datasets/engine-datasets/sft/phase-a-v1/prompt-completion/diagnosis/train.jsonl
+- chat:diagnosis:validation: datasets/engine-datasets/sft/phase-a-v1/chat/diagnosis/validation.jsonl
+- prompt_completion:diagnosis:validation: datasets/engine-datasets/sft/phase-a-v1/prompt-completion/diagnosis/validation.jsonl
+- chat:diagnosis:test: datasets/engine-datasets/sft/phase-a-v1/chat/diagnosis/test.jsonl
+- prompt_completion:diagnosis:test: datasets/engine-datasets/sft/phase-a-v1/prompt-completion/diagnosis/test.jsonl
+- chat:probe-contract:train: datasets/engine-datasets/sft/phase-a-v1/chat/probe-contract/train.jsonl
+- prompt_completion:probe-contract:train: datasets/engine-datasets/sft/phase-a-v1/prompt-completion/probe-contract/train.jsonl
+- chat:probe-contract:validation: datasets/engine-datasets/sft/phase-a-v1/chat/probe-contract/validation.jsonl
+- prompt_completion:probe-contract:validation: datasets/engine-datasets/sft/phase-a-v1/prompt-completion/probe-contract/validation.jsonl
+- chat:probe-contract:test: datasets/engine-datasets/sft/phase-a-v1/chat/probe-contract/test.jsonl
+- prompt_completion:probe-contract:test: datasets/engine-datasets/sft/phase-a-v1/prompt-completion/probe-contract/test.jsonl
+- chat:attempt-evaluator:train: datasets/engine-datasets/sft/phase-a-v1/chat/attempt-evaluator/train.jsonl
+- prompt_completion:attempt-evaluator:train: datasets/engine-datasets/sft/phase-a-v1/prompt-completion/attempt-evaluator/train.jsonl
+- chat:attempt-evaluator:validation: datasets/engine-datasets/sft/phase-a-v1/chat/attempt-evaluator/validation.jsonl
+- prompt_completion:attempt-evaluator:validation: datasets/engine-datasets/sft/phase-a-v1/prompt-completion/attempt-evaluator/validation.jsonl
+- chat:attempt-evaluator:test: datasets/engine-datasets/sft/phase-a-v1/chat/attempt-evaluator/test.jsonl
+- prompt_completion:attempt-evaluator:test: datasets/engine-datasets/sft/phase-a-v1/prompt-completion/attempt-evaluator/test.jsonl
+
+Report: datasets/engine-datasets/sft/phase-a-v1/reports/phase-a-sft-prep-report.json
+Errors: datasets/engine-datasets/sft/phase-a-v1/reports/phase-a-sft-prep-errors.jsonl

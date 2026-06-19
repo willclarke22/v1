@@ -1,0 +1,105 @@
+{
+  "generated_at": "2026-06-19T01:53:25.859Z",
+  "repo_root": "C:\\Users\\willc\\projects\\MyWay\\v1",
+  "workbooks_dir": "C:\\Users\\willc\\projects\\MyWay\\v1\\datasets\\engine-datasets\\phase-a-workbooks",
+  "out_root": "C:\\Users\\willc\\projects\\MyWay\\v1\\datasets\\engine-datasets",
+  "workbook_count": 10,
+  "workbooks": [
+    "myway_batch01_language_pattern_training_dataset_v4.xlsx",
+    "myway_batch02_law_legal_reasoning_training_dataset_v3.xlsx",
+    "myway_batch03_medicine_clinical_foundations_training_dataset_v3.xlsx",
+    "myway_batch04_physics_mechanics_graphs_training_dataset_v3.xlsx",
+    "myway_batch05_chemistry_training_dataset_v3.xlsx",
+    "myway_batch06_biology_systems_experiments_training_dataset_v3.xlsx",
+    "myway_batch07_coding_debugging_cs_training_dataset_v3.xlsx",
+    "myway_batch08_reading_writing_argument_training_dataset_v3.xlsx",
+    "myway_batch09_automotive_mechanical_trades_training_dataset_v3.xlsx",
+    "myway_batch10_plumbing_electrical_hvac_construction_training_dataset_v3.xlsx"
+  ],
+  "total_examples": 728,
+  "skipped_row_count": 0,
+  "unique_split_flow_keys": 728,
+  "by_model": {
+    "attempt_evaluator": 226,
+    "diagnosis": 276,
+    "probe_contract": 226
+  },
+  "by_split": {
+    "test": 73,
+    "train": 582,
+    "validation": 73
+  },
+  "by_model_and_split": {
+    "diagnosis": {
+      "train": 225,
+      "test": 30,
+      "validation": 21
+    },
+    "probe_contract": {
+      "train": 170,
+      "validation": 32,
+      "test": 24
+    },
+    "attempt_evaluator": {
+      "train": 187,
+      "test": 19,
+      "validation": 20
+    }
+  },
+  "diagnosis_labels": {
+    "discrimination_gap": 209,
+    "metacognitive_gap": 76,
+    "no_gap_detected": 37,
+    "procedure_gap": 133,
+    "recall_gap": 5,
+    "representation_gap": 241,
+    "transfer_gap": 54,
+    "unknown": 11
+  },
+  "probe_types": {
+    "apply_transfer": 38,
+    "audio_clip_question": 24,
+    "audio_response_question": 20,
+    "discriminate": 56,
+    "drag_drop_placements": 50,
+    "explain": 64,
+    "graph_relationship": 32,
+    "multi_choice": 32,
+    "predict": 26,
+    "sequence": 48,
+    "single_choice": 22,
+    "slider": 14,
+    "video_click_interval": 12,
+    "video_explanation": 14
+  },
+  "attempt_types": {
+    "audio_response": 30,
+    "drag_drop_placements": 75,
+    "graph": 48,
+    "multi_choice": 48,
+    "none": 21,
+    "numeric": 24,
+    "ordered_items": 72,
+    "single_choice": 189,
+    "text": 153,
+    "video_click": 18
+  },
+  "bridge_levels": {
+    "bridge_0": 510,
+    "bridge_1": 159,
+    "bridge_2": 9
+  },
+  "issue_count": 0,
+  "error_count": 0,
+  "warning_count": 0,
+  "issues_by_code": {},
+  "first_50_issues": [],
+  "first_50_skipped_rows": [],
+  "output_files": {
+    "merged": "C:\\Users\\willc\\projects\\MyWay\\v1\\datasets\\engine-datasets\\merged\\training-corpus.jsonl",
+    "diagnosis": "C:\\Users\\willc\\projects\\MyWay\\v1\\datasets\\engine-datasets\\exports\\diagnosis-training.jsonl",
+    "probe_contract": "C:\\Users\\willc\\projects\\MyWay\\v1\\datasets\\engine-datasets\\exports\\probe-contract-training.jsonl",
+    "attempt_evaluator": "C:\\Users\\willc\\projects\\MyWay\\v1\\datasets\\engine-datasets\\exports\\attempt-evaluator-training.jsonl",
+    "splits": "C:\\Users\\willc\\projects\\MyWay\\v1\\datasets\\engine-datasets\\splits"
+  }
+}
