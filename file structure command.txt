@@ -1,0 +1,32 @@
+cd C:\Users\willc\projects\MyWay\v1
+
+$timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+$outDir = "archive\structure-snapshots"
+$outFile = "$outDir\project-file-structure-$timestamp.txt"
+
+New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+
+"Project file structure snapshot" | Out-File -LiteralPath $outFile -Encoding UTF8
+"Generated: $(Get-Date)" | Out-File -LiteralPath $outFile -Append -Encoding UTF8
+"Project root: $(Get-Location)" | Out-File -LiteralPath $outFile -Append -Encoding UTF8
+"" | Out-File -LiteralPath $outFile -Append -Encoding UTF8
+
+Get-ChildItem -LiteralPath "." -Recurse -Force |
+  Where-Object {
+    $_.FullName -notmatch "\\node_modules\\|\\.next\\|\\.git\\|\\.venv\\|\\local-dev-logs\\"
+  } |
+  Sort-Object FullName |
+  ForEach-Object {
+    $relative = $_.FullName.Replace((Get-Location).Path + "\", "")
+    if ($_.PSIsContainer) {
+      "[DIR]  $relative"
+    } else {
+      "[FILE] $relative  ($($_.Length) bytes)"
+    }
+  } |
+  Out-File -LiteralPath $outFile -Append -Encoding UTF8
+
+Write-Host "`nSaved file structure snapshot to:"
+Write-Host $outFile
+
+notepad $outFile
