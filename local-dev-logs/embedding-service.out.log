@@ -1,3 +1,2 @@
-INFO:     127.0.0.1:54741 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49839 - "POST /embed HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49839 - "POST /embed HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51599 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65517 - "POST /embed HTTP/1.1" 200 OK

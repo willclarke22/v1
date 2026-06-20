@@ -46,7 +46,7 @@ param(
   [string]$EmbeddingServiceMode = "managed",
 
   [ValidateSet("managed", "external", "auto", "disabled")]
-  [string]$ConfusionInsightServiceMode = "managed",
+  [string]$ConfusionInsightServiceMode = "disabled",
 
   <#
    When true, managed service startup will kill existing listeners on the
@@ -543,7 +543,7 @@ function Get-PendingCounts {
     confusion_insight_structured_v1_1_items = $pendingStructuredV11ConfusionInsightItemsFound
     confusion_insight_legacy_text_items = $pendingLegacyTextConfusionInsightItemsFound
     embedding_backed_work = $pendingTopicsFound + $pendingMessageEmbeddingItemsFound
-    total_worker_backed_work = $pendingTopicsFound + $pendingMessageEmbeddingItemsFound + $pendingConfusionInsightItemsFound
+    total_worker_backed_work = $pendingTopicsFound + $pendingMessageEmbeddingItemsFound
   }
 }
 
@@ -876,9 +876,9 @@ function Invoke-EmbeddingBackedDrain {
 Write-WorkerLog "Semantic enrichment worker started."
 Write-WorkerLog "App: $AppBaseUrl"
 Write-WorkerLog "This worker runs when idle-state is safe. Layout commits can run even when no embedding-backed work is pending."
-Write-WorkerLog "Service modes: embedding=$EmbeddingServiceMode confusion_insight=$ConfusionInsightServiceMode"
+Write-WorkerLog "Service mode: embedding=$EmbeddingServiceMode"
 Write-WorkerLog "Use service mode external when heavy services are already running locally or on a GPU box."
-Write-WorkerLog "It processes worker-default structured v1_1 confusion/insight scores, legacy confusion/insight backfill scores, topic-message embeddings, semantic enrichment, semantic layout targets, and semantic layout commits."
+Write-WorkerLog "It processes topic-message embeddings, semantic enrichment, semantic layout targets, and semantic layout commits."
 Write-WorkerLog "Poll interval: $PollSeconds second(s)."
 Write-WorkerLog "Python executable: $PythonExe"
 Write-WorkerLog "Enrichment limit: $EnrichmentLimit"
@@ -934,25 +934,14 @@ while ($true) {
     Start-Sleep -Seconds $PollSeconds
     continue
   }
-
-  Invoke-ConfusionInsightDrain -InitialPendingCounts $pendingCounts
-
-  $pendingAfterConfusionInsight = Get-PendingStatus
-
-  if ($null -eq $pendingAfterConfusionInsight -or $pendingAfterConfusionInsight.ok -ne $true) {
+  if ($pendingCounts.embedding_backed_work -le 0) {
+    Write-WorkerLog "No embedding-backed work is pending. Layout commit check already ran; not starting embedding service."
     Start-Sleep -Seconds $PollSeconds
     continue
   }
 
-  $pendingCountsAfterConfusionInsight = Get-PendingCounts -PendingStatus $pendingAfterConfusionInsight
-
-  if ($pendingCountsAfterConfusionInsight.embedding_backed_work -le 0) {
-    Write-WorkerLog "No embedding-backed work remains after confusion/insight cycle. Layout commit check already ran; not starting embedding service."
-    Start-Sleep -Seconds $PollSeconds
-    continue
-  }
-
-  Invoke-EmbeddingBackedDrain -InitialPendingCounts $pendingCountsAfterConfusionInsight
+  Invoke-EmbeddingBackedDrain -InitialPendingCounts $pendingCounts
 
   Start-Sleep -Seconds $PollSeconds
 }
+

@@ -36,7 +36,7 @@ type IdleStateUpdateBody = Partial<{
 }>;
 
 const ROUTE_NAME = "/api/local-dev/idle-state";
-const IDLE_ENOUGH_AFTER_MESSAGE_MS = 2_000;
+const IDLE_ENOUGH_AFTER_MESSAGE_MS = 12_000;
 const IDLE_STATE_STALE_AFTER_MS = 60_000;
 
 /**
@@ -233,3 +233,4 @@ export async function POST(request: Request) {
 
   return buildResponse("POST");
 }
+

@@ -496,7 +496,32 @@ export async function buildLocalServiceThreeModelMessageRouteResponse(args: {
     throw new Error("No probe contract provider is configured.");
   }
 
-  const routeTopics = await loadRouteTopics();
+  const diagnosisInput: DiagnosisModelInput = {
+    schema_version: "diagnosis_model_input_v1",
+    input_kind: "user_message",
+    user_message: {
+      text: args.message,
+    },
+  };
+
+  /**
+   * Foreground latency optimization:
+   *
+   * Diagnosis only depends on the current user message, so it can run while
+   * route topics are loading and the foreground topic resolver/topic-labeler is
+   * working. Confusion/insight still waits for topic resolution because its
+   * structured input uses target topic label, transition type, and match
+   * confidence. Probe Contract still waits for diagnosis + resolved topic.
+   */
+  const routeTopicsPromise = loadRouteTopics();
+
+  const diagnosisRunPromise = runDiagnosis({
+    provider: providers.diagnosis,
+    model_input: diagnosisInput,
+  });
+
+  const routeTopics = await routeTopicsPromise;
+
   const topicResolution = await resolveForegroundTopicForMessage({
     message: args.message,
     existingTopics: routeTopics,
@@ -508,24 +533,13 @@ export async function buildLocalServiceThreeModelMessageRouteResponse(args: {
   const targetTopicId = targetTopic.id;
   const targetTopicLabel = targetTopic.topic_label;
 
-  const confusionInsightSignals = await scoreForegroundMessageConfusionInsight({
+  const confusionInsightSignalsPromise = scoreForegroundMessageConfusionInsight({
     message: args.message,
     targetTopic,
     topicResolution,
   });
 
-  const diagnosisInput: DiagnosisModelInput = {
-    schema_version: "diagnosis_model_input_v1",
-    input_kind: "user_message",
-    user_message: {
-      text: args.message,
-    },
-  };
-
-  const diagnosisRun = await runDiagnosis({
-    provider: providers.diagnosis,
-    model_input: diagnosisInput,
-  });
+  const diagnosisRun = await diagnosisRunPromise;
 
   const probeContractInput: ProbeContractModelInput = {
     schema_version: "probe_contract_model_input_v1",
@@ -546,10 +560,15 @@ export async function buildLocalServiceThreeModelMessageRouteResponse(args: {
     },
   };
 
-  const probeContractRun = await runProbeContract({
+  const probeContractRunPromise = runProbeContract({
     provider: probeContractProvider,
     model_input: probeContractInput,
   });
+
+  const [probeContractRun, confusionInsightSignals] = await Promise.all([
+    probeContractRunPromise,
+    confusionInsightSignalsPromise,
+  ]);
 
   const rendererAdapter = adaptProbeContractForRenderer(probeContractRun.output);
 
@@ -701,3 +720,4 @@ export async function buildLocalServiceThreeModelMessageRouteResponse(args: {
     },
   } as unknown as MessageRouteResponse;
 }
+
