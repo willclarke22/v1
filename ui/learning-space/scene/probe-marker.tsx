@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { LearningSpaceTopic } from "@/types/learning-space";
 import type { ProbeSummary } from "@/ui/learning-space/probes/probe-surface";
@@ -320,6 +321,13 @@ export function ProbeMarker({
   void probe;
   void onOpenProbe;
 
+  const { camera } = useThree();
+  const spriteRef = useRef<THREE.Sprite>(null);
+  const topicWorldPositionRef = useRef(new THREE.Vector3());
+  const cameraFacingNormalRef = useRef(new THREE.Vector3());
+  const parentWorldQuaternionRef = useRef(new THREE.Quaternion());
+  const localFacingNormalRef = useRef(new THREE.Vector3());
+
   const preview = getProbeMarkerPreview(topic);
   const thumbnailStyle =
     preview?.thumbnail_style ?? getDebugProbeThumbnailStyle(topic);
@@ -333,16 +341,75 @@ export function ProbeMarker({
     };
   }, [texture]);
 
-  const normal = useMemo(() => getProbeMarkerSurfaceNormal(topic), [topic]);
-  const position = useMemo(
-    () => normal.clone().multiplyScalar(visualRadius * PROBE_ICON_SURFACE_OFFSET),
-    [normal, visualRadius],
+  /**
+   * Initial fallback before the first frame updates the marker. After that, the
+   * sprite is projected onto the camera-facing hemisphere every frame.
+   */
+  const initialPosition = useMemo(
+    () =>
+      PROBE_MARKER_DEFAULT_NORMAL.clone().multiplyScalar(
+        visualRadius * PROBE_ICON_SURFACE_OFFSET,
+      ),
+    [visualRadius],
   );
-  const iconScale = visualRadius * (isVisible ? PROBE_ICON_FOCUSED_SCALE : PROBE_ICON_BASE_SCALE);
+
+  /**
+   * Make the probe icon feel painted onto the full visible face of the sphere.
+   *
+   * The old version used a fixed surface normal, so the marker could sit on one
+   * side of the topic. This version computes the world-space direction from the
+   * topic center to the camera, converts that direction into the marker parent's
+   * local space, and places the sprite on that front-facing hemisphere. Because
+   * Three sprites already billboard toward the camera, the icon remains upright
+   * while its position stays attached to the apparent face of the sphere.
+   */
+  useFrame(() => {
+    const sprite = spriteRef.current;
+    const parent = sprite?.parent;
+
+    if (!sprite || !parent) return;
+
+    parent.getWorldPosition(topicWorldPositionRef.current);
+
+    cameraFacingNormalRef.current.subVectors(
+      camera.position,
+      topicWorldPositionRef.current,
+    );
+
+    if (cameraFacingNormalRef.current.lengthSq() < 0.0001) {
+      cameraFacingNormalRef.current.copy(PROBE_MARKER_DEFAULT_NORMAL);
+    } else {
+      cameraFacingNormalRef.current.normalize();
+    }
+
+    parent.getWorldQuaternion(parentWorldQuaternionRef.current);
+
+    localFacingNormalRef.current
+      .copy(cameraFacingNormalRef.current)
+      .applyQuaternion(parentWorldQuaternionRef.current.invert())
+      .normalize();
+
+    sprite.position.copy(
+      localFacingNormalRef.current.multiplyScalar(
+        visualRadius * PROBE_ICON_SURFACE_OFFSET,
+      ),
+    );
+
+    const iconScale =
+      visualRadius *
+      (isVisible ? PROBE_ICON_FOCUSED_SCALE : PROBE_ICON_BASE_SCALE);
+
+    sprite.scale.set(iconScale, iconScale, 1);
+  });
+
+  const iconScale =
+    visualRadius *
+    (isVisible ? PROBE_ICON_FOCUSED_SCALE : PROBE_ICON_BASE_SCALE);
 
   return (
     <sprite
-      position={position}
+      ref={spriteRef}
+      position={initialPosition}
       scale={[iconScale, iconScale, 1]}
       renderOrder={PROBE_ICON_RENDER_ORDER}
       visible={isVisible}
@@ -359,4 +426,3 @@ export function ProbeMarker({
     </sprite>
   );
 }
-

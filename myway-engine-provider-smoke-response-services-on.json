@@ -1,0 +1,410 @@
+{
+  "ok": true,
+  "source": "local_dev_engine_provider_smoke",
+  "provider_mode": "local_services",
+  "warnings": [],
+  "inputs": {
+    "message": "I keep mixing up when Spanish se is reflexive or passive.",
+    "selectedOptionId": "passive_like_no_named_seller",
+    "selfReportedConfidence": 0.75
+  },
+  "diagnosis": {
+    "usable": true,
+    "validation": {
+      "ok": true,
+      "value": {
+        "schema_version": "diagnosis_model_output_v1",
+        "diagnosis": "discrimination_gap",
+        "diagnosis_confidence": 0.3297,
+        "next_action": "generate_probe_contract",
+        "next_action_confidence": 0.7829,
+        "suggested_question": null
+      },
+      "issues": []
+    },
+    "provider_meta": {
+      "provider_name": "diagnosis_service_client",
+      "provider_kind": "service_client",
+      "schema_version": "diagnosis_model_output_v1",
+      "model_name": "myway_diagnosis_classifier_phase_a_v1",
+      "latency_ms": 32,
+      "warnings": []
+    },
+    "output": {
+      "schema_version": "diagnosis_model_output_v1",
+      "diagnosis": "discrimination_gap",
+      "diagnosis_confidence": 0.3297,
+      "next_action": "generate_probe_contract",
+      "next_action_confidence": 0.7829,
+      "suggested_question": null
+    }
+  },
+  "probe_contract": {
+    "usable": true,
+    "validation": {
+      "ok": true,
+      "value": {
+        "answer_key": {
+          "correct_option_id": "pattern_route",
+          "expected_ideas": [
+            "se is not translated the same way every time",
+            "the sentence pattern helps decide what se is doing"
+          ],
+          "kind": "single_choice"
+        },
+        "confidence": 0.2728,
+        "delivery_context": {
+          "bridge_level": "bridge_0",
+          "example_domains_used": [
+            "bus/train transfer maps"
+          ],
+          "language_policy": {
+            "jargon_level": "none"
+          },
+          "personalization_signals_used": [
+            {
+              "confidence": 0.74,
+              "kind": "example_domain",
+              "value": "bus/train transfer maps"
+            }
+          ],
+          "presentation_styles_used": [
+            "concrete_examples",
+            "step_by_step"
+          ],
+          "support_kinds_used": [
+            "step_by_step_frame"
+          ]
+        },
+        "expected_attempt_type": "single_choice",
+        "misconception_markers": [
+          {
+            "confidence": 0.78,
+            "description": "Learner evidence may match the pattern: se one fixed translation.",
+            "label": "se one fixed translation",
+            "marker": "se_one_fixed_translation",
+            "misconception_id": "se_one_fixed_translation"
+          },
+          {
+            "confidence": 0.78,
+            "description": "Learner evidence may match the pattern: se sentence subject confusion.",
+            "label": "se sentence subject confusion",
+            "marker": "se_sentence_subject_confusion",
+            "misconception_id": "se_sentence_subject_confusion"
+          }
+        ],
+        "presentation_support": [
+          {
+            "confidence": 0.82,
+            "kind": "step_by_step_frame",
+            "style_used": "concrete_examples",
+            "text": "Uses bus/train transfer maps as a structural support for the target language-pattern operation. The support is meant to reveal the hidden operation, not decorate the example.",
+            "user_interest_used": "bus/train transfer maps"
+          }
+        ],
+        "probe_type": "single_choice",
+        "prompt": {
+          "full_prompt": "Think of se like a marker on a transit map: the same small symbol can point to different routes depending on where it appears.\n\nLook at these:\n1. Se lava. = He/she washes himself/herself.\n2. Se habla español. = Spanish is spoken / People speak Spanish.\n3. Se me cayó el vaso. = The glass fell on me.\n\nWhich idea will help most?",
+          "reshaping_explanation": "Probe asks the smallest task that reveals the hidden distinction; interest is structurally tied to the repair target.",
+          "root_problem_explanation": "Surface confusion: se appears in several sentences. Hidden mistake: the learner is forcing one English translation onto se instead of using the sentence pattern to decide what job se is doing. Repair target: shift from word-for-word translation to route-matching: each sentence pattern sends se to a different job.",
+          "task": "Think of se like a marker on a transit map: the same small symbol can point to different routes depending on where it appears."
+        },
+        "renderer_params": {
+          "options": [
+            {
+              "id": "pattern_route",
+              "label": "1",
+              "text": "pattern route"
+            },
+            {
+              "id": "se_one_fixed_translation",
+              "label": "2",
+              "text": "se one fixed translation"
+            },
+            {
+              "id": "se_sentence_subject_confusion",
+              "label": "3",
+              "text": "se sentence subject confusion"
+            }
+          ]
+        },
+        "schema_version": "probe_contract_model_output_v1"
+      },
+      "issues": []
+    },
+    "provider_meta": {
+      "provider_name": "probe_contract_service_client",
+      "provider_kind": "service_client",
+      "schema_version": "probe_contract_model_output_v1",
+      "model_name": "myway_probe_contract_retriever_phase_a_v1",
+      "latency_ms": 15,
+      "warnings": []
+    },
+    "output": {
+      "answer_key": {
+        "correct_option_id": "pattern_route",
+        "expected_ideas": [
+          "se is not translated the same way every time",
+          "the sentence pattern helps decide what se is doing"
+        ],
+        "kind": "single_choice"
+      },
+      "confidence": 0.2728,
+      "delivery_context": {
+        "bridge_level": "bridge_0",
+        "example_domains_used": [
+          "bus/train transfer maps"
+        ],
+        "language_policy": {
+          "jargon_level": "none"
+        },
+        "personalization_signals_used": [
+          {
+            "confidence": 0.74,
+            "kind": "example_domain",
+            "value": "bus/train transfer maps"
+          }
+        ],
+        "presentation_styles_used": [
+          "concrete_examples",
+          "step_by_step"
+        ],
+        "support_kinds_used": [
+          "step_by_step_frame"
+        ]
+      },
+      "expected_attempt_type": "single_choice",
+      "misconception_markers": [
+        {
+          "confidence": 0.78,
+          "description": "Learner evidence may match the pattern: se one fixed translation.",
+          "label": "se one fixed translation",
+          "marker": "se_one_fixed_translation",
+          "misconception_id": "se_one_fixed_translation"
+        },
+        {
+          "confidence": 0.78,
+          "description": "Learner evidence may match the pattern: se sentence subject confusion.",
+          "label": "se sentence subject confusion",
+          "marker": "se_sentence_subject_confusion",
+          "misconception_id": "se_sentence_subject_confusion"
+        }
+      ],
+      "presentation_support": [
+        {
+          "confidence": 0.82,
+          "kind": "step_by_step_frame",
+          "style_used": "concrete_examples",
+          "text": "Uses bus/train transfer maps as a structural support for the target language-pattern operation. The support is meant to reveal the hidden operation, not decorate the example.",
+          "user_interest_used": "bus/train transfer maps"
+        }
+      ],
+      "probe_type": "single_choice",
+      "prompt": {
+        "full_prompt": "Think of se like a marker on a transit map: the same small symbol can point to different routes depending on where it appears.\n\nLook at these:\n1. Se lava. = He/she washes himself/herself.\n2. Se habla español. = Spanish is spoken / People speak Spanish.\n3. Se me cayó el vaso. = The glass fell on me.\n\nWhich idea will help most?",
+        "reshaping_explanation": "Probe asks the smallest task that reveals the hidden distinction; interest is structurally tied to the repair target.",
+        "root_problem_explanation": "Surface confusion: se appears in several sentences. Hidden mistake: the learner is forcing one English translation onto se instead of using the sentence pattern to decide what job se is doing. Repair target: shift from word-for-word translation to route-matching: each sentence pattern sends se to a different job.",
+        "task": "Think of se like a marker on a transit map: the same small symbol can point to different routes depending on where it appears."
+      },
+      "renderer_params": {
+        "options": [
+          {
+            "id": "pattern_route",
+            "label": "1",
+            "text": "pattern route"
+          },
+          {
+            "id": "se_one_fixed_translation",
+            "label": "2",
+            "text": "se one fixed translation"
+          },
+          {
+            "id": "se_sentence_subject_confusion",
+            "label": "3",
+            "text": "se sentence subject confusion"
+          }
+        ]
+      },
+      "schema_version": "probe_contract_model_output_v1"
+    }
+  },
+  "renderer_adapter": {
+    "ok": true,
+    "renderable_probe": {
+      "schema_version": "engine_renderable_probe_v1",
+      "probe_type": "single_choice",
+      "expected_attempt_type": "single_choice",
+      "prompt": {
+        "full_prompt": "Think of se like a marker on a transit map: the same small symbol can point to different routes depending on where it appears.\n\nLook at these:\n1. Se lava. = He/she washes himself/herself.\n2. Se habla español. = Spanish is spoken / People speak Spanish.\n3. Se me cayó el vaso. = The glass fell on me.\n\nWhich idea will help most?",
+        "reshaping_explanation": "Probe asks the smallest task that reveals the hidden distinction; interest is structurally tied to the repair target.",
+        "root_problem_explanation": "Surface confusion: se appears in several sentences. Hidden mistake: the learner is forcing one English translation onto se instead of using the sentence pattern to decide what job se is doing. Repair target: shift from word-for-word translation to route-matching: each sentence pattern sends se to a different job.",
+        "task": "Think of se like a marker on a transit map: the same small symbol can point to different routes depending on where it appears."
+      },
+      "presentation_support": [
+        {
+          "confidence": 0.82,
+          "kind": "step_by_step_frame",
+          "style_used": "concrete_examples",
+          "text": "Uses bus/train transfer maps as a structural support for the target language-pattern operation. The support is meant to reveal the hidden operation, not decorate the example.",
+          "user_interest_used": "bus/train transfer maps"
+        }
+      ],
+      "answer_key": {
+        "correct_option_id": "pattern_route",
+        "expected_ideas": [
+          "se is not translated the same way every time",
+          "the sentence pattern helps decide what se is doing"
+        ],
+        "kind": "single_choice"
+      },
+      "misconception_markers": [
+        {
+          "confidence": 0.78,
+          "description": "Learner evidence may match the pattern: se one fixed translation.",
+          "label": "se one fixed translation",
+          "marker": "se_one_fixed_translation",
+          "misconception_id": "se_one_fixed_translation"
+        },
+        {
+          "confidence": 0.78,
+          "description": "Learner evidence may match the pattern: se sentence subject confusion.",
+          "label": "se sentence subject confusion",
+          "marker": "se_sentence_subject_confusion",
+          "misconception_id": "se_sentence_subject_confusion"
+        }
+      ],
+      "renderer_params": {
+        "options": [
+          {
+            "id": "pattern_route",
+            "label": "1",
+            "text": "pattern route"
+          },
+          {
+            "id": "se_one_fixed_translation",
+            "label": "2",
+            "text": "se one fixed translation"
+          },
+          {
+            "id": "se_sentence_subject_confusion",
+            "label": "3",
+            "text": "se sentence subject confusion"
+          }
+        ]
+      },
+      "delivery_context": {
+        "bridge_level": "bridge_0",
+        "example_domains_used": [
+          "bus/train transfer maps"
+        ],
+        "language_policy": {
+          "jargon_level": "none"
+        },
+        "personalization_signals_used": [
+          {
+            "confidence": 0.74,
+            "kind": "example_domain",
+            "value": "bus/train transfer maps"
+          }
+        ],
+        "presentation_styles_used": [
+          "concrete_examples",
+          "step_by_step"
+        ],
+        "support_kinds_used": [
+          "step_by_step_frame"
+        ]
+      },
+      "confidence": 0.2728,
+      "renderer_compatibility": {
+        "renderer_kind": "single_choice",
+        "is_renderable": true,
+        "blocking_reasons": [],
+        "warnings": []
+      }
+    },
+    "warnings": [],
+    "blocking_reasons": []
+  },
+  "attempt_evaluation": {
+    "usable": true,
+    "validation": {
+      "ok": true,
+      "value": {
+        "correctness": 0.4099,
+        "correctness_summary": "The learner picked the fixed-translation option, so the core misconception is still active.",
+        "diagnosis_delta": {
+          "discrimination_gap": 0.18
+        },
+        "misconception_hits": [
+          {
+            "confidence": 0.84,
+            "label": "se one fixed translation",
+            "misconception_id": "se_one_fixed_translation"
+          },
+          {
+            "confidence": 0.84,
+            "label": "se sentence subject confusion",
+            "misconception_id": "se_sentence_subject_confusion"
+          }
+        ],
+        "next_action": "give_feedback",
+        "next_action_confidence": 0.3825,
+        "personalization_delta": null,
+        "schema_version": "probe_attempt_evaluator_output_v1",
+        "understanding_evidence": {
+          "evidence_strength": 0.4099,
+          "informational_only": false,
+          "may_be_lucky_guess": false,
+          "needs_verification_probe": false,
+          "possible_guess": false,
+          "supports_gap": true,
+          "supports_understanding": false,
+          "verification_reason": "Evidence is strong enough for local progress feedback."
+        }
+      },
+      "issues": []
+    },
+    "provider_meta": {
+      "provider_name": "attempt_evaluator_service_client",
+      "provider_kind": "service_client",
+      "schema_version": "probe_attempt_evaluator_output_v1",
+      "model_name": "myway_attempt_evaluator_hybrid_phase_a_v1",
+      "latency_ms": 19,
+      "warnings": []
+    },
+    "output": {
+      "correctness": 0.4099,
+      "correctness_summary": "The learner picked the fixed-translation option, so the core misconception is still active.",
+      "diagnosis_delta": {
+        "discrimination_gap": 0.18
+      },
+      "misconception_hits": [
+        {
+          "confidence": 0.84,
+          "label": "se one fixed translation",
+          "misconception_id": "se_one_fixed_translation"
+        },
+        {
+          "confidence": 0.84,
+          "label": "se sentence subject confusion",
+          "misconception_id": "se_sentence_subject_confusion"
+        }
+      ],
+      "next_action": "give_feedback",
+      "next_action_confidence": 0.3825,
+      "personalization_delta": null,
+      "schema_version": "probe_attempt_evaluator_output_v1",
+      "understanding_evidence": {
+        "evidence_strength": 0.4099,
+        "informational_only": false,
+        "may_be_lucky_guess": false,
+        "needs_verification_probe": false,
+        "possible_guess": false,
+        "supports_gap": true,
+        "supports_understanding": false,
+        "verification_reason": "Evidence is strong enough for local progress feedback."
+      }
+    }
+  }
+}

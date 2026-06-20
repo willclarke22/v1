@@ -1,0 +1,4660 @@
+MyWay probe UI bridge inspection
+Generated: 2026-06-19 12:05:21
+Root: C:\Users\willc\projects\MyWay\v1
+
+
+
+============================================================
+FILE: lib\engine\schemas\shared.ts
+============================================================
+
+// -----------------------------------------------------------------------------
+// MyWay Engine Shared Schema Types
+// -----------------------------------------------------------------------------
+//
+// These are shared contract types for the new 3-model engine:
+//
+// 1. Diagnosis Model
+// 2. Probe Contract Model
+// 3. Probe Attempt Evaluator
+//
+// MyWay owns orchestration, validation, state, rendering compatibility,
+// persistence, trust policy, progression, and personalization profile updates.
+// Models provide structured semantic intelligence only.
+
+export type ConfidenceScore = number;
+
+// 0 = not correct / weak evidence
+// 1 = fully correct / strong evidence
+export type CorrectnessScore = number;
+
+export type DiagnosisLabel =
+  | "unknown"
+  | "no_gap_detected"
+  | "recall_gap"
+  | "representation_gap"
+  | "procedure_gap"
+  | "discrimination_gap"
+  | "transfer_gap"
+  | "metacognitive_gap";
+
+export type DiagnosisNextAction =
+  | "ask_clarifying_question"
+  | "generate_probe_contract"
+  | "give_feedback"
+  | "summarize_progress";
+
+export type AttemptEvaluatorNextAction =
+  | "give_feedback"
+  | "target_misconception"
+  | "generate_followup_probe"
+  | "ask_clarifying_question"
+  | "summarize_progress";
+
+export type ProbeType =
+  | "explain"
+  | "discriminate"
+  | "apply_transfer"
+  | "sequence"
+  | "single_choice"
+  | "multi_choice"
+  | "drag_drop_placements"
+  | "predict"
+  | "slider"
+  | "graph_relationship"
+  | "audio_clip_question"
+  | "audio_response_question"
+  | "video_click_interval"
+  | "video_explanation";
+
+export type ProbeAttemptType =
+  | "text"
+  | "single_choice"
+  | "multi_choice"
+  | "ordered_items"
+  | "drag_drop_placements"
+  | "numeric"
+  | "graph"
+  | "audio_response"
+  | "video_click"
+  | "none"
+  | "unknown";
+
+export type BridgeLevel =
+  | "bridge_0"
+  | "bridge_1"
+  | "bridge_2"
+  | "full_bridge";
+
+// bridge_0 should normally use jargon_level: "none".
+export type JargonLevel =
+  | "none"
+  | "light"
+  | "standard"
+  | "full";
+
+export type LanguagePolicy = {
+  jargon_level: JargonLevel;
+};
+
+export type PresentationStyle =
+  | "plain_direct"
+  | "gentle_coaching"
+  | "analogy_based"
+  | "metaphor_based"
+  | "concrete_examples"
+  | "step_by_step"
+  | "visual_description"
+  | "curiosity_question"
+  | "real_world_connection";
+
+export type PresentationSupportKind =
+  | "analogy"
+  | "metaphor"
+  | "contrast"
+  | "example"
+  | "real_world_connection"
+  | "visual_description"
+  | "step_by_step_frame"
+  | "curiosity_hook";
+
+export type PresentationSupport = {
+  kind: PresentationSupportKind;
+  style_used: PresentationStyle;
+  text: string;
+
+  user_interest_used?: string | null;
+  confidence?: ConfidenceScore | null;
+};
+
+export type ProbePrompt = {
+  // Debug/planning: concise root hypothesis, not necessarily shown directly.
+  root_problem_explanation: string;
+
+  // Debug/planning: concise instructional plan.
+  reshaping_explanation: string;
+
+  // The actual task.
+  task: string;
+
+  // Learner-facing prompt. This does the real explanation + probe.
+  full_prompt: string;
+};
+
+export type AnswerKey = {
+  // Optional for now so older minimal contracts can remain valid.
+  // Dataset examples should normally provide kind.
+  kind?:
+    | "single_choice"
+    | "multi_choice"
+    | "text"
+    | "numeric"
+    | "ordered_items"
+    | "drag_drop_placements"
+    | "graph"
+    | "audio_clip"
+    | "video_click";
+
+  // For single choice, multi choice, or audio clip questions.
+  correct_option_id?: string | null;
+  correct_option_ids?: string[];
+  acceptable_option_ids?: string[];
+
+  // For open-ended text explanation.
+  expected_ideas?: string[];
+  success_markers?: string[];
+
+  // For prediction probes.
+  correct_prediction?: string | number | boolean | null;
+
+  // For sequence probes.
+  correct_order?: string[];
+
+  // For drag/drop placement probes.
+  correct_placements?: Record<string, string>;
+
+  // For slider, numeric, or numeric prediction probes.
+  correct_numeric_range?: {
+    min: number;
+    max: number;
+  } | null;
+
+  // For graph relationship probes.
+  correct_graph_features?: string[];
+
+  // For video click interval probes.
+  correct_click_interval?: {
+    start_seconds: number;
+    end_seconds: number;
+  } | null;
+};
+
+export type MisconceptionMarker = {
+  misconception_id: string;
+  label: string;
+
+  // Optional pattern/string that can help match an attempt to this misconception.
+  marker?: string | null;
+
+  // Optional model-authored explanation for review/data generation.
+  description?: string | null;
+
+  confidence?: ConfidenceScore | null;
+};
+
+export type UnderstandingEvidence = {
+  evidence_strength: ConfidenceScore;
+
+  // True when the attempt supports stable understanding.
+  supports_understanding?: boolean;
+
+  // True when the attempt supports an active gap or misconception.
+  supports_gap?: boolean;
+
+  // True when the learner got the answer right, but the attempt does not show
+  // enough reasoning or transfer to trust the answer as stable understanding.
+  may_be_lucky_guess: boolean;
+
+  // Alias used by newer evaluator artifacts. Keep may_be_lucky_guess as the
+  // durable MyWay field until validation/state code is updated.
+  possible_guess?: boolean;
+
+  // True when MyWay should ask one more related task to verify understanding.
+  needs_verification_probe: boolean;
+
+  informational_only?: boolean;
+
+  verification_reason?: string | null;
+};
+
+export type RendererParams = {
+  options?: Array<{
+    id: string;
+    label: string;
+    text: string;
+  }>;
+
+  items?: Array<{
+    id: string;
+    text: string;
+  }>;
+
+  placement_targets?: Array<{
+    id: string;
+    label: string;
+  }>;
+
+  slider?: {
+    min: number;
+    max: number;
+    step?: number;
+    unit?: string | null;
+  };
+
+  audio?: {
+    audio_id?: string | null;
+    audio_url?: string | null;
+    transcript?: string | null;
+  };
+
+  video?: {
+    video_id?: string | null;
+    video_url?: string | null;
+    duration_seconds?: number | null;
+    informational_only?: boolean;
+  };
+};
+
+// -----------------------------------------------------------------------------
+// Personalization Types
+// -----------------------------------------------------------------------------
+//
+// Personalization is intentionally lightweight in V1.
+//
+// The profile is not a biography of the learner. It is a small, data-driven
+// summary of teaching moves that appear to help, hurt, or require verification.
+// Raw attempt-level details should live in logs/review data, not in the profile.
+//
+// preference_score convention:
+// -1 = strongly avoid
+//  0 = neutral / not enough evidence
+// +1 = strongly prefer
+//
+// confidence is separate from preference_score:
+// preference_score says direction/strength.
+// confidence says how much MyWay should trust that signal.
+
+export type PersonalizationSignalKind =
+  | "bridge_level"
+  | "jargon_level"
+  | "presentation_style"
+  | "support_kind"
+  | "probe_type"
+  | "verification_pattern";
+
+export type PersonalizationSignalDirection =
+  | "prefer"
+  | "avoid"
+  | "verify";
+
+export type PersonalizationSignalScope =
+  | "global"
+  | "topic"
+  | "diagnosis_label"
+  | "probe_type";
+
+export type PersonalizationOutcomeTag =
+  | "misconception_persisted"
+  | "partial_improvement"
+  | "strong_local_success"
+  | "correct_but_needs_verification"
+  | "neutral_or_unclear"
+  | "user_correction";
+
+export type PersonalizationUpdateReason =
+  | "teaching_move_helped"
+  | "teaching_move_did_not_repair"
+  | "try_lower_jargon"
+  | "try_more_targeted_probe"
+  | "avoid_repetition"
+  | "needs_verification";
+
+export type PersonalizationSignal = {
+  signal_id: string;
+
+  kind: PersonalizationSignalKind;
+
+  // The actual thing being learned.
+  // Examples: "bridge_0", "none", "visual_description",
+  // "single_choice_success_needs_explanation_followup".
+  value: string;
+
+  direction: PersonalizationSignalDirection;
+
+  // scope describes where the signal applies.
+  // scope_key identifies the specific topic, diagnosis label, or probe type.
+  //
+  // Examples:
+  // scope: "global", scope_key: null
+  // scope: "diagnosis_label", scope_key: "representation_gap"
+  // scope: "topic", scope_key: "forces_and_motion"
+  // scope: "probe_type", scope_key: "single_choice"
+  scope: PersonalizationSignalScope;
+  scope_key?: string | null;
+
+  preference_score: number;
+  confidence: ConfidenceScore;
+  evidence_count: number;
+
+  summary: string;
+};
+
+export type ExampleDomainSignalScope =
+  | "global"
+  | "topic"
+  | "diagnosis_label";
+
+export type ExampleDomainSignal = {
+  domain: string;
+
+  preference_score: number;
+  confidence: ConfidenceScore;
+  evidence_count: number;
+
+  // Used to prevent tasteful personalization from becoming repetitive.
+  last_used_at?: string | null;
+  recent_use_count: number;
+
+  scope: ExampleDomainSignalScope;
+  scope_key?: string | null;
+
+  summary: string;
+};
+
+export type PersonalizationProfileSnapshot = {
+  schema_version: "personalization_profile_snapshot_v1";
+
+  // Short model-readable summary of the profile.
+  // This should be enough for the Probe Contract Model to understand the
+  // overall personalization direction without reading every old event.
+  summary: string;
+
+  teaching_signals: PersonalizationSignal[];
+
+  // Example domains are separated from teaching signals so MyWay can avoid
+  // overusing a personal-interest example just because it helped once.
+  example_domains: ExampleDomainSignal[];
+};
+
+export type PersonalizationSignalUpdate = {
+  signal_id: string;
+
+  // Deltas are intentionally self-describing, even when signal_id already
+  // exists. This makes logs, review queues, and future training examples easier
+  // to inspect without looking up the previous profile snapshot.
+  kind: PersonalizationSignalKind;
+  value: string;
+  direction: PersonalizationSignalDirection;
+  scope: PersonalizationSignalScope;
+  scope_key?: string | null;
+
+  // Structured tags make profile updates more repeatable while preserving the
+  // human-readable summary below.
+  outcome_tag: PersonalizationOutcomeTag;
+  update_reason: PersonalizationUpdateReason;
+
+  preference_score_delta: number;
+  confidence_delta: number;
+  evidence_count_delta: number;
+
+  summary: string;
+};
+
+export type ExampleDomainUpdate = {
+  domain: string;
+
+  // Example-domain deltas are also self-describing because domain usefulness is
+  // context-sensitive and should not silently generalize across topics.
+  scope: ExampleDomainSignalScope;
+  scope_key?: string | null;
+
+  outcome_tag: PersonalizationOutcomeTag;
+  update_reason: PersonalizationUpdateReason;
+
+  preference_score_delta: number;
+  confidence_delta: number;
+  evidence_count_delta: number;
+
+  recent_use_count_delta?: number;
+  last_used_at?: string | null;
+
+  summary: string;
+};
+
+export type PersonalizationProfileDelta = {
+  schema_version: "personalization_profile_delta_v1";
+
+  // Short explanation of what this delta suggests.
+  // MyWay should still validate and apply the delta cautiously.
+  summary: string;
+
+  teaching_signal_updates?: PersonalizationSignalUpdate[];
+
+  example_domain_updates?: ExampleDomainUpdate[];
+};
+
+export type ProbeDeliveryContext = {
+  bridge_level: BridgeLevel;
+  language_policy: LanguagePolicy;
+
+  presentation_styles_used?: PresentationStyle[];
+  support_kinds_used?: PresentationSupportKind[];
+
+  // Example domains are intentionally lightweight strings.
+  // Examples: "basketball", "cooking", "maps", "music".
+  example_domains_used?: string[];
+
+  // Optional record of which profile signals influenced the delivered probe.
+  personalization_signals_used?: Array<{
+    signal_id?: string;
+    kind: PersonalizationSignalKind | "example_domain";
+    value: string;
+    confidence?: ConfidenceScore | null;
+  }>;
+};
+
+export type EvaluatedProbeAttemptSignal = {
+  probe: {
+    probe_type: ProbeType;
+    expected_attempt_type: ProbeAttemptType;
+    prompt: ProbePrompt;
+    target_diagnosis?: DiagnosisLabel | null;
+  };
+
+  attempt: {
+    attempt_type: ProbeAttemptType;
+    response_summary?: string | null;
+  };
+
+  evaluation: {
+    correctness: CorrectnessScore;
+    correctness_summary: string;
+
+    understanding_evidence: UnderstandingEvidence;
+
+    misconception_hits?: Array<{
+      misconception_id: string;
+      label?: string | null;
+      confidence: ConfidenceScore;
+    }>;
+
+    next_action?: AttemptEvaluatorNextAction | null;
+
+    personalization_delta?: PersonalizationProfileDelta | null;
+  };
+};
+
+
+
+
+
+
+============================================================
+FILE: lib\engine\schemas\probe-contract-model.ts
+============================================================
+
+import type {
+  AnswerKey,
+  BridgeLevel,
+  ConfidenceScore,
+  DiagnosisLabel,
+  EvaluatedProbeAttemptSignal,
+  LanguagePolicy,
+  MisconceptionMarker,
+  PersonalizationProfileSnapshot,
+  PresentationStyle,
+  PresentationSupport,
+  ProbeAttemptType,
+  ProbeDeliveryContext,
+  ProbePrompt,
+  ProbeType,
+  RendererParams,
+} from "./shared";
+
+export type ProbeContractModelInput = {
+  schema_version: "probe_contract_model_input_v1";
+
+  target_topic: {
+    topic_id?: string | null;
+    topic_label: string;
+  };
+
+  target_diagnosis: DiagnosisLabel;
+
+  learner_signal:
+    | {
+        signal_kind: "user_message";
+        user_message: string | null;
+      }
+    | {
+        signal_kind: "evaluated_probe_attempt";
+        evaluated_probe_attempt: EvaluatedProbeAttemptSignal;
+      };
+
+  personalization_context?: {
+    bridge_level: BridgeLevel;
+
+    // bridge_0 should normally set language_policy.jargon_level = "none".
+    language_policy: LanguagePolicy;
+
+    preferred_style?: PresentationStyle | null;
+
+    // preferred_order takes priority over preferred_style when confidence is strong.
+    preferred_order?: PresentationStyle[];
+    preferred_order_confidence?: ConfidenceScore | null;
+
+    user_interests?: Array<{
+      interest: string;
+      user_interest_confidence: ConfidenceScore;
+    }>;
+
+    // Compact profile summary that helps the Probe Contract Model choose
+    // tasteful teaching moves without overusing personal details.
+    profile_snapshot?: PersonalizationProfileSnapshot | null;
+  } | null;
+};
+
+export type ProbeContractModelOutput = {
+  schema_version: "probe_contract_model_output_v1";
+
+  probe_type: ProbeType;
+  expected_attempt_type: ProbeAttemptType;
+
+  prompt: ProbePrompt;
+
+  presentation_support?: PresentationSupport[];
+
+  answer_key?: AnswerKey | null;
+
+  misconception_markers: MisconceptionMarker[];
+
+  renderer_params?: RendererParams | null;
+
+  // Optional record of what teaching moves the generated probe used.
+  // This can be passed into the Probe Attempt Evaluator so outcome evidence can
+  // become a cautious personalization delta.
+  delivery_context?: ProbeDeliveryContext | null;
+
+  // Confidence that this probe contract is usable, aligned, and valid.
+  confidence: ConfidenceScore;
+};
+
+
+
+
+============================================================
+FILE: lib\engine\schemas\probe-attempt-evaluator.ts
+============================================================
+
+import type {
+  AnswerKey,
+  AttemptEvaluatorNextAction,
+  ConfidenceScore,
+  CorrectnessScore,
+  DiagnosisLabel,
+  MisconceptionMarker,
+  PersonalizationProfileDelta,
+  ProbeAttemptType,
+  ProbeDeliveryContext,
+  ProbePrompt,
+  ProbeType,
+  UnderstandingEvidence,
+} from "./shared";
+
+export type ProbeAttemptEvaluatorInput = {
+  schema_version: "probe_attempt_evaluator_input_v1";
+
+  probe: {
+    probe_type: ProbeType;
+    expected_attempt_type: ProbeAttemptType;
+    prompt: ProbePrompt;
+    target_diagnosis?: DiagnosisLabel | null;
+  };
+
+  answer_key?: AnswerKey | null;
+
+  attempt: {
+    attempt_type: ProbeAttemptType;
+
+    text_response?: string | null;
+
+    selected_option_id?: string | null;
+    selected_option_ids?: string[];
+
+    ordered_item_ids?: string[];
+
+    placements?: Record<string, string>;
+
+    numeric_response?: number | null;
+
+    graph_features?: string[];
+
+    audio_response_transcript?: string | null;
+
+    selected_click_seconds?: number | null;
+
+    // Optional learner self-report. This can help detect patterns like:
+    // correct but low confidence, or confident but still using a misconception.
+    self_reported_confidence?: ConfidenceScore | null;
+  };
+
+  misconception_markers?: MisconceptionMarker[];
+
+  // What MyWay actually delivered before this attempt.
+  // This lets the evaluator suggest cautious personalization updates based on
+  // intervention outcome evidence rather than static preference guesses.
+  delivery_context?: ProbeDeliveryContext | null;
+};
+
+export type ProbeAttemptEvaluatorOutput = {
+  schema_version: "probe_attempt_evaluator_output_v1";
+
+  correctness: CorrectnessScore;
+
+  correctness_summary: string;
+
+  understanding_evidence: UnderstandingEvidence;
+
+  misconception_hits: Array<{
+    misconception_id: string;
+    label?: string | null;
+    confidence: ConfidenceScore;
+  }>;
+
+  diagnosis_delta?: Partial<Record<DiagnosisLabel, number>>;
+
+  // Suggested profile update only. MyWay should validate, clamp, and apply this
+  // cautiously instead of letting a model directly mutate the durable profile.
+  personalization_delta?: PersonalizationProfileDelta | null;
+
+  next_action: AttemptEvaluatorNextAction;
+  next_action_confidence: ConfidenceScore;
+};
+
+
+
+
+
+============================================================
+FILE: lib\engine\renderers\index.ts
+============================================================
+
+export * from "./probe-renderer-contract";
+export * from "./renderer-compatibility";
+
+
+
+
+============================================================
+FILE: lib\engine\renderers\probe-renderer-contract.ts
+============================================================
+
+import type {
+  AnswerKey,
+  ConfidenceScore,
+  MisconceptionMarker,
+  PresentationSupport,
+  ProbeAttemptType,
+  ProbeDeliveryContext,
+  ProbePrompt,
+  ProbeType,
+  RendererParams,
+} from "../schemas";
+
+export type EngineRendererKind = ProbeType;
+
+export type RendererCompatibilityReport = {
+  renderer_kind: EngineRendererKind;
+  is_renderable: boolean;
+  blocking_reasons: string[];
+  warnings: string[];
+};
+
+export type EngineRenderableProbe = {
+  schema_version: "engine_renderable_probe_v1";
+
+  probe_type: ProbeType;
+  expected_attempt_type: ProbeAttemptType;
+
+  prompt: ProbePrompt;
+
+  presentation_support?: PresentationSupport[];
+
+  answer_key?: AnswerKey | null;
+
+  misconception_markers: MisconceptionMarker[];
+
+  renderer_params?: RendererParams | null;
+
+  delivery_context?: ProbeDeliveryContext | null;
+
+  confidence: ConfidenceScore;
+
+  renderer_compatibility: RendererCompatibilityReport;
+};
+
+export type ProbeRendererAdapterResult = {
+  ok: boolean;
+  renderable_probe: EngineRenderableProbe | null;
+  warnings: string[];
+  blocking_reasons: string[];
+};
+
+
+
+
+
+============================================================
+FILE: lib\engine\renderers\renderer-compatibility.ts
+============================================================
+
+import type {
+  ProbeContractModelOutput,
+  ProbeType,
+  RendererParams,
+} from "../schemas";
+
+import type {
+  EngineRenderableProbe,
+  RendererCompatibilityReport,
+  ProbeRendererAdapterResult,
+} from "./probe-renderer-contract";
+
+function hasArrayItems(value: unknown): value is unknown[] {
+  return Array.isArray(value) && value.length > 0;
+}
+
+function hasRendererParams(
+  rendererParams: RendererParams | null | undefined,
+): rendererParams is RendererParams {
+  return typeof rendererParams === "object" && rendererParams !== null;
+}
+
+function requireOptions(
+  rendererParams: RendererParams | null | undefined,
+  blockingReasons: string[],
+): void {
+  if (!hasRendererParams(rendererParams) || !hasArrayItems(rendererParams.options)) {
+    blockingReasons.push("renderer_params.options is required for this probe type.");
+  }
+}
+
+function requireItemsAndTargets(
+  rendererParams: RendererParams | null | undefined,
+  blockingReasons: string[],
+): void {
+  if (!hasRendererParams(rendererParams) || !hasArrayItems(rendererParams.items)) {
+    blockingReasons.push("renderer_params.items is required for drag_drop_placements.");
+  }
+
+  if (
+    !hasRendererParams(rendererParams) ||
+    !hasArrayItems(rendererParams.placement_targets)
+  ) {
+    blockingReasons.push(
+      "renderer_params.placement_targets is required for drag_drop_placements.",
+    );
+  }
+}
+
+function requireSlider(
+  rendererParams: RendererParams | null | undefined,
+  blockingReasons: string[],
+): void {
+  if (!hasRendererParams(rendererParams) || !rendererParams.slider) {
+    blockingReasons.push("renderer_params.slider is required for slider probes.");
+    return;
+  }
+
+  const { min, max } = rendererParams.slider;
+
+  if (
+    typeof min !== "number" ||
+    typeof max !== "number" ||
+    !Number.isFinite(min) ||
+    !Number.isFinite(max)
+  ) {
+    blockingReasons.push("renderer_params.slider requires finite min and max values.");
+    return;
+  }
+
+  if (min >= max) {
+    blockingReasons.push("renderer_params.slider.min must be less than max.");
+  }
+}
+
+function warnIfMissingAudio(
+  rendererParams: RendererParams | null | undefined,
+  warnings: string[],
+): void {
+  if (!hasRendererParams(rendererParams) || !rendererParams.audio) {
+    warnings.push("Audio probe has no renderer_params.audio metadata.");
+  }
+}
+
+function warnIfMissingVideo(
+  rendererParams: RendererParams | null | undefined,
+  warnings: string[],
+): void {
+  if (!hasRendererParams(rendererParams) || !rendererParams.video) {
+    warnings.push("Video probe has no renderer_params.video metadata.");
+  }
+}
+
+export function buildRendererCompatibilityReport(
+  probeContract: Pick<ProbeContractModelOutput, "probe_type" | "renderer_params">,
+): RendererCompatibilityReport {
+  const blockingReasons: string[] = [];
+  const warnings: string[] = [];
+
+  const probeType = probeContract.probe_type;
+  const rendererParams = probeContract.renderer_params;
+
+  switch (probeType) {
+    case "single_choice":
+    case "multi_choice": {
+      requireOptions(rendererParams, blockingReasons);
+      break;
+    }
+
+    case "drag_drop_placements": {
+      requireItemsAndTargets(rendererParams, blockingReasons);
+      break;
+    }
+
+    case "slider": {
+      requireSlider(rendererParams, blockingReasons);
+      break;
+    }
+
+    case "audio_clip_question":
+    case "audio_response_question": {
+      warnIfMissingAudio(rendererParams, warnings);
+      break;
+    }
+
+    case "video_click_interval":
+    case "video_explanation": {
+      warnIfMissingVideo(rendererParams, warnings);
+      break;
+    }
+
+    case "explain":
+    case "discriminate":
+    case "apply_transfer":
+    case "sequence":
+    case "predict":
+    case "graph_relationship": {
+      // These can often render with prompt text and optional params.
+      break;
+    }
+
+    default: {
+      const exhaustiveCheck: never = probeType satisfies never;
+      blockingReasons.push(`Unsupported probe renderer kind: ${String(exhaustiveCheck)}`);
+    }
+  }
+
+  return {
+    renderer_kind: probeType,
+    is_renderable: blockingReasons.length === 0,
+    blocking_reasons: blockingReasons,
+    warnings,
+  };
+}
+
+export function toEngineRenderableProbe(
+  probeContract: ProbeContractModelOutput,
+): EngineRenderableProbe {
+  const rendererCompatibility = buildRendererCompatibilityReport(probeContract);
+
+  return {
+    schema_version: "engine_renderable_probe_v1",
+    probe_type: probeContract.probe_type,
+    expected_attempt_type: probeContract.expected_attempt_type,
+    prompt: probeContract.prompt,
+    presentation_support: probeContract.presentation_support,
+    answer_key: probeContract.answer_key,
+    misconception_markers: probeContract.misconception_markers,
+    renderer_params: probeContract.renderer_params,
+    delivery_context: probeContract.delivery_context,
+    confidence: probeContract.confidence,
+    renderer_compatibility: rendererCompatibility,
+  };
+}
+
+export function adaptProbeContractForRenderer(
+  probeContract: ProbeContractModelOutput,
+): ProbeRendererAdapterResult {
+  const renderableProbe = toEngineRenderableProbe(probeContract);
+  const { renderer_compatibility } = renderableProbe;
+
+  return {
+    ok: renderer_compatibility.is_renderable,
+    renderable_probe: renderer_compatibility.is_renderable ? renderableProbe : null,
+    warnings: renderer_compatibility.warnings,
+    blocking_reasons: renderer_compatibility.blocking_reasons,
+  };
+}
+
+export function isRendererBackedProbeType(probeType: ProbeType): boolean {
+  return (
+    probeType === "single_choice" ||
+    probeType === "multi_choice" ||
+    probeType === "drag_drop_placements" ||
+    probeType === "slider" ||
+    probeType === "audio_clip_question" ||
+    probeType === "audio_response_question" ||
+    probeType === "video_click_interval" ||
+    probeType === "video_explanation"
+  );
+}
+
+
+
+
+
+============================================================
+FILE: lib\engine\validation\validate-renderer-params.ts
+============================================================
+
+import type {
+  ProbeType,
+  RendererParams,
+} from "../schemas";
+
+import {
+  buildValidationResult,
+  isRecord,
+  pushIssue,
+  type ValidationIssue,
+  type ValidationResult,
+} from "./shared";
+
+function isArrayWithItems(value: unknown): value is unknown[] {
+  return Array.isArray(value) && value.length > 0;
+}
+
+function validateOptions(
+  rendererParams: Record<string, unknown>,
+  issues: ValidationIssue[],
+  path: string,
+): void {
+  if (!isArrayWithItems(rendererParams.options)) {
+    pushIssue(
+      issues,
+      "error",
+      "renderer_options_required",
+      "This probe type requires renderer_params.options with at least one option.",
+      `${path}.options`,
+    );
+  }
+}
+
+function validateItemsAndTargets(
+  rendererParams: Record<string, unknown>,
+  issues: ValidationIssue[],
+  path: string,
+): void {
+  if (!isArrayWithItems(rendererParams.items)) {
+    pushIssue(
+      issues,
+      "error",
+      "renderer_items_required",
+      "This probe type requires renderer_params.items with at least one item.",
+      `${path}.items`,
+    );
+  }
+
+  if (!isArrayWithItems(rendererParams.placement_targets)) {
+    pushIssue(
+      issues,
+      "error",
+      "renderer_placement_targets_required",
+      "This probe type requires renderer_params.placement_targets with at least one target.",
+      `${path}.placement_targets`,
+    );
+  }
+}
+
+function validateSlider(
+  rendererParams: Record<string, unknown>,
+  issues: ValidationIssue[],
+  path: string,
+): void {
+  if (!isRecord(rendererParams.slider)) {
+    pushIssue(
+      issues,
+      "error",
+      "renderer_slider_required",
+      "Slider probes require renderer_params.slider.",
+      `${path}.slider`,
+    );
+    return;
+  }
+
+  const min = rendererParams.slider.min;
+  const max = rendererParams.slider.max;
+
+  if (
+    typeof min !== "number" ||
+    typeof max !== "number" ||
+    !Number.isFinite(min) ||
+    !Number.isFinite(max)
+  ) {
+    pushIssue(
+      issues,
+      "error",
+      "renderer_slider_min_max_required",
+      "Slider renderer params require finite min and max values.",
+      `${path}.slider`,
+    );
+  } else if (min >= max) {
+    pushIssue(
+      issues,
+      "error",
+      "renderer_slider_min_must_be_less_than_max",
+      "Slider min must be less than max.",
+      `${path}.slider`,
+    );
+  }
+}
+
+function validateVideo(
+  rendererParams: Record<string, unknown>,
+  issues: ValidationIssue[],
+  path: string,
+): void {
+  if (!isRecord(rendererParams.video)) {
+    pushIssue(
+      issues,
+      "warning",
+      "renderer_video_metadata_missing",
+      "Video probes should include renderer_params.video metadata when possible.",
+      `${path}.video`,
+    );
+  }
+}
+
+export function validateRendererParams(
+  rendererParams: unknown,
+  probeType: ProbeType,
+  path = "renderer_params",
+): ValidationResult<RendererParams | null> {
+  const issues: ValidationIssue[] = [];
+
+  if (rendererParams === undefined || rendererParams === null) {
+    if (
+      probeType === "single_choice" ||
+      probeType === "multi_choice" ||
+      probeType === "drag_drop_placements" ||
+      probeType === "slider" ||
+      probeType === "video_click_interval"
+    ) {
+      pushIssue(
+        issues,
+        "error",
+        "renderer_params_required",
+        "This probe type requires renderer_params.",
+        path,
+      );
+    }
+
+    return buildValidationResult(null, issues);
+  }
+
+  if (!isRecord(rendererParams)) {
+    pushIssue(
+      issues,
+      "error",
+      "invalid_renderer_params",
+      "Expected renderer_params to be an object.",
+      path,
+    );
+    return buildValidationResult(null, issues);
+  }
+
+  if (probeType === "single_choice" || probeType === "multi_choice") {
+    validateOptions(rendererParams, issues, path);
+  }
+
+  if (probeType === "drag_drop_placements") {
+    validateItemsAndTargets(rendererParams, issues, path);
+  }
+
+  if (probeType === "slider") {
+    validateSlider(rendererParams, issues, path);
+  }
+
+  if (probeType === "video_click_interval" || probeType === "video_explanation") {
+    validateVideo(rendererParams, issues, path);
+  }
+
+  return buildValidationResult(rendererParams as RendererParams, issues);
+}
+
+
+
+
+============================================================
+FILE: lib\engine\orchestration\run-probe-contract.ts
+============================================================
+
+import type {
+  ProbeContractModelInput,
+  ProbeContractModelOutput,
+} from "../schemas";
+import type {
+  EngineProviderResult,
+  ProbeContractModelProvider,
+} from "../providers";
+import type { ValidationResult } from "../validation";
+import { validateProbeContract } from "../validation";
+
+export type ProbeContractRunResult = {
+  output: ProbeContractModelOutput;
+  provider_result: EngineProviderResult<ProbeContractModelOutput>;
+  validation: ValidationResult<ProbeContractModelOutput | null>;
+  usable: boolean;
+};
+
+export async function runProbeContract(input: {
+  provider: ProbeContractModelProvider;
+  model_input: ProbeContractModelInput;
+}): Promise<ProbeContractRunResult> {
+  const providerResult = await input.provider.runProbeContract(input.model_input);
+  const validation = validateProbeContract(providerResult.output);
+
+  return {
+    output: providerResult.output,
+    provider_result: providerResult,
+    validation,
+    usable: validation.ok,
+  };
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\probe-ui-types.ts
+============================================================
+
+import type {
+  EngineRenderableProbe,
+  ProbeAttemptType,
+  ProbeType,
+  RendererParams,
+} from "@/lib/engine";
+
+export type ProbeAnswerDraft = {
+  attempt_type: ProbeAttemptType;
+  text_response?: string | null;
+  selected_option_id?: string | null;
+  selected_option_ids?: string[];
+  ordered_item_ids?: string[];
+  placements?: Record<string, string>;
+  numeric_response?: number | null;
+  graph_features?: string[];
+  audio_response_transcript?: string | null;
+  selected_click_seconds?: number | null;
+  self_reported_confidence?: number | null;
+};
+
+export type ProbeRendererSubmitPayload = {
+  probe: EngineRenderableProbe;
+  attempt: ProbeAnswerDraft;
+};
+
+export type GenericProbeComponentProps = {
+  probe: EngineRenderableProbe;
+  draft: ProbeAnswerDraft;
+  disabled?: boolean;
+  showDebug?: boolean;
+  onDraftChange: (nextDraft: ProbeAnswerDraft) => void;
+  onSubmit?: (payload: ProbeRendererSubmitPayload) => void;
+};
+
+export type ProbeOption = NonNullable<RendererParams["options"]>[number];
+export type ProbeItem = NonNullable<RendererParams["items"]>[number];
+export type ProbePlacementTarget =
+  NonNullable<RendererParams["placement_targets"]>[number];
+
+export function createEmptyProbeAnswerDraft(
+  attemptType: ProbeAttemptType,
+): ProbeAnswerDraft {
+  return {
+    attempt_type: attemptType,
+    text_response: "",
+    selected_option_id: null,
+    selected_option_ids: [],
+    ordered_item_ids: [],
+    placements: {},
+    numeric_response: null,
+    graph_features: [],
+    audio_response_transcript: "",
+    selected_click_seconds: null,
+    self_reported_confidence: null,
+  };
+}
+
+export function getProbeOptions(probe: EngineRenderableProbe): ProbeOption[] {
+  return probe.renderer_params?.options ?? [];
+}
+
+export function getProbeItems(probe: EngineRenderableProbe): ProbeItem[] {
+  return probe.renderer_params?.items ?? [];
+}
+
+export function getProbePlacementTargets(
+  probe: EngineRenderableProbe,
+): ProbePlacementTarget[] {
+  return probe.renderer_params?.placement_targets ?? [];
+}
+
+export function getProbeTypeLabel(probeType: ProbeType): string {
+  return probeType.replaceAll("_", " ");
+}
+
+export function submitProbe(
+  props: GenericProbeComponentProps,
+  draft: ProbeAnswerDraft,
+): void {
+  props.onSubmit?.({
+    probe: props.probe,
+    attempt: draft,
+  });
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\probe-renderer.tsx
+============================================================
+
+"use client";
+
+import { useMemo, useState } from "react";
+import type { EngineRenderableProbe } from "@/lib/engine";
+import { AudioClipProbe } from "./audio-clip-probe";
+import { AudioResponseProbe } from "./audio-response-probe";
+import { DragDropProbe } from "./drag-drop-probe";
+import { GraphProbe } from "./graph-probe";
+import { MultiChoiceProbe } from "./multi-choice-probe";
+import type {
+  ProbeAnswerDraft,
+  ProbeRendererSubmitPayload,
+} from "./probe-ui-types";
+import { createEmptyProbeAnswerDraft } from "./probe-ui-types";
+import { SequenceProbe } from "./sequence-probe";
+import { SingleChoiceProbe } from "./single-choice-probe";
+import { SliderProbe } from "./slider-probe";
+import { TextProbe } from "./text-probe";
+import { VideoClickProbe } from "./video-click-probe";
+import { VideoExplanationProbe } from "./video-explanation-probe";
+
+export type ProbeRendererProps = {
+  probe: EngineRenderableProbe;
+  disabled?: boolean;
+  showDebug?: boolean;
+  initialDraft?: ProbeAnswerDraft;
+  onDraftChange?: (draft: ProbeAnswerDraft) => void;
+  onSubmit?: (payload: ProbeRendererSubmitPayload) => void;
+};
+
+export function ProbeRenderer(props: ProbeRendererProps) {
+  const initialDraft = useMemo(
+    () =>
+      props.initialDraft ??
+      createEmptyProbeAnswerDraft(props.probe.expected_attempt_type),
+    [props.initialDraft, props.probe.expected_attempt_type],
+  );
+
+  const [draft, setDraft] = useState<ProbeAnswerDraft>(initialDraft);
+
+  function updateDraft(nextDraft: ProbeAnswerDraft) {
+    setDraft(nextDraft);
+    props.onDraftChange?.(nextDraft);
+  }
+
+  const sharedProps = {
+    probe: props.probe,
+    draft,
+    disabled: props.disabled,
+    showDebug: props.showDebug,
+    onDraftChange: updateDraft,
+    onSubmit: props.onSubmit,
+  };
+
+  switch (props.probe.probe_type) {
+    case "single_choice":
+      return <SingleChoiceProbe {...sharedProps} />;
+
+    case "multi_choice":
+      return <MultiChoiceProbe {...sharedProps} />;
+
+    case "drag_drop_placements":
+      return <DragDropProbe {...sharedProps} />;
+
+    case "sequence":
+      return <SequenceProbe {...sharedProps} />;
+
+    case "slider":
+      return <SliderProbe {...sharedProps} />;
+
+    case "graph_relationship":
+      return <GraphProbe {...sharedProps} />;
+
+    case "audio_clip_question":
+      return <AudioClipProbe {...sharedProps} />;
+
+    case "audio_response_question":
+      return <AudioResponseProbe {...sharedProps} />;
+
+    case "video_click_interval":
+      return <VideoClickProbe {...sharedProps} />;
+
+    case "video_explanation":
+      return <VideoExplanationProbe {...sharedProps} />;
+
+    case "discriminate":
+      if (props.probe.expected_attempt_type === "single_choice") {
+        return <SingleChoiceProbe {...sharedProps} />;
+      }
+      return <TextProbe {...sharedProps} />;
+
+    case "explain":
+    case "apply_transfer":
+    case "predict":
+      if (props.probe.expected_attempt_type === "single_choice") {
+        return <SingleChoiceProbe {...sharedProps} />;
+      }
+      if (props.probe.expected_attempt_type === "numeric") {
+        return <SliderProbe {...sharedProps} />;
+      }
+      return <TextProbe {...sharedProps} />;
+
+    default:
+      return <TextProbe {...sharedProps} />;
+  }
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\probe-surface.tsx
+============================================================
+
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import type {
+  EngineRenderableProbe,
+  ProbeAttemptType,
+  ProbeType,
+} from "@/lib/engine";
+import type { ProbeContractSnapshot } from "@/types/contracts";
+import {
+  ProbeRenderer,
+  type ProbeAnswerDraft,
+  type ProbeRendererSubmitPayload,
+} from "./index";
+
+export type ProbeSummary = {
+  id: string;
+  topicId: string;
+  topicLabel?: string;
+  title: string;
+  instruction: string;
+  status: "available" | "active" | "completed";
+  intent?: string | null;
+  probeType?: string | null;
+  expectedResponseType?: string | null;
+  helperText?: string | null;
+
+  /**
+   * Exact contract snapshot attached to the delivered probe. This must be sent
+   * back with the submitted attempt so backend judging evaluates the probe the
+   * learner actually answered.
+   */
+  probeContractSnapshot?: ProbeContractSnapshot | null;
+
+  /**
+   * Engine-native renderable probe carried from the delivered probe contract.
+   * Prefer this when present so the UI does not have to reconstruct the engine
+   * contract from the older ProbeContractSnapshot shape.
+   */
+  engineRenderableProbe?: EngineRenderableProbe | null;
+};
+
+type ProbeSurfaceProps = {
+  probe: ProbeSummary | null;
+  probeFeedback?: {
+    reply: string;
+    suggestedAction: string;
+  } | null;
+  isSubmitting?: boolean;
+  onExit: () => void;
+  onSubmit: (payload: {
+    probeId: string;
+    topicId: string;
+    response: string;
+    attempt?: ProbeAnswerDraft;
+    engineRenderableProbe?: EngineRenderableProbe | null;
+    probeContractSnapshot?: ProbeContractSnapshot | null;
+  }) => void;
+};
+
+const PROBE_TYPES: ProbeType[] = [
+  "explain",
+  "discriminate",
+  "apply_transfer",
+  "sequence",
+  "single_choice",
+  "multi_choice",
+  "drag_drop_placements",
+  "predict",
+  "slider",
+  "graph_relationship",
+  "audio_clip_question",
+  "audio_response_question",
+  "video_click_interval",
+  "video_explanation",
+];
+
+const PROBE_ATTEMPT_TYPES: ProbeAttemptType[] = [
+  "text",
+  "single_choice",
+  "multi_choice",
+  "ordered_items",
+  "drag_drop_placements",
+  "numeric",
+  "graph",
+  "audio_response",
+  "video_click",
+  "none",
+  "unknown",
+];
+
+function getProbeStatusLabel(status: ProbeSummary["status"]) {
+  if (status === "active") return "In progress";
+  if (status === "completed") return "Completed";
+  return "Ready";
+}
+
+function formatBadgeLabel(value?: string | null) {
+  if (!value) return null;
+  return value.replaceAll("_", " ");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0
+    ? value
+    : null;
+}
+
+function isProbeType(value: unknown): value is ProbeType {
+  return typeof value === "string" && PROBE_TYPES.includes(value as ProbeType);
+}
+
+function isProbeAttemptType(value: unknown): value is ProbeAttemptType {
+  return (
+    typeof value === "string" &&
+    PROBE_ATTEMPT_TYPES.includes(value as ProbeAttemptType)
+  );
+}
+
+function normalizeProbeType(value: unknown): ProbeType {
+  if (isProbeType(value)) return value;
+
+  if (value === "transform") return "sequence";
+  if (value === "diagnostic") return "explain";
+  if (value === "multiple_choice") return "multi_choice";
+  if (value === "interactive_action") return "drag_drop_placements";
+  if (value === "audio") return "audio_response_question";
+  if (value === "video") return "video_explanation";
+
+  return "explain";
+}
+
+function normalizeAttemptType(
+  value: unknown,
+  probeType: ProbeType,
+): ProbeAttemptType {
+  if (isProbeAttemptType(value)) return value;
+
+  if (value === "multiple_choice") return "multi_choice";
+  if (value === "interactive_action") return "drag_drop_placements";
+  if (value === "audio") return "audio_response";
+  if (value === "video") return "none";
+
+  if (probeType === "single_choice" || probeType === "discriminate") {
+    return "single_choice";
+  }
+
+  if (probeType === "multi_choice") return "multi_choice";
+  if (probeType === "drag_drop_placements") return "drag_drop_placements";
+  if (probeType === "sequence") return "ordered_items";
+  if (probeType === "slider") return "numeric";
+  if (probeType === "graph_relationship") return "graph";
+  if (probeType === "audio_response_question") return "audio_response";
+  if (probeType === "video_click_interval") return "video_click";
+  if (probeType === "video_explanation") return "none";
+
+  return "text";
+}
+
+function getSnapshotProbeType(snapshot: unknown): ProbeType | null {
+  if (!isRecord(snapshot)) return null;
+
+  if (isProbeType(snapshot.probe_type)) return snapshot.probe_type;
+  if (isProbeType(snapshot.probeType)) return snapshot.probeType;
+
+  return null;
+}
+
+function getSnapshotAttemptType(snapshot: unknown): ProbeAttemptType | null {
+  if (!isRecord(snapshot)) return null;
+
+  if (isProbeAttemptType(snapshot.expected_attempt_type)) {
+    return snapshot.expected_attempt_type;
+  }
+
+  if (isProbeAttemptType(snapshot.expectedAttemptType)) {
+    return snapshot.expectedAttemptType;
+  }
+
+  return null;
+}
+
+function getSnapshotRendererParams(snapshot: unknown) {
+  if (!isRecord(snapshot)) return null;
+
+  const rendererParams = snapshot.renderer_params ?? snapshot.rendererParams;
+
+  return isRecord(rendererParams) ? rendererParams : null;
+}
+
+function getSnapshotAnswerKey(snapshot: unknown) {
+  if (!isRecord(snapshot)) return null;
+
+  const answerKey = snapshot.answer_key ?? snapshot.answerKey;
+
+  return isRecord(answerKey) ? answerKey : null;
+}
+
+function getSnapshotMisconceptionMarkers(snapshot: unknown) {
+  if (!isRecord(snapshot)) return [];
+
+  const markers = snapshot.misconception_markers ?? snapshot.misconceptionMarkers;
+
+  return Array.isArray(markers) ? markers : [];
+}
+
+function buildPrompt(args: {
+  probe: ProbeSummary;
+  snapshot: unknown;
+}) {
+  if (isRecord(args.snapshot) && isRecord(args.snapshot.prompt)) {
+    const prompt = args.snapshot.prompt;
+
+    const task = getString(prompt.task);
+    const fullPrompt = getString(prompt.full_prompt) ?? getString(prompt.fullPrompt);
+
+    if (task && fullPrompt) {
+      return {
+        root_problem_explanation:
+          getString(prompt.root_problem_explanation) ??
+          getString(prompt.rootProblemExplanation) ??
+          "MyWay is checking the specific part of the idea that may need repair.",
+        reshaping_explanation:
+          getString(prompt.reshaping_explanation) ??
+          getString(prompt.reshapingExplanation) ??
+          "Use the probe to make your current understanding visible.",
+        task,
+        full_prompt: fullPrompt,
+      };
+    }
+  }
+
+  return {
+    root_problem_explanation:
+      "MyWay is checking the specific part of this topic that may need repair.",
+    reshaping_explanation:
+      "Answer in the way that best shows what makes sense to you right now.",
+    task: args.probe.instruction,
+    full_prompt: args.probe.instruction,
+  };
+}
+
+function buildRenderableProbe(probe: ProbeSummary): EngineRenderableProbe {
+  if (probe.engineRenderableProbe) {
+    return probe.engineRenderableProbe;
+  }
+
+  const snapshot = probe.probeContractSnapshot ?? null;
+
+  const probeType =
+    getSnapshotProbeType(snapshot) ??
+    normalizeProbeType(probe.probeType ?? probe.expectedResponseType);
+
+  const expectedAttemptType =
+    getSnapshotAttemptType(snapshot) ??
+    normalizeAttemptType(probe.expectedResponseType, probeType);
+
+  const rendererParams = getSnapshotRendererParams(snapshot);
+  const answerKey = getSnapshotAnswerKey(snapshot);
+  const misconceptionMarkers = getSnapshotMisconceptionMarkers(snapshot);
+
+  return {
+    schema_version: "engine_renderable_probe_v1",
+    probe_type: probeType,
+    expected_attempt_type: expectedAttemptType,
+    prompt: buildPrompt({ probe, snapshot }),
+    presentation_support: undefined,
+    answer_key: answerKey as EngineRenderableProbe["answer_key"],
+    misconception_markers:
+      misconceptionMarkers as EngineRenderableProbe["misconception_markers"],
+    renderer_params: rendererParams as EngineRenderableProbe["renderer_params"],
+    delivery_context: null,
+    confidence: 0.5,
+    renderer_compatibility: {
+      renderer_kind: probeType,
+      is_renderable: true,
+      blocking_reasons: [],
+      warnings: rendererParams
+        ? []
+        : [
+            "ProbeSurface used a generic fallback renderer because no renderer_params were supplied.",
+          ],
+    },
+  };
+}
+
+function getInstructionHint(probe: ProbeSummary | null) {
+  if (!probe) return "";
+
+  if (probe.helperText?.trim()) {
+    return probe.helperText;
+  }
+
+  const lower = probe.instruction.toLowerCase();
+
+  if (
+    lower.includes("apply") ||
+    lower.includes("different situation") ||
+    lower.includes("what changes")
+  ) {
+    return "Try to show what carries over and what changes in the new setting.";
+  }
+
+  if (lower.includes("predict") || lower.includes("what happens next")) {
+    return "Focus on what you think will happen and why.";
+  }
+
+  if (
+    lower.includes("example") ||
+    lower.includes("concrete") ||
+    lower.includes("cause-and-effect")
+  ) {
+    return "Use a concrete example or a step-by-step chain if that helps.";
+  }
+
+  return "Answer in your own words. Aim for reasoning, not just keywords.";
+}
+
+function stringifyAttempt(attempt: ProbeAnswerDraft) {
+  if (attempt.text_response?.trim()) return attempt.text_response.trim();
+
+  if (attempt.audio_response_transcript?.trim()) {
+    return attempt.audio_response_transcript.trim();
+  }
+
+  if (attempt.selected_option_id) return attempt.selected_option_id;
+
+  if (attempt.selected_option_ids?.length) {
+    return attempt.selected_option_ids.join(", ");
+  }
+
+  if (attempt.ordered_item_ids?.length) {
+    return attempt.ordered_item_ids.join(" -> ");
+  }
+
+  if (attempt.placements && Object.keys(attempt.placements).length > 0) {
+    return JSON.stringify(attempt.placements);
+  }
+
+  if (typeof attempt.numeric_response === "number") {
+    return String(attempt.numeric_response);
+  }
+
+  if (attempt.graph_features?.length) {
+    return attempt.graph_features.join("\n");
+  }
+
+  if (typeof attempt.selected_click_seconds === "number") {
+    return String(attempt.selected_click_seconds);
+  }
+
+  return "";
+}
+
+function getEncouragement(response: string, isSubmitting: boolean) {
+  if (isSubmitting) return "Submitting your response...";
+  const trimmed = response.trim();
+  if (!trimmed) return "Start when youâ€™re ready.";
+  const words = trimmed.split(/\s+/).length;
+  if (words < 8) return "You can submit now, or add a little more reasoning.";
+  if (words < 20) return "Nice start. A bit more structure could make your thinking clearer.";
+  return "Good â€” this has enough substance to judge.";
+}
+
+export default function ProbeSurface({
+  probe,
+  probeFeedback = null,
+  isSubmitting = false,
+  onExit,
+  onSubmit,
+}: ProbeSurfaceProps) {
+  const [draftResponse, setDraftResponse] = useState("");
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const id = window.requestAnimationFrame(() => {
+      setIsVisible(true);
+    });
+
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    setDraftResponse("");
+  }, [probe?.id]);
+
+  const renderableProbe = useMemo(
+    () => (probe ? buildRenderableProbe(probe) : null),
+    [probe],
+  );
+
+  const trimmedResponse = draftResponse.trim();
+  const wordCount = trimmedResponse ? trimmedResponse.split(/\s+/).length : 0;
+  const canSubmit = trimmedResponse.length > 0 && !isSubmitting;
+
+  const probeHint = useMemo(() => getInstructionHint(probe), [probe]);
+  const encouragement = useMemo(
+    () => getEncouragement(draftResponse, isSubmitting),
+    [draftResponse, isSubmitting],
+  );
+
+  function handleSubmitFromRenderer(payload: ProbeRendererSubmitPayload) {
+    if (!probe || isSubmitting) return;
+
+    const response = stringifyAttempt(payload.attempt).trim();
+    if (!response) return;
+
+    onSubmit({
+      probeId: probe.id,
+      topicId: probe.topicId,
+      response,
+      attempt: payload.attempt,
+      engineRenderableProbe:
+        payload.probe ?? renderableProbe ?? probe.engineRenderableProbe ?? null,
+      probeContractSnapshot: probe.probeContractSnapshot ?? null,
+    });
+  }
+
+  if (!probe || !renderableProbe) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.82)_0%,rgba(101,45,175,0.94)_42%,rgba(18,4,34,1)_100%)] text-white">
+        <div
+          className={`rounded-3xl border border-white/10 bg-white/[0.05] p-8 backdrop-blur-md transition-all duration-500 ${
+            isVisible
+              ? "translate-y-0 opacity-100"
+              : "translate-y-4 opacity-0"
+          }`}
+        >
+          <p className="text-lg font-medium">No active probe</p>
+          <p className="mt-2 max-w-md text-sm leading-7 text-zinc-200/80">
+            There is not an active probe loaded right now. Return to the learning
+            space and continue from there.
+          </p>
+          <button
+            onClick={onExit}
+            type="button"
+            className="mt-5 rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-2 text-sm text-zinc-200 transition hover:bg-white/[0.08]"
+          >
+            Back to learning space
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.9)_0%,rgba(101,45,175,0.98)_42%,rgba(16,3,30,1)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_24%),radial-gradient(circle_at_bottom,rgba(37,0,71,0.25),transparent_36%)]" />
+
+      <div
+        className={`relative z-10 flex h-full w-full items-center justify-center px-6 py-10 transition-all duration-500 ${
+          isVisible ? "scale-100 opacity-100" : "scale-[0.985] opacity-0"
+        }`}
+      >
+        <div className="w-full max-w-4xl rounded-[2rem] border border-white/12 bg-black/20 p-6 shadow-[0_0_50px_rgba(0,0,0,0.28)] backdrop-blur-xl md:p-8">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-white/12 bg-white/[0.07] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.22em] text-zinc-200/80">
+                  Probe
+                </span>
+                <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-300/75">
+                  {getProbeStatusLabel(probe.status)}
+                </span>
+                {probe.intent ? (
+                  <span className="rounded-full border border-purple-200/20 bg-purple-200/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-purple-100/85">
+                    {formatBadgeLabel(probe.intent)}
+                  </span>
+                ) : null}
+                {probe.probeType ? (
+                  <span className="rounded-full border border-cyan-200/20 bg-cyan-200/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-cyan-100/85">
+                    {formatBadgeLabel(probe.probeType)}
+                  </span>
+                ) : null}
+              </div>
+
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight">
+                {probe.title}
+              </h2>
+
+              {probe.topicLabel ? (
+                <p className="mt-2 text-sm text-zinc-300/80">
+                  Topic: {probe.topicLabel}
+                </p>
+              ) : null}
+
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-100/90">
+                {probe.instruction}
+              </p>
+
+              <p className="mt-3 text-xs leading-6 text-zinc-300/75">
+                {probeHint}
+              </p>
+            </div>
+
+            <button
+              onClick={onExit}
+              type="button"
+              disabled={isSubmitting}
+              className="shrink-0 rounded-2xl border border-white/12 bg-white/[0.08] px-4 py-2 text-sm text-zinc-100 transition hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Exit
+            </button>
+          </div>
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+            <div>
+              {probeFeedback ? (
+                <div className="rounded-3xl border border-white/12 bg-white/[0.06] px-5 py-4">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-300/70">
+                    MyWay feedback
+                  </p>
+                  <p className="mt-3 text-sm leading-7 text-zinc-100/95">
+                    {probeFeedback.reply}
+                  </p>
+                  {probeFeedback.suggestedAction ? (
+                    <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-300/65">
+                        Next move
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-zinc-100/90">
+                        {probeFeedback.suggestedAction}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className={probeFeedback ? "mt-6" : ""}>
+                <ProbeRenderer
+                  probe={renderableProbe}
+                  disabled={isSubmitting}
+                  showDebug={process.env.NODE_ENV !== "production"}
+                  onDraftChange={(draft) => setDraftResponse(stringifyAttempt(draft))}
+                  onSubmit={handleSubmitFromRenderer}
+                />
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-300/70">
+                <div>
+                  {wordCount > 0 ? `${wordCount} words` : "No response yet"}
+                </div>
+                <div>{encouragement}</div>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  onClick={onExit}
+                  type="button"
+                  disabled={isSubmitting}
+                  className="rounded-2xl border border-white/12 bg-white/[0.08] px-4 py-2.5 text-sm text-zinc-100 transition hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleSubmitFromRenderer({
+                      probe: renderableProbe,
+                      attempt: {
+                        attempt_type: renderableProbe.expected_attempt_type,
+                        text_response: draftResponse,
+                      },
+                    })
+                  }
+                  type="button"
+                  disabled={!canSubmit}
+                  className="rounded-2xl border border-purple-200/35 bg-white/10 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting ? "Submitting..." : "Submit response"}
+                </button>
+              </div>
+            </div>
+
+            <aside className="rounded-3xl border border-white/10 bg-black/20 p-4">
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-300/70">
+                Guidance
+              </p>
+
+              <div className="mt-4 space-y-4 text-sm leading-6 text-zinc-100/85">
+                <div>
+                  <p className="font-medium text-white">What to aim for</p>
+                  <p className="mt-1 text-zinc-300/80">
+                    Try to explain your thinking clearly, not just give a short
+                    answer.
+                  </p>
+                </div>
+
+                {probe.expectedResponseType ? (
+                  <div>
+                    <p className="font-medium text-white">Expected response</p>
+                    <p className="mt-1 text-zinc-300/80">
+                      {formatBadgeLabel(probe.expectedResponseType)}
+                    </p>
+                  </div>
+                ) : null}
+
+                <div>
+                  <p className="font-medium text-white">Helpful approach</p>
+                  <p className="mt-1 text-zinc-300/80">
+                    Use causes, steps, contrasts, or an example when that makes
+                    your reasoning easier to see.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-medium text-white">Submission</p>
+                  <p className="mt-1 text-zinc-300/80">
+                    Use the probe control to answer, then submit. Text-style
+                    probes can still be answered in your own words.
+                  </p>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\text-probe.tsx
+============================================================
+
+"use client";
+
+import { ProbeShell } from "./probe-shell";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+
+export function TextProbe(props: GenericProbeComponentProps) {
+  const isAudioResponse = props.probe.expected_attempt_type === "audio_response";
+  const value = isAudioResponse
+    ? props.draft.audio_response_transcript ?? ""
+    : props.draft.text_response ?? "";
+
+  return (
+    <ProbeShell {...props}>
+      <label style={{ display: "grid", gap: "0.5rem" }}>
+        <span>Your response</span>
+        <textarea
+          value={value}
+          disabled={props.disabled}
+          rows={6}
+          placeholder="Explain it in your own words."
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            props.onDraftChange({
+              ...props.draft,
+              attempt_type: props.probe.expected_attempt_type,
+              text_response: isAudioResponse
+                ? props.draft.text_response
+                : nextValue,
+              audio_response_transcript: isAudioResponse
+                ? nextValue
+                : props.draft.audio_response_transcript,
+            });
+          }}
+          style={{
+            width: "100%",
+            resize: "vertical",
+            borderRadius: "12px",
+            padding: "0.75rem",
+            border: "1px solid rgba(255,255,255,0.18)",
+            background: "rgba(255,255,255,0.06)",
+            color: "inherit",
+          }}
+        />
+      </label>
+    </ProbeShell>
+  );
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\single-choice-probe.tsx
+============================================================
+
+"use client";
+
+import { ProbeShell } from "./probe-shell";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+import { getProbeOptions } from "./probe-ui-types";
+
+export function SingleChoiceProbe(props: GenericProbeComponentProps) {
+  const options = getProbeOptions(props.probe);
+
+  return (
+    <ProbeShell {...props}>
+      <fieldset
+        disabled={props.disabled}
+        style={{
+          border: 0,
+          padding: 0,
+          margin: 0,
+          display: "grid",
+          gap: "0.6rem",
+        }}
+      >
+        <legend style={{ marginBottom: "0.35rem" }}>Choose one</legend>
+
+        {options.length > 0 ? (
+          options.map((option) => (
+            <label
+              key={option.id}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto 1fr",
+                gap: "0.6rem",
+                alignItems: "start",
+                padding: "0.75rem",
+                border: "1px solid rgba(255,255,255,0.14)",
+                borderRadius: "12px",
+              }}
+            >
+              <input
+                type="radio"
+                name="single-choice-probe"
+                checked={props.draft.selected_option_id === option.id}
+                onChange={() =>
+                  props.onDraftChange({
+                    ...props.draft,
+                    attempt_type: "single_choice",
+                    selected_option_id: option.id,
+                  })
+                }
+              />
+              <span>
+                <strong>{option.label}</strong>
+                <br />
+                {option.text}
+              </span>
+            </label>
+          ))
+        ) : (
+          <p>No options were supplied in renderer_params.options.</p>
+        )}
+      </fieldset>
+    </ProbeShell>
+  );
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\multi-choice-probe.tsx
+============================================================
+
+"use client";
+
+import { ProbeShell } from "./probe-shell";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+import { getProbeOptions } from "./probe-ui-types";
+
+export function MultiChoiceProbe(props: GenericProbeComponentProps) {
+  const options = getProbeOptions(props.probe);
+  const selected = new Set(props.draft.selected_option_ids ?? []);
+
+  return (
+    <ProbeShell {...props}>
+      <fieldset
+        disabled={props.disabled}
+        style={{
+          border: 0,
+          padding: 0,
+          margin: 0,
+          display: "grid",
+          gap: "0.6rem",
+        }}
+      >
+        <legend style={{ marginBottom: "0.35rem" }}>Choose all that fit</legend>
+
+        {options.length > 0 ? (
+          options.map((option) => {
+            const checked = selected.has(option.id);
+
+            return (
+              <label
+                key={option.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "auto 1fr",
+                  gap: "0.6rem",
+                  alignItems: "start",
+                  padding: "0.75rem",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  borderRadius: "12px",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => {
+                    const next = new Set(selected);
+
+                    if (checked) {
+                      next.delete(option.id);
+                    } else {
+                      next.add(option.id);
+                    }
+
+                    props.onDraftChange({
+                      ...props.draft,
+                      attempt_type: "multi_choice",
+                      selected_option_ids: [...next],
+                    });
+                  }}
+                />
+                <span>
+                  <strong>{option.label}</strong>
+                  <br />
+                  {option.text}
+                </span>
+              </label>
+            );
+          })
+        ) : (
+          <p>No options were supplied in renderer_params.options.</p>
+        )}
+      </fieldset>
+    </ProbeShell>
+  );
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\drag-drop-probe.tsx
+============================================================
+
+"use client";
+
+import { ProbeShell } from "./probe-shell";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+import {
+  getProbeItems,
+  getProbePlacementTargets,
+} from "./probe-ui-types";
+
+export function DragDropProbe(props: GenericProbeComponentProps) {
+  const items = getProbeItems(props.probe);
+  const targets = getProbePlacementTargets(props.probe);
+  const placements = props.draft.placements ?? {};
+
+  return (
+    <ProbeShell {...props}>
+      <div style={{ display: "grid", gap: "0.75rem" }}>
+        <p style={{ margin: 0, opacity: 0.78 }}>
+          Generic first version: place each item into a target bucket.
+        </p>
+
+        {items.length > 0 && targets.length > 0 ? (
+          items.map((item) => (
+            <label
+              key={item.id}
+              style={{
+                display: "grid",
+                gap: "0.35rem",
+                padding: "0.75rem",
+                border: "1px solid rgba(255,255,255,0.14)",
+                borderRadius: "12px",
+              }}
+            >
+              <span>{item.text}</span>
+              <select
+                disabled={props.disabled}
+                value={placements[item.id] ?? ""}
+                onChange={(event) =>
+                  props.onDraftChange({
+                    ...props.draft,
+                    attempt_type: "drag_drop_placements",
+                    placements: {
+                      ...placements,
+                      [item.id]: event.target.value,
+                    },
+                  })
+                }
+              >
+                <option value="">Choose a bucket</option>
+                {targets.map((target) => (
+                  <option key={target.id} value={target.id}>
+                    {target.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))
+        ) : (
+          <p>
+            This probe needs renderer_params.items and
+            renderer_params.placement_targets.
+          </p>
+        )}
+      </div>
+    </ProbeShell>
+  );
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\sequence-probe.tsx
+============================================================
+
+"use client";
+
+import { ProbeShell } from "./probe-shell";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+import { getProbeItems } from "./probe-ui-types";
+
+function moveItem(ids: string[], fromIndex: number, toIndex: number): string[] {
+  const next = [...ids];
+  const [item] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, item);
+  return next;
+}
+
+export function SequenceProbe(props: GenericProbeComponentProps) {
+  const items = getProbeItems(props.probe);
+  const currentOrder =
+    props.draft.ordered_item_ids && props.draft.ordered_item_ids.length > 0
+      ? props.draft.ordered_item_ids
+      : items.map((item) => item.id);
+
+  const itemById = new Map(items.map((item) => [item.id, item]));
+
+  return (
+    <ProbeShell {...props}>
+      <div style={{ display: "grid", gap: "0.6rem" }}>
+        <p style={{ margin: 0, opacity: 0.78 }}>Put these in order.</p>
+
+        {currentOrder.length > 0 ? (
+          currentOrder.map((itemId, index) => {
+            const item = itemById.get(itemId);
+
+            return (
+              <div
+                key={itemId}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto auto",
+                  gap: "0.5rem",
+                  alignItems: "center",
+                  padding: "0.75rem",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  borderRadius: "12px",
+                }}
+              >
+                <span>
+                  {index + 1}. {item?.text ?? itemId}
+                </span>
+                <button
+                  type="button"
+                  disabled={props.disabled || index === 0}
+                  onClick={() =>
+                    props.onDraftChange({
+                      ...props.draft,
+                      attempt_type: "ordered_items",
+                      ordered_item_ids: moveItem(currentOrder, index, index - 1),
+                    })
+                  }
+                >
+                  Up
+                </button>
+                <button
+                  type="button"
+                  disabled={props.disabled || index === currentOrder.length - 1}
+                  onClick={() =>
+                    props.onDraftChange({
+                      ...props.draft,
+                      attempt_type: "ordered_items",
+                      ordered_item_ids: moveItem(currentOrder, index, index + 1),
+                    })
+                  }
+                >
+                  Down
+                </button>
+              </div>
+            );
+          })
+        ) : (
+          <p>No sequence items were supplied in renderer_params.items.</p>
+        )}
+      </div>
+    </ProbeShell>
+  );
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\slider-probe.tsx
+============================================================
+
+"use client";
+
+import { ProbeShell } from "./probe-shell";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+
+export function SliderProbe(props: GenericProbeComponentProps) {
+  const slider = props.probe.renderer_params?.slider;
+  const value = props.draft.numeric_response ?? slider?.min ?? 0;
+
+  return (
+    <ProbeShell {...props}>
+      {slider ? (
+        <label style={{ display: "grid", gap: "0.6rem" }}>
+          <span>
+            Your estimate: {value}
+            {slider.unit ? ` ${slider.unit}` : ""}
+          </span>
+          <input
+            type="range"
+            disabled={props.disabled}
+            min={slider.min}
+            max={slider.max}
+            step={slider.step ?? 1}
+            value={value}
+            onChange={(event) =>
+              props.onDraftChange({
+                ...props.draft,
+                attempt_type: "numeric",
+                numeric_response: Number(event.target.value),
+              })
+            }
+          />
+          <input
+            type="number"
+            disabled={props.disabled}
+            min={slider.min}
+            max={slider.max}
+            step={slider.step ?? 1}
+            value={value}
+            onChange={(event) =>
+              props.onDraftChange({
+                ...props.draft,
+                attempt_type: "numeric",
+                numeric_response: Number(event.target.value),
+              })
+            }
+          />
+        </label>
+      ) : (
+        <p>This probe needs renderer_params.slider.</p>
+      )}
+    </ProbeShell>
+  );
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\graph-probe.tsx
+============================================================
+
+"use client";
+
+import { ProbeShell } from "./probe-shell";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+
+export function GraphProbe(props: GenericProbeComponentProps) {
+  const value = (props.draft.graph_features ?? []).join("\n");
+
+  return (
+    <ProbeShell {...props}>
+      <label style={{ display: "grid", gap: "0.5rem" }}>
+        <span>Graph features you notice</span>
+        <textarea
+          disabled={props.disabled}
+          rows={6}
+          value={value}
+          placeholder={"One feature per line, like:\nincreases at first\nlevels off\nstarts at zero"}
+          onChange={(event) =>
+            props.onDraftChange({
+              ...props.draft,
+              attempt_type: "graph",
+              graph_features: event.target.value
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean),
+            })
+          }
+          style={{
+            width: "100%",
+            resize: "vertical",
+            borderRadius: "12px",
+            padding: "0.75rem",
+            border: "1px solid rgba(255,255,255,0.18)",
+            background: "rgba(255,255,255,0.06)",
+            color: "inherit",
+          }}
+        />
+      </label>
+    </ProbeShell>
+  );
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\audio-clip-probe.tsx
+============================================================
+
+"use client";
+
+import { ProbeShell } from "./probe-shell";
+import { SingleChoiceProbe } from "./single-choice-probe";
+import { TextProbe } from "./text-probe";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+import { getProbeOptions } from "./probe-ui-types";
+
+export function AudioClipProbe(props: GenericProbeComponentProps) {
+  const audio = props.probe.renderer_params?.audio;
+  const hasOptions = getProbeOptions(props.probe).length > 0;
+
+  const media = (
+    <div style={{ display: "grid", gap: "0.5rem", marginBottom: "0.75rem" }}>
+      {audio?.audio_url ? <audio controls src={audio.audio_url} /> : null}
+      {audio?.transcript ? (
+        <details>
+          <summary>Transcript</summary>
+          <p>{audio.transcript}</p>
+        </details>
+      ) : null}
+      {!audio?.audio_url && !audio?.transcript ? (
+        <p>No audio metadata was supplied in renderer_params.audio.</p>
+      ) : null}
+    </div>
+  );
+
+  if (hasOptions) {
+    return (
+      <div>
+        {media}
+        <SingleChoiceProbe {...props} />
+      </div>
+    );
+  }
+
+  return (
+    <ProbeShell {...props}>
+      {media}
+      <TextProbe {...props} />
+    </ProbeShell>
+  );
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\audio-response-probe.tsx
+============================================================
+
+"use client";
+
+import { TextProbe } from "./text-probe";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+
+export function AudioResponseProbe(props: GenericProbeComponentProps) {
+  return (
+    <TextProbe
+      {...props}
+      draft={{
+        ...props.draft,
+        attempt_type: "audio_response",
+      }}
+    />
+  );
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\video-click-probe.tsx
+============================================================
+
+"use client";
+
+import { ProbeShell } from "./probe-shell";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+
+export function VideoClickProbe(props: GenericProbeComponentProps) {
+  const video = props.probe.renderer_params?.video;
+  const value = props.draft.selected_click_seconds ?? 0;
+
+  return (
+    <ProbeShell {...props}>
+      <div style={{ display: "grid", gap: "0.75rem" }}>
+        {video?.video_url ? (
+          <video controls src={video.video_url} style={{ width: "100%" }} />
+        ) : (
+          <p>No video URL was supplied in renderer_params.video.</p>
+        )}
+
+        <label style={{ display: "grid", gap: "0.4rem" }}>
+          <span>Moment selected, in seconds</span>
+          <input
+            type="number"
+            min={0}
+            max={video?.duration_seconds ?? undefined}
+            value={value}
+            disabled={props.disabled}
+            onChange={(event) =>
+              props.onDraftChange({
+                ...props.draft,
+                attempt_type: "video_click",
+                selected_click_seconds: Number(event.target.value),
+              })
+            }
+          />
+        </label>
+      </div>
+    </ProbeShell>
+  );
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\probes\video-explanation-probe.tsx
+============================================================
+
+"use client";
+
+import { ProbeShell } from "./probe-shell";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+
+export function VideoExplanationProbe(props: GenericProbeComponentProps) {
+  const video = props.probe.renderer_params?.video;
+
+  return (
+    <ProbeShell
+      {...props}
+      draft={{
+        ...props.draft,
+        attempt_type: "none",
+      }}
+    >
+      <div style={{ display: "grid", gap: "0.75rem" }}>
+        {video?.video_url ? (
+          <video controls src={video.video_url} style={{ width: "100%" }} />
+        ) : (
+          <p>No video URL was supplied in renderer_params.video.</p>
+        )}
+
+        {video?.informational_only ? (
+          <p style={{ margin: 0, opacity: 0.78 }}>
+            This is an explanation-only probe. The next step can ask for an
+            attempt after the learner watches.
+          </p>
+        ) : null}
+      </div>
+    </ProbeShell>
+  );
+}
+
+
+
+
+============================================================
+FILE: hooks\use-probe-flow.ts
+============================================================
+
+"use client";
+
+import { useCallback, useMemo, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import type { EngineRenderableProbe } from "@/lib/engine";
+import type { Topic } from "@/types/topic";
+import type { ProbeSummary } from "@/ui/learning-space/probes/probe-surface";
+import type { ProbeAnswerDraft } from "@/ui/learning-space/probes/probe-ui-types";
+import {
+  isTopicPosition3D,
+  type TopicPosition3D,
+} from "@/lib/learning-space/topic-position";
+import type {
+  DeliveredProbe,
+  FrontendInterventionSummary,
+  FrontendTopicMetricUpdate,
+  LearningSpace,
+  MessageRouteResponse,
+  MyWayRunResult,
+  ProbeContractSnapshot,
+  ProbeSubmitRouteResponse,
+} from "@/types/contracts";
+
+type ProbeSubmitPayload = {
+  probeId: string;
+  topicId: string;
+  response: string;
+
+  /**
+   * Structured answer produced by ProbeRenderer. Keep response above as a
+   * legacy text fallback until /api/probe/submit is fully evaluator-first.
+   */
+  attempt?: ProbeAnswerDraft;
+
+  /**
+   * Engine-native probe used by the renderer. This lets the submit route later
+   * build ProbeAttemptEvaluatorInput without reconstructing the answered probe.
+   */
+  engineRenderableProbe?: EngineRenderableProbe | null;
+
+  probeContractSnapshot?: ProbeContractSnapshot | null;
+};
+type LegacyProbeSubmitApiResponse = {
+  result?: MyWayRunResult;
+  scene_update?: ProbeSubmitRouteResponse["scene_update"];
+  continue_probe_loop?: boolean;
+  next_probe?: DeliveredProbe | null;
+
+  reply?: string;
+  suggestedAction?: string;
+  statusLabel?: string;
+  whyThisNextStep?: string;
+  activeDiagnosis?: string;
+  probeIntent?: string;
+  probeType?: string;
+  updated_topic_metrics?: FrontendTopicMetricUpdate;
+  updatedTopicMetrics?: FrontendTopicMetricUpdate;
+  judgedAttempt?: {
+    attemptId: string;
+    probeId: string;
+    topicId: string;
+    submittedAt: string;
+    response: string;
+    responseType: string;
+    metadata?: {
+      latencyMs?: number | null;
+      revisionCount?: number | null;
+      usedHint?: boolean | null;
+      requestedClarificationBeforeAnswering?: boolean | null;
+    };
+    judgment?: {
+      classification?: string;
+      correctnessEstimate?: number;
+      explanationQuality?: number;
+      insight?: number;
+      confusion?: number;
+      wordCount?: number;
+    };
+  };
+  probeCompleted?: boolean;
+  nextProbe?: {
+    probeId: string;
+    topicId: string;
+    topicLabel?: string;
+    title?: string;
+    prompt: string;
+    type?: string;
+  } | null;
+  error?: string;
+};
+
+type UseProbeFlowParams = {
+  topics: Topic[];
+  setTopics: Dispatch<SetStateAction<Topic[]>>;
+  focusTopic: (topicId: string | null) => void;
+  openMyWayPanel: () => void;
+  hidePanelsForProbeEntry: () => void;
+  onLearningSpaceUpdate?: (learningSpace: LearningSpace | null) => void;
+};
+
+const MAX_CONSECUTIVE_PROBES = 2;
+function responseTypeFromAttempt(attempt: ProbeAnswerDraft | null | undefined) {
+  switch (attempt?.attempt_type) {
+    case "single_choice":
+      return "choice";
+    case "multi_choice":
+      return "multiple_choice";
+    case "ordered_items":
+      return "ordering";
+    case "drag_drop_placements":
+      return "interactive_action";
+    case "numeric":
+      return "predict";
+    case "graph":
+      return "interactive_action";
+    case "audio_response":
+      return "audio";
+    case "video_click":
+      return "video";
+    case "none":
+      return "mixed";
+    case "text":
+    case "unknown":
+    default:
+      return "text";
+  }
+}
+
+function rendererTypeFromAttempt(attempt: ProbeAnswerDraft | null | undefined) {
+  switch (attempt?.attempt_type) {
+    case "single_choice":
+    case "multi_choice":
+      return "multiple_choice_renderer";
+    case "ordered_items":
+      return "ordering_renderer";
+    case "drag_drop_placements":
+      return "drag_drop_renderer";
+    case "numeric":
+      return "slider_renderer";
+    case "graph":
+      return "graph_renderer";
+    case "audio_response":
+      return "audio_renderer";
+    case "video_click":
+      return "video_renderer";
+    case "none":
+      return "display_renderer";
+    case "text":
+    case "unknown":
+    default:
+      return "text_renderer";
+  }
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function asTopicPosition(value: unknown): TopicPosition3D | null {
+  return isTopicPosition3D(value) ? value : null;
+}
+
+function extractLearningSpaceFromMessageResponse(
+  data: MessageRouteResponse,
+): LearningSpace | null {
+  return data.scene_update?.learning_space ?? data.result?.learning_space ?? null;
+}
+
+function extractLearningSpaceFromProbeSubmitResponse(
+  data: LegacyProbeSubmitApiResponse,
+): LearningSpace | null {
+  return data.scene_update?.learning_space ?? data.result?.learning_space ?? null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isEngineRenderableProbe(value: unknown): value is EngineRenderableProbe {
+  return (
+    isRecord(value) &&
+    value.schema_version === "engine_renderable_probe_v1" &&
+    typeof value.probe_type === "string" &&
+    typeof value.expected_attempt_type === "string" &&
+    isRecord(value.prompt)
+  );
+}
+
+function getEngineRenderableProbeFromDeliveredProbe(
+  deliveredProbe: DeliveredProbe | null | undefined,
+): EngineRenderableProbe | null {
+  const snapshot = deliveredProbe?.probe_contract_snapshot;
+
+  if (!isRecord(snapshot)) {
+    return null;
+  }
+
+  const candidate = snapshot.engine_renderable_probe;
+
+  if (!isEngineRenderableProbe(candidate)) {
+    return null;
+  }
+
+  return JSON.parse(JSON.stringify(candidate)) as EngineRenderableProbe;
+}
+
+function extractInterventionFromMessageResponse(
+  data: MessageRouteResponse,
+): FrontendInterventionSummary | null {
+  return (
+    data.intervention ??
+    (data.result
+      ? {
+          mode_selected:
+            data.result.engine_fuel.intervention_mode_decision.mode_selected,
+          target_topic_id:
+            data.result.engine_fuel.intervention_mode_decision.target_topic_id,
+          active_diagnosis:
+            data.result.engine_fuel.intervention_mode_decision.active_diagnosis,
+          probe_available:
+            data.result.delivered_response.delivered_probe !== null
+              ? "available"
+              : "not_applicable",
+          status_label: "",
+          suggested_action: "",
+        }
+      : null)
+  );
+}
+
+function extractReplyFromMessageResponse(data: MessageRouteResponse) {
+  return data.result?.delivered_response?.learner_message?.text ?? "";
+}
+
+function extractSuggestedActionFromMessageResponse(data: MessageRouteResponse) {
+  return (
+    data.result?.delivered_response?.delivered_probe?.title ??
+    data.result?.engine_fuel?.probe_plan?.text_plan?.instructional_goal ??
+    data.result?.engine_fuel?.intervention_mode_decision?.decision_reasons?.[0] ??
+    ""
+  );
+}
+
+function extractMetricUpdateFromMessageResponse(
+  data: MessageRouteResponse,
+): FrontendTopicMetricUpdate | null {
+  const targetTopicId =
+    data.intervention?.target_topic_id ??
+    data.scene_update?.target_topic_id ??
+    data.result?.engine_fuel?.intervention_mode_decision?.target_topic_id ??
+    null;
+
+  if (!targetTopicId) {
+    return null;
+  }
+
+  const topic = data.result?.engine_fuel?.topics?.find(
+    (item) => item.topic_id === targetTopicId,
+  );
+
+  if (!topic) {
+    return null;
+  }
+
+  return {
+    topicId: topic.topic_id,
+    confusion: topic.topic_confusion_average ?? null,
+    insight: topic.topic_insight_average ?? null,
+    learningScore: topic.topic_learning_score ?? null,
+  };
+}
+
+function applyLearningSpaceToTopics(
+  topics: Topic[],
+  learningSpace: LearningSpace | null,
+): Topic[] {
+  if (!learningSpace?.topics?.length) {
+    return topics;
+  }
+
+  const learningSpaceTopicsById = new Map(
+    learningSpace.topics.map((topic) => [topic.topic_id, topic]),
+  );
+
+  return topics.map((topic) => {
+    const learningSpaceTopic = learningSpaceTopicsById.get(topic.id);
+
+    if (!learningSpaceTopic) {
+      return topic;
+    }
+
+    const position = asTopicPosition(learningSpaceTopic.position);
+    const semanticPosition = asTopicPosition(
+      learningSpaceTopic.layout?.semantic_position,
+    );
+
+    return {
+      ...topic,
+      position: position ?? topic.position,
+      semanticPosition: semanticPosition ?? topic.semanticPosition ?? null,
+      semanticPositionMethod:
+        learningSpaceTopic.layout?.semantic_position_method ??
+        topic.semanticPositionMethod ??
+        null,
+      semanticPositionUpdatedAt:
+        learningSpaceTopic.layout?.semantic_position_updated_at ??
+        topic.semanticPositionUpdatedAt ??
+        null,
+      positionSource:
+        learningSpaceTopic.layout?.position_source ??
+        topic.positionSource ??
+        "topic_position",
+    };
+  });
+}
+
+function mapDeliveredProbeToSummary(
+  deliveredProbe: DeliveredProbe | null | undefined,
+): ProbeSummary | null {
+  if (!deliveredProbe?.probe_id || !deliveredProbe?.target_topic_id) {
+    return null;
+  }
+
+  return {
+    id: deliveredProbe.probe_id,
+    topicId: deliveredProbe.target_topic_id,
+    topicLabel: undefined,
+    title: deliveredProbe.title || "Probe",
+    instruction: deliveredProbe.instructions || "Continue with this probe.",
+    status: "available",
+    intent: deliveredProbe.intent ?? null,
+    probeType: deliveredProbe.probe_type ?? null,
+    expectedResponseType: deliveredProbe.expected_response_type ?? null,
+    helperText: deliveredProbe.actual_context_framing ?? null,
+    probeContractSnapshot: deliveredProbe.probe_contract_snapshot ?? null,
+    engineRenderableProbe: getEngineRenderableProbeFromDeliveredProbe(deliveredProbe),
+  };
+}
+
+function extractProbeFromMessageResponse(
+  data: MessageRouteResponse,
+): ProbeSummary | null {
+  return mapDeliveredProbeToSummary(
+    data.result?.delivered_response?.delivered_probe,
+  );
+}
+
+function extractReplyFromProbeSubmitResponse(data: LegacyProbeSubmitApiResponse) {
+  return (
+    data.result?.delivered_response?.learner_message?.text ??
+    data.reply ??
+    "Your probe response was received, but no follow-up message came back."
+  );
+}
+
+function extractSuggestedActionFromProbeSubmitResponse(
+  data: LegacyProbeSubmitApiResponse,
+) {
+  return (
+    data.suggestedAction ??
+    data.result?.engine_fuel?.intervention_mode_decision?.decision_reasons?.[0] ??
+    ""
+  );
+}
+
+function extractMetricUpdateFromProbeSubmitResponse(
+  data: LegacyProbeSubmitApiResponse,
+): FrontendTopicMetricUpdate | undefined {
+  return data.updated_topic_metrics ?? data.updatedTopicMetrics ?? undefined;
+}
+
+function extractNextProbeFromProbeSubmitResponse(
+  data: LegacyProbeSubmitApiResponse,
+): ProbeSummary | null {
+  const contractProbe = mapDeliveredProbeToSummary(
+    data.result?.delivered_response?.delivered_probe,
+  );
+
+  if (contractProbe) return contractProbe;
+
+  const topLevelContractProbe = mapDeliveredProbeToSummary(data.next_probe);
+
+  if (topLevelContractProbe) return topLevelContractProbe;
+
+  if (!data.nextProbe) return null;
+
+  const topicLabel = data.nextProbe.topicLabel?.trim() || undefined;
+
+  return {
+    id: data.nextProbe.probeId,
+    topicId: data.nextProbe.topicId,
+    topicLabel,
+    title: data.nextProbe.title || topicLabel || "Next Probe",
+    instruction: data.nextProbe.prompt,
+    status: "available",
+    intent: null,
+    probeType: data.nextProbe.type ?? null,
+    expectedResponseType: null,
+    helperText: null,
+    probeContractSnapshot: null,
+    engineRenderableProbe: null,
+  };
+}
+
+function extractContinueProbeLoop(
+  data: LegacyProbeSubmitApiResponse,
+  mappedNextProbe: ProbeSummary | null,
+  nextCount: number,
+) {
+  if (typeof data.continue_probe_loop === "boolean") {
+    return (
+      data.continue_probe_loop &&
+      nextCount < MAX_CONSECUTIVE_PROBES &&
+      !!mappedNextProbe
+    );
+  }
+
+  return nextCount < MAX_CONSECUTIVE_PROBES && !!mappedNextProbe;
+}
+
+export function useProbeFlow({
+  topics,
+  setTopics,
+  focusTopic,
+  openMyWayPanel,
+  hidePanelsForProbeEntry,
+  onLearningSpaceUpdate,
+}: UseProbeFlowParams) {
+  const [isSending, setIsSending] = useState(false);
+  const [isSubmittingProbe, setIsSubmittingProbe] = useState(false);
+
+  const [latestReply, setLatestReply] = useState("");
+  const [suggestedAction, setSuggestedAction] = useState("");
+
+  const [availableProbe, setAvailableProbe] = useState<ProbeSummary | null>(null);
+  const [activeProbeId, setActiveProbeId] = useState<string | null>(null);
+  const [sceneMode, setSceneMode] = useState<"space" | "probe">("space");
+
+  const [isEnteringProbe, setIsEnteringProbe] = useState(false);
+  const [probeEntryTopicId, setProbeEntryTopicId] = useState<string | null>(null);
+
+  const [consecutiveProbeCount, setConsecutiveProbeCount] = useState(0);
+
+  const [probeFeedback, setProbeFeedback] = useState<{
+    reply: string;
+    suggestedAction: string;
+  } | null>(null);
+
+  const activeProbe = useMemo(() => {
+    return availableProbe && availableProbe.id === activeProbeId
+      ? availableProbe
+      : null;
+  }, [availableProbe, activeProbeId]);
+
+  const applyTopicMetricUpdate = useCallback(
+    (update?: FrontendTopicMetricUpdate) => {
+      if (!update) return;
+
+      setTopics((prevTopics) =>
+        prevTopics.map((topic) => {
+          if (topic.id !== update.topicId) {
+            return topic;
+          }
+
+          return {
+            ...topic,
+            confusion:
+              update.confusion !== undefined && update.confusion !== null
+                ? clamp(update.confusion, 0, 1)
+                : topic.confusion,
+            insight:
+              update.insight !== undefined && update.insight !== null
+                ? clamp(update.insight, 0, 1)
+                : topic.insight,
+            learningScore:
+              update.learningScore !== undefined && update.learningScore !== null
+                ? clamp(update.learningScore, 0, 1)
+                : topic.learningScore,
+          };
+        }),
+      );
+    },
+    [setTopics],
+  );
+
+  const applyLearningSpaceUpdate = useCallback(
+    (learningSpace: LearningSpace | null) => {
+      if (!learningSpace) return;
+
+      onLearningSpaceUpdate?.(learningSpace);
+
+      setTopics((prevTopics) =>
+        applyLearningSpaceToTopics(prevTopics, learningSpace),
+      );
+    },
+    [onLearningSpaceUpdate, setTopics],
+  );
+
+  const resetProbeStateForMessage = useCallback(() => {
+    setAvailableProbe(null);
+    setActiveProbeId(null);
+    setSceneMode("space");
+    setIsEnteringProbe(false);
+    setProbeEntryTopicId(null);
+    setProbeFeedback(null);
+    setConsecutiveProbeCount(0);
+  }, []);
+
+  const startMessageFlow = useCallback(() => {
+    setIsSending(true);
+    resetProbeStateForMessage();
+  }, [resetProbeStateForMessage]);
+
+  const finishMessageFlowSuccess = useCallback(
+    (data: MessageRouteResponse) => {
+      const metricUpdate = extractMetricUpdateFromMessageResponse(data);
+      if (metricUpdate) {
+        applyTopicMetricUpdate(metricUpdate);
+      }
+
+      const returnedLearningSpace = extractLearningSpaceFromMessageResponse(data);
+      if (returnedLearningSpace) {
+        applyLearningSpaceUpdate(returnedLearningSpace);
+      }
+
+      const intervention = extractInterventionFromMessageResponse(data);
+      const nextProbe = extractProbeFromMessageResponse(data);
+
+      setLatestReply(extractReplyFromMessageResponse(data));
+      setSuggestedAction(extractSuggestedActionFromMessageResponse(data));
+
+      const resolvedTopicId =
+        intervention?.target_topic_id ?? data.scene_update?.target_topic_id ?? null;
+
+      if (resolvedTopicId) {
+        focusTopic(resolvedTopicId);
+      }
+
+      if (intervention?.mode_selected === "probe" && nextProbe) {
+        setAvailableProbe(nextProbe);
+        setActiveProbeId(null);
+        setSceneMode("space");
+      } else {
+        setAvailableProbe(null);
+        setActiveProbeId(null);
+        setSceneMode("space");
+        setIsEnteringProbe(false);
+        setProbeEntryTopicId(null);
+      }
+
+      setProbeFeedback(null);
+      setConsecutiveProbeCount(0);
+      setIsSending(false);
+    },
+    [applyLearningSpaceUpdate, applyTopicMetricUpdate, focusTopic],
+  );
+
+  const finishMessageFlowError = useCallback(() => {
+    setLatestReply("Sorry, something went wrong while sending your message.");
+    setSuggestedAction("Try sending your question again.");
+    setAvailableProbe(null);
+    setActiveProbeId(null);
+    setSceneMode("space");
+    setIsEnteringProbe(false);
+    setProbeEntryTopicId(null);
+    setProbeFeedback(null);
+    setIsSending(false);
+  }, []);
+
+  const handleOpenProbe = useCallback(
+    (probe: ProbeSummary) => {
+      focusTopic(probe.topicId);
+      setActiveProbeId(probe.id);
+      setProbeEntryTopicId(probe.topicId);
+      setIsEnteringProbe(true);
+      setSceneMode("space");
+      setProbeFeedback(null);
+
+      setAvailableProbe((prev) =>
+        prev && prev.id === probe.id ? { ...prev, status: "active" } : prev,
+      );
+
+      hidePanelsForProbeEntry();
+    },
+    [focusTopic, hidePanelsForProbeEntry],
+  );
+
+  const handleProbeEntryComplete = useCallback(() => {
+    setIsEnteringProbe(false);
+    setProbeEntryTopicId(null);
+    setSceneMode("probe");
+  }, []);
+
+  const handleExitProbe = useCallback(() => {
+    setSceneMode("space");
+    setIsEnteringProbe(false);
+    setProbeEntryTopicId(null);
+    setProbeFeedback(null);
+
+    setAvailableProbe((prev) =>
+      prev && prev.id === activeProbeId ? { ...prev, status: "available" } : prev,
+    );
+
+    setActiveProbeId(null);
+  }, [activeProbeId]);
+
+  const handleSubmitProbe = useCallback(
+    async (payload: ProbeSubmitPayload) => {
+      const topic =
+        topics.find((candidate) => candidate.id === payload.topicId) ?? null;
+
+      const currentProbe =
+        availableProbe && availableProbe.id === payload.probeId
+          ? availableProbe
+          : null;
+
+      try {
+        setIsSubmittingProbe(true);
+
+        const response = await fetch("/api/probe/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            probeId: payload.probeId,
+            topicId: payload.topicId,
+            topicLabel: topic?.topic_label ?? topic?.id ?? "this topic",
+            prompt: currentProbe?.instruction ?? null,
+            response: payload.response,
+            structuredAttempt: payload.attempt ?? null,
+            attempt: payload.attempt ?? null,
+            engineRenderableProbe:
+              currentProbe?.engineRenderableProbe ??
+              payload.engineRenderableProbe ??
+              null,
+            probeContractSnapshot:
+              currentProbe?.probeContractSnapshot ??
+              payload.probeContractSnapshot ??
+              null,
+            answeredProbeContractSnapshot:
+              currentProbe?.probeContractSnapshot ??
+              payload.probeContractSnapshot ??
+              null,
+            submittedAt: new Date().toISOString(),
+            responseType: responseTypeFromAttempt(payload.attempt),
+            deliveryContext: {
+              renderer_type: rendererTypeFromAttempt(payload.attempt),
+              generator: "chatgpt",
+              modality: "text",
+              tone: "encouraging",
+              pacing: "normal",
+              language_style: "plain",
+              context_framing: currentProbe?.instruction ?? null,
+              engine_probe_type:
+                currentProbe?.engineRenderableProbe?.probe_type ??
+                payload.engineRenderableProbe?.probe_type ??
+                null,
+              expected_attempt_type:
+                payload.attempt?.attempt_type ??
+                currentProbe?.engineRenderableProbe?.expected_attempt_type ??
+                payload.engineRenderableProbe?.expected_attempt_type ??
+                null,
+            },
+            metadata: {
+              latencyMs: null,
+              revisionCount: null,
+              usedHint: null,
+              requestedClarificationBeforeAnswering: null,
+            },
+          }),
+        });
+
+        const data: LegacyProbeSubmitApiResponse = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error || `Probe submit failed with status ${response.status}`,
+          );
+        }
+
+        const metricUpdate = extractMetricUpdateFromProbeSubmitResponse(data);
+        if (metricUpdate) {
+          applyTopicMetricUpdate(metricUpdate);
+        }
+
+        const returnedLearningSpace = extractLearningSpaceFromProbeSubmitResponse(data);
+        if (returnedLearningSpace) {
+          applyLearningSpaceUpdate(returnedLearningSpace);
+        }
+
+        const replyText = extractReplyFromProbeSubmitResponse(data);
+        const actionText = extractSuggestedActionFromProbeSubmitResponse(data);
+
+        setLatestReply(replyText);
+        setSuggestedAction(actionText);
+        setProbeFeedback({
+          reply: replyText,
+          suggestedAction: actionText,
+        });
+
+        const nextCount = consecutiveProbeCount + 1;
+        const mappedNextProbe = extractNextProbeFromProbeSubmitResponse(data);
+        const shouldContinueProbeLoop = extractContinueProbeLoop(
+          data,
+          mappedNextProbe,
+          nextCount,
+        );
+
+        setConsecutiveProbeCount(nextCount);
+
+        if (shouldContinueProbeLoop && mappedNextProbe) {
+          setAvailableProbe({ ...mappedNextProbe, status: "active" });
+          setActiveProbeId(mappedNextProbe.id);
+          setSceneMode("probe");
+          setIsEnteringProbe(false);
+          setProbeEntryTopicId(null);
+        } else {
+          setAvailableProbe(null);
+          setSceneMode("space");
+          setActiveProbeId(null);
+          setIsEnteringProbe(false);
+          setProbeEntryTopicId(null);
+          openMyWayPanel();
+
+          const resolvedTopicId =
+            data.scene_update?.target_topic_id ??
+            data.result?.engine_fuel?.intervention_mode_decision?.target_topic_id ??
+            payload.topicId;
+
+          if (resolvedTopicId) {
+            focusTopic(resolvedTopicId);
+          }
+        }
+      } catch (error) {
+        console.error("Probe submission failed:", error);
+
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Sorry, something went wrong while submitting your probe response.";
+
+        setLatestReply(errorMessage);
+        setSuggestedAction("Try submitting your response again.");
+        setProbeFeedback({
+          reply: errorMessage,
+          suggestedAction: "Try submitting your response again.",
+        });
+
+        setAvailableProbe((prev) =>
+          prev && prev.id === payload.probeId
+            ? { ...prev, status: "active" }
+            : prev,
+        );
+
+        setSceneMode("probe");
+        setIsEnteringProbe(false);
+        setProbeEntryTopicId(null);
+      } finally {
+        setIsSubmittingProbe(false);
+      }
+    },
+    [
+      topics,
+      availableProbe,
+      consecutiveProbeCount,
+      applyLearningSpaceUpdate,
+      applyTopicMetricUpdate,
+      openMyWayPanel,
+      focusTopic,
+    ],
+  );
+
+  return {
+    isSending,
+    isSubmittingProbe,
+    latestReply,
+    suggestedAction,
+    availableProbe,
+    activeProbe,
+    sceneMode,
+    isEnteringProbe,
+    probeEntryTopicId,
+    probeFeedback,
+    startMessageFlow,
+    finishMessageFlowSuccess,
+    finishMessageFlowError,
+    handleOpenProbe,
+    handleProbeEntryComplete,
+    handleExitProbe,
+    handleSubmitProbe,
+  };
+}
+
+
+
+
+
+
+============================================================
+FILE: ui\learning-space\scene\constants.ts
+============================================================
+
+import * as THREE from "three";
+
+export const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 18, 72);
+export const DEFAULT_TARGET = new THREE.Vector3(0, 0, 0);
+export const ZOOMED_OUT_DISTANCE = 72;
+
+/**
+ * Renderer-only expansion.
+ *
+ * Supabase topic_position / semantic_position stay in canonical semantic-map
+ * units. The canvas expands those coordinates for a more spacious,
+ * NASA-Eyes-like overview without corrupting persisted layout math.
+ *
+ * v15: X/Z still provide the broad map, but Y now has enough scale to make
+ * the learning space genuinely explorable from different viewpoints.
+ */
+export const VISUAL_SPACE_SCALE_XZ = 6.85;
+export const VISUAL_SPACE_SCALE_Y = 4.35;
+
+/**
+ * NASA-Eyes-style composition shaping.
+ *
+ * This pass gives the map more "system scale" while preserving relationships:
+ * most of the extra spacing comes from uniform X/Z expansion, not nonlinear
+ * distortion. This radial boost is kept
+ * deliberately gentle: it helps far topics feel like they live in a larger
+ * solar-system space, but it should not become the main source of semantic
+ * distance. The backend semantic layout still owns topic relationships.
+ *
+ * This is renderer-only. It does not modify topic_position or semantic_position.
+ */
+export const RADIAL_EXPANSION_START = 1.35;
+export const RADIAL_EXPANSION_LINEAR_GAIN = 0.045;
+export const RADIAL_EXPANSION_CURVE_GAIN = 0.018;
+export const RADIAL_EXPANSION_CURVE_POWER = 1.18;
+export const RADIAL_EXPANSION_MAX_BOOST = 0.42;
+
+/**
+ * Renderer-only body scale.
+ *
+ * The learning-space contract still owns render_state.radius. These factors
+ * only decide how large the bodies appear in this particular scene composition.
+ * Smaller background bodies create a stronger sense of navigable space, while
+ * the selected/focused body can become visually dominant like a planet view.
+ */
+export const OVERVIEW_TOPIC_BODY_SCALE = 0.74;
+export const SELECTED_TOPIC_BODY_SCALE = 0.94;
+export const FOCUSED_TOPIC_BODY_SCALE = 1.28;
+export const FOCUSED_BACKGROUND_TOPIC_BODY_SCALE = 0.5;
+export const FOCUSED_SELECTED_BACKGROUND_TOPIC_BODY_SCALE = 0.68;
+
+export const SETTLE_DELAY_MS = 220;
+export const TOPIC_CLICK_SEQUENCE_MS = 280;
+
+/**
+ * Global labels should hide only for real manual view manipulation.
+ * A normal click/select, worker refresh, semantic-layout commit, or
+ * programmatic camera ride should not blank every topic label.
+ */
+export const VIEW_DRAG_LABEL_HIDE_THRESHOLD_PX = 8;
+
+/**
+ * Topic arrival should feel like a gentle materialization, not a flash.
+ * These values only control the creation animation for genuinely new topic ids.
+ */
+export const TOPIC_APPEARANCE_LERP_ALPHA = 0.075;
+export const TOPIC_APPEARANCE_START_SCALE = 0.58;
+
+/**
+ * Visual-only movement policy.
+ *
+ * Canonical topic positions still come from learningSpace.topics[].position.
+ * These values only control how the renderer eases toward that already-committed
+ * renderer-safe position. Keep these intentionally calm so semantic-layout
+ * updates feel like graceful migration rather than abrupt jumps.
+ *
+ * Keep the overview/focused/background alphas matched for now so a staged
+ * layout release feels like one synchronized migration event instead of the
+ * highlighted topic arriving before or after the rest of the map.
+ */
+export const OVERVIEW_TOPIC_POSITION_LERP_ALPHA = 0.009;
+export const FOCUSED_TOPIC_POSITION_LERP_ALPHA = 0.009;
+export const BACKGROUND_TOPIC_POSITION_LERP_ALPHA = 0.009;
+export const PROBE_TOPIC_POSITION_LERP_ALPHA = 0;
+
+/**
+ * Elegant semantic drift trail policy.
+ *
+ * The trail should feel like a subtle memory of movement, not a busy sci-fi
+ * effect. It appears only after a meaningful committed position change and
+ * fades away automatically. White keeps it readable over the starfield without
+ * adding another semantic color language.
+ */
+export const MOVEMENT_TRAIL_MIN_DISTANCE = 0.14;
+export const MOVEMENT_TRAIL_FADE_RATE = 0.985;
+export const MOVEMENT_TRAIL_TARGET_REACHED_FADE_RATE = 0.982;
+export const MOVEMENT_TRAIL_MIN_OPACITY = 0.012;
+export const MOVEMENT_TRAIL_OVERVIEW_OPACITY = 0.72;
+export const MOVEMENT_TRAIL_FOCUSED_OPACITY = 0.62;
+export const MOVEMENT_TRAIL_BACKGROUND_OPACITY = 0.42;
+
+/**
+ * Camera tether policy.
+ *
+ * This is deliberately gentler than a user-triggered warp/focus. Topic movement
+ * should not yank the camera around; only the currently focused/selected topic
+ * is softly followed.
+ */
+export const CAMERA_TETHER_MIN_TOPIC_MOVE = 0.035;
+export const FOCUSED_TOPIC_TETHER_CAMERA_ALPHA = 0.045;
+export const FOCUSED_TOPIC_TETHER_TARGET_ALPHA = 0.055;
+export const SELECTED_TOPIC_TETHER_TARGET_ALPHA = 0.045;
+
+/**
+ * Collision-safe local liveliness.
+ *
+ * Topic center positions remain controlled by semantic layout + backend commit.
+ * This small local bob is reserved inside render_state.collision_radius, so it
+ * should not break the non-overlap contract. Keep this subtle: MyWay should
+ * feel alive without making topic placement visually untrustworthy.
+ */
+export const LOCAL_BOB_MAX_AMPLITUDE = 0.055;
+export const LOCAL_BOB_RESERVE_USAGE = 0.52;
+export const LOCAL_BOB_MIN_RESERVE = 0.045;
+export const LOCAL_BOB_XZ_FACTOR = 0.22;
+export const LOCAL_BOB_LERP_ALPHA = 0.08;
+export const LOCAL_BOB_BASE_SPEED = 0.62;
+export const LOCAL_BOB_SPEED_VARIATION = 0.28;
+
+/**
+ * Map-label policy.
+ *
+ * Labels are useful for navigation, but the current topic's label becomes
+ * redundant in close-up because the right panel owns that context.
+ * Do not hide all labels just because a topic is focused or because layout
+ * migration is staged; other labels should remain visible so the learner can
+ * stay oriented.
+ */
+export const LABEL_HIDE_SCREEN_RADIUS_PX = 44;
+export const LABEL_MAX_WIDTH_OVERVIEW = 210;
+export const LABEL_MAX_WIDTH_PROMINENT = 260;
+export const LABEL_OFFSET_MIN_PX = 34;
+export const LABEL_OFFSET_MAX_PX = 112;
+export const LABEL_OFFSET_SCREEN_RADIUS_MULTIPLIER = 0.86;
+export const LABEL_OFFSET_SCREEN_RADIUS_BIAS_PX = 22;
+export const LABEL_OFFSET_CURRENT_TOPIC_EXTRA_PX = 18;
+export const SEMANTIC_RELATIONSHIP_ARC_MAX_COUNT = 3;
+export const SEMANTIC_RELATIONSHIP_ARC_SEGMENTS = 72;
+export const SEMANTIC_RELATIONSHIP_ARC_MIN_OPACITY = 0.1;
+export const SEMANTIC_RELATIONSHIP_ARC_BASE_OPACITY = 0.18;
+export const SEMANTIC_RELATIONSHIP_ARC_FOCUSED_OPACITY_BOOST = 0.12;
+export const SEMANTIC_RELATIONSHIP_ARC_HOVERLESS_LIFT_MIN = 0.9;
+export const SEMANTIC_RELATIONSHIP_ARC_HOVERLESS_LIFT_MAX = 4.8;
+export const SEMANTIC_RELATIONSHIP_ARC_LIFT_DISTANCE_FACTOR = 0.18;
+export const SEMANTIC_RELATIONSHIP_MIN_SCREEN_DISTANCE_PX = 54;
+export const SEMANTIC_RELATIONSHIP_MAX_SCREEN_FRACTION = 0.82;
+export const LABEL_OCCLUSION_RADIUS_MULTIPLIER = 1.14;
+export const LABEL_OCCLUSION_DEPTH_PADDING = 0.08;
+export const LABEL_OCCLUSION_FADE_BAND = 0.48;
+export const LABEL_OCCLUSION_MAX_OPACITY_MULTIPLIER = 0.34;
+export const LABEL_OCCLUSION_SCREEN_RADIUS_MULTIPLIER = 1.12;
+export const LABEL_OCCLUSION_SCREEN_PADDING_PX = 18;
+export const LABEL_OCCLUSION_SCREEN_FADE_BAND_PX = 44;
+export const LABEL_OCCLUSION_SCREEN_HARD_CORE_MULTIPLIER = 0.82;
+export const LABEL_DISTANCE_FADE_NEAR_MULTIPLIER = 4.2;
+export const LABEL_DISTANCE_FADE_FAR_MULTIPLIER = 18;
+export const LABEL_DISTANCE_FADE_BACKGROUND_MIN_OPACITY = 0.68;
+export const LABEL_DISTANCE_FADE_CURRENT_MIN_OPACITY = 0.84;
+export const LABEL_CURRENT_MIN_OPACITY_WHEN_VISIBLE = 0.78;
+
+/**
+ * Mode-driven relationship scanner.
+ *
+ * Relationship lines now behave as a visual lens. The active mode decides what
+ * the arcs mean:
+ *
+ * - semantic_similarity: semantic neighborhood arcs
+ * - confusion: shared confusion signal arcs
+ * - insight: shared insight signal arcs
+ * - off: no relationship arcs
+ *
+ * While the user rotates the view, scanner relationships are selected from the
+ * current camera/view corridor. On release, the last scanner result stays
+ * briefly before returning to the current mode's default focused relationships.
+ */
+export const VIEWPOINT_SCANNER_RELATIONSHIP_MAX_COUNT = 3;
+export const VIEWPOINT_SCANNER_SETTLE_MS = 3000;
+export const VIEWPOINT_SCANNER_CORRIDOR_RADIUS_PX = 280;
+export const VIEWPOINT_SCANNER_CORE_RADIUS_PX = 82;
+export const VIEWPOINT_SCANNER_MAX_SCREEN_FRACTION = 0.74;
+export const VIEWPOINT_SCANNER_FAR_CORRIDOR_MIN_SCORE = 0.11;
+export const VIEWPOINT_SCANNER_MIN_SCORE = 0.18;
+export const VIEWPOINT_SCANNER_ACTIVE_TOPIC_BIAS = 0.2;
+export const RELATIONSHIP_ARC_DEFAULT_TUBE_RADIUS_MIN = 0.014;
+export const RELATIONSHIP_ARC_DEFAULT_TUBE_RADIUS_MAX = 0.058;
+export const RELATIONSHIP_ARC_SCANNER_TUBE_RADIUS_MIN = 0.038;
+export const RELATIONSHIP_ARC_SCANNER_TUBE_RADIUS_MAX = 0.135;
+export const RELATIONSHIP_ARC_SETTLED_SCAN_TUBE_RADIUS_MIN = 0.034;
+export const RELATIONSHIP_ARC_SETTLED_SCAN_TUBE_RADIUS_MAX = 0.112;
+export const RELATIONSHIP_ARC_TUBE_RADIAL_SEGMENTS = 8;
+export const RELATIONSHIP_ARC_TUBE_SEGMENTS = 48;
+
+/**
+ * Relationship-line occlusion rule.
+ *
+ * Non-connected topics should obey normal real-world depth:
+ * if a relationship line is closer to the camera than an unrelated sphere, the
+ * line can appear in front; if the unrelated sphere is closer, it hides the
+ * line.
+ *
+ * Connected endpoint topics are different. Relationship lines should still tuck
+ * into the topics they connect to, so each relationship creates its own tiny
+ * stencil mask for only its two endpoint topics. The actual topic spheres do not
+ * write the relationship stencil globally.
+ */
+export const RELATIONSHIP_ARC_ENDPOINT_COLOR_BLEND_FRACTION = 0.18;
+export const VIEWPOINT_SCANNER_BLUE = "#7BAFD4";
+export const VIEWPOINT_SCANNER_SETTLED_BLUE = VIEWPOINT_SCANNER_BLUE;
+
+export const CONFUSION_SIGNAL_RELATIONSHIP_RED = "#fb7185";
+export const INSIGHT_SIGNAL_RELATIONSHIP_GREEN = "#34d399";
+export const RELATIONSHIP_VIEW_MODE_ARC_MAX_COUNT = 3;
+
+/**
+ * Probe surface thumbnail.
+ *
+ * Temporary dev mode keeps probe-like thumbnails visible on every topic so the
+ * surface treatment can be tuned without repeatedly creating new eligible
+ * probes. Turn this back to false once the thumbnail feels right.
+ */
+export const SHOW_DEBUG_PROBE_THUMBNAILS_FOR_ALL_TOPICS = false;
+
+/**
+ * The probe display should feel like the topic sphere itself becomes the
+ * thumbnail, similar to a miniature Vegas Sphere. This is intentionally
+ * viewer-facing so the probe stays upright and readable as the camera rotates.
+ *
+ * This display is visual-only for pointer behavior. Normal topic click,
+ * double-click, and drag/scanning interactions still belong to the underlying
+ * topic sphere.
+ */
+/**
+ * Keep the probe display just far enough above the topic sphere to avoid
+ * depth-buffer fighting/shimmer at distance. This is intentionally still close
+ * enough to read as the sphere surface itself, not a separate badge.
+ */
+export const PROBE_DISPLAY_SPHERE_SCALE = 1.012;
+export const PROBE_DISPLAY_GLOW_SCALE = 1.018;
+export const PROBE_DISPLAY_RENDER_ORDER = 24;
+export const PROBE_DISPLAY_GLOW_RENDER_ORDER = 23;
+export const PROBE_DISPLAY_TEXTURE_WIDTH = 1024;
+export const PROBE_DISPLAY_TEXTURE_HEIGHT = 512;
+export const PROBE_DISPLAY_GLOW_OPACITY = 0;
+export const PROBE_DISPLAY_FRONT_ROTATION_Y = -Math.PI / 2;
+export const PROBE_EXIT_CAMERA_ALPHA = 0.068;
+export const PROBE_EXIT_TARGET_ALPHA = 0.074;
+export const PROBE_MARKER_DEFAULT_NORMAL = new THREE.Vector3(0.48, 0.55, 0.68).normalize();
+
+
+export const RELATIONSHIP_DEFAULT_ENDPOINT_ACTIVE_COLOR = "#ead7ff";
+export const RELATIONSHIP_DEFAULT_ENDPOINT_BACKGROUND_COLOR = "#d4d4d8";
+export const TOPIC_SPHERE_RENDER_ORDER = 10;
+
+/**
+ * Probe availability icon.
+ *
+ * The probe marker is a small icon-only intervention invitation. It should stay
+ * visually separate from the stable topic sphere body.
+ */
+export const PROBE_ICON_RENDER_ORDER = 24;
+export const PROBE_ICON_SURFACE_OFFSET = 1.075;
+export const PROBE_ICON_BASE_SCALE = 0.34;
+export const PROBE_ICON_FOCUSED_SCALE = 0.42;
+
+
+export const RELATIONSHIP_ENDPOINT_STENCIL_RENDER_ORDER = 18;
+export const RELATIONSHIP_ARC_RENDER_ORDER = 20;
+export const TOPIC_STENCIL_REF = 1;
+export const RELATIONSHIP_STENCIL_REF_MIN = 2;
+export const RELATIONSHIP_STENCIL_REF_MAX = 255;
+
+
+
+============================================================
+FILE: ui\learning-space\scene\probe-marker.tsx
+============================================================
+
+"use client";
+
+import { useEffect, useMemo } from "react";
+import * as THREE from "three";
+import type { LearningSpaceTopic } from "@/types/learning-space";
+import type { ProbeSummary } from "@/ui/learning-space/probes/probe-surface";
+import { stableHash } from "./geometry-utils";
+import {
+  PROBE_ICON_BASE_SCALE,
+  PROBE_ICON_FOCUSED_SCALE,
+  PROBE_ICON_RENDER_ORDER,
+  PROBE_ICON_SURFACE_OFFSET,
+  PROBE_MARKER_DEFAULT_NORMAL,
+} from "./constants";
+
+export function getProbeMarkerSurfaceNormal(topic: LearningSpaceTopic) {
+  const marker = topic.surface_markers.find(
+    (candidate) => candidate.marker_type === "probe_available",
+  );
+  const normalHint = marker?.surface_anchor.normal_hint;
+
+  if (
+    Array.isArray(normalHint) &&
+    normalHint.length === 3 &&
+    normalHint.every(
+      (value) => typeof value === "number" && Number.isFinite(value),
+    )
+  ) {
+    const hintedNormal = new THREE.Vector3(
+      normalHint[0],
+      normalHint[1],
+      normalHint[2],
+    );
+
+    if (hintedNormal.lengthSq() > 0.0001) {
+      return hintedNormal.normalize();
+    }
+  }
+
+  return PROBE_MARKER_DEFAULT_NORMAL.clone();
+}
+
+export function getProbeMarkerPreview(topic: LearningSpaceTopic) {
+  return topic.surface_markers.find(
+    (marker) =>
+      marker.marker_type === "probe_available" && marker.visible_by_default,
+  )?.preview;
+}
+
+export type ProbeMarkerPreview = NonNullable<
+  LearningSpaceTopic["surface_markers"][number]["preview"]
+>;
+export type ProbeMarkerThumbnailStyle = ProbeMarkerPreview["thumbnail_style"];
+
+export function getDebugProbeThumbnailStyle(topic: LearningSpaceTopic) {
+  const styles: ProbeMarkerThumbnailStyle[] = [
+    "choice_card",
+    "slider_card",
+    "drag_drop_card",
+    "graph_card",
+    "audio_card",
+    "video_card",
+    "simulation_card",
+    "text_card",
+  ];
+  return styles[stableHash(topic.topic_id) % styles.length];
+}
+
+export function getProbeThumbnailIcon(thumbnailStyle: ProbeMarkerThumbnailStyle) {
+  switch (thumbnailStyle) {
+    case "choice_card":
+      return "choice";
+    case "drag_drop_card":
+      return "drag";
+    case "slider_card":
+      return "slider";
+    case "graph_card":
+      return "graph";
+    case "video_card":
+      return "video";
+    case "audio_card":
+      return "audio";
+    case "simulation_card":
+      return "simulation";
+    case "text_card":
+      return "text";
+    case "generic_card":
+    default:
+      return "generic";
+  }
+}
+
+function drawRoundedRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const safeRadius = Math.min(radius, width / 2, height / 2);
+
+  context.beginPath();
+  context.moveTo(x + safeRadius, y);
+  context.lineTo(x + width - safeRadius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + safeRadius);
+  context.lineTo(x + width, y + height - safeRadius);
+  context.quadraticCurveTo(
+    x + width,
+    y + height,
+    x + width - safeRadius,
+    y + height,
+  );
+  context.lineTo(x + safeRadius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - safeRadius);
+  context.lineTo(x, y + safeRadius);
+  context.quadraticCurveTo(x, y, x + safeRadius, y);
+  context.closePath();
+}
+
+function drawProbeIcon(args: {
+  context: CanvasRenderingContext2D;
+  icon: string;
+  width: number;
+  height: number;
+}) {
+  const { context, icon, width, height } = args;
+  const cx = width / 2;
+  const cy = height / 2;
+  const scale = width / 256;
+
+  context.clearRect(0, 0, width, height);
+
+  const halo = context.createRadialGradient(cx, cy, width * 0.06, cx, cy, width * 0.46);
+  halo.addColorStop(0, "rgba(255,255,255,0.34)");
+  halo.addColorStop(0.55, "rgba(255,255,255,0.12)");
+  halo.addColorStop(1, "rgba(255,255,255,0)");
+  context.fillStyle = halo;
+  context.fillRect(0, 0, width, height);
+
+  context.save();
+  context.strokeStyle = "rgba(255,255,255,0.94)";
+  context.fillStyle = "rgba(255,255,255,0.94)";
+  context.shadowColor = "rgba(255,255,255,0.72)";
+  context.shadowBlur = 14 * scale;
+  context.lineWidth = 8 * scale;
+  context.lineCap = "round";
+  context.lineJoin = "round";
+
+  if (icon === "text") {
+    drawRoundedRect(context, cx - 58 * scale, cy - 42 * scale, 116 * scale, 72 * scale, 22 * scale);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(cx - 18 * scale, cy + 30 * scale);
+    context.lineTo(cx, cy + 52 * scale);
+    context.lineTo(cx + 18 * scale, cy + 30 * scale);
+    context.stroke();
+    [-18, 6, 30].forEach((y, index) => {
+      const lineWidth = index === 1 ? 68 : 84;
+      context.beginPath();
+      context.moveTo(cx - (lineWidth / 2) * scale, cy + y * scale);
+      context.lineTo(cx + (lineWidth / 2) * scale, cy + y * scale);
+      context.stroke();
+    });
+  } else if (icon === "choice") {
+    const cells = [
+      [-34, -32, "A"],
+      [34, -32, "B"],
+      [-34, 36, "C"],
+      [34, 36, "D"],
+    ] as const;
+    context.font = `700 ${24 * scale}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI`;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    cells.forEach(([dx, dy, label], index) => {
+      context.beginPath();
+      context.arc(cx + dx * scale, cy + dy * scale, 24 * scale, 0, Math.PI * 2);
+      if (index === 1) context.fill();
+      else context.stroke();
+      context.save();
+      context.shadowBlur = 0;
+      context.fillStyle = index === 1 ? "rgba(17,24,39,0.96)" : "rgba(255,255,255,0.94)";
+      context.fillText(label, cx + dx * scale, cy + dy * scale + 1 * scale);
+      context.restore();
+    });
+  } else if (icon === "slider") {
+    [-34, 0, 34].forEach((dy, index) => {
+      context.beginPath();
+      context.moveTo(cx - 62 * scale, cy + dy * scale);
+      context.lineTo(cx + 62 * scale, cy + dy * scale);
+      context.stroke();
+      const knobX = cx + [-18, 34, 4][index] * scale;
+      drawRoundedRect(context, knobX - 13 * scale, cy + dy * scale - 20 * scale, 26 * scale, 40 * scale, 13 * scale);
+      context.fill();
+    });
+  } else if (icon === "graph") {
+    context.beginPath();
+    context.moveTo(cx - 58 * scale, cy - 52 * scale);
+    context.lineTo(cx - 58 * scale, cy + 54 * scale);
+    context.lineTo(cx + 62 * scale, cy + 54 * scale);
+    context.stroke();
+    const points = [
+      [cx - 38 * scale, cy + 32 * scale],
+      [cx - 8 * scale, cy - 10 * scale],
+      [cx + 24 * scale, cy + 8 * scale],
+      [cx + 52 * scale, cy - 36 * scale],
+    ];
+    context.beginPath();
+    context.moveTo(points[0][0], points[0][1]);
+    for (const [x, y] of points.slice(1)) context.lineTo(x, y);
+    context.stroke();
+    points.forEach(([x, y]) => {
+      context.beginPath();
+      context.arc(x, y, 6 * scale, 0, Math.PI * 2);
+      context.fill();
+    });
+  } else if (icon === "audio") {
+    for (let index = 0; index < 9; index += 1) {
+      const x = cx - 52 * scale + index * 13 * scale;
+      const h = (14 + Math.abs(Math.sin(index * 1.35)) * 34) * scale;
+      context.beginPath();
+      context.moveTo(x, cy - h);
+      context.lineTo(x, cy + h);
+      context.stroke();
+    }
+  } else if (icon === "video") {
+    drawRoundedRect(context, cx - 60 * scale, cy - 42 * scale, 120 * scale, 84 * scale, 18 * scale);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(cx - 14 * scale, cy - 22 * scale);
+    context.lineTo(cx - 14 * scale, cy + 22 * scale);
+    context.lineTo(cx + 28 * scale, cy);
+    context.closePath();
+    context.fill();
+  } else if (icon === "simulation") {
+    drawRoundedRect(context, cx - 66 * scale, cy - 48 * scale, 132 * scale, 96 * scale, 18 * scale);
+    context.stroke();
+    [cx - 34 * scale, cx, cx + 34 * scale].forEach((x, index) => {
+      context.beginPath();
+      context.arc(x, cy - 8 * scale, 14 * scale, 0, Math.PI * 2);
+      context.stroke();
+      context.beginPath();
+      context.moveTo(x, cy - 8 * scale);
+      context.lineTo(x + (index - 1) * 7 * scale, cy - 20 * scale);
+      context.stroke();
+    });
+    context.beginPath();
+    context.moveTo(cx - 46 * scale, cy + 30 * scale);
+    context.lineTo(cx - 16 * scale, cy + 10 * scale);
+    context.stroke();
+    context.beginPath();
+    context.arc(cx - 12 * scale, cy + 8 * scale, 8 * scale, 0, Math.PI * 2);
+    context.fill();
+  } else if (icon === "drag") {
+    drawRoundedRect(context, cx - 62 * scale, cy - 22 * scale, 38 * scale, 38 * scale, 10 * scale);
+    context.fill();
+    context.setLineDash([10 * scale, 8 * scale]);
+    drawRoundedRect(context, cx + 24 * scale, cy - 44 * scale, 42 * scale, 42 * scale, 10 * scale);
+    context.stroke();
+    context.setLineDash([]);
+    context.beginPath();
+    context.moveTo(cx - 16 * scale, cy - 2 * scale);
+    context.bezierCurveTo(cx + 0 * scale, cy - 52 * scale, cx + 42 * scale, cy - 52 * scale, cx + 46 * scale, cy - 2 * scale);
+    context.stroke();
+  } else {
+    context.beginPath();
+    context.arc(cx, cy, 48 * scale, 0, Math.PI * 2);
+    context.stroke();
+    context.font = `800 ${76 * scale}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI`;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("?", cx, cy + 2 * scale);
+  }
+
+  context.restore();
+}
+
+function createProbeIconTexture(icon: string) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+
+  drawProbeIcon({
+    context,
+    icon,
+    width: canvas.width,
+    height: canvas.height,
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.anisotropy = 8;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+export function ProbeMarker({
+  probe,
+  topic,
+  visualRadius,
+  isVisible,
+  onOpenProbe,
+}: {
+  probe: ProbeSummary;
+  topic: LearningSpaceTopic;
+  visualRadius: number;
+  isVisible: boolean;
+  onOpenProbe: (probe: ProbeSummary) => void;
+}) {
+  /**
+   * The marker remains visual-only. The underlying topic sphere keeps normal
+   * click/double-click/triple-click behavior, including probe entry.
+   */
+  void probe;
+  void onOpenProbe;
+
+  const preview = getProbeMarkerPreview(topic);
+  const thumbnailStyle =
+    preview?.thumbnail_style ?? getDebugProbeThumbnailStyle(topic);
+  const icon = getProbeThumbnailIcon(thumbnailStyle);
+
+  const texture = useMemo(() => createProbeIconTexture(icon), [icon]);
+
+  useEffect(() => {
+    return () => {
+      texture?.dispose();
+    };
+  }, [texture]);
+
+  const normal = useMemo(() => getProbeMarkerSurfaceNormal(topic), [topic]);
+  const position = useMemo(
+    () => normal.clone().multiplyScalar(visualRadius * PROBE_ICON_SURFACE_OFFSET),
+    [normal, visualRadius],
+  );
+  const iconScale = visualRadius * (isVisible ? PROBE_ICON_FOCUSED_SCALE : PROBE_ICON_BASE_SCALE);
+
+  return (
+    <sprite
+      position={position}
+      scale={[iconScale, iconScale, 1]}
+      renderOrder={PROBE_ICON_RENDER_ORDER}
+      visible={isVisible}
+      raycast={() => null}
+    >
+      <spriteMaterial
+        map={texture ?? undefined}
+        transparent
+        opacity={isVisible ? 0.94 : 0}
+        depthWrite={false}
+        depthTest
+        toneMapped={false}
+      />
+    </sprite>
+  );
+}
+
+
+
+
+============================================================
+FILE: ui\learning-space\scene\topic-sphere.tsx
+============================================================
+
+"use client";
+
+import { ThreeEvent, useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useRef, type RefObject } from "react";
+import * as THREE from "three";
+import type { LearningSpaceTopic } from "@/types/learning-space";
+import type { ProbeSummary } from "@/ui/learning-space/probes/probe-surface";
+import {
+  LOCAL_BOB_BASE_SPEED,
+  LOCAL_BOB_LERP_ALPHA,
+  LOCAL_BOB_SPEED_VARIATION,
+  LOCAL_BOB_XZ_FACTOR,
+  MOVEMENT_TRAIL_FADE_RATE,
+  MOVEMENT_TRAIL_MIN_DISTANCE,
+  MOVEMENT_TRAIL_MIN_OPACITY,
+  MOVEMENT_TRAIL_TARGET_REACHED_FADE_RATE,
+  SHOW_DEBUG_PROBE_THUMBNAILS_FOR_ALL_TOPICS,
+  TOPIC_APPEARANCE_LERP_ALPHA,
+  TOPIC_APPEARANCE_START_SCALE,
+  TOPIC_CLICK_SEQUENCE_MS,
+  TOPIC_SPHERE_RENDER_ORDER,
+} from "./constants";
+import {
+  getAnimatedTopicPosition,
+  getCollisionSafeBobAmplitude,
+  getTopicMovementAlpha,
+  getTopicPositionVector,
+  getTopicVisualRadius,
+  getTrailInitialOpacity,
+  stableUnitInterval,
+  type AnimatedTopicPositionsRef,
+} from "./geometry-utils";
+import { MovementTrail } from "./movement-trails";
+import { ProbeMarker } from "./probe-marker";
+import { TopicLabel } from "./topic-label";
+import type {
+  PreProbeViewSnapshotRef,
+  TrackballControlsRef,
+} from "./camera-controller";
+
+export function TopicSphere({
+  topic,
+  allTopics,
+  selectedTopicId,
+  isSelected,
+  isFocused,
+  focusedTopicId,
+  topicProbe,
+  isAppearing,
+  isSceneSettled,
+  isProbeVisualSuppressed,
+  isProbeLabelSuppressed,
+  hideLabelsForViewDrag,
+  forceShowLabelDuringViewDrag,
+  onSelect,
+  onFocusTopic,
+  onUnfocus,
+  onOpenProbe,
+  controlsRef,
+  preProbeViewSnapshotRef,
+  animatedTopicPositionsRef,
+}: {
+  topic: LearningSpaceTopic;
+  allTopics: LearningSpaceTopic[];
+  selectedTopicId: string | null;
+  isSelected: boolean;
+  isFocused: boolean;
+  focusedTopicId: string | null;
+  topicProbe: ProbeSummary | null;
+  isAppearing: boolean;
+  isSceneSettled: boolean;
+  isProbeVisualSuppressed: boolean;
+  isProbeLabelSuppressed: boolean;
+  hideLabelsForViewDrag: boolean;
+  forceShowLabelDuringViewDrag: boolean;
+  onSelect: (id: string) => void;
+  onFocusTopic: (id: string) => void;
+  onUnfocus: () => void;
+  onOpenProbe: (probe: ProbeSummary) => void;
+  controlsRef: RefObject<TrackballControlsRef | null>;
+  preProbeViewSnapshotRef: PreProbeViewSnapshotRef;
+  animatedTopicPositionsRef: AnimatedTopicPositionsRef;
+}) {
+  const { camera } = useThree();
+  const isAnyTopicFocused = focusedTopicId !== null;
+
+  const groupRef = useRef<THREE.Group>(null);
+  const visualGroupRef = useRef<THREE.Group>(null);
+  const sphereRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const appearProgressRef = useRef(isAppearing ? 0 : 1);
+
+  const initialRenderPosition = getTopicPositionVector(topic);
+
+  const currentPositionRef = useRef(initialRenderPosition.clone());
+  const targetPositionRef = useRef(initialRenderPosition.clone());
+
+  const bobPhaseRef = useRef(stableUnitInterval(topic.topic_id) * Math.PI * 2);
+  const bobSpeedRef = useRef(
+    LOCAL_BOB_BASE_SPEED +
+      stableUnitInterval(`${topic.topic_id}:bob-speed`) *
+        LOCAL_BOB_SPEED_VARIATION,
+  );
+
+  const trailStartPositionRef = useRef(initialRenderPosition.clone());
+  const trailOpacityRef = useRef(0);
+  const trailGeometryRef = useRef<THREE.BufferGeometry | null>(null);
+  const trailMaterialRef = useRef<THREE.LineBasicMaterial | null>(null);
+
+  const pointerDownRef = useRef<{ x: number; y: number; time: number } | null>(
+    null,
+  );
+  const clickSequenceRef = useRef<{
+    time: number;
+    topicId: string;
+    count: number;
+  } | null>(null);
+  const singleClickTimeoutRef = useRef<number | null>(null);
+  const doubleClickTimeoutRef = useRef<number | null>(null);
+
+  const movementAlpha = getTopicMovementAlpha({
+    isFocused,
+    isAnyTopicFocused,
+    isEnteringProbe: isProbeVisualSuppressed,
+  });
+
+  const visualRadius = getTopicVisualRadius({
+    topic,
+    isSelected,
+    isFocused,
+    isAnyTopicFocused,
+  });
+
+  useEffect(() => {
+    appearProgressRef.current = isAppearing ? 0 : 1;
+  }, [isAppearing, topic.topic_id]);
+
+  useEffect(() => {
+    const nextTarget = getTopicPositionVector(topic);
+    const currentTarget = targetPositionRef.current;
+    const targetDistance = currentTarget.distanceTo(nextTarget);
+    const currentDistance = currentPositionRef.current.distanceTo(nextTarget);
+
+    if (
+      !isProbeVisualSuppressed &&
+      targetDistance >= MOVEMENT_TRAIL_MIN_DISTANCE &&
+      currentDistance >= MOVEMENT_TRAIL_MIN_DISTANCE
+    ) {
+      trailStartPositionRef.current.copy(currentPositionRef.current);
+      trailOpacityRef.current = getTrailInitialOpacity({
+        isFocused,
+        isAnyTopicFocused,
+      });
+    }
+
+    targetPositionRef.current.copy(nextTarget);
+  }, [topic.position, isProbeVisualSuppressed, isFocused, isAnyTopicFocused]);
+
+  useEffect(() => {
+    animatedTopicPositionsRef.current.set(
+      topic.topic_id,
+      currentPositionRef.current.clone(),
+    );
+
+    return () => {
+      animatedTopicPositionsRef.current.delete(topic.topic_id);
+
+      if (singleClickTimeoutRef.current !== null) {
+        window.clearTimeout(singleClickTimeoutRef.current);
+      }
+    };
+  }, [animatedTopicPositionsRef, topic.topic_id]);
+
+  useFrame((state, delta) => {
+    const current = appearProgressRef.current;
+    appearProgressRef.current =
+      current + (1 - current) * TOPIC_APPEARANCE_LERP_ALPHA;
+
+    if (appearProgressRef.current > 0.995) {
+      appearProgressRef.current = 1;
+    }
+
+    const t = appearProgressRef.current;
+    const eased = 1 - Math.pow(1 - t, 3);
+
+    /**
+     * Keep final body size identical for new and existing topics.
+     * The arrival animation only fades/scales up toward the intended size; it
+     * never overshoots above 1, which prevents new topics from looking larger
+     * than established topics after creation.
+     */
+    const finalScale = isAppearing
+      ? Math.max(
+          0.001,
+          TOPIC_APPEARANCE_START_SCALE +
+            (1 - TOPIC_APPEARANCE_START_SCALE) * eased,
+        )
+      : 1;
+
+    if (movementAlpha > 0) {
+      currentPositionRef.current.lerp(targetPositionRef.current, movementAlpha);
+
+      if (
+        currentPositionRef.current.distanceToSquared(
+          targetPositionRef.current,
+        ) < 0.0001
+      ) {
+        currentPositionRef.current.copy(targetPositionRef.current);
+      }
+    }
+
+    const distanceToTarget = currentPositionRef.current.distanceTo(
+      targetPositionRef.current,
+    );
+
+    if (isProbeVisualSuppressed) {
+      trailOpacityRef.current = 0;
+    } else if (distanceToTarget < 0.04) {
+      trailOpacityRef.current *= MOVEMENT_TRAIL_TARGET_REACHED_FADE_RATE;
+    } else {
+      trailOpacityRef.current *= MOVEMENT_TRAIL_FADE_RATE;
+    }
+
+    if (trailOpacityRef.current < MOVEMENT_TRAIL_MIN_OPACITY) {
+      trailOpacityRef.current = 0;
+    }
+
+    if (trailGeometryRef.current && trailMaterialRef.current) {
+      /**
+       * Show the full committed layout update, not only the distance already
+       * traveled this frame. This makes a layout update legible immediately:
+       * "this topic is moving from here to there." The sphere itself still
+       * eases along the path through currentPositionRef.
+       */
+      trailGeometryRef.current.setFromPoints([
+        trailStartPositionRef.current,
+        targetPositionRef.current,
+      ]);
+
+      trailMaterialRef.current.opacity = trailOpacityRef.current * eased;
+      trailMaterialRef.current.visible = trailOpacityRef.current > 0;
+    }
+
+    animatedTopicPositionsRef.current.set(
+      topic.topic_id,
+      currentPositionRef.current.clone(),
+    );
+
+    if (groupRef.current) {
+      groupRef.current.position.copy(currentPositionRef.current);
+      groupRef.current.scale.setScalar(finalScale);
+    }
+
+    if (visualGroupRef.current) {
+      const bobAmplitude = getCollisionSafeBobAmplitude({
+        topic,
+        isFocused,
+        isAnyTopicFocused,
+        isEnteringProbe: isProbeVisualSuppressed,
+      });
+      const bobAngle =
+        state.clock.elapsedTime * bobSpeedRef.current + bobPhaseRef.current;
+      const targetBob = new THREE.Vector3(
+        Math.sin(bobAngle * 0.71) * bobAmplitude * LOCAL_BOB_XZ_FACTOR,
+        Math.sin(bobAngle) * bobAmplitude,
+        Math.cos(bobAngle * 0.53) * bobAmplitude * LOCAL_BOB_XZ_FACTOR,
+      );
+
+      visualGroupRef.current.position.lerp(targetBob, LOCAL_BOB_LERP_ALPHA);
+    }
+
+    if (sphereRef.current) {
+      /**
+       * Keep the solid sphere visually stable.
+       *
+       * Rotating a MeshStandardMaterial sphere under scene lights can make the
+       * specular highlight crawl across the surface like a wave. The clean sphere
+       * should stay calm so probe markers and relationship lines can carry the
+       * meaning.
+       */
+      sphereRef.current.rotation.set(0, 0, 0);
+    }
+
+    if (materialRef.current) {
+      materialRef.current.opacity =
+        (isAnyTopicFocused && !isFocused ? 0.46 : 1) * eased;
+
+      /**
+       * Keep the physical body clean and readable. Selection/focus still gives a
+       * readable lift without competing with probe markers or relationship lines.
+       */
+      const baseGlow = isFocused ? 0.42 : isSelected ? 0.28 : 0.12;
+      const appearanceBoost = isAppearing ? 0.18 * (1 - t) : 0;
+      const movementGlow =
+        trailOpacityRef.current > 0 && !isAnyTopicFocused ? 0.08 : 0;
+
+      materialRef.current.emissiveIntensity =
+        (baseGlow + appearanceBoost + movementGlow) * (0.35 + eased * 0.65);
+    }
+  });
+
+  function clearPendingSingleClick() {
+    if (singleClickTimeoutRef.current !== null) {
+      window.clearTimeout(singleClickTimeoutRef.current);
+      singleClickTimeoutRef.current = null;
+    }
+  }
+
+  function clearPendingDoubleClick() {
+    if (doubleClickTimeoutRef.current !== null) {
+      window.clearTimeout(doubleClickTimeoutRef.current);
+      doubleClickTimeoutRef.current = null;
+    }
+  }
+
+  function clearPendingClickActions() {
+    clearPendingSingleClick();
+    clearPendingDoubleClick();
+  }
+
+  function runSingleClick() {
+    onSelect(topic.topic_id);
+  }
+
+  function runDoubleClick() {
+    if (focusedTopicId === null) {
+      onSelect(topic.topic_id);
+      onFocusTopic(topic.topic_id);
+      return;
+    }
+
+    if (focusedTopicId === topic.topic_id) {
+      onUnfocus();
+      return;
+    }
+
+    onSelect(topic.topic_id);
+    onFocusTopic(topic.topic_id);
+  }
+
+  function runTripleClick() {
+    if (!topicProbe) {
+      runDoubleClick();
+      return;
+    }
+
+    const controls = controlsRef.current;
+    if (controls) {
+      /**
+       * Capture the exact viewpoint before any selection/probe-entry state can
+       * move the camera. Probe exit restores this snapshot so the learner backs
+       * out to the same angle, zoom, and target they triple-clicked from.
+       */
+      preProbeViewSnapshotRef.current = {
+        cameraPosition: camera.position.clone(),
+        cameraQuaternion: camera.quaternion.clone(),
+        cameraUp: camera.up.clone(),
+        cameraZoom: camera.zoom,
+        target: controls.target.clone(),
+        capturedAt: performance.now(),
+      };
+    }
+
+    onSelect(topic.topic_id);
+    onOpenProbe(topicProbe);
+  }
+
+  function handlePointerDown(event: ThreeEvent<PointerEvent>) {
+    event.stopPropagation();
+    pointerDownRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      time: performance.now(),
+    };
+  }
+
+  function handlePointerUp(event: ThreeEvent<PointerEvent>) {
+    event.stopPropagation();
+
+    const down = pointerDownRef.current;
+    pointerDownRef.current = null;
+
+    if (!down) return;
+
+    const dx = event.clientX - down.x;
+    const dy = event.clientY - down.y;
+    const movement = Math.sqrt(dx * dx + dy * dy);
+
+    if (movement > 8) {
+      return;
+    }
+
+    const now = performance.now();
+    const previousSequence = clickSequenceRef.current;
+    const isSameTopicSequence =
+      !!previousSequence &&
+      previousSequence.topicId === topic.topic_id &&
+      now - previousSequence.time <= TOPIC_CLICK_SEQUENCE_MS;
+
+    const nextCount = isSameTopicSequence ? previousSequence.count + 1 : 1;
+
+    clickSequenceRef.current = {
+      time: now,
+      topicId: topic.topic_id,
+      count: nextCount,
+    };
+
+    if (nextCount === 1) {
+      clearPendingClickActions();
+      singleClickTimeoutRef.current = window.setTimeout(() => {
+        runSingleClick();
+        singleClickTimeoutRef.current = null;
+        clickSequenceRef.current = null;
+      }, TOPIC_CLICK_SEQUENCE_MS);
+      return;
+    }
+
+    if (nextCount === 2) {
+      clearPendingSingleClick();
+      clearPendingDoubleClick();
+
+      /**
+       * Delay the double-click action briefly so a third click can become
+       * probe entry without stealing normal double-click focus/unfocus behavior.
+       */
+      doubleClickTimeoutRef.current = window.setTimeout(() => {
+        runDoubleClick();
+        doubleClickTimeoutRef.current = null;
+        clickSequenceRef.current = null;
+      }, TOPIC_CLICK_SEQUENCE_MS);
+      return;
+    }
+
+    clearPendingClickActions();
+    clickSequenceRef.current = null;
+    runTripleClick();
+  }
+
+  const showProbeMarker =
+    !!topicProbe &&
+    !isProbeVisualSuppressed &&
+    (SHOW_DEBUG_PROBE_THUMBNAILS_FOR_ALL_TOPICS || isFocused || isSelected);
+
+  return (
+    <>
+      <MovementTrail
+        geometryRef={trailGeometryRef}
+        materialRef={trailMaterialRef}
+      />
+
+      <group ref={groupRef} position={currentPositionRef.current}>
+        <group ref={visualGroupRef}>
+          <mesh
+            ref={sphereRef}
+            renderOrder={TOPIC_SPHERE_RENDER_ORDER}
+            scale={visualRadius}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerOver={(event) => {
+              event.stopPropagation();
+              document.body.style.cursor = "pointer";
+            }}
+            onPointerOut={(event) => {
+              event.stopPropagation();
+              document.body.style.cursor = "default";
+            }}
+          >
+            <sphereGeometry args={[1, 72, 72]} />
+            <meshStandardMaterial
+              ref={materialRef}
+              color={isSelected ? "#ddd6fe" : "#b7a8ee"}
+              emissive={
+                isFocused ? "#a78bfa" : isSelected ? "#8b5cf6" : "#4c3f73"
+              }
+              emissiveIntensity={isFocused ? 0.42 : isSelected ? 0.28 : 0.12}
+              metalness={0}
+              roughness={0.88}
+              opacity={isAnyTopicFocused && !isFocused ? 0.38 : 0.84}
+              transparent
+              depthWrite
+              depthTest
+            />
+          </mesh>
+
+          <TopicLabel
+            topic={topic}
+            allTopics={allTopics}
+            selectedTopicId={selectedTopicId}
+            focusedTopicId={focusedTopicId}
+            animatedTopicPositionsRef={animatedTopicPositionsRef}
+            isSelected={isSelected}
+            isFocused={isFocused}
+            isAppearing={isAppearing}
+            hideLabelsForViewDrag={hideLabelsForViewDrag}
+            forceShowLabel={forceShowLabelDuringViewDrag}
+            isAnyTopicFocused={isAnyTopicFocused}
+            isEnteringProbe={isProbeLabelSuppressed}
+            worldPositionRef={currentPositionRef}
+            visualRadius={visualRadius}
+          />
+
+          {topicProbe && (
+            <ProbeMarker
+              probe={topicProbe}
+              topic={topic}
+              visualRadius={visualRadius}
+              isVisible={showProbeMarker}
+              onOpenProbe={onOpenProbe}
+            />
+          )}
+        </group>
+      </group>
+    </>
+  );
+}
+
+

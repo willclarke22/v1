@@ -63,3 +63,5 @@ datasets/topic-labeling-dataset/**/label-generator/predictions/
 datasets/topic-labeling-dataset/**/label-generator/train.jsonl
 datasets/topic-labeling-dataset/**/label-generator/validation.jsonl
 datasets/topic-labeling-dataset/**/label-generator/test.jsonl
+myway-semantic-worker-api-integration-inspection.txt
+myway-*-inspection.txt

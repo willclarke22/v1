@@ -1,5 +1,7 @@
 ﻿import { NextResponse } from "next/server";
+import { buildLocalServiceThreeModelMessageRouteResponse } from "@/lib/api-routes/message/local-service-3model-response";
 import { buildMockThreeModelMessageRouteResponse } from "@/lib/api-routes/message/mock-3model-response";
+import { shouldUseLocalServiceThreeModelMessageRoute } from "@/lib/api-routes/message/local-service-3model-response";
 
 function getMessageText(body: unknown) {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -18,39 +20,46 @@ function getMessageText(body: unknown) {
 }
 
 /**
- * Temporary 3-model pipeline route.
+ * 3-model pipeline route switch.
  *
- * The old /api/message path mixed topic routing, model-signal queues,
- * deterministic intervention planning, legacy probe-plan building, persistence,
- * and learning-space projection in one active route.
+ * Default remains the known-good mock path.
  *
- * For the 3-model buildout phase, this route now proves the clean loop:
+ * Set MYWAY_USE_LOCAL_SERVICE_3MODEL=1 to let /api/message call the real local
+ * service clients and deliver their ProbeContractModelOutput through the normal
+ * frontend probe renderer path.
  *
- *   models/diagnosis
- *   â†’ models/probe-contract
- *   â†’ lib/engine
- *   â†’ EngineRenderableProbe
- *   â†’ frontend probe renderer
- *
- * The previous full route is backed up under archive/ by the step-23a script.
+ * Important latency rule:
+ * This foreground route does not start the heavy embedding service. It passes
+ * request context into the local-service adapter, which uses a cheap foreground
+ * topic resolver. Embedding-backed semantic enrichment stays in the local-dev
+ * semantic worker.
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const message = getMessageText(body) || "mock 3-model message";
 
+    if (shouldUseLocalServiceThreeModelMessageRoute()) {
+      return NextResponse.json(
+        await buildLocalServiceThreeModelMessageRouteResponse({
+          message,
+          requestBody: body,
+        }),
+      );
+    }
+
     return NextResponse.json(
       await buildMockThreeModelMessageRouteResponse({ message }),
     );
   } catch (error) {
-    console.error("POST /api/message mock 3-model route failed", error);
+    console.error("POST /api/message 3-model route failed", error);
 
     return NextResponse.json(
       {
         error:
           error instanceof Error
             ? error.message
-            : "Failed to build mock 3-model message response.",
+            : "Failed to build 3-model message response.",
       },
       { status: 500 },
     );

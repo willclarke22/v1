@@ -1,0 +1,1850 @@
+{
+  "result": {
+    "run_metadata": {
+      "run_id": "local-service-message-route-1781906521998",
+      "run_type": "message",
+      "created_at": "2026-06-19T22:02:01.998Z",
+      "source": "local_service_3model_message_route",
+      "debug": {
+        "enabled_by_env": "MYWAY_USE_LOCAL_SERVICE_3MODEL",
+        "topic_resolution_kind": "deterministic_label_seeded_topic"
+      }
+    },
+    "important_run_inputs": {
+      "user_message": {
+        "message_id": null,
+        "timestamp": "2026-06-19T22:02:01.998Z",
+        "content": "What is the difference between mitosis and meiosis?"
+      },
+      "model_signals": {
+        "model_confusion": null,
+        "model_insight": null,
+        "model_version": "local_service_phase_a_v1",
+        "inference_mode": "service",
+        "latency_ms": null,
+        "status": "ok",
+        "error_message": null
+      },
+      "current_interaction_context": {
+        "run_kind": "initial_question",
+        "is_response_to_delivered_probe": false,
+        "prior_mode_selected": null,
+        "prior_probe_was_applicable": null,
+        "prior_probe_id": null,
+        "prior_mode_outcome_available": null
+      },
+      "new_attempt": {
+        "status": "absent"
+      },
+      "vector_info": {
+        "query_text": "What is the difference between mitosis and meiosis?",
+        "top_k_similarity_scores": [
+          0.72
+        ],
+        "selected_topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+        "selected_topic_label": "Difference Between Mitosis Meiosis",
+        "source": "foreground_topic_resolver_no_embedding",
+        "resolution_kind": "deterministic_label_seeded_topic",
+        "authority_source": "deterministic_topic_labeler"
+      },
+      "uploaded_content": []
+    },
+    "engine_fuel": {
+      "schema_version": "local_service_3model_route_adapter_v0",
+      "source": "local_service_3model_message_route",
+      "topics": [
+        {
+          "topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+          "topic_label": "Difference Between Mitosis Meiosis",
+          "topic_confusion_average": 0.58,
+          "topic_insight_average": 0.34,
+          "topic_learning_score": 0.22,
+          "topic_centroid": [
+            -2.029342656114205,
+            -0.84,
+            9.147150780530197
+          ]
+        }
+      ],
+      "intervention_mode_decision": {
+        "mode_selected": "probe",
+        "target_topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+        "active_diagnosis": "representation_gap",
+        "primary_block": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+        "decision_confidence": 0.8531,
+        "decision_reasons": [
+          "Local service 3-model route is enabled with MYWAY_USE_LOCAL_SERVICE_3MODEL.",
+          "Foreground topic resolver ran without starting embedding-backed semantic services.",
+          "Topic resolution: deterministic_label_seeded_topic (Difference Between Mitosis Meiosis).",
+          "Diagnosis Model requested: generate_probe_contract.",
+          "Probe Contract Model returned: discriminate."
+        ],
+        "clarify_score": 0.18,
+        "probe_score": 0.8531,
+        "signal_summary": {
+          "raw_response_signal": 0.225,
+          "evidence_quality_signal": 0.2,
+          "active_problem_signal": 0.8531,
+          "readiness_signal": 0.8,
+          "history_signal": 0.72
+        }
+      },
+      "probe_plan": {
+        "status": "applicable",
+        "probe_id": "local-service-probe-topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+        "target_topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+        "target_diagnosis": "representation_gap",
+        "intent": "diagnostic",
+        "probe_type": "discriminate",
+        "expected_response_type": "single_choice",
+        "text_plan": {
+          "instructional_goal": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+        },
+        "probe_contract_snapshot": {
+          "schema_version": "local_service_probe_contract_snapshot_v1",
+          "source": "local_service_3model_message_route",
+          "target_topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+          "target_topic_label": "Difference Between Mitosis Meiosis",
+          "foreground_topic_resolution": {
+            "resolution_kind": "deterministic_label_seeded_topic",
+            "resolved_label": "Difference Between Mitosis Meiosis",
+            "match_confidence": 0.72,
+            "authority_source": "deterministic_topic_labeler",
+            "warnings": [],
+            "rejected_request_topic": null
+          },
+          "diagnosis_output": {
+            "schema_version": "diagnosis_model_output_v1",
+            "diagnosis": "representation_gap",
+            "diagnosis_confidence": 0.225,
+            "next_action": "generate_probe_contract",
+            "next_action_confidence": 0.8531,
+            "suggested_question": null
+          },
+          "diagnosis_provider_meta": {
+            "provider_name": "diagnosis_service_client",
+            "provider_kind": "service_client",
+            "schema_version": "diagnosis_model_output_v1",
+            "model_name": "myway_diagnosis_classifier_phase_a_v1",
+            "latency_ms": 17,
+            "warnings": []
+          },
+          "diagnosis_validation": {
+            "ok": true,
+            "value": {
+              "schema_version": "diagnosis_model_output_v1",
+              "diagnosis": "representation_gap",
+              "diagnosis_confidence": 0.225,
+              "next_action": "generate_probe_contract",
+              "next_action_confidence": 0.8531,
+              "suggested_question": null
+            },
+            "issues": []
+          },
+          "probe_contract_output": {
+            "answer_key": {
+              "correct_option_id": "b",
+              "kind": "single_choice",
+              "success_markers": [
+                "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+              ]
+            },
+            "confidence": 0.2,
+            "delivery_context": {
+              "bridge_level": "bridge_0",
+              "example_domains_used": [
+                "toy hydraulics"
+              ],
+              "language_policy": {
+                "jargon_level": "none"
+              },
+              "personalization_signals_used": [
+                {
+                  "confidence": 0.68,
+                  "kind": "example_domain",
+                  "value": "toy hydraulics"
+                }
+              ],
+              "presentation_styles_used": [
+                "concrete_examples"
+              ],
+              "support_kinds_used": [
+                "example"
+              ]
+            },
+            "expected_attempt_type": "single_choice",
+            "misconception_markers": [
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "Part Name As Cause",
+                "marker": "part_name_as_cause",
+                "misconception_id": "part_name_as_cause"
+              },
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "One Clue Closure",
+                "marker": "one_clue_closure",
+                "misconception_id": "one_clue_closure"
+              },
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "Unsafe Repair Drift",
+                "marker": "unsafe_repair_drift",
+                "misconception_id": "unsafe_repair_drift"
+              }
+            ],
+            "presentation_support": [
+              {
+                "confidence": 0.72,
+                "kind": "example",
+                "style_used": "concrete_examples",
+                "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+                "user_interest_used": "water balloons and elevator buttons"
+              }
+            ],
+            "probe_type": "discriminate",
+            "prompt": {
+              "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+              "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+              "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+              "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+            },
+            "renderer_params": {
+              "options": [
+                {
+                  "id": "a",
+                  "label": "A",
+                  "text": "The fluid creates energy from nowhere."
+                },
+                {
+                  "id": "b",
+                  "label": "B",
+                  "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+                },
+                {
+                  "id": "c",
+                  "label": "C",
+                  "text": "The bigger plate is stronger because it feels like it."
+                }
+              ]
+            },
+            "schema_version": "probe_contract_model_output_v1"
+          },
+          "probe_contract_provider_meta": {
+            "provider_name": "probe_contract_service_client",
+            "provider_kind": "service_client",
+            "schema_version": "probe_contract_model_output_v1",
+            "model_name": "myway_probe_contract_retriever_phase_a_v1",
+            "latency_ms": 8,
+            "warnings": []
+          },
+          "probe_contract_validation": {
+            "ok": true,
+            "value": {
+              "answer_key": {
+                "correct_option_id": "b",
+                "kind": "single_choice",
+                "success_markers": [
+                  "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+                ]
+              },
+              "confidence": 0.2,
+              "delivery_context": {
+                "bridge_level": "bridge_0",
+                "example_domains_used": [
+                  "toy hydraulics"
+                ],
+                "language_policy": {
+                  "jargon_level": "none"
+                },
+                "personalization_signals_used": [
+                  {
+                    "confidence": 0.68,
+                    "kind": "example_domain",
+                    "value": "toy hydraulics"
+                  }
+                ],
+                "presentation_styles_used": [
+                  "concrete_examples"
+                ],
+                "support_kinds_used": [
+                  "example"
+                ]
+              },
+              "expected_attempt_type": "single_choice",
+              "misconception_markers": [
+                {
+                  "confidence": 0.7,
+                  "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                  "label": "Part Name As Cause",
+                  "marker": "part_name_as_cause",
+                  "misconception_id": "part_name_as_cause"
+                },
+                {
+                  "confidence": 0.7,
+                  "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                  "label": "One Clue Closure",
+                  "marker": "one_clue_closure",
+                  "misconception_id": "one_clue_closure"
+                },
+                {
+                  "confidence": 0.7,
+                  "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                  "label": "Unsafe Repair Drift",
+                  "marker": "unsafe_repair_drift",
+                  "misconception_id": "unsafe_repair_drift"
+                }
+              ],
+              "presentation_support": [
+                {
+                  "confidence": 0.72,
+                  "kind": "example",
+                  "style_used": "concrete_examples",
+                  "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+                  "user_interest_used": "water balloons and elevator buttons"
+                }
+              ],
+              "probe_type": "discriminate",
+              "prompt": {
+                "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+                "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+                "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+                "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+              },
+              "renderer_params": {
+                "options": [
+                  {
+                    "id": "a",
+                    "label": "A",
+                    "text": "The fluid creates energy from nowhere."
+                  },
+                  {
+                    "id": "b",
+                    "label": "B",
+                    "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+                  },
+                  {
+                    "id": "c",
+                    "label": "C",
+                    "text": "The bigger plate is stronger because it feels like it."
+                  }
+                ]
+              },
+              "schema_version": "probe_contract_model_output_v1"
+            },
+            "issues": []
+          },
+          "engine_renderable_probe": {
+            "schema_version": "engine_renderable_probe_v1",
+            "probe_type": "discriminate",
+            "expected_attempt_type": "single_choice",
+            "prompt": {
+              "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+              "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+              "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+              "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+            },
+            "presentation_support": [
+              {
+                "confidence": 0.72,
+                "kind": "example",
+                "style_used": "concrete_examples",
+                "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+                "user_interest_used": "water balloons and elevator buttons"
+              }
+            ],
+            "answer_key": {
+              "correct_option_id": "b",
+              "kind": "single_choice",
+              "success_markers": [
+                "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+              ]
+            },
+            "misconception_markers": [
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "Part Name As Cause",
+                "marker": "part_name_as_cause",
+                "misconception_id": "part_name_as_cause"
+              },
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "One Clue Closure",
+                "marker": "one_clue_closure",
+                "misconception_id": "one_clue_closure"
+              },
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "Unsafe Repair Drift",
+                "marker": "unsafe_repair_drift",
+                "misconception_id": "unsafe_repair_drift"
+              }
+            ],
+            "renderer_params": {
+              "options": [
+                {
+                  "id": "a",
+                  "label": "A",
+                  "text": "The fluid creates energy from nowhere."
+                },
+                {
+                  "id": "b",
+                  "label": "B",
+                  "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+                },
+                {
+                  "id": "c",
+                  "label": "C",
+                  "text": "The bigger plate is stronger because it feels like it."
+                }
+              ]
+            },
+            "delivery_context": {
+              "bridge_level": "bridge_0",
+              "example_domains_used": [
+                "toy hydraulics"
+              ],
+              "language_policy": {
+                "jargon_level": "none"
+              },
+              "personalization_signals_used": [
+                {
+                  "confidence": 0.68,
+                  "kind": "example_domain",
+                  "value": "toy hydraulics"
+                }
+              ],
+              "presentation_styles_used": [
+                "concrete_examples"
+              ],
+              "support_kinds_used": [
+                "example"
+              ]
+            },
+            "confidence": 0.2,
+            "renderer_compatibility": {
+              "renderer_kind": "discriminate",
+              "is_renderable": true,
+              "blocking_reasons": [],
+              "warnings": []
+            }
+          },
+          "renderer_adapter": {
+            "ok": true,
+            "warnings": [],
+            "blocking_reasons": []
+          }
+        }
+      },
+      "local_service_3model": {
+        "topic_resolution": {
+          "resolution_kind": "deterministic_label_seeded_topic",
+          "resolved_label": "Difference Between Mitosis Meiosis",
+          "match_confidence": 0.72,
+          "authority_source": "deterministic_topic_labeler",
+          "warnings": [],
+          "rejected_request_topic": null
+        },
+        "diagnosis_provider_meta": {
+          "provider_name": "diagnosis_service_client",
+          "provider_kind": "service_client",
+          "schema_version": "diagnosis_model_output_v1",
+          "model_name": "myway_diagnosis_classifier_phase_a_v1",
+          "latency_ms": 17,
+          "warnings": []
+        },
+        "probe_contract_provider_meta": {
+          "provider_name": "probe_contract_service_client",
+          "provider_kind": "service_client",
+          "schema_version": "probe_contract_model_output_v1",
+          "model_name": "myway_probe_contract_retriever_phase_a_v1",
+          "latency_ms": 8,
+          "warnings": []
+        },
+        "diagnosis_validation": {
+          "ok": true,
+          "value": {
+            "schema_version": "diagnosis_model_output_v1",
+            "diagnosis": "representation_gap",
+            "diagnosis_confidence": 0.225,
+            "next_action": "generate_probe_contract",
+            "next_action_confidence": 0.8531,
+            "suggested_question": null
+          },
+          "issues": []
+        },
+        "probe_contract_validation": {
+          "ok": true,
+          "value": {
+            "answer_key": {
+              "correct_option_id": "b",
+              "kind": "single_choice",
+              "success_markers": [
+                "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+              ]
+            },
+            "confidence": 0.2,
+            "delivery_context": {
+              "bridge_level": "bridge_0",
+              "example_domains_used": [
+                "toy hydraulics"
+              ],
+              "language_policy": {
+                "jargon_level": "none"
+              },
+              "personalization_signals_used": [
+                {
+                  "confidence": 0.68,
+                  "kind": "example_domain",
+                  "value": "toy hydraulics"
+                }
+              ],
+              "presentation_styles_used": [
+                "concrete_examples"
+              ],
+              "support_kinds_used": [
+                "example"
+              ]
+            },
+            "expected_attempt_type": "single_choice",
+            "misconception_markers": [
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "Part Name As Cause",
+                "marker": "part_name_as_cause",
+                "misconception_id": "part_name_as_cause"
+              },
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "One Clue Closure",
+                "marker": "one_clue_closure",
+                "misconception_id": "one_clue_closure"
+              },
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "Unsafe Repair Drift",
+                "marker": "unsafe_repair_drift",
+                "misconception_id": "unsafe_repair_drift"
+              }
+            ],
+            "presentation_support": [
+              {
+                "confidence": 0.72,
+                "kind": "example",
+                "style_used": "concrete_examples",
+                "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+                "user_interest_used": "water balloons and elevator buttons"
+              }
+            ],
+            "probe_type": "discriminate",
+            "prompt": {
+              "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+              "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+              "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+              "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+            },
+            "renderer_params": {
+              "options": [
+                {
+                  "id": "a",
+                  "label": "A",
+                  "text": "The fluid creates energy from nowhere."
+                },
+                {
+                  "id": "b",
+                  "label": "B",
+                  "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+                },
+                {
+                  "id": "c",
+                  "label": "C",
+                  "text": "The bigger plate is stronger because it feels like it."
+                }
+              ]
+            },
+            "schema_version": "probe_contract_model_output_v1"
+          },
+          "issues": []
+        }
+      }
+    },
+    "delivered_response": {
+      "learner_message": {
+        "text": "I found a specific spot to check. Open the probe and answer it in the way that makes the most sense to you.",
+        "tone": "encouraging",
+        "mode": "probe"
+      },
+      "delivered_probe": {
+        "probe_id": "local-service-probe-topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5-1781906521998",
+        "target_topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+        "target_topic_label": "Difference Between Mitosis Meiosis",
+        "title": "Check Difference Between Mitosis Meiosis",
+        "instructions": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+        "status": "available",
+        "intent": "diagnostic",
+        "probe_type": "discriminate",
+        "expected_response_type": "single_choice",
+        "renderer_modality": "interactive",
+        "renderer_generator": "custom",
+        "actual_tone": "encouraging",
+        "actual_pacing": "normal",
+        "actual_language_style": "plain",
+        "actual_context_framing": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+        "probe_contract_snapshot": {
+          "schema_version": "local_service_probe_contract_snapshot_v1",
+          "source": "local_service_3model_message_route",
+          "target_topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+          "target_topic_label": "Difference Between Mitosis Meiosis",
+          "foreground_topic_resolution": {
+            "resolution_kind": "deterministic_label_seeded_topic",
+            "resolved_label": "Difference Between Mitosis Meiosis",
+            "match_confidence": 0.72,
+            "authority_source": "deterministic_topic_labeler",
+            "warnings": [],
+            "rejected_request_topic": null
+          },
+          "diagnosis_output": {
+            "schema_version": "diagnosis_model_output_v1",
+            "diagnosis": "representation_gap",
+            "diagnosis_confidence": 0.225,
+            "next_action": "generate_probe_contract",
+            "next_action_confidence": 0.8531,
+            "suggested_question": null
+          },
+          "diagnosis_provider_meta": {
+            "provider_name": "diagnosis_service_client",
+            "provider_kind": "service_client",
+            "schema_version": "diagnosis_model_output_v1",
+            "model_name": "myway_diagnosis_classifier_phase_a_v1",
+            "latency_ms": 17,
+            "warnings": []
+          },
+          "diagnosis_validation": {
+            "ok": true,
+            "value": {
+              "schema_version": "diagnosis_model_output_v1",
+              "diagnosis": "representation_gap",
+              "diagnosis_confidence": 0.225,
+              "next_action": "generate_probe_contract",
+              "next_action_confidence": 0.8531,
+              "suggested_question": null
+            },
+            "issues": []
+          },
+          "probe_contract_output": {
+            "answer_key": {
+              "correct_option_id": "b",
+              "kind": "single_choice",
+              "success_markers": [
+                "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+              ]
+            },
+            "confidence": 0.2,
+            "delivery_context": {
+              "bridge_level": "bridge_0",
+              "example_domains_used": [
+                "toy hydraulics"
+              ],
+              "language_policy": {
+                "jargon_level": "none"
+              },
+              "personalization_signals_used": [
+                {
+                  "confidence": 0.68,
+                  "kind": "example_domain",
+                  "value": "toy hydraulics"
+                }
+              ],
+              "presentation_styles_used": [
+                "concrete_examples"
+              ],
+              "support_kinds_used": [
+                "example"
+              ]
+            },
+            "expected_attempt_type": "single_choice",
+            "misconception_markers": [
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "Part Name As Cause",
+                "marker": "part_name_as_cause",
+                "misconception_id": "part_name_as_cause"
+              },
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "One Clue Closure",
+                "marker": "one_clue_closure",
+                "misconception_id": "one_clue_closure"
+              },
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "Unsafe Repair Drift",
+                "marker": "unsafe_repair_drift",
+                "misconception_id": "unsafe_repair_drift"
+              }
+            ],
+            "presentation_support": [
+              {
+                "confidence": 0.72,
+                "kind": "example",
+                "style_used": "concrete_examples",
+                "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+                "user_interest_used": "water balloons and elevator buttons"
+              }
+            ],
+            "probe_type": "discriminate",
+            "prompt": {
+              "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+              "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+              "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+              "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+            },
+            "renderer_params": {
+              "options": [
+                {
+                  "id": "a",
+                  "label": "A",
+                  "text": "The fluid creates energy from nowhere."
+                },
+                {
+                  "id": "b",
+                  "label": "B",
+                  "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+                },
+                {
+                  "id": "c",
+                  "label": "C",
+                  "text": "The bigger plate is stronger because it feels like it."
+                }
+              ]
+            },
+            "schema_version": "probe_contract_model_output_v1"
+          },
+          "probe_contract_provider_meta": {
+            "provider_name": "probe_contract_service_client",
+            "provider_kind": "service_client",
+            "schema_version": "probe_contract_model_output_v1",
+            "model_name": "myway_probe_contract_retriever_phase_a_v1",
+            "latency_ms": 8,
+            "warnings": []
+          },
+          "probe_contract_validation": {
+            "ok": true,
+            "value": {
+              "answer_key": {
+                "correct_option_id": "b",
+                "kind": "single_choice",
+                "success_markers": [
+                  "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+                ]
+              },
+              "confidence": 0.2,
+              "delivery_context": {
+                "bridge_level": "bridge_0",
+                "example_domains_used": [
+                  "toy hydraulics"
+                ],
+                "language_policy": {
+                  "jargon_level": "none"
+                },
+                "personalization_signals_used": [
+                  {
+                    "confidence": 0.68,
+                    "kind": "example_domain",
+                    "value": "toy hydraulics"
+                  }
+                ],
+                "presentation_styles_used": [
+                  "concrete_examples"
+                ],
+                "support_kinds_used": [
+                  "example"
+                ]
+              },
+              "expected_attempt_type": "single_choice",
+              "misconception_markers": [
+                {
+                  "confidence": 0.7,
+                  "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                  "label": "Part Name As Cause",
+                  "marker": "part_name_as_cause",
+                  "misconception_id": "part_name_as_cause"
+                },
+                {
+                  "confidence": 0.7,
+                  "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                  "label": "One Clue Closure",
+                  "marker": "one_clue_closure",
+                  "misconception_id": "one_clue_closure"
+                },
+                {
+                  "confidence": 0.7,
+                  "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                  "label": "Unsafe Repair Drift",
+                  "marker": "unsafe_repair_drift",
+                  "misconception_id": "unsafe_repair_drift"
+                }
+              ],
+              "presentation_support": [
+                {
+                  "confidence": 0.72,
+                  "kind": "example",
+                  "style_used": "concrete_examples",
+                  "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+                  "user_interest_used": "water balloons and elevator buttons"
+                }
+              ],
+              "probe_type": "discriminate",
+              "prompt": {
+                "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+                "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+                "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+                "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+              },
+              "renderer_params": {
+                "options": [
+                  {
+                    "id": "a",
+                    "label": "A",
+                    "text": "The fluid creates energy from nowhere."
+                  },
+                  {
+                    "id": "b",
+                    "label": "B",
+                    "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+                  },
+                  {
+                    "id": "c",
+                    "label": "C",
+                    "text": "The bigger plate is stronger because it feels like it."
+                  }
+                ]
+              },
+              "schema_version": "probe_contract_model_output_v1"
+            },
+            "issues": []
+          },
+          "engine_renderable_probe": {
+            "schema_version": "engine_renderable_probe_v1",
+            "probe_type": "discriminate",
+            "expected_attempt_type": "single_choice",
+            "prompt": {
+              "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+              "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+              "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+              "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+            },
+            "presentation_support": [
+              {
+                "confidence": 0.72,
+                "kind": "example",
+                "style_used": "concrete_examples",
+                "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+                "user_interest_used": "water balloons and elevator buttons"
+              }
+            ],
+            "answer_key": {
+              "correct_option_id": "b",
+              "kind": "single_choice",
+              "success_markers": [
+                "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+              ]
+            },
+            "misconception_markers": [
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "Part Name As Cause",
+                "marker": "part_name_as_cause",
+                "misconception_id": "part_name_as_cause"
+              },
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "One Clue Closure",
+                "marker": "one_clue_closure",
+                "misconception_id": "one_clue_closure"
+              },
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "Unsafe Repair Drift",
+                "marker": "unsafe_repair_drift",
+                "misconception_id": "unsafe_repair_drift"
+              }
+            ],
+            "renderer_params": {
+              "options": [
+                {
+                  "id": "a",
+                  "label": "A",
+                  "text": "The fluid creates energy from nowhere."
+                },
+                {
+                  "id": "b",
+                  "label": "B",
+                  "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+                },
+                {
+                  "id": "c",
+                  "label": "C",
+                  "text": "The bigger plate is stronger because it feels like it."
+                }
+              ]
+            },
+            "delivery_context": {
+              "bridge_level": "bridge_0",
+              "example_domains_used": [
+                "toy hydraulics"
+              ],
+              "language_policy": {
+                "jargon_level": "none"
+              },
+              "personalization_signals_used": [
+                {
+                  "confidence": 0.68,
+                  "kind": "example_domain",
+                  "value": "toy hydraulics"
+                }
+              ],
+              "presentation_styles_used": [
+                "concrete_examples"
+              ],
+              "support_kinds_used": [
+                "example"
+              ]
+            },
+            "confidence": 0.2,
+            "renderer_compatibility": {
+              "renderer_kind": "discriminate",
+              "is_renderable": true,
+              "blocking_reasons": [],
+              "warnings": []
+            }
+          },
+          "renderer_adapter": {
+            "ok": true,
+            "warnings": [],
+            "blocking_reasons": []
+          }
+        },
+        "stimulus_id": "stimulus-local-service-probe-topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5-1781906521998",
+        "payload_snapshot": {
+          "local_service_3model": true,
+          "probe_contract_snapshot": {
+            "schema_version": "local_service_probe_contract_snapshot_v1",
+            "source": "local_service_3model_message_route",
+            "target_topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+            "target_topic_label": "Difference Between Mitosis Meiosis",
+            "foreground_topic_resolution": {
+              "resolution_kind": "deterministic_label_seeded_topic",
+              "resolved_label": "Difference Between Mitosis Meiosis",
+              "match_confidence": 0.72,
+              "authority_source": "deterministic_topic_labeler",
+              "warnings": [],
+              "rejected_request_topic": null
+            },
+            "diagnosis_output": {
+              "schema_version": "diagnosis_model_output_v1",
+              "diagnosis": "representation_gap",
+              "diagnosis_confidence": 0.225,
+              "next_action": "generate_probe_contract",
+              "next_action_confidence": 0.8531,
+              "suggested_question": null
+            },
+            "diagnosis_provider_meta": {
+              "provider_name": "diagnosis_service_client",
+              "provider_kind": "service_client",
+              "schema_version": "diagnosis_model_output_v1",
+              "model_name": "myway_diagnosis_classifier_phase_a_v1",
+              "latency_ms": 17,
+              "warnings": []
+            },
+            "diagnosis_validation": {
+              "ok": true,
+              "value": {
+                "schema_version": "diagnosis_model_output_v1",
+                "diagnosis": "representation_gap",
+                "diagnosis_confidence": 0.225,
+                "next_action": "generate_probe_contract",
+                "next_action_confidence": 0.8531,
+                "suggested_question": null
+              },
+              "issues": []
+            },
+            "probe_contract_output": {
+              "answer_key": {
+                "correct_option_id": "b",
+                "kind": "single_choice",
+                "success_markers": [
+                  "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+                ]
+              },
+              "confidence": 0.2,
+              "delivery_context": {
+                "bridge_level": "bridge_0",
+                "example_domains_used": [
+                  "toy hydraulics"
+                ],
+                "language_policy": {
+                  "jargon_level": "none"
+                },
+                "personalization_signals_used": [
+                  {
+                    "confidence": 0.68,
+                    "kind": "example_domain",
+                    "value": "toy hydraulics"
+                  }
+                ],
+                "presentation_styles_used": [
+                  "concrete_examples"
+                ],
+                "support_kinds_used": [
+                  "example"
+                ]
+              },
+              "expected_attempt_type": "single_choice",
+              "misconception_markers": [
+                {
+                  "confidence": 0.7,
+                  "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                  "label": "Part Name As Cause",
+                  "marker": "part_name_as_cause",
+                  "misconception_id": "part_name_as_cause"
+                },
+                {
+                  "confidence": 0.7,
+                  "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                  "label": "One Clue Closure",
+                  "marker": "one_clue_closure",
+                  "misconception_id": "one_clue_closure"
+                },
+                {
+                  "confidence": 0.7,
+                  "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                  "label": "Unsafe Repair Drift",
+                  "marker": "unsafe_repair_drift",
+                  "misconception_id": "unsafe_repair_drift"
+                }
+              ],
+              "presentation_support": [
+                {
+                  "confidence": 0.72,
+                  "kind": "example",
+                  "style_used": "concrete_examples",
+                  "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+                  "user_interest_used": "water balloons and elevator buttons"
+                }
+              ],
+              "probe_type": "discriminate",
+              "prompt": {
+                "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+                "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+                "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+                "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+              },
+              "renderer_params": {
+                "options": [
+                  {
+                    "id": "a",
+                    "label": "A",
+                    "text": "The fluid creates energy from nowhere."
+                  },
+                  {
+                    "id": "b",
+                    "label": "B",
+                    "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+                  },
+                  {
+                    "id": "c",
+                    "label": "C",
+                    "text": "The bigger plate is stronger because it feels like it."
+                  }
+                ]
+              },
+              "schema_version": "probe_contract_model_output_v1"
+            },
+            "probe_contract_provider_meta": {
+              "provider_name": "probe_contract_service_client",
+              "provider_kind": "service_client",
+              "schema_version": "probe_contract_model_output_v1",
+              "model_name": "myway_probe_contract_retriever_phase_a_v1",
+              "latency_ms": 8,
+              "warnings": []
+            },
+            "probe_contract_validation": {
+              "ok": true,
+              "value": {
+                "answer_key": {
+                  "correct_option_id": "b",
+                  "kind": "single_choice",
+                  "success_markers": [
+                    "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+                  ]
+                },
+                "confidence": 0.2,
+                "delivery_context": {
+                  "bridge_level": "bridge_0",
+                  "example_domains_used": [
+                    "toy hydraulics"
+                  ],
+                  "language_policy": {
+                    "jargon_level": "none"
+                  },
+                  "personalization_signals_used": [
+                    {
+                      "confidence": 0.68,
+                      "kind": "example_domain",
+                      "value": "toy hydraulics"
+                    }
+                  ],
+                  "presentation_styles_used": [
+                    "concrete_examples"
+                  ],
+                  "support_kinds_used": [
+                    "example"
+                  ]
+                },
+                "expected_attempt_type": "single_choice",
+                "misconception_markers": [
+                  {
+                    "confidence": 0.7,
+                    "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                    "label": "Part Name As Cause",
+                    "marker": "part_name_as_cause",
+                    "misconception_id": "part_name_as_cause"
+                  },
+                  {
+                    "confidence": 0.7,
+                    "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                    "label": "One Clue Closure",
+                    "marker": "one_clue_closure",
+                    "misconception_id": "one_clue_closure"
+                  },
+                  {
+                    "confidence": 0.7,
+                    "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                    "label": "Unsafe Repair Drift",
+                    "marker": "unsafe_repair_drift",
+                    "misconception_id": "unsafe_repair_drift"
+                  }
+                ],
+                "presentation_support": [
+                  {
+                    "confidence": 0.72,
+                    "kind": "example",
+                    "style_used": "concrete_examples",
+                    "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+                    "user_interest_used": "water balloons and elevator buttons"
+                  }
+                ],
+                "probe_type": "discriminate",
+                "prompt": {
+                  "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+                  "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+                  "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+                  "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+                },
+                "renderer_params": {
+                  "options": [
+                    {
+                      "id": "a",
+                      "label": "A",
+                      "text": "The fluid creates energy from nowhere."
+                    },
+                    {
+                      "id": "b",
+                      "label": "B",
+                      "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+                    },
+                    {
+                      "id": "c",
+                      "label": "C",
+                      "text": "The bigger plate is stronger because it feels like it."
+                    }
+                  ]
+                },
+                "schema_version": "probe_contract_model_output_v1"
+              },
+              "issues": []
+            },
+            "engine_renderable_probe": {
+              "schema_version": "engine_renderable_probe_v1",
+              "probe_type": "discriminate",
+              "expected_attempt_type": "single_choice",
+              "prompt": {
+                "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+                "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+                "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+                "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+              },
+              "presentation_support": [
+                {
+                  "confidence": 0.72,
+                  "kind": "example",
+                  "style_used": "concrete_examples",
+                  "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+                  "user_interest_used": "water balloons and elevator buttons"
+                }
+              ],
+              "answer_key": {
+                "correct_option_id": "b",
+                "kind": "single_choice",
+                "success_markers": [
+                  "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+                ]
+              },
+              "misconception_markers": [
+                {
+                  "confidence": 0.7,
+                  "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                  "label": "Part Name As Cause",
+                  "marker": "part_name_as_cause",
+                  "misconception_id": "part_name_as_cause"
+                },
+                {
+                  "confidence": 0.7,
+                  "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                  "label": "One Clue Closure",
+                  "marker": "one_clue_closure",
+                  "misconception_id": "one_clue_closure"
+                },
+                {
+                  "confidence": 0.7,
+                  "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                  "label": "Unsafe Repair Drift",
+                  "marker": "unsafe_repair_drift",
+                  "misconception_id": "unsafe_repair_drift"
+                }
+              ],
+              "renderer_params": {
+                "options": [
+                  {
+                    "id": "a",
+                    "label": "A",
+                    "text": "The fluid creates energy from nowhere."
+                  },
+                  {
+                    "id": "b",
+                    "label": "B",
+                    "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+                  },
+                  {
+                    "id": "c",
+                    "label": "C",
+                    "text": "The bigger plate is stronger because it feels like it."
+                  }
+                ]
+              },
+              "delivery_context": {
+                "bridge_level": "bridge_0",
+                "example_domains_used": [
+                  "toy hydraulics"
+                ],
+                "language_policy": {
+                  "jargon_level": "none"
+                },
+                "personalization_signals_used": [
+                  {
+                    "confidence": 0.68,
+                    "kind": "example_domain",
+                    "value": "toy hydraulics"
+                  }
+                ],
+                "presentation_styles_used": [
+                  "concrete_examples"
+                ],
+                "support_kinds_used": [
+                  "example"
+                ]
+              },
+              "confidence": 0.2,
+              "renderer_compatibility": {
+                "renderer_kind": "discriminate",
+                "is_renderable": true,
+                "blocking_reasons": [],
+                "warnings": []
+              }
+            },
+            "renderer_adapter": {
+              "ok": true,
+              "warnings": [],
+              "blocking_reasons": []
+            }
+          },
+          "engine_renderable_probe": {
+            "schema_version": "engine_renderable_probe_v1",
+            "probe_type": "discriminate",
+            "expected_attempt_type": "single_choice",
+            "prompt": {
+              "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+              "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+              "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+              "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+            },
+            "presentation_support": [
+              {
+                "confidence": 0.72,
+                "kind": "example",
+                "style_used": "concrete_examples",
+                "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+                "user_interest_used": "water balloons and elevator buttons"
+              }
+            ],
+            "answer_key": {
+              "correct_option_id": "b",
+              "kind": "single_choice",
+              "success_markers": [
+                "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+              ]
+            },
+            "misconception_markers": [
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "Part Name As Cause",
+                "marker": "part_name_as_cause",
+                "misconception_id": "part_name_as_cause"
+              },
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "One Clue Closure",
+                "marker": "one_clue_closure",
+                "misconception_id": "one_clue_closure"
+              },
+              {
+                "confidence": 0.7,
+                "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+                "label": "Unsafe Repair Drift",
+                "marker": "unsafe_repair_drift",
+                "misconception_id": "unsafe_repair_drift"
+              }
+            ],
+            "renderer_params": {
+              "options": [
+                {
+                  "id": "a",
+                  "label": "A",
+                  "text": "The fluid creates energy from nowhere."
+                },
+                {
+                  "id": "b",
+                  "label": "B",
+                  "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+                },
+                {
+                  "id": "c",
+                  "label": "C",
+                  "text": "The bigger plate is stronger because it feels like it."
+                }
+              ]
+            },
+            "delivery_context": {
+              "bridge_level": "bridge_0",
+              "example_domains_used": [
+                "toy hydraulics"
+              ],
+              "language_policy": {
+                "jargon_level": "none"
+              },
+              "personalization_signals_used": [
+                {
+                  "confidence": 0.68,
+                  "kind": "example_domain",
+                  "value": "toy hydraulics"
+                }
+              ],
+              "presentation_styles_used": [
+                "concrete_examples"
+              ],
+              "support_kinds_used": [
+                "example"
+              ]
+            },
+            "confidence": 0.2,
+            "renderer_compatibility": {
+              "renderer_kind": "discriminate",
+              "is_renderable": true,
+              "blocking_reasons": [],
+              "warnings": []
+            }
+          },
+          "renderer_adapter": {
+            "ok": true,
+            "warnings": [],
+            "blocking_reasons": []
+          }
+        }
+      }
+    },
+    "learning_space": {
+      "space_version": "v1",
+      "topics": [
+        {
+          "topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+          "topic_label": "Difference Between Mitosis Meiosis",
+          "position": [
+            -2.029342656114205,
+            -0.84,
+            9.147150780530197
+          ],
+          "layout": {
+            "position_source": "deterministic_fallback",
+            "semantic_position": null,
+            "semantic_position_method": null,
+            "semantic_position_updated_at": null,
+            "current_position": [
+              -2.029342656114205,
+              -0.84,
+              9.147150780530197
+            ],
+            "rendered_target_position": [
+              -2.029342656114205,
+              -0.84,
+              9.147150780530197
+            ],
+            "layout_confidence": 0.35,
+            "movement_policy": {
+              "easing": "slow",
+              "max_step_per_update": 0.24,
+              "preserve_user_spatial_memory": true
+            }
+          },
+          "render_state": {
+            "radius": 1.12,
+            "collision_radius": 1.38,
+            "surface_noise": 0,
+            "smoothness": 0.96,
+            "spin_rate": 0.002,
+            "saturation": 0.563,
+            "is_star": false,
+            "glow_intensity": 0.167,
+            "glow_source": "insight"
+          },
+          "surface_markers": [],
+          "rings": [],
+          "satellite_count": 1,
+          "satellites": [
+            {
+              "satellite_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5-sat-0",
+              "orbit_angle": 0,
+              "linked_attempt_id": null
+            }
+          ],
+          "topic_panel": {
+            "current_state_summary": "This topic is still forming; more evidence will make the state clearer.",
+            "active_diagnosis": {
+              "label": "representation_gap",
+              "confidence": 0.55,
+              "plain_language": "The mental model or representation may still be unstable."
+            },
+            "primary_block": "Explain the key difference in Difference Between Mitosis Meiosis in your own words.",
+            "next_step": {
+              "mode": "clarify",
+              "text": "Explain the key difference in Difference Between Mitosis Meiosis in your own words.",
+              "reason": "More clarification may help identify the next useful probe."
+            },
+            "recent_evidence_summary": [],
+            "why_this_topic_matters": [],
+            "available_actions": [
+              {
+                "action_type": "ask_clarify",
+                "label": "Clarify this topic",
+                "priority": 50
+              },
+              {
+                "action_type": "inspect_evidence",
+                "label": "Inspect evidence",
+                "priority": 30
+              }
+            ]
+          }
+        }
+      ],
+      "clusters": [],
+      "relationships": [],
+      "viewpoints": [],
+      "projection": {
+        "projection_id": "local_build_learning_space_projection",
+        "projection_method": "committed_topic_position_passthrough",
+        "dimensionality": 3,
+        "relationship_basis": [
+          "local_derived_shared_diagnosis",
+          "local_derived_shared_confusion_pattern",
+          "local_derived_shared_insight_pattern"
+        ],
+        "generated_at": null,
+        "confidence": null,
+        "notes": [
+          "Local buildLearningSpace fallback: no backend relationship/viewpoint layer was supplied. Positions are committed topic_position values only."
+        ]
+      }
+    }
+  },
+  "scene_update": {
+    "target_topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+    "camera_destination_topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+    "arrival_mode": "focus",
+    "learning_space": {
+      "space_version": "v1",
+      "topics": [
+        {
+          "topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+          "topic_label": "Difference Between Mitosis Meiosis",
+          "position": [
+            -2.029342656114205,
+            -0.84,
+            9.147150780530197
+          ],
+          "layout": {
+            "position_source": "deterministic_fallback",
+            "semantic_position": null,
+            "semantic_position_method": null,
+            "semantic_position_updated_at": null,
+            "current_position": [
+              -2.029342656114205,
+              -0.84,
+              9.147150780530197
+            ],
+            "rendered_target_position": [
+              -2.029342656114205,
+              -0.84,
+              9.147150780530197
+            ],
+            "layout_confidence": 0.35,
+            "movement_policy": {
+              "easing": "slow",
+              "max_step_per_update": 0.24,
+              "preserve_user_spatial_memory": true
+            }
+          },
+          "render_state": {
+            "radius": 1.12,
+            "collision_radius": 1.38,
+            "surface_noise": 0,
+            "smoothness": 0.96,
+            "spin_rate": 0.002,
+            "saturation": 0.563,
+            "is_star": false,
+            "glow_intensity": 0.167,
+            "glow_source": "insight"
+          },
+          "surface_markers": [],
+          "rings": [],
+          "satellite_count": 1,
+          "satellites": [
+            {
+              "satellite_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5-sat-0",
+              "orbit_angle": 0,
+              "linked_attempt_id": null
+            }
+          ],
+          "topic_panel": {
+            "current_state_summary": "This topic is still forming; more evidence will make the state clearer.",
+            "active_diagnosis": {
+              "label": "representation_gap",
+              "confidence": 0.55,
+              "plain_language": "The mental model or representation may still be unstable."
+            },
+            "primary_block": "Explain the key difference in Difference Between Mitosis Meiosis in your own words.",
+            "next_step": {
+              "mode": "clarify",
+              "text": "Explain the key difference in Difference Between Mitosis Meiosis in your own words.",
+              "reason": "More clarification may help identify the next useful probe."
+            },
+            "recent_evidence_summary": [],
+            "why_this_topic_matters": [],
+            "available_actions": [
+              {
+                "action_type": "ask_clarify",
+                "label": "Clarify this topic",
+                "priority": 50
+              },
+              {
+                "action_type": "inspect_evidence",
+                "label": "Inspect evidence",
+                "priority": 30
+              }
+            ]
+          }
+        }
+      ],
+      "clusters": [],
+      "relationships": [],
+      "viewpoints": [],
+      "projection": {
+        "projection_id": "local_build_learning_space_projection",
+        "projection_method": "committed_topic_position_passthrough",
+        "dimensionality": 3,
+        "relationship_basis": [
+          "local_derived_shared_diagnosis",
+          "local_derived_shared_confusion_pattern",
+          "local_derived_shared_insight_pattern"
+        ],
+        "generated_at": null,
+        "confidence": null,
+        "notes": [
+          "Local buildLearningSpace fallback: no backend relationship/viewpoint layer was supplied. Positions are committed topic_position values only."
+        ]
+      }
+    },
+    "source": "local_service_3model_message_route"
+  },
+  "intervention": {
+    "mode_selected": "probe",
+    "target_topic_id": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+    "active_diagnosis": "representation_gap",
+    "probe_available": "available",
+    "status_label": "Local 3-model probe",
+    "suggested_action": "Open the generated probe"
+  },
+  "updated_topic_metrics": {
+    "topicId": "topic_c858d0ba-f86d-41ab-944d-22300c5fb4a5",
+    "confusion": 0.58,
+    "insight": 0.34,
+    "learningScore": 0.22
+  },
+  "local_service_3model_debug": {
+    "enabled": true,
+    "topic_resolution": {
+      "resolution_kind": "deterministic_label_seeded_topic",
+      "resolved_label": "Difference Between Mitosis Meiosis",
+      "match_confidence": 0.72,
+      "authority_source": "deterministic_topic_labeler",
+      "warnings": [],
+      "rejected_request_topic": null
+    },
+    "diagnosis_output": {
+      "schema_version": "diagnosis_model_output_v1",
+      "diagnosis": "representation_gap",
+      "diagnosis_confidence": 0.225,
+      "next_action": "generate_probe_contract",
+      "next_action_confidence": 0.8531,
+      "suggested_question": null
+    },
+    "diagnosis_provider_meta": {
+      "provider_name": "diagnosis_service_client",
+      "provider_kind": "service_client",
+      "schema_version": "diagnosis_model_output_v1",
+      "model_name": "myway_diagnosis_classifier_phase_a_v1",
+      "latency_ms": 17,
+      "warnings": []
+    },
+    "probe_contract_output": {
+      "answer_key": {
+        "correct_option_id": "b",
+        "kind": "single_choice",
+        "success_markers": [
+          "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+        ]
+      },
+      "confidence": 0.2,
+      "delivery_context": {
+        "bridge_level": "bridge_0",
+        "example_domains_used": [
+          "toy hydraulics"
+        ],
+        "language_policy": {
+          "jargon_level": "none"
+        },
+        "personalization_signals_used": [
+          {
+            "confidence": 0.68,
+            "kind": "example_domain",
+            "value": "toy hydraulics"
+          }
+        ],
+        "presentation_styles_used": [
+          "concrete_examples"
+        ],
+        "support_kinds_used": [
+          "example"
+        ]
+      },
+      "expected_attempt_type": "single_choice",
+      "misconception_markers": [
+        {
+          "confidence": 0.7,
+          "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+          "label": "Part Name As Cause",
+          "marker": "part_name_as_cause",
+          "misconception_id": "part_name_as_cause"
+        },
+        {
+          "confidence": 0.7,
+          "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+          "label": "One Clue Closure",
+          "marker": "one_clue_closure",
+          "misconception_id": "one_clue_closure"
+        },
+        {
+          "confidence": 0.7,
+          "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+          "label": "Unsafe Repair Drift",
+          "marker": "unsafe_repair_drift",
+          "misconception_id": "unsafe_repair_drift"
+        }
+      ],
+      "presentation_support": [
+        {
+          "confidence": 0.72,
+          "kind": "example",
+          "style_used": "concrete_examples",
+          "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+          "user_interest_used": "water balloons and elevator buttons"
+        }
+      ],
+      "probe_type": "discriminate",
+      "prompt": {
+        "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+        "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+        "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+        "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+      },
+      "renderer_params": {
+        "options": [
+          {
+            "id": "a",
+            "label": "A",
+            "text": "The fluid creates energy from nowhere."
+          },
+          {
+            "id": "b",
+            "label": "B",
+            "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+          },
+          {
+            "id": "c",
+            "label": "C",
+            "text": "The bigger plate is stronger because it feels like it."
+          }
+        ]
+      },
+      "schema_version": "probe_contract_model_output_v1"
+    },
+    "probe_contract_provider_meta": {
+      "provider_name": "probe_contract_service_client",
+      "provider_kind": "service_client",
+      "schema_version": "probe_contract_model_output_v1",
+      "model_name": "myway_probe_contract_retriever_phase_a_v1",
+      "latency_ms": 8,
+      "warnings": []
+    },
+    "renderer_adapter": {
+      "ok": true,
+      "renderable_probe": {
+        "schema_version": "engine_renderable_probe_v1",
+        "probe_type": "discriminate",
+        "expected_attempt_type": "single_choice",
+        "prompt": {
+          "full_prompt": "Toy hydraulic model only — no jack or lifting instructions.\n\nTwo connected water balloons have different-sized flat plates on top. Which sentence is best?\nA) The fluid creates energy from nowhere.\nB) Pressure transfers through the fluid, and different areas can change force/motion tradeoffs.\nC) The bigger plate is stronger because it feels like it.\n\nPick one and say what is being transferred.",
+          "reshaping_explanation": "Use a small toy example tied to water balloons and elevator buttons to expose the hidden mechanical reasoning operation without giving repair instructions.",
+          "root_problem_explanation": "The learner memorizes that hydraulics multiply force but cannot map pressure transmission, area difference, load support, and why safety supports matter.",
+          "task": "Answer the prompt conceptually and include the reasoning clue, role, or relationship that supports the answer."
+        },
+        "presentation_support": [
+          {
+            "confidence": 0.72,
+            "kind": "example",
+            "style_used": "concrete_examples",
+            "text": "Use water balloons and elevator buttons only as a light conceptual surface example; keep the task non-actionable and do not provide real repair, testing, or inspection steps.",
+            "user_interest_used": "water balloons and elevator buttons"
+          }
+        ],
+        "answer_key": {
+          "correct_option_id": "b",
+          "kind": "single_choice",
+          "success_markers": [
+            "B. Pressure is transferred; area differences change force/motion tradeoffs without magic energy creation."
+          ]
+        },
+        "misconception_markers": [
+          {
+            "confidence": 0.7,
+            "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+            "label": "Part Name As Cause",
+            "marker": "part_name_as_cause",
+            "misconception_id": "part_name_as_cause"
+          },
+          {
+            "confidence": 0.7,
+            "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+            "label": "One Clue Closure",
+            "marker": "one_clue_closure",
+            "misconception_id": "one_clue_closure"
+          },
+          {
+            "confidence": 0.7,
+            "description": "Watch for responses that still show this conceptual pattern while working on Hydraulic jack, pressure, and mechanical advantage; do not convert feedback into repair or inspection steps.",
+            "label": "Unsafe Repair Drift",
+            "marker": "unsafe_repair_drift",
+            "misconception_id": "unsafe_repair_drift"
+          }
+        ],
+        "renderer_params": {
+          "options": [
+            {
+              "id": "a",
+              "label": "A",
+              "text": "The fluid creates energy from nowhere."
+            },
+            {
+              "id": "b",
+              "label": "B",
+              "text": "Pressure transfers through the fluid, and different areas can change force/motion tradeoffs."
+            },
+            {
+              "id": "c",
+              "label": "C",
+              "text": "The bigger plate is stronger because it feels like it."
+            }
+          ]
+        },
+        "delivery_context": {
+          "bridge_level": "bridge_0",
+          "example_domains_used": [
+            "toy hydraulics"
+          ],
+          "language_policy": {
+            "jargon_level": "none"
+          },
+          "personalization_signals_used": [
+            {
+              "confidence": 0.68,
+              "kind": "example_domain",
+              "value": "toy hydraulics"
+            }
+          ],
+          "presentation_styles_used": [
+            "concrete_examples"
+          ],
+          "support_kinds_used": [
+            "example"
+          ]
+        },
+        "confidence": 0.2,
+        "renderer_compatibility": {
+          "renderer_kind": "discriminate",
+          "is_renderable": true,
+          "blocking_reasons": [],
+          "warnings": []
+        }
+      },
+      "warnings": [],
+      "blocking_reasons": []
+    }
+  }
+}

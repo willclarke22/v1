@@ -1,0 +1,1512 @@
+MyWay provider shadow wiring inspection
+Generated: 2026-06-19 12:38:30
+Root: C:\Users\willc\projects\MyWay\v1
+
+
+
+============================================================
+FILE: lib\engine\providers\index.ts
+============================================================
+
+export * from "./types";
+export * from "./service-clients";
+export * from "./mock-model-artifacts";
+
+
+
+============================================================
+FILE: lib\engine\providers\types.ts
+============================================================
+
+import type {
+  DiagnosisModelInput,
+  DiagnosisModelOutput,
+  ProbeAttemptEvaluatorInput,
+  ProbeAttemptEvaluatorOutput,
+  ProbeContractModelInput,
+  ProbeContractModelOutput,
+} from "../schemas";
+
+export type EngineProviderKind = "service_client";
+
+export type EngineProviderCallMeta = {
+  provider_name: string;
+  provider_kind: EngineProviderKind;
+  model_name?: string | null;
+  schema_version: string;
+  latency_ms?: number | null;
+  warnings?: string[];
+};
+
+export type EngineProviderResult<TOutput> = {
+  output: TOutput;
+  meta: EngineProviderCallMeta;
+  raw_response?: unknown;
+};
+
+export type DiagnosisModelProvider = {
+  provider_name: string;
+  provider_kind: EngineProviderKind;
+  runDiagnosis(
+    input: DiagnosisModelInput,
+  ): Promise<EngineProviderResult<DiagnosisModelOutput>>;
+};
+
+export type ProbeContractModelProvider = {
+  provider_name: string;
+  provider_kind: EngineProviderKind;
+  runProbeContract(
+    input: ProbeContractModelInput,
+  ): Promise<EngineProviderResult<ProbeContractModelOutput>>;
+};
+
+export type ProbeAttemptEvaluatorProvider = {
+  provider_name: string;
+  provider_kind: EngineProviderKind;
+  runAttemptEvaluation(
+    input: ProbeAttemptEvaluatorInput,
+  ): Promise<EngineProviderResult<ProbeAttemptEvaluatorOutput>>;
+};
+
+export type EngineProviderSet = {
+  diagnosis: DiagnosisModelProvider;
+  probe_contract?: ProbeContractModelProvider;
+  attempt_evaluator: ProbeAttemptEvaluatorProvider;
+};
+
+export function buildProviderMeta(input: {
+  provider_name: string;
+  provider_kind: EngineProviderKind;
+  schema_version: string;
+  model_name?: string | null;
+  started_at_ms: number;
+  warnings?: string[];
+}): EngineProviderCallMeta {
+  return {
+    provider_name: input.provider_name,
+    provider_kind: input.provider_kind,
+    schema_version: input.schema_version,
+    model_name: input.model_name ?? null,
+    latency_ms: Math.max(0, Date.now() - input.started_at_ms),
+    warnings: input.warnings ?? [],
+  };
+}
+
+
+
+
+
+
+============================================================
+FILE: lib\engine\providers\service-clients\index.ts
+============================================================
+
+export * from "./diagnosis-service-client";
+export * from "./probe-contract-service-client";
+export * from "./attempt-evaluator-service-client";
+
+
+
+============================================================
+FILE: lib\engine\providers\service-clients\diagnosis-service-client.ts
+============================================================
+
+import type { DiagnosisModelInput, DiagnosisModelOutput } from "../../schemas";
+import type { DiagnosisModelProvider, EngineProviderResult } from "../types";
+import { buildProviderMeta } from "../types";
+
+export type DiagnosisServiceClientConfig = {
+  provider_name?: string;
+  model_name?: string | null;
+  endpoint_url?: string | null;
+  timeout_ms?: number;
+};
+
+type ServiceEnvelope<T> = {
+  ok?: boolean;
+  output?: T;
+  meta?: unknown;
+  error?: string;
+};
+
+function getEndpointUrl(config: DiagnosisServiceClientConfig): string | null {
+  return (
+    config.endpoint_url ??
+    process.env.MYWAY_DIAGNOSIS_ENDPOINT_URL ??
+    process.env.MYWAY_DIAGNOSIS_SERVICE_URL ??
+    null
+  );
+}
+
+function buildSafeFallbackOutput(input: DiagnosisModelInput): DiagnosisModelOutput {
+  return {
+    schema_version: "diagnosis_model_output_v1",
+    diagnosis: "unknown",
+    diagnosis_confidence: 0.25,
+    next_action: "ask_clarifying_question",
+    next_action_confidence: 0.45,
+    suggested_question:
+      input.input_kind === "user_message"
+        ? "What part should MyWay check first?"
+        : "Can you explain how you got that answer?",
+  };
+}
+
+function isDiagnosisOutput(value: unknown): value is DiagnosisModelOutput {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<DiagnosisModelOutput>;
+  return (
+    candidate.schema_version === "diagnosis_model_output_v1" &&
+    typeof candidate.diagnosis === "string" &&
+    typeof candidate.diagnosis_confidence === "number" &&
+    typeof candidate.next_action === "string" &&
+    typeof candidate.next_action_confidence === "number"
+  );
+}
+
+async function postJson<T>(url: string, input: unknown, timeoutMs: number): Promise<ServiceEnvelope<T>> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ input }),
+      signal: controller.signal,
+    });
+
+    const text = await response.text();
+    const payload = text ? (JSON.parse(text) as ServiceEnvelope<T> | T) : ({} as ServiceEnvelope<T>);
+
+    if (!response.ok) {
+      const errorPayload = payload as ServiceEnvelope<T>;
+      throw new Error(errorPayload.error ?? `Diagnosis service returned HTTP ${response.status}`);
+    }
+
+    if (payload && typeof payload === "object" && "output" in payload) {
+      return payload as ServiceEnvelope<T>;
+    }
+
+    return { ok: true, output: payload as T };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export function createDiagnosisServiceClient(
+  config: DiagnosisServiceClientConfig = {},
+): DiagnosisModelProvider {
+  const providerName = config.provider_name ?? "diagnosis_service_client";
+
+  return {
+    provider_name: providerName,
+    provider_kind: "service_client",
+
+    async runDiagnosis(
+      input: DiagnosisModelInput,
+    ): Promise<EngineProviderResult<DiagnosisModelOutput>> {
+      const startedAtMs = Date.now();
+      const endpointUrl = getEndpointUrl(config);
+
+      if (!endpointUrl) {
+        const output = buildSafeFallbackOutput(input);
+        return {
+          output,
+          meta: buildProviderMeta({
+            provider_name: providerName,
+            provider_kind: "service_client",
+            schema_version: output.schema_version,
+            model_name: config.model_name ?? null,
+            started_at_ms: startedAtMs,
+            warnings: [
+              "No diagnosis endpoint configured. Returned safe fallback output.",
+              "Set MYWAY_DIAGNOSIS_ENDPOINT_URL=http://127.0.0.1:8011/predict to use the local artifact service.",
+            ],
+          }),
+        };
+      }
+
+      try {
+        const serviceResponse = await postJson<DiagnosisModelOutput>(
+          endpointUrl,
+          input,
+          config.timeout_ms ?? 8000,
+        );
+        const output = serviceResponse.output;
+
+        if (!isDiagnosisOutput(output)) {
+          throw new Error("Diagnosis service returned an invalid DiagnosisModelOutput shape.");
+        }
+
+        return {
+          output,
+          meta: buildProviderMeta({
+            provider_name: providerName,
+            provider_kind: "service_client",
+            schema_version: output.schema_version,
+            model_name: config.model_name ?? "myway_diagnosis_classifier_phase_a_v1",
+            started_at_ms: startedAtMs,
+            warnings: [],
+          }),
+        };
+      } catch (error) {
+        const output = buildSafeFallbackOutput(input);
+        return {
+          output,
+          meta: buildProviderMeta({
+            provider_name: providerName,
+            provider_kind: "service_client",
+            schema_version: output.schema_version,
+            model_name: config.model_name ?? null,
+            started_at_ms: startedAtMs,
+            warnings: [
+              "Diagnosis service call failed. Returned safe fallback output.",
+              error instanceof Error ? error.message : String(error),
+            ],
+          }),
+        };
+      }
+    },
+  };
+}
+
+
+
+============================================================
+FILE: lib\engine\providers\service-clients\probe-contract-service-client.ts
+============================================================
+
+import type {
+  ProbeContractModelInput,
+  ProbeContractModelOutput,
+} from "../../schemas";
+import type { EngineProviderResult, ProbeContractModelProvider } from "../types";
+import { buildProviderMeta } from "../types";
+
+export type ProbeContractServiceClientConfig = {
+  provider_name?: string;
+  model_name?: string | null;
+  endpoint_url?: string | null;
+  timeout_ms?: number;
+};
+
+type ServiceEnvelope<T> = {
+  ok?: boolean;
+  output?: T;
+  meta?: unknown;
+  error?: string;
+};
+
+function getEndpointUrl(config: ProbeContractServiceClientConfig): string | null {
+  return (
+    config.endpoint_url ??
+    process.env.MYWAY_PROBE_CONTRACT_ENDPOINT_URL ??
+    process.env.MYWAY_PROBE_CONTRACT_SERVICE_URL ??
+    null
+  );
+}
+
+function buildSafeFallbackOutput(input: ProbeContractModelInput): ProbeContractModelOutput {
+  return {
+    schema_version: "probe_contract_model_output_v1",
+    probe_type: "explain",
+    expected_attempt_type: "text",
+    prompt: {
+      root_problem_explanation:
+        "The probe contract service client could not reach a configured provider.",
+      reshaping_explanation:
+        "Use a safe minimal text probe until the real provider is connected.",
+      task: `Explain what you know about ${input.target_topic.topic_label}.`,
+      full_prompt: `In your own words, explain what you know about ${input.target_topic.topic_label}.`,
+    },
+    presentation_support: [],
+    answer_key: null,
+    misconception_markers: [],
+    renderer_params: null,
+    confidence: 0.2,
+  };
+}
+
+function isProbeContractOutput(value: unknown): value is ProbeContractModelOutput {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<ProbeContractModelOutput>;
+  return (
+    candidate.schema_version === "probe_contract_model_output_v1" &&
+    typeof candidate.probe_type === "string" &&
+    typeof candidate.expected_attempt_type === "string" &&
+    Boolean(candidate.prompt) &&
+    typeof candidate.prompt === "object" &&
+    Array.isArray(candidate.misconception_markers) &&
+    typeof candidate.confidence === "number"
+  );
+}
+
+async function postJson<T>(url: string, input: unknown, timeoutMs: number): Promise<ServiceEnvelope<T>> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ input }),
+      signal: controller.signal,
+    });
+
+    const text = await response.text();
+    const payload = text ? (JSON.parse(text) as ServiceEnvelope<T> | T) : ({} as ServiceEnvelope<T>);
+
+    if (!response.ok) {
+      const errorPayload = payload as ServiceEnvelope<T>;
+      throw new Error(errorPayload.error ?? `Probe contract service returned HTTP ${response.status}`);
+    }
+
+    if (payload && typeof payload === "object" && "output" in payload) {
+      return payload as ServiceEnvelope<T>;
+    }
+
+    return { ok: true, output: payload as T };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export function createProbeContractServiceClient(
+  config: ProbeContractServiceClientConfig = {},
+): ProbeContractModelProvider {
+  const providerName = config.provider_name ?? "probe_contract_service_client";
+
+  return {
+    provider_name: providerName,
+    provider_kind: "service_client",
+
+    async runProbeContract(
+      input: ProbeContractModelInput,
+    ): Promise<EngineProviderResult<ProbeContractModelOutput>> {
+      const startedAtMs = Date.now();
+      const endpointUrl = getEndpointUrl(config);
+
+      if (!endpointUrl) {
+        const output = buildSafeFallbackOutput(input);
+        return {
+          output,
+          meta: buildProviderMeta({
+            provider_name: providerName,
+            provider_kind: "service_client",
+            schema_version: output.schema_version,
+            model_name: config.model_name ?? null,
+            started_at_ms: startedAtMs,
+            warnings: [
+              "No probe contract endpoint configured. Returned safe fallback output.",
+              "Set MYWAY_PROBE_CONTRACT_ENDPOINT_URL=http://127.0.0.1:8012/predict to use the local artifact service.",
+            ],
+          }),
+        };
+      }
+
+      try {
+        const serviceResponse = await postJson<ProbeContractModelOutput>(
+          endpointUrl,
+          input,
+          config.timeout_ms ?? 8000,
+        );
+        const output = serviceResponse.output;
+
+        if (!isProbeContractOutput(output)) {
+          throw new Error("Probe contract service returned an invalid ProbeContractModelOutput shape.");
+        }
+
+        return {
+          output,
+          meta: buildProviderMeta({
+            provider_name: providerName,
+            provider_kind: "service_client",
+            schema_version: output.schema_version,
+            model_name: config.model_name ?? "myway_probe_contract_retriever_phase_a_v1",
+            started_at_ms: startedAtMs,
+            warnings: [],
+          }),
+        };
+      } catch (error) {
+        const output = buildSafeFallbackOutput(input);
+        return {
+          output,
+          meta: buildProviderMeta({
+            provider_name: providerName,
+            provider_kind: "service_client",
+            schema_version: output.schema_version,
+            model_name: config.model_name ?? null,
+            started_at_ms: startedAtMs,
+            warnings: [
+              "Probe contract service call failed. Returned safe fallback output.",
+              error instanceof Error ? error.message : String(error),
+            ],
+          }),
+        };
+      }
+    },
+  };
+}
+
+
+
+============================================================
+FILE: lib\engine\providers\service-clients\attempt-evaluator-service-client.ts
+============================================================
+
+import type {
+  ProbeAttemptEvaluatorInput,
+  ProbeAttemptEvaluatorOutput,
+} from "../../schemas";
+import type { EngineProviderResult, ProbeAttemptEvaluatorProvider } from "../types";
+import { buildProviderMeta } from "../types";
+
+export type AttemptEvaluatorServiceClientConfig = {
+  provider_name?: string;
+  model_name?: string | null;
+  endpoint_url?: string | null;
+  timeout_ms?: number;
+};
+
+type ServiceEnvelope<T> = {
+  ok?: boolean;
+  output?: T;
+  meta?: unknown;
+  error?: string;
+};
+
+function getEndpointUrl(config: AttemptEvaluatorServiceClientConfig): string | null {
+  return (
+    config.endpoint_url ??
+    process.env.MYWAY_ATTEMPT_EVALUATOR_ENDPOINT_URL ??
+    process.env.MYWAY_ATTEMPT_EVALUATOR_SERVICE_URL ??
+    null
+  );
+}
+
+function buildSafeFallbackOutput(): ProbeAttemptEvaluatorOutput {
+  return {
+    schema_version: "probe_attempt_evaluator_output_v1",
+    correctness: 0,
+    correctness_summary:
+      "The attempt evaluator service client could not reach a configured provider, so this output is intentionally low-confidence.",
+    understanding_evidence: {
+      evidence_strength: 0,
+      may_be_lucky_guess: false,
+      needs_verification_probe: true,
+      verification_reason:
+        "The real evaluator was not available, so MyWay should not treat this as stable evidence.",
+    },
+    misconception_hits: [],
+    next_action: "ask_clarifying_question",
+    next_action_confidence: 0.35,
+  };
+}
+
+function isAttemptEvaluatorOutput(value: unknown): value is ProbeAttemptEvaluatorOutput {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<ProbeAttemptEvaluatorOutput>;
+  return (
+    candidate.schema_version === "probe_attempt_evaluator_output_v1" &&
+    typeof candidate.correctness === "number" &&
+    typeof candidate.correctness_summary === "string" &&
+    Boolean(candidate.understanding_evidence) &&
+    typeof candidate.understanding_evidence === "object" &&
+    Array.isArray(candidate.misconception_hits) &&
+    typeof candidate.next_action === "string" &&
+    typeof candidate.next_action_confidence === "number"
+  );
+}
+
+async function postJson<T>(url: string, input: unknown, timeoutMs: number): Promise<ServiceEnvelope<T>> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ input }),
+      signal: controller.signal,
+    });
+
+    const text = await response.text();
+    const payload = text ? (JSON.parse(text) as ServiceEnvelope<T> | T) : ({} as ServiceEnvelope<T>);
+
+    if (!response.ok) {
+      const errorPayload = payload as ServiceEnvelope<T>;
+      throw new Error(errorPayload.error ?? `Attempt evaluator service returned HTTP ${response.status}`);
+    }
+
+    if (payload && typeof payload === "object" && "output" in payload) {
+      return payload as ServiceEnvelope<T>;
+    }
+
+    return { ok: true, output: payload as T };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export function createAttemptEvaluatorServiceClient(
+  config: AttemptEvaluatorServiceClientConfig = {},
+): ProbeAttemptEvaluatorProvider {
+  const providerName = config.provider_name ?? "attempt_evaluator_service_client";
+
+  return {
+    provider_name: providerName,
+    provider_kind: "service_client",
+
+    async runAttemptEvaluation(
+      input: ProbeAttemptEvaluatorInput,
+    ): Promise<EngineProviderResult<ProbeAttemptEvaluatorOutput>> {
+      const startedAtMs = Date.now();
+      const endpointUrl = getEndpointUrl(config);
+
+      if (!endpointUrl) {
+        const output = buildSafeFallbackOutput();
+        return {
+          output,
+          meta: buildProviderMeta({
+            provider_name: providerName,
+            provider_kind: "service_client",
+            schema_version: output.schema_version,
+            model_name: config.model_name ?? null,
+            started_at_ms: startedAtMs,
+            warnings: [
+              "No attempt evaluator endpoint configured. Returned safe fallback output.",
+              "Set MYWAY_ATTEMPT_EVALUATOR_ENDPOINT_URL=http://127.0.0.1:8013/predict to use the local artifact service.",
+            ],
+          }),
+        };
+      }
+
+      try {
+        const serviceResponse = await postJson<ProbeAttemptEvaluatorOutput>(
+          endpointUrl,
+          input,
+          config.timeout_ms ?? 8000,
+        );
+        const output = serviceResponse.output;
+
+        if (!isAttemptEvaluatorOutput(output)) {
+          throw new Error("Attempt evaluator service returned an invalid ProbeAttemptEvaluatorOutput shape.");
+        }
+
+        return {
+          output,
+          meta: buildProviderMeta({
+            provider_name: providerName,
+            provider_kind: "service_client",
+            schema_version: output.schema_version,
+            model_name: config.model_name ?? "myway_attempt_evaluator_hybrid_phase_a_v1",
+            started_at_ms: startedAtMs,
+            warnings: [],
+          }),
+        };
+      } catch (error) {
+        const output = buildSafeFallbackOutput();
+        return {
+          output,
+          meta: buildProviderMeta({
+            provider_name: providerName,
+            provider_kind: "service_client",
+            schema_version: output.schema_version,
+            model_name: config.model_name ?? null,
+            started_at_ms: startedAtMs,
+            warnings: [
+              "Attempt evaluator service call failed. Returned safe fallback output.",
+              error instanceof Error ? error.message : String(error),
+            ],
+          }),
+        };
+      }
+    },
+  };
+}
+
+
+
+============================================================
+FILE: lib\engine\orchestration\run-diagnosis.ts
+============================================================
+
+import type {
+  DiagnosisModelInput,
+  DiagnosisModelOutput,
+} from "../schemas";
+import type {
+  DiagnosisModelProvider,
+  EngineProviderResult,
+} from "../providers";
+import type { ValidationResult } from "../validation";
+import { validateDiagnosisOutput } from "../validation";
+
+export type DiagnosisRunResult = {
+  output: DiagnosisModelOutput;
+  provider_result: EngineProviderResult<DiagnosisModelOutput>;
+  validation: ValidationResult<DiagnosisModelOutput | null>;
+  usable: boolean;
+};
+
+export async function runDiagnosis(input: {
+  provider: DiagnosisModelProvider;
+  model_input: DiagnosisModelInput;
+}): Promise<DiagnosisRunResult> {
+  const providerResult = await input.provider.runDiagnosis(input.model_input);
+  const validation = validateDiagnosisOutput(providerResult.output);
+
+  return {
+    output: providerResult.output,
+    provider_result: providerResult,
+    validation,
+    usable: validation.ok,
+  };
+}
+
+
+
+
+============================================================
+FILE: lib\engine\orchestration\run-probe-contract.ts
+============================================================
+
+import type {
+  ProbeContractModelInput,
+  ProbeContractModelOutput,
+} from "../schemas";
+import type {
+  EngineProviderResult,
+  ProbeContractModelProvider,
+} from "../providers";
+import type { ValidationResult } from "../validation";
+import { validateProbeContract } from "../validation";
+
+export type ProbeContractRunResult = {
+  output: ProbeContractModelOutput;
+  provider_result: EngineProviderResult<ProbeContractModelOutput>;
+  validation: ValidationResult<ProbeContractModelOutput | null>;
+  usable: boolean;
+};
+
+export async function runProbeContract(input: {
+  provider: ProbeContractModelProvider;
+  model_input: ProbeContractModelInput;
+}): Promise<ProbeContractRunResult> {
+  const providerResult = await input.provider.runProbeContract(input.model_input);
+  const validation = validateProbeContract(providerResult.output);
+
+  return {
+    output: providerResult.output,
+    provider_result: providerResult,
+    validation,
+    usable: validation.ok,
+  };
+}
+
+
+
+
+============================================================
+FILE: lib\engine\orchestration\run-attempt-evaluation.ts
+============================================================
+
+import type {
+  ProbeAttemptEvaluatorInput,
+  ProbeAttemptEvaluatorOutput,
+} from "../schemas";
+import type {
+  EngineProviderResult,
+  ProbeAttemptEvaluatorProvider,
+} from "../providers";
+import type { ValidationResult } from "../validation";
+import { validateAttemptEvaluation } from "../validation";
+
+export type AttemptEvaluationRunResult = {
+  output: ProbeAttemptEvaluatorOutput;
+  provider_result: EngineProviderResult<ProbeAttemptEvaluatorOutput>;
+  validation: ValidationResult<ProbeAttemptEvaluatorOutput | null>;
+  usable: boolean;
+};
+
+export async function runAttemptEvaluation(input: {
+  provider: ProbeAttemptEvaluatorProvider;
+  model_input: ProbeAttemptEvaluatorInput;
+}): Promise<AttemptEvaluationRunResult> {
+  const providerResult = await input.provider.runAttemptEvaluation(input.model_input);
+  const validation = validateAttemptEvaluation(providerResult.output);
+
+  return {
+    output: providerResult.output,
+    provider_result: providerResult,
+    validation,
+    usable: validation.ok,
+  };
+}
+
+
+
+
+============================================================
+FILE: lib\engine\orchestration\run-engine-turn.ts
+============================================================
+
+import type {
+  DiagnosisModelInput,
+  ProbeContractModelInput,
+} from "../schemas";
+import type { EngineProviderSet } from "../providers";
+import type { DiagnosisRunResult } from "./run-diagnosis";
+import { runDiagnosis } from "./run-diagnosis";
+import type { ProbeContractRunResult } from "./run-probe-contract";
+import { runProbeContract } from "./run-probe-contract";
+import type { EngineRouteResult } from "./route-engine-next-action";
+import { routeEngineNextAction } from "./route-engine-next-action";
+
+export type EngineTurnProbeContractContext = Omit<
+  ProbeContractModelInput,
+  "schema_version" | "target_diagnosis"
+>;
+
+export type RunEngineTurnInput = {
+  providers: EngineProviderSet;
+  diagnosis_input: DiagnosisModelInput;
+
+  // Optional because not every engine turn should generate a probe.
+  // When present and diagnosis routes to generate_probe_contract, the turn can
+  // produce a validated probe contract without route-level wiring.
+  probe_contract_context?: EngineTurnProbeContractContext;
+};
+
+export type RunEngineTurnResult = {
+  diagnosis: DiagnosisRunResult;
+  route: EngineRouteResult;
+  probe_contract?: ProbeContractRunResult;
+};
+
+export async function runEngineTurn(
+  input: RunEngineTurnInput,
+): Promise<RunEngineTurnResult> {
+  const diagnosis = await runDiagnosis({
+    provider: input.providers.diagnosis,
+    model_input: input.diagnosis_input,
+  });
+
+  const route = routeEngineNextAction({
+    diagnosis_output: diagnosis.output,
+  });
+
+  if (
+    route.next_action === "generate_probe_contract" &&
+    input.providers.probe_contract &&
+    input.probe_contract_context
+  ) {
+    const probeContractInput: ProbeContractModelInput = {
+      schema_version: "probe_contract_model_input_v1",
+      target_topic: input.probe_contract_context.target_topic,
+      target_diagnosis: diagnosis.output.diagnosis,
+      learner_signal: input.probe_contract_context.learner_signal,
+      personalization_context:
+        input.probe_contract_context.personalization_context ?? null,
+    };
+
+    const probeContract = await runProbeContract({
+      provider: input.providers.probe_contract,
+      model_input: probeContractInput,
+    });
+
+    return {
+      diagnosis,
+      route,
+      probe_contract: probeContract,
+    };
+  }
+
+  return {
+    diagnosis,
+    route,
+  };
+}
+
+
+
+
+============================================================
+FILE: lib\engine\orchestration\route-engine-next-action.ts
+============================================================
+
+import type {
+  AttemptEvaluatorNextAction,
+  DiagnosisModelOutput,
+  DiagnosisNextAction,
+  ProbeAttemptEvaluatorOutput,
+} from "../schemas";
+
+export type EngineRoutedNextAction =
+  | DiagnosisNextAction
+  | AttemptEvaluatorNextAction
+  | "keep_topic_open";
+
+export type EngineRouteReason =
+  | "attempt_evaluator_requested_action"
+  | "attempt_needs_verification"
+  | "attempt_has_misconception"
+  | "diagnosis_requested_action"
+  | "no_gap_still_low_confidence"
+  | "fallback_keep_topic_open";
+
+export type EngineRouteResult = {
+  next_action: EngineRoutedNextAction;
+  confidence: number;
+  reason: EngineRouteReason;
+  keep_topic_open: boolean;
+};
+
+export function routeEngineNextAction(input: {
+  diagnosis_output?: DiagnosisModelOutput | null;
+  attempt_evaluation_output?: ProbeAttemptEvaluatorOutput | null;
+}): EngineRouteResult {
+  const attempt = input.attempt_evaluation_output;
+
+  if (attempt) {
+    const hasMisconception = attempt.misconception_hits.length > 0;
+    const needsVerification =
+      attempt.understanding_evidence.needs_verification_probe ||
+      attempt.understanding_evidence.may_be_lucky_guess ||
+      attempt.understanding_evidence.possible_guess === true;
+
+    if (hasMisconception && attempt.next_action !== "target_misconception") {
+      return {
+        next_action: "target_misconception",
+        confidence: Math.max(0.62, attempt.next_action_confidence),
+        reason: "attempt_has_misconception",
+        keep_topic_open: true,
+      };
+    }
+
+    if (needsVerification && attempt.next_action !== "generate_followup_probe") {
+      return {
+        next_action: "generate_followup_probe",
+        confidence: Math.max(0.58, attempt.next_action_confidence),
+        reason: "attempt_needs_verification",
+        keep_topic_open: true,
+      };
+    }
+
+    return {
+      next_action: attempt.next_action,
+      confidence: attempt.next_action_confidence,
+      reason: "attempt_evaluator_requested_action",
+      keep_topic_open:
+        hasMisconception ||
+        needsVerification ||
+        attempt.correctness < 0.85 ||
+        attempt.understanding_evidence.evidence_strength < 0.75,
+    };
+  }
+
+  const diagnosis = input.diagnosis_output;
+
+  if (diagnosis) {
+    if (
+      diagnosis.diagnosis === "no_gap_detected" &&
+      diagnosis.diagnosis_confidence < 0.75
+    ) {
+      return {
+        next_action: "keep_topic_open",
+        confidence: diagnosis.diagnosis_confidence,
+        reason: "no_gap_still_low_confidence",
+        keep_topic_open: true,
+      };
+    }
+
+    return {
+      next_action: diagnosis.next_action,
+      confidence: diagnosis.next_action_confidence,
+      reason: "diagnosis_requested_action",
+      keep_topic_open: diagnosis.diagnosis !== "no_gap_detected",
+    };
+  }
+
+  return {
+    next_action: "keep_topic_open",
+    confidence: 0.25,
+    reason: "fallback_keep_topic_open",
+    keep_topic_open: true,
+  };
+}
+
+
+
+
+
+============================================================
+FILE: app\api\message\route.ts
+============================================================
+
+import { NextResponse } from "next/server";
+import { buildMockThreeModelMessageRouteResponse } from "@/lib/api-routes/message/mock-3model-response";
+
+function getMessageText(body: unknown) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return "";
+  }
+
+  const record = body as Record<string, unknown>;
+  const messageText =
+    typeof record.messageText === "string"
+      ? record.messageText
+      : typeof record.message === "string"
+        ? record.message
+        : "";
+
+  return messageText.trim();
+}
+
+/**
+ * Temporary 3-model pipeline route.
+ *
+ * The old /api/message path mixed topic routing, model-signal queues,
+ * deterministic intervention planning, legacy probe-plan building, persistence,
+ * and learning-space projection in one active route.
+ *
+ * For the 3-model buildout phase, this route now proves the clean loop:
+ *
+ *   models/diagnosis
+ *   â†’ models/probe-contract
+ *   â†’ lib/engine
+ *   â†’ EngineRenderableProbe
+ *   â†’ frontend probe renderer
+ *
+ * The previous full route is backed up under archive/ by the step-23a script.
+ */
+export async function POST(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const message = getMessageText(body) || "mock 3-model message";
+
+    return NextResponse.json(
+      await buildMockThreeModelMessageRouteResponse({ message }),
+    );
+  } catch (error) {
+    console.error("POST /api/message mock 3-model route failed", error);
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to build mock 3-model message response.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+
+
+============================================================
+FILE: app\api\probe\submit\route.ts
+============================================================
+
+import { NextResponse } from "next/server";
+import { buildMockThreeModelProbeSubmitResponse } from "@/lib/api-routes/probe-submit/mock-3model-response";
+
+/**
+ * Temporary 3-model probe-submit route.
+ *
+ * During the model-pipeline cleanup phase, probe submission no longer uses the
+ * old heuristic attempt evidence / contract-judgment / follow-up planning path.
+ *
+ * It now proves this loop:
+ *
+ *   submitted structured attempt
+ *   â†’ mock Probe Attempt Evaluator output
+ *   â†’ engine next-action route
+ *   â†’ mock Probe Contract output
+ *   â†’ EngineRenderableProbe
+ *   â†’ frontend probe loop
+ */
+export async function POST(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}));
+
+    return NextResponse.json(
+      await buildMockThreeModelProbeSubmitResponse(body),
+    );
+  } catch (error) {
+    console.error("POST /api/probe/submit mock 3-model route failed", error);
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to build mock 3-model probe-submit response.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+
+
+============================================================
+FILE: lib\api-routes\message\mock-3model-response.ts
+============================================================
+
+import { buildLearningSpace } from "@/lib/learning-space/build-learning-space";
+import { buildMockThreeModelTurn } from "@/lib/engine/providers/mock-model-artifacts";
+import type { RouteTopic } from "@/lib/topic-routing/route-topics";
+import { loadRouteTopics } from "@/lib/topic-routing/route-topics";
+import type {
+  DeliveredProbe,
+  LearningSpace,
+  MessageRouteResponse,
+  MyWayRunResult,
+} from "@/types/contracts";
+
+function flagEnabled(value: string | undefined) {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
+export function shouldUseMockThreeModelMessageRoute() {
+  return flagEnabled(process.env.MYWAY_USE_MOCK_3MODEL);
+}
+
+function getRouteTopicLabel(topic: RouteTopic | null | undefined) {
+  return topic?.topic_label?.trim() || "Spanish se";
+}
+
+function getTopicId(topic: RouteTopic | null | undefined) {
+  return topic?.id?.trim() || "topic_spanish_se";
+}
+
+function getTopicPosition(topic: RouteTopic | null | undefined) {
+  return Array.isArray(topic?.position) ? topic.position : [0, 0, 0];
+}
+
+function getNumber(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function findMockTargetTopic(topics: RouteTopic[]) {
+  return (
+    topics.find(
+      (topic) => topic.topic_label?.trim().toLowerCase() === "spanish se",
+    ) ?? null
+  );
+}
+
+function buildMockRouteTopics(targetTopic: RouteTopic | null): RouteTopic[] {
+  if (targetTopic) return [targetTopic];
+
+  return [
+    {
+      id: "topic_spanish_se",
+      topic_label: "Spanish se",
+      diagnosis: "discrimination_gap",
+      nextStep: "Check which job se is doing in a sentence pattern.",
+      confusion: 0.62,
+      insight: 0.38,
+      learningScore: 0.42,
+      position: [0, 0, 0],
+      topic_json: {},
+    } as unknown as RouteTopic,
+  ];
+}
+
+function buildRendererAdapterSnapshot(renderableProbe: unknown) {
+  return {
+    ok: Boolean(renderableProbe),
+    warnings: [],
+    blocking_reasons: [],
+  };
+}
+
+function buildProbeContractSnapshot(args: {
+  baseSnapshot: Record<string, unknown>;
+  targetTopicId: string;
+  targetTopicLabel: string;
+  renderableProbe: unknown;
+}) {
+  return {
+    ...args.baseSnapshot,
+    target_topic_id: args.targetTopicId,
+    target_topic_label: args.targetTopicLabel,
+    engine_renderable_probe: args.renderableProbe ?? null,
+    renderer_adapter: buildRendererAdapterSnapshot(args.renderableProbe),
+  };
+}
+
+function buildDeliveredProbeFromMockTurn(args: {
+  topic: RouteTopic | null;
+  turn: ReturnType<typeof buildMockThreeModelTurn>;
+}): DeliveredProbe {
+  const { topic, turn } = args;
+  const targetTopicId = getTopicId(topic);
+  const targetTopicLabel = getRouteTopicLabel(topic);
+  const preview = turn.delivered_probe_preview;
+  const renderableProbe =
+    preview.engineRenderableProbe ?? turn.renderable_probe ?? null;
+  const probeContractSnapshot = buildProbeContractSnapshot({
+    baseSnapshot: preview.probeContractSnapshot as Record<string, unknown>,
+    targetTopicId,
+    targetTopicLabel,
+    renderableProbe,
+  });
+
+  return {
+    probe_id: preview.id,
+    target_topic_id: targetTopicId,
+    target_topic_label: targetTopicLabel,
+    title: preview.title,
+    instructions: preview.instruction,
+    status: "available",
+    intent: "diagnostic",
+    probe_type: preview.probeType,
+    expected_response_type: preview.expectedResponseType,
+    renderer_modality: "interactive",
+    renderer_generator: "custom",
+    actual_tone: "encouraging",
+    actual_pacing: "normal",
+    actual_language_style: "plain",
+    actual_context_framing: preview.helperText,
+    probe_contract_snapshot: probeContractSnapshot,
+    stimulus_id: `stimulus-${preview.id}`,
+    payload_snapshot: {
+      mock_3model: true,
+      probe_contract_snapshot: probeContractSnapshot,
+      engine_renderable_probe: renderableProbe,
+      renderer_adapter: buildRendererAdapterSnapshot(renderableProbe),
+    },
+  } as unknown as DeliveredProbe;
+}
+
+function buildMockEngineFuel(args: {
+  topic: RouteTopic | null;
+  turn: ReturnType<typeof buildMockThreeModelTurn>;
+}) {
+  const { topic, turn } = args;
+  const targetTopicId = getTopicId(topic);
+  const targetTopicLabel = getRouteTopicLabel(topic);
+  const renderableProbe =
+    turn.delivered_probe_preview.engineRenderableProbe ??
+    turn.renderable_probe ??
+    null;
+
+  return {
+    schema_version: "mock_3model_route_adapter_v0",
+    source: "mock_3model_message_route",
+    topics: [
+      {
+        topic_id: targetTopicId,
+        topic_label: targetTopicLabel,
+        topic_confusion_average: getNumber(
+          (topic as { confusion?: unknown } | null)?.confusion,
+          0.62,
+        ),
+        topic_insight_average: getNumber(
+          (topic as { insight?: unknown } | null)?.insight,
+          0.38,
+        ),
+        topic_learning_score: getNumber(
+          (topic as { learningScore?: unknown } | null)?.learningScore,
+          0.42,
+        ),
+        topic_centroid: getTopicPosition(topic),
+      },
+    ],
+    intervention_mode_decision: {
+      mode_selected: "probe",
+      target_topic_id: targetTopicId,
+      active_diagnosis: turn.diagnosis_output.diagnosis,
+      primary_block: "The learner may be treating se as one fixed meaning.",
+      decision_confidence: turn.diagnosis_route.confidence,
+      decision_reasons: [
+        "Mock 3-model path is enabled with MYWAY_USE_MOCK_3MODEL.",
+        `Diagnosis model requested: ${turn.diagnosis_route.next_action}.`,
+        "Probe Contract Model produced a renderable single-choice probe.",
+      ],
+      clarify_score: 0.18,
+      probe_score: 0.82,
+      signal_summary: {
+        raw_response_signal: 0.66,
+        evidence_quality_signal: 0.74,
+        active_problem_signal: 0.76,
+        readiness_signal: 0.8,
+        history_signal: 0.32,
+      },
+    },
+    probe_plan: {
+      status: "applicable",
+      probe_id: turn.delivered_probe_preview.id,
+      target_topic_id: targetTopicId,
+      target_diagnosis: turn.diagnosis_output.diagnosis,
+      intent: "diagnostic",
+      probe_type: turn.probe_contract_output.probe_type,
+      expected_response_type: turn.probe_contract_output.expected_attempt_type,
+      text_plan: {
+        instructional_goal: "Check which job se is doing in a sentence pattern.",
+      },
+      probe_contract_snapshot: buildProbeContractSnapshot({
+        baseSnapshot:
+          turn.delivered_probe_preview.probeContractSnapshot as Record<
+            string,
+            unknown
+          >,
+        targetTopicId,
+        targetTopicLabel,
+        renderableProbe,
+      }),
+    },
+    mock_3model: {
+      scenario_id: turn.scenario_id,
+      model_artifact_paths: turn.model_artifact_paths,
+      diagnosis_route: turn.diagnosis_route,
+      attempt_route: turn.attempt_route,
+    },
+  };
+}
+
+export async function buildMockThreeModelMessageRouteResponse(args: {
+  message: string;
+}): Promise<MessageRouteResponse> {
+  const routeTopics = await loadRouteTopics();
+  const targetTopic = findMockTargetTopic(routeTopics);
+  const mockTopics = buildMockRouteTopics(targetTopic);
+  const turn = buildMockThreeModelTurn();
+
+  const learningSpace = buildLearningSpace(mockTopics) as unknown as LearningSpace;
+  const targetTopicId = getTopicId(targetTopic);
+  const deliveredProbe = buildDeliveredProbeFromMockTurn({
+    topic: targetTopic,
+    turn,
+  });
+
+  const result: MyWayRunResult = {
+    run_metadata: {
+      run_id: "mock-3model-message-route",
+      run_type: "message",
+      created_at: new Date().toISOString(),
+      source: "mock_3model_message_route",
+      debug: {
+        enabled_by_env: "MYWAY_USE_MOCK_3MODEL",
+        scenario_id: turn.scenario_id,
+      },
+    } as unknown as MyWayRunResult["run_metadata"],
+    important_run_inputs: {
+      user_message: {
+        message_id: null,
+        timestamp: new Date().toISOString(),
+        content: args.message,
+      },
+      model_signals: {
+        model_confusion: null,
+        model_insight: null,
+        model_version: "mock_3model_v0",
+        inference_mode: "mock",
+        latency_ms: null,
+        status: "ok",
+        error_message: null,
+      },
+      current_interaction_context: {
+        run_kind: "initial_question",
+        is_response_to_delivered_probe: false,
+        prior_mode_selected: null,
+        prior_probe_was_applicable: null,
+        prior_probe_id: null,
+        prior_mode_outcome_available: null,
+      },
+      new_attempt: {
+        status: "absent",
+      },
+      vector_info: {
+        query_text: args.message,
+        top_k_similarity_scores: [0.86],
+        selected_topic_id: targetTopicId,
+        selected_topic_label: getRouteTopicLabel(targetTopic),
+        source: "mock_3model_message_route",
+      },
+      uploaded_content: [],
+    } as unknown as MyWayRunResult["important_run_inputs"],
+    engine_fuel: buildMockEngineFuel({
+      topic: targetTopic,
+      turn,
+    }) as unknown as MyWayRunResult["engine_fuel"],
+    delivered_response: {
+      learner_message: {
+        text: "Mock 3-model path is active. I'm using the Diagnosis Model output to generate a focused probe from the Probe Contract Model.",
+        tone: "encouraging",
+        mode: "probe",
+      },
+      delivered_probe: deliveredProbe,
+    },
+    learning_space: learningSpace,
+  };
+
+  return {
+    result,
+    scene_update: {
+      target_topic_id: targetTopicId,
+      learning_space: learningSpace,
+      source: "mock_3model_message_route",
+    },
+    intervention: {
+      mode_selected: "probe",
+      target_topic_id: targetTopicId,
+      active_diagnosis: turn.diagnosis_output.diagnosis,
+      probe_available: "available",
+      status_label: "Mock 3-model probe",
+      suggested_action: "Open the generated probe",
+    },
+    updated_topic_metrics: {
+      topicId: targetTopicId,
+      confusion: getNumber(
+        (targetTopic as { confusion?: unknown } | null)?.confusion,
+        0.62,
+      ),
+      insight: getNumber(
+        (targetTopic as { insight?: unknown } | null)?.insight,
+        0.38,
+      ),
+      learningScore: getNumber(
+        (targetTopic as { learningScore?: unknown } | null)?.learningScore,
+        0.42,
+      ),
+    },
+    mock_3model_debug: {
+      enabled: true,
+      scenario_id: turn.scenario_id,
+      model_artifact_paths: turn.model_artifact_paths,
+      renderable_probe: turn.renderable_probe,
+      diagnosis_output: turn.diagnosis_output,
+      probe_contract_output: turn.probe_contract_output,
+    },
+  } as unknown as MessageRouteResponse;
+}
+
+
+
+============================================================
+FILE: lib\api-routes\probe-submit\mock-3model-response.ts
+============================================================
+
+import { buildMockThreeModelTurn } from "@/lib/engine/providers/mock-model-artifacts";
+import { buildMockThreeModelMessageRouteResponse } from "@/lib/api-routes/message/mock-3model-response";
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function getString(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function extractSubmittedAttempt(body: unknown) {
+  const record = asRecord(body);
+  const structuredAttempt =
+    record.structuredAttempt ?? record.attempt ?? record.response ?? null;
+
+  return {
+    probe_id: getString(record.probeId, "mock-probe-spanish-se-single-choice"),
+    topic_id: getString(record.topicId, "topic_spanish_se"),
+    raw_response:
+      typeof record.response === "string"
+        ? record.response
+        : structuredAttempt === null
+          ? ""
+          : JSON.stringify(structuredAttempt),
+    structured_attempt: structuredAttempt,
+    engine_renderable_probe:
+      record.engineRenderableProbe ??
+      asRecord(record.probeContractSnapshot).engine_renderable_probe ??
+      asRecord(record.answeredProbeContractSnapshot).engine_renderable_probe ??
+      null,
+  };
+}
+
+/**
+ * Temporary 3-model probe-submit route adapter.
+ *
+ * This file is not the future evaluator itself. It adapts the mock
+ * Probe Attempt Evaluator output into the response shape the current frontend
+ * still expects.
+ *
+ * Future shape:
+ *
+ *   submitted attempt
+ *   -> Probe Attempt Evaluator output
+ *   -> engine route next action
+ *   -> next Probe Contract / EngineRenderableProbe
+ *
+ * The current evaluator/probe-contract outputs are mock fixtures under:
+ *
+ *   lib/engine/providers/mock-model-artifacts/fixtures
+ */
+export async function buildMockThreeModelProbeSubmitResponse(body: unknown) {
+  const submittedAttempt = extractSubmittedAttempt(body);
+  const turn = buildMockThreeModelTurn();
+
+  const base = await buildMockThreeModelMessageRouteResponse({
+    message: submittedAttempt.raw_response || "mock probe submit",
+  });
+
+  const deliveredProbe = base.result?.delivered_response?.delivered_probe ?? null;
+
+  const response = {
+    ...base,
+
+    continue_probe_loop: true,
+    next_probe: deliveredProbe,
+    nextProbe: deliveredProbe,
+
+    reply:
+      "Mock Probe Attempt Evaluator is active. The submitted answer exposed the fixed-meaning se misconception, so MyWay is returning another model-created probe.",
+    suggestedAction: "Target the exposed misconception",
+
+    judgedAttempt: {
+      schema_version: "mock_judged_attempt_v0",
+      source: "mock_3model_probe_submit_route",
+      submitted_attempt: submittedAttempt,
+      attempt_evaluation_output: turn.attempt_evaluation_output,
+      attempt_route: turn.attempt_route,
+    },
+
+    mock_3model_submit_debug: {
+      enabled: true,
+      scenario_id: turn.scenario_id,
+      submitted_attempt: submittedAttempt,
+      attempt_evaluation_output: turn.attempt_evaluation_output,
+      attempt_route: turn.attempt_route,
+      evaluated_probe_attempt_signal: turn.evaluated_probe_attempt_signal,
+      next_probe_source: "mock_probe_contract_model_output",
+    },
+  };
+
+  if (response.result?.delivered_response) {
+    response.result.delivered_response.learner_message = {
+      text: "Mock evaluator result: the response points to a specific misconception, so I'm giving another focused probe.",
+      tone: "encouraging",
+      mode: "probe",
+    } as typeof response.result.delivered_response.learner_message;
+
+    response.result.engine_fuel = {
+      ...(response.result.engine_fuel as unknown as Record<string, unknown>),
+      mock_probe_submit: {
+        submitted_attempt: submittedAttempt,
+        attempt_evaluation_output: turn.attempt_evaluation_output,
+        attempt_route: turn.attempt_route,
+      },
+    } as unknown as typeof response.result.engine_fuel;
+  }
+
+  return response;
+}
+
+
+
+

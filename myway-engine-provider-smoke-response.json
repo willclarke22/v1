@@ -1,0 +1,182 @@
+{
+  "ok": true,
+  "source": "local_dev_engine_provider_smoke",
+  "provider_mode": "local_services",
+  "warnings": [
+    "Diagnosis service call failed. Returned safe fallback output.",
+    "fetch failed",
+    "Probe contract service call failed. Returned safe fallback output.",
+    "fetch failed",
+    "Attempt evaluator service call failed. Returned safe fallback output.",
+    "fetch failed"
+  ],
+  "inputs": {
+    "message": "I keep mixing up when Spanish se is reflexive or passive.",
+    "selectedOptionId": "passive_like_no_named_seller",
+    "selfReportedConfidence": 0.75
+  },
+  "diagnosis": {
+    "usable": true,
+    "validation": {
+      "ok": true,
+      "value": {
+        "schema_version": "diagnosis_model_output_v1",
+        "diagnosis": "unknown",
+        "diagnosis_confidence": 0.25,
+        "next_action": "ask_clarifying_question",
+        "next_action_confidence": 0.45,
+        "suggested_question": "What part should MyWay check first?"
+      },
+      "issues": []
+    },
+    "provider_meta": {
+      "provider_name": "diagnosis_service_client",
+      "provider_kind": "service_client",
+      "schema_version": "diagnosis_model_output_v1",
+      "model_name": null,
+      "latency_ms": 41,
+      "warnings": [
+        "Diagnosis service call failed. Returned safe fallback output.",
+        "fetch failed"
+      ]
+    },
+    "output": {
+      "schema_version": "diagnosis_model_output_v1",
+      "diagnosis": "unknown",
+      "diagnosis_confidence": 0.25,
+      "next_action": "ask_clarifying_question",
+      "next_action_confidence": 0.45,
+      "suggested_question": "What part should MyWay check first?"
+    }
+  },
+  "probe_contract": {
+    "usable": true,
+    "validation": {
+      "ok": true,
+      "value": {
+        "schema_version": "probe_contract_model_output_v1",
+        "probe_type": "explain",
+        "expected_attempt_type": "text",
+        "prompt": {
+          "root_problem_explanation": "The probe contract service client could not reach a configured provider.",
+          "reshaping_explanation": "Use a safe minimal text probe until the real provider is connected.",
+          "task": "Explain what you know about Spanish se.",
+          "full_prompt": "In your own words, explain what you know about Spanish se."
+        },
+        "presentation_support": [],
+        "answer_key": null,
+        "misconception_markers": [],
+        "renderer_params": null,
+        "confidence": 0.2
+      },
+      "issues": [
+        {
+          "severity": "warning",
+          "code": "answer_key_missing",
+          "message": "This probe type usually needs an answer_key.",
+          "path": "probe_contract.answer_key"
+        }
+      ]
+    },
+    "provider_meta": {
+      "provider_name": "probe_contract_service_client",
+      "provider_kind": "service_client",
+      "schema_version": "probe_contract_model_output_v1",
+      "model_name": null,
+      "latency_ms": 7,
+      "warnings": [
+        "Probe contract service call failed. Returned safe fallback output.",
+        "fetch failed"
+      ]
+    },
+    "output": {
+      "schema_version": "probe_contract_model_output_v1",
+      "probe_type": "explain",
+      "expected_attempt_type": "text",
+      "prompt": {
+        "root_problem_explanation": "The probe contract service client could not reach a configured provider.",
+        "reshaping_explanation": "Use a safe minimal text probe until the real provider is connected.",
+        "task": "Explain what you know about Spanish se.",
+        "full_prompt": "In your own words, explain what you know about Spanish se."
+      },
+      "presentation_support": [],
+      "answer_key": null,
+      "misconception_markers": [],
+      "renderer_params": null,
+      "confidence": 0.2
+    }
+  },
+  "renderer_adapter": {
+    "ok": true,
+    "renderable_probe": {
+      "schema_version": "engine_renderable_probe_v1",
+      "probe_type": "explain",
+      "expected_attempt_type": "text",
+      "prompt": {
+        "root_problem_explanation": "The probe contract service client could not reach a configured provider.",
+        "reshaping_explanation": "Use a safe minimal text probe until the real provider is connected.",
+        "task": "Explain what you know about Spanish se.",
+        "full_prompt": "In your own words, explain what you know about Spanish se."
+      },
+      "presentation_support": [],
+      "answer_key": null,
+      "misconception_markers": [],
+      "renderer_params": null,
+      "confidence": 0.2,
+      "renderer_compatibility": {
+        "renderer_kind": "explain",
+        "is_renderable": true,
+        "blocking_reasons": [],
+        "warnings": []
+      }
+    },
+    "warnings": [],
+    "blocking_reasons": []
+  },
+  "attempt_evaluation": {
+    "usable": true,
+    "validation": {
+      "ok": true,
+      "value": {
+        "schema_version": "probe_attempt_evaluator_output_v1",
+        "correctness": 0,
+        "correctness_summary": "The attempt evaluator service client could not reach a configured provider, so this output is intentionally low-confidence.",
+        "understanding_evidence": {
+          "evidence_strength": 0,
+          "may_be_lucky_guess": false,
+          "needs_verification_probe": true,
+          "verification_reason": "The real evaluator was not available, so MyWay should not treat this as stable evidence."
+        },
+        "misconception_hits": [],
+        "next_action": "ask_clarifying_question",
+        "next_action_confidence": 0.35
+      },
+      "issues": []
+    },
+    "provider_meta": {
+      "provider_name": "attempt_evaluator_service_client",
+      "provider_kind": "service_client",
+      "schema_version": "probe_attempt_evaluator_output_v1",
+      "model_name": null,
+      "latency_ms": 20,
+      "warnings": [
+        "Attempt evaluator service call failed. Returned safe fallback output.",
+        "fetch failed"
+      ]
+    },
+    "output": {
+      "schema_version": "probe_attempt_evaluator_output_v1",
+      "correctness": 0,
+      "correctness_summary": "The attempt evaluator service client could not reach a configured provider, so this output is intentionally low-confidence.",
+      "understanding_evidence": {
+        "evidence_strength": 0,
+        "may_be_lucky_guess": false,
+        "needs_verification_probe": true,
+        "verification_reason": "The real evaluator was not available, so MyWay should not treat this as stable evidence."
+      },
+      "misconception_hits": [],
+      "next_action": "ask_clarifying_question",
+      "next_action_confidence": 0.35
+    }
+  }
+}

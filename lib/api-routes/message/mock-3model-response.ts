@@ -36,9 +36,9 @@ function getNumber(value: unknown, fallback: number) {
 
 function findMockTargetTopic(topics: RouteTopic[]) {
   return (
-    topics.find((topic) => topic.topic_label?.toLowerCase() === "spanish se") ??
-    topics[0] ??
-    null
+    topics.find(
+      (topic) => topic.topic_label?.trim().toLowerCase() === "spanish se",
+    ) ?? null
   );
 }
 
@@ -60,6 +60,29 @@ function buildMockRouteTopics(targetTopic: RouteTopic | null): RouteTopic[] {
   ];
 }
 
+function buildRendererAdapterSnapshot(renderableProbe: unknown) {
+  return {
+    ok: Boolean(renderableProbe),
+    warnings: [],
+    blocking_reasons: [],
+  };
+}
+
+function buildProbeContractSnapshot(args: {
+  baseSnapshot: Record<string, unknown>;
+  targetTopicId: string;
+  targetTopicLabel: string;
+  renderableProbe: unknown;
+}) {
+  return {
+    ...args.baseSnapshot,
+    target_topic_id: args.targetTopicId,
+    target_topic_label: args.targetTopicLabel,
+    engine_renderable_probe: args.renderableProbe ?? null,
+    renderer_adapter: buildRendererAdapterSnapshot(args.renderableProbe),
+  };
+}
+
 function buildDeliveredProbeFromMockTurn(args: {
   topic: RouteTopic | null;
   turn: ReturnType<typeof buildMockThreeModelTurn>;
@@ -68,6 +91,14 @@ function buildDeliveredProbeFromMockTurn(args: {
   const targetTopicId = getTopicId(topic);
   const targetTopicLabel = getRouteTopicLabel(topic);
   const preview = turn.delivered_probe_preview;
+  const renderableProbe =
+    preview.engineRenderableProbe ?? turn.renderable_probe ?? null;
+  const probeContractSnapshot = buildProbeContractSnapshot({
+    baseSnapshot: preview.probeContractSnapshot as Record<string, unknown>,
+    targetTopicId,
+    targetTopicLabel,
+    renderableProbe,
+  });
 
   return {
     probe_id: preview.id,
@@ -85,16 +116,13 @@ function buildDeliveredProbeFromMockTurn(args: {
     actual_pacing: "normal",
     actual_language_style: "plain",
     actual_context_framing: preview.helperText,
-    probe_contract_snapshot: {
-      ...preview.probeContractSnapshot,
-      target_topic_id: targetTopicId,
-      target_topic_label: targetTopicLabel,
-    },
+    probe_contract_snapshot: probeContractSnapshot,
     stimulus_id: `stimulus-${preview.id}`,
     payload_snapshot: {
       mock_3model: true,
-      probe_contract_snapshot: preview.probeContractSnapshot,
-      engine_renderable_probe: preview.engineRenderableProbe,
+      probe_contract_snapshot: probeContractSnapshot,
+      engine_renderable_probe: renderableProbe,
+      renderer_adapter: buildRendererAdapterSnapshot(renderableProbe),
     },
   } as unknown as DeliveredProbe;
 }
@@ -106,6 +134,10 @@ function buildMockEngineFuel(args: {
   const { topic, turn } = args;
   const targetTopicId = getTopicId(topic);
   const targetTopicLabel = getRouteTopicLabel(topic);
+  const renderableProbe =
+    turn.delivered_probe_preview.engineRenderableProbe ??
+    turn.renderable_probe ??
+    null;
 
   return {
     schema_version: "mock_3model_route_adapter_v0",
@@ -161,11 +193,16 @@ function buildMockEngineFuel(args: {
       text_plan: {
         instructional_goal: "Check which job se is doing in a sentence pattern.",
       },
-      probe_contract_snapshot: {
-        ...turn.delivered_probe_preview.probeContractSnapshot,
-        target_topic_id: targetTopicId,
-        target_topic_label: targetTopicLabel,
-      },
+      probe_contract_snapshot: buildProbeContractSnapshot({
+        baseSnapshot:
+          turn.delivered_probe_preview.probeContractSnapshot as Record<
+            string,
+            unknown
+          >,
+        targetTopicId,
+        targetTopicLabel,
+        renderableProbe,
+      }),
     },
     mock_3model: {
       scenario_id: turn.scenario_id,
@@ -292,4 +329,3 @@ export async function buildMockThreeModelMessageRouteResponse(args: {
     },
   } as unknown as MessageRouteResponse;
 }
-

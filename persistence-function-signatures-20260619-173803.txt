@@ -1,0 +1,731 @@
+===== lib\persistence\myway.ts lines 320-570 =====
+ 320:     semanticEnrichmentPromptText,
+ 321:     layoutStatus,
+ 322:     embeddingSkipReason,
+ 323:   };
+ 324: }
+ 325: 
+ 326: export type PersistedRunInput = {
+ 327:   id: string;
+ 328:   runType: "message" | "probe_submit";
+ 329:   userMessage: string | null;
+ 330:   sourceMessageId?: string | null;
+ 331:   targetTopicId?: string | null;
+ 332:   modeSelected?: "clarify" | "probe" | null;
+ 333:   activeDiagnosis?: string | null;
+ 334:   replyText?: string | null;
+ 335:   suggestedAction?: string | null;
+ 336:   runResultJson: JsonValue;
+ 337: };
+ 338: 
+ 339: export type PersistedAttemptInput = {
+ 340:   id: string;
+ 341:   runId: string;
+ 342:   probeId?: string | null;
+ 343:   topicId: string;
+ 344:   responseText?: string | null;
+ 345:   classification?: string | null;
+ 346:   correctnessEstimate?: string | null;
+ 347:   explanationQuality?: string | null;
+ 348:   insight?: number | null;
+ 349:   confusion?: number | null;
+ 350:   attemptJson: JsonValue;
+ 351: };
+ 352: 
+ 353: export type PersistedTopicStateInput = {
+ 354:   topicId: string;
+ 355:   lastRunId?: string | null;
+ 356:   topicLabel: string;
+ 357:   confusion?: number | null;
+ 358:   insight?: number | null;
+ 359:   learningScore?: number | null;
+ 360:   diagnosis?: string | null;
+ 361:   nextStep?: string | null;
+ 362:   topicJson: JsonValue;
+ 363: 
+ 364:   /**
+ 365:    * Current committed renderer position.
+ 366:    * This writes topic_position_x/y/z and mirrors topic_position into topic_json.
+ 367:    */
+ 368:   topicPosition?: TopicPosition | null;
+ 369: 
+ 370:   /**
+ 371:    * Canonical embedding of the clean topic label.
+ 372:    * Used for semantic topic layout and Qdrant topic lookup.
+ 373:    */
+ 374:   topicLabelEmbeddingCentroid?: EmbeddingVector | null;
+ 375:   topicLabelEmbeddingCount?: number | null;
+ 376:   topicLabelEmbeddingModel?: string | null;
+ 377:   topicLabelEmbeddingUpdatedAt?: string | null;
+ 378: 
+ 379:   /**
+ 380:    * Canonical topic-level embedding of learner messages assigned to this topic.
+ 381:    */
+ 382:   topicMessageEmbeddingCentroid?: EmbeddingVector | null;
+ 383:   topicMessageEmbeddingCount?: number | null;
+ 384:   topicMessageEmbeddingModel?: string | null;
+ 385:   topicMessageEmbeddingUpdatedAt?: string | null;
+ 386: 
+ 387:   /**
+ 388:    * Computed semantic target position.
+ 389:    * This writes semantic_position_x/y/z and mirrors semantic_position into topic_json.
+ 390:    */
+ 391:   semanticPosition?: TopicPosition | null;
+ 392:   semanticPositionUpdatedAt?: string | null;
+ 393:   semanticPositionMethod?: string | null;
+ 394: };
+ 395: 
+ 396: export async function insertRun(input: PersistedRunInput) {
+ 397:   const supabase = createServerSupabaseClient();
+ 398: 
+ 399:   const { error } = await supabase.from("runs").insert({
+ 400:     id: input.id,
+ 401:     run_type: input.runType,
+ 402:     user_message: input.userMessage,
+ 403:     source_message_id: input.sourceMessageId ?? null,
+ 404:     target_topic_id: input.targetTopicId ?? null,
+ 405:     mode_selected: input.modeSelected ?? null,
+ 406:     active_diagnosis: input.activeDiagnosis ?? null,
+ 407:     reply_text: input.replyText ?? null,
+ 408:     suggested_action: input.suggestedAction ?? null,
+ 409:     run_result_json: input.runResultJson,
+ 410:   });
+ 411: 
+ 412:   if (error) {
+ 413:     throw new Error(`Failed to insert run: ${error.message}`);
+ 414:   }
+ 415: }
+ 416: 
+ 417: export async function insertAttempt(input: PersistedAttemptInput) {
+ 418:   const supabase = createServerSupabaseClient();
+ 419: 
+ 420:   const { error } = await supabase.from("attempts").insert({
+ 421:     id: input.id,
+ 422:     run_id: input.runId,
+ 423:     probe_id: input.probeId ?? null,
+ 424:     topic_id: input.topicId,
+ 425:     response_text: input.responseText ?? null,
+ 426:     classification: input.classification ?? null,
+ 427:     correctness_estimate: input.correctnessEstimate ?? null,
+ 428:     explanation_quality: input.explanationQuality ?? null,
+ 429:     insight: input.insight ?? null,
+ 430:     confusion: input.confusion ?? null,
+ 431:     attempt_json: input.attemptJson,
+ 432:   });
+ 433: 
+ 434:   if (error) {
+ 435:     throw new Error(`Failed to insert attempt: ${error.message}`);
+ 436:   }
+ 437: }
+ 438: 
+ 439: export async function upsertTopicState(input: PersistedTopicStateInput) {
+ 440:   const supabase = createServerSupabaseClient();
+ 441: 
+ 442:   /**
+ 443:    * Hard-cutover wave 2:
+ 444:    * topic_label_embedding_* and topic_message_embedding_* are canonical.
+ 445:    * topic_embedding_* is no longer accepted or written.
+ 446:    */
+ 447:   const resolvedLabelCentroid = input.topicLabelEmbeddingCentroid ?? null;
+ 448: 
+ 449:   const resolvedLabelCount = input.topicLabelEmbeddingCount ?? null;
+ 450: 
+ 451:   const resolvedLabelModel = input.topicLabelEmbeddingModel ?? null;
+ 452: 
+ 453:   const resolvedLabelUpdatedAt =
+ 454:     input.topicLabelEmbeddingUpdatedAt ??
+ 455:     (resolvedLabelCentroid ? new Date().toISOString() : null);
+ 456: 
+ 457:   const resolvedMessageCentroid = input.topicMessageEmbeddingCentroid ?? null;
+ 458: 
+ 459:   const resolvedMessageCount = input.topicMessageEmbeddingCount ?? null;
+ 460: 
+ 461:   const resolvedMessageModel = input.topicMessageEmbeddingModel ?? null;
+ 462: 
+ 463:   const resolvedMessageUpdatedAt =
+ 464:     input.topicMessageEmbeddingUpdatedAt ??
+ 465:     (resolvedMessageCentroid ? new Date().toISOString() : null);
+ 466: 
+ 467:   const semanticPositionUpdatedAt =
+ 468:     input.semanticPositionUpdatedAt ??
+ 469:     (input.semanticPosition ? new Date().toISOString() : null);
+ 470: 
+ 471:   const topicJsonWithDiagnosis = mergeDiagnosisIntoTopicJson({
+ 472:     topicJson: input.topicJson,
+ 473:     diagnosis: input.diagnosis,
+ 474:   });
+ 475: 
+ 476:   const topicJsonWithEmbedding = mergeEmbeddingFieldsIntoTopicJson({
+ 477:     topicJson: topicJsonWithDiagnosis,
+ 478: 
+ 479:     topicLabelEmbeddingCentroid: resolvedLabelCentroid,
+ 480:     topicLabelEmbeddingCount: resolvedLabelCount,
+ 481:     topicLabelEmbeddingModel: resolvedLabelModel,
+ 482:     topicLabelEmbeddingUpdatedAt: resolvedLabelUpdatedAt,
+ 483: 
+ 484:     topicMessageEmbeddingCentroid: resolvedMessageCentroid,
+ 485:     topicMessageEmbeddingCount: resolvedMessageCount,
+ 486:     topicMessageEmbeddingModel: resolvedMessageModel,
+ 487:     topicMessageEmbeddingUpdatedAt: resolvedMessageUpdatedAt,
+ 488:   });
+ 489: 
+ 490:   const topicJsonWithTopicPosition = mergeTopicPositionIntoTopicJson({
+ 491:     topicJson: topicJsonWithEmbedding,
+ 492:     topicPosition: input.topicPosition,
+ 493:   });
+ 494: 
+ 495:   const topicJsonWithSemanticPosition = mergeSemanticPositionIntoTopicJson({
+ 496:     topicJson: topicJsonWithTopicPosition,
+ 497:     semanticPosition: input.semanticPosition,
+ 498:     semanticPositionUpdatedAt,
+ 499:     semanticPositionMethod: input.semanticPositionMethod,
+ 500:   });
+ 501: 
+ 502:   const columnMetadata = getTopicStateColumnMetadata(
+ 503:     topicJsonWithSemanticPosition,
+ 504:   );
+ 505: 
+ 506:   const { error } = await supabase.from("topic_state").upsert(
+ 507:     {
+ 508:       topic_id: input.topicId,
+ 509:       updated_at: new Date().toISOString(),
+ 510:       last_run_id: input.lastRunId ?? null,
+ 511:       topic_label: input.topicLabel,
+ 512:       confusion: input.confusion ?? null,
+ 513:       insight: input.insight ?? null,
+ 514:       learning_score: input.learningScore ?? null,
+ 515:       diagnosis: input.diagnosis ?? null,
+ 516:       next_step: input.nextStep ?? null,
+ 517:       topic_json: topicJsonWithSemanticPosition,
+ 518: 
+ 519:       topic_position_x: columnMetadata.topicPosition?.[0] ?? null,
+ 520:       topic_position_y: columnMetadata.topicPosition?.[1] ?? null,
+ 521:       topic_position_z: columnMetadata.topicPosition?.[2] ?? null,
+ 522: 
+ 523:       semantic_position_x: columnMetadata.semanticPosition?.[0] ?? null,
+ 524:       semantic_position_y: columnMetadata.semanticPosition?.[1] ?? null,
+ 525:       semantic_position_z: columnMetadata.semanticPosition?.[2] ?? null,
+ 526:       semantic_position_updated_at: columnMetadata.semanticPositionUpdatedAt,
+ 527:       semantic_position_method: columnMetadata.semanticPositionMethod,
+ 528: 
+ 529:       semantic_enrichment_status: columnMetadata.semanticEnrichmentStatus,
+ 530:       needs_embedding_centroid: columnMetadata.needsEmbeddingCentroid,
+ 531:       should_schedule_enrichment: columnMetadata.shouldScheduleEnrichment,
+ 532:       semantic_enrichment_prompt_text:
+ 533:         columnMetadata.semanticEnrichmentPromptText,
+ 534:       layout_status: columnMetadata.layoutStatus,
+ 535:       embedding_skip_reason: columnMetadata.embeddingSkipReason,
+ 536: 
+ 537:       topic_label_embedding_centroid: asJsonEmbeddingVector(
+ 538:         resolvedLabelCentroid,
+ 539:       ),
+ 540:       topic_label_embedding_count: cleanCount(resolvedLabelCount),
+ 541:       topic_label_embedding_model: resolvedLabelModel,
+ 542:       topic_label_embedding_updated_at: resolvedLabelUpdatedAt,
+ 543: 
+ 544:       topic_message_embedding_centroid: asJsonEmbeddingVector(
+ 545:         resolvedMessageCentroid,
+ 546:       ),
+ 547:       topic_message_embedding_count: cleanCount(resolvedMessageCount),
+ 548:       topic_message_embedding_model: resolvedMessageModel,
+ 549:       topic_message_embedding_updated_at: resolvedMessageUpdatedAt,
+ 550:     },
+ 551:     {
+ 552:       onConflict: "topic_id",
+ 553:     },
+ 554:   );
+ 555: 
+ 556:   if (error) {
+ 557:     throw new Error(`Failed to upsert topic_state: ${error.message}`);
+ 558:   }
+ 559: }
+
+===== local-service message imports/top =====
+   1: import { buildLearningSpace } from "@/lib/learning-space/build-learning-space";
+   2: import { runDiagnosis } from "@/lib/engine/orchestration/run-diagnosis";
+   3: import { runProbeContract } from "@/lib/engine/orchestration/run-probe-contract";
+   4: import { buildEngineProviderSet } from "@/lib/engine/providers";
+   5: import { adaptProbeContractForRenderer } from "@/lib/engine/renderers";
+   6: import {
+   7:   scoreConfusionInsight,
+   8:   type ConfusionInsightSignals,
+   9:   type ConfusionInsightStructuredInput,
+  10: } from "@/lib/model-adapters/confusion-insight/confusion-insight-client";
+  11: import type {
+  12:   DiagnosisModelInput,
+  13:   ProbeContractModelInput,
+  14:   ProbeContractModelOutput,
+  15: } from "@/lib/engine/schemas";
+  16: import type { RouteTopic } from "@/lib/topic-routing/route-topics";
+  17: import { loadRouteTopics } from "@/lib/topic-routing/route-topics";
+  18: import {
+  19:   resolveForegroundTopicForMessage,
+  20:   type ForegroundTopicResolution,
+  21: } from "@/lib/topic-routing/foreground-topic-resolver";
+  22: import type {
+  23:   DeliveredProbe,
+  24:   LearningSpace,
+  25:   MessageRouteResponse,
+  26:   MyWayRunResult,
+  27: } from "@/types/contracts";
+  28: 
+  29: function flagEnabled(value: string | undefined) {
+  30:   const normalized = value?.trim().toLowerCase();
+  31:   return normalized === "1" || normalized === "true" || normalized === "yes";
+  32: }
+  33: 
+  34: const DEFAULT_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS = 1_200;
+  35: const MIN_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS = 250;
+  36: const MAX_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS = 10_000;
+  37: 
+  38: function shouldUseForegroundConfusionInsight() {
+  39:   return flagEnabled(process.env.MYWAY_USE_CONFUSION_INSIGHT_IN_FOREGROUND);
+  40: }
+  41: 
+  42: function getForegroundConfusionInsightTimeoutMs() {
+  43:   const raw = process.env.MYWAY_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS?.trim();
+  44:   const parsed = raw ? Number(raw) : NaN;
+  45: 
+  46:   if (!Number.isFinite(parsed) || parsed <= 0) {
+  47:     return DEFAULT_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS;
+  48:   }
+  49: 
+  50:   return Math.min(
+  51:     Math.max(Math.round(parsed), MIN_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS),
+  52:     MAX_FOREGROUND_CONFUSION_INSIGHT_TIMEOUT_MS,
+  53:   );
+  54: }
+  55: 
+  56: function emptyForegroundConfusionInsightSignals(args: {
+  57:   status: ConfusionInsightSignals["status"];
+  58:   errorMessage: string | null;
+  59: }): ConfusionInsightSignals {
+  60:   return {
+  61:     model_confusion: null,
+  62:     model_insight: null,
+  63:     model_version: null,
+  64:     inference_mode: null,
+  65:     latency_ms: null,
+  66:     status: args.status,
+  67:     error_message: args.errorMessage,
+  68:   };
+  69: }
+  70: 
+  71: function getOptionalNumber(value: unknown) {
+  72:   return typeof value === "number" && Number.isFinite(value) ? value : null;
+  73: }
+  74: 
+  75: function topicTransitionTypeFromResolution(
+  76:   kind: ForegroundTopicResolution["resolution_kind"],
+  77: ): ConfusionInsightStructuredInput["topic_transition_type"] {
+  78:   if (
+  79:     kind === "topic_labeler_seeded_topic" ||
+  80:     kind === "deterministic_label_seeded_topic" ||
+
+===== local-service message end/main function area =====
+ 360: }
+ 361: 
+ 362: export async function buildLocalServiceThreeModelMessageRouteResponse(args: {
+ 363:   message: string;
+ 364:   requestBody?: unknown;
+ 365: }): Promise<MessageRouteResponse> {
+ 366:   const providers = buildEngineProviderSet();
+ 367:   const probeContractProvider = providers.probe_contract;
+ 368: 
+ 369:   if (!probeContractProvider) {
+ 370:     throw new Error("No probe contract provider is configured.");
+ 371:   }
+ 372: 
+ 373:   const routeTopics = await loadRouteTopics();
+ 374:   const topicResolution = await resolveForegroundTopicForMessage({
+ 375:     message: args.message,
+ 376:     existingTopics: routeTopics,
+ 377:     requestBody: args.requestBody,
+ 378:   });
+ 379: 
+ 380:   const targetTopic = topicResolution.topic;
+ 381:   const routeTopicsForScene = topicResolution.topicsForScene;
+ 382:   const targetTopicId = targetTopic.id;
+ 383:   const targetTopicLabel = targetTopic.topic_label;
+ 384: 
+ 385:   const confusionInsightSignals = await scoreForegroundMessageConfusionInsight({
+ 386:     message: args.message,
+ 387:     targetTopic,
+ 388:     topicResolution,
+ 389:   });
+ 390: 
+ 391:   const diagnosisInput: DiagnosisModelInput = {
+ 392:     schema_version: "diagnosis_model_input_v1",
+ 393:     input_kind: "user_message",
+ 394:     user_message: {
+ 395:       text: args.message,
+ 396:     },
+ 397:   };
+ 398: 
+ 399:   const diagnosisRun = await runDiagnosis({
+ 400:     provider: providers.diagnosis,
+ 401:     model_input: diagnosisInput,
+ 402:   });
+ 403: 
+ 404:   const probeContractInput: ProbeContractModelInput = {
+ 405:     schema_version: "probe_contract_model_input_v1",
+ 406:     target_topic: {
+ 407:       topic_id: targetTopicId,
+ 408:       topic_label: targetTopicLabel,
+ 409:     },
+ 410:     target_diagnosis: diagnosisRun.output.diagnosis,
+ 411:     learner_signal: {
+ 412:       signal_kind: "user_message",
+ 413:       user_message: args.message,
+ 414:     },
+ 415:     personalization_context: {
+ 416:       bridge_level: "bridge_0",
+ 417:       language_policy: {
+ 418:         jargon_level: "none",
+ 419:       },
+ 420:     },
+ 421:   };
+ 422: 
+ 423:   const probeContractRun = await runProbeContract({
+ 424:     provider: probeContractProvider,
+ 425:     model_input: probeContractInput,
+ 426:   });
+ 427: 
+ 428:   const rendererAdapter = adaptProbeContractForRenderer(probeContractRun.output);
+ 429: 
+ 430:   const probeContractSnapshot = buildProbeContractSnapshot({
+ 431:     targetTopicId,
+ 432:     targetTopicLabel,
+ 433:     diagnosisRun,
+ 434:     probeContractRun,
+ 435:     rendererAdapter,
+ 436:     topicResolution,
+ 437:     confusionInsightSignals,
+ 438:   }) as Record<string, unknown>;
+ 439: 
+ 440:   const deliveredProbe = buildDeliveredProbeFromLocalService({
+ 441:     targetTopicId,
+ 442:     targetTopicLabel,
+ 443:     probeContract: probeContractRun.output,
+ 444:     probeContractSnapshot,
+ 445:   });
+ 446: 
+ 447:   const learningSpace = buildLearningSpace(routeTopicsForScene) as unknown as LearningSpace;
+ 448: 
+ 449:   const result: MyWayRunResult = {
+ 450:     run_metadata: {
+ 451:       run_id: `local-service-message-route-${Date.now()}`,
+ 452:       run_type: "message",
+ 453:       created_at: new Date().toISOString(),
+ 454:       source: "local_service_3model_message_route",
+ 455:       debug: {
+ 456:         enabled_by_env: "MYWAY_USE_LOCAL_SERVICE_3MODEL",
+ 457:         topic_resolution_kind: topicResolution.resolution_kind,
+ 458:       },
+ 459:     } as unknown as MyWayRunResult["run_metadata"],
+ 460:     important_run_inputs: {
+ 461:       user_message: {
+ 462:         message_id: null,
+ 463:         timestamp: new Date().toISOString(),
+ 464:         content: args.message,
+ 465:       },
+ 466:       model_signals: confusionInsightSignals,
+ 467:       current_interaction_context: {
+ 468:         run_kind: "initial_question",
+ 469:         is_response_to_delivered_probe: false,
+ 470:         prior_mode_selected: null,
+ 471:         prior_probe_was_applicable: null,
+ 472:         prior_probe_id: null,
+ 473:         prior_mode_outcome_available: null,
+ 474:       },
+ 475:       new_attempt: {
+ 476:         status: "absent",
+ 477:       },
+ 478:       vector_info: {
+ 479:         query_text: args.message,
+ 480:         top_k_similarity_scores: [topicResolution.match_confidence],
+ 481:         selected_topic_id: targetTopicId,
+ 482:         selected_topic_label: targetTopicLabel,
+ 483:         source: "foreground_topic_resolver_no_embedding",
+ 484:         resolution_kind: topicResolution.resolution_kind,
+ 485:         authority_source: topicResolution.authority_source,
+ 486:       },
+ 487:       uploaded_content: [],
+ 488:     } as unknown as MyWayRunResult["important_run_inputs"],
+ 489:     engine_fuel: buildLocalServiceEngineFuel({
+ 490:       topic: targetTopic,
+ 491:       targetTopicId,
+ 492:       targetTopicLabel,
+ 493:       diagnosisRun,
+ 494:       probeContractRun,
+ 495:       probeContractSnapshot,
+ 496:       topicResolution,
+ 497:       confusionInsightSignals,
+ 498:     }) as unknown as MyWayRunResult["engine_fuel"],
+ 499:     delivered_response: {
+ 500:       learner_message: {
+ 501:         text:
+ 502:           rendererAdapter.ok && rendererAdapter.renderable_probe
+ 503:             ? "I found a specific spot to check. Open the probe and answer it in the way that makes the most sense to you."
+ 504:             : "I found a learning signal, but the generated probe needs a renderer fallback. I am giving the safest available probe view.",
+ 505:         tone: "encouraging",
+ 506:         mode: "probe",
+ 507:       },
+ 508:       delivered_probe: deliveredProbe,
+ 509:     },
+ 510:     learning_space: learningSpace,
+ 511:   };
+ 512: 
+ 513:   return {
+ 514:     result,
+ 515:     scene_update: {
+ 516:       target_topic_id: targetTopicId,
+ 517:       camera_destination_topic_id: targetTopicId,
+ 518:       arrival_mode: "focus",
+ 519:       learning_space: learningSpace,
+ 520:       source: "local_service_3model_message_route",
+ 521:     },
+ 522:     intervention: {
+ 523:       mode_selected: "probe",
+ 524:       target_topic_id: targetTopicId,
+ 525:       active_diagnosis: diagnosisRun.output.diagnosis,
+ 526:       probe_available: "available",
+ 527:       status_label: "Local 3-model probe",
+ 528:       suggested_action: "Open the generated probe",
+ 529:     },
+ 530:     updated_topic_metrics: {
+ 531:       topicId: targetTopicId,
+ 532:       confusion:
+ 533:         confusionInsightSignals.model_confusion ??
+ 534:         getNumber(targetTopic.confusion, 0.62),
+ 535:       insight:
+ 536:         confusionInsightSignals.model_insight ??
+ 537:         getNumber(targetTopic.insight, 0.38),
+ 538:       learningScore: getNumber(targetTopic.learningScore, 0.42),
+ 539:     },
+ 540:     local_service_3model_debug: {
+ 541:       enabled: true,
+ 542:       topic_resolution: {
+ 543:         resolution_kind: topicResolution.resolution_kind,
+ 544:         resolved_label: topicResolution.resolved_label,
+ 545:         match_confidence: topicResolution.match_confidence,
+ 546:         authority_source: topicResolution.authority_source,
+ 547:         warnings: topicResolution.warnings,
+ 548:         rejected_request_topic: topicResolution.rejected_request_topic ?? null,
+ 549:       },
+ 550:       confusion_insight_signals: confusionInsightSignals,
+ 551:       diagnosis_output: diagnosisRun.output,
+ 552:       diagnosis_provider_meta: diagnosisRun.provider_result.meta,
+ 553:       probe_contract_output: probeContractRun.output,
+ 554:       probe_contract_provider_meta: probeContractRun.provider_result.meta,
+ 555:       renderer_adapter: rendererAdapter,
+ 556:     },
+ 557:   } as unknown as MessageRouteResponse;
+ 558: }
+
+===== local-service probe submit end/main function area =====
+ 760:     target_diagnosis: null,
+ 761:   };
+ 762: 
+ 763:   const attempt = buildAttemptFromBody({
+ 764:     body: record,
+ 765:     renderable,
+ 766:   }) as ProbeAttemptEvaluatorInput["attempt"];
+ 767: 
+ 768:   const attemptSummary = summarizeAttempt(attempt);
+ 769:   const confusionInsightSignals = await scoreForegroundProbeSubmitConfusionInsight({
+ 770:     targetTopic,
+ 771:     answeredSnapshot,
+ 772:     renderable,
+ 773:     prompt,
+ 774:     attempt,
+ 775:     attemptSummary,
+ 776:   });
+ 777: 
+ 778:   const attemptEvaluationInput: ProbeAttemptEvaluatorInput = {
+ 779:     schema_version: "probe_attempt_evaluator_input_v1",
+ 780:     probe: probeForEvaluation,
+ 781:     answer_key: asRecord(renderable.answer_key).kind
+ 782:       ? (renderable.answer_key as ProbeAttemptEvaluatorInput["answer_key"])
+ 783:       : (asRecord(answeredSnapshot.probe_contract_output).answer_key as
+ 784:           | ProbeAttemptEvaluatorInput["answer_key"]
+ 785:           | undefined) ?? null,
+ 786:     attempt,
+ 787:     misconception_markers: Array.isArray(renderable.misconception_markers)
+ 788:       ? (renderable.misconception_markers as ProbeAttemptEvaluatorInput["misconception_markers"])
+ 789:       : [],
+ 790:     delivery_context:
+ 791:       normalizeDeliveryContext(renderable.delivery_context) ??
+ 792:       normalizeDeliveryContext(answeredSnapshot.delivery_context) ??
+ 793:       normalizeDeliveryContext(
+ 794:         asRecord(answeredSnapshot.probe_contract_output).delivery_context,
+ 795:       ),
+ 796:   };
+ 797: 
+ 798:   const providers = buildEngineProviderSet();
+ 799:   const probeContractProvider = providers.probe_contract;
+ 800: 
+ 801:   if (!probeContractProvider) {
+ 802:     throw new Error("No probe contract provider is configured.");
+ 803:   }
+ 804: 
+ 805:   const attemptEvaluationRun = await runAttemptEvaluation({
+ 806:     provider: providers.attempt_evaluator,
+ 807:     model_input: attemptEvaluationInput,
+ 808:   });
+ 809: 
+ 810:   const evaluatedProbeAttempt = buildEvaluatedProbeAttemptSignal({
+ 811:     probe: probeForEvaluation,
+ 812:     attempt,
+ 813:     attemptEvaluationRun,
+ 814:   });
+ 815: 
+ 816:   const diagnosisInput: DiagnosisModelInput = {
+ 817:     schema_version: "diagnosis_model_input_v1",
+ 818:     input_kind: "evaluated_probe_attempt",
+ 819:     evaluated_probe_attempt: evaluatedProbeAttempt,
+ 820:   };
+ 821: 
+ 822:   const diagnosisRun = await runDiagnosis({
+ 823:     provider: providers.diagnosis,
+ 824:     model_input: diagnosisInput,
+ 825:   });
+ 826: 
+ 827:   const probeContractInput: ProbeContractModelInput = {
+ 828:     schema_version: "probe_contract_model_input_v1",
+ 829:     target_topic: {
+ 830:       topic_id: targetTopicId,
+ 831:       topic_label: targetTopicLabel,
+ 832:     },
+ 833:     target_diagnosis: diagnosisRun.output.diagnosis,
+ 834:     learner_signal: {
+ 835:       signal_kind: "evaluated_probe_attempt",
+ 836:       evaluated_probe_attempt: evaluatedProbeAttempt,
+ 837:     },
+ 838:     personalization_context: {
+ 839:       bridge_level: "bridge_0",
+ 840:       language_policy: {
+ 841:         jargon_level: "none",
+ 842:       },
+ 843:     },
+ 844:   };
+ 845: 
+ 846:   const probeContractRun = await runProbeContract({
+ 847:     provider: probeContractProvider,
+ 848:     model_input: probeContractInput,
+ 849:   });
+ 850: 
+ 851:   const rendererAdapter = adaptProbeContractForRenderer(probeContractRun.output);
+ 852: 
+ 853:   const probeContractSnapshot = buildProbeContractSnapshot({
+ 854:     targetTopicId,
+ 855:     targetTopicLabel,
+ 856:     answeredProbeContractSnapshot: answeredSnapshot,
+ 857:     attemptEvaluationRun,
+ 858:     diagnosisRun,
+ 859:     probeContractRun,
+ 860:     rendererAdapter,
+ 861:     confusionInsightSignals,
+ 862:   }) as Record<string, unknown>;
+ 863: 
+ 864:   const deliveredProbe = buildDeliveredProbeFromProbeContract({
+ 865:     targetTopicId,
+ 866:     targetTopicLabel,
+ 867:     probeContract: probeContractRun.output,
+ 868:     probeContractSnapshot,
+ 869:   });
+ 870: 
+ 871:   const learningSpace = buildLearningSpace([targetTopic]) as unknown as LearningSpace;
+ 872: 
+ 873:   const result = buildResult({
+ 874:     body: record,
+ 875:     targetTopic,
+ 876:     learningSpace,
+ 877:     attemptInput: attemptEvaluationInput,
+ 878:     attemptEvaluationRun,
+ 879:     diagnosisRun,
+ 880:     probeContractRun,
+ 881:     deliveredProbe,
+ 882:     confusionInsightSignals,
+ 883:   });
+ 884: 
+ 885:   const reply =
+ 886:     attemptEvaluationRun.output.correctness_summary ||
+ 887:     "I checked your response and generated the next focused probe.";
+ 888: 
+ 889:   const suggestedAction =
+ 890:     attemptEvaluationRun.output.next_action === "target_misconception"
+ 891:       ? "Target the exposed misconception"
+ 892:       : attemptEvaluationRun.output.next_action === "generate_followup_probe"
+ 893:         ? "Continue with the follow-up probe"
+ 894:         : "Review the feedback and continue";
+ 895: 
+ 896:   return {
+ 897:     result,
+ 898:     scene_update: {
+ 899:       target_topic_id: targetTopicId,
+ 900:       camera_destination_topic_id: targetTopicId,
+ 901:       arrival_mode: "focus",
+ 902:       learning_space: learningSpace,
+ 903:       source: "local_service_3model_probe_submit_route",
+ 904:     },
+ 905:     intervention: {
+ 906:       mode_selected: "probe",
+ 907:       target_topic_id: targetTopicId,
+ 908:       active_diagnosis: diagnosisRun.output.diagnosis,
+ 909:       probe_available: "available",
+ 910:       status_label: "Local 3-model follow-up probe",
+ 911:       suggested_action: suggestedAction,
+ 912:     },
+ 913:     continue_probe_loop: true,
+ 914:     next_probe: deliveredProbe,
+ 915:     nextProbe: deliveredProbe,
+ 916:     reply,
+ 917:     suggestedAction,
+ 918:     updated_topic_metrics: {
+ 919:       topicId: targetTopicId,
+ 920:       confusion:
+ 921:         confusionInsightSignals.model_confusion ??
+ 922:         getNumber(targetTopic.confusion, 0.62),
+ 923:       insight:
+ 924:         confusionInsightSignals.model_insight ??
+ 925:         getNumber(targetTopic.insight, 0.38),
+ 926:       learningScore: getNumber(targetTopic.learningScore, 0.42),
+ 927:     },
+ 928:     judgedAttempt: {
+ 929:       schema_version: "local_service_judged_attempt_v1",
+ 930:       source: "local_service_3model_probe_submit_route",
+ 931:       probeId: asString(record.probeId),
+ 932:       topicId: targetTopicId,
+ 933:       topicLabel: targetTopicLabel,
+ 934:       submitted_attempt: attempt,
+ 935:       confusion_insight_signals: confusionInsightSignals,
+ 936:       attempt_evaluation_output: attemptEvaluationRun.output,
+ 937:       attempt_evaluation_provider_meta:
+ 938:         attemptEvaluationRun.provider_result.meta,
+ 939:       diagnosis_output: diagnosisRun.output,
+ 940:       evaluated_probe_attempt_signal: evaluatedProbeAttempt,
+ 941:     },
+ 942:     local_service_3model_submit_debug: {
+ 943:       enabled: true,
+ 944:       topic_source: "answered_probe_contract_snapshot_no_embedding",
+ 945:       target_topic_id: targetTopicId,
+ 946:       target_topic_label: targetTopicLabel,
+ 947:       confusion_insight_signals: confusionInsightSignals,
+ 948:       attempt_evaluation_output: attemptEvaluationRun.output,
+ 949:       attempt_evaluation_provider_meta:
+ 950:         attemptEvaluationRun.provider_result.meta,
+ 951:       diagnosis_output: diagnosisRun.output,
+ 952:       diagnosis_provider_meta: diagnosisRun.provider_result.meta,
+ 953:       probe_contract_output: probeContractRun.output,
+ 954:       probe_contract_provider_meta: probeContractRun.provider_result.meta,
+ 955:       renderer_adapter: rendererAdapter,
+ 956:     },
+ 957:   } as unknown as MessageRouteResponse & {
+ 958:     continue_probe_loop: boolean;
+ 959:     next_probe: DeliveredProbe;
+ 960:     nextProbe: DeliveredProbe;
+ 961:     reply: string;
+ 962:     suggestedAction: string;
+ 963:   };
+ 964: }

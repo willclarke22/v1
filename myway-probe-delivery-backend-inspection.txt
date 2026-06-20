@@ -1,0 +1,2575 @@
+MyWay probe delivery backend inspection
+Generated: 2026-06-19 12:08:35
+Root: C:\Users\willc\projects\MyWay\v1
+
+
+
+============================================================
+FILE: types\contracts.ts
+============================================================
+
+// types/contracts.ts
+
+/**
+ * MyWay core runtime contracts
+ *
+ * This file is intentionally centered on the "contract-proving" phase:
+ * - important_run_inputs
+ * - engine_fuel.intervention_mode_decision
+ * - engine_fuel.probe_plan
+ * - delivered_response
+ * - learning_space
+ *
+ * Key invariant:
+ * - engine_fuel.probe_plan = intended intervention plan
+ * - delivered_response.delivered_probe = actual delivered artifact
+ * - important_run_inputs.new_attempt = raw submitted attempt
+ * - engine_fuel.attempts = judged attempts
+ *
+ * Embedding naming invariant:
+ * - topic_centroid remains the visual / 3D position vector for now.
+ * - topic_label_embedding_centroid is the semantic embedding of the clean topic label.
+ *   It is used for layout / semantic structure / Qdrant topic lookup.
+ * - topic_message_embedding_centroid is the topic-level embedding of learner messages.
+ *   It is used later for personalization / struggle-pattern similarity.
+ * - learning_space.position is the renderer-safe current visual position derived
+ *   from topic state.
+ *
+ * Position/layout invariant:
+ * - topic_position_x/y/z = current committed renderer position.
+ * - semantic_position_x/y/z = computed semantic target position.
+ * - learning_space.topics[].position = current renderer-safe position.
+ * - learning_space.topics[].layout.semantic_position = optional semantic target.
+ */
+
+export type ISO8601String = string;
+export type EntityId = string;
+
+export type Nullable<T> = T | null;
+export type EmbeddingVector = number[];
+
+/* ------------------------------------------------------------------ */
+/* ENUM / UNION TYPES */
+/* ------------------------------------------------------------------ */
+
+export type RunKind =
+  | "initial_question"
+  | "clarify_followup"
+  | "attempt_run"
+  | "mixed";
+
+export type InterventionMode = "clarify" | "probe";
+
+export type DiagnosisType =
+  | "unknown"
+  | "no_gap_detected"
+  | "recall_gap"
+  | "representation_gap"
+  | "procedure_gap"
+  | "discrimination_gap"
+  | "transfer_gap"
+  | "metacognitive_gap";
+
+export type ProbeIntent = "diagnostic" | "intervention" | "verification";
+
+export type ProbeType =
+  | "predict"
+  | "explain"
+  | "discriminate"
+  | "transform"
+  | "apply_transfer"
+  | "sequence"
+  | "single_choice"
+  | "multi_choice"
+  | "drag_drop_placements"
+  | "slider"
+  | "graph_relationship"
+  | "audio_clip_question"
+  | "audio_response_question"
+  | "video_click_interval"
+  | "video_explanation";
+
+export type AttemptResponseType =
+  | "text"
+  | "choice"
+  | "multiple_choice"
+  | "ordering"
+  | "transform"
+  | "classify"
+  | "predict"
+  | "dynamic_task"
+  | "audio"
+  | "video"
+  | "interactive_action"
+  | "single_choice"
+  | "multi_choice"
+  | "ordered_items"
+  | "drag_drop_placements"
+  | "numeric"
+  | "graph"
+  | "audio_response"
+  | "video_click"
+  | "none"
+  | "unknown";
+
+export type ProbeExpectedResponseType = AttemptResponseType | "mixed";
+
+export type RendererModality = "text" | "video" | "interactive";
+export type RendererGenerator = "chatgpt" | "sora" | "custom";
+
+export type ModelInferenceMode = "local" | "service";
+export type ModelSignalStatus =
+  | "ok"
+  | "queued"
+  | "unavailable"
+  | "timeout"
+  | "error";
+
+export type AttemptStatus = "present" | "absent" | "not_applicable";
+export type AttemptCompletionStatus =
+  | "complete"
+  | "partial"
+  | "skipped"
+  | "abandoned"
+  | "unclear";
+
+export type PreviousClarifyOutcome =
+  | "sufficient"
+  | "probe_required"
+  | "not_applicable";
+
+export type ProbePlanStatus = "not_applicable" | "applicable";
+
+export type TextPlanStatus = "planned" | "not_selected" | "not_applicable";
+export type VideoPlanStatus = "planned" | "not_selected" | "not_applicable";
+export type InteractivePlanStatus =
+  | "planned"
+  | "not_selected"
+  | "placeholder"
+  | "not_applicable";
+
+export type ContentSourceMode = "generated" | "retrieved" | "hybrid";
+
+export type TextPedagogicalRole =
+  | "guided_question"
+  | "mini_explanation"
+  | "worked_example"
+  | "hint_ladder"
+  | "contrast_prompt"
+  | "mixed";
+
+export type VideoPedagogicalRole =
+  | "micro_explanation"
+  | "narrated_walkthrough"
+  | "concept_animation"
+  | "compare_contrast_video"
+  | "prompt_video";
+
+export type InteractivePedagogicalRole =
+  | "manipulate_and_predict"
+  | "order_and_explain"
+  | "label_and_compare"
+  | "simulate_and_infer";
+
+export type HintPolicy =
+  | "none"
+  | "available_on_request"
+  | "staged"
+  | "built_in";
+
+export type Tone = "neutral" | "encouraging" | "challenging" | "calm";
+export type Verbosity = "low" | "medium" | "high";
+export type Pacing = "slow" | "normal" | "fast";
+export type LanguageStyle = "plain" | "technical" | "metaphorical";
+
+export type MotivationStrategy =
+  | "supportive"
+  | "challenge_based"
+  | "curiosity_based"
+  | "relevance_based";
+
+export type VisualComplexity = "minimal" | "moderate" | "rich";
+export type VisualStylePreference =
+  | "clean_educational"
+  | "cinematic"
+  | "playful"
+  | "diagrammatic";
+
+export type SingleShotVsSequence = "single_shot" | "multi_shot";
+
+export type InteractionType =
+  | "drag_drop"
+  | "slider_manipulation"
+  | "step_ordering"
+  | "clickable_state_change"
+  | "graph_match"
+  | "multi_stage";
+
+export type CognitiveOperation =
+  | "predict"
+  | "classify"
+  | "compare"
+  | "transform"
+  | "construct"
+  | "troubleshoot";
+
+export type Statefulness = "single_step" | "multi_step";
+
+export type FeedbackTiming = "none" | "after_submit" | "stepwise" | "adaptive";
+
+export type OutputForm =
+  | "guided_question"
+  | "mini_explanation"
+  | "worked_example"
+  | "hint_ladder"
+  | "contrast_prompt"
+  | "mixed";
+
+export type AnswerRevealPolicy =
+  | "do_not_reveal"
+  | "partial_reveal"
+  | "reveal_after_attempt";
+
+export type ClosingAction =
+  | "ask_for_prediction"
+  | "ask_for_explanation"
+  | "ask_for_choice"
+  | "ask_for_transformation";
+
+export type LengthBucket = "short" | "medium" | "long";
+
+export type UploadedContentType =
+  | "document"
+  | "audio"
+  | "video"
+  | "image"
+  | "other";
+
+export type LearningSourceKind =
+  | "uploaded_document"
+  | "course_material"
+  | "manual_notes"
+  | "web_excerpt"
+  | "trusted_public_reference"
+  | "human_reviewed_reference"
+  | "generated_text"
+  | "unknown";
+
+export type LearningSourceRightsScope =
+  | "user_uploaded_private"
+  | "public_reference"
+  | "internal_reviewed"
+  | "generated_ephemeral"
+  | "unknown";
+
+export type LearningSourceTrustLevel =
+  | "human_reviewed"
+  | "trusted_public"
+  | "user_provided"
+  | "learner_notes"
+  | "unverified_public"
+  | "model_generated"
+  | "unknown";
+
+export type LearningSourceProcessingStatus =
+  | "raw"
+  | "normalized"
+  | "chunked"
+  | "indexed"
+  | "rejected";
+
+export interface LearningSourceReference {
+  source_id: EntityId;
+  source_kind: LearningSourceKind;
+  source_title: string;
+  rights_scope: LearningSourceRightsScope;
+  trust_level: LearningSourceTrustLevel;
+  summary: Nullable<string>;
+}
+
+export interface LearningSourceChunkReference {
+  source_id: EntityId;
+  chunk_id: EntityId;
+  source_title: string;
+  chunk_index: number;
+  summary: Nullable<string>;
+}
+
+export type ProbeAuthoringMode =
+  | "source_grounded_text_explanation"
+  | "source_grounded_multiple_choice_candidate"
+  | "source_grounded_ordering_candidate"
+  | "source_grounded_drag_drop_candidate"
+  | "source_grounded_graph_candidate"
+  | "low_stakes_reflection_probe"
+  | "not_authorable";
+
+export type ProbeAuthoringReadiness =
+  | "not_ready"
+  | "low_stakes_only"
+  | "candidate_ready"
+  | "trusted_ready";
+
+export type RenderState = {
+  /**
+   * Visible sphere radius. This controls the rendered body size.
+   */
+  radius: number;
+
+  /**
+   * Minimum world-space clearance the layout/renderer should reserve for this topic.
+   * This can be larger than radius because local bobbing, rings, probe markers,
+   * labels, and satellites may occupy visual space beyond the sphere.
+   */
+  collision_radius: number;
+
+  surface_noise: number;
+
+  /**
+   * Smoothness/coherence proxy for the stable topic body.
+   * Higher values should look calmer and more coherent.
+   */
+  smoothness: number;
+
+  spin_rate: number;
+  saturation: number;
+  is_star: boolean;
+
+  /**
+   * Glow is separate from saturation so insight/coherence can brighten a topic
+   * without turning topic hue into a semantic category.
+   */
+  glow_intensity: number;
+  glow_source: "insight" | "star_state" | "focus" | "none";
+};
+
+/* ------------------------------------------------------------------ */
+/* SEMANTIC TOPIC ROUTING */
+/* ------------------------------------------------------------------ */
+
+export type TopicRoutingDecisionKind =
+  | "stay_active"
+  | "switch_existing"
+  | "create_new"
+  | "create_and_link"
+  | "clarify_topic_intent"
+  | "no_decision";
+
+export type TopicRoutingRouterVersion =
+  | "legacy"
+  | "topic-router-v2"
+  | "semantic-centroid-v3";
+
+export type TopicRoutingPolicyPath =
+  | "strong_centroid_match"
+  | "medium_centroid_match_with_gap"
+  | "active_topic_tiny_followup"
+  | "all_centroid_matches_weak_create_new"
+  | "exact_existing_topic_match"
+  | "create_and_link_to_related_topic"
+  | "ambiguous_centroid_competition"
+  | "missing_message_embedding"
+  | "missing_topic_centroids"
+  | "legacy_fallback"
+  | "no_decision";
+
+export interface TopicRoutingThresholds {
+  strong_centroid_match: number;
+  medium_centroid_match: number;
+  weak_centroid_match: number;
+  min_similarity_gap: number;
+  active_followup_match: number;
+  create_new_below: number;
+}
+
+export interface TopicRoutingCandidateEvidence {
+  topic_id: EntityId;
+  topic_label: string;
+  similarity: number;
+  rank: number;
+  embedding_count: Nullable<number>;
+  embedding_model: Nullable<string>;
+}
+
+export interface TopicRoutingDebug {
+  router_version: TopicRoutingRouterVersion;
+  decision_kind: TopicRoutingDecisionKind;
+  policy_path: TopicRoutingPolicyPath;
+
+  selected_topic_id: Nullable<EntityId>;
+  selected_topic_label: Nullable<string>;
+  new_topic_label: Nullable<string>;
+
+  active_topic_id: Nullable<EntityId>;
+  active_topic_label: Nullable<string>;
+
+  best_topic_id: Nullable<EntityId>;
+  best_topic_label: Nullable<string>;
+  best_similarity: Nullable<number>;
+
+  second_topic_id: Nullable<EntityId>;
+  second_topic_label: Nullable<string>;
+  second_similarity: Nullable<number>;
+
+  active_topic_similarity: Nullable<number>;
+  similarity_gap: Nullable<number>;
+
+  top_candidates: TopicRoutingCandidateEvidence[];
+
+  message_embedding_available: boolean;
+  message_embedding_model: Nullable<string>;
+  topic_centroids_available: number;
+  topic_count_considered: number;
+
+  thresholds: Nullable<TopicRoutingThresholds>;
+  reasons: string[];
+}
+
+export interface TopicCentroidUpdateDebug {
+  topic_id: EntityId;
+  previous_embedding_count: number;
+  new_embedding_count: number;
+  update_method: "initialize" | "running_average" | "ema" | "none";
+  alpha: Nullable<number>;
+  embedding_model: Nullable<string>;
+  updated_at: ISO8601String;
+}
+
+export interface TopicRoutingState {
+  router_version: TopicRoutingRouterVersion;
+  decision_kind: TopicRoutingDecisionKind;
+  policy_path: TopicRoutingPolicyPath;
+
+  selected_topic_id: Nullable<EntityId>;
+  selected_topic_label: Nullable<string>;
+  new_topic_label: Nullable<string>;
+
+  confidence: number;
+  reasons: string[];
+
+  vector_info: VectorInfo;
+  debug: TopicRoutingDebug;
+
+  centroid_update: Nullable<TopicCentroidUpdateDebug>;
+}
+
+/* ------------------------------------------------------------------ */
+/* IMPORTANT RUN INPUTS */
+/* ------------------------------------------------------------------ */
+
+export interface UserMessageInput {
+  message_id: Nullable<EntityId>;
+  timestamp: Nullable<ISO8601String>;
+  content: string;
+}
+
+export interface ModelSignals {
+  model_confusion: Nullable<number>;
+  model_insight: Nullable<number>;
+  model_version: Nullable<string>;
+  inference_mode: Nullable<ModelInferenceMode>;
+  latency_ms: Nullable<number>;
+  status: Nullable<ModelSignalStatus>;
+  error_message: Nullable<string>;
+}
+
+export interface CurrentInteractionContext {
+  run_kind: RunKind;
+  is_response_to_delivered_probe: Nullable<boolean>;
+  prior_mode_selected: Nullable<InterventionMode>;
+  prior_probe_was_applicable: Nullable<boolean>;
+  prior_probe_id: Nullable<EntityId>;
+  prior_mode_outcome_available: Nullable<boolean>;
+}
+
+export interface AttemptDeliveryContext {
+  renderer_type: Nullable<string>;
+  generator: Nullable<string>;
+  modality: Nullable<string>;
+  tone: Nullable<string>;
+  pacing: Nullable<string>;
+  language_style: Nullable<string>;
+  context_framing: Nullable<string>;
+}
+
+export interface AttemptSubmissionMetadata {
+  latency_ms: Nullable<number>;
+  revision_count: Nullable<number>;
+  used_hint: Nullable<boolean>;
+  requested_clarification_before_answering: Nullable<boolean>;
+}
+
+export interface NewAttemptInput {
+  status: AttemptStatus;
+  attempt_id: Nullable<EntityId>;
+  timestamp: Nullable<ISO8601String>;
+  originating_run_id: Nullable<EntityId>;
+  source_message_id: Nullable<EntityId>;
+  linked_probe_id: Nullable<EntityId>;
+  linked_stimulus_id: Nullable<EntityId>;
+  linked_topic_id: Nullable<EntityId>;
+  linked_cluster_id: Nullable<EntityId>;
+  linked_resolution_contract_id: Nullable<EntityId>;
+  response_type: Nullable<AttemptResponseType>;
+  completion_status: Nullable<AttemptCompletionStatus>;
+  raw_response: string | Record<string, unknown> | null;
+  delivery_context: AttemptDeliveryContext;
+  submission_metadata: AttemptSubmissionMetadata;
+}
+
+export interface VectorInfo {
+  top_k_topic_labels: string[];
+  top_k_topic_ids: string[];
+  top_k_similarity_scores: number[];
+}
+
+export interface UploadedContentReference {
+  content_id: EntityId;
+  content_type: UploadedContentType;
+  source_name: string;
+  summary: Nullable<string>;
+
+  /**
+   * Optional bridge to the source-processing layer. During migration, uploaded
+   * content may exist before it has been normalized into learning sources.
+   */
+  normalized_source_id?: Nullable<EntityId>;
+  normalized_chunk_ids?: EntityId[];
+}
+
+export interface ImportantRunInputs {
+  user_message: UserMessageInput;
+  model_signals: ModelSignals;
+  current_interaction_context: CurrentInteractionContext;
+  new_attempt: NewAttemptInput;
+  vector_info: VectorInfo;
+  uploaded_content: UploadedContentReference[];
+}
+
+/* ------------------------------------------------------------------ */
+/* INTERVENTION MODE DECISION */
+/* ------------------------------------------------------------------ */
+
+export interface InterventionSignalSummary {
+  raw_response_signal: Nullable<number>;
+  evidence_quality_signal: Nullable<number>;
+  active_problem_signal: Nullable<number>;
+  readiness_signal: Nullable<number>;
+  history_signal: Nullable<number>;
+}
+
+export interface InterventionModeDecision {
+  mode_selected: InterventionMode;
+  target_topic_id: Nullable<EntityId>;
+  active_diagnosis: Nullable<DiagnosisType>;
+  primary_block: Nullable<string>;
+  decision_confidence: number;
+  decision_reasons: string[];
+  clarify_score: number;
+  probe_score: number;
+  signal_summary: InterventionSignalSummary;
+}
+
+export interface PreviousModeOutcome {
+  mode_selected: InterventionMode;
+  reasons: string[];
+  confidence: number;
+  clarify_outcome: PreviousClarifyOutcome;
+}
+
+/* ------------------------------------------------------------------ */
+/* PROBE PLAN */
+/* ------------------------------------------------------------------ */
+
+export interface RendererRequest {
+  preferred_modality: Nullable<RendererModality>;
+  preferred_generator: Nullable<RendererGenerator>;
+  allowed_modalities: RendererModality[];
+  allowed_generators: RendererGenerator[];
+  fallback_renderer_order: RendererModality[];
+  must_preserve_probe_intent: boolean;
+  must_match_requested_modality: boolean;
+  allow_null_delivery_on_failure: boolean;
+}
+
+export interface JudgingSupport {
+  rubric_notes: string[];
+  evidence_type_expected: Array<
+    "predict" | "explain" | "discriminate" | "apply_transfer"
+  >;
+  response_features_to_extract: string[];
+  target_misconceptions: string[];
+  success_indicators: string[];
+  failure_indicators: string[];
+}
+
+export interface SharedContentSelection {
+  source_mode: Nullable<ContentSourceMode>;
+  selected_concepts: string[];
+  selected_examples: string[];
+  selected_contrasts: string[];
+  selected_misconceptions: string[];
+  selected_context: Nullable<string>;
+}
+
+export interface SharedScaffolding {
+  hint_policy: Nullable<HintPolicy>;
+  max_hint_steps: Nullable<number>;
+  allow_partial_credit: Nullable<boolean>;
+  allow_retry: Nullable<boolean>;
+  max_retries: Nullable<number>;
+}
+
+export interface TextPersonalizationApplication {
+  tone: Nullable<Tone>;
+  verbosity: Nullable<Verbosity>;
+  pacing: Nullable<Pacing>;
+  language_style: Nullable<LanguageStyle>;
+  context_framing: Nullable<string>;
+  motivation_strategy: Nullable<MotivationStrategy>;
+  adaptation_reasons: string[];
+}
+
+export interface VideoPersonalizationApplication {
+  tone: Nullable<Tone>;
+  pacing: Nullable<Pacing>;
+  language_style: Nullable<LanguageStyle>;
+  context_framing: Nullable<string>;
+  visual_complexity: Nullable<VisualComplexity>;
+  visual_style_preference: Nullable<VisualStylePreference>;
+  adaptation_reasons: string[];
+}
+
+export interface InteractivePersonalizationApplication {
+  tone: Nullable<Tone>;
+  pacing: Nullable<Pacing>;
+  interaction_density: Nullable<"low" | "medium" | "high">;
+  adaptation_reasons: string[];
+}
+
+export interface TextMeasurementIntent {
+  what_response_should_reveal: string[];
+  what_would_count_as_progress: string[];
+}
+
+export interface VideoMeasurementIntent {
+  what_response_should_reveal: string[];
+  what_visual_takeaway_should_precede_response: string[];
+}
+
+export interface InteractiveMeasurementIntent {
+  telemetry_to_watch: Array<
+    "latency" | "revision_count" | "hint_usage" | "error_pattern"
+  >;
+  what_response_should_reveal: string[];
+}
+
+export interface TextPlan {
+  status: TextPlanStatus;
+  pedagogical_role: Nullable<TextPedagogicalRole>;
+  diagnostic_goal: Nullable<string>;
+  instructional_goal: Nullable<string>;
+  why_text: string[];
+  content_selection: SharedContentSelection;
+  scaffolding: SharedScaffolding;
+  personalization_application: TextPersonalizationApplication;
+  measurement_intent: TextMeasurementIntent;
+}
+
+export interface VideoVisualLearningGoal {
+  what_the_learner_should_notice_first: string[];
+  what_should_change_over_time: string[];
+  what_should_remain_fixed: string[];
+  target_visual_contrast: string[];
+}
+
+export interface VideoStoryboardIntent {
+  shot_count: Nullable<number>;
+  single_shot_vs_sequence: Nullable<SingleShotVsSequence>;
+  timing_beats: string[];
+  pause_for_attempt: Nullable<boolean>;
+  pause_goal: Nullable<string>;
+  must_stop_before_full_answer: Nullable<boolean>;
+}
+
+export interface VideoPlan {
+  status: VideoPlanStatus;
+  pedagogical_role: Nullable<VideoPedagogicalRole>;
+  diagnostic_goal: Nullable<string>;
+  instructional_goal: Nullable<string>;
+  why_video: string[];
+  visual_learning_goal: VideoVisualLearningGoal;
+  content_selection: SharedContentSelection;
+  storyboard_intent: VideoStoryboardIntent;
+  personalization_application: VideoPersonalizationApplication;
+  measurement_intent: VideoMeasurementIntent;
+}
+
+export interface InteractiveTaskModel {
+  interaction_type: Nullable<InteractionType>;
+  cognitive_operation: Nullable<CognitiveOperation>;
+  statefulness: Nullable<Statefulness>;
+}
+
+export interface InteractiveScaffolding extends SharedScaffolding {
+  feedback_timing: Nullable<FeedbackTiming>;
+}
+
+export interface InteractivePlan {
+  status: InteractivePlanStatus;
+  pedagogical_role: Nullable<InteractivePedagogicalRole>;
+  diagnostic_goal: Nullable<string>;
+  instructional_goal: Nullable<string>;
+  why_interactive: string[];
+  task_model: InteractiveTaskModel;
+  scaffolding: InteractiveScaffolding;
+  personalization_application: InteractivePersonalizationApplication;
+  measurement_intent: InteractiveMeasurementIntent;
+}
+
+export interface TextPayloadPersonalizationSnapshot {
+  tone: Nullable<string>;
+  verbosity: Nullable<string>;
+  pacing: Nullable<string>;
+  language_style: Nullable<string>;
+  context_framing: Nullable<string>;
+}
+
+export interface TextPayloadRenderingContract {
+  output_form: Nullable<OutputForm>;
+  answer_reveal_policy: Nullable<AnswerRevealPolicy>;
+  closing_action: Nullable<ClosingAction>;
+  max_length: Nullable<LengthBucket>;
+}
+
+export interface TextPayload {
+  ready_to_send: boolean;
+  api: Nullable<"responses">;
+  model: Nullable<string>;
+  instructions: Nullable<string>;
+  input: Nullable<string>;
+  personalization_snapshot: TextPayloadPersonalizationSnapshot;
+  rendering_contract: TextPayloadRenderingContract;
+}
+
+export interface VideoPayload {
+  ready_to_send: boolean;
+  api: Nullable<"videos">;
+  endpoint: Nullable<"/v1/videos">;
+  model: "sora-2" | "sora-2-pro" | null;
+  size: Nullable<string>;
+  seconds: Nullable<4 | 8 | 12 | 16 | 20>;
+  prompt: Nullable<string>;
+  narration: Nullable<string>;
+  visual_constraints: string[];
+}
+
+export interface InteractivePayload {
+  ready_to_send: boolean;
+  renderer: "custom" | null;
+  task_type: Nullable<string>;
+  prompt: Nullable<string>;
+  config: Record<string, unknown> | null;
+}
+
+/**
+ * JSON-safe snapshot of the richer engine-side Probe Contract V1.
+ *
+ * The canonical 3-model contract types live in lib/engine/schemas. This shape stays
+ * intentionally loose inside the public runtime contract so types/contracts.ts
+ * does not need to import engine modules and create a circular type dependency.
+ */
+export interface ProbeContractSnapshot {
+  contract_id?: EntityId;
+  version?: string;
+  created_at?: ISO8601String;
+
+  target_topic_id?: Nullable<EntityId>;
+  target_topic_label?: string;
+  target_diagnosis?: Nullable<DiagnosisType>;
+
+  intent?: Nullable<ProbeIntent>;
+  probe_type?: Nullable<ProbeType>;
+  renderer_kind?: string;
+  assessment_target?: string;
+  difficulty?: string;
+
+  input_schema?: Record<string, unknown> | null;
+  judging_schema?: Record<string, unknown> | null;
+  renderer_config?: Record<string, unknown> | null;
+
+  diagnosis_state_snapshot?: Record<string, unknown> | null;
+
+  reasons?: string[];
+  cautions?: string[];
+
+  [key: string]: unknown;
+}
+
+export interface ProbePlan {
+  status: ProbePlanStatus;
+  probe_id: EntityId;
+  target_topic_id: Nullable<EntityId>;
+  target_diagnosis: Nullable<DiagnosisType>;
+  intent: Nullable<ProbeIntent>;
+  probe_type: Nullable<ProbeType>;
+  expected_response_type: Nullable<ProbeExpectedResponseType>;
+
+  renderer_request: RendererRequest;
+  judging_support: JudgingSupport;
+
+  text_plan: TextPlan;
+  video_plan: VideoPlan;
+  interactive_plan: InteractivePlan;
+
+  text_payload: TextPayload;
+  video_payload: VideoPayload;
+  interactive_payload: InteractivePayload;
+
+  /**
+   * Optional Probe Contract V1 snapshot.
+   *
+   * This lets the runtime carry "what this probe is measuring" alongside the
+   * older renderer-specific plan fields while we migrate toward richer
+   * interactive probes and contract-based judging.
+   */
+  probe_contract_snapshot: Nullable<ProbeContractSnapshot>;
+}
+
+/* ------------------------------------------------------------------ */
+/* DELIVERED RESPONSE */
+/* ------------------------------------------------------------------ */
+
+export interface DeliveredLearnerMessage {
+  text: string;
+  tone: Nullable<string>;
+  mode: InterventionMode;
+}
+
+export interface DeliveredProbe {
+  probe_id: EntityId;
+  target_topic_id: Nullable<EntityId>;
+  target_diagnosis?: Nullable<DiagnosisType>;
+  intent?: Nullable<ProbeIntent>;
+  probe_type?: Nullable<ProbeType>;
+
+  renderer_type: Nullable<string>;
+  generator: Nullable<string>;
+  modality: Nullable<string>;
+
+  title: Nullable<string>;
+  instructions: Nullable<string>;
+
+  actual_tone: Nullable<string>;
+  actual_pacing: Nullable<string>;
+  actual_language_style: Nullable<string>;
+  actual_context_framing: Nullable<string>;
+
+  expected_response_type: Nullable<ProbeExpectedResponseType>;
+
+  /**
+   * Optional copy of the plan's probe contract snapshot for frontend/debug
+   * surfaces. During migration this may be absent on older delivered probes.
+   */
+  probe_contract_snapshot?: Nullable<ProbeContractSnapshot>;
+
+  stimulus_id: Nullable<EntityId>;
+  payload_snapshot: Record<string, unknown> | null;
+}
+
+export interface DeliveredResponse {
+  learner_message: DeliveredLearnerMessage;
+  delivered_probe: DeliveredProbe | null;
+}
+
+/* ------------------------------------------------------------------ */
+/* JUDGED ATTEMPTS */
+/* ------------------------------------------------------------------ */
+
+export type StimulusModality =
+  | "text"
+  | "diagram"
+  | "video"
+  | "audio"
+  | "simulation"
+  | "interactive";
+
+export type StimulusSource = "static" | "generated";
+export type StimulusGenerator = "chatgpt" | "sora" | "tts" | null;
+
+export type ConfidenceAlignment =
+  | "overconfident"
+  | "underconfident"
+  | "aligned";
+
+export type AttemptOutcomeClassification =
+  | "success"
+  | "near_miss"
+  | "structural_failure"
+  | "guess"
+  | "no_response";
+
+export type AttemptOutcomeRole = "diagnostic" | "verification";
+
+export interface JudgedAttemptStimulus {
+  stimulus_id: Nullable<EntityId>;
+  modality: StimulusModality;
+  source: StimulusSource;
+  generator: StimulusGenerator;
+  constraints: string[];
+}
+
+export interface JudgedAttemptRenderer {
+  renderer_type: string;
+  personalization_applied: {
+    tone: Nullable<string>;
+    verbosity: Nullable<string>;
+    pacing: Nullable<string>;
+    language_style: Nullable<string>;
+    context_framing: Nullable<string>;
+  };
+}
+
+export interface JudgedAttemptRawResponse {
+  type: "text" | "choice" | "ordering" | "state" | "none";
+  value: string | Record<string, unknown> | null;
+}
+
+export interface JudgedAttemptFeatures {
+  correctness: Nullable<number>;
+  error_types: string[];
+  explanation_quality: Nullable<number>;
+  transfer_distance: Nullable<number>;
+  confidence_alignment: Nullable<ConfidenceAlignment>;
+  mental_model_inferred: Nullable<string>;
+  struggle_type: Nullable<string>;
+  evidence_strength: Nullable<number>;
+  judgment_confidence: Nullable<number>;
+  missing_elements: Nullable<string>;
+  misconception_tags: string[];
+}
+
+export interface DiagnosisDelta {
+  unknown?: number;
+  no_gap_detected?: number;
+  recall_gap: number;
+  representation_gap: number;
+  procedure_gap: number;
+  discrimination_gap: number;
+  transfer_gap: number;
+  metacognitive_gap?: number;
+}
+
+export interface JudgedAttemptOutcome {
+  classification: AttemptOutcomeClassification;
+  role: AttemptOutcomeRole;
+}
+
+export interface JudgedAttempt {
+  attempt_id: EntityId;
+  timestamp: ISO8601String;
+  topic_id: EntityId;
+  probe_id: Nullable<EntityId>;
+  stimulus: JudgedAttemptStimulus;
+  renderer: JudgedAttemptRenderer;
+  raw_response: JudgedAttemptRawResponse;
+  features: JudgedAttemptFeatures;
+  mental_model_hypothesis_ids: string[];
+  outcome: JudgedAttemptOutcome;
+  diagnosis_delta: DiagnosisDelta;
+}
+
+/* ------------------------------------------------------------------ */
+/* ENGINE FUEL - PHASE 2 PRACTICAL SHAPE */
+/* ------------------------------------------------------------------ */
+
+export interface TopicEmbeddingSummary {
+  available: boolean;
+  dimension: number;
+  count: number;
+  model: Nullable<string>;
+  updated_at: Nullable<ISO8601String>;
+
+  /**
+   * First five numeric components of the full embedding centroid.
+   * The full embedding remains backend-only; this preview is intentionally
+   * small so normal client responses stay lightweight while still inspectable.
+   */
+  preview: number[];
+}
+
+export interface TopicState {
+  topic_id: EntityId;
+  topic_label: string;
+  topic_confusion_average: number;
+  topic_insight_average: number;
+  topic_learning_score: number;
+  topic_learning_velocity: number;
+  topic_novelty_score: number;
+  topic_message_count: number;
+  topic_difficulty: number;
+  topic_decay_rate: number;
+  topic_link_threshold: number;
+  topic_last_update: ISO8601String;
+
+  /**
+   * Visual / spatial centroid used by the 3D learning-space renderer.
+   * This is NOT the semantic embedding centroid.
+   *
+   * Kept as topic_centroid for backward compatibility with current route/output.
+   * Long-term rename candidate: topic_position or topic_visual_centroid.
+   */
+  topic_centroid: [number, number, number];
+
+  /**
+   * Lightweight client-facing summary of the canonical embedding of the clean
+   * topic label. The full vector is intentionally not included in engine_fuel.
+   */
+  topic_label_embedding: TopicEmbeddingSummary;
+
+  /**
+   * Lightweight client-facing summary of the topic-level learner-message
+   * embedding. The full vector is intentionally not included in engine_fuel.
+   */
+  topic_message_embedding: TopicEmbeddingSummary;
+
+  /**
+   * Deprecated client-facing full-vector fields.
+   *
+   * Full embedding vectors should remain in Supabase/backend RouteTopic state
+   * and persistence layers, not in normal /api/message responses.
+   */
+  topic_label_embedding_centroid?: never;
+  topic_label_embedding_count?: never;
+  topic_label_embedding_model?: never;
+  topic_label_embedding_updated_at?: never;
+  topic_message_embedding_centroid?: never;
+  topic_message_embedding_count?: never;
+  topic_message_embedding_model?: never;
+  topic_message_embedding_updated_at?: never;
+}
+
+export interface ClusterState {
+  cluster_id: EntityId;
+  cluster_label: string;
+  cluster_confusion_average: number;
+  cluster_confusion_variance: number;
+  cluster_insight_average: number;
+  cluster_insight_variance: number;
+  cluster_learning_score: number;
+  cluster_learning_velocity: number;
+  cluster_density: number;
+  cluster_message_count: number;
+  cluster_size: number;
+  cluster_creation_date: ISO8601String;
+  cluster_last_update: ISO8601String;
+  list_of_clustered_topics: EntityId[];
+  cluster_centroid: [number, number, number];
+
+  /**
+   * Optional future semantic centroid for cluster-level routing/retrieval.
+   * Not required for the first semantic topic router pass.
+   */
+  cluster_embedding_centroid?: Nullable<EmbeddingVector>;
+  cluster_embedding_count?: number;
+  cluster_embedding_model?: Nullable<string>;
+  cluster_embedding_updated_at?: Nullable<ISO8601String>;
+}
+
+export interface LinkedPair {
+  topic1: EntityId;
+  topic2: EntityId;
+  raw_previous_similarity: number;
+  decayed_previous_similarity: number;
+  new_similarity: number;
+  previous_link_threshold: number;
+  new_link_threshold: number;
+  link_reason: string;
+}
+
+export interface EngineFuel {
+  intervention_mode_decision: InterventionModeDecision;
+  previous_mode_outcome: PreviousModeOutcome;
+  probe_plan: ProbePlan;
+
+  /**
+   * Optional during migration.
+   * Once semantic centroid routing is fully wired, this can become required.
+   */
+  topic_routing?: TopicRoutingState;
+
+  topics: TopicState[];
+  clusters: ClusterState[];
+  linked_pairs: LinkedPair[];
+
+  attempts: JudgedAttempt[];
+}
+
+/* ------------------------------------------------------------------ */
+/* LEARNING SPACE */
+/* ------------------------------------------------------------------ */
+
+export type TopicPositionSource =
+  | "topic_position"
+  | "semantic_position"
+  | "topic_json"
+  | "deterministic_fallback";
+
+export type LearningSpaceRelationshipType =
+  | "semantic"
+  | "shared_confusion"
+  | "prerequisite"
+  | "strategy"
+  | "temporal";
+
+export type LearningSpaceRelationshipVisualStyle =
+  | "arc"
+  | "thread"
+  | "arrow"
+  | "halo"
+  | "trail";
+
+export type LearningSpaceViewpointType =
+  | "overview"
+  | "semantic_neighborhood"
+  | "confusion_alignment"
+  | "prerequisite_chain"
+  | "bridge"
+  | "growth_path";
+
+export interface LearningSpaceRelationshipBasis {
+  similarity: Nullable<number>;
+  normalized_similarity: Nullable<number>;
+  desired_distance: Nullable<number>;
+  actual_distance: Nullable<number>;
+  diagnostic_method: Nullable<string>;
+}
+
+export interface LearningSpaceRelationshipDisplayPolicy {
+  show_in_overview: boolean;
+  show_on_focus: boolean;
+  max_opacity: number;
+  visual_style: LearningSpaceRelationshipVisualStyle;
+  priority: number;
+}
+
+export interface LearningSpaceRelationship {
+  relationship_id: EntityId;
+  source_topic_id: EntityId;
+  target_topic_id: EntityId;
+  relationship_type: LearningSpaceRelationshipType;
+
+  /**
+   * Strength is continuous and relationship-specific. For semantic links it is
+   * generally derived from embedding similarity.
+   */
+  strength: number;
+
+  /**
+   * Confidence reflects evidence quality, not relationship strength.
+   */
+  confidence: number;
+
+  evidence_source: string[];
+  evidence_summary: Nullable<string>;
+  basis: LearningSpaceRelationshipBasis;
+  display_policy: LearningSpaceRelationshipDisplayPolicy;
+}
+
+export interface LearningSpaceViewpointCamera {
+  position: Nullable<[number, number, number]>;
+  target: Nullable<[number, number, number]>;
+  up: Nullable<[number, number, number]>;
+  distance: Nullable<number>;
+}
+
+export interface LearningSpaceViewpoint {
+  viewpoint_id: EntityId;
+  viewpoint_type: LearningSpaceViewpointType;
+  label: string;
+  intent: string;
+  focus_topic_ids: EntityId[];
+  relationship_ids: EntityId[];
+  camera: LearningSpaceViewpointCamera;
+  relationship_filter: {
+    relationship_types: LearningSpaceRelationshipType[];
+    max_visible_relationships: number;
+  };
+  explanation: Nullable<string>;
+}
+
+export interface LearningSpaceProjectionMetadata {
+  projection_id: EntityId;
+  projection_method: string;
+  dimensionality: 2 | 3;
+  relationship_basis: string[];
+  generated_at: Nullable<ISO8601String>;
+  confidence: Nullable<number>;
+  notes: string[];
+}
+
+export interface LearningSpaceTopicLayout {
+  position_source: TopicPositionSource;
+  semantic_position: Nullable<[number, number, number]>;
+  semantic_position_method: Nullable<string>;
+  semantic_position_updated_at: Nullable<ISO8601String>;
+}
+
+export interface LearningSpaceSatellite {
+  satellite_id: EntityId;
+  orbit_angle: number;
+  linked_attempt_id: Nullable<EntityId>;
+}
+
+export interface LearningSpaceTopic {
+  topic_id: EntityId;
+  topic_label: string;
+
+  /**
+   * Renderer-safe current committed visual position.
+   */
+  position: [number, number, number];
+
+  /**
+   * Layout metadata for debugging and future animation/commit behavior.
+   * The renderer may inspect this, but it should not become the source of truth.
+   */
+  layout: LearningSpaceTopicLayout;
+
+  render_state: RenderState;
+
+  satellite_count: number;
+  satellites: LearningSpaceSatellite[];
+}
+
+export interface LearningSpaceCluster {
+  cluster_id: EntityId;
+
+  /**
+   * Optional compatibility label for older API/debug surfaces. The renderer-safe
+   * learning-space contract does not require a cluster label, but routes may
+   * still include one when available.
+   */
+  cluster_label?: string;
+
+  cluster_centroid: [number, number, number];
+  member_topic_ids: EntityId[];
+}
+
+export interface LearningSpace {
+  space_version: "v1";
+  topics: LearningSpaceTopic[];
+  clusters: LearningSpaceCluster[];
+  relationships: LearningSpaceRelationship[];
+  viewpoints: LearningSpaceViewpoint[];
+  projection: LearningSpaceProjectionMetadata;
+}
+
+/* ------------------------------------------------------------------ */
+/* TOP-LEVEL RUNTIME RESULT */
+/* ------------------------------------------------------------------ */
+
+export interface RunMetadata {
+  run_id: EntityId;
+  timestamp: ISO8601String;
+  engine_version: string;
+  previous_run_id: Nullable<EntityId>;
+  topic_count: number;
+  cluster_count: number;
+  linked_pair_count: number;
+}
+
+export interface MyWayRunResult {
+  run_metadata: RunMetadata;
+  important_run_inputs: ImportantRunInputs;
+  engine_fuel: EngineFuel;
+  delivered_response: DeliveredResponse;
+  learning_space: LearningSpace;
+}
+
+/* ------------------------------------------------------------------ */
+/* FRONTEND-FACING ROUTE PAYLOADS */
+/* ------------------------------------------------------------------ */
+
+export interface MessageRouteRequest {
+  messageText: string;
+  activeTopicId?: Nullable<EntityId>;
+  selectedClusterId?: Nullable<EntityId>;
+  viewportContext?: {
+    focusedTopicId?: Nullable<EntityId>;
+    selectedTopicId?: Nullable<EntityId>;
+    activeTopicIdForMessage?: Nullable<EntityId>;
+  };
+}
+
+export interface ProbeSubmitRouteRequest {
+  probeId: EntityId;
+  topicId: EntityId;
+  response: string | Record<string, unknown>;
+  submittedAt: ISO8601String;
+  deliveryContext?: Partial<AttemptDeliveryContext>;
+}
+
+export interface FrontendSceneUpdate {
+  target_topic_id: Nullable<EntityId>;
+  camera_destination_topic_id: Nullable<EntityId>;
+  arrival_mode: "warp" | "focus" | "none";
+  learning_space: LearningSpace;
+}
+
+export interface FrontendTopicMetricUpdate {
+  topicId: EntityId;
+  confusion?: number;
+  insight?: number;
+  learningScore?: number;
+}
+
+export interface FrontendInterventionSummary {
+  mode_selected: InterventionMode;
+  target_topic_id: Nullable<EntityId>;
+  active_diagnosis: Nullable<DiagnosisType>;
+
+  /**
+   * During migration, some client paths still use "available" / "not_applicable"
+   * while newer route code may prefer boolean.
+   */
+  probe_available: boolean | "available" | "not_applicable";
+
+  status_label: string;
+  suggested_action: string;
+}
+
+export interface MessageRouteResponse {
+  result: MyWayRunResult;
+  scene_update: FrontendSceneUpdate;
+  intervention: FrontendInterventionSummary;
+}
+
+export interface ProbeSubmitRouteResponse {
+  result: MyWayRunResult;
+  scene_update: FrontendSceneUpdate;
+  continue_probe_loop: boolean;
+  next_probe: DeliveredProbe | null;
+  updated_topic_metrics?: FrontendTopicMetricUpdate;
+}
+
+
+
+
+============================================================
+FILE: app\api\message\route.ts
+============================================================
+
+import { NextResponse } from "next/server";
+import { buildMockThreeModelMessageRouteResponse } from "@/lib/api-routes/message/mock-3model-response";
+
+function getMessageText(body: unknown) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return "";
+  }
+
+  const record = body as Record<string, unknown>;
+  const messageText =
+    typeof record.messageText === "string"
+      ? record.messageText
+      : typeof record.message === "string"
+        ? record.message
+        : "";
+
+  return messageText.trim();
+}
+
+/**
+ * Temporary 3-model pipeline route.
+ *
+ * The old /api/message path mixed topic routing, model-signal queues,
+ * deterministic intervention planning, legacy probe-plan building, persistence,
+ * and learning-space projection in one active route.
+ *
+ * For the 3-model buildout phase, this route now proves the clean loop:
+ *
+ *   models/diagnosis
+ *   â†’ models/probe-contract
+ *   â†’ lib/engine
+ *   â†’ EngineRenderableProbe
+ *   â†’ frontend probe renderer
+ *
+ * The previous full route is backed up under archive/ by the step-23a script.
+ */
+export async function POST(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    const message = getMessageText(body) || "mock 3-model message";
+
+    return NextResponse.json(
+      await buildMockThreeModelMessageRouteResponse({ message }),
+    );
+  } catch (error) {
+    console.error("POST /api/message mock 3-model route failed", error);
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to build mock 3-model message response.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+
+
+============================================================
+FILE: app\api\probe\submit\route.ts
+============================================================
+
+import { NextResponse } from "next/server";
+import { buildMockThreeModelProbeSubmitResponse } from "@/lib/api-routes/probe-submit/mock-3model-response";
+
+/**
+ * Temporary 3-model probe-submit route.
+ *
+ * During the model-pipeline cleanup phase, probe submission no longer uses the
+ * old heuristic attempt evidence / contract-judgment / follow-up planning path.
+ *
+ * It now proves this loop:
+ *
+ *   submitted structured attempt
+ *   â†’ mock Probe Attempt Evaluator output
+ *   â†’ engine next-action route
+ *   â†’ mock Probe Contract output
+ *   â†’ EngineRenderableProbe
+ *   â†’ frontend probe loop
+ */
+export async function POST(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}));
+
+    return NextResponse.json(
+      await buildMockThreeModelProbeSubmitResponse(body),
+    );
+  } catch (error) {
+    console.error("POST /api/probe/submit mock 3-model route failed", error);
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to build mock 3-model probe-submit response.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+
+
+============================================================
+FILE: app\api\local-dev\mock-3model-turn\route.ts
+============================================================
+
+import { NextResponse } from "next/server";
+import { buildMockThreeModelTurn } from "@/lib/engine/providers/mock-model-artifacts";
+
+export async function GET() {
+  try {
+    return NextResponse.json(buildMockThreeModelTurn());
+  } catch (error) {
+    return NextResponse.json(
+      {
+        status: "error",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to build mock 3-model turn.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+
+
+============================================================
+FILE: lib\api-routes\message\mock-3model-response.ts
+============================================================
+
+import { buildLearningSpace } from "@/lib/learning-space/build-learning-space";
+import { buildMockThreeModelTurn } from "@/lib/engine/providers/mock-model-artifacts";
+import type { RouteTopic } from "@/lib/topic-routing/route-topics";
+import { loadRouteTopics } from "@/lib/topic-routing/route-topics";
+import type {
+  DeliveredProbe,
+  LearningSpace,
+  MessageRouteResponse,
+  MyWayRunResult,
+} from "@/types/contracts";
+
+function flagEnabled(value: string | undefined) {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
+export function shouldUseMockThreeModelMessageRoute() {
+  return flagEnabled(process.env.MYWAY_USE_MOCK_3MODEL);
+}
+
+function getRouteTopicLabel(topic: RouteTopic | null | undefined) {
+  return topic?.topic_label?.trim() || "Spanish se";
+}
+
+function getTopicId(topic: RouteTopic | null | undefined) {
+  return topic?.id?.trim() || "topic_spanish_se";
+}
+
+function getTopicPosition(topic: RouteTopic | null | undefined) {
+  return Array.isArray(topic?.position) ? topic.position : [0, 0, 0];
+}
+
+function getNumber(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function findMockTargetTopic(topics: RouteTopic[]) {
+  return (
+    topics.find((topic) => topic.topic_label?.toLowerCase() === "spanish se") ??
+    topics[0] ??
+    null
+  );
+}
+
+function buildMockRouteTopics(targetTopic: RouteTopic | null): RouteTopic[] {
+  if (targetTopic) return [targetTopic];
+
+  return [
+    {
+      id: "topic_spanish_se",
+      topic_label: "Spanish se",
+      diagnosis: "discrimination_gap",
+      nextStep: "Check which job se is doing in a sentence pattern.",
+      confusion: 0.62,
+      insight: 0.38,
+      learningScore: 0.42,
+      position: [0, 0, 0],
+      topic_json: {},
+    } as unknown as RouteTopic,
+  ];
+}
+
+function buildDeliveredProbeFromMockTurn(args: {
+  topic: RouteTopic | null;
+  turn: ReturnType<typeof buildMockThreeModelTurn>;
+}): DeliveredProbe {
+  const { topic, turn } = args;
+  const targetTopicId = getTopicId(topic);
+  const targetTopicLabel = getRouteTopicLabel(topic);
+  const preview = turn.delivered_probe_preview;
+
+  return {
+    probe_id: preview.id,
+    target_topic_id: targetTopicId,
+    target_topic_label: targetTopicLabel,
+    title: preview.title,
+    instructions: preview.instruction,
+    status: "available",
+    intent: "diagnostic",
+    probe_type: preview.probeType,
+    expected_response_type: preview.expectedResponseType,
+    renderer_modality: "interactive",
+    renderer_generator: "custom",
+    actual_tone: "encouraging",
+    actual_pacing: "normal",
+    actual_language_style: "plain",
+    actual_context_framing: preview.helperText,
+    probe_contract_snapshot: {
+      ...preview.probeContractSnapshot,
+      target_topic_id: targetTopicId,
+      target_topic_label: targetTopicLabel,
+    },
+    stimulus_id: `stimulus-${preview.id}`,
+    payload_snapshot: {
+      mock_3model: true,
+      probe_contract_snapshot: preview.probeContractSnapshot,
+      engine_renderable_probe: preview.engineRenderableProbe,
+    },
+  } as unknown as DeliveredProbe;
+}
+
+function buildMockEngineFuel(args: {
+  topic: RouteTopic | null;
+  turn: ReturnType<typeof buildMockThreeModelTurn>;
+}) {
+  const { topic, turn } = args;
+  const targetTopicId = getTopicId(topic);
+  const targetTopicLabel = getRouteTopicLabel(topic);
+
+  return {
+    schema_version: "mock_3model_route_adapter_v0",
+    source: "mock_3model_message_route",
+    topics: [
+      {
+        topic_id: targetTopicId,
+        topic_label: targetTopicLabel,
+        topic_confusion_average: getNumber(
+          (topic as { confusion?: unknown } | null)?.confusion,
+          0.62,
+        ),
+        topic_insight_average: getNumber(
+          (topic as { insight?: unknown } | null)?.insight,
+          0.38,
+        ),
+        topic_learning_score: getNumber(
+          (topic as { learningScore?: unknown } | null)?.learningScore,
+          0.42,
+        ),
+        topic_centroid: getTopicPosition(topic),
+      },
+    ],
+    intervention_mode_decision: {
+      mode_selected: "probe",
+      target_topic_id: targetTopicId,
+      active_diagnosis: turn.diagnosis_output.diagnosis,
+      primary_block: "The learner may be treating se as one fixed meaning.",
+      decision_confidence: turn.diagnosis_route.confidence,
+      decision_reasons: [
+        "Mock 3-model path is enabled with MYWAY_USE_MOCK_3MODEL.",
+        `Diagnosis model requested: ${turn.diagnosis_route.next_action}.`,
+        "Probe Contract Model produced a renderable single-choice probe.",
+      ],
+      clarify_score: 0.18,
+      probe_score: 0.82,
+      signal_summary: {
+        raw_response_signal: 0.66,
+        evidence_quality_signal: 0.74,
+        active_problem_signal: 0.76,
+        readiness_signal: 0.8,
+        history_signal: 0.32,
+      },
+    },
+    probe_plan: {
+      status: "applicable",
+      probe_id: turn.delivered_probe_preview.id,
+      target_topic_id: targetTopicId,
+      target_diagnosis: turn.diagnosis_output.diagnosis,
+      intent: "diagnostic",
+      probe_type: turn.probe_contract_output.probe_type,
+      expected_response_type: turn.probe_contract_output.expected_attempt_type,
+      text_plan: {
+        instructional_goal: "Check which job se is doing in a sentence pattern.",
+      },
+      probe_contract_snapshot: {
+        ...turn.delivered_probe_preview.probeContractSnapshot,
+        target_topic_id: targetTopicId,
+        target_topic_label: targetTopicLabel,
+      },
+    },
+    mock_3model: {
+      scenario_id: turn.scenario_id,
+      model_artifact_paths: turn.model_artifact_paths,
+      diagnosis_route: turn.diagnosis_route,
+      attempt_route: turn.attempt_route,
+    },
+  };
+}
+
+export async function buildMockThreeModelMessageRouteResponse(args: {
+  message: string;
+}): Promise<MessageRouteResponse> {
+  const routeTopics = await loadRouteTopics();
+  const targetTopic = findMockTargetTopic(routeTopics);
+  const mockTopics = buildMockRouteTopics(targetTopic);
+  const turn = buildMockThreeModelTurn();
+
+  const learningSpace = buildLearningSpace(mockTopics) as unknown as LearningSpace;
+  const targetTopicId = getTopicId(targetTopic);
+  const deliveredProbe = buildDeliveredProbeFromMockTurn({
+    topic: targetTopic,
+    turn,
+  });
+
+  const result: MyWayRunResult = {
+    run_metadata: {
+      run_id: "mock-3model-message-route",
+      run_type: "message",
+      created_at: new Date().toISOString(),
+      source: "mock_3model_message_route",
+      debug: {
+        enabled_by_env: "MYWAY_USE_MOCK_3MODEL",
+        scenario_id: turn.scenario_id,
+      },
+    } as unknown as MyWayRunResult["run_metadata"],
+    important_run_inputs: {
+      user_message: {
+        message_id: null,
+        timestamp: new Date().toISOString(),
+        content: args.message,
+      },
+      model_signals: {
+        model_confusion: null,
+        model_insight: null,
+        model_version: "mock_3model_v0",
+        inference_mode: "mock",
+        latency_ms: null,
+        status: "ok",
+        error_message: null,
+      },
+      current_interaction_context: {
+        run_kind: "initial_question",
+        is_response_to_delivered_probe: false,
+        prior_mode_selected: null,
+        prior_probe_was_applicable: null,
+        prior_probe_id: null,
+        prior_mode_outcome_available: null,
+      },
+      new_attempt: {
+        status: "absent",
+      },
+      vector_info: {
+        query_text: args.message,
+        top_k_similarity_scores: [0.86],
+        selected_topic_id: targetTopicId,
+        selected_topic_label: getRouteTopicLabel(targetTopic),
+        source: "mock_3model_message_route",
+      },
+      uploaded_content: [],
+    } as unknown as MyWayRunResult["important_run_inputs"],
+    engine_fuel: buildMockEngineFuel({
+      topic: targetTopic,
+      turn,
+    }) as unknown as MyWayRunResult["engine_fuel"],
+    delivered_response: {
+      learner_message: {
+        text: "Mock 3-model path is active. I'm using the Diagnosis Model output to generate a focused probe from the Probe Contract Model.",
+        tone: "encouraging",
+        mode: "probe",
+      },
+      delivered_probe: deliveredProbe,
+    },
+    learning_space: learningSpace,
+  };
+
+  return {
+    result,
+    scene_update: {
+      target_topic_id: targetTopicId,
+      learning_space: learningSpace,
+      source: "mock_3model_message_route",
+    },
+    intervention: {
+      mode_selected: "probe",
+      target_topic_id: targetTopicId,
+      active_diagnosis: turn.diagnosis_output.diagnosis,
+      probe_available: "available",
+      status_label: "Mock 3-model probe",
+      suggested_action: "Open the generated probe",
+    },
+    updated_topic_metrics: {
+      topicId: targetTopicId,
+      confusion: getNumber(
+        (targetTopic as { confusion?: unknown } | null)?.confusion,
+        0.62,
+      ),
+      insight: getNumber(
+        (targetTopic as { insight?: unknown } | null)?.insight,
+        0.38,
+      ),
+      learningScore: getNumber(
+        (targetTopic as { learningScore?: unknown } | null)?.learningScore,
+        0.42,
+      ),
+    },
+    mock_3model_debug: {
+      enabled: true,
+      scenario_id: turn.scenario_id,
+      model_artifact_paths: turn.model_artifact_paths,
+      renderable_probe: turn.renderable_probe,
+      diagnosis_output: turn.diagnosis_output,
+      probe_contract_output: turn.probe_contract_output,
+    },
+  } as unknown as MessageRouteResponse;
+}
+
+
+
+
+============================================================
+FILE: lib\api-routes\probe-submit\mock-3model-response.ts
+============================================================
+
+import { buildMockThreeModelTurn } from "@/lib/engine/providers/mock-model-artifacts";
+import { buildMockThreeModelMessageRouteResponse } from "@/lib/api-routes/message/mock-3model-response";
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function getString(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function extractSubmittedAttempt(body: unknown) {
+  const record = asRecord(body);
+  const structuredAttempt =
+    record.structuredAttempt ?? record.attempt ?? record.response ?? null;
+
+  return {
+    probe_id: getString(record.probeId, "mock-probe-spanish-se-single-choice"),
+    topic_id: getString(record.topicId, "topic_spanish_se"),
+    raw_response:
+      typeof record.response === "string"
+        ? record.response
+        : structuredAttempt === null
+          ? ""
+          : JSON.stringify(structuredAttempt),
+    structured_attempt: structuredAttempt,
+    engine_renderable_probe:
+      record.engineRenderableProbe ??
+      asRecord(record.probeContractSnapshot).engine_renderable_probe ??
+      asRecord(record.answeredProbeContractSnapshot).engine_renderable_probe ??
+      null,
+  };
+}
+
+/**
+ * Temporary 3-model probe-submit route adapter.
+ *
+ * This file is not the future evaluator itself. It adapts the mock
+ * Probe Attempt Evaluator output into the response shape the current frontend
+ * still expects.
+ *
+ * Future shape:
+ *
+ *   submitted attempt
+ *   -> Probe Attempt Evaluator output
+ *   -> engine route next action
+ *   -> next Probe Contract / EngineRenderableProbe
+ *
+ * The current evaluator/probe-contract outputs are mock fixtures under:
+ *
+ *   lib/engine/providers/mock-model-artifacts/fixtures
+ */
+export async function buildMockThreeModelProbeSubmitResponse(body: unknown) {
+  const submittedAttempt = extractSubmittedAttempt(body);
+  const turn = buildMockThreeModelTurn();
+
+  const base = await buildMockThreeModelMessageRouteResponse({
+    message: submittedAttempt.raw_response || "mock probe submit",
+  });
+
+  const deliveredProbe = base.result?.delivered_response?.delivered_probe ?? null;
+
+  const response = {
+    ...base,
+
+    continue_probe_loop: true,
+    next_probe: deliveredProbe,
+    nextProbe: deliveredProbe,
+
+    reply:
+      "Mock Probe Attempt Evaluator is active. The submitted answer exposed the fixed-meaning se misconception, so MyWay is returning another model-created probe.",
+    suggestedAction: "Target the exposed misconception",
+
+    judgedAttempt: {
+      schema_version: "mock_judged_attempt_v0",
+      source: "mock_3model_probe_submit_route",
+      submitted_attempt: submittedAttempt,
+      attempt_evaluation_output: turn.attempt_evaluation_output,
+      attempt_route: turn.attempt_route,
+    },
+
+    mock_3model_submit_debug: {
+      enabled: true,
+      scenario_id: turn.scenario_id,
+      submitted_attempt: submittedAttempt,
+      attempt_evaluation_output: turn.attempt_evaluation_output,
+      attempt_route: turn.attempt_route,
+      evaluated_probe_attempt_signal: turn.evaluated_probe_attempt_signal,
+      next_probe_source: "mock_probe_contract_model_output",
+    },
+  };
+
+  if (response.result?.delivered_response) {
+    response.result.delivered_response.learner_message = {
+      text: "Mock evaluator result: the response points to a specific misconception, so I'm giving another focused probe.",
+      tone: "encouraging",
+      mode: "probe",
+    } as typeof response.result.delivered_response.learner_message;
+
+    response.result.engine_fuel = {
+      ...(response.result.engine_fuel as unknown as Record<string, unknown>),
+      mock_probe_submit: {
+        submitted_attempt: submittedAttempt,
+        attempt_evaluation_output: turn.attempt_evaluation_output,
+        attempt_route: turn.attempt_route,
+      },
+    } as unknown as typeof response.result.engine_fuel;
+  }
+
+  return response;
+}
+
+
+
+
+
+
+============================================================
+FILE: lib\engine\index.ts
+============================================================
+
+// -----------------------------------------------------------------------------
+// MyWay Engine Public Boundary
+// -----------------------------------------------------------------------------
+//
+// This file is the clean public entrypoint for the new 3-model engine.
+//
+// The engine boundary now exposes:
+// - schemas: model contracts and shared types
+// - providers: swappable service/model providers
+// - validation: MyWay-owned output/policy validation
+// - orchestration: model runners and engine turn helpers
+// - renderers: renderer compatibility contracts
+// - state: topic-state and personalization update helpers
+
+export * from "./schemas";
+export * from "./providers";
+export * from "./validation";
+export * from "./orchestration";
+export * from "./renderers";
+export * from "./state";
+
+
+
+
+
+
+
+
+
+============================================================
+FILE: lib\engine\orchestration\run-engine-turn.ts
+============================================================
+
+import type {
+  DiagnosisModelInput,
+  ProbeContractModelInput,
+} from "../schemas";
+import type { EngineProviderSet } from "../providers";
+import type { DiagnosisRunResult } from "./run-diagnosis";
+import { runDiagnosis } from "./run-diagnosis";
+import type { ProbeContractRunResult } from "./run-probe-contract";
+import { runProbeContract } from "./run-probe-contract";
+import type { EngineRouteResult } from "./route-engine-next-action";
+import { routeEngineNextAction } from "./route-engine-next-action";
+
+export type EngineTurnProbeContractContext = Omit<
+  ProbeContractModelInput,
+  "schema_version" | "target_diagnosis"
+>;
+
+export type RunEngineTurnInput = {
+  providers: EngineProviderSet;
+  diagnosis_input: DiagnosisModelInput;
+
+  // Optional because not every engine turn should generate a probe.
+  // When present and diagnosis routes to generate_probe_contract, the turn can
+  // produce a validated probe contract without route-level wiring.
+  probe_contract_context?: EngineTurnProbeContractContext;
+};
+
+export type RunEngineTurnResult = {
+  diagnosis: DiagnosisRunResult;
+  route: EngineRouteResult;
+  probe_contract?: ProbeContractRunResult;
+};
+
+export async function runEngineTurn(
+  input: RunEngineTurnInput,
+): Promise<RunEngineTurnResult> {
+  const diagnosis = await runDiagnosis({
+    provider: input.providers.diagnosis,
+    model_input: input.diagnosis_input,
+  });
+
+  const route = routeEngineNextAction({
+    diagnosis_output: diagnosis.output,
+  });
+
+  if (
+    route.next_action === "generate_probe_contract" &&
+    input.providers.probe_contract &&
+    input.probe_contract_context
+  ) {
+    const probeContractInput: ProbeContractModelInput = {
+      schema_version: "probe_contract_model_input_v1",
+      target_topic: input.probe_contract_context.target_topic,
+      target_diagnosis: diagnosis.output.diagnosis,
+      learner_signal: input.probe_contract_context.learner_signal,
+      personalization_context:
+        input.probe_contract_context.personalization_context ?? null,
+    };
+
+    const probeContract = await runProbeContract({
+      provider: input.providers.probe_contract,
+      model_input: probeContractInput,
+    });
+
+    return {
+      diagnosis,
+      route,
+      probe_contract: probeContract,
+    };
+  }
+
+  return {
+    diagnosis,
+    route,
+  };
+}
+
+
+
+
+============================================================
+FILE: lib\engine\orchestration\run-probe-contract.ts
+============================================================
+
+import type {
+  ProbeContractModelInput,
+  ProbeContractModelOutput,
+} from "../schemas";
+import type {
+  EngineProviderResult,
+  ProbeContractModelProvider,
+} from "../providers";
+import type { ValidationResult } from "../validation";
+import { validateProbeContract } from "../validation";
+
+export type ProbeContractRunResult = {
+  output: ProbeContractModelOutput;
+  provider_result: EngineProviderResult<ProbeContractModelOutput>;
+  validation: ValidationResult<ProbeContractModelOutput | null>;
+  usable: boolean;
+};
+
+export async function runProbeContract(input: {
+  provider: ProbeContractModelProvider;
+  model_input: ProbeContractModelInput;
+}): Promise<ProbeContractRunResult> {
+  const providerResult = await input.provider.runProbeContract(input.model_input);
+  const validation = validateProbeContract(providerResult.output);
+
+  return {
+    output: providerResult.output,
+    provider_result: providerResult,
+    validation,
+    usable: validation.ok,
+  };
+}
+
+
+
+
+============================================================
+FILE: lib\engine\renderers\renderer-compatibility.ts
+============================================================
+
+import type {
+  ProbeContractModelOutput,
+  ProbeType,
+  RendererParams,
+} from "../schemas";
+
+import type {
+  EngineRenderableProbe,
+  RendererCompatibilityReport,
+  ProbeRendererAdapterResult,
+} from "./probe-renderer-contract";
+
+function hasArrayItems(value: unknown): value is unknown[] {
+  return Array.isArray(value) && value.length > 0;
+}
+
+function hasRendererParams(
+  rendererParams: RendererParams | null | undefined,
+): rendererParams is RendererParams {
+  return typeof rendererParams === "object" && rendererParams !== null;
+}
+
+function requireOptions(
+  rendererParams: RendererParams | null | undefined,
+  blockingReasons: string[],
+): void {
+  if (!hasRendererParams(rendererParams) || !hasArrayItems(rendererParams.options)) {
+    blockingReasons.push("renderer_params.options is required for this probe type.");
+  }
+}
+
+function requireItemsAndTargets(
+  rendererParams: RendererParams | null | undefined,
+  blockingReasons: string[],
+): void {
+  if (!hasRendererParams(rendererParams) || !hasArrayItems(rendererParams.items)) {
+    blockingReasons.push("renderer_params.items is required for drag_drop_placements.");
+  }
+
+  if (
+    !hasRendererParams(rendererParams) ||
+    !hasArrayItems(rendererParams.placement_targets)
+  ) {
+    blockingReasons.push(
+      "renderer_params.placement_targets is required for drag_drop_placements.",
+    );
+  }
+}
+
+function requireSlider(
+  rendererParams: RendererParams | null | undefined,
+  blockingReasons: string[],
+): void {
+  if (!hasRendererParams(rendererParams) || !rendererParams.slider) {
+    blockingReasons.push("renderer_params.slider is required for slider probes.");
+    return;
+  }
+
+  const { min, max } = rendererParams.slider;
+
+  if (
+    typeof min !== "number" ||
+    typeof max !== "number" ||
+    !Number.isFinite(min) ||
+    !Number.isFinite(max)
+  ) {
+    blockingReasons.push("renderer_params.slider requires finite min and max values.");
+    return;
+  }
+
+  if (min >= max) {
+    blockingReasons.push("renderer_params.slider.min must be less than max.");
+  }
+}
+
+function warnIfMissingAudio(
+  rendererParams: RendererParams | null | undefined,
+  warnings: string[],
+): void {
+  if (!hasRendererParams(rendererParams) || !rendererParams.audio) {
+    warnings.push("Audio probe has no renderer_params.audio metadata.");
+  }
+}
+
+function warnIfMissingVideo(
+  rendererParams: RendererParams | null | undefined,
+  warnings: string[],
+): void {
+  if (!hasRendererParams(rendererParams) || !rendererParams.video) {
+    warnings.push("Video probe has no renderer_params.video metadata.");
+  }
+}
+
+export function buildRendererCompatibilityReport(
+  probeContract: Pick<ProbeContractModelOutput, "probe_type" | "renderer_params">,
+): RendererCompatibilityReport {
+  const blockingReasons: string[] = [];
+  const warnings: string[] = [];
+
+  const probeType = probeContract.probe_type;
+  const rendererParams = probeContract.renderer_params;
+
+  switch (probeType) {
+    case "single_choice":
+    case "multi_choice": {
+      requireOptions(rendererParams, blockingReasons);
+      break;
+    }
+
+    case "drag_drop_placements": {
+      requireItemsAndTargets(rendererParams, blockingReasons);
+      break;
+    }
+
+    case "slider": {
+      requireSlider(rendererParams, blockingReasons);
+      break;
+    }
+
+    case "audio_clip_question":
+    case "audio_response_question": {
+      warnIfMissingAudio(rendererParams, warnings);
+      break;
+    }
+
+    case "video_click_interval":
+    case "video_explanation": {
+      warnIfMissingVideo(rendererParams, warnings);
+      break;
+    }
+
+    case "explain":
+    case "discriminate":
+    case "apply_transfer":
+    case "sequence":
+    case "predict":
+    case "graph_relationship": {
+      // These can often render with prompt text and optional params.
+      break;
+    }
+
+    default: {
+      const exhaustiveCheck: never = probeType satisfies never;
+      blockingReasons.push(`Unsupported probe renderer kind: ${String(exhaustiveCheck)}`);
+    }
+  }
+
+  return {
+    renderer_kind: probeType,
+    is_renderable: blockingReasons.length === 0,
+    blocking_reasons: blockingReasons,
+    warnings,
+  };
+}
+
+export function toEngineRenderableProbe(
+  probeContract: ProbeContractModelOutput,
+): EngineRenderableProbe {
+  const rendererCompatibility = buildRendererCompatibilityReport(probeContract);
+
+  return {
+    schema_version: "engine_renderable_probe_v1",
+    probe_type: probeContract.probe_type,
+    expected_attempt_type: probeContract.expected_attempt_type,
+    prompt: probeContract.prompt,
+    presentation_support: probeContract.presentation_support,
+    answer_key: probeContract.answer_key,
+    misconception_markers: probeContract.misconception_markers,
+    renderer_params: probeContract.renderer_params,
+    delivery_context: probeContract.delivery_context,
+    confidence: probeContract.confidence,
+    renderer_compatibility: rendererCompatibility,
+  };
+}
+
+export function adaptProbeContractForRenderer(
+  probeContract: ProbeContractModelOutput,
+): ProbeRendererAdapterResult {
+  const renderableProbe = toEngineRenderableProbe(probeContract);
+  const { renderer_compatibility } = renderableProbe;
+
+  return {
+    ok: renderer_compatibility.is_renderable,
+    renderable_probe: renderer_compatibility.is_renderable ? renderableProbe : null,
+    warnings: renderer_compatibility.warnings,
+    blocking_reasons: renderer_compatibility.blocking_reasons,
+  };
+}
+
+export function isRendererBackedProbeType(probeType: ProbeType): boolean {
+  return (
+    probeType === "single_choice" ||
+    probeType === "multi_choice" ||
+    probeType === "drag_drop_placements" ||
+    probeType === "slider" ||
+    probeType === "audio_clip_question" ||
+    probeType === "audio_response_question" ||
+    probeType === "video_click_interval" ||
+    probeType === "video_explanation"
+  );
+}
+
+
+
+
+
+============================================================
+FILE: lib\engine\renderers\index.ts
+============================================================
+
+export * from "./probe-renderer-contract";
+export * from "./renderer-compatibility";
+
+
+
+
+============================================================
+FILE: lib\engine\providers\index.ts
+============================================================
+
+export * from "./types";
+export * from "./service-clients";
+export * from "./mock-model-artifacts";
+
+
+
+============================================================
+FILE: lib\engine\providers\types.ts
+============================================================
+
+import type {
+  DiagnosisModelInput,
+  DiagnosisModelOutput,
+  ProbeAttemptEvaluatorInput,
+  ProbeAttemptEvaluatorOutput,
+  ProbeContractModelInput,
+  ProbeContractModelOutput,
+} from "../schemas";
+
+export type EngineProviderKind = "service_client";
+
+export type EngineProviderCallMeta = {
+  provider_name: string;
+  provider_kind: EngineProviderKind;
+  model_name?: string | null;
+  schema_version: string;
+  latency_ms?: number | null;
+  warnings?: string[];
+};
+
+export type EngineProviderResult<TOutput> = {
+  output: TOutput;
+  meta: EngineProviderCallMeta;
+  raw_response?: unknown;
+};
+
+export type DiagnosisModelProvider = {
+  provider_name: string;
+  provider_kind: EngineProviderKind;
+  runDiagnosis(
+    input: DiagnosisModelInput,
+  ): Promise<EngineProviderResult<DiagnosisModelOutput>>;
+};
+
+export type ProbeContractModelProvider = {
+  provider_name: string;
+  provider_kind: EngineProviderKind;
+  runProbeContract(
+    input: ProbeContractModelInput,
+  ): Promise<EngineProviderResult<ProbeContractModelOutput>>;
+};
+
+export type ProbeAttemptEvaluatorProvider = {
+  provider_name: string;
+  provider_kind: EngineProviderKind;
+  runAttemptEvaluation(
+    input: ProbeAttemptEvaluatorInput,
+  ): Promise<EngineProviderResult<ProbeAttemptEvaluatorOutput>>;
+};
+
+export type EngineProviderSet = {
+  diagnosis: DiagnosisModelProvider;
+  probe_contract?: ProbeContractModelProvider;
+  attempt_evaluator: ProbeAttemptEvaluatorProvider;
+};
+
+export function buildProviderMeta(input: {
+  provider_name: string;
+  provider_kind: EngineProviderKind;
+  schema_version: string;
+  model_name?: string | null;
+  started_at_ms: number;
+  warnings?: string[];
+}): EngineProviderCallMeta {
+  return {
+    provider_name: input.provider_name,
+    provider_kind: input.provider_kind,
+    schema_version: input.schema_version,
+    model_name: input.model_name ?? null,
+    latency_ms: Math.max(0, Date.now() - input.started_at_ms),
+    warnings: input.warnings ?? [],
+  };
+}
+
+
+
+
+
+
+============================================================
+FILE: lib\engine\providers\service-clients\index.ts
+============================================================
+
+export * from "./diagnosis-service-client";
+export * from "./probe-contract-service-client";
+export * from "./attempt-evaluator-service-client";
+
+
+
+============================================================
+FILE: lib\engine\providers\service-clients\probe-contract-service-client.ts
+============================================================
+
+import type {
+  ProbeContractModelInput,
+  ProbeContractModelOutput,
+} from "../../schemas";
+import type { EngineProviderResult, ProbeContractModelProvider } from "../types";
+import { buildProviderMeta } from "../types";
+
+export type ProbeContractServiceClientConfig = {
+  provider_name?: string;
+  model_name?: string | null;
+  endpoint_url?: string | null;
+  timeout_ms?: number;
+};
+
+type ServiceEnvelope<T> = {
+  ok?: boolean;
+  output?: T;
+  meta?: unknown;
+  error?: string;
+};
+
+function getEndpointUrl(config: ProbeContractServiceClientConfig): string | null {
+  return (
+    config.endpoint_url ??
+    process.env.MYWAY_PROBE_CONTRACT_ENDPOINT_URL ??
+    process.env.MYWAY_PROBE_CONTRACT_SERVICE_URL ??
+    null
+  );
+}
+
+function buildSafeFallbackOutput(input: ProbeContractModelInput): ProbeContractModelOutput {
+  return {
+    schema_version: "probe_contract_model_output_v1",
+    probe_type: "explain",
+    expected_attempt_type: "text",
+    prompt: {
+      root_problem_explanation:
+        "The probe contract service client could not reach a configured provider.",
+      reshaping_explanation:
+        "Use a safe minimal text probe until the real provider is connected.",
+      task: `Explain what you know about ${input.target_topic.topic_label}.`,
+      full_prompt: `In your own words, explain what you know about ${input.target_topic.topic_label}.`,
+    },
+    presentation_support: [],
+    answer_key: null,
+    misconception_markers: [],
+    renderer_params: null,
+    confidence: 0.2,
+  };
+}
+
+function isProbeContractOutput(value: unknown): value is ProbeContractModelOutput {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<ProbeContractModelOutput>;
+  return (
+    candidate.schema_version === "probe_contract_model_output_v1" &&
+    typeof candidate.probe_type === "string" &&
+    typeof candidate.expected_attempt_type === "string" &&
+    Boolean(candidate.prompt) &&
+    typeof candidate.prompt === "object" &&
+    Array.isArray(candidate.misconception_markers) &&
+    typeof candidate.confidence === "number"
+  );
+}
+
+async function postJson<T>(url: string, input: unknown, timeoutMs: number): Promise<ServiceEnvelope<T>> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ input }),
+      signal: controller.signal,
+    });
+
+    const text = await response.text();
+    const payload = text ? (JSON.parse(text) as ServiceEnvelope<T> | T) : ({} as ServiceEnvelope<T>);
+
+    if (!response.ok) {
+      const errorPayload = payload as ServiceEnvelope<T>;
+      throw new Error(errorPayload.error ?? `Probe contract service returned HTTP ${response.status}`);
+    }
+
+    if (payload && typeof payload === "object" && "output" in payload) {
+      return payload as ServiceEnvelope<T>;
+    }
+
+    return { ok: true, output: payload as T };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export function createProbeContractServiceClient(
+  config: ProbeContractServiceClientConfig = {},
+): ProbeContractModelProvider {
+  const providerName = config.provider_name ?? "probe_contract_service_client";
+
+  return {
+    provider_name: providerName,
+    provider_kind: "service_client",
+
+    async runProbeContract(
+      input: ProbeContractModelInput,
+    ): Promise<EngineProviderResult<ProbeContractModelOutput>> {
+      const startedAtMs = Date.now();
+      const endpointUrl = getEndpointUrl(config);
+
+      if (!endpointUrl) {
+        const output = buildSafeFallbackOutput(input);
+        return {
+          output,
+          meta: buildProviderMeta({
+            provider_name: providerName,
+            provider_kind: "service_client",
+            schema_version: output.schema_version,
+            model_name: config.model_name ?? null,
+            started_at_ms: startedAtMs,
+            warnings: [
+              "No probe contract endpoint configured. Returned safe fallback output.",
+              "Set MYWAY_PROBE_CONTRACT_ENDPOINT_URL=http://127.0.0.1:8012/predict to use the local artifact service.",
+            ],
+          }),
+        };
+      }
+
+      try {
+        const serviceResponse = await postJson<ProbeContractModelOutput>(
+          endpointUrl,
+          input,
+          config.timeout_ms ?? 8000,
+        );
+        const output = serviceResponse.output;
+
+        if (!isProbeContractOutput(output)) {
+          throw new Error("Probe contract service returned an invalid ProbeContractModelOutput shape.");
+        }
+
+        return {
+          output,
+          meta: buildProviderMeta({
+            provider_name: providerName,
+            provider_kind: "service_client",
+            schema_version: output.schema_version,
+            model_name: config.model_name ?? "myway_probe_contract_retriever_phase_a_v1",
+            started_at_ms: startedAtMs,
+            warnings: [],
+          }),
+        };
+      } catch (error) {
+        const output = buildSafeFallbackOutput(input);
+        return {
+          output,
+          meta: buildProviderMeta({
+            provider_name: providerName,
+            provider_kind: "service_client",
+            schema_version: output.schema_version,
+            model_name: config.model_name ?? null,
+            started_at_ms: startedAtMs,
+            warnings: [
+              "Probe contract service call failed. Returned safe fallback output.",
+              error instanceof Error ? error.message : String(error),
+            ],
+          }),
+        };
+      }
+    },
+  };
+}
+

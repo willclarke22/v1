@@ -1,0 +1,3615 @@
+**********************
+PowerShell transcript start
+Start time: 20260619173520
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\fcf604774b\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 13604
+PSVersion: 7.5.5
+PSEdition: Core
+GitCommitId: 7.5.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is persistence-search-output-20260619-173520.txt
+
+Relevant active route files
+
+FullName                                                                                      Length
+--------                                                                                      ------
+C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts                        12057
+C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts                                       2173
+C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts                                  1535
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts       20307
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts                10551
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts  32980
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts            4018
+C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts                                      17705
+C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts                                       17817
+C:\Users\willc\projects\MyWay\v1\lib\supabase\client.ts                                          255
+C:\Users\willc\projects\MyWay\v1\lib\supabase\server.ts                                          586
+C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts                24302
+C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts                             11095
+C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\client.ts                      4546
+C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\contract.ts                    1651
+C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\policy.ts                      8620
+C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts                 32746
+C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\v3-adapter.ts                  6276
+C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-routing-trace.ts                       5903
+
+
+Search active files for persistence/supabase/topic insert logic
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts
+LineNumber : 28
+Line       :  * service clients and deliver their ProbeContractModelOutput through the normal
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts
+LineNumber : 29
+Line       :  * frontend probe renderer path.
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts
+LineNumber : 32
+Line       :  * This foreground route does not start the heavy embedding service. It passes
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\message\route.ts
+LineNumber : 34
+Line       :  * topic resolver. Embedding-backed semantic enrichment stays in the local-dev
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 3
+Line       :   buildLocalServiceThreeModelProbeSubmitResponse,
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 4
+Line       :   shouldUseLocalServiceThreeModelProbeSubmitRoute,
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 5
+Line       : } from "@/lib/api-routes/probe-submit/local-service-3model-response";
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 6
+Line       : import { buildMockThreeModelProbeSubmitResponse } from "@/lib/api-routes/probe-submit/mock-3model-response";
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 9
+Line       :  * 3-model probe-submit route switch.
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 14
+Line       :  * MYWAY_USE_LOCAL_SERVICE_3MODEL_PROBE_SUBMIT=1, to run the local service
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 15
+Line       :  * Probe Attempt Evaluator and create a follow-up probe from the same answered
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 16
+Line       :  * probe snapshot.
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 19
+Line       :  * This route does not run topic embeddings and does not re-route the topic from
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 20
+Line       :  * scratch. The answered probe snapshot is the source of truth.
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 26
+Line       :     if (shouldUseLocalServiceThreeModelProbeSubmitRoute()) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 28
+Line       :         await buildLocalServiceThreeModelProbeSubmitResponse(body),
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 32
+Line       :     return NextResponse.json(await buildMockThreeModelProbeSubmitResponse(body));
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 34
+Line       :     console.error("POST /api/probe/submit 3-model route failed", error);
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\probe\submit\route.ts
+LineNumber : 41
+Line       :             : "Failed to build 3-model probe-submit response.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 4
+Line       : import { getLatestTopicState } from "@/lib/persistence/read";
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 24
+Line       :   topics: Topic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 25
+Line       :   source: "empty" | "supabase" | "memory_cache";
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 88
+Line       :     "topic_json" in row &&
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 89
+Line       :     row.topic_json &&
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 90
+Line       :     typeof row.topic_json === "object" &&
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 91
+Line       :     !Array.isArray(row.topic_json)
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 93
+Line       :     return row.topic_json as Record<string, unknown>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 122
+Line       :   const rawQueue = topicJson.pending_confusion_insight_scores;
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 124
+Line       :   if (!Array.isArray(rawQueue)) return 0;
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 126
+Line       :   return rawQueue.filter((item) => {
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 143
+Line       :   rows: Awaited<ReturnType<typeof getLatestTopicState>>,
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 196
+Line       :   const hasPendingQueue = hasPendingConfusionInsightScores(topicJson);
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 227
+Line       :   const status: TopicModelSignalStatus = hasPendingQueue
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 253
+Line       :           persistenceSource: asOptionalString(
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 254
+Line       :             lastScoreRecord.persistence_source,
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 262
+Line       : function mapRowsToTopics(
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 263
+Line       :   rows: Awaited<ReturnType<typeof getLatestTopicState>>,
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 338
+Line       :       hasAvailableProbe: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 368
+Line       :     const rows = await getLatestTopicState();
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 372
+Line       :         topics: [],
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 384
+Line       :     const topics = mapRowsToTopics(rows);
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 386
+Line       :       topics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\app\api\bootstrap\topic-state\route.ts
+LineNumber : 387
+Line       :       source: "supabase",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 3
+Line       : import { runProbeContract } from "@/lib/engine/orchestration/run-probe-contract";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 5
+Line       : import { adaptProbeContractForRenderer } from "@/lib/engine/renderers";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 13
+Line       :   ProbeContractModelInput,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 14
+Line       :   ProbeContractModelOutput,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 16
+Line       : import type { RouteTopic } from "@/lib/topic-routing/route-topics";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 17
+Line       : import { loadRouteTopics } from "@/lib/topic-routing/route-topics";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 23
+Line       :   DeliveredProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 126
+Line       :       is_response_to_probe: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 160
+Line       : function getProbeTitle(args: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 162
+Line       :   probeContract: ProbeContractModelOutput;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 164
+Line       :   const task = args.probeContract.prompt.task?.trim();
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 173
+Line       : function buildRendererAdapterSnapshot(input: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 185
+Line       : function buildProbeContractSnapshot(args: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 189
+Line       :   probeContractRun: Awaited<ReturnType<typeof runProbeContract>>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 190
+Line       :   rendererAdapter: ReturnType<typeof adaptProbeContractForRenderer>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 195
+Line       :     schema_version: "local_service_probe_contract_snapshot_v1",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 216
+Line       :     probe_contract_output: args.probeContractRun.output,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 217
+Line       :     probe_contract_provider_meta: args.probeContractRun.provider_result.meta,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 218
+Line       :     probe_contract_validation: args.probeContractRun.validation,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 220
+Line       :     engine_renderable_probe: args.rendererAdapter.renderable_probe ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 221
+Line       :     renderer_adapter: buildRendererAdapterSnapshot(args.rendererAdapter),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 225
+Line       : function buildDeliveredProbeFromLocalService(args: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 228
+Line       :   probeContract: ProbeContractModelOutput;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 229
+Line       :   probeContractSnapshot: Record<string, unknown>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 230
+Line       : }): DeliveredProbe {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 231
+Line       :   const prompt = args.probeContract.prompt;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 232
+Line       :   const probeId = `local-service-probe-${args.targetTopicId}-${Date.now()}`;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 235
+Line       :     probe_id: probeId,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 238
+Line       :     title: getProbeTitle({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 240
+Line       :       probeContract: args.probeContract,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 245
+Line       :     probe_type: args.probeContract.probe_type,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 246
+Line       :     expected_response_type: args.probeContract.expected_attempt_type,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 254
+Line       :       "MyWay is using a local Probe Contract Model output.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 255
+Line       :     probe_contract_snapshot: args.probeContractSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 256
+Line       :     stimulus_id: `stimulus-${probeId}`,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 257
+Line       :     payload_snapshot: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 259
+Line       :       probe_contract_snapshot: args.probeContractSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 260
+Line       :       engine_renderable_probe:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 261
+Line       :         args.probeContractSnapshot.engine_renderable_probe ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 262
+Line       :       renderer_adapter: args.probeContractSnapshot.renderer_adapter ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 264
+Line       :   } as unknown as DeliveredProbe;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 272
+Line       :   probeContractRun: Awaited<ReturnType<typeof runProbeContract>>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 273
+Line       :   probeContractSnapshot: Record<string, unknown>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 280
+Line       :     topics: [
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 298
+Line       :       mode_selected: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 302
+Line       :         args.probeContractRun.output.prompt.root_problem_explanation ||
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 303
+Line       :         "The local Diagnosis Model found a learning signal that can be checked with a probe.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 307
+Line       :         "Foreground topic resolver ran without starting embedding-backed semantic services.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 310
+Line       :         `Probe Contract Model returned: ${args.probeContractRun.output.probe_type}.`,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 317
+Line       :       probe_score:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 318
+Line       :         args.diagnosisRun.output.next_action === "generate_probe_contract"
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 323
+Line       :         evidence_quality_signal: args.probeContractRun.output.confidence,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 325
+Line       :         readiness_signal: args.probeContractRun.usable ? 0.8 : 0.35,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 332
+Line       :     probe_plan: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 334
+Line       :       probe_id: `local-service-probe-${args.targetTopicId}`,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 338
+Line       :       probe_type: args.probeContractRun.output.probe_type,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 339
+Line       :       expected_response_type: args.probeContractRun.output.expected_attempt_type,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 341
+Line       :         instructional_goal: args.probeContractRun.output.prompt.task,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 343
+Line       :       probe_contract_snapshot: args.probeContractSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 355
+Line       :       probe_contract_provider_meta: args.probeContractRun.provider_result.meta,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 357
+Line       :       probe_contract_validation: args.probeContractRun.validation,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 367
+Line       :   const probeContractProvider = providers.probe_contract;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 369
+Line       :   if (!probeContractProvider) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 370
+Line       :     throw new Error("No probe contract provider is configured.");
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 373
+Line       :   const routeTopics = await loadRouteTopics();
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 376
+Line       :     existingTopics: routeTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 381
+Line       :   const routeTopicsForScene = topicResolution.topicsForScene;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 404
+Line       :   const probeContractInput: ProbeContractModelInput = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 405
+Line       :     schema_version: "probe_contract_model_input_v1",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 423
+Line       :   const probeContractRun = await runProbeContract({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 424
+Line       :     provider: probeContractProvider,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 425
+Line       :     model_input: probeContractInput,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 428
+Line       :   const rendererAdapter = adaptProbeContractForRenderer(probeContractRun.output);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 430
+Line       :   const probeContractSnapshot = buildProbeContractSnapshot({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 434
+Line       :     probeContractRun,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 440
+Line       :   const deliveredProbe = buildDeliveredProbeFromLocalService({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 443
+Line       :     probeContract: probeContractRun.output,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 444
+Line       :     probeContractSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 447
+Line       :   const learningSpace = buildLearningSpace(routeTopicsForScene) as unknown as LearningSpace;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 469
+Line       :         is_response_to_delivered_probe: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 471
+Line       :         prior_probe_was_applicable: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 472
+Line       :         prior_probe_id: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 483
+Line       :         source: "foreground_topic_resolver_no_embedding",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 494
+Line       :       probeContractRun,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 495
+Line       :       probeContractSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 502
+Line       :           rendererAdapter.ok && rendererAdapter.renderable_probe
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 503
+Line       :             ? "I found a specific spot to check. Open the probe and answer it in the way that makes the most
+             sense to you."
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 504
+Line       :             : "I found a learning signal, but the generated probe needs a renderer fallback. I am giving the
+             safest available probe view.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 506
+Line       :         mode: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 508
+Line       :       delivered_probe: deliveredProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 523
+Line       :       mode_selected: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 526
+Line       :       probe_available: "available",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 527
+Line       :       status_label: "Local 3-model probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 528
+Line       :       suggested_action: "Open the generated probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 553
+Line       :       probe_contract_output: probeContractRun.output,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts
+LineNumber : 554
+Line       :       probe_contract_provider_meta: probeContractRun.provider_result.meta,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 3
+Line       : import type { RouteTopic } from "@/lib/topic-routing/route-topics";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 4
+Line       : import { loadRouteTopics } from "@/lib/topic-routing/route-topics";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 6
+Line       :   DeliveredProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 37
+Line       : function findMockTargetTopic(topics: RouteTopic[]) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 39
+Line       :     topics.find(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 45
+Line       : function buildMockRouteTopics(targetTopic: RouteTopic | null): RouteTopic[] {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 58
+Line       :       topic_json: {},
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 63
+Line       : function buildRendererAdapterSnapshot(renderableProbe: unknown) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 65
+Line       :     ok: Boolean(renderableProbe),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 71
+Line       : function buildProbeContractSnapshot(args: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 72
+Line       :   baseSnapshot: Record<string, unknown>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 75
+Line       :   renderableProbe: unknown;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 78
+Line       :     ...args.baseSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 81
+Line       :     engine_renderable_probe: args.renderableProbe ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 82
+Line       :     renderer_adapter: buildRendererAdapterSnapshot(args.renderableProbe),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 86
+Line       : function buildDeliveredProbeFromMockTurn(args: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 89
+Line       : }): DeliveredProbe {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 93
+Line       :   const preview = turn.delivered_probe_preview;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 94
+Line       :   const renderableProbe =
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 95
+Line       :     preview.engineRenderableProbe ?? turn.renderable_probe ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 96
+Line       :   const probeContractSnapshot = buildProbeContractSnapshot({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 97
+Line       :     baseSnapshot: preview.probeContractSnapshot as Record<string, unknown>,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 100
+Line       :     renderableProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 104
+Line       :     probe_id: preview.id,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 111
+Line       :     probe_type: preview.probeType,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 119
+Line       :     probe_contract_snapshot: probeContractSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 121
+Line       :     payload_snapshot: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 123
+Line       :       probe_contract_snapshot: probeContractSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 124
+Line       :       engine_renderable_probe: renderableProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 125
+Line       :       renderer_adapter: buildRendererAdapterSnapshot(renderableProbe),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 127
+Line       :   } as unknown as DeliveredProbe;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 137
+Line       :   const renderableProbe =
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 138
+Line       :     turn.delivered_probe_preview.engineRenderableProbe ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 139
+Line       :     turn.renderable_probe ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 145
+Line       :     topics: [
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 165
+Line       :       mode_selected: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 173
+Line       :         "Probe Contract Model produced a renderable single-choice probe.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 176
+Line       :       probe_score: 0.82,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 185
+Line       :     probe_plan: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 187
+Line       :       probe_id: turn.delivered_probe_preview.id,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 191
+Line       :       probe_type: turn.probe_contract_output.probe_type,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 192
+Line       :       expected_response_type: turn.probe_contract_output.expected_attempt_type,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 196
+Line       :       probe_contract_snapshot: buildProbeContractSnapshot({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 197
+Line       :         baseSnapshot:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 198
+Line       :           turn.delivered_probe_preview.probeContractSnapshot as Record<
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 204
+Line       :         renderableProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 219
+Line       :   const routeTopics = await loadRouteTopics();
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 220
+Line       :   const targetTopic = findMockTargetTopic(routeTopics);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 221
+Line       :   const mockTopics = buildMockRouteTopics(targetTopic);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 224
+Line       :   const learningSpace = buildLearningSpace(mockTopics) as unknown as LearningSpace;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 226
+Line       :   const deliveredProbe = buildDeliveredProbeFromMockTurn({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 259
+Line       :         is_response_to_delivered_probe: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 261
+Line       :         prior_probe_was_applicable: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 262
+Line       :         prior_probe_id: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 283
+Line       :         text: "Mock 3-model path is active. I'm using the Diagnosis Model output to generate a focused probe
+             from the Probe Contract Model.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 285
+Line       :         mode: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 287
+Line       :       delivered_probe: deliveredProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 300
+Line       :       mode_selected: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 303
+Line       :       probe_available: "available",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 304
+Line       :       status_label: "Mock 3-model probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 305
+Line       :       suggested_action: "Open the generated probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 326
+Line       :       renderable_probe: turn.renderable_probe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts
+LineNumber : 328
+Line       :       probe_contract_output: turn.probe_contract_output,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 4
+Line       : import { runProbeContract } from "@/lib/engine/orchestration/run-probe-contract";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 6
+Line       : import { adaptProbeContractForRenderer } from "@/lib/engine/renderers";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 14
+Line       :   EvaluatedProbeAttemptSignal,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 15
+Line       :   ProbeAttemptEvaluatorInput,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 16
+Line       :   ProbeAttemptType,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 17
+Line       :   ProbeContractModelInput,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 18
+Line       :   ProbeContractModelOutput,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 19
+Line       :   ProbePrompt,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 23
+Line       :   loadRouteTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 25
+Line       : } from "@/lib/topic-routing/route-topics";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 27
+Line       :   DeliveredProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 80
+Line       :   attemptType: ProbeAttemptType,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 89
+Line       : export function shouldUseLocalServiceThreeModelProbeSubmitRoute() {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 91
+Line       :     flagEnabled(process.env.MYWAY_USE_LOCAL_SERVICE_3MODEL_PROBE_SUBMIT) ||
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 137
+Line       : function normalizeAttemptType(value: unknown): ProbeAttemptType {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 178
+Line       : ): NonNullable<ProbeAttemptEvaluatorInput["delivery_context"]> | null {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 197
+Line       :   } as NonNullable<ProbeAttemptEvaluatorInput["delivery_context"]>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 200
+Line       : function defaultPromptFromBody(body: Record<string, unknown>): ProbePrompt {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 201
+Line       :   const promptText = getString(body.prompt, "Answer the probe in your own words.");
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 205
+Line       :       "The submitted probe did not include a full engine prompt snapshot.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 213
+Line       : function getAnsweredSnapshot(body: Record<string, unknown>) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 215
+Line       :     body.answeredProbeContractSnapshot ?? body.probeContractSnapshot ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 219
+Line       : function getEngineRenderableProbe(body: Record<string, unknown>) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 220
+Line       :   const answeredSnapshot = getAnsweredSnapshot(body);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 223
+Line       :     body.engineRenderableProbe ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 224
+Line       :       answeredSnapshot.engine_renderable_probe ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 225
+Line       :       asRecord(body.probe).engineRenderableProbe ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 233
+Line       : ): ProbePrompt {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 242
+Line       :     return prompt as unknown as ProbePrompt;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 250
+Line       :   answeredSnapshot: Record<string, unknown>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 251
+Line       :   routeTopics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 254
+Line       :     asString(args.answeredSnapshot.target_topic_id) ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 257
+Line       :     "topic_probe_submit";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 260
+Line       :     asString(args.answeredSnapshot.target_topic_label) ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 266
+Line       :     args.routeTopics.find((topic) => topic.id === targetTopicId) ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 267
+Line       :     args.routeTopics.find(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 280
+Line       :     existingTopics: args.routeTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 288
+Line       :     hasAvailableProbe: true,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 292
+Line       : function summarizeAttempt(attempt: ProbeAttemptEvaluatorInput["attempt"]) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 322
+Line       : async function scoreForegroundProbeSubmitConfusionInsight(args: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 324
+Line       :   answeredSnapshot: Record<string, unknown>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 326
+Line       :   prompt: ProbePrompt;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 327
+Line       :   attempt: ProbeAttemptEvaluatorInput["attempt"];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 338
+Line       :   const diagnosisOutput = asRecord(args.answeredSnapshot.diagnosis_output);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 358
+Line       :       previous_mode: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 360
+Line       :       is_response_to_probe: true,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 364
+Line       :           event_type: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 367
+Line       :           probe_type: asString(args.renderable.probe_type),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 369
+Line       :           probe_prompt: args.prompt.full_prompt,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 460
+Line       : function buildRendererAdapterSnapshot(input: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 472
+Line       : function getProbeTitle(args: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 474
+Line       :   probeContract: ProbeContractModelOutput;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 476
+Line       :   const task = args.probeContract.prompt.task?.trim();
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 485
+Line       : function buildDeliveredProbeFromProbeContract(args: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 488
+Line       :   probeContract: ProbeContractModelOutput;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 489
+Line       :   probeContractSnapshot: Record<string, unknown>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 490
+Line       : }): DeliveredProbe {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 491
+Line       :   const prompt = args.probeContract.prompt;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 492
+Line       :   const probeId = `local-service-followup-probe-${args.targetTopicId}-${Date.now()}`;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 495
+Line       :     probe_id: probeId,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 498
+Line       :     title: getProbeTitle({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 500
+Line       :       probeContract: args.probeContract,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 505
+Line       :     probe_type: args.probeContract.probe_type,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 506
+Line       :     expected_response_type: args.probeContract.expected_attempt_type,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 515
+Line       :     probe_contract_snapshot: args.probeContractSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 516
+Line       :     stimulus_id: `stimulus-${probeId}`,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 517
+Line       :     payload_snapshot: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 518
+Line       :       local_service_3model_probe_submit: true,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 519
+Line       :       probe_contract_snapshot: args.probeContractSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 520
+Line       :       engine_renderable_probe:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 521
+Line       :         args.probeContractSnapshot.engine_renderable_probe ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 522
+Line       :       renderer_adapter: args.probeContractSnapshot.renderer_adapter ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 524
+Line       :   } as unknown as DeliveredProbe;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 527
+Line       : function buildProbeContractSnapshot(args: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 530
+Line       :   answeredProbeContractSnapshot: Record<string, unknown>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 533
+Line       :   probeContractRun: Awaited<ReturnType<typeof runProbeContract>>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 534
+Line       :   rendererAdapter: ReturnType<typeof adaptProbeContractForRenderer>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 538
+Line       :     schema_version: "local_service_probe_submit_contract_snapshot_v1",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 539
+Line       :     source: "local_service_3model_probe_submit_route",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 543
+Line       :     previous_probe_contract_snapshot: args.answeredProbeContractSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 556
+Line       :     probe_contract_output: args.probeContractRun.output,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 557
+Line       :     probe_contract_provider_meta: args.probeContractRun.provider_result.meta,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 558
+Line       :     probe_contract_validation: args.probeContractRun.validation,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 560
+Line       :     engine_renderable_probe: args.rendererAdapter.renderable_probe ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 561
+Line       :     renderer_adapter: buildRendererAdapterSnapshot(args.rendererAdapter),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 565
+Line       : function buildEvaluatedProbeAttemptSignal(args: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 566
+Line       :   probe: ProbeAttemptEvaluatorInput["probe"];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 567
+Line       :   attempt: ProbeAttemptEvaluatorInput["attempt"];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 569
+Line       : }): EvaluatedProbeAttemptSignal {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 573
+Line       :     probe: args.probe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 593
+Line       :   attemptInput: ProbeAttemptEvaluatorInput;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 596
+Line       :   probeContractRun: Awaited<ReturnType<typeof runProbeContract>>;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 597
+Line       :   deliveredProbe: DeliveredProbe;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 606
+Line       :       run_id: `local-service-probe-submit-route-${Date.now()}`,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 607
+Line       :       run_type: "probe_submit",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 609
+Line       :       source: "local_service_3model_probe_submit_route",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 612
+Line       :           "MYWAY_USE_LOCAL_SERVICE_3MODEL or MYWAY_USE_LOCAL_SERVICE_3MODEL_PROBE_SUBMIT",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 623
+Line       :         run_kind: "probe_submit",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 624
+Line       :         is_response_to_delivered_probe: true,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 625
+Line       :         prior_mode_selected: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 626
+Line       :         prior_probe_was_applicable: true,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 627
+Line       :         prior_probe_id: asString(args.body.probeId),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 640
+Line       :         source: "answered_probe_contract_snapshot_no_embedding",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 645
+Line       :       schema_version: "local_service_3model_probe_submit_adapter_v0",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 646
+Line       :       source: "local_service_3model_probe_submit_route",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 647
+Line       :       topics: [
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 664
+Line       :         mode_selected: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 670
+Line       :           "Local service 3-model probe-submit route is enabled.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 671
+Line       :           "Probe submit used answeredProbeContractSnapshot as topic source of truth.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 673
+Line       :           `Follow-up Probe Contract Model returned: ${args.probeContractRun.output.probe_type}.`,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 680
+Line       :         probe_score:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 681
+Line       :           evaluation.next_action === "generate_followup_probe" ||
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 690
+Line       :           readiness_signal: args.probeContractRun.usable ? 0.8 : 0.35,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 697
+Line       :       probe_plan: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 699
+Line       :         probe_id: args.deliveredProbe.probe_id,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 703
+Line       :         probe_type: args.probeContractRun.output.probe_type,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 704
+Line       :         expected_response_type: args.probeContractRun.output.expected_attempt_type,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 706
+Line       :           instructional_goal: args.probeContractRun.output.prompt.task,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 708
+Line       :         probe_contract_snapshot: args.deliveredProbe.probe_contract_snapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 710
+Line       :       local_service_3model_probe_submit: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 714
+Line       :         probe_contract_provider_meta: args.probeContractRun.provider_result.meta,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 717
+Line       :         probe_contract_validation: args.probeContractRun.validation,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 724
+Line       :           "I checked your response and generated a follow-up probe.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 726
+Line       :         mode: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 728
+Line       :       delivered_probe: args.deliveredProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 734
+Line       : export async function buildLocalServiceThreeModelProbeSubmitResponse(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 738
+Line       :   const answeredSnapshot = getAnsweredSnapshot(record);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 739
+Line       :   const renderable = getEngineRenderableProbe(record);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 741
+Line       :   const routeTopics = await loadRouteTopics();
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 744
+Line       :     answeredSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 745
+Line       :     routeTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 750
+Line       :   const probeType = getString(renderable.probe_type, "explain");
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 755
+Line       :   const probeForEvaluation: ProbeAttemptEvaluatorInput["probe"] = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 756
+Line       :     probe_type: probeType as ProbeAttemptEvaluatorInput["probe"]["probe_type"],
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 766
+Line       :   }) as ProbeAttemptEvaluatorInput["attempt"];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 769
+Line       :   const confusionInsightSignals = await scoreForegroundProbeSubmitConfusionInsight({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 771
+Line       :     answeredSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 778
+Line       :   const attemptEvaluationInput: ProbeAttemptEvaluatorInput = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 779
+Line       :     schema_version: "probe_attempt_evaluator_input_v1",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 780
+Line       :     probe: probeForEvaluation,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 782
+Line       :       ? (renderable.answer_key as ProbeAttemptEvaluatorInput["answer_key"])
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 783
+Line       :       : (asRecord(answeredSnapshot.probe_contract_output).answer_key as
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 784
+Line       :           | ProbeAttemptEvaluatorInput["answer_key"]
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 788
+Line       :       ? (renderable.misconception_markers as ProbeAttemptEvaluatorInput["misconception_markers"])
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 792
+Line       :       normalizeDeliveryContext(answeredSnapshot.delivery_context) ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 794
+Line       :         asRecord(answeredSnapshot.probe_contract_output).delivery_context,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 799
+Line       :   const probeContractProvider = providers.probe_contract;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 801
+Line       :   if (!probeContractProvider) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 802
+Line       :     throw new Error("No probe contract provider is configured.");
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 810
+Line       :   const evaluatedProbeAttempt = buildEvaluatedProbeAttemptSignal({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 811
+Line       :     probe: probeForEvaluation,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 818
+Line       :     input_kind: "evaluated_probe_attempt",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 819
+Line       :     evaluated_probe_attempt: evaluatedProbeAttempt,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 827
+Line       :   const probeContractInput: ProbeContractModelInput = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 828
+Line       :     schema_version: "probe_contract_model_input_v1",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 835
+Line       :       signal_kind: "evaluated_probe_attempt",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 836
+Line       :       evaluated_probe_attempt: evaluatedProbeAttempt,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 846
+Line       :   const probeContractRun = await runProbeContract({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 847
+Line       :     provider: probeContractProvider,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 848
+Line       :     model_input: probeContractInput,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 851
+Line       :   const rendererAdapter = adaptProbeContractForRenderer(probeContractRun.output);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 853
+Line       :   const probeContractSnapshot = buildProbeContractSnapshot({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 856
+Line       :     answeredProbeContractSnapshot: answeredSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 859
+Line       :     probeContractRun,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 864
+Line       :   const deliveredProbe = buildDeliveredProbeFromProbeContract({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 867
+Line       :     probeContract: probeContractRun.output,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 868
+Line       :     probeContractSnapshot,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 880
+Line       :     probeContractRun,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 881
+Line       :     deliveredProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 887
+Line       :     "I checked your response and generated the next focused probe.";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 892
+Line       :       : attemptEvaluationRun.output.next_action === "generate_followup_probe"
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 893
+Line       :         ? "Continue with the follow-up probe"
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 903
+Line       :       source: "local_service_3model_probe_submit_route",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 906
+Line       :       mode_selected: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 909
+Line       :       probe_available: "available",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 910
+Line       :       status_label: "Local 3-model follow-up probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 913
+Line       :     continue_probe_loop: true,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 914
+Line       :     next_probe: deliveredProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 915
+Line       :     nextProbe: deliveredProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 930
+Line       :       source: "local_service_3model_probe_submit_route",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 931
+Line       :       probeId: asString(record.probeId),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 940
+Line       :       evaluated_probe_attempt_signal: evaluatedProbeAttempt,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 944
+Line       :       topic_source: "answered_probe_contract_snapshot_no_embedding",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 953
+Line       :       probe_contract_output: probeContractRun.output,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 954
+Line       :       probe_contract_provider_meta: probeContractRun.provider_result.meta,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 958
+Line       :     continue_probe_loop: boolean;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 959
+Line       :     next_probe: DeliveredProbe;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts
+LineNumber : 960
+Line       :     nextProbe: DeliveredProbe;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 19
+Line       :     probe_id: getString(record.probeId, "mock-probe-spanish-se-single-choice"),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 28
+Line       :     engine_renderable_probe:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 29
+Line       :       record.engineRenderableProbe ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 30
+Line       :       asRecord(record.probeContractSnapshot).engine_renderable_probe ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 31
+Line       :       asRecord(record.answeredProbeContractSnapshot).engine_renderable_probe ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 37
+Line       :  * Temporary 3-model probe-submit route adapter.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 40
+Line       :  * Probe Attempt Evaluator output into the response shape the current frontend
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 46
+Line       :  *   -> Probe Attempt Evaluator output
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 48
+Line       :  *   -> next Probe Contract / EngineRenderableProbe
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 50
+Line       :  * The current evaluator/probe-contract outputs are mock fixtures under:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 54
+Line       : export async function buildMockThreeModelProbeSubmitResponse(body: unknown) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 59
+Line       :     message: submittedAttempt.raw_response || "mock probe submit",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 62
+Line       :   const deliveredProbe = base.result?.delivered_response?.delivered_probe ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 67
+Line       :     continue_probe_loop: true,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 68
+Line       :     next_probe: deliveredProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 69
+Line       :     nextProbe: deliveredProbe,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 72
+Line       :       "Mock Probe Attempt Evaluator is active. The submitted answer exposed the fixed-meaning se misconception,
+             so MyWay is returning another model-created probe.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 77
+Line       :       source: "mock_3model_probe_submit_route",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 89
+Line       :       evaluated_probe_attempt_signal: turn.evaluated_probe_attempt_signal,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 90
+Line       :       next_probe_source: "mock_probe_contract_model_output",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 96
+Line       :       text: "Mock evaluator result: the response points to a specific misconception, so I'm giving another
+             focused probe.",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 98
+Line       :       mode: "probe",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts
+LineNumber : 103
+Line       :       mock_probe_submit: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 1
+Line       : // lib/persistence/myway.ts
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 3
+Line       : import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 4
+Line       : import type { EmbeddingVector } from "@/types/contracts";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 21
+Line       : function asJsonEmbeddingVector(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 22
+Line       :   value: EmbeddingVector | null | undefined,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 150
+Line       : function mergeEmbeddingFieldsIntoTopicJson(args: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 154
+Line       :    * Canonical topic-label embedding.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 156
+Line       :   topicLabelEmbeddingCentroid?: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 157
+Line       :   topicLabelEmbeddingCount?: number | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 158
+Line       :   topicLabelEmbeddingModel?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 159
+Line       :   topicLabelEmbeddingUpdatedAt?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 162
+Line       :    * Canonical topic-message embedding.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 164
+Line       :   topicMessageEmbeddingCentroid?: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 165
+Line       :   topicMessageEmbeddingCount?: number | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 166
+Line       :   topicMessageEmbeddingModel?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 167
+Line       :   topicMessageEmbeddingUpdatedAt?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 173
+Line       :    * topic_embedding_* is no longer written. Remove stale JSON keys if present.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 175
+Line       :   delete base.topic_embedding_centroid;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 176
+Line       :   delete base.topic_embedding_count;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 177
+Line       :   delete base.topic_embedding_model;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 178
+Line       :   delete base.topic_embedding_updated_at;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 180
+Line       :   if (args.topicLabelEmbeddingCentroid !== undefined) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 181
+Line       :     base.topic_label_embedding_centroid = asJsonEmbeddingVector(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 182
+Line       :       args.topicLabelEmbeddingCentroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 186
+Line       :   if (args.topicLabelEmbeddingCount !== undefined) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 187
+Line       :     base.topic_label_embedding_count = cleanCount(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 188
+Line       :       args.topicLabelEmbeddingCount,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 192
+Line       :   if (args.topicLabelEmbeddingModel !== undefined) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 193
+Line       :     base.topic_label_embedding_model = args.topicLabelEmbeddingModel ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 196
+Line       :   if (args.topicLabelEmbeddingUpdatedAt !== undefined) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 197
+Line       :     base.topic_label_embedding_updated_at =
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 198
+Line       :       args.topicLabelEmbeddingUpdatedAt ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 201
+Line       :   if (args.topicMessageEmbeddingCentroid !== undefined) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 202
+Line       :     base.topic_message_embedding_centroid = asJsonEmbeddingVector(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 203
+Line       :       args.topicMessageEmbeddingCentroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 207
+Line       :   if (args.topicMessageEmbeddingCount !== undefined) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 208
+Line       :     base.topic_message_embedding_count = cleanCount(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 209
+Line       :       args.topicMessageEmbeddingCount,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 213
+Line       :   if (args.topicMessageEmbeddingModel !== undefined) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 214
+Line       :     base.topic_message_embedding_model =
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 215
+Line       :       args.topicMessageEmbeddingModel ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 218
+Line       :   if (args.topicMessageEmbeddingUpdatedAt !== undefined) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 219
+Line       :     base.topic_message_embedding_updated_at =
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 220
+Line       :       args.topicMessageEmbeddingUpdatedAt ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 264
+Line       : function getTopicStateColumnMetadata(topicJsonWithEmbedding: JsonValue) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 265
+Line       :   const topicJson = isPlainObject(topicJsonWithEmbedding)
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 266
+Line       :     ? topicJsonWithEmbedding
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 276
+Line       :       needsEmbeddingCentroid: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 280
+Line       :       embeddingSkipReason: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 296
+Line       :   const needsEmbeddingCentroid =
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 297
+Line       :     readNestedSemanticBoolean(topicJson, "needs_embedding_centroid") ?? false;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 307
+Line       :   const embeddingSkipReason = readNestedSemanticString(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 309
+Line       :     "embedding_skip_reason",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 318
+Line       :     needsEmbeddingCentroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 322
+Line       :     embeddingSkipReason,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 326
+Line       : export type PersistedRunInput = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 328
+Line       :   runType: "message" | "probe_submit";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 332
+Line       :   modeSelected?: "clarify" | "probe" | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 339
+Line       : export type PersistedAttemptInput = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 342
+Line       :   probeId?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 353
+Line       : export type PersistedTopicStateInput = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 366
+Line       :    * This writes topic_position_x/y/z and mirrors topic_position into topic_json.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 371
+Line       :    * Canonical embedding of the clean topic label.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 372
+Line       :    * Used for semantic topic layout and Qdrant topic lookup.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 374
+Line       :   topicLabelEmbeddingCentroid?: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 375
+Line       :   topicLabelEmbeddingCount?: number | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 376
+Line       :   topicLabelEmbeddingModel?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 377
+Line       :   topicLabelEmbeddingUpdatedAt?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 380
+Line       :    * Canonical topic-level embedding of learner messages assigned to this topic.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 382
+Line       :   topicMessageEmbeddingCentroid?: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 383
+Line       :   topicMessageEmbeddingCount?: number | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 384
+Line       :   topicMessageEmbeddingModel?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 385
+Line       :   topicMessageEmbeddingUpdatedAt?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 389
+Line       :    * This writes semantic_position_x/y/z and mirrors semantic_position into topic_json.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 396
+Line       : export async function insertRun(input: PersistedRunInput) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 397
+Line       :   const supabase = createServerSupabaseClient();
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 399
+Line       :   const { error } = await supabase.from("runs").insert({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 413
+Line       :     throw new Error(`Failed to insert run: ${error.message}`);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 417
+Line       : export async function insertAttempt(input: PersistedAttemptInput) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 418
+Line       :   const supabase = createServerSupabaseClient();
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 420
+Line       :   const { error } = await supabase.from("attempts").insert({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 423
+Line       :     probe_id: input.probeId ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 435
+Line       :     throw new Error(`Failed to insert attempt: ${error.message}`);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 439
+Line       : export async function upsertTopicState(input: PersistedTopicStateInput) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 440
+Line       :   const supabase = createServerSupabaseClient();
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 444
+Line       :    * topic_label_embedding_* and topic_message_embedding_* are canonical.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 445
+Line       :    * topic_embedding_* is no longer accepted or written.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 447
+Line       :   const resolvedLabelCentroid = input.topicLabelEmbeddingCentroid ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 449
+Line       :   const resolvedLabelCount = input.topicLabelEmbeddingCount ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 451
+Line       :   const resolvedLabelModel = input.topicLabelEmbeddingModel ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 454
+Line       :     input.topicLabelEmbeddingUpdatedAt ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 457
+Line       :   const resolvedMessageCentroid = input.topicMessageEmbeddingCentroid ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 459
+Line       :   const resolvedMessageCount = input.topicMessageEmbeddingCount ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 461
+Line       :   const resolvedMessageModel = input.topicMessageEmbeddingModel ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 464
+Line       :     input.topicMessageEmbeddingUpdatedAt ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 476
+Line       :   const topicJsonWithEmbedding = mergeEmbeddingFieldsIntoTopicJson({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 479
+Line       :     topicLabelEmbeddingCentroid: resolvedLabelCentroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 480
+Line       :     topicLabelEmbeddingCount: resolvedLabelCount,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 481
+Line       :     topicLabelEmbeddingModel: resolvedLabelModel,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 482
+Line       :     topicLabelEmbeddingUpdatedAt: resolvedLabelUpdatedAt,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 484
+Line       :     topicMessageEmbeddingCentroid: resolvedMessageCentroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 485
+Line       :     topicMessageEmbeddingCount: resolvedMessageCount,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 486
+Line       :     topicMessageEmbeddingModel: resolvedMessageModel,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 487
+Line       :     topicMessageEmbeddingUpdatedAt: resolvedMessageUpdatedAt,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 491
+Line       :     topicJson: topicJsonWithEmbedding,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 502
+Line       :   const columnMetadata = getTopicStateColumnMetadata(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 506
+Line       :   const { error } = await supabase.from("topic_state").upsert(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 517
+Line       :       topic_json: topicJsonWithSemanticPosition,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 530
+Line       :       needs_embedding_centroid: columnMetadata.needsEmbeddingCentroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 535
+Line       :       embedding_skip_reason: columnMetadata.embeddingSkipReason,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 537
+Line       :       topic_label_embedding_centroid: asJsonEmbeddingVector(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 540
+Line       :       topic_label_embedding_count: cleanCount(resolvedLabelCount),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 541
+Line       :       topic_label_embedding_model: resolvedLabelModel,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 542
+Line       :       topic_label_embedding_updated_at: resolvedLabelUpdatedAt,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 544
+Line       :       topic_message_embedding_centroid: asJsonEmbeddingVector(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 547
+Line       :       topic_message_embedding_count: cleanCount(resolvedMessageCount),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 548
+Line       :       topic_message_embedding_model: resolvedMessageModel,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 549
+Line       :       topic_message_embedding_updated_at: resolvedMessageUpdatedAt,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts
+LineNumber : 557
+Line       :     throw new Error(`Failed to upsert topic_state: ${error.message}`);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 1
+Line       : // lib/persistence/read.ts
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 3
+Line       : import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 4
+Line       : import type { EmbeddingVector } from "@/types/contracts";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 60
+Line       : function asEmbeddingVector(value: unknown): EmbeddingVector | null {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 187
+Line       : export type TopicStateRow = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 197
+Line       :   topic_json: Record<string, unknown> | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 200
+Line       :    * Global learning-space relationship/viewpoint layer persisted in topic_json
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 227
+Line       :   needs_embedding_centroid: boolean;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 231
+Line       :   embedding_skip_reason: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 234
+Line       :    * Canonical embedding of the clean topic label.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 235
+Line       :    * Used for semantic 3D topic layout and Qdrant topic lookup.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 237
+Line       :   topic_label_embedding_centroid: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 238
+Line       :   topic_label_embedding_count: number;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 239
+Line       :   topic_label_embedding_model: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 240
+Line       :   topic_label_embedding_updated_at: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 243
+Line       :    * Canonical topic-level embedding of learner messages assigned to this topic.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 246
+Line       :   topic_message_embedding_centroid: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 247
+Line       :   topic_message_embedding_count: number;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 248
+Line       :   topic_message_embedding_model: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 249
+Line       :   topic_message_embedding_updated_at: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 252
+Line       : type RawTopicStateRow = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 262
+Line       :   topic_json?: Record<string, unknown> | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 275
+Line       :   needs_embedding_centroid?: unknown;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 279
+Line       :   embedding_skip_reason?: unknown;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 281
+Line       :   topic_label_embedding_centroid?: unknown;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 282
+Line       :   topic_label_embedding_count?: unknown;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 283
+Line       :   topic_label_embedding_model?: unknown;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 284
+Line       :   topic_label_embedding_updated_at?: unknown;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 286
+Line       :   topic_message_embedding_centroid?: unknown;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 287
+Line       :   topic_message_embedding_count?: unknown;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 288
+Line       :   topic_message_embedding_model?: unknown;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 289
+Line       :   topic_message_embedding_updated_at?: unknown;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 292
+Line       : function normalizeTopicStateRow(row: RawTopicStateRow): TopicStateRow {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 293
+Line       :   const topicJson = row.topic_json ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 347
+Line       :     row.needs_embedding_centroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 352
+Line       :     "needs_embedding_centroid",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 375
+Line       :   const skipReasonFromColumn = asString(row.embedding_skip_reason, null);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 378
+Line       :     "embedding_skip_reason",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 381
+Line       :   const labelCentroidFromColumn = asEmbeddingVector(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 382
+Line       :     row.topic_label_embedding_centroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 384
+Line       :   const labelCentroidFromJson = asEmbeddingVector(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 385
+Line       :     readFromTopicJson(topicJson, "topic_label_embedding_centroid"),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 388
+Line       :   const labelCountFromColumn = asNumber(row.topic_label_embedding_count, null);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 390
+Line       :     readFromTopicJson(topicJson, "topic_label_embedding_count"),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 394
+Line       :   const labelModelFromColumn = asString(row.topic_label_embedding_model, null);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 396
+Line       :     readFromTopicJson(topicJson, "topic_label_embedding_model"),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 401
+Line       :     row.topic_label_embedding_updated_at,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 405
+Line       :     readFromTopicJson(topicJson, "topic_label_embedding_updated_at"),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 409
+Line       :   const messageCentroidFromColumn = asEmbeddingVector(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 410
+Line       :     row.topic_message_embedding_centroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 412
+Line       :   const messageCentroidFromJson = asEmbeddingVector(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 413
+Line       :     readFromTopicJson(topicJson, "topic_message_embedding_centroid"),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 417
+Line       :     row.topic_message_embedding_count,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 421
+Line       :     readFromTopicJson(topicJson, "topic_message_embedding_count"),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 426
+Line       :     row.topic_message_embedding_model,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 430
+Line       :     readFromTopicJson(topicJson, "topic_message_embedding_model"),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 435
+Line       :     row.topic_message_embedding_updated_at,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 439
+Line       :     readFromTopicJson(topicJson, "topic_message_embedding_updated_at"),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 445
+Line       :    * - topic_label_embedding_* is the only label/layout/Qdrant vector family.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 446
+Line       :    * - topic_message_embedding_* is the only learner-message vector family.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 447
+Line       :    * - topic_embedding_* is no longer read.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 470
+Line       :     topic_json: topicJson,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 497
+Line       :     needs_embedding_centroid:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 503
+Line       :     embedding_skip_reason: skipReasonFromColumn ?? skipReasonFromJson,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 505
+Line       :     topic_label_embedding_centroid: labelCentroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 506
+Line       :     topic_label_embedding_count: Math.max(0, labelCount),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 507
+Line       :     topic_label_embedding_model: labelModel,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 508
+Line       :     topic_label_embedding_updated_at: labelUpdatedAt,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 510
+Line       :     topic_message_embedding_centroid: messageCentroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 511
+Line       :     topic_message_embedding_count: Math.max(0, messageCount),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 512
+Line       :     topic_message_embedding_model: messageModel,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 513
+Line       :     topic_message_embedding_updated_at: messageUpdatedAt,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 528
+Line       :   topic_json,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 538
+Line       :   needs_embedding_centroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 542
+Line       :   embedding_skip_reason,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 543
+Line       :   topic_label_embedding_centroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 544
+Line       :   topic_label_embedding_count,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 545
+Line       :   topic_label_embedding_model,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 546
+Line       :   topic_label_embedding_updated_at,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 547
+Line       :   topic_message_embedding_centroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 548
+Line       :   topic_message_embedding_count,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 549
+Line       :   topic_message_embedding_model,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 550
+Line       :   topic_message_embedding_updated_at
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 553
+Line       : export async function getLatestTopicState(): Promise<TopicStateRow[]> {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 554
+Line       :   const supabase = createServerSupabaseClient();
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 556
+Line       :   const { data, error } = await supabase
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 565
+Line       :   return ((data ?? []) as RawTopicStateRow[]).map(normalizeTopicStateRow);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 568
+Line       : export async function getRouteTopicState(): Promise<TopicStateRow[]> {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 569
+Line       :   const supabase = createServerSupabaseClient();
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 571
+Line       :   const { data, error } = await supabase
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts
+LineNumber : 580
+Line       :   return ((data ?? []) as RawTopicStateRow[]).map(normalizeTopicStateRow);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\supabase\client.ts
+LineNumber : 1
+Line       : import { createClient } from "@supabase/supabase-js";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\supabase\client.ts
+LineNumber : 3
+Line       : const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\supabase\client.ts
+LineNumber : 4
+Line       : const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\supabase\client.ts
+LineNumber : 6
+Line       : export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\supabase\server.ts
+LineNumber : 1
+Line       : import { createClient } from "@supabase/supabase-js";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\supabase\server.ts
+LineNumber : 11
+Line       : export function createServerSupabaseClient() {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\supabase\server.ts
+LineNumber : 13
+Line       :     process.env.NEXT_PUBLIC_SUPABASE_URL ?? getEnv("SUPABASE_URL");
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\supabase\server.ts
+LineNumber : 15
+Line       :   const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\supabase\server.ts
+LineNumber : 19
+Line       :       persistSession: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\policy.ts
+LineNumber : 2
+Line       : import type { RouteTopic } from "@/lib/topic-routing/route-topics";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\policy.ts
+LineNumber : 79
+Line       : function findTopicByLabel(existingTopics: RouteTopic[], label: string | null) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\policy.ts
+LineNumber : 85
+Line       :     existingTopics.find((topic) => {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\policy.ts
+LineNumber : 140
+Line       :   existingTopics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\policy.ts
+LineNumber : 142
+Line       :   const { modelResult, activeTopic, existingTopics } = args;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\policy.ts
+LineNumber : 174
+Line       :   const matchedTopic = findTopicByLabel(existingTopics, matchedTopicLabel);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\policy.ts
+LineNumber : 247
+Line       :     const existingMatch = findTopicByLabel(existingTopics, extractedLabel);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 2
+Line       :   EmbeddingVector,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 10
+Line       : } from "@/lib/topic-routing/route-topics";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 58
+Line       :   | "pending_embedding"
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 59
+Line       :   | "embedding_ready"
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 67
+Line       :   needs_embedding_centroid: boolean;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 69
+Line       :     | "topic_label_embedding"
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 70
+Line       :     | "topic_message_embedding"
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 71
+Line       :     | "topic_label_and_message_embedding"
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 74
+Line       :     | "message_embedding"
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 76
+Line       :   embedding_skip_reason:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 91
+Line       :   previous_embedding_count: number;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 92
+Line       :   new_embedding_count: number;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 95
+Line       :   embedding_model: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 97
+Line       :   new_centroid: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 118
+Line       :   routeTopics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 214
+Line       : function findTopicByLabel(existingTopics: RouteTopic[], label: string | null) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 220
+Line       :     existingTopics.find((topic) => {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 227
+Line       : function asEmbeddingVector(value: unknown): EmbeddingVector | null {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 240
+Line       : function topicHasTopicLabelEmbedding(topic: RouteTopic | null): boolean {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 243
+Line       :   return Boolean(asEmbeddingVector(topic.topic_label_embedding_centroid ?? null));
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 246
+Line       : function topicHasTopicMessageEmbedding(topic: RouteTopic | null): boolean {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 250
+Line       :     asEmbeddingVector(topic.topic_message_embedding_centroid ?? null),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 254
+Line       : function topicHasCanonicalEmbeddings(topic: RouteTopic | null): boolean {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 256
+Line       :     topicHasTopicLabelEmbedding(topic) && topicHasTopicMessageEmbedding(topic)
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 272
+Line       : function buildCreatedTopicMessageEmbeddingPlan(args: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 274
+Line       :   messageEmbedding: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 275
+Line       :   embeddingModel: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 277
+Line       :   const { createdTopic, messageEmbedding, embeddingModel } = args;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 278
+Line       :   const centroid = asEmbeddingVector(messageEmbedding);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 284
+Line       :     previous_embedding_count: 0,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 285
+Line       :     new_embedding_count: 1,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 288
+Line       :     embedding_model: embeddingModel,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 428
+Line       :   messageEmbeddingPlan: ModelFirstRouteCentroidUpdatePlan | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 429
+Line       :   messageEmbedding: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 430
+Line       :   embeddingSkippedForFastRoute: boolean;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 438
+Line       :     messageEmbeddingPlan,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 439
+Line       :     messageEmbedding,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 440
+Line       :     embeddingSkippedForFastRoute,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 449
+Line       :       needs_embedding_centroid: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 451
+Line       :       embedding_skip_reason: "model_failure_or_timeout",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 468
+Line       :       needs_embedding_centroid: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 470
+Line       :       embedding_skip_reason: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 477
+Line       :   const hasExistingCanonicalEmbeddings =
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 478
+Line       :     topicHasCanonicalEmbeddings(topicForSemanticCheck);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 479
+Line       :   const hasTopicLabelEmbedding =
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 480
+Line       :     topicHasTopicLabelEmbedding(topicForSemanticCheck);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 481
+Line       :   const hasTopicMessageEmbedding =
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 482
+Line       :     topicHasTopicMessageEmbedding(topicForSemanticCheck);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 484
+Line       :   const hasFreshMessageEmbedding =
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 485
+Line       :     Boolean(messageEmbeddingPlan?.new_centroid) &&
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 486
+Line       :     Boolean(asEmbeddingVector(messageEmbedding)?.length);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 488
+Line       :   if (hasExistingCanonicalEmbeddings) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 490
+Line       :       status: "embedding_ready",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 491
+Line       :       needs_embedding_centroid: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 492
+Line       :       centroid_source: "topic_label_and_message_embedding",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 493
+Line       :       embedding_skip_reason: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 505
+Line       :   if (hasFreshMessageEmbedding) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 507
+Line       :       status: hasTopicLabelEmbedding ? "embedding_ready" : "pending_embedding",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 508
+Line       :       needs_embedding_centroid: !hasTopicLabelEmbedding,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 509
+Line       :       centroid_source: hasTopicLabelEmbedding
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 510
+Line       :         ? "topic_label_and_message_embedding"
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 511
+Line       :         : "topic_message_embedding",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 512
+Line       :       embedding_skip_reason: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 513
+Line       :       layout_status: hasTopicLabelEmbedding
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 522
+Line       :     status: embeddingSkippedForFastRoute
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 524
+Line       :       : "pending_embedding",
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 525
+Line       :     needs_embedding_centroid: true,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 527
+Line       :       hasTopicLabelEmbedding || hasTopicMessageEmbedding
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 528
+Line       :         ? hasTopicLabelEmbedding
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 529
+Line       :           ? "topic_label_embedding"
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 530
+Line       :           : "topic_message_embedding"
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 532
+Line       :     embedding_skip_reason: embeddingSkippedForFastRoute
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 575
+Line       :   routeTopics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 592
+Line       :     routeTopics: args.routeTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 618
+Line       :   existingTopics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 622
+Line       :     existingTopics: args.existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 704
+Line       :   existingTopics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 708
+Line       :   messageEmbedding?: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 709
+Line       :   embeddingModel?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 711
+Line       :   embeddingSkippedForFastRoute?: boolean;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 714
+Line       :     existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 718
+Line       :     messageEmbedding,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 719
+Line       :     embeddingModel,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 721
+Line       :     embeddingSkippedForFastRoute,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 743
+Line       :       messageEmbeddingPlan: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 744
+Line       :       messageEmbedding: messageEmbedding ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 745
+Line       :       embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 754
+Line       :       routeTopics: existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 771
+Line       :         existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 787
+Line       :       messageEmbeddingPlan: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 788
+Line       :       messageEmbedding: messageEmbedding ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 789
+Line       :       embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 798
+Line       :       routeTopics: existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 818
+Line       :     const existingMatch = findTopicByLabel(existingTopics, resolvedLabel);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 832
+Line       :         messageEmbeddingPlan: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 833
+Line       :         messageEmbedding: messageEmbedding ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 834
+Line       :         embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 843
+Line       :         routeTopics: existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 860
+Line       :       existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 864
+Line       :     const messageEmbeddingPlan = buildCreatedTopicMessageEmbeddingPlan({
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 866
+Line       :       messageEmbedding: messageEmbedding ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 867
+Line       :       embeddingModel: embeddingModel ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 878
+Line       :       messageEmbeddingPlan,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 879
+Line       :       messageEmbedding: messageEmbedding ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 880
+Line       :       embeddingSkippedForFastRoute: Boolean(embeddingSkippedForFastRoute),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 889
+Line       :       routeTopics: [...existingTopics, createdTopic],
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 899
+Line       :       centroidUpdatePlan: messageEmbeddingPlan,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 907
+Line       :   existingTopics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 913
+Line       :   const { existingTopics, activeTopic, modelPolicyDecision, semanticVectorInfo } =
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 930
+Line       :       messageEmbeddingPlan: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 931
+Line       :       messageEmbedding: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 932
+Line       :       embeddingSkippedForFastRoute: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 940
+Line       :       routeTopics: existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 955
+Line       :     messageEmbeddingPlan: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 956
+Line       :     messageEmbedding: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 957
+Line       :     embeddingSkippedForFastRoute: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 962
+Line       :     existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-labeler\resolution.ts
+LineNumber : 969
+Line       :     routeTopics: existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 5
+Line       : } from "@/lib/topic-routing/route-topics";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 21
+Line       :   topicsForScene: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 274
+Line       :  * This intentionally does not call embeddings or any heavy semantic service.
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 316
+Line       : function findTopicById(topics: RouteTopic[], id: string | null) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 318
+Line       :   return topics.find((topic) => topic.id === id) ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 321
+Line       : function findTopicByLabel(topics: RouteTopic[], label: string | null) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 327
+Line       :     topics.find(
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 417
+Line       : function bestScoredTopic(topics: RouteTopic[], message: string) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 425
+Line       :   for (const topic of topics) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 439
+Line       : function messageHasConcreteTopicSignal(message: string) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 448
+Line       :   existingTopics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 460
+Line       :     existingTopics: args.existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 466
+Line       :     topicsForScene: [topic],
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 607
+Line       :   existingTopics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 618
+Line       :     currentTopicLabels: args.existingTopics.map((topic) => topic.topic_label),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 641
+Line       :       topicsForScene: [requestedActiveTopic],
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 652
+Line       :   const existingByMatchedLabel = findTopicByLabel(args.existingTopics, matchedLabel);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 653
+Line       :   const existingByExtractedLabel = findTopicByLabel(args.existingTopics, extractedLabel);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 659
+Line       :       topicsForScene: [existing],
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 674
+Line       :       existingTopics: args.existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 694
+Line       :   existingTopics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 698
+Line       :   const existingTopics = args.existingTopics;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 703
+Line       :     const existing = existingTopics[0] ?? null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 708
+Line       :         topicsForScene: [existing],
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 720
+Line       :       existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 732
+Line       :     findTopicById(existingTopics, requestCandidate.topic_id) ??
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 733
+Line       :     findTopicByLabel(existingTopics, requestCandidate.topic_label);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 737
+Line       :     existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 748
+Line       :   const exactOrStrong = bestScoredTopic(existingTopics, message);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 753
+Line       :       topicsForScene: [exactOrStrong.topic],
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 767
+Line       :       requestScore >= 0.45 || !messageHasConcreteTopicSignal(message);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 772
+Line       :         topicsForScene: [requestTopic],
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 793
+Line       :       topicsForScene: [lexical.topic],
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 811
+Line       :   const existingByInferredLabel = findTopicByLabel(existingTopics, inferredLabel);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 816
+Line       :       topicsForScene: [existingByInferredLabel],
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\foreground-topic-resolver.ts
+LineNumber : 834
+Line       :     existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 1
+Line       : // lib/topic-routing/route-topics.ts
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 3
+Line       : import { getRouteTopicState } from "@/lib/persistence/read";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 10
+Line       : import type { DiagnosisType, EmbeddingVector } from "@/types/contracts";
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 46
+Line       :   hasAvailableProbe: boolean;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 48
+Line       :   topic_label_embedding_centroid?: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 49
+Line       :   topic_label_embedding_count?: number | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 50
+Line       :   topic_label_embedding_model?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 51
+Line       :   topic_label_embedding_updated_at?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 53
+Line       :   topic_message_embedding_centroid?: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 54
+Line       :   topic_message_embedding_count?: number | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 55
+Line       :   topic_message_embedding_model?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 56
+Line       :   topic_message_embedding_updated_at?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 59
+Line       :   needs_embedding_centroid?: boolean | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 63
+Line       :   embedding_skip_reason?: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 65
+Line       :   topic_json?: Record<string, unknown> | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 84
+Line       : const DEFAULT_ROUTE_TOPICS_CACHE_MS = 1_500;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 85
+Line       : const MAX_ROUTE_TOPICS_CACHE_MS = 5_000;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 87
+Line       : let routeTopicsCache:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 90
+Line       :       topics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 94
+Line       : function getRouteTopicsCacheMs() {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 95
+Line       :   const raw = process.env.MYWAY_ROUTE_TOPICS_CACHE_MS;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 96
+Line       :   if (!raw) return DEFAULT_ROUTE_TOPICS_CACHE_MS;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 99
+Line       :   if (!Number.isFinite(parsed) || parsed < 0) return DEFAULT_ROUTE_TOPICS_CACHE_MS;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 101
+Line       :   return Math.min(parsed, MAX_ROUTE_TOPICS_CACHE_MS);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 111
+Line       :     topic_label_embedding_centroid: topic.topic_label_embedding_centroid
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 112
+Line       :       ? [...topic.topic_label_embedding_centroid]
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 113
+Line       :       : topic.topic_label_embedding_centroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 114
+Line       :     topic_message_embedding_centroid: topic.topic_message_embedding_centroid
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 115
+Line       :       ? [...topic.topic_message_embedding_centroid]
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 116
+Line       :       : topic.topic_message_embedding_centroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 117
+Line       :     topic_json: topic.topic_json ? { ...topic.topic_json } : topic.topic_json,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 121
+Line       : function cloneRouteTopics(topics: RouteTopic[]) {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 122
+Line       :   return topics.map(cloneRouteTopic);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 125
+Line       : type EmbeddingFields = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 126
+Line       :   topic_label_embedding_centroid: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 127
+Line       :   topic_label_embedding_count: number | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 128
+Line       :   topic_label_embedding_model: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 129
+Line       :   topic_label_embedding_updated_at: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 131
+Line       :   topic_message_embedding_centroid: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 132
+Line       :   topic_message_embedding_count: number | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 133
+Line       :   topic_message_embedding_model: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 134
+Line       :   topic_message_embedding_updated_at: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 195
+Line       :   existingTopics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 197
+Line       :   const position = computeNextTopicPosition(args.existingTopics.length);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 215
+Line       :     hasAvailableProbe: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 216
+Line       :     topic_json: null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 222
+Line       :   existingTopics: RouteTopic[];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 231
+Line       :     existingTopics: args.existingTopics,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 235
+Line       : function resolveEmbeddingFields(row: {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 236
+Line       :   topic_label_embedding_centroid: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 237
+Line       :   topic_label_embedding_count: number | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 238
+Line       :   topic_label_embedding_model: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 239
+Line       :   topic_label_embedding_updated_at: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 241
+Line       :   topic_message_embedding_centroid: EmbeddingVector | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 242
+Line       :   topic_message_embedding_count: number | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 243
+Line       :   topic_message_embedding_model: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 244
+Line       :   topic_message_embedding_updated_at: string | null;
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 245
+Line       : }): EmbeddingFields {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 247
+Line       :     topic_label_embedding_centroid: row.topic_label_embedding_centroid ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 248
+Line       :     topic_label_embedding_count: row.topic_label_embedding_count ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 249
+Line       :     topic_label_embedding_model: row.topic_label_embedding_model ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 250
+Line       :     topic_label_embedding_updated_at:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 251
+Line       :       row.topic_label_embedding_updated_at ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 253
+Line       :     topic_message_embedding_centroid:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 254
+Line       :       row.topic_message_embedding_centroid ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 255
+Line       :     topic_message_embedding_count: row.topic_message_embedding_count ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 256
+Line       :     topic_message_embedding_model: row.topic_message_embedding_model ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 257
+Line       :     topic_message_embedding_updated_at:
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 258
+Line       :       row.topic_message_embedding_updated_at ?? null,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 266
+Line       : export async function loadRouteTopics(): Promise<RouteTopic[]> {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 267
+Line       :   const cacheMs = getRouteTopicsCacheMs();
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 272
+Line       :     routeTopicsCache &&
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 273
+Line       :     now - routeTopicsCache.createdAt <= cacheMs
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 275
+Line       :     return cloneRouteTopics(routeTopicsCache.topics);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 278
+Line       :   const rows = await getRouteTopicState();
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 281
+Line       :     routeTopicsCache = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 283
+Line       :       topics: [],
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 289
+Line       :   const loadedTopics: RouteTopic[] = [];
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 294
+Line       :       index: loadedTopics.length,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 299
+Line       :       topicJson: row.topic_json,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 302
+Line       :     const embeddingFields = resolveEmbeddingFields(row);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 323
+Line       :       hasAvailableProbe: false,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 325
+Line       :       ...embeddingFields,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 328
+Line       :       needs_embedding_centroid: row.needs_embedding_centroid,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 332
+Line       :       embedding_skip_reason: row.embedding_skip_reason,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 334
+Line       :       topic_json: row.topic_json,
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 337
+Line       :     loadedTopics.push(routeTopic);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 340
+Line       :   routeTopicsCache = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 342
+Line       :     topics: cloneRouteTopics(loadedTopics),
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\route-topics.ts
+LineNumber : 345
+Line       :   return cloneRouteTopics(loadedTopics);
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-routing-trace.ts
+LineNumber : 44
+Line       : export type TopicScoreBreakdown = {
+
+Path       : C:\Users\willc\projects\MyWay\v1\lib\topic-routing\topic-routing-trace.ts
+LineNumber : 130
+Line       :     breakdown: TopicScoreBreakdown;
+
+
+Show active persistence folder
+
+FullName                                                  Length
+--------                                                  ------
+C:\Users\willc\projects\MyWay\v1\lib\persistence\myway.ts  17705
+C:\Users\willc\projects\MyWay\v1\lib\persistence\read.ts   17817
+
+
+Show active api-routes folder
+
+FullName                                                                                      Length
+--------                                                                                      ------
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\local-service-3model-response.ts       20307
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\message\mock-3model-response.ts                10551
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\local-service-3model-response.ts  32980
+C:\Users\willc\projects\MyWay\v1\lib\api-routes\probe-submit\mock-3model-response.ts            4018
+
+**********************
+PowerShell transcript end
+End time: 20260619173521
+**********************

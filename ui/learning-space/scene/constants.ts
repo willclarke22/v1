@@ -1,3 +1,4 @@
+
 import * as THREE from "three";
 
 export const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 18, 72);
@@ -262,15 +263,20 @@ export const RELATIONSHIP_DEFAULT_ENDPOINT_BACKGROUND_COLOR = "#d4d4d8";
 export const TOPIC_SPHERE_RENDER_ORDER = 10;
 
 /**
- * Probe availability icon.
+ * Probe availability face overlay.
  *
- * The probe marker is a small icon-only intervention invitation. It should stay
- * visually separate from the stable topic sphere body.
+ * The probe invitation should read as if the visible face of the topic sphere
+ * has become the probe icon. It is not anchored to one fixed geographic point on
+ * the sphere. ProbeMarker projects it onto the camera-facing hemisphere each
+ * frame, so it stays head-on with the learner's current viewpoint.
+ *
+ * Scale values are relative to the topic radius. A value around 1.3 means the
+ * overlay covers most of the visible face without hiding the sphere silhouette.
  */
 export const PROBE_ICON_RENDER_ORDER = 24;
-export const PROBE_ICON_SURFACE_OFFSET = 1.075;
-export const PROBE_ICON_BASE_SCALE = 0.34;
-export const PROBE_ICON_FOCUSED_SCALE = 0.42;
+export const PROBE_ICON_SURFACE_OFFSET = 1.018;
+export const PROBE_ICON_BASE_SCALE = 1.18;
+export const PROBE_ICON_FOCUSED_SCALE = 1.36;
 
 
 export const RELATIONSHIP_ENDPOINT_STENCIL_RENDER_ORDER = 18;

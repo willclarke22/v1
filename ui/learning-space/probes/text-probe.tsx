@@ -11,13 +11,22 @@ export function TextProbe(props: GenericProbeComponentProps) {
 
   return (
     <ProbeShell {...props}>
-      <label style={{ display: "grid", gap: "0.5rem" }}>
-        <span>Your response</span>
+      <label style={{ display: "grid", gap: "0.65rem" }}>
+        <span
+          style={{
+            color: "rgba(255,255,255,0.86)",
+            fontSize: "0.9rem",
+            fontWeight: 700,
+          }}
+        >
+          {isAudioResponse ? "Transcript or spoken response" : "Your response"}
+        </span>
+
         <textarea
           value={value}
           disabled={props.disabled}
-          rows={6}
-          placeholder="Explain it in your own words."
+          rows={7}
+          placeholder="Explain it in your own words. A partial answer is okay."
           onChange={(event) => {
             const nextValue = event.target.value;
             props.onDraftChange({
@@ -34,15 +43,28 @@ export function TextProbe(props: GenericProbeComponentProps) {
           style={{
             width: "100%",
             resize: "vertical",
-            borderRadius: "12px",
-            padding: "0.75rem",
-            border: "1px solid rgba(255,255,255,0.18)",
-            background: "rgba(255,255,255,0.06)",
+            borderRadius: "18px",
+            padding: "1rem",
+            border: "1px solid rgba(255,255,255,0.14)",
+            background:
+              "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.045))",
             color: "inherit",
+            outline: "none",
+            lineHeight: 1.6,
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
           }}
         />
+
+        <span
+          style={{
+            color: "rgba(212,212,216,0.72)",
+            fontSize: "0.78rem",
+            lineHeight: 1.5,
+          }}
+        >
+          MyWay is looking for the shape of your thinking, not perfect wording.
+        </span>
       </label>
     </ProbeShell>
   );
 }
-
