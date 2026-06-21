@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import type {
@@ -9,6 +9,7 @@ import type {
 import type { ProbeContractSnapshot } from "@/types/contracts";
 import {
   ProbeRenderer,
+  createEmptyProbeAnswerDraft,
   type ProbeAnswerDraft,
   type ProbeRendererSubmitPayload,
 } from "./index";
@@ -359,11 +360,11 @@ function stringifyAttempt(attempt: ProbeAnswerDraft) {
 function getEncouragement(response: string, isSubmitting: boolean) {
   if (isSubmitting) return "Submitting your response...";
   const trimmed = response.trim();
-  if (!trimmed) return "Start when youâ€™re ready.";
+  if (!trimmed) return "Start when you're ready.";
   const words = trimmed.split(/\s+/).length;
   if (words < 8) return "You can submit now, or add a little more reasoning.";
   if (words < 20) return "Nice start. A bit more structure could make your thinking clearer.";
-  return "Good â€” this has enough substance to judge.";
+  return "Good — this has enough substance to judge.";
 }
 
 export default function ProbeSurface({
@@ -374,6 +375,7 @@ export default function ProbeSurface({
   onSubmit,
 }: ProbeSurfaceProps) {
   const [draftResponse, setDraftResponse] = useState("");
+  const [latestDraft, setLatestDraft] = useState<ProbeAnswerDraft | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -386,6 +388,7 @@ export default function ProbeSurface({
 
   useEffect(() => {
     setDraftResponse("");
+    setLatestDraft(null);
   }, [probe?.id]);
 
   const renderableProbe = useMemo(
@@ -393,15 +396,28 @@ export default function ProbeSurface({
     [probe],
   );
 
-  const trimmedResponse = draftResponse.trim();
+  const activeDraft = useMemo(() => {
+    if (latestDraft) return latestDraft;
+    if (!renderableProbe) return null;
+    return createEmptyProbeAnswerDraft(renderableProbe.expected_attempt_type);
+  }, [latestDraft, renderableProbe]);
+
+  const trimmedResponse = activeDraft ? stringifyAttempt(activeDraft).trim() : "";
   const wordCount = trimmedResponse ? trimmedResponse.split(/\s+/).length : 0;
   const canSubmit = trimmedResponse.length > 0 && !isSubmitting;
 
   const probeHint = useMemo(() => getInstructionHint(probe), [probe]);
   const encouragement = useMemo(
-    () => getEncouragement(draftResponse, isSubmitting),
-    [draftResponse, isSubmitting],
+    () => getEncouragement(trimmedResponse, isSubmitting),
+    [trimmedResponse, isSubmitting],
   );
+
+  const responseSummary = trimmedResponse
+    ? activeDraft?.attempt_type === "text" ||
+      activeDraft?.attempt_type === "audio_response"
+      ? `${wordCount} word${wordCount === 1 ? "" : "s"} ready`
+      : "Structured response ready"
+    : "Complete the probe to submit";
 
   function handleSubmitFromRenderer(payload: ProbeRendererSubmitPayload) {
     if (!probe || isSubmitting) return;
@@ -448,107 +464,103 @@ export default function ProbeSurface({
   }
 
   return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-hidden text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.9)_0%,rgba(101,45,175,0.98)_42%,rgba(16,3,30,1)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_24%),radial-gradient(circle_at_bottom,rgba(37,0,71,0.25),transparent_36%)]" />
+    <div className="relative h-full w-full overflow-hidden text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.92)_0%,rgba(92,38,160,0.98)_42%,rgba(16,3,30,1)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.1),transparent_24%),radial-gradient(circle_at_bottom_right,rgba(37,0,71,0.35),transparent_38%)]" />
 
       <div
-        className={`relative z-10 flex h-full w-full items-center justify-center px-6 py-10 transition-all duration-500 ${
+        className={`relative z-10 flex h-full w-full justify-center p-3 transition-all duration-500 sm:p-5 ${
           isVisible ? "scale-100 opacity-100" : "scale-[0.985] opacity-0"
         }`}
       >
-        <div className="w-full max-w-4xl rounded-[2rem] border border-white/12 bg-black/20 p-6 shadow-[0_0_50px_rgba(0,0,0,0.28)] backdrop-blur-xl md:p-8">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-white/12 bg-white/[0.07] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.22em] text-zinc-200/80">
-                  Probe
-                </span>
-                <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-300/75">
-                  {getProbeStatusLabel(probe.status)}
-                </span>
-                {probe.intent ? (
-                  <span className="rounded-full border border-purple-200/20 bg-purple-200/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-purple-100/85">
-                    {formatBadgeLabel(probe.intent)}
+        <section className="flex h-full w-full max-w-[1500px] flex-col overflow-hidden rounded-[2rem] border border-white/12 bg-black/[0.22] shadow-[0_0_60px_rgba(0,0,0,0.34)] backdrop-blur-xl">
+          <header className="shrink-0 border-b border-white/10 px-5 py-4 md:px-7">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-white/12 bg-white/[0.07] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-200/80">
+                    MyWay probe
                   </span>
-                ) : null}
-                {probe.probeType ? (
-                  <span className="rounded-full border border-cyan-200/20 bg-cyan-200/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-cyan-100/85">
-                    {formatBadgeLabel(probe.probeType)}
+                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-300/75">
+                    {getProbeStatusLabel(probe.status)}
                   </span>
-                ) : null}
-              </div>
-
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight">
-                {probe.title}
-              </h2>
-
-              {probe.topicLabel ? (
-                <p className="mt-2 text-sm text-zinc-300/80">
-                  Topic: {probe.topicLabel}
-                </p>
-              ) : null}
-
-              <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-100/90">
-                {probe.instruction}
-              </p>
-
-              <p className="mt-3 text-xs leading-6 text-zinc-300/75">
-                {probeHint}
-              </p>
-            </div>
-
-            <button
-              onClick={onExit}
-              type="button"
-              disabled={isSubmitting}
-              className="shrink-0 rounded-2xl border border-white/12 bg-white/[0.08] px-4 py-2 text-sm text-zinc-100 transition hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Exit
-            </button>
-          </div>
-
-          <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
-            <div>
-              {probeFeedback ? (
-                <div className="rounded-3xl border border-white/12 bg-white/[0.06] px-5 py-4">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-300/70">
-                    MyWay feedback
-                  </p>
-                  <p className="mt-3 text-sm leading-7 text-zinc-100/95">
-                    {probeFeedback.reply}
-                  </p>
-                  {probeFeedback.suggestedAction ? (
-                    <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                      <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-300/65">
-                        Next move
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-zinc-100/90">
-                        {probeFeedback.suggestedAction}
-                      </p>
-                    </div>
+                  {probe.probeType ? (
+                    <span className="rounded-full border border-purple-200/20 bg-purple-200/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-purple-100/85">
+                      {formatBadgeLabel(probe.probeType)}
+                    </span>
                   ) : null}
                 </div>
-              ) : null}
 
-              <div className={probeFeedback ? "mt-6" : ""}>
-                <ProbeRenderer
-                  probe={renderableProbe}
-                  disabled={isSubmitting}
-                  showDebug={process.env.NODE_ENV !== "production"}
-                  onDraftChange={(draft) => setDraftResponse(stringifyAttempt(draft))}
-                  onSubmit={handleSubmitFromRenderer}
-                />
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-300/70">
-                <div>
-                  {wordCount > 0 ? `${wordCount} words` : "No response yet"}
+                <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                    {probe.topicLabel ?? probe.title}
+                  </h2>
+                  {probe.topicLabel && probe.title !== probe.topicLabel ? (
+                    <p className="max-w-3xl text-sm leading-6 text-zinc-300/78">
+                      {probe.title}
+                    </p>
+                  ) : null}
                 </div>
-                <div>{encouragement}</div>
+
+                {probeHint ? (
+                  <p className="mt-2 max-w-4xl text-xs leading-6 text-zinc-300/72">
+                    {probeHint}
+                  </p>
+                ) : null}
               </div>
 
-              <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                onClick={onExit}
+                type="button"
+                disabled={isSubmitting}
+                className="shrink-0 rounded-2xl border border-white/12 bg-white/[0.08] px-4 py-2 text-sm text-zinc-100 transition hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Exit
+              </button>
+            </div>
+          </header>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-7 md:py-6">
+            {probeFeedback ? (
+              <div className="mb-5 rounded-3xl border border-white/12 bg-white/[0.06] px-5 py-4">
+                <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-300/70">
+                  MyWay feedback
+                </p>
+                <p className="mt-3 text-sm leading-7 text-zinc-100/95">
+                  {probeFeedback.reply}
+                </p>
+                {probeFeedback.suggestedAction ? (
+                  <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-300/65">
+                      Next move
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-zinc-100/90">
+                      {probeFeedback.suggestedAction}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            <ProbeRenderer
+              probe={renderableProbe}
+              disabled={isSubmitting}
+              showDebug={process.env.NODE_ENV !== "production"}
+              onDraftChange={(draft) => {
+                setLatestDraft(draft);
+                setDraftResponse(stringifyAttempt(draft));
+              }}
+            />
+          </div>
+
+          <footer className="shrink-0 border-t border-white/10 bg-black/[0.22] px-5 py-4 md:px-7">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0 text-xs leading-5 text-zinc-300/76">
+                <p className="font-medium text-zinc-100/90">{responseSummary}</p>
+                <p>{encouragement}</p>
+              </div>
+
+              <div className="flex items-center gap-3">
                 <button
                   onClick={onExit}
                   type="button"
@@ -559,71 +571,25 @@ export default function ProbeSurface({
                 </button>
 
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    if (!activeDraft) return;
+
                     handleSubmitFromRenderer({
                       probe: renderableProbe,
-                      attempt: {
-                        attempt_type: renderableProbe.expected_attempt_type,
-                        text_response: draftResponse,
-                      },
-                    })
-                  }
+                      attempt: activeDraft,
+                    });
+                  }}
                   type="button"
                   disabled={!canSubmit}
-                  className="rounded-2xl border border-purple-200/35 bg-white/10 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-2xl border border-purple-100/35 bg-white/[0.14] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(88,28,135,0.24)] transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-45"
                 >
-                  {isSubmitting ? "Submitting..." : "Submit response"}
+                  {isSubmitting ? "Submitting..." : "Submit probe"}
                 </button>
               </div>
             </div>
-
-            <aside className="rounded-3xl border border-white/10 bg-black/20 p-4">
-              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-300/70">
-                Guidance
-              </p>
-
-              <div className="mt-4 space-y-4 text-sm leading-6 text-zinc-100/85">
-                <div>
-                  <p className="font-medium text-white">What to aim for</p>
-                  <p className="mt-1 text-zinc-300/80">
-                    Try to explain your thinking clearly, not just give a short
-                    answer.
-                  </p>
-                </div>
-
-                {probe.expectedResponseType ? (
-                  <div>
-                    <p className="font-medium text-white">Expected response</p>
-                    <p className="mt-1 text-zinc-300/80">
-                      {formatBadgeLabel(probe.expectedResponseType)}
-                    </p>
-                  </div>
-                ) : null}
-
-                <div>
-                  <p className="font-medium text-white">Helpful approach</p>
-                  <p className="mt-1 text-zinc-300/80">
-                    Use causes, steps, contrasts, or an example when that makes
-                    your reasoning easier to see.
-                  </p>
-                </div>
-
-                <div>
-                  <p className="font-medium text-white">Submission</p>
-                  <p className="mt-1 text-zinc-300/80">
-                    Use the probe control to answer, then submit. Text-style
-                    probes can still be answered in your own words.
-                  </p>
-                </div>
-              </div>
-            </aside>
-          </div>
-        </div>
+          </footer>
+        </section>
       </div>
     </div>
   );
 }
-
-
-
-

@@ -101,6 +101,18 @@ function readNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function readString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function readRecordProperty(
+  value: unknown,
+  key: string,
+): Record<string, unknown> | null {
+  const record = asRecord(value);
+  return asRecord(record?.[key]);
+}
+
 function isDiagnosisState(value: unknown): value is DiagnosisState {
   const record = asRecord(value);
 
@@ -159,24 +171,159 @@ function readActiveDiagnosisEvidenceCount(topic: LearningSpaceInputTopic) {
   return evidenceCount !== null ? Math.max(0, Math.floor(evidenceCount)) : null;
 }
 
+function collectProbeContractSnapshots(topic: LearningSpaceInputTopic) {
+  const topicJson = asRecord(topic.topicJson);
+  const latestDeliveredProbe = asRecord(topicJson?.latest_delivered_probe);
+  const latestPayloadSnapshot = asRecord(latestDeliveredProbe?.payload_snapshot);
+  const nextDeliveredProbe = asRecord(topicJson?.next_delivered_probe);
+  const nextPayloadSnapshot = asRecord(nextDeliveredProbe?.payload_snapshot);
+
+  return [
+    topic.activeProbeContractSnapshot,
+    topic.nextProbeContractSnapshot,
+    topic.lastProbeContractSnapshot,
+    topicJson?.current_probe_contract_snapshot,
+    topicJson?.next_probe_contract,
+    topicJson?.last_probe_contract,
+    topicJson?.latest_delivered_probe,
+    topicJson?.next_delivered_probe,
+    latestDeliveredProbe?.probe_contract_snapshot,
+    latestPayloadSnapshot?.probe_contract_snapshot,
+    nextDeliveredProbe?.probe_contract_snapshot,
+    nextPayloadSnapshot?.probe_contract_snapshot,
+  ].filter(Boolean);
+}
+
 function readProbeContractRendererKind(value: unknown): string | null {
   const snapshot = asRecord(value);
-  const rendererKind = snapshot?.renderer_kind;
+  if (!snapshot) return null;
 
-  return typeof rendererKind === "string" && rendererKind.trim()
-    ? rendererKind.trim()
-    : null;
+  const rendererCompatibility = asRecord(snapshot.renderer_compatibility);
+  const engineRenderableProbe = asRecord(snapshot.engine_renderable_probe);
+  const probeContractOutput = asRecord(snapshot.probe_contract_output);
+  const nestedSnapshot = asRecord(snapshot.probe_contract_snapshot);
+  const payloadSnapshot = asRecord(snapshot.payload_snapshot);
+
+  return (
+    readString(snapshot.renderer_kind) ??
+    readString(snapshot.probe_type) ??
+    readString(snapshot.expected_attempt_type) ??
+    readString(rendererCompatibility?.renderer_kind) ??
+    readString(engineRenderableProbe?.renderer_compatibility) ??
+    readString(engineRenderableProbe?.probe_type) ??
+    readString(engineRenderableProbe?.expected_attempt_type) ??
+    readString(probeContractOutput?.probe_type) ??
+    readString(probeContractOutput?.expected_attempt_type) ??
+    readString(nestedSnapshot?.probe_type) ??
+    readString(nestedSnapshot?.expected_attempt_type) ??
+    readProbeContractRendererKind(payloadSnapshot?.probe_contract_snapshot) ??
+    null
+  );
 }
 
 function readBestProbeContractRendererKind(topic: LearningSpaceInputTopic) {
+  for (const snapshot of collectProbeContractSnapshots(topic)) {
+    const rendererKind = readProbeContractRendererKind(snapshot);
+    if (rendererKind) return rendererKind;
+  }
+
+  return null;
+}
+
+function readPromptRootProblem(value: unknown): string | null {
+  const snapshot = asRecord(value);
+  if (!snapshot) return null;
+
+  const prompt = asRecord(snapshot.prompt);
+  const engineRenderableProbe = asRecord(snapshot.engine_renderable_probe);
+  const enginePrompt = asRecord(engineRenderableProbe?.prompt);
+  const probeContractOutput = asRecord(snapshot.probe_contract_output);
+  const contractPrompt = asRecord(probeContractOutput?.prompt);
+  const nestedSnapshot = asRecord(snapshot.probe_contract_snapshot);
+  const payloadSnapshot = asRecord(snapshot.payload_snapshot);
+
   return (
-    readProbeContractRendererKind(topic.activeProbeContractSnapshot) ??
-    readProbeContractRendererKind(topic.nextProbeContractSnapshot) ??
-    readProbeContractRendererKind(topic.lastProbeContractSnapshot) ??
-    readProbeContractRendererKind(topic.topicJson?.next_probe_contract) ??
-    readProbeContractRendererKind(topic.topicJson?.last_probe_contract) ??
-    readProbeContractRendererKind(topic.topicJson?.next_delivered_probe)
+    readString(prompt?.root_problem_explanation) ??
+    readString(prompt?.rootProblemExplanation) ??
+    readString(enginePrompt?.root_problem_explanation) ??
+    readString(enginePrompt?.rootProblemExplanation) ??
+    readString(contractPrompt?.root_problem_explanation) ??
+    readString(contractPrompt?.rootProblemExplanation) ??
+    readPromptRootProblem(nestedSnapshot) ??
+    readPromptRootProblem(payloadSnapshot?.probe_contract_snapshot) ??
+    null
   );
+}
+
+function readTopicRootProblem(topic: LearningSpaceInputTopic): string | null {
+  for (const snapshot of collectProbeContractSnapshots(topic)) {
+    const rootProblem = readPromptRootProblem(snapshot);
+    if (rootProblem) return rootProblem;
+  }
+
+  return null;
+}
+
+function readTopicRootProblemSource(topic: LearningSpaceInputTopic): string | null {
+  for (const snapshot of collectProbeContractSnapshots(topic)) {
+    if (readPromptRootProblem(snapshot)) {
+      const record = asRecord(snapshot);
+      return readString(record?.source) ?? "probe_contract_snapshot";
+    }
+  }
+
+  return null;
+}
+
+function readMarkerText(marker: unknown): string | null {
+  const record = asRecord(marker);
+  if (!record) return null;
+
+  return (
+    readString(record.misconception_id) ??
+    readString(record.label) ??
+    readString(record.marker) ??
+    null
+  );
+}
+
+function readMisconceptionMarkersFromSnapshot(value: unknown): string[] {
+  const snapshot = asRecord(value);
+  if (!snapshot) return [];
+
+  const engineRenderableProbe = asRecord(snapshot.engine_renderable_probe);
+  const probeContractOutput = asRecord(snapshot.probe_contract_output);
+  const nestedSnapshot = asRecord(snapshot.probe_contract_snapshot);
+  const payloadSnapshot = asRecord(snapshot.payload_snapshot);
+
+  const markerGroups = [
+    snapshot.misconception_markers,
+    engineRenderableProbe?.misconception_markers,
+    probeContractOutput?.misconception_markers,
+  ];
+
+  const markers = markerGroups
+    .flatMap((group) => (Array.isArray(group) ? group : []))
+    .map(readMarkerText)
+    .filter((marker): marker is string => Boolean(marker));
+
+  return [
+    ...new Set([
+      ...markers,
+      ...readMisconceptionMarkersFromSnapshot(nestedSnapshot),
+      ...readMisconceptionMarkersFromSnapshot(payloadSnapshot?.probe_contract_snapshot),
+    ]),
+  ];
+}
+
+function readTopicMisconceptionPatterns(topic: LearningSpaceInputTopic): string[] {
+  return [
+    ...new Set(
+      collectProbeContractSnapshots(topic).flatMap((snapshot) =>
+        readMisconceptionMarkersFromSnapshot(snapshot),
+      ),
+    ),
+  ];
 }
 
 function normalizeTopicPosition(topic: LearningSpaceInputTopic): TopicPosition3D {
@@ -562,6 +709,10 @@ function buildLocalDerivedRelationships(
     semanticPositionUpdatedAt: topic.semanticPositionUpdatedAt ?? null,
     messageCount: topic.messageCount ?? null,
     diagnosisState: readDiagnosisState(topic),
+    rootProblem: readTopicRootProblem(topic),
+    rootProblemSource: readTopicRootProblemSource(topic),
+    misconceptionPatterns: readTopicMisconceptionPatterns(topic),
+    latestProbeType: readBestProbeContractRendererKind(topic),
   }));
 
   return buildTopicRelationships(graphTopics, {
@@ -664,5 +815,3 @@ export function buildLearningSpace(
     projection,
   };
 }
-
-

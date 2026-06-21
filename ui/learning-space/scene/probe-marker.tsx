@@ -48,6 +48,142 @@ export function getProbeMarkerPreview(topic: LearningSpaceTopic) {
   )?.preview;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function getRecord(value: unknown, key: string): Record<string, unknown> | null {
+  const record = asRecord(value);
+  return asRecord(record?.[key]);
+}
+
+function getString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function readProbeTypeFromSnapshot(snapshot: unknown): string | null {
+  const direct = asRecord(snapshot);
+
+  if (!direct) return null;
+
+  return (
+    getString(direct.probe_type) ??
+    getString(direct.probeType) ??
+    getString(direct.expected_attempt_type) ??
+    getString(direct.expectedAttemptType) ??
+    getString(getRecord(direct, "engine_renderable_probe")?.probe_type) ??
+    getString(getRecord(direct, "engine_renderable_probe")?.expected_attempt_type) ??
+    getString(getRecord(direct, "probe_contract_output")?.probe_type) ??
+    getString(getRecord(direct, "probe_contract_output")?.expected_attempt_type) ??
+    null
+  );
+}
+
+function thumbnailStyleFromProbeType(
+  probeType: string | null,
+): ProbeMarkerThumbnailStyle | null {
+  const normalized = probeType?.trim().toLowerCase();
+
+  if (!normalized) return null;
+
+  if (
+    normalized === "single_choice" ||
+    normalized === "multi_choice" ||
+    normalized === "multiple_choice" ||
+    normalized === "discriminate"
+  ) {
+    return "choice_card";
+  }
+
+  if (
+    normalized === "drag_drop_placements" ||
+    normalized === "drag_drop_match" ||
+    normalized === "interactive_action"
+  ) {
+    return "drag_drop_card";
+  }
+
+  if (
+    normalized === "sequence" ||
+    normalized === "ordered_items" ||
+    normalized === "simulation" ||
+    normalized === "transform"
+  ) {
+    return "simulation_card";
+  }
+
+  if (
+    normalized === "slider" ||
+    normalized === "numeric" ||
+    normalized === "predict" ||
+    normalized === "slider_prediction"
+  ) {
+    return "slider_card";
+  }
+
+  if (normalized === "graph" || normalized === "graph_relationship") {
+    return "graph_card";
+  }
+
+  if (
+    normalized === "audio" ||
+    normalized === "audio_clip_question" ||
+    normalized === "audio_response_question" ||
+    normalized === "audio_response"
+  ) {
+    return "audio_card";
+  }
+
+  if (
+    normalized === "video" ||
+    normalized === "video_click_interval" ||
+    normalized === "video_explanation" ||
+    normalized === "video_checkpoint"
+  ) {
+    return "video_card";
+  }
+
+  if (
+    normalized === "explain" ||
+    normalized === "apply_transfer" ||
+    normalized === "text"
+  ) {
+    return "text_card";
+  }
+
+  return null;
+}
+
+function getContractDrivenProbeThumbnailStyle(args: {
+  probe: ProbeSummary;
+  topic: LearningSpaceTopic;
+}): ProbeMarkerThumbnailStyle {
+  /**
+   * Prefer the actual delivered probe. The surface marker remains useful as a
+   * fallback, but it should not override the contract that the learner will
+   * actually answer after the triple-click entry.
+   */
+  const contractProbeType =
+    args.probe.engineRenderableProbe?.probe_type ??
+    args.probe.engineRenderableProbe?.expected_attempt_type ??
+    readProbeTypeFromSnapshot(args.probe.probeContractSnapshot) ??
+    args.probe.probeType ??
+    args.probe.expectedResponseType ??
+    null;
+
+  const contractStyle = thumbnailStyleFromProbeType(contractProbeType);
+
+  if (contractStyle) return contractStyle;
+
+  const previewStyle = getProbeMarkerPreview(args.topic)?.thumbnail_style;
+
+  if (previewStyle) return previewStyle;
+
+  return getDebugProbeThumbnailStyle(args.topic);
+}
+
 export type ProbeMarkerPreview = NonNullable<
   LearningSpaceTopic["surface_markers"][number]["preview"]
 >;
@@ -316,9 +452,10 @@ export function ProbeMarker({
 }) {
   /**
    * The marker remains visual-only. The underlying topic sphere keeps normal
-   * click/double-click/triple-click behavior, including probe entry.
+   * click/double-click/triple-click behavior, including probe entry. The probe
+   * prop is still used as the visual source of truth so the icon cannot drift
+   * back to a generic/text preview while a real contract-backed probe exists.
    */
-  void probe;
   void onOpenProbe;
 
   const { camera } = useThree();
@@ -328,9 +465,10 @@ export function ProbeMarker({
   const parentWorldQuaternionRef = useRef(new THREE.Quaternion());
   const localFacingNormalRef = useRef(new THREE.Vector3());
 
-  const preview = getProbeMarkerPreview(topic);
-  const thumbnailStyle =
-    preview?.thumbnail_style ?? getDebugProbeThumbnailStyle(topic);
+  const thumbnailStyle = getContractDrivenProbeThumbnailStyle({
+    probe,
+    topic,
+  });
   const icon = getProbeThumbnailIcon(thumbnailStyle);
 
   const texture = useMemo(() => createProbeIconTexture(icon), [icon]);

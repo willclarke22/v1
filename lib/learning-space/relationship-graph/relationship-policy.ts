@@ -31,6 +31,14 @@ export const DEFAULT_RELATIONSHIP_GRAPH_OPTIONS = {
   maxInsightGap: 0.14,
   minAverageConfusionForPattern: 0.5,
   minAverageInsightForPattern: 0.38,
+
+  /**
+   * Root-problem relationships are deliberately cross-modal. They can connect a
+   * graph probe and a text probe if both expose the same underlying issue.
+   */
+  minRootProblemSimilarityForSharedConfusion: 0.44,
+  minSharedRootProblemTerms: 2,
+
   minStrength: 0.58,
 
   /**
@@ -264,7 +272,9 @@ export function derivedRelationshipEvidenceSource(
         ? ["topic_diagnosis", evidenceTier]
         : ["topic_diagnosis"];
     case "shared_confusion_pattern":
-      return ["topic_confusion_average"];
+      return evidenceTier && evidenceTier !== "unknown"
+        ? ["topic_confusion_average", evidenceTier]
+        : ["topic_confusion_average"];
     case "shared_insight_pattern":
       return ["topic_insight_average"];
   }

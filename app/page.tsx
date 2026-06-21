@@ -171,6 +171,59 @@ function mergeBootstrappedTopicsWithPrevious(args: {
   });
 }
 
+function mergeMessageTopicsWithPrevious(args: {
+  nextTopics: Topic[];
+  previousTopics: Topic[];
+}) {
+  if (args.previousTopics.length === 0) {
+    return args.nextTopics;
+  }
+
+  const nextById = new Map(args.nextTopics.map((topic) => [topic.id, topic]));
+  const seenTopicIds = new Set<string>();
+
+  const mergedExistingTopics = args.previousTopics.map((previous) => {
+    const next = nextById.get(previous.id);
+
+    if (!next) {
+      return previous;
+    }
+
+    seenTopicIds.add(next.id);
+
+    return {
+      ...previous,
+      ...next,
+
+      /**
+       * /api/message often returns the active/target topic first. Preserve the
+       * rest of the existing learning-space state so opening/exiting probes or
+       * sending one message does not collapse the whole scene down to one topic.
+       */
+      hasAvailableProbe: next.hasAvailableProbe || previous.hasAvailableProbe,
+      confusionInsightStatus:
+        next.confusionInsightStatus ?? previous.confusionInsightStatus,
+      learningSpaceRelationships:
+        next.learningSpaceRelationships ?? previous.learningSpaceRelationships,
+      learningSpaceViewpoints:
+        next.learningSpaceViewpoints ?? previous.learningSpaceViewpoints,
+      learningSpaceProjection:
+        next.learningSpaceProjection ?? previous.learningSpaceProjection,
+      semanticPosition: next.semanticPosition ?? previous.semanticPosition ?? null,
+      semanticPositionMethod:
+        next.semanticPositionMethod ?? previous.semanticPositionMethod ?? null,
+      semanticPositionUpdatedAt:
+        next.semanticPositionUpdatedAt ??
+        previous.semanticPositionUpdatedAt ??
+        null,
+      positionSource: next.positionSource ?? previous.positionSource,
+    };
+  });
+
+  const newTopics = args.nextTopics.filter((topic) => !seenTopicIds.has(topic.id));
+
+  return [...mergedExistingTopics, ...newTopics];
+}
 async function updateLocalDevIdleState(input: LocalDevIdleStateUpdate) {
   if (process.env.NODE_ENV !== "development") return;
 
@@ -615,6 +668,7 @@ export default function Home() {
   const realtimeRefreshTimeoutRef = useRef<number | null>(null);
   const stagedTopicRefreshTimeoutRef = useRef<number | null>(null);
   const stagedTopicRefreshRef = useRef<StagedTopicStateRefresh | null>(null);
+  const lastNonEmptyLearningSpaceRef = useRef<RendererLearningSpace | null>(null);
 
   useEffect(() => {
     topicsRef.current = topics;
@@ -639,6 +693,17 @@ export default function Home() {
 
   const learningSpace: RendererLearningSpace =
     serverLearningSpace ?? localLearningSpace;
+
+  useEffect(() => {
+    if (learningSpace.topics.length > 0) {
+      lastNonEmptyLearningSpaceRef.current = learningSpace;
+    }
+  }, [learningSpace]);
+
+  const visibleLearningSpace: RendererLearningSpace =
+    learningSpace.topics.length > 0
+      ? learningSpace
+      : lastNonEmptyLearningSpaceRef.current ?? learningSpace;
 
   const progressSummary = useMemo(
     () => deriveProgressSummary(topics, focusedTopicId),
@@ -767,6 +832,14 @@ export default function Home() {
           setIsRightPanelOpenWhileUnfocused(false);
         }
       } else {
+        if (payload.reason !== "bootstrap" && topicsRef.current.length > 0) {
+          console.warn("Ignored empty topic-state refresh to preserve the visible learning space.", {
+            reason: payload.reason,
+            existingTopicCount: topicsRef.current.length,
+          });
+          return;
+        }
+
         const topicStateChanged = topicsRef.current.length > 0;
 
         if (topicStateChanged) {
@@ -1060,7 +1133,17 @@ export default function Home() {
         );
       }
 
-      const nextTopics = deriveTopicsFromMessageResponse(data, topics);
+      const derivedNextTopics = deriveTopicsFromMessageResponse(
+        data,
+        topicsRef.current,
+      );
+
+      const nextTopics = derivedNextTopics
+        ? mergeMessageTopicsWithPrevious({
+            nextTopics: derivedNextTopics,
+            previousTopics: topicsRef.current,
+          })
+        : null;
 
       if (nextTopics) {
         topicsRef.current = nextTopics;
@@ -1111,7 +1194,7 @@ export default function Home() {
     <main className="relative h-screen overflow-hidden bg-black text-white">
       <div className="absolute inset-0">
         <SpaceCanvas
-          learningSpace={learningSpace}
+          learningSpace={visibleLearningSpace}
           selectedTopicId={selectedTopicId}
           focusedTopicId={focusedTopicId}
           availableProbe={probeFlow.availableProbe}
@@ -1243,4 +1326,5 @@ export default function Home() {
     </main>
   );
 }
+
 

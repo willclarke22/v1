@@ -118,6 +118,17 @@ export type RelationshipGraphTopic = {
   insight?: number | null;
 
   /**
+   * Optional normalized root problem and misconception summaries carried from the
+   * latest probe contract / evaluator state. These let the graph connect topics
+   * that share the same underlying confusion pattern even when they use
+   * different modalities or probe types.
+   */
+  rootProblem?: string | null;
+  rootProblemSource?: string | null;
+  misconceptionPatterns?: string[];
+  latestProbeType?: string | null;
+
+  /**
    * Optional richer signal summaries for future relationship confidence.
    */
   confusionEvidence?: RelationshipSignalEvidence | null;
@@ -167,6 +178,14 @@ export type RelationshipGraphBuildOptions = {
    */
   minAverageConfusionForPattern?: number;
   minAverageInsightForPattern?: number;
+
+  /**
+   * Shared confusion can also be emitted when topics have similar root problems,
+   * even if their probe modality is different and their raw confusion averages
+   * are not very close.
+   */
+  minRootProblemSimilarityForSharedConfusion?: number;
+  minSharedRootProblemTerms?: number;
 
   /**
    * Weak relationships below this strength are omitted.
@@ -240,6 +259,13 @@ export type RelationshipGraphCandidate = {
   signal_gap?: number | null;
   signal_average?: number | null;
   signal_similarity?: number | null;
+
+  /**
+   * Optional shared-root-problem basis for shared confusion relationships.
+   */
+  shared_pattern_kind?: string | null;
+  root_problem_similarity?: number | null;
+  shared_root_problem_terms?: string[];
 
   /**
    * Caps are applied per topic across derived relationships.
