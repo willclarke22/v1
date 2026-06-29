@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { ProbeShell } from "./probe-shell";
 import type { GenericProbeComponentProps } from "./probe-ui-types";
+import { ProbeButton, ProbeMediaFrame, ProbePill, ProbeStack } from "./shared";
 
 export function VideoExplanationProbe(props: GenericProbeComponentProps) {
   const video = props.probe.renderer_params?.video;
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  const [hasPlayed, setHasPlayed] = useState(false);
 
   useEffect(() => {
     const element = videoRef.current;
@@ -25,80 +27,92 @@ export function VideoExplanationProbe(props: GenericProbeComponentProps) {
       draft={{
         ...props.draft,
         attempt_type: "none",
+        text_response: hasPlayed ? "Watched explanation" : props.draft.text_response,
       }}
     >
-      <div style={{ display: "grid", gap: "1rem" }}>
-        <div>
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.92)", fontWeight: 900 }}>
-            Watch the explanation.
-          </p>
-          <p style={{ margin: "0.34rem 0 0", color: "rgba(255,255,255,0.66)", fontSize: "0.84rem", lineHeight: 1.5 }}>
-            The video can carry the prompt through narration. After it plays, MyWay can ask a follow-up attempt.
-          </p>
+      <ProbeStack gap="1rem">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "0.8rem",
+            flexWrap: "wrap",
+            alignItems: "end",
+          }}
+        >
+          <div>
+            <p style={{ margin: 0, color: "rgba(255,255,255,0.92)", fontWeight: 950 }}>
+              Watch the explanation.
+            </p>
+            <p
+              style={{
+                margin: "0.35rem 0 0",
+                color: "rgba(255,255,255,0.66)",
+                fontSize: "0.84rem",
+                lineHeight: 1.5,
+              }}
+            >
+              This probe teaches first. A later probe can ask you to try the idea.
+            </p>
+          </div>
+          <ProbePill tone={hasPlayed ? "success" : "default"}>
+            {hasPlayed ? "watched" : "ready"}
+          </ProbePill>
         </div>
 
-        {video?.video_url ? (
-          <div style={{ display: "grid", gap: "0.75rem" }}>
+        <ProbeMediaFrame
+          missing={!video?.video_url}
+          title="Video explanation placeholder"
+          body="No video URL was supplied yet. When a URL exists, this player attempts to autoplay."
+        >
+          <div style={{ position: "relative" }}>
             <video
               ref={videoRef}
               controls
-              autoPlay
               playsInline
-              src={video.video_url}
+              src={video?.video_url ?? undefined}
+              onPlay={() => setHasPlayed(true)}
+              onEnded={() => setHasPlayed(true)}
               style={{
+                display: "block",
                 width: "100%",
                 maxHeight: "32rem",
-                border: "1px solid rgba(255,255,255,0.14)",
-                borderRadius: "24px",
                 background: "black",
               }}
             />
-
             {autoplayBlocked ? (
-              <button
-                type="button"
-                disabled={props.disabled}
-                onClick={() => videoRef.current?.play()}
+              <ProbeButton
+                variant="primary"
+                onClick={() => {
+                  videoRef.current?.play();
+                  setAutoplayBlocked(false);
+                }}
                 style={{
-                  justifySelf: "start",
-                  border: "1px solid rgba(221,214,254,0.22)",
-                  borderRadius: "999px",
-                  background: "rgba(255,255,255,0.08)",
-                  color: "white",
-                  padding: "0.55rem 0.78rem",
-                  fontWeight: 800,
+                  position: "absolute",
+                  inset: "50% auto auto 50%",
+                  transform: "translate(-50%, -50%)",
                 }}
               >
-                Play video
-              </button>
+                Play explanation
+              </ProbeButton>
             ) : null}
           </div>
-        ) : (
-          <div
+        </ProbeMediaFrame>
+
+        {video?.informational_only ? (
+          <p
             style={{
-              minHeight: "18rem",
-              display: "grid",
-              placeItems: "center",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: "24px",
-              background:
-                "radial-gradient(circle at center, rgba(168,85,247,0.16), rgba(0,0,0,0.3))",
-              color: "rgba(255,255,255,0.72)",
-              textAlign: "center",
-              padding: "1rem",
+              margin: 0,
+              color: "rgba(255,255,255,0.66)",
+              fontSize: "0.84rem",
+              lineHeight: 1.55,
             }}
           >
-            <div>
-              <p style={{ margin: 0, color: "white", fontWeight: 900 }}>
-                Video explanation placeholder
-              </p>
-              <p style={{ margin: "0.3rem 0 0", fontSize: "0.86rem" }}>
-                No video URL was supplied yet. When a URL exists, this player attempts to autoplay.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
+            This is marked as informational only, so it can behave like a teaching
+            intervention rather than a scored answer.
+          </p>
+        ) : null}
+      </ProbeStack>
     </ProbeShell>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { ProbeShell } from "./probe-shell";
 import type { GenericProbeComponentProps } from "./probe-ui-types";
+import { ProbeMiniLabel, ProbePill, ProbeSection, ProbeStack } from "./shared";
 
 function finiteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
@@ -27,12 +28,6 @@ export function SliderProbe(props: GenericProbeComponentProps) {
 
   const min = finiteNumber(slider?.min) ? slider.min : 0;
   const max = finiteNumber(slider?.max) ? slider.max : 100;
-
-  /**
-   * MyWay slider probes should be fine-grained by default. Model contracts can
-   * still supply min/max/unit, but coarse steps like 5 should not make the UI
-   * feel jumpy or imprecise.
-   */
   const step =
     finiteNumber(slider?.step) && slider.step > 0 && slider.step < 0.01
       ? slider.step
@@ -66,145 +61,89 @@ export function SliderProbe(props: GenericProbeComponentProps) {
   return (
     <ProbeShell {...props}>
       {slider ? (
-        <div style={{ display: "grid", gap: "1rem" }}>
+        <ProbeStack gap="1rem">
           <div
             style={{
               display: "flex",
               alignItems: "end",
               justifyContent: "space-between",
               gap: "1rem",
+              flexWrap: "wrap",
             }}
           >
             <div>
+              <ProbeMiniLabel>Estimate</ProbeMiniLabel>
               <p
                 style={{
-                  margin: 0,
-                  color: "rgba(255,255,255,0.92)",
-                  fontWeight: 800,
-                }}
-              >
-                Set your estimate.
-              </p>
-              <p
-                style={{
-                  margin: "0.32rem 0 0",
-                  color: "rgba(255,255,255,0.64)",
+                  margin: "0.35rem 0 0",
+                  color: "rgba(255,255,255,0.66)",
                   fontSize: "0.84rem",
                   lineHeight: 1.5,
                 }}
               >
-                Use the slider for a quick estimate, then fine-tune the exact
-                value in the number box.
+                Move the slider until the value matches your best estimate.
               </p>
             </div>
 
-            <div
-              style={{
-                minWidth: "8.5rem",
-                border: "1px solid rgba(221,214,254,0.2)",
-                borderRadius: "22px",
-                padding: "0.72rem 0.9rem",
-                background: "rgba(0,0,0,0.18)",
-                textAlign: "right",
-              }}
-            >
-              <p
-                style={{
-                  margin: 0,
-                  color: "rgba(255,255,255,0.58)",
-                  fontSize: "0.68rem",
-                  fontWeight: 800,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                }}
-              >
-                Estimate
-              </p>
-              <p
-                style={{
-                  margin: "0.16rem 0 0",
-                  color: "white",
-                  fontSize: "1.45rem",
-                  fontWeight: 900,
-                  letterSpacing: "-0.035em",
-                }}
-              >
-                {formattedValue}
-                {slider.unit ? (
-                  <span style={{ fontSize: "0.9rem", opacity: 0.76 }}>
-                    {` ${slider.unit}`}
-                  </span>
-                ) : null}
-              </p>
-            </div>
+            <ProbePill tone="purple" active style={{ fontSize: "0.9rem", padding: "0.52rem 0.75rem" }}>
+              {formattedValue}
+              {slider.unit ? ` ${slider.unit}` : ""}
+            </ProbePill>
           </div>
 
-          <label style={{ display: "grid", gap: "0.65rem" }}>
-            <span
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                color: "rgba(255,255,255,0.66)",
-                fontSize: "0.78rem",
-              }}
-            >
-              <span>
-                {formatSliderValue(min, step)}
-                {slider.unit ? ` ${slider.unit}` : ""}
-              </span>
-              <span>
-                {formatSliderValue(max, step)}
-                {slider.unit ? ` ${slider.unit}` : ""}
-              </span>
-            </span>
+          <ProbeSection
+            tone="selected"
+            style={{
+              padding: "1.25rem",
+              borderRadius: "30px",
+              background:
+                "radial-gradient(circle at 50% 0%, rgba(221,214,254,0.16), transparent 44%), linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.035))",
+            }}
+          >
+            <ProbeStack gap="0.95rem">
+              <input
+                type="range"
+                disabled={props.disabled}
+                min={min}
+                max={max}
+                step={step}
+                value={value}
+                onChange={(event) => updateValue(Number(event.target.value))}
+                aria-label="Estimate slider"
+                style={{
+                  width: "100%",
+                  accentColor: "#ddd6fe",
+                }}
+              />
 
-            <input
-              type="range"
-              disabled={props.disabled}
-              min={min}
-              max={max}
-              step={step}
-              value={value}
-              onChange={(event) => updateValue(Number(event.target.value))}
-              style={{ width: "100%", accentColor: "#c4b5fd" }}
-            />
-          </label>
-
-          <label style={{ display: "grid", gap: "0.44rem", maxWidth: "18rem" }}>
-            <span
-              style={{
-                color: "rgba(255,255,255,0.72)",
-                fontSize: "0.8rem",
-                fontWeight: 800,
-              }}
-            >
-              Exact value
-            </span>
-            <input
-              type="number"
-              disabled={props.disabled}
-              min={min}
-              max={max}
-              step={step}
-              value={formattedValue}
-              onChange={(event) => updateValue(Number(event.target.value))}
-              style={{
-                width: "100%",
-                border: "1px solid rgba(255,255,255,0.14)",
-                borderRadius: "16px",
-                background: "rgba(255,255,255,0.07)",
-                color: "white",
-                padding: "0.78rem 0.9rem",
-                fontWeight: 800,
-                outline: "none",
-              }}
-            />
-          </label>
-        </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "1rem",
+                  color: "rgba(255,255,255,0.58)",
+                  fontSize: "0.76rem",
+                  fontWeight: 800,
+                }}
+              >
+                <span>
+                  {min}
+                  {slider.unit ? ` ${slider.unit}` : ""}
+                </span>
+                <span style={{ textAlign: "right" }}>
+                  {max}
+                  {slider.unit ? ` ${slider.unit}` : ""}
+                </span>
+              </div>
+            </ProbeStack>
+          </ProbeSection>
+        </ProbeStack>
       ) : (
-        <p style={{ margin: 0, color: "rgba(255,255,255,0.72)" }}>
-          This probe needs renderer_params.slider.
-        </p>
+        <ProbeSection tone="empty">
+          <p style={{ margin: 0, color: "rgba(255,255,255,0.72)" }}>
+            This probe needs renderer_params.slider.
+          </p>
+        </ProbeSection>
       )}
     </ProbeShell>
   );

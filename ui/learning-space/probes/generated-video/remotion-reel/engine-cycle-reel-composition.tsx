@@ -1,0 +1,329 @@
+"use client";
+
+import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import type { EngineReelContract, EngineReelSceneKind } from "./engine-reel-contract";
+import { findEngineReelScene } from "./engine-reel-contract";
+
+export type EngineCycleReelCompositionProps = {
+  contract: EngineReelContract;
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function easeInOut(value: number) {
+  const t = clamp(value, 0, 1);
+  return -(Math.cos(Math.PI * t) - 1) / 2;
+}
+
+function easeOut(value: number) {
+  const t = clamp(value, 0, 1);
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function scenePistonY(kind: EngineReelSceneKind, progress: number) {
+  const top = 258;
+  const bottom = 430;
+  const t = easeInOut(progress);
+
+  switch (kind) {
+    case "intake":
+      return interpolate(t, [0, 1], [top + 18, bottom]);
+    case "compression":
+      return interpolate(t, [0, 1], [bottom, top + 12]);
+    case "ignition_power":
+      return interpolate(easeOut(progress), [0, 1], [top + 10, bottom + 8]);
+    case "exhaust":
+      return interpolate(t, [0, 1], [bottom + 4, top + 18]);
+    case "overview":
+      return interpolate(Math.sin(progress * Math.PI * 2) * 0.5 + 0.5, [0, 1], [top + 28, bottom - 18]);
+    case "checkpoint":
+    default:
+      return interpolate(Math.sin(progress * Math.PI * 2) * 0.5 + 0.5, [0, 1], [top + 36, bottom - 10]);
+  }
+}
+
+function flowOpacity(kind: EngineReelSceneKind, target: "intake" | "compression" | "power" | "exhaust", progress: number) {
+  if (kind === "intake" && target === "intake") return interpolate(progress, [0.08, 0.25, 0.88], [0, 1, 0.9], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  if (kind === "compression" && target === "compression") return interpolate(progress, [0, 0.78, 1], [0.58, 0.92, 0.72], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  if (kind === "ignition_power" && target === "power") return interpolate(progress, [0.05, 0.18, 0.85, 1], [0, 1, 0.86, 0.3], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  if (kind === "exhaust" && target === "exhaust") return interpolate(progress, [0.08, 0.28, 0.9], [0, 1, 0.65], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  if (kind === "overview") return 0.18;
+  return 0;
+}
+
+function TopTitle({ contract }: { contract: EngineReelContract }) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const enter = spring({ frame, fps, config: { damping: 20, stiffness: 80 } });
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        top: 0,
+        height: 110,
+        display: "grid",
+        placeItems: "center",
+        background: "linear-gradient(180deg, rgba(0,0,0,0.94), rgba(0,0,0,0.72))",
+        borderBottom: "1px solid rgba(255,255,255,0.1)",
+        transform: `translateY(${interpolate(enter, [0, 1], [-14, 0])}px)`,
+        opacity: enter,
+      }}
+    >
+      <div style={{ textAlign: "center" }}>
+        <div style={{ color: "white", fontSize: 34, lineHeight: 1.05, fontWeight: 950, letterSpacing: "0.01em" }}>
+          {contract.title}
+        </div>
+        <div style={{ marginTop: 8, color: "rgba(255,255,255,0.64)", fontSize: 14, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase" }}>
+          contract JSON → Remotion cutaway animation
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CylinderCutaway({ contract }: { contract: EngineReelContract }) {
+  const frame = useCurrentFrame();
+  const active = findEngineReelScene(contract, frame);
+  const kind = active.scene.kind;
+  const progress = active.progress;
+  const pistonY = scenePistonY(kind, progress);
+  const crankAngle = frame * 0.095;
+  const crankX = 640 + Math.cos(crankAngle) * 54;
+  const crankY = 616 + Math.sin(crankAngle) * 26;
+  const chamberTop = 172;
+  const chamberHeight = Math.max(16, pistonY - chamberTop + 16);
+  const intakeOpen = kind === "intake" ? interpolate(progress, [0.08, 0.22, 0.82, 0.95], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0;
+  const exhaustOpen = kind === "exhaust" ? interpolate(progress, [0.08, 0.22, 0.82, 0.95], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0;
+  const sparkOn = kind === "ignition_power" && progress > 0.08 && progress < 0.24;
+  const powerScale = kind === "ignition_power" ? interpolate(progress, [0.08, 0.24, 1], [0.2, 1.15, 0.65], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0;
+  const compressionLines = kind === "compression" ? Math.round(interpolate(progress, [0, 1], [1, 6])) : 0;
+  const wallHighlight = kind === "checkpoint" ? 0.18 + Math.sin(progress * Math.PI * 2) * 0.08 : 0;
+
+  return (
+    <svg viewBox="0 0 1280 720" style={{ width: "100%", height: "100%" }}>
+      <defs>
+        <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#c6cbbd" />
+          <stop offset="100%" stopColor="#899384" />
+        </linearGradient>
+        <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#f7f2e8" />
+          <stop offset="45%" stopColor="#b7b0a4" />
+          <stop offset="78%" stopColor="#fffaf0" />
+          <stop offset="100%" stopColor="#59534d" />
+        </linearGradient>
+        <linearGradient id="gasBlue" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(125,211,252,0.92)" />
+          <stop offset="100%" stopColor="rgba(59,130,246,0.24)" />
+        </linearGradient>
+        <radialGradient id="fire" cx="50%" cy="35%" r="70%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
+          <stop offset="22%" stopColor="rgba(253,224,71,0.95)" />
+          <stop offset="58%" stopColor="rgba(249,115,22,0.68)" />
+          <stop offset="100%" stopColor="rgba(127,29,29,0)" />
+        </radialGradient>
+        <filter id="rough">
+          <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="2" seed="8" />
+          <feDisplacementMap in="SourceGraphic" scale="1.4" />
+        </filter>
+      </defs>
+
+      <rect x="0" y="0" width="1280" height="720" fill="url(#paper)" />
+      <rect x="0" y="0" width="1280" height="720" fill="rgba(0,0,0,0.08)" />
+
+      {/* intake and exhaust ports */}
+      <path d="M0 215 L385 215 Q420 218 460 242 L445 286 Q386 258 350 254 L0 254 Z" fill="rgba(59,130,246,0.28)" stroke="rgba(36,45,50,0.82)" strokeWidth="7" />
+      <path d="M1280 215 L895 215 Q860 218 820 242 L835 286 Q894 258 930 254 L1280 254 Z" fill="rgba(88,71,92,0.34)" stroke="rgba(36,45,50,0.82)" strokeWidth="7" />
+
+      {/* cylinder block */}
+      <path d="M423 146 Q640 71 857 146 L807 640 L473 640 Z" fill="rgba(94,64,61,0.42)" stroke="rgba(48,39,37,0.9)" strokeWidth="8" />
+      <path d="M489 168 Q640 112 791 168 L757 628 L523 628 Z" fill="rgba(231,226,207,0.68)" stroke="rgba(29,27,25,0.74)" strokeWidth="5" filter="url(#rough)" />
+      <path d="M489 168 Q640 112 791 168 L757 628 L523 628 Z" fill={`rgba(221,214,254,${wallHighlight})`} />
+
+      {/* valves */}
+      <g transform={`translate(${0}, ${intakeOpen * 25}) rotate(${-16 + intakeOpen * 8} 474 244)`}>
+        <line x1="388" y1="170" x2="493" y2="285" stroke="#f3eee3" strokeWidth="12" strokeLinecap="round" />
+        <ellipse cx="503" cy="296" rx="13" ry="47" transform="rotate(41 503 296)" fill="#e7e1d7" stroke="#36302d" strokeWidth="4" />
+      </g>
+      <g transform={`translate(${0}, ${exhaustOpen * 25}) rotate(${16 - exhaustOpen * 8} 806 244)`}>
+        <line x1="892" y1="170" x2="787" y2="285" stroke="#f3eee3" strokeWidth="12" strokeLinecap="round" />
+        <ellipse cx="777" cy="296" rx="13" ry="47" transform="rotate(-41 777 296)" fill="#e7e1d7" stroke="#36302d" strokeWidth="4" />
+      </g>
+
+      {/* spark plug */}
+      <g>
+        <rect x="611" y="111" width="58" height="64" rx="12" fill="#d9d4cc" stroke="#1f1d1b" strokeWidth="5" />
+        <line x1="640" y1="174" x2="640" y2="214" stroke="#f6f0e8" strokeWidth="7" strokeLinecap="round" />
+        <path d="M614 126 L667 126 M612 140 L669 140 M616 154 L665 154" stroke="#49433e" strokeWidth="4" />
+        {sparkOn ? (
+          <g opacity={0.75 + Math.sin(frame * 0.9) * 0.22}>
+            <path d="M640 212 L617 250 L650 242 L626 286" fill="none" stroke="#fde68a" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="637" cy="248" r={34 + Math.sin(frame * 0.7) * 8} fill="rgba(253,224,71,0.18)" />
+          </g>
+        ) : null}
+      </g>
+
+      {/* gas chamber */}
+      <clipPath id="chamberClip">
+        <path d={`M508 174 Q640 126 772 174 L754 ${pistonY + 16} L526 ${pistonY + 16} Z`} />
+      </clipPath>
+      <g clipPath="url(#chamberClip)">
+        <rect x="508" y={chamberTop} width="264" height={chamberHeight} fill="url(#gasBlue)" opacity={flowOpacity(kind, "intake", progress)} />
+        <rect x="508" y={chamberTop} width="264" height={chamberHeight} fill="rgba(147,197,253,0.42)" opacity={flowOpacity(kind, "compression", progress)} />
+        <circle cx="640" cy={pistonY - 76} r={120 * powerScale} fill="url(#fire)" opacity={flowOpacity(kind, "power", progress)} />
+        <rect x="508" y={chamberTop} width="264" height={chamberHeight} fill="rgba(75,85,99,0.58)" opacity={flowOpacity(kind, "exhaust", progress)} />
+      </g>
+
+      {/* flow arrows */}
+      {kind === "intake" ? (
+        <g opacity={flowOpacity(kind, "intake", progress)}>
+          {[0, 1, 2].map((i) => (
+            <path key={i} d={`M${150 + progress * 260 - i * 45} 236 C300 236 390 246 506 300`} fill="none" stroke="rgba(125,211,252,0.86)" strokeWidth="9" strokeLinecap="round" strokeDasharray="34 28" />
+          ))}
+          <text x="154" y="196" fill="#e0f2fe" fontSize="24" fontWeight="950">air + fuel in</text>
+        </g>
+      ) : null}
+
+      {kind === "exhaust" ? (
+        <g opacity={flowOpacity(kind, "exhaust", progress)}>
+          {[0, 1, 2].map((i) => (
+            <path key={i} d={`M${664 + progress * 210 + i * 42} 306 C820 260 930 238 1125 236`} fill="none" stroke="rgba(209,213,219,0.8)" strokeWidth="10" strokeLinecap="round" strokeDasharray="34 28" />
+          ))}
+          <text x="956" y="196" fill="#f3f4f6" fontSize="24" fontWeight="950">exhaust out</text>
+        </g>
+      ) : null}
+
+      {/* compression markers */}
+      {Array.from({ length: compressionLines }).map((_, i) => (
+        <path key={i} d={`M548 ${230 + i * 19} Q640 ${210 + i * 10} 732 ${230 + i * 19}`} fill="none" stroke="rgba(219,234,254,0.46)" strokeWidth="3" strokeLinecap="round" />
+      ))}
+
+      {/* piston */}
+      <g transform={`translate(0 ${pistonY})`}>
+        <rect x="512" y="0" width="256" height="92" rx="14" fill="url(#steel)" stroke="#1f1d1b" strokeWidth="6" />
+        <path d="M520 22 H760 M520 39 H760 M520 57 H760" stroke="rgba(31,29,27,0.62)" strokeWidth="4" />
+        <circle cx="640" cy="46" r="14" fill="#111" />
+        <rect x="516" y="8" width="70" height="78" rx="10" fill="rgba(255,255,255,0.28)" />
+      </g>
+
+      {/* rod and crank */}
+      <line x1="640" y1={pistonY + 88} x2={crankX} y2={crankY} stroke="#8a7b72" strokeWidth="22" strokeLinecap="round" />
+      <line x1="640" y1={pistonY + 88} x2={crankX} y2={crankY} stroke="#2f2926" strokeWidth="5" strokeLinecap="round" opacity="0.55" />
+      <circle cx="640" cy="616" r="66" fill="rgba(110,96,87,0.45)" stroke="#2c2623" strokeWidth="8" />
+      <circle cx={crankX} cy={crankY} r="18" fill="#e7e1d7" stroke="#28211f" strokeWidth="5" />
+      <line x1="640" y1="616" x2={crankX} y2={crankY} stroke="#4b403b" strokeWidth="10" strokeLinecap="round" />
+
+      {/* side labels */}
+      <g opacity="0.9">
+        <text x="92" y="286" fill="rgba(255,255,255,0.84)" fontSize="18" fontWeight="900">INTAKE PORT</text>
+        <text x="1012" y="286" fill="rgba(255,255,255,0.84)" fontSize="18" fontWeight="900">EXHAUST PORT</text>
+        <text x="782" y="580" fill="rgba(255,255,255,0.7)" fontSize="18" fontWeight="850">crank turns</text>
+      </g>
+    </svg>
+  );
+}
+
+function BottomCaption({ contract }: { contract: EngineReelContract }) {
+  const frame = useCurrentFrame();
+  const active = findEngineReelScene(contract, frame);
+  const { fps } = useVideoConfig();
+  const captionIn = spring({ frame: Math.max(0, frame - active.startFrame), fps, config: { damping: 18, stiffness: 90 } });
+
+  return (
+    <div style={{ position: "absolute", left: 48, right: 48, bottom: 32 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto minmax(0, 1fr)",
+          gap: 18,
+          alignItems: "center",
+          padding: "18px 22px",
+          borderRadius: 26,
+          background: "rgba(0,0,0,0.72)",
+          border: "1px solid rgba(255,255,255,0.14)",
+          boxShadow: "0 28px 80px rgba(0,0,0,0.4)",
+          transform: `translateY(${interpolate(captionIn, [0, 1], [16, 0])}px)`,
+          opacity: captionIn,
+        }}
+      >
+        <div
+          style={{
+            width: 82,
+            height: 82,
+            borderRadius: 999,
+            display: "grid",
+            placeItems: "center",
+            color: "white",
+            fontWeight: 950,
+            fontSize: 27,
+            background: "radial-gradient(circle at 30% 20%, rgba(255,255,255,0.28), transparent 34%), linear-gradient(145deg, #8b5cf6, #312e81)",
+            border: "1px solid rgba(255,255,255,0.18)",
+          }}
+        >
+          {active.sceneIndex + 1}
+        </div>
+        <div>
+          <div style={{ color: "rgba(255,255,255,0.68)", fontSize: 14, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 900 }}>
+            {active.scene.title}
+          </div>
+          <div style={{ marginTop: 8, color: "white", fontSize: 28, lineHeight: 1.18, fontWeight: 900 }}>
+            {active.scene.caption}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CheckpointOverlay({ contract }: { contract: EngineReelContract }) {
+  const frame = useCurrentFrame();
+  const active = findEngineReelScene(contract, frame);
+  const opacity = active.scene.kind === "checkpoint" ? easeOut(active.progress) : 0;
+
+  if (opacity <= 0.02) return null;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 78,
+        top: 140,
+        width: 390,
+        padding: 24,
+        borderRadius: 28,
+        background: "rgba(17,24,39,0.82)",
+        border: "1px solid rgba(253,224,71,0.28)",
+        color: "white",
+        opacity,
+        transform: `scale(${interpolate(opacity, [0, 1], [0.94, 1])})`,
+        boxShadow: "0 24px 80px rgba(0,0,0,0.38)",
+      }}
+    >
+      <div style={{ color: "rgba(253,224,71,0.96)", fontSize: 13, fontWeight: 950, letterSpacing: "0.16em", textTransform: "uppercase" }}>
+        MyWay checkpoint
+      </div>
+      <div style={{ marginTop: 12, fontSize: 25, lineHeight: 1.2, fontWeight: 950 }}>
+        {contract.checkpoint.prompt}
+      </div>
+      <div style={{ marginTop: 14, color: "rgba(255,255,255,0.66)", fontSize: 16, lineHeight: 1.45 }}>
+        The video should end by checking the exact stuck point, not by being passive.
+      </div>
+    </div>
+  );
+}
+
+export function EngineCycleReelComposition({ contract }: EngineCycleReelCompositionProps) {
+  return (
+    <AbsoluteFill style={{ background: "#0a0a0f", fontFamily: "Arial, Helvetica, sans-serif", overflow: "hidden" }}>
+      <CylinderCutaway contract={contract} />
+      <TopTitle contract={contract} />
+      <BottomCaption contract={contract} />
+      <CheckpointOverlay contract={contract} />
+    </AbsoluteFill>
+  );
+}

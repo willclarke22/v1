@@ -12,12 +12,14 @@
     "@qdrant/js-client-rest": "^1.17.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
+    "@remotion/player": "^4.0.481",
     "@supabase/supabase-js": "^2.100.0",
     "dotenv": "^17.4.2",
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "remotion": "^4.0.481",
     "three": "^0.183.2"
   },
   "devDependencies": {

@@ -1,0 +1,324 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type ScenePlanRequest = {
+  prompt?: string;
+  model?: string;
+};
+
+type NvidiaChatResponse = {
+  choices?: Array<{
+    message?: {
+      content?: unknown;
+    };
+    finish_reason?: string;
+  }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+};
+
+const NVIDIA_BASE_URL = process.env.NVIDIA_BASE_URL ?? "https://integrate.api.nvidia.com/v1";
+const DEFAULT_NVIDIA_MODEL = process.env.MYWAY_NVIDIA_ANIMATION_MODEL ?? "nvidia/nemotron-3-super-120b-a12b";
+const REQUEST_TIMEOUT_MS = 240_000;
+
+function contentToString(content: unknown) {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (part && typeof part === "object") {
+          const record = part as Record<string, unknown>;
+          if (typeof record.text === "string") return record.text;
+          if (typeof record.content === "string") return record.content;
+        }
+        return "";
+      })
+      .join("")
+      .trim();
+  }
+  return "";
+}
+
+function stripCodeFence(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("```")) return trimmed;
+  return trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+}
+
+function safeParseJson(content: string) {
+  const stripped = stripCodeFence(content);
+  try {
+    return JSON.parse(stripped) as unknown;
+  } catch (error) {
+    const firstBrace = stripped.indexOf("{");
+    const lastBrace = stripped.lastIndexOf("}");
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      return JSON.parse(stripped.slice(firstBrace, lastBrace + 1)) as unknown;
+    }
+    throw error;
+  }
+}
+
+function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timeout));
+}
+
+function fallbackPlan(prompt: string) {
+  return {
+    schema_version: "myway_blender_playground_scene_v2",
+    title: "Monster behind the wall",
+    prompt,
+    scene_intent: {
+      read: "A playful monster is mostly hidden behind a wall while an unaware kid passes in the foreground.",
+      cinematic_goal: "Make the silhouette, wall occlusion, rim light, and camera angle carry the scene without text labels.",
+      avoid: ["gore", "realistic fear", "crowded props", "floating labels unless requested"],
+    },
+    render_quality: {
+      target: "polished_stylized_preview",
+      engine: "eevee_next_safe",
+      resolution: [960, 540],
+      samples: 64,
+      use_depth_of_field: true,
+      use_volumetric_fog: true,
+      use_beveled_geometry: true,
+      use_reflective_floor: true,
+      text_labels: "none",
+    },
+    composition: {
+      layout: "foreground_kid_left_hidden_monster_right",
+      focal_subject: "monster_peek",
+      silhouette_priority: "monster head and claws should read clearly around the wall edge",
+      negative_space: "left side gives the kid room to walk; right wall hides the monster body",
+    },
+    camera: {
+      lens_mm: 58,
+      framing: "medium_wide",
+      angle: "low three-quarter hallway angle",
+      focus_target: "monster_eyes",
+      start: { position: [-3.9, -6.7, 2.45], look_at: [0.12, -0.2, 1.05] },
+      end: { position: [-3.25, -5.75, 2.35], look_at: [0.38, -0.45, 1.16] },
+      motion: "slow_push_in_with_tiny_orbit",
+    },
+    environment: {
+      kind: "corner_hallway_stage",
+      floor: "dark reflective floor with subtle perspective grid",
+      walls: "beveled blue-violet hallway corner with one occluding wall",
+      atmosphere: "thin bluish floor fog",
+      background: "dark studio gradient",
+    },
+    subjects: [
+      {
+        id: "monster",
+        kind: "monster",
+        role: "hiding_behind_wall",
+        position_hint: "back_right",
+        pose: "peeking around the wall with three small claws wrapped on the edge",
+        expression: "mischievous wide eyes and small smile",
+        color_hint: "green_teal",
+        scale: "large",
+        material_notes: "soft rubbery body, glowing eyes, pale small horns",
+        animation: "lean farther into view after frame 12",
+      },
+      {
+        id: "kid",
+        kind: "child",
+        role: "unaware_walk_by",
+        position_hint: "front_left",
+        pose: "walking forward while looking away from the monster",
+        expression: "unaware",
+        color_hint: "blue_hoodie",
+        scale: "small",
+        material_notes: "simple toy-like character, readable backpack silhouette",
+        animation: "walks slightly forward during the shot",
+      },
+    ],
+    objects: [
+      {
+        id: "hiding_wall",
+        kind: "wall_corner",
+        position_hint: "center_right",
+        purpose: "occludes most of the monster so the reveal is clear",
+        material_notes: "matte wall with glowing beveled edge",
+      },
+      {
+        id: "warm_hidden_light",
+        kind: "doorway_light",
+        position_hint: "back_right",
+        purpose: "warm light spill from behind the wall separates the monster from the background",
+        material_notes: "emissive warm rectangular panel",
+      },
+    ],
+    lighting: {
+      key: "large cool softbox from upper left",
+      fill: "very dim blue fill so shadows stay readable",
+      rim: "cyan-green rim light behind monster edge",
+      practical: "warm orange hidden light behind the wall",
+      shadow_strength: "strong but soft-edged",
+    },
+    effects: {
+      fog: "thin floor fog, not cloudy",
+      bloom: "subtle on eyes, rim edge, and warm panel",
+      depth_of_field: "focus on monster eyes and wall edge; kid slightly softer",
+      vignette: "medium cinematic dark corners",
+    },
+    animation_beats: [
+      { frame_range: [1, 12], action: "establish hallway corner and unaware kid" },
+      { frame_range: [13, 34], action: "monster slowly leans from behind the wall; eyes catch rim light" },
+      { frame_range: [35, 48], action: "camera pushes in and the monster silhouette becomes the clear focal point" },
+    ],
+    blender_tools_requested: [
+      "beveled cubes",
+      "smooth character primitives",
+      "rim/key/fill/practical lights",
+      "depth of field",
+      "transparent fog slabs",
+      "reflective floor material",
+      "no mirrored text labels",
+    ],
+  };
+}
+
+function buildSystemPrompt() {
+  return [
+    "You are a cinematic Blender scene planner for a local sandbox.",
+    "Return ONLY valid JSON. No markdown. No comments. No executable code.",
+    "You are not writing Blender Python. You are describing a safe scene that a trusted Blender script can render.",
+    "Your output should be much more specific than a normal image prompt. Give Blender-renderable direction for camera, composition, lighting, materials, environment, subjects, effects, and animation beats.",
+    "Do not assume external assets. Use primitive-friendly geometry unless the prompt asks otherwise.",
+    "Prefer high readability: clear silhouettes, strong foreground/background separation, and one focal subject.",
+    "For cinematic freeform tests, avoid floating labels unless the user explicitly asks for text labels. The image itself should carry the scene.",
+    "Use stylized, non-graphic, readable scenes. No gore. No horror violence. A playful scare is fine.",
+  ].join("\n");
+}
+
+function buildUserPrompt(prompt: string) {
+  return [
+    "Create a rich Blender-friendly scene plan for this freeform prompt:",
+    prompt,
+    "",
+    "Return exactly one JSON object with this shape:",
+    "schema_version: \"myway_blender_playground_scene_v2\"",
+    "title: short title",
+    "prompt: original prompt",
+    "scene_intent: { read, cinematic_goal, avoid: string[] }",
+    "render_quality: { target, engine, resolution, samples, use_depth_of_field, use_volumetric_fog, use_beveled_geometry, use_reflective_floor, text_labels }",
+    "composition: { layout, focal_subject, silhouette_priority, negative_space }",
+    "camera: { lens_mm, framing, angle, focus_target, start: { position, look_at }, end: { position, look_at }, motion }",
+    "environment: { kind, floor, walls, atmosphere, background }",
+    "subjects: 1 to 4 objects with { id, kind, role, position_hint, pose, expression, color_hint, scale, material_notes, animation }",
+    "objects: 0 to 8 objects with { id, kind, position_hint, purpose, material_notes }",
+    "lighting: { key, fill, rim, practical, shadow_strength }",
+    "effects: { fog, bloom, depth_of_field, vignette }",
+    "animation_beats: exactly 3 beats with { frame_range, action }",
+    "blender_tools_requested: 5 to 12 strings naming safe Blender tools/features to use",
+    "",
+    "Allowed subject kinds: monster, child, person, robot, creature, animal, abstract_character.",
+    "Allowed object kinds: wall_corner, doorway_light, doorway, table, chair, window, box, machine, tree, rock, generic_prop.",
+    "Allowed position hints: front_left, front_right, center, back_left, back_right, center_right, center_left.",
+    "Allowed text_labels values: none, minimal, requested.",
+    "Keep all scene content safe and non-graphic.",
+    "Return JSON only.",
+  ].join("\n");
+}
+
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    route: "blender-playground/scene-plan",
+    schema_version: "myway_blender_playground_scene_v2",
+    default_model: DEFAULT_NVIDIA_MODEL,
+    has_nvidia_api_key: Boolean(process.env.NVIDIA_API_KEY?.trim()),
+  });
+}
+
+export async function POST(request: NextRequest) {
+  const body = (await request.json().catch(() => ({}))) as ScenePlanRequest;
+  const prompt = body.prompt?.trim() || "Create a monster hiding behind a wall about to scare a kid.";
+  const model = body.model?.trim() || DEFAULT_NVIDIA_MODEL;
+  const apiKey = process.env.NVIDIA_API_KEY;
+
+  if (!apiKey?.trim()) {
+    return NextResponse.json({
+      ok: true,
+      fallback: true,
+      warning: "Missing NVIDIA_API_KEY, so the sandbox returned a deterministic fallback scene plan.",
+      plan: fallbackPlan(prompt),
+    });
+  }
+
+  const startedAt = Date.now();
+
+  try {
+    const response = await fetchWithTimeout(
+      `${NVIDIA_BASE_URL}/chat/completions`,
+      {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          "content-type": "application/json",
+          accept: "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.18,
+          top_p: 0.86,
+          max_tokens: 3600,
+          response_format: { type: "json_object" },
+          chat_template_kwargs: { enable_thinking: false },
+          messages: [
+            { role: "system", content: buildSystemPrompt() },
+            { role: "user", content: buildUserPrompt(prompt) },
+          ],
+        }),
+      },
+      REQUEST_TIMEOUT_MS,
+    );
+
+    const elapsedMs = Date.now() - startedAt;
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      return NextResponse.json({
+        ok: true,
+        fallback: true,
+        warning: `NVIDIA request failed (${response.status}); returned fallback scene plan.`,
+        detail: detail.slice(0, 800),
+        plan: fallbackPlan(prompt),
+      });
+    }
+
+    const data = (await response.json()) as NvidiaChatResponse;
+    const content = contentToString(data.choices?.[0]?.message?.content);
+    const plan = safeParseJson(content);
+
+    return NextResponse.json({
+      ok: true,
+      fallback: false,
+      provider: "nvidia",
+      model,
+      plan,
+      debug: {
+        elapsed_ms: elapsedMs,
+        finish_reason: data.choices?.[0]?.finish_reason ?? null,
+        usage: data.usage ?? null,
+        raw_content_preview: content.slice(0, 1600),
+      },
+    });
+  } catch (error) {
+    return NextResponse.json({
+      ok: true,
+      fallback: true,
+      warning: "Scene-plan generation failed; returned fallback scene plan.",
+      error: error instanceof Error ? error.message : "Unknown scene-plan error",
+      plan: fallbackPlan(prompt),
+    });
+  }
+}

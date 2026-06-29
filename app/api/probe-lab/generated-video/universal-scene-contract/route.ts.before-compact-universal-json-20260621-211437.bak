@@ -1,0 +1,266 @@
+import { NextResponse } from "next/server";
+import {
+  buildFallbackUniversalSceneContract,
+  normalizeUniversalSceneContract,
+  stableUniversalSceneContractId,
+  type UniversalSceneContract,
+} from "@/ui/learning-space/probes/generated-video/universal-scene/universal-scene-contract";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type OllamaUniversalSceneRequest = {
+  learner_signal?: string;
+  model?: string;
+};
+
+type OllamaChatResponse = {
+  message?: {
+    content?: unknown;
+  };
+  done?: boolean;
+  done_reason?: string;
+  total_duration?: number;
+  load_duration?: number;
+  prompt_eval_count?: number;
+  eval_count?: number;
+};
+
+const OLLAMA_URL = process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434";
+const DEFAULT_MODEL = process.env.MYWAY_OLLAMA_ANIMATION_MODEL ?? "qwen2.5:3b";
+const REQUEST_TIMEOUT_MS = 540_000;
+const PING_TIMEOUT_MS = 10_000;
+
+function buildSystemPrompt() {
+  return [
+    "You are MyWay's Universal Animation Scene Director.",
+    "Return only valid JSON. No markdown. No comments. No code fences.",
+    "You are NOT writing React, TypeScript, Remotion, HTML, CSS, or executable code.",
+    "You are writing a renderable JSON scene graph for a trusted Remotion/SVG renderer.",
+    "The scene must be specific to the learner message. Do not force an engine example unless the learner asks about engines.",
+    "You may invent whatever simple visual objects are needed: a baseball diamond, bank layout, graph, circuit, map, timeline, sentence diagram, or another original educational diagram.",
+    "Use safe vector primitives only: card, rect, circle, ellipse, polygon, line, arrow, path, text, icon, highlight.",
+    "Use clear learner-facing captions with minimal jargon.",
+  ].join("\n");
+}
+
+function buildUserPrompt(learnerSignal: string) {
+  return [
+    `Learner message: ${learnerSignal}`,
+    "Create a universal scene contract JSON object with exactly these top-level keys:",
+    "title, diagnosis_guess, learning_goal, scene_style, elements, scenes, checkpoint.",
+    "Coordinate system: width 1280, height 720. Keep main visuals inside x=70..1210 and y=120..625.",
+    "scene_style must include: visual_language, background, notes.",
+    "background must be one of: deep_space, paper, chalkboard, clean_room.",
+    "elements: create 5 to 14 visual elements specific to this learner message.",
+    "Each element must have: id, kind, label, x, y, tone, layer.",
+    "Element kind values: card, rect, circle, ellipse, polygon, line, arrow, path, text, icon, highlight.",
+    "For card/rect/text include width and height. For circle include radius. For polygon include points. For line/arrow include from and to. For path include d.",
+    "Scenes: create 3 to 5 scenes. Each scene must have: id, title, caption, durationInFrames, focus, visible_element_ids, spotlight_element_ids, actions.",
+    "Captions must be under 18 words each.",
+    "visible_element_ids and spotlight_element_ids must reference element ids you created.",
+    "Actions may use: appear, fade, move_to, highlight, pulse, draw, scale_to.",
+    "Action fields: target_id, kind, startFrame, endFrame, optional to with x, y, opacity, scale, rotation.",
+    "checkpoint must include: prompt, expected_idea.",
+    "Make the animation teach the exact confusion. Avoid generic study advice.",
+    "Return only JSON.",
+  ].join("\n");
+}
+
+function stripCodeFence(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("```")) return trimmed;
+  return trimmed
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+}
+
+function safeParseJson(content: string) {
+  const stripped = stripCodeFence(content);
+  try {
+    return JSON.parse(stripped) as unknown;
+  } catch (error) {
+    const firstBrace = stripped.indexOf("{");
+    const lastBrace = stripped.lastIndexOf("}");
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      return JSON.parse(stripped.slice(firstBrace, lastBrace + 1)) as unknown;
+    }
+    throw error;
+  }
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function normalizeOllamaDraft(args: {
+  draft: unknown;
+  model: string;
+  learnerSignal: string;
+}): UniversalSceneContract {
+  const draftRecord = args.draft && typeof args.draft === "object" ? (args.draft as Record<string, unknown>) : {};
+
+  return normalizeUniversalSceneContract(
+    {
+      ...draftRecord,
+      schema_version: "myway_universal_scene_contract_v1",
+      contract_id:
+        typeof draftRecord.contract_id === "string" && draftRecord.contract_id.trim()
+          ? draftRecord.contract_id
+          : stableUniversalSceneContractId(`${args.model}:${args.learnerSignal}:${JSON.stringify(draftRecord).slice(0, 420)}`),
+      learner_signal: args.learnerSignal,
+    },
+    args.learnerSignal,
+  );
+}
+
+async function callOllama(args: { learnerSignal: string; model: string }) {
+  const startedAt = Date.now();
+
+  const response = await fetchWithTimeout(
+    `${OLLAMA_URL}/api/chat`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: args.model,
+        stream: false,
+        keep_alive: "10m",
+        format: "json",
+        options: {
+          temperature: 0.22,
+          top_p: 0.9,
+          num_ctx: 2048,
+          num_predict: 1400,
+        },
+        messages: [
+          { role: "system", content: buildSystemPrompt() },
+          { role: "user", content: buildUserPrompt(args.learnerSignal) },
+        ],
+      }),
+    },
+    REQUEST_TIMEOUT_MS,
+  );
+
+  const elapsed_ms = Date.now() - startedAt;
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`Ollama request failed (${response.status}) after ${elapsed_ms}ms. ${detail.slice(0, 640)}`);
+  }
+
+  const data = (await response.json()) as OllamaChatResponse;
+  const content = data?.message?.content;
+
+  if (typeof content !== "string" || !content.trim()) {
+    throw new Error(`Ollama response did not include usable message.content after ${elapsed_ms}ms.`);
+  }
+
+  const draft = safeParseJson(content);
+  const contract = normalizeOllamaDraft({ draft, model: args.model, learnerSignal: args.learnerSignal });
+
+  return {
+    contract,
+    meta: {
+      elapsed_ms,
+      done_reason: data.done_reason ?? null,
+      prompt_eval_count: data.prompt_eval_count ?? null,
+      eval_count: data.eval_count ?? null,
+      raw_content_preview: content.slice(0, 720),
+    },
+  };
+}
+
+function formatOllamaError(error: unknown) {
+  if (error instanceof Error) {
+    if (error.name === "AbortError" || /aborted/i.test(error.message)) {
+      return `Ollama universal-scene generation timed out or was aborted after ${Math.round(REQUEST_TIMEOUT_MS / 1000)}s. The model may be too slow on CPU for this larger scene graph prompt.`;
+    }
+    return error.message;
+  }
+
+  return "Unknown Ollama error";
+}
+
+export async function GET() {
+  const startedAt = Date.now();
+
+  try {
+    const response = await fetchWithTimeout(`${OLLAMA_URL}/api/tags`, { method: "GET" }, PING_TIMEOUT_MS);
+    const text = await response.text();
+
+    return NextResponse.json({
+      ok: response.ok,
+      route: "universal-scene-contract",
+      ollama_base_url: OLLAMA_URL,
+      default_model: DEFAULT_MODEL,
+      status: response.status,
+      elapsed_ms: Date.now() - startedAt,
+      preview: text.slice(0, 800),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        route: "universal-scene-contract",
+        ollama_base_url: OLLAMA_URL,
+        default_model: DEFAULT_MODEL,
+        elapsed_ms: Date.now() - startedAt,
+        error: error instanceof Error ? `${error.name}: ${error.message}` : "Unknown ping error",
+      },
+      { status: 200 },
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  const body = (await request.json().catch(() => ({}))) as OllamaUniversalSceneRequest;
+  const learnerSignal = body.learner_signal?.trim() || "I do not understand why a baseball runner has to tag up.";
+  const model = body.model?.trim() || DEFAULT_MODEL;
+
+  try {
+    const result = await callOllama({ learnerSignal, model });
+
+    return NextResponse.json({
+      ok: true,
+      source: "ollama",
+      model,
+      contract: result.contract,
+      warnings: [
+        `Ollama generated a universal scene graph in ${Math.round(result.meta.elapsed_ms / 1000)}s; MyWay normalized it into a trusted Remotion contract.`,
+      ],
+      debug: result.meta,
+    });
+  } catch (error) {
+    const fallbackContract = buildFallbackUniversalSceneContract(learnerSignal);
+    const message = formatOllamaError(error);
+
+    console.error("[myway-universal-scene-contract]", message);
+
+    return NextResponse.json(
+      {
+        ok: false,
+        source: "fallback",
+        model,
+        error: message,
+        contract: fallbackContract,
+        warnings: [
+          "Ollama did not return a usable universal scene contract, so the sandbox returned MyWay's deterministic fallback contract.",
+          "This route expects arbitrary scene JSON, not an engine template. Check the pnpm dev terminal for [myway-universal-scene-contract].",
+        ],
+      },
+      { status: 200 },
+    );
+  }
+}

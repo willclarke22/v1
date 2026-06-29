@@ -83,6 +83,10 @@ export type ProbeAnswerDraft = {
   audio_recording_size_bytes?: number | null;
   selected_click_seconds?: number | null;
   selected_click_label?: string | null;
+  generated_video_contract_id?: string | null;
+  generated_video_completed?: boolean | null;
+  generated_video_elapsed_seconds?: number | null;
+  generated_video_checkpoint_response?: string | null;
   self_reported_confidence?: number | null;
 };
 
@@ -134,6 +138,10 @@ export function createEmptyProbeAnswerDraft(
     audio_recording_size_bytes: null,
     selected_click_seconds: null,
     selected_click_label: null,
+    generated_video_contract_id: null,
+    generated_video_completed: null,
+    generated_video_elapsed_seconds: null,
+    generated_video_checkpoint_response: "",
     self_reported_confidence: null,
   };
 }

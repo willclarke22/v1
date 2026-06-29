@@ -3,6 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { ProbeShell } from "./probe-shell";
 import type { GenericProbeComponentProps } from "./probe-ui-types";
+import {
+  ProbeButton,
+  ProbeMediaFrame,
+  ProbeMiniLabel,
+  ProbePill,
+  ProbeStack,
+  ProbeTextArea,
+} from "./shared";
 
 function formatDuration(seconds: number | null | undefined) {
   if (!seconds || seconds <= 0) return "0:00";
@@ -23,14 +31,28 @@ export function AudioResponseProbe(props: GenericProbeComponentProps) {
   const previousAudioUrlRef = useRef<string | null>(null);
 
   const [isRecording, setIsRecording] = useState(false);
+  const [liveSeconds, setLiveSeconds] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(
     props.draft.audio_recording_url ?? null,
   );
 
   useEffect(() => {
+    if (!isRecording) return;
+
+    const id = window.setInterval(() => {
+      const startedAt = startedAtRef.current ?? Date.now();
+      setLiveSeconds(Math.max(0, (Date.now() - startedAt) / 1000));
+    }, 250);
+
+    return () => window.clearInterval(id);
+  }, [isRecording]);
+
+  useEffect(() => {
     return () => {
-      recorderRef.current?.stop();
+      if (recorderRef.current?.state === "recording") {
+        recorderRef.current.stop();
+      }
       streamRef.current?.getTracks().forEach((track) => track.stop());
       if (previousAudioUrlRef.current) {
         URL.revokeObjectURL(previousAudioUrlRef.current);
@@ -56,6 +78,7 @@ export function AudioResponseProbe(props: GenericProbeComponentProps) {
       recorderRef.current = recorder;
       chunksRef.current = [];
       startedAtRef.current = Date.now();
+      setLiveSeconds(0);
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -69,7 +92,7 @@ export function AudioResponseProbe(props: GenericProbeComponentProps) {
         });
         const durationSeconds = Math.max(
           0,
-          ((Date.now() - (startedAtRef.current ?? Date.now())) / 1000),
+          (Date.now() - (startedAtRef.current ?? Date.now())) / 1000,
         );
         const nextAudioUrl = URL.createObjectURL(blob);
 
@@ -80,6 +103,7 @@ export function AudioResponseProbe(props: GenericProbeComponentProps) {
         previousAudioUrlRef.current = nextAudioUrl;
         setAudioUrl(nextAudioUrl);
         setIsRecording(false);
+        setLiveSeconds(durationSeconds);
         stream.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         recorderRef.current = null;
@@ -115,8 +139,29 @@ export function AudioResponseProbe(props: GenericProbeComponentProps) {
     recorderRef.current?.stop();
   }
 
+  function clearRecording() {
+    if (previousAudioUrlRef.current) {
+      URL.revokeObjectURL(previousAudioUrlRef.current);
+      previousAudioUrlRef.current = null;
+    }
+
+    setAudioUrl(null);
+    setLiveSeconds(0);
+
+    props.onDraftChange({
+      ...props.draft,
+      attempt_type: "audio_response",
+      audio_recording_url: null,
+      audio_recording_duration_seconds: null,
+      audio_recording_mime_type: null,
+      audio_recording_size_bytes: null,
+    });
+  }
+
   const duration = props.draft.audio_recording_duration_seconds ?? null;
   const transcript = props.draft.audio_response_transcript ?? "";
+  const displaySeconds = isRecording ? liveSeconds : duration;
+  const hasRecording = Boolean(audioUrl);
 
   return (
     <ProbeShell
@@ -126,129 +171,127 @@ export function AudioResponseProbe(props: GenericProbeComponentProps) {
         attempt_type: "audio_response",
       }}
     >
-      <div style={{ display: "grid", gap: "1rem" }}>
-        <div
-          style={{
-            display: "grid",
-            gap: "0.9rem",
-            justifyItems: "center",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "28px",
-            padding: "1.4rem",
-            background:
-              "radial-gradient(circle at center, rgba(168,85,247,0.16), rgba(0,0,0,0.12))",
-          }}
-        >
-          <button
-            type="button"
-            disabled={props.disabled}
-            onClick={isRecording ? stopRecording : startRecording}
-            aria-label={isRecording ? "Stop recording" : "Start recording"}
+      <ProbeStack gap="1rem">
+        <ProbeMediaFrame>
+          <div
             style={{
-              width: "6.25rem",
-              height: "6.25rem",
-              borderRadius: isRecording ? "2rem" : "999px",
-              border: "1px solid rgba(255,255,255,0.22)",
-              background: isRecording
-                ? "linear-gradient(145deg, rgba(244,63,94,0.7), rgba(168,85,247,0.28))"
-                : "linear-gradient(145deg, rgba(221,214,254,0.26), rgba(168,85,247,0.22))",
-              color: "white",
-              boxShadow: isRecording
-                ? "0 0 42px rgba(244,63,94,0.24)"
-                : "0 0 42px rgba(168,85,247,0.22)",
-              cursor: props.disabled ? "not-allowed" : "pointer",
               display: "grid",
-              placeItems: "center",
-              transition: "border-radius 160ms ease, background 160ms ease, transform 160ms ease",
+              gap: "1rem",
+              justifyItems: "center",
+              padding: "1.35rem",
+              background:
+                "radial-gradient(circle at center, rgba(168,85,247,0.16), rgba(0,0,0,0.12))",
             }}
           >
-            {isRecording ? (
-              <span
-                aria-hidden
+            <button
+              type="button"
+              disabled={props.disabled}
+              onClick={isRecording ? stopRecording : startRecording}
+              aria-label={isRecording ? "Stop recording" : "Start recording"}
+              style={{
+                position: "relative",
+                width: "6.5rem",
+                height: "6.5rem",
+                borderRadius: isRecording ? "2rem" : "999px",
+                border: "1px solid rgba(255,255,255,0.22)",
+                background: isRecording
+                  ? "linear-gradient(145deg, rgba(244,63,94,0.72), rgba(168,85,247,0.28))"
+                  : "linear-gradient(145deg, rgba(221,214,254,0.26), rgba(168,85,247,0.22))",
+                color: "white",
+                boxShadow: isRecording
+                  ? "0 0 52px rgba(244,63,94,0.28)"
+                  : "0 0 44px rgba(168,85,247,0.22)",
+                cursor: props.disabled ? "not-allowed" : "pointer",
+                display: "grid",
+                placeItems: "center",
+                transition:
+                  "border-radius 160ms ease, background 160ms ease, transform 160ms ease",
+              }}
+            >
+              {isRecording ? (
+                <span
+                  aria-hidden
+                  style={{
+                    width: "1.75rem",
+                    height: "1.75rem",
+                    borderRadius: "0.35rem",
+                    background: "white",
+                  }}
+                />
+              ) : (
+                <span aria-hidden style={{ fontSize: "2.25rem", lineHeight: 1 }}>
+                  ●
+                </span>
+              )}
+            </button>
+
+            <div style={{ textAlign: "center" }}>
+              <p style={{ margin: 0, color: "white", fontWeight: 950 }}>
+                {isRecording
+                  ? "Recording..."
+                  : hasRecording
+                    ? "Recording ready"
+                    : "Record your answer"}
+              </p>
+              <p
                 style={{
-                  width: "1.75rem",
-                  height: "1.75rem",
-                  borderRadius: "0.35rem",
-                  background: "white",
+                  margin: "0.28rem 0 0",
+                  color: "rgba(255,255,255,0.64)",
+                  fontSize: "0.84rem",
                 }}
-              />
-            ) : (
-              <span aria-hidden style={{ fontSize: "2.15rem", lineHeight: 1 }}>
-                ●
-              </span>
-            )}
-          </button>
+              >
+                Press the circle to start. Press the square to stop.
+              </p>
+            </div>
 
-          <div style={{ textAlign: "center" }}>
-            <p style={{ margin: 0, color: "white", fontWeight: 900 }}>
-              {isRecording ? "Recording..." : audioUrl ? "Recording ready" : "Record your answer"}
-            </p>
-            <p
-              style={{
-                margin: "0.28rem 0 0",
-                color: "rgba(255,255,255,0.64)",
-                fontSize: "0.84rem",
-              }}
-            >
-              Press the circle to start. Press the square to stop.
-              {duration ? ` Duration: ${formatDuration(duration)}.` : ""}
-            </p>
+            <ProbePill tone={isRecording ? "danger" : hasRecording ? "success" : "default"}>
+              {isRecording ? "live " : ""}
+              {formatDuration(displaySeconds)}
+            </ProbePill>
+
+            {audioUrl ? (
+              <audio controls src={audioUrl} style={{ width: "min(100%, 34rem)" }} />
+            ) : null}
+
+            {audioUrl ? (
+              <ProbeButton variant="ghost" disabled={props.disabled} onClick={clearRecording}>
+                Record again
+              </ProbeButton>
+            ) : null}
+
+            {errorMessage ? (
+              <p
+                style={{
+                  margin: 0,
+                  color: "rgba(254,202,202,0.95)",
+                  fontSize: "0.84rem",
+                  lineHeight: 1.5,
+                }}
+              >
+                {errorMessage}
+              </p>
+            ) : null}
           </div>
+        </ProbeMediaFrame>
 
-          {audioUrl ? (
-            <audio controls src={audioUrl} style={{ width: "min(100%, 34rem)" }} />
-          ) : null}
-
-          {errorMessage ? (
-            <p
-              style={{
-                margin: 0,
-                color: "rgba(254,202,202,0.95)",
-                fontSize: "0.84rem",
-              }}
-            >
-              {errorMessage}
-            </p>
-          ) : null}
-        </div>
-
-        <label style={{ display: "grid", gap: "0.6rem" }}>
-          <span
-            style={{
-              color: "rgba(255,255,255,0.86)",
-              fontSize: "0.9rem",
-              fontWeight: 800,
-            }}
-          >
-            Optional transcript or note
-          </span>
-          <textarea
+        <div style={{ display: "grid", gap: "0.55rem" }}>
+          <ProbeMiniLabel>Optional transcript or note</ProbeMiniLabel>
+          <ProbeTextArea
             value={transcript.startsWith("Audio recording captured") ? "" : transcript}
             disabled={props.disabled}
             rows={4}
-            placeholder="Type what you said, or add a quick note. The recording itself is enough for this local prototype."
-            onChange={(event) => {
+            placeholder="Type what you said, or add a quick note. Later this can connect to transcription/storage."
+            onChange={(nextValue) => {
               props.onDraftChange({
                 ...props.draft,
                 attempt_type: "audio_response",
-                audio_response_transcript: event.target.value,
-                text_response: event.target.value,
+                audio_response_transcript: nextValue,
+                text_response: nextValue,
               });
             }}
-            style={{
-              width: "100%",
-              resize: "vertical",
-              borderRadius: "18px",
-              padding: "0.9rem",
-              border: "1px solid rgba(255,255,255,0.14)",
-              background: "rgba(255,255,255,0.065)",
-              color: "inherit",
-              outline: "none",
-              lineHeight: 1.55,
-            }}
           />
-        </label>
-      </div>
+        </div>
+      </ProbeStack>
     </ProbeShell>
   );
 }

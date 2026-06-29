@@ -1,0 +1,184 @@
+{
+  "prompt": "Create a cinematic stylized scene of a friendly-looking monster hiding behind a wall about to scare a kid. The kid is walking by unaware. Make it spooky, polished, readable, and not gory. Do not use text labels unless they help the composition.",
+  "scene_plan": {
+    "schema_version": "myway_blender_playground_scene_v2",
+    "title": "Friendly Monster Peekaboo",
+    "prompt": "Create a cinematic stylized scene of a friendly-looking monster hiding behind a wall about to scare a kid. The kid is walking by unaware. Make it spooky, polished, readable, and not gory. Do not use text labels unless they help the composition.",
+    "scene_intent": {
+      "read": "clear visual storytelling with immediate emotional contrast",
+      "cinematic_goal": "build tension through composition and timing, resolve with a playful jump-scare",
+      "avoid": [
+        "gore",
+        "horror violence",
+        "realistic fear",
+        "text clutter",
+        "low readability"
+      ]
+    },
+    "render_quality": {
+      "target": "cinematic stylized",
+      "engine": "CYCLES",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "samples": 128,
+      "use_depth_of_field": true,
+      "use_volumetric_fog": false,
+      "use_beveled_geometry": true,
+      "use_reflective_floor": false,
+      "text_labels": "none"
+    },
+    "composition": {
+      "layout": "rule of thirds with monster in left third, kid moving through right third",
+      "focal_subject": "monster",
+      "silhouette_priority": "high",
+      "negative_space": "open hallway space to emphasize isolation and impending surprise"
+    },
+    "camera": {
+      "lens_mm": 35,
+      "framing": "medium wide shot, kid entering from right, monster partially visible behind left wall",
+      "angle": "slightly low angle to make monster loom slightly",
+      "focus_target": "monster's eyes",
+      "start": {
+        "position": [
+          3.5,
+          -2,
+          1.2
+        ],
+        "look_at": [
+          0,
+          0,
+          0.9
+        ]
+      },
+      "end": {
+        "position": [
+          3.5,
+          -2,
+          1.2
+        ],
+        "look_at": [
+          0,
+          0,
+          0.9
+        ]
+      },
+      "motion": "static"
+    },
+    "environment": {
+      "kind": "indoor hallway",
+      "floor": "dark wood planks",
+      "walls": "textured plaster, light gray",
+      "atmosphere": "dim ambient light with subtle volumetric dust",
+      "background": "blurred hallway receding into darkness"
+    },
+    "subjects": [
+      {
+        "id": "monster",
+        "kind": "monster",
+        "role": "antagonist (friendly)",
+        "position_hint": "back_left",
+        "pose": "crouched behind wall, one eye and hand visible, body coiled to spring",
+        "expression": "playful grin, eyes wide with anticipation",
+        "color_hint": "soft blue fur with lighter belly, dark blue claws",
+        "scale": [
+          0.9,
+          0.9,
+          0.9
+        ],
+        "material_notes": "fuzzy subsurface scattering for fur, glossy wet nose, matte claws",
+        "animation": "holds pose until beat 2, then lunges forward on beat 3"
+      },
+      {
+        "id": "kid",
+        "kind": "child",
+        "role": "unsuspecting victim",
+        "position_hint": "front_right",
+        "pose": "mid-stride, head slightly down, arms swinging casually",
+        "expression": "neutral, unaware",
+        "color_hint": "bright yellow raincoat, blue jeans, brown boots",
+        "scale": [
+          0.7,
+          0.7,
+          0.7
+        ],
+        "material_notes": "matte fabric, reflective boot toes",
+        "animation": "walks left to right across frame from beat 1 to beat 3"
+      }
+    ],
+    "objects": [
+      {
+        "id": "wall_corner",
+        "kind": "wall_corner",
+        "position_hint": "center",
+        "purpose": "occluder for monster's hiding spot",
+        "material_notes": "matches wall plaster, slight edge wear"
+      },
+      {
+        "id": "doorway_light",
+        "kind": "doorway_light",
+        "position_hint": "center_left",
+        "purpose": "practical light source casting soft glow",
+        "material_notes": "warm emissive panel, frosted cover"
+      }
+    ],
+    "lighting": {
+      "key": "soft blue rim from upper left, simulating moonlight through high window",
+      "fill": "very low ambient gray to preserve contrast",
+      "rim": "strong blue edge light on monster and kid's raincoat",
+      "practical": "doorway_light provides warm pool on floor",
+      "shadow_strength": 0.7
+    },
+    "effects": {
+      "fog": "none",
+      "bloom": "0.3 on practical light and monster's eyes",
+      "depth_of_field": "f/5.6, focused on monster, kid slightly soft on approach",
+      "vignette": "0.2 to draw focus inward"
+    },
+    "animation_beats": [
+      {
+        "frame_range": [
+          1,
+          30
+        ],
+        "action": "kid walks into frame from right, monster hidden and still"
+      },
+      {
+        "frame_range": [
+          31,
+          60
+        ],
+        "action": "kid passes midpoint, monster begins to rise slightly, eye widening"
+      },
+      {
+        "frame_range": [
+          61,
+          90
+        ],
+        "action": "monster lunges forward with playful roar, kid jumps and turns in surprise"
+      }
+    ],
+    "blender_tools_requested": [
+      "Principled BSDF",
+      "Subsurface Scattering",
+      "Emission Shader",
+      "Depth of Field",
+      "Bloom",
+      "Vignette",
+      "Bevel Tool",
+      "Shader to RGB",
+      "Light Falloff",
+      "Mix Shader",
+      "Transparent BSDF",
+      "Volume Scatter"
+    ]
+  },
+  "render": {
+    "render_id": "myway_playground_1782700733737_6924d1dd",
+    "frames": 48,
+    "fps": 12,
+    "width": 960,
+    "height": 540
+  }
+}

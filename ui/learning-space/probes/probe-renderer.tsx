@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import type { EngineRenderableProbe } from "@/lib/engine";
@@ -6,6 +6,7 @@ import { AudioClipProbe } from "./audio-clip-probe";
 import { AudioResponseProbe } from "./audio-response-probe";
 import { DragDropProbe } from "./drag-drop-probe";
 import { GraphProbe } from "./graph-probe";
+import { GeneratedVideoProbe, hasGeneratedAnimationContract } from "./generated-video";
 import { MultiChoiceProbe } from "./multi-choice-probe";
 import type {
   ProbeAnswerDraft,
@@ -81,6 +82,9 @@ export function ProbeRenderer(props: ProbeRendererProps) {
       return <VideoClickProbe {...sharedProps} />;
 
     case "video_explanation":
+      if (hasGeneratedAnimationContract(props.probe)) {
+        return <GeneratedVideoProbe {...sharedProps} />;
+      }
       return <VideoExplanationProbe {...sharedProps} />;
 
     case "discriminate":
@@ -104,4 +108,3 @@ export function ProbeRenderer(props: ProbeRendererProps) {
       return <TextProbe {...sharedProps} />;
   }
 }
-

@@ -1,0 +1,108 @@
+import {
+  buildDefaultVideoDirectorRequestContext,
+  type VideoDirectorRequestContext,
+} from "./video-director-contract";
+
+export type VideoDirectorLabSample = {
+  label: string;
+  context: VideoDirectorRequestContext;
+};
+
+function sample(label: string, context: Partial<VideoDirectorRequestContext> & { learner_message: string }): VideoDirectorLabSample {
+  const fallback = buildDefaultVideoDirectorRequestContext(context.learner_message);
+  return {
+    label,
+    context: {
+      ...fallback,
+      ...context,
+      learning_context: {
+        ...fallback.learning_context,
+        ...(context.learning_context ?? {}),
+      },
+      personalization_profile: {
+        ...fallback.personalization_profile,
+        ...(context.personalization_profile ?? {}),
+      },
+      renderer_capabilities: {
+        ...fallback.renderer_capabilities,
+        ...(context.renderer_capabilities ?? {}),
+      },
+    },
+  };
+}
+
+export const VIDEO_DIRECTOR_LAB_SAMPLES: VideoDirectorLabSample[] = [
+  sample("3D saddle root problem", {
+    learner_message: "I understand x squared and y squared separately, but I do not get why x squared minus y squared makes a saddle.",
+    learning_context: {
+      topic_label: "3D surfaces",
+      diagnosis_label: "representation_gap",
+      root_problem: "The learner sees x² and y² as separate positive shapes but does not see that subtracting y² creates opposite curvature in the crossing direction.",
+      misconception_target: "Both squared terms should make the surface go up everywhere.",
+      bridge_level: "bridge_0",
+      language_policy: { jargon_level: "none" },
+      prior_attempt_summary: "They can describe x² and y² alone, but not their combined 3D shape.",
+    },
+    personalization_profile: {
+      interests: ["mountain biking", "topographic maps", "visual puzzles"],
+      preferred_explanation_style: ["visual_description", "concrete_examples", "step_by_step"],
+      avoidances: ["formal multivariable calculus language", "long formulas before the visual"],
+      known_good_metaphors: ["paths through terrain"],
+      profile_summary: "Use terrain/map language only if it makes the crossing directions clearer.",
+    },
+  }),
+  sample("Claim vs evidence", {
+    learner_message: "I keep mixing up claim and evidence in an essay. I choose the sentence with facts as the claim.",
+    learning_context: {
+      topic_label: "Claim and evidence",
+      diagnosis_label: "discrimination_gap",
+      root_problem: "The learner is classifying by whether a sentence sounds factual instead of by the role it plays in the argument.",
+      misconception_target: "Fact-like wording means claim.",
+      bridge_level: "bridge_0",
+      language_policy: { jargon_level: "none" },
+    },
+    personalization_profile: {
+      interests: ["debate clips", "detective stories"],
+      preferred_explanation_style: ["concrete_examples", "curiosity_question", "visual_description"],
+      avoidances: ["grammar jargon"],
+      known_good_metaphors: ["detective clue vs conclusion"],
+      profile_summary: "The learner responds well when the animation asks what job each piece is doing.",
+    },
+  }),
+  sample("Spanish se", {
+    learner_message: "I keep mixing up when Spanish se is reflexive or passive.",
+    learning_context: {
+      topic_label: "Spanish se",
+      diagnosis_label: "discrimination_gap",
+      root_problem: "The learner recognizes the word se but is not using the surrounding sentence role to decide what se is doing.",
+      misconception_target: "The same word should always mean the same grammar job.",
+      bridge_level: "bridge_0",
+      language_policy: { jargon_level: "none" },
+    },
+    personalization_profile: {
+      interests: ["movie scenes", "simple role labels"],
+      preferred_explanation_style: ["visual_description", "concrete_examples", "step_by_step"],
+      avoidances: ["grammar labels before examples"],
+      known_good_metaphors: ["who is doing the action"],
+      profile_summary: "Keep the language plain: who acts, who receives, and whether the actor is named.",
+    },
+  }),
+  sample("Current and resistance", {
+    learner_message: "I do not understand why resistance changes current in a circuit.",
+    learning_context: {
+      topic_label: "Electric circuits",
+      diagnosis_label: "representation_gap",
+      root_problem: "The learner does not yet picture current as a flow constrained by the path.",
+      misconception_target: "Resistance is just a label, not something that changes the flow.",
+      bridge_level: "bridge_1",
+      language_policy: { jargon_level: "light" },
+    },
+    personalization_profile: {
+      interests: ["water slides", "game maps"],
+      preferred_explanation_style: ["analogy_based", "visual_description", "step_by_step"],
+      avoidances: ["equations first"],
+      known_good_metaphors: ["narrower path slows movement"],
+      profile_summary: "Analogies help if they preserve the actual cause/effect relationship.",
+    },
+  }),
+];

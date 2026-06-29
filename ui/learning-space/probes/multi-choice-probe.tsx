@@ -1,8 +1,15 @@
-﻿"use client";
+"use client";
 
 import { ProbeShell } from "./probe-shell";
 import type { GenericProbeComponentProps } from "./probe-ui-types";
 import { getProbeOptions } from "./probe-ui-types";
+import {
+  ProbeEmptyState,
+  ProbeMiniLabel,
+  ProbeOptionCard,
+  ProbePill,
+  ProbeStack,
+} from "./shared";
 
 export function MultiChoiceProbe(props: GenericProbeComponentProps) {
   const options = getProbeOptions(props.probe);
@@ -17,109 +24,73 @@ export function MultiChoiceProbe(props: GenericProbeComponentProps) {
           padding: 0,
           margin: 0,
           display: "grid",
-          gap: "0.7rem",
+          gap: "0.8rem",
         }}
       >
-        <legend
+        <div
           style={{
-            marginBottom: "0.25rem",
-            color: "rgba(255,255,255,0.86)",
-            fontSize: "0.9rem",
-            fontWeight: 700,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "0.75rem",
+            alignItems: "center",
+            flexWrap: "wrap",
           }}
         >
-          Choose every idea that fits
-        </legend>
+          <legend>
+            <ProbeMiniLabel>Choose every idea that fits</ProbeMiniLabel>
+          </legend>
+          <ProbePill tone={selected.size > 0 ? "success" : "default"}>
+            {selected.size} selected
+          </ProbePill>
+        </div>
 
         {options.length > 0 ? (
-          options.map((option) => {
-            const checked = selected.has(option.id);
+          <ProbeStack gap="0.72rem">
+            {options.map((option) => {
+              const checked = selected.has(option.id);
 
-            return (
-              <label
-                key={option.id}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "auto 1fr",
-                  gap: "0.75rem",
-                  alignItems: "start",
-                  padding: "0.9rem",
-                  border: checked
-                    ? "1px solid rgba(221,214,254,0.58)"
-                    : "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "18px",
-                  background: checked
-                    ? "linear-gradient(135deg, rgba(124,58,237,0.32), rgba(255,255,255,0.08))"
-                    : "rgba(255,255,255,0.045)",
-                  boxShadow: checked
-                    ? "0 14px 36px rgba(76,29,149,0.28)"
-                    : "none",
-                  cursor: props.disabled ? "default" : "pointer",
-                  transition: "border-color 140ms ease, background 140ms ease, box-shadow 140ms ease",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => {
-                    const next = new Set(selected);
+              return (
+                <ProbeOptionCard
+                  key={option.id}
+                  selected={checked}
+                  disabled={props.disabled}
+                  label={option.label}
+                  input={
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        const next = new Set(selected);
 
-                    if (checked) {
-                      next.delete(option.id);
-                    } else {
-                      next.add(option.id);
-                    }
+                        if (checked) {
+                          next.delete(option.id);
+                        } else {
+                          next.add(option.id);
+                        }
 
-                    props.onDraftChange({
-                      ...props.draft,
-                      attempt_type: "multi_choice",
-                      selected_option_ids: [...next],
-                    });
-                  }}
-                  style={{
-                    marginTop: "0.18rem",
-                    accentColor: "#ddd6fe",
-                  }}
-                />
-
-                <span>
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minWidth: "1.7rem",
-                      height: "1.7rem",
-                      marginBottom: "0.35rem",
-                      borderRadius: "999px",
-                      background: checked
-                        ? "rgba(255,255,255,0.18)"
-                        : "rgba(255,255,255,0.08)",
-                      color: "rgba(255,255,255,0.92)",
-                      fontSize: "0.78rem",
-                      fontWeight: 800,
-                    }}
-                  >
-                    {option.label}
-                  </span>
-
-                  <span
-                    style={{
-                      display: "block",
-                      color: "rgba(255,255,255,0.92)",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {option.text}
-                  </span>
-                </span>
-              </label>
-            );
-          })
+                        props.onDraftChange({
+                          ...props.draft,
+                          attempt_type: "multi_choice",
+                          selected_option_ids: [...next],
+                        });
+                      }}
+                      style={{
+                        marginTop: "0.35rem",
+                        accentColor: "#ddd6fe",
+                      }}
+                    />
+                  }
+                >
+                  {option.text}
+                </ProbeOptionCard>
+              );
+            })}
+          </ProbeStack>
         ) : (
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.72)" }}>
-            No options were supplied in renderer_params.options.
-          </p>
+          <ProbeEmptyState
+            title="No answer options yet"
+            body="This probe needs renderer_params.options before it can render as a multi-choice probe."
+          />
         )}
       </fieldset>
     </ProbeShell>

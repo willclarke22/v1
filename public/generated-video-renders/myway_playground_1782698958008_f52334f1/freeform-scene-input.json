@@ -1,0 +1,13 @@
+{
+  "prompt": "Create a cinematic stylized scene of a friendly-looking monster hiding behind a wall about to scare a kid. The kid is walking by unaware. Make it spooky, polished, readable, and not gory.",
+  "scene_plan": {
+    "prompt": "Create a cinematic stylized scene of a friendly-looking monster hiding behind a wall about to scare a kid. The kid is walking by unaware. Make it spooky, polished, readable, and not gory."
+  },
+  "render": {
+    "render_id": "myway_playground_1782698958008_f52334f1",
+    "frames": 1,
+    "fps": 12,
+    "width": 960,
+    "height": 540
+  }
+}

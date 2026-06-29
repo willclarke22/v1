@@ -1,0 +1,243 @@
+{
+  "prompt": "Create a cinematic stylized scene of a friendly-looking monster hiding behind a wall about to scare a kid. The kid is walking by unaware. Make it spooky, polished, readable, and not gory. Do not use text labels unless they help the composition.",
+  "scene_plan": {
+    "schema_version": "myway_blender_playground_scene_v2",
+    "title": "Friendly Monster Surprise",
+    "prompt": "Create a cinematic stylized scene of a friendly-looking monster hiding behind a wall about to scare a kid. The kid is walking by unaware. Make it spooky, polished, readable, and not gory. Do not use text labels unless they help the composition.",
+    "scene_intent": {
+      "read": "The scene should clearly show a child walking past a wall corner, with a friendly monster peeking out from behind it, body tense and ready to jump, expressing playful mischief rather than threat. The composition must prioritize silhouette contrast and negative space to guide the eye to the impending interaction.",
+      "cinematic_goal": "Build tension through framing and lighting, then release it with a cute, non-threatening scare — emphasizing charm over fear. The monster should feel like a lovable trickster, not a menace.",
+      "avoid": [
+        "gore",
+        "horror violence",
+        "dark shadows obscuring faces",
+        "cluttered background",
+        "photorealistic textures",
+        "floating labels"
+      ]
+    },
+    "render_quality": {
+      "target": "cinematic stylized",
+      "engine": "BLENDER_EEVEE_NEXT",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "samples": 64,
+      "use_depth_of_field": true,
+      "use_volumetric_fog": false,
+      "use_beveled_geometry": true,
+      "use_reflective_floor": false,
+      "text_labels": "none"
+    },
+    "composition": {
+      "layout": "rule_of_thirds",
+      "focal_subject": "monster",
+      "silhouette_priority": "high",
+      "negative_space": "left_side"
+    },
+    "camera": {
+      "lens_mm": 35,
+      "framing": "medium_shot",
+      "angle": "eye_level",
+      "focus_target": "monster_eye",
+      "start": {
+        "position": [
+          -2.5,
+          1.2,
+          1
+        ],
+        "look_at": [
+          0,
+          0,
+          0.8
+        ]
+      },
+      "end": {
+        "position": [
+          -2,
+          1,
+          1
+        ],
+        "look_at": [
+          0,
+          0,
+          0.8
+        ]
+      },
+      "motion": "slow_push_in"
+    },
+    "environment": {
+      "kind": "indoor_hallway",
+      "floor": "polished_concrete",
+      "walls": "textured_plaster_light_gray",
+      "atmosphere": "dim_ambient_with_practicals",
+      "background": "blurred_hallway_doors"
+    },
+    "subjects": [
+      {
+        "id": "monster_01",
+        "kind": "monster",
+        "role": "antagonist_turned_playful",
+        "position_hint": "back_left",
+        "pose": "crouched_peeking",
+        "expression": "mischievous_smiling",
+        "color_hint": "soft_purple_with_lighter_underside",
+        "scale": [
+          0.9,
+          0.9,
+          0.9
+        ],
+        "material_notes": "subsurface_scattering_skin, matte_fabric_patch_on_elbow, no_sharp_teeth",
+        "animation": "slow_lean_forward_then_quick_jump_at_beat_3"
+      },
+      {
+        "id": "kid_01",
+        "kind": "child",
+        "role": "unsuspecting_victim",
+        "position_hint": "center_right",
+        "pose": "walking_casual",
+        "expression": "neutral_curious",
+        "color_hint": "bright_yellow_raincoat, blue_jeans",
+        "scale": [
+          0.7,
+          0.7,
+          0.7
+        ],
+        "material_notes": "waterproof_fabric_raincoat, matte_denim, no_reflective surfaces",
+        "animation": "steady_walk_past_wall"
+      }
+    ],
+    "objects": [
+      {
+        "id": "wall_corner_01",
+        "kind": "wall_corner",
+        "position_hint": "center",
+        "purpose": "occluder_for_monster_hide",
+        "material_notes": "matte_plaster, slight_normal_map_for_brick_texture"
+      },
+      {
+        "id": "doorway_light_01",
+        "kind": "doorway_light",
+        "position_hint": "back_right",
+        "purpose": "warm_practical_light_source",
+        "material_notes": "glass_lens, emissive_warm_white, slight_bloom"
+      }
+    ],
+    "lighting": {
+      "key": {
+        "type": "area",
+        "position": [
+          -1.5,
+          2,
+          2.5
+        ],
+        "color": [
+          1,
+          0.9,
+          0.8
+        ],
+        "strength": 120
+      },
+      "fill": {
+        "type": "hemisphere",
+        "color": [
+          0.6,
+          0.7,
+          0.8
+        ],
+        "strength": 0.3
+      },
+      "rim": {
+        "type": "spot",
+        "position": [
+          0.5,
+          -1.5,
+          2
+        ],
+        "color": [
+          0.8,
+          0.9,
+          1
+        ],
+        "strength": 80,
+        "focus": "monster_silhouette"
+      },
+      "practical": [
+        {
+          "id": "doorway_light_01",
+          "strength": 15,
+          "color": [
+            1,
+            0.8,
+            0.6
+          ]
+        }
+      ],
+      "shadow_strength": 0.7
+    },
+    "effects": {
+      "fog": "none",
+      "bloom": {
+        "threshold": 1.5,
+        "knee": 0.8,
+        "intensity": 0.6
+      },
+      "depth_of_field": {
+        "f_stop": 2.8,
+        "focus_distance": 1.8
+      },
+      "vignette": {
+        "amount": 0.3,
+        "midpoint": 0.5
+      }
+    },
+    "animation_beats": [
+      {
+        "frame_range": [
+          1,
+          45
+        ],
+        "action": "kid walks steadily from right to left past the wall; monster remains hidden, subtle breathing motion"
+      },
+      {
+        "frame_range": [
+          46,
+          75
+        ],
+        "action": "monster begins to lean forward slowly, eyes widen, fingers twitch — tension builds; kid continues walking unaware"
+      },
+      {
+        "frame_range": [
+          76,
+          90
+        ],
+        "action": "monster jumps forward with arms up, mouth open in a silent 'boo!' expression; kid starts slightly, eyes wide — playful surprise, not fear"
+      }
+    ],
+    "blender_tools_requested": [
+      "subdivision_surface",
+      "bevel_tool",
+      "shade_smooth",
+      "area_light",
+      "hemisphere_light",
+      "spot_light",
+      "emissive_material",
+      "subsurface_scattering",
+      "depth_of_field_camera",
+      "bloom_post_process",
+      "vignette_post_process",
+      "keyframe_animation",
+      "graph_editor",
+      "action_editor",
+      "viewport_denoising"
+    ]
+  },
+  "render": {
+    "render_id": "myway_playground_1782700979593_ed41874d",
+    "frames": 1,
+    "fps": 12,
+    "width": 960,
+    "height": 540
+  }
+}

@@ -1,0 +1,992 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+type BuildMode = "template" | "scene_graph";
+type AttemptKind = "message" | "probe_attempt";
+
+type VisualKind =
+  | "saddle_surface"
+  | "claim_evidence"
+  | "equation_balance"
+  | "particle_transfer"
+  | "sequence_steps"
+  | "freeform_primitives";
+
+type PrimitiveShape = {
+  id: string;
+  kind: "card" | "arrow" | "bubble" | "highlight";
+  label: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+};
+
+type AnimationScene = {
+  id: string;
+  title: string;
+  caption: string;
+  durationSeconds: number;
+  visualKind: VisualKind;
+  visualNotes: string;
+  primitives?: PrimitiveShape[];
+};
+
+type AnimationContract = {
+  schema_version: "myway_generated_animation_contract_v0";
+  contract_id: string;
+  created_from: AttemptKind;
+  generation_mode: BuildMode;
+  title: string;
+  learner_signal: string;
+  diagnosis_guess: string;
+  learning_goal: string;
+  renderer_strategy: {
+    kind: "known_template" | "primitive_scene_graph";
+    remotion_composition: string;
+    model_writes_code: false;
+    why: string;
+  };
+  format: {
+    aspect_ratio: "16:9";
+    width: 1280;
+    height: 720;
+    fps: 30;
+  };
+  scenes: AnimationScene[];
+  checkpoint: {
+    prompt: string;
+    expected_idea: string;
+  };
+  safety_notes: string[];
+};
+
+type ActiveScene = {
+  scene: AnimationScene;
+  sceneIndex: number;
+  sceneStart: number;
+  sceneEnd: number;
+  sceneProgress: number;
+};
+
+const SAMPLE_INPUTS = [
+  "I do not get why x^2 - y^2 makes a saddle. I thought both squared parts should go up.",
+  "I keep mixing up claim and evidence. I choose the sentence with facts as the claim.",
+  "I understand oxidation and reduction words, but I keep reversing who loses electrons and who gains them.",
+  "I can solve the equation steps when someone shows me, but I do not know why doing the same thing to both sides keeps it balanced.",
+  "I know the steps, but I keep putting them in the wrong order.",
+  "I wrote the right answer, but I think I guessed. I cannot explain why it works.",
+];
+
+const DEFAULT_SIGNAL = SAMPLE_INPUTS[0] ?? "I am stuck.";
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function easeOutCubic(value: number) {
+  const t = clamp(value, 0, 1);
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function easeInOutSine(value: number) {
+  const t = clamp(value, 0, 1);
+  return -(Math.cos(Math.PI * t) - 1) / 2;
+}
+
+function normalizeSignal(value: string) {
+  return value.trim() || DEFAULT_SIGNAL;
+}
+
+function includesAny(text: string, terms: string[]) {
+  const lower = text.toLowerCase();
+  return terms.some((term) => lower.includes(term));
+}
+
+function keywordTitle(signal: string) {
+  const lower = signal.toLowerCase();
+
+  if (includesAny(lower, ["saddle", "x^2", "x²", "y^2", "y²"])) {
+    return "Why the saddle bends two ways";
+  }
+  if (includesAny(lower, ["claim", "evidence"])) {
+    return "Claim vs evidence";
+  }
+  if (includesAny(lower, ["oxidation", "reduction", "electron", "electrons"])) {
+    return "Tracking who gives and who receives";
+  }
+  if (includesAny(lower, ["equation", "formula", "both sides", "solve"])) {
+    return "Why both sides stay balanced";
+  }
+  if (includesAny(lower, ["order", "sequence", "steps", "first", "last"])) {
+    return "Putting the steps in order";
+  }
+
+  return "Make the hidden structure visible";
+}
+
+function buildPrimitiveScene(signal: string): AnimationScene[] {
+  const words = signal
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 3)
+    .filter((word, index, all) => all.indexOf(word) === index)
+    .slice(0, 5);
+
+  const usefulWords = words.length >= 3 ? words : ["idea", "example", "reason"];
+
+  return [
+    {
+      id: "signal_to_structure",
+      title: "Start with the learner signal",
+      caption: "MyWay first turns the message into the pieces that seem to matter.",
+      durationSeconds: 5,
+      visualKind: "freeform_primitives",
+      visualNotes: "Cards appear from the learner message.",
+      primitives: usefulWords.map((word, index) => ({
+        id: `keyword_${word}`,
+        kind: "card",
+        label: word,
+        x: 90 + index * 116,
+        y: 110 + (index % 2) * 42,
+        width: 104,
+        height: 52,
+      })),
+    },
+    {
+      id: "sort_the_pieces",
+      title: "Sort the pieces",
+      caption: "Then the animation groups the pieces into what the learner knows, mixes up, and needs to test.",
+      durationSeconds: 6,
+      visualKind: "freeform_primitives",
+      visualNotes: "Generic scene-graph layout: known, mixed up, next check.",
+      primitives: [
+        { id: "known", kind: "card", label: "knows", x: 86, y: 120, width: 130, height: 62 },
+        { id: "mixed", kind: "card", label: "mixed up", x: 295, y: 120, width: 150, height: 62 },
+        { id: "check", kind: "card", label: "next check", x: 530, y: 120, width: 150, height: 62 },
+        { id: "arrow1", kind: "arrow", label: "", x: 226, y: 151 },
+        { id: "arrow2", kind: "arrow", label: "", x: 456, y: 151 },
+      ],
+    },
+    {
+      id: "targeted_explanation",
+      title: "Explain only the stuck part",
+      caption: "The video should not reteach everything. It should zoom into the exact missing link.",
+      durationSeconds: 6,
+      visualKind: "freeform_primitives",
+      visualNotes: "Highlight focuses the center card, not the whole topic.",
+      primitives: [
+        { id: "topic", kind: "card", label: "whole topic", x: 82, y: 126, width: 150, height: 62 },
+        { id: "gap", kind: "highlight", label: "stuck link", x: 285, y: 96, width: 170, height: 118 },
+        { id: "answer", kind: "card", label: "try again", x: 520, y: 126, width: 145, height: 62 },
+        { id: "arrow3", kind: "arrow", label: "", x: 238, y: 157 },
+        { id: "arrow4", kind: "arrow", label: "", x: 462, y: 157 },
+      ],
+    },
+    {
+      id: "checkpoint",
+      title: "Checkpoint",
+      caption: "The final scene should ask for evidence that the learner now sees the missing link.",
+      durationSeconds: 5,
+      visualKind: "freeform_primitives",
+      visualNotes: "A question card replaces passive watching.",
+      primitives: [
+        { id: "question", kind: "bubble", label: "Can you explain the link?", x: 210, y: 112, width: 300, height: 82 },
+      ],
+    },
+  ];
+}
+
+function buildContract(signalInput: string, mode: BuildMode, attemptKind: AttemptKind): AnimationContract {
+  const signal = normalizeSignal(signalInput);
+  const lower = signal.toLowerCase();
+  const contractBase = {
+    schema_version: "myway_generated_animation_contract_v0" as const,
+    contract_id: `generated_animation_${Date.now()}`,
+    created_from: attemptKind,
+    generation_mode: mode,
+    title: keywordTitle(signal),
+    learner_signal: signal,
+    format: {
+      aspect_ratio: "16:9" as const,
+      width: 1280 as const,
+      height: 720 as const,
+      fps: 30 as 30,
+    },
+    safety_notes: [
+      "The model should output JSON animation contracts, not arbitrary Remotion code.",
+      "MyWay should validate scene kinds, captions, equations, duration, and checkpoint before rendering.",
+      "Freeform generation should mean freeform scene graph primitives, not unrestricted code execution.",
+    ],
+  };
+
+  if (mode === "scene_graph") {
+    return {
+      ...contractBase,
+      diagnosis_guess: "The learner signal is turned into a generic scene graph because no exact template was chosen.",
+      learning_goal: "Reveal the missing link with simple cards, arrows, highlights, and a final checkpoint.",
+      renderer_strategy: {
+        kind: "primitive_scene_graph",
+        remotion_composition: "PrimitiveSceneGraphVideo",
+        model_writes_code: false,
+        why: "This explores the closest safe version of no-template generation: the model chooses scenes and layout primitives, while MyWay/Remotion render trusted components.",
+      },
+      scenes: buildPrimitiveScene(signal),
+      checkpoint: {
+        prompt: "What is the specific link that was missing before?",
+        expected_idea: "The learner can name the relationship between the pieces, not just repeat the answer.",
+      },
+    };
+  }
+
+  if (includesAny(lower, ["saddle", "x^2", "x²", "y^2", "y²"])) {
+    return {
+      ...contractBase,
+      diagnosis_guess: "The learner is treating a two-variable surface like it should bend the same way in every direction.",
+      learning_goal: "Show that x² bends one direction upward while -y² flips the other direction downward.",
+      renderer_strategy: {
+        kind: "known_template",
+        remotion_composition: "GraphTransformationVideo",
+        model_writes_code: false,
+        why: "A graph transformation template can reliably animate the exact misconception without inventing unsafe rendering code.",
+      },
+      scenes: [
+        {
+          id: "hook",
+          title: "The mismatch",
+          caption: "You expected one kind of curve. A saddle is two curves crossing.",
+          durationSeconds: 4,
+          visualKind: "saddle_surface",
+          visualNotes: "Show flat grid becoming two-direction surface.",
+        },
+        {
+          id: "x_direction",
+          title: "Left to right",
+          caption: "The x² part bends upward like a bowl slice.",
+          durationSeconds: 5,
+          visualKind: "saddle_surface",
+          visualNotes: "Highlight the x-direction curve rising.",
+        },
+        {
+          id: "y_direction",
+          title: "Front to back",
+          caption: "The minus sign flips the y² direction downward.",
+          durationSeconds: 5,
+          visualKind: "saddle_surface",
+          visualNotes: "Highlight the y-direction curve falling.",
+        },
+        {
+          id: "combine",
+          title: "Both at once",
+          caption: "Up one way and down the other way creates the saddle.",
+          durationSeconds: 7,
+          visualKind: "saddle_surface",
+          visualNotes: "Animate the full saddle grid forming.",
+        },
+        {
+          id: "checkpoint",
+          title: "Checkpoint",
+          caption: "Which direction gets flipped by the minus sign?",
+          durationSeconds: 5,
+          visualKind: "saddle_surface",
+          visualNotes: "Pause with x and y direction labels.",
+        },
+      ],
+      checkpoint: {
+        prompt: "For z = x² - y², what does the minus sign do to the y direction?",
+        expected_idea: "It flips the y direction downward, so the surface rises one way and falls the other.",
+      },
+    };
+  }
+
+  if (includesAny(lower, ["claim", "evidence"])) {
+    return {
+      ...contractBase,
+      diagnosis_guess: "The learner is mixing up the statement being argued with the support used to prove it.",
+      learning_goal: "Separate claim as the point being made and evidence as the support for that point.",
+      renderer_strategy: {
+        kind: "known_template",
+        remotion_composition: "CompareContrastVideo",
+        model_writes_code: false,
+        why: "A compare/contrast template is enough because the needed visual is two roles, not a custom animation engine.",
+      },
+      scenes: [
+        { id: "roles", title: "Two jobs", caption: "A claim says what you want the reader to believe.", durationSeconds: 5, visualKind: "claim_evidence", visualNotes: "Claim card appears on left." },
+        { id: "support", title: "Support", caption: "Evidence is the fact, quote, or detail that supports the claim.", durationSeconds: 5, visualKind: "claim_evidence", visualNotes: "Evidence card connects to claim." },
+        { id: "mistake", title: "Common mix-up", caption: "A fact is not automatically the claim. Ask: is it the point or the support?", durationSeconds: 6, visualKind: "claim_evidence", visualNotes: "Swap animation shows wrong placement, then correction." },
+        { id: "checkpoint", title: "Checkpoint", caption: "Which sentence is making the point, and which sentence supports it?", durationSeconds: 5, visualKind: "claim_evidence", visualNotes: "Two cards wait for learner decision." },
+      ],
+      checkpoint: {
+        prompt: "How can you tell whether a sentence is a claim or evidence?",
+        expected_idea: "The claim is the point being made; evidence is the support for that point.",
+      },
+    };
+  }
+
+  if (includesAny(lower, ["oxidation", "reduction", "electron", "electrons"])) {
+    return {
+      ...contractBase,
+      diagnosis_guess: "The learner is reversing who loses electrons and who gains them.",
+      learning_goal: "Make electron movement visible as a transfer from giver to receiver.",
+      renderer_strategy: {
+        kind: "known_template",
+        remotion_composition: "TransferFlowVideo",
+        model_writes_code: false,
+        why: "A transfer-flow template can render giver, receiver, item movement, and labels for many science topics.",
+      },
+      scenes: [
+        { id: "item", title: "Track the item", caption: "Treat the electron like the thing being handed off.", durationSeconds: 5, visualKind: "particle_transfer", visualNotes: "Electron dot appears between two cards." },
+        { id: "loses", title: "The giver loses", caption: "The side that gives the electron is losing it.", durationSeconds: 5, visualKind: "particle_transfer", visualNotes: "Electron moves away from donor." },
+        { id: "gains", title: "The receiver gains", caption: "The side that receives the electron is gaining it.", durationSeconds: 5, visualKind: "particle_transfer", visualNotes: "Electron lands on acceptor." },
+        { id: "checkpoint", title: "Checkpoint", caption: "Which side lost the electron, and which side gained it?", durationSeconds: 5, visualKind: "particle_transfer", visualNotes: "Pause after transfer." },
+      ],
+      checkpoint: {
+        prompt: "If one side gives away an electron, did it lose or gain electrons?",
+        expected_idea: "It lost electrons; the receiver gained them.",
+      },
+    };
+  }
+
+  if (includesAny(lower, ["equation", "formula", "both sides", "solve"])) {
+    return {
+      ...contractBase,
+      diagnosis_guess: "The learner can follow steps but does not yet see why both sides stay equal.",
+      learning_goal: "Show equation solving as keeping a balance level by doing the same move to both sides.",
+      renderer_strategy: {
+        kind: "known_template",
+        remotion_composition: "EquationBalanceVideo",
+        model_writes_code: false,
+        why: "Equation balance has a predictable structure that can be rendered with a reusable balance template.",
+      },
+      scenes: [
+        { id: "balance", title: "Equal means balanced", caption: "Both sides start level because they are equal.", durationSeconds: 5, visualKind: "equation_balance", visualNotes: "Two pans on a scale." },
+        { id: "same_move", title: "Same move", caption: "Doing the same thing to both sides keeps the balance level.", durationSeconds: 6, visualKind: "equation_balance", visualNotes: "Subtract blocks from both sides." },
+        { id: "bad_move", title: "One-sided move", caption: "Changing one side only breaks the balance.", durationSeconds: 5, visualKind: "equation_balance", visualNotes: "One pan drops." },
+        { id: "checkpoint", title: "Checkpoint", caption: "Why is it allowed only when both sides get the same move?", durationSeconds: 5, visualKind: "equation_balance", visualNotes: "Pause with balanced scale." },
+      ],
+      checkpoint: {
+        prompt: "Why does doing the same operation to both sides keep the equation true?",
+        expected_idea: "Because both sides change equally, so the equality/balance is preserved.",
+      },
+    };
+  }
+
+  if (includesAny(lower, ["order", "sequence", "steps", "first", "last"])) {
+    return {
+      ...contractBase,
+      diagnosis_guess: "The learner knows pieces but is missing the order relationship between them.",
+      learning_goal: "Make each step depend on the step before it.",
+      renderer_strategy: {
+        kind: "known_template",
+        remotion_composition: "SequenceStepsVideo",
+        model_writes_code: false,
+        why: "A sequence template can render ordering, dependency, and checkpoint scenes without custom code.",
+      },
+      scenes: [
+        { id: "pieces", title: "You have the pieces", caption: "The issue may not be knowing the pieces. It may be knowing what has to come first.", durationSeconds: 5, visualKind: "sequence_steps", visualNotes: "Step cards appear unordered." },
+        { id: "dependency", title: "Look for dependency", caption: "Ask: which step makes the next step possible?", durationSeconds: 5, visualKind: "sequence_steps", visualNotes: "Arrows connect prerequisite to result." },
+        { id: "ordered", title: "Now order them", caption: "Once the dependency is visible, the order becomes easier to see.", durationSeconds: 6, visualKind: "sequence_steps", visualNotes: "Cards move into order." },
+        { id: "checkpoint", title: "Checkpoint", caption: "Which step has to happen before the others?", durationSeconds: 5, visualKind: "sequence_steps", visualNotes: "First step is highlighted." },
+      ],
+      checkpoint: {
+        prompt: "What clue tells you which step should come first?",
+        expected_idea: "The first step is the one that makes the later steps possible.",
+      },
+    };
+  }
+
+  return {
+    ...contractBase,
+    diagnosis_guess: "The learner may have a partial answer but not the visible relationship behind it.",
+    learning_goal: "Turn the learner's words into a small visual explanation and a checkpoint.",
+    renderer_strategy: {
+      kind: "known_template",
+      remotion_composition: "MisconceptionContrastVideo",
+      model_writes_code: false,
+      why: "A generic misconception-contrast template can still produce a useful first video when no specialized template matches.",
+    },
+    scenes: buildPrimitiveScene(signal),
+    checkpoint: {
+      prompt: "What changed in your understanding after the visual explanation?",
+      expected_idea: "The learner can name the missing relationship in their own words.",
+    },
+  };
+}
+
+function getTotalDuration(contract: AnimationContract) {
+  return contract.scenes.reduce((sum, scene) => sum + scene.durationSeconds, 0);
+}
+
+function findSceneAtTime(contract: AnimationContract, elapsedSeconds: number): ActiveScene {
+  let cursor = 0;
+
+  for (let index = 0; index < contract.scenes.length; index += 1) {
+    const scene = contract.scenes[index]!;
+    const start = cursor;
+    const end = cursor + scene.durationSeconds;
+
+    if (elapsedSeconds <= end || index === contract.scenes.length - 1) {
+      return {
+        scene,
+        sceneIndex: index,
+        sceneStart: start,
+        sceneEnd: end,
+        sceneProgress: clamp((elapsedSeconds - start) / scene.durationSeconds, 0, 1),
+      };
+    }
+
+    cursor = end;
+  }
+
+  const fallback = contract.scenes[0]!;
+  return { scene: fallback, sceneIndex: 0, sceneStart: 0, sceneEnd: fallback.durationSeconds, sceneProgress: 0 };
+}
+
+function formatTime(seconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const remaining = safeSeconds % 60;
+  return `${minutes}:${String(remaining).padStart(2, "0")}`;
+}
+
+function projectSaddlePoint(x: number, y: number, bend: number) {
+  const z = bend * (x * x - y * y);
+  const screenX = 360 + (x - y) * 78;
+  const screenY = 205 + (x + y) * 26 - z * 50;
+  return `${screenX.toFixed(2)},${screenY.toFixed(2)}`;
+}
+
+function buildSaddleLines(progress: number) {
+  const bend = easeInOutSine(progress) * 0.56;
+  const values = [-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2];
+  const samples = 32;
+  const lines: string[] = [];
+
+  for (const fixedY of values) {
+    const points: string[] = [];
+    for (let index = 0; index <= samples; index += 1) {
+      const x = -2 + (index / samples) * 4;
+      points.push(projectSaddlePoint(x, fixedY, bend));
+    }
+    lines.push(points.join(" "));
+  }
+
+  for (const fixedX of values) {
+    const points: string[] = [];
+    for (let index = 0; index <= samples; index += 1) {
+      const y = -2 + (index / samples) * 4;
+      points.push(projectSaddlePoint(fixedX, y, bend));
+    }
+    lines.push(points.join(" "));
+  }
+
+  return lines;
+}
+
+function SceneVisual({ scene, progress }: { scene: AnimationScene; progress: number }) {
+  const eased = easeOutCubic(progress);
+  const pulse = 0.5 + Math.sin(progress * Math.PI * 2) * 0.5;
+
+  if (scene.visualKind === "saddle_surface") {
+    const lines = buildSaddleLines(progress);
+    return (
+      <svg viewBox="0 0 720 360" style={{ width: "100%", height: "100%" }}>
+        <defs>
+          <radialGradient id="saddleGlow" cx="50%" cy="42%" r="68%">
+            <stop offset="0%" stopColor="rgba(168,85,247,0.28)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+          </radialGradient>
+        </defs>
+        <rect width="720" height="360" fill="url(#saddleGlow)" />
+        {lines.map((points, index) => (
+          <polyline
+            key={index}
+            points={points}
+            fill="none"
+            stroke={index < 9 ? "rgba(221,214,254,0.66)" : "rgba(125,211,252,0.56)"}
+            strokeWidth={index === 4 || index === 13 ? 3.3 : 1.55}
+            strokeLinecap="round"
+          />
+        ))}
+        <text x="52" y="52" fill="rgba(255,255,255,0.84)" fontSize="22" fontWeight="900">z = x² - y²</text>
+        <text x="52" y="318" fill="white" fontSize="24" fontWeight="900">up one way + down the other</text>
+      </svg>
+    );
+  }
+
+  if (scene.visualKind === "claim_evidence") {
+    return (
+      <svg viewBox="0 0 720 360" style={{ width: "100%", height: "100%" }}>
+        <rect width="720" height="360" fill="rgba(0,0,0,0.02)" />
+        <g transform={`translate(${80 + eased * 18}, 106)`}>
+          <rect width="220" height="118" rx="24" fill="rgba(221,214,254,0.14)" stroke="rgba(221,214,254,0.4)" />
+          <text x="110" y="54" textAnchor="middle" fill="white" fontSize="25" fontWeight="900">Claim</text>
+          <text x="110" y="86" textAnchor="middle" fill="rgba(255,255,255,0.7)" fontSize="15" fontWeight="700">the point</text>
+        </g>
+        <path d="M316 165 C360 120 405 120 448 165" fill="none" stroke="rgba(255,255,255,0.42)" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${eased * 170} 170`} />
+        <g transform={`translate(${420 - eased * 18}, 106)`}>
+          <rect width="220" height="118" rx="24" fill="rgba(125,211,252,0.12)" stroke="rgba(125,211,252,0.36)" />
+          <text x="110" y="54" textAnchor="middle" fill="white" fontSize="25" fontWeight="900">Evidence</text>
+          <text x="110" y="86" textAnchor="middle" fill="rgba(255,255,255,0.7)" fontSize="15" fontWeight="700">the support</text>
+        </g>
+      </svg>
+    );
+  }
+
+  if (scene.visualKind === "particle_transfer") {
+    const electronX = 190 + eased * 340;
+    return (
+      <svg viewBox="0 0 720 360" style={{ width: "100%", height: "100%" }}>
+        <rect width="720" height="360" fill="rgba(0,0,0,0.02)" />
+        <rect x="78" y="122" width="190" height="112" rx="24" fill="rgba(221,214,254,0.14)" stroke="rgba(221,214,254,0.36)" />
+        <rect x="452" y="122" width="190" height="112" rx="24" fill="rgba(125,211,252,0.12)" stroke="rgba(125,211,252,0.34)" />
+        <text x="173" y="174" textAnchor="middle" fill="white" fontSize="23" fontWeight="900">Giver</text>
+        <text x="547" y="174" textAnchor="middle" fill="white" fontSize="23" fontWeight="900">Receiver</text>
+        <path d="M278 178 C350 118 430 118 452 178" fill="none" stroke="rgba(255,255,255,0.34)" strokeWidth="6" strokeLinecap="round" />
+        <circle cx={electronX} cy={150 - Math.sin(eased * Math.PI) * 34} r="18" fill="white" opacity={0.88} />
+        <text x={electronX} y={156 - Math.sin(eased * Math.PI) * 34} textAnchor="middle" fill="rgba(88,28,135,0.95)" fontSize="18" fontWeight="900">e</text>
+        <text x="72" y="308" fill="white" fontSize="24" fontWeight="900">follow the thing being transferred</text>
+      </svg>
+    );
+  }
+
+  if (scene.visualKind === "equation_balance") {
+    const tilt = scene.id === "bad_move" ? eased * 18 : 0;
+    return (
+      <svg viewBox="0 0 720 360" style={{ width: "100%", height: "100%" }}>
+        <rect width="720" height="360" fill="rgba(0,0,0,0.02)" />
+        <line x1="360" x2="360" y1="88" y2="252" stroke="rgba(255,255,255,0.28)" strokeWidth="8" strokeLinecap="round" />
+        <g transform={`rotate(${tilt} 360 170)`}>
+          <line x1="160" x2="560" y1="170" y2="170" stroke="rgba(221,214,254,0.78)" strokeWidth="10" strokeLinecap="round" />
+          <rect x="118" y="190" width="150" height="56" rx="18" fill="rgba(221,214,254,0.16)" stroke="rgba(221,214,254,0.35)" />
+          <rect x="452" y="190" width="150" height="56" rx="18" fill="rgba(125,211,252,0.13)" stroke="rgba(125,211,252,0.34)" />
+          <text x="193" y="226" textAnchor="middle" fill="white" fontSize="19" fontWeight="900">left side</text>
+          <text x="527" y="226" textAnchor="middle" fill="white" fontSize="19" fontWeight="900">right side</text>
+        </g>
+        <text x="70" y="314" fill="white" fontSize="24" fontWeight="900">same move to both sides keeps it level</text>
+      </svg>
+    );
+  }
+
+  if (scene.visualKind === "sequence_steps") {
+    const labels = ["Step 1", "Step 2", "Step 3"];
+    return (
+      <svg viewBox="0 0 720 360" style={{ width: "100%", height: "100%" }}>
+        <rect width="720" height="360" fill="rgba(0,0,0,0.02)" />
+        {labels.map((label, index) => {
+          const x = 90 + index * 210;
+          const y = 130 + Math.sin((progress + index * 0.18) * Math.PI) * 14;
+          return (
+            <g key={label} transform={`translate(${x}, ${y})`}>
+              <rect width="150" height="84" rx="24" fill="rgba(255,255,255,0.08)" stroke="rgba(221,214,254,0.28)" />
+              <text x="75" y="50" textAnchor="middle" fill="white" fontSize="22" fontWeight="900">{label}</text>
+            </g>
+          );
+        })}
+        <path d="M245 172 L300 172" stroke="rgba(255,255,255,0.38)" strokeWidth="6" strokeLinecap="round" />
+        <path d="M455 172 L510 172" stroke="rgba(255,255,255,0.38)" strokeWidth="6" strokeLinecap="round" />
+        <text x="70" y="314" fill="white" fontSize="24" fontWeight="900">look for what must happen before the next step</text>
+      </svg>
+    );
+  }
+
+  const primitives = scene.primitives ?? [];
+  return (
+    <svg viewBox="0 0 720 360" style={{ width: "100%", height: "100%" }}>
+      <rect width="720" height="360" fill="rgba(0,0,0,0.02)" />
+      <defs>
+        <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L0,6 L9,3 z" fill="rgba(255,255,255,0.56)" />
+        </marker>
+      </defs>
+      {primitives.map((primitive, index) => {
+        const appear = clamp((progress * 1.2) - index * 0.1, 0, 1);
+        const opacity = 0.2 + appear * 0.8;
+        const y = primitive.y + (1 - appear) * 18;
+
+        if (primitive.kind === "arrow") {
+          return (
+            <line
+              key={primitive.id}
+              x1={primitive.x}
+              y1={primitive.y}
+              x2={primitive.x + 72 * eased}
+              y2={primitive.y}
+              stroke="rgba(255,255,255,0.56)"
+              strokeWidth="5"
+              strokeLinecap="round"
+              markerEnd="url(#arrowHead)"
+              opacity={opacity}
+            />
+          );
+        }
+
+        if (primitive.kind === "highlight") {
+          return (
+            <rect
+              key={primitive.id}
+              x={primitive.x}
+              y={y}
+              width={primitive.width ?? 160}
+              height={primitive.height ?? 80}
+              rx="28"
+              fill="rgba(168,85,247,0.18)"
+              stroke="rgba(221,214,254,0.5)"
+              strokeWidth="3"
+              opacity={opacity}
+            />
+          );
+        }
+
+        if (primitive.kind === "bubble") {
+          return (
+            <g key={primitive.id} opacity={opacity}>
+              <rect x={primitive.x} y={y} width={primitive.width ?? 220} height={primitive.height ?? 76} rx="38" fill="rgba(255,255,255,0.1)" stroke="rgba(221,214,254,0.36)" />
+              <text x={primitive.x + (primitive.width ?? 220) / 2} y={y + 46} textAnchor="middle" fill="white" fontSize="20" fontWeight="900">{primitive.label}</text>
+            </g>
+          );
+        }
+
+        return (
+          <g key={primitive.id} opacity={opacity}>
+            <rect x={primitive.x} y={y} width={primitive.width ?? 130} height={primitive.height ?? 58} rx="20" fill="rgba(221,214,254,0.13)" stroke="rgba(221,214,254,0.32)" />
+            <text x={primitive.x + (primitive.width ?? 130) / 2} y={y + 36} textAnchor="middle" fill="white" fontSize="18" fontWeight="900">{primitive.label}</text>
+          </g>
+        );
+      })}
+      <circle cx="610" cy="68" r={22 + pulse * 8} fill="rgba(125,211,252,0.13)" stroke="rgba(125,211,252,0.32)" />
+    </svg>
+  );
+}
+
+function ContractPreview({ contract }: { contract: AnimationContract }) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const totalDuration = useMemo(() => getTotalDuration(contract), [contract]);
+  const active = findSceneAtTime(contract, elapsedSeconds);
+
+  useEffect(() => {
+    setElapsedSeconds(0);
+    setIsPlaying(false);
+  }, [contract.contract_id]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const interval = window.setInterval(() => {
+      setElapsedSeconds((value) => {
+        const next = value + 0.05;
+        if (next >= totalDuration) {
+          window.clearInterval(interval);
+          setIsPlaying(false);
+          return totalDuration;
+        }
+        return next;
+      });
+    }, 50);
+
+    return () => window.clearInterval(interval);
+  }, [isPlaying, totalDuration]);
+
+  function jumpToScene(sceneIndex: number) {
+    const nextStart = contract.scenes
+      .slice(0, sceneIndex)
+      .reduce((sum, scene) => sum + scene.durationSeconds, 0);
+    setElapsedSeconds(nextStart);
+    setIsPlaying(false);
+  }
+
+  function togglePlayback() {
+    if (elapsedSeconds >= totalDuration) {
+      setElapsedSeconds(0);
+      setIsPlaying(true);
+      return;
+    }
+
+    setIsPlaying((value) => !value);
+  }
+
+  return (
+    <div style={{ display: "grid", gap: "0.9rem" }}>
+      <div
+        style={{
+          position: "relative",
+          aspectRatio: "16 / 9",
+          overflow: "hidden",
+          border: "1px solid rgba(255,255,255,0.13)",
+          borderRadius: "28px",
+          background: "linear-gradient(145deg, rgba(5,5,16,0.98), rgba(39,13,64,0.82))",
+          boxShadow: "0 26px 80px rgba(0,0,0,0.32)",
+        }}
+      >
+        <SceneVisual scene={active.scene} progress={active.sceneProgress} />
+        <div
+          style={{
+            position: "absolute",
+            left: "1rem",
+            right: "1rem",
+            bottom: "1rem",
+            display: "grid",
+            gap: "0.45rem",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: "20px",
+            background: "rgba(0,0,0,0.52)",
+            padding: "0.82rem 0.95rem",
+            backdropFilter: "blur(14px)",
+          }}
+        >
+          <p style={{ margin: 0, color: "rgba(255,255,255,0.68)", fontSize: "0.72rem", fontWeight: 900, letterSpacing: "0.13em", textTransform: "uppercase" }}>
+            {active.scene.title}
+          </p>
+          <p style={{ margin: 0, color: "white", fontSize: "1.08rem", lineHeight: 1.35, fontWeight: 850 }}>
+            {active.scene.caption}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gap: "0.62rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.8rem" }}>
+          <button
+            type="button"
+            onClick={togglePlayback}
+            style={{
+              border: "1px solid rgba(221,214,254,0.34)",
+              borderRadius: "999px",
+              background: "linear-gradient(145deg, rgba(221,214,254,0.22), rgba(168,85,247,0.2))",
+              color: "white",
+              padding: "0.62rem 0.9rem",
+              fontWeight: 900,
+              cursor: "pointer",
+              minWidth: "6.25rem",
+            }}
+          >
+            {isPlaying ? "Pause" : elapsedSeconds >= totalDuration ? "Replay" : "Play"}
+          </button>
+          <input
+            aria-label="Animation timeline"
+            type="range"
+            min={0}
+            max={totalDuration}
+            step={0.05}
+            value={elapsedSeconds}
+            onChange={(event) => {
+              setElapsedSeconds(Number(event.target.value));
+              setIsPlaying(false);
+            }}
+            style={{ width: "100%", accentColor: "#c4b5fd" }}
+          />
+          <span style={{ color: "rgba(255,255,255,0.72)", fontSize: "0.8rem", fontWeight: 850, whiteSpace: "nowrap" }}>
+            {formatTime(elapsedSeconds)} / {formatTime(totalDuration)}
+          </span>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.42rem" }}>
+          {contract.scenes.map((scene, index) => (
+            <button
+              key={scene.id}
+              type="button"
+              onClick={() => jumpToScene(index)}
+              style={{
+                border: index === active.sceneIndex ? "1px solid rgba(221,214,254,0.36)" : "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "999px",
+                background: index === active.sceneIndex ? "rgba(221,214,254,0.16)" : "rgba(255,255,255,0.055)",
+                color: "rgba(255,255,255,0.82)",
+                padding: "0.36rem 0.58rem",
+                fontSize: "0.72rem",
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
+            >
+              {index + 1}. {scene.title}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SmallCard({ title, body }: { title: string; body: string }) {
+  return (
+    <section className="rounded-[1.45rem] border border-white/10 bg-white/[0.055] p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-300/70">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-zinc-100/82">{body}</p>
+    </section>
+  );
+}
+
+export function GeneratedVideoGenerationLab() {
+  const [signal, setSignal] = useState(DEFAULT_SIGNAL);
+  const [attemptKind, setAttemptKind] = useState<AttemptKind>("message");
+  const [mode, setMode] = useState<BuildMode>("template");
+  const [contract, setContract] = useState<AnimationContract>(() =>
+    buildContract(DEFAULT_SIGNAL, "template", "message"),
+  );
+
+  const remotionInputProps = useMemo(
+    () => ({
+      contract,
+      renderMode: "preview_then_optional_mp4",
+      note: "This is the exact kind of object a Remotion composition would receive as inputProps.",
+    }),
+    [contract],
+  );
+
+  return (
+    <div className="grid gap-5">
+      <section className="rounded-[2rem] border border-white/10 bg-black/20 p-5 shadow-2xl backdrop-blur-xl">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-purple-100/70">
+              Generation sandbox
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+              Learner signal → animation contract → video preview
+            </h2>
+            <p className="mt-2 max-w-4xl text-sm leading-7 text-zinc-200/76">
+              This page explores what MyWay can generate from a user message or probe attempt. It does not let a model write video code. The safer path is for the model to write a structured contract, then trusted MyWay/Remotion components render it.
+            </p>
+          </div>
+          <div className="rounded-[1.5rem] border border-purple-200/20 bg-purple-200/[0.08] p-4 text-sm leading-6 text-purple-50/82">
+            <strong className="text-white">No-template exploration:</strong> use Primitive scene graph mode. That lets the model choose cards, arrows, highlights, captions, and timing without creating arbitrary code.
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[430px_minmax(0,1fr)]">
+        <aside className="grid content-start gap-4 rounded-[2rem] border border-white/10 bg-black/20 p-5 backdrop-blur-xl">
+          <label className="grid gap-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-300/70">
+              Learner message or attempt
+            </span>
+            <textarea
+              value={signal}
+              rows={8}
+              onChange={(event) => setSignal(event.target.value)}
+              className="w-full resize-y rounded-[1.4rem] border border-white/10 bg-white/[0.07] p-4 text-sm leading-6 text-white outline-none placeholder:text-zinc-400/70"
+              placeholder="Paste what the learner said or attempted."
+            />
+          </label>
+
+          <div className="grid gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-300/70">
+              Try examples
+            </p>
+            <div className="grid gap-2">
+              {SAMPLE_INPUTS.map((sample) => (
+                <button
+                  key={sample}
+                  type="button"
+                  onClick={() => setSignal(sample)}
+                  className="rounded-2xl border border-white/10 bg-white/[0.055] px-3 py-2 text-left text-xs leading-5 text-zinc-100/78 hover:bg-white/[0.08]"
+                >
+                  {sample}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-3 rounded-[1.5rem] border border-white/10 bg-white/[0.045] p-4">
+            <label className="grid gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-300/70">
+                Source kind
+              </span>
+              <select
+                value={attemptKind}
+                onChange={(event) => setAttemptKind(event.target.value as AttemptKind)}
+                className="rounded-full border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
+              >
+                <option value="message">User message</option>
+                <option value="probe_attempt">Probe attempt</option>
+              </select>
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-300/70">
+                Generation mode
+              </span>
+              <select
+                value={mode}
+                onChange={(event) => setMode(event.target.value as BuildMode)}
+                className="rounded-full border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none"
+              >
+                <option value="template">Known template</option>
+                <option value="scene_graph">Primitive scene graph</option>
+              </select>
+            </label>
+
+            <button
+              type="button"
+              onClick={() => setContract(buildContract(signal, mode, attemptKind))}
+              className="rounded-full border border-purple-200/40 bg-purple-200/18 px-4 py-3 text-sm font-black text-white shadow-[0_18px_42px_rgba(88,28,135,0.24)] hover:bg-purple-200/24"
+            >
+              Generate preview contract
+            </button>
+          </div>
+        </aside>
+
+        <main className="grid gap-4 rounded-[2rem] border border-white/10 bg-black/20 p-5 backdrop-blur-xl">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-300/70">
+                Preview
+              </p>
+              <h2 className="mt-1 text-2xl font-semibold tracking-tight">{contract.title}</h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-zinc-200/80">
+                {contract.renderer_strategy.kind.replaceAll("_", " ")}
+              </span>
+              <span className="rounded-full border border-purple-200/20 bg-purple-200/[0.08] px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-purple-50/84">
+                {contract.renderer_strategy.remotion_composition}
+              </span>
+            </div>
+          </div>
+
+          <ContractPreview contract={contract} />
+        </main>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-3">
+        <SmallCard title="Diagnosis guess" body={contract.diagnosis_guess} />
+        <SmallCard title="Learning goal" body={contract.learning_goal} />
+        <SmallCard title="Checkpoint" body={contract.checkpoint.prompt} />
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="rounded-[2rem] border border-white/10 bg-black/20 p-5 backdrop-blur-xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300/70">
+            Animation contract JSON
+          </p>
+          <pre className="mt-4 max-h-[34rem] overflow-auto whitespace-pre-wrap rounded-[1.35rem] bg-black/35 p-4 text-xs leading-5 text-zinc-100/78">
+            {JSON.stringify(contract, null, 2)}
+          </pre>
+        </div>
+
+        <div className="rounded-[2rem] border border-white/10 bg-black/20 p-5 backdrop-blur-xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300/70">
+            Remotion inputProps shape
+          </p>
+          <p className="mt-2 text-sm leading-7 text-zinc-200/76">
+            The next real Remotion step is to pass this object into a composition. The composition would use the same trusted scene components as the preview, then Remotion could render a real MP4 later.
+          </p>
+          <pre className="mt-4 max-h-[34rem] overflow-auto whitespace-pre-wrap rounded-[1.35rem] bg-black/35 p-4 text-xs leading-5 text-zinc-100/78">
+            {JSON.stringify(remotionInputProps, null, 2)}
+          </pre>
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] border border-white/10 bg-white/[0.045] p-5 text-sm leading-7 text-zinc-200/78">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300/70">
+          What this tells us
+        </p>
+        <p className="mt-2">
+          A completely template-free video system would mean the model writes arbitrary rendering code, which is powerful but risky and hard to validate. The better MyWay version is a flexible scene-graph system: the model chooses what needs to be shown, what moves, and what the captions say, while MyWay renders those choices through safe primitives or known templates.
+        </p>
+      </section>
+    </div>
+  );
+}
+

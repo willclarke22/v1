@@ -1,0 +1,202 @@
+"use client";
+
+import type { GeneratedVideoScene } from "../animation-contract";
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function easeOutCubic(value: number) {
+  const t = clamp(value, 0, 1);
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function easeInOutSine(value: number) {
+  const t = clamp(value, 0, 1);
+  return -(Math.cos(Math.PI * t) - 1) / 2;
+}
+
+function buildCurvePath(args: {
+  kind: "up" | "down";
+  progress: number;
+  width?: number;
+  height?: number;
+}) {
+  const width = args.width ?? 720;
+  const height = args.height ?? 310;
+  const points: string[] = [];
+  const centerY = height / 2 + 16;
+  const amount = easeOutCubic(args.progress) * 105;
+
+  for (let index = 0; index <= 80; index += 1) {
+    const t = -1 + (index / 80) * 2;
+    const x = 54 + ((t + 1) / 2) * (width - 108);
+    const bend = t * t * amount;
+    const y = args.kind === "up" ? centerY - bend : centerY + bend;
+    points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+  }
+
+  return points.join(" ");
+}
+
+function projectPoint(x: number, y: number, z: number) {
+  const scale = 82;
+  const screenX = 360 + (x - y) * scale;
+  const screenY = 240 + (x + y) * scale * 0.35 - z * 58;
+  return [screenX, screenY] as const;
+}
+
+function buildSurfaceLines(progress: number) {
+  const lines: string[] = [];
+  const bend = easeInOutSine(progress) * 0.55;
+  const gridValues = [-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2];
+  const samples = 34;
+
+  function zFor(x: number, y: number) {
+    return bend * (x * x - y * y);
+  }
+
+  for (const fixedY of gridValues) {
+    const points: string[] = [];
+    for (let index = 0; index <= samples; index += 1) {
+      const x = -2 + (index / samples) * 4;
+      const [px, py] = projectPoint(x, fixedY, zFor(x, fixedY));
+      points.push(`${px.toFixed(2)},${py.toFixed(2)}`);
+    }
+    lines.push(points.join(" "));
+  }
+
+  for (const fixedX of gridValues) {
+    const points: string[] = [];
+    for (let index = 0; index <= samples; index += 1) {
+      const y = -2 + (index / samples) * 4;
+      const [px, py] = projectPoint(fixedX, y, zFor(fixedX, y));
+      points.push(`${px.toFixed(2)},${py.toFixed(2)}`);
+    }
+    lines.push(points.join(" "));
+  }
+
+  return lines;
+}
+
+export function SaddleSurfaceAnimationScene({
+  scene,
+  progress,
+}: {
+  scene: GeneratedVideoScene;
+  progress: number;
+}) {
+  const eased = easeOutCubic(progress);
+  const pulse = 0.5 + Math.sin(progress * Math.PI * 2) * 0.5;
+
+  if (scene.visualKind === "hook") {
+    return (
+      <svg viewBox="0 0 720 360" style={{ width: "100%", height: "100%" }}>
+        <defs>
+          <radialGradient id="mywayGeneratedHookGlow" cx="50%" cy="45%" r="65%">
+            <stop offset="0%" stopColor="rgba(216,180,254,0.42)" />
+            <stop offset="58%" stopColor="rgba(88,28,135,0.14)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+          </radialGradient>
+        </defs>
+        <rect width="720" height="360" fill="url(#mywayGeneratedHookGlow)" />
+        <circle cx="220" cy="180" r={60 + eased * 28} fill="rgba(255,255,255,0.08)" stroke="rgba(221,214,254,0.4)" />
+        <circle cx="500" cy="180" r={60 + (1 - eased) * 22} fill="rgba(125,211,252,0.08)" stroke="rgba(125,211,252,0.35)" />
+        <path d="M280 180 C340 110 380 250 440 180" fill="none" stroke="rgba(255,255,255,0.72)" strokeWidth="6" strokeLinecap="round" />
+        <text x="220" y="188" textAnchor="middle" fill="white" fontSize="24" fontWeight="800">one curve?</text>
+        <text x="500" y="188" textAnchor="middle" fill="white" fontSize="24" fontWeight="800">two directions</text>
+      </svg>
+    );
+  }
+
+  if (scene.visualKind === "x_direction" || scene.visualKind === "y_direction") {
+    const kind = scene.visualKind === "x_direction" ? "up" : "down";
+    const axisLabel = scene.visualKind === "x_direction" ? "x direction" : "y direction";
+    const equation = scene.visualKind === "x_direction" ? "+ x² bends upward" : "− y² flips downward";
+
+    return (
+      <svg viewBox="0 0 720 360" style={{ width: "100%", height: "100%" }}>
+        <rect width="720" height="360" fill="rgba(0,0,0,0.02)" />
+        {[0, 1, 2, 3, 4, 5, 6].map((line) => (
+          <line
+            key={line}
+            x1="54"
+            x2="666"
+            y1={70 + line * 38}
+            y2={70 + line * 38}
+            stroke="rgba(255,255,255,0.06)"
+          />
+        ))}
+        <line x1="54" x2="666" y1="196" y2="196" stroke="rgba(255,255,255,0.18)" strokeWidth="2" />
+        <polyline
+          points={buildCurvePath({ kind, progress })}
+          fill="none"
+          stroke={scene.visualKind === "x_direction" ? "rgba(221,214,254,0.98)" : "rgba(125,211,252,0.95)"}
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle
+          cx={360 + Math.sin(progress * Math.PI * 2) * 205}
+          cy={scene.visualKind === "x_direction" ? 196 - eased * 54 : 196 + eased * 54}
+          r="12"
+          fill="white"
+          opacity={0.72 + pulse * 0.22}
+        />
+        <text x="78" y="52" fill="rgba(255,255,255,0.72)" fontSize="18" fontWeight="800">{axisLabel}</text>
+        <text x="78" y="318" fill="white" fontSize="28" fontWeight="900">{equation}</text>
+      </svg>
+    );
+  }
+
+  if (scene.visualKind === "saddle_combine") {
+    const lines = buildSurfaceLines(progress);
+    return (
+      <svg viewBox="0 0 720 360" style={{ width: "100%", height: "100%" }}>
+        <defs>
+          <radialGradient id="mywayGeneratedSurfaceGlow" cx="50%" cy="45%" r="65%">
+            <stop offset="0%" stopColor="rgba(168,85,247,0.24)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+          </radialGradient>
+        </defs>
+        <rect width="720" height="360" fill="url(#mywayGeneratedSurfaceGlow)" />
+        {lines.map((points, index) => (
+          <polyline
+            key={index}
+            points={points}
+            fill="none"
+            stroke={index < 9 ? "rgba(221,214,254,0.62)" : "rgba(125,211,252,0.52)"}
+            strokeWidth={index === 4 || index === 13 ? 3.2 : 1.5}
+            strokeLinecap="round"
+          />
+        ))}
+        <text x="60" y="54" fill="rgba(255,255,255,0.78)" fontSize="18" fontWeight="800">z = x² − y²</text>
+        <text x="60" y="318" fill="white" fontSize="25" fontWeight="900">up one way + down the other = saddle</text>
+      </svg>
+    );
+  }
+
+  if (scene.visualKind === "real_world_bridge") {
+    return (
+      <svg viewBox="0 0 720 360" style={{ width: "100%", height: "100%" }}>
+        <path d="M0 300 C130 210 240 255 360 172 C480 92 575 145 720 70 L720 360 L0 360 Z" fill="rgba(76,29,149,0.5)" />
+        <path d="M0 294 C125 222 238 246 360 180 C480 114 575 145 720 86" fill="none" stroke="rgba(255,255,255,0.32)" strokeWidth="8" />
+        <path d="M180 285 C255 205 470 202 540 115" fill="none" stroke="rgba(125,211,252,0.95)" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${eased * 520} 520`} />
+        <circle cx={180 + eased * 360} cy={285 - eased * 170 + Math.sin(eased * Math.PI) * -28} r="13" fill="white" />
+        <text x="56" y="60" fill="white" fontSize="28" fontWeight="900">A mountain pass has the same idea.</text>
+        <text x="56" y="96" fill="rgba(255,255,255,0.72)" fontSize="18" fontWeight="700">One path feels like it rises. The crossing path can curve the other way.</text>
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 720 360" style={{ width: "100%", height: "100%" }}>
+      <rect width="720" height="360" fill="rgba(0,0,0,0.02)" />
+      <circle cx="360" cy="150" r={72 + pulse * 10} fill="rgba(221,214,254,0.1)" stroke="rgba(221,214,254,0.36)" />
+      <text x="360" y="141" textAnchor="middle" fill="white" fontSize="27" fontWeight="900">Quick check</text>
+      <text x="360" y="179" textAnchor="middle" fill="rgba(255,255,255,0.74)" fontSize="18" fontWeight="700">What does the minus sign do?</text>
+      <path d="M210 275 C290 210 430 210 510 275" fill="none" stroke="rgba(125,211,252,0.8)" strokeWidth="8" strokeLinecap="round" />
+      <path d="M210 275 C290 322 430 322 510 275" fill="none" stroke="rgba(221,214,254,0.8)" strokeWidth="8" strokeLinecap="round" />
+    </svg>
+  );
+}

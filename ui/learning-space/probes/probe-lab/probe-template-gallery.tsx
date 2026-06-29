@@ -1,0 +1,448 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import type { EngineRenderableProbe, ProbeAttemptType, ProbeType } from "@/lib/engine";
+import {
+  ProbeRenderer,
+  createEmptyProbeAnswerDraft,
+  type ProbeAnswerDraft,
+  type ProbeRendererSubmitPayload,
+} from "../index";
+
+type ProbeTemplateId =
+  | "single_choice"
+  | "multi_choice"
+  | "drag_drop_placements"
+  | "sequence"
+  | "slider"
+  | "graph_relationship"
+  | "audio_clip_question"
+  | "audio_response_question"
+  | "video_click_interval"
+  | "video_explanation";
+
+type ProbeTemplate = {
+  id: ProbeTemplateId;
+  title: string;
+  subtitle: string;
+  useWhen: string;
+  status: "interactive" | "placeholder" | "media-needed";
+  probe: EngineRenderableProbe;
+};
+
+function makeProbe(args: {
+  probeType: ProbeType;
+  attemptType: ProbeAttemptType;
+  task: string;
+  fullPrompt: string;
+  rootProblem?: string;
+  reshaping?: string;
+  rendererParams?: Record<string, unknown>;
+  answerKey?: Record<string, unknown>;
+}): EngineRenderableProbe {
+  return {
+    schema_version: "engine_renderable_probe_v1",
+    probe_type: args.probeType,
+    expected_attempt_type: args.attemptType,
+    prompt: {
+      root_problem_explanation:
+        args.rootProblem ?? "This template checks one specific piece of the learner's thinking.",
+      reshaping_explanation:
+        args.reshaping ?? "The probe should make the learner's current mental model visible.",
+      task: args.task,
+      full_prompt: args.fullPrompt,
+    },
+    presentation_support: undefined,
+    answer_key: (args.answerKey ?? {}) as EngineRenderableProbe["answer_key"],
+    misconception_markers: [],
+    renderer_params: (args.rendererParams ?? {}) as EngineRenderableProbe["renderer_params"],
+    delivery_context: null,
+    confidence: 0.72,
+    renderer_compatibility: {
+      renderer_kind: args.probeType,
+      is_renderable: true,
+      blocking_reasons: [],
+      warnings: [],
+    },
+  };
+}
+
+const TEMPLATES: ProbeTemplate[] = [
+  {
+    id: "single_choice",
+    title: "Single choice",
+    subtitle: "One best answer with targeted distractors.",
+    useWhen: "Best for discrimination gaps, quick misconception checks, and confidence-friendly first probes.",
+    status: "interactive",
+    probe: makeProbe({
+      probeType: "single_choice",
+      attemptType: "single_choice",
+      task: "Choose the sentence where Spanish se is reflexive.",
+      fullPrompt:
+        "The word se appears in both examples. Do not decide from se alone. Choose the example where the action returns to the same person.",
+      rootProblem: "The learner is treating se as if it has one fixed meaning.",
+      rendererParams: {
+        options: [
+          {
+            id: "self_action",
+            label: "A",
+            text: "Marta se lava las manos. The action starts with Marta and returns to Marta.",
+          },
+          {
+            id: "passive_action",
+            label: "B",
+            text: "Se venden boletos. The sentence says tickets are sold, but no seller is named.",
+          },
+          {
+            id: "surface_match",
+            label: "C",
+            text: "Any sentence with se must be reflexive because the same word appears.",
+          },
+        ],
+      },
+      answerKey: { correct_option_id: "self_action" },
+    }),
+  },
+  {
+    id: "multi_choice",
+    title: "Multi choice",
+    subtitle: "Several true cues can be selected together.",
+    useWhen: "Useful when the learner needs to combine evidence instead of relying on one surface cue.",
+    status: "interactive",
+    probe: makeProbe({
+      probeType: "multi_choice",
+      attemptType: "multi_choice",
+      task: "Select every cue that helps decide what se is doing.",
+      fullPrompt:
+        "Choose the cues that actually help you decide whether se is reflexive or passive-like. Ignore cues that only look helpful.",
+      rootProblem: "The learner needs a better evidence checklist.",
+      rendererParams: {
+        options: [
+          { id: "trace_action", label: "A", text: "Trace where the action goes." },
+          { id: "subject_receives", label: "B", text: "Ask whether the subject receives or performs the action." },
+          { id: "same_word", label: "C", text: "Assume the word se has the same meaning every time." },
+          { id: "missing_actor", label: "D", text: "Notice whether a doer is unnamed or hidden." },
+        ],
+      },
+      answerKey: { correct_option_ids: ["trace_action", "subject_receives", "missing_actor"] },
+    }),
+  },
+  {
+    id: "drag_drop_placements",
+    title: "Drag/drop",
+    subtitle: "Sort pieces into meaningful buckets.",
+    useWhen: "Good for classification, misconception sorting, matching examples to rules, or comparing two mechanisms.",
+    status: "interactive",
+    probe: makeProbe({
+      probeType: "drag_drop_placements",
+      attemptType: "drag_drop_placements",
+      task: "Sort each example by what se is doing.",
+      fullPrompt:
+        "Drag each example into the bucket that best matches the direction of the action.",
+      rootProblem: "The learner is not yet separating same-word/different-role cases.",
+      rendererParams: {
+        items: [
+          { id: "marta_lava", text: "Marta se lava." },
+          { id: "boletos_venden", text: "Se venden boletos." },
+          { id: "juan_mira", text: "Juan se mira en el espejo." },
+          { id: "habla_espanol", text: "Se habla español aquí." },
+        ],
+        placement_targets: [
+          { id: "reflexive", label: "Action returns to the same person" },
+          { id: "passive_like", label: "Action happens, doer is not named" },
+        ],
+      },
+      answerKey: {
+        placements: {
+          marta_lava: "reflexive",
+          juan_mira: "reflexive",
+          boletos_venden: "passive_like",
+          habla_espanol: "passive_like",
+        },
+      },
+    }),
+  },
+  {
+    id: "sequence",
+    title: "Sequence",
+    subtitle: "Put reasoning steps into order.",
+    useWhen: "Useful for procedure gaps, solving workflows, and checking whether the learner knows the next move.",
+    status: "interactive",
+    probe: makeProbe({
+      probeType: "sequence",
+      attemptType: "ordered_items",
+      task: "Put the checking steps in order.",
+      fullPrompt:
+        "Arrange the steps for deciding what se is doing. The goal is not grammar jargon first; it is tracing the action first.",
+      rendererParams: {
+        items: [
+          { id: "find_action", text: "Find the action in the sentence." },
+          { id: "find_subject", text: "Find who or what the sentence is about." },
+          { id: "trace_direction", text: "Trace whether the action returns to that subject or lands on it." },
+          { id: "name_pattern", text: "Then name the pattern if needed." },
+        ],
+      },
+      answerKey: { ordered_item_ids: ["find_action", "find_subject", "trace_direction", "name_pattern"] },
+    }),
+  },
+  {
+    id: "slider",
+    title: "Slider",
+    subtitle: "Estimate a value or confidence level.",
+    useWhen: "Good for calibration, numeric intuition, parameter effects, or confidence probes.",
+    status: "interactive",
+    probe: makeProbe({
+      probeType: "slider",
+      attemptType: "numeric",
+      task: "How confident are you that the action returns to the subject?",
+      fullPrompt:
+        "Move the slider to show how strongly this example feels reflexive before explaining your reasoning.",
+      rendererParams: {
+        slider: {
+          min: 0,
+          max: 1,
+          step: 0.01,
+          label: "Confidence that action returns to subject",
+          min_label: "not at all",
+          max_label: "very sure",
+        },
+      },
+      answerKey: { target_range: [0.7, 1] },
+    }),
+  },
+  {
+    id: "graph_relationship",
+    title: "Graph",
+    subtitle: "Interactive 2D/3D relationship workspace.",
+    useWhen: "Best for functions, surfaces, parameter changes, tradeoffs, motion, optimization, and relationship visualization.",
+    status: "interactive",
+    probe: makeProbe({
+      probeType: "graph_relationship",
+      attemptType: "graph",
+      task: "Use the graph to show what changes when a parameter changes.",
+      fullPrompt:
+        "Adjust the expression or parameter, mark a point, and write what changed in plain language.",
+      rootProblem: "The learner needs to connect symbolic changes with visual changes.",
+      rendererParams: {},
+      answerKey: { expected_features: ["selected point", "plain-language observation"] },
+    }),
+  },
+  {
+    id: "audio_clip_question",
+    title: "Audio clip",
+    subtitle: "Listen first, then answer.",
+    useWhen: "Useful for language listening, pronunciation discrimination, rhythm, tone, or auditory cues.",
+    status: "media-needed",
+    probe: makeProbe({
+      probeType: "audio_clip_question",
+      attemptType: "single_choice",
+      task: "Listen for the cue and choose what changed.",
+      fullPrompt:
+        "This template is ready for an audio URL. Once connected, it can ask the learner to identify the important sound cue.",
+      rendererParams: {
+        audio: {
+          audio_url: "",
+          transcript: "Placeholder transcript for probe-lab preview.",
+          duration_seconds: 0,
+        },
+        options: [
+          { id: "cue_a", label: "A", text: "The first cue changed." },
+          { id: "cue_b", label: "B", text: "The second cue changed." },
+        ],
+      },
+    }),
+  },
+  {
+    id: "audio_response_question",
+    title: "Audio response",
+    subtitle: "Learner records an explanation.",
+    useWhen: "Useful when speaking, pronunciation, self-explanation, or verbal reasoning matters.",
+    status: "interactive",
+    probe: makeProbe({
+      probeType: "audio_response_question",
+      attemptType: "audio_response",
+      task: "Explain your reasoning out loud.",
+      fullPrompt:
+        "Record a short explanation. MyWay can later transcribe and judge the reasoning, not just the final answer.",
+      rendererParams: {},
+    }),
+  },
+  {
+    id: "video_click_interval",
+    title: "Video click",
+    subtitle: "Mark the exact moment something happens.",
+    useWhen: "Good for timing, visual discrimination, sports/mechanics clips, lab videos, and misconception-trigger moments.",
+    status: "media-needed",
+    probe: makeProbe({
+      probeType: "video_click_interval",
+      attemptType: "video_click",
+      task: "Click the moment where the important change happens.",
+      fullPrompt:
+        "This template is ready for a video URL. The learner clicks the moment that reveals the target cue.",
+      rendererParams: {
+        video: {
+          video_url: "",
+          duration_seconds: 0,
+          target_interval_seconds: [2.4, 3.2],
+        },
+      },
+    }),
+  },
+  {
+    id: "video_explanation",
+    title: "Video explanation",
+    subtitle: "Teaching intervention or generated video probe.",
+    useWhen: "Useful when motion, story, or spatial transformation can unstick the learner better than text.",
+    status: "media-needed",
+    probe: makeProbe({
+      probeType: "video_explanation",
+      attemptType: "none",
+      task: "Watch the explanation, then answer the follow-up probe.",
+      fullPrompt:
+        "This template can use a normal video URL or a generated-video contract when the renderer params include one.",
+      rendererParams: {
+        video: {
+          video_url: "",
+          informational_only: true,
+        },
+      },
+    }),
+  },
+];
+
+function statusLabel(status: ProbeTemplate["status"]) {
+  if (status === "interactive") return "interactive";
+  if (status === "media-needed") return "needs media";
+  return "placeholder";
+}
+
+function statusTone(status: ProbeTemplate["status"]) {
+  if (status === "interactive") return "border-emerald-200/25 bg-emerald-200/10 text-emerald-100";
+  if (status === "media-needed") return "border-amber-200/25 bg-amber-200/10 text-amber-100";
+  return "border-zinc-200/20 bg-zinc-200/10 text-zinc-100";
+}
+
+export function ProbeTemplateGallery() {
+  const [selectedId, setSelectedId] = useState<ProbeTemplateId>("single_choice");
+  const [latestDraft, setLatestDraft] = useState<ProbeAnswerDraft>(() =>
+    createEmptyProbeAnswerDraft("single_choice"),
+  );
+  const [lastSubmit, setLastSubmit] = useState<ProbeRendererSubmitPayload | null>(null);
+
+  const selectedTemplate = useMemo(
+    () => TEMPLATES.find((template) => template.id === selectedId) ?? TEMPLATES[0]!,
+    [selectedId],
+  );
+
+  function selectTemplate(template: ProbeTemplate) {
+    setSelectedId(template.id);
+    setLatestDraft(createEmptyProbeAnswerDraft(template.probe.expected_attempt_type));
+    setLastSubmit(null);
+  }
+
+  return (
+    <section className="grid gap-5 lg:grid-cols-[minmax(19rem,0.38fr)_minmax(0,1fr)]">
+      <aside className="rounded-[2rem] border border-white/10 bg-white/[0.055] p-4 shadow-2xl backdrop-blur-xl">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-purple-100/70">
+              Probe templates
+            </p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-white">
+              Renderer gallery
+            </h2>
+          </div>
+          <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-zinc-300">
+            {TEMPLATES.length}
+          </span>
+        </div>
+
+        <div className="grid gap-2">
+          {TEMPLATES.map((template) => {
+            const active = template.id === selectedTemplate.id;
+            return (
+              <button
+                key={template.id}
+                type="button"
+                onClick={() => selectTemplate(template)}
+                className={`rounded-2xl border p-3 text-left transition ${
+                  active
+                    ? "border-purple-200/35 bg-purple-200/14 shadow-[0_16px_34px_rgba(88,28,135,0.20)]"
+                    : "border-white/10 bg-black/15 hover:bg-white/[0.075]"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-semibold text-white">{template.title}</p>
+                  <span
+                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${statusTone(
+                      template.status,
+                    )}`}
+                  >
+                    {statusLabel(template.status)}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-zinc-300/78">{template.subtitle}</p>
+              </button>
+            );
+          })}
+        </div>
+      </aside>
+
+      <div className="grid gap-5">
+        <section className="rounded-[2rem] border border-white/10 bg-white/[0.055] p-5 shadow-2xl backdrop-blur-xl">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-purple-100/70">
+                Active template
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">
+                {selectedTemplate.title}
+              </h2>
+              <p className="mt-2 text-sm leading-7 text-zinc-200/78">
+                {selectedTemplate.useWhen}
+              </p>
+            </div>
+
+            <a
+              href="/probe-lab/generated-video"
+              className="rounded-2xl border border-white/10 bg-white/[0.07] px-4 py-2 text-sm font-semibold text-zinc-100 transition hover:bg-white/[0.11]"
+            >
+              Open generated-video lab
+            </a>
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-black/[0.22] p-4 shadow-2xl backdrop-blur-xl">
+          <ProbeRenderer
+            key={selectedTemplate.id}
+            probe={selectedTemplate.probe}
+            initialDraft={latestDraft}
+            showDebug
+            onDraftChange={setLatestDraft}
+            onSubmit={setLastSubmit}
+          />
+        </section>
+
+        <section className="grid gap-4 rounded-[2rem] border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl xl:grid-cols-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-300/70">
+              Current draft
+            </p>
+            <pre className="mt-3 max-h-80 overflow-auto rounded-3xl border border-white/10 bg-black/30 p-4 text-xs leading-5 text-zinc-200">
+              {JSON.stringify(latestDraft, null, 2)}
+            </pre>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-300/70">
+              Last submit payload
+            </p>
+            <pre className="mt-3 max-h-80 overflow-auto rounded-3xl border border-white/10 bg-black/30 p-4 text-xs leading-5 text-zinc-200">
+              {lastSubmit ? JSON.stringify(lastSubmit.attempt, null, 2) : "Submit from a renderer to inspect the attempt payload."}
+            </pre>
+          </div>
+        </section>
+      </div>
+    </section>
+  );
+}

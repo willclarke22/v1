@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ProbeShell } from "./probe-shell";
 import type { GenericProbeComponentProps } from "./probe-ui-types";
 import { getProbeItems } from "./probe-ui-types";
+import {
+  ProbeButton,
+  ProbeEmptyState,
+  ProbeMiniLabel,
+  ProbePill,
+  ProbeProgressBar,
+  ProbeStack,
+} from "./shared";
 
 function moveItem(ids: string[], fromIndex: number, toIndex: number): string[] {
   const next = [...ids];
@@ -26,6 +34,8 @@ export function SequenceProbe(props: GenericProbeComponentProps) {
   const itemById = new Map(items.map((item) => [item.id, item]));
   const draftOrderKey = (props.draft.ordered_item_ids ?? []).join("|");
   const currentOrderKey = currentOrder.join("|");
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const completion = items.length > 0 ? Math.round((currentOrder.length / items.length) * 100) : 0;
 
   function setOrder(nextOrder: string[]) {
     props.onDraftChange({
@@ -39,140 +49,147 @@ export function SequenceProbe(props: GenericProbeComponentProps) {
     if (items.length > 0 && currentOrderKey !== draftOrderKey) {
       setOrder(currentOrder);
     }
+    // Keep order in sync with renderer params.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentOrderKey, draftOrderKey, items.length]);
 
   return (
     <ProbeShell {...props}>
-      <div style={{ display: "grid", gap: "1rem" }}>
-        <div>
-          <p
-            style={{
-              margin: 0,
-              color: "rgba(255,255,255,0.92)",
-              fontWeight: 800,
-            }}
-          >
-            Arrange the steps.
-          </p>
-          <p
-            style={{
-              margin: "0.35rem 0 0",
-              color: "rgba(255,255,255,0.66)",
-              fontSize: "0.84rem",
-              lineHeight: 1.5,
-            }}
-          >
-            Move the cards until the order matches how you think the idea works.
-          </p>
+      <ProbeStack gap="1rem">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "1rem",
+            alignItems: "end",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <ProbeMiniLabel>Order the steps</ProbeMiniLabel>
+            <p
+              style={{
+                margin: "0.35rem 0 0",
+                color: "rgba(255,255,255,0.66)",
+                fontSize: "0.84rem",
+                lineHeight: 1.5,
+              }}
+            >
+              Drag cards into order, or use the arrow buttons for precise control.
+            </p>
+          </div>
+          <ProbePill tone={items.length > 0 ? "success" : "default"}>
+            {currentOrder.length}/{items.length} steps
+          </ProbePill>
         </div>
 
+        <ProbeProgressBar value={completion} label="Sequence readiness" />
+
         {currentOrder.length > 0 ? (
-          <div style={{ display: "grid", gap: "0.68rem" }}>
+          <div style={{ display: "grid", gap: "0.72rem" }}>
             {currentOrder.map((itemId, index) => {
               const item = itemById.get(itemId);
+              const active = draggedId === itemId;
 
               return (
                 <div
                   key={itemId}
+                  draggable={!props.disabled}
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData("text/plain", itemId);
+                    setDraggedId(itemId);
+                  }}
+                  onDragEnd={() => setDraggedId(null)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const fromId = event.dataTransfer.getData("text/plain") || draggedId;
+                    if (!fromId) return;
+                    const fromIndex = currentOrder.indexOf(fromId);
+                    if (fromIndex < 0 || fromIndex === index) return;
+                    setOrder(moveItem(currentOrder, fromIndex, index));
+                    setDraggedId(null);
+                  }}
                   style={{
                     display: "grid",
                     gridTemplateColumns: "auto minmax(0,1fr) auto",
                     gap: "0.78rem",
                     alignItems: "center",
-                    padding: "0.82rem",
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    borderRadius: "22px",
-                    background:
-                      "linear-gradient(145deg, rgba(255,255,255,0.085), rgba(255,255,255,0.04))",
-                    boxShadow: "0 12px 28px rgba(0,0,0,0.13)",
+                    padding: "0.86rem",
+                    border: active
+                      ? "1px solid rgba(221,214,254,0.58)"
+                      : "1px solid rgba(255,255,255,0.14)",
+                    borderRadius: "24px",
+                    background: active
+                      ? "radial-gradient(circle at top left, rgba(221,214,254,0.18), transparent 35%), linear-gradient(145deg, rgba(124,58,237,0.26), rgba(255,255,255,0.07))"
+                      : "linear-gradient(145deg, rgba(255,255,255,0.085), rgba(255,255,255,0.04))",
+                    boxShadow: active
+                      ? "0 18px 42px rgba(76,29,149,0.24)"
+                      : "0 12px 28px rgba(0,0,0,0.13)",
+                    cursor: props.disabled ? "not-allowed" : "grab",
+                    transition: "border-color 140ms ease, background 140ms ease, box-shadow 140ms ease",
                   }}
                 >
                   <span
                     style={{
-                      display: "inline-grid",
+                      display: "grid",
                       placeItems: "center",
-                      width: "2.15rem",
-                      height: "2.15rem",
+                      width: "2.4rem",
+                      height: "2.4rem",
                       borderRadius: "999px",
-                      border: "1px solid rgba(221,214,254,0.24)",
-                      background: "rgba(221,214,254,0.11)",
-                      color: "rgba(255,255,255,0.92)",
-                      fontSize: "0.82rem",
-                      fontWeight: 900,
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      background: "rgba(255,255,255,0.08)",
+                      color: "white",
+                      fontWeight: 950,
                     }}
                   >
                     {index + 1}
                   </span>
 
-                  <p
+                  <span
                     style={{
-                      margin: 0,
-                      color: "rgba(255,255,255,0.94)",
-                      fontSize: "0.93rem",
+                      minWidth: 0,
+                      color: "rgba(255,255,255,0.92)",
+                      fontWeight: 800,
                       lineHeight: 1.45,
-                      fontWeight: 750,
+                      overflowWrap: "anywhere",
                     }}
                   >
                     {item?.text ?? itemId}
-                  </p>
+                  </span>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "0.42rem",
-                    }}
-                  >
-                    <button
-                      type="button"
+                  <div style={{ display: "flex", gap: "0.4rem" }}>
+                    <ProbeButton
+                      variant="ghost"
                       disabled={props.disabled || index === 0}
+                      ariaLabel="Move item up"
                       onClick={() => setOrder(moveItem(currentOrder, index, index - 1))}
-                      style={{
-                        border: "1px solid rgba(255,255,255,0.12)",
-                        borderRadius: "12px",
-                        background: "rgba(255,255,255,0.07)",
-                        color: "white",
-                        padding: "0.45rem 0.58rem",
-                        cursor:
-                          props.disabled || index === 0 ? "not-allowed" : "pointer",
-                        opacity: props.disabled || index === 0 ? 0.45 : 1,
-                      }}
+                      style={{ width: "2.35rem", height: "2.35rem", padding: 0 }}
                     >
                       ↑
-                    </button>
-                    <button
-                      type="button"
+                    </ProbeButton>
+                    <ProbeButton
+                      variant="ghost"
                       disabled={props.disabled || index === currentOrder.length - 1}
+                      ariaLabel="Move item down"
                       onClick={() => setOrder(moveItem(currentOrder, index, index + 1))}
-                      style={{
-                        border: "1px solid rgba(255,255,255,0.12)",
-                        borderRadius: "12px",
-                        background: "rgba(255,255,255,0.07)",
-                        color: "white",
-                        padding: "0.45rem 0.58rem",
-                        cursor:
-                          props.disabled || index === currentOrder.length - 1
-                            ? "not-allowed"
-                            : "pointer",
-                        opacity:
-                          props.disabled || index === currentOrder.length - 1
-                            ? 0.45
-                            : 1,
-                      }}
+                      style={{ width: "2.35rem", height: "2.35rem", padding: 0 }}
                     >
                       ↓
-                    </button>
+                    </ProbeButton>
                   </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.72)" }}>
-            No sequence items were supplied in renderer_params.items.
-          </p>
+          <ProbeEmptyState
+            title="No sequence items yet"
+            body="This probe needs renderer_params.items before the order can be shown."
+          />
         )}
-      </div>
+      </ProbeStack>
     </ProbeShell>
   );
 }
+
