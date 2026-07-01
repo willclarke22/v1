@@ -1,0 +1,6 @@
+FILE: sandbox\probe-lab\ui\learning-space\probes\generated-video\blender-playground\index.ts
+SIZE BYTES: 82
+========================================================================================================================
+
+export { FreeformBlenderPlaygroundLab } from "./freeform-blender-playground-lab";
+

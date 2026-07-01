@@ -1,0 +1,377 @@
+FILE: ui\learning-space\probes\sandbox\generated-video\generated-video-probe.tsx
+SIZE BYTES: 12355
+========================================================================================================================
+
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ProbeShell } from "../../probe-shell";
+import type { GenericProbeComponentProps, ProbeAnswerDraft } from "../../probe-ui-types";
+import { ProbeButton, ProbePill, ProbeSection, ProbeTextArea } from "../../shared";
+import {
+  getGeneratedVideoContractFromRendererParams,
+  SADDLE_SURFACE_ANIMATION_CONTRACT,
+  type GeneratedVideoContract,
+} from "./animation-contract";
+import { SaddleSurfaceAnimationScene } from "./templates/saddle-surface-animation";
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function findSceneAtTime(contract: GeneratedVideoContract, elapsedSeconds: number) {
+  let cursor = 0;
+
+  for (let index = 0; index < contract.scenes.length; index += 1) {
+    const scene = contract.scenes[index]!;
+    const start = cursor;
+    const end = cursor + scene.durationSeconds;
+
+    if (elapsedSeconds <= end || index === contract.scenes.length - 1) {
+      return {
+        scene,
+        sceneIndex: index,
+        sceneStart: start,
+        sceneEnd: end,
+        sceneProgress: clamp((elapsedSeconds - start) / scene.durationSeconds, 0, 1),
+      };
+    }
+
+    cursor = end;
+  }
+
+  const fallbackScene = contract.scenes[0] ?? SADDLE_SURFACE_ANIMATION_CONTRACT.scenes[0]!;
+  return {
+    scene: fallbackScene,
+    sceneIndex: 0,
+    sceneStart: 0,
+    sceneEnd: fallbackScene.durationSeconds,
+    sceneProgress: 0,
+  };
+}
+
+function formatTime(seconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const remaining = safeSeconds % 60;
+  return `${minutes}:${String(remaining).padStart(2, "0")}`;
+}
+
+function buildDraft(args: {
+  baseDraft?: ProbeAnswerDraft;
+  contract: GeneratedVideoContract;
+  elapsedSeconds: number;
+  totalDuration: number;
+  checkpointResponse: string;
+  completed?: boolean;
+}): ProbeAnswerDraft {
+  const completed = args.completed ?? args.elapsedSeconds >= args.totalDuration;
+  return {
+    ...(args.baseDraft ?? { attempt_type: "none" }),
+    attempt_type: "none",
+    text_response: args.checkpointResponse,
+    generated_video_contract_id: args.contract.contract_id,
+    generated_video_completed: completed,
+    generated_video_elapsed_seconds: Number(args.elapsedSeconds.toFixed(2)),
+    generated_video_checkpoint_response: args.checkpointResponse,
+  };
+}
+
+export function hasGeneratedAnimationContract(probe: { renderer_params?: unknown }) {
+  return Boolean(getGeneratedVideoContractFromRendererParams(probe.renderer_params));
+}
+
+export function GeneratedVideoPlayer({
+  contract = SADDLE_SURFACE_ANIMATION_CONTRACT,
+  disabled,
+  checkpointResponse,
+  onCheckpointResponseChange,
+  onPlaybackDraftChange,
+  showMetadata = true,
+}: {
+  contract?: GeneratedVideoContract;
+  disabled?: boolean;
+  checkpointResponse?: string;
+  onCheckpointResponseChange?: (value: string) => void;
+  onPlaybackDraftChange?: (args: { elapsedSeconds: number; totalDuration: number; completed: boolean }) => void;
+  showMetadata?: boolean;
+}) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const playbackCallbackRef = useRef(onPlaybackDraftChange);
+  const totalDuration = useMemo(
+    () => contract.scenes.reduce((sum, scene) => sum + scene.durationSeconds, 0),
+    [contract.scenes],
+  );
+  const active = findSceneAtTime(contract, elapsedSeconds);
+
+  useEffect(() => {
+    playbackCallbackRef.current = onPlaybackDraftChange;
+  }, [onPlaybackDraftChange]);
+
+  useEffect(() => {
+    playbackCallbackRef.current?.({
+      elapsedSeconds,
+      totalDuration,
+      completed: elapsedSeconds >= totalDuration,
+    });
+  }, [elapsedSeconds, totalDuration]);
+
+  useEffect(() => {
+    if (!isPlaying || disabled) return;
+
+    const interval = window.setInterval(() => {
+      setElapsedSeconds((value) => {
+        const next = value + 0.05;
+        if (next >= totalDuration) {
+          window.clearInterval(interval);
+          setIsPlaying(false);
+          return totalDuration;
+        }
+        return next;
+      });
+    }, 50);
+
+    return () => window.clearInterval(interval);
+  }, [disabled, isPlaying, totalDuration]);
+
+  function jumpToScene(sceneIndex: number) {
+    const nextStart = contract.scenes
+      .slice(0, sceneIndex)
+      .reduce((sum, scene) => sum + scene.durationSeconds, 0);
+    setElapsedSeconds(nextStart);
+    setIsPlaying(false);
+  }
+
+  function togglePlayback() {
+    if (disabled) return;
+
+    if (elapsedSeconds >= totalDuration) {
+      setElapsedSeconds(0);
+      setIsPlaying(true);
+      return;
+    }
+
+    setIsPlaying((value) => !value);
+  }
+
+  return (
+    <div style={{ display: "grid", gap: "1rem" }}>
+      <ProbeSection
+        tone="deep"
+        title={contract.title}
+        subtitle="Laptop-format generated explanation preview. This is a structured animation contract rendered inside MyWay."
+        badge={<ProbePill tone="purple" active>{contract.format.replaceAll("_", " ")}</ProbePill>}
+      >
+        <div
+          style={{
+            position: "relative",
+            aspectRatio: "16 / 9",
+            overflow: "hidden",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: "24px",
+            background:
+              "linear-gradient(145deg, rgba(5,5,16,0.98), rgba(39,13,64,0.82))",
+            boxShadow: "0 26px 80px rgba(0,0,0,0.32)",
+          }}
+        >
+          <SaddleSurfaceAnimationScene scene={active.scene} progress={active.sceneProgress} />
+
+          <div
+            style={{
+              position: "absolute",
+              left: "1rem",
+              right: "1rem",
+              bottom: "1rem",
+              display: "grid",
+              gap: "0.5rem",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: "20px",
+              background: "rgba(0,0,0,0.48)",
+              padding: "0.85rem 1rem",
+              backdropFilter: "blur(14px)",
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                color: "rgba(255,255,255,0.72)",
+                fontSize: "0.78rem",
+                fontWeight: 900,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+              }}
+            >
+              {active.scene.title}
+            </p>
+            <p
+              style={{
+                margin: 0,
+                color: "white",
+                fontSize: "clamp(0.96rem, 1.7vw, 1.18rem)",
+                lineHeight: 1.35,
+                fontWeight: 850,
+              }}
+            >
+              {active.scene.caption}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gap: "0.7rem", marginTop: "0.9rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.8rem" }}>
+            <ProbeButton disabled={disabled} variant="primary" onClick={togglePlayback} style={{ minWidth: "6.6rem" }}>
+              {isPlaying ? "Pause" : elapsedSeconds >= totalDuration ? "Replay" : "Play"}
+            </ProbeButton>
+
+            <input
+              aria-label="Generated animation timeline"
+              type="range"
+              min={0}
+              max={totalDuration}
+              step={0.05}
+              value={elapsedSeconds}
+              disabled={disabled}
+              onChange={(event) => {
+                setElapsedSeconds(Number(event.target.value));
+                setIsPlaying(false);
+              }}
+              style={{ width: "100%", accentColor: "#c4b5fd" }}
+            />
+
+            <span
+              style={{
+                color: "rgba(255,255,255,0.72)",
+                fontSize: "0.8rem",
+                fontWeight: 850,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {formatTime(elapsedSeconds)} / {formatTime(totalDuration)}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.42rem" }}>
+            {contract.scenes.map((scene, index) => (
+              <button
+                key={scene.id}
+                type="button"
+                disabled={disabled}
+                onClick={() => jumpToScene(index)}
+                style={{
+                  border:
+                    index === active.sceneIndex
+                      ? "1px solid rgba(221,214,254,0.36)"
+                      : "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "999px",
+                  background:
+                    index === active.sceneIndex
+                      ? "rgba(221,214,254,0.16)"
+                      : "rgba(255,255,255,0.055)",
+                  color: "rgba(255,255,255,0.82)",
+                  padding: "0.36rem 0.58rem",
+                  fontSize: "0.72rem",
+                  fontWeight: 800,
+                  cursor: disabled ? "not-allowed" : "pointer",
+                  opacity: disabled ? 0.5 : 1,
+                }}
+              >
+                {index + 1}. {scene.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      </ProbeSection>
+
+      {showMetadata ? (
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(18rem, 1fr))",
+            gap: "0.9rem",
+          }}
+        >
+          <ProbeSection title="Learner signal" subtitle={`“${contract.learner_message}”`}>
+            {null}
+          </ProbeSection>
+          <ProbeSection title="MyWay diagnosis" subtitle={contract.diagnosis}>
+            {null}
+          </ProbeSection>
+          <ProbeSection title="Learning goal" subtitle={contract.learning_goal}>
+            {null}
+          </ProbeSection>
+        </section>
+      ) : null}
+
+      <ProbeSection
+        title="Quick checkpoint"
+        subtitle={contract.checkpoint.prompt}
+        badge={<ProbePill tone={checkpointResponse?.trim() ? "success" : "default"}>{checkpointResponse?.trim() ? "answered" : "optional"}</ProbePill>}
+      >
+        <ProbeTextArea
+          value={checkpointResponse ?? ""}
+          disabled={disabled}
+          rows={3}
+          placeholder="Type what changed in your understanding..."
+          onChange={(value) => onCheckpointResponseChange?.(value)}
+          ariaLabel="Generated video checkpoint response"
+        />
+      </ProbeSection>
+    </div>
+  );
+}
+
+export function GeneratedVideoProbe(props: GenericProbeComponentProps) {
+  const contract =
+    getGeneratedVideoContractFromRendererParams(props.probe.renderer_params) ??
+    SADDLE_SURFACE_ANIMATION_CONTRACT;
+  const checkpointResponse = props.draft.generated_video_checkpoint_response ?? props.draft.text_response ?? "";
+  const [playbackState, setPlaybackState] = useState({
+    elapsedSeconds: props.draft.generated_video_elapsed_seconds ?? 0,
+    totalDuration: contract.scenes.reduce((sum, scene) => sum + scene.durationSeconds, 0),
+    completed: props.draft.generated_video_completed ?? false,
+  });
+
+  function updateGeneratedVideoDraft(next: {
+    checkpointResponse?: string;
+    elapsedSeconds?: number;
+    totalDuration?: number;
+    completed?: boolean;
+  }) {
+    const nextPlayback = {
+      elapsedSeconds: next.elapsedSeconds ?? playbackState.elapsedSeconds,
+      totalDuration: next.totalDuration ?? playbackState.totalDuration,
+      completed: next.completed ?? playbackState.completed,
+    };
+    setPlaybackState(nextPlayback);
+
+    props.onDraftChange(
+      buildDraft({
+        baseDraft: props.draft,
+        contract,
+        elapsedSeconds: nextPlayback.elapsedSeconds,
+        totalDuration: nextPlayback.totalDuration,
+        completed: nextPlayback.completed,
+        checkpointResponse: next.checkpointResponse ?? checkpointResponse,
+      }),
+    );
+  }
+
+  return (
+    <ProbeShell {...props}>
+      <GeneratedVideoPlayer
+        contract={contract}
+        disabled={props.disabled}
+        checkpointResponse={checkpointResponse}
+        onCheckpointResponseChange={(value) => updateGeneratedVideoDraft({ checkpointResponse: value })}
+        onPlaybackDraftChange={(state) => updateGeneratedVideoDraft(state)}
+        showMetadata
+      />
+    </ProbeShell>
+  );
+}
+
+export function GeneratedVideoProbeLabPreview() {
+  return <GeneratedVideoPlayer contract={SADDLE_SURFACE_ANIMATION_CONTRACT} showMetadata />;
+}
+

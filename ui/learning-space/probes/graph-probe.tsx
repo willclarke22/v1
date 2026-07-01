@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ProbeShell } from "./probe-shell";
 import type {
   GenericProbeComponentProps,
@@ -22,6 +22,11 @@ import {
 } from "./graph/graph-controls";
 import { Graph2DWorkspace } from "./graph/graph-2d-workspace";
 import { Graph3DWorkspace } from "./graph/graph-3d-workspace";
+import {
+  cloneGraphVisualState,
+  createDefaultGraphVisualState,
+  type GraphVisualState,
+} from "./graph/graph-visual-actions";
 import {
   DEFAULT_FUNCTIONS,
   DEFAULT_PARAMETERS,
@@ -50,13 +55,52 @@ function setFirstFunctionExpression(
   functions: ProbeGraphFunctionDraft[],
   expression: string,
 ): ProbeGraphFunctionDraft[] {
+  const cleanExpression = normalizeGraphExpressionInput(expression, "2d");
+
   if (!functions.length) {
-    return [{ ...DEFAULT_FUNCTIONS[0], expression }];
+    return [{ ...DEFAULT_FUNCTIONS[0], expression: cleanExpression }];
   }
 
   return functions.map((fn, index) =>
-    index === 0 ? { ...fn, expression, enabled: true } : fn,
+    index === 0 ? { ...fn, expression: cleanExpression, enabled: true } : fn,
   );
+}
+
+function normalizeGraphExpressionInput(expression: string, mode: ProbeGraphModeDraft) {
+  let next = String(expression ?? "").trim();
+
+  // OpenAI may send "z = x^2 - y^2", "y = x^2", or even repeated forms.
+  // The UI already shows the left side as a prefix, so the stored expression
+  // should always be only the right-hand side.
+  for (let index = 0; index < 4; index += 1) {
+    const before = next;
+
+    if (mode === "3d") {
+      next = next
+        .replace(/^z\s*=\s*/i, "")
+        .replace(/^f\s*\(\s*x\s*,\s*y\s*\)\s*=\s*/i, "")
+        .replace(/^surface\s*=\s*/i, "")
+        .trim();
+    } else {
+      next = next
+        .replace(/^y\s*=\s*/i, "")
+        .replace(/^f\s*\(\s*x\s*\)\s*=\s*/i, "")
+        .trim();
+    }
+
+    // Sometimes a 3D expression accidentally arrives as "y = ..." or
+    // a 2D expression as "z = ..."; strip those too so the input never doubles.
+    next = next
+      .replace(/^z\s*=\s*/i, "")
+      .replace(/^y\s*=\s*/i, "")
+      .replace(/^f\s*\(\s*x\s*,\s*y\s*\)\s*=\s*/i, "")
+      .replace(/^f\s*\(\s*x\s*\)\s*=\s*/i, "")
+      .trim();
+
+    if (next === before) break;
+  }
+
+  return next || (mode === "3d" ? DEFAULT_SURFACE_EXPRESSION : DEFAULT_FUNCTIONS[0].expression);
 }
 
 function appendExpression(expression: string, insert: string) {
@@ -77,19 +121,504 @@ function getAnimatedParameterValue(args: {
   return roundForStorage(center + amplitude * wave, 2);
 }
 
+type GraphGuidedActionType =
+  | "set_mode"
+  | "set_expression"
+  | "set_camera"
+  | "set_parameter"
+  | "select_center"
+  | "clear_selection"
+  | "show_surface"
+  | "show_function"
+  | "show_slice"
+  | "highlight_axis"
+  | "highlight_term"
+  | "show_label"
+  | "show_point"
+  | "show_tangent"
+  | "show_secant"
+  | "show_area_region"
+  | "show_intersection"
+  | "animate_parameter"
+  | "focus_region"
+  | "unlock_controls";
+
+type GraphGuidedAction = {
+  type: GraphGuidedActionType;
+  mode?: ProbeGraphModeDraft;
+  expression?: string;
+  surface_expression?: string;
+  view?: ProbeGraphView3DDraft;
+  preset_id?: string;
+  name?: string;
+  value?: number;
+  enabled?: boolean;
+  axis?: "x" | "y" | "z";
+  term?: string;
+  text?: string;
+  target?: string;
+  function_id?: string;
+  x?: number;
+  y?: number;
+  z?: number;
+  label?: string;
+  from?: number;
+  to?: number;
+};
+
+type GraphGuidedStep = {
+  id: string;
+  title: string;
+  explanation: string;
+  root_problem_focus?: string | null;
+  graph_actions: GraphGuidedAction[];
+  learner_prompt?: string | null;
+  duration_ms?: number;
+};
+
+type GraphExperience = {
+  root_problem_hook: string;
+  mental_move: string;
+  guided_sequence: GraphGuidedStep[];
+  learner_task: {
+    title: string;
+    instructions: string;
+    interaction_mode: string;
+    required_actions: string[];
+    reflection_prompt: string;
+  };
+  control_policy: {
+    lock_controls_until_complete: boolean;
+    initially_enabled: string[];
+    reveal_sequence: string[];
+  };
+};
+
+function isRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function readString(value: unknown, fallback = "") {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function readStringArray(value: unknown, fallback: string[] = []) {
+  return Array.isArray(value)
+    ? value
+        .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+        .map((item) => item.trim())
+        .slice(0, 10)
+    : fallback;
+}
+
+function readAxis(value: unknown): "x" | "y" | "z" | undefined {
+  return value === "x" || value === "y" || value === "z" ? value : undefined;
+}
+
+function readNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function normalizeGuidedAction(value: unknown): GraphGuidedAction | null {
+  const record = isRecord(value);
+  const type = readString(record.type) as GraphGuidedActionType;
+
+  const supportedTypes: GraphGuidedActionType[] = [
+    "set_mode",
+    "set_expression",
+    "set_camera",
+    "set_parameter",
+    "select_center",
+    "clear_selection",
+    "show_surface",
+    "show_function",
+    "show_slice",
+    "highlight_axis",
+    "highlight_term",
+    "show_label",
+    "show_point",
+    "show_tangent",
+    "show_secant",
+    "show_area_region",
+    "show_intersection",
+    "animate_parameter",
+    "focus_region",
+    "unlock_controls",
+  ];
+
+  if (!supportedTypes.includes(type)) return null;
+
+  const view = isRecord(record.view);
+  const mode = record.mode === "3d" || record.mode === "2d" ? record.mode : undefined;
+  const axis = readAxis(record.axis);
+
+  return {
+    type,
+    mode,
+    expression: readString(record.expression),
+    surface_expression: readString(record.surface_expression),
+    preset_id: readString(record.preset_id),
+    view:
+      typeof view.yaw === "number" && typeof view.pitch === "number" && typeof view.zoom === "number"
+        ? { yaw: view.yaw, pitch: view.pitch, zoom: view.zoom }
+        : undefined,
+    name: readString(record.name),
+    value: readNumber(record.value),
+    enabled: typeof record.enabled === "boolean" ? record.enabled : undefined,
+    axis,
+    term: readString(record.term),
+    text: readString(record.text),
+    target: readString(record.target),
+    function_id: readString(record.function_id),
+    x: readNumber(record.x),
+    y: readNumber(record.y),
+    z: readNumber(record.z),
+    label: readString(record.label),
+    from: readNumber(record.from),
+    to: readNumber(record.to),
+  };
+}
+
+function normalizeGraphExperience(rendererParams: unknown): GraphExperience | null {
+  const params = isRecord(rendererParams);
+  const rawExperience = isRecord(params.graph_experience);
+  if (!Object.keys(rawExperience).length) return null;
+
+  const rawTimeline = Array.isArray(rawExperience.timeline) ? rawExperience.timeline : [];
+  const rawSteps = rawTimeline.length ? rawTimeline : Array.isArray(rawExperience.guided_sequence) ? rawExperience.guided_sequence : [];
+  const guidedSequence = rawSteps
+    .map((item, index): GraphGuidedStep => {
+      const step = isRecord(item);
+      const actions = Array.isArray(step.graph_actions)
+        ? step.graph_actions.map(normalizeGuidedAction).filter((action): action is GraphGuidedAction => Boolean(action))
+        : [];
+      return {
+        id: readString(step.id, "step_" + (index + 1)),
+        title: readString(step.title, "Step " + (index + 1)),
+        explanation: readString(step.explanation, "Watch how the graph changes."),
+        root_problem_focus: readString(step.root_problem_focus, ""),
+        graph_actions: actions,
+        learner_prompt: readString(step.learner_prompt, ""),
+        duration_ms: readNumber(step.duration_ms) ?? readNumber(step.durationMs),
+      };
+    })
+    .filter((step) => step.title || step.explanation)
+    .slice(0, 8);
+
+  const rawTask = isRecord(rawExperience.learner_task);
+  const rawPolicy = isRecord(rawExperience.control_policy);
+
+  return {
+    root_problem_hook: readString(rawExperience.root_problem_hook, "The thing to get is how the equation controls the picture."),
+    mental_move: readString(rawExperience.mental_move, "Connect each part of the formula to something visible on the graph."),
+    guided_sequence: guidedSequence,
+    learner_task: {
+      title: readString(rawTask.title, "Now you take control"),
+      instructions: readString(rawTask.instructions, "Use the graph controls, then explain what changed in your own words."),
+      interaction_mode: readString(rawTask.interaction_mode, "explore_and_explain"),
+      required_actions: readStringArray(rawTask.required_actions, ["change one control", "mark or inspect one feature", "explain what changed"]),
+      reflection_prompt: readString(rawTask.reflection_prompt, "What did the graph make clearer?"),
+    },
+    control_policy: {
+      lock_controls_until_complete: rawPolicy.lock_controls_until_complete !== false,
+      initially_enabled: readStringArray(rawPolicy.initially_enabled, ["view", "step_through"]),
+      reveal_sequence: readStringArray(rawPolicy.reveal_sequence, ["equation", "parameters", "window", "reflection"]),
+    },
+  };
+}
+
+function actionLabel(action: GraphGuidedAction) {
+  switch (action.type) {
+    case "set_mode": return "mode -> " + (action.mode ?? "same");
+    case "set_expression": return "equation -> " + (action.surface_expression || action.expression || "same");
+    case "set_camera": return action.preset_id ? "camera -> " + action.preset_id : "camera view";
+    case "set_parameter": return String(action.name ?? "parameter") + " -> " + (typeof action.value === "number" ? action.value : "value");
+    case "show_slice": return String(action.axis ?? "?") + "-slice";
+    case "highlight_axis": return String(action.axis ?? "?") + "-axis";
+    case "highlight_term": return "term: " + String(action.term ?? "term");
+    case "show_label": return action.text || "label";
+    case "show_tangent": return "tangent";
+    case "show_secant": return "secant";
+    case "show_area_region": return "area";
+    case "show_intersection": return "intersection";
+    case "show_point": return "point";
+    case "show_function": return action.function_id ? "function " + action.function_id : "function";
+    case "animate_parameter": return action.name ? "animate " + action.name : "animate";
+    case "focus_region": return "focus region";
+    case "unlock_controls": return "unlock controls";
+    case "select_center": return "mark center";
+    case "clear_selection": return "clear selection";
+    case "show_surface": return action.enabled === false ? "hide surface" : "show surface";
+    default: return "graph action";
+  }
+}
+
+function appendUniqueNumber(values: number[], value: number) {
+  return values.some((candidate) => Math.abs(candidate - value) < 0.0001) ? values : [...values, value];
+}
+
+function applyActionToVisualState(
+  state: GraphVisualState,
+  action: GraphGuidedAction,
+  step: GraphGuidedStep,
+): GraphVisualState {
+  const next = cloneGraphVisualState(state);
+  next.activeStepId = step.id;
+  next.activeStepTitle = step.title;
+  next.overlayTitle = step.title;
+  next.overlayText = step.explanation;
+  next.overlayPlacement = "top_left";
+
+  if (action.type === "clear_selection") {
+    next.highlightedAxis = null;
+    next.highlightedTerm = null;
+    next.xSlices = [];
+    next.ySlices = [];
+    next.labels = [];
+    next.tangent = null;
+    next.secant = null;
+    next.areaRegion = null;
+    next.showIntersections = false;
+    next.point = null;
+    next.activeFunctionId = null;
+  }
+
+  if (action.type === "show_surface") {
+    next.showSurface = action.enabled !== false;
+  }
+
+  if (action.type === "show_slice") {
+    const value = typeof action.value === "number" ? action.value : 0;
+    if (action.axis === "x") next.xSlices = appendUniqueNumber(next.xSlices, value);
+    if (action.axis === "y") next.ySlices = appendUniqueNumber(next.ySlices, value);
+  }
+
+  if (action.type === "highlight_axis" && action.axis) {
+    next.highlightedAxis = action.axis;
+  }
+
+  if (action.type === "highlight_term") {
+    next.highlightedTerm = action.term || null;
+  }
+
+  if (action.type === "show_label" && action.text) {
+    const id = `${step.id}-label-${next.labels.length + 1}`;
+    next.labels = [...next.labels, { id, text: action.text, target: action.target || null }].slice(-8);
+    next.overlayText = action.text;
+  }
+
+  if (action.type === "show_point") {
+    next.point = {
+      x: typeof action.x === "number" ? action.x : 0,
+      y: typeof action.y === "number" ? action.y : 0,
+      z: typeof action.z === "number" ? action.z : undefined,
+      label: action.label || action.text || null,
+    };
+  }
+
+  if (action.type === "show_tangent") {
+    next.tangent = { x: typeof action.x === "number" ? action.x : 0, label: action.label || action.text || null };
+  }
+
+  if (action.type === "show_secant") {
+    next.secant = {
+      from: typeof action.from === "number" ? action.from : -1,
+      to: typeof action.to === "number" ? action.to : 1,
+      label: action.label || action.text || null,
+    };
+  }
+
+  if (action.type === "show_area_region") {
+    next.areaRegion = {
+      from: typeof action.from === "number" ? action.from : 0,
+      to: typeof action.to === "number" ? action.to : 1,
+      label: action.label || action.text || null,
+    };
+  }
+
+  if (action.type === "show_intersection") {
+    next.showIntersections = true;
+  }
+
+  if (action.type === "show_function") {
+    next.activeFunctionId = action.function_id || "f1";
+  }
+
+  if (action.type === "unlock_controls") {
+    next.controlsUnlocked = true;
+  }
+
+  return next;
+}
+
+function buildVisualFeatureLines(state: GraphVisualState) {
+  const lines = [
+    state.activeStepTitle ? `visual step: ${state.activeStepTitle}` : null,
+    state.highlightedAxis ? `visual highlight axis: ${state.highlightedAxis}` : null,
+    state.highlightedTerm ? `visual highlight term: ${state.highlightedTerm}` : null,
+    state.xSlices.length ? `visual x-slices: ${state.xSlices.join(", ")}` : null,
+    state.ySlices.length ? `visual y-slices: ${state.ySlices.join(", ")}` : null,
+    state.tangent ? `visual tangent at x=${state.tangent.x}` : null,
+    state.secant ? `visual secant from ${state.secant.from} to ${state.secant.to}` : null,
+    state.areaRegion ? `visual area from ${state.areaRegion.from} to ${state.areaRegion.to}` : null,
+    state.showIntersections ? "visual intersections shown" : null,
+    state.point ? `visual point: (${state.point.x}, ${state.point.y}${typeof state.point.z === "number" ? ", " + state.point.z : ""})` : null,
+  ];
+
+  return lines.filter((line): line is string => Boolean(line));
+}
+
+function GraphCinematicPanel({ experience, activeStepIndex, isPlaying, isPaused, isDone, onPlayPause, onReplay, onUnlockControls }: {
+  experience: GraphExperience;
+  activeStepIndex: number;
+  isPlaying: boolean;
+  isPaused: boolean;
+  isDone: boolean;
+  onPlayPause: () => void;
+  onReplay: () => void;
+  onUnlockControls: () => void;
+}) {
+  const activeStep = experience.guided_sequence[activeStepIndex] ?? null;
+  const total = Math.max(1, experience.guided_sequence.length);
+  const progress = isDone ? 100 : Math.round(((activeStepIndex + 1) / total) * 100);
+  const status = isPlaying ? "playing" : isPaused ? "paused" : isDone ? "ready to try" : "queued";
+
+  return (
+    <ProbeSection
+      title="Cinematic graph explanation"
+      subtitle="The graph should build the idea in sync with the words, then hand control to you."
+      badge={<ProbePill tone={isPlaying ? "warning" : isDone ? "success" : "purple"}>{status}</ProbePill>}
+      style={{ padding: "0.9rem" }}
+    >
+      <ProbeStack gap="0.7rem">
+        <div style={{ display: "grid", gap: "0.45rem" }}>
+          <p style={{ margin: 0, color: "white", fontWeight: 950 }}>{experience.root_problem_hook}</p>
+          <p style={{ margin: 0, color: probeTheme.text.secondary, fontSize: "0.82rem", lineHeight: 1.5 }}>{experience.mental_move}</p>
+          {activeStep ? (
+            <p style={{ margin: 0, color: "rgba(255,255,255,0.78)", fontSize: "0.8rem", lineHeight: 1.5 }}>
+              Now showing: <b style={{ color: "white" }}>{activeStep.title}</b>
+            </p>
+          ) : null}
+        </div>
+        <div style={{ height: "0.48rem", borderRadius: "999px", overflow: "hidden", background: "rgba(255,255,255,0.08)" }}>
+          <div style={{ height: "100%", width: progress + "%", borderRadius: "999px", background: "linear-gradient(90deg, rgba(168,85,247,0.85), rgba(251,191,36,0.9))", transition: "width 520ms ease" }} />
+        </div>
+        <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
+          {!isDone ? (
+            <ProbeButton variant="secondary" onClick={onPlayPause} style={{ padding: "0.48rem 0.72rem", fontSize: "0.76rem" }}>
+              {isPlaying ? "Pause" : "Play"}
+            </ProbeButton>
+          ) : null}
+          <ProbeButton variant="secondary" onClick={onReplay} style={{ padding: "0.48rem 0.72rem", fontSize: "0.76rem" }}>
+            Replay
+          </ProbeButton>
+          {!isDone ? (
+            <ProbeButton variant="ghost" onClick={onUnlockControls} style={{ padding: "0.48rem 0.72rem", fontSize: "0.76rem" }}>
+              Skip to learner controls
+            </ProbeButton>
+          ) : null}
+        </div>
+      </ProbeStack>
+    </ProbeSection>
+  );
+}
+
+function GraphExperiencePanel({ experience, activeStepIndex, controlsLocked, onStepChange, onApplyStep, onUnlockControls }: {
+  experience: GraphExperience;
+  activeStepIndex: number;
+  controlsLocked: boolean;
+  onStepChange: (index: number) => void;
+  onApplyStep: (step: GraphGuidedStep) => void;
+  onUnlockControls: () => void;
+}) {
+  const activeStep = experience.guided_sequence[activeStepIndex] ?? null;
+
+  return (
+    <ProbeSection
+      title="Guided graph experience"
+      subtitle="MyWay shows the missing picture first, then asks you to take control."
+      badge={<ProbePill tone={controlsLocked ? "warning" : "success"}>{controlsLocked ? "guided" : "interactive"}</ProbePill>}
+    >
+      <ProbeStack gap="0.8rem">
+        <div style={{ border: "1px solid rgba(221,214,254,0.16)", borderRadius: "22px", padding: "0.95rem", background: "radial-gradient(circle at top left, rgba(221,214,254,0.12), transparent 44%), rgba(0,0,0,0.16)" }}>
+          <p style={{ margin: 0, color: "white", fontWeight: 950 }}>The thing to get</p>
+          <p style={{ margin: "0.45rem 0 0", color: probeTheme.text.secondary, fontSize: "0.88rem", lineHeight: 1.6 }}>{experience.root_problem_hook}</p>
+          <p style={{ margin: "0.65rem 0 0", color: "rgba(255,255,255,0.82)", fontSize: "0.84rem", lineHeight: 1.55 }}><b>Mental move:</b> {experience.mental_move}</p>
+        </div>
+
+        {experience.guided_sequence.length ? (
+          <div style={{ display: "grid", gap: "0.7rem" }}>
+            <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
+              {experience.guided_sequence.map((step, index) => (
+                <ProbeButton key={step.id} variant={index === activeStepIndex ? "primary" : "ghost"} onClick={() => { onStepChange(index); onApplyStep(step); }} style={{ padding: "0.42rem 0.66rem", fontSize: "0.74rem" }}>
+                  {index + 1}. {step.title}
+                </ProbeButton>
+              ))}
+            </div>
+
+            {activeStep ? (
+              <div style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: "20px", padding: "0.85rem", background: "rgba(255,255,255,0.045)" }}>
+                <p style={{ margin: 0, color: "white", fontWeight: 900 }}>{activeStep.title}</p>
+                {activeStep.root_problem_focus ? <p style={{ margin: "0.35rem 0 0", color: "rgba(253,230,138,0.92)", fontSize: "0.8rem", lineHeight: 1.5 }}>{activeStep.root_problem_focus}</p> : null}
+                <p style={{ margin: "0.5rem 0 0", color: probeTheme.text.secondary, fontSize: "0.84rem", lineHeight: 1.55 }}>{activeStep.explanation}</p>
+                {activeStep.learner_prompt ? <p style={{ margin: "0.55rem 0 0", color: "rgba(186,230,253,0.9)", fontSize: "0.82rem", lineHeight: 1.5 }}>{activeStep.learner_prompt}</p> : null}
+                {activeStep.graph_actions.length ? (
+                  <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", marginTop: "0.7rem" }}>
+                    {activeStep.graph_actions.map((action, index) => <ProbePill key={activeStep.id + "-action-" + index} tone="purple">{actionLabel(action)}</ProbePill>)}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        <ProbeSection title={experience.learner_task.title} subtitle={experience.learner_task.instructions} badge={<ProbePill tone="purple">{experience.learner_task.interaction_mode.replaceAll("_", " ")}</ProbePill>} style={{ padding: "0.9rem" }}>
+          <div style={{ display: "grid", gap: "0.55rem" }}>
+            {experience.learner_task.required_actions.length ? (
+              <ul style={{ margin: 0, paddingLeft: "1.1rem", color: probeTheme.text.secondary, fontSize: "0.82rem", lineHeight: 1.6 }}>
+                {experience.learner_task.required_actions.map((action) => <li key={action}>{action}</li>)}
+              </ul>
+            ) : null}
+            <p style={{ margin: 0, color: "rgba(255,255,255,0.78)", fontSize: "0.82rem", lineHeight: 1.55 }}>{experience.learner_task.reflection_prompt}</p>
+            {controlsLocked ? <ProbeButton variant="secondary" onClick={onUnlockControls} style={{ justifySelf: "start" }}>Unlock learner controls</ProbeButton> : null}
+          </div>
+        </ProbeSection>
+      </ProbeStack>
+    </ProbeSection>
+  );
+}
+
 export function GraphProbe(props: GenericProbeComponentProps) {
   const mode = props.draft.graph_mode ?? "2d";
   const graphWindow = normalizeWindow2D(props.draft.graph_window);
   const graph3DWindow = normalizeWindow3D(props.draft.graph_3d_window);
   const graph3DView = normalizeView3D(props.draft.graph_3d_view);
-  const functions = normalizeFunctions(props.draft.graph_functions);
+  const functions = normalizeFunctions(props.draft.graph_functions).map((fn, index) =>
+    index === 0
+      ? { ...fn, expression: normalizeGraphExpressionInput(fn.expression, "2d") }
+      : fn,
+  );
   const parameters = normalizeParameters(props.draft.graph_parameters);
   const variables = useMemo(() => parametersToVariables(parameters), [parameters]);
-  const surfaceExpression =
-    props.draft.graph_surface_expression?.trim() || DEFAULT_SURFACE_EXPRESSION;
+  const surfaceExpression = normalizeGraphExpressionInput(
+    props.draft.graph_surface_expression?.trim() || DEFAULT_SURFACE_EXPRESSION,
+    "3d",
+  );
   const selectedPoint = props.draft.graph_selected_point ?? null;
   const selectedPoint3D = props.draft.graph_selected_point_3d ?? null;
   const notes = props.draft.graph_notes ?? "";
+  const graphExperience = useMemo(() => normalizeGraphExperience(props.probe.renderer_params), [props.probe.renderer_params]);
+  const [experienceStepIndex, setExperienceStepIndex] = useState(0);
+  const [learnerControlsUnlocked, setLearnerControlsUnlocked] = useState(false);
+  const [visualState, setVisualState] = useState<GraphVisualState>(() => createDefaultGraphVisualState());
+  const [cinematicRunId, setCinematicRunId] = useState(0);
+  const [cinematicIsPlaying, setCinematicIsPlaying] = useState(false);
+  const [cinematicPaused, setCinematicPaused] = useState(false);
+  const [cinematicDone, setCinematicDone] = useState(false);
+  const [cinematicStartIndex, setCinematicStartIndex] = useState(0);
+  const cinematicTimeoutRef = useRef<number | null>(null);
 
   const animationIntervalRef = useRef<number | null>(null);
   const firstFunction = functions[0] ?? DEFAULT_FUNCTIONS[0];
@@ -118,7 +647,10 @@ export function GraphProbe(props: GenericProbeComponentProps) {
     const nextWindow = next.graphWindow ?? graphWindow;
     const next3DWindow = next.graph3DWindow ?? graph3DWindow;
     const next3DView = next.graph3DView ?? graph3DView;
-    const nextSurfaceExpression = next.surfaceExpression ?? surfaceExpression;
+    const nextSurfaceExpression = normalizeGraphExpressionInput(
+      next.surfaceExpression ?? surfaceExpression,
+      "3d",
+    );
     const nextPoint =
       next.selectedPoint === undefined ? selectedPoint : next.selectedPoint;
     const nextPoint3D =
@@ -154,6 +686,28 @@ export function GraphProbe(props: GenericProbeComponentProps) {
   }
 
   useEffect(() => {
+    const cleanSurfaceExpression = normalizeGraphExpressionInput(
+      props.draft.graph_surface_expression?.trim() || DEFAULT_SURFACE_EXPRESSION,
+      "3d",
+    );
+    const rawSurfaceExpression = props.draft.graph_surface_expression?.trim() || "";
+    const cleanFunctions = functions.map((fn, index) =>
+      index === 0 ? { ...fn, expression: normalizeGraphExpressionInput(fn.expression, "2d") } : fn,
+    );
+    const rawFirstExpression = props.draft.graph_functions?.[0]?.expression?.trim() || "";
+
+    // Clean up any generated equation prefixes like "z = z = x^2 - y^2".
+    if (
+      rawSurfaceExpression !== cleanSurfaceExpression ||
+      rawFirstExpression !== cleanFunctions[0]?.expression
+    ) {
+      updateGraph({
+        functions: cleanFunctions,
+        surfaceExpression: cleanSurfaceExpression,
+      });
+      return;
+    }
+
     const hasGraphPayload = Boolean(props.draft.graph_features?.length);
     if (hasGraphPayload) return;
 
@@ -167,8 +721,75 @@ export function GraphProbe(props: GenericProbeComponentProps) {
       if (animationIntervalRef.current !== null) {
         window.clearInterval(animationIntervalRef.current);
       }
+      if (cinematicTimeoutRef.current !== null) {
+        window.clearTimeout(cinematicTimeoutRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (!graphExperience?.guided_sequence.length || props.disabled) return;
+
+    let cancelled = false;
+    let stepIndex = Math.min(cinematicStartIndex, graphExperience.guided_sequence.length);
+
+    if (cinematicTimeoutRef.current !== null) {
+      window.clearTimeout(cinematicTimeoutRef.current);
+      cinematicTimeoutRef.current = null;
+    }
+
+    setVisualState(createDefaultGraphVisualState());
+    setLearnerControlsUnlocked(false);
+    setCinematicDone(false);
+    setCinematicPaused(false);
+    setCinematicIsPlaying(true);
+
+    const runStep = () => {
+      if (cancelled) return;
+
+      const step = graphExperience.guided_sequence[stepIndex];
+      if (!step) {
+        setCinematicIsPlaying(false);
+        setCinematicDone(true);
+        setLearnerControlsUnlocked(true);
+        setVisualState((state) => ({
+          ...state,
+          controlsUnlocked: true,
+          activeStepId: "learner_phase",
+          activeStepTitle: "Now you take control",
+          overlayTitle: "Now you take control",
+          overlayText: graphExperience.learner_task.reflection_prompt,
+          timelineProgress: 1,
+        }));
+        return;
+      }
+
+      setExperienceStepIndex(stepIndex);
+      setVisualState((state) => ({ ...state, timelineProgress: stepIndex / Math.max(1, graphExperience.guided_sequence.length) }));
+      applyGuidedStep(step);
+
+      const durationMs = Math.max(4200, Math.min(8000, step.duration_ms ?? 5400));
+      cinematicTimeoutRef.current = window.setTimeout(() => {
+        stepIndex += 1;
+        runStep();
+      }, durationMs);
+    };
+
+    const openingDelay = window.setTimeout(runStep, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(openingDelay);
+      if (cinematicTimeoutRef.current !== null) {
+        window.clearTimeout(cinematicTimeoutRef.current);
+        cinematicTimeoutRef.current = null;
+      }
+    };
+    // The cinematic intentionally runs from the generated experience snapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graphExperience, cinematicRunId, cinematicStartIndex, props.disabled]);
+
+
 
   function updateParameter(nextParameter: ProbeGraphParameterDraft) {
     updateGraph({
@@ -179,7 +800,7 @@ export function GraphProbe(props: GenericProbeComponentProps) {
   }
 
   function animateParameter(parameterName: GraphAnimationId) {
-    if (props.disabled) return;
+    if (graphInputDisabled) return;
 
     if (animationIntervalRef.current !== null) {
       window.clearInterval(animationIntervalRef.current);
@@ -215,6 +836,116 @@ export function GraphProbe(props: GenericProbeComponentProps) {
         animationIntervalRef.current = null;
       }
     }, 36);
+  }
+
+  function replayCinematicSequence() {
+    if (cinematicTimeoutRef.current !== null) {
+      window.clearTimeout(cinematicTimeoutRef.current);
+      cinematicTimeoutRef.current = null;
+    }
+
+    setLearnerControlsUnlocked(false);
+    setCinematicDone(false);
+    setCinematicPaused(false);
+    setCinematicIsPlaying(false);
+    setCinematicStartIndex(0);
+    setVisualState(createDefaultGraphVisualState());
+    setExperienceStepIndex(0);
+    setCinematicRunId((value) => value + 1);
+  }
+
+  function toggleCinematicPlayback() {
+    if (!graphExperience?.guided_sequence.length) return;
+
+    if (cinematicIsPlaying) {
+      if (cinematicTimeoutRef.current !== null) {
+        window.clearTimeout(cinematicTimeoutRef.current);
+        cinematicTimeoutRef.current = null;
+      }
+
+      setCinematicIsPlaying(false);
+      setCinematicPaused(true);
+      return;
+    }
+
+    if (cinematicDone) {
+      replayCinematicSequence();
+      return;
+    }
+
+    setCinematicPaused(false);
+    setCinematicIsPlaying(false);
+    setCinematicStartIndex(Math.min(experienceStepIndex + 1, graphExperience.guided_sequence.length));
+    setCinematicRunId((value) => value + 1);
+  }
+
+
+
+  function applyGuidedStep(step: GraphGuidedStep) {
+    if (props.disabled) return;
+
+    let nextMode = mode;
+    let nextFunctions = functions;
+    let nextParameters = parameters;
+    let nextSurfaceExpression = surfaceExpression;
+    let next3DView = graph3DView;
+    let nextSelectedPoint: ProbeGraphPointDraft | null | undefined = undefined;
+    let nextSelectedPoint3D: ProbeGraphPoint3DDraft | null | undefined = undefined;
+    let nextVisualState = cloneGraphVisualState(visualState);
+
+    for (const action of step.graph_actions) {
+      nextVisualState = applyActionToVisualState(nextVisualState, action, step);
+      if (action.type === "set_mode" && action.mode) nextMode = action.mode;
+      if (action.type === "set_expression") {
+        if (action.expression) nextFunctions = setFirstFunctionExpression(nextFunctions, normalizeGraphExpressionInput(action.expression, "2d"));
+        if (action.surface_expression) nextSurfaceExpression = normalizeGraphExpressionInput(action.surface_expression, "3d");
+      }
+      if (action.type === "set_camera") {
+        const preset = action.preset_id ? VIEW_PRESETS.find((candidate) => candidate.id === action.preset_id) : null;
+        next3DView = action.view ?? preset?.view ?? next3DView;
+      }
+      if (action.type === "set_parameter" && action.name && typeof action.value === "number") {
+        const actionValue = action.value;
+        nextParameters = nextParameters.map((parameter) =>
+          parameter.name === action.name ? { ...parameter, value: actionValue } : parameter,
+        );
+      }
+      if (action.type === "clear_selection") {
+        nextSelectedPoint = null;
+        nextSelectedPoint3D = null;
+      }
+      if (action.type === "select_center") {
+        if (nextMode === "3d") {
+          const x = (graph3DWindow.xMin + graph3DWindow.xMax) / 2;
+          const y = (graph3DWindow.yMin + graph3DWindow.yMax) / 2;
+          const z = evaluateExpression(nextSurfaceExpression, { ...parametersToVariables(nextParameters), x, y }) ?? 0;
+          nextSelectedPoint3D = { x: roundForStorage(x, 3), y: roundForStorage(y, 3), z: roundForStorage(z, 3), expression: nextSurfaceExpression };
+        } else {
+          const x = (graphWindow.xMin + graphWindow.xMax) / 2;
+          const y = evaluateExpression(nextFunctions[0]?.expression ?? firstFunction.expression, { ...parametersToVariables(nextParameters), x }) ?? 0;
+          nextSelectedPoint = { x: roundForStorage(x, 3), y: roundForStorage(y, 3), expression: nextFunctions[0]?.expression ?? firstFunction.expression };
+        }
+      }
+    }
+
+    setVisualState(nextVisualState);
+
+    const stepLine = "guided step: " + step.title + " — " + step.explanation;
+    const visualLines = buildVisualFeatureLines(nextVisualState);
+    const nextNotes = [notes.trim(), stepLine, ...visualLines]
+      .filter((line, index, allLines) => Boolean(line) && allLines.indexOf(line) === index)
+      .join("\n");
+
+    updateGraph({
+      mode: nextMode,
+      functions: nextFunctions,
+      parameters: nextParameters,
+      graph3DView: next3DView,
+      surfaceExpression: nextSurfaceExpression,
+      selectedPoint: nextSelectedPoint,
+      selectedPoint3D: nextSelectedPoint3D,
+      notes: nextNotes,
+    });
   }
 
   function handle2DPointSelect(point: ProbeGraphPointDraft) {
@@ -259,6 +990,12 @@ export function GraphProbe(props: GenericProbeComponentProps) {
   }
 
   const copy = GRAPH_MODE_COPY[mode];
+  const controlsLocked = Boolean(
+    graphExperience?.control_policy.lock_controls_until_complete &&
+      graphExperience.guided_sequence.length > 0 &&
+      (!learnerControlsUnlocked || cinematicIsPlaying),
+  );
+  const graphInputDisabled = props.disabled || controlsLocked;
 
   return (
     <ProbeShell {...props}>
@@ -290,10 +1027,41 @@ export function GraphProbe(props: GenericProbeComponentProps) {
 
           <GraphModeSwitch
             mode={mode}
-            disabled={props.disabled}
+            disabled={graphInputDisabled}
             onModeChange={(nextMode) => updateGraph({ mode: nextMode })}
           />
         </div>
+
+        {graphExperience ? (
+          <GraphCinematicPanel
+            experience={graphExperience}
+            activeStepIndex={experienceStepIndex}
+            isPlaying={cinematicIsPlaying}
+            isPaused={cinematicPaused}
+            isDone={cinematicDone}
+            onPlayPause={toggleCinematicPlayback}
+            onReplay={replayCinematicSequence}
+            onUnlockControls={() => {
+              if (cinematicTimeoutRef.current !== null) {
+                window.clearTimeout(cinematicTimeoutRef.current);
+                cinematicTimeoutRef.current = null;
+              }
+              setCinematicIsPlaying(false);
+              setCinematicPaused(false);
+              setCinematicDone(true);
+              setLearnerControlsUnlocked(true);
+              setVisualState((state) => ({
+                ...state,
+                controlsUnlocked: true,
+                activeStepId: "learner_phase",
+                activeStepTitle: "Now you take control",
+                overlayTitle: "Now you take control",
+                overlayText: graphExperience.learner_task.reflection_prompt,
+                timelineProgress: 1,
+              }));
+            }}
+          />
+        ) : null}
 
         <div
           style={{
@@ -307,27 +1075,18 @@ export function GraphProbe(props: GenericProbeComponentProps) {
               mode={mode}
               expression={activeExpression}
               status={activeStatus}
-              disabled={props.disabled}
+              disabled={graphInputDisabled}
               onExpressionChange={(expression) => {
-                if (mode === "2d") {
-                  updateGraph({
-                    functions: setFirstFunctionExpression(functions, expression),
-                  });
-                } else {
-                  updateGraph({ surfaceExpression: expression });
-                }
-              }}
-              onInsert={(insert) => {
                 if (mode === "2d") {
                   updateGraph({
                     functions: setFirstFunctionExpression(
                       functions,
-                      appendExpression(firstFunction.expression, insert),
+                      normalizeGraphExpressionInput(expression, "2d"),
                     ),
                   });
                 } else {
                   updateGraph({
-                    surfaceExpression: appendExpression(surfaceExpression, insert),
+                    surfaceExpression: normalizeGraphExpressionInput(expression, "3d"),
                   });
                 }
               }}
@@ -336,7 +1095,7 @@ export function GraphProbe(props: GenericProbeComponentProps) {
             <GraphConceptControls
               mode={mode}
               parameters={parameters}
-              disabled={props.disabled}
+              disabled={graphInputDisabled}
               onParameterChange={updateParameter}
               onReset={() => updateGraph({ parameters: DEFAULT_PARAMETERS })}
               onAnimate={animateParameter}
@@ -346,7 +1105,7 @@ export function GraphProbe(props: GenericProbeComponentProps) {
               mode={mode}
               graphWindow={graphWindow}
               graph3DWindow={graph3DWindow}
-              disabled={props.disabled}
+              disabled={graphInputDisabled}
               onWindowChange={(nextWindow) =>
                 updateGraph({ graphWindow: normalizeWindow2D(nextWindow) })
               }
@@ -365,12 +1124,13 @@ export function GraphProbe(props: GenericProbeComponentProps) {
                   graphWindow={graphWindow}
                   variables={variables}
                   selectedPoint={selectedPoint}
-                  disabled={props.disabled}
+                  disabled={graphInputDisabled}
+                  visualState={visualState}
                   onPointSelect={handle2DPointSelect}
                 />
                 <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
                   <ProbeButton
-                    disabled={props.disabled}
+                    disabled={graphInputDisabled}
                     variant="ghost"
                     onClick={mark2DCenterPoint}
                     style={{ padding: "0.48rem 0.7rem", fontSize: "0.76rem" }}
@@ -387,14 +1147,15 @@ export function GraphProbe(props: GenericProbeComponentProps) {
                   graphView={graph3DView}
                   variables={variables}
                   selectedPoint={selectedPoint3D}
-                  disabled={props.disabled}
+                  disabled={graphInputDisabled}
+                  visualState={visualState}
                   onPointSelect={handle3DPointSelect}
                 />
                 <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
                   {VIEW_PRESETS.map((preset) => (
                     <ProbeButton
                       key={preset.id}
-                      disabled={props.disabled}
+                      disabled={graphInputDisabled}
                       variant="ghost"
                       onClick={() => updateGraph({ graph3DView: preset.view })}
                       style={{ padding: "0.48rem 0.7rem", fontSize: "0.76rem" }}
@@ -403,7 +1164,7 @@ export function GraphProbe(props: GenericProbeComponentProps) {
                     </ProbeButton>
                   ))}
                   <ProbeButton
-                    disabled={props.disabled}
+                    disabled={graphInputDisabled}
                     variant="ghost"
                     onClick={mark3DCenterPoint}
                     style={{ padding: "0.48rem 0.7rem", fontSize: "0.76rem" }}
@@ -414,23 +1175,11 @@ export function GraphProbe(props: GenericProbeComponentProps) {
               </>
             )}
 
-            <ProbeSection
-              title="Why this can matter"
-              subtitle={
-                mode === "2d"
-                  ? "A 2D graph can show growth, decay, turning points, or repeated patterns."
-                  : "A 3D surface can show how two inputs combine, which is useful for ideas like saddles, optimization, pressure maps, terrain, and tradeoffs."
-              }
-              badge={<ProbePill tone="purple">{mode === "2d" ? "one input" : "two inputs"}</ProbePill>}
-            >
-              <p style={{ margin: 0, color: probeTheme.text.secondary, fontSize: "0.84rem", lineHeight: 1.55 }}>
-                The model can choose a starting shape, animate one control, then ask the learner to explain the change in plain language.
-              </p>
-            </ProbeSection>
+            
 
             <GraphObservationBox
               value={notes}
-              disabled={props.disabled}
+              disabled={graphInputDisabled}
               onChange={(value) => updateGraph({ notes: value })}
             />
           </ProbeStack>
@@ -442,3 +1191,6 @@ export function GraphProbe(props: GenericProbeComponentProps) {
 
 // These helpers stay exported for tests or future mini-renderers.
 export { screenToX, screenToY };
+
+
+

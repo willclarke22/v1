@@ -1,0 +1,48 @@
+FILE: sandbox\sandbox-reorg-manifest.txt
+SIZE BYTES: 3272
+========================================================================================================================
+
+MYWAY ROOT SANDBOX REORG
+Generated: 2026-07-01T19:00:39.520Z
+
+Goal:
+- Move lab/sandbox/prototype code out of active app and ui runtime folders.
+- Keep active runtime renderers and schemas in place.
+- Preserve sandbox code under root sandbox/ for reference and later promotion.
+
+Moved:
+- app\api\probe-lab -> sandbox\probe-lab\app\api\probe-lab (lab-only API routes)
+- app\probe-lab -> sandbox\probe-lab\app\probe-lab (lab-only app routes/pages)
+- ui\learning-space\probes\openai-full-loop -> sandbox\probe-lab\ui\learning-space\probes\openai-full-loop (OpenAI full-loop lab UI)
+- ui\learning-space\probes\probe-lab -> sandbox\probe-lab\ui\learning-space\probes\probe-lab (probe-template gallery lab UI)
+- ui\learning-space\probes\generated-video\blender-playground -> sandbox\probe-lab\ui\learning-space\probes\generated-video\blender-playground (generated-video lab/prototype folder)
+- ui\learning-space\probes\generated-video\blender -> sandbox\probe-lab\ui\learning-space\probes\generated-video\blender (generated-video lab/prototype folder)
+- ui\learning-space\probes\generated-video\director -> sandbox\probe-lab\ui\learning-space\probes\generated-video\director (generated-video lab/prototype folder)
+- ui\learning-space\probes\generated-video\hybrid-3d -> sandbox\probe-lab\ui\learning-space\probes\generated-video\hybrid-3d (generated-video lab/prototype folder)
+- ui\learning-space\probes\generated-video\procedural-compiler -> sandbox\probe-lab\ui\learning-space\probes\generated-video\procedural-compiler (generated-video lab/prototype folder)
+- ui\learning-space\probes\generated-video\remotion-reel -> sandbox\probe-lab\ui\learning-space\probes\generated-video\remotion-reel (generated-video lab/prototype folder)
+- ui\learning-space\probes\generated-video\remotion -> sandbox\probe-lab\ui\learning-space\probes\generated-video\remotion (generated-video lab/prototype folder)
+- ui\learning-space\probes\generated-video\sandbox -> sandbox\probe-lab\ui\learning-space\probes\generated-video\sandbox (generated-video lab/prototype folder)
+- ui\learning-space\probes\generated-video\universal-scene -> sandbox\probe-lab\ui\learning-space\probes\generated-video\universal-scene (generated-video lab/prototype folder)
+
+Changed:
+- sandbox\README.md (created root sandbox README)
+- ui\learning-space\probes\index.ts (removed exports containing: ./openai-full-loop, ./probe-lab)
+- ui\learning-space\probes\generated-video\index.ts (kept only generated-video runtime exports)
+
+Skipped:
+- tsconfig.json -> tsconfig.json (could not parse tsconfig.json, so sandbox was not excluded automatically: Expected ':' after property name in JSON at position 470 (line 22 column 14))
+
+Important active files intentionally kept in runtime:
+- ui/learning-space/probes/visual-story-probe.tsx
+- ui/learning-space/probes/graph-probe.tsx
+- ui/learning-space/probes/generated-video/generated-video-probe.tsx
+- ui/learning-space/probes/generated-video/animation-contract.ts
+- lib/engine/schemas/visual-story-renderer.ts
+- lib/engine/renderers/*
+- lib/engine/validation/validate-renderer-params.ts
+
+Next architecture step:
+- Create lib/visual-story.
+- Move Visual Story normalization/compiler logic there.
+- Keep renderer files focused on rendering compiled primitives/actions/interactions.

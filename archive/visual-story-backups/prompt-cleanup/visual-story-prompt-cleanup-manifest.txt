@@ -1,0 +1,46 @@
+MYWAY VISUAL STORY PROMPT CLEANUP
+Generated: 2026-07-01T18:18:21.745Z
+
+Route backup: archive\visual-story-backups\prompt-cleanup\route.ts.before-visual-story-prompt-cleanup.bak
+Contract backup: archive\visual-story-backups\prompt-cleanup\visual-story-prompt-contract.ts.before-generalizability-rules.bak
+
+Removed old route prompt lines: 30
+
+Removed route lines:
+- // MYWAY_VISUAL_STORY_V12_DIRECT_INTERACTION
+- "For visual_story renderer params, story.orientation_script must match orientation.body exactly, including any friendly opener such as Totally fair question when you use one.",
+- "Scene planning belongs in renderer_params.visual_story.story.visual_semantics, beats, and interaction_phase, not in learner-facing orientation recap fields.",
+- "VisualStoryProbe v1 is a scene-first WebGL renderer. It should be used when the learner needs a real-world visual bridge more than a worksheet-style graph.",
+- "VisualStoryProbe v2 object-driven scene rules:",
+- "VisualStoryProbe v2.1 orientation text choreography rules:",
+- "- For renderer_params.visual_story, include orientation_text. It should be the same plain-English orientation paragraph the learner would otherwise read before the check.",
+- "- Also include orientation_segments: 3-7 short chunks of orientation_text, each with id, text, beat_id, title, and optional emphasis.",
+- "- orientation_segments are the user-facing cinematic words. Beat words can stay short as visual cue labels, but the orientation paragraph should be animated inside the scene.",
+- "- Sync orientation_segments to beats. If a segment says wheel, dot, height, wave, pi, 2pi, repeat, high, low, or timing, the matching beat should make that object or motion visible.",
+- "- Do not leave the important orientation only outside the probe. Put it in renderer_params.visual_story.orientation_text and split it into orientation_segments.",
+- "renderer_params.visual_story v2 shape: { scene_kind: concept_visualization, story_goal: string, objects: VisualStoryObject[], beats: VisualStoryBeat[], interaction_phase: VisualStoryInteractionPhase, learner_check: object }.",
+- "VisualStoryObject shape: { id: string, type: wheel|dot|wave|axis|guide_line|connector|highlight|marker|label|plane|surface|generic, label?: string, parent_id?: string, position?: [number,number,number], scale?: [number,number,number], color?: string, text?: string }.",
+- "VisualStoryBeat shape: { id: string, title: string, words: string, duration_ms: number, actions: [{ type: show|hide|spin|trace_height|draw_wave|highlight_period|highlight_peak|connect|pulse|focus_camera|enable_interaction, target?: string, from?: string, to?: string, value?: number|string }] }.",
+- "Use VisualStoryProbe v1 as probe_type video_explanation with expected_attempt_type text and renderer_params.visual_story.",
+- "renderer_params.visual_story shape: { scene_kind: \"wheel_to_wave\", story_goal: string, beats: [{ id, title, words, duration_ms }], learner_check: { kind: \"mark_period_and_peak\", instructions: string } }.",
+- "For trig purpose questions about sin, cos, pi, waves, and why graphing matters, strongly prefer renderer_params.visual_story.scene_kind wheel_to_wave over a generic graph_relationship probe.",
+- "canonical_orientation_script is the source of truth for VisualStoryProbe.",
+- "Do not create a separate staging paragraph that becomes the real animation source. The animation must be compiled from canonical_orientation_script.",
+- "renderer_params.visual_story must use schema_version visual_story_contract_v3.",
+- "Required visual_story fields: title, canonical_orientation_script, learning_goal, scene_family, script_beats, scene_objects, scene_actions, camera_plan, interaction_phase, success_criteria.",
+- "canonical_orientation_script must contain ONLY the main teaching paragraph, word-for-word when possible. It is the authoritative teaching script.",
+- "Do not output recap bullets, key takeaways, summary bullets, or a 'Think of...' recap as part of canonical_orientation_script.",
+- "Do not append a visual staging paragraph such as 'A wheel spins...' to canonical_orientation_script. Scene descriptions belong only in scene_objects, scene_actions, camera_plan, and interaction_phase.",
+- "script_beats must split canonical_orientation_script into exact or near-exact text slices. Use script_text for the original wording, not a simplified staging sentence.",
+- "scene_objects is the reusable procedural object list. Supported object types include wheel, dot, arc, axis, graph, wave, line, guide_line, arrow, label, point, vector, surface, plane, slice, bar, container, token, flow_path, node, connector, highlight, and generic.",
+- "scene_actions should map each script beat to visible actions such as show, hide, fade, move, rotate, spin, trace, draw, grow, morph, pulse, highlight, connect, project, map_motion_to_graph, label, focus, and unlock_interaction.",
+- "camera_plan should describe smooth camera motion using hold, push_in, pull_back, orbit, pan, tilt, reframe, follow_object, or wide_reveal.",
+- "If canonical_orientation_script mentions real-life examples like sound, engines, tides, seasons, signals, or wheels, put them in example_echoes and map them visually. Do not turn them into recap bullets.",
+- "Keep story, visual_semantics, beats, interaction_phase, optional_check, canonical_orientation_script, script_beats, scene_objects, scene_actions, camera_plan, diagnosis, probe, answer_key, and rationale if present.",
+
+Contract generalizability rules added: yes
+
+Goal:
+- generate/route.ts should not carry old VisualStory v1/v2/v3/wheel_to_wave prompt rules.
+- visual-story-prompt-contract.ts should be the source of truth for visual story generation.
+- GPT should drive entities/actions/relationships/interactions, while the renderer translates supported primitives.

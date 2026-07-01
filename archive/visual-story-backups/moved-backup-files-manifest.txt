@@ -1,0 +1,91 @@
+MYWAY VISUAL STORY BACKUP CLEANUP MANIFEST
+Generated: 2026-07-01T11:15:41.6400635-07:00
+Root: C:\Users\willc\projects\MyWay\v1
+Action: moved .bak files out of active app/lib/ui folders into archive/visual-story-backups, preserving relative paths.
+
+MOVED: app\api\probe-lab\generated-video\universal-scene-contract\route.ts.before-compact-universal-json-20260621-211437.bak -> archive\visual-story-backups\app\api\probe-lab\generated-video\universal-scene-contract\route.ts.before-compact-universal-json-20260621-211437.bak
+MOVED: app\api\probe-lab\generated-video\universal-scene-contract\route.ts.before-director-v2-quality-20260624-202544.bak -> archive\visual-story-backups\app\api\probe-lab\generated-video\universal-scene-contract\route.ts.before-director-v2-quality-20260624-202544.bak
+MOVED: app\api\probe-lab\generated-video\universal-scene-contract\route.ts.before-json-schema-format-20260621-212653.bak -> archive\visual-story-backups\app\api\probe-lab\generated-video\universal-scene-contract\route.ts.before-json-schema-format-20260621-212653.bak
+MOVED: app\api\probe-lab\generated-video\universal-scene-contract\route.ts.before-nvidia-disable-thinking-20260624-193122.bak -> archive\visual-story-backups\app\api\probe-lab\generated-video\universal-scene-contract\route.ts.before-nvidia-disable-thinking-20260624-193122.bak
+MOVED: app\api\probe-lab\generated-video\universal-scene-contract\route.ts.before-nvidia-extra-body-fix-20260624-193426.bak -> archive\visual-story-backups\app\api\probe-lab\generated-video\universal-scene-contract\route.ts.before-nvidia-extra-body-fix-20260624-193426.bak
+MOVED: app\api\probe-lab\openai-full-loop\evaluate\route.ts.graph-experience-v1.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\evaluate\route.ts.graph-experience-v1.bak
+MOVED: app\api\probe-lab\openai-full-loop\evaluate\route.ts.personalization-v31-fixed.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\evaluate\route.ts.personalization-v31-fixed.bak
+MOVED: app\api\probe-lab\openai-full-loop\evaluate\route.ts.relationship-patterns-v4.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\evaluate\route.ts.relationship-patterns-v4.bak
+MOVED: app\api\probe-lab\openai-full-loop\evaluate\route.ts.v32.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\evaluate\route.ts.v32.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.graph-cinematic-v3.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.graph-cinematic-v3.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.graph-experience-v1.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.graph-experience-v1.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.graph-experience-v2.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.graph-experience-v2.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.personalization-v31-fixed.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.personalization-v31-fixed.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.relationship-patterns-v4.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.relationship-patterns-v4.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.v32.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.v32.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-schema-v1.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-schema-v1.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-v12.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-v12.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-v2-prompt-fix.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-v2-prompt-fix.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-v21.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-v21.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-v3-fixed.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-v3-fixed.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-v3-json-repair.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-v3-json-repair.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-v31-right-way.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\route.ts.visual-story-v31-right-way.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\visual-story-prompt-contract.ts.visual-story-renderer-v1-runtime.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\visual-story-prompt-contract.ts.visual-story-renderer-v1-runtime.bak
+MOVED: app\api\probe-lab\openai-full-loop\generate\visual-story-prompt-contract.ts.visual-story-v12.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\generate\visual-story-prompt-contract.ts.visual-story-v12.bak
+MOVED: app\api\probe-lab\openai-full-loop\relationships\route.ts.relationship-patterns-v4.bak -> archive\visual-story-backups\app\api\probe-lab\openai-full-loop\relationships\route.ts.relationship-patterns-v4.bak
+MOVED: app\probe-lab\generated-video\page.tsx.before-director-v2-quality-20260624-202544.bak -> archive\visual-story-backups\app\probe-lab\generated-video\page.tsx.before-director-v2-quality-20260624-202544.bak
+MOVED: lib\engine\schemas\index.ts.visual-story-schema-v1.bak -> archive\visual-story-backups\lib\engine\schemas\index.ts.visual-story-schema-v1.bak
+MOVED: ui\learning-space\probes\generated-video\remotion-reel\engine-reel-remotion-lab.tsx.before-ollama-ui-debug-20260621-200939.bak -> archive\visual-story-backups\ui\learning-space\probes\generated-video\remotion-reel\engine-reel-remotion-lab.tsx.before-ollama-ui-debug-20260621-200939.bak
+MOVED: ui\learning-space\probes\generated-video\universal-scene\index.ts.before-director-v2-quality-20260624-202544.bak -> archive\visual-story-backups\ui\learning-space\probes\generated-video\universal-scene\index.ts.before-director-v2-quality-20260624-202544.bak
+MOVED: ui\learning-space\probes\generated-video\universal-scene\universal-scene-contract.ts.before-action-null-fix-20260621-205646.bak -> archive\visual-story-backups\ui\learning-space\probes\generated-video\universal-scene\universal-scene-contract.ts.before-action-null-fix-20260621-205646.bak
+MOVED: ui\learning-space\probes\generated-video\universal-scene\universal-scene-contract.ts.before-director-v2-quality-20260624-202544.bak -> archive\visual-story-backups\ui\learning-space\probes\generated-video\universal-scene\universal-scene-contract.ts.before-director-v2-quality-20260624-202544.bak
+MOVED: ui\learning-space\probes\generated-video\universal-scene\universal-scene-remotion-composition.tsx.before-director-v2-quality-20260624-202544.bak -> archive\visual-story-backups\ui\learning-space\probes\generated-video\universal-scene\universal-scene-remotion-composition.tsx.before-director-v2-quality-20260624-202544.bak
+MOVED: ui\learning-space\probes\generated-video\universal-scene\universal-scene-remotion-lab.tsx.before-director-v2-quality-20260624-202544.bak -> archive\visual-story-backups\ui\learning-space\probes\generated-video\universal-scene\universal-scene-remotion-lab.tsx.before-director-v2-quality-20260624-202544.bak
+MOVED: ui\learning-space\probes\graph-probe.tsx.graph-cinematic-v3.bak -> archive\visual-story-backups\ui\learning-space\probes\graph-probe.tsx.graph-cinematic-v3.bak
+MOVED: ui\learning-space\probes\graph-probe.tsx.graph-experience-v1.bak -> archive\visual-story-backups\ui\learning-space\probes\graph-probe.tsx.graph-experience-v1.bak
+MOVED: ui\learning-space\probes\graph-probe.tsx.graph-experience-v2.bak -> archive\visual-story-backups\ui\learning-space\probes\graph-probe.tsx.graph-experience-v2.bak
+MOVED: ui\learning-space\probes\graph\graph-2d-workspace.tsx.graph-cinematic-v3.bak -> archive\visual-story-backups\ui\learning-space\probes\graph\graph-2d-workspace.tsx.graph-cinematic-v3.bak
+MOVED: ui\learning-space\probes\graph\graph-2d-workspace.tsx.graph-experience-v2.bak -> archive\visual-story-backups\ui\learning-space\probes\graph\graph-2d-workspace.tsx.graph-experience-v2.bak
+MOVED: ui\learning-space\probes\graph\graph-3d-workspace.tsx.graph-cinematic-v3.bak -> archive\visual-story-backups\ui\learning-space\probes\graph\graph-3d-workspace.tsx.graph-cinematic-v3.bak
+MOVED: ui\learning-space\probes\graph\graph-3d-workspace.tsx.graph-experience-v2.bak -> archive\visual-story-backups\ui\learning-space\probes\graph\graph-3d-workspace.tsx.graph-experience-v2.bak
+MOVED: ui\learning-space\probes\graph\graph-visual-actions.ts.graph-cinematic-v3.bak -> archive\visual-story-backups\ui\learning-space\probes\graph\graph-visual-actions.ts.graph-cinematic-v3.bak
+MOVED: ui\learning-space\probes\openai-full-loop\openai-full-loop-lab.tsx.personalization-v31-fixed.bak -> archive\visual-story-backups\ui\learning-space\probes\openai-full-loop\openai-full-loop-lab.tsx.personalization-v31-fixed.bak
+MOVED: ui\learning-space\probes\openai-full-loop\openai-full-loop-lab.tsx.v32.bak -> archive\visual-story-backups\ui\learning-space\probes\openai-full-loop\openai-full-loop-lab.tsx.v32.bak
+MOVED: ui\learning-space\probes\probe-ui-types.ts.visual-story-renderer-v1-runtime.bak -> archive\visual-story-backups\ui\learning-space\probes\probe-ui-types.ts.visual-story-renderer-v1-runtime.bak
+MOVED: ui\learning-space\probes\probe-ui-types.ts.visual-story-v3-fixed.bak -> archive\visual-story-backups\ui\learning-space\probes\probe-ui-types.ts.visual-story-v3-fixed.bak
+MOVED: ui\learning-space\probes\visual-story-probe.tsx.canvas-event-types.bak -> archive\visual-story-backups\ui\learning-space\probes\visual-story-probe.tsx.canvas-event-types.bak
+MOVED: ui\learning-space\probes\visual-story-probe.tsx.interaction-typeguards.bak -> archive\visual-story-backups\ui\learning-space\probes\visual-story-probe.tsx.interaction-typeguards.bak
+MOVED: ui\learning-space\probes\visual-story-probe.tsx.renderer-v1-runtime-typecast.bak -> archive\visual-story-backups\ui\learning-space\probes\visual-story-probe.tsx.renderer-v1-runtime-typecast.bak
+MOVED: ui\learning-space\probes\visual-story-probe.tsx.renderer-v1-text-overlay-typefix.bak -> archive\visual-story-backups\ui\learning-space\probes\visual-story-probe.tsx.renderer-v1-text-overlay-typefix.bak
+MOVED: ui\learning-space\probes\visual-story-probe.tsx.text-overlay-typeguard.bak -> archive\visual-story-backups\ui\learning-space\probes\visual-story-probe.tsx.text-overlay-typeguard.bak
+MOVED: ui\learning-space\probes\visual-story-probe.tsx.visual-story-renderer-v1-runtime.bak -> archive\visual-story-backups\ui\learning-space\probes\visual-story-probe.tsx.visual-story-renderer-v1-runtime.bak
+MOVED: ui\learning-space\probes\visual-story-probe.tsx.visual-story-v12.bak -> archive\visual-story-backups\ui\learning-space\probes\visual-story-probe.tsx.visual-story-v12.bak
+MOVED: ui\learning-space\probes\visual-story-probe.tsx.visual-story-v21.bak -> archive\visual-story-backups\ui\learning-space\probes\visual-story-probe.tsx.visual-story-v21.bak
+MOVED: ui\learning-space\probes\visual-story-probe.tsx.visual-story-v3-fixed.bak -> archive\visual-story-backups\ui\learning-space\probes\visual-story-probe.tsx.visual-story-v3-fixed.bak
+MOVED: ui\learning-space\probes\visual-story-probe.tsx.visual-story-v31-right-way.bak -> archive\visual-story-backups\ui\learning-space\probes\visual-story-probe.tsx.visual-story-v31-right-way.bak
+
+POST-CLEANUP GIT STATUS:
+ D app/api/probe-lab/generated-video/universal-scene-contract/route.ts.before-compact-universal-json-20260621-211437.bak
+ D app/api/probe-lab/generated-video/universal-scene-contract/route.ts.before-director-v2-quality-20260624-202544.bak
+ D app/api/probe-lab/generated-video/universal-scene-contract/route.ts.before-json-schema-format-20260621-212653.bak
+ D app/api/probe-lab/generated-video/universal-scene-contract/route.ts.before-nvidia-disable-thinking-20260624-193122.bak
+ D app/api/probe-lab/generated-video/universal-scene-contract/route.ts.before-nvidia-extra-body-fix-20260624-193426.bak
+ D app/probe-lab/generated-video/page.tsx.before-director-v2-quality-20260624-202544.bak
+ M app/probe-lab/page.tsx
+ M lib/engine/schemas/index.ts
+ D ui/learning-space/probes/generated-video/remotion-reel/engine-reel-remotion-lab.tsx.before-ollama-ui-debug-20260621-200939.bak
+ D ui/learning-space/probes/generated-video/universal-scene/index.ts.before-director-v2-quality-20260624-202544.bak
+ D ui/learning-space/probes/generated-video/universal-scene/universal-scene-contract.ts.before-action-null-fix-20260621-205646.bak
+ D ui/learning-space/probes/generated-video/universal-scene/universal-scene-contract.ts.before-director-v2-quality-20260624-202544.bak
+ D ui/learning-space/probes/generated-video/universal-scene/universal-scene-remotion-composition.tsx.before-director-v2-quality-20260624-202544.bak
+ D ui/learning-space/probes/generated-video/universal-scene/universal-scene-remotion-lab.tsx.before-director-v2-quality-20260624-202544.bak
+ M ui/learning-space/probes/graph-probe.tsx
+ M ui/learning-space/probes/graph/graph-2d-workspace.tsx
+ M ui/learning-space/probes/graph/graph-3d-workspace.tsx
+ M ui/learning-space/probes/graph/graph-controls.tsx
+ M ui/learning-space/probes/index.ts
+ M ui/learning-space/probes/probe-renderer.tsx
+ M ui/learning-space/probes/probe-ui-types.ts
+?? app/api/probe-lab/openai-full-loop/
+?? app/probe-lab/openai-full-loop/
+?? archive/structure-snapshots/project-file-structure-20260630-233910.txt
+?? archive/visual-story-backups/
+?? lib/engine/schemas/visual-story-renderer.ts
+?? ui/learning-space/probes/graph/graph-visual-actions.ts
+?? ui/learning-space/probes/openai-full-loop/
+?? ui/learning-space/probes/visual-story-probe.tsx

@@ -1,0 +1,272 @@
+FILE: sandbox\probe-lab\ui\learning-space\probes\generated-video\hybrid-3d\generated-video-3d-player.tsx
+SIZE BYTES: 8876
+========================================================================================================================
+
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  findVideoDirectorBeatAtTime,
+  getVideoDirectorDurationSeconds,
+  type MyWayVideoDirectorContract,
+} from "../director";
+import { GeneratedVideo3DScene } from "./generated-video-3d-scene";
+
+function formatTime(seconds: number) {
+  const safe = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safe / 60);
+  const remaining = safe % 60;
+  return `${minutes}:${String(remaining).padStart(2, "0")}`;
+}
+
+function SmallLabel({ children }: { children: string }) {
+  return (
+    <p
+      style={{
+        margin: 0,
+        color: "rgba(255,255,255,0.58)",
+        fontSize: "0.72rem",
+        fontWeight: 900,
+        letterSpacing: "0.15em",
+        textTransform: "uppercase",
+      }}
+    >
+      {children}
+    </p>
+  );
+}
+
+function Pill({ children }: { children: string }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        border: "1px solid rgba(221,214,254,0.28)",
+        borderRadius: "999px",
+        background: "rgba(221,214,254,0.12)",
+        color: "rgba(255,255,255,0.82)",
+        padding: "0.32rem 0.52rem",
+        fontSize: "0.72rem",
+        fontWeight: 850,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+export function GeneratedVideo3DPlayer({
+  contract,
+  showDebug = true,
+}: {
+  contract: MyWayVideoDirectorContract;
+  showDebug?: boolean;
+}) {
+  const totalDuration = useMemo(() => getVideoDirectorDurationSeconds(contract), [contract]);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const lastContractIdRef = useRef(contract.contract_id);
+
+  useEffect(() => {
+    if (lastContractIdRef.current === contract.contract_id) return;
+    lastContractIdRef.current = contract.contract_id;
+    setElapsedSeconds(0);
+    setIsPlaying(false);
+  }, [contract.contract_id]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const interval = window.setInterval(() => {
+      setElapsedSeconds((value) => {
+        const next = value + 0.05;
+        if (next >= totalDuration) {
+          window.clearInterval(interval);
+          setIsPlaying(false);
+          return totalDuration;
+        }
+        return next;
+      });
+    }, 50);
+
+    return () => window.clearInterval(interval);
+  }, [isPlaying, totalDuration]);
+
+  const active = findVideoDirectorBeatAtTime(contract, elapsedSeconds);
+
+  function togglePlayback() {
+    if (elapsedSeconds >= totalDuration) {
+      setElapsedSeconds(0);
+      setIsPlaying(true);
+      return;
+    }
+    setIsPlaying((value) => !value);
+  }
+
+  function jumpToBeat(beatIndex: number) {
+    const nextStart = contract.beats.slice(0, beatIndex).reduce((sum, beat) => sum + beat.duration_seconds, 0);
+    setElapsedSeconds(nextStart);
+    setIsPlaying(false);
+  }
+
+  return (
+    <section style={{ display: "grid", gap: "1rem" }}>
+      <div
+        style={{
+          position: "relative",
+          aspectRatio: "16 / 9",
+          overflow: "hidden",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: "1.55rem",
+          background: "linear-gradient(145deg, rgba(5,5,16,0.98), rgba(39,13,64,0.82))",
+          boxShadow: "0 28px 90px rgba(0,0,0,0.34)",
+        }}
+      >
+        <GeneratedVideo3DScene contract={contract} beatIndex={active.beatIndex} progress={active.progress} />
+
+        <div
+          style={{
+            pointerEvents: "none",
+            position: "absolute",
+            left: "1rem",
+            top: "1rem",
+            display: "flex",
+            gap: "0.5rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <Pill>{contract.renderer_intent.scene_kind.replaceAll("_", " ")}</Pill>
+          <Pill>{contract.renderer_intent.preferred_renderer.replaceAll("_", " ")}</Pill>
+          {contract.learning_context.bridge_level ? <Pill>{contract.learning_context.bridge_level}</Pill> : null}
+        </div>
+
+        <div
+          style={{
+            pointerEvents: "none",
+            position: "absolute",
+            left: "1rem",
+            right: "1rem",
+            bottom: "1rem",
+            display: "grid",
+            gap: "0.5rem",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: "1.25rem",
+            background: "rgba(0,0,0,0.52)",
+            padding: "0.9rem 1rem",
+            backdropFilter: "blur(14px)",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              color: "rgba(221,214,254,0.84)",
+              fontSize: "0.76rem",
+              fontWeight: 950,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+            }}
+          >
+            {active.beat.purpose}
+          </p>
+          <p
+            style={{
+              margin: 0,
+              color: "white",
+              fontSize: "clamp(0.95rem, 1.7vw, 1.24rem)",
+              lineHeight: 1.35,
+              fontWeight: 850,
+            }}
+          >
+            {active.beat.visual_change}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gap: "0.7rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <button
+            type="button"
+            onClick={togglePlayback}
+            style={{
+              minWidth: "6.4rem",
+              border: "1px solid rgba(221,214,254,0.42)",
+              borderRadius: "999px",
+              background: "linear-gradient(135deg, rgba(147,51,234,0.88), rgba(8,145,178,0.86))",
+              color: "white",
+              padding: "0.66rem 0.9rem",
+              fontWeight: 900,
+              cursor: "pointer",
+            }}
+          >
+            {isPlaying ? "Pause" : elapsedSeconds >= totalDuration ? "Replay" : "Play"}
+          </button>
+
+          <input
+            aria-label="Generated 3D animation timeline"
+            type="range"
+            min={0}
+            max={totalDuration}
+            step={0.05}
+            value={elapsedSeconds}
+            onChange={(event) => {
+              setElapsedSeconds(Number(event.target.value));
+              setIsPlaying(false);
+            }}
+            style={{ width: "100%", accentColor: "#c4b5fd" }}
+          />
+
+          <span style={{ color: "rgba(255,255,255,0.68)", fontSize: "0.8rem", fontWeight: 850, whiteSpace: "nowrap" }}>
+            {formatTime(elapsedSeconds)} / {formatTime(totalDuration)}
+          </span>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem" }}>
+          {contract.beats.map((beat, index) => (
+            <button
+              key={beat.id}
+              type="button"
+              onClick={() => jumpToBeat(index)}
+              style={{
+                border: index === active.beatIndex ? "1px solid rgba(221,214,254,0.38)" : "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "999px",
+                background: index === active.beatIndex ? "rgba(221,214,254,0.16)" : "rgba(255,255,255,0.055)",
+                color: "rgba(255,255,255,0.82)",
+                padding: "0.38rem 0.62rem",
+                fontSize: "0.72rem",
+                fontWeight: 850,
+                cursor: "pointer",
+              }}
+            >
+              {index + 1}. {beat.id.replaceAll("_", " ")}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {showDebug ? (
+        <div className="grid gap-4 xl:grid-cols-2">
+          <section style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: "1.25rem", background: "rgba(255,255,255,0.055)", padding: "1rem" }}>
+            <SmallLabel>Director brief</SmallLabel>
+            <h3 style={{ margin: "0.45rem 0 0", color: "white", fontSize: "1rem", lineHeight: 1.25 }}>{contract.title}</h3>
+            <p style={{ margin: "0.55rem 0 0", color: "rgba(255,255,255,0.72)", lineHeight: 1.52, fontSize: "0.86rem" }}>
+              <strong style={{ color: "white" }}>Aha:</strong> {contract.creative_brief.aha_moment}
+            </p>
+            <p style={{ margin: "0.55rem 0 0", color: "rgba(255,255,255,0.68)", lineHeight: 1.52, fontSize: "0.84rem" }}>
+              {contract.creative_brief.why_this_should_unstick_the_learner}
+            </p>
+          </section>
+
+          <section style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: "1.25rem", background: "rgba(255,255,255,0.055)", padding: "1rem" }}>
+            <SmallLabel>Checkpoint</SmallLabel>
+            <p style={{ margin: "0.55rem 0 0", color: "white", lineHeight: 1.45, fontWeight: 850 }}>{contract.checkpoint.prompt}</p>
+            <p style={{ margin: "0.55rem 0 0", color: "rgba(255,255,255,0.68)", lineHeight: 1.45, fontSize: "0.84rem" }}>
+              Expected idea: {contract.checkpoint.expected_idea}
+            </p>
+          </section>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+

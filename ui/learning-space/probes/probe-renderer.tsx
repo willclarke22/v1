@@ -6,7 +6,7 @@ import { AudioClipProbe } from "./audio-clip-probe";
 import { AudioResponseProbe } from "./audio-response-probe";
 import { DragDropProbe } from "./drag-drop-probe";
 import { GraphProbe } from "./graph-probe";
-import { GeneratedVideoProbe, hasGeneratedAnimationContract } from "./generated-video";
+import { GeneratedVideoProbe, hasGeneratedAnimationContract } from "./sandbox/generated-video";
 import { MultiChoiceProbe } from "./multi-choice-probe";
 import type {
   ProbeAnswerDraft,
@@ -19,6 +19,7 @@ import { SliderProbe } from "./slider-probe";
 import { TextProbe } from "./text-probe";
 import { VideoClickProbe } from "./video-click-probe";
 import { VideoExplanationProbe } from "./video-explanation-probe";
+import { VisualStoryProbe, hasVisualStoryContract } from "./sandbox/visual-story-probe";
 
 export type ProbeRendererProps = {
   probe: EngineRenderableProbe;
@@ -70,6 +71,9 @@ export function ProbeRenderer(props: ProbeRendererProps) {
       return <SliderProbe {...sharedProps} />;
 
     case "graph_relationship":
+      if (hasVisualStoryContract(props.probe)) {
+        return <VisualStoryProbe {...sharedProps} />;
+      }
       return <GraphProbe {...sharedProps} />;
 
     case "audio_clip_question":
@@ -82,6 +86,9 @@ export function ProbeRenderer(props: ProbeRendererProps) {
       return <VideoClickProbe {...sharedProps} />;
 
     case "video_explanation":
+      if (hasVisualStoryContract(props.probe)) {
+        return <VisualStoryProbe {...sharedProps} />;
+      }
       if (hasGeneratedAnimationContract(props.probe)) {
         return <GeneratedVideoProbe {...sharedProps} />;
       }

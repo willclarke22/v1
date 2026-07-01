@@ -1,0 +1,16 @@
+MYWAY VISUAL STORY RUNTIME HELPERS FIX
+Generated: 2026-07-01T19:23:47.664Z
+
+Backup: archive\visual-story-backups\normalizer-extraction\visual-story-probe.tsx.before-runtime-helpers-fix.bak
+
+Reason:
+- Normalizer extraction moved helper definitions out of visual-story-probe.tsx.
+- Some renderer-local functions still need tiny runtime helpers.
+
+Ensured these exist in visual-story-probe.tsx:
+- FALLBACK_ORIENTATION_SCRIPT
+- easeInOut
+- DragState
+
+Expected behavior change:
+- None.

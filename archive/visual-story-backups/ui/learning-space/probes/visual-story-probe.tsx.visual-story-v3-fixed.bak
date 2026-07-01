@@ -1,0 +1,1139 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import * as THREE from "three";
+import type { EngineRenderableProbe } from "@/lib/engine";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+
+type VisualSceneObjectType =
+  | "wheel"
+  | "dot"
+  | "wave"
+  | "axis"
+  | "guide_line"
+  | "connector"
+  | "highlight"
+  | "marker"
+  | "label"
+  | "plane"
+  | "surface"
+  | "generic";
+
+type VisualSceneObject = {
+  id: string;
+  type: VisualSceneObjectType;
+  label?: string;
+  role?: string;
+  parent?: string;
+  position?: [number, number, number];
+  color?: string;
+  radius?: number;
+};
+
+type VisualStoryActionType =
+  | "show"
+  | "hide"
+  | "spin"
+  | "trace_height"
+  | "draw_wave"
+  | "highlight_period"
+  | "highlight_peak"
+  | "connect"
+  | "pulse"
+  | "focus_camera"
+  | "enable_interaction";
+
+type VisualStoryAction = {
+  type: VisualStoryActionType;
+  target?: string;
+  text?: string;
+  speed?: number;
+};
+
+type VisualStoryBeat = {
+  id: string;
+  title: string;
+  words: string;
+  duration_ms: number;
+  actions: VisualStoryAction[];
+};
+
+type VisualStoryInteractionPhase = {
+  unlock_after: "animation_complete" | string;
+  instructions: string;
+  required_actions: Array<{
+    id: string;
+    type: "mark_repeat" | "tap_peak" | "scrub_motion" | "select_object" | string;
+    target?: string;
+    label?: string;
+  }>;
+};
+
+type VisualStoryOrientationSegment = {
+  id: string;
+  text: string;
+  beat_id?: string;
+  title?: string;
+  emphasis?: string;
+};
+
+type VisualStoryScene = {
+  scene_kind: string;
+  story_goal: string;
+  orientation_text: string;
+  orientation_segments: VisualStoryOrientationSegment[];
+  objects: VisualSceneObject[];
+  beats: VisualStoryBeat[];
+  interaction_phase: VisualStoryInteractionPhase;
+  learner_check: {
+    kind: string;
+    instructions: string;
+  };
+};
+
+const DEFAULT_OBJECTS: VisualSceneObject[] = [
+  { id: "wheel", type: "wheel", label: "turning wheel", radius: 0.95 },
+  { id: "tracked_dot", type: "dot", label: "point on wheel", parent: "wheel", color: "#fef3c7" },
+  { id: "height_guide", type: "guide_line", label: "height" },
+  { id: "wave_axes", type: "axis", label: "height over time" },
+  { id: "sine_wave", type: "wave", label: "wave graph", color: "#fef3c7" },
+  { id: "motion_connector", type: "connector", label: "same height" },
+  { id: "period_highlight", type: "highlight", label: "one full repeat" },
+  { id: "peak_marker", type: "marker", label: "highest point" },
+];
+
+const DEFAULT_BEATS: VisualStoryBeat[] = [
+  {
+    id: "turns-repeat",
+    title: "Turns repeat",
+    words: "A point on a wheel keeps returning to the same place.",
+    duration_ms: 5200,
+    actions: [
+      { type: "show", target: "wheel" },
+      { type: "show", target: "tracked_dot" },
+      { type: "spin", target: "wheel" },
+    ],
+  },
+  {
+    id: "height-changes",
+    title: "Height changes",
+    words: "As the wheel turns, the point's height rises and falls smoothly.",
+    duration_ms: 5600,
+    actions: [
+      { type: "trace_height", target: "height_guide" },
+      { type: "focus_camera", target: "tracked_dot" },
+    ],
+  },
+  {
+    id: "height-becomes-wave",
+    title: "Motion becomes a wave",
+    words: "If we draw that height over time, the motion becomes a wave.",
+    duration_ms: 6200,
+    actions: [
+      { type: "show", target: "wave_axes" },
+      { type: "draw_wave", target: "sine_wave" },
+      { type: "connect", target: "motion_connector" },
+    ],
+  },
+  {
+    id: "turn-to-period",
+    title: "One turn, one repeat",
+    words: "One full turn lines up with one full repeat of the wave: 2π.",
+    duration_ms: 6200,
+    actions: [
+      { type: "highlight_period", target: "period_highlight" },
+      { type: "highlight_peak", target: "peak_marker" },
+      { type: "focus_camera", target: "sine_wave" },
+    ],
+  },
+  {
+    id: "learner-check",
+    title: "Your turn",
+    words: "Now move the wheel, then mark one repeat and the highest point.",
+    duration_ms: 4200,
+    actions: [{ type: "enable_interaction" }],
+  },
+];
+
+const DEFAULT_INTERACTION: VisualStoryInteractionPhase = {
+  unlock_after: "animation_complete",
+  instructions: "Move the wheel to see the wave change. Then mark one full repeat and tap the highest point.",
+  required_actions: [
+    { id: "scrub_motion", type: "scrub_motion", target: "wheel", label: "Move the wheel" },
+    { id: "mark_repeat", type: "mark_repeat", target: "sine_wave", label: "Mark one repeat" },
+    { id: "tap_peak", type: "tap_peak", target: "sine_wave", label: "Tap highest point" },
+  ],
+};
+
+const ACTION_ALIASES: Record<string, VisualStoryActionType> = {
+  appear: "show",
+  reveal: "show",
+  show_wheel: "show",
+  show_dot: "show",
+  spin_wheel: "spin",
+  rotate: "spin",
+  rotate_wheel: "spin",
+  project_dot_height: "trace_height",
+  track_height: "trace_height",
+  trace: "trace_height",
+  draw_trace: "draw_wave",
+  draw_wave_from_height: "draw_wave",
+  draw_wave: "draw_wave",
+  highlight_rotation: "highlight_period",
+  highlight_wave_period: "highlight_period",
+  highlight_repeat: "highlight_period",
+  highlight_period: "highlight_period",
+  highlight_peak: "highlight_peak",
+  connect_rotation_to_wave: "connect",
+  connect: "connect",
+  camera: "focus_camera",
+  focus: "focus_camera",
+  unlock: "enable_interaction",
+};
+
+const OBJECT_TYPE_ALIASES: Record<string, VisualSceneObjectType> = {
+  circle: "wheel",
+  tire: "wheel",
+  wheel: "wheel",
+  point: "dot",
+  dot: "dot",
+  marker: "marker",
+  wave_curve: "wave",
+  sine_wave: "wave",
+  curve_2d: "wave",
+  graph_axes: "axis",
+  axes: "axis",
+  axis: "axis",
+  guide: "guide_line",
+  height_guide: "guide_line",
+  line: "guide_line",
+  arrow: "connector",
+  connector: "connector",
+  highlight_band: "highlight",
+  highlight: "highlight",
+  label: "label",
+  plane: "plane",
+  surface: "surface",
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readString(value: unknown, fallback: string, max = 700) {
+  return typeof value === "string" && value.trim()
+    ? value.trim().slice(0, max)
+    : fallback;
+}
+
+function readNumber(value: unknown, fallback: number, min = 1000, max = 12000) {
+  const numberValue = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numberValue)
+    ? Math.min(max, Math.max(min, numberValue))
+    : fallback;
+}
+
+function normalizeObjectType(value: unknown): VisualSceneObjectType {
+  const raw = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return OBJECT_TYPE_ALIASES[raw] ?? "generic";
+}
+
+function normalizeActionType(value: unknown): VisualStoryActionType {
+  const raw = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return ACTION_ALIASES[raw] ?? ACTION_ALIASES[raw.replaceAll("-", "_")] ?? "show";
+}
+
+function normalizePosition(value: unknown): [number, number, number] | undefined {
+  if (!Array.isArray(value) || value.length < 2) return undefined;
+  const x = Number(value[0]);
+  const y = Number(value[1]);
+  const z = Number(value[2] ?? 0);
+  return Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)
+    ? [x, y, z]
+    : undefined;
+}
+
+function normalizeObject(value: unknown, index: number): VisualSceneObject | null {
+  const object = isRecord(value) ? value : {};
+  const id = readString(object.id, `object_${index + 1}`, 80);
+  const type = normalizeObjectType(object.type ?? object.kind ?? object.object_type);
+  return {
+    id,
+    type,
+    label: readString(object.label, id.replaceAll("_", " "), 90),
+    role: readString(object.role, "", 120) || undefined,
+    parent: readString(object.parent, "", 80) || undefined,
+    position: normalizePosition(object.position),
+    color: readString(object.color, "", 40) || undefined,
+    radius: typeof object.radius === "number" && Number.isFinite(object.radius) ? object.radius : undefined,
+  };
+}
+
+function inferTargetForAction(actionType: VisualStoryActionType, fallback = "") {
+  if (fallback) return fallback;
+  if (actionType === "spin") return "wheel";
+  if (actionType === "trace_height") return "height_guide";
+  if (actionType === "draw_wave") return "sine_wave";
+  if (actionType === "highlight_period") return "period_highlight";
+  if (actionType === "highlight_peak") return "peak_marker";
+  if (actionType === "connect") return "motion_connector";
+  return "";
+}
+
+function normalizeAction(value: unknown): VisualStoryAction | null {
+  if (typeof value === "string") {
+    const actionType = normalizeActionType(value);
+    return { type: actionType, target: inferTargetForAction(actionType) };
+  }
+
+  const action = isRecord(value) ? value : {};
+  const actionType = normalizeActionType(action.type ?? action.kind ?? action.action);
+  const target = readString(action.target ?? action.object_id ?? action.objectId, "", 90);
+  return {
+    type: actionType,
+    target: inferTargetForAction(actionType, target),
+    text: readString(action.text, "", 220) || undefined,
+    speed: typeof action.speed === "number" && Number.isFinite(action.speed) ? action.speed : undefined,
+  };
+}
+
+function normalizeBeat(value: unknown, index: number): VisualStoryBeat {
+  const beat = isRecord(value) ? value : {};
+  const rawActions = Array.isArray(beat.actions)
+    ? beat.actions
+    : Array.isArray(beat.visuals)
+      ? beat.visuals
+      : Array.isArray(beat.visual_actions)
+        ? beat.visual_actions
+        : [];
+
+  const actions = rawActions
+    .map(normalizeAction)
+    .filter((action): action is VisualStoryAction => Boolean(action))
+    .slice(0, 8);
+
+  return {
+    id: readString(beat.id, `beat_${index + 1}`, 90),
+    title: readString(beat.title, `Beat ${index + 1}`, 140),
+    words: readString(beat.words ?? beat.narration ?? beat.text, DEFAULT_BEATS[index]?.words ?? "Watch the idea become visible.", 360),
+    duration_ms: readNumber(beat.duration_ms ?? beat.durationMs, DEFAULT_BEATS[index]?.duration_ms ?? 5400, 3200, 9000),
+    actions: actions.length ? actions : DEFAULT_BEATS[index]?.actions ?? [{ type: "show" }],
+  };
+}
+
+function splitOrientationTextIntoSegments(text: string): string[] {
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  if (!cleaned) return [];
+
+  const sentenceMatches = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [cleaned];
+  const sentences = sentenceMatches
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+
+  const segments: string[] = [];
+  let current = "";
+
+  for (const sentence of sentences) {
+    const candidate = current ? current + " " + sentence : sentence;
+
+    if (candidate.length <= 190 || !current) {
+      current = candidate;
+    } else {
+      segments.push(current);
+      current = sentence;
+    }
+  }
+
+  if (current) segments.push(current);
+
+  if (segments.length <= 6) return segments;
+
+  const compact: string[] = [];
+  for (const segment of segments) {
+    const last = compact[compact.length - 1];
+    if (last && (last + " " + segment).length <= 230) {
+      compact[compact.length - 1] = last + " " + segment;
+    } else {
+      compact.push(segment);
+    }
+  }
+
+  return compact.slice(0, 7);
+}
+
+function normalizeOrientationSegment(
+  value: unknown,
+  index: number,
+  beats: VisualStoryBeat[],
+): VisualStoryOrientationSegment | null {
+  const segment = isRecord(value) ? value : {};
+  const textValue = readString(segment.text ?? segment.words ?? segment.narration, "", 420);
+  if (!textValue) return null;
+
+  const beat = beats[index] ?? beats[beats.length - 1] ?? DEFAULT_BEATS[0];
+
+  return {
+    id: readString(segment.id, "orientation_segment_" + (index + 1), 90),
+    text: textValue,
+    beat_id: readString(segment.beat_id ?? segment.beatId, beat?.id ?? "", 90) || undefined,
+    title: readString(segment.title, beat?.title ?? "", 120) || undefined,
+    emphasis: readString(segment.emphasis, "", 80) || undefined,
+  };
+}
+
+function normalizeOrientationSegments(
+  rawStory: Record<string, unknown>,
+  beats: VisualStoryBeat[],
+  orientationText: string,
+): VisualStoryOrientationSegment[] {
+  const rawSegments = Array.isArray(rawStory.orientation_segments)
+    ? rawStory.orientation_segments
+    : Array.isArray(rawStory.orientationSegments)
+      ? rawStory.orientationSegments
+      : [];
+
+  const suppliedSegments = rawSegments
+    .map((item, index) => normalizeOrientationSegment(item, index, beats))
+    .filter((segment): segment is VisualStoryOrientationSegment => Boolean(segment))
+    .slice(0, 8);
+
+  if (suppliedSegments.length) return suppliedSegments;
+
+  const textSegments = splitOrientationTextIntoSegments(orientationText);
+  const fallbackSegments = textSegments.length
+    ? textSegments
+    : beats.map((beat) => beat.words);
+
+  return fallbackSegments.slice(0, Math.max(1, Math.min(8, beats.length || 6))).map((text, index) => {
+    const beat = beats[index] ?? beats[beats.length - 1] ?? DEFAULT_BEATS[0];
+    return {
+      id: "orientation_segment_" + (index + 1),
+      text,
+      beat_id: beat?.id,
+      title: beat?.title,
+    };
+  });
+}
+
+function getActiveOrientationSegment(
+  scene: VisualStoryScene,
+  beatId: string,
+  beatIndex: number,
+): VisualStoryOrientationSegment {
+  const exact = scene.orientation_segments.find((segment) => segment.beat_id === beatId);
+  if (exact) return exact;
+
+  const byIndex = scene.orientation_segments[beatIndex];
+  if (byIndex) return byIndex;
+
+  return {
+    id: "orientation_fallback",
+    text: scene.orientation_text || scene.beats[beatIndex]?.words || scene.story_goal,
+    beat_id: beatId,
+    title: scene.beats[beatIndex]?.title,
+  };
+}
+
+function normalizeInteractionPhase(rawStory: Record<string, unknown>, rawCheck: Record<string, unknown>): VisualStoryInteractionPhase {
+  const rawInteraction = isRecord(rawStory.interaction_phase)
+    ? rawStory.interaction_phase
+    : isRecord(rawStory.interactionPhase)
+      ? rawStory.interactionPhase
+      : {};
+
+  const rawActions = Array.isArray(rawInteraction.required_actions)
+    ? rawInteraction.required_actions
+    : Array.isArray(rawInteraction.requiredActions)
+      ? rawInteraction.requiredActions
+      : DEFAULT_INTERACTION.required_actions;
+
+  const requiredActions = rawActions
+    .map((item, index) => {
+      const action = isRecord(item) ? item : {};
+      const actionType = readString(action.type, DEFAULT_INTERACTION.required_actions[index]?.type ?? "select_object", 90);
+      return {
+        id: readString(action.id, `interaction_${index + 1}`, 90),
+        type: actionType,
+        target: readString(action.target, DEFAULT_INTERACTION.required_actions[index]?.target ?? "", 90) || undefined,
+        label: readString(action.label, DEFAULT_INTERACTION.required_actions[index]?.label ?? actionType.replaceAll("_", " "), 120),
+      };
+    })
+    .slice(0, 6);
+
+  return {
+    unlock_after: readString(rawInteraction.unlock_after ?? rawInteraction.unlockAfter, "animation_complete", 80),
+    instructions: readString(
+      rawInteraction.instructions ?? rawCheck.instructions,
+      DEFAULT_INTERACTION.instructions,
+      360,
+    ),
+    required_actions: requiredActions.length ? requiredActions : DEFAULT_INTERACTION.required_actions,
+  };
+}
+
+function normalizeVisualStoryScene(probe: EngineRenderableProbe): VisualStoryScene {
+  const params: Record<string, unknown> = isRecord(probe.renderer_params)
+    ? (probe.renderer_params as Record<string, unknown>)
+    : {};
+  const rawStory = isRecord(params.visual_story) ? params.visual_story : params;
+  const rawBeats = Array.isArray(rawStory.beats) ? rawStory.beats : [];
+  const rawObjects = Array.isArray(rawStory.objects) ? rawStory.objects : [];
+  const rawCheck = isRecord(rawStory.learner_check)
+    ? rawStory.learner_check
+    : isRecord(rawStory.learnerCheck)
+      ? rawStory.learnerCheck
+      : {};
+
+  const objects = rawObjects
+    .map(normalizeObject)
+    .filter((object): object is VisualSceneObject => Boolean(object))
+    .slice(0, 18);
+  const beats = rawBeats
+    .map(normalizeBeat)
+    .filter((beat) => beat.words || beat.title)
+    .slice(0, 8);
+
+  const normalizedBeats = beats.length ? beats : DEFAULT_BEATS;
+  const storyGoal = readString(
+    rawStory.story_goal ?? rawStory.storyGoal,
+    probe.prompt.reshaping_explanation || "Turn the orientation into a visual story.",
+    420,
+  );
+  const orientationText = readString(
+    rawStory.orientation_text ??
+      rawStory.orientationText ??
+      rawStory.orientation ??
+      rawStory.explanation ??
+      probe.prompt.full_prompt ??
+      probe.prompt.reshaping_explanation,
+    storyGoal,
+    1200,
+  );
+  const orientationSegments = normalizeOrientationSegments(rawStory, normalizedBeats, orientationText);
+
+  return {
+    scene_kind: readString(rawStory.scene_kind ?? rawStory.sceneKind, "wheel_to_wave", 80),
+    story_goal: storyGoal,
+    orientation_text: orientationText,
+    orientation_segments: orientationSegments,
+    objects: objects.length ? objects : DEFAULT_OBJECTS,
+    beats: normalizedBeats,
+    interaction_phase: normalizeInteractionPhase(rawStory, rawCheck),
+    learner_check: {
+      kind: readString(rawCheck.kind, "mark_period_and_peak", 120),
+      instructions: readString(
+        rawCheck.instructions,
+        DEFAULT_INTERACTION.instructions,
+        360,
+      ),
+    },
+  };
+}
+
+export function hasVisualStoryContract(probe: EngineRenderableProbe) {
+  const params: Record<string, unknown> = isRecord(probe.renderer_params)
+    ? (probe.renderer_params as Record<string, unknown>)
+    : {};
+
+  return (
+    isRecord(params.visual_story) ||
+    typeof params.scene_kind === "string" ||
+    typeof params.sceneKind === "string"
+  );
+}
+
+function clamp(value: number, min = 0, max = 1) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function easeInOut(value: number) {
+  const t = clamp(value);
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function beatInfo(beats: VisualStoryBeat[], playheadMs: number) {
+  let cursor = 0;
+
+  for (let index = 0; index < beats.length; index += 1) {
+    const beat = beats[index];
+    const nextCursor = cursor + beat.duration_ms;
+
+    if (playheadMs <= nextCursor || index === beats.length - 1) {
+      const localProgress = clamp((playheadMs - cursor) / Math.max(1, beat.duration_ms));
+      return { beat, index, localProgress };
+    }
+
+    cursor = nextCursor;
+  }
+
+  const lastBeat = beats[beats.length - 1] ?? DEFAULT_BEATS[DEFAULT_BEATS.length - 1];
+  return { beat: lastBeat, index: Math.max(0, beats.length - 1), localProgress: 1 };
+}
+
+function totalDuration(beats: VisualStoryBeat[]) {
+  return beats.reduce((sum, beat) => sum + beat.duration_ms, 0);
+}
+
+function featureProgress(beats: VisualStoryBeat[], playheadMs: number, matcher: (action: VisualStoryAction) => boolean, fallbackStart: number, fallbackEnd: number) {
+  let cursor = 0;
+  let seen = false;
+
+  for (const beat of beats) {
+    const nextCursor = cursor + beat.duration_ms;
+    const hasAction = beat.actions.some(matcher);
+
+    if (hasAction) {
+      if (playheadMs < cursor) return seen ? 1 : 0;
+      if (playheadMs <= nextCursor) {
+        return clamp((playheadMs - cursor) / Math.max(1, beat.duration_ms));
+      }
+      seen = true;
+    }
+
+    cursor = nextCursor;
+  }
+
+  if (seen) return 1;
+
+  const total = totalDuration(beats);
+  const progress = clamp(playheadMs / Math.max(1, total));
+  return clamp((progress - fallbackStart) / Math.max(0.001, fallbackEnd - fallbackStart));
+}
+
+function LinePath({
+  points,
+  color,
+  opacity = 1,
+}: {
+  points: THREE.Vector3[];
+  color: string;
+  opacity?: number;
+}) {
+  const geometry = useMemo(() => new THREE.BufferGeometry().setFromPoints(points), [points]);
+  const material = useMemo(
+    () => new THREE.LineBasicMaterial({ color, transparent: true, opacity }),
+    [color, opacity],
+  );
+  const line = useMemo(() => new THREE.Line(geometry, material), [geometry, material]);
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+      material.dispose();
+    };
+  }, [geometry, material]);
+
+  return <primitive object={line} />;
+}
+
+function CameraRig({
+  progress,
+  interactive,
+}: {
+  progress: number;
+  interactive: boolean;
+}) {
+  const { camera } = useThree();
+
+  useFrame(() => {
+    if (interactive) return;
+
+    const t = easeInOut(progress);
+    const yaw = -0.56 + t * 0.5;
+    const height = 3.2 - Math.sin(t * Math.PI) * 0.62;
+    const distance = 7.9 - Math.sin(t * Math.PI) * 1.28;
+    const target = new THREE.Vector3(Math.sin(yaw) * distance, height, distance * Math.cos(yaw));
+
+    camera.position.lerp(target, 0.045);
+    camera.lookAt(0.25, 0.25, 0);
+    camera.updateProjectionMatrix();
+  });
+
+  return null;
+}
+
+function useHasObject(scene: VisualStoryScene) {
+  return useMemo(() => {
+    const ids = new Set(scene.objects.map((object) => object.id));
+    const types = new Set(scene.objects.map((object) => object.type));
+    return (idOrType: string) => ids.has(idOrType) || types.has(idOrType as VisualSceneObjectType);
+  }, [scene.objects]);
+}
+
+function GenericObject({
+  object,
+  visible,
+}: {
+  object: VisualSceneObject;
+  visible: number;
+}) {
+  if (visible <= 0.01 || object.type === "wheel" || object.type === "dot" || object.type === "wave" || object.type === "axis" || object.type === "guide_line" || object.type === "connector" || object.type === "highlight" || object.type === "marker") {
+    return null;
+  }
+
+  const position = object.position ?? [0, 0, 0];
+  const opacity = 0.08 + visible * 0.24;
+
+  return (
+    <mesh position={position}>
+      <boxGeometry args={[0.28, 0.28, 0.28]} />
+      <meshStandardMaterial color={object.color ?? "#c4b5fd"} transparent opacity={opacity} emissive="#581c87" emissiveIntensity={0.28} />
+    </mesh>
+  );
+}
+
+function WaveTrace({
+  visible,
+  draw,
+  highlightPeriod,
+  highlightPeak,
+  livePhase,
+}: {
+  visible: number;
+  draw: number;
+  highlightPeriod: number;
+  highlightPeak: number;
+  livePhase: number;
+}) {
+  const baseX = 0.3;
+  const baseY = -0.72;
+  const width = 4.4;
+  const amplitude = 0.86;
+  const drawProgress = clamp(draw);
+  const liveX = baseX + clamp(livePhase) * width;
+  const liveY = baseY + Math.sin(clamp(livePhase) * Math.PI * 2) * amplitude;
+
+  const fullWave = useMemo(() => {
+    const points: THREE.Vector3[] = [];
+    for (let i = 0; i <= 180; i += 1) {
+      const t = i / 180;
+      points.push(new THREE.Vector3(baseX + t * width, baseY + Math.sin(t * Math.PI * 2) * amplitude, 0));
+    }
+    return points;
+  }, []);
+
+  const visibleWave = useMemo(() => {
+    const samples = Math.max(2, Math.floor(180 * drawProgress));
+    const points: THREE.Vector3[] = [];
+    for (let i = 0; i <= samples; i += 1) {
+      const t = i / 180;
+      points.push(new THREE.Vector3(baseX + t * width, baseY + Math.sin(t * Math.PI * 2) * amplitude, 0.04));
+    }
+    return points;
+  }, [drawProgress]);
+
+  if (visible <= 0.01) return null;
+
+  return (
+    <group>
+      <LinePath points={[new THREE.Vector3(baseX - 0.18, baseY, 0), new THREE.Vector3(baseX + width + 0.22, baseY, 0)]} color="#ffffff" opacity={0.22 * visible} />
+      <LinePath points={[new THREE.Vector3(baseX, baseY - 1.05, 0), new THREE.Vector3(baseX, baseY + 1.05, 0)]} color="#ffffff" opacity={0.16 * visible} />
+      <LinePath points={fullWave} color="#a78bfa" opacity={0.16 * visible} />
+      <LinePath points={visibleWave} color="#fef3c7" opacity={0.98 * visible} />
+      {drawProgress > 0.02 ? (
+        <mesh position={[liveX, liveY, 0.12]}>
+          <sphereGeometry args={[0.055, 20, 20]} />
+          <meshStandardMaterial color="#ffffff" emissive="#7dd3fc" emissiveIntensity={1.05} />
+        </mesh>
+      ) : null}
+      {highlightPeriod > 0 ? (
+        <group>
+          <LinePath points={[new THREE.Vector3(baseX, baseY - 1.16, 0.08), new THREE.Vector3(baseX + width, baseY - 1.16, 0.08)]} color="#fbbf24" opacity={0.35 + highlightPeriod * 0.6} />
+          <mesh position={[baseX + width / 2, baseY - 1.16, 0.1]} scale={[1 + highlightPeriod * 0.08, 1, 1]}>
+            <boxGeometry args={[width, 0.035, 0.035]} />
+            <meshStandardMaterial color="#fbbf24" emissive="#f59e0b" emissiveIntensity={0.5} transparent opacity={0.28 + highlightPeriod * 0.2} />
+          </mesh>
+        </group>
+      ) : null}
+      {highlightPeak > 0 ? (
+        <mesh position={[baseX + width * 0.25, baseY + amplitude, 0.14]}>
+          <sphereGeometry args={[0.08 + highlightPeak * 0.035, 24, 24]} />
+          <meshStandardMaterial color="#ffffff" emissive="#f59e0b" emissiveIntensity={1.4} />
+        </mesh>
+      ) : null}
+    </group>
+  );
+}
+
+function VisualStoryWorld({
+  scene,
+  playheadMs,
+  totalMs,
+  interactivePhase,
+  isInteractive,
+}: {
+  scene: VisualStoryScene;
+  playheadMs: number;
+  totalMs: number;
+  interactivePhase: number;
+  isInteractive: boolean;
+}) {
+  const hasObject = useHasObject(scene);
+  const storyProgress = clamp(playheadMs / Math.max(1, totalMs));
+  const phase = isInteractive ? interactivePhase : storyProgress;
+  const wheelCenter = new THREE.Vector3(-2.55, 0.15, 0);
+  const radius = scene.objects.find((object) => object.id === "wheel" || object.type === "wheel")?.radius ?? 0.95;
+  const spin = Math.max(
+    featureProgress(scene.beats, playheadMs, (action) => action.type === "spin", 0.0, 0.28),
+    storyProgress > 0.02 ? storyProgress : 0,
+  );
+  const angle = phase * Math.PI * 2.15 - Math.PI / 2;
+  const dot = new THREE.Vector3(
+    wheelCenter.x + Math.cos(angle) * radius,
+    wheelCenter.y + Math.sin(angle) * radius,
+    0.18,
+  );
+
+  const wheelVisible = hasObject("wheel") ? featureProgress(scene.beats, playheadMs, (action) => action.type === "show" && (action.target === "wheel" || !action.target), 0.0, 0.12) : 0;
+  const dotVisible = hasObject("dot") || hasObject("tracked_dot") ? featureProgress(scene.beats, playheadMs, (action) => action.type === "show" && (action.target === "tracked_dot" || action.target === "dot" || action.target === "wheel"), 0.06, 0.18) : 0;
+  const guideVisible = hasObject("guide_line") || hasObject("height_guide") ? featureProgress(scene.beats, playheadMs, (action) => action.type === "trace_height", 0.16, 0.32) : 0;
+  const waveVisible = hasObject("wave") || hasObject("sine_wave") ? featureProgress(scene.beats, playheadMs, (action) => action.type === "draw_wave" || action.type === "show" && action.target === "sine_wave", 0.28, 0.42) : 0;
+  const waveDraw = featureProgress(scene.beats, playheadMs, (action) => action.type === "draw_wave", 0.34, 0.72);
+  const connectorVisible = hasObject("connector") || hasObject("motion_connector") ? featureProgress(scene.beats, playheadMs, (action) => action.type === "connect", 0.38, 0.55) : 0;
+  const periodHighlight = featureProgress(scene.beats, playheadMs, (action) => action.type === "highlight_period", 0.72, 0.9);
+  const peakHighlight = featureProgress(scene.beats, playheadMs, (action) => action.type === "highlight_peak", 0.74, 0.92);
+
+  const waveX = 0.3 + Math.min(1, waveDraw) * 4.4;
+  const waveY = -0.72 + Math.sin(Math.min(1, waveDraw) * Math.PI * 2) * 0.86;
+
+  return (
+    <>
+      <CameraRig progress={storyProgress} interactive={isInteractive} />
+      {isInteractive ? <OrbitControls enablePan={false} enableDamping dampingFactor={0.08} /> : null}
+      <color attach="background" args={["#070014"]} />
+      <ambientLight intensity={0.72} />
+      <directionalLight position={[4, 7, 6]} intensity={1.35} />
+      <pointLight position={[-4, 2, 4]} intensity={0.65} color="#c4b5fd" />
+
+      {wheelVisible > 0.01 ? (
+        <group position={[0, 0, 0]}>
+          <mesh position={wheelCenter} rotation={[0, 0, angle * Math.max(1, spin)]}>
+            <torusGeometry args={[radius, 0.045, 24, 112]} />
+            <meshStandardMaterial color="#a78bfa" emissive="#581c87" emissiveIntensity={0.5} roughness={0.35} transparent opacity={0.28 + wheelVisible * 0.72} />
+          </mesh>
+          <LinePath points={[new THREE.Vector3(wheelCenter.x - radius, wheelCenter.y, 0.05), new THREE.Vector3(wheelCenter.x + radius, wheelCenter.y, 0.05)]} color="#ddd6fe" opacity={0.22 * wheelVisible} />
+          <LinePath points={[new THREE.Vector3(wheelCenter.x, wheelCenter.y - radius, 0.05), new THREE.Vector3(wheelCenter.x, wheelCenter.y + radius, 0.05)]} color="#ddd6fe" opacity={0.18 * wheelVisible} />
+          {dotVisible > 0.01 ? (
+            <mesh position={dot}>
+              <sphereGeometry args={[0.105, 32, 32]} />
+              <meshStandardMaterial color="#ffffff" emissive="#f59e0b" emissiveIntensity={1.75} roughness={0.2} transparent opacity={0.3 + dotVisible * 0.7} />
+            </mesh>
+          ) : null}
+          {guideVisible > 0.01 ? (
+            <>
+              <LinePath points={[dot, new THREE.Vector3(wheelCenter.x + 1.26, dot.y, 0.04)]} color="#fef3c7" opacity={0.18 + guideVisible * 0.58} />
+              <LinePath points={[new THREE.Vector3(wheelCenter.x + 1.26, wheelCenter.y - radius, 0.02), new THREE.Vector3(wheelCenter.x + 1.26, wheelCenter.y + radius, 0.02)]} color="#fef3c7" opacity={0.1 + guideVisible * 0.32} />
+            </>
+          ) : null}
+        </group>
+      ) : null}
+
+      <WaveTrace visible={waveVisible} draw={isInteractive ? 1 : waveDraw} highlightPeriod={periodHighlight} highlightPeak={peakHighlight} livePhase={phase} />
+
+      {connectorVisible > 0 ? (
+        <LinePath points={[new THREE.Vector3(wheelCenter.x + 1.26, dot.y, 0.05), new THREE.Vector3(isInteractive ? 0.3 + phase * 4.4 : waveX, isInteractive ? -0.72 + Math.sin(phase * Math.PI * 2) * 0.86 : waveY, 0.05)]} color="#7dd3fc" opacity={connectorVisible * 0.48} />
+      ) : null}
+
+      {scene.objects.map((object) => (
+        <GenericObject key={object.id} object={object} visible={featureProgress(scene.beats, playheadMs, (action) => action.type === "show" && action.target === object.id, 0.2, 0.45)} />
+      ))}
+    </>
+  );
+}
+
+export function VisualStoryProbe(props: GenericProbeComponentProps) {
+  const scene = useMemo(() => normalizeVisualStoryScene(props.probe), [props.probe]);
+  const totalMs = useMemo(() => totalDuration(scene.beats), [scene.beats]);
+  const [playheadMs, setPlayheadMs] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [interactivePhase, setInteractivePhase] = useState(0.25);
+  const [motionScrubbed, setMotionScrubbed] = useState(false);
+  const [repeatMarked, setRepeatMarked] = useState(false);
+  const [peakMarked, setPeakMarked] = useState(false);
+  const lastFrameRef = useRef<number | null>(null);
+  const lastDraftTextRef = useRef<string>("");
+
+  const done = playheadMs >= totalMs;
+  const active = beatInfo(scene.beats, playheadMs);
+  const activeOrientation = getActiveOrientationSegment(scene, active.beat.id, active.index);
+  const completionReady = repeatMarked && peakMarked;
+  const interactionReady = done && !props.disabled;
+
+  useEffect(() => {
+    if (!isPlaying || props.disabled) {
+      lastFrameRef.current = null;
+      return;
+    }
+
+    let frameId = 0;
+
+    const tick = (now: number) => {
+      const last = lastFrameRef.current ?? now;
+      const delta = Math.min(80, Math.max(0, now - last));
+      lastFrameRef.current = now;
+
+      setPlayheadMs((current) => {
+        const next = Math.min(totalMs, current + delta);
+        if (next >= totalMs) setIsPlaying(false);
+        return next;
+      });
+
+      frameId = window.requestAnimationFrame(tick);
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isPlaying, props.disabled, totalMs]);
+
+  useEffect(() => {
+    const visualStoryFeatures = [
+      `visual_story_scene=${scene.scene_kind}`,
+      `story_goal=${scene.story_goal}`,
+      `animation_complete=${done}`,
+      `learner_scrubbed_motion=${motionScrubbed}`,
+      `learner_marked_repeat=${repeatMarked}`,
+      `learner_marked_peak=${peakMarked}`,
+      `interactive_phase=${interactivePhase.toFixed(3)}`,
+    ];
+
+    const nextText = completionReady
+      ? `visual_story_completed: ${scene.scene_kind}; ${visualStoryFeatures.join("; ")}`
+      : "";
+
+    if (lastDraftTextRef.current === nextText) return;
+    lastDraftTextRef.current = nextText;
+
+    props.onDraftChange({
+      ...props.draft,
+      attempt_type: "text",
+      text_response: nextText,
+      generated_video_completed: completionReady,
+      generated_video_elapsed_seconds: Math.round(playheadMs / 1000),
+      graph_features: visualStoryFeatures,
+    });
+    // Only publish a new answer when the learner check state changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completionReady, done, interactivePhase, motionScrubbed, repeatMarked, peakMarked, scene.scene_kind, scene.story_goal]);
+
+  function replay() {
+    setPlayheadMs(0);
+    setIsPlaying(true);
+    setInteractivePhase(0.25);
+    setMotionScrubbed(false);
+    setRepeatMarked(false);
+    setPeakMarked(false);
+    lastFrameRef.current = null;
+  }
+
+  return (
+    <section
+      aria-label="Visual story probe"
+      style={{
+        position: "relative",
+        minHeight: "min(78vh, 800px)",
+        overflow: "hidden",
+        borderRadius: "30px",
+        border: "1px solid rgba(255,255,255,0.12)",
+        background: "radial-gradient(circle at 30% 20%, rgba(168,85,247,0.28), transparent 36%), linear-gradient(145deg, rgba(6,6,19,0.96), rgba(35,10,60,0.92))",
+        boxShadow: "0 28px 90px rgba(0,0,0,0.38)",
+      }}
+    >
+      <style>{`
+        @keyframes visualStoryTextIn {
+          from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(5px); }
+          to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+      `}</style>
+      <Canvas
+        camera={{ position: [0, 3.2, 7.4], fov: 43, near: 0.1, far: 100 }}
+        dpr={[1, 1.75]}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+      >
+        <VisualStoryWorld
+          scene={scene}
+          playheadMs={playheadMs}
+          totalMs={totalMs}
+          interactivePhase={interactivePhase}
+          isInteractive={interactionReady}
+        />
+      </Canvas>
+
+      <div
+        style={{
+          pointerEvents: "none",
+          position: "absolute",
+          inset: 0,
+          background: "radial-gradient(circle at center, transparent 42%, rgba(0,0,0,0.24) 100%)",
+        }}
+      />
+
+      <div
+        style={{
+          pointerEvents: "none",
+          position: "absolute",
+          left: "clamp(1rem, 3vw, 2rem)",
+          top: "clamp(1rem, 3vw, 2rem)",
+          maxWidth: "36rem",
+          transform: `translateY(${(1 - easeInOut(active.localProgress)) * 8}px)`,
+          opacity: 0.72 + easeInOut(active.localProgress) * 0.28,
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            color: "rgba(221,214,254,0.86)",
+            fontSize: "0.72rem",
+            fontWeight: 850,
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
+          }}
+        >
+          Orientation storyboard · {scene.scene_kind.replaceAll("_", " ")}
+        </p>
+        <h3
+          key={activeOrientation.id}
+          style={{
+            margin: "0.42rem 0 0",
+            color: "white",
+            fontSize: "clamp(1.28rem, 2.36vw, 2.42rem)",
+            lineHeight: 1.08,
+            letterSpacing: "-0.045em",
+            fontWeight: 950,
+            textShadow: "0 14px 44px rgba(0,0,0,0.42)",
+            animation: "visualStoryTextIn 620ms ease both",
+          }}
+        >
+          {activeOrientation.text}
+        </h3>
+        <p
+          style={{
+            margin: "0.85rem 0 0",
+            maxWidth: "29rem",
+            color: "rgba(255,255,255,0.68)",
+            fontSize: "0.9rem",
+            lineHeight: 1.65,
+          }}
+        >
+          {activeOrientation.title ? activeOrientation.title + " · " : ""}
+          Visual cue: {active.beat.words}
+        </p>
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          right: "clamp(1rem, 3vw, 2rem)",
+          top: "clamp(1rem, 3vw, 2rem)",
+          display: "flex",
+          gap: "0.5rem",
+          flexWrap: "wrap",
+          justifyContent: "flex-end",
+        }}
+      >
+        <button
+          type="button"
+          disabled={props.disabled || done}
+          onClick={() => setIsPlaying((value) => !value)}
+          style={controlButtonStyle}
+        >
+          {isPlaying ? "Pause" : done ? "Finished" : "Play"}
+        </button>
+        <button type="button" disabled={props.disabled} onClick={replay} style={controlButtonStyle}>
+          Replay
+        </button>
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          left: "clamp(1rem, 3vw, 2rem)",
+          right: "clamp(1rem, 3vw, 2rem)",
+          bottom: "clamp(1rem, 3vw, 2rem)",
+          display: "grid",
+          gap: "0.75rem",
+        }}
+      >
+        <div style={{ height: "0.48rem", overflow: "hidden", borderRadius: "999px", background: "rgba(255,255,255,0.1)" }}>
+          <div
+            style={{
+              height: "100%",
+              width: `${Math.round((playheadMs / Math.max(1, totalMs)) * 100)}%`,
+              borderRadius: "999px",
+              background: "linear-gradient(90deg, rgba(168,85,247,0.95), rgba(251,191,36,0.95))",
+              transition: isPlaying ? "none" : "width 280ms ease",
+            }}
+          />
+        </div>
+
+        {done ? (
+          <div
+            style={{
+              display: "grid",
+              gap: "0.72rem",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: "22px",
+              background: "rgba(0,0,0,0.34)",
+              padding: "0.85rem",
+              backdropFilter: "blur(16px)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.8rem", flexWrap: "wrap" }}>
+              <p style={{ margin: 0, color: "rgba(255,255,255,0.86)", fontSize: "0.86rem", lineHeight: 1.5 }}>
+                {scene.interaction_phase.instructions || scene.learner_check.instructions}
+              </p>
+              <span style={{ color: completionReady ? "rgba(187,247,208,0.92)" : "rgba(255,255,255,0.58)", fontSize: "0.78rem", fontWeight: 850 }}>
+                {completionReady ? "Ready to submit" : "Try the scene"}
+              </span>
+            </div>
+
+            <label style={{ display: "grid", gap: "0.38rem", color: "rgba(255,255,255,0.74)", fontSize: "0.78rem", fontWeight: 800 }}>
+              Move the wheel and watch the wave point move with it
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.005}
+                value={interactivePhase}
+                disabled={props.disabled}
+                onChange={(event) => {
+                  setInteractivePhase(Number(event.currentTarget.value));
+                  setMotionScrubbed(true);
+                }}
+                style={{ width: "100%" }}
+              />
+            </label>
+
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <button type="button" disabled={props.disabled} onClick={() => setRepeatMarked(true)} style={repeatMarked ? successButtonStyle : controlButtonStyle}>
+                {repeatMarked ? "Repeat marked" : "Mark one repeat"}
+              </button>
+              <button type="button" disabled={props.disabled} onClick={() => setPeakMarked(true)} style={peakMarked ? successButtonStyle : controlButtonStyle}>
+                {peakMarked ? "Peak tapped" : "Tap highest point"}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+const controlButtonStyle = {
+  border: "1px solid rgba(255,255,255,0.16)",
+  borderRadius: "999px",
+  background: "rgba(255,255,255,0.1)",
+  color: "white",
+  padding: "0.58rem 0.85rem",
+  fontSize: "0.78rem",
+  fontWeight: 850,
+  cursor: "pointer",
+  backdropFilter: "blur(12px)",
+} satisfies CSSProperties;
+
+const successButtonStyle = {
+  ...controlButtonStyle,
+  border: "1px solid rgba(187,247,208,0.34)",
+  background: "rgba(34,197,94,0.2)",
+} satisfies CSSProperties;

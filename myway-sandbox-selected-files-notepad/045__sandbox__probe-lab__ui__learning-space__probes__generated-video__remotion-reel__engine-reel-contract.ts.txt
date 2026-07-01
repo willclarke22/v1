@@ -1,0 +1,460 @@
+FILE: sandbox\probe-lab\ui\learning-space\probes\generated-video\remotion-reel\engine-reel-contract.ts
+SIZE BYTES: 15799
+========================================================================================================================
+
+export type EngineReelSceneKind =
+  | "overview"
+  | "intake"
+  | "compression"
+  | "ignition_power"
+  | "exhaust"
+  | "checkpoint";
+
+export type EngineReelScene = {
+  id: string;
+  kind: EngineReelSceneKind;
+  title: string;
+  caption: string;
+  durationInFrames: number;
+  focus: string;
+};
+
+export type EngineReelPart = {
+  id: string;
+  label: string;
+  role: string;
+};
+
+export type EngineReelMotion = {
+  target: string;
+  action: string;
+  timing: string;
+  reason: string;
+};
+
+export type EngineReelContract = {
+  schema_version: "myway_engine_reel_remotion_contract_v1";
+  contract_id: string;
+  title: string;
+  learner_signal: string;
+  diagnosis_guess: string;
+  learning_goal: string;
+  format: {
+    width: number;
+    height: number;
+    fps: number;
+    aspect: "16:9_laptop";
+  };
+  visual_reference: {
+    source_style: string;
+    recreated_elements: string[];
+    intentionally_not_copied: string[];
+  };
+  remotion_strategy: {
+    renderer: "Remotion Player";
+    composition: "EngineCycleReelComposition";
+    model_writes_code: false;
+    model_directs_contract: true;
+    explanation: string;
+  };
+  parts: EngineReelPart[];
+  motions: EngineReelMotion[];
+  scenes: EngineReelScene[];
+  checkpoint: {
+    prompt: string;
+    expected_idea: string;
+  };
+};
+
+export const ENGINE_REEL_FPS = 30;
+export const ENGINE_REEL_WIDTH = 1280;
+export const ENGINE_REEL_HEIGHT = 720;
+
+export const ENGINE_REEL_SCENE_KINDS: EngineReelSceneKind[] = [
+  "overview",
+  "intake",
+  "compression",
+  "ignition_power",
+  "exhaust",
+  "checkpoint",
+];
+
+export function seconds(value: number) {
+  return Math.round(value * ENGINE_REEL_FPS);
+}
+
+export function stableContractId(input: string) {
+  let hash = 0;
+  for (let index = 0; index < input.length; index += 1) {
+    hash = (hash * 31 + input.charCodeAt(index)) >>> 0;
+  }
+  return `engine_reel_contract_${hash.toString(16).padStart(8, "0")}`;
+}
+
+export function buildDefaultEngineParts(): EngineReelPart[] {
+  return [
+    { id: "intake_port", label: "intake", role: "brings air/fuel mixture into the cylinder" },
+    { id: "exhaust_port", label: "exhaust", role: "carries burned gas out" },
+    { id: "intake_valve", label: "intake valve", role: "opens during intake" },
+    { id: "exhaust_valve", label: "exhaust valve", role: "opens during exhaust" },
+    { id: "spark_plug", label: "spark plug", role: "ignites the compressed mixture" },
+    { id: "piston", label: "piston", role: "moves down when hot gas expands" },
+    { id: "crank", label: "crank", role: "turns piston motion into rotation" },
+  ];
+}
+
+export function buildDefaultEngineMotions(): EngineReelMotion[] {
+  return [
+    {
+      target: "piston",
+      action: "move_down",
+      timing: "intake and power strokes",
+      reason: "downward piston motion either pulls mixture in or gets pushed by combustion",
+    },
+    {
+      target: "piston",
+      action: "move_up",
+      timing: "compression and exhaust strokes",
+      reason: "upward piston motion compresses mixture or pushes exhaust out",
+    },
+    {
+      target: "intake_valve",
+      action: "open_then_close",
+      timing: "intake scene only",
+      reason: "fresh mixture enters before compression",
+    },
+    {
+      target: "spark_plug",
+      action: "flash",
+      timing: "top of compression",
+      reason: "spark starts combustion after the mixture is squeezed",
+    },
+    {
+      target: "exhaust_valve",
+      action: "open_then_close",
+      timing: "exhaust scene only",
+      reason: "burned gas leaves before the next intake",
+    },
+  ];
+}
+
+export function buildDefaultEngineScenes(): EngineReelScene[] {
+  return [
+    {
+      id: "overview",
+      kind: "overview",
+      title: "Fixed cutaway view",
+      caption: "The video keeps the camera still so you can track what moves: valves, gas, piston, and crank.",
+      durationInFrames: seconds(3.5),
+      focus: "Show the whole engine as one timed system.",
+    },
+    {
+      id: "intake",
+      kind: "intake",
+      title: "1. Intake",
+      caption: "The intake valve opens. The piston moves down and pulls air/fuel into the cylinder.",
+      durationInFrames: seconds(4.5),
+      focus: "Blue flow enters from the left while the piston moves down.",
+    },
+    {
+      id: "compression",
+      kind: "compression",
+      title: "2. Compression",
+      caption: "Both valves close. The piston moves up and squeezes the mixture into a smaller space.",
+      durationInFrames: seconds(4.5),
+      focus: "The blue space shrinks as the piston rises.",
+    },
+    {
+      id: "ignition_power",
+      kind: "ignition_power",
+      title: "3. Spark + power",
+      caption: "The spark ignites the compressed mixture. Expanding gas pushes the piston down.",
+      durationInFrames: seconds(5),
+      focus: "Spark flash turns into orange expansion that drives the piston down.",
+    },
+    {
+      id: "exhaust",
+      kind: "exhaust",
+      title: "4. Exhaust",
+      caption: "The exhaust valve opens. The piston moves up and pushes burned gas out.",
+      durationInFrames: seconds(4.5),
+      focus: "Gray exhaust leaves to the right while the piston rises.",
+    },
+    {
+      id: "checkpoint",
+      kind: "checkpoint",
+      title: "Checkpoint",
+      caption: "The key is timing: the piston moves, but the valves and spark decide what that motion does.",
+      durationInFrames: seconds(4),
+      focus: "Ask the learner to explain which stroke creates the useful push.",
+    },
+  ];
+}
+
+export function buildEngineReelContract(learnerSignal: string): EngineReelContract {
+  const trimmedSignal = learnerSignal.trim() || "I do not get how a gas engine makes the piston move.";
+
+  return normalizeEngineReelContract({
+    schema_version: "myway_engine_reel_remotion_contract_v1",
+    contract_id: stableContractId(trimmedSignal),
+    title: "How a gas engine pushes the piston",
+    learner_signal: trimmedSignal,
+    diagnosis_guess:
+      "The learner may see the piston moving but not the timed chain: air/fuel enters, gets compressed, ignites, pushes down, then leaves.",
+    learning_goal:
+      "Make the four-stroke loop visible as a timed motion system instead of a list of engine parts.",
+    format: {
+      width: ENGINE_REEL_WIDTH,
+      height: ENGINE_REEL_HEIGHT,
+      fps: ENGINE_REEL_FPS,
+      aspect: "16:9_laptop",
+    },
+    visual_reference: {
+      source_style:
+        "Old educational cutaway animation: fixed camera, moving piston, angled valves, colored intake/exhaust flow, spark moment, large title.",
+      recreated_elements: [
+        "fixed cutaway cylinder",
+        "moving piston and connecting rod",
+        "intake and exhaust valves opening at different moments",
+        "blue intake flow",
+        "compression space shrinking",
+        "spark flash",
+        "orange power stroke",
+        "gray exhaust clearing",
+        "large caption/title layer",
+      ],
+      intentionally_not_copied: [
+        "no original video frames used",
+        "no exact art tracing",
+        "new MyWay color/style treatment",
+        "laptop 16:9 format instead of vertical reel crop",
+      ],
+    },
+    remotion_strategy: buildFixedRemotionStrategy(),
+    parts: buildDefaultEngineParts(),
+    motions: buildDefaultEngineMotions(),
+    scenes: buildDefaultEngineScenes(),
+    checkpoint: {
+      prompt: "Which moment actually pushes the piston down with useful force?",
+      expected_idea:
+        "The power stroke: after compression, the spark ignites the mixture and expanding gas pushes the piston down.",
+    },
+  });
+}
+
+function buildFixedRemotionStrategy(): EngineReelContract["remotion_strategy"] {
+  return {
+    renderer: "Remotion Player",
+    composition: "EngineCycleReelComposition",
+    model_writes_code: false,
+    model_directs_contract: true,
+    explanation:
+      "MyWay/model supplies the contract: parts, motions, scene order, captions, and checkpoint. Remotion uses trusted React/SVG code to animate those directions frame by frame.",
+  };
+}
+
+function asText(value: unknown, fallback: string, maxLength = 240) {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim().replace(/\s+/g, " ");
+  if (!trimmed) return fallback;
+  return trimmed.slice(0, maxLength);
+}
+
+function asStringArray(value: unknown, fallback: string[], maxItems = 8) {
+  if (!Array.isArray(value)) return fallback;
+  const cleaned = value
+    .map((item) => asText(item, "", 140))
+    .filter(Boolean)
+    .slice(0, maxItems);
+  return cleaned.length ? cleaned : fallback;
+}
+
+function asSceneKind(value: unknown, fallback: EngineReelSceneKind): EngineReelSceneKind {
+  return typeof value === "string" && ENGINE_REEL_SCENE_KINDS.includes(value as EngineReelSceneKind)
+    ? (value as EngineReelSceneKind)
+    : fallback;
+}
+
+function asDuration(value: unknown, fallback: number) {
+  const numberValue = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numberValue)) return fallback;
+  return Math.max(seconds(2.5), Math.min(seconds(7), Math.round(numberValue)));
+}
+
+function normalizeScenes(value: unknown): EngineReelScene[] {
+  const fallback = buildDefaultEngineScenes();
+  if (!Array.isArray(value)) return fallback;
+
+  const cleaned = value
+    .slice(0, 8)
+    .map((raw, index): EngineReelScene | null => {
+      if (!raw || typeof raw !== "object") return null;
+      const record = raw as Record<string, unknown>;
+      const defaultKind = ENGINE_REEL_SCENE_KINDS[Math.min(index, ENGINE_REEL_SCENE_KINDS.length - 1)] ?? "overview";
+      const kind = asSceneKind(record.kind, defaultKind);
+      return {
+        id: asText(record.id, `${kind}_${index + 1}`, 40).replace(/[^a-z0-9_-]/gi, "_").toLowerCase(),
+        kind,
+        title: asText(record.title, kind.replaceAll("_", " "), 52),
+        caption: asText(record.caption, "Watch how the timed motion changes the system.", 180),
+        durationInFrames: asDuration(record.durationInFrames, seconds(4.5)),
+        focus: asText(record.focus, "Focus on the part that changes in this scene.", 120),
+      };
+    })
+    .filter((scene): scene is EngineReelScene => Boolean(scene));
+
+  if (cleaned.length < 3) return fallback;
+  if (!cleaned.some((scene) => scene.kind === "checkpoint")) {
+    cleaned.push({
+      id: "checkpoint",
+      kind: "checkpoint",
+      title: "Checkpoint",
+      caption: "Explain the one motion or timing link that makes the system work.",
+      durationInFrames: seconds(4),
+      focus: "Ask the learner to name the causal link.",
+    });
+  }
+  return cleaned;
+}
+
+function normalizeParts(value: unknown) {
+  const fallback = buildDefaultEngineParts();
+  if (!Array.isArray(value)) return fallback;
+  const cleaned = value
+    .slice(0, 10)
+    .map((raw, index): EngineReelPart | null => {
+      if (!raw || typeof raw !== "object") return null;
+      const record = raw as Record<string, unknown>;
+      const label = asText(record.label, fallback[index]?.label ?? `part ${index + 1}`, 42);
+      return {
+        id: asText(record.id, label, 40).replace(/[^a-z0-9_-]/gi, "_").toLowerCase(),
+        label,
+        role: asText(record.role, fallback[index]?.role ?? "helps the timed system work", 120),
+      };
+    })
+    .filter((part): part is EngineReelPart => Boolean(part));
+  return cleaned.length >= 4 ? cleaned : fallback;
+}
+
+function normalizeMotions(value: unknown) {
+  const fallback = buildDefaultEngineMotions();
+  if (!Array.isArray(value)) return fallback;
+  const cleaned = value
+    .slice(0, 10)
+    .map((raw, index): EngineReelMotion | null => {
+      if (!raw || typeof raw !== "object") return null;
+      const record = raw as Record<string, unknown>;
+      return {
+        target: asText(record.target, fallback[index]?.target ?? "piston", 40),
+        action: asText(record.action, fallback[index]?.action ?? "move", 52),
+        timing: asText(record.timing, fallback[index]?.timing ?? "during the focused phase", 90),
+        reason: asText(record.reason, fallback[index]?.reason ?? "this motion reveals the causal link", 140),
+      };
+    })
+    .filter((motion): motion is EngineReelMotion => Boolean(motion));
+  return cleaned.length >= 3 ? cleaned : fallback;
+}
+
+export function normalizeEngineReelContract(input: unknown): EngineReelContract {
+  const record = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  const learnerSignal = asText(record.learner_signal, "I do not get how a gas engine makes the piston move.", 360);
+  const fallback = {
+    source_style:
+      "Clean educational cutaway animation: fixed camera, moving parts, colored flow, labels, captions, and checkpoint.",
+    recreated_elements: [
+      "fixed cutaway view",
+      "moving piston",
+      "timed valves",
+      "colored flow",
+      "spark or trigger moment",
+      "caption layer",
+    ],
+    intentionally_not_copied: [
+      "no original frames used",
+      "new MyWay visual treatment",
+      "contract-directed rendering only",
+    ],
+  };
+  const visualReference = record.visual_reference && typeof record.visual_reference === "object"
+    ? (record.visual_reference as Record<string, unknown>)
+    : {};
+  const checkpoint = record.checkpoint && typeof record.checkpoint === "object"
+    ? (record.checkpoint as Record<string, unknown>)
+    : {};
+
+  return {
+    schema_version: "myway_engine_reel_remotion_contract_v1",
+    contract_id: asText(record.contract_id, stableContractId(JSON.stringify(record).slice(0, 500)), 72),
+    title: asText(record.title, "A visual explanation built from your message", 70),
+    learner_signal: learnerSignal,
+    diagnosis_guess: asText(
+      record.diagnosis_guess,
+      "The learner likely needs the hidden causal link made visible with motion and timing.",
+      220,
+    ),
+    learning_goal: asText(
+      record.learning_goal,
+      "Show the missing link with a focused animation and one checkpoint.",
+      220,
+    ),
+    format: {
+      width: ENGINE_REEL_WIDTH,
+      height: ENGINE_REEL_HEIGHT,
+      fps: ENGINE_REEL_FPS,
+      aspect: "16:9_laptop",
+    },
+    visual_reference: {
+      source_style: asText(visualReference.source_style, fallback.source_style, 180),
+      recreated_elements: asStringArray(visualReference.recreated_elements, fallback.recreated_elements, 10),
+      intentionally_not_copied: asStringArray(visualReference.intentionally_not_copied, fallback.intentionally_not_copied, 8),
+    },
+    remotion_strategy: buildFixedRemotionStrategy(),
+    parts: normalizeParts(record.parts),
+    motions: normalizeMotions(record.motions),
+    scenes: normalizeScenes(record.scenes),
+    checkpoint: {
+      prompt: asText(checkpoint.prompt, "What is the key motion or timing link in this animation?", 140),
+      expected_idea: asText(
+        checkpoint.expected_idea,
+        "The learner should name the causal link that the animation focused on.",
+        180,
+      ),
+    },
+  };
+}
+
+export function getEngineReelDurationInFrames(contract: EngineReelContract) {
+  return contract.scenes.reduce((sum, scene) => sum + scene.durationInFrames, 0);
+}
+
+export function findEngineReelScene(contract: EngineReelContract, frame: number) {
+  let cursor = 0;
+
+  for (let index = 0; index < contract.scenes.length; index += 1) {
+    const scene = contract.scenes[index]!;
+    const startFrame = cursor;
+    const endFrame = startFrame + scene.durationInFrames;
+
+    if (frame <= endFrame || index === contract.scenes.length - 1) {
+      return {
+        scene,
+        sceneIndex: index,
+        startFrame,
+        endFrame,
+        progress: Math.max(0, Math.min(1, (frame - startFrame) / Math.max(1, scene.durationInFrames))),
+      };
+    }
+
+    cursor = endFrame;
+  }
+
+  const fallback = contract.scenes[0]!;
+  return {
+    scene: fallback,
+    sceneIndex: 0,
+    startFrame: 0,
+    endFrame: fallback.durationInFrames,
+    progress: 0,
+  };
+}
+

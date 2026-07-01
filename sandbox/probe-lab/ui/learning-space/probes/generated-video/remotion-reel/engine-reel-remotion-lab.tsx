@@ -1,0 +1,433 @@
+"use client";
+
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Player } from "@remotion/player";
+import { EngineCycleReelComposition } from "./engine-cycle-reel-composition";
+import {
+  buildEngineReelContract,
+  getEngineReelDurationInFrames,
+  type EngineReelContract,
+} from "./engine-reel-contract";
+
+const SAMPLE_MESSAGES = [
+  "I do not get how a gas engine makes the piston move.",
+  "I see the piston moving, but I do not understand what the spark actually does.",
+  "I am confused about when the valves open and why exhaust leaves after the spark.",
+  "I get the four strokes as words, but I cannot see how the timing connects.",
+];
+
+type GenerationSource = "deterministic" | "ollama";
+
+type OllamaResponse = {
+  ok: boolean;
+  source: "ollama" | "fallback";
+  model: string;
+  contract: EngineReelContract;
+  error?: string;
+  warnings?: string[];
+};
+
+function TinyLabel({ children }: { children: ReactNode }) {
+  return (
+    <p
+      style={{
+        margin: 0,
+        color: "rgba(255,255,255,0.58)",
+        fontSize: "0.72rem",
+        fontWeight: 900,
+        letterSpacing: "0.16em",
+        textTransform: "uppercase",
+      }}
+    >
+      {children}
+    </p>
+  );
+}
+
+function Pill({ children, active }: { children: ReactNode; active?: boolean }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        border: active ? "1px solid rgba(221,214,254,0.4)" : "1px solid rgba(255,255,255,0.12)",
+        borderRadius: 999,
+        background: active ? "rgba(221,214,254,0.16)" : "rgba(255,255,255,0.055)",
+        color: "rgba(255,255,255,0.84)",
+        padding: "0.38rem 0.62rem",
+        fontSize: "0.75rem",
+        fontWeight: 850,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function ActionButton({
+  children,
+  disabled,
+  onClick,
+  variant = "secondary",
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+  variant?: "primary" | "secondary";
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      style={{
+        border:
+          variant === "primary"
+            ? "1px solid rgba(221,214,254,0.42)"
+            : "1px solid rgba(255,255,255,0.12)",
+        borderRadius: 999,
+        background:
+          variant === "primary"
+            ? "linear-gradient(135deg, rgba(221,214,254,0.22), rgba(168,85,247,0.18))"
+            : "rgba(255,255,255,0.065)",
+        color: "rgba(255,255,255,0.9)",
+        padding: "0.58rem 0.82rem",
+        fontWeight: 850,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.52 : 1,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function validateContract(contract: EngineReelContract) {
+  const checks = [
+    { label: "schema", ok: contract.schema_version === "myway_engine_reel_remotion_contract_v1" },
+    { label: "format", ok: contract.format.width === 1280 && contract.format.height === 720 && contract.format.fps === 30 },
+    { label: "scenes", ok: contract.scenes.length >= 3 },
+    { label: "parts", ok: contract.parts.length >= 4 },
+    { label: "motions", ok: contract.motions.length >= 3 },
+    { label: "checkpoint", ok: Boolean(contract.checkpoint.prompt && contract.checkpoint.expected_idea) },
+    { label: "trusted renderer", ok: contract.remotion_strategy.composition === "EngineCycleReelComposition" },
+  ];
+
+  const passed = checks.filter((check) => check.ok).length;
+  return { checks, passed, total: checks.length };
+}
+
+function EngineReelRemotionLabInner() {
+  const [learnerSignal, setLearnerSignal] = useState(SAMPLE_MESSAGES[0]!);
+  const [modelName, setModelName] = useState("qwen2.5:3b");
+  const [source, setSource] = useState<GenerationSource>("deterministic");
+  const [contract, setContract] = useState<EngineReelContract>(() => buildEngineReelContract(SAMPLE_MESSAGES[0]!));
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [status, setStatus] = useState("Ready. Generate a deterministic contract or ask local Ollama for a contract.");
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+
+  const durationInFrames = useMemo(() => getEngineReelDurationInFrames(contract), [contract]);
+  const inputProps = useMemo(() => ({ contract }), [contract]);
+  const validation = useMemo(() => validateContract(contract), [contract]);
+
+  function generateDeterministicContract(nextSignal = learnerSignal) {
+    setSource("deterministic");
+    setLastError(null);
+    setWarnings([]);
+    setContract(buildEngineReelContract(nextSignal));
+    setStatus("Generated deterministic MyWay contract. This does not use Ollama.");
+  }
+
+  async function generateWithOllama() {
+    setIsGenerating(true);
+    setLastError(null);
+    setWarnings([]);
+    setStatus(`Asking local Ollama (${modelName}) to write a renderable director contract...`);
+
+    try {
+      const response = await fetch("/api/sandbox/probe-lab/generated-video/ollama-contract", {
+        cache: "no-store",
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          learner_signal: learnerSignal,
+          model: modelName,
+        }),
+      });
+      const data = (await response.json()) as OllamaResponse;
+      const routePayloadForDebug = data as {
+        ok?: boolean;
+        error?: unknown;
+        warnings?: unknown;
+        debug?: unknown;
+      };
+      if (routePayloadForDebug.ok === false) {
+        setStatus(
+          "Ollama route returned ok=false:\n" + JSON.stringify(routePayloadForDebug, null, 2).slice(0, 3000),
+        );
+      }
+      setContract(data.contract);
+      setSource(data.ok ? "ollama" : "deterministic");
+      setWarnings(data.warnings ?? []);
+
+      if (data.ok) {
+        setStatus(`Ollama generated a contract with ${data.contract.scenes.length} scenes using ${data.model}.`);
+      } else {
+        setLastError(data.error ?? "Ollama failed, fallback contract was used.");
+        setStatus("Ollama failed or returned invalid JSON. Showing fallback contract so the preview still works.");
+      }
+    } catch (error) {
+      console.error("[myway-ollama-ui]", error);
+      setLastError(error instanceof Error ? error.message : "Unknown client error");
+      setSource("deterministic");
+      setContract(buildEngineReelContract(learnerSignal));
+      setStatus("Could not reach the Ollama route. Showing fallback contract.");
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  return (
+    <div style={{ display: "grid", gap: "1.25rem" }}>
+      <section
+        style={{
+          display: "grid",
+          gap: "1rem",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: "2rem",
+          padding: "1.2rem",
+          background:
+            "radial-gradient(circle at top left, rgba(168,85,247,0.2), transparent 34%), rgba(0,0,0,0.18)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+          <div>
+            <TinyLabel>Ollama → MyWay contract → Remotion test</TinyLabel>
+            <h2 style={{ margin: "0.35rem 0 0", color: "white", fontSize: "1.55rem", lineHeight: 1.12 }}>
+              Local model generated video director contract
+            </h2>
+            <p style={{ margin: "0.55rem 0 0", maxWidth: "58rem", color: "rgba(255,255,255,0.72)", lineHeight: 1.65 }}>
+              Type a learner message, let local Ollama generate a JSON contract, then pass that contract into a trusted Remotion composition. This tests whether MyWay can use an open-weight model to direct a unique animation without letting the model write app code.
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap", alignContent: "start" }}>
+            <Pill active={source === "ollama"}>{source === "ollama" ? "Ollama contract" : "Deterministic contract"}</Pill>
+            <Pill>Remotion Player</Pill>
+            <Pill>{contract.format.width}×{contract.format.height}</Pill>
+            <Pill>{contract.format.fps} fps</Pill>
+            <Pill>{durationInFrames} frames</Pill>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gap: "0.65rem" }}>
+          <TinyLabel>Learner message / attempt</TinyLabel>
+          <textarea
+            value={learnerSignal}
+            rows={3}
+            onChange={(event) => setLearnerSignal(event.target.value)}
+            style={{
+              width: "100%",
+              resize: "vertical",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: "1.25rem",
+              background: "rgba(255,255,255,0.065)",
+              color: "white",
+              padding: "0.95rem 1rem",
+              outline: "none",
+              lineHeight: 1.55,
+            }}
+          />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+            {SAMPLE_MESSAGES.map((message) => (
+              <button
+                key={message}
+                type="button"
+                onClick={() => {
+                  setLearnerSignal(message);
+                  generateDeterministicContract(message);
+                }}
+                style={{
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,0.065)",
+                  color: "rgba(255,255,255,0.82)",
+                  padding: "0.48rem 0.7rem",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                Try sample
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(14rem, 0.55fr) minmax(18rem, 1fr) auto auto",
+            gap: "0.75rem",
+            alignItems: "end",
+          }}
+        >
+          <label style={{ display: "grid", gap: "0.4rem" }}>
+            <TinyLabel>Ollama model</TinyLabel>
+            <input
+              value={modelName}
+              onChange={(event) => setModelName(event.target.value)}
+              placeholder="qwen2.5:3b"
+              style={{
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: "999px",
+                background: "rgba(255,255,255,0.065)",
+                color: "white",
+                padding: "0.64rem 0.85rem",
+                outline: "none",
+              }}
+            />
+          </label>
+          <div style={{ display: "grid", gap: "0.35rem" }}>
+            <TinyLabel>Status</TinyLabel>
+            <p style={{ margin: 0, color: "rgba(255,255,255,0.72)", fontSize: "0.85rem", lineHeight: 1.5 }}>
+              {status}
+            </p>
+          </div>
+          <ActionButton onClick={() => generateDeterministicContract()} disabled={isGenerating}>
+            Mock contract
+          </ActionButton>
+          <ActionButton onClick={generateWithOllama} disabled={isGenerating} variant="primary">
+            {isGenerating ? "Generating..." : "Generate with Ollama"}
+          </ActionButton>
+        </div>
+
+        {lastError || warnings.length ? (
+          <div style={{ border: "1px solid rgba(253,186,116,0.26)", borderRadius: "1.1rem", background: "rgba(251,146,60,0.08)", padding: "0.85rem", color: "rgba(254,215,170,0.94)", lineHeight: 1.55 }}>
+            {lastError ? <p style={{ margin: 0 }}><strong>Ollama note:</strong> {lastError}</p> : null}
+            {warnings.map((warning) => (
+              <p key={warning} style={{ margin: lastError ? "0.35rem 0 0" : 0 }}>{warning}</p>
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1.45fr) minmax(22rem, 0.9fr)",
+          gap: "1rem",
+          alignItems: "start",
+        }}
+      >
+        <div
+          style={{
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: "2rem",
+            padding: "1rem",
+            background: "rgba(0,0,0,0.2)",
+          }}
+        >
+          <div style={{ marginBottom: "0.75rem", display: "flex", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
+            <div>
+              <TinyLabel>Remotion preview</TinyLabel>
+              <p style={{ margin: "0.25rem 0 0", color: "white", fontWeight: 900 }}>
+                The contract is passed as <code>inputProps</code> into <code>EngineCycleReelComposition</code>.
+              </p>
+            </div>
+          </div>
+
+          <div
+            style={{
+              overflow: "hidden",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: "1.5rem",
+              background: "black",
+              boxShadow: "0 28px 90px rgba(0,0,0,0.32)",
+            }}
+          >
+            <Player
+              key={contract.contract_id}
+              component={EngineCycleReelComposition}
+              inputProps={inputProps}
+              durationInFrames={durationInFrames}
+              compositionWidth={contract.format.width}
+              compositionHeight={contract.format.height}
+              fps={contract.format.fps}
+              controls
+              loop
+              style={{ width: "100%" }}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gap: "1rem" }}>
+          <section style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: "1.4rem", background: "rgba(255,255,255,0.055)", padding: "1rem" }}>
+            <TinyLabel>Contract validation</TinyLabel>
+            <p style={{ margin: "0.55rem 0 0", color: "rgba(255,255,255,0.82)", lineHeight: 1.55 }}>
+              {validation.passed}/{validation.total} render checks passed.
+            </p>
+            <div style={{ marginTop: "0.65rem", display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+              {validation.checks.map((check) => (
+                <Pill key={check.label} active={check.ok}>{check.ok ? "✓" : "!"} {check.label}</Pill>
+              ))}
+            </div>
+          </section>
+
+          <section style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: "1.4rem", background: "rgba(255,255,255,0.055)", padding: "1rem" }}>
+            <TinyLabel>What MyWay is directing</TinyLabel>
+            <div style={{ marginTop: "0.75rem", display: "grid", gap: "0.55rem" }}>
+              <p style={{ margin: 0, color: "rgba(255,255,255,0.82)", lineHeight: 1.55 }}>
+                <strong style={{ color: "white" }}>Diagnosis:</strong> {contract.diagnosis_guess}
+              </p>
+              <p style={{ margin: 0, color: "rgba(255,255,255,0.82)", lineHeight: 1.55 }}>
+                <strong style={{ color: "white" }}>Goal:</strong> {contract.learning_goal}
+              </p>
+              <p style={{ margin: 0, color: "rgba(255,255,255,0.82)", lineHeight: 1.55 }}>
+                <strong style={{ color: "white" }}>Checkpoint:</strong> {contract.checkpoint.prompt}
+              </p>
+            </div>
+          </section>
+
+          <section style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: "1.4rem", background: "rgba(255,255,255,0.055)", padding: "1rem" }}>
+            <TinyLabel>Generated contract JSON</TinyLabel>
+            <pre style={{ margin: "0.75rem 0 0", maxHeight: "32rem", overflow: "auto", whiteSpace: "pre-wrap", color: "rgba(255,255,255,0.76)", fontSize: "0.72rem", lineHeight: 1.45 }}>
+              {JSON.stringify(contract, null, 2)}
+            </pre>
+          </section>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export function EngineReelRemotionLab() {
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  if (!hasMounted) {
+    return (
+      <div
+        style={{
+          display: "grid",
+          placeItems: "center",
+          minHeight: "28rem",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: "2rem",
+          background:
+            "radial-gradient(circle at top left, rgba(168,85,247,0.2), transparent 34%), rgba(0,0,0,0.2)",
+          color: "rgba(255,255,255,0.78)",
+          fontWeight: 850,
+        }}
+      >
+        Loading Remotion + Ollama sandbox...
+      </div>
+    );
+  }
+
+  return <EngineReelRemotionLabInner />;
+}
+
+

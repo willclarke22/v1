@@ -19,11 +19,7 @@ import {
 import {
   ANIMATION_PRESETS_2D,
   ANIMATION_PRESETS_3D,
-  FUNCTION_EXAMPLES,
   GRAPH_MODE_COPY,
-  QUICK_INSERTS_2D,
-  QUICK_INSERTS_3D,
-  SURFACE_EXAMPLES,
   type GraphAnimationId,
   type GraphExpressionStatus,
 } from "./graph-types";
@@ -89,23 +85,23 @@ export function GraphEquationPanel({
   status,
   disabled,
   onExpressionChange,
-  onInsert,
 }: {
   mode: ProbeGraphModeDraft;
   expression: string;
   status: GraphExpressionStatus;
   disabled?: boolean;
   onExpressionChange: (value: string) => void;
-  onInsert: (value: string) => void;
 }) {
   const copy = GRAPH_MODE_COPY[mode];
-  const examples = mode === "2d" ? FUNCTION_EXAMPLES : SURFACE_EXAMPLES;
-  const inserts = mode === "2d" ? QUICK_INSERTS_2D : QUICK_INSERTS_3D;
 
   return (
     <ProbeSection
       title={mode === "2d" ? "Function" : "Surface"}
-      subtitle={copy.body}
+      subtitle={
+        mode === "2d"
+          ? "MyWay can change this during the visual explanation."
+          : "MyWay can build this surface piece by piece during the visual explanation."
+      }
       badge={<ProbePill tone={status.isValid ? "success" : "warning"}>{status.isValid ? "Ready" : "Check"}</ProbePill>}
       style={{ padding: "1rem" }}
     >
@@ -137,7 +133,7 @@ export function GraphEquationPanel({
             autoCapitalize="off"
             autoCorrect="off"
             onChange={(event) => onExpressionChange(event.target.value)}
-            placeholder={mode === "2d" ? "a*x^2 + b*x + c" : "a*x^2 - b*y^2 + c"}
+            placeholder={mode === "2d" ? "x^2 + 2*x + 1" : "x^2 - y^2"}
             style={{
               ...inputStyle,
               border: status.isValid
@@ -152,65 +148,6 @@ export function GraphEquationPanel({
             {status.message}
           </p>
         ) : null}
-
-        <div style={{ display: "grid", gap: "0.6rem" }}>
-          <ProbeMiniLabel>Pick a shape</ProbeMiniLabel>
-          <div style={{ display: "grid", gap: "0.5rem", gridTemplateColumns: "repeat(auto-fit, minmax(8.5rem, 1fr))" }}>
-            {examples.map((example) => (
-              <button
-                key={example.id}
-                type="button"
-                disabled={disabled}
-                onClick={() => onExpressionChange(example.expression)}
-                style={{
-                  minHeight: "4.1rem",
-                  border: expression === example.expression
-                    ? "1px solid rgba(221,214,254,0.52)"
-                    : "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "18px",
-                  background: expression === example.expression
-                    ? "radial-gradient(circle at top left, rgba(221,214,254,0.18), transparent 40%), rgba(255,255,255,0.065)"
-                    : "rgba(255,255,255,0.04)",
-                  color: "white",
-                  padding: "0.7rem",
-                  textAlign: "left",
-                  cursor: disabled ? "not-allowed" : "pointer",
-                }}
-              >
-                <span style={{ display: "block", fontWeight: 900 }}>{example.label}</span>
-                <span style={{ display: "block", marginTop: "0.25rem", color: probeTheme.text.secondary, fontSize: "0.74rem", lineHeight: 1.35 }}>
-                  {example.explanation}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <details>
-          <summary
-            style={{
-              cursor: "pointer",
-              color: "rgba(255,255,255,0.72)",
-              fontSize: "0.8rem",
-              fontWeight: 850,
-            }}
-          >
-            Quick inserts
-          </summary>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", marginTop: "0.55rem" }}>
-            {inserts.map((insert) => (
-              <ProbeButton
-                key={insert}
-                disabled={disabled}
-                variant="ghost"
-                onClick={() => onInsert(insert)}
-                style={{ padding: "0.34rem 0.54rem", fontSize: "0.7rem" }}
-              >
-                + {insert}
-              </ProbeButton>
-            ))}
-          </div>
-        </details>
       </ProbeStack>
     </ProbeSection>
   );

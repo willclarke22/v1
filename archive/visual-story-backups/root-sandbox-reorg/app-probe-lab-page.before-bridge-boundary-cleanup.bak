@@ -1,0 +1,20 @@
+import ProbeLabPageFromSandbox from "@/sandbox/probe-lab/app/probe-lab/page";
+import { VisualStoryGalleryPreview } from "./visual-story-gallery-preview";
+
+export default function ProbeLabPage() {
+  return (
+    <>
+      <ProbeLabPageFromSandbox />
+      <div
+        style={{
+          padding: "0 min(7vw, 4rem) min(5vw, 3rem)",
+          background: "linear-gradient(135deg, #070014, #130827)",
+        }}
+      >
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <VisualStoryGalleryPreview />
+        </div>
+      </div>
+    </>
+  );
+}

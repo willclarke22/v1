@@ -1,0 +1,19 @@
+MYWAY PROBE LAB BRIDGE IMPORT FIX
+Generated: 2026-07-01T19:34:58.207Z
+
+Reason:
+- The OpenAI full-loop sandbox UI was moved into root sandbox/.
+- Its old relative import '../index' no longer resolves from the sandbox path.
+- The bridge route should import sandbox UI, while sandbox UI imports active runtime probe exports through the app alias.
+
+Changed:
+- sandbox\probe-lab\ui\learning-space\probes\openai-full-loop\openai-full-loop-lab.tsx
+- app\probe-lab\page.tsx
+
+Backups:
+- archive\visual-story-backups\root-sandbox-reorg\openai-full-loop-lab.tsx.before-bridge-import-fix.bak
+- archive\visual-story-backups\root-sandbox-reorg\app-probe-lab-page.tsx.before-cssproperties-import-fix.bak
+
+Expected behavior:
+- /probe-lab/openai-full-loop can load the sandbox UI again.
+- Active runtime code remains centralized outside sandbox.

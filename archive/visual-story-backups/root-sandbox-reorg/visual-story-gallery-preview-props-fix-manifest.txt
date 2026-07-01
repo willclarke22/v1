@@ -1,0 +1,18 @@
+MYWAY VISUAL STORY GALLERY PREVIEW PROPS FIX
+Generated: 2026-07-01T19:47:46.001Z
+
+Backup: archive\visual-story-backups\root-sandbox-reorg\visual-story-gallery-preview.before-props-fix.bak
+
+Reason:
+- ProbeRendererProps accepts initialDraft, not draft.
+- Visual Story renderer currently routes through video_explanation or graph_relationship when renderer_params.visual_story exists.
+
+Changed:
+- probe_type generated_video -> video_explanation
+- added expected_attempt_type: text
+- draft prop -> initialDraft prop
+
+Expected behavior:
+- /probe-lab renders the old all-probes gallery.
+- Visual Story preview routes to VisualStoryProbe instead of falling back to TextProbe.
+- Build should get past the ProbeRendererProps error.

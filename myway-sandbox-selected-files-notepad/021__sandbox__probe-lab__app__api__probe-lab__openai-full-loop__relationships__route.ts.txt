@@ -1,0 +1,383 @@
+FILE: sandbox\probe-lab\app\api\probe-lab\openai-full-loop\relationships\route.ts
+SIZE BYTES: 18718
+========================================================================================================================
+
+import { NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type TopicInput = {
+  topic_id?: string;
+  id?: string;
+  topic_label?: string;
+  active_diagnosis?: string | null;
+  diagnosis?: string | null;
+  diagnosis_belief?: number | null;
+  diagnosis_confidence?: number | null;
+  diagnosis_status?: string | null;
+  confusion?: number | null;
+  insight?: number | null;
+  mastery?: number | null;
+  evidence_count?: number | null;
+  root_problem?: string | null;
+  misconception_patterns?: string[];
+  latest_probe_type?: string | null;
+  message_count?: number | null;
+};
+
+type SandboxRelationship = {
+  relationship_id: string;
+  source_topic_id: string;
+  target_topic_id: string;
+  source_topic_label: string;
+  target_topic_label: string;
+  relationship_type: "shared_diagnosis" | "shared_confusion_pattern" | "shared_insight_pattern";
+  strength: number;
+  confidence: number;
+  evidence_count: number;
+  evidence_summary: string;
+  reasons: string[];
+  display_policy: Record<string, unknown>;
+  diagnostic_method: string;
+  pattern?: {
+    kind: string;
+    summary: string;
+    future_probe_implication: string;
+    source?: "root_problem" | "insight" | "diagnosis";
+  };
+};
+
+type NormalTopic = Required<Pick<TopicInput, "topic_id" | "topic_label">> & {
+  active_diagnosis: string | null;
+  diagnosis_belief: number;
+  diagnosis_confidence: number;
+  confusion: number;
+  insight: number;
+  mastery: number;
+  evidence_count: number;
+  root_problem: string;
+  misconception_patterns: string[];
+  latest_probe_type: string | null;
+  message_count: number;
+  root_pattern: PatternMatch | null;
+  insight_pattern: PatternMatch | null;
+};
+
+type PatternMatch = {
+  kind: string;
+  summary: string;
+  future_probe_implication: string;
+  confidence: number;
+  matched_terms: string[];
+};
+
+const DIAGNOSES = new Set([
+  "recall_gap",
+  "representation_gap",
+  "procedure_gap",
+  "discrimination_gap",
+  "transfer_gap",
+  "metacognitive_gap",
+]);
+
+const GENERIC_WORDS = new Set([
+  "about", "across", "after", "again", "also", "because", "before", "being", "better", "build", "building",
+  "could", "does", "doing", "each", "feel", "feels", "from", "have", "helps", "idea", "ideas", "into",
+  "know", "knows", "learner", "learned", "learning", "likely", "meaning", "mental", "missing", "model", "needs",
+  "picture", "problem", "specific", "still", "thing", "things", "thinking", "topic", "understand", "understanding",
+  "user", "what", "when", "where", "which", "with", "without", "would", "wrong", "right", "same", "different",
+  "misconception", "root", "pattern", "concept", "concepts", "example", "examples", "rule", "rules", "case", "cases", "the", "and", "for", "that", "this", "they", "them", "their"
+]);
+
+const ROOT_PATTERNS = [
+  {
+    kind: "procedure_without_purpose",
+    summary: "The learner knows steps or formulas but does not yet know what the system is for.",
+    future_probe_implication: "Start with purpose and orientation, then use one small check before symbolic or procedural probes.",
+    terms: ["memorization", "memorize", "formula", "formulas", "steps", "procedure", "procedures", "purpose", "why", "use", "useful", "for", "method"]
+  },
+  {
+    kind: "representation_mapping_gap",
+    summary: "The learner has trouble mapping between a representation and what it means.",
+    future_probe_implication: "Use graph, diagram, label, or match-the-representation probes before abstract explanation.",
+    terms: ["graph", "visual", "see", "picture", "diagram", "represent", "representation", "map", "mapping", "symbol", "variable", "slope", "tangent", "area", "curve", "surface"]
+  },
+  {
+    kind: "role_direction_reversal",
+    summary: "The learner is mixing up who does, receives, causes, loses, gains, or is described by an action.",
+    future_probe_implication: "Use role-tagging, actor/receiver sorting, direction arrows, or before/after state probes.",
+    terms: ["does", "receiver", "actor", "action", "passive", "reflexive", "who", "whom", "gives", "gets", "receives", "loses", "gains", "oxidation", "reduction", "direction"]
+  },
+  {
+    kind: "boundary_discrimination_gap",
+    summary: "The learner is confusing nearby categories and needs sharper boundaries.",
+    future_probe_implication: "Use compare/contrast, drag-sort, minimal pairs, and why-not-this-option probes.",
+    terms: ["mix", "mixed", "confuse", "confused", "difference", "different", "similar", "distinguish", "versus", "boundary", "between", "either", "which"]
+  },
+  {
+    kind: "local_vs_global_confusion",
+    summary: "The learner is mixing up a moment-by-moment view with a whole-interval or overall view.",
+    future_probe_implication: "Use zoom-in/zoom-out probes, tangent/secant comparisons, snapshot-vs-accumulation checks, and graph regions.",
+    terms: ["instant", "instantaneous", "right now", "moment", "overall", "whole", "interval", "accumulated", "accumulation", "built", "total", "average", "local", "global"]
+  },
+  {
+    kind: "process_vs_object_confusion",
+    summary: "The learner is not sure whether to treat the idea as an action/process or a thing/state.",
+    future_probe_implication: "Use sequence, transformation, before/after, and name-the-state probes.",
+    terms: ["process", "object", "state", "change", "changes", "changing", "becomes", "turns", "transforms", "result", "output"]
+  },
+  {
+    kind: "transfer_surface_match_gap",
+    summary: "The learner may match surface features instead of transferring the deeper structure.",
+    future_probe_implication: "Use cross-context transfer probes with one familiar and one unfamiliar example.",
+    terms: ["apply", "transfer", "new", "context", "situation", "surface", "looks", "similar", "different domain", "carry over"]
+  }
+] as const;
+
+const INSIGHT_PATTERNS = [
+  {
+    kind: "visual_model_unlocked_understanding",
+    summary: "The learner seems to make progress when the hidden structure is made visible.",
+    future_probe_implication: "Prefer visual orientation, graph/diagram probes, and concrete spatial metaphors when they clarify the target idea.",
+    terms: ["visual", "see", "picture", "diagram", "graph", "show", "map", "surface", "tangent", "area", "shape"]
+  },
+  {
+    kind: "contrast_cases_helped",
+    summary: "The learner seems to benefit from seeing close cases side-by-side.",
+    future_probe_implication: "Use compare/contrast, minimal pairs, drag-sort, and explain-why-not probes.",
+    terms: ["difference", "versus", "compare", "contrast", "distinguish", "similar", "mix", "boundary", "which"]
+  },
+  {
+    kind: "motion_or_flow_analogy_helped",
+    summary: "The learner seems to benefit from motion, flow, or transfer analogies.",
+    future_probe_implication: "Use motion/flow examples for rate, transfer, accumulation, forces, systems, and change when appropriate.",
+    terms: ["car", "motion", "speed", "flow", "moves", "moving", "distance", "time", "rate", "transfer", "gains", "loses"]
+  },
+  {
+    kind: "purpose_first_helped",
+    summary: "The learner seems to need the purpose of the idea before details.",
+    future_probe_implication: "Start future probes with a short missing-picture orientation, then check recognition before procedure.",
+    terms: ["purpose", "why", "what is it for", "use", "useful", "higher level", "big picture", "memorization"]
+  }
+] as const;
+
+function clamp01(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : fallback;
+}
+
+function text(value: unknown, fallback: string, max = 180) {
+  return typeof value === "string" && value.trim() ? value.trim().slice(0, max) : fallback;
+}
+
+function count(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : fallback;
+}
+
+function safeId(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 80) || "relationship";
+}
+
+function normalize(value: string) {
+  return value.toLowerCase().replace(/[’]/g, "'").replace(/[^a-z0-9's]+/g, " ").replace(/s+/g, " ").trim();
+}
+
+function tokens(value: string) {
+  const normalized = normalize(value);
+  if (!normalized) return [] as string[];
+  return Array.from(new Set(normalized.split(" ").map((token) => token.trim()).filter((token) => token.length >= 4 && !GENERIC_WORDS.has(token) && !/^d+$/.test(token))));
+}
+
+function includesTerm(haystack: string, term: string) {
+  const normalized = normalize(haystack);
+  const normalizedTerm = normalize(term);
+  if (!normalizedTerm) return false;
+  return normalized.includes(normalizedTerm);
+}
+
+function classify(textValue: string, patterns: typeof ROOT_PATTERNS | typeof INSIGHT_PATTERNS): PatternMatch | null {
+  const textTokens = new Set(tokens(textValue));
+  let best: PatternMatch | null = null;
+  for (const pattern of patterns) {
+    const matched = pattern.terms.filter((term) => textTokens.has(normalize(term)) || includesTerm(textValue, term));
+    const specificMatched = matched.filter((term) => !GENERIC_WORDS.has(normalize(term)));
+    if (specificMatched.length < 2) continue;
+    const confidence = clamp01(0.34 + specificMatched.length * 0.11, 0);
+    if (!best || confidence > best.confidence) {
+      best = {
+        kind: pattern.kind,
+        summary: pattern.summary,
+        future_probe_implication: pattern.future_probe_implication,
+        confidence,
+        matched_terms: specificMatched.slice(0, 8),
+      };
+    }
+  }
+  return best;
+}
+
+function normalizeTopic(topic: TopicInput, index: number): NormalTopic {
+  const topic_id = text(topic.topic_id ?? topic.id, "sandbox_topic_" + (index + 1), 90);
+  const topic_label = text(topic.topic_label, "Sandbox topic " + (index + 1), 160);
+  const evidence_count = count(topic.evidence_count, count(topic.message_count, 1));
+  const root_problem = typeof topic.root_problem === "string" ? topic.root_problem.slice(0, 1200) : "";
+  const misconception_patterns = Array.isArray(topic.misconception_patterns) ? topic.misconception_patterns.filter((item): item is string => typeof item === "string").slice(0, 12) : [];
+  const combinedRootText = [root_problem, ...misconception_patterns].join(" ");
+  const insightText = [topic_label, root_problem, ...misconception_patterns, topic.latest_probe_type ?? ""].join(" ");
+  const diag = typeof (topic.active_diagnosis ?? topic.diagnosis) === "string" && DIAGNOSES.has((topic.active_diagnosis ?? topic.diagnosis) as string) ? (topic.active_diagnosis ?? topic.diagnosis) as string : null;
+  return {
+    topic_id,
+    topic_label,
+    active_diagnosis: diag,
+    diagnosis_belief: clamp01(topic.diagnosis_belief, diag ? 0.58 : 0),
+    diagnosis_confidence: clamp01(topic.diagnosis_confidence, diag ? 0.52 : 0),
+    confusion: clamp01(topic.confusion, 0.45),
+    insight: clamp01(topic.insight, 0.18),
+    mastery: clamp01(topic.mastery, 0.08),
+    evidence_count,
+    root_problem,
+    misconception_patterns,
+    latest_probe_type: typeof topic.latest_probe_type === "string" ? topic.latest_probe_type : null,
+    message_count: count(topic.message_count, evidence_count),
+    root_pattern: classify(combinedRootText, ROOT_PATTERNS),
+    insight_pattern: classify(insightText, INSIGHT_PATTERNS),
+  };
+}
+
+function pairId(type: string, a: NormalTopic, b: NormalTopic, suffix = "") {
+  const ids = [a.topic_id, b.topic_id].sort();
+  return safeId(type + "_" + ids[0] + "_" + ids[1] + (suffix ? "_" + suffix : ""));
+}
+
+function makeDisplayPolicy(priority: number, visible: boolean) {
+  return { priority, visible_by_default: visible, affects_layout: visible, lens: visible ? "core" : "pattern" };
+}
+
+function sharedDiagnosis(a: NormalTopic, b: NormalTopic): SandboxRelationship | null {
+  if (!a.active_diagnosis || !b.active_diagnosis || a.active_diagnosis !== b.active_diagnosis) return null;
+  if (a.topic_id === b.topic_id) return null;
+  const confidence = Math.min(a.diagnosis_confidence, b.diagnosis_confidence);
+  const belief = Math.min(a.diagnosis_belief, b.diagnosis_belief);
+  if (confidence < 0.42 || belief < 0.48) return null;
+  const strength = clamp01(0.42 + confidence * 0.24 + belief * 0.24 + Math.min(a.evidence_count, b.evidence_count, 5) * 0.02);
+  return {
+    relationship_id: pairId("shared_diagnosis", a, b, a.active_diagnosis),
+    source_topic_id: a.topic_id,
+    target_topic_id: b.topic_id,
+    source_topic_label: a.topic_label,
+    target_topic_label: b.topic_label,
+    relationship_type: "shared_diagnosis",
+    strength,
+    confidence,
+    evidence_count: Math.max(1, Math.min(a.evidence_count, b.evidence_count)),
+    evidence_summary: a.topic_label + " and " + b.topic_label + " both show " + a.active_diagnosis + ". This is useful only because they are different topics; a continuation should update one topic instead.",
+    reasons: ["same_active_diagnosis", "different_topic_ids", "diagnosis_confidence:" + confidence.toFixed(3)],
+    display_policy: makeDisplayPolicy(strength, false),
+    diagnostic_method: "sandbox_high_level_shared_diagnosis_v4",
+    pattern: { kind: a.active_diagnosis, summary: "Different topics currently have the same diagnosis label.", future_probe_implication: "Try reusing the successful probe strategy only if the root pattern also supports it.", source: "diagnosis" },
+  };
+}
+
+function sharedConfusionPattern(a: NormalTopic, b: NormalTopic): SandboxRelationship | null {
+  if (!a.root_pattern || !b.root_pattern || a.root_pattern.kind !== b.root_pattern.kind) return null;
+  const averageConfusion = (a.confusion + b.confusion) / 2;
+  if (averageConfusion < 0.36) return null;
+  const confidence = Math.min(a.root_pattern.confidence, b.root_pattern.confidence, 0.92);
+  if (confidence < 0.48) return null;
+  const strength = clamp01(0.36 + averageConfusion * 0.26 + confidence * 0.28 + Math.min(a.evidence_count, b.evidence_count, 5) * 0.018);
+  return {
+    relationship_id: pairId("shared_confusion_pattern", a, b, a.root_pattern.kind),
+    source_topic_id: a.topic_id,
+    target_topic_id: b.topic_id,
+    source_topic_label: a.topic_label,
+    target_topic_label: b.topic_label,
+    relationship_type: "shared_confusion_pattern",
+    strength,
+    confidence,
+    evidence_count: Math.max(1, Math.min(a.evidence_count, b.evidence_count)),
+    evidence_summary: a.topic_label + " and " + b.topic_label + " share the high-level pattern " + a.root_pattern.kind + ": " + a.root_pattern.summary,
+    reasons: ["root_problem_pattern:" + a.root_pattern.kind, "avg_confusion:" + averageConfusion.toFixed(3), "source_terms:" + a.root_pattern.matched_terms.join("|") + ";" + b.root_pattern.matched_terms.join("|")],
+    display_policy: makeDisplayPolicy(strength, true),
+    diagnostic_method: "sandbox_high_level_root_pattern_v4_no_surface_word_overlap",
+    pattern: { kind: a.root_pattern.kind, summary: a.root_pattern.summary, future_probe_implication: a.root_pattern.future_probe_implication, source: "root_problem" },
+  };
+}
+
+function sharedInsightPattern(a: NormalTopic, b: NormalTopic): SandboxRelationship | null {
+  if (!a.insight_pattern || !b.insight_pattern || a.insight_pattern.kind !== b.insight_pattern.kind) return null;
+  const averageInsight = (a.insight + b.insight) / 2;
+  if (averageInsight < 0.32) return null;
+  const confidence = Math.min(a.insight_pattern.confidence, b.insight_pattern.confidence, 0.9);
+  if (confidence < 0.46) return null;
+  const strength = clamp01(0.32 + averageInsight * 0.28 + confidence * 0.3 + Math.min(a.evidence_count, b.evidence_count, 5) * 0.016);
+  return {
+    relationship_id: pairId("shared_insight_pattern", a, b, a.insight_pattern.kind),
+    source_topic_id: a.topic_id,
+    target_topic_id: b.topic_id,
+    source_topic_label: a.topic_label,
+    target_topic_label: b.topic_label,
+    relationship_type: "shared_insight_pattern",
+    strength,
+    confidence,
+    evidence_count: Math.max(1, Math.min(a.evidence_count, b.evidence_count)),
+    evidence_summary: a.topic_label + " and " + b.topic_label + " may share an insight pattern, " + a.insight_pattern.kind + ": " + a.insight_pattern.summary,
+    reasons: ["insight_pattern:" + a.insight_pattern.kind, "avg_insight:" + averageInsight.toFixed(3), "source_terms:" + a.insight_pattern.matched_terms.join("|") + ";" + b.insight_pattern.matched_terms.join("|")],
+    display_policy: makeDisplayPolicy(strength, false),
+    diagnostic_method: "sandbox_high_level_insight_pattern_v4",
+    pattern: { kind: a.insight_pattern.kind, summary: a.insight_pattern.summary, future_probe_implication: a.insight_pattern.future_probe_implication, source: "insight" },
+  };
+}
+
+function rank(items: SandboxRelationship[]) {
+  return [...items].sort((a, b) => b.strength - a.strength || b.confidence - a.confidence || a.relationship_id.localeCompare(b.relationship_id));
+}
+
+export async function POST(request: Request) {
+  const startedAt = Date.now();
+  const body = (await request.json().catch(() => ({}))) as { topics?: TopicInput[] };
+  const topics = Array.isArray(body.topics) ? body.topics.map(normalizeTopic) : [];
+  const relationships: SandboxRelationship[] = [];
+  let candidateCount = 0;
+
+  for (let i = 0; i < topics.length; i += 1) {
+    for (let j = i + 1; j < topics.length; j += 1) {
+      const a = topics[i];
+      const b = topics[j];
+      const candidates = [sharedDiagnosis(a, b), sharedConfusionPattern(a, b), sharedInsightPattern(a, b)];
+      candidateCount += candidates.filter(Boolean).length;
+      for (const candidate of candidates) {
+        if (candidate) relationships.push(candidate);
+      }
+    }
+  }
+
+  const emitted = rank(relationships).slice(0, 72);
+
+  return NextResponse.json({
+    ok: true,
+    elapsed_ms: Date.now() - startedAt,
+    topic_count: topics.length,
+    result: {
+      relationships: emitted,
+      generated_at: new Date().toISOString(),
+      candidate_count: candidateCount,
+      emitted_count: emitted.length,
+      omitted_count: Math.max(0, candidateCount - emitted.length),
+      pattern_catalog: {
+        root_problem_patterns: ROOT_PATTERNS.map((pattern) => ({ kind: pattern.kind, summary: pattern.summary, future_probe_implication: pattern.future_probe_implication })),
+        insight_patterns: INSIGHT_PATTERNS.map((pattern) => ({ kind: pattern.kind, summary: pattern.summary, future_probe_implication: pattern.future_probe_implication })),
+      },
+      projected_topics: topics.map((topic) => ({
+        topic_id: topic.topic_id,
+        topic_label: topic.topic_label,
+        active_diagnosis: topic.active_diagnosis,
+        confusion: topic.confusion,
+        insight: topic.insight,
+        root_pattern: topic.root_pattern,
+        insight_pattern: topic.insight_pattern,
+      })),
+    },
+  });
+}
+
+

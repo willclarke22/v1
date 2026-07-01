@@ -1,0 +1,145 @@
+import { NextResponse } from "next/server";
+import { buildTopicRelationships } from "@/lib/learning-space/relationship-graph";
+import type { RelationshipGraphTopic } from "@/lib/learning-space/relationship-graph";
+import type { DiagnosisType } from "@/types/contracts";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type TopicInput = {
+  topic_id?: string;
+  id?: string;
+  topic_label?: string;
+  active_diagnosis?: string | null;
+  diagnosis?: string | null;
+  diagnosis_belief?: number | null;
+  diagnosis_confidence?: number | null;
+  diagnosis_status?: string | null;
+  confusion?: number | null;
+  insight?: number | null;
+  mastery?: number | null;
+  evidence_count?: number | null;
+  root_problem?: string | null;
+  misconception_patterns?: string[];
+  latest_probe_type?: string | null;
+  message_count?: number | null;
+};
+
+function clamp01(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.min(1, value))
+    : fallback;
+}
+
+function text(value: unknown, fallback: string, max = 180) {
+  return typeof value === "string" && value.trim()
+    ? value.trim().slice(0, max)
+    : fallback;
+}
+
+function count(value: unknown, fallback = 0) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.floor(value))
+    : fallback;
+}
+
+function diagnosis(value: unknown): DiagnosisType | null {
+  const allowed = new Set([
+    "unknown",
+    "no_gap_detected",
+    "recall_gap",
+    "representation_gap",
+    "procedure_gap",
+    "discrimination_gap",
+    "transfer_gap",
+    "metacognitive_gap",
+  ]);
+  return typeof value === "string" && allowed.has(value)
+    ? (value as DiagnosisType)
+    : null;
+}
+
+function toRelationshipTopic(topic: TopicInput, index: number): RelationshipGraphTopic {
+  const id = text(topic.topic_id ?? topic.id, `sandbox_topic_${index + 1}`, 90);
+  const topicLabel = text(topic.topic_label, `Sandbox topic ${index + 1}`, 160);
+  const activeDiagnosis = diagnosis(topic.active_diagnosis ?? topic.diagnosis);
+  const evidenceCount = count(topic.evidence_count, count(topic.message_count, 1));
+  const confusion = clamp01(topic.confusion, 0.45);
+  const insight = clamp01(topic.insight, 0.18);
+  const mastery = clamp01(topic.mastery, 0.08);
+  const angle = (index / Math.max(1, 8)) * Math.PI * 2;
+
+  return {
+    id,
+    topic_label: topicLabel,
+    diagnosis: activeDiagnosis,
+    diagnosisEvidence: activeDiagnosis
+      ? {
+          active_diagnosis: activeDiagnosis,
+          belief: clamp01(topic.diagnosis_belief, activeDiagnosis === "no_gap_detected" ? 0.45 : 0.66),
+          confidence: clamp01(topic.diagnosis_confidence, 0.48 + Math.min(evidenceCount, 5) * 0.05),
+          evidence_count: evidenceCount,
+          resolution_pressure: null,
+          status: text(topic.diagnosis_status, "active", 80),
+          strongest_evidence_tier: evidenceCount >= 2 ? "hybrid_structured_and_rubric_judgment" : "llm_rubric_judgment",
+          last_updated_at: new Date().toISOString(),
+        }
+      : null,
+    confusion,
+    insight,
+    confusionEvidence: {
+      value: confusion,
+      confidence: Math.min(0.92, 0.46 + Math.min(evidenceCount, 8) * 0.045),
+      evidence_count: evidenceCount,
+      source: "openai_full_loop_sandbox_rubric",
+      updated_at: new Date().toISOString(),
+    },
+    insightEvidence: {
+      value: insight,
+      confidence: Math.min(0.92, 0.44 + Math.min(evidenceCount, 8) * 0.045),
+      evidence_count: evidenceCount,
+      source: "openai_full_loop_sandbox_rubric",
+      updated_at: new Date().toISOString(),
+    },
+    rootProblem: typeof topic.root_problem === "string" ? topic.root_problem.slice(0, 700) : null,
+    rootProblemSource: "openai_full_loop_sandbox",
+    misconceptionPatterns: Array.isArray(topic.misconception_patterns)
+      ? topic.misconception_patterns.filter((item): item is string => typeof item === "string").slice(0, 8)
+      : [],
+    latestProbeType: typeof topic.latest_probe_type === "string" ? topic.latest_probe_type : null,
+    learningScore: mastery,
+    messageCount: count(topic.message_count, evidenceCount),
+    position: [
+      Math.cos(angle) * 3,
+      Math.sin(angle) * 1.2,
+      Math.sin(angle) * 3,
+    ],
+  };
+}
+
+export async function POST(request: Request) {
+  const startedAt = Date.now();
+  const body = (await request.json().catch(() => ({}))) as { topics?: TopicInput[] };
+  const topics = Array.isArray(body.topics) ? body.topics : [];
+  const projected = topics.map(toRelationshipTopic);
+
+  try {
+    const result = buildTopicRelationships(projected, {
+      generatedAt: new Date().toISOString(),
+    });
+
+    return NextResponse.json({
+      ok: true,
+      elapsed_ms: Date.now() - startedAt,
+      topic_count: projected.length,
+      result,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown relationship build error";
+    return NextResponse.json(
+      { ok: false, elapsed_ms: Date.now() - startedAt, error: message },
+      { status: 500 },
+    );
+  }
+}
+

@@ -1,0 +1,321 @@
+const fs = require("fs");
+const path = require("path");
+
+const archiveRoot = path.join("archive", "visual-story-backups", "remaining-sandbox-boundary-cleanup");
+const manifestPath = path.join(archiveRoot, "remaining-sandbox-boundary-cleanup-manifest.txt");
+
+function ensureDir(dir) {
+  fs.mkdirSync(dir, { recursive: true });
+}
+
+function read(file) {
+  return fs.readFileSync(file, "utf8");
+}
+
+function write(file, text) {
+  ensureDir(path.dirname(file));
+  fs.writeFileSync(file, text, "utf8");
+}
+
+function copyDir(src, dest) {
+  ensureDir(dest);
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDir(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+function removePath(target) {
+  fs.rmSync(target, { recursive: true, force: true });
+}
+
+function backupPath(target, label) {
+  if (!fs.existsSync(target)) return null;
+  ensureDir(archiveRoot);
+  const safe = label.replace(/[\\/:*?"<>|]/g, "__");
+  const dest = path.join(archiveRoot, `${safe}.bak`);
+  removePath(dest);
+
+  const stat = fs.statSync(target);
+  if (stat.isDirectory()) {
+    copyDir(target, dest);
+  } else {
+    fs.copyFileSync(target, dest);
+  }
+
+  return dest;
+}
+
+function movePath(from, to, label) {
+  if (fs.existsSync(from) && fs.existsSync(to)) {
+    throw new Error(`Both source and destination exist for ${label}. Stop to avoid accidental merge.\nsource: ${from}\ndestination: ${to}`);
+  }
+
+  if (!fs.existsSync(from) && fs.existsSync(to)) {
+    return { status: "already_moved", backup: null };
+  }
+
+  if (!fs.existsSync(from)) {
+    throw new Error(`Missing source and destination for ${label}:\nsource: ${from}\ndestination: ${to}`);
+  }
+
+  const backup = backupPath(from, label);
+  ensureDir(path.dirname(to));
+
+  const stat = fs.statSync(from);
+  if (stat.isDirectory()) {
+    copyDir(from, to);
+  } else {
+    fs.copyFileSync(from, to);
+  }
+
+  removePath(from);
+  return { status: "moved", backup };
+}
+
+function walk(dir, files = []) {
+  if (!fs.existsSync(dir)) return files;
+
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (
+      entry.name === ".git" ||
+      entry.name === ".next" ||
+      entry.name === "node_modules" ||
+      entry.name === "archive"
+    ) {
+      continue;
+    }
+
+    const fullPath = path.join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      walk(fullPath, files);
+    } else if (/\.(ts|tsx|js|jsx|cjs|mjs|json|md|py)$/.test(entry.name)) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
+function replaceInFile(file, mutator) {
+  if (!fs.existsSync(file)) return false;
+  const before = read(file);
+  const next = mutator(before, file);
+
+  if (next !== before) {
+    backupPath(file, `${file}.before-remaining-sandbox-boundary-cleanup`);
+    write(file, next);
+    return true;
+  }
+
+  return false;
+}
+
+function replaceAll(text, from, to) {
+  return text.split(from).join(to);
+}
+
+ensureDir(archiveRoot);
+
+const moves = [
+  {
+    label: "scripts-blender-to-sandbox-probe-lab-scripts",
+    from: path.join("scripts", "blender"),
+    to: path.join("sandbox", "probe-lab", "scripts", "blender"),
+  },
+  {
+    label: "generated-video-renderer-to-ui-probe-sandbox",
+    from: path.join("ui", "learning-space", "probes", "generated-video"),
+    to: path.join("ui", "learning-space", "probes", "sandbox", "generated-video"),
+  },
+  {
+    label: "visual-story-probe-to-ui-probe-sandbox",
+    from: path.join("ui", "learning-space", "probes", "visual-story-probe.tsx"),
+    to: path.join("ui", "learning-space", "probes", "sandbox", "visual-story-probe.tsx"),
+  },
+  {
+    label: "visual-story-renderer-schema-to-lib-sandbox",
+    from: path.join("lib", "engine", "schemas", "visual-story-renderer.ts"),
+    to: path.join("lib", "sandbox", "visual-story", "visual-story-renderer.ts"),
+  },
+];
+
+const moved = [];
+const alreadyMoved = [];
+const backups = [];
+const changed = [];
+
+for (const item of moves) {
+  const result = movePath(item.from, item.to, item.label);
+  if (result.backup) backups.push(result.backup);
+
+  if (result.status === "moved") {
+    moved.push(`${item.from} -> ${item.to}`);
+  } else {
+    alreadyMoved.push(item.to);
+  }
+}
+
+const probesIndex = path.join("ui", "learning-space", "probes", "index.ts");
+if (replaceInFile(probesIndex, (text) => {
+  let next = text;
+  next = replaceAll(next, 'export * from "./generated-video";', 'export * from "./sandbox/generated-video";');
+  next = replaceAll(next, 'export * from "./visual-story-probe";', 'export * from "./sandbox/visual-story-probe";');
+  return next;
+})) changed.push(probesIndex);
+
+const probeRenderer = path.join("ui", "learning-space", "probes", "probe-renderer.tsx");
+if (replaceInFile(probeRenderer, (text) => {
+  let next = text;
+  next = replaceAll(next, 'from "./generated-video";', 'from "./sandbox/generated-video";');
+  next = replaceAll(next, 'from "./visual-story-probe";', 'from "./sandbox/visual-story-probe";');
+  return next;
+})) changed.push(probeRenderer);
+
+const movedGeneratedProbe = path.join("ui", "learning-space", "probes", "sandbox", "generated-video", "generated-video-probe.tsx");
+if (replaceInFile(movedGeneratedProbe, (text) => {
+  let next = text;
+  next = replaceAll(next, 'from "../probe-shell";', 'from "../../probe-shell";');
+  next = replaceAll(next, 'from "../probe-ui-types";', 'from "../../probe-ui-types";');
+  next = replaceAll(next, 'from "../shared";', 'from "../../shared";');
+  return next;
+})) changed.push(movedGeneratedProbe);
+
+const movedVisualStoryProbe = path.join("ui", "learning-space", "probes", "sandbox", "visual-story-probe.tsx");
+if (replaceInFile(movedVisualStoryProbe, (text) => {
+  let next = text;
+  next = replaceAll(next, 'from "./probe-shell";', 'from "../probe-shell";');
+  next = replaceAll(next, 'from "./probe-ui-types";', 'from "../probe-ui-types";');
+  next = replaceAll(next, 'from "./shared";', 'from "../shared";');
+  return next;
+})) changed.push(movedVisualStoryProbe);
+
+const engineSchemasIndex = path.join("lib", "engine", "schemas", "index.ts");
+if (replaceInFile(engineSchemasIndex, (text) => {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => !line.includes('export * from "./visual-story-renderer"'))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n");
+})) changed.push(engineSchemasIndex);
+
+const visualStorySandboxIndex = path.join("lib", "sandbox", "visual-story", "index.ts");
+if (fs.existsSync(visualStorySandboxIndex)) {
+  if (replaceInFile(visualStorySandboxIndex, (text) => {
+    let next = text.trimEnd();
+    if (!next.includes('export * from "./visual-story-renderer";')) {
+      next += '\nexport * from "./visual-story-renderer";\n';
+    } else {
+      next += "\n";
+    }
+    return next;
+  })) changed.push(visualStorySandboxIndex);
+}
+
+for (const file of walk(".")) {
+  const normalized = file.split(path.sep).join("/");
+
+  const didChange = replaceInFile(file, (text) => {
+    let next = text;
+
+    if (normalized.startsWith("sandbox/probe-lab/")) {
+      next = replaceAll(
+        next,
+        "@/ui/learning-space/probes/generated-video",
+        "@/sandbox/probe-lab/ui/learning-space/probes/generated-video"
+      );
+    } else {
+      next = replaceAll(
+        next,
+        "@/ui/learning-space/probes/generated-video",
+        "@/ui/learning-space/probes/sandbox/generated-video"
+      );
+    }
+
+    next = replaceAll(
+      next,
+      'path.join(process.cwd(), "scripts", "blender"',
+      'path.join(process.cwd(), "sandbox", "probe-lab", "scripts", "blender"'
+    );
+
+    next = replaceAll(
+      next,
+      '"public", "generated-video-renders"',
+      '"public", "sandbox", "generated-video-renders"'
+    );
+
+    next = replaceAll(
+      next,
+      "public/generated-video-renders",
+      "public/sandbox/generated-video-renders"
+    );
+
+    next = replaceAll(
+      next,
+      "/sandbox/generated-video-renders",
+      "__MYWAY_SANDBOX_GENERATED_VIDEO_RENDERS__"
+    );
+    next = replaceAll(
+      next,
+      "/generated-video-renders",
+      "/sandbox/generated-video-renders"
+    );
+    next = replaceAll(
+      next,
+      "__MYWAY_SANDBOX_GENERATED_VIDEO_RENDERS__",
+      "/sandbox/generated-video-renders"
+    );
+
+    return next;
+  });
+
+  if (didChange && !changed.includes(file)) {
+    changed.push(file);
+  }
+}
+
+const manifest = [
+  "MYWAY REMAINING SANDBOX BOUNDARY CLEANUP",
+  `Generated: ${new Date().toISOString()}`,
+  "",
+  "Goal:",
+  "- Move remaining sandbox/prototype implementation files under folders named sandbox.",
+  "- Keep active app/runtime bridge files working.",
+  "- Stop leaving Blender, generated-video sandbox renderer, or Visual Story renderer schema in non-sandbox locations.",
+  "",
+  "Moved:",
+  ...moved.map((item) => `- ${item}`),
+  "",
+  "Already moved:",
+  ...alreadyMoved.map((item) => `- ${item}`),
+  "",
+  "Changed files:",
+  ...changed.map((file) => `- ${file}`),
+  "",
+  "Backups:",
+  ...backups.filter(Boolean).map((item) => `- ${item}`),
+  "",
+  "New homes:",
+  "- sandbox/probe-lab/scripts/blender",
+  "- ui/learning-space/probes/sandbox/generated-video",
+  "- ui/learning-space/probes/sandbox/visual-story-probe.tsx",
+  "- lib/sandbox/visual-story/visual-story-renderer.ts",
+  "",
+  "Expected remaining non-sandbox references:",
+  "- ui/learning-space/probes/probe-renderer.tsx may import sandbox probe renderers as a bridge.",
+  "- ui/learning-space/probes/index.ts may export sandbox probe renderers as a bridge.",
+  "- shared draft fields in probe-ui-types.ts may still include generated_video or visual_story because they are runtime answer-shape fields."
+].join("\n");
+
+write(manifestPath, manifest);
+
+console.log("Remaining sandbox boundary cleanup complete.");
+console.log(`Moved: ${moved.length}`);
+console.log(`Changed files: ${changed.length}`);
+console.log(`Manifest: ${manifestPath}`);

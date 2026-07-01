@@ -1,0 +1,133 @@
+FILE: ui\learning-space\probes\sandbox\generated-video\animation-contract.ts
+SIZE BYTES: 3895
+========================================================================================================================
+
+export type GeneratedVideoFormat = "16:9_laptop";
+
+export type GeneratedVideoTemplateId = "saddle_surface_explanation_v1";
+
+export type GeneratedVideoBridgeLevel =
+  | "bridge_0"
+  | "bridge_1"
+  | "bridge_2"
+  | "full_bridge";
+
+export type GeneratedVideoSceneKind =
+  | "hook"
+  | "x_direction"
+  | "y_direction"
+  | "saddle_combine"
+  | "real_world_bridge"
+  | "checkpoint";
+
+export type GeneratedVideoScene = {
+  id: string;
+  title: string;
+  caption: string;
+  durationSeconds: number;
+  visualKind: GeneratedVideoSceneKind;
+};
+
+export type GeneratedVideoCheckpoint = {
+  prompt: string;
+  expected_idea: string;
+};
+
+export type GeneratedVideoContract = {
+  schema_version: "generated_video_contract_v1";
+  contract_id: string;
+  title: string;
+  template: GeneratedVideoTemplateId;
+  format: GeneratedVideoFormat;
+  bridge_level: GeneratedVideoBridgeLevel;
+  learner_message: string;
+  diagnosis: string;
+  learning_goal: string;
+  real_world_bridge?: string | null;
+  scenes: GeneratedVideoScene[];
+  checkpoint: GeneratedVideoCheckpoint;
+};
+
+export const SADDLE_SURFACE_ANIMATION_CONTRACT: GeneratedVideoContract = {
+  schema_version: "generated_video_contract_v1",
+  contract_id: "animation_contract_saddle_surface_demo_v1",
+  title: "Why a saddle bends two ways",
+  template: "saddle_surface_explanation_v1",
+  format: "16:9_laptop",
+  bridge_level: "bridge_0",
+  learner_message:
+    "I understand x² and y² separately, but I do not get why x² - y² makes a saddle.",
+  diagnosis:
+    "The learner is treating a two-variable surface like it should bend the same way in every direction.",
+  learning_goal:
+    "See that z = x² - y² combines an upward bend in one direction with a downward bend in the other direction.",
+  real_world_bridge:
+    "A mountain pass has a similar feel: one path can rise while the crossing path curves the other way.",
+  scenes: [
+    {
+      id: "hook",
+      title: "The hidden mismatch",
+      caption:
+        "You expected one kind of curve. A saddle is two curves happening at once.",
+      durationSeconds: 4,
+      visualKind: "hook",
+    },
+    {
+      id: "x_direction",
+      title: "Walk left to right",
+      caption: "In the x direction, x² lifts the surface upward like a bowl slice.",
+      durationSeconds: 5,
+      visualKind: "x_direction",
+    },
+    {
+      id: "y_direction",
+      title: "Walk front to back",
+      caption:
+        "In the y direction, the minus sign flips y² downward. Same shape, opposite bend.",
+      durationSeconds: 5,
+      visualKind: "y_direction",
+    },
+    {
+      id: "saddle_combine",
+      title: "Put both directions together",
+      caption:
+        "One direction rises while the other falls. That crossing of bends creates the saddle.",
+      durationSeconds: 6,
+      visualKind: "saddle_combine",
+    },
+    {
+      id: "real_world_bridge",
+      title: "Why it matters",
+      caption:
+        "This kind of shape helps describe places where one path curves up and another path curves down.",
+      durationSeconds: 5,
+      visualKind: "real_world_bridge",
+    },
+    {
+      id: "checkpoint",
+      title: "Checkpoint",
+      caption: "Which direction is bending upward, and which direction is bending downward?",
+      durationSeconds: 5,
+      visualKind: "checkpoint",
+    },
+  ],
+  checkpoint: {
+    prompt: "For z = x² - y², what does the minus sign do to the y direction?",
+    expected_idea:
+      "It flips that direction downward, so the surface rises one way and falls the other way.",
+  },
+};
+
+export type RendererParamsWithGeneratedVideo = {
+  generated_animation?: GeneratedVideoContract | null;
+};
+
+export function getGeneratedVideoContractFromRendererParams(
+  rendererParams: unknown,
+): GeneratedVideoContract | null {
+  const candidate = rendererParams as RendererParamsWithGeneratedVideo | null | undefined;
+  return candidate?.generated_animation ?? null;
+}
+
+
+

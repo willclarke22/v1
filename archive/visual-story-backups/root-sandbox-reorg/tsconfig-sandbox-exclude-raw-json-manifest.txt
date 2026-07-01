@@ -1,0 +1,17 @@
+MYWAY TSCONFIG SANDBOX EXCLUDE RAW JSON FIX
+Generated: 2026-07-01T19:07:22.080Z
+
+Backup: archive\visual-story-backups\root-sandbox-reorg\tsconfig.json.before-raw-sandbox-exclude.bak
+
+Reason:
+- Previous script failed because comment stripping misread TypeScript glob strings.
+- This script parses the raw valid JSON directly.
+
+Final exclude:
+- node_modules
+- archive
+- archive/**/*
+- .next
+- out
+- sandbox
+- sandbox/**/*

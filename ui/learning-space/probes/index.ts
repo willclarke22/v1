@@ -12,9 +12,7 @@ export * from "./slider-probe";
 export * from "./text-probe";
 export * from "./video-click-probe";
 export * from "./video-explanation-probe";
-
-
-
+export * from "./sandbox/visual-story-probe";
 
 export * from "./shared";
-export * from "./generated-video";
+export * from "./sandbox/generated-video";

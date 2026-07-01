@@ -1,0 +1,12 @@
+MYWAY VISUAL STORY PROMPT CLEANUP ORDER FIX
+Generated: 2026-07-01T18:21:15.330Z
+
+Contract backup: archive\visual-story-backups\prompt-cleanup\visual-story-prompt-contract.ts.before-order-fix.bak
+Route backup: archive\visual-story-backups\prompt-cleanup\route.ts.before-leftover-script-beats-cleanup.bak
+
+Fixes:
+- Moved VISUAL_STORY_GENERALIZABILITY_RULES above VISUAL_STORY_PROMPT_CONTRACT_V1.
+- Reinserted ...VISUAL_STORY_GENERALIZABILITY_RULES after the contract array starts.
+- Removed leftover old script_beats prompt line from generate/route.ts.
+
+Route changed: yes

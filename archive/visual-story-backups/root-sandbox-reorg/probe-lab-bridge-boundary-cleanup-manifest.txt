@@ -1,0 +1,28 @@
+MYWAY PROBE LAB BRIDGE BOUNDARY CLEANUP
+Generated: 2026-07-01T19:56:14.074Z
+
+Goal:
+- Keep active app/probe-lab as route bridge only.
+- Move actual Visual Story gallery demo content into root sandbox/probe-lab.
+- Keep /probe-lab working as the all-probes gallery plus Visual Story preview.
+
+Created / moved into sandbox:
+- sandbox\probe-lab\app\probe-lab\visual-story-gallery-preview.tsx
+
+Changed:
+- app\probe-lab\page.tsx
+- sandbox\probe-lab\app\probe-lab\page.tsx
+
+Removed from active app route folder:
+- app\probe-lab\visual-story-gallery-preview.tsx
+
+Backups:
+- archive\visual-story-backups\root-sandbox-reorg\app-probe-lab-page.before-bridge-boundary-cleanup.bak
+- archive\visual-story-backups\root-sandbox-reorg\sandbox-probe-lab-page.before-bridge-boundary-cleanup.bak
+- archive\visual-story-backups\root-sandbox-reorg\visual-story-gallery-preview.active.before-bridge-boundary-cleanup.bak
+
+Boundary after cleanup:
+- app/probe-lab/page.tsx is a tiny bridge.
+- sandbox/probe-lab/app/probe-lab/page.tsx owns the gallery composition.
+- sandbox/probe-lab/app/probe-lab/visual-story-gallery-preview.tsx owns the Visual Story preview.
+- app/api/probe-lab remains tiny API route bridges so the dev API URLs still work.

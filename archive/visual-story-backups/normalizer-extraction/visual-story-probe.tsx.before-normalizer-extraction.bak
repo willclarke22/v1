@@ -1,0 +1,1510 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import * as THREE from "three";
+import type { EngineRenderableProbe } from "@/lib/engine";
+import type { GenericProbeComponentProps } from "./probe-ui-types";
+
+type VisualStoryEntityKind =
+  | "wheel"
+  | "dot"
+  | "graph_2d"
+  | "graph_3d"
+  | "wave"
+  | "circle_arc"
+  | "label"
+  | "axis"
+  | "surface"
+  | "point"
+  | "vector"
+  | "machine"
+  | "particle"
+  | "flow"
+  | "container"
+  | "token"
+  | "node"
+  | "connector"
+  | "custom"
+  | string;
+
+type VisualStoryActionType =
+  | "show_entity"
+  | "hide_entity"
+  | "animate_entity"
+  | "move_entity"
+  | "rotate_entity"
+  | "scale_entity"
+  | "trace_path"
+  | "draw_graph"
+  | "highlight_entity"
+  | "highlight_relationship"
+  | "show_label"
+  | "show_marker"
+  | "morph_entity"
+  | "spawn_example"
+  | "transition_to_example"
+  | "set_expression"
+  | "set_parameter"
+  | "pause_emphasis"
+  | string;
+
+type VisualStoryEntity = {
+  id: string;
+  kind: VisualStoryEntityKind;
+  semantic_role: string;
+  display_name?: string | null;
+  meaning?: string | null;
+  visual_style?: {
+    primitive_style?: string;
+    color_hint?: string;
+    emphasis?: "low" | "medium" | "high" | string;
+    persistent?: boolean;
+  } | null;
+  geometry?: Record<string, unknown> | null;
+};
+
+type VisualStoryRelationship = {
+  id: string;
+  source_entity_id: string;
+  target_entity_id: string;
+  relationship_type: string;
+  explanation: string;
+};
+
+type VisualStoryTransformation = {
+  id: string;
+  type: string;
+  description: string;
+  entity_ids?: string[];
+  concept_goal?: string | null;
+};
+
+type VisualStorySupportingExample = {
+  id: string;
+  label: string;
+  example_type: string;
+  why_it_matters: string;
+  explicitly_mentioned?: boolean;
+};
+
+type VisualStoryAction = {
+  id: string;
+  type: VisualStoryActionType;
+  entity_id?: string | null;
+  target_entity_id?: string | null;
+  params?: Record<string, unknown> | null;
+  easing?: string | null;
+};
+
+type VisualStoryCameraDirective = {
+  mode?: string;
+  focus_entity_id?: string | null;
+  position?: [number, number, number];
+  look_at?: [number, number, number];
+  zoom?: number;
+  duration_ms?: number;
+  easing?: string;
+};
+
+type VisualStoryTextOverlay = {
+  layout?: string;
+  emphasis?: string;
+};
+
+type VisualStoryBeat = {
+  id: string;
+  script_segment: string;
+  title?: string | null;
+  duration_ms: number;
+  active_entity_ids?: string[];
+  actions: VisualStoryAction[];
+  camera?: VisualStoryCameraDirective | null;
+  text_overlay?: VisualStoryTextOverlay | null;
+};
+
+// MYWAY_VISUAL_STORY_V12_DIRECT_INTERACTION
+type VisualStoryInteractionPhase = {
+  unlock_after: "story_complete" | string;
+  controls: {
+    orbit?: boolean;
+    zoom?: boolean;
+    pan?: boolean;
+    drag_objects?: boolean;
+    toggle_layers?: boolean;
+    scrub_story?: boolean;
+    replay?: boolean;
+    pause?: boolean;
+  };
+  free_exploration?: {
+    enabled: boolean;
+    instructions?: string;
+    highlight_interactive_entities?: string[];
+  };
+  manipulators?: Array<{
+    id: string;
+    type: string;
+    label: string;
+    target_entity_id?: string;
+    params?: Record<string, unknown>;
+  }>;
+};
+
+type VisualStoryScene = {
+  schema_version: string;
+  scene_kind: "visual_story" | string;
+  title: string;
+  orientation_script: string;
+  root_problem_focus: string;
+  target_takeaway: string;
+  scene_family: string;
+  entities: VisualStoryEntity[];
+  relationships: VisualStoryRelationship[];
+  transformations: VisualStoryTransformation[];
+  supporting_examples: VisualStorySupportingExample[];
+  beats: VisualStoryBeat[];
+  script_display: {
+    show_full_script: boolean;
+    reveal_mode: "sentence_by_sentence" | "phrase_by_phrase" | "beat_synced" | string;
+    layout: "top_banner" | "bottom_caption" | "side_panel" | "floating_cards" | string;
+    max_visible_segments: number;
+    animate_text: boolean;
+  };
+  interaction_phase: VisualStoryInteractionPhase;
+  optional_check: {
+    type?: string;
+    prompt?: string;
+    success_criteria?: Record<string, unknown>;
+    renderer_params?: Record<string, unknown>;
+  } | null;
+};
+
+type BeatProgress = {
+  beat: VisualStoryBeat;
+  index: number;
+  localProgress: number;
+};
+
+type DragState = {
+  mode: "rotate" | "phase";
+  x: number;
+  y: number;
+  yaw: number;
+  pitch: number;
+  phase: number;
+};
+
+const FALLBACK_ORIENTATION_SCRIPT =
+  "The reason sin, cos, and π matter is that they are a compact way to describe repeating motion. Imagine a dot going around a wheel. π marks half of a full turn, and 2π marks one whole turn. Sine and cosine track where that dot is as it turns. The graph matters because it unwraps the turning into a timeline, so you can see highs, lows, returns, and repeats.";
+
+const DEFAULT_INTERACTION: VisualStoryInteractionPhase = {
+  unlock_after: "story_complete",
+  controls: {
+    orbit: true,
+    zoom: true,
+    pan: false,
+    drag_objects: true,
+    toggle_layers: true,
+    scrub_story: true,
+    replay: true,
+    pause: true,
+  },
+  free_exploration: {
+    enabled: true,
+    instructions: "Drag the scene to rotate it, scroll to zoom, or switch to move-dot mode to scrub the motion.",
+  },
+  manipulators: [
+    {
+      id: "scrub_phase",
+      type: "scrub_phase",
+      label: "Move the dot around the cycle",
+      target_entity_id: "dot",
+    },
+  ],
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readString(value: unknown, fallback: string, max = 1600) {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim().slice(0, max)
+    : fallback;
+}
+
+function readOptionalString(value: unknown, max = 900) {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim().slice(0, max)
+    : null;
+}
+
+function readNumber(value: unknown, fallback: number, min = 200, max = 20000) {
+  const numberValue = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numberValue)
+    ? Math.min(max, Math.max(min, numberValue))
+    : fallback;
+}
+
+function sanitizeId(value: unknown, fallback: string) {
+  const raw = typeof value === "string" && value.trim().length > 0 ? value.trim() : fallback;
+  const cleaned = raw
+    .toLowerCase()
+    .replace(/[^a-z0-9_\-\s]/g, "")
+    .replace(/\s+/g, "_")
+    .slice(0, 80);
+  return cleaned || fallback;
+}
+
+function readStringArray(value: unknown, fallback: string[] = [], max = 20) {
+  if (!Array.isArray(value)) return fallback;
+  return value
+    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .map((item) => item.trim().slice(0, 120))
+    .slice(0, max);
+}
+
+function tuple3(value: unknown): [number, number, number] | undefined {
+  if (!Array.isArray(value) || value.length < 2) return undefined;
+  const x = Number(value[0]);
+  const y = Number(value[1]);
+  const z = Number(value[2] ?? 0);
+  return Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z) ? [x, y, z] : undefined;
+}
+
+function clamp(value: number, min = 0, max = 1) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function easeInOut(value: number) {
+  const t = clamp(value);
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function cleanOrientationScript(value: string) {
+  const normalized = value.replace(/\r/g, "").trim();
+  if (!normalized) return FALLBACK_ORIENTATION_SCRIPT;
+
+  const lines = normalized.split("\n");
+  const kept: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (kept.length > 0) break;
+      continue;
+    }
+
+    if (/^[•\-*]\s+/.test(trimmed)) break;
+    if (/^(key takeaways?|recap|summary)\s*:?/i.test(trimmed)) break;
+    if (/^think of\b/i.test(trimmed) && kept.length > 0) break;
+
+    kept.push(trimmed);
+  }
+
+  const joined = kept.join(" ").replace(/\s+/g, " ").trim();
+  return joined || FALLBACK_ORIENTATION_SCRIPT;
+}
+
+function splitIntoSentences(script: string) {
+  const normalized = script.replace(/\s+/g, " ").trim();
+  if (!normalized) return [FALLBACK_ORIENTATION_SCRIPT];
+  return (normalized.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [normalized])
+    .map((sentence) => sentence.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
+function titleFromSegment(segment: string, index: number) {
+  const words = segment.replace(/["“”]/g, "").split(/\s+/).slice(0, 5).join(" ");
+  return words || `Beat ${index + 1}`;
+}
+
+function readRawVisualStory(probe: EngineRenderableProbe) {
+  const params: Record<string, unknown> = isRecord(probe.renderer_params)
+    ? (probe.renderer_params as Record<string, unknown>)
+    : {};
+
+  if (isRecord(params.visual_story)) return params.visual_story;
+  if (isRecord(params.visualStory)) return params.visualStory;
+  if (isRecord(params.visual_story_v1)) return params.visual_story_v1;
+
+  return params;
+}
+
+function normalizeEntities(rawEntities: unknown, orientationScript: string): VisualStoryEntity[] {
+  const entities = Array.isArray(rawEntities)
+    ? rawEntities
+        .map((item, index): VisualStoryEntity | null => {
+          const entity = isRecord(item) ? item : {};
+          const id = sanitizeId(entity.id, `entity_${index + 1}`);
+          const kind = readString(entity.kind ?? entity.type, "custom", 80);
+          return {
+            id,
+            kind,
+            semantic_role: readString(entity.semantic_role ?? entity.role, "visible_idea", 140),
+            display_name: readOptionalString(entity.display_name ?? entity.label ?? entity.name, 100),
+            meaning: readOptionalString(entity.meaning ?? entity.description, 420),
+            visual_style: isRecord(entity.visual_style ?? entity.visualStyle)
+              ? (entity.visual_style ?? entity.visualStyle) as VisualStoryEntity["visual_style"]
+              : null,
+            geometry: isRecord(entity.geometry) ? entity.geometry : null,
+          };
+        })
+        .filter((entity): entity is VisualStoryEntity => Boolean(entity))
+        .slice(0, 32)
+    : [];
+
+  if (entities.length) return entities;
+
+  const lower = orientationScript.toLowerCase();
+  const motion = /sin|cos|sine|cosine|π|pi|wheel|circle|turn|wave|cycle|graph/.test(lower);
+
+  if (motion) {
+    return [
+      { id: "wheel", kind: "wheel", semantic_role: "source_motion", display_name: "wheel", meaning: "A visible cycle that makes repeating motion concrete." },
+      { id: "dot", kind: "dot", semantic_role: "tracked_point", display_name: "dot", meaning: "A point whose position changes as the wheel turns." },
+      { id: "pi_arc", kind: "circle_arc", semantic_role: "half_turn_marker", display_name: "π", meaning: "Halfway around the turn." },
+      { id: "two_pi_arc", kind: "circle_arc", semantic_role: "full_turn_marker", display_name: "2π", meaning: "One whole turn." },
+      { id: "wave_graph", kind: "graph_2d", semantic_role: "unwrapped_motion_graph", display_name: "timeline graph", meaning: "The turning motion stretched into a readable wave." },
+    ];
+  }
+
+  return [
+    { id: "anchor", kind: "node", semantic_role: "real_world_anchor", display_name: "real example" },
+    { id: "hidden_relationship", kind: "connector", semantic_role: "hidden_relationship", display_name: "hidden link" },
+    { id: "visible_model", kind: "node", semantic_role: "visible_model", display_name: "visible model" },
+  ];
+}
+
+function normalizeRelationships(value: unknown): VisualStoryRelationship[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item, index): VisualStoryRelationship | null => {
+      const relation = isRecord(item) ? item : {};
+      const sourceId = relation.source_entity_id ?? relation.sourceEntityId ?? relation.source_id ?? relation.source ?? relation.from;
+      const targetId = relation.target_entity_id ?? relation.targetEntityId ?? relation.target_id ?? relation.target ?? relation.to;
+      return {
+        id: sanitizeId(relation.id, `relationship_${index + 1}`),
+        source_entity_id: sanitizeId(sourceId, "source"),
+        target_entity_id: sanitizeId(targetId, "target"),
+        relationship_type: readString(relation.relationship_type ?? relation.type, "maps_to", 80),
+        explanation: readString(relation.explanation ?? relation.meaning ?? relation.description ?? relation.label, "These visible parts are connected.", 520),
+      };
+    })
+    .filter((relation): relation is VisualStoryRelationship => Boolean(relation))
+    .slice(0, 28);
+}
+
+function normalizeTransformations(value: unknown): VisualStoryTransformation[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item, index): VisualStoryTransformation | null => {
+      const transformation = isRecord(item) ? item : {};
+      const rawEntityIds = transformation.entity_ids ?? transformation.entityIds;
+      const from = transformation.from;
+      const to = transformation.to;
+      const entityIds = [
+        ...readStringArray(rawEntityIds, [], 12),
+        ...(typeof from === "string" ? [from] : []),
+        ...(typeof to === "string" ? [to] : []),
+        ...(Array.isArray(to) ? readStringArray(to, [], 12) : []),
+      ];
+
+      return {
+        id: sanitizeId(transformation.id, `transformation_${index + 1}`),
+        type: readString(transformation.type, "show_cause_effect", 100),
+        description: readString(transformation.description ?? transformation.meaning ?? transformation.label, "Show the hidden relationship visually.", 620),
+        entity_ids: Array.from(new Set(entityIds.map((id) => sanitizeId(id, id)))).slice(0, 16),
+        concept_goal: readOptionalString(transformation.concept_goal ?? transformation.conceptGoal ?? transformation.goal, 420),
+      };
+    })
+    .filter((transformation): transformation is VisualStoryTransformation => Boolean(transformation))
+    .slice(0, 24);
+}
+
+function examplesFromScript(script: string): VisualStorySupportingExample[] {
+  const lower = script.toLowerCase();
+  const candidates: Array<[string, string, string]> = [
+    ["sound", "sound", "A sound wave repeats as pressure changes over time."],
+    ["engine", "engine", "An engine cycle repeats mechanical motion."],
+    ["engines", "engine", "An engine cycle repeats mechanical motion."],
+    ["tide", "tide", "Tides rise and fall in a repeating cycle."],
+    ["tides", "tide", "Tides rise and fall in a repeating cycle."],
+    ["season", "season", "Seasons repeat as a cycle over time."],
+    ["seasons", "season", "Seasons repeat as a cycle over time."],
+    ["signal", "signal", "A signal can repeat as a wave pattern."],
+    ["signals", "signal", "A signal can repeat as a wave pattern."],
+    ["wheel", "wheel", "A wheel makes repeating motion easy to see."],
+    ["wheels", "wheel", "A wheel makes repeating motion easy to see."],
+    ["wave", "wave", "A wave makes the repeated high-low pattern visible."],
+    ["waves", "wave", "A wave makes the repeated high-low pattern visible."],
+  ];
+
+  const seen = new Set<string>();
+  const examples: VisualStorySupportingExample[] = [];
+
+  for (const [needle, type, why] of candidates) {
+    if (!lower.includes(needle) || seen.has(type)) continue;
+    seen.add(type);
+    examples.push({
+      id: type,
+      label: needle,
+      example_type: type,
+      why_it_matters: why,
+      explicitly_mentioned: true,
+    });
+  }
+
+  return examples.slice(0, 6);
+}
+
+function normalizeSupportingExamples(value: unknown, orientationScript: string): VisualStorySupportingExample[] {
+  const fromPlan = Array.isArray(value)
+    ? value
+        .map((item, index): VisualStorySupportingExample | null => {
+          const example = isRecord(item) ? item : {};
+          const label = readString(example.label ?? example.mentioned_text ?? example.mentionedText ?? example.id, `example ${index + 1}`, 100);
+          const explicitText = readOptionalString(example.mentioned_text ?? example.mentionedText, 140);
+          return {
+            id: sanitizeId(example.id ?? example.entity_id ?? example.entityId ?? label, `example_${index + 1}`),
+            label,
+            example_type: readString(example.example_type ?? example.type ?? example.entity_id ?? example.entityId ?? label.toLowerCase(), label.toLowerCase(), 100),
+            why_it_matters: readString(example.why_it_matters ?? example.whyItMatters ?? example.maps_back_to ?? example.mapsBackTo ?? example.meaning ?? example.description, "This example shares the same visible pattern.", 460),
+            explicitly_mentioned: example.explicitly_mentioned === true || example.explicitlyMentioned === true || Boolean(explicitText),
+          };
+        })
+        .filter((example): example is VisualStorySupportingExample => Boolean(example))
+        .slice(0, 10)
+    : [];
+
+  return fromPlan.length ? fromPlan : examplesFromScript(orientationScript);
+}
+
+function normalizeActions(value: unknown): VisualStoryAction[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item, index): VisualStoryAction | null => {
+      const action = isRecord(item) ? item : {};
+      const target = action.entity_id ?? action.entityId ?? action.target_id ?? action.targetId ?? action.target;
+      const params: Record<string, unknown> = {};
+      for (const key of ["value", "label", "from", "to", "effect", "duration_ms", "durationMs"]) {
+        if (key in action) params[key] = action[key];
+      }
+      if (isRecord(action.params)) Object.assign(params, action.params);
+
+      return {
+        id: sanitizeId(action.id, `action_${index + 1}`),
+        type: readString(action.type, "highlight_entity", 100),
+        entity_id: readOptionalString(target, 100),
+        target_entity_id: readOptionalString(action.target_entity_id ?? action.targetEntityId ?? action.to, 100),
+        params: Object.keys(params).length ? params : null,
+        easing: readOptionalString(action.easing, 80),
+      };
+    })
+    .filter((action): action is VisualStoryAction => Boolean(action))
+    .slice(0, 28);
+}
+
+function normalizeBeats(value: unknown, orientationScript: string): VisualStoryBeat[] {
+  const rawBeats = Array.isArray(value) ? value : [];
+  const beats = rawBeats
+    .map((item, index): VisualStoryBeat | null => {
+      const beat = isRecord(item) ? item : {};
+      const scriptSegment = readString(
+        beat.script_segment ?? beat.scriptSegment ?? beat.script_text ?? beat.scriptText ?? beat.words ?? beat.text,
+        "",
+        900,
+      );
+      if (!scriptSegment) return null;
+      const camera = isRecord(beat.camera) ? beat.camera : {};
+      const textOverlaySource = beat.text_overlay ?? beat.textOverlay;
+      const textOverlay = isRecord(textOverlaySource) ? textOverlaySource : {};
+      return {
+        id: sanitizeId(beat.id, `beat_${index + 1}`),
+        script_segment: cleanOrientationScript(scriptSegment),
+        title: readOptionalString(beat.title, 120) ?? titleFromSegment(scriptSegment, index),
+        duration_ms: readNumber(beat.duration_ms ?? beat.durationMs, 4800, 1800, 12000),
+        active_entity_ids: readStringArray(beat.active_entity_ids ?? beat.activeEntityIds ?? beat.focus_object_ids, [], 12).map((id) => sanitizeId(id, id)),
+        actions: normalizeActions(beat.actions ?? beat.scene_actions ?? beat.action_ids),
+        camera: Object.keys(camera).length
+          ? {
+              mode: readOptionalString(camera.mode ?? camera.move, 80) ?? undefined,
+              focus_entity_id: readOptionalString(camera.focus_entity_id ?? camera.focusEntityId, 100),
+              position: tuple3(camera.position),
+              look_at: tuple3(camera.look_at ?? camera.lookAt),
+              zoom: typeof camera.zoom === "number" ? camera.zoom : undefined,
+              duration_ms: typeof camera.duration_ms === "number" ? camera.duration_ms : undefined,
+              easing: readOptionalString(camera.easing, 60) ?? undefined,
+            }
+          : null,
+        text_overlay: isRecord(textOverlay) && Object.keys(textOverlay).length
+          ? { layout: readOptionalString(textOverlay.layout, 80) ?? undefined, emphasis: readOptionalString(textOverlay.emphasis, 80) ?? undefined }
+          : null,
+      };
+    })
+    .filter((beat): beat is VisualStoryBeat => Boolean(beat))
+    .slice(0, 10);
+
+  if (beats.length) return beats;
+
+  return splitIntoSentences(orientationScript).map((segment, index) => ({
+    id: `beat_${index + 1}`,
+    script_segment: segment,
+    title: titleFromSegment(segment, index),
+    duration_ms: index === 0 ? 4200 : 5200,
+    active_entity_ids: [],
+    actions: [],
+    camera: null,
+    text_overlay: null,
+  }));
+}
+
+function normalizeInteraction(value: unknown): VisualStoryInteractionPhase {
+  if (!isRecord(value)) return DEFAULT_INTERACTION;
+
+  const controls: Record<string, unknown> = isRecord(value.controls)
+    ? value.controls
+    : {};
+
+  const freeSource = value.free_exploration ?? value.freeExploration;
+  const free: Record<string, unknown> | null = isRecord(freeSource)
+    ? freeSource
+    : null;
+  const manipulatorsRaw = Array.isArray(value.manipulators) ? value.manipulators : [];
+  const manipulators = manipulatorsRaw
+    .map((item, index) => {
+      const manipulator = isRecord(item) ? item : {};
+      return {
+        id: sanitizeId(manipulator.id, `manipulator_${index + 1}`),
+        type: readString(manipulator.type, "scrub_phase", 80),
+        label: readString(manipulator.label, "Explore the scene", 120),
+        target_entity_id: readOptionalString(manipulator.target_entity_id ?? manipulator.targetEntityId, 100) ?? undefined,
+        params: isRecord(manipulator.params) ? manipulator.params : undefined,
+      };
+    })
+    .slice(0, 8);
+
+  return {
+    unlock_after: readString(value.unlock_after ?? value.unlockAfter, "story_complete", 80),
+    controls: {
+      orbit: controls.orbit !== false,
+      zoom: controls.zoom !== false,
+      pan: controls.pan === true,
+      drag_objects: controls.drag_objects !== false && controls.dragObjects !== false,
+      toggle_layers: controls.toggle_layers !== false && controls.toggleLayers !== false,
+      scrub_story: controls.scrub_story !== false && controls.scrubStory !== false,
+      replay: controls.replay !== false,
+      pause: controls.pause !== false,
+    },
+    free_exploration: free
+      ? {
+          enabled: free.enabled !== false,
+          instructions: readOptionalString(free.instructions, 320) ?? DEFAULT_INTERACTION.free_exploration?.instructions,
+          highlight_interactive_entities: readStringArray(free.highlight_interactive_entities ?? free.highlightInteractiveEntities, [], 8),
+        }
+      : DEFAULT_INTERACTION.free_exploration,
+    manipulators: manipulators.length ? manipulators : DEFAULT_INTERACTION.manipulators,
+  };
+}
+
+function normalizeVisualStoryScene(probe: EngineRenderableProbe): VisualStoryScene {
+  const rawStoryContract = readRawVisualStory(probe);
+  const story = isRecord(rawStoryContract.story) ? rawStoryContract.story : rawStoryContract;
+  const visualSemantics = isRecord(story.visual_semantics ?? story.visualSemantics)
+    ? (story.visual_semantics ?? story.visualSemantics) as Record<string, unknown>
+    : {};
+
+  const orientationScript = cleanOrientationScript(readString(
+    story.orientation_script ??
+      story.orientationScript ??
+      rawStoryContract.canonical_orientation_script ??
+      rawStoryContract.orientation_text ??
+      rawStoryContract.teaching_script ??
+      probe.prompt.reshaping_explanation ??
+      probe.prompt.full_prompt ??
+      probe.prompt.task,
+    FALLBACK_ORIENTATION_SCRIPT,
+    2200,
+  ));
+
+  const title = readString(story.title ?? rawStoryContract.title, probe.prompt.task || "Visual story", 180);
+  const targetTakeaway = readString(
+    story.target_takeaway ?? story.targetTakeaway ?? rawStoryContract.learning_goal ?? rawStoryContract.story_goal,
+    probe.prompt.reshaping_explanation || "Use the scene to see the hidden relationship.",
+    520,
+  );
+  const entities = normalizeEntities(visualSemantics.key_entities ?? rawStoryContract.scene_objects, orientationScript);
+  const beats = normalizeBeats(story.beats ?? rawStoryContract.script_beats ?? rawStoryContract.beats, orientationScript);
+  const lower = orientationScript.toLowerCase();
+  const sceneFamily = readString(
+    rawStoryContract.scene_family ?? story.scene_family ?? story.sceneFamily,
+    /sin|cos|sine|cosine|π|pi|wheel|circle|turn|wave|cycle|graph/.test(lower) ? "motion_to_graph" : "generic_concept_scene",
+    100,
+  );
+
+  const scriptDisplay = isRecord(story.script_display ?? story.scriptDisplay) ? (story.script_display ?? story.scriptDisplay) as Record<string, unknown> : {};
+
+  return {
+    schema_version: readString(rawStoryContract.schema_version, "myway_visual_story_renderer_v1", 100),
+    scene_kind: readString(rawStoryContract.scene_kind ?? rawStoryContract.sceneKind, "visual_story", 80),
+    title,
+    orientation_script: orientationScript,
+    root_problem_focus: readString(story.root_problem_focus ?? story.rootProblemFocus, "The learner needs a visual bridge from words to the underlying relationship.", 420),
+    target_takeaway: targetTakeaway,
+    scene_family: sceneFamily,
+    entities,
+    relationships: normalizeRelationships(visualSemantics.key_relationships ?? rawStoryContract.key_relationships),
+    transformations: normalizeTransformations(visualSemantics.key_transformations ?? rawStoryContract.key_transformations),
+    supporting_examples: normalizeSupportingExamples(visualSemantics.supporting_examples, orientationScript),
+    beats,
+    script_display: {
+      show_full_script: scriptDisplay.show_full_script !== false && scriptDisplay.showFullScript !== false,
+      reveal_mode: readString(scriptDisplay.reveal_mode ?? scriptDisplay.revealMode, "beat_synced", 80),
+      layout: readString(scriptDisplay.layout, "bottom_caption", 80),
+      max_visible_segments: readNumber(scriptDisplay.max_visible_segments ?? scriptDisplay.maxVisibleSegments, 1, 1, 3),
+      animate_text: scriptDisplay.animate_text !== false && scriptDisplay.animateText !== false,
+    },
+    interaction_phase: normalizeInteraction(rawStoryContract.interaction_phase ?? rawStoryContract.interactionPhase),
+    optional_check: isRecord(rawStoryContract.optional_check ?? rawStoryContract.optionalCheck)
+      ? (rawStoryContract.optional_check ?? rawStoryContract.optionalCheck) as VisualStoryScene["optional_check"]
+      : null,
+  };
+}
+
+export function hasVisualStoryContract(probe: EngineRenderableProbe) {
+  const params: Record<string, unknown> = isRecord(probe.renderer_params)
+    ? (probe.renderer_params as Record<string, unknown>)
+    : {};
+  const story = readRawVisualStory(probe);
+
+  return (
+    isRecord(params.visual_story) ||
+    isRecord(params.visualStory) ||
+    isRecord(params.visual_story_v1) ||
+    story.schema_version === "myway_visual_story_renderer_v1" ||
+    story.scene_kind === "visual_story" ||
+    isRecord(story.story) ||
+    typeof story.canonical_orientation_script === "string" ||
+    Array.isArray(story.script_beats) ||
+    Array.isArray(story.beats)
+  );
+}
+
+function totalDuration(beats: VisualStoryBeat[]) {
+  return beats.reduce((sum, beat) => sum + beat.duration_ms, 0);
+}
+
+function beatInfo(beats: VisualStoryBeat[], playheadMs: number): BeatProgress {
+  let cursor = 0;
+
+  for (let index = 0; index < beats.length; index += 1) {
+    const beat = beats[index];
+    const nextCursor = cursor + beat.duration_ms;
+
+    if (playheadMs <= nextCursor || index === beats.length - 1) {
+      const localProgress = clamp((playheadMs - cursor) / Math.max(1, beat.duration_ms));
+      return { beat, index, localProgress };
+    }
+
+    cursor = nextCursor;
+  }
+
+  const first = beats[0] ?? {
+    id: "beat_1",
+    script_segment: FALLBACK_ORIENTATION_SCRIPT,
+    duration_ms: 5000,
+    active_entity_ids: [],
+    actions: [],
+  };
+  return { beat: first, index: 0, localProgress: 1 };
+}
+
+function revealScriptSegment(text: string, progress: number, enabled: boolean) {
+  if (!enabled) return text;
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (words.length <= 5) return text;
+  const visibleCount = Math.max(3, Math.ceil(words.length * clamp((progress - 0.04) / 0.62)));
+  return words.slice(0, visibleCount).join(" ");
+}
+
+function storyLooksMotionBased(scene: VisualStoryScene) {
+  const lower = scene.orientation_script.toLowerCase();
+  return (
+    scene.scene_family === "motion_to_graph" ||
+    /sin|cos|sine|cosine|π|pi|wheel|circle|turn|wave|cycle|graph|sound|engine|tide|season/.test(lower) ||
+    scene.entities.some((entity) => ["wheel", "dot", "graph_2d", "wave", "circle_arc", "machine"].includes(entity.kind))
+  );
+}
+
+function LinePath({ points, color, opacity = 1 }: { points: THREE.Vector3[]; color: string; opacity?: number }) {
+  const geometry = useMemo(() => new THREE.BufferGeometry().setFromPoints(points), [points]);
+  const material = useMemo(
+    () => new THREE.LineBasicMaterial({ color, transparent: true, opacity }),
+    [color, opacity],
+  );
+  const line = useMemo(() => new THREE.Line(geometry, material), [geometry, material]);
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+      material.dispose();
+    };
+  }, [geometry, material]);
+
+  return <primitive object={line} />;
+}
+
+function CameraRig({ scene, progress, interactive, zoom }: { scene: VisualStoryScene; progress: number; interactive: boolean; zoom: number }) {
+  const { camera } = useThree();
+
+  useFrame(() => {
+    const motion = storyLooksMotionBased(scene);
+    const t = easeInOut(progress);
+    const baseDistance = interactive ? zoom : motion ? 7.4 - Math.sin(t * Math.PI) * 1.0 : 7.0 - Math.sin(t * Math.PI) * 0.7;
+    const yaw = interactive ? -0.42 : motion ? -0.62 + t * 0.45 : -0.36 + t * 0.24;
+    const height = interactive ? 3.0 : motion ? 3.08 - Math.sin(t * Math.PI) * 0.42 : 3.1;
+    const next = new THREE.Vector3(Math.sin(yaw) * baseDistance, height, Math.cos(yaw) * baseDistance);
+
+    camera.position.lerp(next, interactive ? 0.075 : 0.045);
+    camera.lookAt(0.12, 0.08, 0);
+    camera.updateProjectionMatrix();
+  });
+
+  return null;
+}
+
+function WaveTrace({ phase, storyProgress, interactive, onCompleteAction }: {
+  phase: number;
+  storyProgress: number;
+  interactive: boolean;
+  onCompleteAction: (id: string) => void;
+}) {
+  const baseX = 0.28;
+  const baseY = -0.78;
+  const width = 4.36;
+  const amplitude = 0.82;
+  const visible = interactive ? 1 : clamp((storyProgress - 0.30) / 0.42);
+  const highlight = interactive ? 1 : clamp((storyProgress - 0.67) / 0.22);
+  const liveX = baseX + phase * width;
+  const liveY = baseY + Math.sin(phase * Math.PI * 2) * amplitude;
+
+  const fullWave = useMemo(() => {
+    const points: THREE.Vector3[] = [];
+    for (let i = 0; i <= 190; i += 1) {
+      const t = i / 190;
+      points.push(new THREE.Vector3(baseX + t * width, baseY + Math.sin(t * Math.PI * 2) * amplitude, 0));
+    }
+    return points;
+  }, []);
+
+  const visibleWave = useMemo(() => {
+    const samples = Math.max(2, Math.floor(190 * visible));
+    const points: THREE.Vector3[] = [];
+    for (let i = 0; i <= samples; i += 1) {
+      const t = i / 190;
+      points.push(new THREE.Vector3(baseX + t * width, baseY + Math.sin(t * Math.PI * 2) * amplitude, 0.05));
+    }
+    return points;
+  }, [visible]);
+
+  return (
+    <group>
+      <LinePath points={[new THREE.Vector3(baseX - 0.18, baseY, 0), new THREE.Vector3(baseX + width + 0.24, baseY, 0)]} color="#ffffff" opacity={0.22} />
+      <LinePath points={[new THREE.Vector3(baseX, baseY - 1.05, 0), new THREE.Vector3(baseX, baseY + 1.05, 0)]} color="#ffffff" opacity={0.16} />
+      <LinePath points={fullWave} color="#a78bfa" opacity={0.18} />
+      <LinePath points={visibleWave} color="#fef3c7" opacity={0.98} />
+      {highlight > 0 ? (
+        <group>
+          <LinePath points={[new THREE.Vector3(baseX, baseY - 1.13, 0.08), new THREE.Vector3(baseX + width, baseY - 1.13, 0.08)]} color="#fbbf24" opacity={0.24 + highlight * 0.55} />
+          <mesh position={[baseX + width * 0.25, baseY + amplitude, 0.18]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onCompleteAction("tap_peak"); }}>
+            <sphereGeometry args={[0.09 + highlight * 0.05, 32, 32]} />
+            <meshStandardMaterial color="#ffffff" emissive="#f59e0b" emissiveIntensity={1.2} roughness={0.2} />
+          </mesh>
+        </group>
+      ) : null}
+      {interactive ? (
+        <group>
+          <mesh position={[baseX + width / 2, baseY - 1.13, 0.2]} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onCompleteAction("mark_one_repeat"); }}>
+            <boxGeometry args={[width, 0.24, 0.08]} />
+            <meshStandardMaterial color="#fbbf24" transparent opacity={0.28} emissive="#a16207" emissiveIntensity={0.42} />
+          </mesh>
+          <LinePath points={[new THREE.Vector3(liveX, baseY - 1.06, 0.16), new THREE.Vector3(liveX, liveY, 0.16)]} color="#7dd3fc" opacity={0.62} />
+          <mesh position={[liveX, liveY, 0.24]}>
+            <sphereGeometry args={[0.075, 24, 24]} />
+            <meshStandardMaterial color="#7dd3fc" emissive="#0284c7" emissiveIntensity={0.9} roughness={0.22} />
+          </mesh>
+        </group>
+      ) : null}
+    </group>
+  );
+}
+
+function ExampleEchoIcon({ example, index, visible }: { example: VisualStorySupportingExample; index: number; visible: number }) {
+  const x = 0.9 + (index % 3) * 1.16;
+  const y = 1.28 - Math.floor(index / 3) * 0.78;
+  const opacity = clamp(visible - index * 0.08);
+  if (opacity <= 0.02) return null;
+
+  const type = example.example_type.toLowerCase();
+
+  if (type.includes("engine")) {
+    return (
+      <group position={[x, y, 0.15]} scale={[opacity, opacity, opacity]}>
+        <mesh position={[-0.18, 0, 0]}>
+          <boxGeometry args={[0.35, 0.28, 0.08]} />
+          <meshStandardMaterial color="#c4b5fd" emissive="#581c87" emissiveIntensity={0.55} transparent opacity={0.72} />
+        </mesh>
+        <mesh position={[0.18, 0, 0]}>
+          <sphereGeometry args={[0.14, 24, 24]} />
+          <meshStandardMaterial color="#fef3c7" emissive="#f59e0b" emissiveIntensity={0.9} transparent opacity={0.82} />
+        </mesh>
+        <LinePath points={[new THREE.Vector3(-0.01, 0, 0.05), new THREE.Vector3(0.1, 0, 0.05)]} color="#fef3c7" opacity={0.78} />
+      </group>
+    );
+  }
+
+  if (type.includes("tide")) {
+    return (
+      <group position={[x, y, 0.15]} scale={[opacity, opacity, opacity]}>
+        <mesh position={[0, -0.12, 0]}>
+          <boxGeometry args={[0.72, 0.14, 0.06]} />
+          <meshStandardMaterial color="#38bdf8" emissive="#0369a1" emissiveIntensity={0.55} transparent opacity={0.55} />
+        </mesh>
+        <LinePath points={[0, 1, 2, 3, 4, 5].map((i) => new THREE.Vector3(-0.34 + i * 0.136, 0.02 + Math.sin(i) * 0.05, 0.05))} color="#7dd3fc" opacity={0.82} />
+      </group>
+    );
+  }
+
+  if (type.includes("season")) {
+    return (
+      <group position={[x, y, 0.15]} scale={[opacity, opacity, opacity]}>
+        <mesh>
+          <torusGeometry args={[0.28, 0.018, 16, 48]} />
+          <meshStandardMaterial color="#86efac" emissive="#15803d" emissiveIntensity={0.62} transparent opacity={0.72} />
+        </mesh>
+        {[0, 1, 2, 3].map((step) => {
+          const a = step * Math.PI / 2;
+          return (
+            <mesh key={step} position={[Math.cos(a) * 0.28, Math.sin(a) * 0.28, 0.04]}>
+              <sphereGeometry args={[0.045, 16, 16]} />
+              <meshStandardMaterial color="#fef3c7" emissive="#f59e0b" emissiveIntensity={0.65} />
+            </mesh>
+          );
+        })}
+      </group>
+    );
+  }
+
+  return (
+    <group position={[x, y, 0.15]} scale={[opacity, opacity, opacity]}>
+      <LinePath points={[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
+        const t = i / 7;
+        return new THREE.Vector3(-0.36 + t * 0.72, Math.sin(t * Math.PI * 2) * 0.18, 0.05);
+      })} color={type.includes("sound") || type.includes("signal") ? "#7dd3fc" : "#fef3c7"} opacity={0.82} />
+      <mesh position={[-0.42, 0, 0]}>
+        <sphereGeometry args={[0.045, 16, 16]} />
+        <meshStandardMaterial color="#c4b5fd" emissive="#7e22ce" emissiveIntensity={0.7} />
+      </mesh>
+    </group>
+  );
+}
+
+function ExampleEchoes({ examples, storyProgress }: { examples: VisualStorySupportingExample[]; storyProgress: number }) {
+  if (!examples.length) return null;
+  const visible = clamp((storyProgress - 0.70) / 0.24);
+
+  return (
+    <group>
+      {examples.slice(0, 6).map((example, index) => (
+        <ExampleEchoIcon key={example.id} example={example} index={index} visible={visible} />
+      ))}
+      {visible > 0.1 ? (
+        <LinePath points={[new THREE.Vector3(0.45, -0.1, 0.03), new THREE.Vector3(0.95, 1.04, 0.03)]} color="#7dd3fc" opacity={0.16 + visible * 0.22} />
+      ) : null}
+    </group>
+  );
+}
+
+function MotionToGraphLayer({ storyProgress, phase, interactive, scene, onCompleteAction, onDotPointerDown }: {
+  storyProgress: number;
+  phase: number;
+  interactive: boolean;
+  scene: VisualStoryScene;
+  onCompleteAction: (id: string) => void;
+  onDotPointerDown: (event: ThreeEvent<PointerEvent>) => void;
+}) {
+  const wheelCenter = new THREE.Vector3(-2.55, 0.05, 0);
+  const radius = 0.92;
+  const progressPhase = interactive ? phase : clamp(storyProgress * 1.08);
+  const angle = progressPhase * Math.PI * 2 - Math.PI / 2;
+  const dot = new THREE.Vector3(
+    wheelCenter.x + Math.cos(angle) * radius,
+    wheelCenter.y + Math.sin(angle) * radius,
+    0.18,
+  );
+  const waveProgress = clamp((storyProgress - 0.30) / 0.44);
+  const liveWaveX = 0.28 + (interactive ? phase : waveProgress) * 4.36;
+  const liveWaveY = -0.78 + Math.sin((interactive ? phase : waveProgress) * Math.PI * 2) * 0.82;
+  const arcVisibility = clamp((storyProgress - 0.18) / 0.3);
+  const projectionVisibility = interactive ? 1 : clamp((storyProgress - 0.22) / 0.22);
+
+  const arcPoints = useMemo(() => {
+    const points: THREE.Vector3[] = [];
+    const visibleSamples = Math.max(3, Math.floor(100 * (interactive ? 1 : arcVisibility)));
+    for (let i = 0; i <= visibleSamples; i += 1) {
+      const t = i / 100;
+      const a = -Math.PI / 2 + t * Math.PI * 2;
+      points.push(new THREE.Vector3(wheelCenter.x + Math.cos(a) * 1.12, wheelCenter.y + Math.sin(a) * 1.12, 0.11));
+    }
+    return points;
+  }, [arcVisibility, interactive]);
+
+  return (
+    <group>
+      <mesh position={wheelCenter} rotation={[0, 0, angle]}>
+        <torusGeometry args={[radius, 0.045, 24, 120]} />
+        <meshStandardMaterial color="#a78bfa" emissive="#581c87" emissiveIntensity={0.46} roughness={0.32} />
+      </mesh>
+      <LinePath points={[new THREE.Vector3(wheelCenter.x - radius, wheelCenter.y, 0.05), new THREE.Vector3(wheelCenter.x + radius, wheelCenter.y, 0.05)]} color="#ddd6fe" opacity={0.24} />
+      <LinePath points={[new THREE.Vector3(wheelCenter.x, wheelCenter.y - radius, 0.05), new THREE.Vector3(wheelCenter.x, wheelCenter.y + radius, 0.05)]} color="#ddd6fe" opacity={0.18} />
+      <LinePath points={arcPoints} color="#fbbf24" opacity={0.72} />
+      <mesh position={dot} onPointerDown={(event: ThreeEvent<PointerEvent>) => { event.stopPropagation(); onDotPointerDown(event); }}>
+        <sphereGeometry args={[interactive ? 0.125 : 0.105, 32, 32]} />
+        <meshStandardMaterial color="#ffffff" emissive="#f59e0b" emissiveIntensity={1.65} roughness={0.2} />
+      </mesh>
+      <LinePath points={[dot, new THREE.Vector3(wheelCenter.x + 1.24, dot.y, 0.05)]} color="#fef3c7" opacity={0.16 + projectionVisibility * 0.58} />
+      <LinePath points={[new THREE.Vector3(wheelCenter.x + 1.24, wheelCenter.y - radius, 0.02), new THREE.Vector3(wheelCenter.x + 1.24, wheelCenter.y + radius, 0.02)]} color="#fef3c7" opacity={0.1 + projectionVisibility * 0.32} />
+      <LinePath points={[new THREE.Vector3(wheelCenter.x + 1.24, dot.y, 0.06), new THREE.Vector3(liveWaveX, liveWaveY, 0.08)]} color="#7dd3fc" opacity={0.16 + projectionVisibility * 0.36} />
+      <WaveTrace phase={phase} storyProgress={storyProgress} interactive={interactive} onCompleteAction={onCompleteAction} />
+      <ExampleEchoes examples={scene.supporting_examples} storyProgress={interactive ? 1 : storyProgress} />
+    </group>
+  );
+}
+
+function materialForEntity(entity: VisualStoryEntity, focused: boolean, progress: number) {
+  const emphasis = entity.visual_style?.emphasis;
+  const color = emphasis === "high" || focused
+    ? "#fef3c7"
+    : emphasis === "low"
+      ? "#7dd3fc"
+      : "#c4b5fd";
+
+  return {
+    color,
+    emissive: focused ? "#f59e0b" : "#312e81",
+    emissiveIntensity: focused ? 0.72 : 0.26,
+    opacity: clamp(0.24 + progress * (focused ? 0.76 : 0.54), 0.18, 1),
+  };
+}
+
+function GenericSceneLayer({ scene, activeBeat, storyProgress, interactive, onCompleteAction }: {
+  scene: VisualStoryScene;
+  activeBeat: VisualStoryBeat;
+  storyProgress: number;
+  interactive: boolean;
+  onCompleteAction: (id: string) => void;
+}) {
+  const entities = scene.entities.slice(0, 16);
+
+  function positionFor(index: number): [number, number, number] {
+    const columns = 4;
+    const col = index % columns;
+    const row = Math.floor(index / columns);
+    return [-2.8 + col * 1.85, 0.88 - row * 1.1, 0];
+  }
+
+  return (
+    <group>
+      {entities.slice(0, -1).map((entity, index) => {
+        const from = positionFor(index);
+        const to = positionFor(index + 1);
+        return <LinePath key={`line-${entity.id}`} points={[new THREE.Vector3(...from), new THREE.Vector3(...to)]} color="#7dd3fc" opacity={0.14 + storyProgress * 0.32} />;
+      })}
+      {entities.map((entity, index) => {
+        const position = positionFor(index);
+        const focused = activeBeat.active_entity_ids?.includes(entity.id) ?? false;
+        const material = materialForEntity(entity, focused, storyProgress);
+        const scale = focused ? 1.08 + Math.sin(storyProgress * Math.PI * 8) * 0.04 : 1;
+        return (
+          <mesh
+            key={entity.id}
+            position={position}
+            scale={[scale, scale, scale]}
+            onClick={(event: ThreeEvent<MouseEvent>) => {
+              if (!interactive) return;
+              event.stopPropagation();
+              onCompleteAction(`selected_${entity.id}`);
+            }}
+          >
+            {entity.kind === "container" || entity.kind === "surface" ? <boxGeometry args={[0.78, 0.52, 0.08]} /> : <sphereGeometry args={[0.3, 32, 32]} />}
+            <meshStandardMaterial color={material.color} emissive={material.emissive} emissiveIntensity={material.emissiveIntensity} transparent opacity={material.opacity} roughness={0.24} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+function VisualStoryWorld({ scene, playheadMs, totalMs, active, phase, stageYaw, stagePitch, zoom, interactive, onCompleteAction, onDotPointerDown }: {
+  scene: VisualStoryScene;
+  playheadMs: number;
+  totalMs: number;
+  active: BeatProgress;
+  phase: number;
+  stageYaw: number;
+  stagePitch: number;
+  zoom: number;
+  interactive: boolean;
+  onCompleteAction: (id: string) => void;
+  onDotPointerDown: (event: ThreeEvent<PointerEvent>) => void;
+}) {
+  const storyProgress = interactive ? phase : clamp(playheadMs / Math.max(1, totalMs));
+  const motionBased = storyLooksMotionBased(scene);
+
+  return (
+    <>
+      <CameraRig scene={scene} progress={storyProgress} interactive={interactive} zoom={zoom} />
+      <color attach="background" args={["#070014"]} />
+      <ambientLight intensity={0.74} />
+      <directionalLight position={[4, 7, 6]} intensity={1.32} />
+      <pointLight position={[-4, 2, 4]} intensity={0.58} color="#c4b5fd" />
+      <group rotation={[stagePitch, stageYaw, 0]}>
+        {motionBased ? (
+          <MotionToGraphLayer
+            storyProgress={storyProgress}
+            phase={phase}
+            interactive={interactive}
+            scene={scene}
+            onCompleteAction={onCompleteAction}
+            onDotPointerDown={onDotPointerDown}
+          />
+        ) : (
+          <GenericSceneLayer scene={scene} activeBeat={active.beat} storyProgress={storyProgress} interactive={interactive} onCompleteAction={onCompleteAction} />
+        )}
+      </group>
+    </>
+  );
+}
+
+function ensureActionIds(scene: VisualStoryScene) {
+  const check = scene.optional_check?.success_criteria;
+  const hasExplicitCheck = check && Object.keys(check).length > 0;
+  if (hasExplicitCheck && storyLooksMotionBased(scene)) return ["mark_one_repeat", "tap_peak"];
+  return ["explored_scene"];
+}
+
+export function VisualStoryProbe(props: GenericProbeComponentProps) {
+  const scene = useMemo(() => normalizeVisualStoryScene(props.probe), [props.probe]);
+  const totalMs = useMemo(() => totalDuration(scene.beats), [scene.beats]);
+  const [playheadMs, setPlayheadMs] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [completedActionIds, setCompletedActionIds] = useState<string[]>([]);
+  const [interactionMode, setInteractionMode] = useState<"rotate" | "phase">("rotate");
+  const [stageYaw, setStageYaw] = useState(0);
+  const [stagePitch, setStagePitch] = useState(0);
+  const [phase, setPhase] = useState(1);
+  const [zoom, setZoom] = useState(7.4);
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [hasExplored, setHasExplored] = useState(false);
+  const [showScriptDuringInteraction, setShowScriptDuringInteraction] = useState(false);
+  const lastFrameRef = useRef<number | null>(null);
+  const lastDraftTextRef = useRef("");
+
+  const done = playheadMs >= totalMs;
+  const interactive = done && !props.disabled;
+  const active = beatInfo(scene.beats, playheadMs);
+  const requiredActionIds = ensureActionIds(scene);
+  const requiredComplete = requiredActionIds.every((id) => id === "explored_scene" ? hasExplored : completedActionIds.includes(id));
+  const completionReady = done && requiredComplete;
+  const visibleScript = revealScriptSegment(active.beat.script_segment, active.localProgress, scene.script_display.animate_text);
+
+  useEffect(() => {
+    if (!isPlaying || props.disabled) {
+      lastFrameRef.current = null;
+      return;
+    }
+
+    let frameId = 0;
+
+    const tick = (now: number) => {
+      const last = lastFrameRef.current ?? now;
+      const delta = Math.min(80, Math.max(0, now - last));
+      lastFrameRef.current = now;
+
+      setPlayheadMs((current) => {
+        const next = Math.min(totalMs, current + delta);
+        if (next >= totalMs) {
+          setIsPlaying(false);
+          setPhase(1);
+        }
+        return next;
+      });
+
+      frameId = window.requestAnimationFrame(tick);
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isPlaying, props.disabled, totalMs]);
+
+  useEffect(() => {
+    const payload = {
+      visual_story_completed: completionReady,
+      visual_story_schema_version: scene.schema_version,
+      visual_story_title: scene.title,
+      visual_story_scene_family: scene.scene_family,
+      visual_story_completed_action_ids: completedActionIds,
+      visual_story_required_action_ids: requiredActionIds,
+      orientation_script: scene.orientation_script,
+      explored_scene: hasExplored,
+      phase,
+      elapsed_seconds: Math.round(playheadMs / 1000),
+    };
+
+    const nextText = completionReady ? JSON.stringify(payload) : "";
+    if (lastDraftTextRef.current === nextText) return;
+    lastDraftTextRef.current = nextText;
+
+    props.onDraftChange({
+      ...props.draft,
+      attempt_type: "text",
+      text_response: nextText,
+      generated_video_completed: completionReady,
+      generated_video_elapsed_seconds: Math.round(playheadMs / 1000),
+      visual_story_completed: completionReady,
+      visual_story_scene_family: scene.scene_family,
+      visual_story_completed_action_ids: completedActionIds,
+      visual_story_interaction_notes: completionReady
+        ? `Explored visual story scene: ${scene.title}.`
+        : "",
+    });
+    // Publish draft only when learner-visible completion state changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completionReady, completedActionIds.join("|"), hasExplored, phase, scene.schema_version, scene.scene_family, scene.title, scene.orientation_script]);
+
+  function completeAction(actionId: string) {
+    setHasExplored(true);
+    setCompletedActionIds((current) => current.includes(actionId) ? current : [...current, actionId]);
+  }
+
+  function replay() {
+    setPlayheadMs(0);
+    setIsPlaying(true);
+    setCompletedActionIds([]);
+    setHasExplored(false);
+    setShowScriptDuringInteraction(false);
+    setStageYaw(0);
+    setStagePitch(0);
+    setPhase(0);
+    setZoom(7.4);
+    setDragState(null);
+    lastFrameRef.current = null;
+  }
+
+  function handleCanvasPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!interactive) return;
+    const mode = interactionMode;
+    setDragState({ mode, x: event.clientX, y: event.clientY, yaw: stageYaw, pitch: stagePitch, phase });
+    setHasExplored(true);
+  }
+
+  function handleCanvasPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!interactive || !dragState) return;
+    const dx = event.clientX - dragState.x;
+    const dy = event.clientY - dragState.y;
+
+    if (dragState.mode === "phase") {
+      setPhase(((dragState.phase + dx / 360) % 1 + 1) % 1);
+      completeAction("explored_scene");
+      return;
+    }
+
+    setStageYaw(dragState.yaw + dx * 0.008);
+    setStagePitch(clamp(dragState.pitch + dy * 0.005, -0.38, 0.38));
+    completeAction("explored_scene");
+  }
+
+  function handleCanvasPointerUp() {
+    setDragState(null);
+  }
+
+  function handleWheel(event: ReactWheelEvent<HTMLDivElement>) {
+    if (!interactive) return;
+    event.preventDefault();
+    setZoom((current) => clamp(current + event.deltaY * 0.006, 5.1, 10.2));
+    setHasExplored(true);
+    completeAction("explored_scene");
+  }
+
+  return (
+    <section aria-label="Visual story probe" style={shellStyle}>
+      <Canvas
+        camera={{ position: [0, 3.2, 7.4], fov: 43, near: 0.1, far: 100 }}
+        dpr={[1, 1.75]}
+        onPointerDown={handleCanvasPointerDown}
+        onPointerMove={handleCanvasPointerMove}
+        onPointerUp={handleCanvasPointerUp}
+        onPointerLeave={handleCanvasPointerUp}
+        onWheel={handleWheel}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", cursor: interactive ? (interactionMode === "phase" ? "ew-resize" : "grab") : "default" }}
+      >
+        <VisualStoryWorld
+          scene={scene}
+          playheadMs={playheadMs}
+          totalMs={totalMs}
+          active={active}
+          phase={phase}
+          stageYaw={stageYaw}
+          stagePitch={stagePitch}
+          zoom={zoom}
+          interactive={interactive}
+          onCompleteAction={completeAction}
+          onDotPointerDown={(event) => {
+            if (!interactive) return;
+            event.stopPropagation();
+            const native = event.nativeEvent;
+            setInteractionMode("phase");
+            setHasExplored(true);
+            setDragState({ mode: "phase", x: native.clientX, y: native.clientY, yaw: stageYaw, pitch: stagePitch, phase });
+            completeAction("explored_scene");
+          }}
+        />
+      </Canvas>
+
+      <div style={vignetteStyle} />
+
+      <div style={topControlRowStyle}>
+        <button type="button" disabled={props.disabled || done} onClick={() => setIsPlaying((value) => !value)} style={controlButtonStyle}>
+          {isPlaying ? "Pause" : done ? "Finished" : "Play"}
+        </button>
+        <button type="button" disabled={props.disabled} onClick={replay} style={controlButtonStyle}>
+          Replay
+        </button>
+        {done ? (
+          <button
+            type="button"
+            disabled={props.disabled}
+            onClick={() => setShowScriptDuringInteraction((value) => !value)}
+            style={showScriptDuringInteraction ? activeButtonStyle : controlButtonStyle}
+          >
+            Script
+          </button>
+        ) : null}
+      </div>
+
+      <div
+        style={{
+          ...captionRailStyle,
+          opacity: interactive && !showScriptDuringInteraction ? 0 : 1,
+          transform: interactive && !showScriptDuringInteraction ? "translateY(0.6rem)" : "translateY(0)",
+          transition: "opacity 180ms ease, transform 180ms ease",
+        }}
+      >
+        <div style={captionCardStyle}>
+          <p style={captionKickerStyle}>orientation script · {active.index + 1}/{scene.beats.length}</p>
+          <p style={captionTextStyle}>{interactive && showScriptDuringInteraction ? scene.orientation_script : visibleScript}</p>
+        </div>
+      </div>
+
+      <div style={bottomRailStyle}>
+        <div style={progressTrackStyle}>
+          <div
+            style={{
+              height: "100%",
+              width: `${Math.round((playheadMs / Math.max(1, totalMs)) * 100)}%`,
+              borderRadius: "999px",
+              background: "linear-gradient(90deg, rgba(168,85,247,0.95), rgba(251,191,36,0.95))",
+              transition: isPlaying ? "none" : "width 240ms ease",
+            }}
+          />
+        </div>
+
+        {done ? (
+          <div style={interactionPanelStyle}>
+            <div style={{ minWidth: 0 }}>
+              <p style={interactionTitleStyle}>Explore the scene</p>
+              <p style={interactionHintStyle}>
+                {scene.interaction_phase.free_exploration?.instructions ?? "Drag the scene to rotate, scroll to zoom, or grab the glowing dot to scrub the motion directly."}
+              </p>
+            </div>
+            <div style={interactionActionsStyle}>
+              <button
+                type="button"
+                disabled={props.disabled}
+                onClick={() => setInteractionMode("rotate")}
+                style={interactionMode === "rotate" ? activeButtonStyle : controlButtonStyle}
+              >
+                Drag scene
+              </button>
+              <button
+                type="button"
+                disabled={props.disabled}
+                onClick={() => setInteractionMode("phase")}
+                style={interactionMode === "phase" ? activeButtonStyle : controlButtonStyle}
+              >
+                Move dot
+              </button>
+              <button
+                type="button"
+                disabled={props.disabled}
+                onClick={() => completeAction("mark_one_repeat")}
+                style={completedActionIds.includes("mark_one_repeat") ? successButtonStyle : controlButtonStyle}
+              >
+                Mark repeat
+              </button>
+              <button
+                type="button"
+                disabled={props.disabled}
+                onClick={() => completeAction("tap_peak")}
+                style={completedActionIds.includes("tap_peak") ? successButtonStyle : controlButtonStyle}
+              >
+                Tap peak
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+const shellStyle = {
+  position: "relative",
+  minHeight: "min(76vh, 790px)",
+  overflow: "hidden",
+  borderRadius: "30px",
+  border: "1px solid rgba(255,255,255,0.12)",
+  background: "radial-gradient(circle at 30% 20%, rgba(168,85,247,0.28), transparent 36%), linear-gradient(145deg, rgba(6,6,19,0.96), rgba(35,10,60,0.92))",
+  boxShadow: "0 28px 90px rgba(0,0,0,0.38)",
+} satisfies CSSProperties;
+
+const vignetteStyle = {
+  pointerEvents: "none",
+  position: "absolute",
+  inset: 0,
+  background: "radial-gradient(circle at center, transparent 48%, rgba(0,0,0,0.28) 100%)",
+} satisfies CSSProperties;
+
+const topControlRowStyle = {
+  position: "absolute",
+  right: "clamp(0.9rem, 2.5vw, 1.4rem)",
+  top: "clamp(0.9rem, 2.5vw, 1.4rem)",
+  display: "flex",
+  gap: "0.5rem",
+  flexWrap: "wrap",
+  justifyContent: "flex-end",
+} satisfies CSSProperties;
+
+const captionRailStyle = {
+  pointerEvents: "none",
+  position: "absolute",
+  left: "clamp(0.9rem, 2.5vw, 1.4rem)",
+  right: "clamp(0.9rem, 2.5vw, 1.4rem)",
+  bottom: "clamp(5.9rem, 12vh, 7.4rem)",
+  display: "flex",
+  justifyContent: "center",
+} satisfies CSSProperties;
+
+const captionCardStyle = {
+  width: "min(58rem, 100%)",
+  border: "1px solid rgba(255,255,255,0.13)",
+  borderRadius: "20px",
+  background: "linear-gradient(180deg, rgba(7,0,20,0.56), rgba(7,0,20,0.38))",
+  padding: "0.78rem 0.95rem",
+  backdropFilter: "blur(14px)",
+  boxShadow: "0 16px 48px rgba(0,0,0,0.24)",
+} satisfies CSSProperties;
+
+const captionKickerStyle = {
+  margin: 0,
+  color: "rgba(221,214,254,0.84)",
+  fontSize: "0.66rem",
+  fontWeight: 850,
+  letterSpacing: "0.18em",
+  textTransform: "uppercase",
+} satisfies CSSProperties;
+
+const captionTextStyle = {
+  margin: "0.35rem 0 0",
+  color: "white",
+  fontSize: "clamp(0.98rem, 1.55vw, 1.34rem)",
+  lineHeight: 1.34,
+  letterSpacing: "-0.018em",
+  fontWeight: 820,
+  textShadow: "0 10px 34px rgba(0,0,0,0.42)",
+} satisfies CSSProperties;
+
+const bottomRailStyle = {
+  position: "absolute",
+  left: "clamp(0.9rem, 2.5vw, 1.4rem)",
+  right: "clamp(0.9rem, 2.5vw, 1.4rem)",
+  bottom: "clamp(0.9rem, 2.5vw, 1.4rem)",
+  display: "grid",
+  gap: "0.7rem",
+} satisfies CSSProperties;
+
+const progressTrackStyle = {
+  height: "0.42rem",
+  overflow: "hidden",
+  borderRadius: "999px",
+  background: "rgba(255,255,255,0.1)",
+} satisfies CSSProperties;
+
+const interactionPanelStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "0.85rem",
+  flexWrap: "wrap",
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: "22px",
+  background: "rgba(0,0,0,0.35)",
+  padding: "0.75rem",
+  backdropFilter: "blur(16px)",
+} satisfies CSSProperties;
+
+const interactionTitleStyle = {
+  margin: 0,
+  color: "rgba(255,255,255,0.92)",
+  fontSize: "0.88rem",
+  fontWeight: 880,
+} satisfies CSSProperties;
+
+const interactionHintStyle = {
+  margin: "0.25rem 0 0",
+  color: "rgba(255,255,255,0.72)",
+  fontSize: "0.82rem",
+  lineHeight: 1.45,
+} satisfies CSSProperties;
+
+const interactionActionsStyle = {
+  display: "flex",
+  gap: "0.5rem",
+  flexWrap: "wrap",
+  justifyContent: "flex-end",
+} satisfies CSSProperties;
+
+const controlButtonStyle = {
+  border: "1px solid rgba(255,255,255,0.16)",
+  borderRadius: "999px",
+  background: "rgba(255,255,255,0.1)",
+  color: "white",
+  padding: "0.58rem 0.85rem",
+  fontSize: "0.78rem",
+  fontWeight: 850,
+  cursor: "pointer",
+  backdropFilter: "blur(12px)",
+} satisfies CSSProperties;
+
+const activeButtonStyle = {
+  ...controlButtonStyle,
+  border: "1px solid rgba(251,191,36,0.42)",
+  background: "rgba(251,191,36,0.18)",
+} satisfies CSSProperties;
+
+const successButtonStyle = {
+  ...controlButtonStyle,
+  border: "1px solid rgba(187,247,208,0.34)",
+  background: "rgba(34,197,94,0.2)",
+} satisfies CSSProperties;

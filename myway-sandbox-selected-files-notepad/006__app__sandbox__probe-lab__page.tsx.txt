@@ -1,0 +1,10 @@
+FILE: app\sandbox\probe-lab\page.tsx
+SIZE BYTES: 160
+========================================================================================================================
+
+import ProbeLabPageFromSandbox from "@/sandbox/probe-lab/app/probe-lab/page";
+
+export default function ProbeLabPage() {
+  return <ProbeLabPageFromSandbox />;
+}
+

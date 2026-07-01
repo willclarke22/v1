@@ -1,0 +1,458 @@
+import { NextResponse } from "next/server";
+import { DEFAULT_OPENAI_MODEL, callResponses, num, parseJson, record, text } from "../_shared";
+import { VISUAL_STORY_PROMPT_CONTRACT_V1 } from "./visual-story-prompt-contract";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type GenerateRequest = {
+  learner_message?: string;
+  target_topic_label?: string;
+  bridge_level?: "bridge_0" | "bridge_1" | "bridge_2" | "full_bridge";
+  jargon_level?: "none" | "light" | "standard" | "full";
+  preferred_style?: string;
+  user_interests?: string[];
+  profile_summary?: string;
+  personalization_context?: unknown;
+  topic_mode?: "auto" | "continue_active" | "force_new" | "switch_selected";
+  active_topic_id?: string | null;
+  existing_topics?: unknown[];
+  current_topic_state?: unknown;
+  recent_history?: unknown[];
+  previous_evaluation?: unknown;
+  generate_reason?: "message" | "followup_from_attempt";
+  turn_mode?: "clarify_first" | "orientation_first" | "teach_then_check" | "probe_only";
+  model?: string;
+};
+
+function bool(value: unknown, fallback = false) {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function stringArray(value: unknown, max = 8) {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim().slice(0, 180)).slice(0, max)
+    : [];
+}
+
+function allowed(value: unknown, options: readonly string[], fallback: string) {
+  return typeof value === "string" && options.includes(value) ? value : fallback;
+}
+
+function normalizeProbe(rawProbe: unknown, bridgeLevel: string, jargonLevel: string) {
+  const probe = record(rawProbe);
+  const prompt = record(probe.prompt);
+  const probeType = allowed(
+    probe.probe_type,
+    [
+      "single_choice",
+      "multi_choice",
+      "drag_drop_placements",
+      "sequence",
+      "slider",
+      "graph_relationship",
+      "explain",
+      "discriminate",
+      "apply_transfer",
+      "predict",
+      "video_explanation",
+    ],
+    "single_choice",
+  );
+  const expectedAttemptType = allowed(
+    probe.expected_attempt_type,
+    ["single_choice", "multi_choice", "drag_drop_placements", "ordered_items", "numeric", "graph", "text", "none"],
+    probeType === "drag_drop_placements" ? "drag_drop_placements" : probeType === "graph_relationship" ? "graph" : "single_choice",
+  );
+
+  return {
+    schema_version: "engine_renderable_probe_v1",
+    probe_type: probeType,
+    expected_attempt_type: expectedAttemptType,
+    prompt: {
+      root_problem_explanation: text(prompt.root_problem_explanation, "MyWay is checking the learner's current model.", 900),
+      reshaping_explanation: text(prompt.reshaping_explanation, "The probe asks the learner to make their thinking visible.", 900),
+      task: text(prompt.task, "Try this probe.", 320),
+      full_prompt: text(prompt.full_prompt, text(prompt.task, "Try this probe.", 320), 1400),
+    },
+    presentation_support: Array.isArray(probe.presentation_support) ? probe.presentation_support.slice(0, 5) : [],
+    answer_key: record(probe.answer_key),
+    misconception_markers: Array.isArray(probe.misconception_markers)
+      ? probe.misconception_markers.map((marker, index) => {
+          const r = record(marker);
+          return {
+            misconception_id: text(r.misconception_id, `misconception_${index + 1}`, 90),
+            label: text(r.label, `Misconception ${index + 1}`, 160),
+            marker: typeof r.marker === "string" ? r.marker.slice(0, 300) : null,
+            description: text(r.description, "Possible misconception pattern.", 500),
+            confidence: num(r.confidence, 0.55),
+          };
+        }).slice(0, 8)
+      : [],
+    renderer_params: record(probe.renderer_params),
+    delivery_context: {
+      ...record(probe.delivery_context),
+      bridge_level: bridgeLevel,
+      language_policy: { jargon_level: jargonLevel },
+    },
+    confidence: num(probe.confidence, 0.66),
+    renderer_compatibility: {
+      renderer_kind: probeType,
+      is_renderable: true,
+      blocking_reasons: [],
+      warnings: [],
+    },
+  };
+}
+
+function normalizeOutput(value: unknown, args: { learnerMessage: string; topicLabel: string; bridgeLevel: string; jargonLevel: string }) {
+  const r = record(value);
+  const diagnosis = record(r.diagnosis);
+  const topicDecision = record(r.topic_decision);
+  const confusion = record(r.confusion_judgment);
+  const insight = record(r.insight_judgment);
+  const delta = record(r.metric_delta);
+  const rationale = record(r.rationale);
+  const understanding = record(r.message_understanding);
+  const clarification = record(r.clarification);
+  const orientation = record(r.orientation);
+  const interestDiscovery = record(r.interest_discovery);
+
+  const normalizedDiagnosis = {
+    schema_version: "diagnosis_model_output_v1",
+    diagnosis: allowed(
+      diagnosis.diagnosis,
+      ["unknown", "no_gap_detected", "recall_gap", "representation_gap", "procedure_gap", "discrimination_gap", "transfer_gap", "metacognitive_gap"],
+      "unknown",
+    ),
+    diagnosis_confidence: num(diagnosis.diagnosis_confidence, 0.55),
+    next_action: allowed(
+      diagnosis.next_action,
+      ["ask_clarifying_question", "generate_probe_contract", "give_feedback", "summarize_progress"],
+      "generate_probe_contract",
+    ),
+    next_action_confidence: num(diagnosis.next_action_confidence, 0.65),
+    suggested_question: typeof diagnosis.suggested_question === "string" ? diagnosis.suggested_question.slice(0, 400) : null,
+    root_problem: text(diagnosis.root_problem, text(record(r.probe).prompt && record(record(r.probe).prompt).root_problem_explanation, "The learner has a specific learning gap to probe.", 400), 700),
+    target_topic_label: text(diagnosis.target_topic_label, args.topicLabel === "Auto-detect from learner message" ? "Auto-detected topic" : args.topicLabel, 180),
+  };
+
+  const action = allowed(topicDecision.action, ["continue_existing_topic", "create_new_topic", "switch_to_existing_topic"], "create_new_topic");
+
+  const turnMode = allowed(r.turn_mode, ["clarify_first", "orientation_first", "teach_then_check", "probe_only"], "probe_only");
+  const inferredCandidates = Array.isArray(interestDiscovery.inferred_candidates)
+    ? interestDiscovery.inferred_candidates.map((candidate, index) => {
+        const c = record(candidate);
+        return {
+          interest: text(c.interest, `candidate_${index + 1}`, 120),
+          confidence: num(c.confidence, 0.35),
+          evidence: text(c.evidence, "Weak interest signal from this turn.", 400),
+          use_when: text(c.use_when, "Only when it clarifies the target idea.", 300),
+          avoid_when: text(c.avoid_when, "Avoid when decorative or distracting.", 300),
+        };
+      }).slice(0, 5)
+    : [];
+
+  return {
+    schema_version: "myway_openai_full_loop_generate_output_v1",
+    message_understanding: {
+      confidence: num(understanding.confidence, 0.62),
+      what_myway_thinks_user_means: text(understanding.what_myway_thinks_user_means, normalizedDiagnosis.root_problem, 700),
+      ambiguity: typeof understanding.ambiguity === "string" && understanding.ambiguity.trim() ? understanding.ambiguity.slice(0, 500) : null,
+      needs_clarification: bool(understanding.needs_clarification, turnMode === "clarify_first"),
+      reason: text(understanding.reason, "MyWay estimated whether it understood the learner message well enough to teach or probe.", 700),
+    },
+    turn_mode: turnMode,
+    clarification: turnMode === "clarify_first" ? {
+      question: text(clarification.question, "What part should MyWay focus on first?", 500),
+      reason: text(clarification.reason, "The learner signal is ambiguous enough that a clarification would reduce the risk of addressing the wrong gap.", 700),
+      confidence: num(clarification.confidence, 0.55),
+      options: stringArray(clarification.options, 4),
+    } : null,
+    orientation: turnMode === "orientation_first" || turnMode === "teach_then_check" ? {
+      title: text(orientation.title, "The missing picture", 180),
+      body: text(orientation.body, normalizedDiagnosis.root_problem, 1600),
+      visual_scene: null,
+      key_points: [],
+      bridge_note: null,
+    } : null,
+    interest_discovery: {
+      should_ask: bool(interestDiscovery.should_ask, false),
+      question: text(interestDiscovery.question, "What kinds of examples usually make ideas click for you?", 500),
+      inferred_candidates: inferredCandidates,
+    },
+    topic_decision: {
+      action,
+      topic_id: typeof topicDecision.topic_id === "string" ? topicDecision.topic_id.slice(0, 120) : null,
+      topic_label: text(topicDecision.topic_label, normalizedDiagnosis.target_topic_label, 180),
+      confidence: num(topicDecision.confidence, 0.62),
+      reason: text(topicDecision.reason, "The topic was selected from the learner signal and sandbox topic memory.", 600),
+    },
+    diagnosis: normalizedDiagnosis,
+    probe: normalizeProbe(r.probe, args.bridgeLevel, args.jargonLevel),
+    confusion_judgment: {
+      score: num(confusion.score, 0.45),
+      rubric_anchor: text(confusion.rubric_anchor, "noticeable confusion", 120),
+      evidence: text(confusion.evidence, normalizedDiagnosis.root_problem, 700),
+      confidence: num(confusion.confidence, 0.55),
+    },
+    insight_judgment: {
+      score: num(insight.score, 0.18),
+      rubric_anchor: text(insight.rubric_anchor, "slight engagement", 120),
+      evidence: text(insight.evidence, "The learner is engaging with the idea, but the level of insight needs more evidence.", 700),
+      confidence: num(insight.confidence, 0.52),
+    },
+    metric_delta: {
+      confusion_delta: num(delta.confusion_delta, 0),
+      insight_delta: num(delta.insight_delta, 0),
+      mastery_delta: num(delta.mastery_delta, 0),
+      evidence_count_delta: Math.max(0, Math.floor(num(delta.evidence_count_delta, 1))),
+      verification_needed: bool(delta.verification_needed, false),
+      reason: text(delta.reason, "The sandbox applied a cautious update from the model judgment.", 700),
+    },
+    personalization_delta: r.personalization_delta ?? null,
+    image_prompt: typeof r.image_prompt === "string" && r.image_prompt.trim() ? r.image_prompt.slice(0, 2400) : null,
+    image_use_case: typeof r.image_use_case === "string" && r.image_use_case.trim() ? r.image_use_case.slice(0, 700) : null,
+    rationale: {
+      why_this_probe_type: text(rationale.why_this_probe_type, "The selected probe should expose the learner's current thinking.", 700),
+      what_it_measures: text(rationale.what_it_measures, "It measures the current gap and whether the learner can apply the idea.", 700),
+      cost_note: text(rationale.cost_note, "Use the cheapest useful renderer before generating images or video.", 500),
+    },
+  };
+}
+
+function systemPrompt() {
+  return [
+    "You are MyWay's strongest-prototype brain model for a sandbox runtime.",
+    "Return ONLY valid JSON. No markdown. No comments. No code fences.",
+    "For teach_then_check visual stories, orientation.body is the only learner-facing orientation paragraph.",
+    "Do not put recap bullets, visual staging summaries, or bridge-note summaries in orientation.visual_scene, orientation.key_points, or orientation.bridge_note; leave those empty/null.",
+    "You must support continuity: decide whether a new learner message continues an existing topic, switches to an existing topic, or creates a new topic.",
+    "Before orientation or probing, estimate message_understanding confidence. If confidence is low or the learner signal could mean multiple different gaps, use turn_mode clarify_first and ask one short clarification question.",
+    "For representation gaps or big-picture intuition requests, prefer orientation_first or teach_then_check before a quiz-like probe.",
+    "For selected-option probes, remember they collect recognition evidence, not explanation evidence.",
+    "Shared diagnosis is for different topics that share the same diagnosis; a continuation of the same topic is not a relationship.",
+    "Use the provided confusion and insight rubrics exactly. Scores must be anchored to evidence, not vibes.",
+    "Choose the cheapest useful probe. Do not generate images/video unless the visual materially helps.",
+    "Use personalization and interests tastefully. Do not force interests into every probe.",
+    "MYWAY_RELATIONSHIP_PATTERNS_V4_GENERATE_MARKER",
+    "Before selecting a renderer, choose a probe_intent: clarify_meaning, orient_missing_picture, check_recognition, test_discrimination, map_representation, surface_misconception, verify_not_guessing, build_transfer.",
+    "For vague messages or low message_understanding confidence, use turn_mode clarify_first and ask a clarifying question before orientation or probing.",
+    "For representation gaps or purpose/intuition requests, prefer orientation_first or teach_then_check before a cold quiz.",
+    "Graph probes should trigger when the learner needs to map a relationship visually: slope, tangent, area, intersections, transformations, rate, accumulation, trig waves, systems, or 3D surfaces.",
+    "Do not use generic word overlap as a root pattern. Prefer high-level reusable patterns like procedure_without_purpose, representation_mapping_gap, role_direction_reversal, boundary_discrimination_gap, local_vs_global_confusion, process_vs_object_confusion, transfer_surface_match_gap.",
+    "Treat personalization as a teaching policy: explanation shape, feedback style, pacing, challenge, verification, and interest-use rules matter more than hobby decoration.",
+    "Use interests only when they clarify the hidden structure of the concept or make the probe more concrete.",
+    "For bridge_0, use no jargon unless the learner used the term and needs it unpacked.",
+  ].join("\n");
+}
+
+function userPrompt(input: GenerateRequest & { learnerMessage: string; topicLabel: string; bridgeLevel: string; jargonLevel: string }) {
+  return [
+    "Generate the next MyWay turn for this sandbox.",
+    "",
+    "Learner message:",
+    input.learnerMessage,
+    "",
+    "Generate reason:",
+    input.generate_reason ?? "message",
+    "",
+    "Topic mode:",
+    input.topic_mode ?? "auto",
+    "",
+    "Active topic id:",
+    input.active_topic_id ?? null,
+    "",
+    "Topic hint:",
+    input.topicLabel,
+    "",
+    "Existing topics JSON:",
+    JSON.stringify(input.existing_topics ?? [], null, 2),
+    "",
+    "Current topic state JSON:",
+    JSON.stringify(input.current_topic_state ?? null, null, 2),
+    "",
+    "Recent history JSON:",
+    JSON.stringify(input.recent_history ?? [], null, 2),
+    "",
+    "Previous evaluation JSON:",
+    JSON.stringify(input.previous_evaluation ?? null, null, 2),
+    "",
+    "Personalization context JSON:",
+    JSON.stringify(
+      input.personalization_context ?? {
+        bridge_level: input.bridgeLevel,
+        language_policy: { jargon_level: input.jargonLevel },
+        preferred_style: input.preferred_style ?? "visual_description",
+        user_interests: input.user_interests ?? [],
+        profile_summary: input.profile_summary ?? "No durable preference evidence yet.",
+      },
+      null,
+      2,
+    ),
+    "",
+    "Turn mode rules:",
+    "clarify_first = MyWay is not confident enough about what the learner means. Ask one clarification question first. Hide/ignore the probe in the UI.",
+    "orientation_first = teach the missing picture first; the active check can come after.",
+    "teach_then_check = show a short orientation immediately followed by a tiny low-pressure check.",
+    "probe_only = enough context exists and the learner is ready for a direct probe.",
+    "For first-turn representation gaps, big-picture intuition gaps, or learner says they need to feel/see the idea, usually use orientation_first or teach_then_check, not probe_only.",
+    "If message_understanding confidence is below 0.62, usually use clarify_first.",
+    "Interest discovery rules:",
+    "Infer interest candidates cautiously from messages/attempts. Keep confidence low until repeated evidence. Interests should clarify concepts, not decorate them. Ask an explicit interest question only when it would help future probes and does not interrupt the learning moment.",
+    "Probe evidence bandwidth rules:",
+    "single_choice and multi_choice collect recognition/discrimination evidence only. Do not treat lack of explanation as learner failure unless the probe asked for explanation.",
+    "",
+    "Confusion rubric:",
+    "0.0 complete clarity; 0.1 almost full clarity; 0.2 light uncertainty; 0.3 mild confusion; 0.4 noticeable confusion; 0.5 moderate confusion/incomplete model; 0.6 strong confusion; 0.7 significant confusion/major misinterpretations; 0.8 deep confusion; 0.9 severe confusion/close to giving up; 1.0 total confusion or frustration.",
+    "",
+    "Insight rubric:",
+    "0.0 no insight; 0.1 extremely minimal curiosity; 0.2 slight factual follow-up; 0.3 basic noticing; 0.4 shallow connection; 0.5 clear realization; 0.6 reframing/analogy; 0.7 strong integration; 0.8 cross-domain integration; 0.9 breakthrough synthesis; 1.0 profound/original insight.",
+    "",
+    "Renderable probe types:",
+    "single_choice, multi_choice, drag_drop_placements, sequence, slider, graph_relationship, explain, discriminate, apply_transfer, predict, video_explanation.",
+    "- Prefer renderer_params.visual_story when the best teaching move is a smooth visual story rather than a worksheet, card, or static graph.",
+    "- Do not generate raw Three.js or JSX. Generate a structured scene plan only.",
+    "interaction_phase shape: { unlock_after: animation_complete, instructions: string, required_actions: [{ id: string, type: mark_period|select_peak|select_point|drag_object|scrub_motion, target?: string }] }.",
+    "- Supported object types: wheel, dot, wave, axis, guide_line, connector, highlight, marker, label, plane, surface, generic.",
+    "- Supported action types: show, hide, spin, trace_height, draw_wave, highlight_period, highlight_peak, connect, pulse, focus_camera, enable_interaction.",
+    "- The visual story should be object-driven: if the orientation mentions an object or physical analogy, include it in objects and use actions to animate it.",
+    "- After the animation, include an interaction_phase. The learner should interact with the same objects used in the story, not answer in a separate worksheet when a visual check is possible.",
+    "- For trig purpose questions, use objects like wheel, tracked_dot, height_guide, sine_wave, period_highlight, peak_marker and actions like spin, trace_height, draw_wave, highlight_period, highlight_peak, enable_interaction.",
+    "- Beat words should be short. The objects and motion should tell the story even if the learner barely reads the text.",
+    "The visual story should storyboard the orientation. If the orientation says wheel, dot, height, wave, one full turn, 2π, or repeat, those should become visible objects/motions in the scene.",
+    "VisualStoryProbe beats should be visual-first: if the words disappeared, the animation should still communicate the idea. Keep beat words short and let objects do the teaching.",
+    "Use 4-6 beats, 4500-7000ms each. The first proof scene is wheel -> glowing dot -> height trace -> sine wave -> one full turn equals one repeat -> learner marks repeat and peak.",
+    "Graph renderer params may include graph: { mode, functions, parameters, window, surface_expression, window3d, view3d, preset_id }.",
+    "For graph_relationship probes, also include renderer_params.graph_experience. This is a general visual action contract, not a text-only explanation and not a hardcoded example.",
+    "renderer_params.graph_experience shape: { root_problem_hook: string, mental_move: string, experience_mode: \"autoplay_then_interact\", timeline: [{ id, title, root_problem_focus, explanation, learner_prompt, duration_ms, graph_actions: [{ type, ... }] }], guided_sequence: same as timeline for compatibility, learner_task: { title, instructions, interaction_mode, required_actions, reflection_prompt }, control_policy: { lock_controls_until_complete, initially_enabled, reveal_sequence } }",
+    "Supported graph_actions for both 2D and 3D: set_mode, set_expression, set_camera, set_parameter, select_center, clear_selection, show_surface, show_function, show_slice, highlight_axis, highlight_term, show_label, show_point, show_tangent, show_secant, show_area_region, show_intersection, animate_parameter, focus_region, unlock_controls.",
+    "Graph actions are commands the renderer performs automatically as a video-ish timeline. Do not require learner clicks during the explanation. Put the explanation on the graph with show_label actions. Use set_camera/view changes as cinematography. Build complex expressions piece by piece when that helps the root problem: start from a simple stage, use set_expression to show one term/feature, label what changed, then add the next piece until the final graph appears. Only after the timeline should controls unlock for the learner task.",
+    "Use the same general action language for quadratics, trig waves, rational asymptotes, systems/intersections, derivative/tangent, area/accumulation, exponential change, and 3D surfaces/tradeoffs.",
+    "For z = x^2 - y^2, use progressive cinematography: first show empty/height context with z-axis label, then show the x^2 stage or x-slice and label that x^2 pushes height up, then show the -y^2 stage or y-slice and label that -y^2 pulls height down, then combine into surface_expression x^2 - y^2 with both slices visible and a wide camera. Use timeline and guided_sequence arrays with the same beats.",
+    "Good graph presets: algebra_quadratic, trig_sine_wave, calculus_derivative_tangent, calculus_area_under_curve, system_intersection, rational_asymptote, exponential_growth_decay, three_d_surface_saddle, three_d_surface_hill, three_d_surface_wave.",
+    "",
+    "Return exactly one JSON object with this shape:",
+    "{",
+    "  \"schema_version\": \"myway_openai_full_loop_generate_output_v1\",",
+    "  \"message_understanding\": { \"confidence\": 0.0, \"what_myway_thinks_user_means\": \"string\", \"ambiguity\": null, \"needs_clarification\": false, \"reason\": \"why\" },",
+    "  \"turn_mode\": \"clarify_first|orientation_first|teach_then_check|probe_only\",",
+    "  \"clarification\": { \"question\": \"one question if needed\", \"reason\": \"why needed\", \"confidence\": 0.0, \"options\": [] } or null,",
+    "  \"orientation\": { \"title\": \"string\", \"body\": \"short teaching before the check\", \"visual_scene\": \"string or null\", \"key_points\": [], \"bridge_note\": \"string or null\" } or null,",
+    "  \"interest_discovery\": { \"should_ask\": false, \"question\": \"optional question\", \"inferred_candidates\": [{ \"interest\": \"string\", \"confidence\": 0.0, \"evidence\": \"string\", \"use_when\": \"string\", \"avoid_when\": \"string\" }] },",
+    "  \"topic_decision\": { \"action\": \"continue_existing_topic|switch_to_existing_topic|create_new_topic\", \"topic_id\": \"existing id or new stable id\", \"topic_label\": \"short label\", \"confidence\": 0.0, \"reason\": \"why\" },",
+    "  \"diagnosis\": { \"schema_version\": \"diagnosis_model_output_v1\", \"diagnosis\": \"unknown|no_gap_detected|recall_gap|representation_gap|procedure_gap|discrimination_gap|transfer_gap|metacognitive_gap\", \"diagnosis_confidence\": 0.0, \"next_action\": \"ask_clarifying_question|generate_probe_contract|give_feedback|summarize_progress\", \"next_action_confidence\": 0.0, \"suggested_question\": null, \"root_problem\": \"specific root problem\", \"target_topic_label\": \"label\" },",
+    "  \"probe\": { \"schema_version\": \"engine_renderable_probe_v1\", \"probe_type\": \"single_choice|multi_choice|drag_drop_placements|sequence|slider|graph_relationship|explain|discriminate|apply_transfer|predict|video_explanation\", \"expected_attempt_type\": \"single_choice|multi_choice|drag_drop_placements|ordered_items|numeric|graph|text|none\", \"prompt\": { \"root_problem_explanation\": \"string\", \"reshaping_explanation\": \"string\", \"task\": \"string\", \"full_prompt\": \"string\" }, \"presentation_support\": [], \"answer_key\": {}, \"misconception_markers\": [], \"renderer_params\": {}, \"delivery_context\": {}, \"confidence\": 0.0, \"renderer_compatibility\": { \"renderer_kind\": \"same as probe_type\", \"is_renderable\": true, \"blocking_reasons\": [], \"warnings\": [] } },",
+    "  \"confusion_judgment\": { \"score\": 0.0, \"rubric_anchor\": \"anchor phrase\", \"evidence\": \"specific evidence\", \"confidence\": 0.0 },",
+    "  \"insight_judgment\": { \"score\": 0.0, \"rubric_anchor\": \"anchor phrase\", \"evidence\": \"specific evidence\", \"confidence\": 0.0 },",
+    "  \"metric_delta\": { \"confusion_delta\": 0.0, \"insight_delta\": 0.0, \"mastery_delta\": 0.0, \"evidence_count_delta\": 1, \"verification_needed\": false, \"reason\": \"why these deltas are cautious\" },",
+    "  \"probe_intent\": \"clarify_meaning|orient_missing_picture|check_recognition|test_discrimination|map_representation|surface_misconception|verify_not_guessing|build_transfer\",",
+    "  \"learning_pattern\": { \"root_problem_pattern\": \"procedure_without_purpose|representation_mapping_gap|role_direction_reversal|boundary_discrimination_gap|local_vs_global_confusion|process_vs_object_confusion|transfer_surface_match_gap|unknown\", \"insight_pattern\": \"visual_model_unlocked_understanding|contrast_cases_helped|motion_or_flow_analogy_helped|purpose_first_helped|unknown\", \"future_probe_implication\": \"how this should affect future probes\" },",
+    "  \"personalization_delta\": null,",
+    "  \"image_prompt\": null,",
+    "  \"image_use_case\": null,",
+    "  \"rationale\": { \"why_this_probe_type\": \"string\", \"what_it_measures\": \"string\", \"cost_note\": \"string\" }",
+    "}",
+    "",
+    "Personalization quality rules:",
+    "- Use the teaching recipe to choose the shape of the probe, not just the wording.",
+    "- If interests are useful, use at most one interest and explain the concept better because of it.",
+    "- If interests are not useful, ignore them and say so in the rationale or cost note.",
+    "- Respect avoid_styles and verification_preference when choosing the next action.",
+    "",
+    "Quality rules:",
+    "- Always choose probe_intent before probe_type. The renderer is the implementation, not the learning reason.",
+    "- For intuition/purpose requests, do not start with a cold selected-option quiz unless orientation has already made the missing picture visible.",
+    "- If using single_choice or multi_choice, mark it as low evidence bandwidth in probe.delivery_context and do not expect explanation evidence.",
+    "- Put root_problem_pattern, insight_pattern, future_probe_implication, and probe_intent in probe.delivery_context too so downstream code can learn from it.",
+    "- Use graph_relationship when the task is about mapping meaning to a visual relationship, such as slope/tangent/area/intersection/transformation/rate/accumulation.",
+    "- If turn_mode is clarify_first, the clarification is the main output and the probe is only a fallback placeholder.",
+    "- If turn_mode is orientation_first or teach_then_check, the orientation should give enough missing-picture information that the learner is not dropped cold into a quiz.",
+    "- If the learner is continuing a topic, keep the same topic_id.",
+    "- If the learner clearly changes subjects, create or switch topic while preserving existing progress.",
+    "- A follow-up from a correct but thin answer should verify, not over-celebrate.",
+    "- Use answer_key conventions: correct_option_id, correct_option_ids, correct_order, correct_placements, correct_numeric_range, correct_graph_features.",
+    "VISUAL STORY CANONICAL SCRIPT RULES:",
+    "For visual-story probes, set probe_type to video_explanation and expected_attempt_type to text for compatibility, then put the real contract in renderer_params.visual_story.",
+    "interaction_phase unlocks after animation_complete and uses the same scene objects for the check. Include required_actions and success markers. For motion_to_graph, include scrub_motion plus the concept-specific check actions.",
+    "For trig, sin, cos, pi, wave, wheel, circle, or why graphing matters, use scene_family motion_to_graph and map the exact canonical script to wheel, dot, turn arc, height guide, and wave objects.",
+    "For other concepts, use scene_family generic_concept_scene or the closest family and build from procedural primitives instead of falling back to text-only explanation.",
+    "Scrap recap fields: do not include key_takeaways, supporting_takeaways, summary_bullets, recap, closing_mental_model, or extra markdown-like bullets. The visual story contract is enough.",
+    "",
+    ...VISUAL_STORY_PROMPT_CONTRACT_V1,
+    "",
+    "Return JSON only.",
+  ].join("\n");
+}
+
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    route: "openai-full-loop/generate",
+    has_api_key: Boolean(process.env.OPENAI_API_KEY?.trim()),
+    default_model: DEFAULT_OPENAI_MODEL,
+  });
+}
+
+export async function POST(request: Request) {
+  const startedAt = Date.now();
+  const body = (await request.json().catch(() => ({}))) as GenerateRequest;
+  const learnerMessage = text(body.learner_message, "I keep mixing up when Spanish se is reflexive or passive.", 2400);
+  const topicLabel = text(body.target_topic_label, "Auto-detect from learner message", 180);
+  const bridgeLevel = body.bridge_level ?? "bridge_0";
+  const jargonLevel = body.jargon_level ?? (bridgeLevel === "bridge_0" ? "none" : "light");
+  const model = body.model?.trim() || DEFAULT_OPENAI_MODEL;
+
+  try {
+    const content = await callResponses({
+      model,
+      system: systemPrompt(),
+      user: userPrompt({ ...body, learnerMessage, topicLabel, bridgeLevel, jargonLevel }),
+      maxOutputTokens: 6200,
+    });
+
+    let parsedOutput: unknown;
+    let repairedPreview: string | null = null;
+
+    try {
+      parsedOutput = parseJson(content);
+    } catch (parseError) {
+      const repairPrompt = [
+        "Repair this malformed JSON into valid JSON.",
+        "Return ONLY the repaired JSON object. No markdown. No explanation. No code fences.",
+        "Do not change the meaning. Do not add new fields unless needed to preserve structure.",
+        "",
+        "Original JSON parse error:",
+        parseError instanceof Error ? parseError.message : String(parseError),
+        "",
+        "Malformed JSON:",
+        content,
+      ].join("\n");
+
+      repairedPreview = await callResponses({
+        model,
+        system: "You are a strict JSON repair tool. Output only valid JSON.",
+        user: repairPrompt,
+        maxOutputTokens: 7000,
+      });
+
+      parsedOutput = parseJson(repairedPreview);
+    }
+
+    const output = normalizeOutput(parsedOutput, { learnerMessage, topicLabel, bridgeLevel, jargonLevel });
+    return NextResponse.json({
+      ok: true,
+      model,
+      elapsed_ms: Date.now() - startedAt,
+      output,
+      raw_output_preview: content.slice(0, 2600),
+      repaired_output_preview: repairedPreview ? repairedPreview.slice(0, 2600) : null,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown OpenAI generate error";
+    console.error("[myway-openai-full-loop/generate]", message);
+    return NextResponse.json({ ok: false, model, elapsed_ms: Date.now() - startedAt, error: message }, { status: 500 });
+  }
+}
+
+

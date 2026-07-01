@@ -1,0 +1,479 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { BlenderFrameSequencePlayer } from "./blender-frame-sequence-player";
+
+type GenerationProvider = "nvidia" | "ollama";
+
+type BlenderRenderResponse = {
+  ok: boolean;
+  error?: string;
+  render_id?: string;
+  frame_urls?: string[];
+  frame_count?: number;
+  fps?: number;
+  duration_seconds?: number;
+  elapsed_ms?: number;
+  stdout?: string;
+  stderr?: string;
+};
+
+const DEFAULT_MODEL_BY_PROVIDER: Record<GenerationProvider, string> = {
+  nvidia: "nvidia/nemotron-3-super-120b-a12b",
+  ollama: "qwen2.5:3b",
+};
+
+const shellStyle = {
+  border: "1px solid rgba(255,255,255,0.1)",
+  borderRadius: "2rem",
+  background: "rgba(0,0,0,0.22)",
+  backdropFilter: "blur(16px)",
+} as const;
+
+function TinyLabel({ children }: { children: string }) {
+  return (
+    <p
+      style={{
+        margin: 0,
+        color: "rgba(255,255,255,0.58)",
+        fontSize: "0.72rem",
+        fontWeight: 900,
+        letterSpacing: "0.16em",
+        textTransform: "uppercase",
+      }}
+    >
+      {children}
+    </p>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: "grid", gap: "0.45rem" }}>
+      <TinyLabel>{label}</TinyLabel>
+      {children}
+    </label>
+  );
+}
+
+const inputStyle = {
+  width: "100%",
+  border: "1px solid rgba(255,255,255,0.13)",
+  borderRadius: "1rem",
+  background: "rgba(255,255,255,0.06)",
+  color: "white",
+  padding: "0.72rem 0.82rem",
+  outline: "none",
+  lineHeight: 1.45,
+} as const;
+
+function splitList(value: string) {
+  return value
+    .split(/[;,\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
+function buildRequestContext(args: {
+  learnerMessage: string;
+  topicLabel: string;
+  diagnosis: string;
+  rootProblem: string;
+  misconceptionTarget: string;
+  bridgeLevel: string;
+  interests: string;
+  priorAttemptSummary: string;
+  profileSummary: string;
+}) {
+  const bridge = args.bridgeLevel || "bridge_0";
+
+  return {
+    learner_message: args.learnerMessage,
+    learning_context: {
+      topic_label: args.topicLabel || "Generated video explanation",
+      diagnosis_label: args.diagnosis || "representation_gap",
+      root_problem: args.rootProblem || "The learner has a partial understanding but cannot yet see the hidden relationship.",
+      misconception_target: args.misconceptionTarget || "The learner is using a surface clue instead of the underlying relationship.",
+      bridge_level: bridge,
+      language_policy: {
+        jargon_level: bridge === "bridge_0" ? "none" : bridge === "bridge_1" ? "light" : "standard",
+      },
+      prior_attempt_summary: args.priorAttemptSummary || null,
+    },
+    personalization_profile: {
+      interests: splitList(args.interests),
+      preferred_explanation_style: ["visual_description", "concrete_examples", "step_by_step"],
+      avoidances: ["long captions", "generic textbook explainer", "decorative personalization"],
+      known_good_metaphors: [],
+      profile_summary: args.profileSummary || null,
+    },
+    renderer_capabilities: {
+      supports_3d_surface: true,
+      supports_camera_orbit: true,
+      supports_slice_planes: true,
+      supports_glow_trails: true,
+      supports_remotion_timeline: true,
+      supports_blender_render: true,
+      supports_cutaway_process_3d: true,
+      supports_flow_particles: true,
+    },
+  };
+}
+
+export function BlenderDirectorRenderLab() {
+  const [provider, setProvider] = useState<GenerationProvider>("nvidia");
+  const [model, setModel] = useState(DEFAULT_MODEL_BY_PROVIDER.nvidia);
+  const [learnerMessage, setLearnerMessage] = useState(
+    "I understand x squared and y squared separately, but I do not get why x squared minus y squared makes a saddle.",
+  );
+  const [topicLabel, setTopicLabel] = useState("Multivariable surfaces");
+  const [diagnosis, setDiagnosis] = useState("representation_gap");
+  const [rootProblem, setRootProblem] = useState(
+    "The learner is treating the surface like both squared terms should bend the same way.",
+  );
+  const [misconceptionTarget, setMisconceptionTarget] = useState(
+    "The learner misses that the minus sign flips the y-direction bend downward.",
+  );
+  const [bridgeLevel, setBridgeLevel] = useState("bridge_0");
+  const [interests, setInterests] = useState("mountains, skiing, maps");
+  const [priorAttemptSummary, setPriorAttemptSummary] = useState("");
+  const [profileSummary, setProfileSummary] = useState(
+    "Learner benefits from visual explanations with motion and concrete examples. Avoid long abstract captions.",
+  );
+  const [status, setStatus] = useState("Ready. Generate a director contract, then render a Blender frame sequence.");
+  const [isWorking, setIsWorking] = useState(false);
+  const [directorContract, setDirectorContract] = useState<unknown>(null);
+  const [routePayload, setRoutePayload] = useState<unknown>(null);
+  const [renderResult, setRenderResult] = useState<BlenderRenderResponse | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [showJson, setShowJson] = useState(false);
+
+  const requestContext = useMemo(
+    () =>
+      buildRequestContext({
+        learnerMessage,
+        topicLabel,
+        diagnosis,
+        rootProblem,
+        misconceptionTarget,
+        bridgeLevel,
+        interests,
+        priorAttemptSummary,
+        profileSummary,
+      }),
+    [bridgeLevel, diagnosis, interests, learnerMessage, misconceptionTarget, priorAttemptSummary, profileSummary, rootProblem, topicLabel],
+  );
+
+  function selectProvider(nextProvider: GenerationProvider) {
+    setProvider(nextProvider);
+    setModel(DEFAULT_MODEL_BY_PROVIDER[nextProvider]);
+  }
+
+  async function generateDirectorOnly() {
+    setIsWorking(true);
+    setLastError(null);
+    setRenderResult(null);
+    setStatus(`Asking ${provider === "nvidia" ? "NVIDIA NIM" : "Local Ollama"} for a MyWay video director contract...`);
+
+    try {
+      const response = await fetch("/api/sandbox/probe-lab/generated-video/universal-scene-contract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...requestContext,
+          provider,
+          model,
+          learner_signal: learnerMessage,
+          learner_message: learnerMessage,
+        }),
+      });
+
+      const data = await response.json();
+      setRoutePayload(data);
+
+      const nextDirector = data.director_contract ?? data.directorContract ?? data.contract?.director_contract ?? null;
+      if (!response.ok || !data.ok || !nextDirector) {
+        throw new Error(data.error ?? "The director route did not return a usable director_contract.");
+      }
+
+      setDirectorContract(nextDirector);
+      setStatus("Director contract generated. You can now render it with Blender.");
+      return nextDirector;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown director generation error.";
+      setLastError(message);
+      setStatus("Director generation failed.");
+      return null;
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  async function renderWithBlender(contractOverride?: unknown) {
+    const contract = contractOverride ?? directorContract;
+    if (!contract) {
+      setLastError("Generate a director contract first.");
+      return;
+    }
+
+    setIsWorking(true);
+    setLastError(null);
+    setStatus("Rendering Blender frame sequence locally. This can take a little while...");
+
+    try {
+      const response = await fetch("/api/sandbox/probe-lab/generated-video/blender-render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          director_contract: contract,
+          request_context: requestContext,
+          frames: 48,
+          fps: 12,
+          width: 960,
+          height: 540,
+        }),
+      });
+
+      const data = (await response.json()) as BlenderRenderResponse;
+      setRenderResult(data);
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? "Blender render failed.");
+      }
+
+      setStatus(`Blender rendered ${data.frame_count ?? data.frame_urls?.length ?? 0} PNG frames in ${Math.round((data.elapsed_ms ?? 0) / 1000)}s.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown Blender render error.";
+      setLastError(message);
+      setStatus("Blender render failed.");
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  async function generateAndRender() {
+    const contract = await generateDirectorOnly();
+    if (contract) await renderWithBlender(contract);
+  }
+
+  return (
+    <section style={{ ...shellStyle, padding: "1rem" }}>
+      <div style={{ display: "grid", gap: "1rem" }}>
+        <header style={{ display: "grid", gap: "0.45rem" }}>
+          <TinyLabel>Optional cinematic render path</TinyLabel>
+          <h2 style={{ margin: 0, color: "white", fontSize: "1.45rem", fontWeight: 950 }}>Blender director render</h2>
+          <p style={{ margin: 0, color: "rgba(255,255,255,0.72)", lineHeight: 1.6, maxWidth: "62rem" }}>
+            This tests the higher-quality path: the model writes a MyWay video director contract, then a trusted local Blender script renders a PNG frame sequence. The model never writes Blender Python.
+          </p>
+        </header>
+
+        <div className="grid gap-4 xl:grid-cols-[430px_minmax(0,1fr)]">
+          <aside style={{ display: "grid", gap: "0.85rem" }}>
+            <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
+              {(["nvidia", "ollama"] as GenerationProvider[]).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => selectProvider(item)}
+                  style={{
+                    border: provider === item ? "1px solid rgba(221,214,254,0.48)" : "1px solid rgba(255,255,255,0.12)",
+                    borderRadius: "999px",
+                    background: provider === item ? "rgba(221,214,254,0.18)" : "rgba(255,255,255,0.055)",
+                    color: "white",
+                    padding: "0.52rem 0.78rem",
+                    fontWeight: 900,
+                    cursor: "pointer",
+                  }}
+                >
+                  {item === "nvidia" ? "NVIDIA NIM" : "Local Ollama"}
+                </button>
+              ))}
+            </div>
+
+            <Field label="Model">
+              <input value={model} onChange={(event) => setModel(event.target.value)} style={inputStyle} />
+            </Field>
+
+            <Field label="Learner message or attempt">
+              <textarea value={learnerMessage} onChange={(event) => setLearnerMessage(event.target.value)} rows={5} style={{ ...inputStyle, resize: "vertical" }} />
+            </Field>
+
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
+              <Field label="Topic label">
+                <input value={topicLabel} onChange={(event) => setTopicLabel(event.target.value)} style={inputStyle} />
+              </Field>
+
+              <Field label="Diagnosis">
+                <select value={diagnosis} onChange={(event) => setDiagnosis(event.target.value)} style={inputStyle}>
+                  {[
+                    "representation_gap",
+                    "discrimination_gap",
+                    "procedure_gap",
+                    "transfer_gap",
+                    "metacognitive_gap",
+                    "recall_gap",
+                    "no_gap_detected",
+                    "unknown",
+                  ].map((item) => (
+                    <option key={item} value={item} style={{ color: "black" }}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            <Field label="Root problem">
+              <textarea value={rootProblem} onChange={(event) => setRootProblem(event.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical" }} />
+            </Field>
+
+            <Field label="Misconception target">
+              <textarea value={misconceptionTarget} onChange={(event) => setMisconceptionTarget(event.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical" }} />
+            </Field>
+
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
+              <Field label="Bridge level">
+                <select value={bridgeLevel} onChange={(event) => setBridgeLevel(event.target.value)} style={inputStyle}>
+                  {["bridge_0", "bridge_1", "bridge_2", "full_bridge"].map((item) => (
+                    <option key={item} value={item} style={{ color: "black" }}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Interests">
+                <input value={interests} onChange={(event) => setInterests(event.target.value)} style={inputStyle} placeholder="mountains, sports, music..." />
+              </Field>
+            </div>
+
+            <Field label="Prior attempt summary">
+              <textarea value={priorAttemptSummary} onChange={(event) => setPriorAttemptSummary(event.target.value)} rows={2} style={{ ...inputStyle, resize: "vertical" }} />
+            </Field>
+
+            <Field label="Profile summary">
+              <textarea value={profileSummary} onChange={(event) => setProfileSummary(event.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical" }} />
+            </Field>
+
+            <div style={{ display: "grid", gap: "0.55rem" }}>
+              <button
+                type="button"
+                disabled={isWorking}
+                onClick={generateAndRender}
+                style={{
+                  border: "1px solid rgba(221,214,254,0.45)",
+                  borderRadius: "999px",
+                  background: isWorking ? "rgba(255,255,255,0.08)" : "linear-gradient(135deg, rgba(168,85,247,0.95), rgba(14,165,233,0.78))",
+                  color: "white",
+                  padding: "0.78rem 1rem",
+                  fontWeight: 950,
+                  cursor: isWorking ? "not-allowed" : "pointer",
+                }}
+              >
+                {isWorking ? "Working..." : "Generate director + render with Blender"}
+              </button>
+
+              <button
+                type="button"
+                disabled={isWorking}
+                onClick={generateDirectorOnly}
+                style={{
+                  border: "1px solid rgba(255,255,255,0.13)",
+                  borderRadius: "999px",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "white",
+                  padding: "0.62rem 1rem",
+                  fontWeight: 850,
+                  cursor: isWorking ? "not-allowed" : "pointer",
+                }}
+              >
+                Generate director only
+              </button>
+
+              <button
+                type="button"
+                disabled={isWorking || !directorContract}
+                onClick={() => renderWithBlender()}
+                style={{
+                  border: "1px solid rgba(255,255,255,0.13)",
+                  borderRadius: "999px",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "white",
+                  padding: "0.62rem 1rem",
+                  fontWeight: 850,
+                  cursor: isWorking || !directorContract ? "not-allowed" : "pointer",
+                  opacity: !directorContract ? 0.55 : 1,
+                }}
+              >
+                Render current director with Blender
+              </button>
+            </div>
+          </aside>
+
+          <main style={{ display: "grid", gap: "1rem", alignContent: "start" }}>
+            <section
+              style={{
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "1.35rem",
+                background: "rgba(255,255,255,0.055)",
+                padding: "0.9rem",
+                display: "grid",
+                gap: "0.45rem",
+              }}
+            >
+              <TinyLabel>Status</TinyLabel>
+              <p style={{ margin: 0, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>{status}</p>
+              {lastError ? <p style={{ margin: 0, color: "#fecaca", lineHeight: 1.5 }}><strong>Error:</strong> {lastError}</p> : null}
+            </section>
+
+            <BlenderFrameSequencePlayer
+              frameUrls={renderResult?.ok ? renderResult.frame_urls ?? [] : []}
+              fps={renderResult?.fps ?? 12}
+              title="MyWay Blender director render"
+              status={renderResult?.ok ? `Render id: ${renderResult.render_id}` : null}
+            />
+
+            <section style={{ display: "grid", gap: "0.65rem" }}>
+              <button
+                type="button"
+                onClick={() => setShowJson((value) => !value)}
+                style={{
+                  justifySelf: "start",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "999px",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "white",
+                  padding: "0.46rem 0.72rem",
+                  fontWeight: 850,
+                  cursor: "pointer",
+                }}
+              >
+                {showJson ? "Hide JSON" : "Show JSON"}
+              </button>
+
+              {showJson ? (
+                <pre
+                  style={{
+                    margin: 0,
+                    maxHeight: "30rem",
+                    overflow: "auto",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "1.2rem",
+                    background: "rgba(0,0,0,0.34)",
+                    color: "rgba(255,255,255,0.78)",
+                    padding: "0.9rem",
+                    fontSize: "0.74rem",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {JSON.stringify({ requestContext, directorContract, renderResult, routePayload }, null, 2)}
+                </pre>
+              ) : null}
+            </section>
+          </main>
+        </div>
+      </div>
+    </section>
+  );
+}

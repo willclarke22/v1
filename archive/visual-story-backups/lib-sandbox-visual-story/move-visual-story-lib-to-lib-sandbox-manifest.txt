@@ -1,0 +1,25 @@
+MYWAY MOVE VISUAL STORY LIB TO LIB SANDBOX
+Generated: 2026-07-01T20:07:26.034Z
+
+Goal:
+- Make Visual Story feel clearly experimental/prototype while it is still being hardened.
+- Keep root sandbox/probe-lab for lab pages and UI demos.
+- Keep reusable Visual Story normalization available to active runtime code.
+
+Moved lib/visual-story -> lib/sandbox/visual-story: yes
+
+Changed imports:
+- lib\sandbox\README.md
+- ui\learning-space\probes\visual-story-probe.tsx
+
+Backups:
+- archive\visual-story-backups\lib-sandbox-visual-story\ui__learning-space__probes__visual-story-probe.tsx.before-lib-sandbox-visual-story-import-fix.bak
+
+Boundary after cleanup:
+- sandbox/probe-lab = demo pages and lab implementation.
+- lib/sandbox/visual-story = experimental reusable runtime logic.
+- ui/learning-space/probes/visual-story-probe.tsx = active renderer component.
+
+Future stable home, if Visual Story graduates:
+- lib/rendering/visual-story
+- or lib/engine/renderers/visual-story

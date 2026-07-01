@@ -11,6 +11,7 @@ import type {
 } from "../probe-ui-types";
 import { ProbeButton, ProbePill, probeTheme } from "../shared";
 import { type GraphVariables } from "./graph-types";
+import type { GraphVisualState } from "./graph-visual-actions";
 import {
   evaluateExpression,
   formatPoint3D,
@@ -23,16 +24,24 @@ import {
   mapSceneToGraphXZ,
 } from "./graph-geometry";
 
-function AxisLine({ points, opacity = 0.45 }: { points: THREE.Vector3[]; opacity?: number }) {
+function AxisLine({
+  points,
+  opacity = 0.45,
+  color = "#ffffff",
+}: {
+  points: THREE.Vector3[];
+  opacity?: number;
+  color?: string;
+}) {
   const geometry = useMemo(() => buildAxisGeometry(points), [points]);
   const material = useMemo(
     () =>
       new THREE.LineBasicMaterial({
-        color: "#ffffff",
+        color,
         transparent: true,
         opacity,
       }),
-    [opacity],
+    [color, opacity],
   );
   const lineObject = useMemo(
     () => new THREE.Line(geometry, material),
@@ -49,17 +58,68 @@ function AxisLine({ points, opacity = 0.45 }: { points: THREE.Vector3[]; opacity
   return <primitive object={lineObject} />;
 }
 
+function SliceCurve({
+  axis,
+  value,
+  expression,
+  graphWindow,
+  variables,
+  opacity = 0.95,
+}: {
+  axis: "x" | "y";
+  value: number;
+  expression: string;
+  graphWindow: ProbeGraphWindow3DDraft;
+  variables: GraphVariables;
+  opacity?: number;
+}) {
+  const points = useMemo(() => {
+    const samples = 96;
+    const nextPoints: THREE.Vector3[] = [];
+
+    for (let index = 0; index <= samples; index += 1) {
+      const t = index / samples;
+      const x =
+        axis === "x"
+          ? graphWindow.xMin + (graphWindow.xMax - graphWindow.xMin) * t
+          : value;
+      const y =
+        axis === "x"
+          ? value
+          : graphWindow.yMin + (graphWindow.yMax - graphWindow.yMin) * t;
+      const z = evaluateExpression(expression, { ...variables, x, y });
+
+      if (z === null || !Number.isFinite(z)) continue;
+      nextPoints.push(mapGraphToScene({ x, y, z, graphWindow }));
+    }
+
+    return nextPoints;
+  }, [axis, expression, graphWindow, value, variables]);
+
+  if (points.length < 2) return null;
+
+  return (
+    <AxisLine
+      points={points}
+      color={axis === "x" ? "#fbbf24" : "#7dd3fc"}
+      opacity={opacity}
+    />
+  );
+}
+
 function SurfaceMesh({
   expression,
   graphWindow,
   variables,
   disabled,
+  showSurface,
   onPointSelect,
 }: {
   expression: string;
   graphWindow: ProbeGraphWindow3DDraft;
   variables: GraphVariables;
   disabled?: boolean;
+  showSurface?: boolean;
   onPointSelect: (point: ProbeGraphPoint3DDraft) => void;
 }) {
   const surfaceData = useMemo(
@@ -100,19 +160,21 @@ function SurfaceMesh({
 
   return (
     <group>
-      <mesh geometry={surfaceData.meshGeometry} onPointerDown={handlePointerDown}>
-        <meshStandardMaterial
-          color="#8b5cf6"
-          emissive="#2e1065"
-          roughness={0.62}
-          metalness={0.08}
-          side={THREE.DoubleSide}
-          transparent
-          opacity={0.72}
-        />
-      </mesh>
+      {showSurface !== false ? (
+        <mesh geometry={surfaceData.meshGeometry} onPointerDown={handlePointerDown}>
+          <meshStandardMaterial
+            color="#8b5cf6"
+            emissive="#2e1065"
+            roughness={0.62}
+            metalness={0.08}
+            side={THREE.DoubleSide}
+            transparent
+            opacity={0.64}
+          />
+        </mesh>
+      ) : null}
       <lineSegments geometry={surfaceData.wireGeometry}>
-        <lineBasicMaterial color="#d8b4fe" transparent opacity={0.36} />
+        <lineBasicMaterial color="#d8b4fe" transparent opacity={showSurface === false ? 0.18 : 0.34} />
       </lineSegments>
     </group>
   );
@@ -142,6 +204,34 @@ function SelectedPoint3DMarker({
   );
 }
 
+function VisualPointMarker({
+  visualState,
+  graphWindow,
+  expression,
+  variables,
+}: {
+  visualState?: GraphVisualState;
+  graphWindow: ProbeGraphWindow3DDraft;
+  expression: string;
+  variables: GraphVariables;
+}) {
+  if (!visualState?.point) return null;
+
+  const graphPoint = visualState.point;
+  const z =
+    typeof graphPoint.z === "number"
+      ? graphPoint.z
+      : evaluateExpression(expression, { ...variables, x: graphPoint.x, y: graphPoint.y }) ?? 0;
+  const position = mapGraphToScene({ x: graphPoint.x, y: graphPoint.y, z, graphWindow });
+
+  return (
+    <mesh position={position}>
+      <sphereGeometry args={[0.16, 24, 24]} />
+      <meshStandardMaterial color="#fef3c7" emissive="#f59e0b" emissiveIntensity={1.05} />
+    </mesh>
+  );
+}
+
 function Graph3DCameraControls({
   view,
   resetToken,
@@ -150,30 +240,65 @@ function Graph3DCameraControls({
   resetToken: number;
 }) {
   const controlsRef = useRef<any>(null);
+  const animationRef = useRef<number | null>(null);
   const { camera } = useThree();
 
   useEffect(() => {
+    if (animationRef.current !== null) {
+      window.cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+
     const yaw = (view.yaw * Math.PI) / 180;
     const pitch = (view.pitch * Math.PI) / 180;
     const radius = 10 / view.zoom;
-    const x = Math.sin(yaw) * Math.cos(pitch) * radius;
-    const y = Math.sin(pitch) * radius;
-    const z = Math.cos(yaw) * Math.cos(pitch) * radius;
+    const targetPosition = new THREE.Vector3(
+      Math.sin(yaw) * Math.cos(pitch) * radius,
+      Math.sin(pitch) * radius,
+      Math.cos(yaw) * Math.cos(pitch) * radius,
+    );
 
-    camera.position.set(x, y, z);
-    camera.up.set(0, 1, 0);
-    camera.lookAt(0, 0, 0);
-    camera.updateProjectionMatrix();
+    const startPosition = camera.position.clone();
+    const startedAt = window.performance.now();
+    const durationMs = 1150;
 
-    const maybeControls = controlsRef.current as {
-      target?: THREE.Vector3;
-      update?: () => void;
-    } | null;
+    const updateControls = () => {
+      const maybeControls = controlsRef.current as {
+        target?: THREE.Vector3;
+        update?: () => void;
+      } | null;
 
-    if (maybeControls?.target) {
-      maybeControls.target.set(0, 0, 0);
-    }
-    maybeControls?.update?.();
+      if (maybeControls?.target) {
+        maybeControls.target.set(0, 0, 0);
+      }
+      maybeControls?.update?.();
+    };
+
+    const animate = (now: number) => {
+      const raw = Math.min(1, Math.max(0, (now - startedAt) / durationMs));
+      const eased = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2;
+
+      camera.position.lerpVectors(startPosition, targetPosition, eased);
+      camera.up.set(0, 1, 0);
+      camera.lookAt(0, 0, 0);
+      camera.updateProjectionMatrix();
+      updateControls();
+
+      if (raw < 1) {
+        animationRef.current = window.requestAnimationFrame(animate);
+      } else {
+        animationRef.current = null;
+      }
+    };
+
+    animationRef.current = window.requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current !== null) {
+        window.cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+    };
   }, [camera, resetToken, view.pitch, view.yaw, view.zoom]);
 
   return (
@@ -194,6 +319,7 @@ function Graph3DScene({
   graphView,
   variables,
   selectedPoint,
+  visualState,
   resetToken,
   disabled,
   onPointSelect,
@@ -203,6 +329,7 @@ function Graph3DScene({
   graphView: ProbeGraphView3DDraft;
   variables: GraphVariables;
   selectedPoint: ProbeGraphPoint3DDraft | null;
+  visualState?: GraphVisualState;
   resetToken: number;
   disabled?: boolean;
   onPointSelect: (point: ProbeGraphPoint3DDraft) => void;
@@ -229,6 +356,8 @@ function Graph3DScene({
     [graphWindow],
   );
 
+  const highlightedAxis = visualState?.highlightedAxis ?? null;
+
   return (
     <>
       <color attach="background" args={["#090014"]} />
@@ -236,16 +365,24 @@ function Graph3DScene({
       <directionalLight position={[5, 7, 6]} intensity={1.15} />
       <pointLight position={[-5, 3, -4]} intensity={0.5} />
       <gridHelper args={[10, 20, "#6d28d9", "#312e81"]} position={[0, -2.35, 0]} />
-      <AxisLine points={xAxis} opacity={0.58} />
-      <AxisLine points={yAxis} opacity={0.38} />
-      <AxisLine points={zAxis} opacity={0.44} />
+      <AxisLine points={xAxis} opacity={highlightedAxis === "x" ? 0.98 : 0.58} color={highlightedAxis === "x" ? "#fbbf24" : "#ffffff"} />
+      <AxisLine points={yAxis} opacity={highlightedAxis === "y" ? 0.98 : 0.38} color={highlightedAxis === "y" ? "#7dd3fc" : "#ffffff"} />
+      <AxisLine points={zAxis} opacity={highlightedAxis === "z" ? 0.98 : 0.44} color={highlightedAxis === "z" ? "#fef3c7" : "#ffffff"} />
       <SurfaceMesh
         expression={expression}
         graphWindow={graphWindow}
         variables={variables}
         disabled={disabled}
+        showSurface={visualState?.showSurface}
         onPointSelect={onPointSelect}
       />
+      {(visualState?.xSlices ?? []).map((value, index) => (
+        <SliceCurve key={`x-slice-${value}-${index}`} axis="x" value={value} expression={expression} graphWindow={graphWindow} variables={variables} />
+      ))}
+      {(visualState?.ySlices ?? []).map((value, index) => (
+        <SliceCurve key={`y-slice-${value}-${index}`} axis="y" value={value} expression={expression} graphWindow={graphWindow} variables={variables} />
+      ))}
+      <VisualPointMarker visualState={visualState} graphWindow={graphWindow} expression={expression} variables={variables} />
       <SelectedPoint3DMarker point={selectedPoint} graphWindow={graphWindow} />
       <Graph3DCameraControls view={graphView} resetToken={resetToken} />
     </>
@@ -259,6 +396,7 @@ export function Graph3DWorkspace({
   variables,
   selectedPoint,
   disabled,
+  visualState,
   onPointSelect,
 }: {
   expression: string;
@@ -267,6 +405,7 @@ export function Graph3DWorkspace({
   variables: GraphVariables;
   selectedPoint: ProbeGraphPoint3DDraft | null;
   disabled?: boolean;
+  visualState?: GraphVisualState;
   onPointSelect: (point: ProbeGraphPoint3DDraft) => void;
 }) {
   const [resetToken, setResetToken] = useState(0);
@@ -294,6 +433,7 @@ export function Graph3DWorkspace({
             graphView={graphView}
             variables={variables}
             selectedPoint={selectedPoint}
+            visualState={visualState}
             resetToken={resetToken}
             disabled={disabled}
             onPointSelect={onPointSelect}
@@ -306,7 +446,7 @@ export function Graph3DWorkspace({
             position: "absolute",
             left: "1rem",
             top: "1rem",
-            maxWidth: "19rem",
+            maxWidth: "21rem",
             border: "1px solid rgba(255,255,255,0.12)",
             borderRadius: "18px",
             background: "rgba(0,0,0,0.35)",
@@ -317,8 +457,42 @@ export function Graph3DWorkspace({
             backdropFilter: "blur(10px)",
           }}
         >
-          Drag to rotate. Scroll to zoom. Right-click or two-finger drag to pan.
+          <b style={{ color: "white" }}>{visualState?.activeStepTitle ?? "3D graph"}</b>
+          <br />
+          {visualState?.overlayText ? visualState.overlayText : visualState?.highlightedTerm ? `Watching: ${visualState.highlightedTerm}` : "Drag to rotate. Scroll to zoom. Right-click or two-finger drag to pan."}
         </div>
+
+        {visualState?.labels.length ? (
+          <div
+            style={{
+              pointerEvents: "none",
+              position: "absolute",
+              left: "1rem",
+              bottom: "1rem",
+              display: "grid",
+              gap: "0.4rem",
+              maxWidth: "22rem",
+            }}
+          >
+            {visualState.labels.slice(-4).map((label) => (
+              <div
+                key={label.id}
+                style={{
+                  border: "1px solid rgba(221,214,254,0.18)",
+                  borderRadius: "16px",
+                  background: "rgba(0,0,0,0.42)",
+                  padding: "0.5rem 0.65rem",
+                  color: "rgba(255,255,255,0.86)",
+                  fontSize: "0.78rem",
+                  lineHeight: 1.4,
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                {label.text}
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         <ProbeButton
           disabled={disabled}
@@ -347,7 +521,11 @@ export function Graph3DWorkspace({
           fontSize: "0.82rem",
         }}
       >
-        <span>Selected point</span>
+        <span>
+          {(visualState?.xSlices.length || visualState?.ySlices.length)
+            ? `Visible slices: x ${visualState.xSlices.length}, y ${visualState.ySlices.length}`
+            : "Selected point"}
+        </span>
         <ProbePill tone={selectedPoint ? "purple" : "default"}>
           {formatPoint3D(selectedPoint)}
         </ProbePill>

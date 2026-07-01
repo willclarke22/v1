@@ -1,0 +1,67 @@
+"use client";
+
+export type GraphVisualAxis = "x" | "y" | "z";
+
+export type GraphVisualLabel = {
+  id: string;
+  text: string;
+  target?: string | null;
+};
+
+export type GraphVisualPoint = {
+  x: number;
+  y: number;
+  z?: number;
+  label?: string | null;
+};
+
+export type GraphVisualState = {
+  showSurface: boolean;
+  highlightedAxis: GraphVisualAxis | null;
+  highlightedTerm: string | null;
+  xSlices: number[];
+  ySlices: number[];
+  labels: GraphVisualLabel[];
+  tangent: { x: number; label?: string | null } | null;
+  secant: { from: number; to: number; label?: string | null } | null;
+  areaRegion: { from: number; to: number; label?: string | null } | null;
+  showIntersections: boolean;
+  point: GraphVisualPoint | null;
+  activeFunctionId: string | null;
+  activeStepId: string | null;
+  activeStepTitle: string | null;
+  controlsUnlocked: boolean;
+};
+
+export function createDefaultGraphVisualState(): GraphVisualState {
+  return {
+    showSurface: true,
+    highlightedAxis: null,
+    highlightedTerm: null,
+    xSlices: [],
+    ySlices: [],
+    labels: [],
+    tangent: null,
+    secant: null,
+    areaRegion: null,
+    showIntersections: false,
+    point: null,
+    activeFunctionId: null,
+    activeStepId: null,
+    activeStepTitle: null,
+    controlsUnlocked: false,
+  };
+}
+
+export function cloneGraphVisualState(state: GraphVisualState): GraphVisualState {
+  return {
+    ...state,
+    xSlices: [...state.xSlices],
+    ySlices: [...state.ySlices],
+    labels: state.labels.map((label) => ({ ...label })),
+    tangent: state.tangent ? { ...state.tangent } : null,
+    secant: state.secant ? { ...state.secant } : null,
+    areaRegion: state.areaRegion ? { ...state.areaRegion } : null,
+    point: state.point ? { ...state.point } : null,
+  };
+}
