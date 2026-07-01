@@ -13,7 +13,6 @@ import {
 
 type ApiResult<T> = {
   ok: boolean;
-  provider?: string;
   model?: string;
   elapsed_ms?: number;
   output?: T;
@@ -34,14 +33,6 @@ type ImageResult = {
 type TopicMode = "auto" | "continue_active" | "force_new" | "switch_selected";
 type BridgeLevel = "bridge_0" | "bridge_1" | "bridge_2" | "full_bridge";
 type JargonLevel = "none" | "light" | "standard" | "full";
-
-// MYWAY_FULL_LOOP_PROVIDER_DROPDOWN_V1
-type ModelProvider = "openai" | "nvidia";
-
-const FULL_LOOP_MODEL_OPTIONS: Array<{ provider: ModelProvider; label: string; model: string; help: string }> = [
-  { provider: "openai", label: "OpenAI · GPT-5.5", model: "gpt-5.5", help: "OpenAI Responses API path." },
-  { provider: "nvidia", label: "NVIDIA · DeepSeek V4 Pro", model: "deepseek-ai/deepseek-v4-pro", help: "NVIDIA OpenAI-compatible chat completions path." },
-];
 
 type TopicDecision = {
   action: "continue_existing_topic" | "switch_to_existing_topic" | "create_new_topic";
@@ -575,12 +566,6 @@ export function OpenAIFullLoopLab() {
   const [learnerMessage, setLearnerMessage] = useState(DEFAULT_MESSAGE);
   const [topicLabel, setTopicLabel] = useState("Auto-detect from learner message");
   const [topicMode, setTopicMode] = useState<TopicMode>("auto");
-  const [modelProvider, setModelProvider] = useState<ModelProvider>("openai");
-
-  function providerForModelName(modelName: string): ModelProvider {
-    const normalized = modelName.trim().toLowerCase();
-    return normalized.includes("deepseek") || normalized.startsWith("deepseek-ai/") ? "nvidia" : modelProvider;
-  }
   const [model, setModel] = useState("gpt-5.5");
   const [imageModel, setImageModel] = useState("gpt-image-1");
   const [profile, setProfile] = useState<PersonalizationProfile>(() => defaultProfile());
@@ -628,15 +613,6 @@ export function OpenAIFullLoopLab() {
       JSON.stringify({ topics, activeTopicId, history: history.slice(-40), profile }),
     );
   }, [activeTopicId, history, loadedFromStorage, profile, topics]);
-
-  const selectedModelOption =
-    FULL_LOOP_MODEL_OPTIONS.find((option) => option.provider === modelProvider) ?? FULL_LOOP_MODEL_OPTIONS[0];
-
-  function handleModelProviderChange(nextProvider: ModelProvider) {
-    const nextOption = FULL_LOOP_MODEL_OPTIONS.find((option) => option.provider === nextProvider) ?? FULL_LOOP_MODEL_OPTIONS[0];
-    setModelProvider(nextOption.provider);
-    setModel(nextOption.model);
-  }
 
   const output = generateResult?.output ?? null;
   const probe = output?.probe ?? null;
@@ -789,7 +765,6 @@ export function OpenAIFullLoopLab() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          model_provider: providerForModelName(model),
           model,
           learner_message: learnerMessage,
           diagnosis: output?.diagnosis ?? null,
@@ -905,21 +880,6 @@ export function OpenAIFullLoopLab() {
 
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-300/70">Model provider</span>
-              <select
-                value={modelProvider}
-                onChange={(event) => handleModelProviderChange(event.target.value as ModelProvider)}
-                className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none focus:border-emerald-200/45"
-              >
-                {FULL_LOOP_MODEL_OPTIONS.map((option) => (
-                  <option key={option.provider} value={option.provider}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <span className="text-[0.68rem] leading-4 text-zinc-400">{selectedModelOption.help}</span>
-            </label>
-            <label className="grid gap-2">
               <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-300/70">Topic mode</span>
               <select value={topicMode} onChange={(event) => setTopicMode(event.target.value as TopicMode)} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none focus:border-emerald-200/45">
                 <option value="auto">Auto route topic</option>
@@ -933,7 +893,7 @@ export function OpenAIFullLoopLab() {
               <input value={topicLabel} onChange={(event) => setTopicLabel(event.target.value)} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none focus:border-emerald-200/45" />
             </label>
             <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-300/70">Model override</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-300/70">OpenAI model</span>
               <input value={model} onChange={(event) => setModel(event.target.value)} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none focus:border-emerald-200/45" />
             </label>
             <label className="grid gap-2">
@@ -972,21 +932,6 @@ export function OpenAIFullLoopLab() {
 
           {activeTopic ? (
             <div className="grid gap-3">
-            <label className="grid gap-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-300/70">Model provider</span>
-              <select
-                value={modelProvider}
-                onChange={(event) => handleModelProviderChange(event.target.value as ModelProvider)}
-                className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none focus:border-emerald-200/45"
-              >
-                {FULL_LOOP_MODEL_OPTIONS.map((option) => (
-                  <option key={option.provider} value={option.provider}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <span className="text-[0.68rem] leading-4 text-zinc-400">{selectedModelOption.help}</span>
-            </label>
               <MetricCard label="confusion" value={activeTopic.confusion} help="0 = clarity, 1 = total confusion" />
               <MetricCard label="insight" value={activeTopic.insight} help="0 = no insight, 1 = breakthrough synthesis" />
               <MetricCard label="mastery" value={activeTopic.mastery} help="Cautious sandbox learning score" />

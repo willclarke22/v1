@@ -29,27 +29,6 @@ export function defaultFullLoopProvider(): FullLoopTextProvider {
   return normalizeFullLoopProvider(process.env.MYWAY_SANDBOX_MODEL_PROVIDER);
 }
 
-export function inferFullLoopProvider(args: {
-  provider?: unknown;
-  model?: unknown;
-}): FullLoopTextProvider {
-  const rawProvider = typeof args.provider === "string" ? args.provider.trim().toLowerCase() : "";
-  const rawModel = typeof args.model === "string" ? args.model.trim().toLowerCase() : "";
-
-  if (
-    rawModel.startsWith("deepseek-ai/") ||
-    rawModel.includes("deepseek") ||
-    rawModel.includes("nvidia")
-  ) {
-    return "nvidia";
-  }
-
-  if (rawProvider === "nvidia") return "nvidia";
-  if (rawProvider === "openai") return "openai";
-
-  return defaultFullLoopProvider();
-}
-
 export function defaultModelForProvider(provider: FullLoopTextProvider) {
   return provider === "nvidia" ? DEFAULT_NVIDIA_FULL_LOOP_MODEL : DEFAULT_OPENAI_MODEL;
 }
@@ -148,7 +127,7 @@ export async function callFullLoopTextModel(args: {
   user: string;
   maxOutputTokens?: number;
 }) {
-  const provider = inferFullLoopProvider({ provider: args.provider, model: args.model });
+  const provider = normalizeFullLoopProvider(args.provider);
   const model = args.model?.trim() || defaultModelForProvider(provider);
 
   if (provider === "nvidia") {

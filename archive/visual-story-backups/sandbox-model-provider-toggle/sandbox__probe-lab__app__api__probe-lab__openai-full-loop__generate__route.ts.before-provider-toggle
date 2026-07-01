@@ -1,16 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  callFullLoopTextModel,
-  defaultFullLoopProvider,
-  inferFullLoopProvider,
-  defaultModelForProvider,
-  normalizeFullLoop,
-  normalizeFullLoopProvider,
-  num,
-  parseJson,
-  record,
-  text,
-} from "../_shared";
+import { DEFAULT_OPENAI_MODEL, callResponses, num, parseJson, record, text } from "../_shared";
 import { VISUAL_STORY_PROMPT_CONTRACT_V1 } from "./visual-story-prompt-contract";
 
 export const runtime = "nodejs";
@@ -34,8 +23,6 @@ type GenerateRequest = {
   generate_reason?: "message" | "followup_from_attempt";
   turn_mode?: "clarify_first" | "orientation_first" | "teach_then_check" | "probe_only";
   model?: string;
-  model_provider?: string;
-  provider?: string;
 };
 
 function bool(value: unknown, fallback = false) {
@@ -402,20 +389,8 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     route: "openai-full-loop/generate",
-    configured_provider: defaultFullLoopProvider(),
-    providers: {
-      openai: {
-        label: "OpenAI GPT-5.5",
-        has_api_key: Boolean(process.env.OPENAI_API_KEY?.trim()),
-        default_model: defaultModelForProvider("openai"),
-      },
-      nvidia: {
-        label: "NVIDIA DeepSeek V4 Pro",
-        has_api_key: Boolean(process.env.NVIDIA_API_KEY?.trim()),
-        default_model: defaultModelForProvider("nvidia"),
-        base_url: process.env.NVIDIA_BASE_URL?.trim() || "https://integrate.api.nvidia.com/v1",
-      },
-    },
+    has_api_key: Boolean(process.env.OPENAI_API_KEY?.trim()),
+    default_model: DEFAULT_OPENAI_MODEL,
   });
 }
 
@@ -426,12 +401,10 @@ export async function POST(request: Request) {
   const topicLabel = text(body.target_topic_label, "Auto-detect from learner message", 180);
   const bridgeLevel = body.bridge_level ?? "bridge_0";
   const jargonLevel = body.jargon_level ?? (bridgeLevel === "bridge_0" ? "none" : "light");
-  const provider = inferFullLoopProvider({ provider: body.model_provider ?? body.provider ?? defaultFullLoopProvider(), model: body.model });
-  const model = body.model?.trim() || defaultModelForProvider(provider);
+  const model = body.model?.trim() || DEFAULT_OPENAI_MODEL;
 
   try {
-    const content = await callFullLoopTextModel({
-      provider,
+    const content = await callResponses({
       model,
       system: systemPrompt(),
       user: userPrompt({ ...body, learnerMessage, topicLabel, bridgeLevel, jargonLevel }),
@@ -456,9 +429,8 @@ export async function POST(request: Request) {
         content,
       ].join("\n");
 
-      repairedPreview = await callFullLoopTextModel({
-      provider,
-      model,
+      repairedPreview = await callResponses({
+        model,
         system: "You are a strict JSON repair tool. Output only valid JSON.",
         user: repairPrompt,
         maxOutputTokens: 7000,
@@ -470,7 +442,6 @@ export async function POST(request: Request) {
     const output = normalizeOutput(parsedOutput, { learnerMessage, topicLabel, bridgeLevel, jargonLevel });
     return NextResponse.json({
       ok: true,
-      provider,
       model,
       elapsed_ms: Date.now() - startedAt,
       output,
@@ -478,9 +449,9 @@ export async function POST(request: Request) {
       repaired_output_preview: repairedPreview ? repairedPreview.slice(0, 2600) : null,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown full-loop generate error";
-    console.error("[myway-sandbox-full-loop/generate]", message);
-    return NextResponse.json({ ok: false, provider, model, elapsed_ms: Date.now() - startedAt, error: message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown OpenAI generate error";
+    console.error("[myway-openai-full-loop/generate]", message);
+    return NextResponse.json({ ok: false, model, elapsed_ms: Date.now() - startedAt, error: message }, { status: 500 });
   }
 }
 

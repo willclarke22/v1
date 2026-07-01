@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import {
   callFullLoopTextModel,
   defaultFullLoopProvider,
-  inferFullLoopProvider,
   defaultModelForProvider,
   normalizeFullLoopProvider,
   num,
@@ -215,7 +214,7 @@ function userPrompt(input: EvaluateRequest) {
 export async function POST(request: Request) {
   const startedAt = Date.now();
   const body = (await request.json().catch(() => ({}))) as EvaluateRequest;
-  const provider = inferFullLoopProvider({ provider: body.model_provider ?? body.provider ?? defaultFullLoopProvider(), model: body.model });
+  const provider = normalizeFullLoopProvider(body.model_provider ?? body.provider ?? defaultFullLoopProvider());
   const model = body.model?.trim() || defaultModelForProvider(provider);
 
   try {

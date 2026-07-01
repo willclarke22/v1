@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import {
   callFullLoopTextModel,
   defaultFullLoopProvider,
-  inferFullLoopProvider,
   defaultModelForProvider,
   normalizeFullLoop,
   normalizeFullLoopProvider,
@@ -426,7 +425,7 @@ export async function POST(request: Request) {
   const topicLabel = text(body.target_topic_label, "Auto-detect from learner message", 180);
   const bridgeLevel = body.bridge_level ?? "bridge_0";
   const jargonLevel = body.jargon_level ?? (bridgeLevel === "bridge_0" ? "none" : "light");
-  const provider = inferFullLoopProvider({ provider: body.model_provider ?? body.provider ?? defaultFullLoopProvider(), model: body.model });
+  const provider = normalizeFullLoopProvider(body.model_provider ?? body.provider ?? defaultFullLoopProvider());
   const model = body.model?.trim() || defaultModelForProvider(provider);
 
   try {

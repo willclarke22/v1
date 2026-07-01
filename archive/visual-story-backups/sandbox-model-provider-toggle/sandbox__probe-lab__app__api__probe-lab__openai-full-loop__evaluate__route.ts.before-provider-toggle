@@ -1,23 +1,11 @@
 import { NextResponse } from "next/server";
-import {
-  callFullLoopTextModel,
-  defaultFullLoopProvider,
-  inferFullLoopProvider,
-  defaultModelForProvider,
-  normalizeFullLoopProvider,
-  num,
-  parseJson,
-  record,
-  text,
-} from "../_shared";
+import { DEFAULT_OPENAI_MODEL, callResponses, num, parseJson, record, text } from "../_shared";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type EvaluateRequest = {
   model?: string;
-  model_provider?: string;
-  provider?: string;
   learner_message?: string;
   diagnosis?: unknown;
   probe?: unknown;
@@ -215,12 +203,10 @@ function userPrompt(input: EvaluateRequest) {
 export async function POST(request: Request) {
   const startedAt = Date.now();
   const body = (await request.json().catch(() => ({}))) as EvaluateRequest;
-  const provider = inferFullLoopProvider({ provider: body.model_provider ?? body.provider ?? defaultFullLoopProvider(), model: body.model });
-  const model = body.model?.trim() || defaultModelForProvider(provider);
+  const model = body.model?.trim() || DEFAULT_OPENAI_MODEL;
 
   try {
-    const content = await callFullLoopTextModel({
-      provider,
+    const content = await callResponses({
       model,
       system: systemPrompt(),
       user: userPrompt(body),
@@ -228,15 +214,14 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({
       ok: true,
-      provider,
       model,
       elapsed_ms: Date.now() - startedAt,
       output: normalizeEvaluation(parseJson(content)),
       raw_output_preview: content.slice(0, 2200),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown full-loop evaluate error";
-    console.error("[myway-sandbox-full-loop/evaluate]", message);
-    return NextResponse.json({ ok: false, provider, model, elapsed_ms: Date.now() - startedAt, error: message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown OpenAI evaluate error";
+    console.error("[myway-openai-full-loop/evaluate]", message);
+    return NextResponse.json({ ok: false, model, elapsed_ms: Date.now() - startedAt, error: message }, { status: 500 });
   }
 }

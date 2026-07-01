@@ -1,0 +1,12 @@
+MYWAY DEEPSEEK PROVIDER INFERENCE FIX
+Generated: 2026-07-01T21:57:34.249Z
+
+Reason:
+- DeepSeek model names were reaching the OpenAI Responses API path.
+- This makes the route infer provider=nvidia when model includes deepseek/deepseek-ai.
+
+Changed:
+- sandbox/probe-lab/app/api/probe-lab/openai-full-loop/_shared.ts
+- sandbox/probe-lab/app/api/probe-lab/openai-full-loop/generate/route.ts
+- sandbox/probe-lab/app/api/probe-lab/openai-full-loop/evaluate/route.ts
+- sandbox/probe-lab/ui/learning-space/probes/openai-full-loop/openai-full-loop-lab.tsx

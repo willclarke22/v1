@@ -1,0 +1,10 @@
+MYWAY SANDBOX MODEL PROVIDER TOGGLE IMPORT FIX
+Generated: 2026-07-01T21:44:47.589Z
+
+Reason:
+- Previous provider-toggle patch accidentally merged shared imports into the next/server import block.
+- This fix rewrites only the import headers for generate/route.ts and evaluate/route.ts.
+
+Changed:
+- sandbox\probe-lab\app\api\probe-lab\openai-full-loop\generate\route.ts
+- sandbox\probe-lab\app\api\probe-lab\openai-full-loop\evaluate\route.ts

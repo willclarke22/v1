@@ -576,11 +576,6 @@ export function OpenAIFullLoopLab() {
   const [topicLabel, setTopicLabel] = useState("Auto-detect from learner message");
   const [topicMode, setTopicMode] = useState<TopicMode>("auto");
   const [modelProvider, setModelProvider] = useState<ModelProvider>("openai");
-
-  function providerForModelName(modelName: string): ModelProvider {
-    const normalized = modelName.trim().toLowerCase();
-    return normalized.includes("deepseek") || normalized.startsWith("deepseek-ai/") ? "nvidia" : modelProvider;
-  }
   const [model, setModel] = useState("gpt-5.5");
   const [imageModel, setImageModel] = useState("gpt-image-1");
   const [profile, setProfile] = useState<PersonalizationProfile>(() => defaultProfile());
@@ -789,7 +784,7 @@ export function OpenAIFullLoopLab() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          model_provider: providerForModelName(model),
+          model_provider: modelProvider,
           model,
           learner_message: learnerMessage,
           diagnosis: output?.diagnosis ?? null,
