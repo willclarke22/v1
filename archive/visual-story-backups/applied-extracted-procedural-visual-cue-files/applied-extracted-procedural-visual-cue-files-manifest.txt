@@ -1,0 +1,12 @@
+MYWAY APPLIED EXTRACTED PROCEDURAL VISUAL CUE FILES
+
+Applied from:
+C:\Users\willc\Downloads\myway_sandbox_procedural_visual_cue_files
+
+Applied files:
+- ui\learning-space\probes\sandbox\visual-story-probe.tsx
+- lib\sandbox\visual-story\normalize-visual-story.ts
+- sandbox\probe-lab\app\api\probe-lab\openai-full-loop\generate\visual-story-prompt-contract.ts
+
+Backups:
+archive\visual-story-backups\applied-extracted-procedural-visual-cue-files

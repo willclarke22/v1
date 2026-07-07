@@ -1,0 +1,16 @@
+MYWAY OPENAI FULL LOOP - NO OPENAI FALLBACK
+Generated: 2026-07-02T02:38:54.463Z
+
+Patched files:
+- sandbox\probe-lab\app\api\probe-lab\openai-full-loop\_shared.ts
+- sandbox\probe-lab\app\api\probe-lab\openai-full-loop\generate\route.ts
+
+Backups:
+- archive\visual-story-backups\openai-full-loop-no-openai-fallback\sandbox__probe-lab__app__api__probe-lab__openai-full-loop___shared.ts.before-no-openai-fallback.bak
+- archive\visual-story-backups\openai-full-loop-no-openai-fallback\sandbox__probe-lab__app__api__probe-lab__openai-full-loop__generate__route.ts.before-no-openai-fallback.bak
+
+Behavior:
+- DeepSeek/NVIDIA stays DeepSeek/NVIDIA.
+- No automatic fallback to OpenAI.
+- NVIDIA request timeout is 180 seconds.
+- A failed NVIDIA request should return a clean failure/debug, not an OpenAI result.

@@ -1,0 +1,341 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { NextResponse } from "next/server";
+import {
+  hasVisualStoryContract,
+  normalizeVisualStoryScene,
+} from "@/lib/sandbox/visual-story";
+import {
+  callFullLoopTextModel,
+  defaultFullLoopProvider,
+  defaultModelForProvider,
+  inferFullLoopProvider,
+  parseJson,
+  record,
+  text,
+} from "../_shared";
+import {
+  buildGenerateOutputFromVisualDraft,
+  buildModelDrivenVisualStoryPrompts,
+  normalizeModelDrivenVisualStoryDraft,
+  type ModelDrivenVisualStoryRequest,
+} from "./model-driven-visual-story";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type GenerateRequest = {
+  learner_message?: string;
+  target_topic_label?: string;
+  bridge_level?: "bridge_0" | "bridge_1" | "bridge_2" | "full_bridge";
+  jargon_level?: "none" | "light" | "standard" | "full";
+  preferred_style?: string;
+  topic_mode?: "auto" | "continue_active" | "force_new" | "switch_selected";
+  active_topic_id?: string | null;
+  generate_reason?: "message" | "followup_from_attempt";
+  turn_mode?: "clarify_first" | "orientation_first" | "teach_then_check" | "probe_only";
+  model?: string;
+  model_provider?: string;
+  provider?: string;
+  dry_run?: boolean;
+  debug_only?: boolean;
+};
+
+const GENERATE_DEBUG_FILE_RELATIVE = path.join(
+  "sandbox",
+  "probe-lab",
+  "debug",
+  "openai-full-loop",
+  "latest-generate-debug.json",
+);
+
+const MODEL_REQUEST_DEBUG_FILE_RELATIVE = path.join(
+  "sandbox",
+  "probe-lab",
+  "debug",
+  "openai-full-loop",
+  "latest-model-request-debug.json",
+);
+
+const GENERATE_DEBUG_FILE_ABSOLUTE = path.join(process.cwd(), GENERATE_DEBUG_FILE_RELATIVE);
+const MODEL_REQUEST_DEBUG_FILE_ABSOLUTE = path.join(process.cwd(), MODEL_REQUEST_DEBUG_FILE_RELATIVE);
+const GENERATE_DEBUG_FILE_DISPLAY = GENERATE_DEBUG_FILE_RELATIVE.split(path.sep).join("\\");
+const MODEL_REQUEST_DEBUG_FILE_DISPLAY = MODEL_REQUEST_DEBUG_FILE_RELATIVE.split(path.sep).join("\\");
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function writeJsonFile(filePath: string, snapshot: Record<string, unknown>) {
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, JSON.stringify(snapshot, null, 2) + "\n", "utf8");
+}
+
+async function writeGenerateDebug(snapshot: Record<string, unknown>) {
+  try {
+    await writeJsonFile(GENERATE_DEBUG_FILE_ABSOLUTE, snapshot);
+    return { ok: true, error: null };
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+async function writeModelRequestDebug(snapshot: Record<string, unknown>) {
+  try {
+    await writeJsonFile(MODEL_REQUEST_DEBUG_FILE_ABSOLUTE, snapshot);
+    return { ok: true, error: null };
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+function buildVisualStoryDebug(output: ReturnType<typeof buildGenerateOutputFromVisualDraft>) {
+  const probe = output.probe as Parameters<typeof hasVisualStoryContract>[0];
+  const rendererParams = record(probe.renderer_params);
+  const rawVisualStory =
+    rendererParams.visual_story ??
+    rendererParams.visualStory ??
+    rendererParams.visual_story_v1 ??
+    null;
+
+  if (!hasVisualStoryContract(probe)) {
+    return {
+      has_visual_story_contract: false,
+      raw_visual_story: rawVisualStory,
+      normalized_visual_story_scene: null,
+      normalizer_error: null,
+    };
+  }
+
+  try {
+    return {
+      has_visual_story_contract: true,
+      raw_visual_story: rawVisualStory,
+      normalized_visual_story_scene: normalizeVisualStoryScene(probe),
+      normalizer_error: null,
+    };
+  } catch (error) {
+    return {
+      has_visual_story_contract: true,
+      raw_visual_story: rawVisualStory,
+      normalized_visual_story_scene: null,
+      normalizer_error: errorMessage(error),
+    };
+  }
+}
+
+function requestToModelInput(body: GenerateRequest): ModelDrivenVisualStoryRequest {
+  const learnerMessage = text(
+    body.learner_message,
+    "Is there a way that I can try to understand this? I can't picture it.",
+    1600,
+  );
+  const topicLabel = text(body.target_topic_label, "Auto-detect from learner message", 180);
+  const bridgeLevel = body.bridge_level ?? "bridge_0";
+  const jargonLevel = body.jargon_level ?? (bridgeLevel === "bridge_0" ? "none" : "light");
+
+  return {
+    learnerMessage,
+    topicLabel,
+    bridgeLevel,
+    jargonLevel,
+    preferredStyle: body.preferred_style ?? "visual_description",
+    topicMode: body.topic_mode ?? "auto",
+    activeTopicId: body.active_topic_id ?? null,
+    generateReason: body.generate_reason ?? "message",
+    turnMode: body.turn_mode ?? "teach_then_check",
+  };
+}
+
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    route: "openai-full-loop/generate",
+    architecture: "model_drives_visual_story_draft_v1",
+    model_output_schema: "myway_model_visual_story_draft_v1",
+    configured_provider: defaultFullLoopProvider(),
+    providers: {
+      openai: {
+        label: "OpenAI GPT-5.5",
+        has_api_key: Boolean(process.env.OPENAI_API_KEY?.trim()),
+        default_model: defaultModelForProvider("openai"),
+      },
+      nvidia: {
+        label: "NVIDIA DeepSeek V4 Pro",
+        has_api_key: Boolean(process.env.NVIDIA_API_KEY?.trim()),
+        default_model: defaultModelForProvider("nvidia"),
+        base_url: process.env.NVIDIA_BASE_URL?.trim() || "https://integrate.api.nvidia.com/v1",
+      },
+    },
+  });
+}
+
+export async function POST(request: Request) {
+  const startedAt = Date.now();
+  const body = (await request.json().catch(() => ({}))) as GenerateRequest;
+  const modelInput = requestToModelInput(body);
+  const provider = inferFullLoopProvider({
+    provider: body.model_provider ?? body.provider ?? defaultFullLoopProvider(),
+    model: body.model,
+  });
+  const model = body.model?.trim() || defaultModelForProvider(provider);
+  const prompts = buildModelDrivenVisualStoryPrompts(modelInput);
+  const maxOutputTokens = 2400;
+
+  const requestDebugSnapshot = {
+    schema_version: "myway_openai_full_loop_latest_model_request_debug_v4",
+    generated_at: new Date().toISOString(),
+    route: "openai-full-loop/generate",
+    architecture: "model_drives_visual_story_draft_v1",
+    calls_model: !(body.dry_run === true || body.debug_only === true),
+    provider,
+    model,
+    max_output_tokens: maxOutputTokens,
+    request_summary: modelInput,
+    prompt_sizes: {
+      system_prompt_characters: prompts.system.length,
+      user_prompt_characters: prompts.user.length,
+      total_prompt_characters: prompts.system.length + prompts.user.length,
+    },
+    expected_model_output_schema: "myway_model_visual_story_draft_v1",
+    prompts: {
+      system_prompt: prompts.system,
+      user_prompt: prompts.user,
+    },
+  };
+
+  const requestDebugWrite = await writeModelRequestDebug(requestDebugSnapshot);
+
+  if (body.dry_run === true || body.debug_only === true) {
+    return NextResponse.json({
+      ok: true,
+      dry_run: true,
+      provider,
+      model,
+      max_output_tokens: maxOutputTokens,
+      prompt_sizes: requestDebugSnapshot.prompt_sizes,
+      debug_file_path: MODEL_REQUEST_DEBUG_FILE_DISPLAY,
+      debug_file_absolute_path: MODEL_REQUEST_DEBUG_FILE_ABSOLUTE,
+      debug_file_write_ok: requestDebugWrite.ok,
+      debug_file_write_error: requestDebugWrite.error,
+    });
+  }
+
+  try {
+    const rawModelText = await callFullLoopTextModel({
+      provider,
+      model,
+      system: prompts.system,
+      user: prompts.user,
+      maxOutputTokens,
+    });
+
+    let parsed: unknown;
+    try {
+      parsed = parseJson(rawModelText);
+    } catch (parseError) {
+      const elapsedMs = Date.now() - startedAt;
+      const debugWrite = await writeGenerateDebug({
+        schema_version: "myway_openai_full_loop_latest_generate_debug_v4",
+        generated_at: new Date().toISOString(),
+        route: "openai-full-loop/generate",
+        architecture: "model_drives_visual_story_draft_v1",
+        ok: false,
+        provider,
+        model,
+        elapsed_ms: elapsedMs,
+        request: modelInput,
+        model_request_debug_file: MODEL_REQUEST_DEBUG_FILE_DISPLAY,
+        parse_error: errorMessage(parseError),
+        raw_model_text: rawModelText,
+      });
+
+      return NextResponse.json(
+        {
+          ok: false,
+          provider,
+          model,
+          elapsed_ms: elapsedMs,
+          error: "Model returned invalid JSON for myway_model_visual_story_draft_v1: " + errorMessage(parseError),
+          raw_output_preview: rawModelText.slice(0, 2400),
+          debug_file_path: GENERATE_DEBUG_FILE_DISPLAY,
+          debug_file_absolute_path: GENERATE_DEBUG_FILE_ABSOLUTE,
+          debug_file_write_ok: debugWrite.ok,
+          debug_file_write_error: debugWrite.error,
+          model_request_debug_file_path: MODEL_REQUEST_DEBUG_FILE_DISPLAY,
+        },
+        { status: 502 },
+      );
+    }
+
+    const modelDraft = normalizeModelDrivenVisualStoryDraft(parsed, modelInput);
+    const output = buildGenerateOutputFromVisualDraft(modelDraft, modelInput);
+    const visualStoryDebug = buildVisualStoryDebug(output);
+    const elapsedMs = Date.now() - startedAt;
+
+    const debugWrite = await writeGenerateDebug({
+      schema_version: "myway_openai_full_loop_latest_generate_debug_v4",
+      generated_at: new Date().toISOString(),
+      route: "openai-full-loop/generate",
+      architecture: "model_drives_visual_story_draft_v1",
+      ok: true,
+      provider,
+      model,
+      elapsed_ms: elapsedMs,
+      request: modelInput,
+      model_request_debug_file: MODEL_REQUEST_DEBUG_FILE_DISPLAY,
+      raw_model_text: rawModelText,
+      parsed_model_draft: parsed,
+      normalized_model_draft: modelDraft,
+      myway_wrapped_output: output,
+      visual_story: visualStoryDebug,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      provider,
+      model,
+      elapsed_ms: elapsedMs,
+      output,
+      raw_output_preview: rawModelText.slice(0, 2400),
+      repaired_output_preview: null,
+      debug_file_path: GENERATE_DEBUG_FILE_DISPLAY,
+      debug_file_absolute_path: GENERATE_DEBUG_FILE_ABSOLUTE,
+      debug_file_write_ok: debugWrite.ok,
+      debug_file_write_error: debugWrite.error,
+      model_request_debug_file_path: MODEL_REQUEST_DEBUG_FILE_DISPLAY,
+    });
+  } catch (error) {
+    const elapsedMs = Date.now() - startedAt;
+    const message = errorMessage(error);
+    const debugWrite = await writeGenerateDebug({
+      schema_version: "myway_openai_full_loop_latest_generate_debug_v4",
+      generated_at: new Date().toISOString(),
+      route: "openai-full-loop/generate",
+      architecture: "model_drives_visual_story_draft_v1",
+      ok: false,
+      provider,
+      model,
+      elapsed_ms: elapsedMs,
+      request: modelInput,
+      model_request_debug_file: MODEL_REQUEST_DEBUG_FILE_DISPLAY,
+      error: message,
+    });
+
+    return NextResponse.json(
+      {
+        ok: false,
+        provider,
+        model,
+        elapsed_ms: elapsedMs,
+        error: message,
+        debug_file_path: GENERATE_DEBUG_FILE_DISPLAY,
+        debug_file_absolute_path: GENERATE_DEBUG_FILE_ABSOLUTE,
+        debug_file_write_ok: debugWrite.ok,
+        debug_file_write_error: debugWrite.error,
+        model_request_debug_file_path: MODEL_REQUEST_DEBUG_FILE_DISPLAY,
+      },
+      { status: 500 },
+    );
+  }
+}

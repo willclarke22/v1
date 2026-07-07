@@ -1,0 +1,254 @@
+{
+  "route": "generate-full-turn",
+  "step": "6d_semantic_draft_boundary",
+  "model_task": "visual_learning_semantic_draft_planner",
+  "prompt_stats": {
+    "system_chars": 1030,
+    "user_chars": 6404,
+    "total_chars": 7434,
+    "available_probe_type_count": 7
+  },
+  "messages_sent_to_model": [
+    {
+      "role": "system",
+      "content": "You are the MyWay Visual Learning Turn Planner.\n\nReturn JSON only.\n\nYour job is outside intelligence: decide the teaching meaning of the turn.\nMyWay will do deterministic wrapping, schema_version fields, delivery_context, validation, asset resolution, and rendering.\n\nReturn a compact semantic draft, not the final app object.\n\nYou must decide:\n- whether to proceed or ask a clarification question\n- topic label and confidence\n- diagnosis label and confidence\n- root problem, target takeaway, and why visual-first\n- learner-facing orientation segments\n- scene entities, relationships, and beats\n- guided interaction\n- follow-up probe that tests the target takeaway\n- tentative personalization hypotheses only\n\nRules:\n- Use plain language for bridge_0 or jargon_level none.\n- Do not use asset ids or file paths. Describe visual_need only.\n- Every beat must cite orientation segment ids.\n- Scene beats must visually express the orientation.\n- Do not create durable personalization_delta before an attempt.\n- Keep the output compact."
+    },
+    {
+      "role": "user",
+      "content": "Build a compact MyWay semantic draft for this visual learning turn.\n\nLEARNER_CONTEXT\n{\n  \"learner_message\": \"I can't picture the Krebs cycle.\",\n  \"topic_label\": \"Krebs cycle\",\n  \"bridge_level\": \"bridge_0\",\n  \"jargon_level\": \"none\",\n  \"preferred_style\": \"visual_description\",\n  \"known_recent_diagnoses\": []\n}\n\nCAPABILITIES_AND_LIMITS\n{\n  \"allowed_diagnosis_labels\": [\n    \"unknown\",\n    \"no_gap_detected\",\n    \"recall_gap\",\n    \"representation_gap\",\n    \"procedure_gap\",\n    \"discrimination_gap\",\n    \"transfer_gap\",\n    \"metacognitive_gap\"\n  ],\n  \"allowed_probe_types\": [\n    \"single_choice\",\n    \"multi_choice\",\n    \"sequence\",\n    \"drag_drop_placements\",\n    \"explain\",\n    \"predict\",\n    \"graph_relationship\"\n  ],\n  \"allowed_experience_modes\": [\n    \"model_selected_scene\",\n    \"process_loop\",\n    \"mechanism\",\n    \"compare_contrast\",\n    \"spatial_structure\",\n    \"generic_scene\"\n  ],\n  \"allowed_render_kinds\": [\n    \"sphere\",\n    \"box\",\n    \"arrow\",\n    \"path\",\n    \"label\",\n    \"particle\",\n    \"registered_asset\",\n    \"any\"\n  ],\n  \"allowed_scene_actions\": [\n    \"show_entity\",\n    \"highlight_entity\",\n    \"move_entity\",\n    \"trace_path\",\n    \"show_label\",\n    \"show_relationship\",\n    \"fade_in\",\n    \"fade_out\",\n    \"pause_for_check\"\n  ],\n  \"limits\": {\n    \"max_orientation_segments\": 4,\n    \"max_scene_beats\": 4,\n    \"max_probe_options\": 4\n  }\n}\n\nOUTPUT_SHAPE\n{\n  \"schema_version\": \"myway_visual_learning_semantic_draft_v1\",\n  \"turn_status\": \"proceed | needs_clarification\",\n  \"clarification\": {\n    \"question\": \"string or null\",\n    \"reason\": \"why MyWay should proceed or ask this question\",\n    \"confidence\": {\n      \"overall\": \"0-1\",\n      \"topic\": \"0-1\",\n      \"learner_goal\": \"0-1\"\n    }\n  },\n  \"topic\": {\n    \"label\": \"short topic label\",\n    \"confidence\": \"0-1\",\n    \"reason\": \"why this topic was inferred\"\n  },\n  \"diagnosis\": {\n    \"label\": \"unknown | no_gap_detected | recall_gap | representation_gap | procedure_gap | discrimination_gap | transfer_gap | metacognitive_gap\",\n    \"confidence\": \"0-1\",\n    \"reason\": \"why this diagnosis fits the learner signal\"\n  },\n  \"learning_focus\": {\n    \"root_problem\": \"what is keeping the learner stuck\",\n    \"target_takeaway\": \"one mental model this turn should build\",\n    \"why_visual_first\": \"why a visual scene should come before the probe\"\n  },\n  \"orientation_segments\": [\n    {\n      \"id\": \"orientation_1\",\n      \"text\": \"learner-facing sentence\",\n      \"purpose\": \"introduce_scene | show_main_structure | show_motion_or_change | show_relationship | prepare_interaction | connect_to_probe\"\n    }\n  ],\n  \"scene\": {\n    \"title\": \"short title\",\n    \"experience_mode\": \"model_selected_scene | process_loop | mechanism | compare_contrast | spatial_structure | generic_scene\",\n    \"entities\": [\n      {\n        \"id\": \"entity_id\",\n        \"display_name\": \"learner-facing name\",\n        \"semantic_role\": \"what this entity means\",\n        \"visual_need\": \"what should be visible\",\n        \"semantic_tags\": [\n          \"tag\"\n        ],\n        \"preferred_render_kind\": \"sphere | box | arrow | path | label | particle | registered_asset | any\"\n      }\n    ],\n    \"relationships\": [\n      {\n        \"id\": \"relationship_id\",\n        \"source_entity_id\": \"entity_id\",\n        \"target_entity_ids\": [\n          \"entity_id\"\n        ],\n        \"relationship_type\": \"connects_to | contrasts_with | causes | becomes | enters | leaves | cycles_back | supports_takeaway\",\n        \"explanation\": \"why these entities relate\"\n      }\n    ],\n    \"beats\": [\n      {\n        \"id\": \"beat_1\",\n        \"title\": \"beat title\",\n        \"source_orientation_segment_ids\": [\n          \"orientation_1\"\n        ],\n        \"active_entity_ids\": [\n          \"entity_id\"\n        ],\n        \"actions\": [\n          {\n            \"type\": \"show_entity | highlight_entity | move_entity | trace_path | show_label | show_relationship | fade_in | fade_out | pause_for_check\",\n            \"target_entity_id\": \"entity_id\",\n            \"narration\": \"what the learner should notice\"\n          }\n        ]\n      }\n    ],\n    \"camera_notes\": \"semantic camera intent\",\n    \"interaction_notes\": \"what learner should inspect\"\n  },\n  \"guided_interaction\": {\n    \"instruction\": \"learner-facing instruction\",\n    \"required_action_type\": \"orbit | zoom | scrub_beats | inspect_entity | compare_entities | drag_object | toggle_layer | answer_in_scene | none\",\n    \"target_entity_ids\": [\n      \"entity_id\"\n    ],\n    \"success_observation\": \"what successful interaction would show\"\n  },\n  \"probe\": {\n    \"probe_type\": \"one of allowed probe types\",\n    \"question\": \"learner-facing question\",\n    \"options\": [\n      {\n        \"id\": \"option_a\",\n        \"text\": \"choice text\"\n      }\n    ],\n    \"correct_option_id\": \"option id for single choice\",\n    \"expected_ideas\": [\n      \"for explain/text probes\"\n    ],\n    \"misconception_markers\": [\n      {\n        \"misconception_id\": \"stable id\",\n        \"label\": \"short label\",\n        \"description\": \"what this misconception would reveal\"\n      }\n    ],\n    \"what_it_measures\": \"understanding this probe checks\"\n  },\n  \"personalization_hypotheses\": [\n    {\n      \"kind\": \"bridge_level | jargon_level | presentation_style | support_kind | probe_type | verification_pattern\",\n      \"value\": \"signal value\",\n      \"direction\": \"prefer | avoid | verify\",\n      \"scope\": \"global | topic | diagnosis_label | probe_type\",\n      \"scope_key\": \"string or null\",\n      \"confidence\": \"0-1\",\n      \"reason\": \"why this is only a hypothesis\"\n    }\n  ],\n  \"confidence\": {\n    \"overall\": \"0-1\",\n    \"scene\": \"0-1\",\n    \"probe\": \"0-1\"\n  }\n}\n\nImportant:\n- Return one JSON object only.\n- Use schema_version \"myway_visual_learning_semantic_draft_v1\".\n- If unclear, set turn_status \"needs_clarification\" and only include clarification plus confidence fields that matter.\n- If proceeding, include topic, diagnosis, learning_focus, orientation_segments, scene, guided_interaction, probe, personalization_hypotheses, and confidence.\n- The model supplies meaning: root problem, orientation, scene semantics, probe idea, misconceptions, and tentative personalization hypotheses.\n- MyWay supplies final wrappers, delivery_context, durations, layout, asset matching, validation, and rendering.\n- Do not use asset ids or file paths. Use visual_need descriptions only.\n- Every scene beat must cite orientation segment ids.\n- The probe must test learning_focus.target_takeaway.\n- Keep the response compact."
+    }
+  ],
+  "expected_output_contract_debug_only": {
+    "schema_version": "myway_visual_learning_semantic_draft_v1",
+    "turn_status": "proceed | needs_clarification",
+    "clarification": {
+      "question": "string or null",
+      "reason": "why MyWay should proceed or ask this question",
+      "confidence": {
+        "overall": "0-1",
+        "topic": "0-1",
+        "learner_goal": "0-1"
+      }
+    },
+    "topic": {
+      "label": "short topic label",
+      "confidence": "0-1",
+      "reason": "why this topic was inferred"
+    },
+    "diagnosis": {
+      "label": "unknown | no_gap_detected | recall_gap | representation_gap | procedure_gap | discrimination_gap | transfer_gap | metacognitive_gap",
+      "confidence": "0-1",
+      "reason": "why this diagnosis fits the learner signal"
+    },
+    "learning_focus": {
+      "root_problem": "what is keeping the learner stuck",
+      "target_takeaway": "one mental model this turn should build",
+      "why_visual_first": "why a visual scene should come before the probe"
+    },
+    "orientation_segments": [
+      {
+        "id": "orientation_1",
+        "text": "learner-facing sentence",
+        "purpose": "introduce_scene | show_main_structure | show_motion_or_change | show_relationship | prepare_interaction | connect_to_probe"
+      }
+    ],
+    "scene": {
+      "title": "short title",
+      "experience_mode": "model_selected_scene | process_loop | mechanism | compare_contrast | spatial_structure | generic_scene",
+      "entities": [
+        {
+          "id": "entity_id",
+          "display_name": "learner-facing name",
+          "semantic_role": "what this entity means",
+          "visual_need": "what should be visible",
+          "semantic_tags": [
+            "tag"
+          ],
+          "preferred_render_kind": "sphere | box | arrow | path | label | particle | registered_asset | any"
+        }
+      ],
+      "relationships": [
+        {
+          "id": "relationship_id",
+          "source_entity_id": "entity_id",
+          "target_entity_ids": [
+            "entity_id"
+          ],
+          "relationship_type": "connects_to | contrasts_with | causes | becomes | enters | leaves | cycles_back | supports_takeaway",
+          "explanation": "why these entities relate"
+        }
+      ],
+      "beats": [
+        {
+          "id": "beat_1",
+          "title": "beat title",
+          "source_orientation_segment_ids": [
+            "orientation_1"
+          ],
+          "active_entity_ids": [
+            "entity_id"
+          ],
+          "actions": [
+            {
+              "type": "show_entity | highlight_entity | move_entity | trace_path | show_label | show_relationship | fade_in | fade_out | pause_for_check",
+              "target_entity_id": "entity_id",
+              "narration": "what the learner should notice"
+            }
+          ]
+        }
+      ],
+      "camera_notes": "semantic camera intent",
+      "interaction_notes": "what learner should inspect"
+    },
+    "guided_interaction": {
+      "instruction": "learner-facing instruction",
+      "required_action_type": "orbit | zoom | scrub_beats | inspect_entity | compare_entities | drag_object | toggle_layer | answer_in_scene | none",
+      "target_entity_ids": [
+        "entity_id"
+      ],
+      "success_observation": "what successful interaction would show"
+    },
+    "probe": {
+      "probe_type": "one of allowed probe types",
+      "question": "learner-facing question",
+      "options": [
+        {
+          "id": "option_a",
+          "text": "choice text"
+        }
+      ],
+      "correct_option_id": "option id for single choice",
+      "expected_ideas": [
+        "for explain/text probes"
+      ],
+      "misconception_markers": [
+        {
+          "misconception_id": "stable id",
+          "label": "short label",
+          "description": "what this misconception would reveal"
+        }
+      ],
+      "what_it_measures": "understanding this probe checks"
+    },
+    "personalization_hypotheses": [
+      {
+        "kind": "bridge_level | jargon_level | presentation_style | support_kind | probe_type | verification_pattern",
+        "value": "signal value",
+        "direction": "prefer | avoid | verify",
+        "scope": "global | topic | diagnosis_label | probe_type",
+        "scope_key": "string or null",
+        "confidence": "0-1",
+        "reason": "why this is only a hypothesis"
+      }
+    ],
+    "confidence": {
+      "overall": "0-1",
+      "scene": "0-1",
+      "probe": "0-1"
+    }
+  },
+  "compiler_input_debug_only": {
+    "schema_version": "myway_visual_learning_turn_input_v1",
+    "input_kind": "user_message",
+    "user_message": {
+      "text": "I can't picture the Krebs cycle."
+    },
+    "evaluated_probe_attempt": null,
+    "known_topic_state": {
+      "topic_id": null,
+      "topic_label": "Krebs cycle",
+      "recent_diagnoses": []
+    },
+    "personalization_context": {
+      "bridge_level": "bridge_0",
+      "language_policy": {
+        "jargon_level": "none"
+      },
+      "preferred_style": "visual_description",
+      "preferred_order": [
+        "visual_description",
+        "step_by_step",
+        "concrete_examples"
+      ],
+      "preferred_order_confidence": 0.55,
+      "user_interests": [],
+      "profile_snapshot": {
+        "schema_version": "personalization_profile_snapshot_v1",
+        "summary": "Prefer clear visual descriptions and step-by-step explanations unless stronger signals exist.",
+        "teaching_signals": [],
+        "example_domains": []
+      }
+    },
+    "renderer_capabilities": {
+      "renderer": "react_three_fiber_sandbox",
+      "can_render_primitives": true,
+      "can_render_paths": true,
+      "can_render_labels": true,
+      "can_render_particles": true,
+      "can_orbit_camera": true,
+      "can_zoom_camera": true,
+      "can_show_captions": true,
+      "can_scrub_beats": true,
+      "supported_experience_modes": [
+        "model_selected_scene",
+        "process_loop",
+        "mechanism",
+        "compare_contrast",
+        "spatial_structure",
+        "generic_scene"
+      ],
+      "supported_primitives": [
+        "sphere",
+        "box",
+        "arrow",
+        "path",
+        "label",
+        "particle"
+      ],
+      "supported_scene_actions": [
+        "show_entity",
+        "highlight_entity",
+        "move_entity",
+        "trace_path",
+        "show_label",
+        "show_relationship",
+        "fade_in",
+        "fade_out",
+        "pause_for_check"
+      ]
+    },
+    "available_probe_types": [
+      "single_choice",
+      "multi_choice",
+      "sequence",
+      "drag_drop_placements",
+      "explain",
+      "predict",
+      "graph_relationship"
+    ],
+    "asset_resolution_policy": {
+      "myway_will_resolve_assets_after_model_output": true,
+      "model_should_not_use_asset_ids": true,
+      "model_should_not_invent_file_paths": true,
+      "model_should_describe_visual_needs": true,
+      "allow_primitive_fallbacks": true,
+      "prefer_scene_integrity_over_asset_availability": true
+    },
+    "output_preferences": {
+      "visual_first": true,
+      "probe_after_visual": true,
+      "no_jargon": true,
+      "max_orientation_segments": 4,
+      "max_visual_beats": 4,
+      "max_probe_options": 4,
+      "include_personalization_hypotheses": true,
+      "durable_personalization_delta_after_attempt_only": true
+    }
+  },
+  "tuning_notes_debug_only": [
+    "Step 6d semantic draft boundary: the model provides outside intelligence only.",
+    "MyWay wraps the compact semantic draft into strict VisualLearningTurnOutput deterministically.",
+    "This reduces prompt/output size while preserving model control of root problem, orientation, scene, probe, and personalization hypotheses.",
+    "Durable personalization_delta still belongs to the Attempt Evaluator after the learner attempts the probe."
+  ]
+}

@@ -1,0 +1,19 @@
+MYWAY MODEL-DRIVEN VISUAL STORY PASS 01
+Generated: 2026-07-01T22:14:59.000Z
+
+Goal:
+- Keep the model driving the visual plan.
+- Stop broad keyword matching from forcing the sine/circle/wave renderer.
+- Keep MyWay rendering safe trusted primitives.
+- Add a Close button for the opened full-script panel.
+
+Changed:
+- ui\learning-space\probes\sandbox\visual-story-probe.tsx
+- lib\sandbox\visual-story\normalize-visual-story.ts
+- sandbox\probe-lab\app\api\probe-lab\openai-full-loop\generate\visual-story-prompt-contract.ts
+
+Expected result:
+- Script panel can be closed after opening.
+- motion_to_graph only appears when the model explicitly structures that scene.
+- Other topics use GenericSceneLayer with model-provided entities/relationships/transformations.
+- Model prompt asks for enough structure to render specific visuals for arbitrary learner messages.

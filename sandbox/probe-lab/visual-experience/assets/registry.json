@@ -1,0 +1,52 @@
+{
+  "schema_version": "myway_visual_asset_registry_v1",
+  "updated_at": "2026-07-02T17:55:00-07:00",
+  "asset_root_public_url": "/sandbox-assets/visual-experience",
+  "notes": "Sandbox visual asset shelf. Browser-loadable GLBs live under public/sandbox-assets/visual-experience. This registry controls which assets the model and visual-experience sandbox are allowed to reference.",
+  "assets": [
+    {
+      "asset_id": "apple_v1",
+      "display_name": "Apple",
+      "asset_type": "glb",
+      "domain": "generic",
+      "source_type": "blender_manual_export",
+      "public_path": "/sandbox-assets/visual-experience/models/generic/apple_v1.glb",
+      "source_path": null,
+      "license_record_path": "sandbox/probe-lab/visual-experience/assets/licenses/apple_v1.json",
+      "semantic_tags": ["generic", "fruit", "apple", "food", "object", "test_asset"],
+      "render_roles": ["reference_object"],
+      "experience_modes": ["asset_preview", "model_selected_scene", "generic_scene"],
+      "license_kind": "unknown",
+      "license_status": "needs_review",
+      "commercial_use_allowed": true,
+      "raw_redistribution_allowed": false,
+      "safe_to_use_in_sandbox": true,
+      "safe_to_promote_to_app": false,
+      "notes": "First successful GLB proof-of-concept asset. Review source/license before app promotion.",
+      "created_at": "2026-07-02",
+      "updated_at": "2026-07-02"
+    },
+    {
+      "asset_id": "banana_v1",
+      "display_name": "Banana",
+      "asset_type": "glb",
+      "domain": "generic",
+      "source_type": "blender_manual_export",
+      "public_path": "/sandbox-assets/visual-experience/models/generic/banana_v1.glb",
+      "source_path": null,
+      "license_record_path": "sandbox/probe-lab/visual-experience/assets/licenses/banana_v1.json",
+      "semantic_tags": ["generic", "fruit", "banana", "food", "object", "test_asset"],
+      "render_roles": ["reference_object"],
+      "experience_modes": ["asset_preview", "model_selected_scene", "generic_scene"],
+      "license_kind": "unknown",
+      "license_status": "needs_review",
+      "commercial_use_allowed": true,
+      "raw_redistribution_allowed": false,
+      "safe_to_use_in_sandbox": true,
+      "safe_to_promote_to_app": false,
+      "notes": "Second successful GLB proof-of-concept asset. Review source/license before app promotion.",
+      "created_at": "2026-07-02",
+      "updated_at": "2026-07-02"
+    }
+  ]
+}

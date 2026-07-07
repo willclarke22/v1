@@ -1,0 +1,38 @@
+{
+  "schema_version": "myway_nvidia_smoke_debug_v1",
+  "generated_at": "2026-07-02T03:39:23.595Z",
+  "ok": true,
+  "status": 200,
+  "elapsed_ms": 3452,
+  "base_url": "https://integrate.api.nvidia.com/v1",
+  "model": "deepseek-ai/deepseek-v4-pro",
+  "mode": "json",
+  "timeout_ms": 45000,
+  "max_tokens": 120,
+  "sent_request_body_without_auth": {
+    "model": "deepseek-ai/deepseek-v4-pro",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Return only valid JSON."
+      },
+      {
+        "role": "user",
+        "content": "Return this exact JSON object with no extra keys: {\"ok\":true,\"message\":\"smoke test\"}"
+      }
+    ],
+    "temperature": 0,
+    "top_p": 1,
+    "max_tokens": 120,
+    "stream": false,
+    "response_format": {
+      "type": "json_object"
+    },
+    "chat_template_kwargs": {
+      "enable_thinking": false,
+      "thinking": false
+    }
+  },
+  "raw_response_preview": "{\"id\":\"chatcmpl-1c7f8291-216b-4686-a1ed-0ccaabbd8d7b\",\"choices\":[{\"index\":0,\"message\":{\"content\":\"{\\\"ok\\\":true,\\\"message\\\":\\\"smoke test\\\"}\",\"role\":\"assistant\",\"reasoning_content\":null},\"finish_reason\":\"stop\",\"logprobs\":null}],\"created\":1782963561,\"model\":\"deepseek-ai/deepseek-v4-pro\",\"service_tier\":null,\"system_fingerprint\":null,\"object\":\"chat.completion\",\"usage\":{\"prompt_tokens\":52,\"completion_tokens\":12,\"total_tokens\":64}}",
+  "output_text": "{\"ok\":true,\"message\":\"smoke test\"}"
+}

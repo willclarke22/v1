@@ -1,10 +1,31 @@
-const activeLabs = [
+const labs = [
   {
     href: "/sandbox/probe-lab/visual-experience",
     title: "Visual Experience Workbench",
-    status: "active lane",
+    status: "main lane",
     description:
-      "The current MyWay sandbox lane for model-directed, interactive visual learning scenes.",
+      "Asset-aware learning scenes: registry, GLB preview, model-facing asset summaries, and future visual compiler work.",
+  },
+  {
+    href: "/sandbox/probe-lab/openai-full-loop",
+    title: "OpenAI full-loop brain sandbox",
+    status: "legacy/reference",
+    description:
+      "Older model-to-visual-story experiment. Keep for mining request-debug, provider, and evaluation ideas.",
+  },
+  {
+    href: "/sandbox/probe-lab/generated-video",
+    title: "Generated-video lab",
+    status: "legacy/reference",
+    description:
+      "Older generated-video, universal-scene, Remotion, procedural, and hybrid 3D experiments.",
+  },
+  {
+    href: "/sandbox/probe-lab/blender-playground",
+    title: "Blender playground",
+    status: "legacy/reference",
+    description:
+      "Older Blender render playground. Keep for mining Blender automation and render-script ideas.",
   },
 ];
 
@@ -19,7 +40,7 @@ export default function ProbeLabPage() {
           "radial-gradient(circle at top left, rgba(34,197,94,0.22), transparent 34%), linear-gradient(135deg, #050816, #111827)",
       }}
     >
-      <div style={{ maxWidth: "980px", margin: "0 auto" }}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         <p
           style={{
             margin: 0,
@@ -32,28 +53,30 @@ export default function ProbeLabPage() {
         >
           MyWay Sandbox
         </p>
-
         <h1 style={{ margin: "0.75rem 0 0", fontSize: "clamp(2rem, 4vw, 4rem)" }}>
           Probe Lab
         </h1>
-
-        <p style={{ maxWidth: "760px", color: "rgba(255,255,255,0.72)", lineHeight: 1.65 }}>
-          Visual Experience is the active sandbox lane. Older OpenAI full-loop, generated-video,
-          Blender playground, and visual-story prototypes have been archived as reference material.
+        <p style={{ maxWidth: "780px", color: "rgba(255,255,255,0.72)", lineHeight: 1.65 }}>
+          Visual Experience is now the main organized lane. Older labs remain available as reference material
+          while useful pieces are mined into the cleaner structure.
         </p>
 
         <div style={{ display: "grid", gap: "1rem", marginTop: "2rem" }}>
-          {activeLabs.map((lab) => (
+          {labs.map((lab) => (
             <a
               key={lab.href}
               href={lab.href}
               style={{
                 display: "block",
-                border: "1px solid rgba(74,222,128,0.48)",
+                border: lab.status === "main lane"
+                  ? "1px solid rgba(74,222,128,0.48)"
+                  : "1px solid rgba(255,255,255,0.12)",
                 borderRadius: "1.25rem",
                 padding: "1.15rem",
                 color: "white",
-                background: "rgba(22,163,74,0.16)",
+                background: lab.status === "main lane"
+                  ? "rgba(22,163,74,0.16)"
+                  : "rgba(255,255,255,0.045)",
                 textDecoration: "none",
               }}
             >

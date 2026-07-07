@@ -1,0 +1,31 @@
+{
+  "schema_version": "myway_openai_full_loop_latest_model_request_debug_v4",
+  "generated_at": "2026-07-02T03:30:08.489Z",
+  "route": "openai-full-loop/generate",
+  "architecture": "model_drives_visual_story_draft_v1",
+  "calls_model": true,
+  "provider": "nvidia",
+  "model": "deepseek-ai/deepseek-v4-pro",
+  "max_output_tokens": 2400,
+  "request_summary": {
+    "learnerMessage": "Is there a way that I can try to understand the krebs cycle, it truly doesn't make sense to me I can't picture it.",
+    "topicLabel": "Auto-detect from learner message",
+    "bridgeLevel": "bridge_0",
+    "jargonLevel": "none",
+    "preferredStyle": "visual_description",
+    "topicMode": "auto",
+    "activeTopicId": "krebs_cycle_visual_intuition",
+    "generateReason": "message",
+    "turnMode": "teach_then_check"
+  },
+  "prompt_sizes": {
+    "system_prompt_characters": 452,
+    "user_prompt_characters": 2462,
+    "total_prompt_characters": 2914
+  },
+  "expected_model_output_schema": "myway_model_visual_story_draft_v1",
+  "prompts": {
+    "system_prompt": "You create compact visual-story drafts for MyWay.\nReturn ONLY valid JSON. No markdown. No code fences. No comments.\nYou are NOT generating the full app response.\nThe learner-facing orientation paragraph is the source of truth.\nUse plain language for bridge_0. Avoid jargon unless the learner used it.\nThe model drives the scene idea. MyWay will wrap and render it.\nKeep the output small: 4-6 entities, 3-5 relationships, 3-5 transformations, 3-4 beats.",
+    "user_prompt": "Learner message:\nIs there a way that I can try to understand the krebs cycle, it truly doesn't make sense to me I can't picture it.\n\nContext:\n{\n  \"topic_hint\": \"Auto-detect from learner message\",\n  \"bridge_level\": \"bridge_0\",\n  \"jargon_level\": \"none\",\n  \"preferred_style\": \"visual_description\"\n}\n\nReturn exactly this JSON shape. Do not add other top-level keys:\n{\n  \"schema_version\": \"myway_model_visual_story_draft_v1\",\n  \"orientation\": {\n    \"title\": \"short title\",\n    \"body\": \"one short plain-language paragraph that gives the learner a picture\"\n  },\n  \"topic\": {\n    \"topic_id\": \"short_snake_case_id\",\n    \"topic_label\": \"short label\"\n  },\n  \"diagnosis\": {\n    \"label\": \"representation_gap\",\n    \"root_problem\": \"the missing picture or relationship\"\n  },\n  \"scene\": {\n    \"family\": \"process_flow\",\n    \"entities\": [\n      {\n        \"id\": \"entity_id\",\n        \"kind\": \"container\",\n        \"display_name\": \"plain label\",\n        \"semantic_role\": \"input\",\n        \"meaning\": \"short meaning\",\n        \"shape\": \"simple shape\",\n        \"color\": \"color hint\",\n        \"visual_cues\": [\n          \"flowing\"\n        ]\n      }\n    ],\n    \"relationships\": [\n      {\n        \"id\": \"relationship_id\",\n        \"type\": \"becomes\",\n        \"from\": \"entity_id\",\n        \"to\": \"entity_id\",\n        \"explanation\": \"short explanation\"\n      }\n    ],\n    \"transformations\": [\n      {\n        \"id\": \"transformation_id\",\n        \"type\": \"trace_motion\",\n        \"entities\": [\n          \"entity_id\"\n        ],\n        \"explanation\": \"short explanation\"\n      }\n    ],\n    \"beats\": [\n      {\n        \"id\": \"beat_1\",\n        \"script_segment\": \"short slice of the orientation body\",\n        \"active_entity_ids\": [\n          \"entity_id\"\n        ],\n        \"actions\": [\n          {\n            \"type\": \"show_entity\",\n            \"entity_id\": \"entity_id\"\n          }\n        ],\n        \"text_overlay\": \"short caption\"\n      }\n    ],\n    \"check_prompt\": \"one short check question\",\n    \"success_markers\": [\n      \"short marker\"\n    ]\n  },\n  \"answer_key\": {\n    \"expected_elements\": [\n      \"short marker\"\n    ],\n    \"minimum_elements_for_pass\": 1\n  },\n  \"misconception_markers\": [\n    {\n      \"id\": \"short_id\",\n      \"marker\": \"short misconception marker\"\n    }\n  ],\n  \"rationale\": \"one short sentence\"\n}\n\nHard limits:\n- JSON only.\n- Keep total output under about 4500 characters.\n- Do not output visual_story. Output scene instead.\n- MyWay will turn scene into renderer_params.visual_story."
+  }
+}
