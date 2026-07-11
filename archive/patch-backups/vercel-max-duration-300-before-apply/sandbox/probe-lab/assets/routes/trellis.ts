@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { acquireFromTrellis } from "../providers/trellis-asset-provider.server";
 
-export const maxDuration = 300;
+export const maxDuration = 900;
 
 function stringArray(value: unknown) {
   return Array.isArray(value)
@@ -87,4 +87,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

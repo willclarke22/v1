@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveMyWayAsset } from "../asset-resolver.server";
 
-export const maxDuration = 300;
+export const maxDuration = 900;
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,4 +14,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: caught instanceof Error ? caught.message : String(caught) }, { status: 500 });
   }
 }
-

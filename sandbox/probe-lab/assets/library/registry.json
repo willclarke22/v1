@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_asset_registry_v1",
-  "updated_at": "2026-07-11T01:32:54.937Z",
+  "updated_at": "2026-07-11T01:48:11.448Z",
   "asset_root_public_url": "/sandbox-assets/myway",
   "notes": "Shared MyWay sandbox asset library. Primitive Builder and Visual Experience both resolve assets from this registry.",
   "assets": [
@@ -218,6 +218,62 @@
       "notes": "Generated with NVIDIA-hosted Microsoft TRELLIS and normalized by Blender. no_texture=true; NVIDIA attempts=2. Review output and license before production promotion.",
       "created_at": "2026-07-11T01:32:54.925Z",
       "updated_at": "2026-07-11T01:32:54.925Z"
+    },
+    {
+      "asset_id": "engine_piston_with_connecting_rod_tr_mrfpfgpn",
+      "canonical_label": "engine piston with connecting rod",
+      "display_name": "engine piston with connecting rod",
+      "aliases": [],
+      "semantic_tags": [
+        "engine piston with connecting rod",
+        "engine",
+        "piston",
+        "connecting rod",
+        "mechanical part"
+      ],
+      "style_tags": [
+        "clean",
+        "realistic",
+        "educational"
+      ],
+      "asset_type": "glb",
+      "domain": "mechanics",
+      "source_type": "trellis",
+      "source_asset_id": null,
+      "source_prompt": "engine piston with connecting rod, clean, realistic, educational, engine",
+      "source_url": "https://build.nvidia.com/microsoft/trellis",
+      "source_path": "sandbox/probe-lab/assets/inbox/trellis/engine_piston_with_connecting_rod_tr_mrfpfgpn-raw.glb",
+      "public_path": "/sandbox-assets/myway/models/trellis/engine_piston_with_connecting_rod_tr_mrfpfgpn.glb",
+      "thumbnail_path": "/sandbox-assets/myway/thumbnails/engine_piston_with_connecting_rod_tr_mrfpfgpn.png",
+      "license_record_path": null,
+      "dimensions_m": [
+        1.990264,
+        2,
+        1.886571
+      ],
+      "default_scale": 1,
+      "default_rotation": [
+        0,
+        0,
+        0
+      ],
+      "ground_offset_m": 0,
+      "polygon_count": 98511,
+      "rigged": false,
+      "animation_clips": [],
+      "content_hash": "39541d4cd0f2cb3ef0c07c4a490638f4d4af3983f3bae9bfcaf23e2c3e640d1d",
+      "quality_score": 0.68,
+      "reuse_count": 0,
+      "license_kind": "unknown",
+      "license_status": "sandbox_only",
+      "commercial_use_allowed": false,
+      "raw_redistribution_allowed": false,
+      "safe_to_use_in_sandbox": true,
+      "safe_to_promote_to_app": false,
+      "status": "normalized",
+      "notes": "Generated with NVIDIA-hosted Microsoft TRELLIS and normalized by Blender. no_texture=true; NVIDIA attempts=1. Review output and license before production promotion.",
+      "created_at": "2026-07-11T01:48:11.419Z",
+      "updated_at": "2026-07-11T01:48:11.419Z"
     }
   ]
 }

@@ -3,7 +3,7 @@ import { createBlenderKitJob, createNormalizeJob } from "../blender/blender-job-
 import { runBlenderJob } from "../blender/blender-bridge.server";
 import { projectPath } from "../paths.server";
 
-export const maxDuration = 300;
+export const maxDuration = 900;
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,4 +38,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: caught instanceof Error ? caught.message : String(caught) }, { status: 500 });
   }
 }
-
