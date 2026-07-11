@@ -21,10 +21,15 @@ export type SpatialConstraint =
 
 export type RenderRole =
   | "transparent_container"
+  | "cylindrical_container"
   | "solid_body"
+  | "piston_body"
   | "moving_body"
   | "connector"
+  | "rod_connector"
   | "rotating_body"
+  | "shaft_body"
+  | "wheel_body"
   | "particle_burst"
   | "path"
   | "label"
@@ -127,6 +132,16 @@ function entityText(entity: SemanticSceneEntity) {
     entity.display_name,
     entity.semantic_role,
     entity.visual_need?.description,
+    ...(entity.visual_need?.semantic_tags ?? []),
+    entity.visual_need?.preferred_render_kind,
+  ].join(" "));
+}
+
+function entityIdentityText(entity: SemanticSceneEntity) {
+  return norm([
+    entity.id,
+    entity.display_name,
+    entity.semantic_role,
     ...(entity.visual_need?.semantic_tags ?? []),
     entity.visual_need?.preferred_render_kind,
   ].join(" "));
@@ -258,11 +273,50 @@ function isMovingLike(entity: SemanticSceneEntity) {
   return ["move", "moving", "mover", "dynamic", "slide", "slides", "flow", "travels", "shifts"].some((token) => combined.includes(token));
 }
 
+function isCylinderLike(entity: SemanticSceneEntity) {
+  const combined = entityText(entity);
+  return ["cylinder", "cylindrical", "tube", "chamber", "barrel", "pipe", "glass like cylinder"].some((token) => combined.includes(token));
+}
+
+function isPistonLike(entity: SemanticSceneEntity) {
+  const combined = entityText(entity);
+  const identity = entityIdentityText(entity);
+
+  if (["piston", "piston head", "sliding plug"].some((token) => identity.includes(token) || combined.includes(token))) return true;
+  if ((combined.includes("movable wall") || combined.includes("sliding wall")) && (combined.includes("tube") || combined.includes("cylinder"))) return true;
+  if (combined.includes("plug") && !isParticleLike(entity)) return true;
+
+  // Generic discs/walls should not become pistons unless the text also says they slide or sit in a cylinder.
+  return (combined.includes("disc") || combined.includes("disk")) &&
+    (combined.includes("slide") || combined.includes("sliding") || combined.includes("piston") || combined.includes("inside the tube") || combined.includes("inside a tube"));
+}
+
+function isRodLike(entity: SemanticSceneEntity) {
+  const combined = entityText(entity);
+  return ["rod", "connecting rod", "linkage", "bar", "lever"].some((token) => combined.includes(token));
+}
+
+function isCrankshaftLike(entity: SemanticSceneEntity) {
+  const combined = entityText(entity);
+  return ["crankshaft", "crank shaft", "shaft", "crank", "off center", "off centre"].some((token) => combined.includes(token));
+}
+
+function isWheelLike(entity: SemanticSceneEntity) {
+  const combined = entityText(entity);
+  return ["wheel", "spoked", "tire", "tyre", "rim", "car wheel", "rotating wheel"].some((token) => combined.includes(token));
+}
+
 function renderRoleForEntity(entity: SemanticSceneEntity): RenderRole {
-  if (isConnectorLike(entity)) return "connector";
+  // More specific mechanical roles must win before broad shape/container heuristics.
   if (isParticleLike(entity)) return "particle_burst";
-  if (isContainerLike(entity)) return "transparent_container";
+  if (isRodLike(entity)) return "rod_connector";
+  if (isWheelLike(entity)) return "wheel_body";
+  if (isCrankshaftLike(entity)) return "shaft_body";
+  if (isPistonLike(entity)) return "piston_body";
+  if (isCylinderLike(entity)) return "cylindrical_container";
   if (isRotatingLike(entity)) return "rotating_body";
+  if (isConnectorLike(entity)) return "connector";
+  if (isContainerLike(entity)) return "transparent_container";
   if (isMovingLike(entity)) return "moving_body";
   if (entity.visual_need?.preferred_render_kind === "path") return "path";
   if (entity.visual_need?.preferred_render_kind === "label") return "label";
@@ -370,11 +424,17 @@ function inferDirectionalConstraints(input: CompileInput, allText: string, const
       const eventText = eventDescriptionsForEntity(input, entity.id);
       const combined = `${currentText} ${eventText}`;
 
-      if (currentText.includes("at the bottom") || currentText.includes("below") || currentText.includes("downwards") || currentText.includes("downward")) {
+      if (combined.includes("at the bottom") || combined.includes("below") || combined.includes("downwards") || combined.includes("downward") || combined.includes("lower assembly")) {
         pushConstraint(constraints, { type: "below", entity_id: entity.id, reference_entity_id: likelyCenter.id, evidence: `${entityLabel(entity)} described as bottom/downward in scene` });
       }
-      if (currentText.includes("at the top") || currentText.includes("above") || currentText.includes("upwards") || currentText.includes("upward")) {
+      if (combined.includes("at the top") || combined.includes("from the top") || combined.includes("enters from the top") || combined.includes("above") || combined.includes("upwards") || combined.includes("upward")) {
         pushConstraint(constraints, { type: "above", entity_id: entity.id, reference_entity_id: likelyCenter.id, evidence: `${entityLabel(entity)} described as top/upward in scene` });
+      }
+      if (combined.includes("far to the right") || combined.includes("on the right") || combined.includes("right side") || combined.includes("to the right")) {
+        pushConstraint(constraints, { type: "right_of", entity_id: entity.id, reference_entity_id: likelyCenter.id, evidence: `${entityLabel(entity)} described as right side of scene` });
+      }
+      if (combined.includes("far to the left") || combined.includes("on the left") || combined.includes("left side") || combined.includes("to the left")) {
+        pushConstraint(constraints, { type: "left_of", entity_id: entity.id, reference_entity_id: likelyCenter.id, evidence: `${entityLabel(entity)} described as left side of scene` });
       }
 
       for (const reference of input.entities) {
@@ -484,9 +544,13 @@ function defaultScaleForRole(role: RenderRole, entity: SemanticSceneEntity, cons
   const vertical = constraints.some((constraint) => constraint.type === "vertical_orientation" && constraint.entity_id === entity.id);
   const horizontal = constraints.some((constraint) => constraint.type === "horizontal_orientation" && constraint.entity_id === entity.id);
 
+  if (role === "cylindrical_container") return vertical ? [0.95, 2.75, 0.95] : horizontal ? [2.45, 0.78, 0.78] : [1.25, 1.25, 1.25];
   if (role === "transparent_container") return vertical ? [0.95, 2.6, 0.72] : horizontal ? [2.25, 0.7, 0.72] : [1.25, 1.25, 0.84];
+  if (role === "piston_body") return [0.78, 0.26, 0.78];
   if (role === "moving_body") return [0.62, 0.42, 0.56];
-  if (role === "connector") return [1, 1, 1];
+  if (role === "rod_connector" || role === "connector") return [1, 1, 1];
+  if (role === "shaft_body") return [0.95, 0.95, 0.28];
+  if (role === "wheel_body") return [1.08, 1.08, 0.28];
   if (role === "rotating_body") return [0.82, 0.82, 0.22];
   if (role === "particle_burst") return [0.62, 0.62, 0.62];
   if (role === "path") return [1, 1, 1];
@@ -612,8 +676,9 @@ function resolveEntityGeometry(input: CompileInput, constraints: SpatialConstrai
         const item = geometry.get(constraint.entity_id);
         const reference = geometry.get(constraint.reference_entity_id);
         if (item && reference) {
-          item.position = [reference.position[0], reference.position[1] + 0.18, reference.position[2]];
-          item.scale = [Math.min(item.scale[0], reference.scale[0] * 0.68), Math.min(item.scale[1], reference.scale[1] * 0.34), Math.min(item.scale[2], reference.scale[2] * 0.78)];
+          const nearTop = entityText(input.entities.find((candidate) => candidate.id === item.entity_id) ?? ({ id: item.entity_id, display_name: item.entity_id, semantic_role: "", visual_need: { description: "", semantic_tags: [], preferred_render_kind: "sphere", fallback_allowed: true } })).includes("near the top");
+          item.position = [reference.position[0], reference.position[1] + (nearTop ? reference.scale[1] * 0.26 : 0.18), reference.position[2]];
+          item.scale = [Math.min(item.scale[0], reference.scale[0] * 0.78), Math.min(item.scale[1], reference.scale[1] * 0.24), Math.min(item.scale[2], reference.scale[2] * 0.86)];
           item.evidence.push(constraint.evidence);
         }
       }
@@ -654,7 +719,7 @@ function resolveEntityGeometry(input: CompileInput, constraints: SpatialConstrai
       item.connector_to_id = to.entity_id;
       item.connector_from_position = cloneVec(from.position);
       item.connector_to_position = cloneVec(to.position);
-      item.render_role = "connector";
+      item.render_role = item.render_role === "rod_connector" ? "rod_connector" : "connector";
       item.evidence.push(constraint.evidence);
     }
   }
@@ -789,6 +854,7 @@ function inferCameraTracks(input: CompileInput, geometry: CompiledEntityGeometry
 function addFaithfulnessWarnings(input: CompileInput, constraints: SpatialConstraint[], geometry: CompiledEntityGeometry[]) {
   const warnings: string[] = [];
   const allText = fullSceneText(input);
+  const inferredTracks = inferMotionTracks(input, constraints);
 
   for (const constraint of constraints) {
     const entity = entityGeometryById(geometry, constraint.entity_id);
@@ -818,11 +884,32 @@ function addFaithfulnessWarnings(input: CompileInput, constraints: SpatialConstr
     }
   }
 
+  for (const entity of input.entities) {
+    const geometryItem = entityGeometryById(geometry, entity.id);
+    if (!geometryItem) continue;
+    const combined = entityText(entity);
+    const identity = entityIdentityText(entity);
+    const entityTracks = inferredTracks.filter((track) => track.entity_id === entity.id);
+
+    if ((identity.includes("cylinder") || identity.includes("tube") || identity.includes("chamber")) && geometryItem.render_role !== "cylindrical_container") {
+      warnings.push(`${entity.id} is described as a cylinder/tube, but the render role is ${geometryItem.render_role}.`);
+    }
+    if ((combined.includes("wheel") || combined.includes("spoked") || identity.includes("crankshaft")) && !["wheel_body", "shaft_body", "rotating_body"].includes(geometryItem.render_role)) {
+      warnings.push(`${entity.id} is described as a wheel/shaft, but the render role is ${geometryItem.render_role}.`);
+    }
+    if ((identity.includes("piston") || identity.includes("piston head") || identity.includes("sliding plug")) && geometryItem.render_role !== "piston_body") {
+      warnings.push(`${entity.id} is described as a piston, but the render role is ${geometryItem.render_role}.`);
+    }
+    if (entityTracks.some((track) => track.kind === "slide") && !["piston_body", "moving_body", "particle_burst", "generic_body", "solid_body"].includes(geometryItem.render_role)) {
+      warnings.push(`${entity.id} has directed slide motion, but its render role may not visibly slide.`);
+    }
+  }
+
   if ((allText.includes("inside") || allText.includes("above") || allText.includes("below") || allText.includes("connect")) && constraints.length < 2) {
     warnings.push("Directed scene contains spatial language, but the compiler found very few spatial constraints. The render may still be too generic.");
   }
 
-  return warnings;
+  return Array.from(new Set(warnings));
 }
 
 export function compileDirectedSceneRenderPlan(input: CompileInput): DirectedSceneRenderPlan {

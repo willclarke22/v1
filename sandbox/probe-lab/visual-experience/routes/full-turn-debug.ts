@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { getVisualLearningTurnProviderStatus } from "../model-provider.server";
+
 import {
   buildVisualLearningTurnInput,
   buildVisualLearningTurnModelRequest,
@@ -20,6 +22,7 @@ export async function GET() {
     ok: true,
     route: "full-turn-debug",
     default_input: input,
+    provider_status: getVisualLearningTurnProviderStatus(),
     model_request: modelRequest,
     examples: {
       proceed: krebsVisualLearningTurnProceedExample,
@@ -39,6 +42,7 @@ export async function POST(request: Request) {
       ok: true,
       route: "full-turn-debug",
       request_body: body,
+      provider_status: getVisualLearningTurnProviderStatus(),
       model_request: modelRequest,
       scaffold_output: scaffoldOutput,
     });

@@ -5,10 +5,10 @@ This is the repeatable workflow for adding GLB assets to the visual-experience s
 ## Folder meanings
 
 ```txt
-public/sandbox-assets/visual-experience/models/<domain>/
+public/sandbox-assets/myway/models/<domain>/
   Browser-loadable GLBs. The app can fetch these by URL.
 
-sandbox/probe-lab/visual-experience/assets/registry.json
+sandbox/probe-lab/assets/library/registry.json
   The source of truth. The model may only reference assets listed here.
 
 sandbox/probe-lab/visual-experience/assets/licenses/

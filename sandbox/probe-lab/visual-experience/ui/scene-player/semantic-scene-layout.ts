@@ -261,12 +261,9 @@ function orientationTextForBeat(root: Record<string, unknown> | null, beat: Sema
   return source.map((segment) => text(segment.text, "")).filter(Boolean).join(" ");
 }
 
-function narrationTextForBeat(beat: SemanticSceneBeat | null, orientationText: string, targetTakeaway: string) {
-  const narrations = (beat?.actions ?? [])
-    .map((action) => text(action.narration, ""))
-    .filter(Boolean);
-
-  if (narrations.length) return narrations.join(" ");
+function narrationTextForBeat(_beat: SemanticSceneBeat | null, orientationText: string, targetTakeaway: string) {
+  // Step 13c: learner-visible words should come from full_prompt/explanation_pieces.
+  // Event descriptions are kept as renderer instructions only.
   return orientationText || targetTakeaway;
 }
 
@@ -285,65 +282,11 @@ function firstStoryFocusEntityId(storyBeats: Array<Record<string, unknown>>, ent
   return entities[0]?.id ?? null;
 }
 
-function learnerProblemCaption(rootProblem: string, targetTakeaway: string) {
-  const cleaned = rootProblem
-    .replace(/^the learner\s+/i, "")
-    .replace(/\bthe learner\b/gi, "you")
-    .replace(/\bcannot\b/gi, "can’t yet")
-    .replace(/\bcan not\b/gi, "can’t yet")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  const withoutFinalPunctuation = cleaned.replace(/[.!?]+$/g, "");
-  const problem = withoutFinalPunctuation ? withoutFinalPunctuation.charAt(0).toLowerCase() + withoutFinalPunctuation.slice(1) : "this idea is hard to picture";
-  const takeaway = targetTakeaway.replace(/\s+/g, " ").replace(/[.!?]+$/g, "").trim();
-  const secondSentence = takeaway ? ` This scene will show: ${takeaway}` : " This scene will show the missing connection.";
-
-  return `The confusing part is this: ${problem}.${secondSentence}`.slice(0, 360);
-}
-
-function rootProblemStoryBeat(input: {
-  learningFocus: Record<string, unknown> | null;
-  storyBeats: Array<Record<string, unknown>>;
-  entities: SemanticSceneEntity[];
-}): Record<string, unknown> | null {
-  const rootProblem = text(input.learningFocus?.root_problem, "");
-  if (!rootProblem) return null;
-
-  const targetTakeaway = text(input.learningFocus?.target_takeaway, "");
-  const focusEntityId = firstStoryFocusEntityId(input.storyBeats, input.entities);
-
-  return {
-    id: "root_problem_intro",
-    title: "The stuck point",
-    director_intent: "Name the learner’s stuck point first so the visual story has a clear purpose.",
-    camera: {
-      shot_type: "wide",
-      focus_entity_ids: focusEntityId ? [focusEntityId] : [],
-      movement: "Start wide and calm before the scene begins solving the stuck point.",
-    },
-    visual_events: focusEntityId
-      ? [
-          {
-            type: "glow",
-            entity_id: focusEntityId,
-            description: "The first important visual target glows softly while the learner hears what this scene is meant to fix.",
-          },
-        ]
-      : [],
-    spoken_caption: {
-      text: learnerProblemCaption(rootProblem, targetTakeaway),
-      display_mode: "one_word_at_a_time",
-      cadence: "natural_speech",
-    },
-  };
-}
-
 function storyBeatsFromPlan(
   scenePlan: Record<string, unknown>,
   fallbackBeats: SemanticSceneBeat[],
-  learningFocus: Record<string, unknown> | null,
-  entities: SemanticSceneEntity[],
+  _learningFocus: Record<string, unknown> | null,
+  _entities: SemanticSceneEntity[],
 ) {
   const raw = asArray(scenePlan.story_beats)
     .map(asRecord)
@@ -353,12 +296,10 @@ function storyBeatsFromPlan(
       id: text(beat.id, fallbackBeats[index]?.id ?? `story_beat_${index + 1}`),
     }));
 
-  if (!raw.length) return [];
-
-  const rootIntro = rootProblemStoryBeat({ learningFocus, storyBeats: raw, entities });
-  if (!rootIntro) return raw;
-
-  return [rootIntro, ...raw];
+  // Step 13c: do not inject the old synthetic root_problem_intro beat.
+  // The model's full_prompt/explanation_pieces are now the source of learner-visible words,
+  // and scene_moments are the source of the animation timeline.
+  return raw;
 }
 
 function sceneActionTypeForVisualEvent(eventType: string): SemanticSceneAction["type"] {
@@ -378,13 +319,17 @@ function semanticBeatFromStoryBeat(
   const camera = asRecord(storyBeat.camera);
   const focusEntityIds = stringArray(camera?.focus_entity_ids, 16);
   const eventEntityIds = events.map((event) => text(event.entity_id, "")).filter(Boolean);
-  const activeEntityIds = Array.from(new Set([...focusEntityIds, ...eventEntityIds, ...(fallbackBeat?.active_entity_ids ?? [])]));
+  const introducedIds = stringArray(storyBeat.introduces_entity_ids, 16);
+  const keptIds = stringArray(storyBeat.keeps_visible_entity_ids, 16);
+  const explicitActiveIds = stringArray(storyBeat.active_entity_ids, 16);
+  const activeEntityIds = Array.from(new Set([...keptIds, ...introducedIds, ...explicitActiveIds, ...focusEntityIds, ...eventEntityIds, ...(fallbackBeat?.active_entity_ids ?? [])]));
   const fallbackDuration = fallbackBeat?.duration_ms ?? 5200;
+  const sourceOrientationIds = stringArray(storyBeat.source_orientation_segment_ids, 16);
 
   return {
     id: text(storyBeat.id, fallbackBeat?.id ?? `story_beat_${index + 1}`),
     title: text(storyBeat.title, fallbackBeat?.title ?? `Beat ${index + 1}`),
-    source_orientation_segment_ids: fallbackBeat?.source_orientation_segment_ids ?? [],
+    source_orientation_segment_ids: sourceOrientationIds.length ? sourceOrientationIds : fallbackBeat?.source_orientation_segment_ids ?? [],
     duration_ms: Number.isFinite(Number(storyBeat.duration_ms)) ? Number(storyBeat.duration_ms) : fallbackDuration,
     active_entity_ids: activeEntityIds,
     actions: events.map((event, eventIndex): SemanticSceneAction => {
@@ -394,8 +339,10 @@ function semanticBeatFromStoryBeat(
         id: text(event.id, `story_event_${index + 1}_${eventIndex + 1}`),
         type: sceneActionTypeForVisualEvent(eventType),
         target_entity_id: targetEntityId,
-        narration: text(event.description, text(asRecord(storyBeat.spoken_caption)?.text, "")) || null,
-        params: { visual_event_type: eventType },
+        // These descriptions drive motion, not learner-facing narration. The visible words come from
+        // the full_prompt-derived explanation piece selected by source_orientation_segment_ids.
+        narration: null,
+        params: { visual_event_type: eventType, event_description: text(event.description, "") },
       };
     }),
   };
@@ -413,9 +360,10 @@ function directedBeatForActiveBeat(storyBeats: Array<Record<string, unknown>>, a
   return byId ?? storyBeats[activeBeatIndex] ?? null;
 }
 
-function captionTextForDirectedBeat(directedBeat: Record<string, unknown> | null, fallback: string) {
-  const spokenCaption = asRecord(directedBeat?.spoken_caption);
-  return text(spokenCaption?.text, fallback);
+function captionTextForDirectedBeat(_directedBeat: Record<string, unknown> | null, fallback: string) {
+  // Step 13c: ignore legacy spoken_caption text here. It may be a deterministic fallback from
+  // visual event descriptions. The active explanation piece is the learner-facing caption.
+  return fallback;
 }
 
 function directorIntentForBeat(directedBeat: Record<string, unknown> | null) {

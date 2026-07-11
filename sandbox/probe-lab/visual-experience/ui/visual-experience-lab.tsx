@@ -8,8 +8,13 @@ import { getSemanticSceneTimelineBeats, prepareSemanticSceneFromTurnResult } fro
 type JsonValue = Record<string, unknown> | unknown[] | string | number | boolean | null;
 
 type RequestBody = {
-  provider: "scaffold" | "deepseek" | "openai";
+  provider: "scaffold" | "deepseek" | "glm" | "openai";
+  generation_preset: "cinematic";
+  enable_streaming: boolean;
+  retry_transient_errors: boolean;
+  fallback_provider: "none" | "scaffold" | "deepseek" | "glm";
   learner_message: string;
+  /** Legacy field kept out of the UI. Step 13 ignores topic hints. */
   topic_label: string;
   user_interests: string;
   bridge_level: string;
@@ -21,9 +26,13 @@ type RequestBody = {
 
 const defaultRequestBody: RequestBody = {
   provider: "deepseek",
-  learner_message: "I can’t picture the Krebs cycle.",
-  topic_label: "Krebs cycle",
-  user_interests: "",
+  generation_preset: "cinematic",
+  enable_streaming: true,
+  retry_transient_errors: true,
+  fallback_provider: "glm",
+  learner_message: "I don't understand how pistons work or why they're important in engines.",
+  topic_label: "",
+  user_interests: "mind, psychology, languages",
   bridge_level: "bridge_0",
   jargon_level: "none",
   preferred_style: "visual_description",
@@ -214,12 +223,19 @@ function buildModelStoryJson(result: JsonValue | undefined): JsonValue {
       : root.normalized_output ? "normalized_output"
       : "output",
     learning_focus: getRecord(modelOutput, "learning_focus"),
-    orientation_segments: getArray(modelOutput, "orientation_segments").length
+    diagnostic_signal: getRecord(modelOutput, "diagnostic_signal"),
+    learner_facing_prompt: getRecord(modelOutput, "learner_facing_prompt"),
+    full_prompt: modelOutput?.learner_facing_prompt ? getRecord(modelOutput, "learner_facing_prompt")?.full_prompt : visualExperience?.full_prompt,
+    explanation_pieces: getArray(getRecord(modelOutput, "learner_facing_prompt"), "explanation_pieces").length
+      ? getArray(getRecord(modelOutput, "learner_facing_prompt"), "explanation_pieces")
+      : getArray(visualExperience, "explanation_pieces"),
+    legacy_orientation_segments: getArray(modelOutput, "orientation_segments").length
       ? getArray(modelOutput, "orientation_segments")
       : getArray(visualExperience, "orientation_segments"),
     scene: {
       title: scene?.title ?? null,
       directed_scene: getRecord(scene, "directed_scene"),
+      scene_moments: getArray(scene, "scene_moments"),
       story_beats: getArray(scene, "story_beats"),
       entities: getArray(scene, "entities"),
       relationships: getArray(scene, "relationships"),
@@ -229,7 +245,7 @@ function buildModelStoryJson(result: JsonValue | undefined): JsonValue {
     },
     guided_interaction: getRecord(modelOutput, "guided_interaction"),
     probe: getRecord(modelOutput, "probe") ?? getRecord(modelOutput, "followup_probe"),
-    personalization_hypotheses: getArray(modelOutput, "personalization_hypotheses"),
+    personalization_decision: getRecord(modelOutput, "personalization_decision"),
     confidence: getRecord(modelOutput, "confidence"),
   };
 }
@@ -298,6 +314,7 @@ function buildRendererInspectionJson(result: JsonValue | undefined): JsonValue {
 
   return {
     request_body: root.request_body ?? null,
+    model_call_diagnostics: root.model_call_diagnostics ?? getRecord(root, "diagnostics")?.model_call_diagnostics ?? null,
     personalization_context: {
       bridge_level: personalizationContext?.bridge_level ?? null,
       jargon_level: getRecord(personalizationContext, "language_policy")?.jargon_level ?? null,
@@ -320,6 +337,54 @@ function buildRendererInspectionJson(result: JsonValue | undefined): JsonValue {
   };
 }
 
+function buildRelationshipPreviewJson(result: JsonValue | undefined): JsonValue {
+  const root = asRecord(result);
+  if (!root) return null;
+  return asRecord(root.sandbox_relationship_preview);
+}
+
+function DiagnosticSignalPanel({ result }: { result: JsonValue | undefined }) {
+  const root = asRecord(result);
+  const output = asRecord(root?.output);
+  const diagnostic = getRecord(output, "diagnostic_signal");
+  const confusion = getRecord(diagnostic, "confusion");
+  const insight = getRecord(diagnostic, "insight");
+  const patterns = getArray(diagnostic, "pattern_candidates");
+  const preview = getRecord(root, "sandbox_relationship_preview");
+  const relationships = getArray(preview, "relationships");
+
+  if (!diagnostic) return null;
+
+  return (
+    <div style={{ borderRadius: 18, padding: 16, background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.24)", display: "grid", gap: 12 }}>
+      <h3 style={{ margin: 0 }}>Confusion / insight signal</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+        <InfoBlock title="Confusion" value={String(confusion?.score ?? "—")} subvalue={`confidence: ${String(confusion?.confidence ?? "—")}`} />
+        <InfoBlock title="Insight" value={String(insight?.score ?? "—")} subvalue={`confidence: ${String(insight?.confidence ?? "—")}`} />
+        <InfoBlock title="Pattern candidates" value={String(patterns.length)} subvalue="topic-level shared labels" />
+        <InfoBlock title="Sandbox relationships" value={String(relationships.length)} subvalue="preview only; production Learning Space untouched" />
+      </div>
+      {patterns.length ? (
+        <div style={{ display: "grid", gap: 8 }}>
+          {patterns.map((item, index) => {
+            const pattern = asRecord(item) ?? {};
+            return (
+              <div key={`${String(pattern.id ?? index)}`} style={{ borderRadius: 14, padding: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 6 }}>
+                  <Pill>{text(pattern.kind, "pattern")}</Pill>
+                  <Pill>{text(pattern.shared_label, "shared_label")}</Pill>
+                  <Pill>confidence: {String(pattern.confidence ?? "—")}</Pill>
+                </div>
+                <p style={{ margin: 0, color: "rgba(255,255,255,0.82)", lineHeight: 1.55 }}>{text(pattern.short_explanation, "—")}</p>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function FullTurnSummary({ result }: { result: JsonValue | undefined }) {
   const root = asRecord(result);
   const output = asRecord(root?.output);
@@ -331,6 +396,10 @@ function FullTurnSummary({ result }: { result: JsonValue | undefined }) {
   const diagnosis = getRecord(output, "diagnosis");
   const learningFocus = getRecord(output, "learning_focus");
   const diagnostics = getRecord(root, "diagnostics");
+  const modelCallDiagnostics = getRecord(root, "model_call_diagnostics") ?? getRecord(diagnostics, "model_call_diagnostics");
+  const providerFailureKind = text(root?.provider_failure_kind, text(modelCallDiagnostics?.final_failure_kind, ""));
+  const providerFallbackUsed = Boolean(root?.provider_fallback_used ?? modelCallDiagnostics?.provider_fallback_used);
+  const providerAttempts = getArray(modelCallDiagnostics, "attempts");
   const fallbackReason = text(root?.fallback_reason, "");
   const likelyCause = text(diagnostics?.likely_cause, "");
   const normalizationApplied = diagnostics?.normalization_applied;
@@ -358,13 +427,16 @@ function FullTurnSummary({ result }: { result: JsonValue | undefined }) {
             <Pill>status: {turnStatus}</Pill>
             <Pill>provider: {text(root.provider_used, "unknown")}</Pill>
             <Pill>model: {text(root.provider_model, "unknown")}</Pill>
-            <Pill>fallback: {String(Boolean(root.fallback_used))}</Pill>
+            <Pill>provider fallback: {String(providerFallbackUsed)}</Pill>
+            <Pill>attempts: {String(providerAttempts.length)}</Pill>
+            {providerFailureKind ? <Pill>failure: {providerFailureKind}</Pill> : null}
+            <Pill>output fallback: {String(Boolean(root.fallback_used))}</Pill>
             <Pill>valid: {String(Boolean(validation?.valid))}</Pill>
           </div>
         </div>
       </div>
 
-      {Boolean(root.fallback_used) || likelyCause || normalizationApplied ? (
+      {Boolean(root.fallback_used) || providerFallbackUsed || likelyCause || normalizationApplied ? (
         <div
           style={{
             borderRadius: 18,
@@ -394,6 +466,11 @@ function FullTurnSummary({ result }: { result: JsonValue | undefined }) {
               {JSON.stringify({ normalization_notes: normalizationNotes, fatal_errors: fatalErrors, validation_warnings: validationWarnings }, null, 2)}
             </pre>
           ) : null}
+          {modelCallDiagnostics ? (
+            <pre style={{ ...jsonPreStyle, maxHeight: 280 }}>
+              {JSON.stringify({ model_call_diagnostics: modelCallDiagnostics }, null, 2)}
+            </pre>
+          ) : null}
         </div>
       ) : null}
 
@@ -411,10 +488,19 @@ function FullTurnSummary({ result }: { result: JsonValue | undefined }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
             <InfoBlock title="Topic" value={text(topicResolution?.topic_label, "—")} subvalue={text(topicResolution?.reason, "")} />
             <InfoBlock title="Diagnosis" value={text(diagnosis?.diagnosis, "—")} subvalue={`confidence: ${String(diagnosis?.diagnosis_confidence ?? "—")}`} />
-            <InfoBlock title="Target takeaway" value={text(learningFocus?.target_takeaway, "—")} subvalue={text(learningFocus?.why_visual_first, "")} />
+            <InfoBlock title="Target takeaway" value={text(learningFocus?.target_takeaway, "—")} />
           </div>
 
           <SemanticScenePlayer result={root} />
+
+          <DiagnosticSignalPanel result={root} />
+
+          <div style={{ borderRadius: 18, padding: 16, background: "rgba(14,165,233,0.1)", border: "1px solid rgba(14,165,233,0.22)", display: "grid", gap: 12 }}>
+            <h3 style={{ margin: 0 }}>Full prompt source of truth</h3>
+            <p style={{ margin: 0, lineHeight: 1.7, color: "rgba(255,255,255,0.88)" }}>
+              {text(getRecord(output, "visual_experience")?.full_prompt, text(learningFocus?.target_takeaway, "—"))}
+            </p>
+          </div>
 
           <div style={{ borderRadius: 18, padding: 16, background: "rgba(14,165,233,0.1)", border: "1px solid rgba(14,165,233,0.22)" }}>
             <h3 style={{ marginTop: 0 }}>Root problem</h3>
@@ -435,15 +521,20 @@ export function VisualExperienceLab() {
   const [error, setError] = useState<string | null>(null);
 
   const currentPayload = useMemo(
-    () => ({
-      ...body,
-      user_interests: parseUserInterests(body.user_interests),
-    }),
+    () => {
+      const { topic_label: _ignoredTopicLabel, ...rest } = body;
+      return {
+        ...rest,
+        generation_preset: "cinematic" as const,
+        user_interests: parseUserInterests(body.user_interests),
+      };
+    },
     [body],
   );
   const activeResult = generateResult ?? resolveResult ?? debugResult;
   const modelStoryJson = useMemo(() => buildModelStoryJson(activeResult), [activeResult]);
   const rendererJson = useMemo(() => buildRendererInspectionJson(activeResult), [activeResult]);
+  const relationshipPreviewJson = useMemo(() => buildRelationshipPreviewJson(activeResult), [activeResult]);
 
   async function run(path: string, setter: (value: JsonValue) => void) {
     setIsLoading(true);
@@ -463,12 +554,12 @@ export function VisualExperienceLab() {
     <main style={shellStyle}>
       <div style={{ maxWidth: 1440, margin: "0 auto", display: "grid", gap: 20 }}>
         <header style={{ display: "grid", gap: 8 }}>
-          <Pill>Visual Experience · Step 8e clean inspection UI</Pill>
+          <Pill>Visual Experience · Step 13 prompt + diagnostics</Pill>
           <h1 style={{ margin: 0, fontSize: "clamp(2rem, 5vw, 4.2rem)", letterSpacing: -1.5 }}>
             Interactive directed-scene lab
           </h1>
           <p style={{ maxWidth: 980, margin: 0, color: "rgba(255,255,255,0.72)", lineHeight: 1.7 }}>
-            Generate a model-directed visual learning scene, play the interactive renderer, then compare the model JSON against the MyWay renderer JSON.
+            Generate a prompt-driven visual learning scene, inspect confusion/insight signals, and preview sandbox-only shared pattern relationships.
           </p>
         </header>
 
@@ -476,13 +567,33 @@ export function VisualExperienceLab() {
           <section style={{ ...cardStyle, display: "grid", gap: 16 }}>
             <h2 style={{ margin: 0 }}>Request controls</h2>
 
-            <Field label="Provider">
+            <Field label="Provider" hint="DeepSeek and GLM-5.2 both use NVIDIA_API_KEY. OpenAI is manual-only and is never used as an automatic fallback.">
               <select value={body.provider} onChange={(event) => setBody((current) => ({ ...current, provider: event.target.value as RequestBody["provider"] }))} style={inputStyle}>
-                <option value="deepseek">DeepSeek via NVIDIA</option>
-                <option value="openai">openai</option>
+                <option value="deepseek">DeepSeek V4 Pro via NVIDIA</option>
+                <option value="glm">GLM-5.2 via NVIDIA</option>
+                <option value="openai">OpenAI (manual only, paid)</option>
                 <option value="scaffold">scaffold fallback</option>
               </select>
             </Field>
+
+            <Field label="Fallback provider" hint="Used only if the primary provider fails before returning usable model text. The generation mode is always cinematic in Step 13.">
+              <select value={body.fallback_provider} onChange={(event) => setBody((current) => ({ ...current, fallback_provider: event.target.value as RequestBody["fallback_provider"] }))} style={inputStyle}>
+                <option value="glm">GLM-5.2</option>
+                <option value="scaffold">scaffold</option>
+                <option value="none">none</option>
+              </select>
+            </Field>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              <label style={{ display: "flex", gap: 10, alignItems: "center", color: "rgba(255,255,255,0.74)" }}>
+                <input type="checkbox" checked={body.enable_streaming} onChange={(event) => setBody((current) => ({ ...current, enable_streaming: event.target.checked }))} />
+                Stream model response when supported
+              </label>
+              <label style={{ display: "flex", gap: 10, alignItems: "center", color: "rgba(255,255,255,0.74)" }}>
+                <input type="checkbox" checked={body.retry_transient_errors} onChange={(event) => setBody((current) => ({ ...current, retry_transient_errors: event.target.checked }))} />
+                Retry transient provider errors
+              </label>
+            </div>
 
             <Field label="Learner message">
               <textarea
@@ -491,10 +602,6 @@ export function VisualExperienceLab() {
                 rows={5}
                 style={{ ...inputStyle, resize: "vertical" }}
               />
-            </Field>
-
-            <Field label="Known topic label, optional">
-              <input value={body.topic_label} onChange={(event) => setBody((current) => ({ ...current, topic_label: event.target.value }))} style={inputStyle} />
             </Field>
 
             <Field
@@ -578,13 +685,18 @@ export function VisualExperienceLab() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: 18 }}>
           <JsonInspectionPanel
             title="Model story + directed scene JSON"
-            description="The model-created teaching JSON: learning focus, orientation, directed scene, story beats, probe, and tentative personalization hypotheses."
+            description="The model-created teaching JSON: diagnostic signal, full_prompt, explanation pieces, directed scene, scene moments, probe, and local personalization decision."
             value={modelStoryJson}
           />
           <JsonInspectionPanel
             title="MyWay renderer execution JSON"
             description="The MyWay-side renderer JSON: request context, compiled timeline, constraints, motion/camera tracks, geometry, warnings, validation, and final scene plan."
             value={rendererJson}
+          />
+          <JsonInspectionPanel
+            title="Sandbox diagnostic relationship preview"
+            description="Sandbox-only shared confusion/insight relationships built deterministically from shared_label matches. Production Learning Space files are not touched."
+            value={relationshipPreviewJson}
           />
         </div>
       </div>

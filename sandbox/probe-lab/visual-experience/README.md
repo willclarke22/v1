@@ -13,20 +13,20 @@ The proof of concept already showed that a Blender/BlenderKit `.glb` can be expo
 - `adapters.ts` converts visual-experience output into current MyWay-facing shapes.
 - `ui/` contains the visual-experience workbench and GLB player.
 - `routes/` contains the sandbox API route implementations.
-- `assets/registry.json` is the source of truth for which assets the model may reference.
+- `../assets/library/registry.json` is the source of truth for which assets the model may reference.
 
 ## Asset rule
 
 Browser-loadable assets do **not** live in this sandbox folder. They live under the real Next.js public folder:
 
 ```txt
-public/sandbox-assets/visual-experience/models/<domain>/<asset_id>.glb
+public/sandbox-assets/myway/models/<domain>/<asset_id>.glb
 ```
 
 The sandbox folder stores metadata and organization:
 
 ```txt
-sandbox/probe-lab/visual-experience/assets/registry.json
+sandbox/probe-lab/assets/library/registry.json
 sandbox/probe-lab/visual-experience/assets/licenses/
 sandbox/probe-lab/visual-experience/assets/source/blender/
 sandbox/probe-lab/visual-experience/assets/generated/
@@ -43,7 +43,7 @@ sandbox/probe-lab/visual-experience/compiler.ts    -> lib/visual-experience/comp
 sandbox/probe-lab/visual-experience/validate.ts    -> lib/visual-experience/validate.ts
 sandbox/probe-lab/visual-experience/adapters.ts    -> lib/visual-experience/adapters.ts
 sandbox/probe-lab/visual-experience/ui/*           -> ui/learning-space/probes/visual-experience/*
-public/sandbox-assets/visual-experience/*          -> public/myway-assets/visual-experience/* or external asset storage
+public/sandbox-assets/myway/*          -> public/myway-assets/visual-experience/* or external asset storage
 ```
 
 ## Next after Step 3

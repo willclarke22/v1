@@ -1,0 +1,223 @@
+{
+  "schema_version": "myway_asset_registry_v1",
+  "updated_at": "2026-07-11T01:32:54.937Z",
+  "asset_root_public_url": "/sandbox-assets/myway",
+  "notes": "Shared MyWay sandbox asset library. Primitive Builder and Visual Experience both resolve assets from this registry.",
+  "assets": [
+    {
+      "asset_id": "apple_v1",
+      "canonical_label": "apple",
+      "display_name": "Apple",
+      "aliases": [],
+      "semantic_tags": [
+        "generic",
+        "fruit",
+        "apple",
+        "food",
+        "object",
+        "test_asset"
+      ],
+      "style_tags": [],
+      "asset_type": "glb",
+      "domain": "generic",
+      "source_type": "manual",
+      "source_asset_id": null,
+      "source_prompt": null,
+      "source_url": null,
+      "source_path": null,
+      "public_path": "/sandbox-assets/myway/models/manual/apple_v1.glb",
+      "thumbnail_path": null,
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/apple_v1.json",
+      "dimensions_m": [
+        1,
+        1,
+        1
+      ],
+      "default_scale": 1,
+      "default_rotation": [
+        0,
+        0,
+        0
+      ],
+      "ground_offset_m": 0,
+      "polygon_count": null,
+      "rigged": false,
+      "animation_clips": [],
+      "content_hash": null,
+      "quality_score": 0.65,
+      "reuse_count": 0,
+      "license_kind": "unknown",
+      "license_status": "needs_review",
+      "commercial_use_allowed": true,
+      "raw_redistribution_allowed": false,
+      "safe_to_use_in_sandbox": true,
+      "safe_to_promote_to_app": false,
+      "status": "normalized",
+      "notes": "Migrated from the original Visual Experience proof-of-concept shelf.",
+      "created_at": "2026-07-02",
+      "updated_at": "2026-07-10"
+    },
+    {
+      "asset_id": "banana_v1",
+      "canonical_label": "banana",
+      "display_name": "Banana",
+      "aliases": [],
+      "semantic_tags": [
+        "generic",
+        "fruit",
+        "banana",
+        "food",
+        "object",
+        "test_asset"
+      ],
+      "style_tags": [],
+      "asset_type": "glb",
+      "domain": "generic",
+      "source_type": "manual",
+      "source_asset_id": null,
+      "source_prompt": null,
+      "source_url": null,
+      "source_path": null,
+      "public_path": "/sandbox-assets/myway/models/manual/banana_v1.glb",
+      "thumbnail_path": null,
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/banana_v1.json",
+      "dimensions_m": [
+        1,
+        1,
+        1
+      ],
+      "default_scale": 1,
+      "default_rotation": [
+        0,
+        0,
+        0
+      ],
+      "ground_offset_m": 0,
+      "polygon_count": null,
+      "rigged": false,
+      "animation_clips": [],
+      "content_hash": null,
+      "quality_score": 0.65,
+      "reuse_count": 0,
+      "license_kind": "unknown",
+      "license_status": "needs_review",
+      "commercial_use_allowed": true,
+      "raw_redistribution_allowed": false,
+      "safe_to_use_in_sandbox": true,
+      "safe_to_promote_to_app": false,
+      "status": "normalized",
+      "notes": "Migrated from the original Visual Experience proof-of-concept shelf.",
+      "created_at": "2026-07-02",
+      "updated_at": "2026-07-10"
+    },
+    {
+      "asset_id": "simple_wooden_chair_bk_mrfn5tpp",
+      "canonical_label": "simple wooden chair",
+      "display_name": "Chair",
+      "aliases": [
+        "wood chair"
+      ],
+      "semantic_tags": [
+        "simple wooden chair",
+        "chair",
+        "furniture",
+        "seat"
+      ],
+      "style_tags": [
+        "clean",
+        "realistic"
+      ],
+      "asset_type": "glb",
+      "domain": "generic",
+      "source_type": "blenderkit",
+      "source_asset_id": "50df0de3-0e95-4d06-bdb4-6ea2c882db9e",
+      "source_prompt": "simple wooden chair wood furniture seat clean realistic",
+      "source_url": "https://www.blenderkit.com/api/v1/assets/5a950088-3395-468c-b98e-2392dd1de2de/",
+      "source_path": "public/sandbox-assets/myway/models/blenderkit/simple_wooden_chair_bk_mrfn5tpp.glb",
+      "public_path": "/sandbox-assets/myway/models/blenderkit/simple_wooden_chair_bk_mrfn5tpp.glb",
+      "thumbnail_path": "/sandbox-assets/myway/thumbnails/simple_wooden_chair_bk_mrfn5tpp.png",
+      "license_record_path": "sandbox/probe-lab/assets/library/source-records/simple_wooden_chair_bk_mrfn5tpp.json",
+      "dimensions_m": [
+        1.090715,
+        1.266695,
+        1.999699
+      ],
+      "default_scale": 1,
+      "default_rotation": [
+        0,
+        0,
+        0
+      ],
+      "ground_offset_m": 0,
+      "polygon_count": 534,
+      "rigged": false,
+      "animation_clips": [],
+      "content_hash": "f3515e1507bd69a193b90835e29dc468a54c09ea1085f4f06cddfe21ccadb55a",
+      "quality_score": 0.78,
+      "reuse_count": 0,
+      "license_kind": "royalty_free",
+      "license_status": "recorded",
+      "commercial_use_allowed": true,
+      "raw_redistribution_allowed": false,
+      "safe_to_use_in_sandbox": true,
+      "safe_to_promote_to_app": false,
+      "status": "normalized",
+      "notes": "Automatically acquired and normalized from BlendKit by Ján Staňo.",
+      "created_at": "2026-07-11T00:44:01.207Z",
+      "updated_at": "2026-07-11T00:44:01.207Z"
+    },
+    {
+      "asset_id": "simple_wooden_chair_tr_mrfougpj",
+      "canonical_label": "simple wooden chair",
+      "display_name": "simple wooden chair",
+      "aliases": [],
+      "semantic_tags": [
+        "simple wooden chair",
+        "chair",
+        "furniture"
+      ],
+      "style_tags": [
+        "clean",
+        "simple"
+      ],
+      "asset_type": "glb",
+      "domain": "generic",
+      "source_type": "trellis",
+      "source_asset_id": null,
+      "source_prompt": "simple wooden chair, clean, simple, chair, furniture",
+      "source_url": "https://build.nvidia.com/microsoft/trellis",
+      "source_path": "sandbox/probe-lab/assets/inbox/trellis/simple_wooden_chair_tr_mrfougpj-raw.glb",
+      "public_path": "/sandbox-assets/myway/models/trellis/simple_wooden_chair_tr_mrfougpj.glb",
+      "thumbnail_path": "/sandbox-assets/myway/thumbnails/simple_wooden_chair_tr_mrfougpj.png",
+      "license_record_path": null,
+      "dimensions_m": [
+        1.295961,
+        1.299018,
+        2
+      ],
+      "default_scale": 1,
+      "default_rotation": [
+        0,
+        0,
+        0
+      ],
+      "ground_offset_m": 0,
+      "polygon_count": 9390,
+      "rigged": false,
+      "animation_clips": [],
+      "content_hash": "539f5ddcb1fb7ef4d1aa6c802cdde2252d2f3e5880a81b87a85a2e5f1726bd29",
+      "quality_score": 0.68,
+      "reuse_count": 0,
+      "license_kind": "unknown",
+      "license_status": "sandbox_only",
+      "commercial_use_allowed": false,
+      "raw_redistribution_allowed": false,
+      "safe_to_use_in_sandbox": true,
+      "safe_to_promote_to_app": false,
+      "status": "normalized",
+      "notes": "Generated with NVIDIA-hosted Microsoft TRELLIS and normalized by Blender. no_texture=true; NVIDIA attempts=2. Review output and license before production promotion.",
+      "created_at": "2026-07-11T01:32:54.925Z",
+      "updated_at": "2026-07-11T01:32:54.925Z"
+    }
+  ]
+}

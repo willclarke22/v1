@@ -65,3 +65,10 @@ datasets/topic-labeling-dataset/**/label-generator/validation.jsonl
 datasets/topic-labeling-dataset/**/label-generator/test.jsonl
 myway-semantic-worker-api-integration-inspection.txt
 myway-*-inspection.txt
+sandbox/probe-lab/assets/inbox/**
+!sandbox/probe-lab/assets/inbox/**/.gitkeep
+sandbox/probe-lab/assets/jobs/**/*.json
+sandbox/probe-lab/assets/debug/*.json
+public/sandbox-assets/myway/models/blenderkit/*.glb
+public/sandbox-assets/myway/models/trellis/*.glb
+public/sandbox-assets/myway/thumbnails/*.png

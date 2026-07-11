@@ -5,13 +5,13 @@ import type {
   VisualRendererCapabilities,
 } from "./schema";
 
-export const VISUAL_EXPERIENCE_PUBLIC_ASSET_ROOT = "/sandbox-assets/visual-experience";
+export const VISUAL_EXPERIENCE_PUBLIC_ASSET_ROOT = "/sandbox-assets/myway";
 
 export const VISUAL_EXPERIENCE_REGISTRY_PROJECT_PATH =
-  "sandbox/probe-lab/visual-experience/assets/registry.json";
+  "sandbox/probe-lab/assets/library/registry.json";
 
 export const VISUAL_EXPERIENCE_PUBLIC_PROJECT_PATH =
-  "public/sandbox-assets/visual-experience";
+  "public/sandbox-assets/myway";
 
 export const visualExperienceRendererCapabilities: VisualRendererCapabilities = {
   renderer: "react_three_fiber_sandbox",

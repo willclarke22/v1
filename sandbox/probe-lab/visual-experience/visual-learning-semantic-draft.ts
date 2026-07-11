@@ -10,10 +10,12 @@ import type {
   VisualExperienceMode,
   VisualPrimitiveKind,
   VisualSceneActionType,
+  VisualExplanationPiece,
 } from "./visual-learning-turn";
+import type { DiagnosticSignal } from "./diagnostic-relationships";
 
 export type VisualLearningSemanticDraft = {
-  schema_version: "myway_visual_learning_semantic_draft_v1";
+  schema_version: "myway_visual_learning_semantic_draft_v1" | "myway_visual_learning_semantic_draft_v2";
   turn_status: "proceed" | "needs_clarification";
   clarification?: {
     question?: string | null;
@@ -24,6 +26,7 @@ export type VisualLearningSemanticDraft = {
       learner_goal?: ConfidenceScore | null;
     } | null;
   } | null;
+  topic_label?: string | null;
   topic?: {
     label?: string | null;
     confidence?: ConfidenceScore | null;
@@ -34,12 +37,24 @@ export type VisualLearningSemanticDraft = {
     confidence?: ConfidenceScore | null;
     reason?: string | null;
   } | null;
+  diagnostic_signal?: DiagnosticSignal | null;
   learning_focus?: {
     root_problem?: string | null;
     target_takeaway?: string | null;
+    /** Legacy v1 only. v2 does not ask for why_visual_first. */
     why_visual_first?: string | null;
+    misconception_to_surface?: string | null;
   } | null;
+  learner_facing_prompt?: {
+    title?: string | null;
+    full_prompt?: string | null;
+    explanation_pieces?: VisualExplanationPiece[];
+    what_to_watch_for?: string[];
+    tone?: "calm" | "curious" | "encouraging" | "cinematic" | "direct" | string | null;
+  } | null;
+  /** Legacy v1. v2 uses learner_facing_prompt.explanation_pieces. */
   orientation_segments?: VisualLearningSemanticDraftOrientationSegment[];
+  personalization_decision?: VisualLearningSemanticDraftPersonalizationDecision | null;
   directed_scene?: VisualLearningDirectedScene | null;
   scene?: VisualLearningSemanticDraftScene | null;
   guided_interaction?: {
@@ -49,6 +64,7 @@ export type VisualLearningSemanticDraft = {
     success_observation?: string | null;
   } | null;
   probe?: VisualLearningSemanticDraftProbe | null;
+  /** Legacy v1 only. v2 pre-attempt drafts should not include this. */
   personalization_hypotheses?: VisualLearningSemanticDraftPersonalizationHypothesis[];
   confidence?:
     | ConfidenceScore
@@ -66,13 +82,25 @@ export type VisualLearningSemanticDraftOrientationSegment = {
   purpose?: string | null;
 };
 
+export type VisualLearningSemanticDraftPersonalizationDecision = {
+  chosen_interest?: string | null;
+  use_interest?: "structural_bridge" | "light_tone" | "do_not_use" | string | null;
+  reason?: string | null;
+  structural_mapping?: string | null;
+  anti_distortion_guard?: string | null;
+};
+
 export type VisualLearningSemanticDraftScene = {
   title?: string | null;
   /** Compatibility layout hint. directed_scene is the richer source of visual direction. */
   experience_mode?: VisualExperienceMode | string | null;
   directed_scene?: VisualLearningDirectedScene | null;
+  scene_moments?: VisualLearningDirectedStoryBeat[];
+  /** Legacy renderer compatibility. v2 should prefer scene_moments. */
   story_beats?: VisualLearningDirectedStoryBeat[];
+  /** Legacy only. v2 prompt no longer asks for caption_policy or label_policy. */
   caption_policy?: Record<string, unknown> | null;
+  /** Legacy only. v2 prompt no longer asks for label_policy. */
   label_policy?: Record<string, unknown> | null;
   entities?: VisualLearningSemanticDraftEntity[];
   relationships?: VisualLearningSemanticDraftRelationship[];
@@ -87,7 +115,9 @@ export type VisualLearningDirectedScene = {
   emotional_tone?: string | null;
   spatial_design?: string | null;
   cinematography?: Record<string, unknown> | null;
+  /** Legacy only. v2 prompt no longer asks for caption_policy or label_policy. */
   caption_policy?: Record<string, unknown> | null;
+  /** Legacy only. v2 prompt no longer asks for label_policy. */
   label_policy?: Record<string, unknown> | null;
   renderer_directive?: string | null;
   [key: string]: unknown;
@@ -99,7 +129,12 @@ export type VisualLearningDirectedStoryBeat = {
   director_intent?: string | null;
   camera?: Record<string, unknown> | null;
   visual_events?: Array<Record<string, unknown>>;
+  /** Legacy only. v2 prompt no longer asks for spoken_caption. */
   spoken_caption?: Record<string, unknown> | null;
+  source_explanation_piece_ids?: string[];
+  introduces_entity_ids?: string[];
+  keeps_visible_entity_ids?: string[];
+  active_entity_ids?: string[];
   [key: string]: unknown;
 };
 
@@ -147,6 +182,7 @@ export type VisualLearningSemanticDraftProbe = {
   question?: string | null;
   options?: Array<{ id?: string | null; text?: string | null; label?: string | null }>;
   correct_option_id?: string | null;
+  full_prompt?: string | null;
   correct_option_ids?: string[];
   expected_ideas?: string[];
   misconception_markers?: Array<{
@@ -178,11 +214,11 @@ export function isVisualLearningSemanticDraftLike(value: unknown): value is Visu
   if (!record) return false;
 
   if (record.schema_version === "myway_visual_learning_semantic_draft_v1") return true;
+  if (record.schema_version === "myway_visual_learning_semantic_draft_v2") return true;
 
   // Do not treat the final strict MyWay output as a semantic draft.
   if (record.schema_version === "myway_visual_learning_turn_output_v1") return false;
 
   // Near-miss semantic drafts usually have scene/probe rather than visual_experience/followup_probe.
-  return Boolean(record.scene || record.probe || record.orientation_segments || record.learning_focus);
+  return Boolean(record.scene || record.probe || record.orientation_segments || record.learner_facing_prompt || record.diagnostic_signal || record.learning_focus);
 }
-

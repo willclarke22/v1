@@ -33,7 +33,7 @@ function getBeats(result: unknown) {
   return getSemanticSceneTimelineBeats(result);
 }
 
-function splitWords(value: string) {
+function splitWords(value: string): string[] {
   return value.trim().match(/\S+/g) ?? [];
 }
 
@@ -49,29 +49,55 @@ function wordDelayMs(word: string) {
   return Math.max(110, delay);
 }
 
-function useSpokenWordStream(value: string, enabled: boolean, resetKey: unknown) {
-  const words = useMemo(() => splitWords(value), [value]);
-  const [wordIndex, setWordIndex] = useState(0);
+function chunkWordsForCaption(value: string, maxWordsOnScreen = 5) {
+  const words = splitWords(value);
+  const maxWords = Math.max(3, Math.min(8, Math.round(maxWordsOnScreen || 5)));
+  const chunks: string[] = [];
+
+  for (let index = 0; index < words.length;) {
+    let end = Math.min(words.length, index + maxWords);
+    for (let cursor = index + 2; cursor < end; cursor += 1) {
+      if (/[,.!?;:]$/.test(words[cursor] ?? "")) {
+        end = cursor + 1;
+        break;
+      }
+    }
+    chunks.push(words.slice(index, end).join(" "));
+    index = end;
+  }
+
+  return chunks;
+}
+
+function chunkDelayMs(chunk: string) {
+  const words = splitWords(chunk);
+  const delay = words.reduce<number>((sum, word) => sum + wordDelayMs(word), 0);
+  return Math.max(850, Math.min(2400, delay));
+}
+
+function useSpokenCaptionStream(value: string, enabled: boolean, resetKey: unknown, maxWordsOnScreen = 5) {
+  const chunks = useMemo(() => chunkWordsForCaption(value, maxWordsOnScreen), [value, maxWordsOnScreen]);
+  const [chunkIndex, setChunkIndex] = useState(0);
 
   useEffect(() => {
-    setWordIndex(0);
-  }, [enabled, value, resetKey]);
+    setChunkIndex(0);
+  }, [enabled, value, resetKey, maxWordsOnScreen]);
 
   useEffect(() => {
-    if (!enabled || !words.length) return;
-    if (wordIndex >= words.length - 1) return;
+    if (!enabled || !chunks.length) return;
+    if (chunkIndex >= chunks.length - 1) return;
 
     const timer = window.setTimeout(() => {
-      setWordIndex((current) => Math.min(words.length - 1, current + 1));
-    }, wordDelayMs(words[wordIndex] ?? ""));
+      setChunkIndex((current) => Math.min(chunks.length - 1, current + 1));
+    }, chunkDelayMs(chunks[chunkIndex] ?? ""));
 
     return () => window.clearTimeout(timer);
-  }, [enabled, resetKey, value, wordIndex, words]);
+  }, [chunks, chunkIndex, enabled, resetKey, value]);
 
   return {
-    word: words[wordIndex] ?? "",
-    progress: words.length ? (wordIndex + 1) / words.length : 1,
-    done: words.length > 0 && wordIndex >= words.length - 1,
+    caption: chunks[chunkIndex] ?? "",
+    progress: chunks.length ? (chunkIndex + 1) / chunks.length : 1,
+    done: chunks.length > 0 && chunkIndex >= chunks.length - 1,
   };
 }
 
@@ -134,10 +160,12 @@ export function SemanticScenePlayer({ result }: { result: unknown }) {
     scene?.orientation_text ||
     scene?.target_takeaway ||
     "";
-  const streamedCaption = useSpokenWordStream(
+  const captionPolicy = asRecord(scene?.caption_policy);
+  const streamedCaption = useSpokenCaptionStream(
     storyText,
     mode === "story" && isPlaying,
     scene?.active_beat?.id ?? activeBeatIndex,
+    Number(captionPolicy?.max_words_on_screen ?? 5),
   );
 
   useEffect(() => {
@@ -267,7 +295,7 @@ export function SemanticScenePlayer({ result }: { result: unknown }) {
             setMode("inspect");
           }
         }}
-        storyCaption={mode === "story" ? (isPlaying ? streamedCaption.word : "") : ""}
+        storyCaption={mode === "story" ? (isPlaying ? streamedCaption.caption : "") : ""}
         storyProgress={streamedCaption.progress}
         storyMode={mode === "story"}
         isPlaying={isPlaying}

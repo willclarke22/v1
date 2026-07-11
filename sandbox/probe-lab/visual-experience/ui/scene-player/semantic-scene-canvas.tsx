@@ -37,12 +37,12 @@ function materialForEntity(entity: PreparedSemanticSceneEntity, opacity = 1) {
     return { color: "#dbeafe", emissive: "#0f172a", emissiveIntensity: 0.05 };
   })();
 
-  const transparentRole = entity.render_role === "transparent_container" || entity.render_role === "particle_burst";
+  const transparentRole = entity.render_role === "transparent_container" || entity.render_role === "cylindrical_container" || entity.render_role === "particle_burst";
 
   return {
     ...base,
     transparent: transparentRole || opacity < 0.98,
-    opacity: entity.render_role === "transparent_container" ? Math.min(opacity, 0.28) : entity.render_role === "particle_burst" ? Math.min(opacity, 0.86) : opacity,
+    opacity: entity.render_role === "transparent_container" || entity.render_role === "cylindrical_container" ? Math.min(opacity, 0.28) : entity.render_role === "particle_burst" ? Math.min(opacity, 0.86) : opacity,
   };
 }
 
@@ -250,6 +250,97 @@ function Starburst({ entity, progress }: { entity: PreparedSemanticSceneEntity; 
   );
 }
 
+function CylindricalContainer({ entity, progress }: { entity: PreparedSemanticSceneEntity; progress: number }) {
+  const material = materialForEntity(entity, actionOpacity(entity, progress));
+
+  return (
+    <group>
+      <mesh castShadow receiveShadow scale={entity.scale}>
+        <cylinderGeometry args={[0.5, 0.5, 1, 48, 1, true]} />
+        <meshStandardMaterial {...material} roughness={0.18} metalness={0.05} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh scale={[entity.scale[0] * 1.02, entity.scale[1] * 1.02, entity.scale[2] * 1.02]}>
+        <cylinderGeometry args={[0.5, 0.5, 1, 48, 1, true]} />
+        <meshBasicMaterial color="#bfdbfe" transparent opacity={0.24} wireframe side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+}
+
+function PistonBody({ entity, progress }: { entity: PreparedSemanticSceneEntity; progress: number }) {
+  const material = materialForEntity(entity, actionOpacity(entity, progress));
+
+  return (
+    <group scale={entity.scale}>
+      <mesh castShadow receiveShadow>
+        <cylinderGeometry args={[0.5, 0.5, 1, 56]} />
+        <meshStandardMaterial {...material} roughness={0.42} metalness={0.35} />
+      </mesh>
+      {[-0.42, -0.2, 0.2, 0.42].map((y) => (
+        <mesh key={`${entity.id}-ring-${y}`} position={[0, y, 0]}>
+          <torusGeometry args={[0.51, 0.014, 8, 56]} />
+          <meshBasicMaterial color="#f8fafc" transparent opacity={0.44} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function WheelBody({ entity, progress }: { entity: PreparedSemanticSceneEntity; progress: number }) {
+  const material = materialForEntity(entity, actionOpacity(entity, progress));
+  const glow = entity.event_types.includes("glow") || entity.motion_tracks.some((track) => track.kind === "glow");
+
+  return (
+    <group scale={entity.scale}>
+      <mesh>
+        <torusGeometry args={[0.48, 0.055, 16, 80]} />
+        <meshStandardMaterial {...material} roughness={0.34} metalness={0.24} />
+      </mesh>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <mesh key={`${entity.id}-spoke-${index}`} rotation={[0, 0, (index / 6) * Math.PI]}>
+          <boxGeometry args={[0.86, 0.018, 0.028]} />
+          <meshStandardMaterial {...material} roughness={0.36} metalness={0.18} />
+        </mesh>
+      ))}
+      <mesh>
+        <sphereGeometry args={[0.09, 24, 24]} />
+        <meshStandardMaterial {...material} roughness={0.3} metalness={0.3} />
+      </mesh>
+      {glow ? (
+        <mesh>
+          <torusGeometry args={[0.6 + Math.sin(progress * Math.PI) * 0.06, 0.018, 12, 80]} />
+          <meshBasicMaterial color="#fef3c7" transparent opacity={0.38} />
+        </mesh>
+      ) : null}
+    </group>
+  );
+}
+
+function ShaftBody({ entity, progress }: { entity: PreparedSemanticSceneEntity; progress: number }) {
+  const material = materialForEntity(entity, actionOpacity(entity, progress));
+  const crankAngle = progress * Math.PI * 2;
+
+  return (
+    <group scale={entity.scale}>
+      <mesh rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.07, 0.07, 1.15, 24]} />
+        <meshStandardMaterial {...material} roughness={0.28} metalness={0.34} />
+      </mesh>
+      <group rotation={[0, 0, crankAngle]}>
+        <mesh position={[0.28, 0, 0]}>
+          <sphereGeometry args={[0.08, 20, 20]} />
+          <meshStandardMaterial color="#fde68a" emissive="#92400e" emissiveIntensity={0.52} />
+        </mesh>
+        <Line points={[[0, 0, 0], [0.28, 0, 0]]} color="#fef3c7" lineWidth={3} transparent opacity={0.82} />
+      </group>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.34, 0.02, 8, 64]} />
+        <meshBasicMaterial color="#93c5fd" transparent opacity={0.35} />
+      </mesh>
+    </group>
+  );
+}
+
 function RotatingBody({ entity, progress }: { entity: PreparedSemanticSceneEntity; progress: number }) {
   const material = materialForEntity(entity, actionOpacity(entity, progress));
   const glow = entity.event_types.includes("glow") || entity.motion_tracks.some((track) => track.kind === "glow");
@@ -291,7 +382,7 @@ function PrimitiveEntity({
   storyMode: boolean;
   isPlaying: boolean;
 }) {
-  if (entity.render_role === "connector") return null;
+  if (entity.render_role === "connector" || entity.render_role === "rod_connector") return null;
 
   const material = materialForEntity(entity, actionOpacity(entity, progress));
   const desiredScale = animatedScale(entity, progress);
@@ -316,6 +407,46 @@ function PrimitiveEntity({
       onSelectEntity?.(entity.id);
     },
   };
+
+  if (entity.render_role === "cylindrical_container") {
+    return (
+      <group ref={groupRef} position={targetPosition.toArray()} scale={desiredScale} {...clickProps}>
+        <SelectionHalo entity={entity} progress={progress} />
+        <CylindricalContainer entity={entity} progress={progress} />
+        <EntityLabel entity={entity} storyMode={storyMode} isPlaying={isPlaying} />
+      </group>
+    );
+  }
+
+  if (entity.render_role === "piston_body") {
+    return (
+      <group ref={groupRef} position={targetPosition.toArray()} scale={desiredScale} {...clickProps}>
+        <SelectionHalo entity={entity} progress={progress} />
+        <PistonBody entity={entity} progress={progress} />
+        <EntityLabel entity={entity} storyMode={storyMode} isPlaying={isPlaying} />
+      </group>
+    );
+  }
+
+  if (entity.render_role === "wheel_body") {
+    return (
+      <group ref={groupRef} position={targetPosition.toArray()} scale={desiredScale} {...clickProps}>
+        <SelectionHalo entity={entity} progress={progress} />
+        <WheelBody entity={entity} progress={progress} />
+        <EntityLabel entity={entity} storyMode={storyMode} isPlaying={isPlaying} />
+      </group>
+    );
+  }
+
+  if (entity.render_role === "shaft_body") {
+    return (
+      <group ref={groupRef} position={targetPosition.toArray()} scale={desiredScale} {...clickProps}>
+        <SelectionHalo entity={entity} progress={progress} />
+        <ShaftBody entity={entity} progress={progress} />
+        <EntityLabel entity={entity} storyMode={storyMode} isPlaying={isPlaying} />
+      </group>
+    );
+  }
 
   if (entity.render_role === "transparent_container") {
     return (
@@ -390,7 +521,7 @@ function PrimitiveEntity({
 
 function ConnectorLines({ scene, progress }: { scene: PreparedSemanticScene; progress: number }) {
   const byId = new Map(scene.entities.map((entity) => [entity.id, entity]));
-  const connectors = scene.entities.filter((entity) => entity.render_role === "connector" && entity.connector_from_id && entity.connector_to_id);
+  const connectors = scene.entities.filter((entity) => (entity.render_role === "connector" || entity.render_role === "rod_connector") && entity.connector_from_id && entity.connector_to_id);
 
   return (
     <>
@@ -401,7 +532,7 @@ function ConnectorLines({ scene, progress }: { scene: PreparedSemanticScene; pro
         const end = to ? animatedPosition(to, progress) : connector.connector_to_position;
         if (!start || !end) return null;
         const midpoint: Vec3 = [(start[0] + end[0]) / 2, (start[1] + end[1]) / 2, (start[2] + end[2]) / 2];
-        const active = connector.is_active || connector.is_action_target;
+        const active = connector.is_active || connector.is_action_target || connector.render_role === "rod_connector";
         return (
           <group key={`${connector.id}-connector`}>
             <Line
@@ -484,7 +615,7 @@ function BeatActionHints({ scene, progress }: { scene: PreparedSemanticScene; pr
   return (
     <>
       {targets.map((entity, index) => {
-        if (entity.render_role === "connector") return null;
+        if (entity.render_role === "connector" || entity.render_role === "rod_connector") return null;
         const position = animatedPosition(entity, progress);
         return (
           <group key={`${entity.id}-pulse-${index}`} position={position}>
@@ -669,12 +800,12 @@ export function SemanticSceneCanvas({
             <div
               style={{
                 color: "white",
-                fontSize: storyMode ? 54 : 18,
-                lineHeight: storyMode ? 1.02 : 1.45,
+                fontSize: storyMode ? 30 : 18,
+                lineHeight: storyMode ? 1.16 : 1.45,
                 fontWeight: 850,
                 letterSpacing: storyMode ? "0.01em" : undefined,
                 textAlign: storyMode ? "center" : "left",
-                minHeight: storyMode ? 60 : undefined,
+                minHeight: storyMode ? 74 : undefined,
                 textShadow: "0 2px 24px rgba(0,0,0,0.72)",
               }}
             >

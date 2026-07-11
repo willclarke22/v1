@@ -18,13 +18,17 @@ import type {
   SemanticSceneEntity,
   SemanticSceneRelationship,
   VisualExperienceMode,
+  VisualExplanationPiece,
   VisualLearningTurnInput,
   VisualLearningTurnOutput,
   VisualOrientationSegment,
+  VisualPersonalizationDecision,
   VisualPersonalizationHypothesis,
   VisualPrimitiveKind,
   VisualSceneActionType,
 } from "./visual-learning-turn";
+import { normalizeDiagnosticSignal } from "./diagnostic-relationships";
+import type { DiagnosticSignal } from "./diagnostic-relationships";
 import type { VisualLearningSemanticDraft } from "./visual-learning-semantic-draft";
 
 export type VisualLearningSemanticDraftAssemblyReport = {
@@ -90,6 +94,17 @@ const ORIENTATION_PURPOSES: VisualOrientationSegment["purpose"][] = [
   "show_relationship",
   "prepare_interaction",
   "connect_to_probe",
+];
+
+const EXPLANATION_ROLES: VisualExplanationPiece["role"][] = [
+  "start_from_basic_need",
+  "hit_a_wall",
+  "introduce_needed_part",
+  "show_how_part_helps",
+  "hit_next_wall",
+  "connect_parts",
+  "land_the_takeaway",
+  "prepare_followup_probe",
 ];
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -174,6 +189,23 @@ function supportedOrientationPurpose(value: unknown, index: number): VisualOrien
   return "connect_to_probe";
 }
 
+function supportedExplanationRole(value: unknown, index: number): VisualExplanationPiece["role"] {
+  if (EXPLANATION_ROLES.includes(value as VisualExplanationPiece["role"])) {
+    return value as VisualExplanationPiece["role"];
+  }
+  if (index === 0) return "start_from_basic_need";
+  if (index === 1) return "hit_a_wall";
+  return "connect_parts";
+}
+
+function orientationPurposeForExplanationRole(role: VisualExplanationPiece["role"]): VisualOrientationSegment["purpose"] {
+  if (role === "start_from_basic_need" || role === "introduce_needed_part") return "show_main_structure";
+  if (role === "show_how_part_helps" || role === "hit_next_wall") return "show_motion_or_change";
+  if (role === "connect_parts" || role === "land_the_takeaway") return "show_relationship";
+  if (role === "prepare_followup_probe") return "connect_to_probe";
+  return "introduce_scene";
+}
+
 function supportedProbeType(value: unknown, input: VisualLearningTurnInput): ProbeType {
   return input.available_probe_types.includes(value as ProbeType)
     ? (value as ProbeType)
@@ -194,7 +226,69 @@ function expectedAttemptTypeForProbe(probeType: ProbeType): ProbeAttemptType {
   return "text";
 }
 
-function normalizeOrientationSegments(draft: Record<string, unknown>, rootProblem: string, targetTakeaway: string, input: VisualLearningTurnInput) {
+function normalizeExplanationPieces(draft: Record<string, unknown>, rootProblem: string, targetTakeaway: string): VisualExplanationPiece[] {
+  const prompt = asRecord(draft.learner_facing_prompt) ?? {};
+  const rawPieces = asArray(prompt.explanation_pieces).length
+    ? asArray(prompt.explanation_pieces)
+    : asArray(draft.explanation_pieces);
+
+  const pieces = rawPieces.map((item, index): VisualExplanationPiece => {
+    const record = asRecord(item) ?? {};
+    return {
+      id: cleanId(record.id, `piece_${index + 1}`),
+      text: text(record.text, index === 0 ? rootProblem : targetTakeaway),
+      role: supportedExplanationRole(record.role, index),
+    };
+  });
+
+  if (pieces.length) return pieces.slice(0, 8);
+
+  return [
+    {
+      id: "piece_1",
+      text: rootProblem,
+      role: "start_from_basic_need",
+    },
+    {
+      id: "piece_2",
+      text: targetTakeaway,
+      role: "land_the_takeaway",
+    },
+  ];
+}
+
+function normalizeWhatToWatchFor(draft: Record<string, unknown>): string[] {
+  const prompt = asRecord(draft.learner_facing_prompt) ?? {};
+  return asArray(prompt.what_to_watch_for)
+    .map((item) => String(item).trim())
+    .filter(Boolean)
+    .slice(0, 5);
+}
+
+function normalizeFullPrompt(draft: Record<string, unknown>, rootProblem: string, targetTakeaway: string, explanationPieces: VisualExplanationPiece[]) {
+  const prompt = asRecord(draft.learner_facing_prompt) ?? {};
+  const fromModel = optionalText(prompt.full_prompt);
+  if (fromModel) return fromModel;
+
+  const stitched = explanationPieces.map((piece) => piece.text).filter(Boolean).join(" ");
+  return stitched || `${rootProblem} ${targetTakeaway}`;
+}
+
+function normalizeOrientationSegments(
+  draft: Record<string, unknown>,
+  rootProblem: string,
+  targetTakeaway: string,
+  input: VisualLearningTurnInput,
+  explanationPieces: VisualExplanationPiece[],
+) {
+  if (explanationPieces.length) {
+    return explanationPieces.slice(0, Math.max(1, input.output_preferences.max_orientation_segments)).map((piece): VisualOrientationSegment => ({
+      id: cleanId(piece.id.replace(/^piece_/, "orientation_"), piece.id),
+      text: piece.text,
+      purpose: orientationPurposeForExplanationRole(piece.role),
+    }));
+  }
+
   const rawSegments = asArray(draft.orientation_segments).slice(0, input.output_preferences.max_orientation_segments);
 
   const segments = rawSegments.map((item, index): VisualOrientationSegment => {
@@ -394,17 +488,86 @@ function normalizeRecordArray(value: unknown, max = 8): Array<Record<string, unk
     .slice(0, max);
 }
 
-function normalizeDirectedStoryBeats(scene: Record<string, unknown> | null, beats: SemanticSceneBeat[]): Array<Record<string, unknown>> {
-  const raw = asArray(scene?.story_beats).length
-    ? asArray(scene?.story_beats)
-    : asArray(scene?.directed_story_beats);
+function bridge0PrefersPhraseCaptions(input: VisualLearningTurnInput) {
+  return input.personalization_context.bridge_level === "bridge_0" || input.personalization_context.language_policy.jargon_level === "none";
+}
 
-  const normalized = normalizeRecordArray(raw, beats.length || 8).map((beat, index) => {
+function normalizeCaptionPolicyRecord(value: unknown, input: VisualLearningTurnInput): Record<string, unknown> {
+  const raw = normalizeRecord(value) ?? {};
+  const forcePhrase = bridge0PrefersPhraseCaptions(input);
+  const requestedMode = text(raw.display_mode, "");
+
+  return {
+    ...raw,
+    display_mode: forcePhrase && requestedMode !== "sentence" ? "short_phrase" : text(raw.display_mode, "short_phrase"),
+    cadence: text(raw.cadence, "natural_speech"),
+    max_words_on_screen: Math.max(3, Math.min(8, Number(raw.max_words_on_screen) || 5)),
+    important_words_linger: raw.important_words_linger !== false,
+  };
+}
+
+function normalizeSpokenCaption(value: unknown, fallback: string, input: VisualLearningTurnInput): Record<string, unknown> {
+  const raw = normalizeRecord(value) ?? {};
+  const policy = normalizeCaptionPolicyRecord(raw, input);
+
+  return {
+    ...raw,
+    text: text(raw.text, fallback),
+    display_mode: policy.display_mode,
+    cadence: policy.cadence,
+    max_words_on_screen: policy.max_words_on_screen,
+    important_words_linger: policy.important_words_linger,
+  };
+}
+
+function normalizeDirectedStoryBeats(
+  scene: Record<string, unknown> | null,
+  beats: SemanticSceneBeat[],
+  input: VisualLearningTurnInput,
+  explanationPieces: VisualExplanationPiece[],
+): Array<Record<string, unknown>> {
+  const raw = asArray(scene?.scene_moments).length
+    ? asArray(scene?.scene_moments)
+    : asArray(scene?.story_beats).length
+      ? asArray(scene?.story_beats)
+      : asArray(scene?.directed_story_beats);
+
+  const explanationTextById = new Map(explanationPieces.map((piece) => [piece.id, piece.text]));
+  const explanationToOrientationId = new Map(
+    explanationPieces.map((piece) => [piece.id, cleanId(piece.id.replace(/^piece_/, "orientation_"), piece.id)]),
+  );
+
+  const normalized = normalizeRecordArray(raw, Math.max(8, raw.length, beats.length)).map((beat, index) => {
     const fallbackBeat = beats[index];
+    const sourceExplanationIds = asArray(beat.source_explanation_piece_ids)
+      .map((id) => cleanId(id, ""))
+      .filter(Boolean);
+    const sourceOrientationIds = asArray(beat.source_orientation_segment_ids)
+      .map((id) => cleanId(id, ""))
+      .filter(Boolean);
+    const derivedOrientationIds = sourceExplanationIds
+      .map((id) => explanationToOrientationId.get(id) ?? cleanId(id.replace(/^piece_/, "orientation_"), id))
+      .filter(Boolean);
+    const safeSourceOrientationIds = sourceOrientationIds.length
+      ? sourceOrientationIds
+      : derivedOrientationIds.length
+        ? derivedOrientationIds
+        : fallbackBeat?.source_orientation_segment_ids ?? [];
+    const explanationCaption = sourceExplanationIds
+      .map((id) => explanationTextById.get(id))
+      .filter(Boolean)
+      .join(" ");
+    const fallbackCaption = explanationCaption || fallbackBeat?.actions.map((action) => action.narration).filter(Boolean).join(" ") || fallbackBeat?.title || `Beat ${index + 1}`;
+
     return {
       ...beat,
       id: cleanId(beat.id, fallbackBeat?.id ?? `beat_${index + 1}`),
       title: text(beat.title, fallbackBeat?.title ?? `Beat ${index + 1}`),
+      source_orientation_segment_ids: safeSourceOrientationIds,
+      // Keep source_explanation_piece_ids for debugging and traceability, but renderer captions use the
+      // corresponding explanation piece text from full_prompt as the learner-visible narration.
+      source_explanation_piece_ids: sourceExplanationIds,
+      spoken_caption: normalizeSpokenCaption(beat.spoken_caption, fallbackCaption, input),
     };
   });
 
@@ -413,6 +576,7 @@ function normalizeDirectedStoryBeats(scene: Record<string, unknown> | null, beat
   return beats.map((beat) => ({
     id: beat.id,
     title: beat.title,
+    source_orientation_segment_ids: beat.source_orientation_segment_ids,
     director_intent: beat.actions.map((action) => action.narration).filter(Boolean).join(" ") || "Guide the learner through this visual beat.",
     camera: {
       shot_type: "follow",
@@ -424,11 +588,11 @@ function normalizeDirectedStoryBeats(scene: Record<string, unknown> | null, beat
       entity_id: action.target_entity_id,
       description: action.narration ?? "Show the active visual event.",
     })),
-    spoken_caption: {
-      text: beat.actions.map((action) => action.narration).filter(Boolean).join(" ") || beat.title,
-      display_mode: "one_word_at_a_time",
-      cadence: "natural_speech",
-    },
+    spoken_caption: normalizeSpokenCaption(
+      null,
+      beat.actions.map((action) => action.narration).filter(Boolean).join(" ") || beat.title,
+      input,
+    ),
   }));
 }
 
@@ -523,7 +687,7 @@ function normalizeProbe(draft: Record<string, unknown>, input: VisualLearningTur
       root_problem_explanation: rootProblem,
       reshaping_explanation: text(raw.what_it_measures, "The scene built the mental picture needed for the check."),
       task: expectedAttemptType === "text" ? "Explain the main idea from the scene." : "Choose the best answer.",
-      full_prompt: text(raw.question, `Based on the scene, which choice best matches this takeaway: ${targetTakeaway}`),
+      full_prompt: text(raw.full_prompt, text(raw.question, `Based on the scene, which choice best matches this takeaway: ${targetTakeaway}`)),
     },
     presentation_support: [],
     answer_key: answerKey,
@@ -541,35 +705,46 @@ function normalizeProbe(draft: Record<string, unknown>, input: VisualLearningTur
   };
 }
 
-function normalizePersonalizationHypotheses(draft: Record<string, unknown>): VisualPersonalizationHypothesis[] {
-  return asArray(draft.personalization_hypotheses).slice(0, 4).map((item, index): VisualPersonalizationHypothesis => {
-    const record = asRecord(item) ?? {};
-    const kind: PersonalizationSignalKind =
-      record.kind === "bridge_level" ||
-      record.kind === "jargon_level" ||
-      record.kind === "presentation_style" ||
-      record.kind === "support_kind" ||
-      record.kind === "probe_type" ||
-      record.kind === "verification_pattern"
-        ? record.kind
-        : "presentation_style";
-    const direction: PersonalizationSignalDirection =
-      record.direction === "avoid" || record.direction === "verify" ? record.direction : "prefer";
-    const scope: PersonalizationSignalScope =
-      record.scope === "global" || record.scope === "topic" || record.scope === "probe_type" || record.scope === "diagnosis_label"
-        ? record.scope
-        : "diagnosis_label";
+function normalizePersonalizationDecision(draft: Record<string, unknown>, input: VisualLearningTurnInput): VisualPersonalizationDecision | null {
+  const raw = asRecord(draft.personalization_decision) ?? null;
+  const interests = input.personalization_context.user_interests ?? [];
+  const firstInterest = interests[0]?.interest ?? null;
 
-    return {
-      kind,
-      value: text(record.value, `hypothesis_${index + 1}`),
-      direction,
-      scope,
-      scope_key: optionalText(record.scope_key) ?? (scope === "diagnosis_label" ? "representation_gap" : null),
-      confidence: clamp01(record.confidence, 0.45),
-      reason: text(record.reason, "This is a tentative pre-attempt personalization hypothesis."),
-    };
-  });
+  if (!raw && !firstInterest) return null;
+
+  const requestedUse = text(raw?.use_interest, "");
+  const useInterest: VisualPersonalizationDecision["use_interest"] =
+    requestedUse === "structural_bridge" || requestedUse === "light_tone" || requestedUse === "do_not_use"
+      ? requestedUse
+      : raw
+        ? "do_not_use"
+        : "do_not_use";
+
+  const chosenInterest = optionalText(raw?.chosen_interest) ?? (useInterest === "do_not_use" ? null : firstInterest);
+  const structuralMapping = optionalText(raw?.structural_mapping);
+
+  return {
+    chosen_interest: chosenInterest,
+    use_interest: useInterest,
+    reason: text(
+      raw?.reason,
+      firstInterest
+        ? "The model must decide explicitly whether the available interests improve this explanation without distorting the concept."
+        : "No stable interest was available for this run.",
+    ),
+    structural_mapping: useInterest === "structural_bridge" ? structuralMapping : null,
+    anti_distortion_guard: text(raw?.anti_distortion_guard, "Keep the actual concept accurate; never change the mechanism just to fit an interest."),
+  };
+}
+
+function normalizePersonalizationHypotheses(_draft: Record<string, unknown>): VisualPersonalizationHypothesis[] {
+  // Step 13: pre-attempt visual drafts should not create personalization hypotheses.
+  // Durable personalization belongs to the attempt evaluator after the learner responds.
+  return [];
+}
+
+function normalizeDiagnosticSignalFromDraft(draft: Record<string, unknown>): DiagnosticSignal {
+  return normalizeDiagnosticSignal(draft.diagnostic_signal);
 }
 
 export function assembleVisualLearningTurnFromSemanticDraft(
@@ -599,7 +774,7 @@ export function assembleVisualLearningTurnFromSemanticDraft(
         },
       },
       report: {
-        source_shape: draft.schema_version === "myway_visual_learning_semantic_draft_v1" ? "semantic_draft" : "semantic_draft_near_miss",
+        source_shape: (draft.schema_version === "myway_visual_learning_semantic_draft_v1" || draft.schema_version === "myway_visual_learning_semantic_draft_v2") ? "semantic_draft" : "semantic_draft_near_miss",
         notes: ["MyWay assembled a needs_clarification output from the model's semantic draft."],
         warnings: [],
         model_intelligence_fields_used: ["clarification.question", "clarification.reason", "clarification.confidence"],
@@ -613,7 +788,7 @@ export function assembleVisualLearningTurnFromSemanticDraft(
   const focus = asRecord(draft.learning_focus) ?? draft;
   const scene = asRecord(draft.scene) ?? asRecord(draft.semantic_scene_plan);
 
-  const topicLabel = text(topic.label, inferTopicLabel(input));
+  const topicLabel = text(draft.topic_label, text(topic.label, inferTopicLabel(input)));
   const diagnosisLabel = supportedDiagnosis(diagnosis.label);
   const rootProblem = text(
     focus.root_problem,
@@ -623,29 +798,26 @@ export function assembleVisualLearningTurnFromSemanticDraft(
     focus.target_takeaway,
     "The learner should leave with one simple mental picture they can use to organize the idea.",
   );
-  const whyVisualFirst = text(
-    focus.why_visual_first,
-    "A visual scene should come first because the learner's current gap is about picturing the idea.",
-  );
-  const orientationSegments = normalizeOrientationSegments(draft, rootProblem, targetTakeaway, input);
+  const explanationPieces = normalizeExplanationPieces(draft, rootProblem, targetTakeaway);
+  const fullPrompt = normalizeFullPrompt(draft, rootProblem, targetTakeaway, explanationPieces);
+  const whatToWatchFor = normalizeWhatToWatchFor(draft);
+  const diagnosticSignal = normalizeDiagnosticSignalFromDraft(draft);
+  const orientationSegments = normalizeOrientationSegments(draft, rootProblem, targetTakeaway, input, explanationPieces);
   const orientationIds = orientationSegments.map((segment) => segment.id);
   const entities = normalizeEntities(scene);
   const entityIds = entities.map((entity) => entity.id);
   const relationships = normalizeRelationships(scene, entityIds);
   const beats = normalizeBeats(scene, orientationIds, entityIds, input);
   const directedScene = normalizeRecord(scene?.directed_scene ?? (draft as Record<string, unknown>).directed_scene);
-  const storyBeats = normalizeDirectedStoryBeats(scene, beats);
-  const captionPolicy = normalizeRecord(scene?.caption_policy ?? directedScene?.caption_policy) ?? {
-    display_mode: "one_word_at_a_time",
-    cadence: "natural_speech",
-    max_words_on_screen: 1,
-  };
-  const labelPolicy = normalizeRecord(scene?.label_policy ?? directedScene?.label_policy) ?? {
+  const storyBeats = normalizeDirectedStoryBeats(scene, beats, input, explanationPieces);
+  const captionPolicy = normalizeCaptionPolicyRecord(scene?.caption_policy ?? directedScene?.caption_policy, input);
+  const labelPolicy = {
     default_visibility: "active_only",
     show_labels_when: "introduced_or_selected",
     avoid_covering_core_motion: true,
   };
   const guidedInteraction = normalizeGuidedInteraction(draft, entityIds);
+  const personalizationDecision = normalizePersonalizationDecision(draft, input);
   const followupProbe = normalizeProbe(draft, input, rootProblem, targetTakeaway);
   const personalizationHypotheses = normalizePersonalizationHypotheses(draft);
 
@@ -680,19 +852,23 @@ export function assembleVisualLearningTurnFromSemanticDraft(
         next_action_confidence: 0.82,
         suggested_question: null,
       },
+      diagnostic_signal: diagnosticSignal,
       learning_focus: {
         root_problem: rootProblem,
         target_takeaway: targetTakeaway,
-        why_visual_first: whyVisualFirst,
       },
       visual_experience: {
         schema_version: "myway_visual_experience_compiler_output_v1",
-        title: text(scene?.title, `${topicLabel} visual model`),
-        // Legacy strict-output field retained for compatibility only. The renderer ignores this.
+        title: text(asRecord(draft.learner_facing_prompt)?.title, text(scene?.title, `${topicLabel} visual model`)),
+        full_prompt: fullPrompt,
+        explanation_pieces: explanationPieces,
+        what_to_watch_for: whatToWatchFor,
+        // Legacy strict-output field retained for renderer compatibility only.
         experience_mode: "generic_scene",
         orientation_segments: orientationSegments,
         semantic_scene_plan: {
           directed_scene: directedScene,
+          scene_moments: storyBeats,
           story_beats: storyBeats,
           caption_policy: captionPolicy,
           label_policy: labelPolicy,
@@ -704,12 +880,13 @@ export function assembleVisualLearningTurnFromSemanticDraft(
         },
       },
       guided_interaction: guidedInteraction,
+      personalization_decision: personalizationDecision,
       followup_probe: followupProbe,
       personalization_hypotheses: personalizationHypotheses,
       confidence: numberFromConfidence(draft.confidence, 0.82),
     },
     report: {
-      source_shape: draft.schema_version === "myway_visual_learning_semantic_draft_v1" ? "semantic_draft" : "semantic_draft_near_miss",
+      source_shape: (draft.schema_version === "myway_visual_learning_semantic_draft_v1" || draft.schema_version === "myway_visual_learning_semantic_draft_v2") ? "semantic_draft" : "semantic_draft_near_miss",
       notes: ["MyWay assembled the strict VisualLearningTurnOutput from the model's compact semantic draft."],
       warnings: [],
       model_intelligence_fields_used: [
@@ -717,15 +894,17 @@ export function assembleVisualLearningTurnFromSemanticDraft(
         "topic",
         "diagnosis",
         "learning_focus",
-        "orientation_segments",
+        "diagnostic_signal",
+        "learner_facing_prompt.full_prompt",
+        "learner_facing_prompt.explanation_pieces",
+        "personalization_decision",
         "scene.directed_scene",
-        "scene.story_beats",
+        "scene.scene_moments",
         "scene.entities",
         "scene.relationships",
         "scene.beats",
         "guided_interaction",
         "probe",
-        "personalization_hypotheses",
         "confidence",
       ],
       myway_deterministic_fields_added: [
@@ -733,6 +912,7 @@ export function assembleVisualLearningTurnFromSemanticDraft(
         "clarification_gate wrapper",
         "topic_resolution wrapper",
         "diagnosis.next_action",
+        "diagnostic_signal wrapper",
         "visual_experience wrapper",
         "duration_ms defaults",
         "action ids",
@@ -744,4 +924,3 @@ export function assembleVisualLearningTurnFromSemanticDraft(
     },
   };
 }
-

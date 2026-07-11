@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { assembleVisualLearningTurnFromSemanticDraft } from "../assemble-visual-learning-turn";
+import {
+  buildSandboxDiagnosticRelationshipPreview,
+  cleanDiagnosticPatternId,
+  makeSandboxTopicDiagnosticState,
+  normalizeDiagnosticSignal,
+} from "../diagnostic-relationships";
 import { parseJsonObjectFromText } from "../json-extract";
 import { callVisualLearningTurnModel, getVisualLearningTurnProvider, getVisualLearningTurnProviderStatus } from "../model-provider.server";
 import { normalizeVisualLearningTurnOutput } from "../normalize-visual-learning-turn-output";
@@ -16,7 +22,11 @@ import {
 } from "../visual-learning-turn-request";
 
 type GenerateFullTurnRequestBody = VisualLearningTurnRequestBody & {
-  provider?: "scaffold" | "deepseek" | "openai" | string;
+  provider?: "scaffold" | "deepseek" | "glm" | "openai" | string;
+  generation_preset?: "reliable" | "cinematic" | string;
+  enable_streaming?: boolean;
+  retry_transient_errors?: boolean;
+  fallback_provider?: "none" | "scaffold" | "deepseek" | "glm" | string;
   use_fallback_on_invalid?: boolean;
 };
 
@@ -78,6 +88,8 @@ function shouldUseFallbackOnInvalid(body: GenerateFullTurnRequestBody) {
 
 function likelyFallbackCause(args: {
   providerCallError: string | null;
+  providerFailureKind?: string | null;
+  providerFallbackUsed?: boolean | null;
   parseOk: boolean;
   parseError: string | null;
   validation: VisualLearningTurnValidationReport | null;
@@ -87,13 +99,19 @@ function likelyFallbackCause(args: {
   normalizationApplied: boolean | null;
 }) {
   if (args.providerCallError) {
-    if (args.providerCallError.includes("504")) {
-      return "The provider returned a 504 gateway timeout before MyWay received a model response. Step 6e-light cleaned up the prompt, so this is now more likely provider load/model latency than schema complexity.";
+    if (args.providerFallbackUsed) {
+      return `The primary provider failed, but MyWay recovered by using the configured fallback provider. Failure kind: ${args.providerFailureKind ?? "unknown"}. Details: ${args.providerCallError}`;
     }
-    if (args.providerCallError.toLowerCase().includes("timed out")) {
-      return "The provider call timed out before MyWay received a model response. Try again, use scaffold, reduce max tokens, or increase MYWAY_VISUAL_EXPERIENCE_PROVIDER_TIMEOUT_MS.";
+    if (args.providerFailureKind === "provider_504" || args.providerCallError.includes("504")) {
+      return "The provider returned a 504 gateway timeout before MyWay received a usable model response. Streaming, retry/backoff, lower reliable-mode token limits, and alternate-provider fallback are the right mitigations.";
     }
-    return `The provider call failed before parsing/validation: ${args.providerCallError}`;
+    if (args.providerFailureKind === "local_abort_timeout" || args.providerCallError.toLowerCase().includes("timed out")) {
+      return "The model call timed out from MyWay's side before a usable response finished. Use reliable mode, streaming, retry/backoff, a lower token budget, or an alternate provider.";
+    }
+    if (args.providerFailureKind === "provider_429") {
+      return "The provider rate-limited or throttled the request. Retry/backoff and alternate-provider fallback should handle this better than immediately changing prompts.";
+    }
+    return `The provider call failed before parsing/validation. Failure kind: ${args.providerFailureKind ?? "unknown"}. Details: ${args.providerCallError}`;
   }
 
   if (!args.parseOk) return `The provider returned text that could not be parsed as JSON: ${args.parseError ?? "unknown parse error"}`;
@@ -122,22 +140,28 @@ function likelyFallbackCause(args: {
 }
 
 export async function GET() {
-  const input = buildVisualLearningTurnInput({ example: "krebs" });
+  const input = buildVisualLearningTurnInput({
+    learner_message: "I don't understand how pistons work or why they're important in engines.",
+    user_interests: ["mind", "psychology", "languages"],
+  });
   const modelRequest = buildVisualLearningTurnModelRequest(input);
 
   return NextResponse.json({
     ok: true,
     route: "generate-full-turn",
-    step: "8_directed_cinematic_scene_schema",
+    step: "13_prompt_drives_scene_diagnostic_relationships",
     provider_status: getVisualLearningTurnProviderStatus(),
     default_input: input,
     model_request: modelRequest,
     usage: {
       method: "POST",
       body: {
-        provider: "scaffold | deepseek | openai",
-        learner_message: "I can’t picture the Krebs cycle.",
-        topic_label: "Krebs cycle",
+        provider: "scaffold | deepseek | glm | openai",
+        generation_preset: "cinematic (reliable legacy value is accepted but ignored by Step 13)",
+        enable_streaming: true,
+        retry_transient_errors: true,
+        fallback_provider: "glm | scaffold | none",
+        learner_message: "I don't understand how pistons work or why they're important in engines.",
         bridge_level: "bridge_0",
         jargon_level: "none",
         preferred_style: "visual_description",
@@ -159,23 +183,34 @@ export async function POST(request: Request) {
     let providerResult: Awaited<ReturnType<typeof callVisualLearningTurnModel>>;
     let providerCallError: string | null = null;
     let providerCallDurationMs: number | null = null;
-    const providerCallStartedAt = Date.now();
+    let providerFailureKind: string | null = null;
+    let providerFallbackUsed = false;
 
     try {
       providerResult = await callVisualLearningTurnModel({
         provider,
         model_request: modelRequest,
         scaffold_raw_text: scaffoldRawText,
+        generation_preset: "cinematic",
+        enable_streaming: body.enable_streaming ?? true,
+        retry_transient_errors: body.retry_transient_errors ?? true,
+        fallback_provider: body.fallback_provider ?? (provider === "deepseek" || provider === "nvidia" ? "glm" : "none"),
       });
-      providerCallDurationMs = Date.now() - providerCallStartedAt;
+      providerCallError = providerResult.provider_call_error ?? null;
+      providerCallDurationMs = providerResult.diagnostics?.total_duration_ms ?? providerResult.duration_ms;
+      providerFailureKind = providerResult.diagnostics?.final_failure_kind ?? null;
+      providerFallbackUsed = Boolean(providerResult.provider_fallback_used);
     } catch (error) {
-      providerCallDurationMs = Date.now() - providerCallStartedAt;
       providerCallError = error instanceof Error ? error.message : String(error);
       providerResult = await callVisualLearningTurnModel({
         provider: "scaffold",
         model_request: modelRequest,
         scaffold_raw_text: scaffoldRawText,
+        generation_preset: "cinematic",
       });
+      providerCallDurationMs = providerResult.duration_ms;
+      providerFailureKind = "unknown_error";
+      providerFallbackUsed = true;
     }
 
     const parseResult = parseJsonObjectFromText<unknown>(providerResult.raw_text);
@@ -244,6 +279,9 @@ export async function POST(request: Request) {
       parse_ok: parseResult.ok,
       parse_error: parseResult.ok ? null : parseResult.error,
       provider_call_error: providerCallError,
+      provider_failure_kind: providerFailureKind,
+      provider_fallback_used: providerFallbackUsed,
+      model_call_diagnostics: providerResult.diagnostics ?? null,
       semantic_draft_used: semanticDraftUsed,
       assembly_source_shape: assembly?.source_shape ?? null,
       assembly_notes: assembly?.notes ?? [],
@@ -273,6 +311,8 @@ export async function POST(request: Request) {
       likely_cause: fallbackUsed
         ? likelyFallbackCause({
             providerCallError,
+            providerFailureKind,
+            providerFallbackUsed,
             parseOk: parseResult.ok,
             parseError: parseResult.ok ? null : parseResult.error,
             validation: modelValidation,
@@ -288,18 +328,35 @@ export async function POST(request: Request) {
             : null,
     };
 
+    const sandboxRelationshipPreview =
+      finalOutput.turn_status === "proceed"
+        ? buildSandboxDiagnosticRelationshipPreview({
+            topic: makeSandboxTopicDiagnosticState({
+              topic_id:
+                finalOutput.topic_resolution.topic_id ??
+                cleanDiagnosticPatternId(finalOutput.topic_resolution.topic_label.toLowerCase(), "current_topic"),
+              topic_label: finalOutput.topic_resolution.topic_label,
+              diagnostic_signal: finalOutput.diagnostic_signal ?? normalizeDiagnosticSignal(null),
+            }),
+          })
+        : null;
+
     return NextResponse.json({
       ok: true,
       route: "generate-full-turn",
-      step: "8_directed_cinematic_scene_schema",
+      step: "13_prompt_drives_scene_diagnostic_relationships",
       request_body: body,
       provider_requested: provider,
       provider_used: providerResult.provider_used,
       provider_model: providerResult.model,
       provider_call_error: providerCallError,
+      provider_failure_kind: providerFailureKind,
+      provider_fallback_used: providerFallbackUsed,
+      model_call_diagnostics: providerResult.diagnostics ?? null,
       fallback_used: fallbackUsed,
       fallback_reason: fallbackReason,
       diagnostics,
+      sandbox_relationship_preview: sandboxRelationshipPreview,
       input,
       model_request: modelRequest,
       provider_request_payload_preview: providerResult.request_payload_preview,
@@ -324,12 +381,10 @@ export async function POST(request: Request) {
       {
         ok: false,
         route: "generate-full-turn",
-        step: "8_directed_cinematic_scene_schema",
+        step: "13_prompt_drives_scene_diagnostic_relationships",
         error: message,
       },
       { status: 500 },
     );
   }
 }
-
-

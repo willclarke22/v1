@@ -1,4 +1,5 @@
 import type { DiagnosisModelOutput } from "@/lib/engine/schemas/diagnosis-model";
+import type { DiagnosticSignal } from "./diagnostic-relationships";
 import type { ProbeContractModelOutput } from "@/lib/engine/schemas/probe-contract-model";
 import type {
   BridgeLevel,
@@ -52,6 +53,9 @@ export type VisualLearningTurnInput = {
     max_visual_beats: number;
     max_probe_options: number;
     include_personalization_hypotheses: boolean;
+    full_prompt_drives_scene?: boolean;
+    cinematic_by_default?: true;
+    introduce_visual_elements_one_at_a_time_when_helpful?: true;
     durable_personalization_delta_after_attempt_only: true;
   };
 };
@@ -108,9 +112,11 @@ export type VisualLearningTurnProceedOutput = {
   clarification_gate: ClarificationGateOutput;
   topic_resolution: TopicResolutionOutput;
   diagnosis: DiagnosisModelOutput;
+  diagnostic_signal?: DiagnosticSignal;
   learning_focus: VisualLearningFocus;
   visual_experience: VisualExperienceCompilerOutput;
   guided_interaction: GuidedVisualInteraction;
+  personalization_decision?: VisualPersonalizationDecision | null;
   followup_probe: ProbeContractModelOutput;
   personalization_hypotheses?: VisualPersonalizationHypothesis[];
   confidence: ConfidenceScore;
@@ -136,15 +142,36 @@ export type TopicResolutionOutput = {
 export type VisualLearningFocus = {
   root_problem: string;
   target_takeaway: string;
-  why_visual_first: string;
+  /** Legacy compatibility only. The v2 model prompt no longer asks for this. */
+  why_visual_first?: string;
 };
 
 export type VisualExperienceCompilerOutput = {
   schema_version: "myway_visual_experience_compiler_output_v1";
   title: string;
+  /** Source of truth for the learner-facing teaching turn. */
+  full_prompt?: string;
+  /** Teaching moves inside full_prompt; also used for progressive reveal. */
+  explanation_pieces?: VisualExplanationPiece[];
+  what_to_watch_for?: string[];
   experience_mode: VisualExperienceMode;
+  /** Legacy renderer compatibility derived from explanation_pieces. */
   orientation_segments: VisualOrientationSegment[];
   semantic_scene_plan: SemanticScenePlan;
+};
+
+export type VisualExplanationPiece = {
+  id: string;
+  text: string;
+  role:
+    | "start_from_basic_need"
+    | "hit_a_wall"
+    | "introduce_needed_part"
+    | "show_how_part_helps"
+    | "hit_next_wall"
+    | "connect_parts"
+    | "land_the_takeaway"
+    | "prepare_followup_probe";
 };
 
 export type VisualOrientationSegment = {
@@ -215,12 +242,16 @@ export type DirectedStoryBeat = {
     [key: string]: unknown;
   } | null;
   visual_events?: DirectedVisualEvent[];
+  /** Legacy renderer compatibility only. The v2 model prompt no longer asks for spoken_caption. */
   spoken_caption?: {
     text?: string;
     display_mode?: "one_word_at_a_time" | "short_phrase" | "sentence" | string;
     cadence?: "natural_speech" | "slow" | "quick" | string;
     [key: string]: unknown;
   } | null;
+  source_explanation_piece_ids?: string[];
+  introduces_entity_ids?: string[];
+  keeps_visible_entity_ids?: string[];
   [key: string]: unknown;
 };
 
@@ -231,6 +262,8 @@ export type SemanticScenePlan = {
   story_beats?: Array<Record<string, unknown>>;
   caption_policy?: Record<string, unknown> | null;
   label_policy?: Record<string, unknown> | null;
+  /** v2 scene moments from the model. story_beats remains the renderer compatibility layer. */
+  scene_moments?: Array<Record<string, unknown>>;
   entities: SemanticSceneEntity[];
   relationships?: SemanticSceneRelationship[];
   beats: SemanticSceneBeat[];
@@ -300,6 +333,14 @@ export type GuidedVisualInteraction = {
     | "none";
   target_entity_ids?: string[];
   success_observation?: string | null;
+};
+
+export type VisualPersonalizationDecision = {
+  chosen_interest?: string | null;
+  use_interest: "structural_bridge" | "light_tone" | "do_not_use";
+  reason: string;
+  structural_mapping?: string | null;
+  anti_distortion_guard: string;
 };
 
 export type VisualPersonalizationHypothesis = {
@@ -393,4 +434,3 @@ export const DEFAULT_VISUAL_LEARNING_PROBE_TYPES: ProbeType[] = [
 
 export const DEFAULT_BRIDGE_LEVEL: BridgeLevel = "bridge_0";
 export const DEFAULT_JARGON_LEVEL: JargonLevel = "none";
-

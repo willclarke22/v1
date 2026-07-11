@@ -6,6 +6,20 @@ const activeLabs = [
     description:
       "The current MyWay sandbox lane for model-directed, interactive visual learning scenes.",
   },
+  {
+    href: "/sandbox/probe-lab/asset-library",
+    title: "Asset Library",
+    status: "shared library",
+    description:
+      "Search every registered MyWay asset, inspect metadata and licenses, and rotate GLB files in a live 3D viewer.",
+  },
+  {
+    href: "/sandbox/probe-lab/primitive-builder",
+    title: "Primitive Builder Lab",
+    status: "active sandbox",
+    description:
+      "A Lego-style sandbox for building model-planned 3D structures from procedural primitives and reusable assets.",
+  },
 ];
 
 export default function ProbeLabPage() {
@@ -33,16 +47,34 @@ export default function ProbeLabPage() {
           MyWay Sandbox
         </p>
 
-        <h1 style={{ margin: "0.75rem 0 0", fontSize: "clamp(2rem, 4vw, 4rem)" }}>
+        <h1
+          style={{
+            margin: "0.75rem 0 0",
+            fontSize: "clamp(2rem, 4vw, 4rem)",
+          }}
+        >
           Probe Lab
         </h1>
 
-        <p style={{ maxWidth: "760px", color: "rgba(255,255,255,0.72)", lineHeight: 1.65 }}>
-          Visual Experience is the active sandbox lane. Older OpenAI full-loop, generated-video,
-          Blender playground, and visual-story prototypes have been archived as reference material.
+        <p
+          style={{
+            maxWidth: "760px",
+            color: "rgba(255,255,255,0.72)",
+            lineHeight: 1.65,
+          }}
+        >
+          Visual Experience is the active learning lane. The shared Asset
+          Library stores reusable 3D models, while Primitive Builder tests
+          procedural and model-assisted scene construction.
         </p>
 
-        <div style={{ display: "grid", gap: "1rem", marginTop: "2rem" }}>
+        <div
+          style={{
+            display: "grid",
+            gap: "1rem",
+            marginTop: "2rem",
+          }}
+        >
           {activeLabs.map((lab) => (
             <a
               key={lab.href}
@@ -57,8 +89,17 @@ export default function ProbeLabPage() {
                 textDecoration: "none",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
-                <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{lab.title}</h2>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "1rem",
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: "1.1rem" }}>
+                  {lab.title}
+                </h2>
                 <span
                   style={{
                     border: "1px solid rgba(255,255,255,0.14)",
@@ -73,7 +114,13 @@ export default function ProbeLabPage() {
                   {lab.status}
                 </span>
               </div>
-              <p style={{ margin: "0.55rem 0 0", color: "rgba(255,255,255,0.68)", lineHeight: 1.55 }}>
+              <p
+                style={{
+                  margin: "0.55rem 0 0",
+                  color: "rgba(255,255,255,0.68)",
+                  lineHeight: 1.55,
+                }}
+              >
                 {lab.description}
               </p>
             </a>
