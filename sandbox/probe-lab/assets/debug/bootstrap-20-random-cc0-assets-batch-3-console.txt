@@ -1,0 +1,276 @@
+
+[1/20] Searching CC0 BlendKit assets for "dog house" with query "dog house"...
+
+[1/20] Searching CC0 BlendKit assets for "dog house" with query "pet house"...
+Failed query "dog house" for dog house: RuntimeError: BlendKit returned 26 total results and 12 downloadable models for 'dog house', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 12}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 770, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 730, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 609, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 26 total results and 12 downloadable models for 'dog house', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 12}. MyWay will not fall back to a less permissive license.
+
+Failed query "pet house" for dog house: RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'pet house', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 770, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 730, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 609, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'pet house', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+
+
+[1/20] Searching CC0 BlendKit assets for "dog house" with query "small kennel"...
+Imported dog house: small_kennel_bk_mrjsh7tc (Scan Small brick red wall)
+
+[2/20] Searching CC0 BlendKit assets for "toolbox" with query "toolbox"...
+Imported toolbox: toolbox_bk_mrjsibio (Measuring Tape)
+
+[3/20] Searching CC0 BlendKit assets for "umbrella" with query "umbrella"...
+
+[3/20] Searching CC0 BlendKit assets for "umbrella" with query "rain umbrella"...
+Failed query "umbrella" for umbrella: RuntimeError: BlendKit returned 76 total results and 11 downloadable models for 'umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 11}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 770, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 730, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 609, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 76 total results and 11 downloadable models for 'umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 11}. MyWay will not fall back to a less permissive license.
+
+
+Failed query "rain umbrella" for umbrella: RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'rain umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+[3/20] Searching CC0 BlendKit assets for "umbrella" with query "open umbrella"...
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 770, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 730, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 609, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'rain umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+
+Failed query "open umbrella" for umbrella: RuntimeError: BlendKit returned 5 total results and 1 downloadable models for 'open umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 770, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 730, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 609, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 5 total results and 1 downloadable models for 'open umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.
+
+
+[3/20] Searching CC0 BlendKit assets for "garden shovel" with query "garden shovel"...
+Imported garden shovel: garden_shovel_bk_mrjsjcoy (Garden Gloves)
+
+[4/20] Searching CC0 BlendKit assets for "broom" with query "broom"...
+Imported broom: broom_bk_mrjskk4g (Plastic Broom)
+
+[5/20] Searching CC0 BlendKit assets for "soccer ball" with query "soccer ball"...
+Imported soccer ball: soccer_ball_bk_mrjsl3ka (American Football)
+
+[6/20] Searching CC0 BlendKit assets for "coffee table" with query "coffee table"...
+Imported coffee table: coffee_table_bk_mrjslov4 (Gothic Coffee Table)
+
+[7/20] Searching CC0 BlendKit assets for "fire hydrant" with query "fire hydrant"...
+Imported fire hydrant: fire_hydrant_bk_mrjsn0wl (Fire Hydrant)
+
+[8/20] Searching CC0 BlendKit assets for "guitar" with query "acoustic guitar"...
+Imported guitar: acoustic_guitar_bk_mrjsnkag (Classic Guitar)
+
+[9/20] Searching CC0 BlendKit assets for "headphones" with query "headphones"...
+Imported headphones: headphones_bk_mrjsoaf2 (USB Type-C(Outside))
+
+{
+  "ok": false,
+  "target_new_assets": 20,
+  "imported_new_assets": 9,
+  "skipped_existing_count": 40,
+  "failed_concepts": 1,
+  "catalog_size": 50,
+  "seed_text": "random-everyday-batch-3",
+  "seed": 2528997015,
+  "completed": [
+    {
+      "label": "dog house",
+      "query": "small kennel",
+      "asset_id": "small_kennel_bk_mrjsh7tc",
+      "source_asset_id": "37b5d79d-fcd4-4f3e-ae81-a3edb5921ce4",
+      "display_name": "Scan Small brick red wall",
+      "domain": "everyday_objects",
+      "polygon_count": 29998,
+      "file_size_bytes": 3489160,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/small_kennel_bk_mrjsh7tc.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/small_kennel_bk_mrjsh7tc.review.json"
+    },
+    {
+      "label": "toolbox",
+      "query": "toolbox",
+      "asset_id": "toolbox_bk_mrjsibio",
+      "source_asset_id": "8f83aeb9-907a-44d1-91de-cc84e084067c",
+      "display_name": "Measuring Tape",
+      "domain": "engineering",
+      "polygon_count": 1645,
+      "file_size_bytes": 1035508,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/toolbox_bk_mrjsibio.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/toolbox_bk_mrjsibio.review.json"
+    },
+    {
+      "label": "garden shovel",
+      "query": "garden shovel",
+      "asset_id": "garden_shovel_bk_mrjsjcoy",
+      "source_asset_id": "b27a8fa9-8e27-4ca7-b882-415cc53745cf",
+      "display_name": "Garden Gloves",
+      "domain": "everyday_objects",
+      "polygon_count": 3411,
+      "file_size_bytes": 6146336,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/garden_shovel_bk_mrjsjcoy.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/garden_shovel_bk_mrjsjcoy.review.json"
+    },
+    {
+      "label": "broom",
+      "query": "broom",
+      "asset_id": "broom_bk_mrjskk4g",
+      "source_asset_id": "2cce857f-e470-41e8-9423-ae3eea87a144",
+      "display_name": "Plastic Broom",
+      "domain": "everyday_objects",
+      "polygon_count": 9522,
+      "file_size_bytes": 2697072,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/broom_bk_mrjskk4g.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/broom_bk_mrjskk4g.review.json"
+    },
+    {
+      "label": "soccer ball",
+      "query": "soccer ball",
+      "asset_id": "soccer_ball_bk_mrjsl3ka",
+      "source_asset_id": "631cc69f-ca96-447b-9fcd-e75e50082e12",
+      "display_name": "American Football",
+      "domain": "physical_education",
+      "polygon_count": 2328,
+      "file_size_bytes": 6080488,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/soccer_ball_bk_mrjsl3ka.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/soccer_ball_bk_mrjsl3ka.review.json"
+    },
+    {
+      "label": "coffee table",
+      "query": "coffee table",
+      "asset_id": "coffee_table_bk_mrjslov4",
+      "source_asset_id": "ac7489c6-e813-4d4e-b694-6417b3d35111",
+      "display_name": "Gothic Coffee Table",
+      "domain": "everyday_objects",
+      "polygon_count": 12350,
+      "file_size_bytes": 5376164,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/coffee_table_bk_mrjslov4.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/coffee_table_bk_mrjslov4.review.json"
+    },
+    {
+      "label": "fire hydrant",
+      "query": "fire hydrant",
+      "asset_id": "fire_hydrant_bk_mrjsn0wl",
+      "source_asset_id": "26cfb88f-1b8d-4f67-b618-195344cec087",
+      "display_name": "Fire Hydrant",
+      "domain": "civics",
+      "polygon_count": 124482,
+      "file_size_bytes": 4748004,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/fire_hydrant_bk_mrjsn0wl.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/fire_hydrant_bk_mrjsn0wl.review.json"
+    },
+    {
+      "label": "guitar",
+      "query": "acoustic guitar",
+      "asset_id": "acoustic_guitar_bk_mrjsnkag",
+      "source_asset_id": "8e698ef0-7ab1-4fab-acd6-e5accda027c1",
+      "display_name": "Classic Guitar",
+      "domain": "music",
+      "polygon_count": 75507,
+      "file_size_bytes": 8975304,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/acoustic_guitar_bk_mrjsnkag.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/acoustic_guitar_bk_mrjsnkag.review.json"
+    },
+    {
+      "label": "headphones",
+      "query": "headphones",
+      "asset_id": "headphones_bk_mrjsoaf2",
+      "source_asset_id": "71cf9fe9-7e81-4f09-b3c9-15ed4fc49ec7",
+      "display_name": "USB Type-C(Outside)",
+      "domain": "technology",
+      "polygon_count": 2516,
+      "file_size_bytes": 1367236,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/headphones_bk_mrjsoaf2.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/headphones_bk_mrjsoaf2.review.json"
+    }
+  ],
+  "failed": [
+    {
+      "label": "umbrella",
+      "queries": [
+        "umbrella",
+        "rain umbrella",
+        "open umbrella"
+      ],
+      "errors": [
+        "[umbrella] RuntimeError: BlendKit returned 76 total results and 11 downloadable models for 'umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 11}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 770, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 730, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 609, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 76 total results and 11 downloadable models for 'umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 11}. MyWay will not fall back to a less permissive license.\n",
+        "[rain umbrella] RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'rain umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 770, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 730, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 609, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'rain umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\n",
+        "[open umbrella] RuntimeError: BlendKit returned 5 total results and 1 downloadable models for 'open umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 770, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 730, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 609, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 5 total results and 1 downloadable models for 'open umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.\n"
+      ]
+    }
+  ],
+  "state_file": "sandbox/probe-lab/assets/debug/bootstrap-20-random-cc0-assets-state.json",
+  "next": "Review the local assets at http://localhost:3000/sandbox/probe-lab/asset-library. Upload only approved models to Cloudflare R2.",
+  "resumable": "Stop with Ctrl+C and run the same command again. Existing CC0 concepts and source IDs are skipped."
+}

@@ -1,15 +1,47 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, Line, OrbitControls, RoundedBox, Text, useGLTF } from "@react-three/drei";
+import { Bounds, Html, Line, OrbitControls, RoundedBox, Text, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { createContext, FormEvent, Suspense, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { MutableRefObject, ReactNode, RefObject } from "react";
 import type { PrimitiveBeat, PrimitiveBuildPlanV1, PrimitivePart } from "../primitive-build-plan";
+import type { PrimitiveBuilderAssetRequirement } from "../asset-requirement-plan";
+import {
+  ResolvedAssetModel,
+  solveResolvedAssetLayout,
+  type ResolvedAssetRuntimeMetrics,
+} from "@/sandbox/probe-lab/scenes/ui";
+import type {
+  PrimitiveBuilderSceneAssetResolution,
+  ResolvedSceneAssetBinding,
+} from "@/sandbox/probe-lab/scenes/resolved-scene";
 
 type Vec3 = [number, number, number];
 type ProviderChoice = "deepseek" | "glm";
 type FallbackChoice = "none" | "deepseek" | "glm";
+
+type GeneratedAssetRequirement =
+  PrimitiveBuilderAssetRequirement;
+
+type SavedPrimitiveBuilderScene = {
+  schema_version: "myway_scene_manifest_v2";
+  scene_id: string;
+  title: string;
+  original_prompt: string;
+  source: "primitive_builder";
+  assets: ResolvedSceneAssetBinding[];
+  procedural_nodes: unknown[];
+  scene_graph?: unknown;
+  primitive_plan?: PrimitiveBuildPlanV1 | null;
+  asset_requirements?: GeneratedAssetRequirement[];
+  unresolved_requirements?: GeneratedAssetRequirement[];
+  camera?: Record<string, unknown>;
+  lights?: Record<string, unknown>;
+  timeline?: unknown[];
+  created_at: string;
+  updated_at: string;
+};
 
 type GenerateResponse = {
   ok: boolean;
@@ -31,6 +63,19 @@ type GenerateResponse = {
   parse_error?: string | null;
   model_call_diagnostics?: unknown;
   raw_text_preview?: string;
+  scene_graph?: unknown;
+  asset_requirements?: GeneratedAssetRequirement[];
+  asset_inference?: Array<{
+    asset_id: string;
+    canonical_label: string;
+    matched_phrase: string;
+    fallback_node_id: string;
+    source:
+      | "existing_model_requirement"
+      | "matched_scene_node"
+      | "created_fallback_node";
+  }>;
+  asset_resolution?: PrimitiveBuilderSceneAssetResolution;
 };
 
 type RenderPart = PrimitivePart & {
@@ -462,6 +507,28 @@ function composeScene(parts: RenderPart[]) {
 
 function resolveScene(plan: PrimitiveBuildPlanV1): ResolvedScene {
   const byId = new Map<string, RenderPart>();
+  const usesAbsoluteSceneGraphPlacement =
+    plan.parts.length > 0 &&
+    plan.parts.every(
+      (part) =>
+        part.style_hint === "scene_graph_absolute",
+    );
+
+  if (usesAbsoluteSceneGraphPlacement) {
+    const parts = plan.parts.map((part) => {
+      const rendered: RenderPart = {
+        ...part,
+        scale: scaledSize(part),
+        position: partOffset(part),
+      };
+      byId.set(part.id, rendered);
+      return rendered;
+    });
+
+    composeScene(parts);
+    return { parts, byId };
+  }
+
   const pending = [...plan.parts];
   const primaryRoot = findPrimaryRoot(plan.parts);
 
@@ -693,28 +760,312 @@ function PartMesh({ part, active }: { part: RenderPart; active: boolean }) {
   );
 }
 
-function PrimitiveScene({ plan, activeStep, showLabels }: { plan: PrimitiveBuildPlanV1; activeStep: number; showLabels: boolean }) {
-  const scene = useMemo(() => resolveScene(plan), [plan]);
-  const activeBeat = plan.beats[activeStep - 1] ?? plan.beats[0];
-  const visibleIds = visiblePartIds(plan, activeStep);
-  const activeIds = activePartIds(activeBeat);
-  const visibleParts = scene.parts.filter((part) => visibleIds.has(part.id));
+function sameVec3(
+  a: Vec3 | undefined,
+  b: Vec3,
+) {
+  return Boolean(
+    a &&
+      Math.abs(a[0] - b[0]) < 0.0001 &&
+      Math.abs(a[1] - b[1]) < 0.0001 &&
+      Math.abs(a[2] - b[2]) < 0.0001,
+  );
+}
+
+function sameRuntimeMetrics(
+  left: ResolvedAssetRuntimeMetrics,
+  right: ResolvedAssetRuntimeMetrics,
+) {
+  if (
+    !sameVec3(left.world_size, right.world_size) ||
+    !sameVec3(left.source_size, right.source_size) ||
+    left.support_surfaces.length !==
+      right.support_surfaces.length
+  ) {
+    return false;
+  }
+
+  return left.support_surfaces.every(
+    (surface, index) => {
+      const other =
+        right.support_surfaces[index];
+      return Boolean(
+        other &&
+          surface.id === other.id &&
+          sameVec3(
+            surface.center_offset,
+            other.center_offset,
+          ) &&
+          Math.abs(
+            surface.size[0] - other.size[0],
+          ) < 0.0001 &&
+          Math.abs(
+            surface.size[1] - other.size[1],
+          ) < 0.0001,
+      );
+    },
+  );
+}
+
+function PrimitiveScene({
+  plan,
+  sceneGraph,
+  activeStep,
+  showLabels,
+  assetBindings,
+  hiddenFallbackNodeIds,
+}: {
+  plan: PrimitiveBuildPlanV1;
+  sceneGraph: unknown;
+  activeStep: number;
+  showLabels: boolean;
+  assetBindings: ResolvedSceneAssetBinding[];
+  hiddenFallbackNodeIds: Set<string>;
+}) {
+  const scene = useMemo(
+    () => resolveScene(plan),
+    [plan],
+  );
+  const [assetMetrics, setAssetMetrics] =
+    useState<
+      Map<string, ResolvedAssetRuntimeMetrics>
+    >(() => new Map());
+  const activeBeat =
+    plan.beats[activeStep - 1] ??
+    plan.beats[0];
+  const visibleIds =
+    visiblePartIds(plan, activeStep);
+  const activeIds =
+    activePartIds(activeBeat);
+  const visibleParts = scene.parts.filter(
+    (part) =>
+      visibleIds.has(part.id) &&
+      !hiddenFallbackNodeIds.has(part.id),
+  );
+
+  const bindingSubtreeIds = useMemo(() => {
+    const byInstanceId =
+      new Map<string, Set<string>>();
+
+    for (const binding of assetBindings) {
+      const ids = new Set<string>(
+        binding.replacement_node_ids ?? [],
+      );
+
+      if (binding.fallback_node_id) {
+        for (const nodeId of
+          collectSceneGraphSubtreeIds(
+            sceneGraph,
+            binding.fallback_node_id,
+          )) {
+          ids.add(nodeId);
+        }
+      }
+
+      byInstanceId.set(
+        binding.instance_id,
+        ids,
+      );
+    }
+
+    return byInstanceId;
+  }, [assetBindings, sceneGraph]);
+
+  function bindingIntersects(
+    binding: ResolvedSceneAssetBinding,
+    ids: Set<string>,
+  ) {
+    const subtree =
+      bindingSubtreeIds.get(
+        binding.instance_id,
+      );
+
+    if (!subtree || subtree.size === 0) {
+      return !binding.fallback_node_id;
+    }
+
+    for (const nodeId of subtree) {
+      if (ids.has(nodeId)) return true;
+    }
+
+    return false;
+  }
+
+  const visibleAssetBindings =
+    assetBindings.filter((binding) =>
+      bindingIntersects(binding, visibleIds),
+    );
+  const baseAssetPositions = useMemo(() => {
+    const positions = new Map<string, Vec3>();
+
+    for (const binding of assetBindings) {
+      const ownedParts = (
+        binding.replacement_node_ids ?? []
+      )
+        .map((nodeId) => scene.byId.get(nodeId))
+        .filter(
+          (part): part is RenderPart =>
+            Boolean(part),
+        );
+
+      if (ownedParts.length > 0) {
+        const minX = Math.min(
+          ...ownedParts.map(
+            (part) =>
+              part.position[0] -
+              part.scale[0] / 2,
+          ),
+        );
+        const maxX = Math.max(
+          ...ownedParts.map(
+            (part) =>
+              part.position[0] +
+              part.scale[0] / 2,
+          ),
+        );
+        const minY = Math.min(
+          ...ownedParts.map(
+            (part) =>
+              part.position[1] -
+              part.scale[1] / 2,
+          ),
+        );
+        const minZ = Math.min(
+          ...ownedParts.map(
+            (part) =>
+              part.position[2] -
+              part.scale[2] / 2,
+          ),
+        );
+        const maxZ = Math.max(
+          ...ownedParts.map(
+            (part) =>
+              part.position[2] +
+              part.scale[2] / 2,
+          ),
+        );
+
+        positions.set(binding.instance_id, [
+          (minX + maxX) / 2,
+          minY,
+          (minZ + maxZ) / 2,
+        ]);
+        continue;
+      }
+
+      const fallback = binding.fallback_node_id
+        ? scene.byId.get(binding.fallback_node_id)
+        : undefined;
+      positions.set(
+        binding.instance_id,
+        fallback
+          ? [
+              fallback.position[0],
+              fallback.position[1] -
+                fallback.scale[1] / 2,
+              fallback.position[2],
+            ]
+          : binding.position,
+      );
+    }
+
+    return positions;
+  }, [assetBindings, scene]);
+
+  const layout = useMemo(
+    () =>
+      solveResolvedAssetLayout({
+        bindings: assetBindings,
+        basePositions: baseAssetPositions,
+        metrics: assetMetrics,
+      }),
+    [
+      assetBindings,
+      assetMetrics,
+      baseAssetPositions,
+    ],
+  );
+  const layoutPositions = layout.positions;
+
+  function recordMetrics(
+    metrics: ResolvedAssetRuntimeMetrics,
+  ) {
+    setAssetMetrics((current) => {
+      const previous = current.get(
+        metrics.instance_id,
+      );
+
+      if (
+        previous &&
+        sameRuntimeMetrics(previous, metrics)
+      ) {
+        return current;
+      }
+
+      const next = new Map(current);
+      next.set(metrics.instance_id, metrics);
+      return next;
+    });
+  }
 
   return (
-    <Canvas camera={{ position: [5.2, 3.8, 6.2], fov: 44 }} shadows>
-      <color attach="background" args={["#020617"]} />
+    <Canvas
+      camera={{
+        position: [5.2, 3.8, 6.2],
+        fov: 44,
+      }}
+      shadows
+    >
+      <color
+        attach="background"
+        args={["#020617"]}
+      />
       <ambientLight intensity={0.52} />
-      <directionalLight position={[4, 7, 5]} intensity={1.25} castShadow />
-      <pointLight position={[-4, 3, -4]} intensity={0.6} color="#60a5fa" />
-      <pointLight position={[3, 2.5, 3]} intensity={0.35} color="#fbbf24" />
-      <group rotation={[0, -0.35, 0]}>
+      <directionalLight
+        position={[4, 7, 5]}
+        intensity={1.25}
+        castShadow
+      />
+      <pointLight
+        position={[-4, 3, -4]}
+        intensity={0.6}
+        color="#60a5fa"
+      />
+      <pointLight
+        position={[3, 2.5, 3]}
+        intensity={0.35}
+        color="#fbbf24"
+      />
+
+      <Bounds
+        fit
+        clip
+        observe
+        margin={1.25}
+      >
+        <group rotation={[0, -0.35, 0]}>
         {visibleParts.map((part) => {
-          const active = activeIds.has(part.id);
+          const active =
+            activeIds.has(part.id);
+
           return (
             <group key={part.id}>
-              <PartMesh part={part} active={active} />
+              <PartMesh
+                part={part}
+                active={active}
+              />
               {showLabels && active ? (
-                <Html position={[part.position[0], part.position[1] + part.scale[1] / 2 + 0.28, part.position[2]]} center distanceFactor={7.5}>
+                <Html
+                  position={[
+                    part.position[0],
+                    part.position[1] +
+                      part.scale[1] / 2 +
+                      0.28,
+                    part.position[2],
+                  ]}
+                  center
+                  distanceFactor={7.5}
+                >
                   <div className="rounded-full border border-white/15 bg-black/70 px-2 py-1 text-[10px] font-semibold text-white shadow-xl backdrop-blur">
                     {part.display_name}
                   </div>
@@ -723,12 +1074,58 @@ function PrimitiveScene({ plan, activeStep, showLabels }: { plan: PrimitiveBuild
             </group>
           );
         })}
-      </group>
-      <Text position={[0, 3.7, -2.2]} fontSize={0.18} maxWidth={4.8} textAlign="center" color="#dbeafe" anchorX="center" anchorY="middle">
-        {activeBeat?.title ?? plan.scene_title}
+
+        {visibleAssetBindings.map(
+          (binding) => (
+            <Suspense
+              fallback={null}
+              key={binding.instance_id}
+            >
+              <ResolvedAssetModel
+                binding={binding}
+                active={bindingIntersects(
+                  binding,
+                  activeIds,
+                )}
+                positionOverride={
+                  layoutPositions.get(
+                    binding.instance_id,
+                  ) ?? binding.position
+                }
+                onMetrics={recordMetrics}
+              />
+            </Suspense>
+          ),
+        )}
+        </group>
+      </Bounds>
+
+      <Text
+        position={[0, 3.7, -2.2]}
+        fontSize={0.18}
+        maxWidth={4.8}
+        textAlign="center"
+        color="#dbeafe"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {activeBeat?.title ??
+          plan.scene_title}
       </Text>
-      <gridHelper args={[9, 18, "#334155", "#1e293b"]} position={[0, -0.04, 0]} />
-      <OrbitControls enableDamping makeDefault />
+
+      <gridHelper
+        args={[
+          9,
+          18,
+          "#334155",
+          "#1e293b",
+        ]}
+        position={[0, -0.04, 0]}
+      />
+      <OrbitControls
+        enableDamping
+        makeDefault
+      />
     </Canvas>
   );
 }
@@ -748,6 +1145,56 @@ function providerLabel(value: string | undefined) {
   if (value === "glm") return "GLM-5.2";
   if (value === "deepseek") return "DeepSeek V4 Pro";
   return value ?? "unknown";
+}
+
+
+function collectSceneGraphSubtreeIds(
+  sceneGraph: unknown,
+  targetId: string,
+) {
+  const found = new Set<string>();
+
+  function visit(
+    values: unknown,
+    insideTarget: boolean,
+  ) {
+    if (!Array.isArray(values)) return;
+
+    for (const value of values) {
+      if (
+        !value ||
+        typeof value !== "object" ||
+        Array.isArray(value)
+      ) {
+        continue;
+      }
+
+      const node = value as Record<string, unknown>;
+      const nodeId =
+        typeof node.id === "string"
+          ? node.id
+          : "";
+      const active =
+        insideTarget || nodeId === targetId;
+
+      if (active && nodeId) {
+        found.add(nodeId);
+      }
+
+      visit(node.children, active);
+    }
+  }
+
+  const root =
+    sceneGraph &&
+    typeof sceneGraph === "object" &&
+    !Array.isArray(sceneGraph)
+      ? (sceneGraph as Record<string, unknown>)
+      : {};
+
+  visit(root.nodes, false);
+  if (!found.size) found.add(targetId);
+  return found;
 }
 
 function scriptVec3(value: unknown, fallback: Vec3): Vec3 {
@@ -1188,12 +1635,365 @@ export function PrimitiveBuilderLab() {
   const [result, setResult] = useState<GenerateResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [trellisBindings, setTrellisBindings] = useState<ResolvedSceneAssetBinding[]>([]);
+  const [trellisLoadingIds, setTrellisLoadingIds] = useState<Set<string>>(new Set());
+  const [keptPrimitiveIds, setKeptPrimitiveIds] = useState<Set<string>>(new Set());
+  const [hiddenRequirementIds, setHiddenRequirementIds] = useState<Set<string>>(new Set());
+  const [savedScenes, setSavedScenes] = useState<SavedPrimitiveBuilderScene[]>([]);
+  const [sceneName, setSceneName] = useState("");
+  const [sceneMessage, setSceneMessage] = useState<string | null>(null);
   const [sceneScriptCode, setSceneScriptCode] = useState(DEFAULT_SCENE_SCRIPT);
   const [sceneScriptResult, setSceneScriptResult] = useState(() => compileSceneScript(DEFAULT_SCENE_SCRIPT));
 
   const plan = result?.plan ?? null;
   const currentBeat = plan ? plan.beats[activeStep - 1] ?? plan.beats[0] : null;
   const visibleCount = plan ? visiblePartIds(plan, activeStep).size : 0;
+  const assetRequirements = result?.asset_requirements ?? [];
+  const resolvedBindings = useMemo(() => {
+    const byId = new Map<string, ResolvedSceneAssetBinding>();
+
+    for (const binding of result?.asset_resolution?.bindings ?? []) {
+      byId.set(binding.instance_id, binding);
+    }
+
+    for (const binding of trellisBindings) {
+      byId.set(binding.instance_id, binding);
+    }
+
+    return [...byId.values()];
+  }, [result, trellisBindings]);
+  const hiddenFallbackNodeIds = useMemo(() => {
+    const ids = new Set<string>();
+
+    for (const binding of resolvedBindings) {
+      for (
+        const nodeId of
+        binding.replacement_node_ids ?? []
+      ) {
+        ids.add(nodeId);
+      }
+
+      if (binding.fallback_node_id) {
+        for (const nodeId of collectSceneGraphSubtreeIds(
+          result?.scene_graph,
+          binding.fallback_node_id,
+        )) {
+          ids.add(nodeId);
+        }
+      }
+    }
+
+    for (const requirement of assetRequirements) {
+      if (
+        hiddenRequirementIds.has(
+          requirement.instance_id,
+        )
+      ) {
+        for (
+          const nodeId of
+          requirement.replacement_node_ids ?? []
+        ) {
+          ids.add(nodeId);
+        }
+
+        if (requirement.fallback_node_id) {
+          for (const nodeId of collectSceneGraphSubtreeIds(
+            result?.scene_graph,
+            requirement.fallback_node_id,
+          )) {
+            ids.add(nodeId);
+          }
+        }
+      }
+    }
+
+    return ids;
+  }, [
+    assetRequirements,
+    hiddenRequirementIds,
+    resolvedBindings,
+    result?.scene_graph,
+  ]);
+
+  async function readJsonResponse(
+    response: Response,
+  ) {
+    const raw = await response.text();
+
+    try {
+      return JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      throw new Error(
+        `Expected JSON from ${response.url}, but received ${response.status} ${response.statusText}: ${raw.slice(0, 180)}`,
+      );
+    }
+  }
+
+  async function refreshSavedScenes() {
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/scenes",
+        { cache: "no-store" },
+      );
+      const json = await readJsonResponse(response);
+
+      if (!response.ok || json.ok !== true) {
+        throw new Error(
+          typeof json.error === "string"
+            ? json.error
+            : `Scene list failed with ${response.status}`,
+        );
+      }
+
+      setSavedScenes(
+        Array.isArray(json.scenes)
+          ? (json.scenes as SavedPrimitiveBuilderScene[])
+          : [],
+      );
+    } catch (caught) {
+      setSceneMessage(
+        `Saved scenes could not be loaded: ${
+          caught instanceof Error
+            ? caught.message
+            : String(caught)
+        }`,
+      );
+    }
+  }
+
+  useEffect(() => {
+    void refreshSavedScenes();
+  }, []);
+
+  async function generateWithTrellis(
+    requirement: GeneratedAssetRequirement,
+  ) {
+    if (
+      trellisLoadingIds.has(
+        requirement.instance_id,
+      )
+    ) {
+      return;
+    }
+
+    setTrellisLoadingIds((current) => {
+      const next = new Set(current);
+      next.add(requirement.instance_id);
+      return next;
+    });
+    setError(null);
+    setSceneMessage(
+      `Generating ${requirement.concept} with TRELLIS…`,
+    );
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/primitive-builder/trellis",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ requirement }),
+        },
+      );
+      const json = await readJsonResponse(response);
+
+      if (
+        !response.ok ||
+        json.ok !== true ||
+        !json.binding
+      ) {
+        throw new Error(
+          typeof json.error === "string"
+            ? json.error
+            : `TRELLIS request failed with ${response.status}`,
+        );
+      }
+
+      const binding =
+        json.binding as ResolvedSceneAssetBinding;
+
+      setTrellisBindings((current) => [
+        ...current.filter(
+          (candidate) =>
+            candidate.instance_id !==
+            binding.instance_id,
+        ),
+        binding,
+      ]);
+      setKeptPrimitiveIds((current) => {
+        const next = new Set(current);
+        next.delete(requirement.instance_id);
+        return next;
+      });
+      setHiddenRequirementIds((current) => {
+        const next = new Set(current);
+        next.delete(requirement.instance_id);
+        return next;
+      });
+      setSceneMessage(
+        `${requirement.concept} is now rendered as a TRELLIS preview. Review and approve it in the Asset Library before MyWay may reuse it automatically.`,
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    } finally {
+      setTrellisLoadingIds((current) => {
+        const next = new Set(current);
+        next.delete(requirement.instance_id);
+        return next;
+      });
+    }
+  }
+
+  async function saveCurrentScene() {
+    if (!plan || !result) return;
+
+    const sceneGraph =
+      result.scene_graph &&
+      typeof result.scene_graph === "object"
+        ? (result.scene_graph as Record<
+            string,
+            unknown
+          >)
+        : {};
+    const title =
+      sceneName.trim() ||
+      plan.scene_title ||
+      "Primitive Builder Scene";
+
+    setSceneMessage("Saving scene…");
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/scenes",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            schema_version:
+              "myway_scene_manifest_v2",
+            title,
+            original_prompt: prompt,
+            source: "primitive_builder",
+            assets: resolvedBindings,
+            procedural_nodes: Array.isArray(
+              sceneGraph.nodes,
+            )
+              ? sceneGraph.nodes
+              : [],
+            scene_graph: result.scene_graph,
+            primitive_plan: plan,
+            asset_requirements:
+              assetRequirements,
+            unresolved_requirements:
+              assetRequirements.filter(
+                (requirement) =>
+                  !resolvedBindings.some(
+                    (binding) =>
+                      binding.instance_id ===
+                      requirement.instance_id,
+                  ),
+              ),
+            camera:
+              sceneGraph.camera &&
+              typeof sceneGraph.camera ===
+                "object"
+                ? sceneGraph.camera
+                : {},
+            lights:
+              sceneGraph.lighting &&
+              typeof sceneGraph.lighting ===
+                "object"
+                ? sceneGraph.lighting
+                : {},
+            timeline: Array.isArray(
+              sceneGraph.beats,
+            )
+              ? sceneGraph.beats
+              : plan.beats,
+          }),
+        },
+      );
+      const json = await readJsonResponse(response);
+
+      if (!response.ok || json.ok !== true) {
+        throw new Error(
+          typeof json.error === "string"
+            ? json.error
+            : `Scene save failed with ${response.status}`,
+        );
+      }
+
+      setSceneMessage(`Saved “${title}”.`);
+      setSceneName(title);
+      await refreshSavedScenes();
+    } catch (caught) {
+      setSceneMessage(
+        `Scene save failed: ${
+          caught instanceof Error
+            ? caught.message
+            : String(caught)
+        }`,
+      );
+    }
+  }
+
+  function loadSavedScene(
+    scene: SavedPrimitiveBuilderScene,
+  ) {
+    const loadedPlan = scene.primitive_plan;
+
+    if (
+      !loadedPlan ||
+      !Array.isArray(loadedPlan.parts) ||
+      !Array.isArray(loadedPlan.beats)
+    ) {
+      setSceneMessage(
+        `“${scene.title}” does not contain a reloadable Primitive Builder plan.`,
+      );
+      return;
+    }
+
+    const bindings = (
+      Array.isArray(scene.assets)
+        ? scene.assets
+        : []
+    ).filter(
+      (binding) =>
+        typeof binding.public_path === "string" &&
+        binding.public_path.length > 0,
+    );
+
+    setPrompt(scene.original_prompt);
+    setSceneName(scene.title);
+    setTrellisBindings(bindings);
+    setKeptPrimitiveIds(new Set());
+    setHiddenRequirementIds(new Set());
+    setResult({
+      ok: true,
+      plan: loadedPlan,
+      scene_graph: scene.scene_graph,
+      asset_requirements:
+        scene.asset_requirements ?? [],
+      asset_resolution: {
+        schema_version:
+          "primitive_builder_scene_asset_resolution_v2",
+        bindings,
+        unresolved_requirements:
+          scene.unresolved_requirements ?? [],
+        warnings: [],
+      },
+    });
+    setActiveStep(1);
+    setSceneMessage(`Loaded “${scene.title}”.`);
+  }
 
   async function submitPrompt(event?: FormEvent) {
     event?.preventDefault();
@@ -1220,12 +2020,25 @@ export function PrimitiveBuilderLab() {
         }),
       });
 
-      const json = (await response.json()) as GenerateResponse | { error?: string };
+      const json = await readJsonResponse(response);
       if (!response.ok || !("plan" in json)) {
-        throw new Error(("error" in json && json.error) || `Request failed with ${response.status}`);
+        throw new Error(
+          typeof json.error === "string"
+            ? json.error
+            : `Request failed with ${response.status}`,
+        );
       }
 
-      setResult(json);
+      setResult(json as unknown as GenerateResponse);
+      setTrellisBindings([]);
+      setKeptPrimitiveIds(new Set());
+      setHiddenRequirementIds(new Set());
+      setSceneName(
+        typeof (json.plan as Record<string, unknown>)?.scene_title === "string"
+          ? String((json.plan as Record<string, unknown>).scene_title)
+          : "",
+      );
+      setSceneMessage(null);
       setActiveStep(1);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -1325,14 +2138,21 @@ export function PrimitiveBuilderLab() {
             </div>
             <div className="h-[640px] min-h-[58vh]">
               {plan ? (
-                <PrimitiveScene plan={plan} activeStep={activeStep} showLabels={showLabels} />
+                <PrimitiveScene
+                  plan={plan}
+                  sceneGraph={result?.scene_graph}
+                  activeStep={activeStep}
+                  showLabels={showLabels}
+                  assetBindings={resolvedBindings}
+                  hiddenFallbackNodeIds={hiddenFallbackNodeIds}
+                />
               ) : (
                 <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.12),transparent_34%)] p-8 text-center">
                   <div className="max-w-md rounded-[2rem] border border-white/10 bg-white/[0.055] p-6 shadow-2xl backdrop-blur-xl">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-100/70">Empty build space</p>
                     <h2 className="mt-3 text-2xl font-semibold text-white">Send a prompt to assemble primitives</h2>
                     <p className="mt-2 text-sm leading-7 text-zinc-300/78">
-                      Try something like “build a kitchen with a pot on the stove” or “build a car with an open engine bay.”
+                      Try something like “build a kitchen with a pot on the stove” or “build a car with an open engine bay.” The planner now records reusable asset needs while keeping primitive fallbacks visible.
                     </p>
                   </div>
                 </div>
@@ -1384,6 +2204,226 @@ export function PrimitiveBuilderLab() {
                   </button>
                 </div>
 
+                <div className="rounded-3xl border border-cyan-200/20 bg-cyan-300/[0.07] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-100/75">Asset requirements</p>
+                    <span className="rounded-full border border-cyan-100/15 bg-cyan-100/[0.06] px-2 py-1 text-xs text-cyan-50/80">
+                      {resolvedBindings.length} resolved · {assetRequirements.length}
+                    </span>
+                  </div>
+
+                  {assetRequirements.length ? (
+                    <div className="mt-3 grid gap-2">
+                      {assetRequirements.map((requirement) => {
+                        const binding = resolvedBindings.find(
+                          (candidate) =>
+                            candidate.instance_id === requirement.instance_id,
+                        );
+                        const isLoading = trellisLoadingIds.has(
+                          requirement.instance_id,
+                        );
+                        const keptPrimitive = keptPrimitiveIds.has(
+                          requirement.instance_id,
+                        );
+                        const hidden = hiddenRequirementIds.has(
+                          requirement.instance_id,
+                        );
+
+                        return (
+                          <div
+                            className="rounded-2xl border border-white/10 bg-black/25 p-3"
+                            key={requirement.instance_id}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-white">
+                                  {requirement.concept}
+                                </p>
+                                <p className="mt-1 text-xs leading-5 text-zinc-300/75">
+                                  {requirement.motion_role}
+                                </p>
+                              </div>
+                              <span className={`rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${
+                                binding
+                                  ? "border-emerald-200/25 bg-emerald-300/10 text-emerald-100"
+                                  : keptPrimitive
+                                    ? "border-amber-200/25 bg-amber-300/10 text-amber-100"
+                                    : hidden
+                                      ? "border-rose-200/25 bg-rose-300/10 text-rose-100"
+                                      : "border-white/10 text-zinc-300"
+                              }`}>
+                                {binding
+                                  ? binding.preview_only
+                                    ? "TRELLIS preview"
+                                    : "library asset"
+                                  : keptPrimitive
+                                    ? "primitive kept"
+                                    : hidden
+                                      ? "hidden"
+                                      : "missing"}
+                              </span>
+                            </div>
+
+                            <p className="mt-2 text-[11px] leading-5 text-cyan-50/70">
+                              Primitive fallback: {requirement.fallback_node_id ?? requirement.fallback_primitive}
+                              {` · target ${requirement.target_extent_m.toFixed(2)} m`}
+                            </p>
+                            <p className="text-[11px] leading-5 text-cyan-50/55">
+                              Placement: {requirement.placement_relation}
+                              {requirement.placement_target_instance_id
+                                ? ` → ${requirement.placement_target_instance_id}`
+                                : ""}
+                              {` · owns ${(requirement.replacement_node_ids ?? []).length} primitive node(s)`}
+                            </p>
+
+                            {binding ? (
+                              <div className="mt-3 rounded-xl border border-emerald-200/15 bg-emerald-300/[0.06] px-3 py-2 text-[11px] leading-5 text-emerald-50/80">
+                                <p className="font-semibold">{binding.asset_id}</p>
+                                <p>
+                                  {binding.source_type}
+                                  {binding.public_path.startsWith("http")
+                                    ? " · Cloudflare R2"
+                                    : " · local library"}
+                                  {binding.match_score != null
+                                    ? ` · match ${binding.match_score.toFixed(1)}`
+                                    : ""}
+                                  {binding.match_margin != null
+                                    ? ` · margin ${binding.match_margin.toFixed(1)}`
+                                    : ""}
+                                  {binding.preview_only
+                                    ? " · current-scene preview only"
+                                    : ""}
+                                  {binding.fallback_node_id
+                                    ? ` · fallback subtree ${binding.fallback_node_id}`
+                                    : " · always visible"}
+                                </p>
+                                <p className="break-all text-emerald-50/55">
+                                  {binding.public_path}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  disabled={isLoading}
+                                  onClick={() => void generateWithTrellis(requirement)}
+                                  className="rounded-xl border border-violet-200/25 bg-violet-300/10 px-3 py-2 text-[11px] font-semibold text-violet-50 transition hover:bg-violet-300/15 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {isLoading ? "Generating…" : "Generate with TRELLIS"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setKeptPrimitiveIds((current) => {
+                                      const next = new Set(current);
+                                      next.add(requirement.instance_id);
+                                      return next;
+                                    });
+                                    setHiddenRequirementIds((current) => {
+                                      const next = new Set(current);
+                                      next.delete(requirement.instance_id);
+                                      return next;
+                                    });
+                                  }}
+                                  className="rounded-xl border border-white/10 bg-white/[0.055] px-3 py-2 text-[11px] font-semibold text-zinc-100 transition hover:bg-white/[0.09]"
+                                >
+                                  Keep primitive
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setHiddenRequirementIds((current) => {
+                                      const next = new Set(current);
+                                      next.add(requirement.instance_id);
+                                      return next;
+                                    });
+                                    setKeptPrimitiveIds((current) => {
+                                      const next = new Set(current);
+                                      next.delete(requirement.instance_id);
+                                      return next;
+                                    });
+                                  }}
+                                  className="rounded-xl border border-rose-200/20 bg-rose-300/[0.07] px-3 py-2 text-[11px] font-semibold text-rose-100 transition hover:bg-rose-300/12"
+                                >
+                                  Hide object
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs leading-5 text-zinc-300/72">
+                      No scene-approved library asset was explicitly named in the prompt, and the model did not request another reusable GLB.
+                    </p>
+                  )}
+
+                  <p className="mt-3 text-[11px] leading-5 text-cyan-50/60">
+                    Scene-approved library matches replace their named primitive fallbacks automatically. TRELLIS results appear immediately for this scene but remain pending for future automatic reuse.
+                  </p>
+                </div>
+
+                <div className="rounded-3xl border border-emerald-200/20 bg-emerald-300/[0.06] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-100/75">
+                      Saved scenes
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void refreshSavedScenes()}
+                      className="rounded-full border border-white/10 bg-white/[0.055] px-2 py-1 text-[10px] font-semibold text-zinc-200"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+
+                  <input
+                    value={sceneName}
+                    onChange={(event) => setSceneName(event.target.value)}
+                    placeholder={plan?.scene_title ?? "Scene name"}
+                    className="mt-3 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-500"
+                  />
+                  <button
+                    type="button"
+                    disabled={!plan}
+                    onClick={() => void saveCurrentScene()}
+                    className="mt-2 w-full rounded-xl border border-emerald-200/25 bg-emerald-300/10 px-3 py-2 text-sm font-semibold text-emerald-50 transition hover:bg-emerald-300/15 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Save current scene
+                  </button>
+
+                  {sceneMessage ? (
+                    <p className="mt-2 text-[11px] leading-5 text-emerald-50/70">
+                      {sceneMessage}
+                    </p>
+                  ) : null}
+
+                  {savedScenes.length ? (
+                    <div className="mt-3 grid max-h-48 gap-2 overflow-auto pr-1">
+                      {savedScenes.map((scene) => (
+                        <button
+                          type="button"
+                          key={scene.scene_id}
+                          onClick={() => loadSavedScene(scene)}
+                          className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-left transition hover:bg-white/[0.07]"
+                        >
+                          <p className="text-xs font-semibold text-white">
+                            {scene.title}
+                          </p>
+                          <p className="mt-1 text-[10px] text-zinc-400">
+                            {scene.assets.length} asset{scene.assets.length === 1 ? "" : "s"} · {new Date(scene.updated_at).toLocaleString()}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-[11px] text-zinc-400">
+                      No saved Primitive Builder scenes yet.
+                    </p>
+                  )}
+                </div>
+
                 <div className="rounded-3xl border border-white/10 bg-black/24 p-4 text-xs leading-5 text-zinc-300">
                   <p className="font-black uppercase tracking-[0.14em] text-zinc-400">Model run</p>
                   <p className="mt-2">Primary: {providerLabel(result?.provider_requested)}</p>
@@ -1405,7 +2445,12 @@ export function PrimitiveBuilderLab() {
                 ) : null}
 
                 <details className="rounded-3xl border border-white/10 bg-black/24 p-4">
-                  <summary className="cursor-pointer text-sm font-semibold text-zinc-100">Show primitive plan JSON</summary>
+                  <summary className="cursor-pointer text-sm font-semibold text-zinc-100">Show hybrid scene graph JSON</summary>
+                  <pre className="mt-3 max-h-72 overflow-auto rounded-2xl bg-black/45 p-3 text-[11px] leading-5 text-zinc-300">{JSON.stringify(result?.scene_graph ?? null, null, 2)}</pre>
+                </details>
+
+                <details className="rounded-3xl border border-white/10 bg-black/24 p-4">
+                  <summary className="cursor-pointer text-sm font-semibold text-zinc-100">Show primitive fallback plan JSON</summary>
                   <pre className="mt-3 max-h-72 overflow-auto rounded-2xl bg-black/45 p-3 text-[11px] leading-5 text-zinc-300">{JSON.stringify(plan, null, 2)}</pre>
                 </details>
               </>
@@ -1481,3 +2526,6 @@ export function PrimitiveBuilderLab() {
     </main>
   );
 }
+
+
+

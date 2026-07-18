@@ -1,17 +1,18 @@
 # Primitive Builder Lab
 
-The lab now supports a hybrid scene path:
+Primitive Builder now uses the shared MyWay hybrid scene runtime.
 
-- procedural SceneScript primitives,
-- reusable GLB assets from the shared MyWay Asset Library,
-- hands-off BlendKit acquisition through Blender,
-- TRELLIS generation when BlendKit has no suitable asset,
-- scene manifests that reference individual reusable assets.
+## Generation path
 
-SceneScript can load a registered asset with:
+1. The model returns `primitive_scene_graph_v2`.
+2. Asset requirements are resolved against scene-approved library assets.
+3. Approved GLBs replace their named primitive fallback subtrees.
+4. Missing requirements remain visible as procedural fallbacks.
+5. The user may explicitly generate a TRELLIS preview, keep the primitive, or hide the object.
+6. The complete mixed scene can be saved as `myway_scene_manifest_v2`.
 
-```js
-model("pot", "metal_cooking_pot_bk_123", [0, 1, 0], [1, 1, 1], {
-  motion: { type: "oscillateY", amplitude: 0.03, speed: 1.4 }
-})
-```
+The model never chooses asset IDs, paths, providers, or URLs. MyWay owns asset
+resolution and validates the result.
+
+TRELLIS output is available immediately for the current sandbox scene, but it
+remains globally scene-review pending until approved in the Asset Library.

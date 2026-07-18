@@ -1,0 +1,19 @@
+{
+  "ok": false,
+  "completed": [],
+  "failures": [
+    {
+      "concept": "apple",
+      "error": "RuntimeError: BlendKit returned no downloadable model for 'apple whole red fruit food realistic botanical isolated' with license 'cc0'. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 724, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 685, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<3 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 567, in acquire_blenderkit\n    raise RuntimeError(\n    ...<2 lines>...\n    )\nRuntimeError: BlendKit returned no downloadable model for 'apple whole red fruit food realistic botanical isolated' with license 'cc0'. MyWay will not fall back to a less permissive license.\n"
+    },
+    {
+      "concept": "banana",
+      "error": "RuntimeError: BlendKit returned no downloadable model for 'banana whole yellow fruit food realistic botanical isolated' with license 'cc0'. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 724, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 685, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<3 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 567, in acquire_blenderkit\n    raise RuntimeError(\n    ...<2 lines>...\n    )\nRuntimeError: BlendKit returned no downloadable model for 'banana whole yellow fruit food realistic botanical isolated' with license 'cc0'. MyWay will not fall back to a less permissive license.\n"
+    },
+    {
+      "concept": "pineapple",
+      "error": "RuntimeError: BlendKit returned no downloadable model for 'pineapple whole fruit food realistic botanical isolated' with license 'cc0'. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 724, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 685, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<3 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 567, in acquire_blenderkit\n    raise RuntimeError(\n    ...<2 lines>...\n    )\nRuntimeError: BlendKit returned no downloadable model for 'pineapple whole fruit food realistic botanical isolated' with license 'cc0'. MyWay will not fall back to a less permissive license.\n"
+    }
+  ],
+  "next": "Open http://localhost:3000/sandbox/probe-lab/asset-library, inspect each model, and use its Upload to Cloudflare R2 button only when the visual is acceptable."
+}

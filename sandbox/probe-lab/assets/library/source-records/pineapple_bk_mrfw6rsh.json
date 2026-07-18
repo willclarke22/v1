@@ -1,0 +1,35 @@
+{
+  "schema_version": "myway_blenderkit_source_record_v1",
+  "captured_at": "2026-07-11T04:56:33.585150+00:00",
+  "asset_id": "853eb6de-c461-411e-b0b9-1887577dc9f0",
+  "asset_base_id": "7a50d41b-9679-4e88-b574-d310689bffae",
+  "display_name": "Pineapple",
+  "description": "Photoscanned Pineapple, remeshed and baked.",
+  "license": "cc0",
+  "required_license_kind": "cc0",
+  "is_free": true,
+  "can_download": true,
+  "verification_status": "validated",
+  "tags": [
+    "pineapple",
+    "fruit",
+    "fruits",
+    "decoration",
+    "kitchen",
+    "vegetable"
+  ],
+  "author": {
+    "id": 59772,
+    "name": "Lucas Paludo",
+    "about_url": "http://www.instagram.com/paludo.arq"
+  },
+  "download_file_type": "resolution_1K",
+  "source_api_url": "https://www.blenderkit.com/api/v1/assets/853eb6de-c461-411e-b0b9-1887577dc9f0/",
+  "source_page_url": "https://www.blenderkit.com/asset-gallery-detail/7a50d41b-9679-4e88-b574-d310689bffae/",
+  "official_license_docs_url": "https://www.blenderkit.com/docs/licenses/",
+  "myway_blenderkit_search_query": "pineapple",
+  "myway_required_license_kind": "cc0",
+  "normalized_runtime_glb": "public/sandbox-assets/myway/models/blenderkit/pineapple_bk_mrfw6rsh.glb",
+  "normalized_thumbnail": "public/sandbox-assets/myway/thumbnails/pineapple_bk_mrfw6rsh.png",
+  "content_hash": "f66d7ccd481b643f7e35be5ea0d2c8842d6350d0040da686c090db576820d479"
+}

@@ -451,8 +451,90 @@ def recursive_url(value):
     return None
 
 
+def ordered_tokens(value):
+    return [
+        part
+        for part in "".join(
+            character.lower() if character.isalnum() else " "
+            for character in str(value or "")
+        ).split()
+        if part
+    ]
+
+
 def tokenize(value):
-    return {part for part in ''.join(c.lower() if c.isalnum() else ' ' for c in value).split() if part}
+    return set(ordered_tokens(value))
+
+
+LOW_INFORMATION_QUERY_TOKENS = {
+    "generic",
+    "simple",
+    "basic",
+    "realistic",
+    "small",
+    "large",
+    "medium",
+    "modern",
+    "classic",
+    "wooden",
+    "plastic",
+    "metal",
+    "household",
+    "home",
+    "indoor",
+    "outdoor",
+}
+
+
+def token_matches(query_token, source_token):
+    if query_token == source_token:
+        return True
+
+    if len(query_token) >= 4 and len(source_token) >= 4:
+        if query_token in source_token or source_token in query_token:
+            return True
+
+    query_singular = (
+        query_token[:-1]
+        if query_token.endswith("s") and len(query_token) > 4
+        else query_token
+    )
+    source_singular = (
+        source_token[:-1]
+        if source_token.endswith("s") and len(source_token) > 4
+        else source_token
+    )
+
+    return query_singular == source_singular
+
+
+def blenderkit_result_words(result):
+    text = " ".join([
+        str(result.get("displayName", "")),
+        str(result.get("name", "")),
+        str(result.get("description", "")),
+        " ".join(result.get("tags", []) or []),
+    ])
+    return tokenize(text)
+
+
+def query_anchor_token(query):
+    tokens = ordered_tokens(query)
+    meaningful = [
+        token
+        for token in tokens
+        if token not in LOW_INFORMATION_QUERY_TOKENS
+    ]
+    return (meaningful or tokens)[-1] if tokens else None
+
+
+def blenderkit_result_matches_query(result, query):
+    anchor = query_anchor_token(query)
+    if not anchor:
+        return False
+
+    words = blenderkit_result_words(result)
+    return any(token_matches(anchor, word) for word in words)
 
 
 def score_blenderkit_result(result, query_tokens):
@@ -486,24 +568,179 @@ def choose_file(asset, preferred_resolution):
     raise RuntimeError("BlendKit result did not expose a downloadable .blend file.")
 
 
-def acquire_blenderkit(query, preferred_resolution, free_only, temp_dir):
+
+def normalized_blenderkit_license(value):
+    normalized = (
+        str(value or "")
+        .strip()
+        .lower()
+        .replace("-", "_")
+        .replace(" ", "_")
+    )
+
+    # BlendKit's API currently serializes Creative Commons Zero as
+    # "cc_zero". Treat only known CC0 aliases as the same permissive license.
+    if normalized in {
+        "cc0",
+        "cc_0",
+        "cc_zero",
+        "creative_commons_zero",
+    }:
+        return "cc0"
+
+    return normalized
+
+
+def blenderkit_asset_page_url(asset):
+    asset_base_id = asset.get("assetBaseId")
+    if asset_base_id:
+        return f"https://www.blenderkit.com/asset-gallery-detail/{asset_base_id}/"
+    return asset.get("url")
+
+
+def collect_blenderkit_results(search_url, api_key, max_pages=12):
+    results = []
+    next_url = search_url
+    seen_urls = set()
+
+    for _ in range(max_pages):
+        if not next_url or next_url in seen_urls:
+            break
+
+        seen_urls.add(next_url)
+        payload = http_json(next_url, api_key)
+        results.extend(payload.get("results", []) or [])
+        next_url = payload.get("next")
+
+    return results
+
+
+def acquire_blenderkit(
+    query,
+    preferred_resolution,
+    free_only,
+    required_license_kind,
+    excluded_source_asset_ids,
+    temp_dir,
+):
     api_key = get_blenderkit_api_key()
-    query_parts = ["asset_type:model"]
-    if free_only:
-        query_parts.append("is_free:true")
-    query_parts.extend(query.split())
-    encoded = urllib.parse.quote_plus(" ".join(query_parts), safe="+:")
-    search_url = f"https://www.blenderkit.com/api/v1/search/?query={encoded}&page_size=30&dict_parameters=1"
-    log(f"Searching BlendKit for: {query}")
-    payload = http_json(search_url, api_key)
-    results = [item for item in payload.get("results", []) if item.get("assetType") == "model"]
-    if free_only:
-        results = [item for item in results if item.get("isFree") is True]
-    results = [item for item in results if item.get("canDownload") is not False]
+    # Keep the server query intentionally broad. BlendKit's own add-on sends
+    # a short human search term plus asset_type and uses free status mainly as
+    # result ordering. License and downloadability are verified locally below.
+    concise_query = " ".join(str(query or "").split()).strip()
+    query_parts = [concise_query, "asset_type:model", "order:_score"]
+    encoded = urllib.parse.quote_plus(
+        " ".join(part for part in query_parts if part),
+        safe="+:",
+    )
+    search_url = (
+        "https://www.blenderkit.com/api/v1/search/"
+        f"?query={encoded}&page_size=100&dict_parameters=1"
+    )
+    log(f"Searching BlendKit broadly for: {concise_query}")
+    all_results = collect_blenderkit_results(search_url, api_key)
+
+    excluded_ids = {
+        str(value).strip()
+        for value in (excluded_source_asset_ids or [])
+        if str(value).strip()
+    }
+
+    model_results = [
+        item
+        for item in all_results
+        if str(item.get("assetType") or "").lower() == "model"
+        and item.get("canDownload") is not False
+        and str(item.get("assetBaseId") or item.get("id") or "").strip()
+        not in excluded_ids
+    ]
+
+    normalized_required_license = normalized_blenderkit_license(
+        required_license_kind
+    )
+
+    observed_licenses = {}
+    for item in model_results:
+        observed = normalized_blenderkit_license(item.get("license")) or "unknown"
+        observed_licenses[observed] = observed_licenses.get(observed, 0) + 1
+
+    results = model_results
+    if normalized_required_license:
+        results = [
+            item
+            for item in model_results
+            if normalized_blenderkit_license(item.get("license"))
+            == normalized_required_license
+        ]
+
+    # Do not discard a verified CC0 result merely because isFree is absent or
+    # serialized differently. Exact CC0 is the permission gate.
+    if free_only and not normalized_required_license:
+        explicitly_free = [
+            item for item in results if item.get("isFree") is True
+        ]
+        if explicitly_free:
+            results = explicitly_free
+
     if not results:
-        raise RuntimeError(f"BlendKit returned no downloadable model for '{query}'.")
+        license_detail = (
+            f" with license '{normalized_required_license}'"
+            if normalized_required_license
+            else ""
+        )
+        raise RuntimeError(
+            f"BlendKit returned {len(all_results)} total results and "
+            f"{len(model_results)} downloadable models for '{concise_query}', "
+            f"but none matched{license_detail}. "
+            f"Observed downloadable-model licenses: {observed_licenses or {'none': 0}}. "
+            "MyWay will not fall back to a less permissive license."
+        )
+
     query_tokens = tokenize(query)
-    asset = max(results, key=lambda item: score_blenderkit_result(item, query_tokens))
+    semantic_results = [
+        item
+        for item in results
+        if blenderkit_result_matches_query(item, concise_query)
+    ]
+
+    if not semantic_results:
+        preview_names = [
+            str(item.get("displayName") or item.get("name") or "unnamed")
+            for item in sorted(
+                results,
+                key=lambda item: score_blenderkit_result(
+                    item,
+                    query_tokens,
+                ),
+                reverse=True,
+            )[:5]
+        ]
+        anchor = query_anchor_token(concise_query)
+        raise RuntimeError(
+            "BlendKit had correctly licensed candidates, but none matched "
+            f"the core object word '{anchor}' for query "
+            f"'{concise_query}'. Top rejected candidates: "
+            f"{preview_names}. No asset was downloaded or registered."
+        )
+
+    asset = max(
+        semantic_results,
+        key=lambda item: score_blenderkit_result(item, query_tokens),
+    )
+    selected_license = normalized_blenderkit_license(
+        asset.get("license")
+    )
+
+    if (
+        normalized_required_license
+        and selected_license != normalized_required_license
+    ):
+        raise RuntimeError(
+            "BlendKit selected an asset whose license did not match the "
+            f"required license: expected={normalized_required_license}, "
+            f"actual={selected_license or 'unknown'}."
+        )
+
     file_record = choose_file(asset, preferred_resolution)
     download_url = file_record.get("url") or file_record.get("downloadUrl")
     if not download_url:
@@ -512,38 +749,341 @@ def acquire_blenderkit(query, preferred_resolution, free_only, temp_dir):
     if "api/v1/downloads/" in download_url and "scene_uuid=" not in download_url:
         separator = "&" if "?" in download_url else "?"
         download_url = f"{download_url}{separator}scene_uuid={uuid.uuid4()}"
+
     content_type, body = http_bytes(download_url, api_key)
     actual_url = None
     if "json" in content_type.lower() or body[:1] in {b"{", b"["}:
         response_payload = json.loads(body.decode("utf-8"))
         actual_url = recursive_url(response_payload)
         if not actual_url:
-            raise RuntimeError("BlendKit download endpoint did not return a usable file URL.")
+            raise RuntimeError(
+                "BlendKit download endpoint did not return a usable file URL."
+            )
         content_type, body = http_bytes(actual_url, api_key)
+
     blend_path = Path(temp_dir) / f"{asset.get('id', uuid.uuid4())}.blend"
     blend_path.write_bytes(body)
     if blend_path.stat().st_size < 1024:
-        raise RuntimeError("BlendKit download was unexpectedly small and likely invalid.")
+        raise RuntimeError(
+            "BlendKit download was unexpectedly small and likely invalid."
+        )
+
+    author = asset.get("author") or {}
+    author_name = (
+        author.get("fullName")
+        or " ".join(
+            filter(
+                None,
+                [
+                    author.get("firstName"),
+                    author.get("lastName"),
+                ],
+            )
+        ).strip()
+        or None
+    )
+    source_api_url = asset.get("url")
+    source_page_url = blenderkit_asset_page_url(asset)
 
     return blend_path, {
         "source_asset_id": asset.get("assetBaseId") or asset.get("id"),
         "source_asset_name": asset.get("displayName") or asset.get("name"),
-        "source_url": asset.get("url"),
-        "source_license": asset.get("license"),
-        "source_author": " ".join(filter(None, [
-            (asset.get("author") or {}).get("firstName"),
-            (asset.get("author") or {}).get("lastName"),
-        ])).strip() or None,
+        "source_url": source_page_url,
+        "source_license": selected_license or asset.get("license"),
+        "source_author": author_name,
         "source_record": {
+            "schema_version": "myway_blenderkit_source_record_v1",
+            "captured_at": __import__("datetime").datetime.now(
+                __import__("datetime").timezone.utc
+            ).isoformat(),
             "asset_id": asset.get("id"),
             "asset_base_id": asset.get("assetBaseId"),
             "display_name": asset.get("displayName") or asset.get("name"),
-            "license": asset.get("license"),
+            "description": asset.get("description"),
+            "license": selected_license or asset.get("license"),
+            "required_license_kind": normalized_required_license or None,
             "is_free": asset.get("isFree"),
+            "can_download": asset.get("canDownload"),
+            "verification_status": asset.get("verificationStatus"),
             "tags": asset.get("tags") or [],
+            "author": {
+                "id": author.get("id"),
+                "name": author_name,
+                "about_url": author.get("aboutMeUrl"),
+            },
             "download_file_type": file_record.get("fileType"),
-            "source_url": asset.get("url"),
+            "source_api_url": source_api_url,
+            "source_page_url": source_page_url,
+            "official_license_docs_url": (
+                "https://www.blenderkit.com/docs/licenses/"
+            ),
         },
+    }
+
+
+
+def gltf_y_up_point(vector):
+    """Convert Blender Z-up world coordinates to exported glTF Y-up."""
+    return [
+        round(float(vector.x), 6),
+        round(float(vector.z), 6),
+        round(float(-vector.y), 6),
+    ]
+
+
+def geometry_profile():
+    """Build a geometry-only profile with no concept or object-name rules."""
+    meshes = mesh_objects()
+    if not meshes:
+        raise RuntimeError("Cannot profile an asset without mesh objects.")
+
+    minimum, maximum = world_bbox(meshes)
+    dimensions = maximum - minimum
+    longest = max(dimensions.x, dimensions.y, dimensions.z, 1e-6)
+    height_tolerance = max(0.004, longest * 0.012)
+    min_triangle_area = max(1e-8, longest * longest * 1e-7)
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    triangles = []
+
+    for source_obj in meshes:
+        evaluated = source_obj.evaluated_get(depsgraph)
+        mesh = evaluated.to_mesh()
+        try:
+            mesh.calc_loop_triangles()
+            matrix = evaluated.matrix_world
+
+            for triangle in mesh.loop_triangles:
+                vertices = [
+                    matrix @ mesh.vertices[index].co
+                    for index in triangle.vertices
+                ]
+                ab = vertices[1] - vertices[0]
+                ac = vertices[2] - vertices[0]
+                cross = ab.cross(ac)
+                doubled_area = cross.length
+                if doubled_area <= min_triangle_area * 2:
+                    continue
+
+                normal = cross.normalized()
+                # Blender's world-up is +Z. Only geometry itself determines
+                # whether a face is a candidate support plane.
+                if normal.z < 0.82:
+                    continue
+
+                center = sum(vertices, Vector((0.0, 0.0, 0.0))) / 3.0
+                xs = [vertex.x for vertex in vertices]
+                ys = [vertex.y for vertex in vertices]
+                triangles.append(
+                    {
+                        "height": center.z,
+                        "area": doubled_area * 0.5,
+                        "center": center,
+                        "normal": normal,
+                        "min_x": min(xs),
+                        "max_x": max(xs),
+                        "min_y": min(ys),
+                        "max_y": max(ys),
+                    }
+                )
+        finally:
+            evaluated.to_mesh_clear()
+
+    triangles.sort(key=lambda item: item["height"])
+    clusters = []
+
+    for triangle in triangles:
+        cluster = None
+        best_delta = None
+
+        for candidate in clusters:
+            delta = abs(candidate["height"] - triangle["height"])
+            if delta <= height_tolerance and (
+                best_delta is None or delta < best_delta
+            ):
+                cluster = candidate
+                best_delta = delta
+
+        if cluster is None:
+            cluster = {
+                "height": triangle["height"],
+                "area": 0.0,
+                "weighted_center": Vector(),
+                "weighted_normal": Vector(),
+                "min_x": triangle["min_x"],
+                "max_x": triangle["max_x"],
+                "min_y": triangle["min_y"],
+                "max_y": triangle["max_y"],
+            }
+            clusters.append(cluster)
+
+        area = triangle["area"]
+        previous_area = cluster["area"]
+        total_area = previous_area + area
+        cluster["height"] = (
+            cluster["height"] * previous_area +
+            triangle["height"] * area
+        ) / max(total_area, 1e-9)
+        cluster["area"] = total_area
+        cluster["weighted_center"] += triangle["center"] * area
+        cluster["weighted_normal"] += triangle["normal"] * area
+        cluster["min_x"] = min(cluster["min_x"], triangle["min_x"])
+        cluster["max_x"] = max(cluster["max_x"], triangle["max_x"])
+        cluster["min_y"] = min(cluster["min_y"], triangle["min_y"])
+        cluster["max_y"] = max(cluster["max_y"], triangle["max_y"])
+
+    max_cluster_area = max(
+        [cluster["area"] for cluster in clusters] or [0.0]
+    )
+    footprint_area = max(dimensions.x * dimensions.y, 1e-9)
+    minimum_surface_area = max(
+        footprint_area * 0.0025,
+        max_cluster_area * 0.025,
+    )
+    surfaces = []
+
+    for cluster in clusters:
+        width = cluster["max_x"] - cluster["min_x"]
+        depth = cluster["max_y"] - cluster["min_y"]
+        if (
+            cluster["area"] < minimum_surface_area
+            or width < longest * 0.015
+            or depth < longest * 0.015
+        ):
+            continue
+
+        center = (
+            cluster["weighted_center"] /
+            max(cluster["area"], 1e-9)
+        )
+        normal = cluster["weighted_normal"]
+        if normal.length <= 1e-9:
+            normal = Vector((0, 0, 1))
+        else:
+            normal.normalize()
+
+        area_ratio = min(1.0, cluster["area"] / footprint_area)
+        normal_score = max(0.0, min(1.0, normal.z))
+        confidence = max(
+            0.05,
+            min(
+                1.0,
+                normal_score * 0.62 +
+                min(1.0, area_ratio * 4.0) * 0.38,
+            ),
+        )
+        height_ratio = (
+            (cluster["height"] - minimum.z) /
+            max(dimensions.z, 1e-9)
+        )
+
+        surfaces.append(
+            {
+                "id": f"surface_{len(surfaces) + 1}",
+                "label": f"Detected support surface {len(surfaces) + 1}",
+                "center": gltf_y_up_point(
+                    Vector((center.x, center.y, cluster["height"]))
+                ),
+                "normal": gltf_y_up_point(normal),
+                "u_axis": [1.0, 0.0, 0.0],
+                "v_axis": [0.0, 0.0, -1.0],
+                "size": [
+                    round(float(width), 6),
+                    round(float(depth), 6),
+                ],
+                "area": round(float(cluster["area"]), 8),
+                "confidence": round(float(confidence), 6),
+                "source": "blender_geometry",
+                "height_ratio": round(float(height_ratio), 6),
+                "footprint_ratio": [
+                    round(float(width / max(dimensions.x, 1e-9)), 6),
+                    round(float(depth / max(dimensions.y, 1e-9)), 6),
+                ],
+            }
+        )
+
+    surfaces.sort(
+        key=lambda item: (
+            -item["confidence"],
+            -item["area"],
+            item["center"][1],
+        )
+    )
+    surfaces = surfaces[:16]
+
+    gltf_min = Vector((minimum.x, minimum.z, -maximum.y))
+    gltf_max = Vector((maximum.x, maximum.z, -minimum.y))
+    gltf_size = gltf_max - gltf_min
+    gltf_center = (gltf_min + gltf_max) / 2.0
+    bottom_center = Vector((gltf_center.x, gltf_min.y, gltf_center.z))
+
+    return {
+        "schema_version": "myway_asset_geometry_profile_v1",
+        "coordinate_space": "normalized_glb_y_up",
+        "local_bounds": {
+            "min": [
+                round(float(gltf_min.x), 6),
+                round(float(gltf_min.y), 6),
+                round(float(gltf_min.z), 6),
+            ],
+            "max": [
+                round(float(gltf_max.x), 6),
+                round(float(gltf_max.y), 6),
+                round(float(gltf_max.z), 6),
+            ],
+            "size": [
+                round(float(gltf_size.x), 6),
+                round(float(gltf_size.y), 6),
+                round(float(gltf_size.z), 6),
+            ],
+            "center": [
+                round(float(gltf_center.x), 6),
+                round(float(gltf_center.y), 6),
+                round(float(gltf_center.z), 6),
+            ],
+        },
+        "orientation": {
+            "up_axis": [0.0, 1.0, 0.0],
+            "forward_axis": [0.0, 0.0, 1.0],
+        },
+        "bottom_contact_region": {
+            "id": "bottom_contact",
+            "center": [
+                round(float(bottom_center.x), 6),
+                round(float(bottom_center.y), 6),
+                round(float(bottom_center.z), 6),
+            ],
+            "normal": [0.0, 1.0, 0.0],
+            "size": [
+                round(float(max(gltf_size.x, 1e-6)), 6),
+                round(float(max(gltf_size.z, 1e-6)), 6),
+            ],
+            "area": round(
+                float(max(gltf_size.x * gltf_size.z, 1e-9)),
+                8,
+            ),
+            "confidence": 0.65,
+        },
+        "support_surfaces": surfaces,
+        "interior_volumes": [],
+        "collision_boxes": [
+            {
+                "center": [
+                    round(float(gltf_center.x), 6),
+                    round(float(gltf_center.y), 6),
+                    round(float(gltf_center.z), 6),
+                ],
+                "size": [
+                    round(float(max(gltf_size.x, 1e-6)), 6),
+                    round(float(max(gltf_size.y, 1e-6)), 6),
+                    round(float(max(gltf_size.z, 1e-6)), 6),
+                ],
+                "rotation": [0.0, 0.0, 0.0],
+            }
+        ],
+        "generated_at": __import__("datetime").datetime.now(
+            __import__("datetime").timezone.utc
+        ).isoformat(),
+        "generator": "myway_blender_geometry_profile_v1",
     }
 
 
@@ -565,6 +1105,8 @@ def execute(job):
             job["query"],
             job.get("resolution", "resolution_1K"),
             bool(job.get("free_only", True)),
+            job.get("required_license_kind"),
+            job.get("excluded_source_asset_ids", []),
             temp_dir,
         )
         append_blend_file(blend_path)
@@ -576,6 +1118,7 @@ def execute(job):
         raise RuntimeError(f"Unknown Blender job kind: {job['kind']}")
 
     dimensions = normalize_scene(float(job.get("target_extent_m", 2.0)))
+    profile = geometry_profile()
     export_glb(job["output_path"])
     make_thumbnail(job["thumbnail_path"], dimensions)
     return {
@@ -585,6 +1128,7 @@ def execute(job):
         "polygon_count": polygon_count(),
         "rigged": any(obj.type == "ARMATURE" for obj in asset_objects()),
         "animation_clips": animation_clips(),
+        "geometry_profile": profile,
         "texture_report": texture_report,
         **source_metadata,
     }
@@ -615,3 +1159,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+

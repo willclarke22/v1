@@ -6,6 +6,8 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import type { PreparedSemanticScene, PreparedSemanticSceneEntity } from "./semantic-scene-layout";
+import { ResolvedAssetModel } from "@/sandbox/probe-lab/scenes/ui";
+import type { ResolvedSceneAssetBinding } from "@/sandbox/probe-lab/scenes/resolved-scene";
 import type { Vec3 } from "./directed-scene-compiler";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -407,6 +409,76 @@ function PrimitiveEntity({
       onSelectEntity?.(entity.id);
     },
   };
+
+  if (
+    entity.render_kind === "registered_asset" &&
+    entity.resolved_asset
+  ) {
+    const binding: ResolvedSceneAssetBinding = {
+      instance_id: entity.id,
+      concept: entity.display_name,
+      asset_id: entity.resolved_asset.asset_id,
+      public_path: entity.resolved_asset.public_path,
+      source_type:
+        entity.resolved_asset.source_type as ResolvedSceneAssetBinding["source_type"],
+      scene_review_status:
+        entity.resolved_asset.scene_review_status,
+      dimensions_m:
+        entity.resolved_asset.dimensions_m,
+      default_scale:
+        entity.resolved_asset.default_scale,
+      default_rotation:
+        entity.resolved_asset.default_rotation,
+      ground_offset_m:
+        entity.resolved_asset.ground_offset_m,
+      target_extent_m: 1,
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1],
+      replacement_node_ids: [],
+      placement_relation: "absolute",
+      placement_anchor: "center",
+      placement_offset: [0, 0, 0],
+      placement_uv: [0, 0],
+      primitive_support_surface: undefined,
+      layout_priority: 0,
+      clearance_m: 0.01,
+      geometry_profile: null,
+      preview_only: false,
+      match_score:
+        entity.resolved_asset.match_score ?? null,
+      match_margin: null,
+      candidate_scores: [],
+    };
+
+    return (
+      <group
+        ref={groupRef}
+        position={targetPosition.toArray()}
+        scale={desiredScale}
+        {...clickProps}
+      >
+        <SelectionHalo
+          entity={entity}
+          progress={progress}
+        />
+        <ResolvedAssetModel
+          binding={binding}
+          active={
+            entity.is_active ||
+            entity.selected
+          }
+          positionOverride={[0, 0, 0]}
+          targetExtentOverride={1}
+        />
+        <EntityLabel
+          entity={entity}
+          storyMode={storyMode}
+          isPlaying={isPlaying}
+        />
+      </group>
+    );
+  }
 
   if (entity.render_role === "cylindrical_container") {
     return (
@@ -817,3 +889,5 @@ export function SemanticSceneCanvas({
     </div>
   );
 }
+
+

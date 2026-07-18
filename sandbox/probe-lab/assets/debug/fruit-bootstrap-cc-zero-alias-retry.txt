@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "completed": [
+    {
+      "concept": "apple",
+      "asset_id": "apple_bk_mrfw6ag5",
+      "display_name": "Food Apple",
+      "license": "cc0",
+      "public_path": "/sandbox-assets/myway/models/blenderkit/apple_bk_mrfw6ag5.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/apple_bk_mrfw6ag5.review.json"
+    },
+    {
+      "concept": "banana",
+      "asset_id": "banana_bk_mrfw6k98",
+      "display_name": "PX Banana",
+      "license": "cc0",
+      "public_path": "/sandbox-assets/myway/models/blenderkit/banana_bk_mrfw6k98.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/banana_bk_mrfw6k98.review.json"
+    },
+    {
+      "concept": "pineapple",
+      "asset_id": "pineapple_bk_mrfw6rsh",
+      "display_name": "Pineapple",
+      "license": "cc0",
+      "public_path": "/sandbox-assets/myway/models/blenderkit/pineapple_bk_mrfw6rsh.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/pineapple_bk_mrfw6rsh.review.json"
+    }
+  ],
+  "failures": [],
+  "next": "Open http://localhost:3000/sandbox/probe-lab/asset-library, inspect each model, and use its Upload to Cloudflare R2 button only when the visual is acceptable."
+}

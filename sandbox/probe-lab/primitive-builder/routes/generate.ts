@@ -2,8 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { parseJsonObjectFromText } from "@/sandbox/probe-lab/visual-experience/json-extract";
 import { callVisualLearningTurnModel } from "@/sandbox/probe-lab/visual-experience/model-provider.server";
-import { makePrimitiveBuildModelRequest, normalizePrimitiveBuilderFallback, normalizePrimitiveBuilderProvider } from "../primitive-build-request";
+import {
+  makePrimitiveBuildModelRequest,
+  makePrimitiveBuildRepairRequest,
+  normalizePrimitiveBuilderFallback,
+  normalizePrimitiveBuilderProvider,
+} from "../primitive-build-request";
 import { makePrimitiveSceneGraphScaffoldText, normalizePrimitiveSceneGraph, sceneGraphToPrimitiveBuildPlan } from "../primitive-scene-graph";
+import {
+  preparePrimitiveBuilderSceneAssets,
+  resolvePrimitiveBuilderSceneAssets,
+} from "../../scenes/resolve-scene-assets.server";
 
 function text(value: unknown, fallback: string) {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -21,30 +30,121 @@ export async function POST(request: NextRequest) {
   const fallbackProvider = normalizePrimitiveBuilderFallback(body.fallback_provider, provider);
   const modelRequest = makePrimitiveBuildModelRequest({ user_request: userRequest, style: body.style });
 
-  const providerResult = await callVisualLearningTurnModel({
+  let providerResult = await callVisualLearningTurnModel({
     provider,
     model_request: modelRequest as any,
-    scaffold_raw_text: makePrimitiveSceneGraphScaffoldText(userRequest),
+    scaffold_raw_text:
+      makePrimitiveSceneGraphScaffoldText(
+        userRequest,
+      ),
     generation_preset: "cinematic",
     enable_streaming: true,
     retry_transient_errors: true,
     fallback_provider: fallbackProvider,
   });
 
-  const parsed = parseJsonObjectFromText(providerResult.raw_text);
-  const normalizedGraph = normalizePrimitiveSceneGraph(parsed.ok ? parsed.value : null, userRequest);
-  const warnings = [...normalizedGraph.warnings];
+  const initialParsed =
+    parseJsonObjectFromText(
+      providerResult.raw_text,
+    );
+  let parsed = initialParsed;
+  let parseRetry: {
+    attempted: boolean;
+    succeeded: boolean;
+    error: string | null;
+  } = {
+    attempted: false,
+    succeeded: false,
+    error: null,
+  };
 
-  if (!parsed.ok) {
-    warnings.unshift(`Model response parse failed: ${parsed.error}`);
+  if (!initialParsed.ok) {
+    parseRetry.attempted = true;
+
+    try {
+      const repairRequest =
+        makePrimitiveBuildRepairRequest({
+          user_request: userRequest,
+          style: body.style,
+          previous_response:
+            providerResult.raw_text,
+        });
+      const repairResult =
+        await callVisualLearningTurnModel({
+          provider,
+          model_request:
+            repairRequest as any,
+          scaffold_raw_text:
+            makePrimitiveSceneGraphScaffoldText(
+              userRequest,
+            ),
+          generation_preset: "cinematic",
+          enable_streaming: false,
+          retry_transient_errors: true,
+          fallback_provider:
+            fallbackProvider,
+        });
+      const repaired =
+        parseJsonObjectFromText(
+          repairResult.raw_text,
+        );
+
+      if (repaired.ok) {
+        providerResult = repairResult;
+        parsed = repaired;
+        parseRetry.succeeded = true;
+      } else {
+        parseRetry.error = repaired.error;
+      }
+    } catch (caught) {
+      parseRetry.error =
+        caught instanceof Error
+          ? caught.message
+          : String(caught);
+    }
   }
 
-  const plan = sceneGraphToPrimitiveBuildPlan(normalizedGraph.scene_graph);
+  const normalizedGraph =
+    normalizePrimitiveSceneGraph(
+      parsed.ok ? parsed.value : null,
+      userRequest,
+    );
+  const warnings = [
+    ...normalizedGraph.warnings,
+  ];
+
+  if (!initialParsed.ok) {
+    if (parseRetry.succeeded) {
+      warnings.unshift(
+        `Initial model response could not be parsed (${initialParsed.error}); compact non-streaming JSON retry succeeded.`,
+      );
+    } else {
+      warnings.unshift(
+        `Model response parse failed: ${initialParsed.error}. Compact non-streaming retry also failed: ${parseRetry.error ?? "no JSON object was found"}.`,
+      );
+    }
+  }
+
+  const preparedAssets =
+    await preparePrimitiveBuilderSceneAssets(
+      normalizedGraph.scene_graph,
+      userRequest,
+    );
+  warnings.push(...preparedAssets.warnings);
+
+  const plan = sceneGraphToPrimitiveBuildPlan(
+    preparedAssets.scene_graph,
+  );
+  const assetResolution =
+    await resolvePrimitiveBuilderSceneAssets(
+      preparedAssets.scene_graph,
+    );
+  warnings.push(...assetResolution.warnings);
 
   return NextResponse.json({
     ok: true,
     route: "primitive-builder-generate",
-    schema_version: "primitive_scene_graph_v1",
+    schema_version: "primitive_scene_graph_v2",
     provider_requested: provider,
     fallback_provider: fallbackProvider,
     provider_used: providerResult.provider_used,
@@ -56,11 +156,19 @@ export async function POST(request: NextRequest) {
     provider_request_payload_preview: providerResult.request_payload_preview ?? null,
     prompt_stats: modelRequest.prompt_stats,
     parse_ok: parsed.ok,
-    parse_error: parsed.ok ? null : parsed.error,
+    parse_error:
+      parsed.ok ? null : parsed.error,
+    parse_retry: parseRetry,
     warnings,
-    scene_graph: normalizedGraph.scene_graph,
+    scene_graph: preparedAssets.scene_graph,
+    asset_requirements:
+      preparedAssets.scene_graph.asset_requirements,
+    asset_inference:
+      preparedAssets.inferred_assets,
+    asset_resolution: assetResolution,
     // Compatibility: keep a flattened plan so the existing beat/sidebar code and any old tests still have a plan field.
     plan,
     raw_text_preview: preview(providerResult.raw_text),
   });
 }
+

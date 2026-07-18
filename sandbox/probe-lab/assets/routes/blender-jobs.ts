@@ -17,7 +17,8 @@ export async function POST(request: NextRequest) {
         thumbnail_path: projectPath("public/sandbox-assets/myway/thumbnails", `${id}.png`),
         target_extent_m: Number(body.target_extent_m ?? 2),
         resolution: "resolution_1K",
-        free_only: body.free_only !== false,
+        free_only: true,
+        required_license_kind: "cc0",
         result: null,
         error: null,
       });
@@ -38,4 +39,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: caught instanceof Error ? caught.message : String(caught) }, { status: 500 });
   }
 }
+
 

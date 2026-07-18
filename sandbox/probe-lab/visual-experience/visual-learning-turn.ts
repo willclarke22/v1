@@ -358,13 +358,28 @@ export type MyWayResolvedVisualLearningTurn = {
   source_output_valid: boolean;
   render_bindings: RenderBinding[];
   queued_asset_needs: QueuedAssetNeed[];
+  asset_resolution_warnings?: string[];
   validation: VisualLearningTurnValidationReport;
+};
+
+export type RegisteredVisualAssetBinding = {
+  kind: "registered_asset";
+  asset_id: string;
+  public_path: string;
+  source_type: string;
+  scene_review_status: "pending" | "approved" | "rejected";
+  dimensions_m: [number, number, number];
+  default_scale: number;
+  default_rotation: [number, number, number];
+  ground_offset_m: number;
+  match_score?: number | null;
+  reason: string;
 };
 
 export type RenderBinding = {
   entity_id: string;
   binding:
-    | { kind: "registered_asset"; asset_id: string; reason: string }
+    | RegisteredVisualAssetBinding
     | { kind: "primitive"; primitive: VisualPrimitiveKind; reason: string }
     | { kind: "placeholder"; label: string; reason: string };
 };

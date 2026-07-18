@@ -1,4 +1,8 @@
 import type { PrimitiveBeat, PrimitiveBuildPlanV1, PrimitiveKind, PrimitivePart, VisualRole } from "./primitive-build-plan";
+import {
+  normalizePrimitiveBuilderAssetRequirements,
+  type PrimitiveBuilderAssetRequirement,
+} from "./asset-requirement-plan";
 
 export const SCENE_GRAPH_NODE_KINDS = [
   "group",
@@ -86,8 +90,8 @@ export type PrimitiveSceneGraphBeat = {
   camera?: PrimitiveSceneGraphCameraPreset;
 };
 
-export type PrimitiveSceneGraphV1 = {
-  schema_version: "primitive_scene_graph_v1";
+export type PrimitiveSceneGraphV2 = {
+  schema_version: "primitive_scene_graph_v2";
   user_request: string;
   scene_title: string;
   scene_summary: string;
@@ -98,6 +102,7 @@ export type PrimitiveSceneGraphV1 = {
     cutaway: boolean;
   };
   nodes: PrimitiveSceneGraphNode[];
+  asset_requirements: PrimitiveBuilderAssetRequirement[];
   beats: PrimitiveSceneGraphBeat[];
   camera?: {
     preset?: PrimitiveSceneGraphCameraPreset;
@@ -110,6 +115,10 @@ export type PrimitiveSceneGraphV1 = {
     fill_light?: Vec3;
   };
 };
+
+// Compatibility alias for older imports while the runtime migrates to the
+// hybrid v2 contract.
+export type PrimitiveSceneGraphV1 = PrimitiveSceneGraphV2;
 
 const nodeKindSet = new Set<string>(SCENE_GRAPH_NODE_KINDS);
 const motionTypeSet = new Set<string>(SCENE_GRAPH_MOTION_TYPES);
@@ -276,69 +285,68 @@ function sanitizeMotionReferences(nodes: PrimitiveSceneGraphNode[], ids: Set<str
   });
 }
 
-function makeScaffoldSceneGraph(userRequest: string): PrimitiveSceneGraphV1 {
+function makeScaffoldSceneGraph(
+  userRequest: string,
+): PrimitiveSceneGraphV2 {
   return {
-    schema_version: "primitive_scene_graph_v1",
+    schema_version: "primitive_scene_graph_v2",
     user_request: userRequest,
-    scene_title: "Grouped Motion Scene",
+    scene_title: "Request-safe fallback scene",
     scene_summary:
-      "A fallback grouped scene graph with a stage, a moving object, a hinged panel, and a pulsing glow. It exists only when the model response cannot be used.",
-    style: { look: "clean_stylized", mood: "neutral", complexity: "medium", cutaway: false },
-    camera: { preset: "orbit", position: [6.4, 5.2, 7.2], target: [0, 1.2, -0.8] },
-    lighting: { mood: "warm neutral", key_light: [4, 8, 6], fill_light: [-1.5, 2.4, -2.7] },
+      "The model response could not be parsed. MyWay created only a neutral ground plane; approved assets explicitly named in the request will be added deterministically.",
+    style: {
+      look: "clean_stylized",
+      mood: "neutral",
+      complexity: "low",
+      cutaway: false,
+    },
+    camera: {
+      preset: "orbit",
+      position: [6.4, 4.8, 7.2],
+      target: [0, 0.9, 0],
+    },
+    lighting: {
+      mood: "warm neutral",
+      key_light: [4, 8, 6],
+      fill_light: [-1.5, 2.4, -2.7],
+    },
     nodes: [
       {
-        id: "stage",
+        id: "fallback_environment",
         kind: "group",
-        display_name: "Stage",
+        display_name: "Fallback environment",
         position: [0, 0, 0],
         children: [
-          { id: "base", kind: "softBox", display_name: "Base", position: [0, -0.16, 0], scale: [7.5, 0.28, 4.8], color: "#7b5a3d", radius: 0.16 },
-          { id: "floor", kind: "softBox", display_name: "Floor", position: [0, 0, 0], scale: [7.1, 0.12, 4.4], color: "#d7c2a7", radius: 0.1 },
-        ],
-      },
-      {
-        id: "motion_demo",
-        kind: "group",
-        display_name: "Motion demo",
-        position: [0, 0.25, 0],
-        children: [
           {
-            id: "moving_car",
-            kind: "group",
-            display_name: "Moving car",
-            position: [-2, 0.2, 0.9],
-            motion: { type: "pathLoop", points: [[-2, 0.2, 0.9], [1.8, 0.2, 0.9], [1.2, 0.2, -0.7], [-2, 0.2, -0.5]], speed: 0.25, faceDirection: true },
-            children: [
-              { id: "car_body", kind: "softBox", display_name: "Car body", position: [0, 0.22, 0], scale: [0.9, 0.3, 0.5], color: "#38bdf8", radius: 0.08 },
-              { id: "car_roof", kind: "softBox", display_name: "Car roof", position: [-0.08, 0.43, 0], scale: [0.42, 0.22, 0.38], color: "#7dd3fc", radius: 0.08 },
-            ],
+            id: "environment_ground",
+            kind: "softBox",
+            display_name: "Ground",
+            position: [0, -0.08, 0],
+            scale: [7.2, 0.16, 5.2],
+            color: "#486a4a",
+            radius: 0.12,
           },
-          {
-            id: "hinged_panel",
-            kind: "group",
-            display_name: "Hinged panel",
-            position: [2.4, 0.8, -0.9],
-            motion: { type: "swingY", pivot: [-0.45, 0, 0], minAngle: 0, maxAngle: 1.1, speed: 0.7 },
-            children: [{ id: "panel_body", kind: "softBox", display_name: "Panel body", position: [0, 0, 0], scale: [0.9, 1.1, 0.06], color: "#7c8048", radius: 0.05 }],
-          },
-          { id: "focus_glow", kind: "glow", display_name: "Motion glow", position: [0, 1.4, 0], scale: [1.2, 0.08, 0.8], color: "#fbbf24", opacity: 0.4, motion: { type: "pulse", speed: 0.8 } },
         ],
       },
     ],
+    asset_requirements: [],
     beats: [
-      { id: "beat_1", title: "Build the grouped stage", reveal: ["stage"], camera: "wide" },
-      { id: "beat_2", title: "Show motion semantics", reveal: ["motion_demo"], emphasize: ["moving_car", "hinged_panel", "focus_glow"], camera: "medium" },
+      {
+        id: "beat_1",
+        title: "Show the requested scene",
+        reveal: ["fallback_environment"],
+        camera: "wide",
+      },
     ],
   };
 }
 
-export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string): { scene_graph: PrimitiveSceneGraphV1; warnings: string[] } {
+export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string): { scene_graph: PrimitiveSceneGraphV2; warnings: string[] } {
   const warnings: string[] = [];
   const rootRecord = asRecord(raw);
   const source = asRecord(rootRecord?.scene_graph) ?? asRecord(rootRecord?.scene) ?? rootRecord;
   if (!source) {
-    return { scene_graph: makeScaffoldSceneGraph(userRequest), warnings: ["Model response was not an object; grouped scaffold scene used."] };
+    return { scene_graph: makeScaffoldSceneGraph(userRequest), warnings: ["Model response was not an object; request-safe scaffold scene used."] };
   }
 
   const styleRecord = asRecord(source.style) ?? {};
@@ -349,11 +357,17 @@ export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string):
     .filter((node): node is PrimitiveSceneGraphNode => Boolean(node));
 
   if (!nodes.length) {
-    return { scene_graph: makeScaffoldSceneGraph(userRequest), warnings: ["Model response had no valid scene graph nodes; grouped scaffold scene used."] };
+    return { scene_graph: makeScaffoldSceneGraph(userRequest), warnings: ["Model response had no valid scene graph nodes; request-safe scaffold scene used."] };
   }
 
   const ids = collectIds(nodes);
   sanitizeMotionReferences(nodes, ids, warnings);
+  const assetRequirements =
+    normalizePrimitiveBuilderAssetRequirements(
+      source.asset_requirements,
+      ids,
+      warnings,
+    );
 
   const beats: PrimitiveSceneGraphBeat[] = asArray(source.beats)
     .map((beat, index): PrimitiveSceneGraphBeat | null => {
@@ -377,7 +391,7 @@ export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string):
 
   return {
     scene_graph: {
-      schema_version: "primitive_scene_graph_v1",
+      schema_version: "primitive_scene_graph_v2",
       user_request: text(source.user_request, userRequest),
       scene_title: text(source.scene_title, "Grouped Primitive Scene"),
       scene_summary: text(source.scene_summary, "A grouped procedural scene graph assembled from primitives and allowed motion semantics."),
@@ -388,6 +402,7 @@ export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string):
         cutaway: styleRecord.cutaway === true,
       },
       nodes,
+      asset_requirements: assetRequirements,
       beats: beats.length
         ? beats
         : [{ id: "beat_1", title: "Build the grouped scene", reveal: nodes.map((node) => node.id), camera: "wide" }],
@@ -411,6 +426,66 @@ function flattenSceneGraphNodes(nodes: PrimitiveSceneGraphNode[], output: Primit
     output.push(node);
     flattenSceneGraphNodes(node.children ?? [], output);
   });
+  return output;
+}
+
+type RenderableSceneGraphEntry = {
+  node: PrimitiveSceneGraphNode;
+  world_position: Vec3;
+};
+
+function addVec3(a: Vec3, b: Vec3): Vec3 {
+  return [
+    a[0] + b[0],
+    a[1] + b[1],
+    a[2] + b[2],
+  ];
+}
+
+function flattenRenderableSceneGraphNodes(
+  nodes: PrimitiveSceneGraphNode[],
+  parentPosition: Vec3 = [0, 0, 0],
+  output: RenderableSceneGraphEntry[] = [],
+) {
+  nodes.forEach((node) => {
+    const worldPosition = addVec3(
+      parentPosition,
+      vec3(node.position, [0, 0, 0]),
+    );
+
+    if (node.kind !== "group") {
+      output.push({
+        node,
+        world_position: worldPosition,
+      });
+    }
+
+    flattenRenderableSceneGraphNodes(
+      node.children ?? [],
+      worldPosition,
+      output,
+    );
+  });
+
+  return output;
+}
+
+function collectRenderableDescendantIds(
+  nodes: PrimitiveSceneGraphNode[],
+  output = new Map<string, string[]>(),
+): Map<string, string[]> {
+  function visit(node: PrimitiveSceneGraphNode): string[] {
+    const own =
+      node.kind === "group"
+        ? []
+        : [node.id];
+    const nested = (node.children ?? []).flatMap(visit);
+    const ids = [...own, ...nested];
+    output.set(node.id, ids);
+    return ids;
+  }
+
+  nodes.forEach(visit);
   return output;
 }
 
@@ -441,34 +516,84 @@ export function countSceneGraphNodes(nodes: PrimitiveSceneGraphNode[]) {
   return flattenSceneGraphNodes(nodes).length;
 }
 
-export function sceneGraphToPrimitiveBuildPlan(sceneGraph: PrimitiveSceneGraphV1): PrimitiveBuildPlanV1 {
-  const flat = flattenSceneGraphNodes(sceneGraph.nodes).filter((node) => node.kind !== "group");
-  const safeFlat = flat.length ? flat : flattenSceneGraphNodes(sceneGraph.nodes);
-  const parts: PrimitivePart[] = safeFlat.map((node, index) => ({
-    id: node.id,
-    display_name: node.display_name ?? node.id.replace(/_/g, " "),
-    primitive: primitiveForKind(node.kind),
-    role: roleForKind(node.kind),
-    size: positiveScale(node.scale, [1, 1, 1]),
-    material: node.kind === "glow" ? "glow" : node.kind === "cloud" ? "particle" : node.metalness && node.metalness > 0.25 ? "metal" : node.opacity && node.opacity < 0.75 ? "glass" : "matte",
-    style_hint: node.kind === "group" ? "group container" : "scene graph primitive",
-    placement: {
-      relation: index === 0 ? "root" : "attached_to",
-      target_id: index === 0 ? undefined : safeFlat[0]?.id,
-      anchor: "center",
-      offset: vec3(node.position, [0, 0, 0]),
-    },
-    modifiers: node.kind === "softBox" ? ["rounded"] : node.opacity && node.opacity < 0.75 ? ["transparent"] : undefined,
-  }));
+export function sceneGraphToPrimitiveBuildPlan(sceneGraph: PrimitiveSceneGraphV2): PrimitiveBuildPlanV1 {
+  const entries = flattenRenderableSceneGraphNodes(
+    sceneGraph.nodes,
+  );
+  const parts: PrimitivePart[] = entries.map(
+    ({ node, world_position }) => ({
+      id: node.id,
+      display_name:
+        node.display_name ??
+        node.id.replace(/_/g, " "),
+      primitive: primitiveForKind(node.kind),
+      role: roleForKind(node.kind),
+      size: positiveScale(node.scale, [1, 1, 1]),
+      material:
+        node.kind === "glow"
+          ? "glow"
+          : node.kind === "cloud"
+            ? "particle"
+            : node.metalness && node.metalness > 0.25
+              ? "metal"
+              : node.opacity && node.opacity < 0.75
+                ? "glass"
+                : "matte",
+      style_hint: "scene_graph_absolute",
+      placement: {
+        relation: "root",
+        anchor: "center",
+        offset: world_position,
+      },
+      modifiers:
+        node.kind === "softBox"
+          ? ["rounded"]
+          : node.opacity && node.opacity < 0.75
+            ? ["transparent"]
+            : undefined,
+    }),
+  );
 
-  const ids = new Set(parts.map((part) => part.id));
-  const beats: PrimitiveBeat[] = sceneGraph.beats.map((beat, index) => ({
-    id: beat.id || `beat_${index + 1}`,
-    title: beat.title || `Beat ${index + 1}`,
-    reveal: beat.reveal.filter((id) => ids.has(id)).length ? beat.reveal.filter((id) => ids.has(id)) : parts.map((part) => part.id),
-    emphasize: beat.emphasize?.filter((id) => ids.has(id)),
-    camera: beat.camera ?? (index === 0 ? "wide" : "medium"),
-  }));
+  const partIds = new Set(
+    parts.map((part) => part.id),
+  );
+  const descendants =
+    collectRenderableDescendantIds(sceneGraph.nodes);
+
+  function expandBeatTargets(values: string[]) {
+    return Array.from(
+      new Set(
+        values.flatMap((id) => {
+          if (partIds.has(id)) return [id];
+          return descendants.get(id) ?? [];
+        }),
+      ),
+    ).filter((id) => partIds.has(id));
+  }
+
+  const beats: PrimitiveBeat[] =
+    sceneGraph.beats.map((beat, index) => {
+      const reveal = expandBeatTargets(beat.reveal);
+      const emphasize = expandBeatTargets(
+        beat.emphasize ?? [],
+      );
+
+      return {
+        id: beat.id || `beat_${index + 1}`,
+        title: beat.title || `Beat ${index + 1}`,
+        reveal:
+          reveal.length > 0
+            ? reveal
+            : parts.map((part) => part.id),
+        emphasize:
+          emphasize.length > 0
+            ? emphasize
+            : undefined,
+        camera:
+          beat.camera ??
+          (index === 0 ? "wide" : "medium"),
+      };
+    });
 
   return {
     schema_version: "primitive_build_plan_v1",
@@ -478,7 +603,17 @@ export function sceneGraphToPrimitiveBuildPlan(sceneGraph: PrimitiveSceneGraphV1
     style: sceneGraph.style,
     parts,
     relationships: [],
-    beats: beats.length ? beats : [{ id: "beat_1", title: "Build the grouped scene", reveal: parts.map((part) => part.id), camera: "wide" }],
+    beats:
+      beats.length > 0
+        ? beats
+        : [
+            {
+              id: "beat_1",
+              title: "Build the grouped scene",
+              reveal: parts.map((part) => part.id),
+              camera: "wide",
+            },
+          ],
   };
 }
 

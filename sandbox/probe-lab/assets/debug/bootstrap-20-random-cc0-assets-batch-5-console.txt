@@ -1,0 +1,2141 @@
+
+[1/20] Searching CC0 BlendKit assets for "bulldozer" with query "bulldozer"...
+
+[1/20] Searching CC0 BlendKit assets for "bulldozer" with query "construction bulldozer"...
+Failed query "bulldozer" for bulldozer: RuntimeError: BlendKit returned 19 total results and 3 downloadable models for 'bulldozer', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 3}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 19 total results and 3 downloadable models for 'bulldozer', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 3}. MyWay will not fall back to a less permissive license.
+
+Failed query "construction bulldozer" for bulldozer: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'bulldozer' for query 'construction bulldozer'. Top rejected candidates: ['Propane Torch', 'Old Military Compressor', 'Gravel Garbage Heap', 'Abandoned House', 'Fired brick']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'bulldozer' for query 'construction bulldozer'. Top rejected candidates: ['Propane Torch', 'Old Military Compressor', 'Gravel Garbage Heap', 'Abandoned House', 'Fired brick']. No asset was downloaded or registered.
+
+
+[1/20] Searching CC0 BlendKit assets for "bus stop" with query "bus stop"...
+Failed query "bus stop" for bus stop: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'stop' for query 'bus stop'. Top rejected candidates: ['Rubbish Bin Store Garbage']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+
+[1/20] Searching CC0 BlendKit assets for "bus stop" with query "bus shelter"...
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'stop' for query 'bus stop'. Top rejected candidates: ['Rubbish Bin Store Garbage']. No asset was downloaded or registered.
+
+Failed query "bus shelter" for bus stop: RuntimeError: BlendKit returned 29 total results and 6 downloadable models for 'bus shelter', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 6}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 29 total results and 6 downloadable models for 'bus shelter', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 6}. MyWay will not fall back to a less permissive license.
+
+
+[1/20] Searching CC0 BlendKit assets for "cutting board" with query "cutting board"...
+Imported cutting board: cutting_board_bk_mrl8jd2u (Wooden Cutting Board)
+
+[2/20] Searching CC0 BlendKit assets for "bowling pin" with query "bowling pin"...
+
+[2/20] Searching CC0 BlendKit assets for "bowling pin" with query "white bowling pin"...
+Failed query "bowling pin" for bowling pin: RuntimeError: BlendKit returned 23 total results and 14 downloadable models for 'bowling pin', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 14}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 23 total results and 14 downloadable models for 'bowling pin', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 14}. MyWay will not fall back to a less permissive license.
+
+Failed query "white bowling pin" for bowling pin: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'pin' for query 'white bowling pin'. Top rejected candidates: ['Cabbage White Butterfly', 'Ghost', 'Black and white japanese aquarelle with wood frame', 'Double spot light', 'Street Sign (Photoscanned)']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'pin' for query 'white bowling pin'. Top rejected candidates: ['Cabbage White Butterfly', 'Ghost', 'Black and white japanese aquarelle with wood frame', 'Double spot light', 'Street Sign (Photoscanned)']. No asset was downloaded or registered.
+
+
+[2/20] Searching CC0 BlendKit assets for "pliers" with query "pliers"...
+
+[2/20] Searching CC0 BlendKit assets for "pliers" with query "hand pliers"...
+Failed query "pliers" for pliers: RuntimeError: BlendKit returned 20 total results and 5 downloadable models for 'pliers', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 5}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 20 total results and 5 downloadable models for 'pliers', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 5}. MyWay will not fall back to a less permissive license.
+
+Failed query "hand pliers" for pliers: RuntimeError: BlendKit returned 2 total results and 0 downloadable models for 'hand pliers', but none matched with license 'cc0'. Observed downloadable-model licenses: {'none': 0}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 2 total results and 0 downloadable models for 'hand pliers', but none matched with license 'cc0'. Observed downloadable-model licenses: {'none': 0}. MyWay will not fall back to a less permissive license.
+
+
+[2/20] Searching CC0 BlendKit assets for "game controller" with query "game controller"...
+Imported game controller: game_controller_bk_mrl8olry (Ps4 fat with very light scratches)
+
+[3/20] Searching CC0 BlendKit assets for "dog house" with query "dog house"...
+
+[3/20] Searching CC0 BlendKit assets for "dog house" with query "pet house"...
+Failed query "dog house" for dog house: RuntimeError: BlendKit returned 26 total results and 12 downloadable models for 'dog house', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 12}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 26 total results and 12 downloadable models for 'dog house', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 12}. MyWay will not fall back to a less permissive license.
+
+
+[3/20] Searching CC0 BlendKit assets for "dog house" with query "small kennel"...
+Failed query "pet house" for dog house: RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'pet house', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'pet house', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+
+Failed query "small kennel" for dog house: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'kennel' for query 'small kennel'. Top rejected candidates: ['Scan Small brick red wall', 'Scan Small rock ground', 'Scan Dirt small stone road', 'Scan Small rock road old', 'Scan Small rock road']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'kennel' for query 'small kennel'. Top rejected candidates: ['Scan Small brick red wall', 'Scan Small rock ground', 'Scan Dirt small stone road', 'Scan Small rock road old', 'Scan Small rock road']. No asset was downloaded or registered.
+
+
+[3/20] Searching CC0 BlendKit assets for "rolling pin" with query "rolling pin"...
+
+Failed query "rolling pin" for rolling pin: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'pin' for query 'rolling pin'. Top rejected candidates: ['Industrial Storage Cart', 'Tool Cart']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+[3/20] Searching CC0 BlendKit assets for "rolling pin" with query "wooden rolling pin"...
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'pin' for query 'rolling pin'. Top rejected candidates: ['Industrial Storage Cart', 'Tool Cart']. No asset was downloaded or registered.
+
+Failed query "wooden rolling pin" for rolling pin: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'pin' for query 'wooden rolling pin'. Top rejected candidates: ['Scan Wooden Chair', 'Folding Wooden Stool', 'Wooden Display Shelves 01', 'Modern wooden bridge', 'Wooden Crate']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'pin' for query 'wooden rolling pin'. Top rejected candidates: ['Scan Wooden Chair', 'Folding Wooden Stool', 'Wooden Display Shelves 01', 'Modern wooden bridge', 'Wooden Crate']. No asset was downloaded or registered.
+
+
+[3/20] Searching CC0 BlendKit assets for "wallet" with query "wallet"...
+
+[3/20] Searching CC0 BlendKit assets for "wallet" with query "leather wallet"...
+Failed query "wallet" for wallet: RuntimeError: BlendKit returned 18 total results and 8 downloadable models for 'wallet', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 8}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 18 total results and 8 downloadable models for 'wallet', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 8}. MyWay will not fall back to a less permissive license.
+
+Failed query "leather wallet" for wallet: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'wallet' for query 'leather wallet'. Top rejected candidates: ['Leather suite Robot', 'Noble leather hat', 'Scan Wooden Chair', 'Leather Bag', 'Blue Leather Notebook']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'wallet' for query 'leather wallet'. Top rejected candidates: ['Leather suite Robot', 'Noble leather hat', 'Scan Wooden Chair', 'Leather Bag', 'Blue Leather Notebook']. No asset was downloaded or registered.
+
+
+[3/20] Searching CC0 BlendKit assets for "hair dryer" with query "hair dryer"...
+Imported hair dryer: hair_dryer_bk_mrl8ttrh (Hair Dryer Salerm 4200)
+
+[4/20] Searching CC0 BlendKit assets for "cooking pot" with query "cooking pot"...
+Imported cooking pot: cooking_pot_bk_mrl8unu3 (Brass Pot)
+
+[5/20] Searching CC0 BlendKit assets for "umbrella" with query "umbrella"...
+Failed query "umbrella" for umbrella: RuntimeError: BlendKit returned 76 total results and 11 downloadable models for 'umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 11}. MyWay will not fall back to a less permissive license.
+
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+[5/20] Searching CC0 BlendKit assets for "umbrella" with query "rain umbrella"...
+RuntimeError: BlendKit returned 76 total results and 11 downloadable models for 'umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 11}. MyWay will not fall back to a less permissive license.
+
+Failed query "rain umbrella" for umbrella: RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'rain umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+
+[5/20] Searching CC0 BlendKit assets for "umbrella" with query "open umbrella"...
+RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'rain umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+
+Failed query "open umbrella" for umbrella: RuntimeError: BlendKit returned 5 total results and 1 downloadable models for 'open umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 5 total results and 1 downloadable models for 'open umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.
+
+
+[5/20] Searching CC0 BlendKit assets for "ambulance" with query "ambulance"...
+
+Failed query "ambulance" for ambulance: RuntimeError: BlendKit returned 25 total results and 2 downloadable models for 'ambulance', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+[5/20] Searching CC0 BlendKit assets for "ambulance" with query "emergency ambulance"...
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 25 total results and 2 downloadable models for 'ambulance', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+
+Failed query "emergency ambulance" for ambulance: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'ambulance' for query 'emergency ambulance'. Top rejected candidates: ['Korean Fire Extinguisher', 'Modular Fire Escape', 'Robot FANUC CR-35iA']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'ambulance' for query 'emergency ambulance'. Top rejected candidates: ['Korean Fire Extinguisher', 'Modular Fire Escape', 'Robot FANUC CR-35iA']. No asset was downloaded or registered.
+
+
+[5/20] Searching CC0 BlendKit assets for "microphone" with query "microphone"...
+Imported microphone: microphone_bk_mrl8wnca (Vintage Radio Transceiver)
+
+[6/20] Searching CC0 BlendKit assets for "backpack" with query "backpack"...
+Imported backpack: backpack_bk_mrl8x7xb (Leather Bag)
+
+[7/20] Searching CC0 BlendKit assets for "jump rope" with query "jump rope"...
+
+Failed query "jump rope" for jump rope: RuntimeError: BlendKit returned 1 total results and 1 downloadable models for 'jump rope', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 1 total results and 1 downloadable models for 'jump rope', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.
+
+[7/20] Searching CC0 BlendKit assets for "jump rope" with query "skipping rope"...
+Failed query "skipping rope" for jump rope: RuntimeError: BlendKit returned 1 total results and 0 downloadable models for 'skipping rope', but none matched with license 'cc0'. Observed downloadable-model licenses: {'none': 0}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 1 total results and 0 downloadable models for 'skipping rope', but none matched with license 'cc0'. Observed downloadable-model licenses: {'none': 0}. MyWay will not fall back to a less permissive license.
+
+
+[7/20] Searching CC0 BlendKit assets for "park fountain" with query "park fountain"...
+Failed query "park fountain" for park fountain: RuntimeError: BlendKit returned 65 total results and 7 downloadable models for 'park fountain', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 7}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+
+[7/20] Searching CC0 BlendKit assets for "park fountain" with query "water fountain"...
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 65 total results and 7 downloadable models for 'park fountain', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 7}. MyWay will not fall back to a less permissive license.
+
+Failed query "water fountain" for park fountain: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'fountain' for query 'water fountain'. Top rejected candidates: ['Water color decorative vases', 'Fire Hydrant (Photoscanned)', 'Red Fire Hydrant (Photoscanned)', 'Picture Frame', 'Aluminum teapot']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'fountain' for query 'water fountain'. Top rejected candidates: ['Water color decorative vases', 'Fire Hydrant (Photoscanned)', 'Red Fire Hydrant (Photoscanned)', 'Picture Frame', 'Aluminum teapot']. No asset was downloaded or registered.
+
+
+[7/20] Searching CC0 BlendKit assets for "wooden crate" with query "wooden crate"...
+Imported wooden crate: wooden_crate_bk_mrl8zkb9 (Wooden Crate)
+
+[8/20] Searching CC0 BlendKit assets for "excavator" with query "excavator"...
+
+[8/20] Searching CC0 BlendKit assets for "excavator" with query "construction excavator"...
+Failed query "excavator" for excavator: RuntimeError: BlendKit returned 16 total results and 8 downloadable models for 'excavator', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 8}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 16 total results and 8 downloadable models for 'excavator', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 8}. MyWay will not fall back to a less permissive license.
+
+Failed query "construction excavator" for excavator: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'excavator' for query 'construction excavator'. Top rejected candidates: ['Plastic chair', 'Propane Torch', 'Old Military Compressor', 'MagicBook', 'Tower']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'excavator' for query 'construction excavator'. Top rejected candidates: ['Plastic chair', 'Propane Torch', 'Old Military Compressor', 'MagicBook', 'Tower']. No asset was downloaded or registered.
+
+
+[8/20] Searching CC0 BlendKit assets for "handbag" with query "handbag"...
+Failed query "handbag" for handbag: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'handbag' for query 'handbag'. Top rejected candidates: ['Compost Bag', 'Trash Heap', 'Trash Heap', 'Cement Bag', 'Lether bag-Freepoly.org']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+
+[8/20] Searching CC0 BlendKit assets for "handbag" with query "shoulder bag"...
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'handbag' for query 'handbag'. Top rejected candidates: ['Compost Bag', 'Trash Heap', 'Trash Heap', 'Cement Bag', 'Lether bag-Freepoly.org']. No asset was downloaded or registered.
+
+Failed query "shoulder bag" for handbag: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'bag' for query 'shoulder bag'. Top rejected candidates: ['Space Marine', 'Scan The Dasheng Pagoda', 'Animated Heat Distortion Plane', 'Ic7851', 'Brown Wooden Step']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+
+[8/20] Searching CC0 BlendKit assets for "handbag" with query "purse bag"...
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'bag' for query 'shoulder bag'. Top rejected candidates: ['Space Marine', 'Scan The Dasheng Pagoda', 'Animated Heat Distortion Plane', 'Ic7851', 'Brown Wooden Step']. No asset was downloaded or registered.
+
+Imported handbag: handbag_bk_mrl97uh8 (Cement Bag)
+
+[9/20] Searching CC0 BlendKit assets for "ironing board" with query "ironing board"...
+
+[9/20] Searching CC0 BlendKit assets for "ironing board" with query "laundry ironing board"...
+Failed query "ironing board" for ironing board: RuntimeError: BlendKit returned 25 total results and 2 downloadable models for 'ironing board', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 25 total results and 2 downloadable models for 'ironing board', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+
+Failed query "laundry ironing board" for ironing board: RuntimeError: BlendKit returned 95 total results and 32 downloadable models for 'laundry ironing board', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 32}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 95 total results and 32 downloadable models for 'laundry ironing board', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 32}. MyWay will not fall back to a less permissive license.
+
+
+[9/20] Searching CC0 BlendKit assets for "train locomotive" with query "train locomotive"...
+Imported train locomotive: train_locomotive_bk_mrl996yt (Steam Locomotive)
+
+[10/20] Searching CC0 BlendKit assets for "armchair" with query "armchair"...
+Imported armchair: armchair_bk_mrl9ao6x (Calin Armchair)
+
+[11/20] Searching CC0 BlendKit assets for "scooter" with query "kick scooter"...
+Failed query "kick scooter" for scooter: RuntimeError: BlendKit returned 2 total results and 1 downloadable models for 'kick scooter', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 2 total results and 1 downloadable models for 'kick scooter', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.
+
+
+[11/20] Searching CC0 BlendKit assets for "scooter" with query "street scooter"...
+Failed query "street scooter" for scooter: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'scooter' for query 'street scooter'. Top rejected candidates: ['Street shaft', 'Scan Street wall', 'Scan street road', 'Street Stairs', 'Scan Street road']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'scooter' for query 'street scooter'. Top rejected candidates: ['Street shaft', 'Scan Street wall', 'Scan street road', 'Street Stairs', 'Scan Street road']. No asset was downloaded or registered.
+
+
+[11/20] Searching CC0 BlendKit assets for "playground slide" with query "playground slide"...
+
+Failed query "playground slide" for playground slide: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'slide' for query 'playground slide'. Top rejected candidates: ['Painted Concrete Blocks (Photoscanned)', 'Medieval festival tribune.']. No asset was downloaded or registered.
+[11/20] Searching CC0 BlendKit assets for "playground slide" with query "children slide"...
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'slide' for query 'playground slide'. Top rejected candidates: ['Painted Concrete Blocks (Photoscanned)', 'Medieval festival tribune.']. No asset was downloaded or registered.
+
+Failed query "children slide" for playground slide: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'slide' for query 'children slide'. Top rejected candidates: ['Bunny Soft Toy', "Child's Drawing On Paper 08", 'Kids Chair', 'Scan Children Toy Car', 'Die']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'slide' for query 'children slide'. Top rejected candidates: ['Bunny Soft Toy', "Child's Drawing On Paper 08", 'Kids Chair', 'Scan Children Toy Car', 'Die']. No asset was downloaded or registered.
+
+
+[11/20] Searching CC0 BlendKit assets for "frying pan" with query "frying pan"...
+
+[11/20] Searching CC0 BlendKit assets for "frying pan" with query "cooking skillet"...
+Failed query "frying pan" for frying pan: RuntimeError: BlendKit returned 42 total results and 11 downloadable models for 'frying pan', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 11}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 42 total results and 11 downloadable models for 'frying pan', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 11}. MyWay will not fall back to a less permissive license.
+
+Failed query "cooking skillet" for frying pan: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'skillet' for query 'cooking skillet'. Top rejected candidates: ['Lemon', 'Bread', 'Allium sativum', 'Allium sativum', 'Strawberry Chocolate Cake']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'skillet' for query 'cooking skillet'. Top rejected candidates: ['Lemon', 'Bread', 'Allium sativum', 'Allium sativum', 'Strawberry Chocolate Cake']. No asset was downloaded or registered.
+
+
+[11/20] Searching CC0 BlendKit assets for "picnic table" with query "picnic table"...
+
+Failed query "picnic table" for picnic table: RuntimeError: BlendKit returned 116 total results and 15 downloadable models for 'picnic table', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 15}. MyWay will not fall back to a less permissive license.
+[11/20] Searching CC0 BlendKit assets for "picnic table" with query "outdoor picnic table"...
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 116 total results and 15 downloadable models for 'picnic table', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 15}. MyWay will not fall back to a less permissive license.
+
+Imported picnic table: picnic_table_bk_mrl9f5or (Outdoor Table Chair Set 01)
+
+[12/20] Searching CC0 BlendKit assets for "baseball cap" with query "baseball cap"...
+Failed query "baseball cap" for baseball cap: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'cap' for query 'baseball cap'. Top rejected candidates: ['Baseball', 'Baseball 01']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'cap' for query 'baseball cap'. Top rejected candidates: ['Baseball', 'Baseball 01']. No asset was downloaded or registered.
+
+
+[12/20] Searching CC0 BlendKit assets for "baseball cap" with query "sports cap"...
+Failed query "sports cap" for baseball cap: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'cap' for query 'sports cap'. Top rejected candidates: ['Ferrari Dodici Cilindri', 'Ferrari Dodici Cilindri', 'Baseball', 'Dirty Football', 'Dartboard']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'cap' for query 'sports cap'. Top rejected candidates: ['Ferrari Dodici Cilindri', 'Ferrari Dodici Cilindri', 'Baseball', 'Dirty Football', 'Dartboard']. No asset was downloaded or registered.
+
+
+[12/20] Searching CC0 BlendKit assets for "screwdriver" with query "screwdriver"...
+Failed query "screwdriver" for screwdriver: Blender job exceeded 720 seconds.
+
+[12/20] Searching CC0 BlendKit assets for "screwdriver" with query "hand screwdriver"...
+Failed query "hand screwdriver" for screwdriver: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'screwdriver' for query 'hand screwdriver'. Top rejected candidates: ['Humanoid Turtle', 'Clock-Freepoly.org', 'Wall Clock']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'screwdriver' for query 'hand screwdriver'. Top rejected candidates: ['Humanoid Turtle', 'Clock-Freepoly.org', 'Wall Clock']. No asset was downloaded or registered.
+
+
+[12/20] Searching CC0 BlendKit assets for "audio speaker" with query "audio speaker"...
+Imported audio speaker: audio_speaker_bk_mrla3ta3 (Boombox)
+
+[13/20] Searching CC0 BlendKit assets for "tape measure" with query "tape measure"...
+Failed query "tape measure" for tape measure: RuntimeError: BlendKit returned 7 total results and 2 downloadable models for 'tape measure', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+
+[13/20] Searching CC0 BlendKit assets for "tape measure" with query "measuring tape"...
+RuntimeError: BlendKit returned 7 total results and 2 downloadable models for 'tape measure', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+
+Failed query "measuring tape" for tape measure: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'tape' for query 'measuring tape'. Top rejected candidates: ['Switch Box INS-0116-Freepoly.org', 'Modern coffee table', 'Wooden shelving unit furniture', 'Corner Shelf', 'IKEA bamboo corner shelf']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'tape' for query 'measuring tape'. Top rejected candidates: ['Switch Box INS-0116-Freepoly.org', 'Modern coffee table', 'Wooden shelving unit furniture', 'Corner Shelf', 'IKEA bamboo corner shelf']. No asset was downloaded or registered.
+
+
+[13/20] Searching CC0 BlendKit assets for "drinking glass" with query "drinking glass"...
+Imported drinking glass: drinking_glass_bk_mrla5fo9 (Ballantine's whiskey glass)
+
+[14/20] Searching CC0 BlendKit assets for "radio" with query "radio"...
+Imported radio: radio_bk_mrla6qbo (Military Speaker-Freepoly.org)
+
+[15/20] Searching CC0 BlendKit assets for "farm tractor" with query "farm tractor"...
+
+[15/20] Searching CC0 BlendKit assets for "farm tractor" with query "agricultural tractor"...
+Failed query "farm tractor" for farm tractor: RuntimeError: BlendKit returned 4 total results and 0 downloadable models for 'farm tractor', but none matched with license 'cc0'. Observed downloadable-model licenses: {'none': 0}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 4 total results and 0 downloadable models for 'farm tractor', but none matched with license 'cc0'. Observed downloadable-model licenses: {'none': 0}. MyWay will not fall back to a less permissive license.
+
+Failed query "agricultural tractor" for farm tractor: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'tractor' for query 'agricultural tractor'. Top rejected candidates: ['Old Farm Windmill']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'tractor' for query 'agricultural tractor'. Top rejected candidates: ['Old Farm Windmill']. No asset was downloaded or registered.
+
+
+[15/20] Searching CC0 BlendKit assets for "dumbbell" with query "dumbbell"...
+
+[15/20] Searching CC0 BlendKit assets for "dumbbell" with query "hand weight"...
+Failed query "dumbbell" for dumbbell: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'dumbbell' for query 'dumbbell'. Top rejected candidates: ['Large Stack of Old Office Documents', 'Queen Marika', 'Humanoid rigged base template']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'dumbbell' for query 'dumbbell'. Top rejected candidates: ['Large Stack of Old Office Documents', 'Queen Marika', 'Humanoid rigged base template']. No asset was downloaded or registered.
+
+Failed query "hand weight" for dumbbell: RuntimeError: BlendKit returned 89 total results and 7 downloadable models for 'hand weight', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 7}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 89 total results and 7 downloadable models for 'hand weight', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 7}. MyWay will not fall back to a less permissive license.
+
+
+[15/20] Searching CC0 BlendKit assets for "laundry basket" with query "laundry basket"...
+Failed query "laundry basket" for laundry basket: RuntimeError: BlendKit returned 98 total results and 33 downloadable models for 'laundry basket', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 33}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+
+[15/20] Searching CC0 BlendKit assets for "laundry basket" with query "clothes basket"...
+    )
+RuntimeError: BlendKit returned 98 total results and 33 downloadable models for 'laundry basket', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 33}. MyWay will not fall back to a less permissive license.
+
+Failed query "clothes basket" for laundry basket: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'basket' for query 'clothes basket'. Top rejected candidates: ['Rigged Anime Girl', 'Stacey', 'Bunny Soft Toy', 'Scan Old Building Cloth', 'Scan Dirt blue white cloth']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'basket' for query 'clothes basket'. Top rejected candidates: ['Rigged Anime Girl', 'Stacey', 'Bunny Soft Toy', 'Scan Old Building Cloth', 'Scan Dirt blue white cloth']. No asset was downloaded or registered.
+
+
+[15/20] Searching CC0 BlendKit assets for "kitchen blender" with query "kitchen blender"...
+Failed query "kitchen blender" for kitchen blender: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'blender' for query 'kitchen blender'. Top rejected candidates: ['Wooden Cutting Board', 'Cup', 'Cup', 'Cup', 'Coffee Cup']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+
+[15/20] Searching CC0 BlendKit assets for "kitchen blender" with query "food blender"...
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'blender' for query 'kitchen blender'. Top rejected candidates: ['Wooden Cutting Board', 'Cup', 'Cup', 'Cup', 'Coffee Cup']. No asset was downloaded or registered.
+
+Failed query "food blender" for kitchen blender: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'blender' for query 'food blender'. Top rejected candidates: ['Egg 04', 'Soup Jar', 'Coffee', 'Tomato 01']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'blender' for query 'food blender'. Top rejected candidates: ['Egg 04', 'Soup Jar', 'Coffee', 'Tomato 01']. No asset was downloaded or registered.
+
+
+[15/20] Searching CC0 BlendKit assets for "forklift" with query "forklift"...
+Failed query "forklift" for forklift: RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'forklift', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'forklift', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.
+
+
+[15/20] Searching CC0 BlendKit assets for "forklift" with query "warehouse forklift"...
+Failed query "warehouse forklift" for forklift: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'forklift' for query 'warehouse forklift'. Top rejected candidates: ['Plastic Crate', 'Cardboard Box', 'Modular Airduct Rectangular', 'Modular Airduct Circular', 'Barrel 02']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'forklift' for query 'warehouse forklift'. Top rejected candidates: ['Plastic Crate', 'Cardboard Box', 'Modular Airduct Rectangular', 'Modular Airduct Circular', 'Barrel 02']. No asset was downloaded or registered.
+
+
+[15/20] Searching CC0 BlendKit assets for "toothbrush" with query "toothbrush"...
+
+Failed query "toothbrush" for toothbrush: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'toothbrush' for query 'toothbrush'. Top rejected candidates: ['Sandworm (rigged)', 'Beholder', 'Abstract Canvas (GN)']. No asset was downloaded or registered.
+[15/20] Searching CC0 BlendKit assets for "toothbrush" with query "manual toothbrush"...
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'toothbrush' for query 'toothbrush'. Top rejected candidates: ['Sandworm (rigged)', 'Beholder', 'Abstract Canvas (GN)']. No asset was downloaded or registered.
+
+Failed query "manual toothbrush" for toothbrush: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'toothbrush' for query 'manual toothbrush'. Top rejected candidates: ['Debris and twigs', 'Debris and twigs', 'Debris and twigs', 'Tree bark debris', 'Tree bark debris']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'toothbrush' for query 'manual toothbrush'. Top rejected candidates: ['Debris and twigs', 'Debris and twigs', 'Debris and twigs', 'Tree bark debris', 'Tree bark debris']. No asset was downloaded or registered.
+
+
+[15/20] Searching CC0 BlendKit assets for "shower head" with query "shower head"...
+
+Failed query "shower head" for shower head: RuntimeError: BlendKit returned 222 total results and 55 downloadable models for 'shower head', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 55}. MyWay will not fall back to a less permissive license.
+[15/20] Searching CC0 BlendKit assets for "shower head" with query "bathroom showerhead"...
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 222 total results and 55 downloadable models for 'shower head', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 55}. MyWay will not fall back to a less permissive license.
+
+Failed query "bathroom showerhead" for shower head: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'showerhead' for query 'bathroom showerhead'. Top rejected candidates: ['Rubber Duck Toy', 'Bathroom Mirror', 'Miomare bathroom shelf', 'Plunger', 'Bathroom Wall Cabinet']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+
+[15/20] Searching CC0 BlendKit assets for "wooden barrel" with query "wooden barrel"...
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'showerhead' for query 'bathroom showerhead'. Top rejected candidates: ['Rubber Duck Toy', 'Bathroom Mirror', 'Miomare bathroom shelf', 'Plunger', 'Bathroom Wall Cabinet']. No asset was downloaded or registered.
+
+Imported wooden barrel: wooden_barrel_bk_mrladqjx (Wooden Barrel)
+
+[16/20] Searching CC0 BlendKit assets for "trumpet" with query "trumpet"...
+
+[16/20] Searching CC0 BlendKit assets for "trumpet" with query "brass trumpet"...
+Failed query "trumpet" for trumpet: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'trumpet' for query 'trumpet'. Top rejected candidates: ['Cow Skull decoration', 'Ram┬┤s horn']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'trumpet' for query 'trumpet'. Top rejected candidates: ['Cow Skull decoration', 'Ram┬┤s horn']. No asset was downloaded or registered.
+
+Failed query "brass trumpet" for trumpet: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'trumpet' for query 'brass trumpet'. Top rejected candidates: ['Brass Blowtorch', 'Brass Vase', 'Brass Vase', 'Brass Vase', 'Brass Pan']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'trumpet' for query 'brass trumpet'. Top rejected candidates: ['Brass Blowtorch', 'Brass Vase', 'Brass Vase', 'Brass Vase', 'Brass Pan']. No asset was downloaded or registered.
+
+
+[16/20] Searching CC0 BlendKit assets for "police car" with query "police car"...
+Imported police car: police_car_bk_mrlag8pi (M4a1 Weapon)
+
+[17/20] Searching CC0 BlendKit assets for "kitchen cabinet" with query "kitchen cabinet"...
+Imported kitchen cabinet: kitchen_cabinet_bk_mrlagqqw (Elza Curio Cabinet - Light Wood)
+
+[18/20] Searching CC0 BlendKit assets for "playground swing" with query "playground swing"...
+
+[18/20] Searching CC0 BlendKit assets for "playground swing" with query "swing set"...
+Failed query "playground swing" for playground swing: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'swing' for query 'playground swing'. Top rejected candidates: ['Painted Concrete Blocks (Photoscanned)', 'Medieval festival tribune.']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'swing' for query 'playground swing'. Top rejected candidates: ['Painted Concrete Blocks (Photoscanned)', 'Medieval festival tribune.']. No asset was downloaded or registered.
+
+Failed query "swing set" for playground swing: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'set' for query 'swing set'. Top rejected candidates: ['Cloud Breaking Blade']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'set' for query 'swing set'. Top rejected candidates: ['Cloud Breaking Blade']. No asset was downloaded or registered.
+
+
+[18/20] Searching CC0 BlendKit assets for "work boot" with query "work boot"...
+Failed query "work boot" for work boot: RuntimeError: BlendKit returned 54 total results and 4 downloadable models for 'work boot', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 4}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+
+[18/20] Searching CC0 BlendKit assets for "work boot" with query "leather boot"...
+RuntimeError: BlendKit returned 54 total results and 4 downloadable models for 'work boot', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 4}. MyWay will not fall back to a less permissive license.
+
+Failed query "leather boot" for work boot: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'boot' for query 'leather boot'. Top rejected candidates: ['Leather suite Robot', 'Leather Cleaner Can', 'Mid Century Lounge Chair', 'Binoculars', 'Noble leather hat']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'boot' for query 'leather boot'. Top rejected candidates: ['Leather suite Robot', 'Leather Cleaner Can', 'Mid Century Lounge Chair', 'Binoculars', 'Noble leather hat']. No asset was downloaded or registered.
+
+
+[18/20] Searching CC0 BlendKit assets for "stop sign" with query "stop sign"...
+Imported stop sign: stop_sign_bk_mrlajuqo (Cassette for Stationary)
+
+[19/20] Searching CC0 BlendKit assets for "volleyball" with query "volleyball"...
+Imported volleyball: volleyball_bk_mrlakkdn (Volleyball)
+
+[20/20] Searching CC0 BlendKit assets for "fire truck" with query "fire truck"...
+Failed query "fire truck" for fire truck: RuntimeError: BlendKit returned 128 total results and 13 downloadable models for 'fire truck', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 13}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+
+[20/20] Searching CC0 BlendKit assets for "fire truck" with query "fire engine vehicle"...
+RuntimeError: BlendKit returned 128 total results and 13 downloadable models for 'fire truck', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 13}. MyWay will not fall back to a less permissive license.
+
+Failed query "fire engine vehicle" for fire truck: RuntimeError: BlendKit returned 23 total results and 6 downloadable models for 'fire engine vehicle', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 6}. MyWay will not fall back to a less permissive license.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 691, in acquire_blenderkit
+    raise RuntimeError(
+    ...<5 lines>...
+    )
+RuntimeError: BlendKit returned 23 total results and 6 downloadable models for 'fire engine vehicle', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 6}. MyWay will not fall back to a less permissive license.
+
+
+[20/20] Searching CC0 BlendKit assets for "safety vest" with query "safety vest"...
+Failed query "safety vest" for safety vest: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'vest' for query 'safety vest'. Top rejected candidates: ['Wet Floor Sign 01', 'Modular Fire Escape', 'Traffic Cone', 'Safety Sand Barrel', 'Traffic Cone (Photoscanned)']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'vest' for query 'safety vest'. Top rejected candidates: ['Wet Floor Sign 01', 'Modular Fire Escape', 'Traffic Cone', 'Safety Sand Barrel', 'Traffic Cone (Photoscanned)']. No asset was downloaded or registered.
+
+
+[20/20] Searching CC0 BlendKit assets for "safety vest" with query "construction vest"...
+Failed query "construction vest" for safety vest: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'vest' for query 'construction vest'. Top rejected candidates: ['Plastic chair', 'Propane Torch', 'Old Military Compressor', 'Gravel Garbage Heap', 'Gravel Garbage Heap']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'vest' for query 'construction vest'. Top rejected candidates: ['Plastic chair', 'Propane Torch', 'Old Military Compressor', 'Gravel Garbage Heap', 'Gravel Garbage Heap']. No asset was downloaded or registered.
+
+
+[20/20] Searching CC0 BlendKit assets for "dresser" with query "bedroom dresser"...
+Failed query "bedroom dresser" for dresser: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'dresser' for query 'bedroom dresser'. Top rejected candidates: ['Painted Wooden Nightstand', 'Old Bed Frame', 'Master bed', 'Angry Egg', 'Chinese Console Table']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 878, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 838, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+
+[20/20] Searching CC0 BlendKit assets for "dresser" with query "drawer dresser"...
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'dresser' for query 'bedroom dresser'. Top rejected candidates: ['Painted Wooden Nightstand', 'Old Bed Frame', 'Master bed', 'Angry Egg', 'Chinese Console Table']. No asset was downloaded or registered.
+
+Imported dresser: dresser_bk_mrlanxrp (Rivet Kingston Modern Dresser)
+
+{
+  "ok": true,
+  "target_new_assets": 20,
+  "imported_new_assets": 20,
+  "skipped_existing_count": 64,
+  "failed_concepts": 31,
+  "catalog_size": 128,
+  "seed_text": "random-everyday-batch-5",
+  "seed": 2495441777,
+  "completed": [
+    {
+      "label": "cutting board",
+      "query": "cutting board",
+      "asset_id": "cutting_board_bk_mrl8jd2u",
+      "source_asset_id": "b41b3c20-5bd8-4632-b018-c1e62989fa0d",
+      "display_name": "Wooden Cutting Board",
+      "domain": "everyday_objects",
+      "polygon_count": 1802,
+      "file_size_bytes": 381983440,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/cutting_board_bk_mrl8jd2u.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/cutting_board_bk_mrl8jd2u.review.json"
+    },
+    {
+      "label": "game controller",
+      "query": "game controller",
+      "asset_id": "game_controller_bk_mrl8olry",
+      "source_asset_id": "d67f2300-7491-4141-870e-b67f819c13f8",
+      "display_name": "Ps4 fat with very light scratches",
+      "domain": "technology",
+      "polygon_count": 1060434,
+      "file_size_bytes": 95794108,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/game_controller_bk_mrl8olry.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/game_controller_bk_mrl8olry.review.json"
+    },
+    {
+      "label": "hair dryer",
+      "query": "hair dryer",
+      "asset_id": "hair_dryer_bk_mrl8ttrh",
+      "source_asset_id": "af73b3a4-63fb-49fb-8737-99e1df8b013c",
+      "display_name": "Hair Dryer Salerm 4200",
+      "domain": "everyday_objects",
+      "polygon_count": 18331,
+      "file_size_bytes": 3963480,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/hair_dryer_bk_mrl8ttrh.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/hair_dryer_bk_mrl8ttrh.review.json"
+    },
+    {
+      "label": "cooking pot",
+      "query": "cooking pot",
+      "asset_id": "cooking_pot_bk_mrl8unu3",
+      "source_asset_id": "3c4039d4-5db7-4be7-94a0-3e5888c57782",
+      "display_name": "Brass Pot",
+      "domain": "everyday_objects",
+      "polygon_count": 1984,
+      "file_size_bytes": 3935568,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/cooking_pot_bk_mrl8unu3.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/cooking_pot_bk_mrl8unu3.review.json"
+    },
+    {
+      "label": "microphone",
+      "query": "microphone",
+      "asset_id": "microphone_bk_mrl8wnca",
+      "source_asset_id": "8082e91c-dd4b-4b5a-b896-5f3f1d13f943",
+      "display_name": "Vintage Radio Transceiver",
+      "domain": "technology",
+      "polygon_count": 24015,
+      "file_size_bytes": 9094620,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/microphone_bk_mrl8wnca.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/microphone_bk_mrl8wnca.review.json"
+    },
+    {
+      "label": "backpack",
+      "query": "backpack",
+      "asset_id": "backpack_bk_mrl8x7xb",
+      "source_asset_id": "e56f4712-6d4b-4524-8cfa-3061c24f3834",
+      "display_name": "Leather Bag",
+      "domain": "everyday_objects",
+      "polygon_count": 6454,
+      "file_size_bytes": 14029484,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/backpack_bk_mrl8x7xb.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/backpack_bk_mrl8x7xb.review.json"
+    },
+    {
+      "label": "wooden crate",
+      "query": "wooden crate",
+      "asset_id": "wooden_crate_bk_mrl8zkb9",
+      "source_asset_id": "437445a1-9841-4fd7-8c39-6a3a5e6e5ca4",
+      "display_name": "Wooden Crate",
+      "domain": "everyday_objects",
+      "polygon_count": 2736,
+      "file_size_bytes": 343251816,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/wooden_crate_bk_mrl8zkb9.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/wooden_crate_bk_mrl8zkb9.review.json"
+    },
+    {
+      "label": "handbag",
+      "query": "purse bag",
+      "asset_id": "handbag_bk_mrl97uh8",
+      "source_asset_id": "7c51d7fa-a5f8-401b-8025-7dac93ede601",
+      "display_name": "Cement Bag",
+      "domain": "everyday_objects",
+      "polygon_count": 503,
+      "file_size_bytes": 4548020,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/handbag_bk_mrl97uh8.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/handbag_bk_mrl97uh8.review.json"
+    },
+    {
+      "label": "train locomotive",
+      "query": "train locomotive",
+      "asset_id": "train_locomotive_bk_mrl996yt",
+      "source_asset_id": "469880dd-585b-4a9d-955e-b8b593421adf",
+      "display_name": "Steam Locomotive",
+      "domain": "engineering",
+      "polygon_count": 97905,
+      "file_size_bytes": 44898968,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/train_locomotive_bk_mrl996yt.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/train_locomotive_bk_mrl996yt.review.json"
+    },
+    {
+      "label": "armchair",
+      "query": "armchair",
+      "asset_id": "armchair_bk_mrl9ao6x",
+      "source_asset_id": "36ae9327-5ad0-40f4-8df7-9cf533b049d4",
+      "display_name": "Calin Armchair",
+      "domain": "everyday_objects",
+      "polygon_count": 84776,
+      "file_size_bytes": 12887396,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/armchair_bk_mrl9ao6x.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/armchair_bk_mrl9ao6x.review.json"
+    },
+    {
+      "label": "picnic table",
+      "query": "outdoor picnic table",
+      "asset_id": "picnic_table_bk_mrl9f5or",
+      "source_asset_id": "c35fd7a7-7aa0-4940-94f4-f8eab073981f",
+      "display_name": "Outdoor Table Chair Set 01",
+      "domain": "everyday_objects",
+      "polygon_count": 5188,
+      "file_size_bytes": 2662896,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/picnic_table_bk_mrl9f5or.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/picnic_table_bk_mrl9f5or.review.json"
+    },
+    {
+      "label": "audio speaker",
+      "query": "audio speaker",
+      "asset_id": "audio_speaker_bk_mrla3ta3",
+      "source_asset_id": "e9f4b65a-1b38-40fd-891d-c6ddb9321931",
+      "display_name": "Boombox",
+      "domain": "technology",
+      "polygon_count": 8908,
+      "file_size_bytes": 8139400,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/audio_speaker_bk_mrla3ta3.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/audio_speaker_bk_mrla3ta3.review.json"
+    },
+    {
+      "label": "drinking glass",
+      "query": "drinking glass",
+      "asset_id": "drinking_glass_bk_mrla5fo9",
+      "source_asset_id": "a6541fc8-feae-4a8d-bd26-7c57eef3c834",
+      "display_name": "Ballantine's whiskey glass",
+      "domain": "everyday_objects",
+      "polygon_count": 10381,
+      "file_size_bytes": 1568396,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/drinking_glass_bk_mrla5fo9.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/drinking_glass_bk_mrla5fo9.review.json"
+    },
+    {
+      "label": "radio",
+      "query": "radio",
+      "asset_id": "radio_bk_mrla6qbo",
+      "source_asset_id": "e805cf72-fe8e-4363-9ee5-41f3aff96c45",
+      "display_name": "Military Speaker-Freepoly.org",
+      "domain": "technology",
+      "polygon_count": 6948,
+      "file_size_bytes": 898500,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/radio_bk_mrla6qbo.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/radio_bk_mrla6qbo.review.json"
+    },
+    {
+      "label": "wooden barrel",
+      "query": "wooden barrel",
+      "asset_id": "wooden_barrel_bk_mrladqjx",
+      "source_asset_id": "cf46a1d5-41f7-47b7-95eb-097a70058cc5",
+      "display_name": "Wooden Barrel",
+      "domain": "everyday_objects",
+      "polygon_count": 1220,
+      "file_size_bytes": 1989764,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/wooden_barrel_bk_mrladqjx.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/wooden_barrel_bk_mrladqjx.review.json"
+    },
+    {
+      "label": "police car",
+      "query": "police car",
+      "asset_id": "police_car_bk_mrlag8pi",
+      "source_asset_id": "e9982d49-ea63-4ec3-b4e7-476e56a78ba0",
+      "display_name": "M4a1 Weapon",
+      "domain": "civics",
+      "polygon_count": 4885,
+      "file_size_bytes": 1687500,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/police_car_bk_mrlag8pi.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/police_car_bk_mrlag8pi.review.json"
+    },
+    {
+      "label": "kitchen cabinet",
+      "query": "kitchen cabinet",
+      "asset_id": "kitchen_cabinet_bk_mrlagqqw",
+      "source_asset_id": "257c806b-aa0a-452d-85ae-75944232fc06",
+      "display_name": "Elza Curio Cabinet - Light Wood",
+      "domain": "everyday_objects",
+      "polygon_count": 16396,
+      "file_size_bytes": 3329456,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/kitchen_cabinet_bk_mrlagqqw.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/kitchen_cabinet_bk_mrlagqqw.review.json"
+    },
+    {
+      "label": "stop sign",
+      "query": "stop sign",
+      "asset_id": "stop_sign_bk_mrlajuqo",
+      "source_asset_id": "4fc3ec17-c540-4911-a30f-b4240a62a939",
+      "display_name": "Cassette for Stationary",
+      "domain": "civics",
+      "polygon_count": 488,
+      "file_size_bytes": 2962880,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/stop_sign_bk_mrlajuqo.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/stop_sign_bk_mrlajuqo.review.json"
+    },
+    {
+      "label": "volleyball",
+      "query": "volleyball",
+      "asset_id": "volleyball_bk_mrlakkdn",
+      "source_asset_id": "28a9139e-3724-472d-96d5-cb72ae443aa1",
+      "display_name": "Volleyball",
+      "domain": "physical_education",
+      "polygon_count": 15000,
+      "file_size_bytes": 1103636,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/volleyball_bk_mrlakkdn.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/volleyball_bk_mrlakkdn.review.json"
+    },
+    {
+      "label": "dresser",
+      "query": "drawer dresser",
+      "asset_id": "dresser_bk_mrlanxrp",
+      "source_asset_id": "37598187-3b03-4711-908b-e7242d37b392",
+      "display_name": "Rivet Kingston Modern Dresser",
+      "domain": "everyday_objects",
+      "polygon_count": 690790,
+      "file_size_bytes": 42107244,
+      "public_path": "/sandbox-assets/myway/models/blenderkit/dresser_bk_mrlanxrp.glb",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/dresser_bk_mrlanxrp.review.json"
+    }
+  ],
+  "failed": [
+    {
+      "label": "bulldozer",
+      "queries": [
+        "bulldozer",
+        "construction bulldozer"
+      ],
+      "errors": [
+        "[bulldozer] RuntimeError: BlendKit returned 19 total results and 3 downloadable models for 'bulldozer', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 3}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 19 total results and 3 downloadable models for 'bulldozer', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 3}. MyWay will not fall back to a less permissive license.\n",
+        "[construction bulldozer] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'bulldozer' for query 'construction bulldozer'. Top rejected candidates: ['Propane Torch', 'Old Military Compressor', 'Gravel Garbage Heap', 'Abandoned House', 'Fired brick']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'bulldozer' for query 'construction bulldozer'. Top rejected candidates: ['Propane Torch', 'Old Military Compressor', 'Gravel Garbage Heap', 'Abandoned House', 'Fired brick']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "bus stop",
+      "queries": [
+        "bus stop",
+        "bus shelter"
+      ],
+      "errors": [
+        "[bus stop] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'stop' for query 'bus stop'. Top rejected candidates: ['Rubbish Bin Store Garbage']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'stop' for query 'bus stop'. Top rejected candidates: ['Rubbish Bin Store Garbage']. No asset was downloaded or registered.\n",
+        "[bus shelter] RuntimeError: BlendKit returned 29 total results and 6 downloadable models for 'bus shelter', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 6}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 29 total results and 6 downloadable models for 'bus shelter', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 6}. MyWay will not fall back to a less permissive license.\n"
+      ]
+    },
+    {
+      "label": "bowling pin",
+      "queries": [
+        "bowling pin",
+        "white bowling pin"
+      ],
+      "errors": [
+        "[bowling pin] RuntimeError: BlendKit returned 23 total results and 14 downloadable models for 'bowling pin', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 14}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 23 total results and 14 downloadable models for 'bowling pin', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 14}. MyWay will not fall back to a less permissive license.\n",
+        "[white bowling pin] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'pin' for query 'white bowling pin'. Top rejected candidates: ['Cabbage White Butterfly', 'Ghost', 'Black and white japanese aquarelle with wood frame', 'Double spot light', 'Street Sign (Photoscanned)']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'pin' for query 'white bowling pin'. Top rejected candidates: ['Cabbage White Butterfly', 'Ghost', 'Black and white japanese aquarelle with wood frame', 'Double spot light', 'Street Sign (Photoscanned)']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "pliers",
+      "queries": [
+        "pliers",
+        "hand pliers"
+      ],
+      "errors": [
+        "[pliers] RuntimeError: BlendKit returned 20 total results and 5 downloadable models for 'pliers', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 5}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 20 total results and 5 downloadable models for 'pliers', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 5}. MyWay will not fall back to a less permissive license.\n",
+        "[hand pliers] RuntimeError: BlendKit returned 2 total results and 0 downloadable models for 'hand pliers', but none matched with license 'cc0'. Observed downloadable-model licenses: {'none': 0}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 2 total results and 0 downloadable models for 'hand pliers', but none matched with license 'cc0'. Observed downloadable-model licenses: {'none': 0}. MyWay will not fall back to a less permissive license.\n"
+      ]
+    },
+    {
+      "label": "dog house",
+      "queries": [
+        "dog house",
+        "pet house",
+        "small kennel"
+      ],
+      "errors": [
+        "[dog house] RuntimeError: BlendKit returned 26 total results and 12 downloadable models for 'dog house', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 12}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 26 total results and 12 downloadable models for 'dog house', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 12}. MyWay will not fall back to a less permissive license.\n",
+        "[pet house] RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'pet house', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'pet house', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\n",
+        "[small kennel] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'kennel' for query 'small kennel'. Top rejected candidates: ['Scan Small brick red wall', 'Scan Small rock ground', 'Scan Dirt small stone road', 'Scan Small rock road old', 'Scan Small rock road']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'kennel' for query 'small kennel'. Top rejected candidates: ['Scan Small brick red wall', 'Scan Small rock ground', 'Scan Dirt small stone road', 'Scan Small rock road old', 'Scan Small rock road']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "rolling pin",
+      "queries": [
+        "rolling pin",
+        "wooden rolling pin"
+      ],
+      "errors": [
+        "[rolling pin] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'pin' for query 'rolling pin'. Top rejected candidates: ['Industrial Storage Cart', 'Tool Cart']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'pin' for query 'rolling pin'. Top rejected candidates: ['Industrial Storage Cart', 'Tool Cart']. No asset was downloaded or registered.\n",
+        "[wooden rolling pin] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'pin' for query 'wooden rolling pin'. Top rejected candidates: ['Scan Wooden Chair', 'Folding Wooden Stool', 'Wooden Display Shelves 01', 'Modern wooden bridge', 'Wooden Crate']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'pin' for query 'wooden rolling pin'. Top rejected candidates: ['Scan Wooden Chair', 'Folding Wooden Stool', 'Wooden Display Shelves 01', 'Modern wooden bridge', 'Wooden Crate']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "wallet",
+      "queries": [
+        "wallet",
+        "leather wallet"
+      ],
+      "errors": [
+        "[wallet] RuntimeError: BlendKit returned 18 total results and 8 downloadable models for 'wallet', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 8}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 18 total results and 8 downloadable models for 'wallet', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 8}. MyWay will not fall back to a less permissive license.\n",
+        "[leather wallet] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'wallet' for query 'leather wallet'. Top rejected candidates: ['Leather suite Robot', 'Noble leather hat', 'Scan Wooden Chair', 'Leather Bag', 'Blue Leather Notebook']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'wallet' for query 'leather wallet'. Top rejected candidates: ['Leather suite Robot', 'Noble leather hat', 'Scan Wooden Chair', 'Leather Bag', 'Blue Leather Notebook']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "umbrella",
+      "queries": [
+        "umbrella",
+        "rain umbrella",
+        "open umbrella"
+      ],
+      "errors": [
+        "[umbrella] RuntimeError: BlendKit returned 76 total results and 11 downloadable models for 'umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 11}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 76 total results and 11 downloadable models for 'umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 11}. MyWay will not fall back to a less permissive license.\n",
+        "[rain umbrella] RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'rain umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'rain umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\n",
+        "[open umbrella] RuntimeError: BlendKit returned 5 total results and 1 downloadable models for 'open umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 5 total results and 1 downloadable models for 'open umbrella', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.\n"
+      ]
+    },
+    {
+      "label": "ambulance",
+      "queries": [
+        "ambulance",
+        "emergency ambulance"
+      ],
+      "errors": [
+        "[ambulance] RuntimeError: BlendKit returned 25 total results and 2 downloadable models for 'ambulance', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 25 total results and 2 downloadable models for 'ambulance', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\n",
+        "[emergency ambulance] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'ambulance' for query 'emergency ambulance'. Top rejected candidates: ['Korean Fire Extinguisher', 'Modular Fire Escape', 'Robot FANUC CR-35iA']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'ambulance' for query 'emergency ambulance'. Top rejected candidates: ['Korean Fire Extinguisher', 'Modular Fire Escape', 'Robot FANUC CR-35iA']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "jump rope",
+      "queries": [
+        "jump rope",
+        "skipping rope"
+      ],
+      "errors": [
+        "[jump rope] RuntimeError: BlendKit returned 1 total results and 1 downloadable models for 'jump rope', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 1 total results and 1 downloadable models for 'jump rope', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.\n",
+        "[skipping rope] RuntimeError: BlendKit returned 1 total results and 0 downloadable models for 'skipping rope', but none matched with license 'cc0'. Observed downloadable-model licenses: {'none': 0}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 1 total results and 0 downloadable models for 'skipping rope', but none matched with license 'cc0'. Observed downloadable-model licenses: {'none': 0}. MyWay will not fall back to a less permissive license.\n"
+      ]
+    },
+    {
+      "label": "park fountain",
+      "queries": [
+        "park fountain",
+        "water fountain"
+      ],
+      "errors": [
+        "[park fountain] RuntimeError: BlendKit returned 65 total results and 7 downloadable models for 'park fountain', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 7}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 65 total results and 7 downloadable models for 'park fountain', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 7}. MyWay will not fall back to a less permissive license.\n",
+        "[water fountain] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'fountain' for query 'water fountain'. Top rejected candidates: ['Water color decorative vases', 'Fire Hydrant (Photoscanned)', 'Red Fire Hydrant (Photoscanned)', 'Picture Frame', 'Aluminum teapot']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'fountain' for query 'water fountain'. Top rejected candidates: ['Water color decorative vases', 'Fire Hydrant (Photoscanned)', 'Red Fire Hydrant (Photoscanned)', 'Picture Frame', 'Aluminum teapot']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "excavator",
+      "queries": [
+        "excavator",
+        "construction excavator"
+      ],
+      "errors": [
+        "[excavator] RuntimeError: BlendKit returned 16 total results and 8 downloadable models for 'excavator', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 8}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 16 total results and 8 downloadable models for 'excavator', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 8}. MyWay will not fall back to a less permissive license.\n",
+        "[construction excavator] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'excavator' for query 'construction excavator'. Top rejected candidates: ['Plastic chair', 'Propane Torch', 'Old Military Compressor', 'MagicBook', 'Tower']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'excavator' for query 'construction excavator'. Top rejected candidates: ['Plastic chair', 'Propane Torch', 'Old Military Compressor', 'MagicBook', 'Tower']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "ironing board",
+      "queries": [
+        "ironing board",
+        "laundry ironing board"
+      ],
+      "errors": [
+        "[ironing board] RuntimeError: BlendKit returned 25 total results and 2 downloadable models for 'ironing board', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 25 total results and 2 downloadable models for 'ironing board', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\n",
+        "[laundry ironing board] RuntimeError: BlendKit returned 95 total results and 32 downloadable models for 'laundry ironing board', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 32}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 95 total results and 32 downloadable models for 'laundry ironing board', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 32}. MyWay will not fall back to a less permissive license.\n"
+      ]
+    },
+    {
+      "label": "scooter",
+      "queries": [
+        "kick scooter",
+        "street scooter"
+      ],
+      "errors": [
+        "[kick scooter] RuntimeError: BlendKit returned 2 total results and 1 downloadable models for 'kick scooter', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 2 total results and 1 downloadable models for 'kick scooter', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 1}. MyWay will not fall back to a less permissive license.\n",
+        "[street scooter] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'scooter' for query 'street scooter'. Top rejected candidates: ['Street shaft', 'Scan Street wall', 'Scan street road', 'Street Stairs', 'Scan Street road']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'scooter' for query 'street scooter'. Top rejected candidates: ['Street shaft', 'Scan Street wall', 'Scan street road', 'Street Stairs', 'Scan Street road']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "playground slide",
+      "queries": [
+        "playground slide",
+        "children slide"
+      ],
+      "errors": [
+        "[playground slide] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'slide' for query 'playground slide'. Top rejected candidates: ['Painted Concrete Blocks (Photoscanned)', 'Medieval festival tribune.']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'slide' for query 'playground slide'. Top rejected candidates: ['Painted Concrete Blocks (Photoscanned)', 'Medieval festival tribune.']. No asset was downloaded or registered.\n",
+        "[children slide] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'slide' for query 'children slide'. Top rejected candidates: ['Bunny Soft Toy', \"Child's Drawing On Paper 08\", 'Kids Chair', 'Scan Children Toy Car', 'Die']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'slide' for query 'children slide'. Top rejected candidates: ['Bunny Soft Toy', \"Child's Drawing On Paper 08\", 'Kids Chair', 'Scan Children Toy Car', 'Die']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "frying pan",
+      "queries": [
+        "frying pan",
+        "cooking skillet"
+      ],
+      "errors": [
+        "[frying pan] RuntimeError: BlendKit returned 42 total results and 11 downloadable models for 'frying pan', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 11}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 42 total results and 11 downloadable models for 'frying pan', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 11}. MyWay will not fall back to a less permissive license.\n",
+        "[cooking skillet] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'skillet' for query 'cooking skillet'. Top rejected candidates: ['Lemon', 'Bread', 'Allium sativum', 'Allium sativum', 'Strawberry Chocolate Cake']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'skillet' for query 'cooking skillet'. Top rejected candidates: ['Lemon', 'Bread', 'Allium sativum', 'Allium sativum', 'Strawberry Chocolate Cake']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "baseball cap",
+      "queries": [
+        "baseball cap",
+        "sports cap"
+      ],
+      "errors": [
+        "[baseball cap] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'cap' for query 'baseball cap'. Top rejected candidates: ['Baseball', 'Baseball 01']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'cap' for query 'baseball cap'. Top rejected candidates: ['Baseball', 'Baseball 01']. No asset was downloaded or registered.\n",
+        "[sports cap] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'cap' for query 'sports cap'. Top rejected candidates: ['Ferrari Dodici Cilindri', 'Ferrari Dodici Cilindri', 'Baseball', 'Dirty Football', 'Dartboard']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'cap' for query 'sports cap'. Top rejected candidates: ['Ferrari Dodici Cilindri', 'Ferrari Dodici Cilindri', 'Baseball', 'Dirty Football', 'Dartboard']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "screwdriver",
+      "queries": [
+        "screwdriver",
+        "hand screwdriver"
+      ],
+      "errors": [
+        "[screwdriver] Blender job exceeded 720 seconds.",
+        "[hand screwdriver] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'screwdriver' for query 'hand screwdriver'. Top rejected candidates: ['Humanoid Turtle', 'Clock-Freepoly.org', 'Wall Clock']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'screwdriver' for query 'hand screwdriver'. Top rejected candidates: ['Humanoid Turtle', 'Clock-Freepoly.org', 'Wall Clock']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "tape measure",
+      "queries": [
+        "tape measure",
+        "measuring tape"
+      ],
+      "errors": [
+        "[tape measure] RuntimeError: BlendKit returned 7 total results and 2 downloadable models for 'tape measure', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 7 total results and 2 downloadable models for 'tape measure', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\n",
+        "[measuring tape] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'tape' for query 'measuring tape'. Top rejected candidates: ['Switch Box INS-0116-Freepoly.org', 'Modern coffee table', 'Wooden shelving unit furniture', 'Corner Shelf', 'IKEA bamboo corner shelf']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'tape' for query 'measuring tape'. Top rejected candidates: ['Switch Box INS-0116-Freepoly.org', 'Modern coffee table', 'Wooden shelving unit furniture', 'Corner Shelf', 'IKEA bamboo corner shelf']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "farm tractor",
+      "queries": [
+        "farm tractor",
+        "agricultural tractor"
+      ],
+      "errors": [
+        "[farm tractor] RuntimeError: BlendKit returned 4 total results and 0 downloadable models for 'farm tractor', but none matched with license 'cc0'. Observed downloadable-model licenses: {'none': 0}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 4 total results and 0 downloadable models for 'farm tractor', but none matched with license 'cc0'. Observed downloadable-model licenses: {'none': 0}. MyWay will not fall back to a less permissive license.\n",
+        "[agricultural tractor] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'tractor' for query 'agricultural tractor'. Top rejected candidates: ['Old Farm Windmill']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'tractor' for query 'agricultural tractor'. Top rejected candidates: ['Old Farm Windmill']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "dumbbell",
+      "queries": [
+        "dumbbell",
+        "hand weight"
+      ],
+      "errors": [
+        "[dumbbell] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'dumbbell' for query 'dumbbell'. Top rejected candidates: ['Large Stack of Old Office Documents', 'Queen Marika', 'Humanoid rigged base template']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'dumbbell' for query 'dumbbell'. Top rejected candidates: ['Large Stack of Old Office Documents', 'Queen Marika', 'Humanoid rigged base template']. No asset was downloaded or registered.\n",
+        "[hand weight] RuntimeError: BlendKit returned 89 total results and 7 downloadable models for 'hand weight', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 7}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 89 total results and 7 downloadable models for 'hand weight', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 7}. MyWay will not fall back to a less permissive license.\n"
+      ]
+    },
+    {
+      "label": "laundry basket",
+      "queries": [
+        "laundry basket",
+        "clothes basket"
+      ],
+      "errors": [
+        "[laundry basket] RuntimeError: BlendKit returned 98 total results and 33 downloadable models for 'laundry basket', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 33}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 98 total results and 33 downloadable models for 'laundry basket', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 33}. MyWay will not fall back to a less permissive license.\n",
+        "[clothes basket] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'basket' for query 'clothes basket'. Top rejected candidates: ['Rigged Anime Girl', 'Stacey', 'Bunny Soft Toy', 'Scan Old Building Cloth', 'Scan Dirt blue white cloth']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'basket' for query 'clothes basket'. Top rejected candidates: ['Rigged Anime Girl', 'Stacey', 'Bunny Soft Toy', 'Scan Old Building Cloth', 'Scan Dirt blue white cloth']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "kitchen blender",
+      "queries": [
+        "kitchen blender",
+        "food blender"
+      ],
+      "errors": [
+        "[kitchen blender] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'blender' for query 'kitchen blender'. Top rejected candidates: ['Wooden Cutting Board', 'Cup', 'Cup', 'Cup', 'Coffee Cup']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'blender' for query 'kitchen blender'. Top rejected candidates: ['Wooden Cutting Board', 'Cup', 'Cup', 'Cup', 'Coffee Cup']. No asset was downloaded or registered.\n",
+        "[food blender] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'blender' for query 'food blender'. Top rejected candidates: ['Egg 04', 'Soup Jar', 'Coffee', 'Tomato 01']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'blender' for query 'food blender'. Top rejected candidates: ['Egg 04', 'Soup Jar', 'Coffee', 'Tomato 01']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "forklift",
+      "queries": [
+        "forklift",
+        "warehouse forklift"
+      ],
+      "errors": [
+        "[forklift] RuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'forklift', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 8 total results and 2 downloadable models for 'forklift', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 2}. MyWay will not fall back to a less permissive license.\n",
+        "[warehouse forklift] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'forklift' for query 'warehouse forklift'. Top rejected candidates: ['Plastic Crate', 'Cardboard Box', 'Modular Airduct Rectangular', 'Modular Airduct Circular', 'Barrel 02']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'forklift' for query 'warehouse forklift'. Top rejected candidates: ['Plastic Crate', 'Cardboard Box', 'Modular Airduct Rectangular', 'Modular Airduct Circular', 'Barrel 02']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "toothbrush",
+      "queries": [
+        "toothbrush",
+        "manual toothbrush"
+      ],
+      "errors": [
+        "[toothbrush] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'toothbrush' for query 'toothbrush'. Top rejected candidates: ['Sandworm (rigged)', 'Beholder', 'Abstract Canvas (GN)']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'toothbrush' for query 'toothbrush'. Top rejected candidates: ['Sandworm (rigged)', 'Beholder', 'Abstract Canvas (GN)']. No asset was downloaded or registered.\n",
+        "[manual toothbrush] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'toothbrush' for query 'manual toothbrush'. Top rejected candidates: ['Debris and twigs', 'Debris and twigs', 'Debris and twigs', 'Tree bark debris', 'Tree bark debris']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'toothbrush' for query 'manual toothbrush'. Top rejected candidates: ['Debris and twigs', 'Debris and twigs', 'Debris and twigs', 'Tree bark debris', 'Tree bark debris']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "shower head",
+      "queries": [
+        "shower head",
+        "bathroom showerhead"
+      ],
+      "errors": [
+        "[shower head] RuntimeError: BlendKit returned 222 total results and 55 downloadable models for 'shower head', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 55}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 222 total results and 55 downloadable models for 'shower head', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 55}. MyWay will not fall back to a less permissive license.\n",
+        "[bathroom showerhead] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'showerhead' for query 'bathroom showerhead'. Top rejected candidates: ['Rubber Duck Toy', 'Bathroom Mirror', 'Miomare bathroom shelf', 'Plunger', 'Bathroom Wall Cabinet']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'showerhead' for query 'bathroom showerhead'. Top rejected candidates: ['Rubber Duck Toy', 'Bathroom Mirror', 'Miomare bathroom shelf', 'Plunger', 'Bathroom Wall Cabinet']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "trumpet",
+      "queries": [
+        "trumpet",
+        "brass trumpet"
+      ],
+      "errors": [
+        "[trumpet] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'trumpet' for query 'trumpet'. Top rejected candidates: ['Cow Skull decoration', 'Ram┬┤s horn']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'trumpet' for query 'trumpet'. Top rejected candidates: ['Cow Skull decoration', 'Ram┬┤s horn']. No asset was downloaded or registered.\n",
+        "[brass trumpet] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'trumpet' for query 'brass trumpet'. Top rejected candidates: ['Brass Blowtorch', 'Brass Vase', 'Brass Vase', 'Brass Vase', 'Brass Pan']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'trumpet' for query 'brass trumpet'. Top rejected candidates: ['Brass Blowtorch', 'Brass Vase', 'Brass Vase', 'Brass Vase', 'Brass Pan']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "playground swing",
+      "queries": [
+        "playground swing",
+        "swing set"
+      ],
+      "errors": [
+        "[playground swing] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'swing' for query 'playground swing'. Top rejected candidates: ['Painted Concrete Blocks (Photoscanned)', 'Medieval festival tribune.']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'swing' for query 'playground swing'. Top rejected candidates: ['Painted Concrete Blocks (Photoscanned)', 'Medieval festival tribune.']. No asset was downloaded or registered.\n",
+        "[swing set] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'set' for query 'swing set'. Top rejected candidates: ['Cloud Breaking Blade']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'set' for query 'swing set'. Top rejected candidates: ['Cloud Breaking Blade']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "work boot",
+      "queries": [
+        "work boot",
+        "leather boot"
+      ],
+      "errors": [
+        "[work boot] RuntimeError: BlendKit returned 54 total results and 4 downloadable models for 'work boot', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 4}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 54 total results and 4 downloadable models for 'work boot', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 4}. MyWay will not fall back to a less permissive license.\n",
+        "[leather boot] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'boot' for query 'leather boot'. Top rejected candidates: ['Leather suite Robot', 'Leather Cleaner Can', 'Mid Century Lounge Chair', 'Binoculars', 'Noble leather hat']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'boot' for query 'leather boot'. Top rejected candidates: ['Leather suite Robot', 'Leather Cleaner Can', 'Mid Century Lounge Chair', 'Binoculars', 'Noble leather hat']. No asset was downloaded or registered.\n"
+      ]
+    },
+    {
+      "label": "fire truck",
+      "queries": [
+        "fire truck",
+        "fire engine vehicle"
+      ],
+      "errors": [
+        "[fire truck] RuntimeError: BlendKit returned 128 total results and 13 downloadable models for 'fire truck', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 13}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 128 total results and 13 downloadable models for 'fire truck', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 13}. MyWay will not fall back to a less permissive license.\n",
+        "[fire engine vehicle] RuntimeError: BlendKit returned 23 total results and 6 downloadable models for 'fire engine vehicle', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 6}. MyWay will not fall back to a less permissive license.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 691, in acquire_blenderkit\n    raise RuntimeError(\n    ...<5 lines>...\n    )\nRuntimeError: BlendKit returned 23 total results and 6 downloadable models for 'fire engine vehicle', but none matched with license 'cc0'. Observed downloadable-model licenses: {'royalty_free': 6}. MyWay will not fall back to a less permissive license.\n"
+      ]
+    },
+    {
+      "label": "safety vest",
+      "queries": [
+        "safety vest",
+        "construction vest"
+      ],
+      "errors": [
+        "[safety vest] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'vest' for query 'safety vest'. Top rejected candidates: ['Wet Floor Sign 01', 'Modular Fire Escape', 'Traffic Cone', 'Safety Sand Barrel', 'Traffic Cone (Photoscanned)']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'vest' for query 'safety vest'. Top rejected candidates: ['Wet Floor Sign 01', 'Modular Fire Escape', 'Traffic Cone', 'Safety Sand Barrel', 'Traffic Cone (Photoscanned)']. No asset was downloaded or registered.\n",
+        "[construction vest] RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'vest' for query 'construction vest'. Top rejected candidates: ['Plastic chair', 'Propane Torch', 'Old Military Compressor', 'Gravel Garbage Heap', 'Gravel Garbage Heap']. No asset was downloaded or registered.\nTraceback (most recent call last):\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 878, in main\n    result = execute(job)\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 838, in execute\n    blend_path, source_metadata = acquire_blenderkit(\n                                  ~~~~~~~~~~~~~~~~~~^\n        job[\"query\"],\n        ^^^^^^^^^^^^^\n    ...<4 lines>...\n        temp_dir,\n        ^^^^^^^^^\n    )\n    ^\n  File \"C:\\Users\\willc\\projects\\MyWay\\v1\\sandbox\\probe-lab\\assets\\blender\\scripts\\myway-blender-bridge.py\", line 719, in acquire_blenderkit\n    raise RuntimeError(\n    ...<4 lines>...\n    )\nRuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'vest' for query 'construction vest'. Top rejected candidates: ['Plastic chair', 'Propane Torch', 'Old Military Compressor', 'Gravel Garbage Heap', 'Gravel Garbage Heap']. No asset was downloaded or registered.\n"
+      ]
+    }
+  ],
+  "state_file": "sandbox/probe-lab/assets/debug/bootstrap-20-random-cc0-assets-state.json",
+  "next": "Review the local assets at http://localhost:3000/sandbox/probe-lab/asset-library. Upload only approved models to Cloudflare R2.",
+  "target_policy": "Failed, irrelevant, duplicate, or non-CC0 results do not count. The script continues through the expanded catalog until the requested success count is reached.",
+  "resumable": "Stop with Ctrl+C and run the same command again. Existing CC0 concepts and source IDs are skipped."
+}

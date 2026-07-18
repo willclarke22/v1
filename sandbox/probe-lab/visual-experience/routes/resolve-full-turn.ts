@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { resolveVisualLearningTurn } from "../resolve-visual-learning-turn";
+import { attachApprovedAssetsToVisualTurn } from "../resolve-visual-learning-turn-assets.server";
 import {
   buildVisualLearningTurnInput,
   buildVisualLearningTurnScaffoldOutput,
@@ -10,7 +11,11 @@ import {
 export async function GET() {
   const input = buildVisualLearningTurnInput({ example: "krebs" });
   const output = buildVisualLearningTurnScaffoldOutput(input, { example: "krebs" });
-  const resolved = resolveVisualLearningTurn(output, input);
+  const resolved =
+    await attachApprovedAssetsToVisualTurn(
+      resolveVisualLearningTurn(output, input),
+      output,
+    );
 
   return NextResponse.json({
     ok: true,
@@ -26,7 +31,11 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as VisualLearningTurnRequestBody;
     const input = buildVisualLearningTurnInput(body);
     const output = buildVisualLearningTurnScaffoldOutput(input, body);
-    const resolved = resolveVisualLearningTurn(output, input);
+    const resolved =
+      await attachApprovedAssetsToVisualTurn(
+        resolveVisualLearningTurn(output, input),
+        output,
+      );
 
     return NextResponse.json({
       ok: true,

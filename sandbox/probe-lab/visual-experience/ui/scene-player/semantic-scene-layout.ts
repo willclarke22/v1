@@ -15,6 +15,17 @@ export type PreparedSemanticSceneEntity = SemanticSceneEntity & {
   scale: Vec3;
   render_kind: PrimitiveRenderKind;
   render_role: string;
+  resolved_asset?: {
+    asset_id: string;
+    public_path: string;
+    source_type: string;
+    scene_review_status: "pending" | "approved" | "rejected";
+    dimensions_m: Vec3;
+    default_scale: number;
+    default_rotation: Vec3;
+    ground_offset_m: number;
+    match_score?: number | null;
+  } | null;
   unit_count: number;
   is_active: boolean;
   is_action_target: boolean;
@@ -75,6 +86,15 @@ type RenderBindingRecord = {
     kind?: unknown;
     primitive?: unknown;
     label?: unknown;
+    asset_id?: unknown;
+    public_path?: unknown;
+    source_type?: unknown;
+    scene_review_status?: unknown;
+    dimensions_m?: unknown;
+    default_scale?: unknown;
+    default_rotation?: unknown;
+    ground_offset_m?: unknown;
+    match_score?: unknown;
   } | null;
 };
 
@@ -111,7 +131,51 @@ function tuple3(value: unknown): Vec3 | null {
   return Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z) ? [x, y, z] : null;
 }
 
+function resolvedAssetFromBinding(
+  binding?: RenderBindingRecord | null,
+): PreparedSemanticSceneEntity["resolved_asset"] {
+  const source = binding?.binding;
+  if (
+    source?.kind !== "registered_asset" ||
+    typeof source.asset_id !== "string" ||
+    typeof source.public_path !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    asset_id: source.asset_id,
+    public_path: source.public_path,
+    source_type: text(source.source_type, "manual"),
+    scene_review_status:
+      source.scene_review_status === "approved" ||
+      source.scene_review_status === "rejected"
+        ? source.scene_review_status
+        : "pending",
+    dimensions_m:
+      tuple3(source.dimensions_m) ?? [1, 1, 1],
+    default_scale:
+      Number.isFinite(Number(source.default_scale))
+        ? Number(source.default_scale)
+        : 1,
+    default_rotation:
+      tuple3(source.default_rotation) ?? [0, 0, 0],
+    ground_offset_m:
+      Number.isFinite(Number(source.ground_offset_m))
+        ? Number(source.ground_offset_m)
+        : 0,
+    match_score:
+      Number.isFinite(Number(source.match_score))
+        ? Number(source.match_score)
+        : null,
+  };
+}
+
 function getPreferredRenderKind(entity: SemanticSceneEntity, binding?: RenderBindingRecord | null): PrimitiveRenderKind {
+  if (binding?.binding?.kind === "registered_asset") {
+    return "registered_asset";
+  }
+
   const primitive = text(binding?.binding?.primitive, "");
   if (primitive) return primitive as PrimitiveRenderKind;
 
@@ -513,8 +577,12 @@ export function prepareSemanticSceneFromTurnResult(input: {
       ...entity,
       position: geometry?.position ?? [0, 0, 0],
       scale: geometry?.scale ?? [0.72, 0.72, 0.72],
-      render_kind: geometry?.render_kind ?? getPreferredRenderKind(entity, binding),
+      render_kind:
+        binding?.binding?.kind === "registered_asset"
+          ? "registered_asset"
+          : geometry?.render_kind ?? getPreferredRenderKind(entity, binding),
       render_role: geometry?.render_role ?? "generic_body",
+      resolved_asset: resolvedAssetFromBinding(binding),
       unit_count: inferUnitCount(entity),
       is_active: isActive,
       is_action_target: actionTargetIds.has(entity.id),

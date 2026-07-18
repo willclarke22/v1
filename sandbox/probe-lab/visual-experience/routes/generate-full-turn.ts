@@ -11,6 +11,7 @@ import { parseJsonObjectFromText } from "../json-extract";
 import { callVisualLearningTurnModel, getVisualLearningTurnProvider, getVisualLearningTurnProviderStatus } from "../model-provider.server";
 import { normalizeVisualLearningTurnOutput } from "../normalize-visual-learning-turn-output";
 import { resolveVisualLearningTurn } from "../resolve-visual-learning-turn";
+import { attachApprovedAssetsToVisualTurn } from "../resolve-visual-learning-turn-assets.server";
 import { validateVisualLearningTurnOutput } from "../validate-visual-learning-turn";
 import { isVisualLearningSemanticDraftLike } from "../visual-learning-semantic-draft";
 import type { VisualLearningTurnOutput, VisualLearningTurnValidationReport } from "../visual-learning-turn";
@@ -273,6 +274,12 @@ export async function POST(request: Request) {
       finalOutput = scaffoldOutput;
       finalResolved = resolveVisualLearningTurn(scaffoldOutput, input);
     }
+
+    finalResolved =
+      await attachApprovedAssetsToVisualTurn(
+        finalResolved,
+        finalOutput,
+      );
 
     const diagnostics = {
       semantic_draft_boundary: true,

@@ -1,11 +1,7 @@
-# Visual asset license records
+# MyWay asset license reviews
 
-Put one JSON file per asset here.
+Each public runtime asset requires an explicit JSON review.
 
-Recommended file name:
+BlendKit intake is restricted to exact CC0 results. Royalty Free assets are blocked from standalone public GLB distribution.
 
-```txt
-<asset_id>.json
-```
-
-Keep sandbox assets marked as `sandbox_only` or `needs_review` until the source and license are recorded clearly.
+TRELLIS outputs remain sandbox-only until production-use and public-distribution terms are independently confirmed.

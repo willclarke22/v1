@@ -126,6 +126,21 @@ export async function acquireFromTrellis(input: {
     style_tags: input.styleTags ?? [],
     asset_type: "glb",
     domain: input.domain ?? "generic",
+    requested_concept: input.concept,
+    source_display_name: input.concept,
+    verified_canonical_label: null,
+    verified_aliases: [],
+    semantic_review_status: "pending",
+    semantic_reviewed_at: null,
+    semantic_review_notes: null,
+    object_composition: "single_object",
+    contains: [],
+    affordances: [],
+    support_surfaces:
+      result.geometry_profile?.support_surfaces ?? [],
+    geometry_profile:
+      result.geometry_profile ?? null,
+    preferred_for_concepts: [],
     source_type: "trellis",
     source_asset_id: null,
     source_prompt: generated.prompt,
@@ -138,7 +153,13 @@ export async function acquireFromTrellis(input: {
     thumbnail_path:
       `/sandbox-assets/myway/thumbnails/${assetId}.png`,
     license_record_path: null,
-    dimensions_m: result.dimensions_m,
+    dimensions_m:
+      result.geometry_profile?.local_bounds.size ??
+      [
+        result.dimensions_m[0],
+        result.dimensions_m[2],
+        result.dimensions_m[1],
+      ],
     default_scale: 1,
     default_rotation: [0, 0, 0],
     ground_offset_m: 0,
@@ -166,3 +187,5 @@ export async function acquireFromTrellis(input: {
 
   return registerMyWayAsset(record);
 }
+
+

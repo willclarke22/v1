@@ -17,6 +17,8 @@ type AssetFileStats = {
   exists: boolean;
   file_size_bytes: number | null;
   project_relative_path: string | null;
+  storage_provider?: "local" | "r2";
+  remote_url?: string | null;
 };
 
 type LibraryAsset = {
@@ -28,6 +30,49 @@ type LibraryAsset = {
   style_tags: string[];
   asset_type: "glb" | "gltf" | "primitive";
   domain: string;
+  requested_concept?: string | null;
+  source_display_name?: string | null;
+  verified_canonical_label?: string | null;
+  verified_aliases?: string[];
+  semantic_review_status:
+    | "pending"
+    | "verified"
+    | "mismatch"
+    | "rejected";
+  semantic_reviewed_at?: string | null;
+  semantic_review_notes?: string | null;
+  object_composition:
+    | "single_object"
+    | "object_set"
+    | "environment_piece"
+    | "unknown";
+  contains?: string[];
+  affordances?: string[];
+  support_surfaces?: Array<{
+    id: string;
+    label: string;
+    center: Vec3;
+    normal: Vec3;
+    u_axis: Vec3;
+    v_axis: Vec3;
+    size: [number, number];
+    area: number;
+    confidence: number;
+    source:
+      | "blender_geometry"
+      | "runtime_geometry"
+      | "manual"
+      | "legacy_ratio";
+    height_ratio?: number;
+    footprint_ratio?: [number, number];
+  }>;
+  geometry_profile?: {
+    schema_version: "myway_asset_geometry_profile_v1";
+    generator: string;
+    generated_at: string;
+    support_surfaces: unknown[];
+  } | null;
+  preferred_for_concepts?: string[];
   source_type: "blenderkit" | "trellis" | "manual" | "procedural";
   source_asset_id?: string | null;
   source_prompt?: string | null;
@@ -36,6 +81,13 @@ type LibraryAsset = {
   public_path: string;
   thumbnail_path?: string | null;
   license_record_path?: string | null;
+  storage_provider?: "local" | "r2";
+  storage_object_key?: string | null;
+  storage_etag?: string | null;
+  file_size_bytes?: number | null;
+  thumbnail_storage_provider?: "local" | "r2" | null;
+  thumbnail_object_key?: string | null;
+  promoted_at?: string | null;
   dimensions_m: Vec3;
   default_scale: number;
   default_rotation: Vec3;
@@ -53,6 +105,9 @@ type LibraryAsset = {
   safe_to_use_in_sandbox: boolean;
   safe_to_promote_to_app: boolean;
   status: "inbox" | "normalized" | "approved" | "rejected";
+  scene_review_status: "pending" | "approved" | "rejected";
+  scene_reviewed_at?: string | null;
+  scene_review_notes?: string | null;
   notes?: string | null;
   created_at: string;
   updated_at: string;
@@ -63,6 +118,7 @@ type LibraryResponse = {
   ok: boolean;
   count?: number;
   assets?: LibraryAsset[];
+  asset?: LibraryAsset;
   error?: string;
 };
 
@@ -256,10 +312,25 @@ export function AssetLibraryLab() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [domainFilter, setDomainFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sceneReviewFilter, setSceneReviewFilter] = useState("all");
   const [licenseFilter, setLicenseFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [refreshToken, setRefreshToken] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [promotingAssetId, setPromotingAssetId] = useState<string | null>(null);
+  const [promotionMessage, setPromotionMessage] = useState<string | null>(null);
+  const [maintenanceAction, setMaintenanceAction] = useState<
+    "remove" | "blenderkit" | "trellis" | null
+  >(null);
+  const [maintenanceAssetId, setMaintenanceAssetId] = useState<string | null>(
+    null,
+  );
+  const [sceneReviewAssetId, setSceneReviewAssetId] = useState<string | null>(
+    null,
+  );
+  const [semanticReviewAssetId, setSemanticReviewAssetId] = useState<
+    string | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -323,6 +394,456 @@ export function AssetLibraryLab() {
     return () => controller.abort();
   }, [refreshToken]);
 
+  async function uploadSelectedAssetToCloudflare() {
+    if (!selectedAssetId) return;
+
+    const asset = assets.find(
+      (candidate) => candidate.asset_id === selectedAssetId,
+    );
+
+    if (!asset) return;
+
+    const confirmed = window.confirm(
+      `Upload "${asset.display_name}" to the public Cloudflare R2 runtime bucket?\n\nOnly continue after reviewing the rotating 3D preview. The asset's recorded license must permit production use and public GLB distribution.`,
+    );
+
+    if (!confirmed) return;
+
+    setPromotingAssetId(asset.asset_id);
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/promote",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            asset_id: asset.asset_id,
+          }),
+        },
+      );
+      const payload = (await response.json()) as LibraryResponse;
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(
+          payload.error || "The asset could not be uploaded to Cloudflare R2.",
+        );
+      }
+
+      setPromotionMessage(
+        `${asset.display_name} is now stored in Cloudflare R2.`,
+      );
+      setRefreshToken((value) => value + 1);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : String(caught),
+      );
+    } finally {
+      setPromotingAssetId(null);
+    }
+  }
+
+  async function updateSelectedSceneReview(
+    sceneReviewStatus: "pending" | "approved" | "rejected",
+  ) {
+    if (!selectedAssetId) return;
+
+    const asset = assets.find(
+      (candidate) => candidate.asset_id === selectedAssetId,
+    );
+
+    if (!asset) return;
+
+    if (
+      sceneReviewStatus === "approved" &&
+      (!asset.file_stats.exists ||
+        !asset.safe_to_use_in_sandbox ||
+        asset.status === "rejected" ||
+        asset.semantic_review_status !== "verified")
+    ) {
+      setError(
+        "This asset cannot be approved for scenes until its file exists, it is safe for sandbox use, and its semantic identity is verified.",
+      );
+      return;
+    }
+
+    const actionLabel =
+      sceneReviewStatus === "approved"
+        ? "approve"
+        : sceneReviewStatus === "rejected"
+          ? "reject"
+          : "return to pending review";
+
+    const confirmed = window.confirm(
+      `${actionLabel[0]?.toUpperCase()}${actionLabel.slice(1)} "${asset.display_name}" for automatic scene selection?`,
+    );
+
+    if (!confirmed) return;
+
+    const notes =
+      sceneReviewStatus === "rejected"
+        ? window.prompt(
+            "Optional rejection note (for example: wrong object, poor geometry, incomplete model):",
+            asset.scene_review_notes ?? "",
+          )
+        : null;
+
+    setSceneReviewAssetId(asset.asset_id);
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/library",
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            asset_id: asset.asset_id,
+            scene_review_status: sceneReviewStatus,
+            scene_review_notes: notes,
+          }),
+        },
+      );
+      const payload = (await response.json()) as LibraryResponse;
+
+      if (!response.ok || !payload.ok || !payload.asset) {
+        throw new Error(
+          payload.error || "The scene review status could not be updated.",
+        );
+      }
+
+      setPromotionMessage(
+        `${asset.display_name} is now scene review: ${sceneReviewStatus}.`,
+      );
+      setRefreshToken((value) => value + 1);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : String(caught),
+      );
+    } finally {
+      setSceneReviewAssetId(null);
+    }
+  }
+
+  async function updateSelectedSemanticIdentity(
+    mode: "edit" | "source" | "mismatch" | "pending",
+  ) {
+    if (!selectedAssetId) return;
+
+    const asset = assets.find(
+      (candidate) =>
+        candidate.asset_id === selectedAssetId,
+    );
+    if (!asset) return;
+
+    let semanticReviewStatus:
+      | "pending"
+      | "verified"
+      | "mismatch"
+      | "rejected" = "verified";
+    let verifiedCanonicalLabel =
+      asset.verified_canonical_label ??
+      asset.canonical_label;
+    let verifiedAliases =
+      asset.verified_aliases ?? [];
+    let objectComposition =
+      asset.object_composition ?? "unknown";
+    let contains = asset.contains ?? [];
+    let affordances = asset.affordances ?? [];
+    let preferredForConcepts =
+      asset.preferred_for_concepts ?? [];
+    let notes =
+      asset.semantic_review_notes ?? "";
+
+    if (mode === "mismatch") {
+      semanticReviewStatus = "mismatch";
+      verifiedCanonicalLabel = "";
+      notes =
+        window.prompt(
+          "Why is the requested identity wrong?",
+          notes ||
+            `Requested "${asset.requested_concept ?? asset.canonical_label}", but source is "${asset.source_display_name ?? asset.display_name}".`,
+        ) ?? notes;
+    } else if (mode === "pending") {
+      semanticReviewStatus = "pending";
+      verifiedCanonicalLabel = "";
+    } else {
+      if (mode === "source") {
+        verifiedCanonicalLabel =
+          asset.source_display_name ??
+          asset.display_name;
+      } else {
+        verifiedCanonicalLabel =
+          window.prompt(
+            "Verified canonical label:",
+            verifiedCanonicalLabel,
+          )?.trim() ?? "";
+      }
+
+      if (!verifiedCanonicalLabel) return;
+
+      verifiedAliases = (
+        window.prompt(
+          "Verified aliases, separated by commas:",
+          verifiedAliases.join(", "),
+        ) ?? ""
+      )
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+      const compositionInput =
+        window.prompt(
+          "Composition: single_object, object_set, environment_piece, or unknown",
+          objectComposition,
+        )?.trim();
+
+      if (
+        compositionInput === "single_object" ||
+        compositionInput === "object_set" ||
+        compositionInput === "environment_piece" ||
+        compositionInput === "unknown"
+      ) {
+        objectComposition = compositionInput;
+      }
+
+      contains = (
+        window.prompt(
+          "Contained objects, separated by commas:",
+          contains.join(", "),
+        ) ?? ""
+      )
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+      affordances = (
+        window.prompt(
+          "Reviewed semantic affordances, separated by commas. Physical support surfaces are detected from geometry automatically:",
+          affordances.join(", "),
+        ) ?? ""
+      )
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+      preferredForConcepts = (
+        window.prompt(
+          "Prefer this asset for these concepts, separated by commas:",
+          preferredForConcepts.join(", "),
+        ) ?? ""
+      )
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+      notes =
+        window.prompt(
+          "Optional semantic review note:",
+          notes,
+        ) ?? notes;
+    }
+
+    setSemanticReviewAssetId(asset.asset_id);
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/library",
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "semantic_identity",
+            asset_id: asset.asset_id,
+            semantic_review_status:
+              semanticReviewStatus,
+            verified_canonical_label:
+              verifiedCanonicalLabel,
+            verified_aliases: verifiedAliases,
+            object_composition:
+              objectComposition,
+            contains,
+            affordances,
+            preferred_for_concepts:
+              preferredForConcepts,
+            semantic_review_notes: notes,
+          }),
+        },
+      );
+      const payload =
+        (await response.json()) as LibraryResponse;
+
+      if (
+        !response.ok ||
+        !payload.ok ||
+        !payload.asset
+      ) {
+        throw new Error(
+          payload.error ||
+            "The semantic identity could not be updated.",
+        );
+      }
+
+      setPromotionMessage(
+        `${asset.display_name} semantic identity is now ${semanticReviewStatus}.`,
+      );
+      setRefreshToken((value) => value + 1);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    } finally {
+      setSemanticReviewAssetId(null);
+    }
+  }
+
+  async function removeSelectedAsset() {
+    if (!selectedAssetId) return;
+
+    const asset = assets.find(
+      (candidate) => candidate.asset_id === selectedAssetId,
+    );
+
+    if (!asset) return;
+
+    const remoteWarning =
+      asset.storage_provider === "r2"
+        ? "\n\nThis asset is stored in Cloudflare R2. Its remote GLB, thumbnail, and any archived source object will also be deleted."
+        : "";
+
+    const confirmed = window.confirm(
+      `Permanently remove "${asset.display_name}" from the MyWay Asset Library?${remoteWarning}\n\nThe registry entry, local files, source record, and license record will be removed. This cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    setMaintenanceAction("remove");
+    setMaintenanceAssetId(asset.asset_id);
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/remove",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            asset_id: asset.asset_id,
+          }),
+        },
+      );
+      const payload = (await response.json()) as LibraryResponse & {
+        removed_asset_id?: string;
+      };
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(
+          payload.error || "The asset could not be removed.",
+        );
+      }
+
+      setSelectedAssetId(null);
+      setPromotionMessage(
+        `${asset.display_name} was removed from the library.`,
+      );
+      setRefreshToken((value) => value + 1);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : String(caught),
+      );
+    } finally {
+      setMaintenanceAction(null);
+      setMaintenanceAssetId(null);
+    }
+  }
+
+  async function createReplacement(
+    provider: "blenderkit" | "trellis",
+  ) {
+    if (!selectedAssetId) return;
+
+    const asset = assets.find(
+      (candidate) => candidate.asset_id === selectedAssetId,
+    );
+
+    if (!asset) return;
+
+    const providerLabel =
+      provider === "blenderkit"
+        ? "BlendKit"
+        : "TRELLIS";
+
+    const confirmed = window.confirm(
+      provider === "blenderkit"
+        ? `Search BlendKit for a different CC0 version of "${asset.verified_canonical_label ?? asset.canonical_label}"?\n\nThe current asset will stay in the library so you can compare both versions.`
+        : `Ask TRELLIS to generate an improved version of "${asset.verified_canonical_label ?? asset.canonical_label}"?\n\nThe current asset will stay in the library. TRELLIS generation can take several minutes and the result remains sandbox-only until its licensing is cleared.`,
+    );
+
+    if (!confirmed) return;
+
+    setMaintenanceAction(provider);
+    setMaintenanceAssetId(asset.asset_id);
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/replace",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            asset_id: asset.asset_id,
+            provider,
+          }),
+        },
+      );
+      const payload = (await response.json()) as LibraryResponse;
+
+      if (
+        !response.ok ||
+        !payload.ok ||
+        !payload.asset
+      ) {
+        throw new Error(
+          payload.error ||
+            `A ${providerLabel} replacement could not be created.`,
+        );
+      }
+
+      setSelectedAssetId(payload.asset.asset_id);
+      setPromotionMessage(
+        `${providerLabel} created a new candidate. The original is still in the library for comparison.`,
+      );
+      setRefreshToken((value) => value + 1);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : String(caught),
+      );
+    } finally {
+      setMaintenanceAction(null);
+      setMaintenanceAssetId(null);
+    }
+  }
+
   const sources = useMemo(
     () => uniqueSorted(assets.map((asset) => asset.source_type)),
     [assets],
@@ -333,6 +854,10 @@ export function AssetLibraryLab() {
   );
   const statuses = useMemo(
     () => uniqueSorted(assets.map((asset) => asset.status)),
+    [assets],
+  );
+  const sceneReviewStatuses = useMemo(
+    () => uniqueSorted(assets.map((asset) => asset.scene_review_status)),
     [assets],
   );
   const licenses = useMemo(
@@ -357,6 +882,12 @@ export function AssetLibraryLab() {
       if (statusFilter !== "all" && asset.status !== statusFilter) {
         return false;
       }
+      if (
+        sceneReviewFilter !== "all" &&
+        asset.scene_review_status !== sceneReviewFilter
+      ) {
+        return false;
+      }
       if (licenseFilter !== "all" && asset.license_kind !== licenseFilter) {
         return false;
       }
@@ -368,13 +899,22 @@ export function AssetLibraryLab() {
         asset.domain,
         asset.source_type,
         asset.status,
+        asset.scene_review_status,
+        asset.semantic_review_status,
         asset.license_kind,
         asset.license_status,
         asset.notes ?? "",
         asset.source_prompt ?? "",
+        asset.requested_concept ?? "",
+        asset.source_display_name ?? "",
+        asset.verified_canonical_label ?? "",
         ...asset.aliases,
+        ...(asset.verified_aliases ?? []),
         ...asset.semantic_tags,
         ...asset.style_tags,
+        ...(asset.contains ?? []),
+        ...(asset.affordances ?? []),
+        ...(asset.preferred_for_concepts ?? []),
       ]
         .join(" ")
         .toLowerCase();
@@ -410,6 +950,7 @@ export function AssetLibraryLab() {
     domainFilter,
     licenseFilter,
     search,
+    sceneReviewFilter,
     sortKey,
     sourceFilter,
     statusFilter,
@@ -425,6 +966,13 @@ export function AssetLibraryLab() {
     (asset) =>
       asset.source_type === "blenderkit" ||
       asset.source_type === "trellis",
+  ).length;
+  const sceneApprovedAssets = assets.filter(
+    (asset) => asset.scene_review_status === "approved",
+  ).length;
+  const semanticVerifiedAssets = assets.filter(
+    (asset) =>
+      asset.semantic_review_status === "verified",
   ).length;
 
   return (
@@ -504,13 +1052,54 @@ export function AssetLibraryLab() {
         }
 
         .asset-library-button:disabled {
-          cursor: wait;
+          cursor: not-allowed;
           opacity: 0.55;
+        }
+
+        .asset-library-button[data-primary="true"] {
+          border-color: rgba(74, 222, 128, 0.55);
+          color: #dcfce7;
+          background: rgba(22, 163, 74, 0.24);
+        }
+
+        .asset-library-promotion-note,
+        .asset-library-success {
+          border: 1px solid rgba(74, 222, 128, 0.25);
+          border-radius: 0.9rem;
+          margin: 0 0 1rem;
+          padding: 0.75rem;
+          color: rgba(220, 252, 231, 0.86);
+          background: rgba(22, 163, 74, 0.1);
+          font-size: 0.8rem;
+          line-height: 1.5;
+        }
+
+        .asset-library-success {
+          margin: 0 0 1rem;
+        }
+
+        .asset-library-maintenance-actions {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 0.65rem;
+          margin: 0 0 1rem;
+        }
+
+        .asset-library-button[data-danger="true"] {
+          border-color: rgba(248, 113, 113, 0.55);
+          color: #fee2e2;
+          background: rgba(185, 28, 28, 0.2);
+        }
+
+        .asset-library-button[data-secondary="true"] {
+          border-color: rgba(96, 165, 250, 0.5);
+          color: #dbeafe;
+          background: rgba(30, 64, 175, 0.18);
         }
 
         .asset-library-stats {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 0.8rem;
           margin-bottom: 1rem;
         }
@@ -537,7 +1126,7 @@ export function AssetLibraryLab() {
 
         .asset-library-controls {
           display: grid;
-          grid-template-columns: minmax(240px, 1.8fr) repeat(5, minmax(130px, 0.7fr));
+          grid-template-columns: minmax(240px, 1.8fr) repeat(6, minmax(130px, 0.7fr));
           gap: 0.7rem;
           margin-bottom: 1rem;
           border: 1px solid rgba(148, 163, 184, 0.18);
@@ -927,6 +1516,16 @@ export function AssetLibraryLab() {
             value={generatedAssets}
             detail="BlendKit and TRELLIS assets"
           />
+          <StatCard
+            label="Identity verified"
+            value={semanticVerifiedAssets}
+            detail="Verified labels used by the resolver"
+          />
+          <StatCard
+            label="Scene approved"
+            value={sceneApprovedAssets}
+            detail="Eligible after identity verification"
+          />
         </section>
 
         <section className="asset-library-controls" aria-label="Asset filters">
@@ -978,6 +1577,19 @@ export function AssetLibraryLab() {
           </select>
 
           <select
+            aria-label="Filter by scene review"
+            onChange={(event) => setSceneReviewFilter(event.target.value)}
+            value={sceneReviewFilter}
+          >
+            <option value="all">All scene reviews</option>
+            {sceneReviewStatuses.map((status) => (
+              <option key={status} value={status}>
+                scene: {status}
+              </option>
+            ))}
+          </select>
+
+          <select
             aria-label="Filter by license"
             onChange={(event) => setLicenseFilter(event.target.value)}
             value={licenseFilter}
@@ -1003,6 +1615,9 @@ export function AssetLibraryLab() {
         </section>
 
         {error ? <div className="asset-library-error">{error}</div> : null}
+        {promotionMessage ? (
+          <div className="asset-library-success">{promotionMessage}</div>
+        ) : null}
 
         <div className="asset-library-layout">
           <section className="asset-library-results">
@@ -1071,6 +1686,17 @@ export function AssetLibraryLab() {
                           <span className="asset-library-badge">
                             {asset.status}
                           </span>
+                          <span
+                            className="asset-library-badge"
+                            data-positive={
+                              asset.scene_review_status === "approved"
+                            }
+                            data-warning={
+                              asset.scene_review_status === "pending"
+                            }
+                          >
+                            scene: {asset.scene_review_status}
+                          </span>
                         </div>
                       </div>
                     </button>
@@ -1130,24 +1756,345 @@ export function AssetLibraryLab() {
                         Source record
                       </a>
                     ) : null}
+
+                    {selectedAsset.storage_provider === "r2" ? (
+                      <span
+                        className="asset-library-badge"
+                        data-positive="true"
+                      >
+                        Stored in Cloudflare R2
+                      </span>
+                    ) : (
+                      <button
+                        className="asset-library-button"
+                        data-primary="true"
+                        disabled={
+                          promotingAssetId === selectedAsset.asset_id ||
+                          !selectedAsset.file_stats.exists ||
+                          !selectedAsset.safe_to_promote_to_app ||
+                          selectedAsset.license_kind !== "cc0"
+                        }
+                        onClick={() => {
+                          void uploadSelectedAssetToCloudflare();
+                        }}
+                        type="button"
+                      >
+                        {promotingAssetId === selectedAsset.asset_id
+                          ? "Uploading to Cloudflare…"
+                          : "Upload reviewed asset to Cloudflare"}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="asset-library-promotion-note">
+                    Review the rotating model before uploading it. The button
+                    only activates for a local CC0 asset whose recorded review
+                    permits production use, commercial use, and public GLB
+                    redistribution. TRELLIS and Royalty Free assets remain
+                    blocked.
+                  </div>
+
+                  <div className="asset-library-promotion-note">
+                    Scene review is separate from licensing. Only assets marked
+                    <strong> approved for scenes</strong> may be selected by
+                    automatic scene composition. New and existing assets begin
+                    as pending until you inspect the rotating model.
+                  </div>
+
+                  <div className="asset-library-promotion-note">
+                    Automatic matching uses the verified identity, not the
+                    requested search term or technical asset ID. Resolve any
+                    source-name mismatch before approving the asset for scenes.
+                  </div>
+
+                  <div className="asset-library-maintenance-actions">
+                    <button
+                      className="asset-library-button"
+                      data-primary="true"
+                      disabled={
+                        semanticReviewAssetId ===
+                        selectedAsset.asset_id
+                      }
+                      onClick={() => {
+                        void updateSelectedSemanticIdentity(
+                          "edit",
+                        );
+                      }}
+                      type="button"
+                    >
+                      {semanticReviewAssetId ===
+                      selectedAsset.asset_id
+                        ? "Updating identity…"
+                        : "Verify or edit identity"}
+                    </button>
+
+                    <button
+                      className="asset-library-button"
+                      data-secondary="true"
+                      disabled={
+                        semanticReviewAssetId ===
+                          selectedAsset.asset_id ||
+                        !selectedAsset.source_display_name
+                      }
+                      onClick={() => {
+                        void updateSelectedSemanticIdentity(
+                          "source",
+                        );
+                      }}
+                      type="button"
+                    >
+                      Use source name as identity
+                    </button>
+
+                    <button
+                      className="asset-library-button"
+                      data-danger="true"
+                      disabled={
+                        semanticReviewAssetId ===
+                          selectedAsset.asset_id ||
+                        selectedAsset.semantic_review_status ===
+                          "mismatch"
+                      }
+                      onClick={() => {
+                        void updateSelectedSemanticIdentity(
+                          "mismatch",
+                        );
+                      }}
+                      type="button"
+                    >
+                      Mark identity mismatch
+                    </button>
+
+                    <button
+                      className="asset-library-button"
+                      data-secondary="true"
+                      disabled={
+                        semanticReviewAssetId ===
+                          selectedAsset.asset_id ||
+                        selectedAsset.semantic_review_status ===
+                          "pending"
+                      }
+                      onClick={() => {
+                        void updateSelectedSemanticIdentity(
+                          "pending",
+                        );
+                      }}
+                      type="button"
+                    >
+                      Return identity to pending
+                    </button>
+                  </div>
+
+                  <div className="asset-library-maintenance-actions">
+                    <button
+                      className="asset-library-button"
+                      data-primary="true"
+                      disabled={
+                        sceneReviewAssetId === selectedAsset.asset_id ||
+                        selectedAsset.scene_review_status === "approved" ||
+                        !selectedAsset.file_stats.exists ||
+                        !selectedAsset.safe_to_use_in_sandbox ||
+                        selectedAsset.status === "rejected" ||
+                        selectedAsset.semantic_review_status !== "verified"
+                      }
+                      onClick={() => {
+                        void updateSelectedSceneReview("approved");
+                      }}
+                      type="button"
+                    >
+                      {sceneReviewAssetId === selectedAsset.asset_id
+                        ? "Updating scene review…"
+                        : "Approve for scene use"}
+                    </button>
+
+                    <button
+                      className="asset-library-button"
+                      data-danger="true"
+                      disabled={
+                        sceneReviewAssetId === selectedAsset.asset_id ||
+                        selectedAsset.scene_review_status === "rejected"
+                      }
+                      onClick={() => {
+                        void updateSelectedSceneReview("rejected");
+                      }}
+                      type="button"
+                    >
+                      Reject for scene use
+                    </button>
+
+                    <button
+                      className="asset-library-button"
+                      data-secondary="true"
+                      disabled={
+                        sceneReviewAssetId === selectedAsset.asset_id ||
+                        selectedAsset.scene_review_status === "pending"
+                      }
+                      onClick={() => {
+                        void updateSelectedSceneReview("pending");
+                      }}
+                      type="button"
+                    >
+                      Return to pending
+                    </button>
+                  </div>
+
+                  <div className="asset-library-maintenance-actions">
+                    <button
+                      className="asset-library-button"
+                      data-danger="true"
+                      disabled={
+                        maintenanceAssetId === selectedAsset.asset_id
+                      }
+                      onClick={() => {
+                        void removeSelectedAsset();
+                      }}
+                      type="button"
+                    >
+                      {maintenanceAction === "remove" &&
+                      maintenanceAssetId === selectedAsset.asset_id
+                        ? "Removing asset…"
+                        : "Remove from library"}
+                    </button>
+
+                    <button
+                      className="asset-library-button"
+                      data-secondary="true"
+                      disabled={
+                        maintenanceAssetId === selectedAsset.asset_id
+                      }
+                      onClick={() => {
+                        void createReplacement("blenderkit");
+                      }}
+                      type="button"
+                    >
+                      {maintenanceAction === "blenderkit" &&
+                      maintenanceAssetId === selectedAsset.asset_id
+                        ? "Searching BlendKit…"
+                        : "Find different CC0 BlenderKit asset"}
+                    </button>
+
+                    {selectedAsset.source_type === "trellis" ? (
+                      <button
+                        className="asset-library-button"
+                        data-secondary="true"
+                        disabled={
+                          maintenanceAssetId === selectedAsset.asset_id
+                        }
+                        onClick={() => {
+                          void createReplacement("trellis");
+                        }}
+                        type="button"
+                      >
+                        {maintenanceAction === "trellis" &&
+                        maintenanceAssetId === selectedAsset.asset_id
+                          ? "Generating improved TRELLIS asset…"
+                          : "Generate better TRELLIS version"}
+                      </button>
+                    ) : null}
                   </div>
 
                   <div className="asset-library-metadata">
+                    <MetadataRow label="Requested concept">
+                      {selectedAsset.requested_concept ||
+                        selectedAsset.canonical_label}
+                    </MetadataRow>
+                    <MetadataRow label="Source name">
+                      {selectedAsset.source_display_name ||
+                        selectedAsset.display_name}
+                    </MetadataRow>
+                    <MetadataRow label="Verified identity">
+                      {selectedAsset.verified_canonical_label ||
+                        "Not verified"}
+                    </MetadataRow>
+                    <MetadataRow label="Semantic review">
+                      {selectedAsset.semantic_review_status}
+                      {selectedAsset.semantic_reviewed_at
+                        ? ` · ${formatDate(
+                            selectedAsset.semantic_reviewed_at,
+                          )}`
+                        : ""}
+                    </MetadataRow>
+                    <MetadataRow label="Verified aliases">
+                      {(selectedAsset.verified_aliases ?? []).length
+                        ? selectedAsset.verified_aliases!.join(", ")
+                        : "None"}
+                    </MetadataRow>
+                    <MetadataRow label="Composition">
+                      {selectedAsset.object_composition}
+                    </MetadataRow>
+                    <MetadataRow label="Contains">
+                      {(selectedAsset.contains ?? []).length
+                        ? selectedAsset.contains!.join(", ")
+                        : "None recorded"}
+                    </MetadataRow>
+                    <MetadataRow label="Affordances">
+                      {(selectedAsset.affordances ?? []).length
+                        ? selectedAsset.affordances!.join(", ")
+                        : "None recorded"}
+                    </MetadataRow>
+                    <MetadataRow label="Preferred concepts">
+                      {(selectedAsset.preferred_for_concepts ?? []).length
+                        ? selectedAsset.preferred_for_concepts!.join(", ")
+                        : "None"}
+                    </MetadataRow>
                     <MetadataRow label="Source">
                       {sourceLabel(selectedAsset.source_type)}
                     </MetadataRow>
                     <MetadataRow label="Status">
                       {selectedAsset.status}
                     </MetadataRow>
+                    <MetadataRow label="Scene review">
+                      {selectedAsset.scene_review_status}
+                      {selectedAsset.scene_reviewed_at
+                        ? ` · ${formatDate(selectedAsset.scene_reviewed_at)}`
+                        : ""}
+                    </MetadataRow>
+                    <MetadataRow label="Scene review notes">
+                      {selectedAsset.scene_review_notes || "None"}
+                    </MetadataRow>
                     <MetadataRow label="License">
                       {selectedAsset.license_kind} ·{" "}
                       {selectedAsset.license_status}
+                    </MetadataRow>
+                    <MetadataRow label="Storage">
+                      {selectedAsset.storage_provider === "r2"
+                        ? "Cloudflare R2"
+                        : "Local review copy"}
+                    </MetadataRow>
+                    <MetadataRow label="License record">
+                      <code>
+                        {selectedAsset.license_record_path ??
+                          "Not recorded"}
+                      </code>
                     </MetadataRow>
                     <MetadataRow label="Dimensions">
                       {formatDimensions(selectedAsset.dimensions_m)} m
                     </MetadataRow>
                     <MetadataRow label="Polygons">
                       {selectedAsset.polygon_count?.toLocaleString() ?? "Unknown"}
+                    </MetadataRow>
+                    <MetadataRow label="Geometry profile">
+                      {selectedAsset.geometry_profile
+                        ? `${selectedAsset.geometry_profile.generator} · ${
+                            selectedAsset.geometry_profile.support_surfaces.length
+                          } detected support surface${
+                            selectedAsset.geometry_profile.support_surfaces.length === 1
+                              ? ""
+                              : "s"
+                          }`
+                        : "Runtime analysis on first scene load"}
+                    </MetadataRow>
+                    <MetadataRow label="Support surfaces">
+                      {(selectedAsset.support_surfaces ?? []).length
+                        ? selectedAsset.support_surfaces!
+                            .map(
+                              (surface) =>
+                                `${surface.label} (${Math.round(
+                                  surface.confidence * 100,
+                                )}% ${surface.source})`,
+                            )
+                            .join(", ")
+                        : "None persisted yet"}
                     </MetadataRow>
                     <MetadataRow label="File">
                       {selectedAsset.file_stats.exists
@@ -1186,11 +2133,13 @@ export function AssetLibraryLab() {
                   </div>
 
                   <div className="asset-library-tags">
-                    {[
-                      ...selectedAsset.aliases,
-                      ...selectedAsset.semantic_tags,
-                      ...selectedAsset.style_tags,
-                    ].map((tag) => (
+                    {Array.from(
+                      new Set([
+                        ...selectedAsset.aliases,
+                        ...selectedAsset.semantic_tags,
+                        ...selectedAsset.style_tags,
+                      ]),
+                    ).map((tag) => (
                       <span className="asset-library-tag" key={tag}>
                         {tag}
                       </span>
@@ -1211,3 +2160,5 @@ export function AssetLibraryLab() {
 }
 
 export default AssetLibraryLab;
+
+
