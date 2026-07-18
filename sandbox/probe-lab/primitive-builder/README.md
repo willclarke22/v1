@@ -1,18 +1,21 @@
-# Primitive Builder Lab
+# Asset Scene Builder Lab
 
-Primitive Builder now uses the shared MyWay hybrid scene runtime.
+Primitive Builder now operates as an asset-first scene compiler.
 
 ## Generation path
 
 1. The model returns `primitive_scene_graph_v2`.
-2. Asset requirements are resolved against scene-approved library assets.
-3. Approved GLBs replace their named primitive fallback subtrees.
-4. Missing requirements remain visible as procedural fallbacks.
-5. The user may explicitly generate a TRELLIS preview, keep the primitive, or hide the object.
-6. The complete mixed scene can be saved as `myway_scene_manifest_v2`.
+2. Primitive nodes are normalized as invisible layout proxies.
+3. Every physical object that should appear is represented by an asset requirement.
+4. MyWay resolves requirements against semantically verified, scene-approved library assets.
+5. Resolved GLBs are laid out with Geometry Profile + Constraint Layout.
+6. Unresolved requirements are absent from the 3D scene and shown as **Missing from scene**.
+7. The user may generate a TRELLIS preview for a missing requirement.
+8. Saved scenes store asset bindings, layout metadata, and only explicitly authorized abstract procedural effects.
 
 The model never chooses asset IDs, paths, providers, or URLs. MyWay owns asset
-resolution and validates the result.
+resolution, geometry validation, layout, and rendering.
 
-TRELLIS output is available immediately for the current sandbox scene, but it
-remains globally scene-review pending until approved in the Asset Library.
+Physical primitive proxies are never rendered. Only nodes explicitly marked
+`procedural_required` and normalized as supported abstract effects may appear
+alongside assets.

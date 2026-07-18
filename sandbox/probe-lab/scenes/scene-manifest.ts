@@ -24,8 +24,12 @@ export type SceneAssetInstance = {
   rotation: Vec3;
   scale: Vec3;
   motion?: Record<string, unknown> | null;
-  fallback_node_id?: string;
+  layout_proxy_node_id?: string;
   parent_id?: string;
+  layout_proxy_node_ids?: string[];
+
+  // Compatibility fields accepted from older saved scenes.
+  fallback_node_id?: string;
   replacement_node_ids?: string[];
   placement_relation?:
     | "absolute"
@@ -70,5 +74,3 @@ export type MyWaySceneManifestV2 = {
 // Compatibility alias for older imports.
 export type MyWaySceneManifestV1 =
   MyWaySceneManifestV2;
-
-

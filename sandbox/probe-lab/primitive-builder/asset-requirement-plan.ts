@@ -1,6 +1,6 @@
 export type PrimitiveBuilderVec3 = [number, number, number];
 
-export const PRIMITIVE_BUILDER_FALLBACK_KINDS = [
+export const PRIMITIVE_BUILDER_LAYOUT_PROXY_KINDS = [
   "box",
   "softBox",
   "cylinder",
@@ -8,6 +8,10 @@ export const PRIMITIVE_BUILDER_FALLBACK_KINDS = [
   "group",
   "none",
 ] as const;
+
+// Compatibility aliases for saved pre-asset-first scenes and older callers.
+export const PRIMITIVE_BUILDER_FALLBACK_KINDS =
+  PRIMITIVE_BUILDER_LAYOUT_PROXY_KINDS;
 
 export const PRIMITIVE_BUILDER_PLACEMENT_RELATIONS = [
   "absolute",
@@ -18,8 +22,12 @@ export const PRIMITIVE_BUILDER_PLACEMENT_RELATIONS = [
   "attached_to",
 ] as const;
 
+export type PrimitiveBuilderLayoutProxyKind =
+  (typeof PRIMITIVE_BUILDER_LAYOUT_PROXY_KINDS)[number];
+
+// Compatibility alias. New code should use PrimitiveBuilderLayoutProxyKind.
 export type PrimitiveBuilderFallbackKind =
-  (typeof PRIMITIVE_BUILDER_FALLBACK_KINDS)[number];
+  PrimitiveBuilderLayoutProxyKind;
 
 export type PrimitiveBuilderPlacementRelation =
   (typeof PRIMITIVE_BUILDER_PLACEMENT_RELATIONS)[number];
@@ -46,13 +54,18 @@ export type PrimitiveBuilderAssetRequirement = {
   reusable: boolean;
   required: boolean;
   target_extent_m: number;
-  fallback_primitive: PrimitiveBuilderFallbackKind;
-  fallback_node_id?: string;
+  // Primitive geometry is an invisible layout proxy. It is never rendered as
+  // a substitute for a missing asset in the asset-first scene runtime.
+  layout_proxy_kind: PrimitiveBuilderLayoutProxyKind;
+  layout_proxy_node_id?: string;
+  layout_proxy_node_ids: string[];
   parent_id?: string;
 
-  // Explicit replacement ownership prevents primitive fragments from leaking
-  // into a scene after the GLB replaces its fallback.
-  replacement_node_ids: string[];
+  // Read-only compatibility fields accepted from older saved scenes. Normalized
+  // requirements are emitted with layout_proxy_* fields instead.
+  fallback_primitive?: PrimitiveBuilderFallbackKind;
+  fallback_node_id?: string;
+  replacement_node_ids?: string[];
 
   // Relationship-aware placement is resolved after actual GLB bounds load.
   placement_relation: PrimitiveBuilderPlacementRelation;
@@ -70,7 +83,7 @@ export type PrimitiveBuilderAssetRequirement = {
 };
 
 export type PrimitiveBuilderAssetRequirementPlan = {
-  schema_version: "primitive_builder_asset_requirements_v3";
+  schema_version: "primitive_builder_asset_requirements_v4";
   scene_request: string;
   requirements: PrimitiveBuilderAssetRequirement[];
 };
@@ -256,27 +269,36 @@ export function normalizePrimitiveBuilderAssetRequirements(
         return null;
       }
 
-      const rawFallback = item.fallback_primitive;
-      const fallbackPrimitive =
-        typeof rawFallback === "string" &&
-        (PRIMITIVE_BUILDER_FALLBACK_KINDS as readonly string[]).includes(
-          rawFallback,
-        )
-          ? (rawFallback as PrimitiveBuilderFallbackKind)
+      const rawLayoutProxyKind =
+        item.layout_proxy_kind ??
+        item.fallback_primitive;
+      const layoutProxyKind =
+        typeof rawLayoutProxyKind === "string" &&
+        (
+          PRIMITIVE_BUILDER_LAYOUT_PROXY_KINDS as readonly string[]
+        ).includes(rawLayoutProxyKind)
+          ? (rawLayoutProxyKind as PrimitiveBuilderLayoutProxyKind)
           : "softBox";
 
-      const fallbackNodeId =
-        typeof item.fallback_node_id === "string"
-          ? id(item.fallback_node_id, "")
+      const rawLayoutProxyNodeId =
+        item.layout_proxy_node_id ??
+        item.fallback_node_id;
+      const layoutProxyNodeId =
+        typeof rawLayoutProxyNodeId === "string"
+          ? id(rawLayoutProxyNodeId, "")
           : undefined;
-      const validFallbackNodeId =
-        fallbackNodeId && knownNodeIds.has(fallbackNodeId)
-          ? fallbackNodeId
+      const validLayoutProxyNodeId =
+        layoutProxyNodeId &&
+        knownNodeIds.has(layoutProxyNodeId)
+          ? layoutProxyNodeId
           : undefined;
 
-      if (fallbackNodeId && !validFallbackNodeId) {
+      if (
+        layoutProxyNodeId &&
+        !validLayoutProxyNodeId
+      ) {
         warnings.push(
-          `Asset requirement ${instanceId} referenced missing fallback node ${fallbackNodeId}.`,
+          `Asset requirement ${instanceId} referenced missing layout proxy node ${layoutProxyNodeId}.`,
         );
       }
 
@@ -304,16 +326,19 @@ export function normalizePrimitiveBuilderAssetRequirements(
           ? (rawRelation as PrimitiveBuilderPlacementRelation)
           : "absolute";
 
-      const replacementNodeIds = Array.from(
+      const layoutProxyNodeIds = Array.from(
         new Set([
-          ...strings(item.replacement_node_ids)
+          ...strings(
+            item.layout_proxy_node_ids ??
+              item.replacement_node_ids,
+          )
             .map((value) => id(value, ""))
             .filter(
               (value) =>
                 value && knownNodeIds.has(value),
             ),
-          ...(validFallbackNodeId
-            ? [validFallbackNodeId]
+          ...(validLayoutProxyNodeId
+            ? [validLayoutProxyNodeId]
             : []),
         ]),
       );
@@ -332,10 +357,12 @@ export function normalizePrimitiveBuilderAssetRequirements(
           0.1,
           Math.min(20, number(item.target_extent_m, 1)),
         ),
-        fallback_primitive: fallbackPrimitive,
-        fallback_node_id: validFallbackNodeId,
+        layout_proxy_kind: layoutProxyKind,
+        layout_proxy_node_id:
+          validLayoutProxyNodeId,
+        layout_proxy_node_ids:
+          layoutProxyNodeIds,
         parent_id: validParentId,
-        replacement_node_ids: replacementNodeIds,
         placement_relation: placementRelation,
         placement_target_instance_id:
           typeof item.placement_target_instance_id === "string"
@@ -404,5 +431,3 @@ export function normalizePrimitiveBuilderAssetRequirements(
     return requirement;
   });
 }
-
-

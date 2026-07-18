@@ -15,10 +15,10 @@ const activeLabs = [
   },
   {
     href: "/sandbox/probe-lab/primitive-builder",
-    title: "Primitive Builder Lab",
+    title: "Asset Scene Builder",
     status: "active sandbox",
     description:
-      "A Lego-style sandbox for building model-planned 3D structures from procedural primitives and reusable assets.",
+      "An asset-first sandbox where the model plans invisible layout proxies and MyWay renders verified GLB assets.",
   },
 ];
 
@@ -64,8 +64,8 @@ export default function ProbeLabPage() {
           }}
         >
           Visual Experience is the active learning lane. The shared Asset
-          Library stores reusable 3D models, while Primitive Builder tests
-          procedural and model-assisted scene construction.
+          Library stores reusable 3D models, while Asset Scene Builder tests
+          model-planned, asset-first scene composition.
         </p>
 
         <div

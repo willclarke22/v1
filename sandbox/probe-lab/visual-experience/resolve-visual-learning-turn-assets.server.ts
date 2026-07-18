@@ -92,7 +92,6 @@ export async function attachApprovedAssetsToVisualTurn(
       style_tags: [],
       allow_blenderkit: false,
       allow_trellis: false,
-      allow_primitive_fallback: false,
       require_scene_approved: true,
       minimum_match_score: 48,
       minimum_match_margin: 6,

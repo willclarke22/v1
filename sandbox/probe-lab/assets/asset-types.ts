@@ -237,6 +237,9 @@ export type AssetResolveRequest = {
   preferred_asset_id?: string;
   allow_blenderkit?: boolean;
   allow_trellis?: boolean;
+
+  // Deprecated compatibility input. The asset resolver never returns
+  // primitive substitutes; unavailable assets resolve as source "none".
   allow_primitive_fallback?: boolean;
   force_refresh?: boolean;
   require_scene_approved?: boolean;
@@ -266,5 +269,3 @@ export type AssetResolveResult = {
   candidate_scores?: AssetMatchScoreBreakdown[];
   requires_scene_review?: boolean;
 };
-
-

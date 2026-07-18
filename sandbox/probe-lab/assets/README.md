@@ -1,12 +1,14 @@
-# MyWay Asset Pipeline
+# MyWay Asset Runtime
 
-Shared sandbox asset system used by Primitive Builder and Visual Experience.
+The Asset Library stores reusable GLB assets, verified semantic identity,
+geometry profiles, review status, licensing, and local or Cloudflare R2 paths.
 
-Resolution order:
+Asset resolution may return:
 
-1. Reuse a matching asset from `library/registry.json`.
-2. Search and acquire a free BlendKit model through Blender.
-3. Generate a missing model through NVIDIA TRELLIS.
-4. Fall back to procedural primitives.
+- a reviewed library asset;
+- an explicitly requested BlenderKit acquisition;
+- an explicitly requested TRELLIS generation;
+- unresolved.
 
-Blender runs in background and performs normalization, grounding, scaling, thumbnail rendering and GLB export. BlendKit must be installed and enabled in Blender. A stored BlendKit login is used automatically when available.
+Primitive asset fallbacks are disabled. Missing physical objects remain absent
+until a real asset is available.

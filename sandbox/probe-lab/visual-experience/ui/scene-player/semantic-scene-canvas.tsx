@@ -435,7 +435,7 @@ function PrimitiveEntity({
       position: [0, 0, 0],
       rotation: [0, 0, 0],
       scale: [1, 1, 1],
-      replacement_node_ids: [],
+      layout_proxy_node_ids: [],
       placement_relation: "absolute",
       placement_anchor: "center",
       placement_offset: [0, 0, 0],
@@ -889,5 +889,3 @@ export function SemanticSceneCanvas({
     </div>
   );
 }
-
-

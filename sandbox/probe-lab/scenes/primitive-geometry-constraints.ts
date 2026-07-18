@@ -424,9 +424,9 @@ function requirementNodeIds(
   worldById: Map<string, WorldNode>,
 ) {
   const roots = new Set([
-    ...requirement.replacement_node_ids,
-    ...(requirement.fallback_node_id
-      ? [requirement.fallback_node_id]
+    ...requirement.layout_proxy_node_ids,
+    ...(requirement.layout_proxy_node_id
+      ? [requirement.layout_proxy_node_id]
       : []),
   ]);
   const expanded = new Set(roots);
@@ -674,12 +674,6 @@ function hasRequestEvidence(
   ).some((token) => requested.has(token));
 }
 
-function rootNodeIds(
-  nodes: PrimitiveSceneGraphNode[],
-) {
-  return new Set(nodes.map((node) => node.id));
-}
-
 function pruneDecorativeSurfaces(
   sceneGraph: PrimitiveSceneGraphV2,
   requirements: PrimitiveBuilderAssetRequirement[],
@@ -688,9 +682,9 @@ function pruneDecorativeSurfaces(
 ) {
   const owned = new Set(
     requirements.flatMap((requirement) => [
-      ...requirement.replacement_node_ids,
-      ...(requirement.fallback_node_id
-        ? [requirement.fallback_node_id]
+      ...requirement.layout_proxy_node_ids,
+      ...(requirement.layout_proxy_node_id
+        ? [requirement.layout_proxy_node_id]
         : []),
     ]),
   );
@@ -703,13 +697,8 @@ function pruneDecorativeSurfaces(
       entry.bounds,
     ]),
   );
-  const rootIds = rootNodeIds(sceneGraph.nodes);
-  const otherAreas = worldNodes
-    .filter(
-      (entry) =>
-        entry.bounds &&
-        !rootIds.has(entry.node.id),
-    )
+  const geometricAreas = worldNodes
+    .filter((entry) => entry.bounds)
     .map(
       (entry) =>
         entry.bounds!.size[0] *
@@ -717,23 +706,43 @@ function pruneDecorativeSurfaces(
     )
     .sort((a, b) => a - b);
   const medianArea =
-    otherAreas[
-      Math.floor(otherAreas.length / 2)
+    geometricAreas[
+      Math.floor(geometricAreas.length / 2)
     ] ?? 1;
   const removed = new Set<string>();
 
-  sceneGraph.nodes = sceneGraph.nodes.filter(
-    (node) => {
+  function filterNodes(
+    nodes: PrimitiveSceneGraphNode[],
+  ): PrimitiveSceneGraphNode[] {
+    return nodes.flatMap((node) => {
+      const children = filterNodes(
+        node.children ?? [],
+      );
+      const candidate = {
+        ...node,
+        children:
+          node.kind === "group"
+            ? children
+            : node.children,
+      };
+
       if (
         owned.has(node.id) ||
-        hasRequestEvidence(node, userRequest)
+        hasRequestEvidence(node, userRequest) ||
+        node.render_policy ===
+          "procedural_required"
       ) {
-        return true;
+        return [candidate];
       }
 
       const bounds = boundsById.get(node.id);
       if (!bounds || node.kind === "group") {
-        return true;
+        // Empty layout-only groups have no spatial value after their children
+        // are removed.
+        return node.kind === "group" &&
+          children.length === 0
+          ? []
+          : [candidate];
       }
 
       const horizontalArea =
@@ -754,13 +763,17 @@ function pruneDecorativeSurfaces(
       if (isPlanar && dominatesScene) {
         removed.add(node.id);
         warnings.push(
-          `Removed context surface ${node.id} because it had no request evidence and dominated the requested composition.`,
+          `Removed unrequested layout surface ${node.id} because it dominated the requested composition.`,
         );
-        return false;
+        return [];
       }
 
-      return true;
-    },
+      return [candidate];
+    });
+  }
+
+  sceneGraph.nodes = filterNodes(
+    sceneGraph.nodes,
   );
 
   if (!removed.size) return;
@@ -924,7 +937,7 @@ export function compilePrimitiveGeometryConstraints(
       if (!childBounds) {
         return {
           ...requirement,
-          replacement_node_ids:
+          layout_proxy_node_ids:
             replacementNodeIds,
           placement_relation:
             "absolute" as const,
@@ -994,14 +1007,14 @@ export function compilePrimitiveGeometryConstraints(
       );
       const base = {
         ...requirement,
-        replacement_node_ids:
+        layout_proxy_node_ids:
           replacementNodeIds,
         target_extent_m: Math.max(
           0.05,
           Math.min(20, extent),
         ),
         // Imported GLBs use a bottom-centre local origin. Convert the
-        // primitive fallback bounds to the same contract before rendering.
+        // invisible layout-proxy bounds to the same contract before asset rendering.
         position: [
           childBounds.center[0],
           childBounds.min[1],

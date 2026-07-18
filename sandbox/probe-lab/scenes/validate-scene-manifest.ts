@@ -69,15 +69,31 @@ function normalizeAssetInstance(
     scale: vec3(item.scale, [1, 1, 1]).map(
       (entry) => Math.max(0.001, Math.abs(entry)),
     ) as [number, number, number],
-    replacement_node_ids: Array.isArray(
-      item.replacement_node_ids,
+    layout_proxy_node_id:
+      typeof item.layout_proxy_node_id ===
+        "string"
+        ? item.layout_proxy_node_id
+        : typeof item.fallback_node_id ===
+            "string"
+          ? item.fallback_node_id
+          : undefined,
+    layout_proxy_node_ids: Array.isArray(
+      item.layout_proxy_node_ids,
     )
-      ? item.replacement_node_ids.filter(
+      ? item.layout_proxy_node_ids.filter(
           (entry): entry is string =>
             typeof entry === "string" &&
             entry.trim().length > 0,
         )
-      : [],
+      : Array.isArray(
+            item.replacement_node_ids,
+          )
+        ? item.replacement_node_ids.filter(
+            (entry): entry is string =>
+              typeof entry === "string" &&
+              entry.trim().length > 0,
+          )
+        : [],
     placement_relation:
       item.placement_relation === "on_ground" ||
       item.placement_relation === "on_surface" ||

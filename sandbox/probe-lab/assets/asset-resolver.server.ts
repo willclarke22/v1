@@ -13,7 +13,6 @@ import {
 } from "./asset-library.server";
 import { projectPath } from "./paths.server";
 import { acquireFromBlenderKit } from "./providers/blenderkit-provider.server";
-import { makePrimitiveFallbackAsset } from "./providers/primitive-provider";
 import { acquireFromTrellis } from "./providers/trellis-asset-provider.server";
 
 const LOW_INFORMATION_TOKENS = new Set([
@@ -654,24 +653,11 @@ export async function resolveMyWayAsset(
     }
   }
 
-  if (
-    request.allow_primitive_fallback !== false
-  ) {
-    const result: AssetResolveResult = {
-      ok: true,
-      source: "primitive",
-      asset: makePrimitiveFallbackAsset(
-        request.concept,
-      ),
-      warnings,
-      attempts,
-      match_score: null,
-      match_margin: null,
-      candidate_scores: candidateScores,
-      requires_scene_review: false,
-    };
-    await debug(result, request);
-    return result;
+
+  if (request.allow_primitive_fallback === true) {
+    warnings.push(
+      "Primitive asset fallbacks are disabled. Missing assets remain unresolved until a library asset or generated asset is available.",
+    );
   }
 
   const result: AssetResolveResult = {

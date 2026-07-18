@@ -28,9 +28,13 @@ export type ResolvedSceneAssetBinding = {
   rotation: Vec3;
   scale: Vec3;
   motion?: Record<string, unknown> | null;
-  fallback_node_id?: string;
+  layout_proxy_node_id?: string;
   parent_id?: string;
-  replacement_node_ids: string[];
+  layout_proxy_node_ids: string[];
+
+  // Compatibility fields for loading older scene manifests.
+  fallback_node_id?: string;
+  replacement_node_ids?: string[];
   placement_relation: PrimitiveBuilderPlacementRelation;
   placement_target_instance_id?: string;
   placement_anchor: string;
@@ -81,10 +85,11 @@ export function makeResolvedSceneAssetBinding(input: {
     rotation: requirement.rotation,
     scale: requirement.scale,
     motion: input.motion ?? null,
-    fallback_node_id: requirement.fallback_node_id,
+    layout_proxy_node_id:
+      requirement.layout_proxy_node_id,
     parent_id: requirement.parent_id,
-    replacement_node_ids:
-      requirement.replacement_node_ids,
+    layout_proxy_node_ids:
+      requirement.layout_proxy_node_ids,
     placement_relation:
       requirement.placement_relation,
     placement_target_instance_id:
@@ -109,5 +114,3 @@ export function makeResolvedSceneAssetBinding(input: {
       input.candidateScores ?? [],
   };
 }
-
-

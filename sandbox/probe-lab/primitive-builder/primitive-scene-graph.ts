@@ -36,12 +36,18 @@ export const SCENE_GRAPH_MOTION_TYPES = [
 
 export const SCENE_GRAPH_PLANES = ["xy", "xz", "yz"] as const;
 export const SCENE_GRAPH_CAMERA_PRESETS = ["wide", "medium", "close", "top", "isometric", "orbit"] as const;
+export const SCENE_GRAPH_RENDER_POLICIES = [
+  "layout_proxy",
+  "procedural_required",
+] as const;
 
 export type Vec3 = [number, number, number];
 export type PrimitiveSceneGraphNodeKind = (typeof SCENE_GRAPH_NODE_KINDS)[number];
 export type PrimitiveSceneGraphMotionType = (typeof SCENE_GRAPH_MOTION_TYPES)[number];
 export type PrimitiveSceneGraphPlane = (typeof SCENE_GRAPH_PLANES)[number];
 export type PrimitiveSceneGraphCameraPreset = (typeof SCENE_GRAPH_CAMERA_PRESETS)[number];
+export type PrimitiveSceneGraphRenderPolicy =
+  (typeof SCENE_GRAPH_RENDER_POLICIES)[number];
 
 export type PrimitiveSceneGraphMotion = {
   type: PrimitiveSceneGraphMotionType;
@@ -78,6 +84,7 @@ export type PrimitiveSceneGraphNode = {
   metalness?: number;
   roughness?: number;
   opacity?: number;
+  render_policy?: PrimitiveSceneGraphRenderPolicy;
   motion?: PrimitiveSceneGraphMotion;
   children?: PrimitiveSceneGraphNode[];
 };
@@ -124,6 +131,13 @@ const nodeKindSet = new Set<string>(SCENE_GRAPH_NODE_KINDS);
 const motionTypeSet = new Set<string>(SCENE_GRAPH_MOTION_TYPES);
 const planeSet = new Set<string>(SCENE_GRAPH_PLANES);
 const cameraSet = new Set<string>(SCENE_GRAPH_CAMERA_PRESETS);
+const renderPolicySet = new Set<string>(
+  SCENE_GRAPH_RENDER_POLICIES,
+);
+const proceduralKindSet = new Set<string>([
+  "glow",
+  "cloud",
+]);
 const lookSet = new Set<string>(["clean_stylized", "diagrammatic", "miniature", "technical_cutaway"]);
 const moodSet = new Set<string>(["neutral", "warm", "energetic", "clinical"]);
 const complexitySet = new Set<string>(["low", "medium", "high"]);
@@ -237,6 +251,27 @@ function normalizeNode(raw: unknown, seen: Set<string>, warnings: string[], fall
   seen.add(id);
 
   const kind = oneOf<PrimitiveSceneGraphNodeKind>(record.kind, nodeKindSet, "softBox");
+  const requestedRenderPolicy =
+    oneOf<PrimitiveSceneGraphRenderPolicy>(
+      record.render_policy,
+      renderPolicySet,
+      "layout_proxy",
+    );
+  const renderPolicy =
+    requestedRenderPolicy === "procedural_required" &&
+    proceduralKindSet.has(kind)
+      ? "procedural_required"
+      : "layout_proxy";
+
+  if (
+    requestedRenderPolicy === "procedural_required" &&
+    renderPolicy !== "procedural_required"
+  ) {
+    warnings.push(
+      `Node ${id} requested procedural rendering for physical kind ${kind}; it was retained as an invisible layout proxy.`,
+    );
+  }
+
   const node: PrimitiveSceneGraphNode = {
     id,
     kind,
@@ -249,6 +284,7 @@ function normalizeNode(raw: unknown, seen: Set<string>, warnings: string[], fall
     metalness: boundedNumber(record.metalness, 0.08, 0, 1),
     roughness: boundedNumber(record.roughness, 0.55, 0, 1),
     opacity: boundedNumber(record.opacity, kind === "cloud" ? 0.35 : kind === "glow" ? 0.56 : 1, 0, 1),
+    render_policy: renderPolicy,
     motion: normalizeMotion(record.motion, warnings),
   };
 
@@ -291,9 +327,9 @@ function makeScaffoldSceneGraph(
   return {
     schema_version: "primitive_scene_graph_v2",
     user_request: userRequest,
-    scene_title: "Request-safe fallback scene",
+    scene_title: "Request-safe asset scene",
     scene_summary:
-      "The model response could not be parsed. MyWay created only a neutral ground plane; approved assets explicitly named in the request will be added deterministically.",
+      "The model response could not be parsed. MyWay will show only verified assets explicitly identified in the request; unavailable objects remain missing from the scene.",
     style: {
       look: "clean_stylized",
       mood: "neutral",
@@ -310,31 +346,13 @@ function makeScaffoldSceneGraph(
       key_light: [4, 8, 6],
       fill_light: [-1.5, 2.4, -2.7],
     },
-    nodes: [
-      {
-        id: "fallback_environment",
-        kind: "group",
-        display_name: "Fallback environment",
-        position: [0, 0, 0],
-        children: [
-          {
-            id: "environment_ground",
-            kind: "softBox",
-            display_name: "Ground",
-            position: [0, -0.08, 0],
-            scale: [7.2, 0.16, 5.2],
-            color: "#486a4a",
-            radius: 0.12,
-          },
-        ],
-      },
-    ],
+    nodes: [],
     asset_requirements: [],
     beats: [
       {
         id: "beat_1",
-        title: "Show the requested scene",
-        reveal: ["fallback_environment"],
+        title: "Show available assets",
+        reveal: [],
         camera: "wide",
       },
     ],
@@ -346,7 +364,7 @@ export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string):
   const rootRecord = asRecord(raw);
   const source = asRecord(rootRecord?.scene_graph) ?? asRecord(rootRecord?.scene) ?? rootRecord;
   if (!source) {
-    return { scene_graph: makeScaffoldSceneGraph(userRequest), warnings: ["Model response was not an object; request-safe scaffold scene used."] };
+    return { scene_graph: makeScaffoldSceneGraph(userRequest), warnings: ["Model response was not an object; request-safe asset scene used."] };
   }
 
   const styleRecord = asRecord(source.style) ?? {};
@@ -357,7 +375,7 @@ export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string):
     .filter((node): node is PrimitiveSceneGraphNode => Boolean(node));
 
   if (!nodes.length) {
-    return { scene_graph: makeScaffoldSceneGraph(userRequest), warnings: ["Model response had no valid scene graph nodes; request-safe scaffold scene used."] };
+    return { scene_graph: makeScaffoldSceneGraph(userRequest), warnings: ["Model response had no valid scene graph nodes; request-safe asset scene used."] };
   }
 
   const ids = collectIds(nodes);

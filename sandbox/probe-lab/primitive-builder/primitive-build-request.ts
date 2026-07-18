@@ -3,6 +3,7 @@ import {
   SCENE_GRAPH_MOTION_TYPES,
   SCENE_GRAPH_NODE_KINDS,
   SCENE_GRAPH_PLANES,
+  SCENE_GRAPH_RENDER_POLICIES,
 } from "./primitive-scene-graph";
 
 export type PrimitiveBuilderModelProvider = "deepseek" | "glm";
@@ -96,6 +97,8 @@ function compactResponseContract() {
         scale: [1, 1, 1],
         rotation: [0, 0, 0],
         color: "#94a3b8",
+        render_policy:
+          SCENE_GRAPH_RENDER_POLICIES.join(" | "),
         motion: {
           type: SCENE_GRAPH_MOTION_TYPES.join(" | "),
         },
@@ -114,9 +117,10 @@ function compactResponseContract() {
         reusable: true,
         required: true,
         target_extent_m: 1.5,
-        fallback_primitive:
+        layout_proxy_kind:
           "box | softBox | cylinder | sphere | group | none",
-        fallback_node_id: "existing node or group id",
+        layout_proxy_node_id:
+          "existing invisible layout-proxy node or group id",
         parent_id: "optional existing parent group id",
         position: [0, 0, 0],
         rotation: [0, 0, 0],
@@ -142,14 +146,16 @@ export function makePrimitiveBuildModelRequest(input: {
   const style = normalizedStyle(input.style);
   const schema = compactResponseContract();
 
-  const system = `You are MyWay's Primitive Scene Planner.
+  const system = `You are MyWay's Asset Scene Planner.
 Return exactly one valid JSON object. Do not use markdown, code fences, commentary, or hidden reasoning.
 Build a clear grouped primitive_scene_graph_v2 from the request.
-Use local child coordinates inside meaningful groups.
-Use only the allowed node and motion values.
-You may request reusable GLB objects, but never output asset IDs, URLs, providers, paths, React, Three.js, JavaScript, or executable code.
-Every asset requirement must reference an existing primitive fallback node or group.
-MyWay—not the model—will infer replacement ownership, physical attachment relationships, verified asset identity, and final GLB placement.`;
+The primitive nodes are invisible layout proxies only. They communicate approximate bounds, grouping, relative position, support relationships, motion intent, and beat timing; they are never shown as substitutes for missing assets.
+Use local child coordinates inside meaningful groups and use only allowed values.
+Create an asset requirement for every physical object that should appear in the final scene.
+Never output asset IDs, URLs, providers, paths, React, Three.js, JavaScript, or executable code.
+Every asset requirement must reference an existing layout proxy node or group.
+MyWay—not the model—resolves verified assets, exact geometry, support surfaces, packing, collision handling, and final placement.
+Only an explicitly requested abstract glow or particle cloud may use render_policy procedural_required. All other nodes must use layout_proxy.`;
 
   const allowed = {
     node_kind: SCENE_GRAPH_NODE_KINDS,
@@ -159,7 +165,9 @@ MyWay—not the model—will infer replacement ownership, physical attachment re
     look: SCENE_LOOKS,
     mood: SCENE_MOODS,
     complexity: SCENE_COMPLEXITIES,
-    asset_fallback_primitive: [
+    render_policy:
+      SCENE_GRAPH_RENDER_POLICIES,
+    asset_layout_proxy_kind: [
       "box",
       "softBox",
       "cylinder",
@@ -188,15 +196,18 @@ RULES:
 - Use nodes[], not flat parts[].
 - Use groups for recognizable objects and subsystems.
 - Keep the requested composition coherent and omit unrelated demo objects.
-- Add asset_requirements for reusable objects whose fidelity benefits from a GLB.
-- Do not request assets for floors, walls, paths, smoke, glows, or basic filler.
-- Every fallback_node_id and every beat node ID must exist in nodes.
-- MyWay will infer on-surface placement, grounding, replacement ownership, and asset ranking after parsing.`;
+- Every requested physical object that should be visible must have an asset_requirement.
+- Do not create visible primitive substitutes, decorative floors, stages, walls, or backdrops.
+- Physical-object nodes must use render_policy "layout_proxy".
+- Use render_policy "procedural_required" only for an explicitly requested abstract glow or particle cloud.
+- Every layout_proxy_node_id and every beat node ID must exist in nodes.
+- Missing assets will be absent from the scene and reported as "Missing from scene".
+- MyWay will infer support placement, grounding, isolated proxy ownership, and asset ranking after parsing.`;
 
   return {
     model_task: "hybrid_primitive_scene_graph_planner",
     schema_version:
-      "primitive_scene_graph_model_request_compact_v3",
+      "asset_scene_graph_model_request_v4",
     messages: [
       { role: "system" as const, content: system },
       { role: "user" as const, content: user },
@@ -241,13 +252,13 @@ REQUIRED_OUTPUT_SHAPE: ${JSON.stringify(schema)}
 PREVIOUS_RESPONSE_PREVIEW:
 ${previousPreview || "(empty or unavailable)"}
 
-Create a fresh request-specific scene. Use 3 to 16 meaningful nodes and one or more beats. Do not include unrelated demonstration cars, panels, or glows. MyWay will handle asset placement and replacement metadata after parsing.`;
+Create a fresh request-specific scene. Use meaningful invisible layout proxies and one or more beats. Every physical object that should appear must have an asset requirement. Do not include unrelated demonstrations, decorative floors, stages, or visible primitive substitutes. MyWay will handle asset placement and isolated proxy metadata after parsing.`;
 
   return {
     model_task:
       "hybrid_primitive_scene_graph_json_repair",
     schema_version:
-      "primitive_scene_graph_json_repair_v1",
+      "asset_scene_graph_json_repair_v2",
     messages: [
       { role: "system" as const, content: system },
       { role: "user" as const, content: user },

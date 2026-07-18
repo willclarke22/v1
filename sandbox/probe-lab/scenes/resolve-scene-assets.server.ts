@@ -28,11 +28,11 @@ type PromptAssetInference = {
   asset_id: string;
   canonical_label: string;
   matched_phrase: string;
-  fallback_node_id: string;
+  layout_proxy_node_id: string;
   source:
     | "existing_model_requirement"
     | "matched_scene_node"
-    | "created_fallback_node";
+    | "created_layout_proxy";
 };
 
 function normalizePhrase(value: string) {
@@ -371,9 +371,9 @@ function targetExtentFor(
   );
 }
 
-function fallbackKindForNode(
+function layoutProxyKindForNode(
   node: PrimitiveSceneGraphNode,
-): PrimitiveBuilderAssetRequirement["fallback_primitive"] {
+): PrimitiveBuilderAssetRequirement["layout_proxy_kind"] {
   if (node.kind === "group") return "group";
   if (node.kind === "softBox") return "softBox";
   if (node.kind === "box") return "box";
@@ -411,74 +411,62 @@ function collectSubtreeNodeIds(
   return ids;
 }
 
-const OWNERSHIP_STOP_TOKENS = new Set([
-  "asset",
-  "object",
-  "scene",
-  "outdoor",
-  "indoor",
-  "small",
-  "large",
-  "wooden",
-  "generic",
-]);
-
-function ownershipTokens(
-  requirement: PrimitiveBuilderAssetRequirement,
-) {
-  const meaningful = phraseTokens(
-    [
-      requirement.concept,
-      ...requirement.aliases,
-    ].join(" "),
-  ).filter(
-    (token) =>
-      !OWNERSHIP_STOP_TOKENS.has(token),
-  );
-
-  return Array.from(new Set(meaningful));
-}
-
-function inferReplacementNodeIds(
-  requirement: PrimitiveBuilderAssetRequirement,
+function isolateLayoutProxyOwnership(
+  requirements: PrimitiveBuilderAssetRequirement[],
   sceneGraph: PrimitiveSceneGraphV2,
-) {
-  const owned = collectSubtreeNodeIds(
-    sceneGraph.nodes,
-    requirement.fallback_node_id,
-  );
-  for (const id of requirement.replacement_node_ids) {
-    owned.add(id);
+): PrimitiveBuilderAssetRequirement[] {
+  const subtrees = new Map<string, Set<string>>();
+
+  for (const requirement of requirements) {
+    subtrees.set(
+      requirement.instance_id,
+      collectSubtreeNodeIds(
+        sceneGraph.nodes,
+        requirement.layout_proxy_node_id,
+      ),
+    );
   }
 
-  const tokens = ownershipTokens(requirement);
-  const references =
-    flattenNodeReferences(sceneGraph.nodes);
-
-  for (const reference of references) {
-    const normalized = normalizePhrase(
-      `${reference.node.id} ${
-        reference.node.display_name ?? ""
-      }`,
-    );
-    const nodeTokens = phraseTokens(normalized);
-    const strongMatches = tokens.filter(
-      (token) =>
-        token.length >= 4 &&
-        nodeTokens.some(
-          (candidate) =>
-            candidate === token ||
-            candidate.startsWith(token) ||
-            token.startsWith(candidate),
-        ),
+  return requirements.map((requirement) => {
+    const owned = new Set(
+      subtrees.get(requirement.instance_id) ?? [],
     );
 
-    if (strongMatches.length > 0) {
-      owned.add(reference.node.id);
+    // A parent proxy may contain independent child asset proxies. Those child
+    // subtrees belong only to their own requirements and must not be consumed
+    // by the parent asset.
+    for (const other of requirements) {
+      if (
+        other.instance_id ===
+        requirement.instance_id
+      ) {
+        continue;
+      }
+
+      const otherRoot =
+        other.layout_proxy_node_id;
+      if (!otherRoot || !owned.has(otherRoot)) {
+        continue;
+      }
+
+      for (
+        const nodeId of
+        subtrees.get(other.instance_id) ?? []
+      ) {
+        owned.delete(nodeId);
+      }
     }
-  }
 
-  return Array.from(owned);
+    if (requirement.layout_proxy_node_id) {
+      owned.add(requirement.layout_proxy_node_id);
+    }
+
+    return {
+      ...requirement,
+      layout_proxy_node_ids:
+        Array.from(owned),
+    };
+  });
 }
 
 function decorateRequirementsForComposition(
@@ -488,16 +476,11 @@ function decorateRequirementsForComposition(
   userRequest: string,
   warnings: string[],
 ): PrimitiveBuilderAssetRequirement[] {
-  const withOwnership = requirements.map(
-    (requirement) => ({
-      ...requirement,
-      replacement_node_ids:
-        inferReplacementNodeIds(
-          requirement,
-          sceneGraph,
-        ),
-    }),
-  );
+  const withOwnership =
+    isolateLayoutProxyOwnership(
+      requirements,
+      sceneGraph,
+    );
 
   return compilePrimitiveGeometryConstraints(
     sceneGraph,
@@ -529,7 +512,7 @@ function uniqueNodeId(
   return candidate;
 }
 
-function generatedFallbackPosition(
+function generatedLayoutProxyPosition(
   asset: MyWayAssetRecord,
   index: number,
   largestExtent: number,
@@ -555,7 +538,7 @@ function generatedFallbackPosition(
   ];
 }
 
-function createFallbackNode(
+function createLayoutProxyNode(
   sceneGraph: PrimitiveSceneGraphV2,
   asset: MyWayAssetRecord,
   index: number,
@@ -563,11 +546,11 @@ function createFallbackNode(
   existingIds: Set<string>,
 ): SceneNodeReference {
   const nodeId = uniqueNodeId(
-    `${safeId(asset.verified_canonical_label ?? asset.canonical_label)}_asset_fallback`,
+    `${safeId(asset.verified_canonical_label ?? asset.canonical_label)}_layout_proxy`,
     existingIds,
   );
   const extent = targetExtentFor(asset);
-  const position = generatedFallbackPosition(
+  const position = generatedLayoutProxyPosition(
     asset,
     index,
     largestExtent,
@@ -596,6 +579,7 @@ function createFallbackNode(
     metalness: 0.08,
     roughness: 0.55,
     opacity: 0.82,
+    render_policy: "layout_proxy",
   };
 
   sceneGraph.nodes.push(node);
@@ -651,15 +635,15 @@ function requirementForAsset(
       existing.target_extent_m >= 0.08
         ? existing.target_extent_m
         : targetExtentFor(asset, reference),
-    fallback_primitive: fallbackKindForNode(
+    layout_proxy_kind: layoutProxyKindForNode(
       reference.node,
     ),
-    fallback_node_id: reference.node.id,
+    layout_proxy_node_id: reference.node.id,
     parent_id:
       existing?.parent_id ??
       reference.parent_id,
-    replacement_node_ids:
-      existing?.replacement_node_ids ?? [
+    layout_proxy_node_ids:
+      existing?.layout_proxy_node_ids ?? [
         reference.node.id,
       ],
     placement_relation:
@@ -848,7 +832,7 @@ export async function preparePrimitiveBuilderSceneAssets(
         (item) =>
           item.node.id ===
           existingRequirement.requirement
-            .fallback_node_id,
+            .layout_proxy_node_id,
       );
       source = "existing_model_requirement";
     } else {
@@ -867,26 +851,26 @@ export async function preparePrimitiveBuilderSceneAssets(
         reference = bestNode.reference;
         source = "matched_scene_node";
       } else {
-        reference = createFallbackNode(
+        reference = createLayoutProxyNode(
           sceneGraph,
           asset,
           index,
           largestExtent,
           existingIds,
         );
-        source = "created_fallback_node";
+        source = "created_layout_proxy";
       }
     }
 
     if (!reference) {
-      reference = createFallbackNode(
+      reference = createLayoutProxyNode(
         sceneGraph,
         asset,
         index,
         largestExtent,
         existingIds,
       );
-      source = "created_fallback_node";
+      source = "created_layout_proxy";
     }
 
     claimedNodeIds.add(reference.node.id);
@@ -922,7 +906,7 @@ export async function preparePrimitiveBuilderSceneAssets(
       asset_id: asset.asset_id,
       canonical_label: asset.verified_canonical_label ?? asset.canonical_label,
       matched_phrase: phrase,
-      fallback_node_id: reference.node.id,
+      layout_proxy_node_id: reference.node.id,
       source,
     });
     warnings.push(
@@ -996,7 +980,6 @@ export async function resolvePrimitiveBuilderSceneAssets(
           : undefined,
       allow_blenderkit: false,
       allow_trellis: false,
-      allow_primitive_fallback: false,
       require_scene_approved: true,
       require_semantic_verified: true,
       minimum_match_score: 48,
@@ -1017,7 +1000,7 @@ export async function resolvePrimitiveBuilderSceneAssets(
     ) {
       const fallbackNode = findNode(
         sceneGraph.nodes,
-        requirement.fallback_node_id,
+        requirement.layout_proxy_node_id,
       );
       const positionedRequirement = requirement;
 
@@ -1078,5 +1061,3 @@ export async function generateTrellisPreviewForRequirement(
     }),
   };
 }
-
-

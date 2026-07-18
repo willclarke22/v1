@@ -17,18 +17,23 @@ export async function POST(request: NextRequest) {
       body && typeof body === "object"
         ? body.requirement
         : null;
-    const fallbackNodeId =
+    const layoutProxyNodeId =
       rawRequirement &&
-      typeof rawRequirement === "object" &&
-      typeof rawRequirement.fallback_node_id === "string"
-        ? rawRequirement.fallback_node_id
+      typeof rawRequirement === "object"
+        ? typeof rawRequirement.layout_proxy_node_id ===
+            "string"
+          ? rawRequirement.layout_proxy_node_id
+          : typeof rawRequirement.fallback_node_id ===
+              "string"
+            ? rawRequirement.fallback_node_id
+            : null
         : null;
     const warnings: string[] = [];
     const requirements =
       normalizePrimitiveBuilderAssetRequirements(
         [rawRequirement],
         new Set(
-          fallbackNodeId ? [fallbackNodeId] : [],
+          layoutProxyNodeId ? [layoutProxyNodeId] : [],
         ),
         warnings,
       );
