@@ -1,0 +1,49 @@
+
+[1/20] Searching CC0 BlendKit assets for "chalkboard" with query "chalkboard"...
+Imported and identity-verified chalkboard: chalkboard_bk_mrqj9vbx (Standing Chalkboard 01)
+
+[2/20] Searching CC0 BlendKit assets for "passenger car" with query "generic car"...
+
+[2/20] Searching CC0 BlendKit assets for "passenger car" with query "passenger car"...
+Failed query "generic car" for passenger car: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'car' for query 'generic car'. Top rejected candidates: ['Early 1900s Office Mail Envelope Stack', 'Early 1900s Office Mail Opened', 'Generic Sculpture', 'Liquid Ink Pen', 'Generator']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 1146, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 1104, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'car' for query 'generic car'. Top rejected candidates: ['Early 1900s Office Mail Envelope Stack', 'Early 1900s Office Mail Opened', 'Generic Sculpture', 'Liquid Ink Pen', 'Generator']. No asset was downloaded or registered.
+
+
+[2/20] Searching CC0 BlendKit assets for "passenger car" with query "compact car"...
+Failed query "passenger car" for passenger car: RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'car' for query 'passenger car'. Top rejected candidates: ['Long-range passenger aircraft 405-FLA']. No asset was downloaded or registered.
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 1146, in main
+    result = execute(job)
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 1104, in execute
+    blend_path, source_metadata = acquire_blenderkit(
+                                  ~~~~~~~~~~~~~~~~~~^
+        job["query"],
+        ^^^^^^^^^^^^^
+    ...<4 lines>...
+        temp_dir,
+        ^^^^^^^^^
+    )
+    ^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\assets\blender\scripts\myway-blender-bridge.py", line 719, in acquire_blenderkit
+    raise RuntimeError(
+    ...<4 lines>...
+    )
+RuntimeError: BlendKit had correctly licensed candidates, but none matched the core object word 'car' for query 'passenger car'. Top rejected candidates: ['Long-range passenger aircraft 405-FLA']. No asset was downloaded or registered.
+

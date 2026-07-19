@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_asset_registry_v1",
-  "updated_at": "2026-07-18T03:09:03.833Z",
+  "updated_at": "2026-07-18T16:13:52.255Z",
   "asset_root_public_url": "/sandbox-assets/myway",
   "notes": "Clean MyWay asset library. BlendKit intake is CC0-only. Runtime assets are uploaded to Cloudflare R2 only after visual review.",
   "assets": [
@@ -81,7 +81,7 @@
       "animation_clips": [],
       "content_hash": "7feb2e6acd4504e7f65c8fa339a1b12be11863396afc7ec9869822287b378432",
       "quality_score": 0.78,
-      "reuse_count": 6,
+      "reuse_count": 7,
       "license_kind": "cc0",
       "license_status": "app_ready",
       "commercial_use_allowed": true,
@@ -94,7 +94,7 @@
       "scene_review_notes": null,
       "notes": "Automatically acquired and normalized from BlendKit by Poly Haven . The source API record reported CC0. Review the live model before uploading it to Cloudflare R2. Promoted to Cloudflare R2 with license review apple_bk_mrfw6ag5_blenderkit_cc0_review_v1.",
       "created_at": "2026-07-11T04:56:19.712Z",
-      "updated_at": "2026-07-18T03:03:37.785Z"
+      "updated_at": "2026-07-18T15:18:45.908Z"
     },
     {
       "asset_id": "pineapple_bk_mrfw6rsh",
@@ -622,7 +622,7 @@
       "animation_clips": [],
       "content_hash": "3aa293c43981b348e83649633b18701237f65e8659652347165e14a9aff26c87",
       "quality_score": 0.78,
-      "reuse_count": 1,
+      "reuse_count": 2,
       "license_kind": "cc0",
       "license_status": "app_ready",
       "commercial_use_allowed": true,
@@ -635,7 +635,7 @@
       "scene_review_notes": null,
       "notes": "Automatically acquired and normalized from BlendKit by Poly Haven . The source API record reported CC0. Review the live model before uploading it to Cloudflare R2. Selected by the random-everyday CC0 batch for \"bookshelf\" using the BlendKit query \"bookshelf\". Promoted to Cloudflare R2 with license review bookshelf_bk_mrgibenm_blenderkit_cc0_review_v1.",
       "created_at": "2026-07-11T15:16:18.293Z",
-      "updated_at": "2026-07-18T03:09:03.833Z"
+      "updated_at": "2026-07-18T15:18:45.867Z"
     },
     {
       "asset_id": "park_bench_bk_mrgicqo7",
@@ -1122,7 +1122,7 @@
       "animation_clips": [],
       "content_hash": "dfc776b8e05580177ec2836196369285ec4cdfe499b7f97c2abcf7ee5e5efaa8",
       "quality_score": 0.78,
-      "reuse_count": 0,
+      "reuse_count": 1,
       "license_kind": "cc0",
       "license_status": "app_ready",
       "commercial_use_allowed": true,
@@ -1135,7 +1135,7 @@
       "scene_review_notes": null,
       "notes": "Automatically acquired and normalized from BlendKit by Poly Haven . The source API record reported CC0. Review the live model before uploading it to Cloudflare R2. Selected by the random-everyday CC0 batch for \"camera\" using the BlendKit query \"camera\". Promoted to Cloudflare R2 with license review camera_bk_mrjr07a3_blenderkit_cc0_review_v1.",
       "created_at": "2026-07-13T21:44:55.595Z",
-      "updated_at": "2026-07-17T22:21:11.317Z"
+      "updated_at": "2026-07-18T15:18:45.940Z"
     },
     {
       "asset_id": "broom_bk_mrjskk4g",
@@ -2431,7 +2431,7 @@
       "animation_clips": [],
       "content_hash": "70dd8ef145f78a4e4f085fbb2dea7d81527846ff7b775969e272cb334843d11c",
       "quality_score": 0.78,
-      "reuse_count": 0,
+      "reuse_count": 1,
       "license_kind": "cc0",
       "license_status": "app_ready",
       "commercial_use_allowed": true,
@@ -2444,7 +2444,7 @@
       "scene_review_notes": null,
       "notes": "Automatically acquired and normalized from BlendKit by PBRPX . The source API record reported CC0. Review the live model before uploading it to Cloudflare R2. Selected by the random-everyday CC0 batch for \"volleyball\" using the BlendKit query \"volleyball\". Promoted to Cloudflare R2 with license review volleyball_bk_mrlakkdn_blenderkit_cc0_review_v1.",
       "created_at": "2026-07-14T23:38:20.884Z",
-      "updated_at": "2026-07-17T22:02:34.997Z"
+      "updated_at": "2026-07-18T15:18:45.973Z"
     },
     {
       "asset_id": "dresser_bk_mrlanxrp",
@@ -2538,6 +2538,4176 @@
       "notes": "Automatically acquired and normalized from BlendKit by Daniel Lee. The source API record reported CC0. Review the live model before uploading it to Cloudflare R2. Selected by the random-everyday CC0 batch for \"dresser\" using the BlendKit query \"drawer dresser\". Promoted to Cloudflare R2 with license review dresser_bk_mrlanxrp_blenderkit_cc0_review_v1.",
       "created_at": "2026-07-14T23:41:46.697Z",
       "updated_at": "2026-07-17T22:01:20.644Z"
+    },
+    {
+      "asset_id": "wood_log_bk_mrqjskc4",
+      "canonical_label": "wood log",
+      "display_name": "Wood Log (Photoscanned)",
+      "aliases": [
+        "log",
+        "tree log",
+        "cut log",
+        "wood log"
+      ],
+      "semantic_tags": [
+        "wood log",
+        "nature",
+        "wood",
+        "forest"
+      ],
+      "style_tags": [
+        "generic",
+        "reusable",
+        "everyday"
+      ],
+      "asset_type": "glb",
+      "domain": "biology",
+      "requested_concept": "wood log",
+      "source_display_name": "Wood Log (Photoscanned)",
+      "verified_canonical_label": "wood log",
+      "verified_aliases": [
+        "log",
+        "wood log",
+        "tree log",
+        "cut log"
+      ],
+      "semantic_review_status": "verified",
+      "semantic_reviewed_at": "2026-07-18T15:55:15.312Z",
+      "semantic_review_notes": "Automatically identity-verified during the random CC0 import. source evidence contains exact label \"wood log\". Visual scene approval is still required.",
+      "object_composition": "unknown",
+      "contains": [],
+      "affordances": [
+        "support_surface"
+      ],
+      "support_surfaces": [
+        {
+          "id": "surface_4",
+          "label": "Detected support surface 4",
+          "center": [
+            -0.090953,
+            0.351787,
+            -0.035877
+          ],
+          "normal": [
+            -0.1780950752910447,
+            0.9835564158059393,
+            0.029982012675123404
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.507786,
+            1.267803
+          ],
+          "area": 0.11429689,
+          "confidence": 0.82503,
+          "source": "blender_geometry",
+          "height_ratio": 0.685016,
+          "footprint_ratio": [
+            0.817782,
+            0.975233
+          ]
+        },
+        {
+          "id": "surface_6",
+          "label": "Detected support surface 6",
+          "center": [
+            -0.022421,
+            0.415649,
+            0.093666
+          ],
+          "normal": [
+            -0.2684710501599276,
+            0.9609421795381294,
+            0.0671820125519861
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.33399,
+            1.257076
+          ],
+          "area": 0.08441408,
+          "confidence": 0.754739,
+          "source": "blender_geometry",
+          "height_ratio": 0.809371,
+          "footprint_ratio": [
+            0.537887,
+            0.966982
+          ]
+        },
+        {
+          "id": "surface_7",
+          "label": "Detected support surface 7",
+          "center": [
+            0.023584,
+            0.444291,
+            0.018881
+          ],
+          "normal": [
+            -0.17823799061274,
+            0.9816589482989696,
+            0.06765299643691974
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.246641,
+            1.225637
+          ],
+          "area": 0.07276578,
+          "confidence": 0.745649,
+          "source": "blender_geometry",
+          "height_ratio": 0.865144,
+          "footprint_ratio": [
+            0.397212,
+            0.942798
+          ]
+        },
+        {
+          "id": "surface_5",
+          "label": "Detected support surface 5",
+          "center": [
+            -0.10335,
+            0.38228,
+            0.007869
+          ],
+          "normal": [
+            -0.37159305740760173,
+            0.927041143219061,
+            0.05013300774507404
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.437543,
+            1.249197
+          ],
+          "area": 0.07981526,
+          "confidence": 0.72506,
+          "source": "blender_geometry",
+          "height_ratio": 0.744394,
+          "footprint_ratio": [
+            0.704657,
+            0.960921
+          ]
+        },
+        {
+          "id": "surface_8",
+          "label": "Detected support surface 8",
+          "center": [
+            0.043873,
+            0.474798,
+            -0.135171
+          ],
+          "normal": [
+            -0.26741706280410793,
+            0.9608812256673062,
+            0.07207901692808347
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.171015,
+            0.866695
+          ],
+          "area": 0.04401195,
+          "confidence": 0.678622,
+          "source": "blender_geometry",
+          "height_ratio": 0.92455,
+          "footprint_ratio": [
+            0.275417,
+            0.666688
+          ]
+        },
+        {
+          "id": "surface_3",
+          "label": "Detected support surface 3",
+          "center": [
+            0.005598,
+            0.313457,
+            0.184062
+          ],
+          "normal": [
+            0.007279001292743465,
+            0.9959561768808367,
+            0.08954501590310669
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.505542,
+            1.269428
+          ],
+          "area": 0.02214234,
+          "confidence": 0.659188,
+          "source": "blender_geometry",
+          "height_ratio": 0.610378,
+          "footprint_ratio": [
+            0.814168,
+            0.976483
+          ]
+        },
+        {
+          "id": "surface_2",
+          "label": "Detected support surface 2",
+          "center": [
+            0.120282,
+            0.278176,
+            -0.141922
+          ],
+          "normal": [
+            0.21170995166344794,
+            0.9770187769319835,
+            0.024762994346237594
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.554171,
+            1.26659
+          ],
+          "area": 0.01994369,
+          "confidence": 0.643306,
+          "source": "blender_geometry",
+          "height_ratio": 0.541677,
+          "footprint_ratio": [
+            0.892485,
+            0.9743
+          ]
+        },
+        {
+          "id": "surface_9",
+          "label": "Detected support surface 9",
+          "center": [
+            0.048527,
+            0.500203,
+            -0.360194
+          ],
+          "normal": [
+            -0.0649040081223477,
+            0.9978201248712095,
+            0.011936001493719066
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.078473,
+            0.529446
+          ],
+          "area": 0.01044853,
+          "confidence": 0.638323,
+          "source": "blender_geometry",
+          "height_ratio": 0.97402,
+          "footprint_ratio": [
+            0.126379,
+            0.407266
+          ]
+        },
+        {
+          "id": "surface_1",
+          "label": "Detected support surface 1",
+          "center": [
+            0.230339,
+            0.232948,
+            0.096889
+          ],
+          "normal": [
+            0.29049709565344695,
+            0.9544853142882036,
+            0.0675960222576839
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.579122,
+            0.973538
+          ],
+          "area": 0.00317813,
+          "confidence": 0.597765,
+          "source": "blender_geometry",
+          "height_ratio": 0.453606,
+          "footprint_ratio": [
+            0.932668,
+            0.748875
+          ]
+        }
+      ],
+      "geometry_profile": {
+        "schema_version": "myway_asset_geometry_profile_v1",
+        "coordinate_space": "normalized_glb_y_up",
+        "local_bounds": {
+          "min": [
+            -0.310465,
+            0,
+            -0.65
+          ],
+          "max": [
+            0.310465,
+            0.513545,
+            0.65
+          ],
+          "size": [
+            0.62093,
+            0.513545,
+            1.3
+          ],
+          "center": [
+            0,
+            0.256773,
+            0
+          ]
+        },
+        "orientation": {
+          "up_axis": [
+            0,
+            1,
+            0
+          ],
+          "forward_axis": [
+            0,
+            0,
+            1
+          ]
+        },
+        "bottom_contact_region": {
+          "id": "bottom_contact",
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "size": [
+            0.62093,
+            1.3
+          ],
+          "area": 0.80720922,
+          "confidence": 0.65
+        },
+        "support_surfaces": [
+          {
+            "id": "surface_4",
+            "label": "Detected support surface 4",
+            "center": [
+              -0.090953,
+              0.351787,
+              -0.035877
+            ],
+            "normal": [
+              -0.1780950752910447,
+              0.9835564158059393,
+              0.029982012675123404
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.507786,
+              1.267803
+            ],
+            "area": 0.11429689,
+            "confidence": 0.82503,
+            "source": "blender_geometry",
+            "height_ratio": 0.685016,
+            "footprint_ratio": [
+              0.817782,
+              0.975233
+            ]
+          },
+          {
+            "id": "surface_6",
+            "label": "Detected support surface 6",
+            "center": [
+              -0.022421,
+              0.415649,
+              0.093666
+            ],
+            "normal": [
+              -0.2684710501599276,
+              0.9609421795381294,
+              0.0671820125519861
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.33399,
+              1.257076
+            ],
+            "area": 0.08441408,
+            "confidence": 0.754739,
+            "source": "blender_geometry",
+            "height_ratio": 0.809371,
+            "footprint_ratio": [
+              0.537887,
+              0.966982
+            ]
+          },
+          {
+            "id": "surface_7",
+            "label": "Detected support surface 7",
+            "center": [
+              0.023584,
+              0.444291,
+              0.018881
+            ],
+            "normal": [
+              -0.17823799061274,
+              0.9816589482989696,
+              0.06765299643691974
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.246641,
+              1.225637
+            ],
+            "area": 0.07276578,
+            "confidence": 0.745649,
+            "source": "blender_geometry",
+            "height_ratio": 0.865144,
+            "footprint_ratio": [
+              0.397212,
+              0.942798
+            ]
+          },
+          {
+            "id": "surface_5",
+            "label": "Detected support surface 5",
+            "center": [
+              -0.10335,
+              0.38228,
+              0.007869
+            ],
+            "normal": [
+              -0.37159305740760173,
+              0.927041143219061,
+              0.05013300774507404
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.437543,
+              1.249197
+            ],
+            "area": 0.07981526,
+            "confidence": 0.72506,
+            "source": "blender_geometry",
+            "height_ratio": 0.744394,
+            "footprint_ratio": [
+              0.704657,
+              0.960921
+            ]
+          },
+          {
+            "id": "surface_8",
+            "label": "Detected support surface 8",
+            "center": [
+              0.043873,
+              0.474798,
+              -0.135171
+            ],
+            "normal": [
+              -0.26741706280410793,
+              0.9608812256673062,
+              0.07207901692808347
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.171015,
+              0.866695
+            ],
+            "area": 0.04401195,
+            "confidence": 0.678622,
+            "source": "blender_geometry",
+            "height_ratio": 0.92455,
+            "footprint_ratio": [
+              0.275417,
+              0.666688
+            ]
+          },
+          {
+            "id": "surface_3",
+            "label": "Detected support surface 3",
+            "center": [
+              0.005598,
+              0.313457,
+              0.184062
+            ],
+            "normal": [
+              0.007279001292743465,
+              0.9959561768808367,
+              0.08954501590310669
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.505542,
+              1.269428
+            ],
+            "area": 0.02214234,
+            "confidence": 0.659188,
+            "source": "blender_geometry",
+            "height_ratio": 0.610378,
+            "footprint_ratio": [
+              0.814168,
+              0.976483
+            ]
+          },
+          {
+            "id": "surface_2",
+            "label": "Detected support surface 2",
+            "center": [
+              0.120282,
+              0.278176,
+              -0.141922
+            ],
+            "normal": [
+              0.21170995166344794,
+              0.9770187769319835,
+              0.024762994346237594
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.554171,
+              1.26659
+            ],
+            "area": 0.01994369,
+            "confidence": 0.643306,
+            "source": "blender_geometry",
+            "height_ratio": 0.541677,
+            "footprint_ratio": [
+              0.892485,
+              0.9743
+            ]
+          },
+          {
+            "id": "surface_9",
+            "label": "Detected support surface 9",
+            "center": [
+              0.048527,
+              0.500203,
+              -0.360194
+            ],
+            "normal": [
+              -0.0649040081223477,
+              0.9978201248712095,
+              0.011936001493719066
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.078473,
+              0.529446
+            ],
+            "area": 0.01044853,
+            "confidence": 0.638323,
+            "source": "blender_geometry",
+            "height_ratio": 0.97402,
+            "footprint_ratio": [
+              0.126379,
+              0.407266
+            ]
+          },
+          {
+            "id": "surface_1",
+            "label": "Detected support surface 1",
+            "center": [
+              0.230339,
+              0.232948,
+              0.096889
+            ],
+            "normal": [
+              0.29049709565344695,
+              0.9544853142882036,
+              0.0675960222576839
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.579122,
+              0.973538
+            ],
+            "area": 0.00317813,
+            "confidence": 0.597765,
+            "source": "blender_geometry",
+            "height_ratio": 0.453606,
+            "footprint_ratio": [
+              0.932668,
+              0.748875
+            ]
+          }
+        ],
+        "interior_volumes": [],
+        "collision_boxes": [
+          {
+            "center": [
+              0,
+              0.256773,
+              0
+            ],
+            "size": [
+              0.62093,
+              0.513545,
+              1.3
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "generated_at": "2026-07-18T15:55:11.459486+00:00",
+        "generator": "myway_blender_geometry_profile_v1"
+      },
+      "preferred_for_concepts": [],
+      "source_type": "blenderkit",
+      "source_asset_id": "fed6fc4e-53ec-4fb2-b15b-5e37f8a2c6a8",
+      "source_prompt": "wood log",
+      "source_url": "https://www.blenderkit.com/asset-gallery-detail/fed6fc4e-53ec-4fb2-b15b-5e37f8a2c6a8/",
+      "source_path": "public/sandbox-assets/myway/models/blenderkit/wood_log_bk_mrqjskc4.glb",
+      "public_path": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/models/blenderkit/wood_log_bk_mrqjskc4/5f9ff67b20a5e678.glb",
+      "thumbnail_path": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/thumbnails/wood_log_bk_mrqjskc4/b59af5d0a8dbf707.png",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/wood_log_bk_mrqjskc4.review.json",
+      "storage_provider": "r2",
+      "storage_object_key": "runtime/models/blenderkit/wood_log_bk_mrqjskc4/5f9ff67b20a5e678.glb",
+      "storage_etag": "f6fd4f45ec1a0a9f8e86693c02b418ae",
+      "file_size_bytes": 2406204,
+      "thumbnail_storage_provider": "r2",
+      "thumbnail_object_key": "runtime/thumbnails/wood_log_bk_mrqjskc4/b59af5d0a8dbf707.png",
+      "thumbnail_etag": "88c8275a44acfb346817da3a47d12c9c",
+      "thumbnail_file_size_bytes": 125213,
+      "source_storage_provider": null,
+      "source_object_key": null,
+      "source_storage_etag": null,
+      "source_file_size_bytes": null,
+      "source_archived_at": null,
+      "promoted_at": "2026-07-18T16:12:59.218Z",
+      "license_review_id": "wood_log_bk_mrqjskc4_blenderkit_cc0_review_v1",
+      "dimensions_m": [
+        0.62093,
+        0.513545,
+        1.3
+      ],
+      "default_scale": 1,
+      "default_rotation": [
+        0,
+        0,
+        0
+      ],
+      "ground_offset_m": 0,
+      "polygon_count": 10000,
+      "rigged": false,
+      "animation_clips": [],
+      "content_hash": "5f9ff67b20a5e678a7d2a513520d932727a8ff43f379b55a644ae3c5c4870458",
+      "quality_score": 0.78,
+      "reuse_count": 0,
+      "license_kind": "cc0",
+      "license_status": "app_ready",
+      "commercial_use_allowed": true,
+      "raw_redistribution_allowed": true,
+      "safe_to_use_in_sandbox": true,
+      "safe_to_promote_to_app": true,
+      "status": "approved",
+      "scene_review_status": "approved",
+      "scene_reviewed_at": "2026-07-18T16:13:03.641Z",
+      "scene_review_notes": null,
+      "notes": "Automatically acquired and normalized from BlendKit by Nik Kottmann. The source API record reported CC0. Review the live model before uploading it to Cloudflare R2. Selected by the random CC0 batch for \"wood log\" using query \"wood log\". source evidence contains exact label \"wood log\". Promoted to Cloudflare R2 with license review wood_log_bk_mrqjskc4_blenderkit_cc0_review_v1.",
+      "created_at": "2026-07-18T15:55:15.287Z",
+      "updated_at": "2026-07-18T16:13:03.662Z"
+    },
+    {
+      "asset_id": "cash_register_bk_mrqjytmw",
+      "canonical_label": "cash register",
+      "display_name": "Cash Register 01",
+      "aliases": [
+        "checkout register",
+        "store cash register",
+        "cash register"
+      ],
+      "semantic_tags": [
+        "cash register",
+        "store",
+        "technology",
+        "money"
+      ],
+      "style_tags": [
+        "generic",
+        "reusable",
+        "everyday"
+      ],
+      "asset_type": "glb",
+      "domain": "everyday_objects",
+      "requested_concept": "cash register",
+      "source_display_name": "Cash Register 01",
+      "verified_canonical_label": "cash register",
+      "verified_aliases": [
+        "checkout register",
+        "cash register",
+        "store cash register"
+      ],
+      "semantic_review_status": "verified",
+      "semantic_reviewed_at": "2026-07-18T16:00:05.093Z",
+      "semantic_review_notes": "Automatically identity-verified during the random CC0 import. source evidence contains exact label \"cash register\". Visual scene approval is still required.",
+      "object_composition": "unknown",
+      "contains": [],
+      "affordances": [
+        "support_surface"
+      ],
+      "support_surfaces": [
+        {
+          "id": "surface_7",
+          "label": "Detected support surface 7",
+          "center": [
+            -0.055464,
+            0.132176,
+            -0.090993
+          ],
+          "normal": [
+            0.00014899999730868754,
+            0.9999999819375004,
+            0.00011799999786862504
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.466673,
+            0.418446
+          ],
+          "area": 0.19552537,
+          "confidence": 1,
+          "source": "blender_geometry",
+          "height_ratio": 0.220294,
+          "footprint_ratio": [
+            0.804814,
+            0.694226
+          ]
+        },
+        {
+          "id": "surface_2",
+          "label": "Detected support surface 2",
+          "center": [
+            -0.05835,
+            0.034811,
+            0.027783
+          ],
+          "normal": [
+            0.00042699994035046103,
+            0.9999678603099994,
+            0.008005998881606066
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.407091,
+            0.479149
+          ],
+          "area": 0.15897157,
+          "confidence": 0.99998,
+          "source": "blender_geometry",
+          "height_ratio": 0.058019,
+          "footprint_ratio": [
+            0.702059,
+            0.794936
+          ]
+        },
+        {
+          "id": "surface_3",
+          "label": "Detected support surface 3",
+          "center": [
+            -0.026557,
+            0.04662,
+            0.091911
+          ],
+          "normal": [
+            0.011469002517211214,
+            0.9992182193079392,
+            0.037834008303790134
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.386663,
+            0.216055
+          ],
+          "area": 0.101472,
+          "confidence": 0.999515,
+          "source": "blender_geometry",
+          "height_ratio": 0.0777,
+          "footprint_ratio": [
+            0.666831,
+            0.358448
+          ]
+        },
+        {
+          "id": "surface_13",
+          "label": "Detected support surface 13",
+          "center": [
+            -0.059222,
+            0.59963,
+            -0.222264
+          ],
+          "normal": [
+            0.000009999997841615698,
+            0.9999707841678291,
+            -0.007643998350131039
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.378775,
+            0.094298
+          ],
+          "area": 0.03694391,
+          "confidence": 0.780651,
+          "source": "blender_geometry",
+          "height_ratio": 0.999384,
+          "footprint_ratio": [
+            0.653227,
+            0.156445
+          ]
+        },
+        {
+          "id": "surface_10",
+          "label": "Detected support surface 10",
+          "center": [
+            -0.05892,
+            0.491293,
+            -0.16231
+          ],
+          "normal": [
+            0.0004940000343228764,
+            0.9368940650949333,
+            -0.34961302429093893
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.438705,
+            0.194385
+          ],
+          "area": 0.03932205,
+          "confidence": 0.751885,
+          "source": "blender_geometry",
+          "height_ratio": 0.818822,
+          "footprint_ratio": [
+            0.756581,
+            0.322495
+          ]
+        },
+        {
+          "id": "surface_9",
+          "label": "Detected support surface 9",
+          "center": [
+            0.012399,
+            0.471442,
+            -0.216491
+          ],
+          "normal": [
+            0.00002500000550587682,
+            0.9366162062756929,
+            -0.35035707716089937
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.438792,
+            0.199202
+          ],
+          "area": 0.03855198,
+          "confidence": 0.748364,
+          "source": "blender_geometry",
+          "height_ratio": 0.785737,
+          "footprint_ratio": [
+            0.756731,
+            0.330488
+          ]
+        },
+        {
+          "id": "surface_4",
+          "label": "Detected support surface 4",
+          "center": [
+            0.055203,
+            0.055088,
+            0.118447
+          ],
+          "normal": [
+            -0.01248999636563016,
+            0.9993327092117122,
+            0.03432399001232103
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.258707,
+            0.161824
+          ],
+          "area": 0.02458708,
+          "confidence": 0.726515,
+          "source": "blender_geometry",
+          "height_ratio": 0.091813,
+          "footprint_ratio": [
+            0.44616,
+            0.268476
+          ]
+        },
+        {
+          "id": "surface_11",
+          "label": "Detected support surface 11",
+          "center": [
+            -0.036351,
+            0.51362,
+            -0.120433
+          ],
+          "normal": [
+            0.0001799999765293546,
+            0.9804518721564376,
+            0.1967589743441071
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.444742,
+            0.231063
+          ],
+          "area": 0.02132387,
+          "confidence": 0.700617,
+          "source": "blender_geometry",
+          "height_ratio": 0.856033,
+          "footprint_ratio": [
+            0.766993,
+            0.383346
+          ]
+        },
+        {
+          "id": "surface_12",
+          "label": "Detected support surface 12",
+          "center": [
+            -0.091167,
+            0.540467,
+            -0.218596
+          ],
+          "normal": [
+            -0.00036100013685860734,
+            0.9984063785054147,
+            -0.05643202139391947
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.349751,
+            0.144833
+          ],
+          "area": 0.01198919,
+          "confidence": 0.671153,
+          "source": "blender_geometry",
+          "height_ratio": 0.900778,
+          "footprint_ratio": [
+            0.603173,
+            0.240287
+          ]
+        },
+        {
+          "id": "surface_5",
+          "label": "Detected support surface 5",
+          "center": [
+            -0.070849,
+            0.107928,
+            0.132285
+          ],
+          "normal": [
+            -0.000005000001462755642,
+            0.9998522925078308,
+            0.017187005028076244
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.389218,
+            0.293774
+          ],
+          "area": 0.01075562,
+          "confidence": 0.666684,
+          "source": "blender_geometry",
+          "height_ratio": 0.179879,
+          "footprint_ratio": [
+            0.671237,
+            0.487388
+          ]
+        },
+        {
+          "id": "surface_1",
+          "label": "Detected support surface 1",
+          "center": [
+            -0.055497,
+            0.02239,
+            0.197468
+          ],
+          "normal": [
+            0,
+            0.9999998096555542,
+            -0.000616999882557477
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.407091,
+            0.185878
+          ],
+          "area": 0.00899542,
+          "confidence": 0.659121,
+          "source": "blender_geometry",
+          "height_ratio": 0.037316,
+          "footprint_ratio": [
+            0.702059,
+            0.308382
+          ]
+        },
+        {
+          "id": "surface_8",
+          "label": "Detected support surface 8",
+          "center": [
+            -0.049558,
+            0.162673,
+            -0.118393
+          ],
+          "normal": [
+            0,
+            0.9999999999995,
+            9.999999999995e-7
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.385309,
+            0.348912
+          ],
+          "area": 0.00607271,
+          "confidence": 0.64641,
+          "source": "blender_geometry",
+          "height_ratio": 0.271121,
+          "footprint_ratio": [
+            0.664496,
+            0.578865
+          ]
+        },
+        {
+          "id": "surface_6",
+          "label": "Detected support surface 6",
+          "center": [
+            -0.055571,
+            0.122014,
+            0.291249
+          ],
+          "normal": [
+            0,
+            0.9987656349527252,
+            0.04967098184533396
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.404525,
+            0.013609
+          ],
+          "area": 0.00554321,
+          "confidence": 0.643342,
+          "source": "blender_geometry",
+          "height_ratio": 0.203357,
+          "footprint_ratio": [
+            0.697634,
+            0.022579
+          ]
+        }
+      ],
+      "geometry_profile": {
+        "schema_version": "myway_asset_geometry_profile_v1",
+        "coordinate_space": "normalized_glb_y_up",
+        "local_bounds": {
+          "min": [
+            -0.289926,
+            0,
+            -0.301376
+          ],
+          "max": [
+            0.289926,
+            0.6,
+            0.301376
+          ],
+          "size": [
+            0.579852,
+            0.6,
+            0.602751
+          ],
+          "center": [
+            0,
+            0.3,
+            0
+          ]
+        },
+        "orientation": {
+          "up_axis": [
+            0,
+            1,
+            0
+          ],
+          "forward_axis": [
+            0,
+            0,
+            1
+          ]
+        },
+        "bottom_contact_region": {
+          "id": "bottom_contact",
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "size": [
+            0.579852,
+            0.602751
+          ],
+          "area": 0.34950662,
+          "confidence": 0.65
+        },
+        "support_surfaces": [
+          {
+            "id": "surface_7",
+            "label": "Detected support surface 7",
+            "center": [
+              -0.055464,
+              0.132176,
+              -0.090993
+            ],
+            "normal": [
+              0.00014899999730868754,
+              0.9999999819375004,
+              0.00011799999786862504
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.466673,
+              0.418446
+            ],
+            "area": 0.19552537,
+            "confidence": 1,
+            "source": "blender_geometry",
+            "height_ratio": 0.220294,
+            "footprint_ratio": [
+              0.804814,
+              0.694226
+            ]
+          },
+          {
+            "id": "surface_2",
+            "label": "Detected support surface 2",
+            "center": [
+              -0.05835,
+              0.034811,
+              0.027783
+            ],
+            "normal": [
+              0.00042699994035046103,
+              0.9999678603099994,
+              0.008005998881606066
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.407091,
+              0.479149
+            ],
+            "area": 0.15897157,
+            "confidence": 0.99998,
+            "source": "blender_geometry",
+            "height_ratio": 0.058019,
+            "footprint_ratio": [
+              0.702059,
+              0.794936
+            ]
+          },
+          {
+            "id": "surface_3",
+            "label": "Detected support surface 3",
+            "center": [
+              -0.026557,
+              0.04662,
+              0.091911
+            ],
+            "normal": [
+              0.011469002517211214,
+              0.9992182193079392,
+              0.037834008303790134
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.386663,
+              0.216055
+            ],
+            "area": 0.101472,
+            "confidence": 0.999515,
+            "source": "blender_geometry",
+            "height_ratio": 0.0777,
+            "footprint_ratio": [
+              0.666831,
+              0.358448
+            ]
+          },
+          {
+            "id": "surface_13",
+            "label": "Detected support surface 13",
+            "center": [
+              -0.059222,
+              0.59963,
+              -0.222264
+            ],
+            "normal": [
+              0.000009999997841615698,
+              0.9999707841678291,
+              -0.007643998350131039
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.378775,
+              0.094298
+            ],
+            "area": 0.03694391,
+            "confidence": 0.780651,
+            "source": "blender_geometry",
+            "height_ratio": 0.999384,
+            "footprint_ratio": [
+              0.653227,
+              0.156445
+            ]
+          },
+          {
+            "id": "surface_10",
+            "label": "Detected support surface 10",
+            "center": [
+              -0.05892,
+              0.491293,
+              -0.16231
+            ],
+            "normal": [
+              0.0004940000343228764,
+              0.9368940650949333,
+              -0.34961302429093893
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.438705,
+              0.194385
+            ],
+            "area": 0.03932205,
+            "confidence": 0.751885,
+            "source": "blender_geometry",
+            "height_ratio": 0.818822,
+            "footprint_ratio": [
+              0.756581,
+              0.322495
+            ]
+          },
+          {
+            "id": "surface_9",
+            "label": "Detected support surface 9",
+            "center": [
+              0.012399,
+              0.471442,
+              -0.216491
+            ],
+            "normal": [
+              0.00002500000550587682,
+              0.9366162062756929,
+              -0.35035707716089937
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.438792,
+              0.199202
+            ],
+            "area": 0.03855198,
+            "confidence": 0.748364,
+            "source": "blender_geometry",
+            "height_ratio": 0.785737,
+            "footprint_ratio": [
+              0.756731,
+              0.330488
+            ]
+          },
+          {
+            "id": "surface_4",
+            "label": "Detected support surface 4",
+            "center": [
+              0.055203,
+              0.055088,
+              0.118447
+            ],
+            "normal": [
+              -0.01248999636563016,
+              0.9993327092117122,
+              0.03432399001232103
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.258707,
+              0.161824
+            ],
+            "area": 0.02458708,
+            "confidence": 0.726515,
+            "source": "blender_geometry",
+            "height_ratio": 0.091813,
+            "footprint_ratio": [
+              0.44616,
+              0.268476
+            ]
+          },
+          {
+            "id": "surface_11",
+            "label": "Detected support surface 11",
+            "center": [
+              -0.036351,
+              0.51362,
+              -0.120433
+            ],
+            "normal": [
+              0.0001799999765293546,
+              0.9804518721564376,
+              0.1967589743441071
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.444742,
+              0.231063
+            ],
+            "area": 0.02132387,
+            "confidence": 0.700617,
+            "source": "blender_geometry",
+            "height_ratio": 0.856033,
+            "footprint_ratio": [
+              0.766993,
+              0.383346
+            ]
+          },
+          {
+            "id": "surface_12",
+            "label": "Detected support surface 12",
+            "center": [
+              -0.091167,
+              0.540467,
+              -0.218596
+            ],
+            "normal": [
+              -0.00036100013685860734,
+              0.9984063785054147,
+              -0.05643202139391947
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.349751,
+              0.144833
+            ],
+            "area": 0.01198919,
+            "confidence": 0.671153,
+            "source": "blender_geometry",
+            "height_ratio": 0.900778,
+            "footprint_ratio": [
+              0.603173,
+              0.240287
+            ]
+          },
+          {
+            "id": "surface_5",
+            "label": "Detected support surface 5",
+            "center": [
+              -0.070849,
+              0.107928,
+              0.132285
+            ],
+            "normal": [
+              -0.000005000001462755642,
+              0.9998522925078308,
+              0.017187005028076244
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.389218,
+              0.293774
+            ],
+            "area": 0.01075562,
+            "confidence": 0.666684,
+            "source": "blender_geometry",
+            "height_ratio": 0.179879,
+            "footprint_ratio": [
+              0.671237,
+              0.487388
+            ]
+          },
+          {
+            "id": "surface_1",
+            "label": "Detected support surface 1",
+            "center": [
+              -0.055497,
+              0.02239,
+              0.197468
+            ],
+            "normal": [
+              0,
+              0.9999998096555542,
+              -0.000616999882557477
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.407091,
+              0.185878
+            ],
+            "area": 0.00899542,
+            "confidence": 0.659121,
+            "source": "blender_geometry",
+            "height_ratio": 0.037316,
+            "footprint_ratio": [
+              0.702059,
+              0.308382
+            ]
+          },
+          {
+            "id": "surface_8",
+            "label": "Detected support surface 8",
+            "center": [
+              -0.049558,
+              0.162673,
+              -0.118393
+            ],
+            "normal": [
+              0,
+              0.9999999999995,
+              9.999999999995e-7
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.385309,
+              0.348912
+            ],
+            "area": 0.00607271,
+            "confidence": 0.64641,
+            "source": "blender_geometry",
+            "height_ratio": 0.271121,
+            "footprint_ratio": [
+              0.664496,
+              0.578865
+            ]
+          },
+          {
+            "id": "surface_6",
+            "label": "Detected support surface 6",
+            "center": [
+              -0.055571,
+              0.122014,
+              0.291249
+            ],
+            "normal": [
+              0,
+              0.9987656349527252,
+              0.04967098184533396
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.404525,
+              0.013609
+            ],
+            "area": 0.00554321,
+            "confidence": 0.643342,
+            "source": "blender_geometry",
+            "height_ratio": 0.203357,
+            "footprint_ratio": [
+              0.697634,
+              0.022579
+            ]
+          }
+        ],
+        "interior_volumes": [],
+        "collision_boxes": [
+          {
+            "center": [
+              0,
+              0.3,
+              0
+            ],
+            "size": [
+              0.579852,
+              0.6,
+              0.602751
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "generated_at": "2026-07-18T15:59:58.413806+00:00",
+        "generator": "myway_blender_geometry_profile_v1"
+      },
+      "preferred_for_concepts": [],
+      "source_type": "blenderkit",
+      "source_asset_id": "b43aaf51-db94-43bc-b2a9-b10f9bd6c048",
+      "source_prompt": "cash register",
+      "source_url": "https://www.blenderkit.com/asset-gallery-detail/b43aaf51-db94-43bc-b2a9-b10f9bd6c048/",
+      "source_path": "public/sandbox-assets/myway/models/blenderkit/cash_register_bk_mrqjytmw.glb",
+      "public_path": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/models/blenderkit/cash_register_bk_mrqjytmw/d0a1cd4dcffe4f82.glb",
+      "thumbnail_path": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/thumbnails/cash_register_bk_mrqjytmw/bb758b6d1f1bb90f.png",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/cash_register_bk_mrqjytmw.review.json",
+      "storage_provider": "r2",
+      "storage_object_key": "runtime/models/blenderkit/cash_register_bk_mrqjytmw/d0a1cd4dcffe4f82.glb",
+      "storage_etag": "83aa0a197e74dbc135a62cd272f3d315",
+      "file_size_bytes": 5231352,
+      "thumbnail_storage_provider": "r2",
+      "thumbnail_object_key": "runtime/thumbnails/cash_register_bk_mrqjytmw/bb758b6d1f1bb90f.png",
+      "thumbnail_etag": "15e152bff4d7c86184aa70a5e7f6797b",
+      "thumbnail_file_size_bytes": 197855,
+      "source_storage_provider": null,
+      "source_object_key": null,
+      "source_storage_etag": null,
+      "source_file_size_bytes": null,
+      "source_archived_at": null,
+      "promoted_at": "2026-07-18T16:11:16.062Z",
+      "license_review_id": "cash_register_bk_mrqjytmw_blenderkit_cc0_review_v1",
+      "dimensions_m": [
+        0.579852,
+        0.6,
+        0.602751
+      ],
+      "default_scale": 1,
+      "default_rotation": [
+        0,
+        0,
+        0
+      ],
+      "ground_offset_m": 0,
+      "polygon_count": 9927,
+      "rigged": false,
+      "animation_clips": [],
+      "content_hash": "d0a1cd4dcffe4f82b707f759c77de5c165188f74f4db7acdad531f6935259f39",
+      "quality_score": 0.78,
+      "reuse_count": 0,
+      "license_kind": "cc0",
+      "license_status": "app_ready",
+      "commercial_use_allowed": true,
+      "raw_redistribution_allowed": true,
+      "safe_to_use_in_sandbox": true,
+      "safe_to_promote_to_app": true,
+      "status": "approved",
+      "scene_review_status": "approved",
+      "scene_reviewed_at": "2026-07-18T16:11:19.399Z",
+      "scene_review_notes": null,
+      "notes": "Automatically acquired and normalized from BlendKit by Poly Haven . The source API record reported CC0. Review the live model before uploading it to Cloudflare R2. Selected by the random CC0 batch for \"cash register\" using query \"cash register\". source evidence contains exact label \"cash register\". Promoted to Cloudflare R2 with license review cash_register_bk_mrqjytmw_blenderkit_cc0_review_v1.",
+      "created_at": "2026-07-18T16:00:05.066Z",
+      "updated_at": "2026-07-18T16:11:19.415Z"
+    },
+    {
+      "asset_id": "tree_stump_bk_mrqk15g2",
+      "canonical_label": "tree stump",
+      "display_name": "Tree Stump 01",
+      "aliases": [
+        "stump",
+        "cut tree stump",
+        "wood stump",
+        "tree stump"
+      ],
+      "semantic_tags": [
+        "tree stump",
+        "nature",
+        "wood",
+        "forest"
+      ],
+      "style_tags": [
+        "generic",
+        "reusable",
+        "everyday"
+      ],
+      "asset_type": "glb",
+      "domain": "biology",
+      "requested_concept": "tree stump",
+      "source_display_name": "Tree Stump 01",
+      "verified_canonical_label": "tree stump",
+      "verified_aliases": [
+        "stump",
+        "tree stump",
+        "cut tree stump",
+        "wood stump"
+      ],
+      "semantic_review_status": "verified",
+      "semantic_reviewed_at": "2026-07-18T16:02:01.760Z",
+      "semantic_review_notes": "Automatically identity-verified during the random CC0 import. source evidence contains exact label \"tree stump\". Visual scene approval is still required.",
+      "object_composition": "unknown",
+      "contains": [],
+      "affordances": [
+        "support_surface"
+      ],
+      "support_surfaces": [
+        {
+          "id": "surface_6",
+          "label": "Detected support surface 6",
+          "center": [
+            -0.006383,
+            0.126376,
+            -0.068648
+          ],
+          "normal": [
+            -0.02734101102764359,
+            0.994354401060002,
+            -0.10252704135295762
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.609288,
+            0.664233
+          ],
+          "area": 0.04154889,
+          "confidence": 0.703479,
+          "source": "blender_geometry",
+          "height_ratio": 0.389943,
+          "footprint_ratio": [
+            0.755232,
+            0.738037
+          ]
+        },
+        {
+          "id": "surface_7",
+          "label": "Detected support surface 7",
+          "center": [
+            -0.024089,
+            0.146795,
+            -0.085233
+          ],
+          "normal": [
+            -0.05967799202946759,
+            0.9950528671017429,
+            -0.07942498939207854
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.562317,
+            0.588998
+          ],
+          "area": 0.03919279,
+          "confidence": 0.69898,
+          "source": "blender_geometry",
+          "height_ratio": 0.452948,
+          "footprint_ratio": [
+            0.69701,
+            0.654442
+          ]
+        },
+        {
+          "id": "surface_5",
+          "label": "Detected support surface 5",
+          "center": [
+            0.064605,
+            0.101188,
+            0.164975
+          ],
+          "normal": [
+            0.024094009575720266,
+            0.9932993947685468,
+            0.11303004492170922
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.641711,
+            0.716369
+          ],
+          "area": 0.03749135,
+          "confidence": 0.694331,
+          "source": "blender_geometry",
+          "height_ratio": 0.312225,
+          "footprint_ratio": [
+            0.795421,
+            0.795966
+          ]
+        },
+        {
+          "id": "surface_1",
+          "label": "Detected support surface 1",
+          "center": [
+            0.053997,
+            0.014718,
+            0.121592
+          ],
+          "normal": [
+            0.07056201084548774,
+            0.9860881515632397,
+            0.15050302313254219
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.806756,
+            0.9
+          ],
+          "area": 0.02993096,
+          "confidence": 0.674033,
+          "source": "blender_geometry",
+          "height_ratio": 0.045414,
+          "footprint_ratio": [
+            1,
+            1
+          ]
+        },
+        {
+          "id": "surface_8",
+          "label": "Detected support surface 8",
+          "center": [
+            -0.082047,
+            0.166196,
+            -0.079213
+          ],
+          "normal": [
+            -0.08156200061416187,
+            0.9943860074877267,
+            -0.06741000050759731
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.523583,
+            0.536484
+          ],
+          "area": 0.02641113,
+          "confidence": 0.671809,
+          "source": "blender_geometry",
+          "height_ratio": 0.512812,
+          "footprint_ratio": [
+            0.648999,
+            0.596093
+          ]
+        },
+        {
+          "id": "surface_14",
+          "label": "Detected support surface 14",
+          "center": [
+            -0.018791,
+            0.301336,
+            0.006758
+          ],
+          "normal": [
+            -0.08754197750145205,
+            0.9905807454178095,
+            -0.10529097293990757
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.326993,
+            0.280309
+          ],
+          "area": 0.02591659,
+          "confidence": 0.668415,
+          "source": "blender_geometry",
+          "height_ratio": 0.929798,
+          "footprint_ratio": [
+            0.405318,
+            0.311455
+          ]
+        },
+        {
+          "id": "surface_4",
+          "label": "Detected support surface 4",
+          "center": [
+            0.024805,
+            0.079002,
+            0.210203
+          ],
+          "normal": [
+            -0.01574200307784526,
+            0.9661041888907772,
+            0.2576720503795289
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.684496,
+            0.7598
+          ],
+          "area": 0.02598337,
+          "confidence": 0.653379,
+          "source": "blender_geometry",
+          "height_ratio": 0.243767,
+          "footprint_ratio": [
+            0.848455,
+            0.844223
+          ]
+        },
+        {
+          "id": "surface_13",
+          "label": "Detected support surface 13",
+          "center": [
+            0.058299,
+            0.278026,
+            -0.03551
+          ],
+          "normal": [
+            -0.026477999739602114,
+            0.9989479901758459,
+            -0.037440999631786494
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.33266,
+            0.331754
+          ],
+          "area": 0.014839,
+          "confidence": 0.650412,
+          "source": "blender_geometry",
+          "height_ratio": 0.857873,
+          "footprint_ratio": [
+            0.412343,
+            0.368616
+          ]
+        },
+        {
+          "id": "surface_12",
+          "label": "Detected support surface 12",
+          "center": [
+            -0.004151,
+            0.252715,
+            -0.009069
+          ],
+          "normal": [
+            -0.036268987583640645,
+            0.9988886580395163,
+            -0.030099989695541184
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.392695,
+            0.351599
+          ],
+          "area": 0.01205671,
+          "confidence": 0.644551,
+          "source": "blender_geometry",
+          "height_ratio": 0.779773,
+          "footprint_ratio": [
+            0.486759,
+            0.390665
+          ]
+        },
+        {
+          "id": "surface_2",
+          "label": "Detected support surface 2",
+          "center": [
+            -0.080894,
+            0.029951,
+            0.033522
+          ],
+          "normal": [
+            -0.09339997148116366,
+            0.9945906963107285,
+            0.045450986121952565
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.768806,
+            0.864709
+          ],
+          "area": 0.00955382,
+          "confidence": 0.636647,
+          "source": "blender_geometry",
+          "height_ratio": 0.092417,
+          "footprint_ratio": [
+            0.952959,
+            0.960788
+          ]
+        },
+        {
+          "id": "surface_11",
+          "label": "Detected support surface 11",
+          "center": [
+            -0.005965,
+            0.230444,
+            -0.022421
+          ],
+          "normal": [
+            -0.028860004473286613,
+            0.9992651548856114,
+            -0.0252240039097083
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.416028,
+            0.34584
+          ],
+          "area": 0.00715733,
+          "confidence": 0.634528,
+          "source": "blender_geometry",
+          "height_ratio": 0.711056,
+          "footprint_ratio": [
+            0.51568,
+            0.384266
+          ]
+        },
+        {
+          "id": "surface_3",
+          "label": "Detected support surface 3",
+          "center": [
+            0.089996,
+            0.056573,
+            0.256965
+          ],
+          "normal": [
+            0.11199197473405337,
+            0.9536607848493828,
+            0.27926493699644095
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.69442,
+            0.797202
+          ],
+          "area": 0.0201382,
+          "confidence": 0.633428,
+          "source": "blender_geometry",
+          "height_ratio": 0.17456,
+          "footprint_ratio": [
+            0.860756,
+            0.88578
+          ]
+        },
+        {
+          "id": "surface_15",
+          "label": "Detected support surface 15",
+          "center": [
+            -0.045245,
+            0.317112,
+            0.068703
+          ],
+          "normal": [
+            -0.0627100101477033,
+            0.9971101613518807,
+            -0.04288100693898366
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.122367,
+            0.111789
+          ],
+          "area": 0.00725177,
+          "confidence": 0.633389,
+          "source": "blender_geometry",
+          "height_ratio": 0.978477,
+          "footprint_ratio": [
+            0.151678,
+            0.12421
+          ]
+        },
+        {
+          "id": "surface_9",
+          "label": "Detected support surface 9",
+          "center": [
+            -0.044534,
+            0.184207,
+            -0.073617
+          ],
+          "normal": [
+            -0.07406100112476444,
+            0.9812090149016214,
+            -0.17816800270583746
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.47827,
+            0.417806
+          ],
+          "area": 0.01033062,
+          "confidence": 0.629976,
+          "source": "blender_geometry",
+          "height_ratio": 0.568387,
+          "footprint_ratio": [
+            0.592832,
+            0.464229
+          ]
+        },
+        {
+          "id": "surface_10",
+          "label": "Detected support surface 10",
+          "center": [
+            -0.017461,
+            0.204538,
+            -0.073618
+          ],
+          "normal": [
+            -0.057737985771341226,
+            0.994904754820677,
+            -0.08264897963240121
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.43134,
+            0.384336
+          ],
+          "area": 0.00374237,
+          "confidence": 0.624675,
+          "source": "blender_geometry",
+          "height_ratio": 0.631121,
+          "footprint_ratio": [
+            0.53466,
+            0.42704
+          ]
+        }
+      ],
+      "geometry_profile": {
+        "schema_version": "myway_asset_geometry_profile_v1",
+        "coordinate_space": "normalized_glb_y_up",
+        "local_bounds": {
+          "min": [
+            -0.403378,
+            0,
+            -0.45
+          ],
+          "max": [
+            0.403378,
+            0.324087,
+            0.45
+          ],
+          "size": [
+            0.806756,
+            0.324087,
+            0.9
+          ],
+          "center": [
+            0,
+            0.162044,
+            0
+          ]
+        },
+        "orientation": {
+          "up_axis": [
+            0,
+            1,
+            0
+          ],
+          "forward_axis": [
+            0,
+            0,
+            1
+          ]
+        },
+        "bottom_contact_region": {
+          "id": "bottom_contact",
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "size": [
+            0.806756,
+            0.9
+          ],
+          "area": 0.72608024,
+          "confidence": 0.65
+        },
+        "support_surfaces": [
+          {
+            "id": "surface_6",
+            "label": "Detected support surface 6",
+            "center": [
+              -0.006383,
+              0.126376,
+              -0.068648
+            ],
+            "normal": [
+              -0.02734101102764359,
+              0.994354401060002,
+              -0.10252704135295762
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.609288,
+              0.664233
+            ],
+            "area": 0.04154889,
+            "confidence": 0.703479,
+            "source": "blender_geometry",
+            "height_ratio": 0.389943,
+            "footprint_ratio": [
+              0.755232,
+              0.738037
+            ]
+          },
+          {
+            "id": "surface_7",
+            "label": "Detected support surface 7",
+            "center": [
+              -0.024089,
+              0.146795,
+              -0.085233
+            ],
+            "normal": [
+              -0.05967799202946759,
+              0.9950528671017429,
+              -0.07942498939207854
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.562317,
+              0.588998
+            ],
+            "area": 0.03919279,
+            "confidence": 0.69898,
+            "source": "blender_geometry",
+            "height_ratio": 0.452948,
+            "footprint_ratio": [
+              0.69701,
+              0.654442
+            ]
+          },
+          {
+            "id": "surface_5",
+            "label": "Detected support surface 5",
+            "center": [
+              0.064605,
+              0.101188,
+              0.164975
+            ],
+            "normal": [
+              0.024094009575720266,
+              0.9932993947685468,
+              0.11303004492170922
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.641711,
+              0.716369
+            ],
+            "area": 0.03749135,
+            "confidence": 0.694331,
+            "source": "blender_geometry",
+            "height_ratio": 0.312225,
+            "footprint_ratio": [
+              0.795421,
+              0.795966
+            ]
+          },
+          {
+            "id": "surface_1",
+            "label": "Detected support surface 1",
+            "center": [
+              0.053997,
+              0.014718,
+              0.121592
+            ],
+            "normal": [
+              0.07056201084548774,
+              0.9860881515632397,
+              0.15050302313254219
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.806756,
+              0.9
+            ],
+            "area": 0.02993096,
+            "confidence": 0.674033,
+            "source": "blender_geometry",
+            "height_ratio": 0.045414,
+            "footprint_ratio": [
+              1,
+              1
+            ]
+          },
+          {
+            "id": "surface_8",
+            "label": "Detected support surface 8",
+            "center": [
+              -0.082047,
+              0.166196,
+              -0.079213
+            ],
+            "normal": [
+              -0.08156200061416187,
+              0.9943860074877267,
+              -0.06741000050759731
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.523583,
+              0.536484
+            ],
+            "area": 0.02641113,
+            "confidence": 0.671809,
+            "source": "blender_geometry",
+            "height_ratio": 0.512812,
+            "footprint_ratio": [
+              0.648999,
+              0.596093
+            ]
+          },
+          {
+            "id": "surface_14",
+            "label": "Detected support surface 14",
+            "center": [
+              -0.018791,
+              0.301336,
+              0.006758
+            ],
+            "normal": [
+              -0.08754197750145205,
+              0.9905807454178095,
+              -0.10529097293990757
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.326993,
+              0.280309
+            ],
+            "area": 0.02591659,
+            "confidence": 0.668415,
+            "source": "blender_geometry",
+            "height_ratio": 0.929798,
+            "footprint_ratio": [
+              0.405318,
+              0.311455
+            ]
+          },
+          {
+            "id": "surface_4",
+            "label": "Detected support surface 4",
+            "center": [
+              0.024805,
+              0.079002,
+              0.210203
+            ],
+            "normal": [
+              -0.01574200307784526,
+              0.9661041888907772,
+              0.2576720503795289
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.684496,
+              0.7598
+            ],
+            "area": 0.02598337,
+            "confidence": 0.653379,
+            "source": "blender_geometry",
+            "height_ratio": 0.243767,
+            "footprint_ratio": [
+              0.848455,
+              0.844223
+            ]
+          },
+          {
+            "id": "surface_13",
+            "label": "Detected support surface 13",
+            "center": [
+              0.058299,
+              0.278026,
+              -0.03551
+            ],
+            "normal": [
+              -0.026477999739602114,
+              0.9989479901758459,
+              -0.037440999631786494
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.33266,
+              0.331754
+            ],
+            "area": 0.014839,
+            "confidence": 0.650412,
+            "source": "blender_geometry",
+            "height_ratio": 0.857873,
+            "footprint_ratio": [
+              0.412343,
+              0.368616
+            ]
+          },
+          {
+            "id": "surface_12",
+            "label": "Detected support surface 12",
+            "center": [
+              -0.004151,
+              0.252715,
+              -0.009069
+            ],
+            "normal": [
+              -0.036268987583640645,
+              0.9988886580395163,
+              -0.030099989695541184
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.392695,
+              0.351599
+            ],
+            "area": 0.01205671,
+            "confidence": 0.644551,
+            "source": "blender_geometry",
+            "height_ratio": 0.779773,
+            "footprint_ratio": [
+              0.486759,
+              0.390665
+            ]
+          },
+          {
+            "id": "surface_2",
+            "label": "Detected support surface 2",
+            "center": [
+              -0.080894,
+              0.029951,
+              0.033522
+            ],
+            "normal": [
+              -0.09339997148116366,
+              0.9945906963107285,
+              0.045450986121952565
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.768806,
+              0.864709
+            ],
+            "area": 0.00955382,
+            "confidence": 0.636647,
+            "source": "blender_geometry",
+            "height_ratio": 0.092417,
+            "footprint_ratio": [
+              0.952959,
+              0.960788
+            ]
+          },
+          {
+            "id": "surface_11",
+            "label": "Detected support surface 11",
+            "center": [
+              -0.005965,
+              0.230444,
+              -0.022421
+            ],
+            "normal": [
+              -0.028860004473286613,
+              0.9992651548856114,
+              -0.0252240039097083
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.416028,
+              0.34584
+            ],
+            "area": 0.00715733,
+            "confidence": 0.634528,
+            "source": "blender_geometry",
+            "height_ratio": 0.711056,
+            "footprint_ratio": [
+              0.51568,
+              0.384266
+            ]
+          },
+          {
+            "id": "surface_3",
+            "label": "Detected support surface 3",
+            "center": [
+              0.089996,
+              0.056573,
+              0.256965
+            ],
+            "normal": [
+              0.11199197473405337,
+              0.9536607848493828,
+              0.27926493699644095
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.69442,
+              0.797202
+            ],
+            "area": 0.0201382,
+            "confidence": 0.633428,
+            "source": "blender_geometry",
+            "height_ratio": 0.17456,
+            "footprint_ratio": [
+              0.860756,
+              0.88578
+            ]
+          },
+          {
+            "id": "surface_15",
+            "label": "Detected support surface 15",
+            "center": [
+              -0.045245,
+              0.317112,
+              0.068703
+            ],
+            "normal": [
+              -0.0627100101477033,
+              0.9971101613518807,
+              -0.04288100693898366
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.122367,
+              0.111789
+            ],
+            "area": 0.00725177,
+            "confidence": 0.633389,
+            "source": "blender_geometry",
+            "height_ratio": 0.978477,
+            "footprint_ratio": [
+              0.151678,
+              0.12421
+            ]
+          },
+          {
+            "id": "surface_9",
+            "label": "Detected support surface 9",
+            "center": [
+              -0.044534,
+              0.184207,
+              -0.073617
+            ],
+            "normal": [
+              -0.07406100112476444,
+              0.9812090149016214,
+              -0.17816800270583746
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.47827,
+              0.417806
+            ],
+            "area": 0.01033062,
+            "confidence": 0.629976,
+            "source": "blender_geometry",
+            "height_ratio": 0.568387,
+            "footprint_ratio": [
+              0.592832,
+              0.464229
+            ]
+          },
+          {
+            "id": "surface_10",
+            "label": "Detected support surface 10",
+            "center": [
+              -0.017461,
+              0.204538,
+              -0.073618
+            ],
+            "normal": [
+              -0.057737985771341226,
+              0.994904754820677,
+              -0.08264897963240121
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.43134,
+              0.384336
+            ],
+            "area": 0.00374237,
+            "confidence": 0.624675,
+            "source": "blender_geometry",
+            "height_ratio": 0.631121,
+            "footprint_ratio": [
+              0.53466,
+              0.42704
+            ]
+          }
+        ],
+        "interior_volumes": [],
+        "collision_boxes": [
+          {
+            "center": [
+              0,
+              0.162044,
+              0
+            ],
+            "size": [
+              0.806756,
+              0.324087,
+              0.9
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "generated_at": "2026-07-18T16:01:56.212331+00:00",
+        "generator": "myway_blender_geometry_profile_v1"
+      },
+      "preferred_for_concepts": [],
+      "source_type": "blenderkit",
+      "source_asset_id": "12abdbf2-c3cd-4ccf-9328-81dfe386dfc9",
+      "source_prompt": "tree stump",
+      "source_url": "https://www.blenderkit.com/asset-gallery-detail/12abdbf2-c3cd-4ccf-9328-81dfe386dfc9/",
+      "source_path": "public/sandbox-assets/myway/models/blenderkit/tree_stump_bk_mrqk15g2.glb",
+      "public_path": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/models/blenderkit/tree_stump_bk_mrqk15g2/347ed9d512cc3e93.glb",
+      "thumbnail_path": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/thumbnails/tree_stump_bk_mrqk15g2/0aa767ff53304faa.png",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/tree_stump_bk_mrqk15g2.review.json",
+      "storage_provider": "r2",
+      "storage_object_key": "runtime/models/blenderkit/tree_stump_bk_mrqk15g2/347ed9d512cc3e93.glb",
+      "storage_etag": "4f742320848cb25a3fc916f512c22a4b",
+      "file_size_bytes": 7171240,
+      "thumbnail_storage_provider": "r2",
+      "thumbnail_object_key": "runtime/thumbnails/tree_stump_bk_mrqk15g2/0aa767ff53304faa.png",
+      "thumbnail_etag": "60d088bef41a12aad105d6be5905608b",
+      "thumbnail_file_size_bytes": 149146,
+      "source_storage_provider": null,
+      "source_object_key": null,
+      "source_storage_etag": null,
+      "source_file_size_bytes": null,
+      "source_archived_at": null,
+      "promoted_at": "2026-07-18T16:10:35.651Z",
+      "license_review_id": "tree_stump_bk_mrqk15g2_blenderkit_cc0_review_v1",
+      "dimensions_m": [
+        0.806756,
+        0.324087,
+        0.9
+      ],
+      "default_scale": 1,
+      "default_rotation": [
+        0,
+        0,
+        0
+      ],
+      "ground_offset_m": 0,
+      "polygon_count": 41046,
+      "rigged": false,
+      "animation_clips": [],
+      "content_hash": "347ed9d512cc3e935d9e5f62a3dbab3781fc0af3fa79ca50b84cf1a260ecb855",
+      "quality_score": 0.78,
+      "reuse_count": 0,
+      "license_kind": "cc0",
+      "license_status": "app_ready",
+      "commercial_use_allowed": true,
+      "raw_redistribution_allowed": true,
+      "safe_to_use_in_sandbox": true,
+      "safe_to_promote_to_app": true,
+      "status": "approved",
+      "scene_review_status": "approved",
+      "scene_reviewed_at": "2026-07-18T16:10:41.971Z",
+      "scene_review_notes": null,
+      "notes": "Automatically acquired and normalized from BlendKit by Poly Haven . The source API record reported CC0. Review the live model before uploading it to Cloudflare R2. Selected by the random CC0 batch for \"tree stump\" using query \"tree stump\". source evidence contains exact label \"tree stump\". Promoted to Cloudflare R2 with license review tree_stump_bk_mrqk15g2_blenderkit_cc0_review_v1.",
+      "created_at": "2026-07-18T16:02:01.717Z",
+      "updated_at": "2026-07-18T16:10:41.993Z"
+    },
+    {
+      "asset_id": "lantern_bk_mrqk238f",
+      "canonical_label": "lantern",
+      "display_name": "Lantern",
+      "aliases": [
+        "portable light",
+        "camping lantern",
+        "portable lantern",
+        "lantern"
+      ],
+      "semantic_tags": [
+        "lantern",
+        "lighting",
+        "outdoors",
+        "equipment"
+      ],
+      "style_tags": [
+        "generic",
+        "reusable",
+        "everyday"
+      ],
+      "asset_type": "glb",
+      "domain": "everyday_objects",
+      "requested_concept": "lantern",
+      "source_display_name": "Lantern",
+      "verified_canonical_label": "lantern",
+      "verified_aliases": [
+        "portable light",
+        "lantern",
+        "camping lantern",
+        "portable lantern"
+      ],
+      "semantic_review_status": "verified",
+      "semantic_reviewed_at": "2026-07-18T16:02:49.994Z",
+      "semantic_review_notes": "Automatically identity-verified during the random CC0 import. source evidence contains exact label \"lantern\". Visual scene approval is still required.",
+      "object_composition": "unknown",
+      "contains": [],
+      "affordances": [
+        "support_surface"
+      ],
+      "support_surfaces": [
+        {
+          "id": "surface_3",
+          "label": "Detected support surface 3",
+          "center": [
+            0.000019,
+            0.054545,
+            0.002482
+          ],
+          "normal": [
+            -0.0001480000705799925,
+            0.9999474768665659,
+            0.010248004887187589
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.118377,
+            0.112002
+          ],
+          "area": 0.00877448,
+          "confidence": 0.999967,
+          "source": "blender_geometry",
+          "height_ratio": 0.136361,
+          "footprint_ratio": [
+            0.71327,
+            0.847789
+          ]
+        },
+        {
+          "id": "surface_11",
+          "label": "Detected support surface 11",
+          "center": [
+            0,
+            0.27877,
+            -0.000022
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.078944,
+            0.078944
+          ],
+          "area": 0.00485852,
+          "confidence": 0.956818,
+          "source": "blender_geometry",
+          "height_ratio": 0.696925,
+          "footprint_ratio": [
+            0.475668,
+            0.597555
+          ]
+        },
+        {
+          "id": "surface_5",
+          "label": "Detected support surface 5",
+          "center": [
+            -0.000689,
+            0.080445,
+            -0.001087
+          ],
+          "normal": [
+            0.0001499999982825,
+            0.99999998855,
+            0.000019999999771000003
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.123762,
+            0.067388
+          ],
+          "area": 0.00314654,
+          "confidence": 0.838134,
+          "source": "blender_geometry",
+          "height_ratio": 0.201112,
+          "footprint_ratio": [
+            0.74572,
+            0.510088
+          ]
+        },
+        {
+          "id": "surface_10",
+          "label": "Detected support surface 10",
+          "center": [
+            0,
+            0.255462,
+            -0.000022
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.066682,
+            0.066682
+          ],
+          "area": 0.00160464,
+          "confidence": 0.731242,
+          "source": "blender_geometry",
+          "height_ratio": 0.638654,
+          "footprint_ratio": [
+            0.401788,
+            0.504743
+          ]
+        },
+        {
+          "id": "surface_6",
+          "label": "Detected support surface 6",
+          "center": [
+            -0.001263,
+            0.089081,
+            -0.000222
+          ],
+          "normal": [
+            -0.005120997810144022,
+            0.9999865723828334,
+            0.0007939996604675558
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.151318,
+            0.076093
+          ],
+          "area": 0.0008519,
+          "confidence": 0.679049,
+          "source": "blender_geometry",
+          "height_ratio": 0.222702,
+          "footprint_ratio": [
+            0.911752,
+            0.575977
+          ]
+        },
+        {
+          "id": "surface_8",
+          "label": "Detected support surface 8",
+          "center": [
+            0,
+            0.203515,
+            -0.000022
+          ],
+          "normal": [
+            0,
+            0.9999999999995,
+            9.999999999995e-7
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.096339,
+            0.096339
+          ],
+          "area": 0.0006908,
+          "confidence": 0.66789,
+          "source": "blender_geometry",
+          "height_ratio": 0.508786,
+          "footprint_ratio": [
+            0.580484,
+            0.72923
+          ]
+        },
+        {
+          "id": "surface_9",
+          "label": "Detected support surface 9",
+          "center": [
+            0,
+            0.235913,
+            0
+          ],
+          "normal": [
+            0,
+            0.9999999999995,
+            9.999999999995e-7
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.11343,
+            0.018899
+          ],
+          "area": 0.00037322,
+          "confidence": 0.645874,
+          "source": "blender_geometry",
+          "height_ratio": 0.589782,
+          "footprint_ratio": [
+            0.683465,
+            0.143057
+          ]
+        },
+        {
+          "id": "surface_2",
+          "label": "Detected support surface 2",
+          "center": [
+            -0.00004,
+            0.040975,
+            0.003098
+          ],
+          "normal": [
+            0,
+            0.9999140209157018,
+            -0.013113000274291187
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.118068,
+            0.118068
+          ],
+          "area": 0.00036604,
+          "confidence": 0.645322,
+          "source": "blender_geometry",
+          "height_ratio": 0.102437,
+          "footprint_ratio": [
+            0.711409,
+            0.893703
+          ]
+        },
+        {
+          "id": "surface_7",
+          "label": "Detected support surface 7",
+          "center": [
+            0,
+            0.176231,
+            -0.000022
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.070019,
+            0.070019
+          ],
+          "area": 0.00036253,
+          "confidence": 0.645132,
+          "source": "blender_geometry",
+          "height_ratio": 0.440579,
+          "footprint_ratio": [
+            0.421895,
+            0.530002
+          ]
+        },
+        {
+          "id": "surface_4",
+          "label": "Detected support surface 4",
+          "center": [
+            -0.000028,
+            0.060771,
+            0.030189
+          ],
+          "normal": [
+            0,
+            0.9844822743850931,
+            0.17548404890916613
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.11514,
+            0.05632
+          ],
+          "area": 0.00047462,
+          "confidence": 0.643282,
+          "source": "blender_geometry",
+          "height_ratio": 0.151928,
+          "footprint_ratio": [
+            0.693767,
+            0.426306
+          ]
+        },
+        {
+          "id": "surface_1",
+          "label": "Detected support surface 1",
+          "center": [
+            -0.00004,
+            0.002813,
+            0
+          ],
+          "normal": [
+            0,
+            0.999999999998,
+            0.000001999999999996
+          ],
+          "u_axis": [
+            1,
+            0,
+            0
+          ],
+          "v_axis": [
+            0,
+            0,
+            -1
+          ],
+          "size": [
+            0.131057,
+            0.131057
+          ],
+          "area": 0.00025205,
+          "confidence": 0.637473,
+          "source": "blender_geometry",
+          "height_ratio": 0.007031,
+          "footprint_ratio": [
+            0.789674,
+            0.992022
+          ]
+        }
+      ],
+      "geometry_profile": {
+        "schema_version": "myway_asset_geometry_profile_v1",
+        "coordinate_space": "normalized_glb_y_up",
+        "local_bounds": {
+          "min": [
+            -0.082982,
+            0,
+            -0.066056
+          ],
+          "max": [
+            0.082982,
+            0.4,
+            0.066056
+          ],
+          "size": [
+            0.165964,
+            0.4,
+            0.132111
+          ],
+          "center": [
+            0,
+            0.2,
+            0
+          ]
+        },
+        "orientation": {
+          "up_axis": [
+            0,
+            1,
+            0
+          ],
+          "forward_axis": [
+            0,
+            0,
+            1
+          ]
+        },
+        "bottom_contact_region": {
+          "id": "bottom_contact",
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "normal": [
+            0,
+            1,
+            0
+          ],
+          "size": [
+            0.165964,
+            0.132111
+          ],
+          "area": 0.02192566,
+          "confidence": 0.65
+        },
+        "support_surfaces": [
+          {
+            "id": "surface_3",
+            "label": "Detected support surface 3",
+            "center": [
+              0.000019,
+              0.054545,
+              0.002482
+            ],
+            "normal": [
+              -0.0001480000705799925,
+              0.9999474768665659,
+              0.010248004887187589
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.118377,
+              0.112002
+            ],
+            "area": 0.00877448,
+            "confidence": 0.999967,
+            "source": "blender_geometry",
+            "height_ratio": 0.136361,
+            "footprint_ratio": [
+              0.71327,
+              0.847789
+            ]
+          },
+          {
+            "id": "surface_11",
+            "label": "Detected support surface 11",
+            "center": [
+              0,
+              0.27877,
+              -0.000022
+            ],
+            "normal": [
+              0,
+              1,
+              0
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.078944,
+              0.078944
+            ],
+            "area": 0.00485852,
+            "confidence": 0.956818,
+            "source": "blender_geometry",
+            "height_ratio": 0.696925,
+            "footprint_ratio": [
+              0.475668,
+              0.597555
+            ]
+          },
+          {
+            "id": "surface_5",
+            "label": "Detected support surface 5",
+            "center": [
+              -0.000689,
+              0.080445,
+              -0.001087
+            ],
+            "normal": [
+              0.0001499999982825,
+              0.99999998855,
+              0.000019999999771000003
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.123762,
+              0.067388
+            ],
+            "area": 0.00314654,
+            "confidence": 0.838134,
+            "source": "blender_geometry",
+            "height_ratio": 0.201112,
+            "footprint_ratio": [
+              0.74572,
+              0.510088
+            ]
+          },
+          {
+            "id": "surface_10",
+            "label": "Detected support surface 10",
+            "center": [
+              0,
+              0.255462,
+              -0.000022
+            ],
+            "normal": [
+              0,
+              1,
+              0
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.066682,
+              0.066682
+            ],
+            "area": 0.00160464,
+            "confidence": 0.731242,
+            "source": "blender_geometry",
+            "height_ratio": 0.638654,
+            "footprint_ratio": [
+              0.401788,
+              0.504743
+            ]
+          },
+          {
+            "id": "surface_6",
+            "label": "Detected support surface 6",
+            "center": [
+              -0.001263,
+              0.089081,
+              -0.000222
+            ],
+            "normal": [
+              -0.005120997810144022,
+              0.9999865723828334,
+              0.0007939996604675558
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.151318,
+              0.076093
+            ],
+            "area": 0.0008519,
+            "confidence": 0.679049,
+            "source": "blender_geometry",
+            "height_ratio": 0.222702,
+            "footprint_ratio": [
+              0.911752,
+              0.575977
+            ]
+          },
+          {
+            "id": "surface_8",
+            "label": "Detected support surface 8",
+            "center": [
+              0,
+              0.203515,
+              -0.000022
+            ],
+            "normal": [
+              0,
+              0.9999999999995,
+              9.999999999995e-7
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.096339,
+              0.096339
+            ],
+            "area": 0.0006908,
+            "confidence": 0.66789,
+            "source": "blender_geometry",
+            "height_ratio": 0.508786,
+            "footprint_ratio": [
+              0.580484,
+              0.72923
+            ]
+          },
+          {
+            "id": "surface_9",
+            "label": "Detected support surface 9",
+            "center": [
+              0,
+              0.235913,
+              0
+            ],
+            "normal": [
+              0,
+              0.9999999999995,
+              9.999999999995e-7
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.11343,
+              0.018899
+            ],
+            "area": 0.00037322,
+            "confidence": 0.645874,
+            "source": "blender_geometry",
+            "height_ratio": 0.589782,
+            "footprint_ratio": [
+              0.683465,
+              0.143057
+            ]
+          },
+          {
+            "id": "surface_2",
+            "label": "Detected support surface 2",
+            "center": [
+              -0.00004,
+              0.040975,
+              0.003098
+            ],
+            "normal": [
+              0,
+              0.9999140209157018,
+              -0.013113000274291187
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.118068,
+              0.118068
+            ],
+            "area": 0.00036604,
+            "confidence": 0.645322,
+            "source": "blender_geometry",
+            "height_ratio": 0.102437,
+            "footprint_ratio": [
+              0.711409,
+              0.893703
+            ]
+          },
+          {
+            "id": "surface_7",
+            "label": "Detected support surface 7",
+            "center": [
+              0,
+              0.176231,
+              -0.000022
+            ],
+            "normal": [
+              0,
+              1,
+              0
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.070019,
+              0.070019
+            ],
+            "area": 0.00036253,
+            "confidence": 0.645132,
+            "source": "blender_geometry",
+            "height_ratio": 0.440579,
+            "footprint_ratio": [
+              0.421895,
+              0.530002
+            ]
+          },
+          {
+            "id": "surface_4",
+            "label": "Detected support surface 4",
+            "center": [
+              -0.000028,
+              0.060771,
+              0.030189
+            ],
+            "normal": [
+              0,
+              0.9844822743850931,
+              0.17548404890916613
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.11514,
+              0.05632
+            ],
+            "area": 0.00047462,
+            "confidence": 0.643282,
+            "source": "blender_geometry",
+            "height_ratio": 0.151928,
+            "footprint_ratio": [
+              0.693767,
+              0.426306
+            ]
+          },
+          {
+            "id": "surface_1",
+            "label": "Detected support surface 1",
+            "center": [
+              -0.00004,
+              0.002813,
+              0
+            ],
+            "normal": [
+              0,
+              0.999999999998,
+              0.000001999999999996
+            ],
+            "u_axis": [
+              1,
+              0,
+              0
+            ],
+            "v_axis": [
+              0,
+              0,
+              -1
+            ],
+            "size": [
+              0.131057,
+              0.131057
+            ],
+            "area": 0.00025205,
+            "confidence": 0.637473,
+            "source": "blender_geometry",
+            "height_ratio": 0.007031,
+            "footprint_ratio": [
+              0.789674,
+              0.992022
+            ]
+          }
+        ],
+        "interior_volumes": [],
+        "collision_boxes": [
+          {
+            "center": [
+              0,
+              0.2,
+              0
+            ],
+            "size": [
+              0.165964,
+              0.4,
+              0.132111
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "generated_at": "2026-07-18T16:02:38.858306+00:00",
+        "generator": "myway_blender_geometry_profile_v1"
+      },
+      "preferred_for_concepts": [],
+      "source_type": "blenderkit",
+      "source_asset_id": "4926885c-bdf9-47c7-967a-76dba284a2d8",
+      "source_prompt": "lantern",
+      "source_url": "https://www.blenderkit.com/asset-gallery-detail/4926885c-bdf9-47c7-967a-76dba284a2d8/",
+      "source_path": "public/sandbox-assets/myway/models/blenderkit/lantern_bk_mrqk238f.glb",
+      "public_path": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/models/blenderkit/lantern_bk_mrqk238f/60cf0ba9ca729b10.glb",
+      "thumbnail_path": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/thumbnails/lantern_bk_mrqk238f/6c9372b05f6bf1e7.png",
+      "license_record_path": "sandbox/probe-lab/assets/library/licenses/lantern_bk_mrqk238f.review.json",
+      "storage_provider": "r2",
+      "storage_object_key": "runtime/models/blenderkit/lantern_bk_mrqk238f/60cf0ba9ca729b10.glb",
+      "storage_etag": "a8bf12ce23d5cce84701105c19c70163-2",
+      "file_size_bytes": 8705628,
+      "thumbnail_storage_provider": "r2",
+      "thumbnail_object_key": "runtime/thumbnails/lantern_bk_mrqk238f/6c9372b05f6bf1e7.png",
+      "thumbnail_etag": "941c62a1f175735a9f180c4536255a26",
+      "thumbnail_file_size_bytes": 132411,
+      "source_storage_provider": null,
+      "source_object_key": null,
+      "source_storage_etag": null,
+      "source_file_size_bytes": null,
+      "source_archived_at": null,
+      "promoted_at": "2026-07-18T16:10:09.605Z",
+      "license_review_id": "lantern_bk_mrqk238f_blenderkit_cc0_review_v1",
+      "dimensions_m": [
+        0.165964,
+        0.4,
+        0.132111
+      ],
+      "default_scale": 1,
+      "default_rotation": [
+        0,
+        0,
+        0
+      ],
+      "ground_offset_m": 0,
+      "polygon_count": 17252,
+      "rigged": false,
+      "animation_clips": [],
+      "content_hash": "60cf0ba9ca729b104f98c8d6691bb7a129f04cb607aa0a7ca31296a7c7119228",
+      "quality_score": 0.78,
+      "reuse_count": 0,
+      "license_kind": "cc0",
+      "license_status": "app_ready",
+      "commercial_use_allowed": true,
+      "raw_redistribution_allowed": true,
+      "safe_to_use_in_sandbox": true,
+      "safe_to_promote_to_app": true,
+      "status": "approved",
+      "scene_review_status": "approved",
+      "scene_reviewed_at": "2026-07-18T16:10:14.740Z",
+      "scene_review_notes": null,
+      "notes": "Automatically acquired and normalized from BlendKit by Poly Haven . The source API record reported CC0. Review the live model before uploading it to Cloudflare R2. Selected by the random CC0 batch for \"lantern\" using query \"lantern\". source evidence contains exact label \"lantern\". Promoted to Cloudflare R2 with license review lantern_bk_mrqk238f_blenderkit_cc0_review_v1.",
+      "created_at": "2026-07-18T16:02:49.953Z",
+      "updated_at": "2026-07-18T16:10:14.769Z"
     }
   ]
 }

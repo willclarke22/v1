@@ -5,6 +5,7 @@ import {
   Bounds,
   Html,
   OrbitControls,
+  Text,
 } from "@react-three/drei";
 import {
   ChangeEvent,
@@ -813,6 +814,19 @@ function AssetScene({
             )}
           </group>
         </Bounds>
+
+        <Text
+          position={[0, 3.7, -2.2]}
+          fontSize={0.18}
+          maxWidth={4.8}
+          textAlign="center"
+          color="#dbeafe"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {activeBeat?.title ??
+            plan.scene_title}
+        </Text>
 
         <gridHelper
           args={[

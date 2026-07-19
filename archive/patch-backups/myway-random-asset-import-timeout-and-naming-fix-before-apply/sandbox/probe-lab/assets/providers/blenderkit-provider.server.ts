@@ -85,7 +85,6 @@ export async function acquireFromBlenderKit(input: {
   searchQuery?: string;
   requiredLicenseKind?: "cc0";
   excludedSourceAssetIds?: string[];
-  jobTimeoutMs?: number;
 }) {
   await ensureAssetDirectories();
 
@@ -124,18 +123,7 @@ export async function acquireFromBlenderKit(input: {
     error: null,
   });
 
-  const jobTimeoutMs =
-    typeof input.jobTimeoutMs === "number" &&
-    Number.isFinite(input.jobTimeoutMs)
-      ? Math.min(
-          12 * 60 * 1000,
-          Math.max(30_000, input.jobTimeoutMs),
-        )
-      : undefined;
-  const completed = await runBlenderJob(
-    jobPath,
-    jobTimeoutMs,
-  );
+  const completed = await runBlenderJob(jobPath);
 
   if (!completed.result) {
     throw new Error(
@@ -298,6 +286,5 @@ export async function acquireFromBlenderKit(input: {
     license_review_path: licenseRelativePath,
   };
 }
-
 
 

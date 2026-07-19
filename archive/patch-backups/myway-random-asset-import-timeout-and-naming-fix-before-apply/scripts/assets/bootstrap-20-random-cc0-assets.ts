@@ -244,40 +244,6 @@ function positiveInteger(value: string | null, fallback: number) {
     : fallback;
 }
 
-function boundedInteger(
-  value: string | null,
-  fallback: number,
-  minimum: number,
-  maximum: number,
-) {
-  const parsed = positiveInteger(value, fallback);
-  return Math.min(maximum, Math.max(minimum, parsed));
-}
-
-async function withHeartbeat<T>(input: {
-  label: string;
-  timeoutSeconds: number;
-  operation: Promise<T>;
-}) {
-  const startedAt = Date.now();
-  const heartbeat = setInterval(() => {
-    const elapsedSeconds = Math.round(
-      (Date.now() - startedAt) / 1000,
-    );
-    console.log(
-      `Still working on ${input.label} ` +
-        `(${elapsedSeconds}s elapsed; ` +
-        `${input.timeoutSeconds}s query limit)...`,
-    );
-  }, 15_000);
-
-  try {
-    return await input.operation;
-  } finally {
-    clearInterval(heartbeat);
-  }
-}
-
 function normalizedLabel(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -530,18 +496,6 @@ async function main() {
     "random-everyday-batch-1";
   const seed = hashSeed(seedText);
   const dryRun = hasFlag("--dry-run");
-  const queryTimeoutSeconds = boundedInteger(
-    argument("--query-timeout-seconds"),
-    75,
-    30,
-    300,
-  );
-  const maxQueriesPerConcept = boundedInteger(
-    argument("--max-queries-per-concept"),
-    2,
-    1,
-    5,
-  );
 
   const existingAssets =
     await listMyWayAssets();
@@ -602,10 +556,6 @@ async function main() {
             existingLabels.size,
           pending_concepts:
             pendingCatalog.length,
-          query_timeout_seconds:
-            queryTimeoutSeconds,
-          max_queries_per_concept:
-            maxQueriesPerConcept,
           randomized_preview:
             pendingCatalog
               .slice(0, 30)
@@ -646,12 +596,8 @@ async function main() {
 
     const errors: string[] = [];
     let imported = false;
-    const orderedQueries = uniqueStrings([
-      item.label,
-      ...item.queries,
-    ]).slice(0, maxQueriesPerConcept);
 
-    for (const query of orderedQueries) {
+    for (const query of item.queries) {
       console.log(
         `\n[${completed.length + 1}/${target}] ` +
           `Searching CC0 BlendKit assets for ` +
@@ -666,15 +612,11 @@ async function main() {
         | null = null;
 
       try {
-        const result = await withHeartbeat({
-          label: `"${item.label}" using "${query}"`,
-          timeoutSeconds: queryTimeoutSeconds,
-          operation: acquireFromBlenderKit({
-            // The catalog label is the identity. Synonym queries are search
-            // provenance only and must never rename the asset or its ID.
-            concept: item.label,
-            searchQuery: query,
+        const result =
+          await acquireFromBlenderKit({
+            concept: query,
             aliases: [
+              item.label,
               ...item.aliases,
               ...item.queries.filter(
                 (candidate) =>
@@ -694,10 +636,7 @@ async function main() {
             excludedSourceAssetIds: [
               ...excludedSourceAssetIds,
             ],
-            jobTimeoutMs:
-              queryTimeoutSeconds * 1000,
-          }),
-        });
+          });
 
         candidateAssetId =
           result.asset.asset_id;
@@ -880,10 +819,6 @@ async function main() {
           seed_text: seedText,
           seed,
           target_new_assets: target,
-          query_timeout_seconds:
-            queryTimeoutSeconds,
-          max_queries_per_concept:
-            maxQueriesPerConcept,
           completed_count:
             completed.length,
           attempted_concepts:
@@ -964,10 +899,6 @@ async function main() {
   const finalResult = {
     ok: reachedTarget,
     target_new_assets: target,
-    query_timeout_seconds:
-      queryTimeoutSeconds,
-    max_queries_per_concept:
-      maxQueriesPerConcept,
     imported_new_assets:
       completed.length,
     skipped_existing_count:
