@@ -5,6 +5,11 @@ import {
   getMyWayAsset,
   listMyWayAssets,
   registerMyWayAsset,
+  renameMyWayAssetId,
+  repairAllMyWayAssetIdentityArtifacts,
+  repairMyWayAssetIdentityArtifacts,
+  updateMyWayAssetCanonicalLabel,
+  updateMyWayAssetAliases,
   reviewMyWayAssetForScenes,
   reviewMyWayAssetSemanticIdentity,
 } from "../asset-library.server";
@@ -78,6 +83,18 @@ function stringList(value: unknown) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = (await request.json()) as Record<string, unknown>;
+    if (
+      body.action ===
+      "repair_all_identity_artifacts"
+    ) {
+      const result =
+        await repairAllMyWayAssetIdentityArtifacts();
+      return NextResponse.json({
+        ok: result.failed.length === 0,
+        ...result,
+      });
+    }
+
     const assetId =
       typeof body.asset_id === "string"
         ? body.asset_id
@@ -85,6 +102,121 @@ export async function PATCH(request: NextRequest) {
 
     if (!assetId.trim()) {
       throw new Error("asset_id is required");
+    }
+
+    if (
+      body.action ===
+      "repair_identity_artifacts"
+    ) {
+      const result =
+        await repairMyWayAssetIdentityArtifacts({
+          assetId,
+          queueEmbeddingRefresh:
+            body.queue_embedding_refresh !== false,
+        });
+      return NextResponse.json({
+        ok: true,
+        asset:
+          await assetWithFileStats(
+            result.asset,
+          ),
+        moved_identity_files:
+          result.moved_identity_files,
+        updated_reference_files:
+          result.updated_reference_files,
+        embedding_refresh_queued:
+          result.embedding_refresh_queued,
+        warnings: result.warnings,
+      });
+    }
+
+    if (body.action === "rename_asset_id") {
+      const nextAssetId =
+        typeof body.next_asset_id === "string"
+          ? body.next_asset_id
+          : "";
+
+      if (!nextAssetId.trim()) {
+        throw new Error(
+          "next_asset_id is required",
+        );
+      }
+
+      const result =
+        await renameMyWayAssetId({
+          assetId,
+          nextAssetId,
+        });
+
+      return NextResponse.json({
+        ok: true,
+        asset:
+          await assetWithFileStats(
+            result.asset,
+          ),
+        renamed_from:
+          result.renamed_from,
+        updated_reference_files:
+          result.updated_reference_files,
+        moved_identity_files:
+          result.moved_identity_files,
+        embedding_refresh_queued:
+          result.embedding_refresh_queued,
+      });
+    }
+
+    if (body.action === "update_canonical_label") {
+      const canonicalLabel =
+        typeof body.canonical_label === "string"
+          ? body.canonical_label
+          : "";
+
+      if (!canonicalLabel.trim()) {
+        throw new Error(
+          "canonical_label is required",
+        );
+      }
+
+      const result =
+        await updateMyWayAssetCanonicalLabel({
+          assetId,
+          canonicalLabel,
+        });
+
+      return NextResponse.json({
+        ok: true,
+        asset:
+          await assetWithFileStats(
+            result.asset,
+          ),
+        canonical_label_updated_from:
+          result.updated_from,
+        embedding_refresh_queued:
+          result.embedding_refresh_queued,
+      });
+    }
+
+
+    if (body.action === "update_aliases") {
+      const aliases = stringList(
+        body.aliases,
+      );
+
+      const result =
+        await updateMyWayAssetAliases({
+          assetId,
+          aliases,
+        });
+
+      return NextResponse.json({
+        ok: true,
+        asset:
+          await assetWithFileStats(
+            result.asset,
+          ),
+        aliases_updated_from:
+          result.updated_from,
+      });
     }
 
     if (body.action === "semantic_identity") {

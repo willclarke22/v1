@@ -2,11 +2,35 @@ import { randomUUID } from "node:crypto";
 import { readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { BlenderKitAcquireJob, BlenderNormalizeJob, MyWayBlenderJob } from "./blender-job-types";
+import type {
+  BlenderAnalysisRenderJob,
+  BlenderGeometryProfileJob,
+  BlenderKitAcquireJob,
+  BlenderNormalizeJob,
+  MyWayBlenderJob,
+} from "./blender-job-types";
 import { ensureAssetDirectories, MYWAY_ASSET_JOB_PROJECT_PATH, projectPath } from "../paths.server";
 
 function now() {
   return new Date().toISOString();
+}
+
+export async function createGeometryProfileJob(
+  input: Omit<
+    BlenderGeometryProfileJob,
+    "schema_version" | "job_id" | "status" | "created_at" | "updated_at"
+  >,
+) {
+  const timestamp = now();
+  const job: BlenderGeometryProfileJob = {
+    ...input,
+    schema_version: "myway_blender_job_v1",
+    job_id: randomUUID(),
+    status: "pending",
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+  return writePendingJob(job);
 }
 
 export async function createNormalizeJob(input: Omit<BlenderNormalizeJob, "schema_version" | "job_id" | "status" | "created_at" | "updated_at">) {
@@ -25,6 +49,24 @@ export async function createNormalizeJob(input: Omit<BlenderNormalizeJob, "schem
 export async function createBlenderKitJob(input: Omit<BlenderKitAcquireJob, "schema_version" | "job_id" | "status" | "created_at" | "updated_at">) {
   const timestamp = now();
   const job: BlenderKitAcquireJob = {
+    ...input,
+    schema_version: "myway_blender_job_v1",
+    job_id: randomUUID(),
+    status: "pending",
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+  return writePendingJob(job);
+}
+
+export async function createAnalysisRenderJob(
+  input: Omit<
+    BlenderAnalysisRenderJob,
+    "schema_version" | "job_id" | "status" | "created_at" | "updated_at"
+  >,
+) {
+  const timestamp = now();
+  const job: BlenderAnalysisRenderJob = {
     ...input,
     schema_version: "myway_blender_job_v1",
     job_id: randomUUID(),

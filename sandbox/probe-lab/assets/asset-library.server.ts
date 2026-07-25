@@ -1,13 +1,14 @@
 import {
-  readFile,
+  mkdir,
+  readdir,
+  rename as renameFile,
   stat,
-  writeFile,
 } from "node:fs/promises";
 import path from "node:path";
 
 import type {
   MyWayAssetRecord,
-  MyWayAssetRegistryV1,
+  MyWayAssetRegistryV2,
 } from "./asset-types";
 import {
   normalizeMyWayAssetRecord,
@@ -15,17 +16,192 @@ import {
 } from "./normalize-asset-record";
 import {
   ensureAssetDirectories,
+  MYWAY_ASSET_LIBRARY_PROJECT_PATH,
   MYWAY_ASSET_REGISTRY_PROJECT_PATH,
+  MYWAY_MISSING_ASSET_QUEUE_PROJECT_PATH,
+  MYWAY_SCENE_MANIFEST_PROJECT_PATH,
   projectPath,
+  projectRoot,
   publicUrlToProjectPath,
 } from "./paths.server";
 import { validateMyWayAssetRecord } from "./validate-asset-record";
+import {
+  readJsonFileWithRetry,
+  writeJsonFileAtomic,
+} from "./json-file.server";
 
 let writeQueue: Promise<unknown> = Promise.resolve();
 
-function emptyRegistry(): MyWayAssetRegistryV1 {
+type JsonReferenceMutation = {
+  file_path: string;
+  original: unknown;
+  next: unknown;
+};
+
+function replaceExactStringReferences(
+  value: unknown,
+  replacements: ReadonlyMap<string, string>,
+): unknown {
+  if (typeof value === "string") {
+    return replacements.get(value) ?? value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) =>
+      replaceExactStringReferences(
+        item,
+        replacements,
+      ),
+    );
+  }
+
+  if (
+    value &&
+    typeof value === "object"
+  ) {
+    return Object.fromEntries(
+      Object.entries(
+        value as Record<string, unknown>,
+      ).map(([key, item]) => [
+        key,
+        replaceExactStringReferences(
+          item,
+          replacements,
+        ),
+      ]),
+    );
+  }
+
+  return value;
+}
+
+const ASSET_EMBEDDING_DIRECTORY =
+  "sandbox/probe-lab/assets/embeddings";
+
+function canonicalEmbeddingVectorKey(
+  assetId: string,
+) {
+  return `${ASSET_EMBEDDING_DIRECTORY}/${safeAssetId(assetId)}.json`;
+}
+
+async function fileExists(filePath: string) {
+  try {
+    await stat(filePath);
+    return true;
+  } catch (caught) {
+    if (
+      (caught as NodeJS.ErrnoException).code ===
+      "ENOENT"
+    ) {
+      return false;
+    }
+    throw caught;
+  }
+}
+
+function queueIdentityEmbeddingRefresh(
+  assetId: string,
+) {
+  void import(
+    "./enrichment/asset-enrichment-worker.server"
+  )
+    .then(({ queueAssetEmbeddingRefresh }) => {
+      queueAssetEmbeddingRefresh(assetId);
+    })
+    .catch(() => undefined);
+}
+
+function projectPathFromStoredReference(
+  storedPath: string,
+) {
+  const normalized = storedPath
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "");
+
+  if (
+    normalized.includes("../") ||
+    path.isAbsolute(storedPath)
+  ) {
+    return null;
+  }
+
+  return projectPath(
+    ...normalized.split("/").filter(Boolean),
+  );
+}
+
+async function listJsonFiles(
+  relativeDirectory: string,
+) {
+  try {
+    const directory = projectPath(
+      ...relativeDirectory
+        .replace(/\\/g, "/")
+        .split("/")
+        .filter(Boolean),
+    );
+    const entries = await readdir(
+      directory,
+      { withFileTypes: true },
+    );
+
+    return entries
+      .filter(
+        (entry) =>
+          entry.isFile() &&
+          entry.name.toLowerCase().endsWith(".json"),
+      )
+      .map((entry) =>
+        path.join(directory, entry.name),
+      );
+  } catch (caught) {
+    if (
+      (caught as NodeJS.ErrnoException).code ===
+      "ENOENT"
+    ) {
+      return [];
+    }
+    throw caught;
+  }
+}
+
+async function collectJsonReferenceMutation(
+  filePath: string,
+  replacements: ReadonlyMap<string, string>,
+): Promise<JsonReferenceMutation | null> {
+  try {
+    const original =
+      await readJsonFileWithRetry<unknown>(
+        filePath,
+      );
+    const next =
+      replaceExactStringReferences(
+        original,
+        replacements,
+      );
+
+    return JSON.stringify(original) ===
+      JSON.stringify(next)
+      ? null
+      : {
+          file_path: filePath,
+          original,
+          next,
+        };
+  } catch (caught) {
+    if (
+      (caught as NodeJS.ErrnoException).code ===
+      "ENOENT"
+    ) {
+      return null;
+    }
+    throw caught;
+  }
+}
+
+function emptyRegistry(): MyWayAssetRegistryV2 {
   return {
-    schema_version: "myway_asset_registry_v1",
+    schema_version: "myway_asset_registry_v2",
     updated_at: new Date().toISOString(),
     asset_root_public_url: "/sandbox-assets/myway",
     notes: "Shared MyWay sandbox asset library.",
@@ -33,16 +209,17 @@ function emptyRegistry(): MyWayAssetRegistryV1 {
   };
 }
 
-export async function loadMyWayAssetRegistry(): Promise<MyWayAssetRegistryV1> {
+export async function loadMyWayAssetRegistry(): Promise<MyWayAssetRegistryV2> {
   await ensureAssetDirectories();
   const registryPath = projectPath(
     MYWAY_ASSET_REGISTRY_PROJECT_PATH,
   );
 
   try {
-    const parsed = JSON.parse(
-      await readFile(registryPath, "utf8"),
-    ) as Partial<MyWayAssetRegistryV1>;
+    const parsed =
+      await readJsonFileWithRetry<
+        Partial<MyWayAssetRegistryV2>
+      >(registryPath);
 
     return {
       ...emptyRegistry(),
@@ -74,31 +251,29 @@ export async function loadMyWayAssetRegistry(): Promise<MyWayAssetRegistryV1> {
     }
 
     const registry = emptyRegistry();
-    await writeFile(
+    await writeJsonFileAtomic(
       registryPath,
-      `${JSON.stringify(registry, null, 2)}\n`,
-      "utf8",
+      registry,
     );
     return registry;
   }
 }
 
 async function saveRegistryUnlocked(
-  registry: MyWayAssetRegistryV1,
+  registry: MyWayAssetRegistryV2,
 ) {
   registry.updated_at = new Date().toISOString();
 
-  await writeFile(
+  await writeJsonFileAtomic(
     projectPath(
       MYWAY_ASSET_REGISTRY_PROJECT_PATH,
     ),
-    `${JSON.stringify(registry, null, 2)}\n`,
-    "utf8",
+    registry,
   );
 }
 
 export function saveMyWayAssetRegistry(
-  registry: MyWayAssetRegistryV1,
+  registry: MyWayAssetRegistryV2,
 ) {
   const task = writeQueue.then(() =>
     saveRegistryUnlocked(registry),
@@ -188,9 +363,24 @@ export async function registerMyWayAsset(
 
   await saveMyWayAssetRegistry(registry);
 
+  const created = existingIndex < 0;
+  if (
+    created &&
+    asset.asset_type !== "primitive" &&
+    asset.status !== "rejected"
+  ) {
+    void import(
+      "./enrichment/asset-enrichment-worker.server"
+    )
+      .then(({ queueAssetEnrichment }) => {
+        queueAssetEnrichment(asset.asset_id);
+      })
+      .catch(() => undefined);
+  }
+
   return {
     asset,
-    created: existingIndex < 0,
+    created,
     duplicate_of: null,
   };
 }
@@ -250,6 +440,748 @@ export async function updateMyWayAsset(
 
   await saveMyWayAssetRegistry(registry);
   return normalized;
+}
+
+
+export async function renameMyWayAssetId(input: {
+  assetId: string;
+  nextAssetId: string;
+}) {
+  await ensureAssetDirectories();
+
+  const previousAssetId =
+    safeAssetId(input.assetId);
+  const nextAssetId =
+    safeAssetId(input.nextAssetId);
+
+  if (!previousAssetId) {
+    throw new Error(
+      "The current asset ID is required.",
+    );
+  }
+
+  if (!nextAssetId) {
+    throw new Error(
+      "The new asset ID must contain at least one letter or number.",
+    );
+  }
+
+  const registry =
+    await loadMyWayAssetRegistry();
+  const index = registry.assets.findIndex(
+    (asset) =>
+      asset.asset_id === previousAssetId,
+  );
+
+  if (index < 0) {
+    throw new Error(
+      `Asset was not found in the registry: ${previousAssetId}`,
+    );
+  }
+
+  if (previousAssetId === nextAssetId) {
+    const repaired =
+      await repairMyWayAssetIdentityArtifacts({
+        assetId: previousAssetId,
+        queueEmbeddingRefresh: false,
+      });
+    return {
+      asset: repaired.asset,
+      renamed_from: previousAssetId,
+      updated_reference_files:
+        repaired.updated_reference_files,
+      moved_identity_files:
+        repaired.moved_identity_files,
+    };
+  }
+
+  if (
+    registry.assets.some(
+      (asset) =>
+        asset.asset_id === nextAssetId,
+    )
+  ) {
+    throw new Error(
+      `Another asset already uses the ID "${nextAssetId}".`,
+    );
+  }
+
+  const current = registry.assets[index]!;
+  const previousVectorKey =
+    current.appearance_embedding?.vector_key ??
+    null;
+  const nextVectorKey = previousVectorKey
+    ? canonicalEmbeddingVectorKey(nextAssetId)
+    : null;
+  const previousVectorPath = previousVectorKey
+    ? projectPathFromStoredReference(
+        previousVectorKey,
+      )
+    : null;
+  const nextVectorPath = nextVectorKey
+    ? projectPathFromStoredReference(
+        nextVectorKey,
+      )
+    : null;
+  const previousVectorExists =
+    previousVectorPath
+      ? await fileExists(previousVectorPath)
+      : false;
+  const embeddingRefreshQueued =
+    Boolean(
+      current.appearance_embedding &&
+      !previousVectorExists,
+    );
+
+  const renamed: MyWayAssetRecord = {
+    ...current,
+    asset_id: nextAssetId,
+    appearance_embedding:
+      current.appearance_embedding
+        ? {
+            ...current.appearance_embedding,
+            status: embeddingRefreshQueued
+              ? "pending"
+              : current.appearance_embedding.status,
+            vector_key: nextVectorKey,
+            source_text_hash: embeddingRefreshQueued
+              ? null
+              : current.appearance_embedding.source_text_hash,
+            embedded_at: embeddingRefreshQueued
+              ? null
+              : current.appearance_embedding.embedded_at,
+            error: embeddingRefreshQueued
+              ? null
+              : current.appearance_embedding.error,
+          }
+        : undefined,
+    updated_at: new Date().toISOString(),
+  };
+
+  const validation =
+    validateMyWayAssetRecord(renamed);
+
+  if (!validation.ok) {
+    throw new Error(
+      validation.errors.join("; "),
+    );
+  }
+
+  const referenceFiles = new Set<string>([
+    projectPath(
+      MYWAY_MISSING_ASSET_QUEUE_PROJECT_PATH,
+    ),
+    ...(await listJsonFiles(
+      MYWAY_SCENE_MANIFEST_PROJECT_PATH,
+    )),
+    ...(await listJsonFiles(
+      `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/source-records`,
+    )),
+  ]);
+
+  if (
+    current.license_record_path &&
+    !/^https?:\/\//i.test(
+      current.license_record_path,
+    )
+  ) {
+    const licensePath =
+      projectPathFromStoredReference(
+        current.license_record_path,
+      );
+    if (licensePath) {
+      referenceFiles.add(licensePath);
+    }
+  }
+
+  if (previousVectorPath) {
+    referenceFiles.add(previousVectorPath);
+  }
+
+  const replacements = new Map<string, string>([
+    [previousAssetId, nextAssetId],
+  ]);
+  if (
+    previousVectorKey &&
+    nextVectorKey &&
+    previousVectorKey !== nextVectorKey
+  ) {
+    replacements.set(
+      previousVectorKey,
+      nextVectorKey,
+    );
+  }
+
+  const mutations = (
+    await Promise.all(
+      [...referenceFiles].map((filePath) =>
+        collectJsonReferenceMutation(
+          filePath,
+          replacements,
+        ),
+      ),
+    )
+  ).filter(
+    (
+      mutation,
+    ): mutation is JsonReferenceMutation =>
+      Boolean(mutation),
+  );
+
+  const applied: JsonReferenceMutation[] =
+    [];
+  let vectorMoved = false;
+
+  try {
+    for (const mutation of mutations) {
+      await writeJsonFileAtomic(
+        mutation.file_path,
+        mutation.next,
+      );
+      applied.push(mutation);
+    }
+
+    if (
+      previousVectorPath &&
+      nextVectorPath &&
+      previousVectorPath !== nextVectorPath &&
+      previousVectorExists
+    ) {
+      if (await fileExists(nextVectorPath)) {
+        throw new Error(
+          `The canonical embedding filename already exists: ${nextVectorKey}`,
+        );
+      }
+      await mkdir(
+        path.dirname(nextVectorPath),
+        { recursive: true },
+      );
+      await renameFile(
+        previousVectorPath,
+        nextVectorPath,
+      );
+      vectorMoved = true;
+    }
+
+    registry.assets[index] = renamed;
+    await saveMyWayAssetRegistry(registry);
+  } catch (caught) {
+    if (
+      vectorMoved &&
+      previousVectorPath &&
+      nextVectorPath
+    ) {
+      await renameFile(
+        nextVectorPath,
+        previousVectorPath,
+      ).catch(() => undefined);
+    }
+    for (
+      const mutation of applied
+        .slice()
+        .reverse()
+    ) {
+      await writeJsonFileAtomic(
+        mutation.file_path,
+        mutation.original,
+      ).catch(() => undefined);
+    }
+    throw caught;
+  }
+
+  if (embeddingRefreshQueued) {
+    queueIdentityEmbeddingRefresh(
+      renamed.asset_id,
+    );
+  }
+
+  return {
+    asset: renamed,
+    renamed_from: previousAssetId,
+    updated_reference_files:
+      mutations.map(
+        (mutation) =>
+          path.relative(
+            projectRoot(),
+            mutation.file_path,
+          ),
+      ),
+    moved_identity_files: vectorMoved && nextVectorKey
+      ? [nextVectorKey]
+      : [],
+    embedding_refresh_queued:
+      embeddingRefreshQueued,
+  };
+}
+
+export async function updateMyWayAssetCanonicalLabel(input: {
+  assetId: string;
+  canonicalLabel: string;
+}) {
+  const current = await getMyWayAsset(input.assetId);
+
+  if (!current) {
+    throw new Error(
+      `Asset was not found in the registry: ${safeAssetId(input.assetId)}`,
+    );
+  }
+
+  const canonicalLabel = input.canonicalLabel
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+
+  if (!canonicalLabel) {
+    throw new Error(
+      "A canonical label is required.",
+    );
+  }
+
+  const previousCanonicalLabel =
+    current.verified_canonical_label ??
+    current.canonical_label;
+
+  const existingEmbedding =
+    current.appearance_embedding;
+  const asset = await updateMyWayAsset(
+    current.asset_id,
+    {
+      verified_canonical_label:
+        canonicalLabel,
+      semantic_review_status:
+        "verified",
+      semantic_reviewed_at:
+        new Date().toISOString(),
+      appearance_embedding: existingEmbedding
+        ? {
+            ...existingEmbedding,
+            status: "pending",
+            source_text_hash: null,
+            embedded_at: null,
+            error: null,
+          }
+        : existingEmbedding,
+    },
+  );
+
+  if (existingEmbedding) {
+    queueIdentityEmbeddingRefresh(
+      asset.asset_id,
+    );
+  }
+
+  return {
+    asset,
+    updated_from:
+      previousCanonicalLabel,
+    embedding_refresh_queued:
+      Boolean(existingEmbedding),
+  };
+}
+
+
+export async function repairMyWayAssetIdentityArtifacts(input: {
+  assetId: string;
+  queueEmbeddingRefresh?: boolean;
+}) {
+  await ensureAssetDirectories();
+
+  const assetId = safeAssetId(input.assetId);
+  const registry = await loadMyWayAssetRegistry();
+  const index = registry.assets.findIndex(
+    (asset) => asset.asset_id === assetId,
+  );
+
+  if (index < 0) {
+    throw new Error(
+      `Asset was not found in the registry: ${assetId}`,
+    );
+  }
+
+  const current = registry.assets[index]!;
+  const embedding = current.appearance_embedding;
+  if (!embedding) {
+    return {
+      asset: current,
+      moved_identity_files: [] as string[],
+      updated_reference_files: [] as string[],
+      embedding_refresh_queued: false,
+      warnings: [] as string[],
+    };
+  }
+
+  const expectedVectorKey =
+    canonicalEmbeddingVectorKey(current.asset_id);
+  const currentVectorKey =
+    embedding.vector_key;
+  const currentVectorPath = currentVectorKey
+    ? projectPathFromStoredReference(
+        currentVectorKey,
+      )
+    : null;
+  const expectedVectorPath =
+    projectPathFromStoredReference(
+      expectedVectorKey,
+    );
+
+  if (!expectedVectorPath) {
+    throw new Error(
+      `Could not resolve the canonical embedding path for ${current.asset_id}.`,
+    );
+  }
+
+  const currentExists = currentVectorPath
+    ? await fileExists(currentVectorPath)
+    : false;
+  const expectedExists =
+    await fileExists(expectedVectorPath);
+
+  if (
+    currentVectorPath &&
+    currentVectorPath !== expectedVectorPath &&
+    currentExists &&
+    expectedExists
+  ) {
+    throw new Error(
+      `Both the old and canonical embedding files exist for ${current.asset_id}. Resolve the duplicate before continuing: ${currentVectorKey} and ${expectedVectorKey}`,
+    );
+  }
+
+  const sourceVectorPath = currentExists
+    ? currentVectorPath
+    : expectedExists
+      ? expectedVectorPath
+      : null;
+  const sourceVectorKey = currentExists
+    ? currentVectorKey
+    : expectedExists
+      ? expectedVectorKey
+      : null;
+
+  const replacements = new Map<string, string>();
+  if (
+    currentVectorKey &&
+    currentVectorKey !== expectedVectorKey
+  ) {
+    replacements.set(
+      currentVectorKey,
+      expectedVectorKey,
+    );
+  }
+
+  const referenceFiles = new Set<string>([
+    projectPath(
+      MYWAY_MISSING_ASSET_QUEUE_PROJECT_PATH,
+    ),
+    ...(await listJsonFiles(
+      MYWAY_SCENE_MANIFEST_PROJECT_PATH,
+    )),
+    ...(await listJsonFiles(
+      `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/source-records`,
+    )),
+  ]);
+  if (sourceVectorPath) {
+    referenceFiles.add(sourceVectorPath);
+  }
+
+  let sourceTextNeedsRefresh = false;
+  const warnings: string[] = [];
+  if (sourceVectorPath) {
+    try {
+      const stored =
+        await readJsonFileWithRetry<
+          Record<string, unknown>
+        >(sourceVectorPath);
+      const storedAssetId =
+        typeof stored.asset_id === "string"
+          ? safeAssetId(stored.asset_id)
+          : "";
+      if (
+        storedAssetId &&
+        storedAssetId !== current.asset_id
+      ) {
+        replacements.set(
+          storedAssetId,
+          current.asset_id,
+        );
+      }
+
+      const identityLabel = (
+        current.verified_canonical_label ??
+        current.canonical_label
+      )
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+      const sourceText =
+        typeof stored.source_text === "string"
+          ? stored.source_text.toLowerCase()
+          : "";
+      sourceTextNeedsRefresh =
+        !sourceText.includes(
+          `asset identity gate: ${identityLabel}`,
+        );
+    } catch (caught) {
+      sourceTextNeedsRefresh = true;
+      warnings.push(
+        `The embedding JSON could not be inspected: ${
+          caught instanceof Error
+            ? caught.message
+            : String(caught)
+        }`,
+      );
+    }
+  } else {
+    sourceTextNeedsRefresh = true;
+    warnings.push(
+      "The embedding metadata exists, but its vector file is missing.",
+    );
+  }
+
+  const mutations = replacements.size > 0
+    ? (
+        await Promise.all(
+          [...referenceFiles].map((filePath) =>
+            collectJsonReferenceMutation(
+              filePath,
+              replacements,
+            ),
+          ),
+        )
+      ).filter(
+        (
+          mutation,
+        ): mutation is JsonReferenceMutation =>
+          Boolean(mutation),
+      )
+    : [];
+
+  const shouldQueueRefresh =
+    input.queueEmbeddingRefresh !== false &&
+    sourceTextNeedsRefresh;
+  const repaired: MyWayAssetRecord = {
+    ...current,
+    appearance_embedding: {
+      ...embedding,
+      status: shouldQueueRefresh
+        ? "pending"
+        : embedding.status,
+      vector_key: expectedVectorKey,
+      source_text_hash: shouldQueueRefresh
+        ? null
+        : embedding.source_text_hash,
+      embedded_at: shouldQueueRefresh
+        ? null
+        : embedding.embedded_at,
+      error: shouldQueueRefresh
+        ? null
+        : embedding.error,
+    },
+    updated_at: new Date().toISOString(),
+  };
+
+  const validation =
+    validateMyWayAssetRecord(repaired);
+  if (!validation.ok) {
+    throw new Error(
+      validation.errors.join("; "),
+    );
+  }
+
+  const applied: JsonReferenceMutation[] = [];
+  let vectorMoved = false;
+
+  try {
+    for (const mutation of mutations) {
+      await writeJsonFileAtomic(
+        mutation.file_path,
+        mutation.next,
+      );
+      applied.push(mutation);
+    }
+
+    if (
+      sourceVectorPath &&
+      sourceVectorPath !== expectedVectorPath
+    ) {
+      await mkdir(
+        path.dirname(expectedVectorPath),
+        { recursive: true },
+      );
+      await renameFile(
+        sourceVectorPath,
+        expectedVectorPath,
+      );
+      vectorMoved = true;
+    }
+
+    registry.assets[index] = repaired;
+    await saveMyWayAssetRegistry(registry);
+  } catch (caught) {
+    if (
+      vectorMoved &&
+      sourceVectorPath
+    ) {
+      await renameFile(
+        expectedVectorPath,
+        sourceVectorPath,
+      ).catch(() => undefined);
+    }
+    for (
+      const mutation of applied
+        .slice()
+        .reverse()
+    ) {
+      await writeJsonFileAtomic(
+        mutation.file_path,
+        mutation.original,
+      ).catch(() => undefined);
+    }
+    throw caught;
+  }
+
+  if (shouldQueueRefresh) {
+    queueIdentityEmbeddingRefresh(
+      repaired.asset_id,
+    );
+  }
+
+  return {
+    asset: repaired,
+    moved_identity_files:
+      vectorMoved
+        ? [expectedVectorKey]
+        : [],
+    updated_reference_files:
+      mutations.map((mutation) =>
+        path.relative(
+          projectRoot(),
+          mutation.file_path,
+        ),
+      ),
+    embedding_refresh_queued:
+      shouldQueueRefresh,
+    warnings,
+  };
+}
+
+export async function repairAllMyWayAssetIdentityArtifacts() {
+  const assets = await listMyWayAssets();
+  const repaired: Array<{
+    asset_id: string;
+    moved_identity_files: string[];
+    updated_reference_files: string[];
+    embedding_refresh_queued: boolean;
+    warnings: string[];
+  }> = [];
+  const failed: Array<{
+    asset_id: string;
+    error: string;
+  }> = [];
+
+  for (const asset of assets) {
+    try {
+      const result =
+        await repairMyWayAssetIdentityArtifacts({
+          assetId: asset.asset_id,
+          queueEmbeddingRefresh: true,
+        });
+      repaired.push({
+        asset_id: result.asset.asset_id,
+        moved_identity_files:
+          result.moved_identity_files,
+        updated_reference_files:
+          result.updated_reference_files,
+        embedding_refresh_queued:
+          result.embedding_refresh_queued,
+        warnings: result.warnings,
+      });
+    } catch (caught) {
+      failed.push({
+        asset_id: asset.asset_id,
+        error:
+          caught instanceof Error
+            ? caught.message
+            : String(caught),
+      });
+    }
+  }
+
+  return {
+    repaired,
+    failed,
+  };
+}
+
+
+export async function updateMyWayAssetAliases(input: {
+  assetId: string;
+  aliases: string[];
+}) {
+  const current = await getMyWayAsset(input.assetId);
+
+  if (!current) {
+    throw new Error(
+      `Asset was not found in the registry: ${safeAssetId(input.assetId)}`,
+    );
+  }
+
+  const canonical = (
+    current.verified_canonical_label ??
+    current.canonical_label
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+
+  const aliases = Array.from(
+    new Set(
+      input.aliases
+        .map((value) =>
+          value
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, " "),
+        )
+        .filter(
+          (value) =>
+            Boolean(value) &&
+            value !== canonical,
+        ),
+    ),
+  );
+
+  const previousAliases = Array.from(
+    new Set([
+      ...(current.verified_aliases ?? []),
+      ...current.aliases,
+    ]),
+  );
+
+  const asset = await updateMyWayAsset(
+    current.asset_id,
+    {
+      // aliases is the active identity synonym set. Keep the verified copy in
+      // sync so older imported assets can be edited, including removals.
+      aliases,
+      verified_aliases: aliases,
+      semantic_review_status:
+        current.semantic_review_status ===
+        "verified"
+          ? "verified"
+          : current.semantic_review_status,
+      semantic_reviewed_at:
+        current.semantic_review_status ===
+        "verified"
+          ? new Date().toISOString()
+          : current.semantic_reviewed_at,
+    },
+  );
+
+  return {
+    asset,
+    updated_from: previousAliases,
+  };
 }
 
 export async function reviewMyWayAssetForScenes(input: {
@@ -341,7 +1273,27 @@ export async function reviewMyWayAssetSemanticIdentity(input: {
     );
   }
 
-  return updateMyWayAsset(current.asset_id, {
+  const previousIdentityLabel = (
+    current.verified_canonical_label ??
+    current.canonical_label
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+  const nextIdentityLabel = (
+    verifiedCanonicalLabel ??
+    current.canonical_label
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+  const identityChanged =
+    previousIdentityLabel !==
+    nextIdentityLabel;
+  const existingEmbedding =
+    current.appearance_embedding;
+
+  const updated = await updateMyWayAsset(current.asset_id, {
     verified_canonical_label: verifiedCanonicalLabel,
     verified_aliases: input.verifiedAliases ?? [],
     semantic_review_status: input.semanticReviewStatus,
@@ -374,7 +1326,25 @@ export async function reviewMyWayAssetSemanticIdentity(input: {
       input.semanticReviewStatus === "rejected"
         ? null
         : current.scene_reviewed_at,
+    appearance_embedding:
+      identityChanged && existingEmbedding
+        ? {
+            ...existingEmbedding,
+            status: "pending",
+            source_text_hash: null,
+            embedded_at: null,
+            error: null,
+          }
+        : existingEmbedding,
   });
+
+  if (identityChanged && existingEmbedding) {
+    queueIdentityEmbeddingRefresh(
+      updated.asset_id,
+    );
+  }
+
+  return updated;
 }
 
 export async function listSceneApprovedAssets() {

@@ -878,6 +878,31 @@ function breakPlacementCycles(
   }
 }
 
+function explicitPrimitiveSurface(
+  requirement: PrimitiveBuilderAssetRequirement,
+  target: PrimitiveBuilderAssetRequirement,
+  worldById: Map<string, WorldNode>,
+) {
+  const surfaces = requirementSurfaces(
+    target,
+    worldById,
+  );
+  if (!surfaces.length) return undefined;
+
+  const rank =
+    requirement.placement_region.vertical_rank;
+  const sorted = [...surfaces].sort((left, right) => {
+    if (rank === "highest" || rank === "upper") {
+      return right.center[1] - left.center[1];
+    }
+    if (rank === "lowest" || rank === "lower") {
+      return left.center[1] - right.center[1];
+    }
+    return right.area - left.area;
+  });
+  return sorted[0];
+}
+
 export function compilePrimitiveGeometryConstraints(
   sceneGraph: PrimitiveSceneGraphV2,
   requirements: PrimitiveBuilderAssetRequirement[],
@@ -1023,11 +1048,62 @@ export function compilePrimitiveGeometryConstraints(
         layout_priority: best ? 10 : 0,
       };
 
+      if (requirement.placement_source === "explicit") {
+        if (requirement.placement_relation === "on_ground") {
+          return {
+            ...base,
+            placement_relation: "on_ground" as const,
+            placement_target_instance_id: undefined,
+            primitive_support_surface: undefined,
+          };
+        }
+
+        const explicitTarget =
+          requirement.placement_target_instance_id
+            ? requirements.find(
+                (candidate) =>
+                  candidate.instance_id ===
+                  requirement.placement_target_instance_id,
+              )
+            : undefined;
+        if (explicitTarget) {
+          const targetBounds =
+            boundsByRequirement.get(
+              explicitTarget.instance_id,
+            );
+          const surface =
+            requirement.placement_relation ===
+            "on_surface"
+              ? explicitPrimitiveSurface(
+                  requirement,
+                  explicitTarget,
+                  worldById,
+                )
+              : undefined;
+
+          return {
+            ...base,
+            placement_relation:
+              requirement.placement_relation,
+            placement_target_instance_id:
+              explicitTarget.instance_id,
+            primitive_support_surface:
+              surface && targetBounds
+                ? surfaceReference(
+                    surface,
+                    targetBounds,
+                  )
+                : requirement.primitive_support_surface,
+          };
+        }
+      }
+
       if (best && best.score > 0.35) {
         return {
           ...base,
           placement_relation:
             "on_surface" as const,
+          placement_source: "inferred" as const,
           placement_target_instance_id:
             best.target.instance_id,
           placement_anchor:
@@ -1052,6 +1128,7 @@ export function compilePrimitiveGeometryConstraints(
           ...base,
           placement_relation:
             "on_ground" as const,
+          placement_source: "inferred" as const,
           placement_target_instance_id:
             undefined,
           placement_anchor:
@@ -1074,6 +1151,7 @@ export function compilePrimitiveGeometryConstraints(
         ...base,
         placement_relation:
           "absolute" as const,
+        placement_source: "inferred" as const,
         placement_target_instance_id:
           undefined,
         placement_anchor: "center",

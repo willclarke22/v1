@@ -1,0 +1,41 @@
+{
+  "schema_version": "myway_blenderkit_source_record_v1",
+  "captured_at": "2026-07-20T04:21:05.954978+00:00",
+  "asset_id": "f4b2a5db-9544-47b6-a918-dbc8f91dfe38",
+  "asset_base_id": "f0bf8121-3ef0-4883-ae7a-af09abca9c26",
+  "display_name": "Pencil Sharpener Caran D'Ache",
+  "description": "Iconic mechanical pencil sharpener by Caran d’Ache (Geneva, Switzerland). This model represents the old black edition of the renowned “Mini Pencil Sharpener”. Ideal for high-end office interiors, product visualization, and architectural visualization (archviz) scenes where refined design objects matter.",
+  "license": "cc0",
+  "required_license_kind": "cc0",
+  "is_free": true,
+  "can_download": true,
+  "verification_status": "validated",
+  "tags": [
+    "pencil",
+    "sharpener",
+    "stationery",
+    "office",
+    "desk",
+    "accessory",
+    "mechanical",
+    "design",
+    "product",
+    "swiss"
+  ],
+  "author": {
+    "id": 508759,
+    "name": "Joël Pisanello",
+    "about_url": "https://www.artstation.com/j-pisanello"
+  },
+  "download_file_type": "resolution_1K",
+  "source_api_url": "https://www.blenderkit.com/api/v1/assets/f4b2a5db-9544-47b6-a918-dbc8f91dfe38/",
+  "source_page_url": "https://www.blenderkit.com/asset-gallery-detail/f0bf8121-3ef0-4883-ae7a-af09abca9c26/",
+  "official_license_docs_url": "https://www.blenderkit.com/docs/licenses/",
+  "myway_requested_concept": "pencil",
+  "myway_blenderkit_search_query": "pencil",
+  "myway_required_license_kind": "cc0",
+  "excluded_source_asset_ids": [],
+  "normalized_runtime_glb": "public/sandbox-assets/myway/models/blenderkit/pencil_bk_mrspvkes.glb",
+  "normalized_thumbnail": "public/sandbox-assets/myway/thumbnails/pencil_bk_mrspvkes.png",
+  "content_hash": "d865d128edaaf968f436674370df0a9f67835cae49e6ef5c24c9a6fc812bdffb"
+}

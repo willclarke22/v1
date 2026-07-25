@@ -682,11 +682,6 @@ async function main() {
               ),
             ],
             semanticTags: item.tags,
-            styleTags: [
-              "generic",
-              "reusable",
-              "everyday",
-            ],
             domain: item.domain,
             targetExtentM:
               item.targetExtentM,
@@ -793,14 +788,6 @@ async function main() {
                     .semantic_tags,
                   ...item.tags,
                   item.label,
-                ]),
-              style_tags:
-                uniqueStrings([
-                  ...result.asset
-                    .style_tags,
-                  "generic",
-                  "reusable",
-                  "everyday",
                 ]),
               domain: item.domain,
               scene_review_status:

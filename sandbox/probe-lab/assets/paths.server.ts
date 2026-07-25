@@ -8,6 +8,8 @@ export const MYWAY_SCENE_MANIFEST_PROJECT_PATH = "sandbox/probe-lab/scenes/manif
 export const MYWAY_ASSET_JOB_PROJECT_PATH = "sandbox/probe-lab/assets/jobs";
 export const MYWAY_ASSET_INBOX_PROJECT_PATH = "sandbox/probe-lab/assets/inbox";
 export const MYWAY_ASSET_DEBUG_PROJECT_PATH = "sandbox/probe-lab/assets/debug";
+export const MYWAY_MISSING_ASSET_QUEUE_PROJECT_PATH =
+  "sandbox/probe-lab/assets/acquisition/missing-asset-jobs.json";
 export const MYWAY_PUBLIC_ASSET_PROJECT_PATH = "public/sandbox-assets/myway";
 
 export function projectRoot() {
@@ -35,8 +37,11 @@ export async function ensureAssetDirectories() {
     MYWAY_ASSET_LIBRARY_PROJECT_PATH,
     `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/licenses`,
     `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/source-records`,
+    "sandbox/probe-lab/assets/embeddings",
+    "sandbox/probe-lab/assets/enrichment/cache",
     MYWAY_SCENE_MANIFEST_PROJECT_PATH,
     MYWAY_ASSET_DEBUG_PROJECT_PATH,
+    "sandbox/probe-lab/assets/acquisition",
     `${MYWAY_ASSET_INBOX_PROJECT_PATH}/blenderkit`,
     `${MYWAY_ASSET_INBOX_PROJECT_PATH}/trellis`,
     `${MYWAY_ASSET_INBOX_PROJECT_PATH}/manual`,
@@ -49,6 +54,7 @@ export async function ensureAssetDirectories() {
     `${MYWAY_PUBLIC_ASSET_PROJECT_PATH}/models/manual`,
     `${MYWAY_PUBLIC_ASSET_PROJECT_PATH}/models/procedural`,
     `${MYWAY_PUBLIC_ASSET_PROJECT_PATH}/thumbnails`,
+    `${MYWAY_PUBLIC_ASSET_PROJECT_PATH}/analysis`,
   ];
   await Promise.all(
     directories.map((directory) =>

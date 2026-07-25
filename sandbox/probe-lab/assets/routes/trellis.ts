@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     const result = await acquireFromTrellis({
       concept,
       semanticTags: stringArray(body.semantic_tags),
-      styleTags: stringArray(body.style_tags),
+      acquisitionTerms: stringArray(body.acquisition_terms),
       domain:
         typeof body.domain === "string"
           ? body.domain.trim() || "generic"
@@ -87,4 +87,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

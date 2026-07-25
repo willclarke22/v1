@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { MyWayAssetRecord } from "../asset-types";
@@ -31,13 +31,13 @@ function buildBlendKitQuery(input: {
   concept: string;
   aliases?: string[];
   semanticTags?: string[];
-  styleTags?: string[];
+  acquisitionTerms?: string[];
 }) {
   const orderedTerms = [
     input.concept,
     ...(input.aliases ?? []),
     ...(input.semanticTags ?? []),
-    ...(input.styleTags ?? []),
+    ...(input.acquisitionTerms ?? []),
   ];
 
   const seen = new Set<string>();
@@ -79,7 +79,7 @@ export async function acquireFromBlenderKit(input: {
   concept: string;
   aliases?: string[];
   semanticTags?: string[];
-  styleTags?: string[];
+  acquisitionTerms?: string[];
   domain?: string;
   targetExtentM?: number;
   searchQuery?: string;
@@ -137,9 +137,9 @@ export async function acquireFromBlenderKit(input: {
     jobTimeoutMs,
   );
 
-  if (!completed.result) {
+  if (completed.kind !== "blenderkit_acquire" || !completed.result) {
     throw new Error(
-      "Blender completed without returning asset metadata.",
+      "Blender completed without returning BlendKit asset metadata.",
     );
   }
 
@@ -197,7 +197,6 @@ export async function acquireFromBlenderKit(input: {
       input.concept,
       ...(input.semanticTags ?? []),
     ],
-    style_tags: input.styleTags ?? [],
     asset_type: "glb",
     domain: input.domain ?? "generic",
     requested_concept: input.concept,
@@ -275,6 +274,30 @@ export async function acquireFromBlenderKit(input: {
   };
 
   const registered = await registerMyWayAsset(record);
+
+  if (!registered.created) {
+    await Promise.all(
+      [
+        outputPath,
+        thumbnailPath,
+        sourceRecordPath,
+        licensePath,
+      ].map((candidatePath) =>
+        rm(candidatePath, { force: true }).catch(
+          () => undefined,
+        ),
+      ),
+    );
+
+    return {
+      ...registered,
+      source_record_path:
+        `sandbox/probe-lab/assets/library/source-records/${registered.asset.asset_id}.json`,
+      license_review_path:
+        registered.asset.license_record_path ?? null,
+    };
+  }
+
   const review = buildBlenderKitCc0LicenseReview(registered.asset);
 
   await writeFile(
@@ -298,6 +321,3 @@ export async function acquireFromBlenderKit(input: {
     license_review_path: licenseRelativePath,
   };
 }
-
-
-

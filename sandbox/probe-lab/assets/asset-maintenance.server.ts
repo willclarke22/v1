@@ -54,6 +54,10 @@ function possibleLocalAssetFiles(asset: MyWayAssetRecord) {
     asset.thumbnail_path,
     asset.source_path,
     asset.license_record_path,
+    asset.appearance_embedding?.vector_key,
+    ...(asset.appearance_profile?.analysis_views ?? []).map(
+      (view) => view.public_path,
+    ),
   ]) {
     const candidate = localProjectPath(value);
     if (candidate) candidates.add(candidate);
@@ -233,7 +237,6 @@ export async function createMyWayAssetReplacement(input: {
       concept: original.verified_canonical_label ?? original.canonical_label,
       aliases: original.aliases,
       semanticTags: original.semantic_tags,
-      styleTags: original.style_tags,
       domain: original.domain,
       targetExtentM: replacementExtent(original),
       requiredLicenseKind: "cc0",
@@ -276,8 +279,7 @@ export async function createMyWayAssetReplacement(input: {
       "accurate proportions",
       "complete object",
     ],
-    styleTags: [
-      ...original.style_tags,
+    acquisitionTerms: [
       "high quality",
       "clean detailed geometry",
     ],

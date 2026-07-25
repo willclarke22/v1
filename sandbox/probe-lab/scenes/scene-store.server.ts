@@ -1,7 +1,5 @@
 import {
-  readFile,
   readdir,
-  writeFile,
 } from "node:fs/promises";
 
 import {
@@ -10,14 +8,28 @@ import {
   projectPath,
 } from "../assets/paths.server";
 import {
+  readJsonFileWithRetry,
+  writeJsonFileAtomic,
+} from "../assets/json-file.server";
+import {
   getMyWayAsset,
 } from "../assets/asset-library.server";
+import {
+  linkMissingAssetJobsToSavedScene,
+} from "../assets/acquisition/missing-asset-store.server";
 import type {
   MyWaySceneManifestV2,
 } from "./scene-manifest";
 import {
   validateSceneManifest,
+  safeSceneId,
 } from "./validate-scene-manifest";
+import type {
+  PrimitiveSceneGraphV2,
+} from "../primitive-builder/primitive-scene-graph";
+import {
+  resolvePrimitiveBuilderSceneAssets,
+} from "./resolve-scene-assets.server";
 
 export async function saveSceneManifest(
   raw: unknown,
@@ -48,11 +60,15 @@ export async function saveSceneManifest(
     `${validated.scene.scene_id}.json`,
   );
 
-  await writeFile(
+  await writeJsonFileAtomic(
     filePath,
-    `${JSON.stringify(validated.scene, null, 2)}\n`,
-    "utf8",
+    validated.scene,
   );
+
+  await linkMissingAssetJobsToSavedScene(
+    validated.scene.scene_id,
+    validated.scene.scene_id,
+  ).catch(() => undefined);
 
   return hydrateSceneManifest(validated.scene);
 }
@@ -102,6 +118,100 @@ async function hydrateSceneManifest(
   };
 }
 
+
+export async function getSceneManifest(
+  sceneId: string,
+) {
+  await ensureAssetDirectories();
+  const normalizedId = safeSceneId(sceneId);
+  if (!normalizedId) return null;
+
+  try {
+    const raw = await readJsonFileWithRetry<unknown>(
+      projectPath(
+        MYWAY_SCENE_MANIFEST_PROJECT_PATH,
+        `${normalizedId}.json`,
+      ),
+    );
+    const validated =
+      validateSceneManifest(raw);
+
+    return validated.ok
+      ? await hydrateSceneManifest(
+          validated.scene,
+        )
+      : null;
+  } catch (caught) {
+    if (
+      (caught as NodeJS.ErrnoException)
+        .code === "ENOENT"
+    ) {
+      return null;
+    }
+    throw caught;
+  }
+}
+
+function isPrimitiveSceneGraph(
+  value: unknown,
+): value is PrimitiveSceneGraphV2 {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      (value as PrimitiveSceneGraphV2)
+        .schema_version ===
+        "primitive_scene_graph_v2" &&
+      Array.isArray(
+        (value as PrimitiveSceneGraphV2)
+          .asset_requirements,
+      ),
+  );
+}
+
+export async function refreshSavedSceneAssets(
+  sceneId: string,
+) {
+  const scene =
+    await getSceneManifest(sceneId);
+
+  if (!scene) {
+    throw new Error(
+      `Saved scene was not found: ${sceneId}`,
+    );
+  }
+
+  if (
+    !isPrimitiveSceneGraph(
+      scene.scene_graph,
+    )
+  ) {
+    throw new Error(
+      "The saved scene does not contain a refreshable primitive scene graph.",
+    );
+  }
+
+  const resolution =
+    await resolvePrimitiveBuilderSceneAssets(
+      scene.scene_graph,
+    );
+
+  const refreshed:
+    MyWaySceneManifestV2 = {
+    ...scene,
+    assets: resolution.bindings,
+    unresolved_requirements:
+      resolution.unresolved_requirements,
+    updated_at: new Date().toISOString(),
+  };
+
+  return {
+    scene:
+      await saveSceneManifest(refreshed),
+    resolution,
+  };
+}
+
 export async function listSceneManifests(): Promise<
   MyWaySceneManifestV2[]
 > {
@@ -116,13 +226,10 @@ export async function listSceneManifests(): Promise<
 
   for (const name of names) {
     try {
-      const raw = JSON.parse(
-        await readFile(
-          projectPath(
-            MYWAY_SCENE_MANIFEST_PROJECT_PATH,
-            name,
-          ),
-          "utf8",
+      const raw = await readJsonFileWithRetry<unknown>(
+        projectPath(
+          MYWAY_SCENE_MANIFEST_PROJECT_PATH,
+          name,
         ),
       );
       const validated = validateSceneManifest(raw);
@@ -143,5 +250,3 @@ export async function listSceneManifests(): Promise<
     b.updated_at.localeCompare(a.updated_at),
   );
 }
-
-

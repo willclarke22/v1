@@ -1,10 +1,15 @@
 import type {
+  MyWayAssetAppearanceRankingDiagnostics,
   MyWayAssetGeometryProfileV1,
   MyWayAssetSceneReviewStatus,
   MyWayAssetSourceType,
   Vec3,
 } from "../assets/asset-types";
 import type {
+  LogicalAssetSizeDecision,
+} from "../assets/logical-asset-size";
+import type {
+  PrimitiveBuilderPlacementRegionPreference,
   PrimitiveBuilderSurfaceReference,
 } from "../primitive-builder/asset-requirement-plan";
 
@@ -20,6 +25,8 @@ export type SceneAssetInstance = {
   default_rotation?: Vec3;
   ground_offset_m?: number;
   target_extent_m?: number;
+  requested_target_extent_m?: number;
+  size_policy?: LogicalAssetSizeDecision;
   position: Vec3;
   rotation: Vec3;
   scale: Vec3;
@@ -40,6 +47,8 @@ export type SceneAssetInstance = {
     | "attached_to";
   placement_target_instance_id?: string;
   placement_anchor?: string;
+  placement_region?: PrimitiveBuilderPlacementRegionPreference;
+  placement_source?: "explicit" | "inferred";
   placement_offset?: Vec3;
   placement_uv?: [number, number];
   primitive_support_surface?: PrimitiveBuilderSurfaceReference;
@@ -49,6 +58,12 @@ export type SceneAssetInstance = {
   preview_only?: boolean;
   match_score?: number | null;
   match_margin?: number | null;
+  appearance_ranking?: MyWayAssetAppearanceRankingDiagnostics;
+  appearance_similarity?: number | null;
+  appearance_score?: number;
+  appearance_summary?: string | null;
+  appearance_trait_matches?: string[];
+  appearance_trait_conflicts?: string[];
   visible_from_beat?: number | null;
 };
 

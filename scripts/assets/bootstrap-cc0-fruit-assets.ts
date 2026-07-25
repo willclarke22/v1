@@ -12,7 +12,6 @@ const fruitRequests = [
       "realistic",
       "botanical",
     ],
-    styleTags: ["realistic", "isolated"],
   },
   {
     concept: "banana",
@@ -24,7 +23,6 @@ const fruitRequests = [
       "realistic",
       "botanical",
     ],
-    styleTags: ["realistic", "isolated"],
   },
   {
     concept: "pineapple",
@@ -36,7 +34,6 @@ const fruitRequests = [
       "realistic",
       "botanical",
     ],
-    styleTags: ["realistic", "isolated"],
   },
 ];
 

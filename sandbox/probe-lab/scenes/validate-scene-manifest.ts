@@ -43,6 +43,75 @@ function vec3(
   ];
 }
 
+function placementRegion(value: unknown) {
+  const item = record(value) ?? {};
+  const allowed = <T extends string>(
+    raw: unknown,
+    values: readonly T[],
+    fallback: T,
+  ): T =>
+    typeof raw === "string" &&
+    values.includes(raw as T)
+      ? (raw as T)
+      : fallback;
+
+  return {
+    region_kind: allowed(
+      item.region_kind,
+      [
+        "any",
+        "support",
+        "containment",
+        "attachment",
+        "adjacent",
+      ] as const,
+      "any",
+    ),
+    exposure: allowed(
+      item.exposure,
+      ["any", "exterior", "interior"] as const,
+      "any",
+    ),
+    orientation: allowed(
+      item.orientation,
+      [
+        "any",
+        "upward",
+        "vertical",
+        "downward",
+        "sloped",
+      ] as const,
+      "any",
+    ),
+    vertical_rank: allowed(
+      item.vertical_rank,
+      [
+        "any",
+        "highest",
+        "upper",
+        "middle",
+        "lower",
+        "lowest",
+      ] as const,
+      "any",
+    ),
+    openness: allowed(
+      item.openness,
+      ["any", "open", "enclosed"] as const,
+      "any",
+    ),
+    side: allowed(
+      item.side,
+      ["any", "left", "right", "front", "back"] as const,
+      "any",
+    ),
+    require_ground_contact:
+      item.require_ground_contact === true,
+    allow_intersection:
+      item.allow_intersection === true,
+  };
+}
+
 function normalizeAssetInstance(
   value: unknown,
   index: number,
@@ -110,6 +179,13 @@ function normalizeAssetInstance(
       typeof item.placement_anchor === "string"
         ? item.placement_anchor
         : "center",
+    placement_region: placementRegion(
+      item.placement_region,
+    ),
+    placement_source:
+      item.placement_source === "explicit"
+        ? "explicit"
+        : "inferred",
     placement_offset: vec3(
       item.placement_offset,
       [0, 0, 0],

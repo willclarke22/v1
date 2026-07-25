@@ -1,4 +1,8 @@
 import type {
+  MyWayAssetAppearanceEmbeddingV1,
+  MyWayAssetAppearanceProfileV1,
+  MyWayAssetAppearanceViewName,
+  MyWayAssetAttachmentRegion,
   MyWayAssetCollisionBox,
   MyWayAssetContactRegion,
   MyWayAssetGeometryProfileV1,
@@ -65,6 +69,121 @@ function storageProvider(
   return value === "local" || value === "r2"
     ? value
     : fallback;
+}
+
+
+const APPEARANCE_VIEW_NAMES = new Set<MyWayAssetAppearanceViewName>([
+  "front_three_quarter",
+  "rear_three_quarter",
+  "side",
+  "elevated_front",
+]);
+
+function appearanceProfile(
+  value: unknown,
+  contentHash: string | null,
+): MyWayAssetAppearanceProfileV1 {
+  const item =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  const storedHash = nullableString(item.content_hash);
+  const hashChanged = Boolean(
+    contentHash && storedHash && contentHash !== storedHash,
+  );
+  const rawStatus = item.status;
+  const status = hashChanged
+    ? "pending"
+    : rawStatus === "rendering" ||
+        rawStatus === "analyzing" ||
+        rawStatus === "ready" ||
+        rawStatus === "failed"
+      ? rawStatus
+      : "pending";
+  const analysisViews = Array.isArray(item.analysis_views)
+    ? item.analysis_views
+        .map((entry) => {
+          if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+            return null;
+          }
+          const view = entry as Record<string, unknown>;
+          const name = view.name;
+          const publicPath = nullableString(view.public_path);
+          if (
+            typeof name !== "string" ||
+            !APPEARANCE_VIEW_NAMES.has(name as MyWayAssetAppearanceViewName) ||
+            !publicPath
+          ) {
+            return null;
+          }
+          return {
+            name: name as MyWayAssetAppearanceViewName,
+            public_path: publicPath,
+          };
+        })
+        .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+    : [];
+
+  return {
+    schema_version: "myway_asset_appearance_profile_v1",
+    status,
+    summary: hashChanged ? "" : nullableString(item.summary) ?? "",
+    style_descriptors: hashChanged ? [] : stringList(item.style_descriptors),
+    design_era: hashChanged ? [] : stringList(item.design_era),
+    realism_level: hashChanged ? [] : stringList(item.realism_level),
+    shape_language: hashChanged ? [] : stringList(item.shape_language),
+    material_treatment: hashChanged ? [] : stringList(item.material_treatment),
+    color_palette: hashChanged ? [] : stringList(item.color_palette),
+    surface_condition: hashChanged ? [] : stringList(item.surface_condition),
+    ornamentation: hashChanged ? [] : stringList(item.ornamentation),
+    visual_mood: hashChanged ? [] : stringList(item.visual_mood),
+    detail_level: hashChanged ? [] : stringList(item.detail_level),
+    scene_compatibility: hashChanged ? [] : stringList(item.scene_compatibility),
+    descriptors: hashChanged ? [] : stringList(item.descriptors),
+    materials: hashChanged ? [] : stringList(item.materials),
+    colors: hashChanged ? [] : stringList(item.colors),
+    geometry: hashChanged ? [] : stringList(item.geometry),
+    warnings: hashChanged ? [] : stringList(item.warnings),
+    confidence: hashChanged
+      ? 0
+      : Math.max(0, Math.min(1, numberOr(item.confidence, 0))),
+    analysis_views: hashChanged ? [] : analysisViews,
+    model: hashChanged ? null : nullableString(item.model),
+    prompt_version:
+      nullableString(item.prompt_version) ??
+      "myway_asset_appearance_prompt_v1",
+    render_version:
+      nullableString(item.render_version) ??
+      "myway_asset_analysis_render_v1",
+    content_hash: contentHash,
+    analyzed_at: hashChanged ? null : nullableString(item.analyzed_at),
+    error: hashChanged ? null : nullableString(item.error),
+  };
+}
+
+function appearanceEmbedding(
+  value: unknown,
+): MyWayAssetAppearanceEmbeddingV1 {
+  const item =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  const rawStatus = item.status;
+
+  return {
+    schema_version: "myway_asset_appearance_embedding_v1",
+    status:
+      rawStatus === "ready" || rawStatus === "failed"
+        ? rawStatus
+        : "pending",
+    model:
+      nullableString(item.model) ?? "nvidia/nemotron-3-embed-1b",
+    dimensions: nullableNumber(item.dimensions),
+    vector_key: nullableString(item.vector_key),
+    source_text_hash: nullableString(item.source_text_hash),
+    embedded_at: nullableString(item.embedded_at),
+    error: nullableString(item.error),
+  };
 }
 
 function normalizePhrase(value: string) {
@@ -309,6 +428,62 @@ function supportSurfaces(
             ),
           ),
           source,
+          region_kind: "support",
+          exposure:
+            item.exposure === "exterior" ||
+            item.exposure === "interior"
+              ? item.exposure
+              : "unknown",
+          orientation:
+            item.orientation === "upward" ||
+            item.orientation === "vertical" ||
+            item.orientation === "downward" ||
+            item.orientation === "sloped"
+              ? item.orientation
+              : "upward",
+          openness:
+            item.openness === "open" ||
+            item.openness === "enclosed"
+              ? item.openness
+              : "unknown",
+          vertical_rank: Math.max(
+            0,
+            Math.round(
+              numberOr(item.vertical_rank, index),
+            ),
+          ),
+          clearance_above_m:
+            item.clearance_above_m == null
+              ? null
+              : Math.max(
+                  0,
+                  numberOr(item.clearance_above_m, 0),
+                ),
+          blocked_fraction: Math.max(
+            0,
+            Math.min(
+              1,
+              numberOr(item.blocked_fraction, 0),
+            ),
+          ),
+          enclosure_confidence: Math.max(
+            0,
+            Math.min(
+              1,
+              numberOr(item.enclosure_confidence, 0),
+            ),
+          ),
+          edge_margin_m: Math.max(
+            0,
+            numberOr(item.edge_margin_m, 0.01),
+          ),
+          usable_size: (() => {
+            const usable = vec2(item.usable_size, size);
+            return [
+              Math.max(0.001, Math.abs(usable[0])),
+              Math.max(0.001, Math.abs(usable[1])),
+            ] as [number, number];
+          })(),
           height_ratio: Math.max(
             0,
             Math.min(1.5, legacyHeight),
@@ -329,6 +504,13 @@ function supportSurfaces(
               ),
             ),
           ],
+          coverage_ratio: Math.max(
+            0,
+            Math.min(
+              1,
+              numberOr(item.coverage_ratio, 1),
+            ),
+          ),
         };
       },
     )
@@ -422,6 +604,8 @@ function collisionBoxes(
         ]);
 
         return {
+          id: nullableString(item.id) ?? undefined,
+          label: nullableString(item.label) ?? undefined,
           center: vec3(item.center, [0, 0.5, 0]),
           size: size.map((entry) =>
             Math.max(0.001, Math.abs(entry)),
@@ -430,6 +614,17 @@ function collisionBoxes(
             item.rotation,
             [0, 0, 0],
           ),
+          confidence: Math.max(
+            0,
+            Math.min(1, numberOr(item.confidence, 0.7)),
+          ),
+          source:
+            item.source === "blender_geometry" ||
+            item.source === "runtime_geometry" ||
+            item.source === "manual" ||
+            item.source === "legacy_ratio"
+              ? item.source
+              : "blender_geometry",
         };
       },
     )
@@ -476,6 +671,7 @@ function interiorVolumes(
                   `interior_${index + 1}`,
               ),
             ) || `interior_${index + 1}`,
+          label: nullableString(item.label) ?? undefined,
           center: vec3(
             item.center,
             [0, 0.5, 0],
@@ -494,6 +690,25 @@ function interiorVolumes(
               numberOr(item.confidence, 0.5),
             ),
           ),
+          source:
+            item.source === "manual" ||
+            item.source === "runtime_geometry"
+              ? item.source
+              : "blender_geometry",
+          exposure:
+            item.exposure === "exterior"
+              ? "exterior"
+              : "interior",
+          openness:
+            item.openness === "open"
+              ? "open"
+              : item.openness === "enclosed"
+                ? "enclosed"
+                : "unknown",
+          access_direction: normalizedDirection(
+            item.access_direction,
+            [0, 1, 0],
+          ),
         };
       },
     )
@@ -504,6 +719,65 @@ function interiorVolumes(
         Boolean(entry),
     )
     .slice(0, 16);
+}
+
+function attachmentRegions(
+  value: unknown,
+): MyWayAssetAttachmentRegion[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry, index): MyWayAssetAttachmentRegion | null => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+        return null;
+      }
+      const item = entry as Record<string, unknown>;
+      const size = vec2(item.size, [1, 1]);
+      const side =
+        item.side === "left" ||
+        item.side === "right" ||
+        item.side === "front" ||
+        item.side === "back" ||
+        item.side === "top" ||
+        item.side === "bottom"
+          ? item.side
+          : "unknown";
+
+      return {
+        id:
+          safeAssetId(String(item.id ?? `attachment_${index + 1}`)) ||
+          `attachment_${index + 1}`,
+        label: nullableString(item.label) ?? `Attachment region ${index + 1}`,
+        center: vec3(item.center, [0, 0.5, 0]),
+        normal: normalizedDirection(item.normal, [0, 0, 1]),
+        u_axis: normalizedDirection(item.u_axis, [1, 0, 0]),
+        v_axis: normalizedDirection(item.v_axis, [0, 1, 0]),
+        size: [
+          Math.max(0.001, Math.abs(size[0])),
+          Math.max(0.001, Math.abs(size[1])),
+        ],
+        confidence: Math.max(
+          0,
+          Math.min(1, numberOr(item.confidence, 0.5)),
+        ),
+        source:
+          item.source === "manual" ||
+          item.source === "runtime_geometry"
+            ? item.source
+            : "blender_geometry",
+        exposure:
+          item.exposure === "interior" ? "interior" : "exterior",
+        orientation:
+          item.orientation === "upward" ||
+          item.orientation === "downward" ||
+          item.orientation === "sloped"
+            ? item.orientation
+            : "vertical",
+        side,
+      };
+    })
+    .filter((entry): entry is MyWayAssetAttachmentRegion => Boolean(entry))
+    .slice(0, 24);
 }
 
 function geometryProfile(
@@ -596,9 +870,91 @@ function geometryProfile(
     interior_volumes: interiorVolumes(
       item.interior_volumes,
     ),
+    attachment_regions: attachmentRegions(
+      item.attachment_regions,
+    ),
     collision_boxes: collisionBoxes(
       item.collision_boxes,
     ),
+    primary_support_surface_id:
+      nullableString(
+        item.primary_support_surface_id,
+      ),
+    audit:
+      item.audit &&
+      typeof item.audit === "object" &&
+      !Array.isArray(item.audit)
+        ? (() => {
+            const audit =
+              item.audit as Record<
+                string,
+                unknown
+              >;
+            return {
+              status:
+                audit.status ===
+                "review_required"
+                  ? "review_required"
+                  : "measured",
+              confidence: Math.max(
+                0,
+                Math.min(
+                  1,
+                  numberOr(
+                    audit.confidence,
+                    0,
+                  ),
+                ),
+              ),
+              warnings: stringList(
+                audit.warnings,
+              ),
+              mesh_object_count: Math.max(
+                0,
+                Math.round(
+                  numberOr(
+                    audit.mesh_object_count,
+                    0,
+                  ),
+                ),
+              ),
+              included_mesh_count: Math.max(
+                0,
+                Math.round(
+                  numberOr(
+                    audit.included_mesh_count,
+                    0,
+                  ),
+                ),
+              ),
+              excluded_mesh_names:
+                stringList(
+                  audit.excluded_mesh_names,
+                ),
+              triangle_count: Math.max(
+                0,
+                Math.round(
+                  numberOr(
+                    audit.triangle_count,
+                    0,
+                  ),
+                ),
+              ),
+              support_surface_count:
+                Math.max(
+                  0,
+                  Math.round(
+                    numberOr(
+                      audit.support_surface_count,
+                      surfaces.length,
+                    ),
+                  ),
+                ),
+            };
+          })()
+        : undefined,
+    content_hash:
+      nullableString(item.content_hash),
     generated_at:
       nullableString(item.generated_at) ??
       new Date(0).toISOString(),
@@ -744,6 +1100,15 @@ export function normalizeMyWayAssetRecord(
     affordances.push("support_surface");
   }
 
+  const contentHash = nullableString(item.content_hash);
+  const normalizedAppearanceProfile = appearanceProfile(
+    item.appearance_profile,
+    contentHash,
+  );
+  const normalizedAppearanceEmbedding = appearanceEmbedding(
+    item.appearance_embedding,
+  );
+
   const inferredStorageProvider =
     /^https?:\/\//i.test(publicPath)
       ? "r2"
@@ -755,7 +1120,6 @@ export function normalizeMyWayAssetRecord(
     display_name: displayName,
     aliases: stringList(item.aliases),
     semantic_tags: stringList(item.semantic_tags),
-    style_tags: stringList(item.style_tags),
     asset_type:
       item.asset_type === "gltf" ||
       item.asset_type === "primitive"
@@ -790,6 +1154,8 @@ export function normalizeMyWayAssetRecord(
     preferred_for_concepts: stringList(
       item.preferred_for_concepts,
     ).map(normalizePhrase),
+    appearance_profile: normalizedAppearanceProfile,
+    appearance_embedding: normalizedAppearanceEmbedding,
 
     source_type: sourceType,
     source_asset_id: nullableString(
@@ -894,7 +1260,7 @@ export function normalizeMyWayAssetRecord(
       item.animation_clips,
     ),
 
-    content_hash: nullableString(item.content_hash),
+    content_hash: contentHash,
     quality_score: Math.min(
       1,
       Math.max(
@@ -942,5 +1308,3 @@ export function normalizeMyWayAssetRecord(
       nullableString(item.updated_at) ?? now,
   };
 }
-
-

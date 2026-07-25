@@ -72,3 +72,12 @@ sandbox/probe-lab/assets/debug/*.json
 public/sandbox-assets/myway/models/blenderkit/*.glb
 public/sandbox-assets/myway/models/trellis/*.glb
 public/sandbox-assets/myway/thumbnails/*.png
+sandbox/probe-lab/assets/acquisition/missing-asset-jobs.json
+
+# MyWay local generated files and patch backups
+.myway-patch-backups/
+sandbox/probe-lab/assets/enrichment/cache/
+myway-sandbox-all-files-one-notepad.txt
+scripts-assets-dump.txt
+sandbox/probe-lab/assets/library/registry.json.before-r2-promotion.backup
+archive/patch-backups/

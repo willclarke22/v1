@@ -10,6 +10,8 @@ import {
 import * as THREE from "three";
 
 import type {
+  MyWayAssetAttachmentRegion,
+  MyWayAssetInteriorVolume,
   MyWayAssetSupportSurface,
 } from "../../assets/asset-types";
 import type { ResolvedSceneAssetBinding } from "../resolved-scene";
@@ -18,15 +20,52 @@ export type Vec3 = [number, number, number];
 
 export type ResolvedAssetRuntimeSupportSurface = {
   id: string;
+  label: string;
+  source: MyWayAssetSupportSurface["source"];
+  is_primary: boolean;
   center_offset: Vec3;
   normal: Vec3;
   u_axis: Vec3;
   v_axis: Vec3;
   size: [number, number];
+  usable_size: [number, number];
   area: number;
   confidence: number;
   height_ratio: number;
   size_ratio: [number, number];
+  exposure: "exterior" | "interior" | "unknown";
+  orientation: "upward" | "vertical" | "downward" | "sloped" | "unknown";
+  openness: "open" | "enclosed" | "unknown";
+  vertical_rank: number;
+  clearance_above_m: number | null;
+  blocked_fraction: number;
+  enclosure_confidence: number;
+  edge_margin_m: number;
+};
+
+export type ResolvedAssetRuntimeInteriorVolume = {
+  id: string;
+  label: string;
+  center_offset: Vec3;
+  size: Vec3;
+  confidence: number;
+  exposure: "exterior" | "interior" | "unknown";
+  openness: "open" | "enclosed" | "unknown";
+  access_direction: Vec3;
+};
+
+export type ResolvedAssetRuntimeAttachmentRegion = {
+  id: string;
+  label: string;
+  center_offset: Vec3;
+  normal: Vec3;
+  u_axis: Vec3;
+  v_axis: Vec3;
+  size: [number, number];
+  confidence: number;
+  side: "left" | "right" | "front" | "back" | "top" | "bottom" | "unknown";
+  exposure: "exterior" | "interior" | "unknown";
+  orientation: "upward" | "vertical" | "downward" | "sloped" | "unknown";
 };
 
 export type ResolvedAssetRuntimeMetrics = {
@@ -35,19 +74,59 @@ export type ResolvedAssetRuntimeMetrics = {
   world_size: Vec3;
   bottom_center_offset: Vec3;
   support_surfaces: ResolvedAssetRuntimeSupportSurface[];
+  interior_volumes: ResolvedAssetRuntimeInteriorVolume[];
+  attachment_regions: ResolvedAssetRuntimeAttachmentRegion[];
+  geometry_confidence: number;
 };
 
 type LocalSupportSurface = {
   id: string;
+  label: string;
+  source: MyWayAssetSupportSurface["source"];
+  isPrimary: boolean;
   center: THREE.Vector3;
   normal: THREE.Vector3;
   uAxis: THREE.Vector3;
   vAxis: THREE.Vector3;
   size: [number, number];
+  usableSize: [number, number];
   area: number;
   confidence: number;
   heightRatio: number;
   sizeRatio: [number, number];
+  exposure: "exterior" | "interior" | "unknown";
+  orientation: "upward" | "vertical" | "downward" | "sloped" | "unknown";
+  openness: "open" | "enclosed" | "unknown";
+  verticalRank: number;
+  clearanceAboveM: number | null;
+  blockedFraction: number;
+  enclosureConfidence: number;
+  edgeMarginM: number;
+};
+
+type LocalInteriorVolume = {
+  id: string;
+  label: string;
+  center: THREE.Vector3;
+  size: Vec3;
+  confidence: number;
+  exposure: "exterior" | "interior" | "unknown";
+  openness: "open" | "enclosed" | "unknown";
+  accessDirection: THREE.Vector3;
+};
+
+type LocalAttachmentRegion = {
+  id: string;
+  label: string;
+  center: THREE.Vector3;
+  normal: THREE.Vector3;
+  uAxis: THREE.Vector3;
+  vAxis: THREE.Vector3;
+  size: [number, number];
+  confidence: number;
+  side: ResolvedAssetRuntimeAttachmentRegion["side"];
+  exposure: ResolvedAssetRuntimeAttachmentRegion["exposure"];
+  orientation: ResolvedAssetRuntimeAttachmentRegion["orientation"];
 };
 
 type SurfaceAccumulator = {
@@ -108,12 +187,14 @@ function normalizedOr(
 function localSurfaceFromRecord(
   surface: MyWayAssetSupportSurface,
   sourceSize: Vec3,
+  centerOffset: THREE.Vector3,
+  primarySurfaceId?: string | null,
 ): LocalSupportSurface {
   const center = new THREE.Vector3(
     surface.center[0],
     surface.center[1],
     surface.center[2],
-  );
+  ).add(centerOffset);
   const normal = normalizedOr(
     new THREE.Vector3(
       surface.normal[0],
@@ -141,6 +222,10 @@ function localSurfaceFromRecord(
 
   return {
     id: surface.id,
+    label: surface.label,
+    source: surface.source,
+    isPrimary:
+      surface.id === primarySurfaceId,
     center,
     normal,
     uAxis,
@@ -148,6 +233,10 @@ function localSurfaceFromRecord(
     size: [
       Math.max(0.001, surface.size[0]),
       Math.max(0.001, surface.size[1]),
+    ],
+    usableSize: [
+      Math.max(0.001, surface.usable_size?.[0] ?? surface.size[0]),
+      Math.max(0.001, surface.usable_size?.[1] ?? surface.size[1]),
     ],
     area: Math.max(0, surface.area),
     confidence: Math.max(
@@ -164,6 +253,101 @@ function localSurfaceFromRecord(
         surface.size[1] /
           Math.max(sourceSize[2], 0.001),
       ],
+    exposure: surface.exposure ?? "unknown",
+    orientation: surface.orientation ?? "upward",
+    openness: surface.openness ?? "unknown",
+    verticalRank: Math.max(0, surface.vertical_rank ?? 0),
+    clearanceAboveM:
+      surface.clearance_above_m == null
+        ? null
+        : Math.max(0, surface.clearance_above_m),
+    blockedFraction: Math.max(
+      0,
+      Math.min(1, surface.blocked_fraction ?? 0),
+    ),
+    enclosureConfidence: Math.max(
+      0,
+      Math.min(1, surface.enclosure_confidence ?? 0),
+    ),
+    edgeMarginM: Math.max(0, surface.edge_margin_m ?? 0.01),
+  };
+}
+
+function localInteriorFromRecord(
+  volume: MyWayAssetInteriorVolume,
+  centerOffset: THREE.Vector3,
+): LocalInteriorVolume {
+  return {
+    id: volume.id,
+    label: volume.label ?? volume.id.replace(/_/g, " "),
+    center: new THREE.Vector3(
+      volume.center[0],
+      volume.center[1],
+      volume.center[2],
+    ).add(centerOffset),
+    size: [
+      Math.max(0.001, volume.size[0]),
+      Math.max(0.001, volume.size[1]),
+      Math.max(0.001, volume.size[2]),
+    ],
+    confidence: Math.max(0, Math.min(1, volume.confidence)),
+    exposure: volume.exposure ?? "interior",
+    openness: volume.openness ?? "unknown",
+    accessDirection: normalizedOr(
+      new THREE.Vector3(
+        volume.access_direction?.[0] ?? 0,
+        volume.access_direction?.[1] ?? 1,
+        volume.access_direction?.[2] ?? 0,
+      ),
+      new THREE.Vector3(0, 1, 0),
+    ),
+  };
+}
+
+function localAttachmentFromRecord(
+  region: MyWayAssetAttachmentRegion,
+  centerOffset: THREE.Vector3,
+): LocalAttachmentRegion {
+  return {
+    id: region.id,
+    label: region.label,
+    center: new THREE.Vector3(
+      region.center[0],
+      region.center[1],
+      region.center[2],
+    ).add(centerOffset),
+    normal: normalizedOr(
+      new THREE.Vector3(
+        region.normal[0],
+        region.normal[1],
+        region.normal[2],
+      ),
+      new THREE.Vector3(0, 0, 1),
+    ),
+    uAxis: normalizedOr(
+      new THREE.Vector3(
+        region.u_axis[0],
+        region.u_axis[1],
+        region.u_axis[2],
+      ),
+      new THREE.Vector3(1, 0, 0),
+    ),
+    vAxis: normalizedOr(
+      new THREE.Vector3(
+        region.v_axis[0],
+        region.v_axis[1],
+        region.v_axis[2],
+      ),
+      new THREE.Vector3(0, 1, 0),
+    ),
+    size: [
+      Math.max(0.001, region.size[0]),
+      Math.max(0.001, region.size[1]),
+    ],
+    confidence: Math.max(0, Math.min(1, region.confidence)),
+    side: region.side,
+    exposure: region.exposure,
+    orientation: region.orientation,
   };
 }
 
@@ -439,13 +623,28 @@ function detectSupportSurfaces(
 
         return {
           id: `runtime_surface_${index + 1}`,
+          label: `Runtime support surface ${index + 1}`,
+          source: "runtime_geometry",
+          isPrimary: false,
           center,
           normal,
           uAxis: new THREE.Vector3(1, 0, 0),
           vAxis: new THREE.Vector3(0, 0, 1),
           size: [width, depth],
+          usableSize: [
+            Math.max(0.001, width * 0.9),
+            Math.max(0.001, depth * 0.9),
+          ],
           area: cluster.area,
           confidence,
+          exposure: "unknown",
+          orientation: "upward",
+          openness: "unknown",
+          verticalRank: index,
+          clearanceAboveM: null,
+          blockedFraction: 0,
+          enclosureConfidence: 0,
+          edgeMarginM: Math.max(0.005, Math.min(width, depth) * 0.05),
           heightRatio:
             (cluster.height - bounds.min.y) /
             Math.max(size.y, 0.001),
@@ -461,7 +660,11 @@ function detectSupportSurfaces(
         right.confidence - left.confidence ||
         right.area - left.area,
     )
-    .slice(0, 16);
+    .slice(0, 16)
+    .map((surface, index) => ({
+      ...surface,
+      isPrimary: index === 0,
+    }));
 
   return surfaces;
 }
@@ -557,12 +760,31 @@ export function ResolvedAssetModel({
           localSurfaceFromRecord(
             surface,
             sourceSize,
+            offset,
+            binding.geometry_profile
+              ?.primary_support_surface_id,
           ),
         ) ?? [];
     const detected = detectSupportSurfaces(
       clone,
       centeredBounds,
     );
+    const localInteriorVolumes =
+      binding.geometry_profile?.interior_volumes
+        ?.map((volume) =>
+          localInteriorFromRecord(
+            volume,
+            offset,
+          ),
+        ) ?? [];
+    const localAttachmentRegions =
+      binding.geometry_profile?.attachment_regions
+        ?.map((region) =>
+          localAttachmentFromRecord(
+            region,
+            offset,
+          ),
+        ) ?? [];
 
     return {
       object: clone,
@@ -576,6 +798,8 @@ export function ResolvedAssetModel({
         persisted.length > 0
           ? persisted
           : detected,
+      localInteriorVolumes,
+      localAttachmentRegions,
     };
   }, [
     binding.geometry_profile,
@@ -676,6 +900,10 @@ export function ResolvedAssetModel({
 
             return {
               id: surface.id,
+              label: surface.label,
+              source: surface.source,
+              is_primary:
+                surface.isPrimary,
               center_offset: asVec3(scaledCenter),
               normal: asVec3(normal),
               u_axis: asVec3(scaledU),
@@ -683,6 +911,10 @@ export function ResolvedAssetModel({
               size: [
                 surface.size[0] * uFactor,
                 surface.size[1] * vFactor,
+              ],
+              usable_size: [
+                surface.usableSize[0] * uFactor,
+                surface.usableSize[1] * vFactor,
               ],
               area:
                 surface.area *
@@ -693,6 +925,27 @@ export function ResolvedAssetModel({
                 surface.heightRatio,
               size_ratio:
                 surface.sizeRatio,
+              exposure: surface.exposure,
+              orientation: surface.orientation,
+              openness: surface.openness,
+              vertical_rank: surface.verticalRank,
+              clearance_above_m:
+                surface.clearanceAboveM == null
+                  ? null
+                  : surface.clearanceAboveM *
+                    Math.max(0.001, Math.abs(baseScale[1])),
+              blocked_fraction: surface.blockedFraction,
+              enclosure_confidence:
+                surface.enclosureConfidence,
+              edge_margin_m:
+                surface.edgeMarginM *
+                Math.max(
+                  0.001,
+                  Math.min(
+                    Math.abs(baseScale[0]),
+                    Math.abs(baseScale[2]),
+                  ),
+                ),
             };
           },
         ),
@@ -703,6 +956,114 @@ export function ResolvedAssetModel({
       ],
     );
 
+  const worldInteriorVolumes = useMemo(
+    () =>
+      prepared.localInteriorVolumes.map(
+        (volume): ResolvedAssetRuntimeInteriorVolume => {
+          const center = volume.center
+            .clone()
+            .multiply(
+              new THREE.Vector3(
+                baseScale[0],
+                baseScale[1],
+                baseScale[2],
+              ),
+            )
+            .applyQuaternion(rotationQuaternion);
+          const direction = volume.accessDirection
+            .clone()
+            .applyQuaternion(rotationQuaternion)
+            .normalize();
+
+          return {
+            id: volume.id,
+            label: volume.label,
+            center_offset: asVec3(center),
+            size: [
+              volume.size[0] * Math.abs(baseScale[0]),
+              volume.size[1] * Math.abs(baseScale[1]),
+              volume.size[2] * Math.abs(baseScale[2]),
+            ],
+            confidence: volume.confidence,
+            exposure: volume.exposure,
+            openness: volume.openness,
+            access_direction: asVec3(direction),
+          };
+        },
+      ),
+    [
+      baseScale,
+      prepared.localInteriorVolumes,
+      rotationQuaternion,
+    ],
+  );
+
+  const worldAttachmentRegions = useMemo(
+    () =>
+      prepared.localAttachmentRegions.map(
+        (region): ResolvedAssetRuntimeAttachmentRegion => {
+          const center = region.center
+            .clone()
+            .multiply(
+              new THREE.Vector3(
+                baseScale[0],
+                baseScale[1],
+                baseScale[2],
+              ),
+            )
+            .applyQuaternion(rotationQuaternion);
+          const u = region.uAxis
+            .clone()
+            .multiply(
+              new THREE.Vector3(
+                baseScale[0],
+                baseScale[1],
+                baseScale[2],
+              ),
+            );
+          const v = region.vAxis
+            .clone()
+            .multiply(
+              new THREE.Vector3(
+                baseScale[0],
+                baseScale[1],
+                baseScale[2],
+              ),
+            );
+          const uFactor = Math.max(0.001, u.length());
+          const vFactor = Math.max(0.001, v.length());
+          u.normalize().applyQuaternion(rotationQuaternion);
+          v.normalize().applyQuaternion(rotationQuaternion);
+          const normal = region.normal
+            .clone()
+            .applyQuaternion(rotationQuaternion)
+            .normalize();
+
+          return {
+            id: region.id,
+            label: region.label,
+            center_offset: asVec3(center),
+            normal: asVec3(normal),
+            u_axis: asVec3(u),
+            v_axis: asVec3(v),
+            size: [
+              region.size[0] * uFactor,
+              region.size[1] * vFactor,
+            ],
+            confidence: region.confidence,
+            side: region.side,
+            exposure: region.exposure,
+            orientation: region.orientation,
+          };
+        },
+      ),
+    [
+      baseScale,
+      prepared.localAttachmentRegions,
+      rotationQuaternion,
+    ],
+  );
+
   useEffect(() => {
     onMetrics?.({
       instance_id: binding.instance_id,
@@ -712,6 +1073,13 @@ export function ResolvedAssetModel({
         prepared.bottomCenterOffset,
       support_surfaces:
         worldSupportSurfaces,
+      interior_volumes:
+        worldInteriorVolumes,
+      attachment_regions:
+        worldAttachmentRegions,
+      geometry_confidence:
+        binding.geometry_profile?.audit?.confidence ??
+        (worldSupportSurfaces.length > 0 ? 0.55 : 0.2),
     });
   }, [
     binding.instance_id,
@@ -720,6 +1088,9 @@ export function ResolvedAssetModel({
     prepared.sourceSize,
     worldSize,
     worldSupportSurfaces,
+    worldInteriorVolumes,
+    worldAttachmentRegions,
+    binding.geometry_profile?.audit?.confidence,
   ]);
 
   useFrame(({ clock }) => {

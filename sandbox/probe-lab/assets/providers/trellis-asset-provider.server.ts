@@ -1,3 +1,4 @@
+import { rm } from "node:fs/promises";
 import path from "node:path";
 
 import type { MyWayAssetRecord } from "../asset-types";
@@ -15,11 +16,11 @@ import { requestTrellisGlb } from "./trellis-provider.server";
 function compactTrellisPrompt(input: {
   concept: string;
   semanticTags?: string[];
-  styleTags?: string[];
+  acquisitionTerms?: string[];
 }) {
   const values = [
     input.concept,
-    ...(input.styleTags ?? []),
+    ...(input.acquisitionTerms ?? []),
     ...(input.semanticTags ?? []),
   ];
 
@@ -59,7 +60,7 @@ function compactTrellisPrompt(input: {
 export async function acquireFromTrellis(input: {
   concept: string;
   semanticTags?: string[];
-  styleTags?: string[];
+  acquisitionTerms?: string[];
   domain?: string;
   targetExtentM?: number;
   noTexture?: boolean;
@@ -107,7 +108,7 @@ export async function acquireFromTrellis(input: {
 
   const completed = await runBlenderJob(jobPath);
 
-  if (!completed.result) {
+  if (completed.kind !== "normalize_asset" || !completed.result) {
     throw new Error(
       "Blender completed without returning normalized TRELLIS metadata.",
     );
@@ -123,7 +124,6 @@ export async function acquireFromTrellis(input: {
       input.concept,
       ...(input.semanticTags ?? []),
     ],
-    style_tags: input.styleTags ?? [],
     asset_type: "glb",
     domain: input.domain ?? "generic",
     requested_concept: input.concept,
@@ -185,7 +185,18 @@ export async function acquireFromTrellis(input: {
     updated_at: new Date().toISOString(),
   };
 
-  return registerMyWayAsset(record);
+  const registered = await registerMyWayAsset(record);
+
+  if (!registered.created) {
+    await Promise.all(
+      [inboxPath, outputPath, thumbnailPath].map(
+        (candidatePath) =>
+          rm(candidatePath, { force: true }).catch(
+            () => undefined,
+          ),
+      ),
+    );
+  }
+
+  return registered;
 }
-
-

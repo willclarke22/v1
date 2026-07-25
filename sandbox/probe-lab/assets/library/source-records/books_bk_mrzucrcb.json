@@ -1,0 +1,35 @@
+{
+  "schema_version": "myway_blenderkit_source_record_v1",
+  "captured_at": "2026-07-25T04:00:49.894169+00:00",
+  "asset_id": "ef3bf939-f66b-4454-b12e-3a7639f9982a",
+  "asset_base_id": "02311319-c261-41be-bb2a-e6cb10bf82e3",
+  "display_name": "MagicBook",
+  "description": "This is a 3D model of a retro-style hardcover book. The main body features a blue cover, complemented by golden metal corner guards and exquisite patterns, exuding elegance and mystery. It is often used as elements such as \"magic books\" and \"ancient books\" in fantasy and magic-themed works, for game, film and television scene construction or cultural and creative design, conveying an atmosphere of ancient knowledge and mysterious power",
+  "license": "cc0",
+  "required_license_kind": "cc0",
+  "is_free": true,
+  "can_download": true,
+  "verification_status": "validated",
+  "tags": [
+    "magicbook",
+    "Book",
+    "golden",
+    "patterne"
+  ],
+  "author": {
+    "id": 869490,
+    "name": "foehn N",
+    "about_url": "https://sketchfab.com/fohn"
+  },
+  "download_file_type": "resolution_1K",
+  "source_api_url": "https://www.blenderkit.com/api/v1/assets/ef3bf939-f66b-4454-b12e-3a7639f9982a/",
+  "source_page_url": "https://www.blenderkit.com/asset-gallery-detail/02311319-c261-41be-bb2a-e6cb10bf82e3/",
+  "official_license_docs_url": "https://www.blenderkit.com/docs/licenses/",
+  "myway_requested_concept": "books",
+  "myway_blenderkit_search_query": "books hardcover",
+  "myway_required_license_kind": "cc0",
+  "excluded_source_asset_ids": [],
+  "normalized_runtime_glb": "public/sandbox-assets/myway/models/blenderkit/books_bk_mrzucrcb.glb",
+  "normalized_thumbnail": "public/sandbox-assets/myway/thumbnails/books_bk_mrzucrcb.png",
+  "content_hash": "73ceb0f3eabf8693fd3f0daff54213ac6daed1e6a2721d1d466ce550ebf20ab2"
+}

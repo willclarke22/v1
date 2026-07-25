@@ -927,7 +927,6 @@ async function main() {
             ...item.queries.filter((candidate) => candidate !== query),
           ],
           semanticTags: item.tags,
-          styleTags: ["educational", "reusable"],
           domain: item.domain,
           targetExtentM: item.targetExtentM,
           requiredLicenseKind: "cc0",
@@ -956,13 +955,6 @@ async function main() {
                 ...result.asset.semantic_tags,
                 ...item.tags,
                 item.label,
-              ]),
-            ),
-            style_tags: Array.from(
-              new Set([
-                ...result.asset.style_tags,
-                "educational",
-                "reusable",
               ]),
             ),
             domain: item.domain,

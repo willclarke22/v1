@@ -5,7 +5,7 @@ import {
   normalizeMyWayAssetRecord,
 } from "../../sandbox/probe-lab/assets/normalize-asset-record";
 import type {
-  MyWayAssetRegistryV1,
+  MyWayAssetRegistryV2,
 } from "../../sandbox/probe-lab/assets/asset-types";
 
 async function main() {
@@ -34,8 +34,8 @@ async function main() {
       ): asset is NonNullable<typeof asset> =>
         Boolean(asset),
     );
-  const registry: MyWayAssetRegistryV1 = {
-    schema_version: "myway_asset_registry_v1",
+  const registry: MyWayAssetRegistryV2 = {
+    schema_version: "myway_asset_registry_v2",
     updated_at: new Date().toISOString(),
     asset_root_public_url:
       "/sandbox-assets/myway",

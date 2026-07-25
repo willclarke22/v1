@@ -1,3 +1,10 @@
+import type {
+  MyWayAssetAppearanceRequestV1,
+} from "../assets/asset-types";
+import {
+  normalizeAppearanceRequest,
+} from "../assets/appearance-request";
+
 export type PrimitiveBuilderVec3 = [number, number, number];
 
 export const PRIMITIVE_BUILDER_LAYOUT_PROXY_KINDS = [
@@ -21,6 +28,63 @@ export const PRIMITIVE_BUILDER_PLACEMENT_RELATIONS = [
   "inside",
   "attached_to",
 ] as const;
+
+
+export const PRIMITIVE_BUILDER_REGION_KINDS = [
+  "any",
+  "support",
+  "containment",
+  "attachment",
+  "adjacent",
+] as const;
+
+export const PRIMITIVE_BUILDER_REGION_EXPOSURES = [
+  "any",
+  "exterior",
+  "interior",
+] as const;
+
+export const PRIMITIVE_BUILDER_REGION_ORIENTATIONS = [
+  "any",
+  "upward",
+  "vertical",
+  "downward",
+  "sloped",
+] as const;
+
+export const PRIMITIVE_BUILDER_VERTICAL_RANKS = [
+  "any",
+  "highest",
+  "upper",
+  "middle",
+  "lower",
+  "lowest",
+] as const;
+
+export const PRIMITIVE_BUILDER_OPENNESS = [
+  "any",
+  "open",
+  "enclosed",
+] as const;
+
+export const PRIMITIVE_BUILDER_SIDES = [
+  "any",
+  "left",
+  "right",
+  "front",
+  "back",
+] as const;
+
+export type PrimitiveBuilderPlacementRegionPreference = {
+  region_kind: (typeof PRIMITIVE_BUILDER_REGION_KINDS)[number];
+  exposure: (typeof PRIMITIVE_BUILDER_REGION_EXPOSURES)[number];
+  orientation: (typeof PRIMITIVE_BUILDER_REGION_ORIENTATIONS)[number];
+  vertical_rank: (typeof PRIMITIVE_BUILDER_VERTICAL_RANKS)[number];
+  openness: (typeof PRIMITIVE_BUILDER_OPENNESS)[number];
+  side: (typeof PRIMITIVE_BUILDER_SIDES)[number];
+  require_ground_contact: boolean;
+  allow_intersection: boolean;
+};
 
 export type PrimitiveBuilderLayoutProxyKind =
   (typeof PRIMITIVE_BUILDER_LAYOUT_PROXY_KINDS)[number];
@@ -48,7 +112,7 @@ export type PrimitiveBuilderAssetRequirement = {
   concept: string;
   aliases: string[];
   semantic_tags: string[];
-  style_tags: string[];
+  appearance_request?: MyWayAssetAppearanceRequestV1;
   motion_role: string;
   must_be_separate: boolean;
   reusable: boolean;
@@ -71,6 +135,8 @@ export type PrimitiveBuilderAssetRequirement = {
   placement_relation: PrimitiveBuilderPlacementRelation;
   placement_target_instance_id?: string;
   placement_anchor: string;
+  placement_region: PrimitiveBuilderPlacementRegionPreference;
+  placement_source: "explicit" | "inferred";
   placement_offset: PrimitiveBuilderVec3;
   placement_uv: [number, number];
   primitive_support_surface?: PrimitiveBuilderSurfaceReference;
@@ -233,6 +299,72 @@ function surfaceReference(
   };
 }
 
+function allowedString<T extends readonly string[]>(
+  value: unknown,
+  allowed: T,
+  fallback: T[number],
+): T[number] {
+  return typeof value === "string" &&
+    (allowed as readonly string[]).includes(value)
+    ? (value as T[number])
+    : fallback;
+}
+
+function placementRegion(
+  value: unknown,
+  relation: PrimitiveBuilderPlacementRelation,
+): PrimitiveBuilderPlacementRegionPreference {
+  const item = record(value) ?? {};
+  const defaultKind =
+    relation === "on_surface"
+      ? "support"
+      : relation === "inside"
+        ? "containment"
+        : relation === "attached_to"
+          ? "attachment"
+          : relation === "beside"
+            ? "adjacent"
+            : "any";
+
+  return {
+    region_kind: allowedString(
+      item.region_kind,
+      PRIMITIVE_BUILDER_REGION_KINDS,
+      defaultKind,
+    ),
+    exposure: allowedString(
+      item.exposure,
+      PRIMITIVE_BUILDER_REGION_EXPOSURES,
+      "any",
+    ),
+    orientation: allowedString(
+      item.orientation,
+      PRIMITIVE_BUILDER_REGION_ORIENTATIONS,
+      relation === "on_surface" ? "upward" : "any",
+    ),
+    vertical_rank: allowedString(
+      item.vertical_rank,
+      PRIMITIVE_BUILDER_VERTICAL_RANKS,
+      "any",
+    ),
+    openness: allowedString(
+      item.openness,
+      PRIMITIVE_BUILDER_OPENNESS,
+      "any",
+    ),
+    side: allowedString(
+      item.side,
+      PRIMITIVE_BUILDER_SIDES,
+      "any",
+    ),
+    require_ground_contact:
+      item.require_ground_contact === true ||
+      relation === "beside",
+    allow_intersection:
+      item.allow_intersection === true,
+  };
+}
+
 export function normalizePrimitiveBuilderAssetRequirements(
   raw: unknown,
   knownNodeIds: Set<string>,
@@ -318,6 +450,9 @@ export function normalizePrimitiveBuilderAssetRequirements(
       }
 
       const rawRelation = item.placement_relation;
+      const placementWasExplicit =
+        typeof rawRelation === "string" &&
+        rawRelation !== "absolute";
       const placementRelation =
         typeof rawRelation === "string" &&
         (
@@ -348,15 +483,27 @@ export function normalizePrimitiveBuilderAssetRequirements(
         concept,
         aliases: strings(item.aliases),
         semantic_tags: strings(item.semantic_tags),
-        style_tags: strings(item.style_tags),
+        appearance_request:
+          normalizeAppearanceRequest(
+            item.appearance_request ??
+              item.appearance,
+          ),
         motion_role: text(item.motion_role, "static_scene_object"),
         must_be_separate: item.must_be_separate !== false,
         reusable: item.reusable !== false,
         required: item.required !== false,
-        target_extent_m: Math.max(
-          0.1,
-          Math.min(20, number(item.target_extent_m, 1)),
-        ),
+        target_extent_m: (() => {
+          const requested = number(
+            item.target_extent_m,
+            0,
+          );
+          return requested > 0
+            ? Math.max(
+                0.02,
+                Math.min(30, requested),
+              )
+            : 0;
+        })(),
         layout_proxy_kind: layoutProxyKind,
         layout_proxy_node_id:
           validLayoutProxyNodeId,
@@ -369,6 +516,15 @@ export function normalizePrimitiveBuilderAssetRequirements(
             ? id(item.placement_target_instance_id, "")
             : undefined,
         placement_anchor: text(item.placement_anchor, "center"),
+        placement_region: placementRegion(
+          item.placement_region ??
+            item.region_preference,
+          placementRelation,
+        ),
+        placement_source:
+          placementWasExplicit
+            ? "explicit"
+            : "inferred",
         placement_offset: vec3(
           item.placement_offset,
           [0, 0, 0],
@@ -425,6 +581,11 @@ export function normalizePrimitiveBuilderAssetRequirements(
         ...requirement,
         placement_relation: "absolute" as const,
         placement_target_instance_id: undefined,
+        placement_source: "inferred" as const,
+        placement_region: placementRegion(
+          undefined,
+          "absolute",
+        ),
       };
     }
 

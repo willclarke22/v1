@@ -43,6 +43,83 @@ export type MyWayAssetStorageProvider =
   | "local"
   | "r2";
 
+export type MyWayAssetAppearanceStatus =
+  | "pending"
+  | "rendering"
+  | "analyzing"
+  | "ready"
+  | "failed";
+
+export type MyWayAssetAppearanceViewName =
+  | "front_three_quarter"
+  | "rear_three_quarter"
+  | "side"
+  | "elevated_front";
+
+export type MyWayAssetAppearanceView = {
+  name: MyWayAssetAppearanceViewName;
+  public_path: string;
+};
+
+export type MyWayAssetAppearanceProfileV1 = {
+  schema_version: "myway_asset_appearance_profile_v1";
+  status: MyWayAssetAppearanceStatus;
+  summary: string;
+  style_descriptors: string[];
+  design_era: string[];
+  realism_level: string[];
+  shape_language: string[];
+  material_treatment: string[];
+  color_palette: string[];
+  surface_condition: string[];
+  ornamentation: string[];
+  visual_mood: string[];
+  detail_level: string[];
+  scene_compatibility: string[];
+  descriptors: string[];
+  materials: string[];
+  colors: string[];
+  geometry: string[];
+  warnings: string[];
+  confidence: number;
+  analysis_views: MyWayAssetAppearanceView[];
+  model: string | null;
+  prompt_version: string;
+  render_version: string;
+  content_hash: string | null;
+  analyzed_at: string | null;
+  error: string | null;
+};
+
+export type MyWayAssetAppearanceEmbeddingV1 = {
+  schema_version: "myway_asset_appearance_embedding_v1";
+  status: "pending" | "ready" | "failed";
+  model: string;
+  dimensions: number | null;
+  vector_key: string | null;
+  source_text_hash: string | null;
+  embedded_at: string | null;
+  error: string | null;
+};
+
+export type MyWayAssetAppearanceRequestV1 = {
+  schema_version: "myway_asset_appearance_request_v1";
+  visual_brief: string;
+  required_traits: string[];
+  preferred_traits: string[];
+  avoid_traits: string[];
+};
+
+export type MyWayAssetAppearanceRankingDiagnostics = {
+  requested: boolean;
+  used: boolean;
+  model: string | null;
+  dimensions: number | null;
+  source_text_hash: string | null;
+  comparable_candidate_count: number;
+  reason: string | null;
+};
+
 export type Vec3 = [number, number, number];
 
 export type MyWayAssetGeometryProfileSource =
@@ -50,6 +127,23 @@ export type MyWayAssetGeometryProfileSource =
   | "runtime_geometry"
   | "manual"
   | "legacy_ratio";
+
+export type MyWaySpatialExposure =
+  | "exterior"
+  | "interior"
+  | "unknown";
+
+export type MyWaySpatialOrientation =
+  | "upward"
+  | "vertical"
+  | "downward"
+  | "sloped"
+  | "unknown";
+
+export type MyWaySpatialOpenness =
+  | "open"
+  | "enclosed"
+  | "unknown";
 
 export type MyWayAssetBounds = {
   min: Vec3;
@@ -75,28 +169,77 @@ export type MyWayAssetSupportSurface = {
   u_axis: Vec3;
   v_axis: Vec3;
   size: [number, number];
+  usable_size?: [number, number];
   area: number;
   confidence: number;
   source: MyWayAssetGeometryProfileSource;
+
+  // Generic spatial-region properties. These deliberately avoid object-specific
+  // labels such as "tabletop" or "shelf" so the same solver works for every asset.
+  region_kind?: "support";
+  exposure?: MyWaySpatialExposure;
+  orientation?: MyWaySpatialOrientation;
+  openness?: MyWaySpatialOpenness;
+  vertical_rank?: number;
+  clearance_above_m?: number | null;
+  blocked_fraction?: number;
+  enclosure_confidence?: number;
+  edge_margin_m?: number;
 
   // Legacy ratio fields remain optional so old registry records can be read
   // without pretending that a guessed whole-object top is real geometry.
   height_ratio?: number;
   footprint_ratio?: [number, number];
+  coverage_ratio?: number;
+};
+
+export type MyWayAssetGeometryAuditV1 = {
+  status: "measured" | "review_required";
+  confidence: number;
+  warnings: string[];
+  mesh_object_count: number;
+  included_mesh_count: number;
+  excluded_mesh_names: string[];
+  triangle_count: number;
+  support_surface_count: number;
 };
 
 export type MyWayAssetCollisionBox = {
+  id?: string;
+  label?: string;
   center: Vec3;
   size: Vec3;
   rotation: Vec3;
+  confidence?: number;
+  source?: MyWayAssetGeometryProfileSource;
 };
 
 export type MyWayAssetInteriorVolume = {
   id: string;
+  label?: string;
   center: Vec3;
   size: Vec3;
   rotation: Vec3;
   confidence: number;
+  source?: MyWayAssetGeometryProfileSource;
+  exposure?: MyWaySpatialExposure;
+  openness?: MyWaySpatialOpenness;
+  access_direction?: Vec3;
+};
+
+export type MyWayAssetAttachmentRegion = {
+  id: string;
+  label: string;
+  center: Vec3;
+  normal: Vec3;
+  u_axis: Vec3;
+  v_axis: Vec3;
+  size: [number, number];
+  confidence: number;
+  source: MyWayAssetGeometryProfileSource;
+  exposure: MyWaySpatialExposure;
+  orientation: MyWaySpatialOrientation;
+  side: "left" | "right" | "front" | "back" | "top" | "bottom" | "unknown";
 };
 
 export type MyWayAssetGeometryProfileV1 = {
@@ -110,7 +253,11 @@ export type MyWayAssetGeometryProfileV1 = {
   bottom_contact_region: MyWayAssetContactRegion;
   support_surfaces: MyWayAssetSupportSurface[];
   interior_volumes: MyWayAssetInteriorVolume[];
+  attachment_regions: MyWayAssetAttachmentRegion[];
   collision_boxes: MyWayAssetCollisionBox[];
+  primary_support_surface_id?: string | null;
+  audit?: MyWayAssetGeometryAuditV1;
+  content_hash?: string | null;
   generated_at: string;
   generator: string;
 };
@@ -124,7 +271,6 @@ export type MyWayAssetRecord = {
   display_name: string;
   aliases: string[];
   semantic_tags: string[];
-  style_tags: string[];
   asset_type: "glb" | "gltf" | "primitive";
   domain: string;
 
@@ -142,6 +288,8 @@ export type MyWayAssetRecord = {
   support_surfaces?: MyWayAssetSupportSurface[];
   geometry_profile?: MyWayAssetGeometryProfileV1 | null;
   preferred_for_concepts?: string[];
+  appearance_profile?: MyWayAssetAppearanceProfileV1;
+  appearance_embedding?: MyWayAssetAppearanceEmbeddingV1;
 
   source_type: MyWayAssetSourceType;
   source_asset_id?: string | null;
@@ -203,8 +351,8 @@ export type MyWayAssetRecord = {
   updated_at: string;
 };
 
-export type MyWayAssetRegistryV1 = {
-  schema_version: "myway_asset_registry_v1";
+export type MyWayAssetRegistryV2 = {
+  schema_version: "myway_asset_registry_v2";
   updated_at: string;
   asset_root_public_url: "/sandbox-assets/myway";
   notes?: string | null;
@@ -222,6 +370,24 @@ export type AssetMatchScoreBreakdown = {
   preferred_bonus: number;
   performance_penalty: number;
   contradiction_penalty: number;
+  appearance_eligible: boolean;
+  appearance_status:
+    | "not_requested"
+    | "ready"
+    | "profile_only"
+    | "missing"
+    | "invalid"
+    | "contradicted";
+  appearance_similarity: number | null;
+  appearance_similarity_bonus: number;
+  required_trait_matches: string[];
+  required_trait_unknown: string[];
+  required_trait_conflicts: string[];
+  preferred_trait_matches: string[];
+  avoid_trait_matches: string[];
+  appearance_trait_bonus: number;
+  appearance_penalty: number;
+  appearance_summary: string | null;
   total: number;
 };
 
@@ -229,12 +395,13 @@ export type AssetResolveRequest = {
   concept: string;
   aliases?: string[];
   semantic_tags?: string[];
-  style_tags?: string[];
   domain?: string;
   target_extent_m?: number;
   required_affordances?: string[];
   desired_composition?: MyWayAssetObjectComposition;
   preferred_asset_id?: string;
+  appearance_request?: MyWayAssetAppearanceRequestV1;
+  appearance_ranking?: boolean;
   allow_blenderkit?: boolean;
   allow_trellis?: boolean;
 
@@ -247,6 +414,7 @@ export type AssetResolveRequest = {
   minimum_match_score?: number;
   minimum_match_margin?: number;
   candidate_limit?: number;
+  record_reuse?: boolean;
 };
 
 export type AssetResolveResult = {
@@ -267,5 +435,7 @@ export type AssetResolveResult = {
   match_score?: number | null;
   match_margin?: number | null;
   candidate_scores?: AssetMatchScoreBreakdown[];
+  appearance_ranking?: MyWayAssetAppearanceRankingDiagnostics;
+  failure_reason?: string | null;
   requires_scene_review?: boolean;
 };

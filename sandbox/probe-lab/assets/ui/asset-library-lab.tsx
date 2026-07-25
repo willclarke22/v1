@@ -7,6 +7,7 @@ import {
   Suspense,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { ErrorInfo, ReactNode } from "react";
@@ -27,7 +28,6 @@ type LibraryAsset = {
   display_name: string;
   aliases: string[];
   semantic_tags: string[];
-  style_tags: string[];
   asset_type: "glb" | "gltf" | "primitive";
   domain: string;
   requested_concept?: string | null;
@@ -65,14 +65,105 @@ type LibraryAsset = {
       | "legacy_ratio";
     height_ratio?: number;
     footprint_ratio?: [number, number];
+    usable_size?: [number, number];
+    exposure?: "exterior" | "interior" | "unknown";
+    openness?: "open" | "enclosed" | "unknown";
+    vertical_rank?: number;
+    clearance_above_m?: number | null;
   }>;
   geometry_profile?: {
     schema_version: "myway_asset_geometry_profile_v1";
     generator: string;
     generated_at: string;
-    support_surfaces: unknown[];
+    content_hash?: string | null;
+    primary_support_surface_id?: string | null;
+    local_bounds: {
+      min: Vec3;
+      max: Vec3;
+      size: Vec3;
+      center: Vec3;
+    };
+    support_surfaces: Array<{
+      id: string;
+      label: string;
+      size: [number, number];
+      confidence: number;
+      source: string;
+      height_ratio?: number;
+      coverage_ratio?: number;
+      usable_size?: [number, number];
+      exposure?: "exterior" | "interior" | "unknown";
+      openness?: "open" | "enclosed" | "unknown";
+      vertical_rank?: number;
+      clearance_above_m?: number | null;
+    }>;
+    interior_volumes: Array<{
+      id: string;
+      label?: string;
+      size: Vec3;
+      confidence: number;
+    }>;
+    attachment_regions: Array<{
+      id: string;
+      label: string;
+      size: [number, number];
+      confidence: number;
+      side: string;
+    }>;
+    audit?: {
+      status: "measured" | "review_required";
+      confidence: number;
+      warnings: string[];
+      mesh_object_count: number;
+      included_mesh_count: number;
+      excluded_mesh_names: string[];
+      triangle_count: number;
+      support_surface_count: number;
+    };
   } | null;
   preferred_for_concepts?: string[];
+  appearance_profile?: {
+    schema_version: "myway_asset_appearance_profile_v1";
+    status: "pending" | "rendering" | "analyzing" | "ready" | "failed";
+    summary: string;
+    style_descriptors: string[];
+    design_era: string[];
+    realism_level: string[];
+    shape_language: string[];
+    material_treatment: string[];
+    color_palette: string[];
+    surface_condition: string[];
+    ornamentation: string[];
+    visual_mood: string[];
+    detail_level: string[];
+    scene_compatibility: string[];
+    descriptors: string[];
+    materials: string[];
+    colors: string[];
+    geometry: string[];
+    warnings: string[];
+    confidence: number;
+    analysis_views: Array<{
+      name: "front_three_quarter" | "rear_three_quarter" | "side" | "elevated_front";
+      public_path: string;
+    }>;
+    model: string | null;
+    prompt_version: string;
+    render_version: string;
+    content_hash: string | null;
+    analyzed_at: string | null;
+    error: string | null;
+  };
+  appearance_embedding?: {
+    schema_version: "myway_asset_appearance_embedding_v1";
+    status: "pending" | "ready" | "failed";
+    model: string;
+    dimensions: number | null;
+    vector_key: string | null;
+    source_text_hash: string | null;
+    embedded_at: string | null;
+    error: string | null;
+  };
   source_type: "blenderkit" | "trellis" | "manual" | "procedural";
   source_asset_id?: string | null;
   source_prompt?: string | null;
@@ -119,10 +210,153 @@ type LibraryResponse = {
   count?: number;
   assets?: LibraryAsset[];
   asset?: LibraryAsset;
+  renamed_from?: string;
+  canonical_label_updated_from?: string;
+  aliases_updated_from?: string[];
+  updated_reference_files?: string[];
+  moved_identity_files?: string[];
+  embedding_refresh_queued?: boolean;
+  warnings?: string[];
   error?: string;
 };
 
+
+type AcquisitionStatus =
+  | "missing"
+  | "searching_blenderkit"
+  | "generating_trellis"
+  | "awaiting_review"
+  | "approved"
+  | "unavailable";
+
+type AcquisitionJob = {
+  job_id: string;
+  concept_key: string;
+  concept: string;
+  status: AcquisitionStatus;
+  active_provider:
+    | "blenderkit"
+    | "trellis"
+    | null;
+  current_candidate_asset_id:
+    | string
+    | null;
+  linked_scene_count: number;
+  refresh_ready: boolean;
+  request_count: number;
+  attempt_count: number;
+  last_error: string | null;
+  updated_at: string;
+  scene_references: Array<{
+    scene_session_id: string;
+    scene_id?: string | null;
+    title?: string | null;
+    original_prompt?: string | null;
+  }>;
+  candidate_history: Array<{
+    asset_id: string;
+    source_type:
+      | "blenderkit"
+      | "trellis"
+      | "manual"
+      | "procedural";
+    status:
+      | "awaiting_review"
+      | "approved"
+      | "rejected"
+      | "superseded";
+  }>;
+};
+
+type AcquisitionResponse = {
+  ok: boolean;
+  jobs?: AcquisitionJob[];
+  job?: AcquisitionJob;
+  asset?: LibraryAsset;
+  published?: boolean;
+  removed_asset_id?: string;
+  removed_job_id?: string;
+  removed_local_files?: string[];
+  removed_remote_objects?: string[];
+  error?: string;
+};
+
+
+type EnrichmentQueueEntry = {
+  asset_id: string;
+  status:
+    | "queued"
+    | "running"
+    | "completed"
+    | "failed";
+  mode?: "full" | "embedding_only";
+  force: boolean;
+  queued_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  error: string | null;
+};
+
+type EnrichmentResponse = {
+  ok: boolean;
+  queue?: EnrichmentQueueEntry[];
+  entries?: EnrichmentQueueEntry[];
+  queued_count?: number;
+  skipped_count?: number;
+  error?: string;
+};
+
+type GeometryQueueEntry = {
+  asset_id: string;
+  status: "queued" | "running" | "completed" | "failed" | "skipped";
+  force: boolean;
+  queued_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  support_surface_count: number | null;
+  audit_status: "measured" | "review_required" | null;
+  audit_confidence: number | null;
+  warnings: string[];
+  error: string | null;
+};
+
+type GeometryResponse = {
+  ok: boolean;
+  queue?: GeometryQueueEntry[];
+  entries?: GeometryQueueEntry[];
+  queued_count?: number;
+  skipped_count?: number;
+  error?: string;
+};
+
+type DirectBlendKitImportResponse = {
+  ok: boolean;
+  created?: boolean;
+  asset?: LibraryAsset;
+  enrichment_entry?: EnrichmentQueueEntry;
+  message?: string;
+  error?: string;
+};
+
+type ReviewView =
+  | "all"
+  | "needs_review"
+  | "approved"
+  | "rejected"
+  | "acquiring";
+
 type SortKey = "newest" | "name" | "source" | "reuse";
+
+type IdentityDraft = {
+  assetId: string;
+  canonicalLabel: string;
+  aliases: string;
+  composition: LibraryAsset["object_composition"];
+  contains: string;
+  affordances: string;
+  preferredConcepts: string;
+  notes: string;
+};
 
 function uniqueSorted(values: string[]) {
   return [...new Set(values.filter(Boolean))].sort((a, b) =>
@@ -156,6 +390,30 @@ function sourceLabel(source: LibraryAsset["source_type"]) {
   if (source === "trellis") return "TRELLIS";
   if (source === "procedural") return "Procedural";
   return "Manual";
+}
+
+function readableLabel(value: string) {
+  const normalized = value.replaceAll("_", " ").replace(/\s+/g, " ").trim();
+  return normalized
+    ? normalized.charAt(0).toUpperCase() + normalized.slice(1)
+    : "Unnamed asset";
+}
+
+function assetTitle(asset: LibraryAsset) {
+  return readableLabel(
+    asset.verified_canonical_label ||
+      asset.requested_concept ||
+      asset.source_display_name ||
+      asset.display_name ||
+      asset.asset_id,
+  );
+}
+
+function csvValues(value: string) {
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 }
 
 function LoadedAsset({ src }: { src: string }) {
@@ -305,6 +563,183 @@ function MetadataRow({
   );
 }
 
+
+type AssetLibrarySnapshot = {
+  assets: LibraryAsset[];
+  jobs: AcquisitionJob[];
+  enrichmentQueue: EnrichmentQueueEntry[];
+  geometryQueue: GeometryQueueEntry[];
+};
+
+let assetLibrarySnapshotPromise:
+  Promise<AssetLibrarySnapshot> | null =
+  null;
+
+function fetchAssetLibrarySnapshot() {
+  if (assetLibrarySnapshotPromise) {
+    return assetLibrarySnapshotPromise;
+  }
+
+  assetLibrarySnapshotPromise =
+    Promise.all([
+      fetch(
+        "/api/sandbox/probe-lab/assets/library",
+        { cache: "no-store" },
+      ),
+      fetch(
+        "/api/sandbox/probe-lab/assets/acquisition?summary=1",
+        { cache: "no-store" },
+      ),
+      fetch(
+        "/api/sandbox/probe-lab/assets/enrichment",
+        { cache: "no-store" },
+      ),
+      fetch(
+        "/api/sandbox/probe-lab/assets/geometry",
+        { cache: "no-store" },
+      ),
+    ])
+      .then(
+        async ([
+          libraryResponse,
+          acquisitionResponse,
+          enrichmentResponse,
+          geometryResponse,
+        ]) => {
+          const libraryPayload =
+            (await libraryResponse.json()) as LibraryResponse;
+          const acquisitionPayload =
+            (await acquisitionResponse.json()) as AcquisitionResponse;
+          const enrichmentPayload =
+            (await enrichmentResponse.json()) as EnrichmentResponse;
+          const geometryPayload =
+            (await geometryResponse.json()) as GeometryResponse;
+
+          if (
+            !libraryResponse.ok ||
+            !libraryPayload.ok ||
+            !Array.isArray(
+              libraryPayload.assets,
+            )
+          ) {
+            throw new Error(
+              libraryPayload.error ||
+                "The asset library could not be loaded.",
+            );
+          }
+
+          if (
+            !acquisitionResponse.ok ||
+            !acquisitionPayload.ok
+          ) {
+            throw new Error(
+              acquisitionPayload.error ||
+                "The missing-asset queue could not be loaded.",
+            );
+          }
+
+          if (
+            !enrichmentResponse.ok ||
+            !enrichmentPayload.ok
+          ) {
+            throw new Error(
+              enrichmentPayload.error ||
+                "The appearance-analysis queue could not be loaded.",
+            );
+          }
+
+          if (!geometryResponse.ok || !geometryPayload.ok) {
+            throw new Error(
+              geometryPayload.error ||
+                "The geometry-profile queue could not be loaded.",
+            );
+          }
+
+          return {
+            assets:
+              libraryPayload.assets,
+            jobs:
+              acquisitionPayload.jobs ??
+              [],
+            enrichmentQueue:
+              enrichmentPayload.queue ??
+              [],
+            geometryQueue:
+              geometryPayload.queue ??
+              [],
+          };
+        },
+      )
+      .finally(() => {
+        assetLibrarySnapshotPromise =
+          null;
+      });
+
+  return assetLibrarySnapshotPromise;
+}
+
+function acquisitionStatusSignature(
+  jobs: AcquisitionJob[],
+) {
+  return jobs
+    .map(
+      (job) =>
+        [
+          job.job_id,
+          job.status,
+          job.current_candidate_asset_id ??
+            "",
+          job.updated_at,
+        ].join(":"),
+    )
+    .sort()
+    .join("|");
+}
+
+function enrichmentTerminalSignature(
+  entries: EnrichmentQueueEntry[],
+) {
+  return entries
+    .filter(
+      (entry) =>
+        entry.status === "completed" ||
+        entry.status === "failed",
+    )
+    .map(
+      (entry) =>
+        [
+          entry.asset_id,
+          entry.status,
+          entry.completed_at ?? "",
+        ].join(":"),
+    )
+    .sort()
+    .join("|");
+}
+
+function geometryTerminalSignature(
+  entries: GeometryQueueEntry[],
+) {
+  return entries
+    .filter(
+      (entry) =>
+        entry.status === "completed" ||
+        entry.status === "failed" ||
+        entry.status === "skipped",
+    )
+    .map((entry) =>
+      [
+        entry.asset_id,
+        entry.status,
+        entry.completed_at ?? "",
+        entry.audit_status ?? "",
+      ].join(":"),
+    )
+    .sort()
+    .join("|");
+}
+
+
 export function AssetLibraryLab() {
   const [assets, setAssets] = useState<LibraryAsset[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
@@ -313,186 +748,786 @@ export function AssetLibraryLab() {
   const [domainFilter, setDomainFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sceneReviewFilter, setSceneReviewFilter] = useState("all");
+  const [reviewView, setReviewView] =
+    useState<ReviewView>("needs_review");
+  const [acquisitionJobs, setAcquisitionJobs] =
+    useState<AcquisitionJob[]>([]);
+  const [enrichmentQueue, setEnrichmentQueue] =
+    useState<EnrichmentQueueEntry[]>([]);
+  const [geometryQueue, setGeometryQueue] =
+    useState<GeometryQueueEntry[]>([]);
+  const [blendKitConcept, setBlendKitConcept] =
+    useState("");
+  const [blendKitImporting, setBlendKitImporting] =
+    useState(false);
   const [licenseFilter, setLicenseFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [refreshToken, setRefreshToken] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [promotingAssetId, setPromotingAssetId] = useState<string | null>(null);
+  const [acquisitionAction, setAcquisitionAction] = useState<
+    "approve" | "remove" | "blenderkit" | "trellis" | null
+  >(null);
+  const [acquisitionActionId, setAcquisitionActionId] =
+    useState<string | null>(null);
   const [promotionMessage, setPromotionMessage] = useState<string | null>(null);
   const [maintenanceAction, setMaintenanceAction] = useState<
-    "remove" | "blenderkit" | "trellis" | null
+    | "remove"
+    | "rename"
+    | "canonical_label"
+    | "aliases"
+    | "blenderkit"
+    | "trellis"
+    | null
   >(null);
   const [maintenanceAssetId, setMaintenanceAssetId] = useState<string | null>(
-    null,
-  );
-  const [sceneReviewAssetId, setSceneReviewAssetId] = useState<string | null>(
     null,
   );
   const [semanticReviewAssetId, setSemanticReviewAssetId] = useState<
     string | null
   >(null);
+  const [identityDraft, setIdentityDraft] = useState<IdentityDraft | null>(null);
+  const [enrichmentAssetId, setEnrichmentAssetId] = useState<string | null>(null);
+  const [geometryAssetId, setGeometryAssetId] =
+    useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const acquisitionPollInFlight =
+    useRef(false);
+  const enrichmentPollInFlight =
+    useRef(false);
+  const geometryPollInFlight =
+    useRef(false);
+  const completedEnrichmentSignature =
+    useRef("");
+  const completedGeometrySignature =
+    useRef("");
 
   useEffect(() => {
-    const controller = new AbortController();
+    let active = true;
 
-    async function loadLibrary() {
-      setIsLoading(true);
-      setError(null);
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        const response = await fetch(
-          "/api/sandbox/probe-lab/assets/library",
-          {
-            cache: "no-store",
-            signal: controller.signal,
-          },
+    void fetchAssetLibrarySnapshot()
+      .then((snapshot) => {
+        if (!active) return;
+
+        setAssets(snapshot.assets);
+        setAcquisitionJobs(
+          snapshot.jobs,
         );
-        const payload = (await response.json()) as LibraryResponse;
-
-        const loadedAssets = payload.assets;
-
-        if (!response.ok || !payload.ok || !Array.isArray(loadedAssets)) {
-          throw new Error(
-            payload.error || "The asset library could not be loaded.",
+        setEnrichmentQueue(
+          snapshot.enrichmentQueue,
+        );
+        setGeometryQueue(
+          snapshot.geometryQueue,
+        );
+        completedEnrichmentSignature.current =
+          enrichmentTerminalSignature(
+            snapshot.enrichmentQueue,
           );
-        }
-
-        setAssets(loadedAssets);
+        completedGeometrySignature.current =
+          geometryTerminalSignature(
+            snapshot.geometryQueue,
+          );
         setSelectedAssetId((current) => {
           if (
             current &&
-            loadedAssets.some((asset) => asset.asset_id === current)
+            snapshot.assets.some(
+              (asset) =>
+                asset.asset_id ===
+                current,
+            )
           ) {
             return current;
           }
 
-          const newestPreviewable = loadedAssets
-            .filter(
+          const previewable =
+            snapshot.assets
+              .filter(
+                (asset) =>
+                  asset.file_stats.exists &&
+                  (asset.asset_type ===
+                    "glb" ||
+                    asset.asset_type ===
+                      "gltf"),
+              )
+              .sort(
+                (a, b) =>
+                  Date.parse(
+                    b.created_at,
+                  ) -
+                  Date.parse(
+                    a.created_at,
+                  ),
+              );
+          const newestPreviewable =
+            previewable.find(
               (asset) =>
-                asset.file_stats.exists &&
-                (asset.asset_type === "glb" ||
-                  asset.asset_type === "gltf"),
-            )
-            .sort(
-              (a, b) =>
-                Date.parse(b.created_at) - Date.parse(a.created_at),
-            )[0];
+                asset.scene_review_status ===
+                "pending",
+            ) ?? previewable[0];
 
-          return newestPreviewable?.asset_id ?? loadedAssets[0]?.asset_id ?? null;
+          return (
+            newestPreviewable
+              ?.asset_id ??
+            snapshot.assets[0]
+              ?.asset_id ??
+            null
+          );
         });
+      })
+      .catch((caught) => {
+        if (!active) return;
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : String(caught),
+        );
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [refreshToken]);
+
+  const hasActiveAcquisition =
+    acquisitionJobs.some(
+      (job) =>
+        job.status ===
+          "searching_blenderkit" ||
+        job.status ===
+          "generating_trellis",
+    );
+
+  useEffect(() => {
+    if (!hasActiveAcquisition) return;
+
+    let disposed = false;
+    let lastSignature =
+      acquisitionStatusSignature(
+        acquisitionJobs,
+      );
+
+    async function poll() {
+      if (
+        disposed ||
+        document.visibilityState !==
+          "visible" ||
+        acquisitionPollInFlight.current
+      ) {
+        return;
+      }
+
+      acquisitionPollInFlight.current =
+        true;
+      try {
+        const response = await fetch(
+          "/api/sandbox/probe-lab/assets/acquisition?summary=1",
+          { cache: "no-store" },
+        );
+        const payload =
+          (await response.json()) as AcquisitionResponse;
+
+        if (
+          !response.ok ||
+          !payload.ok
+        ) {
+          throw new Error(
+            payload.error ||
+              "The acquisition queue could not be refreshed.",
+          );
+        }
+
+        const nextJobs =
+          payload.jobs ?? [];
+        const nextSignature =
+          acquisitionStatusSignature(
+            nextJobs,
+          );
+
+        setAcquisitionJobs(
+          nextJobs,
+        );
+
+        if (
+          nextSignature !==
+          lastSignature
+        ) {
+          const shouldReloadAssets =
+            nextJobs.some(
+              (job) =>
+                job.status ===
+                  "awaiting_review" ||
+                job.status ===
+                  "approved",
+            );
+          lastSignature =
+            nextSignature;
+
+          if (
+            shouldReloadAssets &&
+            !disposed
+          ) {
+            setRefreshToken(
+              (value) =>
+                value + 1,
+            );
+          }
+        }
       } catch (caught) {
-        if (controller.signal.aborted) return;
-        setError(caught instanceof Error ? caught.message : String(caught));
+        if (!disposed) {
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : String(caught),
+          );
+        }
       } finally {
-        if (!controller.signal.aborted) setIsLoading(false);
+        acquisitionPollInFlight.current =
+          false;
       }
     }
 
-    void loadLibrary();
-
-    return () => controller.abort();
-  }, [refreshToken]);
-
-  async function uploadSelectedAssetToCloudflare() {
-    if (!selectedAssetId) return;
-
-    const asset = assets.find(
-      (candidate) => candidate.asset_id === selectedAssetId,
+    const interval =
+      window.setInterval(
+        () => {
+          void poll();
+        },
+        8_000,
+      );
+    const onVisibility = () => {
+      if (
+        document.visibilityState ===
+        "visible"
+      ) {
+        void poll();
+      }
+    };
+    document.addEventListener(
+      "visibilitychange",
+      onVisibility,
     );
 
-    if (!asset) return;
+    return () => {
+      disposed = true;
+      window.clearInterval(
+        interval,
+      );
+      document.removeEventListener(
+        "visibilitychange",
+        onVisibility,
+      );
+    };
+  }, [hasActiveAcquisition]);
 
-    const confirmed = window.confirm(
-      `Upload "${asset.display_name}" to the public Cloudflare R2 runtime bucket?\n\nOnly continue after reviewing the rotating 3D preview. The asset's recorded license must permit production use and public GLB distribution.`,
+  const hasActiveEnrichment =
+    enrichmentQueue.some(
+      (entry) =>
+        entry.status === "queued" ||
+        entry.status === "running",
     );
 
-    if (!confirmed) return;
+  useEffect(() => {
+    if (!hasActiveEnrichment) return;
 
-    setPromotingAssetId(asset.asset_id);
+    let disposed = false;
+
+    async function poll() {
+      if (
+        disposed ||
+        document.visibilityState !==
+          "visible" ||
+        enrichmentPollInFlight.current
+      ) {
+        return;
+      }
+
+      enrichmentPollInFlight.current =
+        true;
+      try {
+        const response = await fetch(
+          "/api/sandbox/probe-lab/assets/enrichment",
+          { cache: "no-store" },
+        );
+        const payload =
+          (await response.json()) as EnrichmentResponse;
+
+        if (
+          !response.ok ||
+          !payload.ok
+        ) {
+          throw new Error(
+            payload.error ||
+              "The appearance-analysis queue could not be refreshed.",
+          );
+        }
+
+        const nextQueue =
+          payload.queue ?? [];
+        const terminalSignature =
+          enrichmentTerminalSignature(
+            nextQueue,
+          );
+        setEnrichmentQueue(
+          nextQueue,
+        );
+
+        if (
+          terminalSignature !==
+          completedEnrichmentSignature.current
+        ) {
+          completedEnrichmentSignature.current =
+            terminalSignature;
+          if (!disposed) {
+            setRefreshToken(
+              (value) =>
+                value + 1,
+            );
+          }
+        }
+      } catch (caught) {
+        if (!disposed) {
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : String(caught),
+          );
+        }
+      } finally {
+        enrichmentPollInFlight.current =
+          false;
+      }
+    }
+
+    const interval =
+      window.setInterval(
+        () => {
+          void poll();
+        },
+        8_000,
+      );
+    const onVisibility = () => {
+      if (
+        document.visibilityState ===
+        "visible"
+      ) {
+        void poll();
+      }
+    };
+    document.addEventListener(
+      "visibilitychange",
+      onVisibility,
+    );
+
+    return () => {
+      disposed = true;
+      window.clearInterval(
+        interval,
+      );
+      document.removeEventListener(
+        "visibilitychange",
+        onVisibility,
+      );
+    };
+  }, [hasActiveEnrichment]);
+
+  const hasActiveGeometry =
+    geometryQueue.some(
+      (entry) =>
+        entry.status === "queued" ||
+        entry.status === "running",
+    );
+
+  useEffect(() => {
+    if (!hasActiveGeometry) return;
+
+    let disposed = false;
+
+    async function poll() {
+      if (
+        disposed ||
+        document.visibilityState !== "visible" ||
+        geometryPollInFlight.current
+      ) {
+        return;
+      }
+
+      geometryPollInFlight.current = true;
+      try {
+        const response = await fetch(
+          "/api/sandbox/probe-lab/assets/geometry",
+          { cache: "no-store" },
+        );
+        const payload =
+          (await response.json()) as GeometryResponse;
+
+        if (!response.ok || !payload.ok) {
+          throw new Error(
+            payload.error ||
+              "The geometry queue could not be refreshed.",
+          );
+        }
+
+        const nextQueue = payload.queue ?? [];
+        const terminalSignature =
+          geometryTerminalSignature(nextQueue);
+        setGeometryQueue(nextQueue);
+
+        if (
+          terminalSignature !==
+          completedGeometrySignature.current
+        ) {
+          completedGeometrySignature.current =
+            terminalSignature;
+          if (!disposed) {
+            setRefreshToken((value) => value + 1);
+          }
+        }
+      } catch (caught) {
+        if (!disposed) {
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : String(caught),
+          );
+        }
+      } finally {
+        geometryPollInFlight.current = false;
+      }
+    }
+
+    const interval = window.setInterval(
+      () => void poll(),
+      8_000,
+    );
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void poll();
+      }
+    };
+    document.addEventListener(
+      "visibilitychange",
+      onVisibility,
+    );
+
+    return () => {
+      disposed = true;
+      window.clearInterval(interval);
+      document.removeEventListener(
+        "visibilitychange",
+        onVisibility,
+      );
+    };
+  }, [hasActiveGeometry]);
+
+
+  async function runAcquisitionAction(input: {
+    action:
+      | "approve_publish"
+      | "reject_remove"
+      | "retry_blenderkit"
+      | "generate_trellis"
+      | "cancel_job";
+    assetId?: string;
+    jobId?: string;
+    note?: string | null;
+  }) {
+    const actionId =
+      input.assetId ??
+      input.jobId ??
+      input.action;
+    setAcquisitionAction(
+      input.action === "approve_publish"
+        ? "approve"
+        : input.action === "reject_remove" ||
+            input.action === "cancel_job"
+          ? "remove"
+          : input.action === "generate_trellis"
+            ? "trellis"
+            : "blenderkit",
+    );
+    setAcquisitionActionId(actionId);
     setPromotionMessage(null);
     setError(null);
 
     try {
       const response = await fetch(
-        "/api/sandbox/probe-lab/assets/promote",
+        "/api/sandbox/probe-lab/assets/acquisition",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            asset_id: asset.asset_id,
+            action: input.action,
+            asset_id:
+              input.assetId ?? null,
+            job_id:
+              input.jobId ?? null,
+            note: input.note ?? null,
           }),
         },
       );
-      const payload = (await response.json()) as LibraryResponse;
+      const payload =
+        (await response.json()) as AcquisitionResponse;
 
       if (!response.ok || !payload.ok) {
         throw new Error(
-          payload.error || "The asset could not be uploaded to Cloudflare R2.",
+          payload.error ||
+            "The acquisition action failed.",
         );
       }
 
-      setPromotionMessage(
-        `${asset.display_name} is now stored in Cloudflare R2.`,
+      if (
+        input.action ===
+        "approve_publish"
+      ) {
+        setPromotionMessage(
+          payload.published
+            ? "The asset is approved, published to Cloudflare R2, and ready for linked scenes."
+            : "The asset is approved for local sandbox scenes. Public promotion remains blocked by its license record.",
+        );
+      } else if (
+        input.action ===
+        "reject_remove"
+      ) {
+        setSelectedAssetId(null);
+        setPromotionMessage(
+          "The candidate was rejected and permanently removed. Its missing-asset job remains in Acquiring so you can choose another BlendKit or TRELLIS attempt when ready.",
+        );
+      } else if (
+        input.action === "cancel_job"
+      ) {
+        setPromotionMessage(
+          "The acquisition need was cancelled and removed from Acquiring. Linked scenes remain unchanged and will show that object as unavailable until rebuilt without it.",
+        );
+      } else {
+        setPromotionMessage(
+          input.action ===
+            "generate_trellis"
+            ? "The current candidate was rejected. TRELLIS generation has started for the same missing concept."
+            : "The current candidate was rejected. MyWay is searching BlendKit for a different CC0 asset.",
+        );
+      }
+
+      setRefreshToken(
+        (value) => value + 1,
       );
-      setRefreshToken((value) => value + 1);
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : String(caught),
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
       );
     } finally {
-      setPromotingAssetId(null);
+      setAcquisitionAction(null);
+      setAcquisitionActionId(null);
     }
   }
 
-  async function updateSelectedSceneReview(
-    sceneReviewStatus: "pending" | "approved" | "rejected",
+  async function approveSelectedAsset() {
+    if (!selectedAssetId) return;
+
+    const asset = assets.find(
+      (candidate) =>
+        candidate.asset_id ===
+        selectedAssetId,
+    );
+    if (!asset) return;
+
+    const actionLabel =
+      asset.storage_provider === "r2"
+        ? "Approve this asset for automatic scene use?"
+        : asset.safe_to_promote_to_app
+          ? "Approve this asset and publish its GLB and thumbnail to Cloudflare R2?"
+          : "Approve this asset for local sandbox scene use? It is not currently cleared for public R2 promotion.";
+
+    if (
+      !window.confirm(
+        `${actionLabel}\n\nReview the rotating 3D model and verified identity before continuing.`,
+      )
+    ) {
+      return;
+    }
+
+    await runAcquisitionAction({
+      action: "approve_publish",
+      assetId: asset.asset_id,
+    });
+  }
+
+  async function retrySelectedCandidate(
+    provider:
+      | "blenderkit"
+      | "trellis",
   ) {
     if (!selectedAssetId) return;
 
     const asset = assets.find(
-      (candidate) => candidate.asset_id === selectedAssetId,
+      (candidate) =>
+        candidate.asset_id ===
+        selectedAssetId,
     );
-
     if (!asset) return;
 
-    if (
-      sceneReviewStatus === "approved" &&
-      (!asset.file_stats.exists ||
-        !asset.safe_to_use_in_sandbox ||
-        asset.status === "rejected" ||
-        asset.semantic_review_status !== "verified")
-    ) {
+    const note = window.prompt(
+      provider === "blenderkit"
+        ? "Why should MyWay reject this candidate and search BlendKit for another one?"
+        : "Why should MyWay reject this candidate and generate a TRELLIS replacement?",
+      asset.scene_review_notes ?? "",
+    );
+
+    if (note === null) return;
+
+    await runAcquisitionAction({
+      action:
+        provider === "trellis"
+          ? "generate_trellis"
+          : "retry_blenderkit",
+      assetId: asset.asset_id,
+      note,
+    });
+  }
+
+  async function removeSelectedNeedsReviewCandidate() {
+    if (!selectedAssetId) return;
+
+    const asset = assets.find(
+      (candidate) =>
+        candidate.asset_id ===
+        selectedAssetId,
+    );
+    if (!asset) return;
+
+    const linkedJob =
+      acquisitionJobByAssetId.get(
+        asset.asset_id,
+      );
+    if (!linkedJob) {
       setError(
-        "This asset cannot be approved for scenes until its file exists, it is safe for sandbox use, and its semantic identity is verified.",
+        "This candidate is no longer linked to a missing-asset job. Refresh the Asset Library and try again.",
       );
       return;
     }
 
-    const actionLabel =
-      sceneReviewStatus === "approved"
-        ? "approve"
-        : sceneReviewStatus === "rejected"
-          ? "reject"
-          : "return to pending review";
+    const note = window.prompt(
+      `Why should MyWay reject and remove this candidate for "${linkedJob.concept}"?`,
+      asset.scene_review_notes ??
+        "I do not want to keep this candidate.",
+    );
+
+    if (note === null) return;
+
+    const remoteWarning =
+      asset.storage_provider === "r2"
+        ? "\n\nThis candidate is stored in Cloudflare R2. Its remote GLB, thumbnail, and archived source object will also be deleted."
+        : "";
 
     const confirmed = window.confirm(
-      `${actionLabel[0]?.toUpperCase()}${actionLabel.slice(1)} "${asset.display_name}" for automatic scene selection?`,
+      `Reject and permanently remove "${assetTitle(asset)}"?${remoteWarning}\n\nIts registry record, local model files, thumbnail, source and license records, appearance renders, and local embedding will be removed. The linked missing-asset job will remain available under Acquiring, but MyWay will not automatically fetch another candidate.`,
     );
 
     if (!confirmed) return;
 
-    const notes =
-      sceneReviewStatus === "rejected"
-        ? window.prompt(
-            "Optional rejection note (for example: wrong object, poor geometry, incomplete model):",
-            asset.scene_review_notes ?? "",
-          )
-        : null;
+    await runAcquisitionAction({
+      action: "reject_remove",
+      assetId: asset.asset_id,
+      note,
+    });
+  }
 
-    setSceneReviewAssetId(asset.asset_id);
+  async function retryAcquisitionJob(
+    job: AcquisitionJob,
+    provider:
+      | "blenderkit"
+      | "trellis",
+  ) {
+    await runAcquisitionAction({
+      action:
+        provider === "trellis"
+          ? "generate_trellis"
+          : "retry_blenderkit",
+      jobId: job.job_id,
+    });
+  }
+
+  async function cancelAcquisitionJob(
+    job: AcquisitionJob,
+  ) {
+    const activeWarning =
+      job.status === "searching_blenderkit" ||
+      job.status === "generating_trellis"
+        ? "\n\nA provider request is already running. MyWay cannot always stop that external process immediately, but any new candidate returned after cancellation will be discarded and removed."
+        : "";
+
+    const confirmed = window.confirm(
+      `Cancel acquisition for "${job.concept}"?${activeWarning}\n\nThis removes the shared need from Acquiring. It does not delete the linked Primitive Builder scenes; those scenes will continue to show this object as unavailable until rebuilt without it.`,
+    );
+
+    if (!confirmed) return;
+
+    await runAcquisitionAction({
+      action: "cancel_job",
+      jobId: job.job_id,
+    });
+  }
+
+  async function renameSelectedAssetId() {
+    if (
+      !selectedAssetId ||
+      !identityDraft
+    ) {
+      return;
+    }
+
+    const asset = assets.find(
+      (candidate) =>
+        candidate.asset_id ===
+        selectedAssetId,
+    );
+
+    if (!asset) return;
+
+    const nextAssetId =
+      identityDraft.assetId
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 96);
+
+    if (!nextAssetId) {
+      setError(
+        "The asset ID must contain at least one letter or number.",
+      );
+      return;
+    }
+
+    if (
+      nextAssetId === asset.asset_id
+    ) {
+      setPromotionMessage(
+        "The asset ID is already unchanged.",
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Rename asset ID "${asset.asset_id}" to "${nextAssetId}"?\n\nMyWay will update the registry, local embedding metadata, acquisition references, and saved scene references. Existing GLB, thumbnail, analysis-image, and R2 storage paths will remain unchanged because storage location is separate from asset identity.`,
+    );
+
+    if (!confirmed) return;
+
+    setMaintenanceAction("rename");
+    setMaintenanceAssetId(
+      asset.asset_id,
+    );
     setPromotionMessage(null);
     setError(null);
 
@@ -502,153 +1537,330 @@ export function AssetLibraryLab() {
         {
           method: "PATCH",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
           body: JSON.stringify({
+            action: "rename_asset_id",
             asset_id: asset.asset_id,
-            scene_review_status: sceneReviewStatus,
-            scene_review_notes: notes,
+            next_asset_id: nextAssetId,
           }),
         },
       );
-      const payload = (await response.json()) as LibraryResponse;
 
-      if (!response.ok || !payload.ok || !payload.asset) {
+      const payload =
+        (await response.json()) as
+          LibraryResponse;
+
+      if (
+        !response.ok ||
+        !payload.ok ||
+        !payload.asset
+      ) {
         throw new Error(
-          payload.error || "The scene review status could not be updated.",
+          payload.error ||
+            "The asset ID could not be renamed.",
         );
       }
 
-      setPromotionMessage(
-        `${asset.display_name} is now scene review: ${sceneReviewStatus}.`,
+      setSelectedAssetId(
+        payload.asset.asset_id,
       );
-      setRefreshToken((value) => value + 1);
+      setIdentityDraft((current) =>
+        current
+          ? {
+              ...current,
+              assetId:
+                payload.asset!
+                  .asset_id,
+            }
+          : current,
+      );
+      setPromotionMessage(
+        `Asset ID renamed from ${asset.asset_id} to ${payload.asset.asset_id}. Embedding filename, metadata, and saved references were synchronized; model and thumbnail storage paths were preserved.`,
+      );
+      setRefreshToken(
+        (value) => value + 1,
+      );
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : String(caught),
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
       );
     } finally {
-      setSceneReviewAssetId(null);
+      setMaintenanceAction(null);
+      setMaintenanceAssetId(null);
     }
   }
 
-  async function updateSelectedSemanticIdentity(
-    mode: "edit" | "source" | "mismatch" | "pending",
-  ) {
-    if (!selectedAssetId) return;
+  async function updateSelectedCanonicalLabel() {
+    if (
+      !selectedAssetId ||
+      !identityDraft
+    ) {
+      return;
+    }
 
     const asset = assets.find(
       (candidate) =>
-        candidate.asset_id === selectedAssetId,
+        candidate.asset_id ===
+        selectedAssetId,
+    );
+
+    if (!asset) return;
+
+    const canonicalLabel =
+      identityDraft.canonicalLabel
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+
+    if (!canonicalLabel) {
+      setError(
+        "A canonical label is required.",
+      );
+      return;
+    }
+
+    const currentCanonicalLabel = (
+      asset.verified_canonical_label ||
+      asset.canonical_label
+    )
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+
+    if (
+      canonicalLabel ===
+      currentCanonicalLabel
+    ) {
+      setPromotionMessage(
+        "The canonical label is already unchanged.",
+      );
+      return;
+    }
+
+    setMaintenanceAction(
+      "canonical_label",
+    );
+    setMaintenanceAssetId(
+      asset.asset_id,
+    );
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/library",
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            action:
+              "update_canonical_label",
+            asset_id:
+              asset.asset_id,
+            canonical_label:
+              canonicalLabel,
+          }),
+        },
+      );
+
+      const payload =
+        (await response.json()) as
+          LibraryResponse;
+
+      if (
+        !response.ok ||
+        !payload.ok ||
+        !payload.asset
+      ) {
+        throw new Error(
+          payload.error ||
+            "The canonical label could not be updated.",
+        );
+      }
+
+      setIdentityDraft((current) =>
+        current
+          ? {
+              ...current,
+              canonicalLabel:
+                payload.asset!
+                  .verified_canonical_label ||
+                canonicalLabel,
+            }
+          : current,
+      );
+      setPromotionMessage(
+        `Canonical label updated from ${payload.canonical_label_updated_from ?? currentCanonicalLabel} to ${payload.asset.verified_canonical_label ?? canonicalLabel}. The source name and technical asset ID were preserved.${payload.embedding_refresh_queued ? " A refreshed identity-aware embedding was queued automatically." : ""}`,
+      );
+      setRefreshToken(
+        (value) => value + 1,
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    } finally {
+      setMaintenanceAction(null);
+      setMaintenanceAssetId(null);
+    }
+  }
+
+  async function updateSelectedAliases() {
+    if (
+      !selectedAssetId ||
+      !identityDraft
+    ) {
+      return;
+    }
+
+    const asset = assets.find(
+      (candidate) =>
+        candidate.asset_id ===
+        selectedAssetId,
     );
     if (!asset) return;
 
-    let semanticReviewStatus:
-      | "pending"
-      | "verified"
-      | "mismatch"
-      | "rejected" = "verified";
-    let verifiedCanonicalLabel =
-      asset.verified_canonical_label ??
-      asset.canonical_label;
-    let verifiedAliases =
-      asset.verified_aliases ?? [];
-    let objectComposition =
-      asset.object_composition ?? "unknown";
-    let contains = asset.contains ?? [];
-    let affordances = asset.affordances ?? [];
-    let preferredForConcepts =
-      asset.preferred_for_concepts ?? [];
-    let notes =
-      asset.semantic_review_notes ?? "";
-
-    if (mode === "mismatch") {
-      semanticReviewStatus = "mismatch";
-      verifiedCanonicalLabel = "";
-      notes =
-        window.prompt(
-          "Why is the requested identity wrong?",
-          notes ||
-            `Requested "${asset.requested_concept ?? asset.canonical_label}", but source is "${asset.source_display_name ?? asset.display_name}".`,
-        ) ?? notes;
-    } else if (mode === "pending") {
-      semanticReviewStatus = "pending";
-      verifiedCanonicalLabel = "";
-    } else {
-      if (mode === "source") {
-        verifiedCanonicalLabel =
-          asset.source_display_name ??
-          asset.display_name;
-      } else {
-        verifiedCanonicalLabel =
-          window.prompt(
-            "Verified canonical label:",
-            verifiedCanonicalLabel,
-          )?.trim() ?? "";
-      }
-
-      if (!verifiedCanonicalLabel) return;
-
-      verifiedAliases = (
-        window.prompt(
-          "Verified aliases, separated by commas:",
-          verifiedAliases.join(", "),
-        ) ?? ""
+    const aliases = csvValues(
+      identityDraft.aliases,
+    );
+    const currentAliases = Array.from(
+      new Set([
+        ...(asset.verified_aliases ?? []),
+        ...asset.aliases,
+      ]),
+    )
+      .map((value) =>
+        value
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, " "),
       )
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean);
+      .filter(Boolean)
+      .sort();
+    const nextAliases = aliases
+      .map((value) =>
+        value
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, " "),
+      )
+      .filter(Boolean)
+      .sort();
 
-      const compositionInput =
-        window.prompt(
-          "Composition: single_object, object_set, environment_piece, or unknown",
-          objectComposition,
-        )?.trim();
+    if (
+      JSON.stringify(currentAliases) ===
+      JSON.stringify(nextAliases)
+    ) {
+      setPromotionMessage(
+        "The aliases are already unchanged.",
+      );
+      return;
+    }
+
+    setMaintenanceAction("aliases");
+    setMaintenanceAssetId(
+      asset.asset_id,
+    );
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/library",
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            action: "update_aliases",
+            asset_id:
+              asset.asset_id,
+            aliases,
+          }),
+        },
+      );
+      const payload =
+        (await response.json()) as
+          LibraryResponse;
 
       if (
-        compositionInput === "single_object" ||
-        compositionInput === "object_set" ||
-        compositionInput === "environment_piece" ||
-        compositionInput === "unknown"
+        !response.ok ||
+        !payload.ok ||
+        !payload.asset
       ) {
-        objectComposition = compositionInput;
+        throw new Error(
+          payload.error ||
+            "The aliases could not be updated.",
+        );
       }
 
-      contains = (
-        window.prompt(
-          "Contained objects, separated by commas:",
-          contains.join(", "),
-        ) ?? ""
-      )
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean);
+      const savedAliases =
+        payload.asset
+          .verified_aliases ?? [];
+      setIdentityDraft((current) =>
+        current
+          ? {
+              ...current,
+              aliases:
+                savedAliases.join(
+                  ", ",
+                ),
+            }
+          : current,
+      );
+      setPromotionMessage(
+        savedAliases.length
+          ? `Aliases updated: ${savedAliases.join(", ")}.`
+          : "All verified aliases were removed.",
+      );
+      setRefreshToken(
+        (value) => value + 1,
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    } finally {
+      setMaintenanceAction(null);
+      setMaintenanceAssetId(null);
+    }
+  }
 
-      affordances = (
-        window.prompt(
-          "Reviewed semantic affordances, separated by commas. Physical support surfaces are detected from geometry automatically:",
-          affordances.join(", "),
-        ) ?? ""
-      )
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean);
+  async function saveSelectedSemanticIdentity(
+    semanticReviewStatus: "pending" | "verified" | "mismatch",
+    options: { useSourceName?: boolean } = {},
+  ) {
+    if (!selectedAssetId || !identityDraft) return;
 
-      preferredForConcepts = (
-        window.prompt(
-          "Prefer this asset for these concepts, separated by commas:",
-          preferredForConcepts.join(", "),
-        ) ?? ""
-      )
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean);
+    const asset = assets.find(
+      (candidate) => candidate.asset_id === selectedAssetId,
+    );
+    if (!asset) return;
 
-      notes =
-        window.prompt(
-          "Optional semantic review note:",
-          notes,
-        ) ?? notes;
+    const verifiedCanonicalLabel =
+      semanticReviewStatus === "verified"
+        ? (options.useSourceName
+            ? asset.source_display_name || asset.display_name
+            : identityDraft.canonicalLabel
+          ).trim()
+        : "";
+
+    if (semanticReviewStatus === "verified" && !verifiedCanonicalLabel) {
+      setError("A verified canonical label is required.");
+      return;
     }
 
     setSemanticReviewAssetId(asset.asset_id);
@@ -660,29 +1872,297 @@ export function AssetLibraryLab() {
         "/api/sandbox/probe-lab/assets/library",
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             action: "semantic_identity",
             asset_id: asset.asset_id,
-            semantic_review_status:
-              semanticReviewStatus,
-            verified_canonical_label:
-              verifiedCanonicalLabel,
-            verified_aliases: verifiedAliases,
-            object_composition:
-              objectComposition,
-            contains,
-            affordances,
-            preferred_for_concepts:
-              preferredForConcepts,
-            semantic_review_notes: notes,
+            semantic_review_status: semanticReviewStatus,
+            verified_canonical_label: verifiedCanonicalLabel,
+            verified_aliases: csvValues(identityDraft.aliases),
+            object_composition: identityDraft.composition,
+            contains: csvValues(identityDraft.contains),
+            affordances: csvValues(identityDraft.affordances),
+            preferred_for_concepts: csvValues(
+              identityDraft.preferredConcepts,
+            ),
+            semantic_review_notes: identityDraft.notes,
+          }),
+        },
+      );
+      const payload = (await response.json()) as LibraryResponse;
+
+      if (!response.ok || !payload.ok || !payload.asset) {
+        throw new Error(
+          payload.error || "The semantic identity could not be updated.",
+        );
+      }
+
+      setIdentityDraft({
+        assetId:
+          payload.asset.asset_id,
+        canonicalLabel:
+          payload.asset
+            .verified_canonical_label ||
+          payload.asset
+            .requested_concept ||
+          payload.asset
+            .canonical_label,
+        aliases: Array.from(
+          new Set([
+            ...(payload.asset
+              .verified_aliases ?? []),
+            ...payload.asset.aliases,
+          ]),
+        ).join(", "),
+        composition:
+          payload.asset
+            .object_composition ??
+          "unknown",
+        contains: (
+          payload.asset.contains ?? []
+        ).join(", "),
+        affordances: (
+          payload.asset.affordances ?? []
+        ).join(", "),
+        preferredConcepts: (
+          payload.asset
+            .preferred_for_concepts ?? []
+        ).join(", "),
+        notes:
+          payload.asset
+            .semantic_review_notes ??
+          "",
+      });
+      setPromotionMessage(
+        `${assetTitle(asset)} identity is now ${semanticReviewStatus}.`,
+      );
+      setRefreshToken((value) => value + 1);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSemanticReviewAssetId(null);
+    }
+  }
+
+  async function runEnrichmentAction(
+    action: "enrich_asset" | "backfill_next",
+  ) {
+    const assetId = selectedAssetId;
+    if (action === "enrich_asset" && !assetId) return;
+
+    setEnrichmentAssetId(assetId ?? "backfill");
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/enrichment",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            action === "enrich_asset"
+              ? { action, asset_id: assetId, force: true }
+              : { action },
+          ),
+        },
+      );
+      const payload =
+        (await response.json()) as
+          EnrichmentResponse & {
+            entry?:
+              | EnrichmentQueueEntry
+              | null;
+          };
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || "Asset enrichment could not start.");
+      }
+
+      if (payload.entry) {
+        setEnrichmentQueue(
+          (current) => {
+            const next =
+              current.filter(
+                (entry) =>
+                  entry.asset_id !==
+                  payload.entry!
+                    .asset_id,
+              );
+            next.push(
+              payload.entry!,
+            );
+            return next;
+          },
+        );
+      }
+
+      setPromotionMessage(
+        payload.entry
+          ? "Asset enrichment was queued. Lightweight queue polling will refresh the library when it finishes."
+          : "No pending asset currently needs backfill.",
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setEnrichmentAssetId(null);
+    }
+  }
+
+  async function runGeometryAction(
+    mode: "selected" | "all",
+  ) {
+    const assetId = selectedAssetId;
+    if (mode === "selected" && !assetId) {
+      return;
+    }
+
+    setGeometryAssetId(
+      mode === "all" ? "all" : assetId,
+    );
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/geometry",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(
+            mode === "all"
+              ? { action: "profile_all", force: true }
+              : {
+                  action: "profile_asset",
+                  asset_id: assetId,
+                  force: true,
+                },
+          ),
+        },
+      );
+      const payload =
+        (await response.json()) as GeometryResponse & {
+          entry?: GeometryQueueEntry;
+        };
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(
+          payload.error ||
+            "Geometry profiling could not start.",
+        );
+      }
+
+      if (mode === "all") {
+        setGeometryQueue(payload.entries ?? []);
+        setPromotionMessage(
+          `Queued ${payload.queued_count ?? payload.entries?.length ?? 0} asset(s) for geometry audit and backfill. Existing GLBs are measured in place.`,
+        );
+      } else if (payload.entry) {
+        setGeometryQueue((current) => [
+          ...current.filter(
+            (entry) =>
+              entry.asset_id !== payload.entry!.asset_id,
+          ),
+          payload.entry!,
+        ]);
+        setPromotionMessage(
+          "Geometry profiling was queued for the selected asset.",
+        );
+      }
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    } finally {
+      setGeometryAssetId(null);
+    }
+  }
+
+  async function runBulkEnrichment() {
+    setEnrichmentAssetId("all");
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/enrichment",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            action: "enrich_all",
+            force: true,
           }),
         },
       );
       const payload =
-        (await response.json()) as LibraryResponse;
+        (await response.json()) as
+          EnrichmentResponse;
+
+      if (
+        !response.ok ||
+        !payload.ok
+      ) {
+        throw new Error(
+          payload.error ||
+            "The full asset-analysis batch could not be queued.",
+        );
+      }
+
+      setEnrichmentQueue(
+        payload.entries ?? [],
+      );
+      setPromotionMessage(
+        `Queued ${payload.queued_count ?? payload.entries?.length ?? 0} existing asset(s) for style analysis. The queue runs sequentially; keep the server running.`,
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    } finally {
+      setEnrichmentAssetId(null);
+    }
+  }
+
+  async function importBlendKitAsset() {
+    const concept =
+      blendKitConcept.trim();
+    if (!concept) {
+      setError(
+        "Type an object name to import from BlendKit.",
+      );
+      return;
+    }
+
+    setBlendKitImporting(true);
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/import-blenderkit",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            concept,
+          }),
+        },
+      );
+      const payload =
+        (await response.json()) as
+          DirectBlendKitImportResponse;
 
       if (
         !response.ok ||
@@ -691,14 +2171,46 @@ export function AssetLibraryLab() {
       ) {
         throw new Error(
           payload.error ||
-            "The semantic identity could not be updated.",
+            "BlendKit import failed.",
         );
       }
 
-      setPromotionMessage(
-        `${asset.display_name} semantic identity is now ${semanticReviewStatus}.`,
+      if (
+        payload.enrichment_entry
+      ) {
+        setEnrichmentQueue(
+          (current) => {
+            const next =
+              current.filter(
+                (entry) =>
+                  entry.asset_id !==
+                  payload
+                    .enrichment_entry!
+                    .asset_id,
+              );
+            next.push(
+              payload
+                .enrichment_entry!,
+            );
+            return next;
+          },
+        );
+      }
+
+      setSelectedAssetId(
+        payload.asset.asset_id,
       );
-      setRefreshToken((value) => value + 1);
+      setReviewView(
+        "needs_review",
+      );
+      setBlendKitConcept("");
+      setPromotionMessage(
+        payload.message ||
+          `${payload.asset.display_name} was imported from BlendKit and queued for analysis.`,
+      );
+      setRefreshToken(
+        (value) => value + 1,
+      );
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -706,7 +2218,7 @@ export function AssetLibraryLab() {
           : String(caught),
       );
     } finally {
-      setSemanticReviewAssetId(null);
+      setBlendKitImporting(false);
     }
   }
 
@@ -725,7 +2237,7 @@ export function AssetLibraryLab() {
         : "";
 
     const confirmed = window.confirm(
-      `Permanently remove "${asset.display_name}" from the MyWay Asset Library?${remoteWarning}\n\nThe registry entry, local files, source record, and license record will be removed. This cannot be undone.`,
+      `Permanently remove "${asset.display_name}" from the MyWay Asset Library?${remoteWarning}\n\nThe registry entry, local model files, thumbnail, source and license records, appearance renders, and local embedding will be removed. This cannot be undone.`,
     );
 
     if (!confirmed) return;
@@ -865,6 +2377,87 @@ export function AssetLibraryLab() {
     [assets],
   );
 
+
+  const acquisitionJobByAssetId =
+    useMemo(() => {
+      const map =
+        new Map<string, AcquisitionJob>();
+
+      for (const job of acquisitionJobs) {
+        if (
+          job.current_candidate_asset_id
+        ) {
+          map.set(
+            job.current_candidate_asset_id,
+            job,
+          );
+        }
+
+        for (const candidate of
+          job.candidate_history) {
+          if (!map.has(candidate.asset_id)) {
+            map.set(
+              candidate.asset_id,
+              job,
+            );
+          }
+        }
+      }
+
+      return map;
+    }, [acquisitionJobs]);
+
+  const acquisitionCounts = useMemo(
+    () => ({
+      all: assets.length,
+      needs_review: assets.filter(
+        (asset) =>
+          asset.scene_review_status ===
+          "pending",
+      ).length,
+      approved: assets.filter(
+        (asset) =>
+          asset.scene_review_status ===
+          "approved",
+      ).length,
+      rejected: assets.filter(
+        (asset) =>
+          asset.scene_review_status ===
+          "rejected",
+      ).length,
+      acquiring: acquisitionJobs.filter(
+        (job) =>
+          job.status === "missing" ||
+          job.status ===
+            "searching_blenderkit" ||
+          job.status ===
+            "generating_trellis" ||
+          job.status === "unavailable",
+      ).length,
+    }),
+    [
+      acquisitionJobByAssetId,
+      acquisitionJobs,
+      assets,
+    ],
+  );
+
+  const activeAcquisitionJobs =
+    useMemo(
+      () =>
+        acquisitionJobs.filter(
+          (job) =>
+            job.status === "missing" ||
+            job.status ===
+              "searching_blenderkit" ||
+            job.status ===
+              "generating_trellis" ||
+            job.status ===
+              "unavailable",
+        ),
+      [acquisitionJobs],
+    );
+
   const visibleAssets = useMemo(() => {
     const queryTokens = search
       .trim()
@@ -873,6 +2466,48 @@ export function AssetLibraryLab() {
       .filter(Boolean);
 
     const filtered = assets.filter((asset) => {
+      const linkedJob =
+        acquisitionJobByAssetId.get(
+          asset.asset_id,
+        );
+
+      if (
+        reviewView === "needs_review" &&
+        asset.scene_review_status !==
+          "pending"
+      ) {
+        return false;
+      }
+
+      if (
+        reviewView === "approved" &&
+        asset.scene_review_status !==
+          "approved"
+      ) {
+        return false;
+      }
+
+      if (
+        reviewView === "rejected" &&
+        asset.scene_review_status !==
+          "rejected"
+      ) {
+        return false;
+      }
+
+      if (
+        reviewView === "acquiring" &&
+        (!linkedJob ||
+          ![
+            "missing",
+            "searching_blenderkit",
+            "generating_trellis",
+            "unavailable",
+          ].includes(linkedJob.status))
+      ) {
+        return false;
+      }
+
       if (sourceFilter !== "all" && asset.source_type !== sourceFilter) {
         return false;
       }
@@ -911,7 +2546,22 @@ export function AssetLibraryLab() {
         ...asset.aliases,
         ...(asset.verified_aliases ?? []),
         ...asset.semantic_tags,
-        ...asset.style_tags,
+        ...(asset.appearance_profile?.style_descriptors ?? []),
+        ...(asset.appearance_profile?.design_era ?? []),
+        ...(asset.appearance_profile?.realism_level ?? []),
+        ...(asset.appearance_profile?.shape_language ?? []),
+        ...(asset.appearance_profile?.material_treatment ?? []),
+        ...(asset.appearance_profile?.color_palette ?? []),
+        ...(asset.appearance_profile?.surface_condition ?? []),
+        ...(asset.appearance_profile?.ornamentation ?? []),
+        ...(asset.appearance_profile?.visual_mood ?? []),
+        ...(asset.appearance_profile?.detail_level ?? []),
+        ...(asset.appearance_profile?.scene_compatibility ?? []),
+        ...(asset.appearance_profile?.descriptors ?? []),
+        ...(asset.appearance_profile?.materials ?? []),
+        ...(asset.appearance_profile?.colors ?? []),
+        ...(asset.appearance_profile?.geometry ?? []),
+        asset.appearance_profile?.summary ?? "",
         ...(asset.contains ?? []),
         ...(asset.affordances ?? []),
         ...(asset.preferred_for_concepts ?? []),
@@ -947,17 +2597,96 @@ export function AssetLibraryLab() {
     return filtered;
   }, [
     assets,
+    acquisitionJobByAssetId,
     domainFilter,
     licenseFilter,
     search,
+    reviewView,
     sceneReviewFilter,
     sortKey,
     sourceFilter,
     statusFilter,
   ]);
 
+  useEffect(() => {
+    if (
+      selectedAssetId &&
+      visibleAssets.some(
+        (asset) =>
+          asset.asset_id === selectedAssetId,
+      )
+    ) {
+      return;
+    }
+
+    setSelectedAssetId(
+      visibleAssets[0]?.asset_id ?? null,
+    );
+  }, [selectedAssetId, visibleAssets]);
+
   const selectedAsset =
     assets.find((asset) => asset.asset_id === selectedAssetId) ?? null;
+
+  useEffect(() => {
+    if (!selectedAsset) {
+      setIdentityDraft(null);
+      return;
+    }
+
+    setIdentityDraft((current) => {
+      // Background queue polling refreshes the asset record. Preserve any
+      // unsaved editor text while the same asset remains selected.
+      if (
+        current?.assetId ===
+        selectedAsset.asset_id
+      ) {
+        return current;
+      }
+
+      return {
+        assetId:
+          selectedAsset.asset_id,
+        canonicalLabel:
+          selectedAsset
+            .verified_canonical_label ||
+          selectedAsset
+            .requested_concept ||
+          selectedAsset.canonical_label,
+        aliases: Array.from(
+          new Set([
+            ...(selectedAsset
+              .verified_aliases ?? []),
+            ...selectedAsset.aliases,
+          ]),
+        ).join(", "),
+        composition:
+          selectedAsset
+            .object_composition ??
+          "unknown",
+        contains: (
+          selectedAsset.contains ?? []
+        ).join(", "),
+        affordances: (
+          selectedAsset.affordances ?? []
+        ).join(", "),
+        preferredConcepts: (
+          selectedAsset
+            .preferred_for_concepts ?? []
+        ).join(", "),
+        notes:
+          selectedAsset
+            .semantic_review_notes ??
+          "",
+      };
+    });
+  }, [selectedAsset]);
+
+  const selectedAcquisitionJob =
+    selectedAsset
+      ? acquisitionJobByAssetId.get(
+          selectedAsset.asset_id,
+        ) ?? null
+      : null;
 
   const existingFiles = assets.filter(
     (asset) => asset.file_stats.exists,
@@ -1122,6 +2851,117 @@ export function AssetLibraryLab() {
           display: block;
           margin: 0.35rem 0 0.2rem;
           font-size: 1.7rem;
+        }
+
+
+
+        .asset-library-direct-import {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 0.8rem;
+          align-items: end;
+          margin-bottom: 1rem;
+          border: 1px solid rgba(56, 189, 248, 0.24);
+          border-radius: 1.25rem;
+          padding: 1rem;
+          background:
+            linear-gradient(135deg, rgba(14, 116, 144, 0.16), rgba(15, 23, 42, 0.72));
+        }
+
+        .asset-library-direct-import label {
+          display: grid;
+          gap: 0.45rem;
+          color: #e0f2fe;
+          font-weight: 700;
+        }
+
+        .asset-library-direct-import input {
+          width: 100%;
+          min-height: 46px;
+          border: 1px solid rgba(125, 211, 252, 0.3);
+          border-radius: 0.9rem;
+          padding: 0 0.85rem;
+          color: #f8fafc;
+          background: rgba(2, 6, 23, 0.72);
+          font: inherit;
+          outline: none;
+        }
+
+        .asset-library-direct-import small {
+          color: rgba(203, 213, 225, 0.7);
+          font-weight: 400;
+          line-height: 1.5;
+        }
+
+        .asset-library-review-tabs {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.65rem;
+          margin-bottom: 1rem;
+        }
+
+        .asset-library-review-tab {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.65rem;
+          min-height: 42px;
+          border: 1px solid rgba(148, 163, 184, 0.22);
+          border-radius: 999px;
+          padding: 0.65rem 0.9rem;
+          color: rgba(226, 232, 240, 0.8);
+          background: rgba(15, 23, 42, 0.64);
+          cursor: pointer;
+        }
+
+        .asset-library-review-tab[data-active="true"] {
+          border-color: rgba(56, 189, 248, 0.7);
+          color: #ecfeff;
+          background: rgba(8, 145, 178, 0.24);
+          box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .asset-library-review-tab strong {
+          display: inline-flex;
+          min-width: 1.75rem;
+          justify-content: center;
+          border-radius: 999px;
+          padding: 0.15rem 0.45rem;
+          color: #e0f2fe;
+          background: rgba(255, 255, 255, 0.09);
+        }
+
+        .asset-library-acquisition-queue {
+          margin-bottom: 1rem;
+          border: 1px solid rgba(167, 139, 250, 0.2);
+          border-radius: 1.25rem;
+          padding: 0.9rem;
+          background: rgba(76, 29, 149, 0.1);
+        }
+
+        .asset-library-acquisition-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+          gap: 0.75rem;
+        }
+
+        .asset-library-acquisition-card {
+          border: 1px solid rgba(196, 181, 253, 0.18);
+          border-radius: 1rem;
+          padding: 1rem;
+          background: rgba(15, 23, 42, 0.72);
+        }
+
+        .asset-library-acquisition-card h2 {
+          margin: 0;
+          font-size: 1.05rem;
+        }
+
+        .asset-library-acquisition-card p,
+        .asset-library-acquisition-card small {
+          display: block;
+          margin: 0.45rem 0 0;
+          color: rgba(226, 232, 240, 0.68);
+          line-height: 1.55;
         }
 
         .asset-library-controls {
@@ -1425,6 +3265,159 @@ export function AssetLibraryLab() {
           background: rgba(127, 29, 29, 0.18);
         }
 
+        .asset-library-card-source,
+        .asset-library-details-source {
+          margin: 0.35rem 0 0;
+          color: rgba(203, 213, 225, 0.78);
+          font-size: 0.74rem;
+          line-height: 1.35;
+        }
+
+        .asset-library-details-source {
+          margin-bottom: 0.15rem;
+        }
+
+        .asset-library-editor,
+        .asset-library-appearance {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.75rem;
+          border: 1px solid rgba(56, 189, 248, 0.2);
+          border-radius: 1rem;
+          margin-bottom: 1rem;
+          padding: 0.9rem;
+          background: rgba(2, 6, 23, 0.35);
+        }
+
+        .asset-library-appearance {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .asset-library-editor label {
+          display: grid;
+          gap: 0.35rem;
+          color: rgba(226, 232, 240, 0.82);
+          font-size: 0.76rem;
+          font-weight: 800;
+        }
+
+        .asset-library-editor label small,
+        .asset-library-section-heading small,
+        .asset-library-appearance > small {
+          color: rgba(148, 163, 184, 0.7);
+          font-weight: 500;
+        }
+
+        .asset-library-editor input,
+        .asset-library-editor select,
+        .asset-library-editor textarea {
+          width: 100%;
+          border: 1px solid rgba(148, 163, 184, 0.25);
+          border-radius: 0.7rem;
+          padding: 0.65rem 0.7rem;
+          color: #f8fafc;
+          background: rgba(15, 23, 42, 0.82);
+          font: inherit;
+          font-weight: 500;
+        }
+
+        .asset-library-editor textarea {
+          resize: vertical;
+        }
+
+        .asset-library-field-help {
+          display: block;
+          margin-top: 0.35rem;
+          color: rgba(203, 213, 225, 0.68);
+          font-size: 0.72rem;
+          font-weight: 500;
+          line-height: 1.45;
+          text-transform: none;
+          letter-spacing: normal;
+        }
+
+        .asset-library-editor-advanced {
+          border: 1px solid rgba(148, 163, 184, 0.22);
+          border-radius: 0.9rem;
+          padding: 0.8rem;
+          background: rgba(15, 23, 42, 0.44);
+        }
+
+        .asset-library-editor-advanced summary {
+          cursor: pointer;
+          color: #cbd5e1;
+          font-size: 0.82rem;
+          font-weight: 850;
+        }
+
+        .asset-library-editor-advanced[open] {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.8rem;
+        }
+
+        .asset-library-editor-advanced[open] summary {
+          grid-column: 1 / -1;
+        }
+
+        @media (max-width: 760px) {
+          .asset-library-editor-advanced[open] {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .asset-library-editor-wide,
+        .asset-library-section-heading {
+          grid-column: 1 / -1;
+        }
+
+        .asset-library-section-heading {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+        }
+
+        .asset-library-section-heading strong,
+        .asset-library-section-heading small {
+          display: block;
+        }
+
+        .asset-library-analysis-views {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.55rem;
+        }
+
+        .asset-library-analysis-views figure {
+          overflow: hidden;
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          border-radius: 0.8rem;
+          margin: 0;
+          background: #e2e8f0;
+        }
+
+        .asset-library-analysis-views img {
+          display: block;
+          width: 100%;
+          aspect-ratio: 1;
+          object-fit: cover;
+        }
+
+        .asset-library-analysis-views figcaption {
+          padding: 0.4rem 0.5rem;
+          color: rgba(226, 232, 240, 0.78);
+          background: rgba(2, 6, 23, 0.92);
+          font-size: 0.65rem;
+          text-transform: capitalize;
+        }
+
+        .asset-library-error-inline {
+          margin: 0;
+          color: #fecaca;
+          font-size: 0.75rem;
+        }
+
         @media (max-width: 1180px) {
           .asset-library-controls {
             grid-template-columns: repeat(3, minmax(150px, 1fr));
@@ -1452,6 +3445,10 @@ export function AssetLibraryLab() {
           .asset-library-header-actions {
             justify-content: flex-start;
             margin-top: 1rem;
+          }
+
+          .asset-library-direct-import {
+            grid-template-columns: 1fr;
           }
 
           .asset-library-stats,
@@ -1491,6 +3488,28 @@ export function AssetLibraryLab() {
             </a>
             <button
               className="asset-library-button"
+              data-secondary="true"
+              disabled={geometryAssetId === "all"}
+              onClick={() => void runGeometryAction("all")}
+              type="button"
+            >
+              {geometryAssetId === "all"
+                ? "Queueing geometry audit…"
+                : "Audit & backfill geometry"}
+            </button>
+            <button
+              className="asset-library-button"
+              data-secondary="true"
+              disabled={enrichmentAssetId === "all"}
+              onClick={() => void runBulkEnrichment()}
+              type="button"
+            >
+              {enrichmentAssetId === "all"
+                ? "Queueing all analyses…"
+                : "Analyze all assets"}
+            </button>
+            <button
+              className="asset-library-button"
               disabled={isLoading}
               onClick={() => setRefreshToken((value) => value + 1)}
               type="button"
@@ -1499,6 +3518,47 @@ export function AssetLibraryLab() {
             </button>
           </div>
         </header>
+
+        <form
+          className="asset-library-direct-import"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void importBlendKitAsset();
+          }}
+        >
+          <label>
+            Get a CC0 asset directly from BlendKit
+            <input
+              aria-label="BlendKit object name"
+              disabled={blendKitImporting}
+              onChange={(event) =>
+                setBlendKitConcept(
+                  event.target.value,
+                )
+              }
+              placeholder="Type an object, such as microscope or violin"
+              value={blendKitConcept}
+            />
+            <small>
+              This bypasses scene generation, imports one unseen CC0 candidate,
+              normalizes its source file, and queues style analysis. Identity and
+              scene approval still require review.
+            </small>
+          </label>
+          <button
+            className="asset-library-button"
+            data-primary="true"
+            disabled={
+              blendKitImporting ||
+              !blendKitConcept.trim()
+            }
+            type="submit"
+          >
+            {blendKitImporting
+              ? "Importing from BlendKit…"
+              : "Get BlendKit asset"}
+          </button>
+        </form>
 
         <section className="asset-library-stats">
           <StatCard
@@ -1527,6 +3587,159 @@ export function AssetLibraryLab() {
             detail="Eligible after identity verification"
           />
         </section>
+
+
+        <section
+          className="asset-library-review-tabs"
+          aria-label="Asset review queue"
+        >
+          {(
+            [
+              ["needs_review", "Needs review"],
+              ["acquiring", "Acquiring"],
+              ["approved", "Approved"],
+              ["rejected", "Rejected"],
+              ["all", "All assets"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              className="asset-library-review-tab"
+              data-active={
+                reviewView === value
+              }
+              onClick={() =>
+                setReviewView(value)
+              }
+              type="button"
+            >
+              <span>{label}</span>
+              <strong>
+                {acquisitionCounts[value]}
+              </strong>
+            </button>
+          ))}
+        </section>
+
+        {reviewView === "acquiring" &&
+        activeAcquisitionJobs.length ? (
+          <section className="asset-library-acquisition-queue">
+            <div className="asset-library-results-header">
+              <span>
+                Automatic missing-asset acquisition
+              </span>
+              <span>
+                One job is shared by every scene that needs the same concept
+              </span>
+            </div>
+
+            <div className="asset-library-acquisition-grid">
+              {activeAcquisitionJobs.map(
+                (job) => {
+                  const busy =
+                    acquisitionActionId ===
+                    job.job_id;
+
+                  return (
+                    <article
+                      className="asset-library-acquisition-card"
+                      key={job.job_id}
+                    >
+                      <div>
+                        <p className="asset-library-eyebrow">
+                          {job.status.replaceAll(
+                            "_",
+                            " ",
+                          )}
+                        </p>
+                        <h2>{job.concept}</h2>
+                        <p>
+                          Needed by{" "}
+                          {job.linked_scene_count}{" "}
+                          scene
+                          {job.linked_scene_count === 1
+                            ? ""
+                            : "s"}
+                          . Attempt{" "}
+                          {job.attempt_count}.
+                        </p>
+                        {job.last_error ? (
+                          <small>
+                            {job.last_error}
+                          </small>
+                        ) : null}
+                      </div>
+
+                      <div className="asset-library-maintenance-actions">
+                        <button
+                          className="asset-library-button"
+                          data-secondary="true"
+                          disabled={
+                            busy ||
+                            job.status ===
+                              "searching_blenderkit"
+                          }
+                          onClick={() => {
+                            void retryAcquisitionJob(
+                              job,
+                              "blenderkit",
+                            );
+                          }}
+                          type="button"
+                        >
+                          {busy &&
+                          acquisitionAction ===
+                            "blenderkit"
+                            ? "Searching BlendKit…"
+                            : "Try BlendKit again"}
+                        </button>
+                        <button
+                          className="asset-library-button"
+                          data-secondary="true"
+                          disabled={
+                            busy ||
+                            job.status ===
+                              "generating_trellis"
+                          }
+                          onClick={() => {
+                            void retryAcquisitionJob(
+                              job,
+                              "trellis",
+                            );
+                          }}
+                          type="button"
+                        >
+                          {busy &&
+                          acquisitionAction ===
+                            "trellis"
+                            ? "Starting TRELLIS…"
+                            : "Generate with TRELLIS"}
+                        </button>
+                        <button
+                          className="asset-library-button"
+                          data-danger="true"
+                          disabled={busy}
+                          onClick={() => {
+                            void cancelAcquisitionJob(
+                              job,
+                            );
+                          }}
+                          type="button"
+                        >
+                          {busy &&
+                          acquisitionAction ===
+                            "remove"
+                            ? "Cancelling…"
+                            : "Cancel & remove need"}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                },
+              )}
+            </div>
+          </section>
+        ) : null}
 
         <section className="asset-library-controls" aria-label="Asset filters">
           <input
@@ -1652,14 +3865,14 @@ export function AssetLibraryLab() {
                           />
                         ) : (
                           <div className="asset-library-placeholder">
-                            {asset.display_name.slice(0, 2).toUpperCase()}
+                            {assetTitle(asset).slice(0, 2).toUpperCase()}
                           </div>
                         )}
                       </div>
 
                       <div className="asset-library-card-body">
                         <div className="asset-library-card-title-row">
-                          <h2>{asset.display_name}</h2>
+                          <h2>{assetTitle(asset)}</h2>
                           <span
                             className="asset-library-badge"
                             data-positive={asset.file_stats.exists}
@@ -1669,8 +3882,11 @@ export function AssetLibraryLab() {
                           </span>
                         </div>
 
+                        <p className="asset-library-card-source">
+                          Source: {asset.source_display_name || asset.display_name}
+                        </p>
                         <p className="asset-library-card-id">
-                          {asset.asset_id}
+                          ID: {asset.asset_id}
                         </p>
 
                         <div className="asset-library-badges">
@@ -1718,9 +3934,12 @@ export function AssetLibraryLab() {
             <div className="asset-library-details">
               {selectedAsset ? (
                 <>
-                  <h2>{selectedAsset.display_name}</h2>
+                  <h2>{assetTitle(selectedAsset)}</h2>
+                  <p className="asset-library-details-source">
+                    Source: {selectedAsset.source_display_name || selectedAsset.display_name}
+                  </p>
                   <p className="asset-library-details-id">
-                    {selectedAsset.asset_id}
+                    ID: {selectedAsset.asset_id}
                   </p>
 
                   <div className="asset-library-detail-actions">
@@ -1757,223 +3976,626 @@ export function AssetLibraryLab() {
                       </a>
                     ) : null}
 
-                    {selectedAsset.storage_provider === "r2" ? (
-                      <span
-                        className="asset-library-badge"
-                        data-positive="true"
-                      >
-                        Stored in Cloudflare R2
-                      </span>
-                    ) : (
-                      <button
-                        className="asset-library-button"
-                        data-primary="true"
-                        disabled={
-                          promotingAssetId === selectedAsset.asset_id ||
-                          !selectedAsset.file_stats.exists ||
-                          !selectedAsset.safe_to_promote_to_app ||
-                          selectedAsset.license_kind !== "cc0"
-                        }
-                        onClick={() => {
-                          void uploadSelectedAssetToCloudflare();
-                        }}
-                        type="button"
-                      >
-                        {promotingAssetId === selectedAsset.asset_id
-                          ? "Uploading to Cloudflare…"
-                          : "Upload reviewed asset to Cloudflare"}
-                      </button>
-                    )}
+                    <span
+                      className="asset-library-badge"
+                      data-positive={
+                        selectedAsset.storage_provider ===
+                        "r2"
+                      }
+                      data-warning={
+                        selectedAsset.storage_provider !==
+                        "r2"
+                      }
+                    >
+                      {selectedAsset.storage_provider ===
+                      "r2"
+                        ? "Stored in Cloudflare R2"
+                        : "Local candidate"}
+                    </span>
                   </div>
 
                   <div className="asset-library-promotion-note">
-                    Review the rotating model before uploading it. The button
-                    only activates for a local CC0 asset whose recorded review
-                    permits production use, commercial use, and public GLB
-                    redistribution. TRELLIS and Royalty Free assets remain
-                    blocked.
+                    Review the rotating model and verify its identity first.
+                    One approval action now publishes eligible CC0 files to
+                    Cloudflare R2 and approves them for automatic scene use.
+                    Assets that are not cleared for public promotion may still
+                    be approved for this local sandbox.
                   </div>
 
-                  <div className="asset-library-promotion-note">
-                    Scene review is separate from licensing. Only assets marked
-                    <strong> approved for scenes</strong> may be selected by
-                    automatic scene composition. New and existing assets begin
-                    as pending until you inspect the rotating model.
-                  </div>
+                  {selectedAcquisitionJob ? (
+                    <div className="asset-library-promotion-note">
+                      <strong>
+                        Needed by{" "}
+                        {
+                          selectedAcquisitionJob.linked_scene_count
+                        }{" "}
+                        scene
+                        {selectedAcquisitionJob.linked_scene_count ===
+                        1
+                          ? ""
+                          : "s"}
+                        .
+                      </strong>{" "}
+                      Job status:{" "}
+                      {selectedAcquisitionJob.status.replaceAll(
+                        "_",
+                        " ",
+                      )}
+                      . Approving this candidate makes every linked scene
+                      refresh-ready.
+                    </div>
+                  ) : null}
 
                   <div className="asset-library-promotion-note">
                     Automatic matching uses the verified identity, not the
-                    requested search term or technical asset ID. Resolve any
-                    source-name mismatch before approving the asset for scenes.
+                    requested search phrase or technical asset ID.
                   </div>
+
+                  {identityDraft ? (
+                    <section className="asset-library-editor">
+                      <div className="asset-library-section-heading">
+                        <div>
+                          <strong>MyWay identity</strong>
+                          <small>
+                            Source: {selectedAsset.source_display_name || selectedAsset.display_name}
+                          </small>
+                        </div>
+                        <span className="asset-library-badge">
+                          {selectedAsset.semantic_review_status}
+                        </span>
+                      </div>
+
+                      <label className="asset-library-editor-wide">
+                        Asset ID
+                        <input
+                          value={identityDraft.assetId}
+                          onChange={(event) =>
+                            setIdentityDraft((current) =>
+                              current
+                                ? { ...current, assetId: event.target.value }
+                                : current,
+                            )
+                          }
+                        />
+                        <small className="asset-library-field-help">
+                          Stable technical reference used by the registry and saved scenes.
+                          It is not used to decide what the object is. Spaces are converted
+                          to underscores when renamed.
+                        </small>
+                      </label>
+                      <div className="asset-library-maintenance-actions asset-library-editor-wide">
+                        <button
+                          className="asset-library-button"
+                          data-secondary="true"
+                          disabled={
+                            maintenanceAssetId === selectedAsset.asset_id ||
+                            enrichmentAssetId === selectedAsset.asset_id ||
+                            identityDraft.assetId.trim() === selectedAsset.asset_id
+                          }
+                          onClick={() => void renameSelectedAssetId()}
+                          type="button"
+                        >
+                          {maintenanceAction === "rename" &&
+                          maintenanceAssetId === selectedAsset.asset_id
+                            ? "Renaming asset ID…"
+                            : "Rename asset ID"}
+                        </button>
+                      </div>
+
+                      <label className="asset-library-editor-wide">
+                        Canonical label
+                        <input
+                          value={identityDraft.canonicalLabel}
+                          onChange={(event) =>
+                            setIdentityDraft((current) =>
+                              current
+                                ? { ...current, canonicalLabel: event.target.value }
+                                : current,
+                            )
+                          }
+                        />
+                        <small className="asset-library-field-help">
+                          The verified human-readable identity used by automatic matching,
+                          such as “cash register” or “book.” Updating it preserves the
+                          imported source name and technical asset ID.
+                        </small>
+                      </label>
+                      <div className="asset-library-maintenance-actions asset-library-editor-wide">
+                        <button
+                          className="asset-library-button"
+                          data-secondary="true"
+                          disabled={
+                            maintenanceAssetId === selectedAsset.asset_id ||
+                            semanticReviewAssetId === selectedAsset.asset_id ||
+                            !identityDraft.canonicalLabel.trim() ||
+                            identityDraft.canonicalLabel.trim().toLowerCase().replace(/\s+/g, " ") ===
+                              (selectedAsset.verified_canonical_label || selectedAsset.canonical_label)
+                                .trim()
+                                .toLowerCase()
+                                .replace(/\s+/g, " ")
+                          }
+                          onClick={() => void updateSelectedCanonicalLabel()}
+                          type="button"
+                        >
+                          {maintenanceAction === "canonical_label" &&
+                          maintenanceAssetId === selectedAsset.asset_id
+                            ? "Updating canonical label…"
+                            : "Update canonical label"}
+                        </button>
+                      </div>
+                      <label>
+                        Aliases <small>comma separated</small>
+                        <input
+                          value={identityDraft.aliases}
+                          onChange={(event) =>
+                            setIdentityDraft((current) =>
+                              current
+                                ? { ...current, aliases: event.target.value }
+                                : current,
+                            )
+                          }
+                        />
+                        <small className="asset-library-field-help">
+                          Other names that mean the same object, such as “till” or
+                          “checkout register.” Keep these when users may use different words.
+                        </small>
+                      </label>
+                      <div className="asset-library-maintenance-actions">
+                        <button
+                          className="asset-library-button"
+                          data-secondary="true"
+                          disabled={
+                            maintenanceAssetId === selectedAsset.asset_id ||
+                            semanticReviewAssetId === selectedAsset.asset_id
+                          }
+                          onClick={() => void updateSelectedAliases()}
+                          type="button"
+                        >
+                          {maintenanceAction === "aliases" &&
+                          maintenanceAssetId === selectedAsset.asset_id
+                            ? "Updating aliases…"
+                            : "Update aliases"}
+                        </button>
+                      </div>
+                      <label className="asset-library-editor-wide">
+                        Composition
+                        <select
+                          value={identityDraft.composition}
+                          onChange={(event) =>
+                            setIdentityDraft((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    composition: event.target.value as IdentityDraft["composition"],
+                                  }
+                                : current,
+                            )
+                          }
+                        >
+                          <option value="single_object">single object</option>
+                          <option value="object_set">object set</option>
+                          <option value="environment_piece">environment piece</option>
+                          <option value="unknown">unknown</option>
+                        </select>
+                        <small className="asset-library-field-help">
+                          Whether the GLB is one reusable object, a bundled set of objects,
+                          or part of an environment. This protects the resolver from using
+                          an entire room when it needs one prop.
+                        </small>
+                      </label>
+
+                      <details className="asset-library-editor-advanced asset-library-editor-wide">
+                        <summary>Advanced matching metadata</summary>
+                        <label>
+                          Contains <small>comma separated</small>
+                          <input
+                            value={identityDraft.contains}
+                            onChange={(event) =>
+                              setIdentityDraft((current) =>
+                                current
+                                  ? { ...current, contains: event.target.value }
+                                  : current,
+                              )
+                            }
+                          />
+                          <small className="asset-library-field-help">
+                            Distinct visible objects bundled inside this asset, such as
+                            “books” in a furnished bookshelf set. Leave blank for a normal
+                            single object.
+                          </small>
+                        </label>
+                        <label>
+                          Affordances <small>comma separated</small>
+                          <input
+                            value={identityDraft.affordances}
+                            onChange={(event) =>
+                              setIdentityDraft((current) =>
+                                current
+                                  ? { ...current, affordances: event.target.value }
+                                  : current,
+                              )
+                            }
+                          />
+                          <small className="asset-library-field-help">
+                            What the object can meaningfully do or support, such as
+                            “holds_objects,” “emits_light,” or “can_open.” These can become
+                            hard gates when a scene explicitly requires the capability.
+                          </small>
+                        </label>
+                        <label className="asset-library-editor-wide">
+                          Preferred concepts <small>comma separated</small>
+                          <input
+                            value={identityDraft.preferredConcepts}
+                            onChange={(event) =>
+                              setIdentityDraft((current) =>
+                                current
+                                  ? { ...current, preferredConcepts: event.target.value }
+                                  : current,
+                              )
+                            }
+                          />
+                          <small className="asset-library-field-help">
+                            Strong manual resolver overrides. Usually leave this blank.
+                            Add a concept only when this exact asset should consistently
+                            win over other valid assets for that concept.
+                          </small>
+                        </label>
+                      </details>
+                      <label className="asset-library-editor-wide">
+                        Review notes
+                        <textarea
+                          rows={3}
+                          value={identityDraft.notes}
+                          onChange={(event) =>
+                            setIdentityDraft((current) =>
+                              current
+                                ? { ...current, notes: event.target.value }
+                                : current,
+                            )
+                          }
+                        />
+                      </label>
+
+                      <div className="asset-library-maintenance-actions asset-library-editor-wide">
+                        <button
+                          className="asset-library-button"
+                          data-primary="true"
+                          disabled={semanticReviewAssetId === selectedAsset.asset_id}
+                          onClick={() => void saveSelectedSemanticIdentity("verified")}
+                          type="button"
+                        >
+                          {semanticReviewAssetId === selectedAsset.asset_id
+                            ? "Saving identity…"
+                            : "Save identity & verify"}
+                        </button>
+                        <button
+                          className="asset-library-button"
+                          data-secondary="true"
+                          disabled={
+                            semanticReviewAssetId === selectedAsset.asset_id ||
+                            !selectedAsset.source_display_name
+                          }
+                          onClick={() =>
+                            void saveSelectedSemanticIdentity("verified", {
+                              useSourceName: true,
+                            })
+                          }
+                          type="button"
+                        >
+                          Use source name
+                        </button>
+                        <button
+                          className="asset-library-button"
+                          data-danger="true"
+                          disabled={semanticReviewAssetId === selectedAsset.asset_id}
+                          onClick={() => void saveSelectedSemanticIdentity("mismatch")}
+                          type="button"
+                        >
+                          Mark mismatch
+                        </button>
+                        <button
+                          className="asset-library-button"
+                          data-secondary="true"
+                          disabled={semanticReviewAssetId === selectedAsset.asset_id}
+                          onClick={() => void saveSelectedSemanticIdentity("pending")}
+                          type="button"
+                        >
+                          Return to pending
+                        </button>
+                      </div>
+                      <small className="asset-library-editor-wide">
+                        Save identity & verify stores the canonical label,
+                        aliases, composition, contained objects, affordances,
+                        preferred concepts, and review notes, then marks the
+                        semantic identity as verified. It does not approve the
+                        asset for automatic scenes; use the separate scene
+                        approval button below after reviewing the model.
+                      </small>
+                    </section>
+                  ) : null}
+
+                  <section className="asset-library-appearance">
+                    <div className="asset-library-section-heading">
+                      <div>
+                        <strong>Appearance &amp; style analysis</strong>
+                        <small>Nemotron Nano 12B v2 VL · four standardized views</small>
+                      </div>
+                      <span
+                        className="asset-library-badge"
+                        data-positive={selectedAsset.appearance_profile?.status === "ready"}
+                        data-warning={
+                          selectedAsset.appearance_profile?.status === "pending" ||
+                          selectedAsset.appearance_profile?.status === "rendering" ||
+                          selectedAsset.appearance_profile?.status === "analyzing"
+                        }
+                      >
+                        {selectedAsset.appearance_profile?.status ?? "pending"}
+                      </span>
+                    </div>
+
+                    {selectedAsset.appearance_profile?.analysis_views.length ? (
+                      <div className="asset-library-analysis-views">
+                        {selectedAsset.appearance_profile.analysis_views.map((view) => (
+                          <figure key={view.name}>
+                            <img alt={`${assetTitle(selectedAsset)} ${view.name}`} src={view.public_path} />
+                            <figcaption>{view.name.replaceAll("_", " ")}</figcaption>
+                          </figure>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    <p>
+                      {selectedAsset.appearance_profile?.summary ||
+                        "No appearance analysis has been completed yet."}
+                    </p>
+                    {selectedAsset.appearance_profile?.error ? (
+                      <p className="asset-library-error-inline">
+                        {selectedAsset.appearance_profile.error}
+                      </p>
+                    ) : null}
+                    {selectedAsset.appearance_profile?.status === "ready" ? (
+                      <div className="asset-library-metadata">
+                        <MetadataRow label="Style">
+                          {(selectedAsset.appearance_profile.style_descriptors ?? []).length
+                            ? selectedAsset.appearance_profile.style_descriptors.join(", ")
+                            : "Not confidently identified"}
+                        </MetadataRow>
+                        <MetadataRow label="Era / aesthetic">
+                          {(selectedAsset.appearance_profile.design_era ?? []).length
+                            ? selectedAsset.appearance_profile.design_era.join(", ")
+                            : "Not confidently identified"}
+                        </MetadataRow>
+                        <MetadataRow label="Realism">
+                          {(selectedAsset.appearance_profile.realism_level ?? []).length
+                            ? selectedAsset.appearance_profile.realism_level.join(", ")
+                            : "Not confidently identified"}
+                        </MetadataRow>
+                        <MetadataRow label="Shape language">
+                          {(selectedAsset.appearance_profile.shape_language ?? []).length
+                            ? selectedAsset.appearance_profile.shape_language.join(", ")
+                            : "Not confidently identified"}
+                        </MetadataRow>
+                        <MetadataRow label="Material treatment">
+                          {(selectedAsset.appearance_profile.material_treatment ?? []).length
+                            ? selectedAsset.appearance_profile.material_treatment.join(", ")
+                            : "Not confidently identified"}
+                        </MetadataRow>
+                        <MetadataRow label="Palette">
+                          {(selectedAsset.appearance_profile.color_palette ?? []).length
+                            ? selectedAsset.appearance_profile.color_palette.join(", ")
+                            : "Not confidently identified"}
+                        </MetadataRow>
+                        <MetadataRow label="Surface condition">
+                          {(selectedAsset.appearance_profile.surface_condition ?? []).length
+                            ? selectedAsset.appearance_profile.surface_condition.join(", ")
+                            : "Not confidently identified"}
+                        </MetadataRow>
+                        <MetadataRow label="Ornamentation">
+                          {(selectedAsset.appearance_profile.ornamentation ?? []).length
+                            ? selectedAsset.appearance_profile.ornamentation.join(", ")
+                            : "Not confidently identified"}
+                        </MetadataRow>
+                        <MetadataRow label="Visual mood">
+                          {(selectedAsset.appearance_profile.visual_mood ?? []).length
+                            ? selectedAsset.appearance_profile.visual_mood.join(", ")
+                            : "Not confidently identified"}
+                        </MetadataRow>
+                        <MetadataRow label="Detail level">
+                          {(selectedAsset.appearance_profile.detail_level ?? []).length
+                            ? selectedAsset.appearance_profile.detail_level.join(", ")
+                            : "Not confidently identified"}
+                        </MetadataRow>
+                        <MetadataRow label="Visual scene fit">
+                          {(selectedAsset.appearance_profile.scene_compatibility ?? []).length
+                            ? selectedAsset.appearance_profile.scene_compatibility.join(", ")
+                            : "Not confidently identified"}
+                        </MetadataRow>
+                      </div>
+                    ) : null}
+                    <details>
+                      <summary>Supporting visible details</summary>
+                      <div className="asset-library-badges">
+                        {[
+                          ...(selectedAsset.appearance_profile?.descriptors ?? []),
+                          ...(selectedAsset.appearance_profile?.materials ?? []),
+                          ...(selectedAsset.appearance_profile?.colors ?? []),
+                          ...(selectedAsset.appearance_profile?.geometry ?? []),
+                        ].map((value, index) => (
+                          <span className="asset-library-badge" key={`${value}-${index}`}>{value}</span>
+                        ))}
+                      </div>
+                    </details>
+                    <div className="asset-library-maintenance-actions">
+                      <button
+                        className="asset-library-button"
+                        data-secondary="true"
+                        disabled={geometryAssetId === selectedAsset.asset_id}
+                        onClick={() => void runGeometryAction("selected")}
+                        type="button"
+                      >
+                        {geometryAssetId === selectedAsset.asset_id
+                          ? "Profiling geometry…"
+                          : "Profile selected geometry"}
+                      </button>
+                      <button
+                        className="asset-library-button"
+                        data-primary="true"
+                        disabled={enrichmentAssetId === selectedAsset.asset_id}
+                        onClick={() => void runEnrichmentAction("enrich_asset")}
+                        type="button"
+                      >
+                        {enrichmentAssetId === selectedAsset.asset_id
+                          ? "Queueing analysis…"
+                          : selectedAsset.appearance_profile?.status === "ready"
+                            ? "Re-analyze asset"
+                            : "Analyze asset"}
+                      </button>
+                      <button
+                        className="asset-library-button"
+                        data-secondary="true"
+                        disabled={enrichmentAssetId === "backfill"}
+                        onClick={() => void runEnrichmentAction("backfill_next")}
+                        type="button"
+                      >
+                        {enrichmentAssetId === "backfill"
+                          ? "Queueing next…"
+                          : "Analyze next pending asset"}
+                      </button>
+                    </div>
+                    <small>
+                      Embedding: {selectedAsset.appearance_embedding?.status ?? "pending"}
+                      {selectedAsset.appearance_embedding?.dimensions
+                        ? ` · ${selectedAsset.appearance_embedding.dimensions} dimensions`
+                        : ""}
+                      {selectedAsset.appearance_embedding?.model
+                        ? ` · ${selectedAsset.appearance_embedding.model}`
+                        : ""}
+                    </small>
+                  </section>
 
                   <div className="asset-library-maintenance-actions">
                     <button
                       className="asset-library-button"
                       data-primary="true"
                       disabled={
-                        semanticReviewAssetId ===
-                        selectedAsset.asset_id
-                      }
-                      onClick={() => {
-                        void updateSelectedSemanticIdentity(
-                          "edit",
-                        );
-                      }}
-                      type="button"
-                    >
-                      {semanticReviewAssetId ===
-                      selectedAsset.asset_id
-                        ? "Updating identity…"
-                        : "Verify or edit identity"}
-                    </button>
-
-                    <button
-                      className="asset-library-button"
-                      data-secondary="true"
-                      disabled={
-                        semanticReviewAssetId ===
+                        acquisitionActionId ===
                           selectedAsset.asset_id ||
-                        !selectedAsset.source_display_name
-                      }
-                      onClick={() => {
-                        void updateSelectedSemanticIdentity(
-                          "source",
-                        );
-                      }}
-                      type="button"
-                    >
-                      Use source name as identity
-                    </button>
-
-                    <button
-                      className="asset-library-button"
-                      data-danger="true"
-                      disabled={
-                        semanticReviewAssetId ===
-                          selectedAsset.asset_id ||
-                        selectedAsset.semantic_review_status ===
-                          "mismatch"
-                      }
-                      onClick={() => {
-                        void updateSelectedSemanticIdentity(
-                          "mismatch",
-                        );
-                      }}
-                      type="button"
-                    >
-                      Mark identity mismatch
-                    </button>
-
-                    <button
-                      className="asset-library-button"
-                      data-secondary="true"
-                      disabled={
-                        semanticReviewAssetId ===
-                          selectedAsset.asset_id ||
-                        selectedAsset.semantic_review_status ===
-                          "pending"
-                      }
-                      onClick={() => {
-                        void updateSelectedSemanticIdentity(
-                          "pending",
-                        );
-                      }}
-                      type="button"
-                    >
-                      Return identity to pending
-                    </button>
-                  </div>
-
-                  <div className="asset-library-maintenance-actions">
-                    <button
-                      className="asset-library-button"
-                      data-primary="true"
-                      disabled={
-                        sceneReviewAssetId === selectedAsset.asset_id ||
-                        selectedAsset.scene_review_status === "approved" ||
+                        selectedAsset.scene_review_status ===
+                          "approved" ||
                         !selectedAsset.file_stats.exists ||
                         !selectedAsset.safe_to_use_in_sandbox ||
-                        selectedAsset.status === "rejected" ||
-                        selectedAsset.semantic_review_status !== "verified"
+                        selectedAsset.status ===
+                          "rejected" ||
+                        selectedAsset.semantic_review_status !==
+                          "verified"
                       }
                       onClick={() => {
-                        void updateSelectedSceneReview("approved");
+                        void approveSelectedAsset();
                       }}
                       type="button"
                     >
-                      {sceneReviewAssetId === selectedAsset.asset_id
-                        ? "Updating scene review…"
-                        : "Approve for scene use"}
+                      {acquisitionActionId ===
+                        selectedAsset.asset_id &&
+                      acquisitionAction === "approve"
+                        ? "Approving and publishing…"
+                        : selectedAsset.storage_provider ===
+                            "r2"
+                          ? "Approve for scene use"
+                          : selectedAsset.safe_to_promote_to_app
+                            ? "Approve & publish"
+                            : "Approve for local scene"}
                     </button>
 
-                    <button
-                      className="asset-library-button"
-                      data-danger="true"
-                      disabled={
-                        sceneReviewAssetId === selectedAsset.asset_id ||
-                        selectedAsset.scene_review_status === "rejected"
-                      }
-                      onClick={() => {
-                        void updateSelectedSceneReview("rejected");
-                      }}
-                      type="button"
-                    >
-                      Reject for scene use
-                    </button>
+                    {selectedAcquisitionJob &&
+                    selectedAcquisitionJob.status !==
+                      "approved" ? (
+                      <>
+                        <button
+                          className="asset-library-button"
+                          data-secondary="true"
+                          disabled={
+                            acquisitionActionId ===
+                            selectedAsset.asset_id
+                          }
+                          onClick={() => {
+                            void retrySelectedCandidate(
+                              "blenderkit",
+                            );
+                          }}
+                          type="button"
+                        >
+                          {acquisitionActionId ===
+                            selectedAsset.asset_id &&
+                          acquisitionAction ===
+                            "blenderkit"
+                            ? "Starting another BlendKit search…"
+                            : "Try another BlenderKit asset"}
+                        </button>
 
-                    <button
-                      className="asset-library-button"
-                      data-secondary="true"
-                      disabled={
-                        sceneReviewAssetId === selectedAsset.asset_id ||
-                        selectedAsset.scene_review_status === "pending"
-                      }
-                      onClick={() => {
-                        void updateSelectedSceneReview("pending");
-                      }}
-                      type="button"
-                    >
-                      Return to pending
-                    </button>
+                        <button
+                          className="asset-library-button"
+                          data-secondary="true"
+                          disabled={
+                            acquisitionActionId ===
+                            selectedAsset.asset_id
+                          }
+                          onClick={() => {
+                            void retrySelectedCandidate(
+                              "trellis",
+                            );
+                          }}
+                          type="button"
+                        >
+                          {acquisitionActionId ===
+                            selectedAsset.asset_id &&
+                          acquisitionAction ===
+                            "trellis"
+                            ? "Starting TRELLIS…"
+                            : "Generate with TRELLIS instead"}
+                        </button>
+
+                        <button
+                          className="asset-library-button"
+                          data-danger="true"
+                          disabled={
+                            acquisitionActionId ===
+                            selectedAsset.asset_id
+                          }
+                          onClick={() => {
+                            void removeSelectedNeedsReviewCandidate();
+                          }}
+                          type="button"
+                        >
+                          {acquisitionActionId ===
+                            selectedAsset.asset_id &&
+                          acquisitionAction ===
+                            "remove"
+                            ? "Rejecting and removing…"
+                            : "Reject & remove candidate"}
+                        </button>
+                      </>
+                    ) : null}
                   </div>
 
-                  <div className="asset-library-maintenance-actions">
-                    <button
-                      className="asset-library-button"
-                      data-danger="true"
-                      disabled={
+                  {!selectedAcquisitionJob ? (
+                    <div className="asset-library-maintenance-actions">
+                      <button
+                        className="asset-library-button"
+                        data-danger="true"
+                        disabled={
+                          maintenanceAssetId === selectedAsset.asset_id
+                        }
+                        onClick={() => {
+                          void removeSelectedAsset();
+                        }}
+                        type="button"
+                      >
+                        {maintenanceAction === "remove" &&
                         maintenanceAssetId === selectedAsset.asset_id
-                      }
-                      onClick={() => {
-                        void removeSelectedAsset();
-                      }}
-                      type="button"
-                    >
-                      {maintenanceAction === "remove" &&
-                      maintenanceAssetId === selectedAsset.asset_id
-                        ? "Removing asset…"
-                        : "Remove from library"}
-                    </button>
+                          ? "Removing asset…"
+                          : "Remove from library"}
+                      </button>
 
-                    <button
-                      className="asset-library-button"
-                      data-secondary="true"
-                      disabled={
-                        maintenanceAssetId === selectedAsset.asset_id
-                      }
-                      onClick={() => {
-                        void createReplacement("blenderkit");
-                      }}
-                      type="button"
-                    >
-                      {maintenanceAction === "blenderkit" &&
-                      maintenanceAssetId === selectedAsset.asset_id
-                        ? "Searching BlendKit…"
-                        : "Find different CC0 BlenderKit asset"}
-                    </button>
-
-                    {selectedAsset.source_type === "trellis" ? (
                       <button
                         className="asset-library-button"
                         data-secondary="true"
@@ -1981,17 +4603,36 @@ export function AssetLibraryLab() {
                           maintenanceAssetId === selectedAsset.asset_id
                         }
                         onClick={() => {
-                          void createReplacement("trellis");
+                          void createReplacement("blenderkit");
                         }}
                         type="button"
                       >
-                        {maintenanceAction === "trellis" &&
+                        {maintenanceAction === "blenderkit" &&
                         maintenanceAssetId === selectedAsset.asset_id
-                          ? "Generating improved TRELLIS asset…"
-                          : "Generate better TRELLIS version"}
+                          ? "Searching BlendKit…"
+                          : "Find different CC0 BlenderKit asset"}
                       </button>
-                    ) : null}
-                  </div>
+
+                      {selectedAsset.source_type === "trellis" ? (
+                        <button
+                          className="asset-library-button"
+                          data-secondary="true"
+                          disabled={
+                            maintenanceAssetId === selectedAsset.asset_id
+                          }
+                          onClick={() => {
+                            void createReplacement("trellis");
+                          }}
+                          type="button"
+                        >
+                          {maintenanceAction === "trellis" &&
+                          maintenanceAssetId === selectedAsset.asset_id
+                            ? "Generating improved TRELLIS asset…"
+                            : "Generate better TRELLIS version"}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
 
                   <div className="asset-library-metadata">
                     <MetadataRow label="Requested concept">
@@ -2015,8 +4656,18 @@ export function AssetLibraryLab() {
                         : ""}
                     </MetadataRow>
                     <MetadataRow label="Verified aliases">
-                      {(selectedAsset.verified_aliases ?? []).length
-                        ? selectedAsset.verified_aliases!.join(", ")
+                      {Array.from(
+                        new Set([
+                          ...(selectedAsset.verified_aliases ?? []),
+                          ...selectedAsset.aliases,
+                        ]),
+                      ).length
+                        ? Array.from(
+                            new Set([
+                              ...(selectedAsset.verified_aliases ?? []),
+                              ...selectedAsset.aliases,
+                            ]),
+                          ).join(", ")
                         : "None"}
                     </MetadataRow>
                     <MetadataRow label="Composition">
@@ -2073,16 +4724,39 @@ export function AssetLibraryLab() {
                     <MetadataRow label="Polygons">
                       {selectedAsset.polygon_count?.toLocaleString() ?? "Unknown"}
                     </MetadataRow>
-                    <MetadataRow label="Geometry profile">
+                    <MetadataRow label="Spatial profile">
                       {selectedAsset.geometry_profile
                         ? `${selectedAsset.geometry_profile.generator} · ${
                             selectedAsset.geometry_profile.support_surfaces.length
-                          } detected support surface${
-                            selectedAsset.geometry_profile.support_surfaces.length === 1
-                              ? ""
-                              : "s"
+                          } support · ${
+                            selectedAsset.geometry_profile.interior_volumes?.length ?? 0
+                          } containment · ${
+                            selectedAsset.geometry_profile.attachment_regions?.length ?? 0
+                          } attachment · ${Math.round(
+                            (selectedAsset.geometry_profile.audit?.confidence ?? 0) * 100,
+                          )}% audit confidence`
+                        : "Not measured yet"}
+                    </MetadataRow>
+                    <MetadataRow label="Geometry audit">
+                      {selectedAsset.geometry_profile?.audit
+                        ? `${selectedAsset.geometry_profile.audit.status.replaceAll(
+                            "_",
+                            " ",
+                          )}${
+                            selectedAsset.geometry_profile.audit.warnings.length
+                              ? ` · ${selectedAsset.geometry_profile.audit.warnings.join(
+                                  "; ",
+                                )}`
+                              : " · no warnings"
                           }`
-                        : "Runtime analysis on first scene load"}
+                        : "Pending backfill"}
+                    </MetadataRow>
+                    <MetadataRow label="Measured bounds">
+                      {selectedAsset.geometry_profile
+                        ? `${formatDimensions(
+                            selectedAsset.geometry_profile.local_bounds.size,
+                          )} m`
+                        : "Not available"}
                     </MetadataRow>
                     <MetadataRow label="Support surfaces">
                       {(selectedAsset.support_surfaces ?? []).length
@@ -2091,7 +4765,19 @@ export function AssetLibraryLab() {
                               (surface) =>
                                 `${surface.label} (${Math.round(
                                   surface.confidence * 100,
-                                )}% ${surface.source})`,
+                                )}% ${surface.source}${
+                                  surface.exposure
+                                    ? ` · ${surface.exposure}`
+                                    : ""
+                                }${
+                                  surface.openness
+                                    ? ` · ${surface.openness}`
+                                    : ""
+                                }${
+                                  surface.clearance_above_m == null
+                                    ? ""
+                                    : ` · ${surface.clearance_above_m.toFixed(2)} m clearance`
+                                })`,
                             )
                             .join(", ")
                         : "None persisted yet"}
@@ -2137,7 +4823,7 @@ export function AssetLibraryLab() {
                       new Set([
                         ...selectedAsset.aliases,
                         ...selectedAsset.semantic_tags,
-                        ...selectedAsset.style_tags,
+                        ...(selectedAsset.appearance_profile?.descriptors ?? []),
                       ]),
                     ).map((tag) => (
                       <span className="asset-library-tag" key={tag}>
@@ -2160,5 +4846,3 @@ export function AssetLibraryLab() {
 }
 
 export default AssetLibraryLab;
-
-

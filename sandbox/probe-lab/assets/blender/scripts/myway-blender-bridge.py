@@ -387,6 +387,79 @@ def make_thumbnail(thumbnail_path, dimensions):
     bpy.ops.render.render(write_still=True)
 
 
+
+def make_analysis_renders(render_directory, public_url_root, dimensions):
+    render_dir = Path(render_directory)
+    render_dir.mkdir(parents=True, exist_ok=True)
+
+    scene = bpy.context.scene
+    available_engines = {
+        item.identifier
+        for item in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items
+    }
+    if "BLENDER_EEVEE_NEXT" in available_engines:
+        scene.render.engine = "BLENDER_EEVEE_NEXT"
+    elif "BLENDER_EEVEE" in available_engines:
+        scene.render.engine = "BLENDER_EEVEE"
+    else:
+        scene.render.engine = "CYCLES" if "CYCLES" in available_engines else next(iter(available_engines))
+
+    scene.render.resolution_x = 512
+    scene.render.resolution_y = 512
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.film_transparent = False
+    if scene.world is None:
+        scene.world = bpy.data.worlds.new("MyWayAssetAnalysisWorld")
+    scene.world.color = (0.055, 0.065, 0.08)
+
+    longest = max(dimensions) if dimensions else 2.0
+    target = Vector((0, 0, max(dimensions[2] * 0.45, 0.2)))
+
+    camera_data = bpy.data.cameras.new("MyWayAssetAnalysisCamera")
+    camera = bpy.data.objects.new("MyWayAssetAnalysisCamera", camera_data)
+    scene.collection.objects.link(camera)
+    camera_data.lens = 52
+    scene.camera = camera
+
+    for name, location, energy, size in [
+        ("MyWayAnalysisKey", (longest * 2, -longest * 2, longest * 3), 1100, longest * 2),
+        ("MyWayAnalysisFill", (-longest * 2, -longest, longest * 1.5), 650, longest * 2),
+        ("MyWayAnalysisRim", (0, longest * 2, longest * 2.5), 900, longest * 1.5),
+    ]:
+        light_data = bpy.data.lights.new(name, type="AREA")
+        light_data.energy = energy
+        light_data.shape = "DISK"
+        light_data.size = max(size, 1.0)
+        light = bpy.data.objects.new(name, light_data)
+        light.location = location
+        scene.collection.objects.link(light)
+
+    view_specs = [
+        ("front_three_quarter", (longest * 1.55, -longest * 1.75, longest * 1.2)),
+        ("rear_three_quarter", (-longest * 1.55, longest * 1.75, longest * 1.2)),
+        ("side", (longest * 2.2, 0, longest * 1.0)),
+        ("elevated_front", (longest * 1.2, -longest * 1.55, longest * 2.0)),
+    ]
+
+    public_root = str(public_url_root).rstrip("/")
+    views = []
+    for view_name, location in view_specs:
+        camera.location = location
+        camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
+        file_path = render_dir / f"{view_name}.png"
+        scene.render.filepath = str(file_path)
+        bpy.ops.render.render(write_still=True)
+        views.append(
+            {
+                "name": view_name,
+                "file_path": str(file_path),
+                "public_path": f"{public_root}/{view_name}.png",
+            }
+        )
+
+    return views
+
 def polygon_count():
     return sum(len(obj.data.polygons) for obj in mesh_objects() if getattr(obj, "data", None))
 
@@ -831,21 +904,64 @@ def gltf_y_up_point(vector):
     ]
 
 
+def _mesh_name_is_helper(obj):
+    name = str(getattr(obj, "name", "")).lower()
+    helper_terms = (
+        "collision",
+        "collider",
+        "ucx_",
+        "ubx_",
+        "helper",
+        "proxy",
+        "bounding",
+        "bounds",
+    )
+    return any(term in name for term in helper_terms)
+
+
+def _interval_gap(a_min, a_max, b_min, b_max):
+    if a_max < b_min:
+        return b_min - a_max
+    if b_max < a_min:
+        return a_min - b_max
+    return 0.0
+
+
 def geometry_profile():
-    """Build a geometry-only profile with no concept or object-name rules."""
-    meshes = mesh_objects()
-    if not meshes:
+    """Measure one GLB into generic spatial regions for collision-safe placement."""
+    all_meshes = mesh_objects()
+    if not all_meshes:
         raise RuntimeError("Cannot profile an asset without mesh objects.")
 
-    minimum, maximum = world_bbox(meshes)
+    visible_meshes = [
+        obj
+        for obj in all_meshes
+        if not bool(getattr(obj, "hide_render", False))
+        and not bool(obj.hide_get())
+    ]
+    if not visible_meshes:
+        visible_meshes = all_meshes
+
+    excluded_meshes = [obj for obj in visible_meshes if _mesh_name_is_helper(obj)]
+    geometry_meshes = [obj for obj in visible_meshes if obj not in excluded_meshes]
+    if not geometry_meshes:
+        geometry_meshes = visible_meshes
+        excluded_meshes = []
+
+    # Bounds intentionally match visible render geometry because Three.js fits
+    # the complete loaded GLB. Region detection may ignore helper meshes.
+    minimum, maximum = world_bbox(visible_meshes)
     dimensions = maximum - minimum
     longest = max(dimensions.x, dimensions.y, dimensions.z, 1e-6)
-    height_tolerance = max(0.004, longest * 0.012)
+    height_tolerance = max(0.003, longest * 0.008)
+    spatial_gap_tolerance = max(0.008, longest * 0.025)
     min_triangle_area = max(1e-8, longest * longest * 1e-7)
     depsgraph = bpy.context.evaluated_depsgraph_get()
+    scene = bpy.context.scene
     triangles = []
+    triangle_count = 0
 
-    for source_obj in meshes:
+    for source_obj in geometry_meshes:
         evaluated = source_obj.evaluated_get(depsgraph)
         mesh = evaluated.to_mesh()
         try:
@@ -853,10 +969,8 @@ def geometry_profile():
             matrix = evaluated.matrix_world
 
             for triangle in mesh.loop_triangles:
-                vertices = [
-                    matrix @ mesh.vertices[index].co
-                    for index in triangle.vertices
-                ]
+                triangle_count += 1
+                vertices = [matrix @ mesh.vertices[index].co for index in triangle.vertices]
                 ab = vertices[1] - vertices[0]
                 ac = vertices[2] - vertices[0]
                 cross = ab.cross(ac)
@@ -865,9 +979,7 @@ def geometry_profile():
                     continue
 
                 normal = cross.normalized()
-                # Blender's world-up is +Z. Only geometry itself determines
-                # whether a face is a candidate support plane.
-                if normal.z < 0.82:
+                if normal.z < 0.86:
                     continue
 
                 center = sum(vertices, Vector((0.0, 0.0, 0.0))) / 3.0
@@ -888,20 +1000,34 @@ def geometry_profile():
         finally:
             evaluated.to_mesh_clear()
 
-    triangles.sort(key=lambda item: item["height"])
+    triangles.sort(key=lambda item: (item["height"], item["min_x"], item["min_y"]))
     clusters = []
 
     for triangle in triangles:
         cluster = None
-        best_delta = None
+        best_score = None
 
         for candidate in clusters:
-            delta = abs(candidate["height"] - triangle["height"])
-            if delta <= height_tolerance and (
-                best_delta is None or delta < best_delta
-            ):
+            height_delta = abs(candidate["height"] - triangle["height"])
+            if height_delta > height_tolerance:
+                continue
+
+            gap_x = _interval_gap(
+                candidate["min_x"], candidate["max_x"],
+                triangle["min_x"], triangle["max_x"],
+            )
+            gap_y = _interval_gap(
+                candidate["min_y"], candidate["max_y"],
+                triangle["min_y"], triangle["max_y"],
+            )
+            spatial_gap = math.hypot(gap_x, gap_y)
+            if spatial_gap > spatial_gap_tolerance:
+                continue
+
+            score = height_delta + spatial_gap * 0.35
+            if best_score is None or score < best_score:
                 cluster = candidate
-                best_delta = delta
+                best_score = score
 
         if cluster is None:
             cluster = {
@@ -913,6 +1039,7 @@ def geometry_profile():
                 "max_x": triangle["max_x"],
                 "min_y": triangle["min_y"],
                 "max_y": triangle["max_y"],
+                "triangle_count": 0,
             }
             clusters.append(cluster)
 
@@ -920,8 +1047,7 @@ def geometry_profile():
         previous_area = cluster["area"]
         total_area = previous_area + area
         cluster["height"] = (
-            cluster["height"] * previous_area +
-            triangle["height"] * area
+            cluster["height"] * previous_area + triangle["height"] * area
         ) / max(total_area, 1e-9)
         cluster["area"] = total_area
         cluster["weighted_center"] += triangle["center"] * area
@@ -930,31 +1056,71 @@ def geometry_profile():
         cluster["max_x"] = max(cluster["max_x"], triangle["max_x"])
         cluster["min_y"] = min(cluster["min_y"], triangle["min_y"])
         cluster["max_y"] = max(cluster["max_y"], triangle["max_y"])
+        cluster["triangle_count"] += 1
 
-    max_cluster_area = max(
-        [cluster["area"] for cluster in clusters] or [0.0]
-    )
+    max_cluster_area = max([cluster["area"] for cluster in clusters] or [0.0])
     footprint_area = max(dimensions.x * dimensions.y, 1e-9)
-    minimum_surface_area = max(
-        footprint_area * 0.0025,
-        max_cluster_area * 0.025,
-    )
-    surfaces = []
+    minimum_surface_area = max(footprint_area * 0.0015, max_cluster_area * 0.018)
+    candidates = []
+
+    def clearance_samples(candidate):
+        width = candidate["width"]
+        depth = candidate["depth"]
+        center = candidate["center"]
+        offsets = (
+            (0.0, 0.0),
+            (-0.32, -0.32),
+            (-0.32, 0.32),
+            (0.32, -0.32),
+            (0.32, 0.32),
+            (-0.48, 0.0),
+            (0.48, 0.0),
+            (0.0, -0.48),
+            (0.0, 0.48),
+        )
+        start_epsilon = max(0.002, longest * 0.002)
+        maximum_distance = max(longest * 2.5, dimensions.z + 0.5)
+        hits = []
+
+        for u, v in offsets:
+            origin = Vector((
+                center.x + u * width,
+                center.y + v * depth,
+                candidate["height"] + start_epsilon,
+            ))
+            hit, location, _normal, _index, _obj, _matrix = scene.ray_cast(
+                depsgraph,
+                origin,
+                Vector((0.0, 0.0, 1.0)),
+                distance=maximum_distance,
+            )
+            if hit:
+                distance = float(location.z - origin.z)
+                if distance > start_epsilon * 0.5:
+                    hits.append(distance)
+
+        blocked_fraction = len(hits) / len(offsets)
+        clearance = None
+        if hits and blocked_fraction >= 0.34:
+            ordered = sorted(hits)
+            index = max(0, min(len(ordered) - 1, int(len(ordered) * 0.2)))
+            clearance = ordered[index]
+        return blocked_fraction, clearance
 
     for cluster in clusters:
         width = cluster["max_x"] - cluster["min_x"]
         depth = cluster["max_y"] - cluster["min_y"]
+        rectangle_area = max(width * depth, 1e-9)
+        coverage_ratio = max(0.0, min(1.0, cluster["area"] / rectangle_area))
         if (
             cluster["area"] < minimum_surface_area
-            or width < longest * 0.015
-            or depth < longest * 0.015
+            or width < longest * 0.012
+            or depth < longest * 0.012
+            or coverage_ratio < 0.08
         ):
             continue
 
-        center = (
-            cluster["weighted_center"] /
-            max(cluster["area"], 1e-9)
-        )
+        center = cluster["weighted_center"] / max(cluster["area"], 1e-9)
         normal = cluster["weighted_normal"]
         if normal.length <= 1e-9:
             normal = Vector((0, 0, 1))
@@ -967,48 +1133,105 @@ def geometry_profile():
             0.05,
             min(
                 1.0,
-                normal_score * 0.62 +
-                min(1.0, area_ratio * 4.0) * 0.38,
+                normal_score * 0.45
+                + min(1.0, area_ratio * 5.0) * 0.25
+                + coverage_ratio * 0.30,
             ),
         )
-        height_ratio = (
-            (cluster["height"] - minimum.z) /
-            max(dimensions.z, 1e-9)
-        )
+        height_ratio = (cluster["height"] - minimum.z) / max(dimensions.z, 1e-9)
+        candidate = {
+            "height": cluster["height"],
+            "height_ratio": height_ratio,
+            "area": cluster["area"],
+            "area_ratio": area_ratio,
+            "coverage_ratio": coverage_ratio,
+            "confidence": confidence,
+            "center": center,
+            "normal": normal,
+            "width": width,
+            "depth": depth,
+        }
+        blocked_fraction, clearance = clearance_samples(candidate)
+        candidate["blocked_fraction"] = blocked_fraction
+        candidate["clearance_above_m"] = clearance
+        candidate["exposure"] = "interior" if blocked_fraction >= 0.45 else "exterior"
+        candidate["openness"] = "enclosed" if blocked_fraction >= 0.45 else "open"
+        candidate["enclosure_confidence"] = min(1.0, abs(blocked_fraction - 0.45) * 2.0 + 0.35)
+        edge_margin = min(0.06, max(0.005, min(width, depth) * 0.055))
+        candidate["edge_margin_m"] = edge_margin
+        candidate["usable_width"] = max(0.001, width - edge_margin * 2)
+        candidate["usable_depth"] = max(0.001, depth - edge_margin * 2)
+        candidates.append(candidate)
 
+    by_height = sorted(candidates, key=lambda item: (-item["height"], -item["area"]))
+    for rank, candidate in enumerate(by_height):
+        candidate["vertical_rank"] = rank
+
+    candidates.sort(
+        key=lambda item: (
+            -(
+                item["confidence"] * 1.8
+                + item["area_ratio"]
+                + item["height_ratio"] * 0.45
+                + (0.7 if item["exposure"] == "exterior" else 0.0)
+                + (0.25 if item["openness"] == "open" else 0.0)
+            ),
+            -item["area"],
+        )
+    )
+    primary = candidates[0] if candidates else None
+    surfaces = []
+
+    for index, candidate in enumerate(candidates[:24]):
+        is_primary = candidate is primary
+        if is_primary:
+            surface_id = "primary_support_surface"
+            label = "Primary support region"
+        else:
+            surface_id = f"support_region_{index + 1}"
+            label = "Support region"
+
+        center = candidate["center"]
         surfaces.append(
             {
-                "id": f"surface_{len(surfaces) + 1}",
-                "label": f"Detected support surface {len(surfaces) + 1}",
-                "center": gltf_y_up_point(
-                    Vector((center.x, center.y, cluster["height"]))
-                ),
-                "normal": gltf_y_up_point(normal),
+                "id": surface_id,
+                "label": label,
+                "center": gltf_y_up_point(Vector((center.x, center.y, candidate["height"]))),
+                "normal": gltf_y_up_point(candidate["normal"]),
                 "u_axis": [1.0, 0.0, 0.0],
                 "v_axis": [0.0, 0.0, -1.0],
                 "size": [
-                    round(float(width), 6),
-                    round(float(depth), 6),
+                    round(float(candidate["width"]), 6),
+                    round(float(candidate["depth"]), 6),
                 ],
-                "area": round(float(cluster["area"]), 8),
-                "confidence": round(float(confidence), 6),
+                "usable_size": [
+                    round(float(candidate["usable_width"]), 6),
+                    round(float(candidate["usable_depth"]), 6),
+                ],
+                "area": round(float(candidate["area"]), 8),
+                "confidence": round(float(candidate["confidence"]), 6),
                 "source": "blender_geometry",
-                "height_ratio": round(float(height_ratio), 6),
+                "region_kind": "support",
+                "exposure": candidate["exposure"],
+                "orientation": "upward",
+                "openness": candidate["openness"],
+                "vertical_rank": int(candidate["vertical_rank"]),
+                "clearance_above_m": (
+                    round(float(candidate["clearance_above_m"]), 6)
+                    if candidate["clearance_above_m"] is not None
+                    else None
+                ),
+                "blocked_fraction": round(float(candidate["blocked_fraction"]), 6),
+                "enclosure_confidence": round(float(candidate["enclosure_confidence"]), 6),
+                "edge_margin_m": round(float(candidate["edge_margin_m"]), 6),
+                "height_ratio": round(float(candidate["height_ratio"]), 6),
                 "footprint_ratio": [
-                    round(float(width / max(dimensions.x, 1e-9)), 6),
-                    round(float(depth / max(dimensions.y, 1e-9)), 6),
+                    round(float(candidate["width"] / max(dimensions.x, 1e-9)), 6),
+                    round(float(candidate["depth"] / max(dimensions.y, 1e-9)), 6),
                 ],
+                "coverage_ratio": round(float(candidate["coverage_ratio"]), 6),
             }
         )
-
-    surfaces.sort(
-        key=lambda item: (
-            -item["confidence"],
-            -item["area"],
-            item["center"][1],
-        )
-    )
-    surfaces = surfaces[:16]
 
     gltf_min = Vector((minimum.x, minimum.z, -maximum.y))
     gltf_max = Vector((maximum.x, maximum.z, -minimum.y))
@@ -1016,76 +1239,189 @@ def geometry_profile():
     gltf_center = (gltf_min + gltf_max) / 2.0
     bottom_center = Vector((gltf_center.x, gltf_min.y, gltf_center.z))
 
+    interior_volumes = []
+    for index, candidate in enumerate(candidates):
+        clearance = candidate["clearance_above_m"]
+        if (
+            candidate["exposure"] != "interior"
+            or clearance is None
+            or clearance < max(0.04, longest * 0.025)
+        ):
+            continue
+        center = candidate["center"]
+        volume_center = Vector((
+            center.x,
+            center.y,
+            candidate["height"] + clearance * 0.5,
+        ))
+        interior_volumes.append(
+            {
+                "id": f"containment_region_{index + 1}",
+                "label": "Measured containment region",
+                "center": gltf_y_up_point(volume_center),
+                "size": [
+                    round(float(candidate["usable_width"]), 6),
+                    round(float(max(0.001, clearance * 0.94)), 6),
+                    round(float(candidate["usable_depth"]), 6),
+                ],
+                "rotation": [0.0, 0.0, 0.0],
+                "confidence": round(float(min(candidate["confidence"], candidate["enclosure_confidence"])), 6),
+                "source": "blender_geometry",
+                "exposure": "interior",
+                "openness": candidate["openness"],
+                "access_direction": [0.0, 0.0, 1.0],
+            }
+        )
+        if len(interior_volumes) >= 16:
+            break
+
+    attachment_regions = [
+        {
+            "id": "attachment_left",
+            "label": "Left exterior attachment region",
+            "center": [gltf_min.x, gltf_center.y, gltf_center.z],
+            "normal": [-1.0, 0.0, 0.0],
+            "u_axis": [0.0, 1.0, 0.0],
+            "v_axis": [0.0, 0.0, 1.0],
+            "size": [gltf_size.y, gltf_size.z],
+            "side": "left",
+        },
+        {
+            "id": "attachment_right",
+            "label": "Right exterior attachment region",
+            "center": [gltf_max.x, gltf_center.y, gltf_center.z],
+            "normal": [1.0, 0.0, 0.0],
+            "u_axis": [0.0, 1.0, 0.0],
+            "v_axis": [0.0, 0.0, 1.0],
+            "size": [gltf_size.y, gltf_size.z],
+            "side": "right",
+        },
+        {
+            "id": "attachment_front",
+            "label": "Front exterior attachment region",
+            "center": [gltf_center.x, gltf_center.y, gltf_max.z],
+            "normal": [0.0, 0.0, 1.0],
+            "u_axis": [1.0, 0.0, 0.0],
+            "v_axis": [0.0, 1.0, 0.0],
+            "size": [gltf_size.x, gltf_size.y],
+            "side": "front",
+        },
+        {
+            "id": "attachment_back",
+            "label": "Back exterior attachment region",
+            "center": [gltf_center.x, gltf_center.y, gltf_min.z],
+            "normal": [0.0, 0.0, -1.0],
+            "u_axis": [1.0, 0.0, 0.0],
+            "v_axis": [0.0, 1.0, 0.0],
+            "size": [gltf_size.x, gltf_size.y],
+            "side": "back",
+        },
+    ]
+    for region in attachment_regions:
+        region["center"] = [round(float(value), 6) for value in region["center"]]
+        region["size"] = [round(float(max(value, 1e-6)), 6) for value in region["size"]]
+        region["confidence"] = 0.52
+        region["source"] = "blender_geometry"
+        region["exposure"] = "exterior"
+        region["orientation"] = "vertical"
+
+    mesh_collision_boxes = []
+    for index, obj in enumerate(geometry_meshes):
+        obj_min, obj_max = world_bbox([obj])
+        obj_gltf_min = Vector((obj_min.x, obj_min.z, -obj_max.y))
+        obj_gltf_max = Vector((obj_max.x, obj_max.z, -obj_min.y))
+        obj_size = obj_gltf_max - obj_gltf_min
+        volume = max(0.0, obj_size.x * obj_size.y * obj_size.z)
+        if volume <= max(1e-12, gltf_size.x * gltf_size.y * gltf_size.z * 1e-7):
+            continue
+        obj_center = (obj_gltf_min + obj_gltf_max) / 2.0
+        mesh_collision_boxes.append(
+            {
+                "id": f"solid_region_{index + 1}",
+                "label": str(obj.name),
+                "center": [round(float(obj_center.x), 6), round(float(obj_center.y), 6), round(float(obj_center.z), 6)],
+                "size": [round(float(max(obj_size.x, 1e-6)), 6), round(float(max(obj_size.y, 1e-6)), 6), round(float(max(obj_size.z, 1e-6)), 6)],
+                "rotation": [0.0, 0.0, 0.0],
+                "confidence": 0.68,
+                "source": "blender_geometry",
+                "volume": volume,
+            }
+        )
+    mesh_collision_boxes.sort(key=lambda item: -item["volume"])
+    collision_boxes = []
+    for item in mesh_collision_boxes[:32]:
+        item.pop("volume", None)
+        collision_boxes.append(item)
+    if not collision_boxes:
+        collision_boxes = [
+            {
+                "id": "solid_region_1",
+                "label": "Whole visible asset bounds",
+                "center": [round(float(gltf_center.x), 6), round(float(gltf_center.y), 6), round(float(gltf_center.z), 6)],
+                "size": [round(float(max(gltf_size.x, 1e-6)), 6), round(float(max(gltf_size.y, 1e-6)), 6), round(float(max(gltf_size.z, 1e-6)), 6)],
+                "rotation": [0.0, 0.0, 0.0],
+                "confidence": 0.45,
+                "source": "blender_geometry",
+            }
+        ]
+
+    warnings = []
+    smallest = max(min(dimensions.x, dimensions.y, dimensions.z), 1e-9)
+    aspect_ratio = longest / smallest
+    if aspect_ratio > 120:
+        warnings.append("The measured bounds have an extreme aspect ratio and should be reviewed.")
+    if excluded_meshes:
+        warnings.append(
+            "Helper-like mesh objects were excluded from spatial-region detection: "
+            + ", ".join(obj.name for obj in excluded_meshes[:12])
+        )
+    if primary and primary["confidence"] < 0.48:
+        warnings.append("The best support region has low geometric confidence.")
+    if primary and primary["coverage_ratio"] < 0.18:
+        warnings.append("The best support region is sparse or disconnected inside its rectangle.")
+
+    audit_confidence = 0.94 - min(0.35, len(warnings) * 0.12)
+    review_required = any(
+        phrase in " ".join(warnings).lower()
+        for phrase in ("extreme aspect", "low geometric", "sparse")
+    )
+
     return {
         "schema_version": "myway_asset_geometry_profile_v1",
         "coordinate_space": "normalized_glb_y_up",
         "local_bounds": {
-            "min": [
-                round(float(gltf_min.x), 6),
-                round(float(gltf_min.y), 6),
-                round(float(gltf_min.z), 6),
-            ],
-            "max": [
-                round(float(gltf_max.x), 6),
-                round(float(gltf_max.y), 6),
-                round(float(gltf_max.z), 6),
-            ],
-            "size": [
-                round(float(gltf_size.x), 6),
-                round(float(gltf_size.y), 6),
-                round(float(gltf_size.z), 6),
-            ],
-            "center": [
-                round(float(gltf_center.x), 6),
-                round(float(gltf_center.y), 6),
-                round(float(gltf_center.z), 6),
-            ],
+            "min": [round(float(gltf_min.x), 6), round(float(gltf_min.y), 6), round(float(gltf_min.z), 6)],
+            "max": [round(float(gltf_max.x), 6), round(float(gltf_max.y), 6), round(float(gltf_max.z), 6)],
+            "size": [round(float(gltf_size.x), 6), round(float(gltf_size.y), 6), round(float(gltf_size.z), 6)],
+            "center": [round(float(gltf_center.x), 6), round(float(gltf_center.y), 6), round(float(gltf_center.z), 6)],
         },
-        "orientation": {
-            "up_axis": [0.0, 1.0, 0.0],
-            "forward_axis": [0.0, 0.0, 1.0],
-        },
+        "orientation": {"up_axis": [0.0, 1.0, 0.0], "forward_axis": [0.0, 0.0, 1.0]},
         "bottom_contact_region": {
             "id": "bottom_contact",
-            "center": [
-                round(float(bottom_center.x), 6),
-                round(float(bottom_center.y), 6),
-                round(float(bottom_center.z), 6),
-            ],
+            "center": [round(float(bottom_center.x), 6), round(float(bottom_center.y), 6), round(float(bottom_center.z), 6)],
             "normal": [0.0, 1.0, 0.0],
-            "size": [
-                round(float(max(gltf_size.x, 1e-6)), 6),
-                round(float(max(gltf_size.z, 1e-6)), 6),
-            ],
-            "area": round(
-                float(max(gltf_size.x * gltf_size.z, 1e-9)),
-                8,
-            ),
-            "confidence": 0.65,
+            "size": [round(float(max(gltf_size.x, 1e-6)), 6), round(float(max(gltf_size.z, 1e-6)), 6)],
+            "area": round(float(max(gltf_size.x * gltf_size.z, 1e-9)), 8),
+            "confidence": 0.72,
         },
         "support_surfaces": surfaces,
-        "interior_volumes": [],
-        "collision_boxes": [
-            {
-                "center": [
-                    round(float(gltf_center.x), 6),
-                    round(float(gltf_center.y), 6),
-                    round(float(gltf_center.z), 6),
-                ],
-                "size": [
-                    round(float(max(gltf_size.x, 1e-6)), 6),
-                    round(float(max(gltf_size.y, 1e-6)), 6),
-                    round(float(max(gltf_size.z, 1e-6)), 6),
-                ],
-                "rotation": [0.0, 0.0, 0.0],
-            }
-        ],
-        "generated_at": __import__("datetime").datetime.now(
-            __import__("datetime").timezone.utc
-        ).isoformat(),
-        "generator": "myway_blender_geometry_profile_v1",
+        "interior_volumes": interior_volumes,
+        "attachment_regions": attachment_regions,
+        "collision_boxes": collision_boxes,
+        "primary_support_surface_id": "primary_support_surface" if primary else None,
+        "audit": {
+            "status": "review_required" if review_required else "measured",
+            "confidence": round(float(max(0.0, min(1.0, audit_confidence))), 6),
+            "warnings": warnings,
+            "mesh_object_count": len(all_meshes),
+            "included_mesh_count": len(geometry_meshes),
+            "excluded_mesh_names": [obj.name for obj in excluded_meshes[:32]],
+            "triangle_count": triangle_count,
+            "support_surface_count": len(surfaces),
+        },
+        "generated_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+        "generator": "myway_blender_geometry_profile_v3_spatial_regions",
     }
-
 
 def execute(job):
     source_metadata = {}
@@ -1096,8 +1432,27 @@ def execute(job):
         "warnings": [],
     }
 
-    if job["kind"] == "normalize_asset":
+    if job["kind"] == "profile_asset_geometry":
         import_asset(job["input_path"])
+        profile = geometry_profile()
+        return {
+            "dimensions_m": profile["local_bounds"]["size"],
+            "geometry_profile": profile,
+        }
+    elif job["kind"] == "normalize_asset":
+        import_asset(job["input_path"])
+    elif job["kind"] == "render_asset_analysis":
+        import_asset(job["input_path"])
+        dimensions = normalize_scene(float(job.get("target_extent_m", 2.0)))
+        views = make_analysis_renders(
+            job["render_directory"],
+            job["public_url_root"],
+            dimensions,
+        )
+        return {
+            "dimensions_m": dimensions,
+            "analysis_views": views,
+        }
     elif job["kind"] == "blenderkit_acquire":
         temp_dir = Path(job["output_path"]).parent / ".blenderkit-download"
         temp_dir.mkdir(parents=True, exist_ok=True)
@@ -1159,7 +1514,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-

@@ -1,5 +1,6 @@
 import type {
   AssetMatchScoreBreakdown,
+  MyWayAssetAppearanceRankingDiagnostics,
   MyWayAssetGeometryProfileV1,
   MyWayAssetRecord,
   MyWayAssetSceneReviewStatus,
@@ -7,8 +8,12 @@ import type {
   Vec3,
 } from "../assets/asset-types";
 import type {
+  LogicalAssetSizeDecision,
+} from "../assets/logical-asset-size";
+import type {
   PrimitiveBuilderAssetRequirement,
   PrimitiveBuilderPlacementRelation,
+  PrimitiveBuilderPlacementRegionPreference,
   PrimitiveBuilderSurfaceReference,
 } from "../primitive-builder/asset-requirement-plan";
 
@@ -24,6 +29,8 @@ export type ResolvedSceneAssetBinding = {
   default_rotation: Vec3;
   ground_offset_m: number;
   target_extent_m: number;
+  requested_target_extent_m?: number;
+  size_policy?: LogicalAssetSizeDecision;
   position: Vec3;
   rotation: Vec3;
   scale: Vec3;
@@ -38,6 +45,8 @@ export type ResolvedSceneAssetBinding = {
   placement_relation: PrimitiveBuilderPlacementRelation;
   placement_target_instance_id?: string;
   placement_anchor: string;
+  placement_region: PrimitiveBuilderPlacementRegionPreference;
+  placement_source: "explicit" | "inferred";
   placement_offset: Vec3;
   placement_uv: [number, number];
   primitive_support_surface?: PrimitiveBuilderSurfaceReference;
@@ -48,12 +57,28 @@ export type ResolvedSceneAssetBinding = {
   match_score?: number | null;
   match_margin?: number | null;
   candidate_scores?: AssetMatchScoreBreakdown[];
+  appearance_ranking?: MyWayAssetAppearanceRankingDiagnostics;
+  appearance_similarity?: number | null;
+  appearance_score?: number;
+  appearance_summary?: string | null;
+  appearance_trait_matches?: string[];
+  appearance_trait_conflicts?: string[];
+};
+
+export type PrimitiveBuilderUnresolvedAssetDiagnostic = {
+  instance_id: string;
+  concept: string;
+  reason: string;
+  warnings: string[];
+  candidate_scores: AssetMatchScoreBreakdown[];
+  appearance_ranking?: MyWayAssetAppearanceRankingDiagnostics;
 };
 
 export type PrimitiveBuilderSceneAssetResolution = {
   schema_version: "primitive_builder_scene_asset_resolution_v2";
   bindings: ResolvedSceneAssetBinding[];
   unresolved_requirements: PrimitiveBuilderAssetRequirement[];
+  unresolved_diagnostics?: PrimitiveBuilderUnresolvedAssetDiagnostic[];
   warnings: string[];
 };
 
@@ -65,6 +90,9 @@ export function makeResolvedSceneAssetBinding(input: {
   matchScore?: number | null;
   matchMargin?: number | null;
   candidateScores?: AssetMatchScoreBreakdown[];
+  appearanceRanking?: MyWayAssetAppearanceRankingDiagnostics;
+  selectedScore?: AssetMatchScoreBreakdown;
+  sizeDecision?: LogicalAssetSizeDecision;
 }): ResolvedSceneAssetBinding {
   const { requirement, asset } = input;
 
@@ -81,6 +109,10 @@ export function makeResolvedSceneAssetBinding(input: {
     default_rotation: asset.default_rotation,
     ground_offset_m: asset.ground_offset_m,
     target_extent_m: requirement.target_extent_m,
+    requested_target_extent_m:
+      input.sizeDecision?.requested_target_extent_m ??
+      requirement.target_extent_m,
+    size_policy: input.sizeDecision,
     position: requirement.position,
     rotation: requirement.rotation,
     scale: requirement.scale,
@@ -96,6 +128,10 @@ export function makeResolvedSceneAssetBinding(input: {
       requirement.placement_target_instance_id,
     placement_anchor:
       requirement.placement_anchor,
+    placement_region:
+      requirement.placement_region,
+    placement_source:
+      requirement.placement_source,
     placement_offset:
       requirement.placement_offset,
     placement_uv:
@@ -112,5 +148,29 @@ export function makeResolvedSceneAssetBinding(input: {
     match_margin: input.matchMargin ?? null,
     candidate_scores:
       input.candidateScores ?? [],
+    appearance_ranking:
+      input.appearanceRanking,
+    appearance_similarity:
+      input.selectedScore
+        ?.appearance_similarity ?? null,
+    appearance_score:
+      (input.selectedScore
+        ?.appearance_similarity_bonus ?? 0) +
+      (input.selectedScore
+        ?.appearance_trait_bonus ?? 0) -
+      (input.selectedScore
+        ?.appearance_penalty ?? 0),
+    appearance_summary:
+      input.selectedScore
+        ?.appearance_summary ?? null,
+    appearance_trait_matches: [
+      ...(input.selectedScore
+        ?.required_trait_matches ?? []),
+      ...(input.selectedScore
+        ?.preferred_trait_matches ?? []),
+    ],
+    appearance_trait_conflicts:
+      input.selectedScore
+        ?.required_trait_conflicts ?? [],
   };
 }

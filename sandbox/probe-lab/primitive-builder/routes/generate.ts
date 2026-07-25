@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { NextRequest, NextResponse } from "next/server";
 
 import { parseJsonObjectFromText } from "@/sandbox/probe-lab/visual-experience/json-extract";
@@ -13,6 +15,13 @@ import {
   preparePrimitiveBuilderSceneAssets,
   resolvePrimitiveBuilderSceneAssets,
 } from "../../scenes/resolve-scene-assets.server";
+import {
+  enqueueMissingAssetRequirements,
+  listMissingAssetJobs,
+} from "../../assets/acquisition/missing-asset-store.server";
+import {
+  startMissingAssetAcquisitions,
+} from "../../assets/acquisition/missing-asset-worker.server";
 
 function text(value: unknown, fallback: string) {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -24,6 +33,8 @@ function preview(value: string, max = 4000) {
 
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
+  const sceneSessionId =
+    `primitive_${Date.now().toString(36)}_${randomUUID().slice(0, 8)}`;
   const body = await request.json().catch(() => ({}));
   const userRequest = text(body.prompt, "build something interesting");
   const provider = normalizePrimitiveBuilderProvider(body.provider);
@@ -141,10 +152,44 @@ export async function POST(request: NextRequest) {
     );
   warnings.push(...assetResolution.warnings);
 
+  const acquisitionJobs =
+    await enqueueMissingAssetRequirements({
+      sceneSessionId,
+      source: "primitive_builder",
+      title: plan.scene_title,
+      originalPrompt: userRequest,
+      requirements:
+        assetResolution.unresolved_requirements,
+    });
+
+  startMissingAssetAcquisitions(
+    acquisitionJobs
+      .filter(
+        (job) =>
+          job.status === "missing" ||
+          job.status === "unavailable",
+      )
+      .map((job) => job.job_id),
+  );
+
+  const acquisitionJobSummaries =
+    await listMissingAssetJobs({
+      sceneSessionId,
+    });
+
+  if (acquisitionJobs.length) {
+    warnings.push(
+      `${acquisitionJobs.length} missing asset acquisition job(s) were queued automatically.`,
+    );
+  }
+
   return NextResponse.json({
     ok: true,
     route: "primitive-builder-generate",
     schema_version: "primitive_scene_graph_v2",
+    scene_session_id: sceneSessionId,
+    acquisition_jobs:
+      acquisitionJobSummaries,
     provider_requested: provider,
     fallback_provider: fallbackProvider,
     provider_used: providerResult.provider_used,
@@ -171,4 +216,3 @@ export async function POST(request: NextRequest) {
     raw_text_preview: preview(providerResult.raw_text),
   });
 }
-

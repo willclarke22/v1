@@ -1,10 +1,13 @@
 import { resolveMyWayAsset } from "../assets/asset-resolver.server";
 import {
+  applyLogicalAssetSizing,
+  logicalAssetSizeDecision,
+} from "../assets/logical-asset-size";
+import {
   assetWithFileStats,
   listMyWayAssets,
 } from "../assets/asset-library.server";
 import type { MyWayAssetRecord, Vec3 } from "../assets/asset-types";
-import { acquireFromTrellis } from "../assets/providers/trellis-asset-provider.server";
 import type { PrimitiveBuilderAssetRequirement } from "../primitive-builder/asset-requirement-plan";
 import type {
   PrimitiveSceneGraphNode,
@@ -81,6 +84,7 @@ function assetPhrases(asset: MyWayAssetRecord) {
     asset.verified_canonical_label ??
       asset.canonical_label,
     ...(asset.verified_aliases ?? []),
+    ...asset.aliases,
   ]).sort(
     (a, b) =>
       phraseTokens(b).length -
@@ -336,39 +340,30 @@ function targetExtentFor(
   asset: MyWayAssetRecord,
   reference?: SceneNodeReference,
 ) {
-  if (reference && reference.node.kind !== "group") {
-    const scale =
-      reference.node.scale ?? [1, 1, 1];
-    const nodeExtent = Math.max(
-      ...scale.map((value) =>
-        Math.abs(value),
-      ),
-    );
+  const proxyHint =
+    reference && reference.node.kind !== "group"
+      ? Math.max(
+          ...(reference.node.scale ?? [0, 0, 0]).map(
+            (value) => Math.abs(value),
+          ),
+        )
+      : 0;
 
-    if (
-      Number.isFinite(nodeExtent) &&
-      nodeExtent >= 0.05
-    ) {
-      return Math.min(20, nodeExtent);
-    }
-  }
-
-  const dimensions = assetRuntimeDimensions(asset);
-  const naturalExtent = Math.max(
-    ...dimensions.map((value) =>
-      Math.abs(value),
-    ),
-  );
-
-  return Math.max(
-    0.05,
-    Math.min(
-      20,
-      Number.isFinite(naturalExtent)
-        ? naturalExtent
-        : 1,
-    ),
-  );
+  return logicalAssetSizeDecision({
+    concept:
+      asset.verified_canonical_label ??
+      asset.canonical_label,
+    aliases: [
+      ...(asset.verified_aliases ?? []),
+      ...asset.aliases,
+    ],
+    semanticTags: asset.semantic_tags,
+    requestedTargetExtentM:
+      Number.isFinite(proxyHint) &&
+      proxyHint >= 0.05
+        ? proxyHint
+        : 0,
+  }).target_extent_m;
 }
 
 function layoutProxyKindForNode(
@@ -614,6 +609,7 @@ function requirementForAsset(
     concept: verifiedLabel,
     aliases: uniqueStrings([
       ...(asset.verified_aliases ?? []),
+      ...asset.aliases,
       asset.source_display_name ??
         asset.display_name,
     ]),
@@ -622,7 +618,8 @@ function requirementForAsset(
       ...(asset.contains ?? []),
       verifiedLabel,
     ]),
-    style_tags: uniqueStrings(asset.style_tags),
+    appearance_request:
+      existing?.appearance_request,
     motion_role:
       existing?.motion_role ??
       "static reusable scene object",
@@ -653,6 +650,19 @@ function requirementForAsset(
       existing?.placement_target_instance_id,
     placement_anchor:
       existing?.placement_anchor ?? "center",
+    placement_region:
+      existing?.placement_region ?? {
+        region_kind: "any",
+        exposure: "any",
+        orientation: "any",
+        vertical_rank: "any",
+        openness: "any",
+        side: "any",
+        require_ground_contact: false,
+        allow_intersection: false,
+      },
+    placement_source:
+      existing?.placement_source ?? "inferred",
     placement_offset:
       existing?.placement_offset ?? [0, 0, 0],
     placement_uv:
@@ -966,13 +976,42 @@ export async function resolvePrimitiveBuilderSceneAssets(
 ): Promise<PrimitiveBuilderSceneAssetResolution> {
   const bindings: PrimitiveBuilderSceneAssetResolution["bindings"] = [];
   const unresolved: PrimitiveBuilderAssetRequirement[] = [];
+  const unresolvedDiagnostics:
+    NonNullable<
+      PrimitiveBuilderSceneAssetResolution["unresolved_diagnostics"]
+    > = [];
   const warnings: string[] = [];
-  for (const requirement of sceneGraph.asset_requirements) {
+  const sized = applyLogicalAssetSizing(
+    sceneGraph.asset_requirements,
+    sceneGraph.user_request,
+  );
+  sceneGraph.asset_requirements =
+    sized.requirements;
+
+  for (const requirement of sized.requirements) {
+    const sizeDecision =
+      sized.decisions.get(
+        requirement.instance_id,
+      );
+
+    if (
+      sizeDecision &&
+      sizeDecision.requested_target_extent_m > 0 &&
+      Math.abs(
+        sizeDecision.target_extent_m -
+          sizeDecision.requested_target_extent_m,
+      ) >= 0.08
+    ) {
+      warnings.push(
+        `${requirement.concept}: logical size adjusted from ${sizeDecision.requested_target_extent_m.toFixed(2)} m to ${sizeDecision.target_extent_m.toFixed(2)} m. ${sizeDecision.reason}`,
+      );
+    }
     const result = await resolveMyWayAsset({
       concept: requirement.concept,
       aliases: requirement.aliases,
       semantic_tags: requirement.semantic_tags,
-      style_tags: requirement.style_tags,
+      appearance_request:
+        requirement.appearance_request,
       target_extent_m: requirement.target_extent_m,
       desired_composition:
         requirement.must_be_separate
@@ -1016,12 +1055,33 @@ export async function resolvePrimitiveBuilderSceneAssets(
           matchMargin: result.match_margin,
           candidateScores:
             result.candidate_scores,
+          appearanceRanking:
+            result.appearance_ranking,
+          selectedScore:
+            result.candidate_scores?.find(
+              (candidate) =>
+                candidate.asset_id ===
+                result.asset?.asset_id,
+            ),
+          sizeDecision,
         }),
       );
       continue;
     }
 
     unresolved.push(requirement);
+    unresolvedDiagnostics.push({
+      instance_id: requirement.instance_id,
+      concept: requirement.concept,
+      reason:
+        result.failure_reason ??
+        `No approved ${requirement.concept} asset could be resolved.`,
+      warnings: result.warnings,
+      candidate_scores:
+        result.candidate_scores ?? [],
+      appearance_ranking:
+        result.appearance_ranking,
+    });
   }
 
   return {
@@ -1029,35 +1089,8 @@ export async function resolvePrimitiveBuilderSceneAssets(
       "primitive_builder_scene_asset_resolution_v2",
     bindings,
     unresolved_requirements: unresolved,
+    unresolved_diagnostics:
+      unresolvedDiagnostics,
     warnings,
-  };
-}
-
-export async function generateTrellisPreviewForRequirement(
-  requirement: PrimitiveBuilderAssetRequirement,
-) {
-  const result = await acquireFromTrellis({
-    concept: requirement.concept,
-    semanticTags: requirement.semantic_tags,
-    styleTags: [
-      ...requirement.style_tags,
-      "complete object",
-      "clean detailed geometry",
-      "accurate proportions",
-    ],
-    domain: "primitive_builder_scene",
-    targetExtentM: requirement.target_extent_m,
-    noTexture: true,
-    seed: Math.floor(Math.random() * 2_000_000_000) + 1,
-    maxAttempts: 3,
-  });
-
-  return {
-    asset: result.asset,
-    binding: makeResolvedSceneAssetBinding({
-      requirement,
-      asset: result.asset,
-      previewOnly: true,
-    }),
   };
 }

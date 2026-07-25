@@ -10,8 +10,10 @@ import {
   ChangeEvent,
   FormEvent,
   Suspense,
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -27,6 +29,7 @@ import {
   ResolvedAssetModel,
   solveResolvedAssetLayout,
   type ResolvedAssetRuntimeMetrics,
+  type ResolvedPlacementDiagnostic,
 } from "@/sandbox/probe-lab/scenes/ui";
 import type {
   PrimitiveBuilderSceneAssetResolution,
@@ -34,6 +37,32 @@ import type {
 } from "@/sandbox/probe-lab/scenes/resolved-scene";
 
 type Vec3 = [number, number, number];
+
+type RuntimeAssetDiagnostic = {
+  world_size: Vec3;
+  source_size: Vec3;
+  support_surface_count: number;
+  containment_region_count: number;
+  attachment_region_count: number;
+  geometry_confidence: number;
+  placement_status: ResolvedPlacementDiagnostic["status"];
+  placement_reason: string | null;
+  placement_messages: string[];
+  collisions: string[];
+  placement: {
+    target_instance_id: string;
+    surface_id: string;
+    surface_label: string;
+    surface_source: string;
+    surface_confidence: number;
+    surface_size: [number, number];
+    usable_surface_size: [number, number];
+    is_primary: boolean;
+    exposure: string;
+    openness: string;
+    clearance_above_m: number | null;
+  } | null;
+};
 type ProviderChoice = "deepseek" | "glm";
 type FallbackChoice =
   | "none"
@@ -62,9 +91,47 @@ type SavedPrimitiveBuilderScene = {
   updated_at: string;
 };
 
+
+type MissingAssetAcquisitionJob = {
+  job_id: string;
+  concept_key: string;
+  requirement_key?: string;
+  concept: string;
+  appearance_request?: {
+    visual_brief: string;
+    required_traits: string[];
+    preferred_traits: string[];
+    avoid_traits: string[];
+  };
+  status:
+    | "missing"
+    | "searching_blenderkit"
+    | "generating_trellis"
+    | "awaiting_review"
+    | "approved"
+    | "unavailable";
+  active_provider:
+    | "blenderkit"
+    | "trellis"
+    | null;
+  current_candidate_asset_id:
+    | string
+    | null;
+  linked_scene_count: number;
+  refresh_ready: boolean;
+  last_error: string | null;
+  scene_references: Array<{
+    scene_session_id: string;
+    scene_id?: string | null;
+    requirement_instance_ids: string[];
+  }>;
+};
+
 type GenerateResponse = {
   ok: boolean;
   plan: PrimitiveBuildPlanV1;
+  scene_session_id?: string;
+  acquisition_jobs?: MissingAssetAcquisitionJob[];
   warnings?: string[];
   provider_requested?: string;
   fallback_provider?: string;
@@ -116,6 +183,16 @@ type ResolvedLayoutScene = {
 
 const DEFAULT_PROMPT =
   "Build a small outdoor picnic scene with a picnic table, a coffee mug, an apple, and a potted plant.";
+
+function normalizeConceptKey(
+  value: string,
+) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
 
 function positiveSize(
   value: Vec3,
@@ -277,7 +354,15 @@ function sameRuntimeMetrics(
       right.source_size,
     ) ||
     left.support_surfaces.length !==
-      right.support_surfaces.length
+      right.support_surfaces.length ||
+    left.interior_volumes.length !==
+      right.interior_volumes.length ||
+    left.attachment_regions.length !==
+      right.attachment_regions.length ||
+    Math.abs(
+      left.geometry_confidence -
+        right.geometry_confidence,
+    ) > 0.0001
   ) {
     return false;
   }
@@ -510,12 +595,19 @@ function AssetScene({
   activeStep,
   showLabels,
   assetBindings,
+  onRuntimeDiagnostics,
 }: {
   plan: PrimitiveBuildPlanV1;
   sceneGraph: unknown;
   activeStep: number;
   showLabels: boolean;
   assetBindings: ResolvedSceneAssetBinding[];
+  onRuntimeDiagnostics: (
+    diagnostics: Map<
+      string,
+      RuntimeAssetDiagnostic
+    >,
+  ) => void;
 }) {
   const layoutScene = useMemo(
     () => resolveLayoutScene(plan),
@@ -677,6 +769,14 @@ function AssetScene({
       baseAssetPositions,
     ],
   );
+  const renderableAssetBindings =
+    visibleAssetBindings.filter(
+      (binding) =>
+        !solvedLayout.all_metrics_ready ||
+        !solvedLayout.unresolved_ids.has(
+          binding.instance_id,
+        ),
+    );
 
   function recordMetrics(
     metrics: ResolvedAssetRuntimeMetrics,
@@ -701,6 +801,87 @@ function AssetScene({
       return next;
     });
   }
+
+  useEffect(() => {
+    const diagnostics = new Map<
+      string,
+      RuntimeAssetDiagnostic
+    >();
+
+    for (const binding of assetBindings) {
+      const metrics = assetMetrics.get(
+        binding.instance_id,
+      );
+      if (!metrics) continue;
+
+      const placement =
+        solvedLayout.surface_placements.get(
+          binding.instance_id,
+        );
+      const placementDiagnostic =
+        solvedLayout.placement_diagnostics.get(
+          binding.instance_id,
+        );
+      diagnostics.set(
+        binding.instance_id,
+        {
+          world_size: metrics.world_size,
+          source_size: metrics.source_size,
+          support_surface_count:
+            metrics.support_surfaces.length,
+          containment_region_count:
+            metrics.interior_volumes.length,
+          attachment_region_count:
+            metrics.attachment_regions.length,
+          geometry_confidence:
+            metrics.geometry_confidence,
+          placement_status:
+            placementDiagnostic?.status ??
+            "provisional",
+          placement_reason:
+            placementDiagnostic?.reason ?? null,
+          placement_messages:
+            placementDiagnostic?.messages ?? [],
+          collisions:
+            placementDiagnostic?.collisions ?? [],
+          placement: placement
+            ? {
+                target_instance_id:
+                  placement.target_instance_id,
+                surface_id:
+                  placement.surface.id,
+                surface_label:
+                  placement.surface.label,
+                surface_source:
+                  placement.surface.source,
+                surface_confidence:
+                  placement.surface.confidence,
+                surface_size:
+                  placement.surface.size,
+                usable_surface_size:
+                  placement.surface.usable_size,
+                exposure:
+                  placement.surface.exposure,
+                openness:
+                  placement.surface.openness,
+                clearance_above_m:
+                  placement.surface.clearance_above_m,
+                is_primary:
+                  placement.surface.is_primary,
+              }
+            : null,
+        },
+      );
+    }
+
+    onRuntimeDiagnostics(diagnostics);
+  }, [
+    assetBindings,
+    assetMetrics,
+    onRuntimeDiagnostics,
+    solvedLayout.surface_placements,
+    solvedLayout.placement_diagnostics,
+  ]);
 
   return (
     <div className="relative h-full">
@@ -751,7 +932,7 @@ function AssetScene({
               ),
             )}
 
-            {visibleAssetBindings.map(
+            {renderableAssetBindings.map(
               (binding) => {
                 const position =
                   solvedLayout.positions.get(
@@ -829,7 +1010,7 @@ function AssetScene({
         />
       </Canvas>
 
-      {visibleAssetBindings.length === 0 &&
+      {renderableAssetBindings.length === 0 &&
       visibleProceduralParts.length === 0 ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8">
           <div className="max-w-sm rounded-3xl border border-white/10 bg-slate-950/85 p-5 text-center shadow-2xl backdrop-blur">
@@ -901,18 +1082,6 @@ export function PrimitiveBuilderLab() {
     useState(false);
   const [error, setError] =
     useState<string | null>(null);
-  const [
-    previewBindings,
-    setPreviewBindings,
-  ] = useState<
-    ResolvedSceneAssetBinding[]
-  >([]);
-  const [
-    trellisLoadingIds,
-    setTrellisLoadingIds,
-  ] = useState<Set<string>>(
-    new Set(),
-  );
   const [savedScenes, setSavedScenes] =
     useState<
       SavedPrimitiveBuilderScene[]
@@ -921,6 +1090,37 @@ export function PrimitiveBuilderLab() {
     useState("");
   const [sceneMessage, setSceneMessage] =
     useState<string | null>(null);
+  const [
+    acquisitionJobs,
+    setAcquisitionJobs,
+  ] = useState<
+    MissingAssetAcquisitionJob[]
+  >([]);
+  const [
+    refreshingMissingAssets,
+    setRefreshingMissingAssets,
+  ] = useState(false);
+  const [savedSceneId, setSavedSceneId] =
+    useState<string | null>(null);
+  const [runtimeDiagnostics, setRuntimeDiagnostics] =
+    useState<
+      Map<string, RuntimeAssetDiagnostic>
+    >(() => new Map());
+  const acquisitionPollInFlight =
+    useRef(false);
+
+  const handleRuntimeDiagnostics =
+    useCallback(
+      (
+        diagnostics: Map<
+          string,
+          RuntimeAssetDiagnostic
+        >,
+      ) => {
+        setRuntimeDiagnostics(diagnostics);
+      },
+      [],
+    );
 
   const plan = result?.plan ?? null;
   const currentBeat = plan
@@ -929,30 +1129,9 @@ export function PrimitiveBuilderLab() {
     : null;
   const assetRequirements =
     result?.asset_requirements ?? [];
-  const resolvedBindings = useMemo(() => {
-    const byId = new Map<
-      string,
-      ResolvedSceneAssetBinding
-    >();
-
-    for (const binding of
-      result?.asset_resolution?.bindings ??
-      []) {
-      byId.set(
-        binding.instance_id,
-        binding,
-      );
-    }
-
-    for (const binding of previewBindings) {
-      byId.set(
-        binding.instance_id,
-        binding,
-      );
-    }
-
-    return [...byId.values()];
-  }, [previewBindings, result]);
+  const resolvedBindings =
+    result?.asset_resolution?.bindings ??
+    [];
   const missingRequirements =
     assetRequirements.filter(
       (requirement) =>
@@ -961,6 +1140,96 @@ export function PrimitiveBuilderLab() {
             binding.instance_id ===
             requirement.instance_id,
         ),
+    );
+  const acquisitionJobByRequirementId =
+    useMemo(() => {
+      const map = new Map<
+        string,
+        MissingAssetAcquisitionJob
+      >();
+      const sessionId =
+        result?.scene_session_id ??
+        savedSceneId;
+
+      for (const job of acquisitionJobs) {
+        for (const reference of
+          job.scene_references) {
+          if (
+            sessionId &&
+            reference.scene_session_id !==
+              sessionId &&
+            reference.scene_id !==
+              sessionId
+          ) {
+            continue;
+          }
+
+          for (const instanceId of
+            reference.requirement_instance_ids) {
+            map.set(instanceId, job);
+          }
+        }
+      }
+
+      for (const requirement of
+        missingRequirements) {
+        if (
+          !map.has(requirement.instance_id)
+        ) {
+          const conceptKey =
+            normalizeConceptKey(
+              requirement.concept,
+            );
+          const fallbackJob =
+            acquisitionJobs.find(
+              (job) =>
+                job.concept_key ===
+                conceptKey,
+            );
+          if (fallbackJob) {
+            map.set(
+              requirement.instance_id,
+              fallbackJob,
+            );
+          }
+        }
+      }
+
+      return map;
+    }, [
+      acquisitionJobs,
+      missingRequirements,
+      result?.scene_session_id,
+      savedSceneId,
+    ]);
+  const refreshReadyCount =
+    missingRequirements.filter(
+      (requirement) =>
+        acquisitionJobByRequirementId.get(
+          requirement.instance_id,
+        )?.status === "approved",
+    ).length;
+  const hasAcquiringMissingAssets =
+    missingRequirements.some((requirement) => {
+      const status =
+        acquisitionJobByRequirementId.get(
+          requirement.instance_id,
+        )?.status;
+      return (
+        status === "missing" ||
+        status ===
+          "searching_blenderkit" ||
+        status ===
+          "generating_trellis"
+      );
+    });
+  const hasAwaitingReviewMissingAssets =
+    missingRequirements.some(
+      (requirement) =>
+        acquisitionJobByRequirementId.get(
+          requirement.instance_id,
+        )?.status ===
+        "awaiting_review",
     );
   const warnings = Array.from(
     new Set([
@@ -1024,34 +1293,219 @@ export function PrimitiveBuilderLab() {
     }
   }
 
+
   useEffect(() => {
     void refreshSavedScenes();
   }, []);
 
-  async function generateWithTrellis(
-    requirement: GeneratedAssetRequirement,
+  async function refreshAcquisitionJobs(
+    sceneSessionId:
+      | string
+      | null
+      | undefined,
+    options: {
+      silent?: boolean;
+    } = {},
   ) {
+    if (!sceneSessionId) {
+      setAcquisitionJobs([]);
+      return;
+    }
+
     if (
-      trellisLoadingIds.has(
-        requirement.instance_id,
-      )
+      acquisitionPollInFlight.current
     ) {
       return;
     }
 
-    setTrellisLoadingIds((current) => {
-      const next = new Set(current);
-      next.add(requirement.instance_id);
-      return next;
-    });
+    acquisitionPollInFlight.current =
+      true;
+    try {
+      const response = await fetch(
+        `/api/sandbox/probe-lab/assets/acquisition?scene_session_id=${encodeURIComponent(
+          sceneSessionId,
+        )}&summary=1`,
+        { cache: "no-store" },
+      );
+      const json =
+        await readJsonResponse(response);
+
+      if (
+        !response.ok ||
+        json.ok !== true
+      ) {
+        throw new Error(
+          typeof json.error === "string"
+            ? json.error
+            : `Acquisition status failed with ${response.status}`,
+        );
+      }
+
+      setAcquisitionJobs(
+        Array.isArray(json.jobs)
+          ? (json.jobs as MissingAssetAcquisitionJob[])
+          : [],
+      );
+    } catch (caught) {
+      if (!options.silent) {
+        setSceneMessage(
+          `Missing-asset status could not be refreshed: ${
+            caught instanceof Error
+              ? caught.message
+              : String(caught)
+          }`,
+        );
+      }
+    } finally {
+      acquisitionPollInFlight.current =
+        false;
+    }
+  }
+
+  const activeAcquisitionPolling =
+    acquisitionJobs.some(
+      (job) =>
+        job.status ===
+          "searching_blenderkit" ||
+        job.status ===
+          "generating_trellis",
+    );
+
+  useEffect(() => {
+    const sceneSessionId =
+      result?.scene_session_id ??
+      savedSceneId;
+
+    if (
+      !sceneSessionId ||
+      !missingRequirements.length
+    ) {
+      return;
+    }
+
+    void refreshAcquisitionJobs(
+      sceneSessionId,
+      { silent: true },
+    );
+  }, [
+    missingRequirements.length,
+    result?.scene_session_id,
+    savedSceneId,
+  ]);
+
+  useEffect(() => {
+    const sceneSessionId =
+      result?.scene_session_id ??
+      savedSceneId;
+
+    if (
+      !sceneSessionId ||
+      !missingRequirements.length ||
+      !activeAcquisitionPolling
+    ) {
+      return;
+    }
+
+    const poll = () => {
+      if (
+        document.visibilityState !==
+        "visible"
+      ) {
+        return;
+      }
+
+      void refreshAcquisitionJobs(
+        sceneSessionId,
+        { silent: true },
+      );
+    };
+
+    const interval =
+      window.setInterval(
+        poll,
+        8_000,
+      );
+    const onVisibility = () => {
+      if (
+        document.visibilityState ===
+        "visible"
+      ) {
+        poll();
+      }
+    };
+    document.addEventListener(
+      "visibilitychange",
+      onVisibility,
+    );
+
+    return () => {
+      window.clearInterval(
+        interval,
+      );
+      document.removeEventListener(
+        "visibilitychange",
+        onVisibility,
+      );
+    };
+  }, [
+    activeAcquisitionPolling,
+    missingRequirements.length,
+    result?.scene_session_id,
+    savedSceneId,
+  ]);
+
+  useEffect(() => {
+    const sceneSessionId =
+      result?.scene_session_id ??
+      savedSceneId;
+
+    if (
+      !sceneSessionId ||
+      !missingRequirements.length
+    ) {
+      return;
+    }
+
+    const refreshOnFocus = () => {
+      void refreshAcquisitionJobs(
+        sceneSessionId,
+        { silent: true },
+      );
+    };
+
+    window.addEventListener(
+      "focus",
+      refreshOnFocus,
+    );
+    return () =>
+      window.removeEventListener(
+        "focus",
+        refreshOnFocus,
+      );
+  }, [
+    missingRequirements.length,
+    result?.scene_session_id,
+    savedSceneId,
+  ]);
+
+  async function refreshMissingAssets() {
+    if (
+      !result?.scene_graph ||
+      refreshingMissingAssets ||
+      missingRequirements.length < 1
+    ) {
+      return;
+    }
+
+    setRefreshingMissingAssets(true);
     setError(null);
     setSceneMessage(
-      `Generating ${requirement.concept} with TRELLIS…`,
+      "Refreshing approved missing assets without regenerating the scene…",
     );
 
     try {
       const response = await fetch(
-        "/api/sandbox/probe-lab/primitive-builder/trellis",
+        "/api/sandbox/probe-lab/primitive-builder/refresh-assets",
         {
           method: "POST",
           headers: {
@@ -1059,7 +1513,14 @@ export function PrimitiveBuilderLab() {
               "application/json",
           },
           body: JSON.stringify({
-            requirement,
+            scene_id: savedSceneId,
+            saved:
+              Boolean(savedSceneId),
+            scene_session_id:
+              result.scene_session_id ??
+              savedSceneId,
+            scene_graph:
+              result.scene_graph,
           }),
         },
       );
@@ -1069,28 +1530,52 @@ export function PrimitiveBuilderLab() {
       if (
         !response.ok ||
         json.ok !== true ||
-        !json.binding
+        !json.resolution
       ) {
         throw new Error(
           typeof json.error === "string"
             ? json.error
-            : `TRELLIS request failed with ${response.status}`,
+            : `Missing-asset refresh failed with ${response.status}`,
         );
       }
 
-      const binding =
-        json.binding as ResolvedSceneAssetBinding;
+      const resolution =
+        json.resolution as PrimitiveBuilderSceneAssetResolution;
 
-      setPreviewBindings((current) => [
-        ...current.filter(
-          (candidate) =>
-            candidate.instance_id !==
-            binding.instance_id,
-        ),
-        binding,
-      ]);
+      setResult((current) =>
+        current
+          ? {
+              ...current,
+              asset_resolution:
+                resolution,
+            }
+          : current,
+      );
+      setAcquisitionJobs(
+        Array.isArray(
+          json.acquisition_jobs,
+        )
+          ? (json.acquisition_jobs as MissingAssetAcquisitionJob[])
+          : acquisitionJobs,
+      );
+
+      if (json.scene) {
+        await refreshSavedScenes();
+      }
+
+      const unresolvedReasons =
+        (resolution.unresolved_diagnostics ?? [])
+          .map(
+            (diagnostic) =>
+              `${diagnostic.concept}: ${diagnostic.reason}`,
+          )
+          .slice(0, 3);
       setSceneMessage(
-        `${requirement.concept} is now in the current scene as a TRELLIS preview. Review it in the Asset Library before MyWay may reuse it automatically.`,
+        `Refreshed ${resolution.bindings.length} approved asset binding(s). ${resolution.unresolved_requirements.length} requirement(s) remain missing.${
+          unresolvedReasons.length
+            ? ` ${unresolvedReasons.join(" ")}`
+            : ""
+        }`,
       );
     } catch (caught) {
       setError(
@@ -1099,13 +1584,7 @@ export function PrimitiveBuilderLab() {
           : String(caught),
       );
     } finally {
-      setTrellisLoadingIds((current) => {
-        const next = new Set(current);
-        next.delete(
-          requirement.instance_id,
-        );
-        return next;
-      });
+      setRefreshingMissingAssets(false);
     }
   }
 
@@ -1135,6 +1614,10 @@ export function PrimitiveBuilderLab() {
           body: JSON.stringify({
             schema_version:
               "myway_scene_manifest_v2",
+            scene_id:
+              savedSceneId ??
+              result.scene_session_id ??
+              title,
             title,
             original_prompt: prompt,
             source: "primitive_builder",
@@ -1184,6 +1667,26 @@ export function PrimitiveBuilderLab() {
         `Saved “${title}”.`,
       );
       setSceneName(title);
+      if (
+        json.scene &&
+        typeof (
+          json.scene as Record<
+            string,
+            unknown
+          >
+        ).scene_id === "string"
+      ) {
+        setSavedSceneId(
+          String(
+            (
+              json.scene as Record<
+                string,
+                unknown
+              >
+            ).scene_id,
+          ),
+        );
+      }
       await refreshSavedScenes();
     } catch (caught) {
       setSceneMessage(
@@ -1230,10 +1733,13 @@ export function PrimitiveBuilderLab() {
 
     setPrompt(scene.original_prompt);
     setSceneName(scene.title);
-    setPreviewBindings([]);
+    setSavedSceneId(scene.scene_id);
+    setAcquisitionJobs([]);
     setResult({
       ok: true,
       plan: loadedPlan,
+      scene_session_id:
+        scene.scene_id,
       scene_graph: scene.scene_graph,
       asset_requirements:
         scene.asset_requirements ?? [],
@@ -1300,10 +1806,13 @@ export function PrimitiveBuilderLab() {
         );
       }
 
-      setResult(
-        json as unknown as GenerateResponse,
+      const generated =
+        json as unknown as GenerateResponse;
+      setResult(generated);
+      setAcquisitionJobs(
+        generated.acquisition_jobs ?? [],
       );
-      setPreviewBindings([]);
+      setSavedSceneId(null);
       setSceneName(
         typeof (
           json.plan as Record<
@@ -1501,6 +2010,9 @@ export function PrimitiveBuilderLab() {
                   assetBindings={
                     resolvedBindings
                   }
+                  onRuntimeDiagnostics={
+                    handleRuntimeDiagnostics
+                  }
                 />
               ) : (
                 <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.12),transparent_34%)] p-8 text-center">
@@ -1650,6 +2162,33 @@ export function PrimitiveBuilderLab() {
                     </span>
                   </div>
 
+                  {missingRequirements.length ? (
+                    <button
+                      type="button"
+                      disabled={
+                        refreshingMissingAssets
+                      }
+                      onClick={() => {
+                        void refreshMissingAssets();
+                      }}
+                      className={`mt-3 w-full rounded-2xl border px-3 py-2 text-xs font-semibold transition ${
+                        refreshReadyCount > 0
+                          ? "border-emerald-200/35 bg-emerald-300/14 text-emerald-50 hover:bg-emerald-300/20"
+                          : "border-amber-200/20 bg-amber-300/[0.07] text-amber-50/85 hover:bg-amber-300/[0.12]"
+                      }`}
+                    >
+                      {refreshingMissingAssets
+                        ? "Checking missing assets…"
+                        : refreshReadyCount > 0
+                          ? `Refresh missing assets (${refreshReadyCount})`
+                          : hasAcquiringMissingAssets
+                            ? "Check acquisition progress"
+                            : hasAwaitingReviewMissingAssets
+                              ? "Check why assets are awaiting review"
+                              : "Check why assets are still missing"}
+                    </button>
+                  ) : null}
+
                   {assetRequirements.length ? (
                     <div className="mt-3 grid gap-2">
                       {assetRequirements.map(
@@ -1660,8 +2199,17 @@ export function PrimitiveBuilderLab() {
                                 candidate.instance_id ===
                                 requirement.instance_id,
                             );
-                          const isLoading =
-                            trellisLoadingIds.has(
+                          const acquisitionJob =
+                            acquisitionJobByRequirementId.get(
+                              requirement.instance_id,
+                            );
+                          const acquisitionStatus =
+                            acquisitionJob?.status.replaceAll(
+                              "_",
+                              " ",
+                            );
+                          const runtimeDiagnostic =
+                            runtimeDiagnostics.get(
                               requirement.instance_id,
                             );
 
@@ -1696,7 +2244,8 @@ export function PrimitiveBuilderLab() {
                                     ? binding.preview_only
                                       ? "TRELLIS preview"
                                       : "in scene"
-                                    : "missing from scene"}
+                                    : acquisitionStatus ??
+                                      "missing from scene"}
                                 </span>
                               </div>
 
@@ -1709,6 +2258,123 @@ export function PrimitiveBuilderLab() {
                                   ? ` → ${requirement.placement_target_instance_id}`
                                   : ""}
                               </p>
+                              <p
+                                className="mt-1 text-[11px] leading-5 text-sky-100/65"
+                                title={
+                                  binding?.size_policy?.reason
+                                }
+                              >
+                                Logical size:{" "}
+                                {requirement.target_extent_m.toFixed(
+                                  2,
+                                )}{" "}
+                                m longest dimension
+                                {binding?.size_policy
+                                  ? ` · ${binding.size_policy.source.replaceAll(
+                                      "_",
+                                      " ",
+                                    )}`
+                                  : ""}
+                              </p>
+                              {runtimeDiagnostic ? (
+                                <>
+                                  <p className="mt-1 text-[11px] leading-5 text-emerald-100/70">
+                                    Actual world size:{" "}
+                                    {runtimeDiagnostic.world_size
+                                      .map((value) => value.toFixed(3))
+                                      .join(" × ")}{" "}
+                                    m
+                                  </p>
+                                  <p className="mt-1 text-[11px] leading-5 text-amber-100/70">
+                                    {runtimeDiagnostic.placement
+                                      ? `Selected region: ${
+                                          runtimeDiagnostic.placement.surface_label
+                                        } · ${Math.round(
+                                          runtimeDiagnostic.placement.surface_confidence * 100,
+                                        )}% ${
+                                          runtimeDiagnostic.placement.surface_source
+                                        } · ${runtimeDiagnostic.placement.exposure} · ${runtimeDiagnostic.placement.openness} · usable ${runtimeDiagnostic.placement.usable_surface_size
+                                          .map((value) => value.toFixed(2))
+                                          .join(" × ")} m${
+                                          runtimeDiagnostic.placement.clearance_above_m == null
+                                            ? " · open clearance"
+                                            : ` · ${runtimeDiagnostic.placement.clearance_above_m.toFixed(2)} m clearance above`
+                                        }${
+                                          runtimeDiagnostic.placement.is_primary
+                                            ? " · primary"
+                                            : ""
+                                        }`
+                                      : `Spatial regions: ${runtimeDiagnostic.support_surface_count} support · ${runtimeDiagnostic.containment_region_count} containment · ${runtimeDiagnostic.attachment_region_count} attachment`}
+                                  </p>
+                                  <p
+                                    className={`mt-1 text-[11px] leading-5 ${
+                                      runtimeDiagnostic.placement_status === "unresolved"
+                                        ? "text-rose-200/85"
+                                        : runtimeDiagnostic.placement_status === "adjusted"
+                                          ? "text-sky-200/80"
+                                          : "text-zinc-300/65"
+                                    }`}
+                                  >
+                                    Placement status: {runtimeDiagnostic.placement_status.replaceAll("_", " ")}
+                                    {runtimeDiagnostic.placement_reason
+                                      ? ` · ${runtimeDiagnostic.placement_reason.replaceAll("_", " ")}`
+                                      : ""}
+                                    {runtimeDiagnostic.collisions.length
+                                      ? ` · collision with ${runtimeDiagnostic.collisions.join(", ")}`
+                                      : ""}
+                                  </p>
+                                  {runtimeDiagnostic.placement_messages.length ? (
+                                    <p className="mt-1 text-[11px] leading-5 text-rose-100/65">
+                                      {runtimeDiagnostic.placement_messages.join(" ")}
+                                    </p>
+                                  ) : null}
+                                </>
+                              ) : null}
+
+                              {requirement.appearance_request ? (
+                                <div className="mt-2 rounded-xl border border-violet-200/10 bg-violet-300/[0.045] px-3 py-2 text-[11px] leading-5 text-violet-50/75">
+                                  <p className="font-semibold text-violet-100">
+                                    Desired appearance
+                                  </p>
+                                  {requirement.appearance_request
+                                    .visual_brief ? (
+                                    <p>
+                                      {
+                                        requirement
+                                          .appearance_request
+                                          .visual_brief
+                                      }
+                                    </p>
+                                  ) : null}
+                                  {requirement.appearance_request
+                                    .required_traits.length ? (
+                                    <p>
+                                      Required:{" "}
+                                      {requirement.appearance_request.required_traits.join(
+                                        ", ",
+                                      )}
+                                    </p>
+                                  ) : null}
+                                  {requirement.appearance_request
+                                    .preferred_traits.length ? (
+                                    <p>
+                                      Preferred:{" "}
+                                      {requirement.appearance_request.preferred_traits.join(
+                                        ", ",
+                                      )}
+                                    </p>
+                                  ) : null}
+                                  {requirement.appearance_request
+                                    .avoid_traits.length ? (
+                                    <p>
+                                      Avoid:{" "}
+                                      {requirement.appearance_request.avoid_traits.join(
+                                        ", ",
+                                      )}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              ) : null}
 
                               {binding ? (
                                 <div className="mt-3 rounded-xl border border-emerald-200/15 bg-emerald-300/[0.06] px-3 py-2 text-[11px] leading-5 text-emerald-50/80">
@@ -1738,29 +2404,95 @@ export function PrimitiveBuilderLab() {
                                           1,
                                         )}`
                                       : ""}
+                                    {binding.appearance_similarity !=
+                                    null
+                                      ? ` · appearance ${Math.round(
+                                          Math.max(
+                                            0,
+                                            Math.min(
+                                              1,
+                                              binding.appearance_similarity,
+                                            ),
+                                          ) * 100,
+                                        )}%`
+                                      : ""}
                                   </p>
+                                  {binding.appearance_summary ? (
+                                    <p className="mt-1 text-emerald-50/65">
+                                      {
+                                        binding.appearance_summary
+                                      }
+                                    </p>
+                                  ) : null}
+                                  {binding.appearance_trait_matches
+                                    ?.length ? (
+                                    <p className="mt-1 text-emerald-100/70">
+                                      Appearance matched:{" "}
+                                      {binding.appearance_trait_matches.join(
+                                        ", ",
+                                      )}
+                                    </p>
+                                  ) : null}
+                                  {binding.appearance_ranking
+                                    ?.requested &&
+                                  !binding.appearance_ranking
+                                    .used ? (
+                                    <p className="mt-1 text-amber-100/70">
+                                      Selected using identity and
+                                      quality ranking.{" "}
+                                      {
+                                        binding
+                                          .appearance_ranking
+                                          .reason
+                                      }
+                                    </p>
+                                  ) : null}
                                 </div>
                               ) : (
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  <button
-                                    type="button"
-                                    disabled={
-                                      isLoading
-                                    }
-                                    onClick={() =>
-                                      void generateWithTrellis(
-                                        requirement,
-                                      )
-                                    }
-                                    className="rounded-xl border border-violet-200/25 bg-violet-300/10 px-3 py-2 text-[11px] font-semibold text-violet-50 transition hover:bg-violet-300/15 disabled:cursor-not-allowed disabled:opacity-50"
-                                  >
-                                    {isLoading
-                                      ? "Generating…"
-                                      : "Generate with TRELLIS"}
-                                  </button>
+                                <div className="mt-3 rounded-xl border border-amber-200/15 bg-amber-300/[0.055] px-3 py-2 text-[11px] leading-5 text-amber-50/80">
+                                  <p>
+                                    {acquisitionJob?.status ===
+                                    "searching_blenderkit"
+                                      ? "MyWay is searching BlendKit automatically."
+                                      : acquisitionJob?.status ===
+                                          "generating_trellis"
+                                        ? "BlendKit did not produce an acceptable candidate, so TRELLIS is generating one."
+                                        : acquisitionJob?.status ===
+                                            "awaiting_review"
+                                          ? "A candidate is ready in the Asset Library. Approve it, try another BlendKit asset, or generate with TRELLIS instead."
+                                          : acquisitionJob?.status ===
+                                              "approved"
+                                            ? "An approved asset is ready. Use Refresh missing assets above."
+                                            : acquisitionJob?.status ===
+                                                "unavailable"
+                                              ? "Acquisition needs attention in the Asset Library."
+                                              : "MyWay queued this missing asset for automatic acquisition."}
+                                  </p>
+                                  {acquisitionJob?.last_error ? (
+                                    <p className="mt-1 text-rose-100/75">
+                                      {acquisitionJob.last_error}
+                                    </p>
+                                  ) : null}
+                                  {result?.asset_resolution
+                                    ?.unresolved_diagnostics
+                                    ?.find(
+                                      (diagnostic) =>
+                                        diagnostic.instance_id ===
+                                        requirement.instance_id,
+                                    ) ? (
+                                    <p className="mt-1 text-amber-100/75">
+                                      {
+                                        result.asset_resolution.unresolved_diagnostics.find(
+                                          (diagnostic) =>
+                                            diagnostic.instance_id ===
+                                            requirement.instance_id,
+                                        )?.reason
+                                      }
+                                    </p>
+                                  ) : null}
                                   <a
                                     href="/sandbox/probe-lab/asset-library"
-                                    className="rounded-xl border border-white/10 bg-white/[0.055] px-3 py-2 text-[11px] font-semibold text-zinc-100 transition hover:bg-white/[0.09]"
+                                    className="mt-2 inline-flex rounded-xl border border-white/10 bg-white/[0.055] px-3 py-2 font-semibold text-zinc-100 transition hover:bg-white/[0.09]"
                                   >
                                     Open Asset Library
                                   </a>
@@ -1780,12 +2512,11 @@ export function PrimitiveBuilderLab() {
                   )}
 
                   <p className="mt-3 text-[11px] leading-5 text-cyan-50/60">
-                    Missing objects are not
-                    replaced with primitives.
-                    TRELLIS previews can enter
-                    this scene immediately but
-                    remain pending for future
-                    automatic reuse.
+                    Missing objects are not replaced with primitives. MyWay
+                    automatically searches BlendKit, falls back to TRELLIS
+                    when needed, and waits for approval in the Asset Library.
+                    Refreshing adds newly approved assets without another model
+                    generation.
                   </p>
                 </div>
 

@@ -5,6 +5,9 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 
+import type {
+  MyWayAssetRegistryV2,
+} from "../../sandbox/probe-lab/assets/asset-types";
 import {
   ensureAssetDirectories,
   MYWAY_ASSET_REGISTRY_PROJECT_PATH,
@@ -42,8 +45,8 @@ async function main() {
 
   await ensureAssetDirectories();
 
-  const emptyRegistry = {
-    schema_version: "myway_asset_registry_v1",
+  const emptyRegistry: MyWayAssetRegistryV2 = {
+    schema_version: "myway_asset_registry_v2",
     updated_at: new Date().toISOString(),
     asset_root_public_url: "/sandbox-assets/myway",
     notes:

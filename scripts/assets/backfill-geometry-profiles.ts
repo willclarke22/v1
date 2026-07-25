@@ -117,6 +117,13 @@ async function main() {
         });
       const completed =
         await runBlenderJob(jobPath);
+
+      if (completed.kind !== "normalize_asset") {
+        throw new Error(
+          `Expected a normalize_asset Blender job but received ${completed.kind}.`,
+        );
+      }
+
       const profile =
         completed.result?.geometry_profile;
 

@@ -89,7 +89,15 @@ export async function attachApprovedAssetsToVisualTurn(
       ],
       semantic_tags:
         entity.visual_need.semantic_tags,
-      style_tags: [],
+      appearance_request: {
+        schema_version:
+          "myway_asset_appearance_request_v1",
+        visual_brief:
+          entity.visual_need.description,
+        required_traits: [],
+        preferred_traits: [],
+        avoid_traits: [],
+      },
       allow_blenderkit: false,
       allow_trellis: false,
       require_scene_approved: true,
