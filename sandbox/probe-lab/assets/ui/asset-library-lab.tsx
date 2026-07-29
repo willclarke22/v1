@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import type { ErrorInfo, ReactNode } from "react";
+import * as THREE from "three";
 
 type Vec3 = [number, number, number];
 
@@ -329,14 +330,85 @@ type GeometryResponse = {
   error?: string;
 };
 
+type BlenderKitCandidate = {
+  source_asset_id: string;
+  source_internal_id: string | null;
+  display_name: string;
+  description: string | null;
+  source_url: string | null;
+  thumbnail_url: string | null;
+  author_name: string | null;
+  license_kind: "cc0";
+  verification_status: string | null;
+  is_free: boolean | null;
+  rating_quality: number | null;
+  polygon_count: number | null;
+  file_size_bytes: number | null;
+  available_resolutions: string[];
+  tags: string[];
+  match_score: number;
+  semantic_match: boolean;
+  already_imported: boolean;
+};
+
+type DirectBlendKitSearchResponse = {
+  ok: boolean;
+  query?: string;
+  candidates?: BlenderKitCandidate[];
+  total_cc0_downloadable?: number;
+  semantic_match_count?: number;
+  broadened_results?: boolean;
+  message?: string;
+  error?: string;
+};
+
 type DirectBlendKitImportResponse = {
   ok: boolean;
   created?: boolean;
   asset?: LibraryAsset;
   enrichment_entry?: EnrichmentQueueEntry;
+  selected_source_asset_id?: string | null;
   message?: string;
   error?: string;
 };
+
+type DirectTrellisCreateResponse = {
+  ok: boolean;
+  created?: boolean;
+  asset?: LibraryAsset;
+  enrichment_entry?: EnrichmentQueueEntry;
+  normalization_extent_m?: number;
+  generated_prompt?: string | null;
+  message?: string;
+  error?: string;
+  debug_path?: string;
+};
+
+type DirectGlmProceduralResponse = {
+  ok: boolean;
+  created?: boolean;
+  asset?: LibraryAsset;
+  enrichment_entry?: EnrichmentQueueEntry | null;
+  plan?: { suitability: "strong" | "moderate" | "weak"; suitability_reason: string; parts: unknown[] };
+  model?: string;
+  message?: string;
+  error?: string;
+  debug_path?: string;
+};
+
+type DirectLocalGlbImportResponse = {
+  ok: boolean;
+  created?: boolean;
+  duplicate_of?: string | null;
+  asset?: LibraryAsset;
+  enrichment_entry?: EnrichmentQueueEntry | null;
+  source_record_path?: string | null;
+  message?: string;
+  error?: string;
+  debug_path?: string;
+};
+
+type ManualAcquisitionMode = "blenderkit" | "trellis" | "glm" | "local";
 
 type ReviewView =
   | "all"
@@ -493,22 +565,26 @@ function AssetViewer({ asset }: { asset: LibraryAsset | null }) {
       <Canvas
         camera={{ position: [4.5, 3.2, 5.5], fov: 42 }}
         dpr={[1, 1.75]}
+        gl={{
+          antialias: true,
+          alpha: false,
+        }}
         shadows
       >
         <color attach="background" args={["#07111f"]} />
-        <ambientLight intensity={1.5} />
+        <ambientLight intensity={0.75} />
         <hemisphereLight
-          args={["#dbeafe", "#172554", 1.7]}
+          args={["#f8fafc", "#172554", 1.15]}
           position={[0, 4, 0]}
         />
         <directionalLight
           castShadow
-          intensity={3}
+          intensity={2.2}
           position={[4, 6, 5]}
           shadow-mapSize-width={1024}
           shadow-mapSize-height={1024}
         />
-        <directionalLight intensity={1.1} position={[-4, 2, -3]} />
+        <directionalLight intensity={0.85} position={[-4, 2, -3]} />
 
         <Suspense fallback={<ViewerLoading />}>
           <LoadedAsset src={asset.public_path} />
@@ -756,10 +832,55 @@ export function AssetLibraryLab() {
     useState<EnrichmentQueueEntry[]>([]);
   const [geometryQueue, setGeometryQueue] =
     useState<GeometryQueueEntry[]>([]);
+  const [manualAcquisitionMode, setManualAcquisitionMode] =
+    useState<ManualAcquisitionMode>("blenderkit");
   const [blendKitConcept, setBlendKitConcept] =
     useState("");
+  const [blendKitSearching, setBlendKitSearching] =
+    useState(false);
   const [blendKitImporting, setBlendKitImporting] =
     useState(false);
+  const [blendKitCandidates, setBlendKitCandidates] =
+    useState<BlenderKitCandidate[]>([]);
+  const [blendKitSelectedSourceAssetId, setBlendKitSelectedSourceAssetId] =
+    useState<string | null>(null);
+  const [blendKitLastSearchQuery, setBlendKitLastSearchQuery] =
+    useState("");
+  const [trellisConcept, setTrellisConcept] = useState("");
+  const [trellisDetails, setTrellisDetails] = useState("");
+  const [trellisSemanticTags, setTrellisSemanticTags] = useState("");
+  const [trellisDomain, setTrellisDomain] =
+    useState("asset_library_manual_trellis");
+  const [trellisTargetExtentM, setTrellisTargetExtentM] =
+    useState("2");
+  const [trellisSeed, setTrellisSeed] = useState("0");
+  const [trellisMaxAttempts, setTrellisMaxAttempts] =
+    useState("3");
+  const [trellisNoTexture, setTrellisNoTexture] =
+    useState(false);
+  const [trellisCreating, setTrellisCreating] =
+    useState(false);
+  const [glmConcept, setGlmConcept] = useState("");
+  const [glmDetails, setGlmDetails] = useState("");
+  const [glmStyle, setGlmStyle] = useState("clean stylized");
+  const [glmTargetExtentM, setGlmTargetExtentM] = useState("2");
+  const [glmCreating, setGlmCreating] = useState(false);
+  const [localGlbFile, setLocalGlbFile] = useState<File | null>(null);
+  const [localGlbConcept, setLocalGlbConcept] = useState("");
+  const [localGlbAliases, setLocalGlbAliases] = useState("");
+  const [localGlbSemanticTags, setLocalGlbSemanticTags] = useState("");
+  const [localGlbDomain, setLocalGlbDomain] =
+    useState("asset_library_manual_upload");
+  const [localGlbTargetExtentM, setLocalGlbTargetExtentM] =
+    useState("2");
+  const [localGlbSourceProvider, setLocalGlbSourceProvider] = useState("");
+  const [localGlbSourceUrl, setLocalGlbSourceUrl] = useState("");
+  const [localGlbLicenseKind, setLocalGlbLicenseKind] =
+    useState("unknown");
+  const [localGlbAttribution, setLocalGlbAttribution] = useState("");
+  const [localGlbProvenanceNotes, setLocalGlbProvenanceNotes] = useState("");
+  const [localGlbImporting, setLocalGlbImporting] = useState(false);
+  const localGlbFileInputRef = useRef<HTMLInputElement | null>(null);
   const [licenseFilter, setLicenseFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [refreshToken, setRefreshToken] = useState(0);
@@ -2132,12 +2253,96 @@ export function AssetLibraryLab() {
     }
   }
 
+  async function searchBlendKitAssets() {
+    const concept = blendKitConcept.trim();
+    if (!concept) {
+      setError(
+        "Type an object name to search for on BlendKit.",
+      );
+      return;
+    }
+
+    setBlendKitSearching(true);
+    setBlendKitCandidates([]);
+    setBlendKitSelectedSourceAssetId(null);
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/import-blenderkit",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "search",
+            concept,
+            search_query: concept,
+          }),
+        },
+      );
+      const payload =
+        (await response.json()) as DirectBlendKitSearchResponse;
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(
+          payload.error ||
+            "BlendKit candidate search failed.",
+        );
+      }
+
+      const candidates = payload.candidates ?? [];
+      setBlendKitCandidates(candidates);
+      setBlendKitLastSearchQuery(payload.query ?? concept);
+      setBlendKitSelectedSourceAssetId(
+        candidates.find((candidate) => !candidate.already_imported)
+          ?.source_asset_id ?? null,
+      );
+      setPromotionMessage(
+        payload.message ||
+          (candidates.length > 0
+            ? `Choose one of ${candidates.length} CC0 BlendKit candidates.`
+            : "No selectable CC0 BlendKit candidates were found."),
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    } finally {
+      setBlendKitSearching(false);
+    }
+  }
+
   async function importBlendKitAsset() {
-    const concept =
-      blendKitConcept.trim();
+    const concept = blendKitConcept.trim();
+    const selectedSourceAssetId =
+      blendKitSelectedSourceAssetId;
+
     if (!concept) {
       setError(
         "Type an object name to import from BlendKit.",
+      );
+      return;
+    }
+
+    if (!selectedSourceAssetId) {
+      setError(
+        "Select a BlendKit candidate before importing.",
+      );
+      return;
+    }
+
+    const selectedCandidate = blendKitCandidates.find(
+      (candidate) =>
+        candidate.source_asset_id === selectedSourceAssetId,
+    );
+    if (!selectedCandidate || selectedCandidate.already_imported) {
+      setError(
+        "The selected BlendKit candidate is not available for import.",
       );
       return;
     }
@@ -2152,65 +2357,51 @@ export function AssetLibraryLab() {
         {
           method: "POST",
           headers: {
-            "Content-Type":
-              "application/json",
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            action: "import",
             concept,
+            search_query:
+              blendKitLastSearchQuery || concept,
+            selected_source_asset_id:
+              selectedSourceAssetId,
           }),
         },
       );
       const payload =
-        (await response.json()) as
-          DirectBlendKitImportResponse;
+        (await response.json()) as DirectBlendKitImportResponse;
 
-      if (
-        !response.ok ||
-        !payload.ok ||
-        !payload.asset
-      ) {
+      if (!response.ok || !payload.ok || !payload.asset) {
         throw new Error(
           payload.error ||
             "BlendKit import failed.",
         );
       }
 
-      if (
-        payload.enrichment_entry
-      ) {
-        setEnrichmentQueue(
-          (current) => {
-            const next =
-              current.filter(
-                (entry) =>
-                  entry.asset_id !==
-                  payload
-                    .enrichment_entry!
-                    .asset_id,
-              );
-            next.push(
-              payload
-                .enrichment_entry!,
-            );
-            return next;
-          },
-        );
+      if (payload.enrichment_entry) {
+        setEnrichmentQueue((current) => {
+          const next = current.filter(
+            (entry) =>
+              entry.asset_id !==
+              payload.enrichment_entry!.asset_id,
+          );
+          next.push(payload.enrichment_entry!);
+          return next;
+        });
       }
 
-      setSelectedAssetId(
-        payload.asset.asset_id,
-      );
-      setReviewView(
-        "needs_review",
-      );
+      setSelectedAssetId(payload.asset.asset_id);
+      setReviewView("needs_review");
       setBlendKitConcept("");
+      setBlendKitCandidates([]);
+      setBlendKitSelectedSourceAssetId(null);
+      setBlendKitLastSearchQuery("");
       setPromotionMessage(
         payload.message ||
           `${payload.asset.display_name} was imported from BlendKit and queued for analysis.`,
       );
-      setRefreshToken(
-        (value) => value + 1,
-      );
+      setRefreshToken((value) => value + 1);
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -2219,6 +2410,246 @@ export function AssetLibraryLab() {
       );
     } finally {
       setBlendKitImporting(false);
+    }
+  }
+
+  async function createGlmProceduralAsset() {
+    const concept = glmConcept.trim();
+    const targetExtent = Number(glmTargetExtentM);
+    if (!concept) { setError("Type the object you want GLM 5.2 to construct."); return; }
+    if (!Number.isFinite(targetExtent) || targetExtent <= 0) { setError("The GLM normalization extent must be greater than zero."); return; }
+    setGlmCreating(true); setPromotionMessage(null); setError(null);
+    try {
+      const response = await fetch("/api/sandbox/probe-lab/assets/glm-builder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ concept, details: glmDetails, style: glmStyle, target_extent_m: targetExtent }),
+      });
+      const payload = (await response.json()) as DirectGlmProceduralResponse;
+      if (!response.ok || !payload.ok || !payload.asset) throw new Error(payload.error || "GLM procedural asset generation failed.");
+      if (payload.enrichment_entry) setEnrichmentQueue((current) => [...current.filter((entry) => entry.asset_id !== payload.enrichment_entry!.asset_id), payload.enrichment_entry!]);
+      setSelectedAssetId(payload.asset.asset_id); setReviewView("needs_review");
+      setPromotionMessage(payload.message || `${payload.asset.display_name} was constructed by GLM and queued for review.`);
+      setRefreshToken((value) => value + 1);
+    } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+    finally { setGlmCreating(false); }
+  }
+
+  async function createTrellisAsset() {
+    const concept = trellisConcept.trim();
+
+    if (!concept) {
+      setError(
+        "Type the object you want TRELLIS to generate.",
+      );
+      return;
+    }
+
+    const parsedTargetExtent = Number(trellisTargetExtentM);
+    const parsedSeed = Number(trellisSeed);
+    const parsedMaxAttempts = Number(trellisMaxAttempts);
+
+    if (
+      !Number.isFinite(parsedTargetExtent) ||
+      parsedTargetExtent <= 0
+    ) {
+      setError(
+        "The TRELLIS normalization extent must be greater than zero.",
+      );
+      return;
+    }
+
+    if (
+      !Number.isInteger(parsedSeed) ||
+      parsedSeed < 0
+    ) {
+      setError(
+        "The TRELLIS seed must be a nonnegative whole number.",
+      );
+      return;
+    }
+
+    if (
+      !Number.isInteger(parsedMaxAttempts) ||
+      parsedMaxAttempts < 1 ||
+      parsedMaxAttempts > 3
+    ) {
+      setError(
+        "TRELLIS attempts must be a whole number from 1 to 3.",
+      );
+      return;
+    }
+
+    setTrellisCreating(true);
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/trellis",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            concept,
+            acquisition_terms: csvValues(trellisDetails),
+            semantic_tags: csvValues(trellisSemanticTags),
+            domain:
+              trellisDomain.trim() ||
+              "asset_library_manual_trellis",
+            target_extent_m: parsedTargetExtent,
+            no_texture: trellisNoTexture,
+            seed: parsedSeed,
+            max_attempts: parsedMaxAttempts,
+          }),
+        },
+      );
+      const payload =
+        (await response.json()) as DirectTrellisCreateResponse;
+
+      if (!response.ok || !payload.ok || !payload.asset) {
+        throw new Error(
+          payload.error ||
+            "TRELLIS asset generation failed.",
+        );
+      }
+
+      if (payload.enrichment_entry) {
+        setEnrichmentQueue((current) => {
+          const next = current.filter(
+            (entry) =>
+              entry.asset_id !==
+              payload.enrichment_entry!.asset_id,
+          );
+          next.push(payload.enrichment_entry!);
+          return next;
+        });
+      }
+
+      setSelectedAssetId(payload.asset.asset_id);
+      setReviewView("needs_review");
+      setTrellisConcept("");
+      setTrellisDetails("");
+      setTrellisSemanticTags("");
+      setPromotionMessage(
+        payload.message ||
+          `${payload.asset.display_name} was generated with TRELLIS and queued for analysis.`,
+      );
+      setRefreshToken((value) => value + 1);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    } finally {
+      setTrellisCreating(false);
+    }
+  }
+
+  async function importLocalGlbAsset() {
+    const concept = localGlbConcept.trim();
+    const parsedTargetExtent = Number(localGlbTargetExtentM);
+
+    if (!localGlbFile) {
+      setError("Choose a GLB file to import.");
+      return;
+    }
+
+    if (!concept) {
+      setError("Enter the canonical identity of the uploaded object.");
+      return;
+    }
+
+    if (
+      !Number.isFinite(parsedTargetExtent) ||
+      parsedTargetExtent <= 0
+    ) {
+      setError(
+        "The manual GLB normalization extent must be greater than zero.",
+      );
+      return;
+    }
+
+    setLocalGlbImporting(true);
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.set("file", localGlbFile);
+      formData.set("concept", concept);
+      formData.set("aliases", localGlbAliases);
+      formData.set("semantic_tags", localGlbSemanticTags);
+      formData.set(
+        "domain",
+        localGlbDomain.trim() || "asset_library_manual_upload",
+      );
+      formData.set("target_extent_m", String(parsedTargetExtent));
+      formData.set(
+        "source_provider",
+        localGlbSourceProvider.trim() || "Manual upload",
+      );
+      formData.set("source_url", localGlbSourceUrl.trim());
+      formData.set("license_kind", localGlbLicenseKind);
+      formData.set("attribution", localGlbAttribution.trim());
+      formData.set(
+        "provenance_notes",
+        localGlbProvenanceNotes.trim(),
+      );
+
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/import-local",
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+      const payload =
+        (await response.json()) as DirectLocalGlbImportResponse;
+
+      if (!response.ok || !payload.ok || !payload.asset) {
+        throw new Error(
+          payload.error || "The local GLB import failed.",
+        );
+      }
+
+      if (payload.enrichment_entry) {
+        setEnrichmentQueue((current) => {
+          const next = current.filter(
+            (entry) =>
+              entry.asset_id !== payload.enrichment_entry!.asset_id,
+          );
+          next.push(payload.enrichment_entry!);
+          return next;
+        });
+      }
+
+      setSelectedAssetId(payload.asset.asset_id);
+      setReviewView(payload.created === false ? "all" : "needs_review");
+      setLocalGlbFile(null);
+      setLocalGlbConcept("");
+      setLocalGlbAliases("");
+      setLocalGlbSemanticTags("");
+      setLocalGlbSourceUrl("");
+      setLocalGlbAttribution("");
+      setLocalGlbProvenanceNotes("");
+      if (localGlbFileInputRef.current) {
+        localGlbFileInputRef.current.value = "";
+      }
+      setPromotionMessage(
+        payload.message ||
+          `${payload.asset.display_name} was imported and queued for analysis.`,
+      );
+      setRefreshToken((value) => value + 1);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : String(caught),
+      );
+    } finally {
+      setLocalGlbImporting(false);
     }
   }
 
@@ -2857,15 +3288,54 @@ export function AssetLibraryLab() {
 
         .asset-library-direct-import {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          gap: 0.8rem;
-          align-items: end;
+          gap: 1rem;
           margin-bottom: 1rem;
           border: 1px solid rgba(56, 189, 248, 0.24);
           border-radius: 1.25rem;
           padding: 1rem;
           background:
             linear-gradient(135deg, rgba(14, 116, 144, 0.16), rgba(15, 23, 42, 0.72));
+        }
+
+        .asset-library-acquisition-provider-tabs {
+          display: flex;
+          width: fit-content;
+          max-width: 100%;
+          overflow: hidden;
+          border: 1px solid rgba(125, 211, 252, 0.24);
+          border-radius: 999px;
+          background: rgba(2, 6, 23, 0.52);
+        }
+
+        .asset-library-acquisition-provider-tabs button {
+          flex: 1 1 auto;
+          min-height: 40px;
+          border: 0;
+          padding: 0.6rem 0.9rem;
+          color: rgba(226, 232, 240, 0.72);
+          background: transparent;
+          font: inherit;
+          font-size: 0.82rem;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .asset-library-acquisition-provider-tabs button[data-active="true"] {
+          color: #ecfeff;
+          background: rgba(8, 145, 178, 0.28);
+          box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.34);
+        }
+
+        .asset-library-acquisition-provider-tabs button:disabled {
+          cursor: not-allowed;
+          opacity: 0.55;
+        }
+
+        .asset-library-direct-import-search {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 0.8rem;
+          align-items: end;
         }
 
         .asset-library-direct-import label {
@@ -2875,7 +3345,9 @@ export function AssetLibraryLab() {
           font-weight: 700;
         }
 
-        .asset-library-direct-import input {
+        .asset-library-direct-import input,
+        .asset-library-direct-import textarea,
+        .asset-library-direct-import select {
           width: 100%;
           min-height: 46px;
           border: 1px solid rgba(125, 211, 252, 0.3);
@@ -2887,10 +3359,238 @@ export function AssetLibraryLab() {
           outline: none;
         }
 
+        .asset-library-direct-import textarea {
+          min-height: 88px;
+          padding: 0.75rem 0.85rem;
+          resize: vertical;
+        }
+
+        .asset-library-direct-import select {
+          min-height: 46px;
+          padding: 0 0.85rem;
+        }
+
+        .asset-library-trellis-form {
+          display: grid;
+          gap: 1rem;
+        }
+
+        .asset-library-trellis-intro {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+        }
+
+        .asset-library-trellis-intro > div {
+          display: grid;
+          gap: 0.35rem;
+          max-width: 760px;
+        }
+
+        .asset-library-trellis-fields {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.8rem;
+          border-top: 1px solid rgba(125, 211, 252, 0.18);
+          padding-top: 1rem;
+        }
+
+        .asset-library-trellis-wide {
+          grid-column: 1 / -1;
+        }
+
+        .asset-library-trellis-checkbox {
+          display: flex !important;
+          align-items: flex-start;
+          gap: 0.65rem !important;
+          border: 1px solid rgba(148, 163, 184, 0.2);
+          border-radius: 0.9rem;
+          padding: 0.8rem;
+          background: rgba(15, 23, 42, 0.5);
+        }
+
+        .asset-library-trellis-checkbox > input {
+          width: 18px;
+          min-height: 18px;
+          margin-top: 0.15rem;
+          padding: 0;
+        }
+
+        .asset-library-trellis-checkbox > span {
+          display: grid;
+          gap: 0.25rem;
+        }
+
+        .asset-library-trellis-warning {
+          margin: 0;
+          border: 1px solid rgba(251, 191, 36, 0.22);
+          border-radius: 0.8rem;
+          padding: 0.7rem 0.8rem;
+          color: rgba(254, 243, 199, 0.82);
+          background: rgba(120, 53, 15, 0.12);
+          font-size: 0.78rem;
+          line-height: 1.5;
+        }
+
         .asset-library-direct-import small {
           color: rgba(203, 213, 225, 0.7);
           font-weight: 400;
           line-height: 1.5;
+        }
+
+        .asset-library-blenderkit-results {
+          display: grid;
+          gap: 0.9rem;
+          border-top: 1px solid rgba(125, 211, 252, 0.18);
+          padding-top: 1rem;
+        }
+
+        .asset-library-blenderkit-results-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+        }
+
+        .asset-library-blenderkit-results-header > div {
+          display: grid;
+          gap: 0.2rem;
+        }
+
+        .asset-library-blenderkit-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+          gap: 0.8rem;
+        }
+
+        .asset-library-blenderkit-candidate {
+          display: grid;
+          align-content: space-between;
+          gap: 0.7rem;
+          min-width: 0;
+          border: 1px solid rgba(148, 163, 184, 0.22);
+          border-radius: 1rem;
+          padding: 0.7rem;
+          background: rgba(2, 6, 23, 0.62);
+          transition: border-color 140ms ease, background 140ms ease;
+        }
+
+        .asset-library-blenderkit-candidate[data-selected="true"] {
+          border-color: rgba(56, 189, 248, 0.9);
+          background: rgba(8, 145, 178, 0.16);
+          box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .asset-library-blenderkit-candidate[data-disabled="true"] {
+          opacity: 0.58;
+        }
+
+        .asset-library-blenderkit-candidate > label {
+          display: grid;
+          grid-template-columns: auto 84px minmax(0, 1fr);
+          gap: 0.65rem;
+          align-items: start;
+          color: inherit;
+          font-weight: 400;
+          cursor: pointer;
+        }
+
+        .asset-library-blenderkit-candidate > label > input {
+          width: 18px;
+          min-height: 18px;
+          margin-top: 0.3rem;
+          padding: 0;
+        }
+
+        .asset-library-blenderkit-preview {
+          display: grid;
+          place-items: center;
+          width: 84px;
+          aspect-ratio: 1;
+          overflow: hidden;
+          border-radius: 0.75rem;
+          color: rgba(226, 232, 240, 0.72);
+          background: rgba(15, 23, 42, 0.9);
+        }
+
+        .asset-library-blenderkit-preview img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .asset-library-blenderkit-copy {
+          display: grid;
+          gap: 0.35rem;
+          min-width: 0;
+        }
+
+        .asset-library-blenderkit-title-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 0.45rem;
+        }
+
+        .asset-library-blenderkit-title-row strong {
+          overflow-wrap: anywhere;
+        }
+
+        .asset-library-blenderkit-title-row span {
+          flex: 0 0 auto;
+          border-radius: 999px;
+          padding: 0.15rem 0.4rem;
+          color: #bbf7d0;
+          background: rgba(22, 163, 74, 0.18);
+          font-size: 0.72rem;
+          font-weight: 800;
+        }
+
+        .asset-library-blenderkit-copy p {
+          display: -webkit-box;
+          overflow: hidden;
+          margin: 0;
+          color: rgba(226, 232, 240, 0.76);
+          font-size: 0.82rem;
+          font-weight: 400;
+          line-height: 1.4;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 3;
+        }
+
+        .asset-library-blenderkit-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.35rem;
+        }
+
+        .asset-library-blenderkit-meta span,
+        .asset-library-blenderkit-copy em {
+          border-radius: 999px;
+          padding: 0.22rem 0.45rem;
+          color: rgba(203, 213, 225, 0.78);
+          background: rgba(30, 41, 59, 0.78);
+          font-size: 0.7rem;
+          font-style: normal;
+          font-weight: 600;
+        }
+
+        .asset-library-blenderkit-copy em {
+          width: fit-content;
+          color: #fde68a;
+          background: rgba(161, 98, 7, 0.22);
+        }
+
+        .asset-library-blenderkit-candidate > a {
+          width: fit-content;
+          color: #7dd3fc;
+          font-size: 0.78rem;
+          text-decoration: none;
+        }
+
+        .asset-library-blenderkit-candidate > a:hover {
+          text-decoration: underline;
         }
 
         .asset-library-review-tabs {
@@ -3447,8 +4147,34 @@ export function AssetLibraryLab() {
             margin-top: 1rem;
           }
 
-          .asset-library-direct-import {
+          .asset-library-direct-import-search {
             grid-template-columns: 1fr;
+          }
+
+          .asset-library-trellis-intro {
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .asset-library-trellis-fields {
+            grid-template-columns: 1fr;
+          }
+
+          .asset-library-trellis-wide {
+            grid-column: auto;
+          }
+
+          .asset-library-blenderkit-results-header {
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .asset-library-blenderkit-candidate > label {
+            grid-template-columns: auto 72px minmax(0, 1fr);
+          }
+
+          .asset-library-blenderkit-preview {
+            width: 72px;
           }
 
           .asset-library-stats,
@@ -3486,6 +4212,12 @@ export function AssetLibraryLab() {
             <a className="asset-library-link" href="/sandbox/probe-lab">
               Back to Probe Lab
             </a>
+            <a
+              className="asset-library-link"
+              href="/sandbox/probe-lab/asset-library/ambientcg"
+            >
+              ambientCG Materials & HDRIs
+            </a>
             <button
               className="asset-library-button"
               data-secondary="true"
@@ -3519,46 +4251,600 @@ export function AssetLibraryLab() {
           </div>
         </header>
 
-        <form
-          className="asset-library-direct-import"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void importBlendKitAsset();
-          }}
-        >
-          <label>
-            Get a CC0 asset directly from BlendKit
-            <input
-              aria-label="BlendKit object name"
-              disabled={blendKitImporting}
-              onChange={(event) =>
-                setBlendKitConcept(
-                  event.target.value,
-                )
-              }
-              placeholder="Type an object, such as microscope or violin"
-              value={blendKitConcept}
-            />
-            <small>
-              This bypasses scene generation, imports one unseen CC0 candidate,
-              normalizes its source file, and queues style analysis. Identity and
-              scene approval still require review.
-            </small>
-          </label>
-          <button
-            className="asset-library-button"
-            data-primary="true"
-            disabled={
-              blendKitImporting ||
-              !blendKitConcept.trim()
-            }
-            type="submit"
+        <section className="asset-library-direct-import">
+          <div
+            aria-label="Manual asset acquisition provider"
+            className="asset-library-acquisition-provider-tabs"
           >
-            {blendKitImporting
-              ? "Importing from BlendKit…"
-              : "Get BlendKit asset"}
-          </button>
-        </form>
+            <button
+              data-active={manualAcquisitionMode === "blenderkit"}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || localGlbImporting}
+              onClick={() => setManualAcquisitionMode("blenderkit")}
+              type="button"
+            >
+              Search BlendKit
+            </button>
+            <button
+              data-active={manualAcquisitionMode === "trellis"}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || localGlbImporting}
+              onClick={() => setManualAcquisitionMode("trellis")}
+              type="button"
+            >
+              Create with TRELLIS
+            </button>
+            <button
+              data-active={manualAcquisitionMode === "glm"}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || localGlbImporting}
+              onClick={() => setManualAcquisitionMode("glm")}
+              type="button"
+            >
+              Build with GLM 5.2
+            </button>
+            <button
+              data-active={manualAcquisitionMode === "local"}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || localGlbImporting}
+              onClick={() => setManualAcquisitionMode("local")}
+              type="button"
+            >
+              Import local GLB
+            </button>
+          </div>
+
+          {manualAcquisitionMode === "blenderkit" ? (
+            <>
+              <form
+                className="asset-library-direct-import-search"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void searchBlendKitAssets();
+                }}
+              >
+                <label>
+                  Choose a CC0 asset from BlendKit
+                  <input
+                    aria-label="BlendKit object name"
+                    disabled={blendKitSearching || blendKitImporting}
+                    onChange={(event) => {
+                      setBlendKitConcept(event.target.value);
+                      setBlendKitCandidates([]);
+                      setBlendKitSelectedSourceAssetId(null);
+                      setBlendKitLastSearchQuery("");
+                    }}
+                    placeholder="Type an object, such as microscope or violin"
+                    value={blendKitConcept}
+                  />
+                  <small>
+                    Search first, compare the available candidates, then import only
+                    the exact model you select. The normal geometry, identity,
+                    appearance, embedding, and approval pipeline still runs afterward.
+                  </small>
+                </label>
+                <button
+                  className="asset-library-button"
+                  data-primary="true"
+                  disabled={
+                    blendKitSearching ||
+                    blendKitImporting ||
+                    !blendKitConcept.trim()
+                  }
+                  type="submit"
+                >
+                  {blendKitSearching
+                    ? "Searching BlendKit…"
+                    : blendKitCandidates.length > 0
+                      ? "Search again"
+                      : "Search BlendKit"}
+                </button>
+              </form>
+
+              {blendKitCandidates.length > 0 ? (
+                <div className="asset-library-blenderkit-results">
+                  <div className="asset-library-blenderkit-results-header">
+                    <div>
+                      <strong>
+                        Select one candidate
+                      </strong>
+                      <small>
+                        {blendKitCandidates.length} CC0 option(s) shown for “
+                        {blendKitLastSearchQuery || blendKitConcept.trim()}”.
+                      </small>
+                    </div>
+                    <button
+                      className="asset-library-button"
+                      data-primary="true"
+                      disabled={
+                        blendKitImporting ||
+                        !blendKitSelectedSourceAssetId
+                      }
+                      onClick={() => void importBlendKitAsset()}
+                      type="button"
+                    >
+                      {blendKitImporting
+                        ? "Importing selected asset…"
+                        : "Import selected asset"}
+                    </button>
+                  </div>
+
+                  <div className="asset-library-blenderkit-grid">
+                    {blendKitCandidates.map((candidate) => {
+                      const selected =
+                        candidate.source_asset_id ===
+                        blendKitSelectedSourceAssetId;
+
+                      return (
+                        <article
+                          className="asset-library-blenderkit-candidate"
+                          data-disabled={candidate.already_imported}
+                          data-selected={selected}
+                          key={candidate.source_asset_id}
+                        >
+                          <label>
+                            <input
+                              checked={selected}
+                              disabled={
+                                candidate.already_imported ||
+                                blendKitImporting
+                              }
+                              name="blenderkit-candidate"
+                              onChange={() =>
+                                setBlendKitSelectedSourceAssetId(
+                                  candidate.source_asset_id,
+                                )
+                              }
+                              type="radio"
+                              value={candidate.source_asset_id}
+                            />
+                            <div className="asset-library-blenderkit-preview">
+                              {candidate.thumbnail_url ? (
+                                <img
+                                  alt={`${candidate.display_name} BlendKit preview`}
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer"
+                                  src={candidate.thumbnail_url}
+                                />
+                              ) : (
+                                <span aria-hidden="true">
+                                  {candidate.display_name.slice(0, 2).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                            <div className="asset-library-blenderkit-copy">
+                              <div className="asset-library-blenderkit-title-row">
+                                <strong>{candidate.display_name}</strong>
+                                <span>CC0</span>
+                              </div>
+                              <small>
+                                {candidate.author_name
+                                  ? `By ${candidate.author_name}`
+                                  : "Creator not listed"}
+                                {candidate.verification_status
+                                  ? ` · ${candidate.verification_status}`
+                                  : ""}
+                              </small>
+                              {candidate.description ? (
+                                <p>{candidate.description}</p>
+                              ) : null}
+                              <div className="asset-library-blenderkit-meta">
+                                <span>
+                                  {candidate.polygon_count != null
+                                    ? `${candidate.polygon_count.toLocaleString()} polygons`
+                                    : "Polygon count unavailable"}
+                                </span>
+                                <span>
+                                  {candidate.file_size_bytes != null
+                                    ? formatBytes(candidate.file_size_bytes)
+                                    : "File size unavailable"}
+                                </span>
+                                <span>
+                                  {candidate.semantic_match
+                                    ? "Direct identity match"
+                                    : "Broader search result"}
+                                </span>
+                              </div>
+                              {candidate.already_imported ? (
+                                <em>Already in your Asset Library</em>
+                              ) : null}
+                            </div>
+                          </label>
+                          {candidate.source_url ? (
+                            <a
+                              href={candidate.source_url}
+                              rel="noreferrer"
+                              target="_blank"
+                            >
+                              Open on BlendKit
+                            </a>
+                          ) : null}
+                        </article>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+            </>
+          ) : manualAcquisitionMode === "trellis" ? (
+            <form
+              className="asset-library-trellis-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void createTrellisAsset();
+              }}
+            >
+              <div className="asset-library-trellis-intro">
+                <div>
+                  <strong>Create a new reusable asset with TRELLIS</strong>
+                  <small>
+                    TRELLIS generates one new GLB from your description. MyWay then
+                    normalizes it, measures its spatial regions, registers it, and
+                    queues appearance and embedding analysis before approval.
+                  </small>
+                </div>
+                <button
+                  className="asset-library-button"
+                  data-primary="true"
+                  disabled={trellisCreating || !trellisConcept.trim()}
+                  type="submit"
+                >
+                  {trellisCreating
+                    ? "Generating and processing asset…"
+                    : "Generate TRELLIS asset"}
+                </button>
+              </div>
+
+              <div className="asset-library-trellis-fields">
+                <label className="asset-library-trellis-wide">
+                  Object identity
+                  <input
+                    aria-label="TRELLIS object identity"
+                    disabled={trellisCreating}
+                    onChange={(event) => setTrellisConcept(event.target.value)}
+                    placeholder="For example: vintage desk fan"
+                    value={trellisConcept}
+                  />
+                  <small>
+                    Use the clearest noun phrase for what the asset actually is.
+                  </small>
+                </label>
+
+                <label className="asset-library-trellis-wide">
+                  Generation details
+                  <textarea
+                    aria-label="TRELLIS generation details"
+                    disabled={trellisCreating}
+                    onChange={(event) => setTrellisDetails(event.target.value)}
+                    placeholder="Comma-separated details, such as metal cage, three blades, tabletop base"
+                    rows={3}
+                    value={trellisDetails}
+                  />
+                  <small>
+                    MyWay combines the identity and these details into TRELLIS’s compact
+                    generation prompt. Put the most important shape details first.
+                  </small>
+                </label>
+
+                <label>
+                  Semantic tags
+                  <input
+                    aria-label="TRELLIS semantic tags"
+                    disabled={trellisCreating}
+                    onChange={(event) =>
+                      setTrellisSemanticTags(event.target.value)
+                    }
+                    placeholder="fan, appliance, tabletop"
+                    value={trellisSemanticTags}
+                  />
+                </label>
+
+                <label>
+                  Domain
+                  <input
+                    aria-label="TRELLIS asset domain"
+                    disabled={trellisCreating}
+                    onChange={(event) => setTrellisDomain(event.target.value)}
+                    value={trellisDomain}
+                  />
+                </label>
+
+                <label>
+                  Normalization extent (m)
+                  <input
+                    aria-label="TRELLIS normalization extent"
+                    disabled={trellisCreating}
+                    min="0.05"
+                    onChange={(event) =>
+                      setTrellisTargetExtentM(event.target.value)
+                    }
+                    step="0.05"
+                    type="number"
+                    value={trellisTargetExtentM}
+                  />
+                  <small>
+                    This is the standardized working size, not the final logical scene size.
+                  </small>
+                </label>
+
+                <label>
+                  Seed
+                  <input
+                    aria-label="TRELLIS seed"
+                    disabled={trellisCreating}
+                    min="0"
+                    onChange={(event) => setTrellisSeed(event.target.value)}
+                    step="1"
+                    type="number"
+                    value={trellisSeed}
+                  />
+                </label>
+
+                <label>
+                  Retry attempts
+                  <select
+                    aria-label="TRELLIS retry attempts"
+                    disabled={trellisCreating}
+                    onChange={(event) =>
+                      setTrellisMaxAttempts(event.target.value)
+                    }
+                    value={trellisMaxAttempts}
+                  >
+                    <option value="1">1 attempt</option>
+                    <option value="2">2 attempts</option>
+                    <option value="3">3 attempts</option>
+                  </select>
+                </label>
+
+                <label className="asset-library-trellis-checkbox">
+                  <input
+                    checked={trellisNoTexture}
+                    disabled={trellisCreating}
+                    onChange={(event) =>
+                      setTrellisNoTexture(event.target.checked)
+                    }
+                    type="checkbox"
+                  />
+                  <span>
+                    Generate without textures
+                    <small>
+                      Useful when geometry matters more than surface appearance.
+                    </small>
+                  </span>
+                </label>
+              </div>
+
+              <p className="asset-library-trellis-warning">
+                TRELLIS output is generated rather than selected from a catalogue.
+                Review the identity, geometry, and appearance before approving it for scenes.
+              </p>
+            </form>
+          ) : manualAcquisitionMode === "glm" ? (
+            <form
+              className="asset-library-trellis-form"
+              onSubmit={(event) => { event.preventDefault(); void createGlmProceduralAsset(); }}
+            >
+              <div className="asset-library-trellis-intro">
+                <div>
+                  <strong>Construct a procedural GLB with GLM 5.2</strong>
+                  <small>GLM returns a constrained JSON build plan. MyWay validates it, compiles approved primitives into GLB, then runs Blender normalization, Spatial Geometry Profile v3, enrichment, and review.</small>
+                </div>
+                <button className="asset-library-button" data-primary="true" disabled={glmCreating || !glmConcept.trim()} type="submit">
+                  {glmCreating ? "Designing and compiling asset…" : "Build GLM asset"}
+                </button>
+              </div>
+              <div className="asset-library-trellis-fields">
+                <label className="asset-library-trellis-wide">Object identity
+                  <input aria-label="GLM object identity" disabled={glmCreating} onChange={(event) => setGlmConcept(event.target.value)} placeholder="For example: piston assembly" value={glmConcept} />
+                </label>
+                <label className="asset-library-trellis-wide">Construction details
+                  <textarea aria-label="GLM construction details" disabled={glmCreating} onChange={(event) => setGlmDetails(event.target.value)} placeholder="cylindrical piston head, connecting rod, wrist pin, dark steel" rows={3} value={glmDetails} />
+                </label>
+                <label>Style
+                  <input aria-label="GLM procedural style" disabled={glmCreating} onChange={(event) => setGlmStyle(event.target.value)} value={glmStyle} />
+                </label>
+                <label>Normalization extent (m)
+                  <input aria-label="GLM normalization extent" disabled={glmCreating} min="0.05" onChange={(event) => setGlmTargetExtentM(event.target.value)} step="0.05" type="number" value={glmTargetExtentM} />
+                </label>
+              </div>
+              <p className="asset-library-trellis-warning">Best for geometric, mechanical, furniture, toy-like, symbolic, and educational objects. Organic or photorealistic requests may produce stylized approximations and remain pending review.</p>
+            </form>
+          ) : (
+            <form
+              className="asset-library-trellis-form asset-library-local-glb-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void importLocalGlbAsset();
+              }}
+            >
+              <div className="asset-library-trellis-intro">
+                <div>
+                  <strong>Import an existing GLB into the reusable library</strong>
+                  <small>
+                    MyWay validates the binary GLB, preserves the original source,
+                    normalizes it in Blender, creates Spatial Geometry Profile v3,
+                    and queues appearance and embedding analysis before approval.
+                  </small>
+                </div>
+                <button
+                  className="asset-library-button"
+                  data-primary="true"
+                  disabled={
+                    localGlbImporting ||
+                    !localGlbFile ||
+                    !localGlbConcept.trim()
+                  }
+                  type="submit"
+                >
+                  {localGlbImporting
+                    ? "Uploading and processing GLB…"
+                    : "Import GLB"}
+                </button>
+              </div>
+
+              <div className="asset-library-trellis-fields">
+                <label className="asset-library-trellis-wide asset-library-local-file">
+                  GLB file
+                  <input
+                    accept=".glb,model/gltf-binary,application/octet-stream"
+                    aria-label="Local GLB file"
+                    disabled={localGlbImporting}
+                    onChange={(event) =>
+                      setLocalGlbFile(event.target.files?.[0] ?? null)
+                    }
+                    ref={localGlbFileInputRef}
+                    type="file"
+                  />
+                  <small>
+                    GLB 2.0 only, up to 400 MB. The original source file is kept in
+                    the manual inbox; the normalized runtime copy receives a stable
+                    MyWay asset ID.
+                  </small>
+                </label>
+
+                <label className="asset-library-trellis-wide">
+                  Canonical object identity
+                  <input
+                    aria-label="Local GLB canonical identity"
+                    disabled={localGlbImporting}
+                    onChange={(event) => setLocalGlbConcept(event.target.value)}
+                    placeholder="For example: cheeseburger"
+                    value={localGlbConcept}
+                  />
+                  <small>
+                    This controls the library identity. The original filename remains
+                    unchanged in the provenance record.
+                  </small>
+                </label>
+
+                <label>
+                  Aliases
+                  <input
+                    aria-label="Local GLB aliases"
+                    disabled={localGlbImporting}
+                    onChange={(event) => setLocalGlbAliases(event.target.value)}
+                    placeholder="burger, cheese burger, hamburger"
+                    value={localGlbAliases}
+                  />
+                </label>
+
+                <label>
+                  Semantic tags
+                  <input
+                    aria-label="Local GLB semantic tags"
+                    disabled={localGlbImporting}
+                    onChange={(event) =>
+                      setLocalGlbSemanticTags(event.target.value)
+                    }
+                    placeholder="food, sandwich, meal"
+                    value={localGlbSemanticTags}
+                  />
+                </label>
+
+                <label>
+                  Domain
+                  <input
+                    aria-label="Local GLB domain"
+                    disabled={localGlbImporting}
+                    onChange={(event) => setLocalGlbDomain(event.target.value)}
+                    value={localGlbDomain}
+                  />
+                </label>
+
+                <label>
+                  Normalization extent (m)
+                  <input
+                    aria-label="Local GLB normalization extent"
+                    disabled={localGlbImporting}
+                    min="0.05"
+                    onChange={(event) =>
+                      setLocalGlbTargetExtentM(event.target.value)
+                    }
+                    step="0.05"
+                    type="number"
+                    value={localGlbTargetExtentM}
+                  />
+                  <small>
+                    Standardized working size; logical scene sizing can adjust it later.
+                  </small>
+                </label>
+
+                <label>
+                  Source or generator
+                  <input
+                    aria-label="Local GLB source provider"
+                    disabled={localGlbImporting}
+                    onChange={(event) =>
+                      setLocalGlbSourceProvider(event.target.value)
+                    }
+                    placeholder="For example: Hi3D"
+                    value={localGlbSourceProvider}
+                  />
+                </label>
+
+                <label className="asset-library-trellis-wide">
+                  Source page
+                  <input
+                    aria-label="Local GLB source URL"
+                    disabled={localGlbImporting}
+                    onChange={(event) => setLocalGlbSourceUrl(event.target.value)}
+                    placeholder="Optional URL for the tool, model page, or original source"
+                    type="url"
+                    value={localGlbSourceUrl}
+                  />
+                </label>
+
+                <label>
+                  License information
+                  <select
+                    aria-label="Local GLB license kind"
+                    disabled={localGlbImporting}
+                    onChange={(event) =>
+                      setLocalGlbLicenseKind(event.target.value)
+                    }
+                    value={localGlbLicenseKind}
+                  >
+                    <option value="unknown">Unknown / needs review</option>
+                    <option value="self_owned">I own the usable rights</option>
+                    <option value="cc0">CC0 / public-domain dedication</option>
+                    <option value="royalty_free">
+                      Royalty-free and commercially usable
+                    </option>
+                  </select>
+                </label>
+
+                <label>
+                  Attribution
+                  <input
+                    aria-label="Local GLB attribution"
+                    disabled={localGlbImporting}
+                    onChange={(event) =>
+                      setLocalGlbAttribution(event.target.value)
+                    }
+                    placeholder="Creator or required credit"
+                    value={localGlbAttribution}
+                  />
+                </label>
+
+                <label className="asset-library-trellis-wide">
+                  Provenance notes
+                  <textarea
+                    aria-label="Local GLB provenance notes"
+                    disabled={localGlbImporting}
+                    onChange={(event) =>
+                      setLocalGlbProvenanceNotes(event.target.value)
+                    }
+                    placeholder="How it was generated, plan or credit used, input ownership, or any restrictions to verify"
+                    rows={3}
+                    value={localGlbProvenanceNotes}
+                  />
+                </label>
+              </div>
+
+              <p className="asset-library-trellis-warning">
+                Manual upload does not mean automatic approval. MyWay keeps the
+                asset sandbox-only and blocks app promotion until its identity,
+                geometry, appearance, licensing, and scene eligibility are reviewed.
+              </p>
+            </form>
+          )}
+        </section>
 
         <section className="asset-library-stats">
           <StatCard

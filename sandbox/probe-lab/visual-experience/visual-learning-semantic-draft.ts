@@ -92,9 +92,13 @@ export type VisualLearningSemanticDraftPersonalizationDecision = {
 
 export type VisualLearningSemanticDraftScene = {
   title?: string | null;
-  /** Compatibility layout hint. directed_scene is the richer source of visual direction. */
+  /** Canonical model-authored educational direction. MyWay normalizes and validates this before rendering. */
+  director_plan?: Record<string, unknown> | null;
+  /** Compatibility layout hint. The director plan is the richer source of visual direction. */
   experience_mode?: VisualExperienceMode | string | null;
+  /** Legacy compatibility. New v2 prompts derive this from director_plan. */
   directed_scene?: VisualLearningDirectedScene | null;
+  /** Legacy compatibility. New v2 prompts use director_plan.moments. */
   scene_moments?: VisualLearningDirectedStoryBeat[];
   /** Legacy renderer compatibility. v2 should prefer scene_moments. */
   story_beats?: VisualLearningDirectedStoryBeat[];

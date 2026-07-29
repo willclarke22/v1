@@ -74,6 +74,7 @@ export type BlenderKitAcquireJob = {
   free_only: boolean;
   required_license_kind?: "cc0" | null;
   excluded_source_asset_ids?: string[];
+  selected_source_asset_id?: string | null;
   created_at: string;
   updated_at: string;
   result?: BlenderAssetResult | null;

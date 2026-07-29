@@ -1,0 +1,46 @@
+MYWAY_PROGRESS: Starting treasure chest build
+MYWAY_PROGRESS: Building chest body
+MYWAY_PROGRESS: Building lid
+MYWAY_PROGRESS: Building hinges
+MYWAY_PROGRESS: Building gold coins
+MYWAY_PROGRESS: Parenting objects
+MYWAY_PROGRESS: Finalizing
+MYWAY_PROGRESS: Total triangles: 7004
+MYWAY_PROGRESS: Treasure chest build complete
+Info: Saved as "stylized_treasure_chest.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.1\5.1\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+18:01:00 | INFO: Starting glTF 2.0 export
+18:01:00 | INFO: Extracting primitive: Cube
+18:01:00 | INFO: Primitives created: 3
+18:01:00 | INFO: Extracting primitive: Cylinder.006
+18:01:00 | INFO: Primitives created: 1
+18:01:00 | INFO: Extracting primitive: Cube.010
+18:01:00 | INFO: Primitives created: 3
+18:01:00 | INFO: Extracting primitive: Cylinder
+18:01:00 | INFO: Primitives created: 1
+18:01:00 | INFO: Extracting primitive: Cylinder.003
+18:01:00 | INFO: Primitives created: 1
+18:01:00 | INFO: Extracting primitive: Cylinder.001
+18:01:00 | INFO: Primitives created: 1
+18:01:00 | INFO: Extracting primitive: Cylinder.002
+18:01:00 | INFO: Primitives created: 1
+18:01:00 | INFO: Extracting primitive: Cylinder.004
+18:01:00 | INFO: Primitives created: 1
+18:01:00 | INFO: Extracting primitive: Cylinder.005
+18:01:00 | INFO: Primitives created: 1
+18:01:00 | INFO: Extracting primitive: Cube.018
+18:01:00 | INFO: Primitives created: 1
+18:01:00 | INFO: Extracting primitive: Cube.020
+18:01:00 | INFO: Primitives created: 1
+18:01:00 | INFO: Extracting primitive: Cube.019
+18:01:00 | INFO: Primitives created: 1
+18:01:00 | INFO: Extracting primitive: Cube.021
+18:01:00 | INFO: Primitives created: 1
+18:01:00 | INFO: Finished glTF 2.0 export in 0.2513914108276367 s
+00:11.719  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\10927aeb-29c6-440a-a553-106cdacd3b1b\preview.png'
+
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\10927aeb-29c6-440a-a553-106cdacd3b1b\preview.png
+MYWAY_ASSET_BUILD_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\10927aeb-29c6-440a-a553-106cdacd3b1b\stylized_treasure_chest.glb
+Blender 5.1.2 (hash ec6e62d40fa9 built 2026-05-19 01:37:34)
+
+Blender quit

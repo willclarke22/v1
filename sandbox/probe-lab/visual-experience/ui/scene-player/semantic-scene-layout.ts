@@ -7,6 +7,11 @@ import type {
 } from "../../visual-learning-turn";
 import type { DirectedSceneRenderPlan, MotionTrack, Vec3 } from "./directed-scene-compiler";
 import { compileDirectedSceneRenderPlan } from "./directed-scene-compiler";
+import {
+  directorPlanToLegacyDirectedScene,
+  directorPlanToLegacyStoryBeats,
+  type EducationalSceneDirectorPlanV1,
+} from "../../../director";
 
 export type PrimitiveRenderKind = VisualPrimitiveKind | "registered_asset" | "any" | "placeholder";
 
@@ -69,11 +74,13 @@ export type PreparedSemanticScene = {
   interaction_notes: string | null;
   story_focus_entity_id: string | null;
   camera: PreparedSemanticSceneCamera;
+  director_plan: EducationalSceneDirectorPlanV1 | null;
   directed_scene: Record<string, unknown> | null;
   directed_story_beat: Record<string, unknown> | null;
   scene_concept: string | null;
   director_intent: string | null;
   cinematic_caption_text: string;
+  text_cues: Array<Record<string, unknown>>;
   caption_policy: Record<string, unknown> | null;
   label_policy: Record<string, unknown> | null;
   render_plan: DirectedSceneRenderPlan;
@@ -352,6 +359,17 @@ function storyBeatsFromPlan(
   _learningFocus: Record<string, unknown> | null,
   _entities: SemanticSceneEntity[],
 ) {
+  const directorPlan =
+    asRecord(scenePlan.director_plan);
+  if (
+    directorPlan?.schema_version ===
+    "myway_educational_scene_director_v1"
+  ) {
+    return directorPlanToLegacyStoryBeats(
+      directorPlan as unknown as EducationalSceneDirectorPlanV1,
+    );
+  }
+
   const raw = asArray(scenePlan.story_beats)
     .map(asRecord)
     .filter((item): item is Record<string, unknown> => Boolean(item))
@@ -424,10 +442,23 @@ function directedBeatForActiveBeat(storyBeats: Array<Record<string, unknown>>, a
   return byId ?? storyBeats[activeBeatIndex] ?? null;
 }
 
-function captionTextForDirectedBeat(_directedBeat: Record<string, unknown> | null, fallback: string) {
-  // Step 13c: ignore legacy spoken_caption text here. It may be a deterministic fallback from
-  // visual event descriptions. The active explanation piece is the learner-facing caption.
-  return fallback;
+function captionTextForDirectedBeat(
+  directedBeat: Record<string, unknown> | null,
+  fallback: string,
+) {
+  const firstCue = asRecord(
+    asArray(
+      directedBeat?.text_cues,
+    )[0],
+  );
+  const canonicalText = text(
+    firstCue?.text,
+    "",
+  );
+
+  // Canonical director text cues are intentionally short and synchronized with
+  // the visual job. Fall back to the explanation piece for older saved turns.
+  return canonicalText || fallback;
 }
 
 function directorIntentForBeat(directedBeat: Record<string, unknown> | null) {
@@ -512,7 +543,21 @@ export function prepareSemanticSceneFromTurnResult(input: {
 
   if (!root || text(output?.turn_status, "") !== "proceed" || !scenePlan) return null;
 
-  const directedScene = nonEmptyRecord(scenePlan.directed_scene);
+  const rawDirectorPlan =
+    asRecord(scenePlan.director_plan);
+  const directorPlan =
+    rawDirectorPlan?.schema_version ===
+    "myway_educational_scene_director_v1"
+      ? (rawDirectorPlan as unknown as EducationalSceneDirectorPlanV1)
+      : null;
+  const directedScene =
+    directorPlan
+      ? directorPlanToLegacyDirectedScene(
+          directorPlan,
+        )
+      : nonEmptyRecord(
+          scenePlan.directed_scene,
+        );
   const captionPolicy = nonEmptyRecord(scenePlan.caption_policy ?? directedScene?.caption_policy);
   const labelPolicy = nonEmptyRecord(scenePlan.label_policy ?? directedScene?.label_policy);
   const entities = asArray(scenePlan.entities).map(normalizeEntity);
@@ -620,11 +665,22 @@ export function prepareSemanticSceneFromTurnResult(input: {
     interaction_notes: text(scenePlan.interaction_notes, "") || null,
     story_focus_entity_id: storyFocusEntityId,
     camera: cameraForBeat(renderPlan, activeBeat, activeBeatIndex),
+    director_plan: directorPlan,
     directed_scene: directedScene,
     directed_story_beat: directedBeat,
     scene_concept: text(directedScene?.scene_concept, "") || null,
     director_intent: directorIntentForBeat(directedBeat),
     cinematic_caption_text: cinematicCaptionText,
+    text_cues: asArray(
+      directedBeat?.text_cues,
+    )
+      .map(asRecord)
+      .filter(
+        (
+          cue,
+        ): cue is Record<string, unknown> =>
+          Boolean(cue),
+      ),
     caption_policy: captionPolicy,
     label_policy: labelPolicy,
     render_plan: renderPlan,

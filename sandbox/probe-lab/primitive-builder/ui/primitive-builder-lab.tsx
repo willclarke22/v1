@@ -18,6 +18,10 @@ import {
 } from "react";
 
 import type {
+  EducationalSceneDirectorPlanV1,
+  EducationalSceneDirectorValidationReport,
+} from "@/sandbox/probe-lab/director";
+import type {
   PrimitiveBeat,
   PrimitiveBuildPlanV1,
   PrimitivePart,
@@ -81,6 +85,8 @@ type SavedPrimitiveBuilderScene = {
   assets: ResolvedSceneAssetBinding[];
   procedural_nodes: unknown[];
   scene_graph?: unknown;
+  director_plan?: EducationalSceneDirectorPlanV1 | null;
+  director_validation?: EducationalSceneDirectorValidationReport | null;
   primitive_plan?: PrimitiveBuildPlanV1 | null;
   asset_requirements?: GeneratedAssetRequirement[];
   unresolved_requirements?: GeneratedAssetRequirement[];
@@ -155,6 +161,8 @@ type GenerateResponse = {
   model_call_diagnostics?: unknown;
   raw_text_preview?: string;
   scene_graph?: unknown;
+  director_plan?: EducationalSceneDirectorPlanV1 | null;
+  director_validation?: EducationalSceneDirectorValidationReport | null;
   asset_requirements?: GeneratedAssetRequirement[];
   asset_inference?: Array<{
     asset_id: string;
@@ -1123,6 +1131,10 @@ export function PrimitiveBuilderLab() {
     );
 
   const plan = result?.plan ?? null;
+  const directorPlan =
+    result?.director_plan ?? null;
+  const directorValidation =
+    result?.director_validation ?? null;
   const currentBeat = plan
     ? plan.beats[activeStep - 1] ??
       plan.beats[0]
@@ -1628,6 +1640,10 @@ export function PrimitiveBuilderLab() {
               ),
             scene_graph:
               result.scene_graph,
+            director_plan:
+              result.director_plan ?? null,
+            director_validation:
+              result.director_validation ?? null,
             primitive_plan: plan,
             asset_requirements:
               assetRequirements,
@@ -1741,6 +1757,10 @@ export function PrimitiveBuilderLab() {
       scene_session_id:
         scene.scene_id,
       scene_graph: scene.scene_graph,
+      director_plan:
+        scene.director_plan ?? null,
+      director_validation:
+        scene.director_validation ?? null,
       asset_requirements:
         scene.asset_requirements ?? [],
       asset_resolution: {
@@ -2519,6 +2539,87 @@ export function PrimitiveBuilderLab() {
                     generation.
                   </p>
                 </div>
+
+                {directorPlan ? (
+                  <div className="rounded-3xl border border-violet-200/20 bg-violet-300/[0.07] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-violet-100/75">
+                          Educational director
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-white">
+                          {directorPlan.scene_thesis}
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-white/10 bg-black/25 px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-violet-50/70">
+                        {directorValidation?.valid === false
+                          ? "Needs review"
+                          : "Direction ready"}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] leading-5 text-violet-50/70">
+                      <p>
+                        Mode:{" "}
+                        {directorPlan.representation_strategy.primary_mode.replaceAll(
+                          "_",
+                          " ",
+                        )}
+                      </p>
+                      <p>
+                        Moments:{" "}
+                        {directorPlan.moments.length}
+                      </p>
+                      <p>
+                        Events:{" "}
+                        {directorValidation?.event_count ??
+                          directorPlan.moments.reduce(
+                            (count, moment) =>
+                              count +
+                              moment.events.length,
+                            0,
+                          )}
+                      </p>
+                      <p>
+                        Text cues:{" "}
+                        {directorValidation?.text_cue_count ??
+                          directorPlan.moments.reduce(
+                            (count, moment) =>
+                              count +
+                              moment.text_cues.length,
+                            0,
+                          )}
+                      </p>
+                    </div>
+
+                    <div className="mt-3 grid gap-2">
+                      {directorPlan.moments
+                        .slice(0, 6)
+                        .map((moment, index) => (
+                          <div
+                            key={moment.id}
+                            className="rounded-2xl border border-white/8 bg-black/20 px-3 py-2"
+                          >
+                            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-violet-100/55">
+                              Moment {index + 1}
+                            </p>
+                            <p className="mt-1 text-xs font-semibold text-violet-50/90">
+                              {moment.title}
+                            </p>
+                            <p className="mt-1 text-[11px] leading-5 text-violet-50/60">
+                              {moment.learning_job}
+                            </p>
+                          </div>
+                        ))}
+                    </div>
+
+                    <p className="mt-3 text-[11px] leading-5 text-violet-50/55">
+                      This direction remains the source of truth when an actor
+                      is missing. Asset resolution can bind a better GLB later
+                      without asking the model to redesign the lesson.
+                    </p>
+                  </div>
+                ) : null}
 
                 {warnings.length ? (
                   <div className="rounded-3xl border border-amber-200/20 bg-amber-300/[0.07] p-4">

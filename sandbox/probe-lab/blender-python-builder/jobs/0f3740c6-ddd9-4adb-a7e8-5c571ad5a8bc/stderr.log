@@ -1,0 +1,12 @@
+C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\0f3740c6-ddd9-4adb-a7e8-5c571ad5a8bc\build_asset.py:24: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\0f3740c6-ddd9-4adb-a7e8-5c571ad5a8bc\build_asset.py", line 395, in <module>
+    build_chest()
+    ~~~~~~~~~~~^^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\0f3740c6-ddd9-4adb-a7e8-5c571ad5a8bc\build_asset.py", line 277, in build_chest
+    bpy.ops.object.modifier_apply(modifier="Solidify")
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Operator bpy.ops.object.modifier_apply.poll() This modifier operation is not allowed from Edit mode
+
+Error: script failed, file: 'C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\0f3740c6-ddd9-4adb-a7e8-5c571ad5a8bc\build_asset.py', exiting.

@@ -1,0 +1,589 @@
+"use client";
+
+import { OrbitControls, useGLTF } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
+import {
+  Suspense,
+  useMemo,
+  useState,
+} from "react";
+
+type GenerateResponse = {
+  ok: boolean;
+  code?: string;
+  model?: string;
+  line_count?: number;
+  elapsed_ms?: number;
+  transport?: string;
+  error?: string;
+};
+
+type ExecuteResponse = {
+  ok: boolean;
+  job_id?: string;
+  asset_name?: string;
+  glb_url?: string;
+  preview_url?: string | null;
+  glb_bytes?: number;
+  elapsed_ms?: number;
+  stdout?: string;
+  stderr?: string;
+  error?: string;
+};
+
+const STARTER_CODE = `import bpy
+import math
+
+# Paste Blender Python here, or ask GLM 5.2 to create it.
+# MyWay appends trusted GLB export and preview-render code automatically.
+
+print("MYWAY_PROGRESS: starting custom build")
+
+bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0.5))
+obj = bpy.context.object
+obj.name = "example_cube"
+
+bevel = obj.modifiers.new(name="soft_edges", type="BEVEL")
+bevel.width = 0.08
+bevel.segments = 3
+
+bpy.context.view_layer.objects.active = obj
+bpy.ops.object.shade_smooth_by_angle()
+
+material = bpy.data.materials.new("example_material")
+material.diffuse_color = (0.14, 0.48, 0.9, 1.0)
+material.use_nodes = True
+principled = material.node_tree.nodes.get("Principled BSDF")
+if principled:
+    principled.inputs["Base Color"].default_value = (0.14, 0.48, 0.9, 1.0)
+    principled.inputs["Roughness"].default_value = 0.38
+obj.data.materials.append(material)
+
+print("MYWAY_PROGRESS: custom build complete")
+`;
+
+function Model({ url }: { url: string }) {
+  const gltf = useGLTF(url);
+  const clone = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
+  return <primitive object={clone} />;
+}
+
+function formatBytes(value?: number) {
+  if (!value) return "â€”";
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
+  return `${(value / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function formatDurationMs(value?: number) {
+  if (!value) return "â€”";
+  if (value < 1000) return `${Math.round(value)} ms`;
+  return `${(value / 1000).toFixed(1)}s`;
+}
+
+const panelStyle = {
+  border: "1px solid rgba(148,163,184,0.22)",
+  borderRadius: 18,
+  background: "rgba(15,23,42,0.78)",
+  boxShadow: "0 24px 60px rgba(0,0,0,0.24)",
+} as const;
+
+export function BlenderPythonBuilderLab() {
+  const [request, setRequest] = useState(
+    "Build a clean stylized low-poly wooden treasure chest with a separate lid, gold hinges, and useful object names for animation.",
+  );
+  const [assetName, setAssetName] = useState("stylized_treasure_chest");
+  const [style, setStyle] = useState("clean stylized");
+  const [targetExtent, setTargetExtent] = useState(2);
+  const [maxTriangles, setMaxTriangles] = useState(30000);
+  const [animationReady, setAnimationReady] = useState(true);
+  const [code, setCode] = useState(STARTER_CODE);
+  const [generation, setGeneration] = useState<GenerateResponse | null>(null);
+  const [execution, setExecution] = useState<ExecuteResponse | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [executing, setExecuting] = useState(false);
+  const [repairing, setRepairing] = useState(false);
+  const [repair, setRepair] = useState<GenerateResponse | null>(null);
+
+  async function generateCode() {
+    setGenerating(true);
+    setGeneration(null);
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/blender-python-builder/generate",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            request,
+            style,
+            animation_ready: animationReady,
+            target_extent_m: targetExtent,
+            max_triangles: maxTriangles,
+          }),
+        },
+      );
+      const payload = (await response.json()) as GenerateResponse;
+      setGeneration(payload);
+      if (payload.ok && payload.code) setCode(payload.code);
+    } catch (caught) {
+      setGeneration({
+        ok: false,
+        error: caught instanceof Error ? caught.message : String(caught),
+      });
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function executeCode() {
+    setExecuting(true);
+    setExecution(null);
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/blender-python-builder/execute",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code,
+            asset_name: assetName,
+          }),
+        },
+      );
+      const payload = (await response.json()) as ExecuteResponse;
+      setExecution(payload);
+    } catch (caught) {
+      setExecution({
+        ok: false,
+        error: caught instanceof Error ? caught.message : String(caught),
+      });
+    } finally {
+      setExecuting(false);
+    }
+  }
+
+
+  async function repairCode() {
+    if (!execution || execution.ok || !execution.error) return;
+    setRepairing(true);
+    setRepair(null);
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/blender-python-builder/repair",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            request,
+            code,
+            error: execution.error,
+          }),
+        },
+      );
+      const payload = (await response.json()) as GenerateResponse;
+      setRepair(payload);
+      if (payload.ok && payload.code) {
+        setCode(payload.code);
+        setExecution(null);
+      }
+    } catch (caught) {
+      setRepair({
+        ok: false,
+        error: caught instanceof Error ? caught.message : String(caught),
+      });
+    } finally {
+      setRepairing(false);
+    }
+  }
+
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        padding: "clamp(18px, 3vw, 42px)",
+        color: "#e2e8f0",
+        background:
+          "radial-gradient(circle at 12% 0%, rgba(14,165,233,0.18), transparent 34%), radial-gradient(circle at 92% 8%, rgba(168,85,247,0.15), transparent 30%), #050816",
+      }}
+    >
+      <div style={{ maxWidth: 1680, margin: "0 auto" }}>
+        <a
+          href="/sandbox/probe-lab"
+          style={{ color: "#7dd3fc", textDecoration: "none" }}
+        >
+          â† Probe Lab
+        </a>
+        <div style={{ margin: "18px 0 26px" }}>
+          <div
+            style={{
+              color: "#38bdf8",
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+            }}
+          >
+            GLM 5.2 â†’ Blender Python â†’ GLB â†’ Three.js
+          </div>
+          <h1 style={{ margin: "8px 0", fontSize: "clamp(30px, 5vw, 58px)" }}>
+            Blender Python Asset Builder
+          </h1>
+          <p style={{ maxWidth: 920, color: "#94a3b8", lineHeight: 1.65 }}>
+            Generate editable Blender Python from a plain-language request, paste
+            or revise code manually, run Blender headlessly, and inspect the
+            exported GLB in Three.js.
+          </p>
+        </div>
+
+        <section
+          style={{
+            ...panelStyle,
+            padding: 20,
+            marginBottom: 20,
+            display: "grid",
+            gap: 16,
+            gridTemplateColumns: "minmax(0, 1.5fr) minmax(240px, 0.5fr)",
+          }}
+        >
+          <label style={{ display: "grid", gap: 8 }}>
+            <span style={{ fontWeight: 750 }}>Build request</span>
+            <textarea
+              value={request}
+              onChange={(event) => setRequest(event.target.value)}
+              rows={5}
+              style={{
+                width: "100%",
+                resize: "vertical",
+                borderRadius: 12,
+                border: "1px solid rgba(148,163,184,0.28)",
+                background: "#020617",
+                color: "#e2e8f0",
+                padding: 14,
+                font: "inherit",
+                lineHeight: 1.5,
+              }}
+            />
+          </label>
+
+          <div style={{ display: "grid", gap: 12 }}>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span>Asset file name</span>
+              <input
+                value={assetName}
+                onChange={(event) => setAssetName(event.target.value)}
+                style={{
+                  borderRadius: 10,
+                  border: "1px solid rgba(148,163,184,0.28)",
+                  background: "#020617",
+                  color: "#e2e8f0",
+                  padding: 11,
+                }}
+              />
+            </label>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span>Style</span>
+              <input
+                value={style}
+                onChange={(event) => setStyle(event.target.value)}
+                style={{
+                  borderRadius: 10,
+                  border: "1px solid rgba(148,163,184,0.28)",
+                  background: "#020617",
+                  color: "#e2e8f0",
+                  padding: 11,
+                }}
+              />
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span>Extent (m)</span>
+                <input
+                  type="number"
+                  min={0.05}
+                  max={20}
+                  step={0.1}
+                  value={targetExtent}
+                  onChange={(event) => setTargetExtent(Number(event.target.value))}
+                  style={{
+                    borderRadius: 10,
+                    border: "1px solid rgba(148,163,184,0.28)",
+                    background: "#020617",
+                    color: "#e2e8f0",
+                    padding: 11,
+                  }}
+                />
+              </label>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span>Max triangles</span>
+                <input
+                  type="number"
+                  min={500}
+                  max={250000}
+                  step={500}
+                  value={maxTriangles}
+                  onChange={(event) => setMaxTriangles(Number(event.target.value))}
+                  style={{
+                    borderRadius: 10,
+                    border: "1px solid rgba(148,163,184,0.28)",
+                    background: "#020617",
+                    color: "#e2e8f0",
+                    padding: 11,
+                  }}
+                />
+              </label>
+            </div>
+            <label style={{ display: "flex", gap: 9, alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={animationReady}
+                onChange={(event) => setAnimationReady(event.target.checked)}
+              />
+              Separately named animation-ready parts
+            </label>
+            <button
+              type="button"
+              onClick={generateCode}
+              disabled={generating || !request.trim()}
+              style={{
+                border: 0,
+                borderRadius: 12,
+                padding: "13px 16px",
+                fontWeight: 850,
+                cursor: "pointer",
+                background: "#0ea5e9",
+                color: "#03111c",
+                opacity: generating ? 0.65 : 1,
+              }}
+            >
+              {generating ? "Generating Python (streaming, up to 5 min)â€¦" : "Generate Python with GLM 5.2"}
+            </button>
+            {generation && (
+              <div style={{ color: generation.ok ? "#86efac" : "#fca5a5", fontSize: 13 }}>
+                {generation.ok
+                  ? `${generation.model} returned ${generation.line_count ?? "â€”"} lines in ${formatDurationMs(generation.elapsed_ms)} via ${generation.transport ?? "streaming"}.`
+                  : generation.error}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section
+          style={{
+            display: "grid",
+            gap: 20,
+            gridTemplateColumns: "minmax(0, 1.1fr) minmax(380px, 0.9fr)",
+          }}
+        >
+          <div style={{ ...panelStyle, padding: 18, minWidth: 0 }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 12,
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <strong>Editable Blender Python</strong>
+                <div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>
+                  {code.split(/\r?\n/).length} lines Â· GLB export is appended by MyWay
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setCode(STARTER_CODE)}
+                  style={{
+                    borderRadius: 10,
+                    border: "1px solid rgba(148,163,184,0.3)",
+                    background: "transparent",
+                    color: "#cbd5e1",
+                    padding: "9px 12px",
+                  }}
+                >
+                  Reset example
+                </button>
+                {execution && !execution.ok && execution.error && (
+                  <button
+                    type="button"
+                    onClick={repairCode}
+                    disabled={repairing || executing}
+                    style={{
+                      border: "1px solid rgba(251,191,36,0.55)",
+                      borderRadius: 10,
+                      padding: "10px 14px",
+                      fontWeight: 850,
+                      cursor: "pointer",
+                      background: "rgba(245,158,11,0.16)",
+                      color: "#fde68a",
+                      opacity: repairing ? 0.65 : 1,
+                    }}
+                  >
+                    {repairing ? "Repairing with GLMâ€¦" : "Repair with GLM 5.2"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={executeCode}
+                  disabled={executing || repairing || !code.trim()}
+                  style={{
+                    border: 0,
+                    borderRadius: 10,
+                    padding: "10px 16px",
+                    fontWeight: 850,
+                    cursor: "pointer",
+                    background: "#a3e635",
+                    color: "#18210a",
+                    opacity: executing ? 0.65 : 1,
+                  }}
+                >
+                  {executing ? "Running Blenderâ€¦" : "Run in Blender"}
+                </button>
+              </div>
+            </div>
+            {repair && (
+              <div
+                style={{
+                  marginBottom: 10,
+                  color: repair.ok ? "#fde68a" : "#fca5a5",
+                  fontSize: 13,
+                }}
+              >
+                {repair.ok
+                  ? `${repair.model} repaired the script (${repair.line_count ?? "â€”"} lines, ${formatDurationMs(repair.elapsed_ms)} via ${repair.transport ?? "streaming"}). Review it, then run Blender again.`
+                  : repair.error}
+              </div>
+            )}
+            <textarea
+              value={code}
+              onChange={(event) => setCode(event.target.value)}
+              spellCheck={false}
+              style={{
+                width: "100%",
+                minHeight: 760,
+                resize: "vertical",
+                borderRadius: 12,
+                border: "1px solid rgba(148,163,184,0.22)",
+                background: "#020617",
+                color: "#dbeafe",
+                padding: 16,
+                fontFamily:
+                  '"Cascadia Code", "SFMono-Regular", Consolas, monospace',
+                fontSize: 13,
+                lineHeight: 1.55,
+                tabSize: 4,
+              }}
+            />
+          </div>
+
+          <div style={{ display: "grid", gap: 20, alignContent: "start" }}>
+            <div style={{ ...panelStyle, overflow: "hidden" }}>
+              <div style={{ padding: "14px 16px", fontWeight: 800 }}>
+                Three.js GLB preview
+              </div>
+              <div style={{ height: 520, background: "#020617" }}>
+                {execution?.ok && execution.glb_url ? (
+                  <Canvas camera={{ position: [4, 3, 5], fov: 45 }}>
+                    <color attach="background" args={["#020617"]} />
+                    <ambientLight intensity={1.6} />
+                    <directionalLight position={[5, 8, 6]} intensity={3} />
+                    <directionalLight position={[-5, 3, -4]} intensity={1.2} />
+                    <Suspense fallback={null}>
+                      <Model key={execution.glb_url} url={execution.glb_url} />
+                    </Suspense>
+                    <gridHelper args={[12, 24, "#334155", "#172033"]} />
+                    <OrbitControls makeDefault />
+                  </Canvas>
+                ) : (
+                  <div
+                    style={{
+                      height: "100%",
+                      display: "grid",
+                      placeItems: "center",
+                      color: "#64748b",
+                      textAlign: "center",
+                      padding: 30,
+                    }}
+                  >
+                    Run a script to load its exported GLB here.
+                  </div>
+                )}
+              </div>
+              {execution?.ok && (
+                <div
+                  style={{
+                    padding: 14,
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: 8,
+                    color: "#94a3b8",
+                    fontSize: 12,
+                  }}
+                >
+                  <div>GLB: {formatBytes(execution.glb_bytes)}</div>
+                  <div>
+                    Blender:{" "}
+                    {execution.elapsed_ms
+                      ? `${(execution.elapsed_ms / 1000).toFixed(1)}s`
+                      : "â€”"}
+                  </div>
+                  <div>Job: {execution.job_id?.slice(0, 8)}</div>
+                </div>
+              )}
+            </div>
+
+            {execution?.preview_url && (
+              <div style={{ ...panelStyle, padding: 14 }}>
+                <strong>Blender preview render</strong>
+                <img
+                  src={`${execution.preview_url}?v=${execution.job_id}`}
+                  alt="Blender asset preview"
+                  style={{
+                    width: "100%",
+                    borderRadius: 12,
+                    marginTop: 12,
+                    display: "block",
+                  }}
+                />
+              </div>
+            )}
+
+            <div style={{ ...panelStyle, padding: 16 }}>
+              <strong>Execution console</strong>
+              <pre
+                style={{
+                  minHeight: 180,
+                  maxHeight: 420,
+                  overflow: "auto",
+                  whiteSpace: "pre-wrap",
+                  color: execution?.ok ? "#bbf7d0" : "#fecaca",
+                  background: "#020617",
+                  borderRadius: 12,
+                  padding: 14,
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                }}
+              >
+                {executing
+                  ? "Starting Blenderâ€¦"
+                  : execution
+                    ? execution.ok
+                      ? [
+                          execution.stdout,
+                          execution.stderr,
+                          `GLB: ${execution.glb_url}`,
+                        ]
+                          .filter(Boolean)
+                          .join("\n")
+                      : execution.error
+                    : "No Blender run yet."}
+              </pre>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}

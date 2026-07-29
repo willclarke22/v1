@@ -1,0 +1,4 @@
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\934e0ee5-cc2f-4cb9-82d4-a9691386d991\build_asset.py", line 1
+    import bpy\nimport mathutils\nimport bpy
+               ^
+SyntaxError: unexpected character after line continuation character

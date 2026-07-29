@@ -30,6 +30,13 @@ import type {
 import { normalizeDiagnosticSignal } from "./diagnostic-relationships";
 import type { DiagnosticSignal } from "./diagnostic-relationships";
 import type { VisualLearningSemanticDraft } from "./visual-learning-semantic-draft";
+import {
+  directorPlanToCaptionPolicy,
+  directorPlanToLegacyDirectedScene,
+  directorPlanToLegacySemanticBeats,
+  directorPlanToLegacyStoryBeats,
+  normalizeEducationalSceneDirectorPlan,
+} from "../director";
 
 export type VisualLearningSemanticDraftAssemblyReport = {
   source_shape: "semantic_draft" | "semantic_draft_near_miss";
@@ -339,6 +346,30 @@ function normalizeEntities(scene: Record<string, unknown> | null): SemanticScene
         ),
         fallback_allowed: true,
       },
+      actor_kind:
+        typeof record.actor_kind === "string"
+          ? record.actor_kind
+          : undefined,
+      asset_policy: asRecord(record.asset_policy)
+        ? {
+            asset_required:
+              asRecord(record.asset_policy)?.asset_required === true,
+            can_use_proxy_until_asset_ready:
+              asRecord(record.asset_policy)?.can_use_proxy_until_asset_ready !== false,
+            fallback_representation:
+              typeof asRecord(record.asset_policy)?.fallback_representation === "string"
+                ? String(asRecord(record.asset_policy)?.fallback_representation)
+                : undefined,
+            capability_needs: asArray(asRecord(record.asset_policy)?.capability_needs)
+              .map(String)
+              .filter(Boolean)
+              .slice(0, 16),
+            anchor_needs: asArray(asRecord(record.asset_policy)?.anchor_needs)
+              .map(String)
+              .filter(Boolean)
+              .slice(0, 16),
+          }
+        : null,
       // Step 8c: do not inject row-layout coordinates. The directed-scene compiler derives geometry from the model's spatial language.
       position_hint: null,
     };
@@ -807,10 +838,54 @@ export function assembleVisualLearningTurnFromSemanticDraft(
   const entities = normalizeEntities(scene);
   const entityIds = entities.map((entity) => entity.id);
   const relationships = normalizeRelationships(scene, entityIds);
-  const beats = normalizeBeats(scene, orientationIds, entityIds, input);
-  const directedScene = normalizeRecord(scene?.directed_scene ?? (draft as Record<string, unknown>).directed_scene);
-  const storyBeats = normalizeDirectedStoryBeats(scene, beats, input, explanationPieces);
-  const captionPolicy = normalizeCaptionPolicyRecord(scene?.caption_policy ?? directedScene?.caption_policy, input);
+  const compatibilityBeats = normalizeBeats(scene, orientationIds, entityIds, input);
+  const legacyDirectedScene = normalizeRecord(
+    scene?.directed_scene ??
+      (draft as Record<string, unknown>).directed_scene,
+  );
+  const legacyStoryBeats = normalizeDirectedStoryBeats(
+    scene,
+    compatibilityBeats,
+    input,
+    explanationPieces,
+  );
+  const directorResult = normalizeEducationalSceneDirectorPlan(
+    scene?.director_plan ??
+      (draft as Record<string, unknown>).director_plan ??
+      legacyDirectedScene ??
+      {},
+    {
+      source: "visual_experience",
+      title: text(
+        asRecord(draft.learner_facing_prompt)?.title,
+        text(scene?.title, `${topicLabel} visual model`),
+      ),
+      scene_thesis: fullPrompt,
+      learner_takeaway: targetTakeaway,
+      entities,
+      relationships,
+      explanation_pieces: explanationPieces,
+      legacy_directed_scene: legacyDirectedScene,
+      legacy_story_beats: legacyStoryBeats,
+      legacy_beats: compatibilityBeats,
+      style: scene?.style,
+    },
+  );
+  const directorPlan = directorResult.plan;
+  const directedScene =
+    directorPlanToLegacyDirectedScene(directorPlan);
+  const storyBeats =
+    directorPlanToLegacyStoryBeats(directorPlan);
+  const derivedBeats =
+    directorPlanToLegacySemanticBeats(
+      directorPlan,
+      orientationIds,
+    );
+  const beats = derivedBeats.length
+    ? (derivedBeats as unknown as SemanticSceneBeat[])
+    : compatibilityBeats;
+  const captionPolicy =
+    directorPlanToCaptionPolicy(directorPlan);
   const labelPolicy = {
     default_visibility: "active_only",
     show_labels_when: "introduced_or_selected",
@@ -867,6 +942,8 @@ export function assembleVisualLearningTurnFromSemanticDraft(
         experience_mode: "generic_scene",
         orientation_segments: orientationSegments,
         semantic_scene_plan: {
+          director_plan: directorPlan,
+          director_validation: directorResult.validation,
           directed_scene: directedScene,
           scene_moments: storyBeats,
           story_beats: storyBeats,
@@ -888,7 +965,7 @@ export function assembleVisualLearningTurnFromSemanticDraft(
     report: {
       source_shape: (draft.schema_version === "myway_visual_learning_semantic_draft_v1" || draft.schema_version === "myway_visual_learning_semantic_draft_v2") ? "semantic_draft" : "semantic_draft_near_miss",
       notes: ["MyWay assembled the strict VisualLearningTurnOutput from the model's compact semantic draft."],
-      warnings: [],
+      warnings: directorResult.warnings,
       model_intelligence_fields_used: [
         "clarification",
         "topic",
@@ -898,8 +975,9 @@ export function assembleVisualLearningTurnFromSemanticDraft(
         "learner_facing_prompt.full_prompt",
         "learner_facing_prompt.explanation_pieces",
         "personalization_decision",
-        "scene.directed_scene",
-        "scene.scene_moments",
+        "scene.director_plan",
+        "scene.directed_scene (legacy input when present)",
+        "scene.scene_moments (legacy input when present)",
         "scene.entities",
         "scene.relationships",
         "scene.beats",
@@ -914,6 +992,8 @@ export function assembleVisualLearningTurnFromSemanticDraft(
         "diagnosis.next_action",
         "diagnostic_signal wrapper",
         "visual_experience wrapper",
+        "canonical director_plan normalization and validation",
+        "legacy directed_scene/story_beats/semantic beats derived from director_plan",
         "duration_ms defaults",
         "action ids",
           "followup_probe ProbeContractModelOutput wrapper",

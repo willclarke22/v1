@@ -1,38 +1,42 @@
+
 # MyWay Shared Scene Runtime
 
-The scene runtime is shared by Primitive Builder and Visual Experience.
+The shared scene runtime is downstream of the Educational Scene Director.
 
-- `resolved-scene.ts` defines serializable GLB bindings and spatial intent.
-- `resolve-scene-assets.server.ts` resolves requirements against approved assets.
-- `primitive-geometry-constraints.ts` preserves explicit spatial language and
-  infers missing relationships from invisible layout proxies.
-- `ui/resolved-asset-model.tsx` loads GLBs, measures their final world size, and
-  transforms stored spatial regions into scene coordinates.
-- `ui/constraint-layout.ts` selects compatible regions, checks fit and clearance,
-  finds collision-free positions, and rejects unresolved intersections.
+It owns asset binding, geometry, spatial constraints, and safe placement. It
+must not reinterpret or weaken the educational sequence.
 
-## General spatial invariant
+## Inputs
 
-Two solid assets may not intersect unless the request explicitly permits an
-intersection, insertion, embedding, or another physical penetration. An invalid
-placement is returned as unresolved and is omitted after runtime measurements are
-ready; the solver does not silently shrink or bury the asset.
+- canonical `director_plan` with stable entity ids;
+- Primitive Builder layout proxies and asset requirements;
+- reviewed GLB bindings;
+- logical size decisions;
+- measured geometry profiles.
+
+## Outputs
+
+- resolved actor bindings;
+- unresolved actor diagnostics;
+- spatial constraints;
+- collision-safe transforms;
+- compatibility motion and camera tracks;
+- serializable scene manifests that preserve `director_plan`.
+
+## Spatial invariant
+
+Two solid assets may not intersect unless the request explicitly permits
+insertion, embedding, or another physical penetration. Invalid placement is
+returned as unresolved and omitted from the literal asset layer; the director
+event and stable actor id remain intact.
 
 ## Generic relation handling
 
-- `on_surface`: selects a compatible support region and validates usable footprint,
-  clearance above, and collisions with every other placed asset.
-- `inside`: requires a measured containment region large enough for the child.
-- `beside`: places the child outside the target bounds and keeps ground contact by
-  default.
-- `attached_to`: selects a compatible exterior attachment region and validates fit.
-- `on_ground` and `absolute`: search nearby collision-free root positions.
+- `on_surface`: compatible support region, footprint, clearance, collisions.
+- `inside`: measured containment region and fit.
+- `beside`: exterior placement with ground contact by default.
+- `attached_to`: compatible attachment region and fit.
+- `on_ground` and `absolute`: nearby collision-free root positions.
 
-Spatial wording is represented with generic preferences such as exterior/interior,
-upward/vertical, highest/lowest, open/enclosed, and left/right/front/back. Thus
-"on top of" and "on the top shelf" remain distinct without hard-coding a
-bookshelf rule.
-
-Saved scenes reference reusable asset IDs. They are hydrated from the current
-registry when loaded, so rerunning the spatial geometry backfill upgrades existing
-assets without copying GLBs into scene folders.
+Saved scenes hydrate reusable assets from the current registry and preserve the
+director contract so actor upgrades do not require re-directing the lesson.

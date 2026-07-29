@@ -7,11 +7,20 @@ import type {
   VisualExperienceMode,
   VisualLearningTurnInput,
   VisualLearningTurnOutput,
+  VisualLearningTurnProceedOutput,
   VisualOrientationSegment,
   VisualPersonalizationHypothesis,
   VisualPrimitiveKind,
   VisualSceneActionType,
 } from "./visual-learning-turn";
+
+import {
+  directorPlanToCaptionPolicy,
+  directorPlanToLegacyDirectedScene,
+  directorPlanToLegacySemanticBeats,
+  directorPlanToLegacyStoryBeats,
+  normalizeEducationalSceneDirectorPlan,
+} from "../director";
 
 const EXPERIENCE_MODES: VisualExperienceMode[] = [
   "model_selected_scene",
@@ -214,6 +223,30 @@ function normalizeEntities(rawScenePlan: Record<string, unknown> | null): Semant
         preferred_render_kind: supportedPrimitive(visualNeedRecord?.preferred_render_kind ?? record.preferred_render_kind, visualNeedDescription),
         fallback_allowed: typeof visualNeedRecord?.fallback_allowed === "boolean" ? visualNeedRecord.fallback_allowed : true,
       },
+      actor_kind:
+        typeof record.actor_kind === "string"
+          ? record.actor_kind
+          : undefined,
+      asset_policy: asRecord(record.asset_policy)
+        ? {
+            asset_required:
+              asRecord(record.asset_policy)?.asset_required === true,
+            can_use_proxy_until_asset_ready:
+              asRecord(record.asset_policy)?.can_use_proxy_until_asset_ready !== false,
+            fallback_representation:
+              typeof asRecord(record.asset_policy)?.fallback_representation === "string"
+                ? String(asRecord(record.asset_policy)?.fallback_representation)
+                : undefined,
+            capability_needs: asArray(asRecord(record.asset_policy)?.capability_needs)
+              .map(String)
+              .filter(Boolean)
+              .slice(0, 16),
+            anchor_needs: asArray(asRecord(record.asset_policy)?.anchor_needs)
+              .map(String)
+              .filter(Boolean)
+              .slice(0, 16),
+          }
+        : null,
       position_hint: Array.isArray(record.position_hint) && record.position_hint.length === 3
         ? [Number(record.position_hint[0]) || 0, Number(record.position_hint[1]) || 0, Number(record.position_hint[2]) || 0]
         : [index * 1.6 - Math.max(0, rawEntities.length - 1) * 0.8, 0, 0],
@@ -498,13 +531,121 @@ export function normalizeVisualLearningTurnOutput(
     };
   }
 
-  if (isStrictProceed(raw) || isStrictClarification(raw)) {
+  if (isStrictProceed(raw)) {
+    const strictOutput =
+      raw as unknown as VisualLearningTurnProceedOutput;
+    const visualExperience =
+      asRecord(strictOutput.visual_experience) ?? {};
+    const scenePlan =
+      asRecord(visualExperience.semantic_scene_plan) ?? {};
+    const learningFocus =
+      asRecord(strictOutput.learning_focus) ?? {};
+    const directorResult =
+      normalizeEducationalSceneDirectorPlan(
+        scenePlan.director_plan ??
+          scenePlan.directed_scene ??
+          {},
+        {
+          source: "visual_experience",
+          title: text(
+            visualExperience.title,
+            "Directed educational scene",
+          ),
+          scene_thesis: text(
+            visualExperience.full_prompt,
+            text(
+              learningFocus.root_problem,
+              "Build a clear mental model.",
+            ),
+          ),
+          learner_takeaway: text(
+            learningFocus.target_takeaway,
+            "The learner can explain the central relationship.",
+          ),
+          entities: scenePlan.entities,
+          relationships: scenePlan.relationships,
+          explanation_pieces:
+            visualExperience.explanation_pieces,
+          legacy_directed_scene:
+            scenePlan.directed_scene,
+          legacy_story_beats:
+            scenePlan.story_beats ??
+            scenePlan.scene_moments,
+          legacy_beats: scenePlan.beats,
+        },
+      );
+    const orientationIds = asArray(
+      visualExperience.orientation_segments,
+    )
+      .map((segment) =>
+        text(asRecord(segment)?.id, ""),
+      )
+      .filter(Boolean);
+    const semanticBeats =
+      directorPlanToLegacySemanticBeats(
+        directorResult.plan,
+        orientationIds,
+      ) as unknown as SemanticSceneBeat[];
+    const storyBeats =
+      directorPlanToLegacyStoryBeats(
+        directorResult.plan,
+      );
+
+    return {
+      output: {
+        ...strictOutput,
+        visual_experience: {
+          ...strictOutput.visual_experience,
+          semantic_scene_plan: {
+            ...strictOutput.visual_experience
+              .semantic_scene_plan,
+            director_plan:
+              directorResult.plan,
+            director_validation:
+              directorResult.validation,
+            directed_scene:
+              directorPlanToLegacyDirectedScene(
+                directorResult.plan,
+              ),
+            scene_moments:
+              storyBeats,
+            story_beats:
+              storyBeats,
+            caption_policy:
+              directorPlanToCaptionPolicy(
+                directorResult.plan,
+              ),
+            beats:
+              semanticBeats.length
+                ? semanticBeats
+                : strictOutput.visual_experience
+                    .semantic_scene_plan
+                    .beats,
+          },
+        },
+      },
+      report: {
+        applied:
+          !scenePlan.director_plan,
+        source_shape: "already_strict",
+        notes: [
+          scenePlan.director_plan
+            ? "Strict output already contained a director plan; MyWay normalized and validated it."
+            : "Strict output was upgraded with a canonical director plan and derived compatibility views.",
+        ],
+        warnings:
+          directorResult.warnings,
+      },
+    };
+  }
+
+  if (isStrictClarification(raw)) {
     return {
       output: raw as VisualLearningTurnOutput,
       report: {
         applied: false,
         source_shape: "already_strict",
-        notes: ["Model output already matched the strict wrapper shape."],
+        notes: ["Model output already matched the strict clarification wrapper shape."],
         warnings: [],
       },
     };
@@ -531,7 +672,56 @@ export function normalizeVisualLearningTurnOutput(
   const entities = normalizeEntities(rawScenePlan);
   const entityIds = entities.map((entity) => entity.id);
   const relationships = normalizeRelationships(rawScenePlan, entityIds);
-  const beats = normalizeBeats(rawScenePlan, orientationSegments.map((segment) => segment.id), entityIds);
+  const compatibilityBeats = normalizeBeats(
+    rawScenePlan,
+    orientationSegments.map(
+      (segment) => segment.id,
+    ),
+    entityIds,
+  );
+  const directorResult =
+    normalizeEducationalSceneDirectorPlan(
+      rawScenePlan?.director_plan ??
+        rawScenePlan?.directed_scene ??
+        {},
+      {
+        source: "visual_experience",
+        title: text(
+          visualExperience?.title,
+          `${topicLabel} visual model`,
+        ),
+        scene_thesis: text(
+          visualExperience?.full_prompt,
+          rootProblem,
+        ),
+        learner_takeaway:
+          targetTakeaway,
+        entities,
+        relationships,
+        explanation_pieces:
+          visualExperience?.explanation_pieces,
+        legacy_directed_scene:
+          rawScenePlan?.directed_scene,
+        legacy_story_beats:
+          rawScenePlan?.story_beats ??
+          rawScenePlan?.scene_moments,
+        legacy_beats:
+          compatibilityBeats,
+      },
+    );
+  const directorPlan =
+    directorResult.plan;
+  const storyBeats =
+    directorPlanToLegacyStoryBeats(
+      directorPlan,
+    );
+  const beats =
+    directorPlanToLegacySemanticBeats(
+      directorPlan,
+      orientationSegments.map(
+        (segment) => segment.id,
+      ),
+    ) as unknown as SemanticSceneBeat[];
   const guidedInteraction = normalizeGuidedInteraction(raw, entityIds);
   const followupProbe = normalizeFollowupProbe(raw, input, rootProblem, targetTakeaway);
   const personalizationHypotheses = normalizePersonalizationHypotheses(raw);
@@ -585,6 +775,21 @@ export function normalizeVisualLearningTurnOutput(
       experience_mode: supportedExperienceMode(visualExperience?.experience_mode ?? rawScenePlan?.experience_mode),
       orientation_segments: orientationSegments,
       semantic_scene_plan: {
+        director_plan: directorPlan,
+        director_validation:
+          directorResult.validation,
+        directed_scene:
+          directorPlanToLegacyDirectedScene(
+            directorPlan,
+          ),
+        scene_moments:
+          storyBeats,
+        story_beats:
+          storyBeats,
+        caption_policy:
+          directorPlanToCaptionPolicy(
+            directorPlan,
+          ),
         entities,
         relationships,
         beats,
@@ -604,7 +809,10 @@ export function normalizeVisualLearningTurnOutput(
       applied: true,
       source_shape: raw.root_problem || raw.orientation_segments || raw.semantic_scene_plan ? "near_miss_flat" : "near_miss_partial",
       notes,
-      warnings,
+      warnings: [
+        ...warnings,
+        ...directorResult.warnings,
+      ],
     },
   };
 }

@@ -1,5 +1,9 @@
 import type { ProbeType } from "@/lib/engine/schemas/shared";
-import type { VisualLearningTurnInput, VisualLearningTurnOutput } from "./visual-learning-turn";
+import type {
+  VisualLearningTurnInput,
+  VisualLearningTurnOutput,
+  VisualLearningTurnProceedOutput,
+} from "./visual-learning-turn";
 import {
   DEFAULT_BRIDGE_LEVEL,
   DEFAULT_JARGON_LEVEL,
@@ -11,6 +15,17 @@ import {
   unclearVisualLearningTurnOutputExample,
 } from "./visual-learning-turn-examples";
 import { SHARED_CONFUSION_LABELS, SHARED_INSIGHT_LABELS } from "./diagnostic-relationships";
+import {
+  DIRECTOR_BEHAVIOURS,
+  DIRECTOR_CAMERA_MOVEMENTS,
+  DIRECTOR_CAMERA_SHOTS,
+  DIRECTOR_REPRESENTATION_MODES,
+  directorPlanToCaptionPolicy,
+  directorPlanToLegacyDirectedScene,
+  directorPlanToLegacySemanticBeats,
+  directorPlanToLegacyStoryBeats,
+  normalizeEducationalSceneDirectorPlan,
+} from "../director";
 
 export type VisualLearningTurnRequestBody = {
   learner_message?: string;
@@ -77,9 +92,20 @@ You handle:
 - creating a learner-facing full_prompt
 - creating explanation_pieces inside that full_prompt
 - creating a visual scene that proves the full_prompt
+- directing a sequence of exceptional visual moments even before final assets exist
 - creating a follow-up probe
 
 The learner_facing_prompt.full_prompt is the source of truth.
+The scene.director_plan is the source of truth for how that teaching path is staged.
+
+Direct the lesson before casting final assets:
+- Give every moment exactly one learner-attention job.
+- Keep stable entity ids so actors can be replaced later without rewriting the scene.
+- Never weaken or omit direction because an asset may be unavailable.
+- Describe capability and anchor needs for physical actors, such as rotate, pour, contain, connect, open, or follow.
+- Use camera framing, motion, timed text, and progressive reveal to make the causal relationship visible.
+- Prefer a clear animated diagram or mechanistic abstraction over a poor literal reenactment.
+- MyWay owns asset ids, file paths, geometry validation, collision safety, renderer math, and late binding.
 
 Build the full_prompt from first principles. Use explanation_pieces to make the teaching path clear:
 1. start from a basic need
@@ -173,54 +199,24 @@ export const VISUAL_LEARNING_SEMANTIC_DRAFT_RESPONSE_CONTRACT = {
   },
   scene: {
     title: "short title",
-    directed_scene: {
-      scene_concept: "rich freeform description of the exact visual scene",
-      visual_metaphor: "concrete metaphor or null",
-      emotional_tone: "clear, calm, cinematic, etc.",
-      spatial_design: "where objects live and what must stay visible",
-      cinematography: {
-        opening_shot: "first camera view",
-        camera_motion: "camera path across the story",
-        focus_strategy: "what is emphasized or dimmed",
-      },
-      reveal_strategy: {
-        reveal_elements_one_at_a_time: true,
-        reason: "why progressive reveal helps or does not help",
-        reveal_order_entity_ids: ["entity_id"],
-        keep_previous_elements_visible: true,
-      },
-    },
-    scene_moments: [
-      {
-        id: "moment_1",
-        title: "moment title",
-        source_explanation_piece_ids: ["piece_1"],
-        introduces_entity_ids: ["entity_id"],
-        keeps_visible_entity_ids: [],
-        active_entity_ids: ["entity_id"],
-        director_intent: "what the learner should notice in this moment",
-        camera: {
-          shot_type: "wide | close_up | push_in | pull_back | follow | orbit",
-          focus_entity_ids: ["entity_id"],
-          movement: "semantic camera movement",
-        },
-        visual_events: [
-          {
-            type: "move | merge | split | fade | pop | glow | trace | transform",
-            entity_id: "entity_id",
-            description: "visible event the renderer should execute",
-          },
-        ],
-      },
-    ],
     entities: [
       {
-        id: "entity_id",
+        id: "stable_entity_id",
         display_name: "learner-facing name",
-        semantic_role: "what this entity means",
-        visual_need: "what should be visible",
-        semantic_tags: ["tag"],
-        preferred_render_kind: "sphere | box | arrow | path | label | particle | registered_asset | any",
+        semantic_role: "what this actor means in the explanation",
+        visual_need: {
+          description: "what must be visible even if a final asset is not ready",
+          semantic_tags: ["identity and scene-role tags"],
+          preferred_render_kind: "sphere | box | arrow | path | label | particle | registered_asset | any",
+        },
+        actor_kind: "physical_asset | procedural_effect | diagrammatic_actor | path | label | symbolic_actor | any",
+        asset_policy: {
+          asset_required: false,
+          can_use_proxy_until_asset_ready: true,
+          fallback_representation: "diagrammatic_proxy | abstract_proxy | path_or_label | preserve_direction_without_actor | none",
+          capability_needs: ["move, rotate, pour, contain, open, connect, etc."],
+          anchor_needs: ["ground, center, output, input, handle, interior, etc."],
+        },
       },
     ],
     relationships: [
@@ -229,9 +225,91 @@ export const VISUAL_LEARNING_SEMANTIC_DRAFT_RESPONSE_CONTRACT = {
         source_entity_id: "entity_id",
         target_entity_ids: ["entity_id"],
         relationship_type: "connects_to | contrasts_with | causes | becomes | enters | leaves | cycles_back | supports_takeaway",
-        explanation: "why these entities relate",
+        explanation: "why the relationship matters to the learner",
       },
     ],
+    director_plan: {
+      schema_version: "myway_educational_scene_director_v1",
+      title: "short scene title",
+      scene_thesis: "one sentence describing what the scene must make undeniable",
+      learner_takeaway: "the mental model the learner should leave with",
+      representation_strategy: {
+        primary_mode: DIRECTOR_REPRESENTATION_MODES.join(" | "),
+        secondary_modes: ["optional alternate representation"],
+        reason: "why this representation best exposes the hidden relationship",
+        fidelity_priority: "causal_clarity | spatial_clarity | comparison_clarity | literal_fidelity",
+      },
+      style: {
+        look: "clean stylized, technical cutaway, diagrammatic, etc.",
+        mood: "clear and calm",
+        continuity: "what remains visible across moments",
+        attention_policy: "how the scene keeps one visual job per moment",
+      },
+      moments: [
+        {
+          id: "moment_1",
+          title: "short moment title",
+          learning_job: "the single teaching job of this moment",
+          director_intent: "exactly what the learner should notice",
+          source_explanation_piece_ids: ["piece_1"],
+          duration_ms: 4200,
+          introduces_entity_ids: ["entity_id"],
+          keeps_visible_entity_ids: [],
+          active_entity_ids: ["entity_id"],
+          camera: {
+            shot_type: DIRECTOR_CAMERA_SHOTS.join(" | "),
+            movement: DIRECTOR_CAMERA_MOVEMENTS.join(" | "),
+            focus_entity_ids: ["entity_id"],
+            framing_intent: "what must remain readable in frame",
+            keep_visible_entity_ids: [],
+          },
+          events: [
+            {
+              id: "event_1",
+              behaviour: DIRECTOR_BEHAVIOURS.join(" | "),
+              actor_entity_id: "entity_id",
+              target_entity_id: "optional entity id or null",
+              supporting_entity_ids: [],
+              start_ms: 0,
+              duration_ms: 1800,
+              easing: "linear | ease_in | ease_out | ease_in_out | spring | step",
+              path_hint: "semantic path description or null",
+              description: "the visible change the renderer should compile",
+              parameters: {},
+              fallback_behaviour: "optional simpler supported behaviour or null",
+            },
+          ],
+          text_cues: [
+            {
+              id: "text_1",
+              kind: "object_anchor | world_label | screen_caption | screen_center",
+              text: "short learner-facing phrase",
+              anchor_entity_id: "entity_id or null",
+              placement: "above | below | left | right | center | top | bottom | auto",
+              start_ms: 250,
+              end_ms: 3600,
+              emphasis_words: ["optional"],
+              entrance: "fade | fade_up | pop | type_on | none",
+              exit: "fade | hold | none",
+            },
+          ],
+          success_observation: "what should be visually obvious by the end of the moment",
+        },
+      ],
+      global_text_policy: {
+        max_words_per_cue: 18,
+        max_lines: 2,
+        avoid_covering_core_motion: true,
+        prefer_object_anchored_text: true,
+      },
+      execution_policy: {
+        direction_survives_missing_assets: true,
+        preserve_entity_ids_for_late_binding: true,
+        asset_resolution_owner: "myway",
+        renderer_compiles_behaviours: true,
+        allow_abstract_proxy_until_asset_ready: true,
+      },
+    },
   },
   guided_interaction: {
     instruction: "learner-facing instruction",
@@ -429,7 +507,13 @@ RULES:
 - learner_facing_prompt.full_prompt is the source of truth.
 - Build full_prompt from first principles using explanation_pieces.
 - Do not output orientation_segments, key_takeaway, why_visual_first, label_policy, spoken_caption, or personalization_hypotheses.
-- scene.scene_moments should visually prove the explanation_pieces and should reveal elements one at a time when useful.
+- scene.director_plan is primary. Do not output legacy directed_scene, scene_moments, story_beats, or beats; MyWay derives those compatibility views.
+- Every director moment must have one learning_job, one director_intent, an explicit camera cue, at least one event, and concise timed text.
+- Keep entity ids stable across all moments and relationships.
+- Do not omit an entity or simplify the teaching sequence because a final asset may be missing.
+- For physical actors, include capability_needs and anchor_needs inside the entity's director metadata when useful; MyWay will preserve those for late binding.
+- Use semantic behaviours even when the current Three.js renderer cannot execute the premium version yet. Include a simpler fallback_behaviour when possible.
+- Prefer causal clarity over spectacle, and prefer a controlled abstraction over a misleading literal scene.
 - probe.full_prompt should be workbook-style and should test the target_takeaway.`;
 }
 
@@ -452,7 +536,8 @@ export function buildVisualLearningTurnModelRequest(input: VisualLearningTurnInp
     response_contract: VISUAL_LEARNING_SEMANTIC_DRAFT_RESPONSE_CONTRACT,
     compiler_input: input,
     tuning_notes: [
-      "Step 13: full_prompt is the source of truth; explanation_pieces drive progressive reveal.",
+      "Director consolidation: full_prompt is the teaching source of truth and scene.director_plan is the staging source of truth.",
+      "Director consolidation: legacy scene moments, story beats, semantic beats, camera tracks, and motion tracks are compatibility views derived by MyWay.",
       "Step 13: topic_label is inferred by the model; legacy topic_label input is ignored.",
       "Step 13: diagnostic_signal now carries confusion/insight scores and shared pattern candidates.",
       "Step 13: MyWay creates sandbox relationship previews deterministically from shared_label matches.",
@@ -601,7 +686,7 @@ function buildTopicAwareScaffoldOutput(input: VisualLearningTurnInput): VisualLe
   const inputEntityId = isPiston ? "expanding_gas" : "system_input";
   const outputEntityId = isPiston ? "crank_spin" : "system_output";
 
-  return {
+  const scaffold: VisualLearningTurnProceedOutput = {
     schema_version: "myway_visual_learning_turn_output_v1",
     turn_status: "proceed",
     clarification_gate: {
@@ -870,6 +955,85 @@ function buildTopicAwareScaffoldOutput(input: VisualLearningTurnInput): VisualLe
     },
     confidence: 0.62,
   };
+
+  const scenePlan =
+    scaffold.visual_experience
+      .semantic_scene_plan;
+  const directorResult =
+    normalizeEducationalSceneDirectorPlan(
+      scenePlan.director_plan ??
+        scenePlan.directed_scene ??
+        {},
+      {
+        source: "scaffold",
+        title:
+          scaffold.visual_experience
+            .title,
+        scene_thesis:
+          scaffold.visual_experience
+            .full_prompt ??
+          rootProblem,
+        learner_takeaway:
+          targetTakeaway,
+        entities:
+          scenePlan.entities,
+        relationships:
+          scenePlan.relationships,
+        explanation_pieces:
+          scaffold.visual_experience
+            .explanation_pieces,
+        legacy_directed_scene:
+          scenePlan.directed_scene,
+        legacy_story_beats:
+          scenePlan.scene_moments ??
+          scenePlan.story_beats,
+        legacy_beats:
+          scenePlan.beats,
+      },
+    );
+  const storyBeats =
+    directorPlanToLegacyStoryBeats(
+      directorResult.plan,
+    );
+  const semanticBeats =
+    directorPlanToLegacySemanticBeats(
+      directorResult.plan,
+      scaffold.visual_experience
+        .orientation_segments.map(
+          (segment) => segment.id,
+        ),
+    );
+
+  return {
+    ...scaffold,
+    visual_experience: {
+      ...scaffold.visual_experience,
+      semantic_scene_plan: {
+        ...scenePlan,
+        director_plan:
+          directorResult.plan,
+        director_validation:
+          directorResult.validation,
+        directed_scene:
+          directorPlanToLegacyDirectedScene(
+            directorResult.plan,
+          ),
+        scene_moments:
+          storyBeats,
+        story_beats:
+          storyBeats,
+        caption_policy:
+          directorPlanToCaptionPolicy(
+            directorResult.plan,
+          ),
+        beats:
+          semanticBeats.length
+            ? (semanticBeats as unknown as typeof scenePlan.beats)
+            : scenePlan.beats,
+      },
+    },
+  };
+
 }
 
 export function buildVisualLearningTurnScaffoldOutput(

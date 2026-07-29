@@ -3,6 +3,10 @@ import type {
   SceneAssetInstance,
 } from "./scene-manifest";
 
+import {
+  normalizeEducationalSceneDirectorPlan,
+} from "../director";
+
 export function safeSceneId(value: string) {
   return value
     .toLowerCase()
@@ -235,6 +239,34 @@ export function validateSceneManifest(
         )
     : [];
 
+  const sceneGraphRecord =
+    record(item.scene_graph);
+  const rawDirectorPlan =
+    item.director_plan ??
+    sceneGraphRecord?.director_plan ??
+    null;
+  const directorResult = rawDirectorPlan
+    ? normalizeEducationalSceneDirectorPlan(
+        rawDirectorPlan,
+        {
+          source,
+          title: String(
+            item.title ?? sceneId,
+          ),
+          scene_thesis: String(
+            item.original_prompt ?? "",
+          ),
+          learner_takeaway:
+            "Preserve the intended educational sequence when the scene is reloaded.",
+          entities:
+            sceneGraphRecord?.asset_requirements,
+          legacy_beats:
+            item.timeline ??
+            sceneGraphRecord?.beats,
+        },
+      )
+    : null;
+
   const scene: MyWaySceneManifestV2 = {
     schema_version: "myway_scene_manifest_v2",
     scene_id: sceneId,
@@ -249,6 +281,10 @@ export function validateSceneManifest(
     )
       ? item.procedural_nodes
       : [],
+    director_plan:
+      directorResult?.plan ?? null,
+    director_validation:
+      directorResult?.validation ?? null,
     scene_graph: item.scene_graph ?? null,
     primitive_plan: item.primitive_plan ?? null,
     asset_requirements: Array.isArray(

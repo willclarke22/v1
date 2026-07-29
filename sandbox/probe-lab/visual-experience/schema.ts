@@ -1,3 +1,8 @@
+import type {
+  EducationalSceneDirectorPlanV1,
+  EducationalSceneDirectorValidationReport,
+} from "../director";
+
 // -----------------------------------------------------------------------------
 // MyWay Visual Experience sandbox schema
 // -----------------------------------------------------------------------------
@@ -290,6 +295,9 @@ export type VisualSceneBeat = {
 
 export type VisualExperienceScenePlan = {
   renderer: "react_three_fiber_sandbox";
+  /** Canonical direction; legacy entities/beats below are renderer compatibility views. */
+  director_plan?: EducationalSceneDirectorPlanV1 | null;
+  director_validation?: EducationalSceneDirectorValidationReport | null;
   visual_style: "simple_preview" | "diagrammatic" | "cinematic_learning" | "minimal_story";
   entities: VisualSceneEntity[];
   beats: VisualSceneBeat[];

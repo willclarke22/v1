@@ -1,0 +1,17 @@
+MYWAY_PROGRESS: starting custom build
+MYWAY_PROGRESS: custom build complete
+Info: Saved as "stylized_treasure_chest.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.1\5.1\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+17:19:18 | INFO: Starting glTF 2.0 export
+17:19:18 | INFO: Extracting primitive: Cube
+17:19:18 | INFO: Primitives created: 1
+17:19:18 | INFO: Extracting primitive: Cube.001
+17:19:18 | INFO: Primitives created: 1
+17:19:18 | INFO: Finished glTF 2.0 export in 0.2050328254699707 s
+00:12.671  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\def0667b-1c9f-49fb-a872-7a414bfc1510\preview.png'
+
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\def0667b-1c9f-49fb-a872-7a414bfc1510\preview.png
+MYWAY_ASSET_BUILD_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\def0667b-1c9f-49fb-a872-7a414bfc1510\stylized_treasure_chest.glb
+Blender 5.1.2 (hash ec6e62d40fa9 built 2026-05-19 01:37:34)
+
+Blender quit

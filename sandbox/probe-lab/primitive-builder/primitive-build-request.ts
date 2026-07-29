@@ -6,6 +6,13 @@ import {
   SCENE_GRAPH_RENDER_POLICIES,
 } from "./primitive-scene-graph";
 
+import {
+  DIRECTOR_BEHAVIOURS,
+  DIRECTOR_CAMERA_MOVEMENTS,
+  DIRECTOR_CAMERA_SHOTS,
+  DIRECTOR_REPRESENTATION_MODES,
+} from "../director";
+
 export type PrimitiveBuilderModelProvider = "deepseek" | "glm";
 export type PrimitiveBuilderFallbackProvider = "none" | "deepseek" | "glm";
 
@@ -88,6 +95,103 @@ function compactResponseContract() {
       key_light: [4, 8, 6],
       fill_light: [-1.5, 2.4, -2.7],
     },
+    director_plan: {
+      schema_version:
+        "myway_educational_scene_director_v1",
+      title: "short scene title",
+      scene_thesis:
+        "what the scene must make visually undeniable",
+      learner_takeaway:
+        "the mental model the learner should leave with",
+      representation_strategy: {
+        primary_mode:
+          DIRECTOR_REPRESENTATION_MODES.join(" | "),
+        secondary_modes: [],
+        reason:
+          "why this representation exposes the requested relationship",
+        fidelity_priority:
+          "causal_clarity | spatial_clarity | comparison_clarity | literal_fidelity",
+      },
+      style: {
+        look: "clean stylized",
+        mood: "clear and calm",
+        continuity:
+          "what remains visible across moments",
+        attention_policy:
+          "how each moment keeps one visual job",
+      },
+      moments: [
+        {
+          id: "moment_1",
+          title: "short title",
+          learning_job:
+            "the single teaching job of this moment",
+          director_intent:
+            "what the viewer must notice",
+          duration_ms: 4200,
+          introduces_entity_ids: [
+            "asset requirement instance ids or procedural node ids",
+          ],
+          keeps_visible_entity_ids: [],
+          active_entity_ids: [],
+          camera: {
+            shot_type:
+              DIRECTOR_CAMERA_SHOTS.join(" | "),
+            movement:
+              DIRECTOR_CAMERA_MOVEMENTS.join(" | "),
+            focus_entity_ids: [],
+            framing_intent:
+              "what must remain readable",
+            keep_visible_entity_ids: [],
+          },
+          events: [
+            {
+              id: "event_1",
+              behaviour:
+                DIRECTOR_BEHAVIOURS.join(" | "),
+              actor_entity_id:
+                "asset requirement instance id or procedural node id",
+              target_entity_id:
+                "optional actor id or null",
+              supporting_entity_ids: [],
+              start_ms: 0,
+              duration_ms: 1800,
+              easing:
+                "linear | ease_in | ease_out | ease_in_out | spring | step",
+              path_hint:
+                "semantic path description or null",
+              description:
+                "the visible change MyWay should compile",
+              parameters: {},
+              fallback_behaviour:
+                "optional simpler behaviour or null",
+            },
+          ],
+          text_cues: [
+            {
+              id: "text_1",
+              kind:
+                "object_anchor | world_label | screen_caption | screen_center",
+              text:
+                "short educational phrase",
+              anchor_entity_id:
+                "actor id or null",
+              placement:
+                "above | below | left | right | center | top | bottom | auto",
+              start_ms: 250,
+              end_ms: 3600,
+              emphasis_words: [],
+              entrance:
+                "fade | fade_up | pop | type_on | none",
+              exit:
+                "fade | hold | none",
+            },
+          ],
+          success_observation:
+            "what should be obvious by the end",
+        },
+      ],
+    },
     nodes: [
       {
         id: "stable_snake_case_id",
@@ -159,15 +263,6 @@ function compactResponseContract() {
         scale: [1, 1, 1],
       },
     ],
-    beats: [
-      {
-        id: "beat_1",
-        title: "short title",
-        reveal: ["node ids"],
-        emphasize: ["optional node ids"],
-        camera: "optional camera preset",
-      },
-    ],
   };
 }
 
@@ -181,11 +276,18 @@ export function makePrimitiveBuildModelRequest(input: {
   const system = `You are MyWay's Asset Scene Planner.
 Return exactly one valid JSON object. Do not use markdown, code fences, commentary, or hidden reasoning.
 Build a clear grouped primitive_scene_graph_v2 from the request.
-The primitive nodes are invisible layout proxies only. They communicate approximate bounds, grouping, relative position, support relationships, motion intent, and beat timing; they are never shown as substitutes for missing assets.
+The director_plan is the source of truth for teaching sequence, movement, camera, timed text, and stable actor ids.
+Direct the scene before casting final assets. The direction must remain exceptional even when every physical actor is unresolved.
+Each director moment must have one learning_job, one director_intent, explicit camera framing, at least one semantic event, and concise timed text.
+Use asset requirement instance_ids as the actor ids for physical objects and procedural node ids for abstract effects.
+Never omit a requested actor or weaken the motion sequence because MyWay may not have the asset yet.
+Describe semantic behaviours and actor capability/anchor needs; MyWay compiles them into supported Three.js or Blender execution later.
+The primitive nodes are invisible layout proxies only. They communicate approximate bounds, grouping, relative position, support relationships, and motion intent; they are never shown as substitutes for missing assets.
 Use local child coordinates inside meaningful groups and use only allowed values.
 Create an asset requirement for every physical object that should appear in the final scene.
 Never output asset IDs, URLs, providers, paths, React, Three.js, JavaScript, or executable code.
 Every asset requirement must reference an existing layout proxy node or group.
+Every physical actor referenced by director_plan must use the matching asset requirement instance_id. Abstract effects may reference procedural_required node ids.
 For each physical object, describe object-specific visible appearance in appearance_request using open vocabulary. Keep identity in concept and appearance separate.
 Default required_traits to an empty array. Add a required trait only when the user explicitly requested that visible property and omitting it would make the scene meaningfully wrong. Never promote parts inferred only from general object knowledge into required traits. Put ordinary preferences in preferred_traits and clear conflicts in avoid_traits.
 Set target_extent_m to 0 unless the user explicitly gives a physical measurement for that object. MyWay applies a deterministic real-world size policy and parent-relative caps after parsing, so never guess an object's size from the example schema.
@@ -233,6 +335,8 @@ RULES:
 - The first character must be { and the final character must be }.
 - Return only the JSON object.
 - Use nodes[], not flat parts[].
+- Include director_plan and treat it as the source of truth for the educational sequence.
+- Do not output legacy beats; MyWay derives reveal beats from director_plan.moments.
 - Use groups for recognizable objects and subsystems.
 - Keep the requested composition coherent and omit unrelated demo objects.
 - Every requested physical object that should be visible must have an asset_requirement.
@@ -247,14 +351,16 @@ RULES:
 - Do not create visible primitive substitutes, decorative floors, stages, walls, or backdrops.
 - Physical-object nodes must use render_policy "layout_proxy".
 - Use render_policy "procedural_required" only for an explicitly requested abstract glow or particle cloud.
-- Every layout_proxy_node_id and every beat node ID must exist in nodes.
-- Missing assets will be absent from the scene and reported as "Missing from scene".
+- Every layout_proxy_node_id must exist in nodes.
+- Every director event, camera focus, and text anchor must reference a physical asset requirement instance_id or a procedural_required node id.
+- Give each director moment one visual job and preserve stable actor ids across the full sequence.
+- Missing assets may be absent from the current rendered scene, but their direction, capability needs, anchors, movement, camera cues, and text cues must remain complete.
 - MyWay will preserve explicit spatial intent, infer missing relations from proxy geometry, and enforce collision-safe final placement after assets load.`;
 
   return {
     model_task: "hybrid_primitive_scene_graph_planner",
     schema_version:
-      "asset_scene_graph_model_request_v7_spatial_constraints",
+      "asset_scene_graph_model_request_v8_director_consolidation",
     messages: [
       { role: "system" as const, content: system },
       { role: "user" as const, content: user },
@@ -299,13 +405,13 @@ REQUIRED_OUTPUT_SHAPE: ${JSON.stringify(schema)}
 PREVIOUS_RESPONSE_PREVIEW:
 ${previousPreview || "(empty or unavailable)"}
 
-Create a fresh request-specific scene. Use meaningful invisible layout proxies and one or more beats. Every physical object that should appear must have an asset requirement. Keep identity in concept and object-specific visible appearance in appearance_request. Default required_traits to [] and never invent required parts from general object knowledge. Do not include unrelated demonstrations, decorative floors, stages, or visible primitive substitutes. Preserve explicit spatial relations with generic placement_region properties and keep allow_intersection false unless the request explicitly requires intersection. MyWay will handle asset selection, appearance ranking, measured spatial regions, and collision-safe placement after parsing.`;
+Create a fresh request-specific scene. Include a complete director_plan plus meaningful invisible layout proxies. Do not output legacy beats; MyWay derives them from director_plan.moments. Every physical object that should appear must have an asset requirement, and every physical actor in the director plan must reference that requirement's stable instance_id. Keep identity in concept and object-specific visible appearance in appearance_request. Default required_traits to [] and never invent required parts from general object knowledge. Do not include unrelated demonstrations, decorative floors, stages, or visible primitive substitutes. Preserve explicit spatial relations with generic placement_region properties and keep allow_intersection false unless the request explicitly requires intersection. MyWay will handle asset selection, appearance ranking, measured spatial regions, collision-safe placement, renderer compilation, and late-bound actors after parsing.`;
 
   return {
     model_task:
       "hybrid_primitive_scene_graph_json_repair",
     schema_version:
-      "asset_scene_graph_json_repair_v4_spatial_constraints",
+      "asset_scene_graph_json_repair_v5_director_consolidation",
     messages: [
       { role: "system" as const, content: system },
       { role: "user" as const, content: user },

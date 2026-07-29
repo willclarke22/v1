@@ -326,6 +326,236 @@ def prepare_blenderkit_textures(asset_directory, resolution):
     }
 
 
+
+def _mesh_color_attribute_names(mesh):
+    names = []
+
+    color_attributes = getattr(mesh, "color_attributes", None)
+    if color_attributes is not None:
+        try:
+            names.extend(
+                attribute.name
+                for attribute in color_attributes
+                if getattr(attribute, "name", "")
+            )
+        except Exception:
+            pass
+
+    legacy_colors = getattr(mesh, "vertex_colors", None)
+    if legacy_colors is not None:
+        try:
+            names.extend(
+                layer.name
+                for layer in legacy_colors
+                if getattr(layer, "name", "")
+            )
+        except Exception:
+            pass
+
+    return list(dict.fromkeys(names))
+
+
+def _preferred_mesh_color_attribute(mesh):
+    color_attributes = getattr(mesh, "color_attributes", None)
+
+    if color_attributes is not None:
+        for candidate in [
+            getattr(color_attributes, "active_color", None),
+            getattr(color_attributes, "render_color_index", None),
+        ]:
+            if candidate is not None and hasattr(candidate, "name"):
+                return candidate.name
+
+        try:
+            active = getattr(color_attributes, "active", None)
+            if active is not None and getattr(active, "name", ""):
+                return active.name
+        except Exception:
+            pass
+
+        try:
+            if len(color_attributes) > 0:
+                return color_attributes[0].name
+        except Exception:
+            pass
+
+    legacy_colors = getattr(mesh, "vertex_colors", None)
+    if legacy_colors is not None:
+        try:
+            active = getattr(legacy_colors, "active", None)
+            if active is not None and getattr(active, "name", ""):
+                return active.name
+            if len(legacy_colors) > 0:
+                return legacy_colors[0].name
+        except Exception:
+            pass
+
+    return None
+
+
+def _ensure_principled_material(material):
+    material.use_nodes = True
+    node_tree = material.node_tree
+
+    output = next(
+        (node for node in node_tree.nodes if node.type == "OUTPUT_MATERIAL"),
+        None,
+    )
+    if output is None:
+        output = node_tree.nodes.new("ShaderNodeOutputMaterial")
+
+    principled = next(
+        (node for node in node_tree.nodes if node.type == "BSDF_PRINCIPLED"),
+        None,
+    )
+    if principled is None:
+        principled = node_tree.nodes.new("ShaderNodeBsdfPrincipled")
+
+    surface = output.inputs.get("Surface")
+    if surface is not None and not surface.is_linked:
+        node_tree.links.new(principled.outputs.get("BSDF"), surface)
+
+    return node_tree, principled
+
+
+def _base_color_already_uses_attribute(base_color):
+    if base_color is None or not base_color.is_linked:
+        return False
+
+    for link in base_color.links:
+        source = link.from_node
+        if source and source.type in {"VERTEX_COLOR", "ATTRIBUTE"}:
+            return True
+
+    return False
+
+
+def _connect_color_attribute(material, attribute_name):
+    node_tree, principled = _ensure_principled_material(material)
+    base_color = principled.inputs.get("Base Color")
+
+    if base_color is None or _base_color_already_uses_attribute(base_color):
+        return False
+
+    color_node = None
+
+    try:
+        color_node = node_tree.nodes.new("ShaderNodeVertexColor")
+        color_node.layer_name = attribute_name
+    except Exception:
+        color_node = node_tree.nodes.new("ShaderNodeAttribute")
+        color_node.attribute_name = attribute_name
+
+    color_output = color_node.outputs.get("Color")
+    if color_output is None:
+        node_tree.nodes.remove(color_node)
+        return False
+
+    # A glTF vertex colour is multiplied with the material base colour.
+    # White keeps the authored vertex colours unchanged.
+    base_color.default_value = (1.0, 1.0, 1.0, 1.0)
+    node_tree.links.new(color_output, base_color)
+
+    alpha_input = principled.inputs.get("Alpha")
+    alpha_output = color_node.outputs.get("Alpha")
+    if (
+        alpha_input is not None
+        and alpha_output is not None
+        and not alpha_input.is_linked
+    ):
+        node_tree.links.new(alpha_output, alpha_input)
+
+    material.diffuse_color = (1.0, 1.0, 1.0, 1.0)
+    return True
+
+
+def preserve_imported_appearance():
+    report = {
+        "mesh_count": 0,
+        "material_count": len(bpy.data.materials),
+        "image_count": 0,
+        "packed_image_count": 0,
+        "missing_image_count": 0,
+        "vertex_color_meshes": [],
+        "vertex_color_attributes": [],
+        "materials_created": [],
+        "materials_rebound_to_vertex_colors": [],
+        "warnings": [],
+    }
+
+    for image in list(bpy.data.images):
+        if image.name in {"Render Result", "Viewer Node"}:
+            continue
+
+        report["image_count"] += 1
+        if len(getattr(image, "packed_files", [])) > 0:
+            report["packed_image_count"] += 1
+
+        if (
+            getattr(image, "source", "") not in {"GENERATED", "VIEWER"}
+            and not _image_has_usable_source(image)
+        ):
+            report["missing_image_count"] += 1
+            report["warnings"].append(
+                f"Image '{image.name}' has no usable packed or external source."
+            )
+
+    all_attribute_names = []
+
+    for obj in mesh_objects():
+        report["mesh_count"] += 1
+        mesh = obj.data
+        attribute_names = _mesh_color_attribute_names(mesh)
+        if not attribute_names:
+            continue
+
+        report["vertex_color_meshes"].append(obj.name)
+        all_attribute_names.extend(attribute_names)
+        preferred_attribute = _preferred_mesh_color_attribute(mesh) or attribute_names[0]
+
+        if len(obj.material_slots) == 0:
+            material = bpy.data.materials.new(
+                name=f"MyWayVertexColor_{obj.name}"
+            )
+            obj.data.materials.append(material)
+            report["materials_created"].append(material.name)
+
+        for slot in obj.material_slots:
+            material = slot.material
+            if material is None:
+                material = bpy.data.materials.new(
+                    name=f"MyWayVertexColor_{obj.name}"
+                )
+                slot.material = material
+                report["materials_created"].append(material.name)
+
+            try:
+                if _connect_color_attribute(material, preferred_attribute):
+                    report["materials_rebound_to_vertex_colors"].append(
+                        f"{obj.name}:{material.name}:{preferred_attribute}"
+                    )
+            except Exception as exc:
+                report["warnings"].append(
+                    f"Could not connect colour attribute '{preferred_attribute}' "
+                    f"for {obj.name}/{material.name}: {type(exc).__name__}: {exc}"
+                )
+
+    report["vertex_color_attributes"] = list(dict.fromkeys(all_attribute_names))
+    report["materials_created"] = list(dict.fromkeys(report["materials_created"]))
+    report["materials_rebound_to_vertex_colors"] = list(
+        dict.fromkeys(report["materials_rebound_to_vertex_colors"])
+    )
+
+    if report["vertex_color_meshes"]:
+        log(
+            "Preserved vertex colours for "
+            f"{len(report['vertex_color_meshes'])} mesh object(s): "
+            + ", ".join(report["vertex_color_attributes"])
+        )
+
+    return report
+
+
 def export_glb(output_path):
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.object.select_all(action="DESELECT")
@@ -694,6 +924,7 @@ def acquire_blenderkit(
     free_only,
     required_license_kind,
     excluded_source_asset_ids,
+    selected_source_asset_id,
     temp_dir,
 ):
     api_key = get_blenderkit_api_key()
@@ -770,36 +1001,53 @@ def acquire_blenderkit(
         )
 
     query_tokens = tokenize(query)
-    semantic_results = [
-        item
-        for item in results
-        if blenderkit_result_matches_query(item, concise_query)
-    ]
+    selected_id = str(selected_source_asset_id or "").strip()
 
-    if not semantic_results:
-        preview_names = [
-            str(item.get("displayName") or item.get("name") or "unnamed")
-            for item in sorted(
-                results,
-                key=lambda item: score_blenderkit_result(
-                    item,
-                    query_tokens,
-                ),
-                reverse=True,
-            )[:5]
+    if selected_id:
+        exact_results = [
+            item
+            for item in results
+            if str(item.get("assetBaseId") or item.get("id") or "").strip()
+            == selected_id
         ]
-        anchor = query_anchor_token(concise_query)
-        raise RuntimeError(
-            "BlendKit had correctly licensed candidates, but none matched "
-            f"the core object word '{anchor}' for query "
-            f"'{concise_query}'. Top rejected candidates: "
-            f"{preview_names}. No asset was downloaded or registered."
-        )
+        if not exact_results:
+            raise RuntimeError(
+                "The selected BlendKit candidate was no longer present, "
+                "downloadable, and CC0 when import began. Search again and "
+                "choose another candidate."
+            )
+        asset = exact_results[0]
+    else:
+        semantic_results = [
+            item
+            for item in results
+            if blenderkit_result_matches_query(item, concise_query)
+        ]
 
-    asset = max(
-        semantic_results,
-        key=lambda item: score_blenderkit_result(item, query_tokens),
-    )
+        if not semantic_results:
+            preview_names = [
+                str(item.get("displayName") or item.get("name") or "unnamed")
+                for item in sorted(
+                    results,
+                    key=lambda item: score_blenderkit_result(
+                        item,
+                        query_tokens,
+                    ),
+                    reverse=True,
+                )[:5]
+            ]
+            anchor = query_anchor_token(concise_query)
+            raise RuntimeError(
+                "BlendKit had correctly licensed candidates, but none matched "
+                f"the core object word '{anchor}' for query "
+                f"'{concise_query}'. Top rejected candidates: "
+                f"{preview_names}. No asset was downloaded or registered."
+            )
+
+        asset = max(
+            semantic_results,
+            key=lambda item: score_blenderkit_result(item, query_tokens),
+        )
     selected_license = normalized_blenderkit_license(
         asset.get("license")
     )
@@ -1431,6 +1679,18 @@ def execute(job):
         "missing_images_removed": [],
         "warnings": [],
     }
+    appearance_report = {
+        "mesh_count": 0,
+        "material_count": 0,
+        "image_count": 0,
+        "packed_image_count": 0,
+        "missing_image_count": 0,
+        "vertex_color_meshes": [],
+        "vertex_color_attributes": [],
+        "materials_created": [],
+        "materials_rebound_to_vertex_colors": [],
+        "warnings": [],
+    }
 
     if job["kind"] == "profile_asset_geometry":
         import_asset(job["input_path"])
@@ -1462,6 +1722,7 @@ def execute(job):
             bool(job.get("free_only", True)),
             job.get("required_license_kind"),
             job.get("excluded_source_asset_ids", []),
+            job.get("selected_source_asset_id"),
             temp_dir,
         )
         append_blend_file(blend_path)
@@ -1472,6 +1733,7 @@ def execute(job):
     else:
         raise RuntimeError(f"Unknown Blender job kind: {job['kind']}")
 
+    appearance_report = preserve_imported_appearance()
     dimensions = normalize_scene(float(job.get("target_extent_m", 2.0)))
     profile = geometry_profile()
     export_glb(job["output_path"])
@@ -1485,6 +1747,7 @@ def execute(job):
         "animation_clips": animation_clips(),
         "geometry_profile": profile,
         "texture_report": texture_report,
+        "appearance_report": appearance_report,
         **source_metadata,
     }
 

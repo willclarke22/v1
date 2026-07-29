@@ -17,6 +17,11 @@ import type {
   PrimitiveBuilderSurfaceReference,
 } from "../primitive-builder/asset-requirement-plan";
 
+import type {
+  EducationalSceneDirectorPlanV1,
+  EducationalSceneDirectorValidationReport,
+} from "../director";
+
 export type ResolvedSceneAssetBinding = {
   instance_id: string;
   concept: string;
@@ -76,6 +81,8 @@ export type PrimitiveBuilderUnresolvedAssetDiagnostic = {
 
 export type PrimitiveBuilderSceneAssetResolution = {
   schema_version: "primitive_builder_scene_asset_resolution_v2";
+  director_plan?: EducationalSceneDirectorPlanV1;
+  director_validation?: EducationalSceneDirectorValidationReport;
   bindings: ResolvedSceneAssetBinding[];
   unresolved_requirements: PrimitiveBuilderAssetRequirement[];
   unresolved_diagnostics?: PrimitiveBuilderUnresolvedAssetDiagnostic[];

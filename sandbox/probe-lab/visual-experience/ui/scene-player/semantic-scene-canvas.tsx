@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Html, Line, OrbitControls } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
@@ -851,45 +851,41 @@ export function SemanticSceneCanvas({
         <div
           style={{
             position: "absolute",
-            left: 22,
-            right: 22,
-            bottom: 18,
-            display: "grid",
-            gap: 8,
+            left: 18,
+            right: "auto",
+            bottom: 14,
+            maxWidth: "min(460px, calc(100% - 36px))",
             pointerEvents: "none",
           }}
         >
           <div
             style={{
-              width: `${Math.max(8, Math.min(100, normalizedProgress * 100))}%`,
-              height: 3,
-              borderRadius: 999,
-              background: "linear-gradient(90deg, rgba(125,211,252,0.35), rgba(251,191,36,0.92))",
-              boxShadow: "0 0 22px rgba(251,191,36,0.28)",
-            }}
-          />
-          <div
-            style={{
-              maxWidth: storyMode ? 360 : 920,
-              margin: storyMode ? "0 auto" : undefined,
-              borderRadius: 18,
-              padding: storyMode ? "10px 14px" : "12px 14px",
-              background: "linear-gradient(135deg, rgba(2,6,23,0.74), rgba(15,23,42,0.64))",
-              border: "1px solid rgba(125,211,252,0.2)",
-              boxShadow: "0 18px 60px rgba(0,0,0,0.35)",
-              backdropFilter: "blur(10px)",
+              maxWidth: storyMode ? 460 : 920,
+              padding: storyMode ? 0 : "12px 14px",
+              borderRadius: storyMode ? 0 : 18,
+              background: storyMode
+                ? "transparent"
+                : "linear-gradient(135deg, rgba(2,6,23,0.74), rgba(15,23,42,0.64))",
+              border: storyMode
+                ? "none"
+                : "1px solid rgba(125,211,252,0.2)",
+              boxShadow: storyMode
+                ? "none"
+                : "0 18px 60px rgba(0,0,0,0.35)",
+              backdropFilter: storyMode ? "none" : "blur(10px)",
             }}
           >
             <div
               style={{
                 color: "white",
-                fontSize: storyMode ? 30 : 18,
-                lineHeight: storyMode ? 1.16 : 1.45,
-                fontWeight: 850,
-                letterSpacing: storyMode ? "0.01em" : undefined,
-                textAlign: storyMode ? "center" : "left",
-                minHeight: storyMode ? 74 : undefined,
-                textShadow: "0 2px 24px rgba(0,0,0,0.72)",
+                fontSize: storyMode ? 14 : 18,
+                lineHeight: storyMode ? 1.42 : 1.45,
+                fontWeight: storyMode ? 650 : 850,
+                letterSpacing: storyMode ? "0.005em" : undefined,
+                textAlign: "left",
+                textShadow: storyMode
+                  ? "0 1px 2px rgba(0,0,0,0.98), 0 2px 10px rgba(0,0,0,0.92)"
+                  : "0 2px 24px rgba(0,0,0,0.72)",
               }}
             >
               {captionText}
@@ -900,3 +896,4 @@ export function SemanticSceneCanvas({
     </div>
   );
 }
+

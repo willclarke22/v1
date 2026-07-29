@@ -4,6 +4,13 @@ import {
   type PrimitiveBuilderAssetRequirement,
 } from "./asset-requirement-plan";
 
+import {
+  directorPlanToPrimitiveBeats,
+  normalizeEducationalSceneDirectorPlan,
+  type EducationalSceneDirectorPlanV1,
+  type EducationalSceneDirectorValidationReport,
+} from "../director";
+
 export const SCENE_GRAPH_NODE_KINDS = [
   "group",
   "box",
@@ -110,6 +117,10 @@ export type PrimitiveSceneGraphV2 = {
   };
   nodes: PrimitiveSceneGraphNode[];
   asset_requirements: PrimitiveBuilderAssetRequirement[];
+  /** Canonical educational direction. Assets and layout are late-bound to these stable entity ids. */
+  director_plan: EducationalSceneDirectorPlanV1;
+  director_validation: EducationalSceneDirectorValidationReport;
+  /** Compatibility reveal beats derived from director_plan or accepted from older saved scenes. */
   beats: PrimitiveSceneGraphBeat[];
   camera?: {
     preset?: PrimitiveSceneGraphCameraPreset;
@@ -324,12 +335,44 @@ function sanitizeMotionReferences(nodes: PrimitiveSceneGraphNode[], ids: Set<str
 function makeScaffoldSceneGraph(
   userRequest: string,
 ): PrimitiveSceneGraphV2 {
+  const directorResult =
+    normalizeEducationalSceneDirectorPlan(
+      {},
+      {
+        source: "scaffold",
+        title: "Request-safe directed scene",
+        scene_thesis:
+          "Preserve a clear teaching sequence even when no final actors are available yet.",
+        learner_takeaway:
+          "The learner can still follow the intended visual relationship while assets are acquired later.",
+        entities: [
+          {
+            id: "main_actor",
+            display_name: "main actor",
+            semantic_role:
+              "the central actor requested by the learner",
+            visual_need:
+              "A late-binding actor that preserves the scene direction until a verified asset is available.",
+            preferred_render_kind:
+              "any",
+          },
+        ],
+        explanation_pieces: [
+          {
+            id: "piece_1",
+            text:
+              "Start by revealing the central actor and the job it performs.",
+          },
+        ],
+      },
+    );
+
   return {
     schema_version: "primitive_scene_graph_v2",
     user_request: userRequest,
     scene_title: "Request-safe asset scene",
     scene_summary:
-      "The model response could not be parsed. MyWay will show only verified assets explicitly identified in the request; unavailable objects remain missing from the scene.",
+      "The model response could not be parsed. MyWay preserves the educational direction and stable actor ids while verified assets remain unresolved.",
     style: {
       look: "clean_stylized",
       mood: "neutral",
@@ -348,15 +391,189 @@ function makeScaffoldSceneGraph(
     },
     nodes: [],
     asset_requirements: [],
-    beats: [
-      {
-        id: "beat_1",
-        title: "Show available assets",
-        reveal: [],
-        camera: "wide",
-      },
-    ],
+    director_plan:
+      directorResult.plan,
+    director_validation:
+      directorResult.validation,
+    beats: [],
   };
+}
+
+function directorEntitiesForGraph(
+  nodes: PrimitiveSceneGraphNode[],
+  requirements: PrimitiveBuilderAssetRequirement[],
+) {
+  const physical = requirements.map(
+    (requirement) => ({
+      id: requirement.instance_id,
+      display_name: requirement.concept,
+      semantic_role:
+        requirement.motion_role ||
+        "a physical actor in the scene",
+      visual_need: {
+        description:
+          requirement.appearance_request
+            ?.visual_brief ||
+          `A clear ${requirement.concept} actor.`,
+        semantic_tags:
+          requirement.semantic_tags,
+        preferred_render_kind:
+          "registered_asset",
+      },
+      actor_kind:
+        "physical_asset",
+      asset_policy: {
+        asset_required:
+          requirement.required,
+        can_use_proxy_until_asset_ready:
+          true,
+        fallback_representation:
+          "diagrammatic_proxy",
+        capability_needs:
+          requirement.motion_role
+            ? [requirement.motion_role]
+            : [],
+        anchor_needs: [
+          requirement.placement_anchor,
+        ].filter(Boolean),
+      },
+    }),
+  );
+
+  const procedural =
+    flattenSceneGraphNodes(nodes)
+      .filter(
+        (node) =>
+          node.render_policy ===
+          "procedural_required",
+      )
+      .map((node) => ({
+        id: node.id,
+        display_name:
+          node.display_name ??
+          node.id.replace(/_/g, " "),
+        semantic_role:
+          "an abstract effect required by the explanation",
+        visual_need: {
+          description:
+            `A ${node.kind} effect that remains available without a physical asset.`,
+          semantic_tags: [
+            node.kind,
+            "procedural_effect",
+          ],
+          preferred_render_kind:
+            node.kind === "cloud"
+              ? "particle"
+              : "any",
+        },
+        actor_kind:
+          "procedural_effect",
+        asset_policy: {
+          asset_required: false,
+          can_use_proxy_until_asset_ready:
+            true,
+          fallback_representation:
+            "abstract_proxy",
+          capability_needs:
+            node.motion?.type
+              ? [node.motion.type]
+              : [],
+          anchor_needs: [],
+        },
+      }));
+
+  return [
+    ...physical,
+    ...procedural,
+  ];
+}
+
+function directorBeatsForGraph(
+  plan: EducationalSceneDirectorPlanV1,
+  requirements: PrimitiveBuilderAssetRequirement[],
+  nodeIds: Set<string>,
+  fallbackNodeIds: string[],
+): PrimitiveSceneGraphBeat[] {
+  const requirementNodes =
+    new Map<string, string[]>();
+
+  requirements.forEach(
+    (requirement) => {
+      const ids = Array.from(
+        new Set([
+          ...(requirement
+            .layout_proxy_node_ids ??
+            []),
+          ...(requirement
+            .layout_proxy_node_id
+            ? [
+                requirement
+                  .layout_proxy_node_id,
+              ]
+            : []),
+        ]),
+      ).filter((id) =>
+        nodeIds.has(id),
+      );
+      requirementNodes.set(
+        requirement.instance_id,
+        ids,
+      );
+    },
+  );
+
+  function expand(
+    ids: string[],
+  ) {
+    return Array.from(
+      new Set(
+        ids.flatMap((id) => {
+          if (nodeIds.has(id)) {
+            return [id];
+          }
+          return (
+            requirementNodes.get(id) ??
+            []
+          );
+        }),
+      ),
+    );
+  }
+
+  const derived =
+    directorPlanToPrimitiveBeats(
+      plan,
+    ).map((beat) => ({
+      ...beat,
+      reveal: expand(beat.reveal),
+      emphasize:
+        beat.emphasize
+          ? expand(beat.emphasize)
+          : undefined,
+    }));
+
+  return derived.map(
+    (beat, index) => ({
+      id: beat.id,
+      title: beat.title,
+      reveal:
+        beat.reveal.length
+          ? beat.reveal
+          : fallbackNodeIds,
+      emphasize:
+        beat.emphasize?.length
+          ? beat.emphasize
+          : undefined,
+      camera:
+        oneOf<PrimitiveSceneGraphCameraPreset>(
+          beat.camera,
+          cameraSet,
+          index === 0
+            ? "wide"
+            : "medium",
+        ),
+    }),
+  );
 }
 
 export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string): { scene_graph: PrimitiveSceneGraphV2; warnings: string[] } {
@@ -387,7 +604,7 @@ export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string):
       warnings,
     );
 
-  const beats: PrimitiveSceneGraphBeat[] = asArray(source.beats)
+  const compatibilityBeats: PrimitiveSceneGraphBeat[] = asArray(source.beats)
     .map((beat, index): PrimitiveSceneGraphBeat | null => {
       const record = asRecord(beat);
       if (!record) return null;
@@ -403,6 +620,55 @@ export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string):
       };
     })
     .filter((beat): beat is PrimitiveSceneGraphBeat => Boolean(beat));
+
+  const directorResult =
+    normalizeEducationalSceneDirectorPlan(
+      source.director_plan ??
+        source.directed_scene ??
+        {},
+      {
+        source: "primitive_builder",
+        title: text(
+          source.scene_title,
+          "Directed asset scene",
+        ),
+        scene_thesis: text(
+          source.scene_summary,
+          `Direct a clear scene for ${userRequest}.`,
+        ),
+        learner_takeaway: text(
+          source.learner_takeaway,
+          "The scene should make the requested relationship easy to follow.",
+        ),
+        entities:
+          directorEntitiesForGraph(
+            nodes,
+            assetRequirements,
+          ),
+        relationships:
+          source.relationships,
+        explanation_pieces:
+          source.explanation_pieces,
+        legacy_directed_scene:
+          source.directed_scene,
+        legacy_story_beats:
+          source.story_beats ??
+          source.scene_moments,
+        legacy_beats:
+          compatibilityBeats,
+        style: styleRecord,
+      },
+    );
+  warnings.push(
+    ...directorResult.warnings,
+  );
+  const directorBeats =
+    directorBeatsForGraph(
+      directorResult.plan,
+      assetRequirements,
+      ids,
+      nodes.map((node) => node.id),
+    );
 
   const cameraRecord = asRecord(source.camera) ?? {};
   const lightingRecord = asRecord(source.lighting) ?? {};
@@ -421,9 +687,15 @@ export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string):
       },
       nodes,
       asset_requirements: assetRequirements,
-      beats: beats.length
-        ? beats
-        : [{ id: "beat_1", title: "Build the grouped scene", reveal: nodes.map((node) => node.id), camera: "wide" }],
+      director_plan:
+        directorResult.plan,
+      director_validation:
+        directorResult.validation,
+      beats: directorBeats.length
+        ? directorBeats
+        : compatibilityBeats.length
+          ? compatibilityBeats
+          : [{ id: "beat_1", title: "Build the grouped scene", reveal: nodes.map((node) => node.id), camera: "wide" }],
       camera: {
         preset: oneOf<PrimitiveSceneGraphCameraPreset>(cameraRecord.preset, cameraSet, "orbit"),
         target: vec3(cameraRecord.target, [0, 1.2, -0.8]),

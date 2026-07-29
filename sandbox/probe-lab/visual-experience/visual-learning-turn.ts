@@ -16,6 +16,12 @@ import type {
   ProbeType,
 } from "@/lib/engine/schemas/shared";
 
+import type {
+  DirectorActorKind,
+  DirectorFallbackRepresentation,
+  EducationalSceneDirectorPlanV1,
+  EducationalSceneDirectorValidationReport,
+} from "../director";
 export type VisualLearningTurnInput = {
   schema_version: "myway_visual_learning_turn_input_v1";
   input_kind: "user_message" | "evaluated_probe_attempt";
@@ -256,7 +262,11 @@ export type DirectedStoryBeat = {
 };
 
 export type SemanticScenePlan = {
-  /** Rich model-authored direction for the renderer. This is the primary scene design. */
+  /** Canonical source of truth for educational direction and late-bound actors. */
+  director_plan?: EducationalSceneDirectorPlanV1 | null;
+  /** Validation produced when the canonical director plan is normalized. */
+  director_validation?: EducationalSceneDirectorValidationReport | null;
+  /** Compatibility view derived from director_plan for the current renderer. */
   directed_scene?: Record<string, unknown> | null;
   /** Optional beat-level director instructions. The older beats array remains the executable compatibility layer. */
   story_beats?: Array<Record<string, unknown>>;
@@ -276,6 +286,15 @@ export type SemanticSceneEntity = {
   display_name: string;
   semantic_role: string;
   visual_need: VisualNeed;
+  /** Director-facing actor classification retained independently of the resolved GLB. */
+  actor_kind?: DirectorActorKind | string;
+  asset_policy?: {
+    asset_required?: boolean;
+    can_use_proxy_until_asset_ready?: boolean;
+    fallback_representation?: DirectorFallbackRepresentation | string;
+    capability_needs?: string[];
+    anchor_needs?: string[];
+  } | null;
   position_hint?: [number, number, number] | null;
 };
 
@@ -403,6 +422,9 @@ export type VisualLearningTurnValidationReport = {
   bridge_policy_valid: boolean;
   fatal_errors: string[];
   warnings: string[];
+  director_plan_present?: boolean;
+  director_plan_valid?: boolean;
+  director_plan_issue_count?: number;
 };
 
 export const DEFAULT_VISUAL_LEARNING_RENDERER_CAPABILITIES: VisualLearningRendererCapabilities = {

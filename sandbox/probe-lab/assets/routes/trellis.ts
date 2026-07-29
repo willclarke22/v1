@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { assetWithFileStats } from "../asset-library.server";
+import { queueAssetEnrichment } from "../enrichment/asset-enrichment-worker.server";
 import { acquireFromTrellis } from "../providers/trellis-asset-provider.server";
 
+export const runtime = "nodejs";
 export const maxDuration = 300;
 
 function stringArray(value: unknown) {
@@ -26,7 +29,7 @@ function nonnegativeInteger(
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as Record<string, unknown>;
     const concept =
       typeof body.concept === "string"
         ? body.concept.trim()
@@ -42,20 +45,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const semanticTags = stringArray(body.semantic_tags);
+    const acquisitionTerms = stringArray(body.acquisition_terms);
+    const targetExtentM =
+      typeof body.target_extent_m === "number" &&
+      Number.isFinite(body.target_extent_m) &&
+      body.target_extent_m > 0
+        ? Math.min(20, Math.max(0.05, body.target_extent_m))
+        : 2;
+
     const result = await acquireFromTrellis({
       concept,
-      semanticTags: stringArray(body.semantic_tags),
-      acquisitionTerms: stringArray(body.acquisition_terms),
+      semanticTags,
+      acquisitionTerms,
       domain:
         typeof body.domain === "string"
-          ? body.domain.trim() || "generic"
-          : "generic",
-      targetExtentM:
-        typeof body.target_extent_m === "number" &&
-        Number.isFinite(body.target_extent_m) &&
-        body.target_extent_m > 0
-          ? body.target_extent_m
-          : 2,
+          ? body.domain.trim() || "asset_library_manual_trellis"
+          : "asset_library_manual_trellis",
+      targetExtentM,
       noTexture: body.no_texture === true,
       seed: nonnegativeInteger(body.seed, 0),
       maxAttempts: Math.min(
@@ -67,10 +74,20 @@ export async function POST(request: NextRequest) {
       ),
     });
 
+    const entry = queueAssetEnrichment(result.asset.asset_id, {
+      force: true,
+    });
+
     return NextResponse.json({
       ok: true,
       source: "trellis",
-      ...result,
+      created: result.created,
+      asset: await assetWithFileStats(result.asset),
+      enrichment_entry: entry,
+      normalization_extent_m: targetExtentM,
+      generated_prompt: result.asset.source_prompt ?? null,
+      message:
+        "TRELLIS generated the asset and MyWay queued its appearance and identity analysis. Review the generated model before approving it for scenes.",
     });
   } catch (caught) {
     return NextResponse.json(

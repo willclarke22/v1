@@ -1,10 +1,12 @@
 import { randomUUID } from "node:crypto";
 import {
+  open,
   readFile,
   rename,
   rm,
-  writeFile,
 } from "node:fs/promises";
+
+const writeQueues = new Map<string, Promise<void>>();
 
 function pause(milliseconds: number) {
   return new Promise<void>((resolve) => {
@@ -20,6 +22,67 @@ function isRetryableJsonReadError(caught: unknown) {
         caught.message,
       ))
   );
+}
+
+function isRetryableAtomicReplaceError(caught: unknown) {
+  const code = (caught as NodeJS.ErrnoException)?.code;
+  return (
+    code === "EPERM" ||
+    code === "EBUSY" ||
+    code === "EACCES" ||
+    code === "ENOTEMPTY"
+  );
+}
+
+async function renameWithWindowsRetry(
+  temporaryPath: string,
+  filePath: string,
+) {
+  const delays = [50, 100, 200, 400, 800, 1_200];
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt <= delays.length; attempt += 1) {
+    try {
+      await rename(temporaryPath, filePath);
+      return;
+    } catch (caught) {
+      lastError = caught;
+
+      if (
+        !isRetryableAtomicReplaceError(caught) ||
+        attempt >= delays.length
+      ) {
+        throw caught;
+      }
+
+      await pause(delays[attempt]);
+    }
+  }
+
+  throw lastError;
+}
+
+async function writeJsonFileAtomicUnlocked(
+  filePath: string,
+  value: unknown,
+) {
+  const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
+  const payload = `${JSON.stringify(value, null, 2)}\n`;
+
+  try {
+    const handle = await open(temporaryPath, "w");
+
+    try {
+      await handle.writeFile(payload, "utf8");
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+
+    await renameWithWindowsRetry(temporaryPath, filePath);
+  } finally {
+    await rm(temporaryPath, { force: true }).catch(() => undefined);
+  }
 }
 
 export async function readJsonFileWithRetry<T>(
@@ -60,16 +123,19 @@ export async function writeJsonFileAtomic(
   filePath: string,
   value: unknown,
 ) {
-  const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
+  const previous = writeQueues.get(filePath) ?? Promise.resolve();
+
+  const current = previous
+    .catch(() => undefined)
+    .then(() => writeJsonFileAtomicUnlocked(filePath, value));
+
+  writeQueues.set(filePath, current);
 
   try {
-    await writeFile(
-      temporaryPath,
-      `${JSON.stringify(value, null, 2)}\n`,
-      "utf8",
-    );
-    await rename(temporaryPath, filePath);
+    await current;
   } finally {
-    await rm(temporaryPath, { force: true }).catch(() => undefined);
+    if (writeQueues.get(filePath) === current) {
+      writeQueues.delete(filePath);
+    }
   }
 }

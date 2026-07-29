@@ -47,6 +47,9 @@ function emptyReport(fatalErrors: string[], warnings: string[] = []): VisualLear
     bridge_policy_valid: true,
     fatal_errors: fatalErrors,
     warnings,
+    director_plan_present: false,
+    director_plan_valid: false,
+    director_plan_issue_count: 0,
   };
 }
 
@@ -60,11 +63,28 @@ function validateProceedOutput(
   const learningFocus = asRecord(output.learning_focus);
   const visualExperience = asRecord(output.visual_experience);
   const scenePlan = asRecord(visualExperience?.semantic_scene_plan);
+  const directorPlan = asRecord(scenePlan?.director_plan);
+  const directorValidation = asRecord(scenePlan?.director_validation);
+  const directorIssues = asArray(directorValidation?.issues);
+  const directorPlanPresent = Boolean(directorPlan);
+  const directorPlanValid =
+    directorPlanPresent &&
+    directorValidation?.valid !== false;
   const followupProbe = asRecord(output.followup_probe);
   const followupPrompt = asRecord(followupProbe?.prompt);
 
   const rootProblemPresent = hasText(learningFocus?.root_problem);
   if (!rootProblemPresent) fatalErrors.push("learning_focus.root_problem is required for proceed output.");
+
+  if (!directorPlanPresent) {
+    warnings.push(
+      "semantic_scene_plan.director_plan is missing. Compatibility beats may still render, but the canonical direction layer was not preserved.",
+    );
+  } else if (!directorPlanValid) {
+    warnings.push(
+      "semantic_scene_plan.director_plan failed canonical validation. Renderer compatibility views may be incomplete.",
+    );
+  }
 
   const orientationSegments = asArray(visualExperience?.orientation_segments).map((segment) => asRecord(segment)).filter(Boolean) as Record<string, unknown>[];
   const orientationIds = orientationSegments.map((segment) => String(segment.id ?? "")).filter(Boolean);
@@ -173,6 +193,12 @@ function validateProceedOutput(
     bridge_policy_valid: bridgePolicyValid,
     fatal_errors: fatalErrors,
     warnings,
+    director_plan_present:
+      directorPlanPresent,
+    director_plan_valid:
+      directorPlanValid,
+    director_plan_issue_count:
+      directorIssues.length,
   };
 }
 
@@ -199,6 +225,9 @@ export function validateVisualLearningTurnOutput(
       bridge_policy_valid: true,
       fatal_errors: hasQuestion ? [] : ["Clarification output must include clarification_question."],
       warnings: [],
+      director_plan_present: false,
+      director_plan_valid: false,
+      director_plan_issue_count: 0,
     };
   }
 

@@ -1,0 +1,1340 @@
+[
+  {
+    "id": "Tiles",
+    "title": "Tiles",
+    "type": "material",
+    "numberOfAssets": 164
+  },
+  {
+    "id": "PavingStones",
+    "title": "Paving Stones",
+    "type": "material",
+    "numberOfAssets": 155
+  },
+  {
+    "id": "DaySkyHDRI",
+    "title": "Day Sky HDRI",
+    "type": "hdri",
+    "numberOfAssets": 132
+  },
+  {
+    "id": "Ground",
+    "title": "Ground",
+    "type": "material",
+    "numberOfAssets": 122
+  },
+  {
+    "id": "Bricks",
+    "title": "Bricks",
+    "type": "material",
+    "numberOfAssets": 115
+  },
+  {
+    "id": "DayEnvironmentHDRI",
+    "title": "Day Environment HDRI",
+    "type": "hdri",
+    "numberOfAssets": 112
+  },
+  {
+    "id": "Metal",
+    "title": "Metal",
+    "type": "material",
+    "numberOfAssets": 101
+  },
+  {
+    "id": "Wood",
+    "title": "Wood",
+    "type": "material",
+    "numberOfAssets": 101
+  },
+  {
+    "id": "EveningSkyHDRI",
+    "title": "Evening Sky HDRI",
+    "type": "hdri",
+    "numberOfAssets": 90
+  },
+  {
+    "id": "Fabric",
+    "title": "Fabric",
+    "type": "material",
+    "numberOfAssets": 87
+  },
+  {
+    "id": "WoodFloor",
+    "title": "Wood Floor",
+    "type": "material",
+    "numberOfAssets": 74
+  },
+  {
+    "id": "RoadLines",
+    "title": "Road Lines",
+    "type": "decal",
+    "numberOfAssets": 69
+  },
+  {
+    "id": "Rock",
+    "title": "Rock",
+    "type": "material",
+    "numberOfAssets": 67
+  },
+  {
+    "id": "Concrete",
+    "title": "Concrete",
+    "type": "material",
+    "numberOfAssets": 61
+  },
+  {
+    "id": "Planks",
+    "title": "Planks",
+    "type": "material",
+    "numberOfAssets": 59
+  },
+  {
+    "id": "Leather",
+    "title": "Leather",
+    "type": "material",
+    "numberOfAssets": 50
+  },
+  {
+    "id": "Asphalt",
+    "title": "Asphalt",
+    "type": "material",
+    "numberOfAssets": 46
+  },
+  {
+    "id": "Gravel",
+    "title": "Gravel",
+    "type": "material",
+    "numberOfAssets": 44
+  },
+  {
+    "id": "Leaking",
+    "title": "Leaking",
+    "type": "decal",
+    "numberOfAssets": 39
+  },
+  {
+    "id": "Road",
+    "title": "Road",
+    "type": "material",
+    "numberOfAssets": 31
+  },
+  {
+    "id": "LeafSet",
+    "title": "Leaf Set",
+    "type": "atlas",
+    "numberOfAssets": 30
+  },
+  {
+    "id": "MorningSkyHDRI",
+    "title": "Morning Sky HDRI",
+    "type": "hdri",
+    "numberOfAssets": 28
+  },
+  {
+    "id": "RoofingTiles",
+    "title": "Roofing Tiles",
+    "type": "material",
+    "numberOfAssets": 27
+  },
+  {
+    "id": "Facade",
+    "title": "Facade",
+    "type": "material",
+    "numberOfAssets": 26
+  },
+  {
+    "id": "Marble",
+    "title": "Marble",
+    "type": "material",
+    "numberOfAssets": 26
+  },
+  {
+    "id": "Rocks",
+    "title": "Rocks",
+    "type": "material",
+    "numberOfAssets": 26
+  },
+  {
+    "id": "Sign",
+    "title": "Sign",
+    "type": "material",
+    "numberOfAssets": 26
+  },
+  {
+    "id": "Plastic",
+    "title": "Plastic",
+    "type": "material",
+    "numberOfAssets": 25
+  },
+  {
+    "id": "Snow",
+    "title": "Snow",
+    "type": "material",
+    "numberOfAssets": 23
+  },
+  {
+    "id": "IndoorEnvironmentHDRI",
+    "title": "Indoor Environment HDRI",
+    "type": "hdri",
+    "numberOfAssets": 22
+  },
+  {
+    "id": "ChristmasTreeOrnament",
+    "title": "Christmas Tree Ornament",
+    "type": "material",
+    "numberOfAssets": 21
+  },
+  {
+    "id": "DiamondPlate",
+    "title": "Diamond Plate",
+    "type": "material",
+    "numberOfAssets": 21
+  },
+  {
+    "id": "Terrazzo",
+    "title": "Terrazzo",
+    "type": "material",
+    "numberOfAssets": 21
+  },
+  {
+    "id": "MetalPlates",
+    "title": "Metal Plates",
+    "type": "material",
+    "numberOfAssets": 20
+  },
+  {
+    "id": "SurfaceImperfections",
+    "title": "Surface Imperfections",
+    "type": "material",
+    "numberOfAssets": 20
+  },
+  {
+    "id": "Wicker",
+    "title": "Wicker",
+    "type": "material",
+    "numberOfAssets": 19
+  },
+  {
+    "id": "PaintedMetal",
+    "title": "Painted Metal",
+    "type": "material",
+    "numberOfAssets": 18
+  },
+  {
+    "id": "PaintedPlaster",
+    "title": "Painted Plaster",
+    "type": "material",
+    "numberOfAssets": 18
+  },
+  {
+    "id": "TilesSubstance",
+    "title": "Tiles Substance",
+    "type": "substance",
+    "numberOfAssets": 18
+  },
+  {
+    "id": "NightSkyHDRI",
+    "title": "Night Sky HDRI",
+    "type": "hdri",
+    "numberOfAssets": 17
+  },
+  {
+    "id": "PaintedWood",
+    "title": "Painted Wood",
+    "type": "material",
+    "numberOfAssets": 17
+  },
+  {
+    "id": "Carpet",
+    "title": "Carpet",
+    "type": "material",
+    "numberOfAssets": 16
+  },
+  {
+    "id": "Bark",
+    "title": "Bark",
+    "type": "material",
+    "numberOfAssets": 15
+  },
+  {
+    "id": "CorrugatedSteel",
+    "title": "Corrugated Steel",
+    "type": "material",
+    "numberOfAssets": 15
+  },
+  {
+    "id": "Onyx",
+    "title": "Onyx",
+    "type": "material",
+    "numberOfAssets": 15
+  },
+  {
+    "id": "Granite",
+    "title": "Granite",
+    "type": "material",
+    "numberOfAssets": 14
+  },
+  {
+    "id": "MetalWalkway",
+    "title": "Metal Walkway",
+    "type": "material",
+    "numberOfAssets": 14
+  },
+  {
+    "id": "Travertine",
+    "title": "Travertine",
+    "type": "material",
+    "numberOfAssets": 14
+  },
+  {
+    "id": "3DBread",
+    "title": "3D Bread",
+    "type": "3d-model",
+    "numberOfAssets": 13
+  },
+  {
+    "id": "WoodSiding",
+    "title": "Wood Siding",
+    "type": "material",
+    "numberOfAssets": 13
+  },
+  {
+    "id": "Fence",
+    "title": "Fence",
+    "type": "material",
+    "numberOfAssets": 12
+  },
+  {
+    "id": "FabricSubstance",
+    "title": "Fabric Substance",
+    "type": "substance",
+    "numberOfAssets": 11
+  },
+  {
+    "id": "WoodSubstance",
+    "title": "Wood Substance",
+    "type": "substance",
+    "numberOfAssets": 11
+  },
+  {
+    "id": "ManholeCover",
+    "title": "Manhole Cover",
+    "type": "decal",
+    "numberOfAssets": 10
+  },
+  {
+    "id": "NightEnvironmentHDRI",
+    "title": "Night Environment HDRI",
+    "type": "hdri",
+    "numberOfAssets": 10
+  },
+  {
+    "id": "Rust",
+    "title": "Rust",
+    "type": "material",
+    "numberOfAssets": 10
+  },
+  {
+    "id": "Backdrop",
+    "title": "Backdrop",
+    "type": "plain-image",
+    "numberOfAssets": 9
+  },
+  {
+    "id": "Fingerprints",
+    "title": "Fingerprints",
+    "type": "material",
+    "numberOfAssets": 9
+  },
+  {
+    "id": "MetalSubstance",
+    "title": "Metal Substance",
+    "type": "substance",
+    "numberOfAssets": 9
+  },
+  {
+    "id": "ScatteredLeaves",
+    "title": "Scattered Leaves",
+    "type": "material",
+    "numberOfAssets": 9
+  },
+  {
+    "id": "WoodFloorSubstance",
+    "title": "Wood Floor Substance",
+    "type": "substance",
+    "numberOfAssets": 9
+  },
+  {
+    "id": "Chipboard",
+    "title": "Chipboard",
+    "type": "material",
+    "numberOfAssets": 8
+  },
+  {
+    "id": "Foliage",
+    "title": "Foliage",
+    "type": "atlas",
+    "numberOfAssets": 8
+  },
+  {
+    "id": "Grass",
+    "title": "Grass",
+    "type": "material",
+    "numberOfAssets": 8
+  },
+  {
+    "id": "Net",
+    "title": "Net",
+    "type": "material",
+    "numberOfAssets": 8
+  },
+  {
+    "id": "Smear",
+    "title": "Smear",
+    "type": "material",
+    "numberOfAssets": 8
+  },
+  {
+    "id": "BricksSubstance",
+    "title": "Bricks Substance",
+    "type": "substance",
+    "numberOfAssets": 7
+  },
+  {
+    "id": "Chip",
+    "title": "Chip",
+    "type": "material",
+    "numberOfAssets": 7
+  },
+  {
+    "id": "ChristmasTreeOrnamentSubstance",
+    "title": "Christmas Tree Ornament Substance",
+    "type": "substance",
+    "numberOfAssets": 7
+  },
+  {
+    "id": "PavingStonesSubstance",
+    "title": "Paving Stones Substance",
+    "type": "substance",
+    "numberOfAssets": 7
+  },
+  {
+    "id": "Plaster",
+    "title": "Plaster",
+    "type": "material",
+    "numberOfAssets": 7
+  },
+  {
+    "id": "TactilePaving",
+    "title": "Tactile Paving",
+    "type": "material",
+    "numberOfAssets": 7
+  },
+  {
+    "id": "Bamboo",
+    "title": "Bamboo",
+    "type": "material",
+    "numberOfAssets": 6
+  },
+  {
+    "id": "Footsteps",
+    "title": "Footsteps",
+    "type": "material",
+    "numberOfAssets": 6
+  },
+  {
+    "id": "LeatherSubstance",
+    "title": "Leather Substance",
+    "type": "substance",
+    "numberOfAssets": 6
+  },
+  {
+    "id": "OfficeCeiling",
+    "title": "Office Ceiling",
+    "type": "material",
+    "numberOfAssets": 6
+  },
+  {
+    "id": "Paint",
+    "title": "Paint",
+    "type": "material",
+    "numberOfAssets": 6
+  },
+  {
+    "id": "Paper",
+    "title": "Paper",
+    "type": "material",
+    "numberOfAssets": 6
+  },
+  {
+    "id": "Tape",
+    "title": "Tape",
+    "type": "atlas",
+    "numberOfAssets": 6
+  },
+  {
+    "id": "Tatami",
+    "title": "Tatami",
+    "type": "material",
+    "numberOfAssets": 6
+  },
+  {
+    "id": "Wallpaper",
+    "title": "Wallpaper",
+    "type": "material",
+    "numberOfAssets": 6
+  },
+  {
+    "id": "ConcreteSubstance",
+    "title": "Concrete Substance",
+    "type": "substance",
+    "numberOfAssets": 5
+  },
+  {
+    "id": "EveningEnvironmentHDRI",
+    "title": "Evening Environment HDRI",
+    "type": "hdri",
+    "numberOfAssets": 5
+  },
+  {
+    "id": "FoodCrossSectionSet",
+    "title": "Food Cross Section Set",
+    "type": "atlas",
+    "numberOfAssets": 5
+  },
+  {
+    "id": "Lava",
+    "title": "Lava",
+    "type": "material",
+    "numberOfAssets": 5
+  },
+  {
+    "id": "PaintedBricks",
+    "title": "Painted Bricks",
+    "type": "material",
+    "numberOfAssets": 5
+  },
+  {
+    "id": "Scratches",
+    "title": "Scratches",
+    "type": "material",
+    "numberOfAssets": 5
+  },
+  {
+    "id": "Styrofoam",
+    "title": "Styrofoam",
+    "type": "material",
+    "numberOfAssets": 5
+  },
+  {
+    "id": "Terrain",
+    "title": "Terrain",
+    "type": "terrain",
+    "numberOfAssets": 5
+  },
+  {
+    "id": "TreeEnd",
+    "title": "Tree End",
+    "type": "material",
+    "numberOfAssets": 5
+  },
+  {
+    "id": "3DPear",
+    "title": "3D Pear",
+    "type": "3d-model",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "Cardboard",
+    "title": "Cardboard",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "Chainmail",
+    "title": "Chainmail",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "Clay",
+    "title": "Clay",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "Cork",
+    "title": "Cork",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "FacadeSubstance",
+    "title": "Facade Substance",
+    "type": "substance",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "GroundSubstance",
+    "title": "Ground Substance",
+    "type": "substance",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "HDRIElement",
+    "title": "HDRI Element",
+    "type": "hdri-element",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "Ice",
+    "title": "Ice",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "Ivory",
+    "title": "Ivory",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "LeakingSubstance",
+    "title": "Leaking Substance",
+    "type": "substance",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "MetalPlatesSubstance",
+    "title": "Metal Plates Substance",
+    "type": "substance",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "Moss",
+    "title": "Moss",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "Pathway",
+    "title": "Pathway",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "Pipe",
+    "title": "Pipe",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "Pizza",
+    "title": "Pizza",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "PlanksSubstance",
+    "title": "Planks Substance",
+    "type": "substance",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "Rubber",
+    "title": "Rubber",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "SheetMetal",
+    "title": "Sheet Metal",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "SolarPanel",
+    "title": "Solar Panel",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "ThatchedRoof",
+    "title": "Thatched Roof",
+    "type": "material",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "WrinklesBrush",
+    "title": "Wrinkles Brush",
+    "type": "brush",
+    "numberOfAssets": 4
+  },
+  {
+    "id": "3DApple",
+    "title": "3D Apple",
+    "type": "3d-model",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "3DPastry",
+    "title": "3D Pastry",
+    "type": "3d-model",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "AcousticFoam",
+    "title": "Acoustic Foam",
+    "type": "material",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "AsphaltSubstance",
+    "title": "Asphalt Substance",
+    "type": "substance",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "Candy",
+    "title": "Candy",
+    "type": "material",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "CookieSet",
+    "title": "Cookie Set",
+    "type": "atlas",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "Foam",
+    "title": "Foam",
+    "type": "material",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "Foil",
+    "title": "Foil",
+    "type": "material",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "GlazedTerracotta",
+    "title": "Glazed Terracotta",
+    "type": "material",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "Leaf",
+    "title": "Leaf",
+    "type": "material",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "MarbleSubstance",
+    "title": "Marble Substance",
+    "type": "substance",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "PaymentCard",
+    "title": "Payment Card",
+    "type": "material",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "PlasticSubstance",
+    "title": "Plastic Substance",
+    "type": "substance",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "Porcelain",
+    "title": "Porcelain",
+    "type": "material",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "RockSubstance",
+    "title": "Rock Substance",
+    "type": "substance",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "RoofingTilesSubstance",
+    "title": "Roofing Tiles Substance",
+    "type": "substance",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "Rope",
+    "title": "Rope",
+    "type": "material",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "Sponge",
+    "title": "Sponge",
+    "type": "material",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "SurfaceImperfectionsSubstance",
+    "title": "Surface Imperfections Substance",
+    "type": "substance",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "WoodChips",
+    "title": "Wood Chips",
+    "type": "material",
+    "numberOfAssets": 3
+  },
+  {
+    "id": "3DCookie",
+    "title": "3D Cookie",
+    "type": "3d-model",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "AsphaltDamageSet",
+    "title": "Asphalt Damage Set",
+    "type": "atlas",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "ChewingGum",
+    "title": "Chewing Gum",
+    "type": "decal",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "ChipboardSubstance",
+    "title": "Chipboard Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "ColdCutsSet",
+    "title": "Cold Cuts Set",
+    "type": "atlas",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "CorrugatedSteelSubstance",
+    "title": "Corrugated Steel Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "DiamondPlateSubstance",
+    "title": "Diamond Plate Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "Door",
+    "title": "Door",
+    "type": "decal",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "FenceSubstance",
+    "title": "Fence Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "FingerprintsSubstance",
+    "title": "Fingerprints Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "GrassSubstance",
+    "title": "Grass Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "Grate",
+    "title": "Grate",
+    "type": "material",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "GravelSubstance",
+    "title": "Gravel Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "MetalWalkwaySubstance",
+    "title": "Metal Walkway Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "PaintedMetalSubstance",
+    "title": "Painted Metal Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "PaintedPlasterSubstance",
+    "title": "Painted Plaster Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "PaintedWoodSubstance",
+    "title": "Painted Wood Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "PavingEdge",
+    "title": "Paving Edge",
+    "type": "decal",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "PlasterSubstance",
+    "title": "Plaster Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "RoadLinesSubstance",
+    "title": "Road Lines Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "RoadSubstance",
+    "title": "Road Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "RustSubstance",
+    "title": "Rust Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "SnowSubstance",
+    "title": "Snow Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "TactilePavingSubstance",
+    "title": "Tactile Paving Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "TerrazzoSubstance",
+    "title": "Terrazzo Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "WickerSubstance",
+    "title": "Wicker Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "WoodSidingSubstance",
+    "title": "Wood Siding Substance",
+    "type": "substance",
+    "numberOfAssets": 2
+  },
+  {
+    "id": "3DAvocado",
+    "title": "3D Avocado",
+    "type": "3d-model",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "3DCake",
+    "title": "3D Cake",
+    "type": "3d-model",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "3DCucumber",
+    "title": "3D Cucumber",
+    "type": "3d-model",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "3DKiwi",
+    "title": "3D Kiwi",
+    "type": "3d-model",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "3DLemon",
+    "title": "3D Lemon",
+    "type": "3d-model",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "3DMango",
+    "title": "3D Mango",
+    "type": "3d-model",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "3DMelon",
+    "title": "3D Melon",
+    "type": "3d-model",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "3DStick",
+    "title": "3D Stick",
+    "type": "3d-model",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "3DTreeStump",
+    "title": "3D Tree Stump",
+    "type": "3d-model",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "AcousticFoamSubstance",
+    "title": "Acoustic Foam Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "AsphaltDamage",
+    "title": "Asphalt Damage",
+    "type": "decal",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "BambooSubstance",
+    "title": "Bamboo Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "CandySubstance",
+    "title": "Candy Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "CardboardSet",
+    "title": "Cardboard Set",
+    "type": "atlas",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "CardboardSubstance",
+    "title": "Cardboard Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "CarpetSubstance",
+    "title": "Carpet Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "ChainmailSubstance",
+    "title": "Chainmail Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "ChewingGumSubstance",
+    "title": "Chewing Gum Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "ClaySubstance",
+    "title": "Clay Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "FlowerSet",
+    "title": "Flower Set",
+    "type": "material",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "FoamSubstance",
+    "title": "Foam Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "FoilSubstance",
+    "title": "Foil Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "FootstepsSubstance",
+    "title": "Footsteps Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "GlazedTerracottaSubstance",
+    "title": "Glazed Terracotta Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "GraniteSubstance",
+    "title": "Granite Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "IceSubstance",
+    "title": "Ice Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "IvorySubstance",
+    "title": "Ivory Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "LavaSubstance",
+    "title": "Lava Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "Logs",
+    "title": "Logs",
+    "type": "material",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "MossSubstance",
+    "title": "Moss Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "NetSubstance",
+    "title": "Net Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "NightSkyHDRISubstance",
+    "title": "Night Sky HDRI Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "OfficeCeilingSubstance",
+    "title": "Office Ceiling Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "OnyxSubstance",
+    "title": "Onyx Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "PaintedBricksSubstance",
+    "title": "Painted Bricks Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "Painting",
+    "title": "Painting",
+    "type": "material",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "PaintSubstance",
+    "title": "Paint Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "PaymentCardSubstance",
+    "title": "Payment Card Sbustance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "PineNeedles",
+    "title": "Pine Needles",
+    "type": "atlas",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "PipeSubstance",
+    "title": "Pipe Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "PorcelainSubstance",
+    "title": "Porcelain Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "Rails",
+    "title": "Rails",
+    "type": "material",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "RockBrush",
+    "title": "Rock Brush",
+    "type": "brush",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "RopeSubstance",
+    "title": "Rope Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "RubberSubstance",
+    "title": "Rubber Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "ScatteredLeavesSubstance",
+    "title": "Scattered Leaves Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "ScratchesSubstance",
+    "title": "Scratches Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "ScrewSet",
+    "title": "Screw Set",
+    "type": "atlas",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "ScrewSubstance",
+    "title": "Screw Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "SheetMetalSubstance",
+    "title": "Sheet Metal Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "Shells",
+    "title": "Shells",
+    "type": "material",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "ShellSet",
+    "title": "Shell Set",
+    "type": "atlas",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "SignSubstance",
+    "title": "Sign Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "SolarPanelSubstance",
+    "title": "Solar Panel Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "SpongeSubstance",
+    "title": "Sponge Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "Sticker",
+    "title": "Sticker",
+    "type": "material",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "StickSet",
+    "title": "Stick Set",
+    "type": "material",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "StyrofoamSubstance",
+    "title": "Styrofoam Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "TapeSubstance",
+    "title": "Tape Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "TatamiSubstance",
+    "title": "Tatami Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "ThatchedRoofSubstance",
+    "title": "Thatched Roof Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "TireTracks",
+    "title": "Tire Tracks",
+    "type": "decal",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "TravertineSubstance",
+    "title": "Travertine Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  },
+  {
+    "id": "WallpaperSubstance",
+    "title": "Wallpaper Substance",
+    "type": "substance",
+    "numberOfAssets": 1
+  }
+]

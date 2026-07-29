@@ -1,0 +1,392 @@
+﻿import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import {
+  access,
+  mkdir,
+  readFile,
+  stat,
+  writeFile,
+} from "node:fs/promises";
+import path from "node:path";
+
+import {
+  projectPath,
+  resolveBlenderExecutable,
+} from "../assets/paths.server";
+
+const TIMEOUT_MS = 4 * 60 * 1000;
+const MAX_SCRIPT_CHARS = 500_000;
+
+const FORBIDDEN_PATTERNS: Array<[RegExp, string]> = [
+  [/\bimport\s+subprocess\b/, "subprocess imports are not allowed"],
+  [/\bfrom\s+subprocess\b/, "subprocess imports are not allowed"],
+  [/\bimport\s+socket\b/, "socket imports are not allowed"],
+  [/\bfrom\s+socket\b/, "socket imports are not allowed"],
+  [/\bimport\s+requests\b/, "requests imports are not allowed"],
+  [/\bimport\s+urllib\b/, "urllib imports are not allowed"],
+  [/\bos\.system\s*\(/, "os.system calls are not allowed"],
+  [/\bos\.popen\s*\(/, "os.popen calls are not allowed"],
+  [/\beval\s*\(/, "eval calls are not allowed"],
+  [/\bexec\s*\(/, "exec calls are not allowed"],
+  [/\b__import__\s*\(/, "dynamic imports are not allowed"],
+];
+
+function validateScript(code: string) {
+  if (!code.trim()) throw new Error("The Blender Python editor is empty.");
+  if (code.length > MAX_SCRIPT_CHARS) {
+    throw new Error(`Script exceeds ${MAX_SCRIPT_CHARS} characters.`);
+  }
+  if (!/\bimport\s+bpy\b/.test(code)) {
+    throw new Error("The script must import bpy.");
+  }
+
+  for (const [pattern, message] of FORBIDDEN_PATTERNS) {
+    if (pattern.test(code)) throw new Error(message);
+  }
+}
+
+function safeAssetName(value: string) {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 64) || "generated_asset"
+  );
+}
+
+function trustedFooter() {
+  return String.raw`
+
+# ---------------------------------------------------------------------------
+# Trusted MyWay export and preview footer.
+# ---------------------------------------------------------------------------
+import os as _myway_os
+import math as _myway_math
+
+_myway_output_dir = _myway_os.environ["MYWAY_BLENDER_OUTPUT_DIR"]
+_myway_asset_name = _myway_os.environ.get(
+    "MYWAY_BLENDER_ASSET_NAME",
+    "generated_asset",
+)
+_myway_os.makedirs(_myway_output_dir, exist_ok=True)
+
+def _myway_scene_meshes():
+    return [
+        obj for obj in bpy.context.scene.objects
+        if obj.type == "MESH"
+    ]
+
+_myway_meshes = _myway_scene_meshes()
+if not _myway_meshes:
+    raise RuntimeError("The script completed without creating any mesh objects.")
+
+for _myway_obj in _myway_meshes:
+    _myway_obj.select_set(True)
+
+_myway_glb_path = _myway_os.path.join(
+    _myway_output_dir,
+    _myway_asset_name + ".glb",
+)
+_myway_blend_path = _myway_os.path.join(
+    _myway_output_dir,
+    _myway_asset_name + ".blend",
+)
+_myway_preview_path = _myway_os.path.join(
+    _myway_output_dir,
+    "preview.png",
+)
+
+bpy.ops.wm.save_as_mainfile(filepath=_myway_blend_path)
+bpy.ops.export_scene.gltf(
+    filepath=_myway_glb_path,
+    export_format="GLB",
+    export_apply=True,
+    export_animations=True,
+)
+
+# Build a simple preview camera and lights without modifying exported geometry.
+_myway_min = [float("inf"), float("inf"), float("inf")]
+_myway_max = [float("-inf"), float("-inf"), float("-inf")]
+for _myway_obj in _myway_meshes:
+    for _myway_corner in _myway_obj.bound_box:
+        _myway_world = _myway_obj.matrix_world @ mathutils.Vector(_myway_corner)
+        for _myway_i in range(3):
+            _myway_min[_myway_i] = min(_myway_min[_myway_i], _myway_world[_myway_i])
+            _myway_max[_myway_i] = max(_myway_max[_myway_i], _myway_world[_myway_i])
+
+_myway_center = mathutils.Vector((
+    (_myway_min[0] + _myway_max[0]) / 2,
+    (_myway_min[1] + _myway_max[1]) / 2,
+    (_myway_min[2] + _myway_max[2]) / 2,
+))
+_myway_extent = max(
+    _myway_max[0] - _myway_min[0],
+    _myway_max[1] - _myway_min[1],
+    _myway_max[2] - _myway_min[2],
+    0.5,
+)
+
+bpy.ops.object.camera_add(
+    location=(
+        _myway_center.x + _myway_extent * 1.8,
+        _myway_center.y - _myway_extent * 2.2,
+        _myway_center.z + _myway_extent * 1.35,
+    )
+)
+_myway_camera = bpy.context.object
+_myway_direction = _myway_center - _myway_camera.location
+_myway_camera.rotation_euler = _myway_direction.to_track_quat("-Z", "Y").to_euler()
+_myway_camera.data.lens = 52
+bpy.context.scene.camera = _myway_camera
+
+for _myway_location, _myway_energy, _myway_size in [
+    ((_myway_center.x + _myway_extent * 1.4,
+      _myway_center.y - _myway_extent * 1.2,
+      _myway_center.z + _myway_extent * 2.0), 1100, _myway_extent),
+    ((_myway_center.x - _myway_extent * 1.8,
+      _myway_center.y - _myway_extent * 0.4,
+      _myway_center.z + _myway_extent * 1.0), 700, _myway_extent * 1.2),
+]:
+    bpy.ops.object.light_add(type="AREA", location=_myway_location)
+    _myway_light = bpy.context.object
+    _myway_light.data.energy = _myway_energy
+    _myway_light.data.shape = "DISK"
+    _myway_light.data.size = _myway_size
+    _myway_light.rotation_euler = (
+        _myway_center - _myway_light.location
+    ).to_track_quat("-Z", "Y").to_euler()
+
+# Blender builds expose different Eevee identifiers. Select from the enum
+# actually available in this installation rather than assuming a version name.
+_myway_available_engines = {
+    item.identifier
+    for item in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items
+}
+if "BLENDER_EEVEE_NEXT" in _myway_available_engines:
+    bpy.context.scene.render.engine = "BLENDER_EEVEE_NEXT"
+elif "BLENDER_EEVEE" in _myway_available_engines:
+    bpy.context.scene.render.engine = "BLENDER_EEVEE"
+elif "BLENDER_WORKBENCH" in _myway_available_engines:
+    bpy.context.scene.render.engine = "BLENDER_WORKBENCH"
+elif "CYCLES" in _myway_available_engines:
+    bpy.context.scene.render.engine = "CYCLES"
+
+bpy.context.scene.render.resolution_x = 768
+bpy.context.scene.render.resolution_y = 768
+bpy.context.scene.render.resolution_percentage = 100
+bpy.context.scene.render.image_settings.file_format = "PNG"
+bpy.context.scene.render.filepath = _myway_preview_path
+if bpy.context.scene.world is None:
+    bpy.context.scene.world = bpy.data.worlds.new("MyWayPreviewWorld")
+bpy.context.scene.world.color = (0.035, 0.045, 0.07)
+
+# A preview is useful but must not invalidate a GLB that already exported.
+try:
+    bpy.ops.render.render(write_still=True)
+    print("MYWAY_PREVIEW_COMPLETE:" + _myway_preview_path)
+except Exception as _myway_preview_error:
+    print("MYWAY_PREVIEW_WARNING:" + repr(_myway_preview_error))
+
+print("MYWAY_ASSET_BUILD_COMPLETE:" + _myway_glb_path)
+`;
+}
+
+function terminateProcessTree(child: ReturnType<typeof spawn>) {
+  return new Promise<void>((resolve) => {
+    if (!child.pid) return resolve();
+
+    if (process.platform !== "win32") {
+      child.kill("SIGKILL");
+      return resolve();
+    }
+
+    const killer = spawn(
+      "taskkill",
+      ["/PID", String(child.pid), "/T", "/F"],
+      { windowsHide: true, stdio: "ignore" },
+    );
+    killer.on("error", () => {
+      child.kill();
+      resolve();
+    });
+    killer.on("close", () => resolve());
+  });
+}
+
+function runBlender(
+  executable: string,
+  scriptPath: string,
+  env: NodeJS.ProcessEnv,
+) {
+  return new Promise<{
+    stdout: string;
+    stderr: string;
+    exitCode: number;
+    elapsedMs: number;
+  }>((resolve, reject) => {
+    const started = Date.now();
+    const child = spawn(
+      executable,
+      ["--background", "--factory-startup", "--python-exit-code", "1", "--python", scriptPath],
+      {
+        cwd: process.cwd(),
+        windowsHide: true,
+        env,
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
+
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      void terminateProcessTree(child).finally(() => {
+        reject(new Error("Blender execution exceeded 240 seconds."));
+      });
+    }, TIMEOUT_MS);
+
+    child.on("error", (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      reject(error);
+    });
+
+    child.on("close", (exitCode) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      resolve({
+        stdout,
+        stderr,
+        exitCode: exitCode ?? -1,
+        elapsedMs: Date.now() - started,
+      });
+    });
+  });
+}
+
+async function exists(filePath: string) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function executeBlenderPython(input: {
+  code: string;
+  assetName: string;
+}) {
+  validateScript(input.code);
+
+  const jobId = randomUUID();
+  const assetName = safeAssetName(input.assetName);
+  const privateDir = projectPath(
+    "sandbox/probe-lab/blender-python-builder/jobs",
+    jobId,
+  );
+  const publicRelative = [
+    "sandbox-assets",
+    "myway",
+    "blender-python-builder",
+    jobId,
+  ];
+  const publicDir = projectPath("public", ...publicRelative);
+
+  await Promise.all([
+    mkdir(privateDir, { recursive: true }),
+    mkdir(publicDir, { recursive: true }),
+  ]);
+
+  const scriptPath = path.join(privateDir, "build_asset.py");
+  const completeScript =
+    "import bpy\nimport mathutils\n" +
+    input.code +
+    trustedFooter();
+
+  await writeFile(scriptPath, completeScript, "utf8");
+  await writeFile(
+    path.join(privateDir, "request.json"),
+    JSON.stringify(
+      {
+        job_id: jobId,
+        asset_name: assetName,
+        created_at: new Date().toISOString(),
+      },
+      null,
+      2,
+    ) + "\n",
+    "utf8",
+  );
+
+  const blender = await resolveBlenderExecutable();
+  const result = await runBlender(blender, scriptPath, {
+    ...process.env,
+    MYWAY_BLENDER_OUTPUT_DIR: publicDir,
+    MYWAY_BLENDER_ASSET_NAME: assetName,
+  });
+
+  await Promise.all([
+    writeFile(path.join(privateDir, "stdout.log"), result.stdout, "utf8"),
+    writeFile(path.join(privateDir, "stderr.log"), result.stderr, "utf8"),
+  ]);
+
+  const glbPath = path.join(publicDir, `${assetName}.glb`);
+  const previewPath = path.join(publicDir, "preview.png");
+
+  if (result.exitCode !== 0) {
+    throw new Error(
+      [
+        `Blender exited with code ${result.exitCode}.`,
+        result.stderr.trim(),
+        result.stdout.trim().slice(-5000),
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
+  }
+
+  if (!(await exists(glbPath))) {
+    throw new Error(
+      "Blender exited successfully but the expected GLB was not created.",
+    );
+  }
+
+  const glbStats = await stat(glbPath);
+  const manifest = {
+    job_id: jobId,
+    asset_name: assetName,
+    glb_url: `/${publicRelative.join("/")}/${assetName}.glb`,
+    preview_url: (await exists(previewPath))
+      ? `/${publicRelative.join("/")}/preview.png`
+      : null,
+    glb_bytes: glbStats.size,
+    elapsed_ms: result.elapsedMs,
+    completed_at: new Date().toISOString(),
+  };
+
+  await writeFile(
+    path.join(publicDir, "manifest.json"),
+    JSON.stringify(manifest, null, 2) + "\n",
+    "utf8",
+  );
+
+  return {
+    ...manifest,
+    stdout: result.stdout,
+    stderr: result.stderr,
+  };
+}

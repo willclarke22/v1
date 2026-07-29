@@ -1,3 +1,12 @@
+/**
+ * Compatibility-only flattened renderer plan.
+ *
+ * New model prompts author `myway_educational_scene_director_v1` plus
+ * `primitive_scene_graph_v2`. MyWay derives this v1 structure for the existing
+ * sidebar and renderer while the sandbox migrates. Do not add new educational
+ * direction fields here.
+ */
+
 export const PRIMITIVE_KINDS = [
   "box",
   "rounded_box",

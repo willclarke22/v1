@@ -1,0 +1,64 @@
+MYWAY_PROGRESS: Starting chest build
+MYWAY_PROGRESS: Building body
+MYWAY_PROGRESS: Building lid
+MYWAY_PROGRESS: Adding iron bands
+MYWAY_PROGRESS: Adding corner brackets
+MYWAY_PROGRESS: Adding lock plate
+MYWAY_PROGRESS: Adding hinges
+MYWAY_PROGRESS: Adding lid clasp
+MYWAY_PROGRESS: Adding interior floor
+MYWAY_PROGRESS: Grouping objects
+MYWAY_PROGRESS: Finalizing position
+MYWAY_PROGRESS: Total triangles: 1148
+MYWAY_PROGRESS: Build complete
+MYWAY_PROGRESS: Chest_Body and Chest_Lid are animation-ready
+MYWAY_PROGRESS: Lid origin is at hinge line for rotation animation
+Info: Saved as "stylized_treasure_chest.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.1\5.1\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+17:27:07 | INFO: Starting glTF 2.0 export
+17:27:07 | INFO: Extracting primitive: Cube
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cube.002
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cube.003
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cube.007
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cube.008
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cube.005
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cube.006
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cube.011
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cylinder
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cube.009
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cube.001
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cube.004
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cube.010
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cylinder.001
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Sphere
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Sphere.001
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Cylinder.002
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Sphere.002
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Extracting primitive: Sphere.003
+17:27:08 | INFO: Primitives created: 1
+17:27:08 | INFO: Finished glTF 2.0 export in 0.22267532348632812 s
+00:12.437  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\d47faa31-8e67-4cf5-8d7a-b2c989fc7e46\preview.png'
+
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\d47faa31-8e67-4cf5-8d7a-b2c989fc7e46\preview.png
+MYWAY_ASSET_BUILD_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\d47faa31-8e67-4cf5-8d7a-b2c989fc7e46\stylized_treasure_chest.glb
+Blender 5.1.2 (hash ec6e62d40fa9 built 2026-05-19 01:37:34)
+
+Blender quit

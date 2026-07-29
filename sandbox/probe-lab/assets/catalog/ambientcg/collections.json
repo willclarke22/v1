@@ -1,0 +1,77 @@
+[
+  {
+    "id": "bcon25",
+    "title": "Blender Conference 2025",
+    "numberOfAssets": 5
+  },
+  {
+    "id": "factory",
+    "title": "Industrial Manufacturing Facility",
+    "numberOfAssets": 110
+  },
+  {
+    "id": "glowing-skies",
+    "title": "Glowing Skies",
+    "numberOfAssets": 11
+  },
+  {
+    "id": "ancient-catacombs",
+    "title": "Ancient Catacombs",
+    "numberOfAssets": 22
+  },
+  {
+    "id": "kitchen",
+    "title": "Kitchen",
+    "numberOfAssets": 116
+  },
+  {
+    "id": "happy-holidays",
+    "title": "Happy Holidays!",
+    "numberOfAssets": 53
+  },
+  {
+    "id": "borkum",
+    "title": "Island of Borkum",
+    "numberOfAssets": 34
+  },
+  {
+    "id": "bathroom",
+    "title": "Bathroom",
+    "numberOfAssets": 26
+  },
+  {
+    "id": "crime-scene",
+    "title": "Crime Scene",
+    "numberOfAssets": 19
+  },
+  {
+    "id": "solarpunk",
+    "title": "Solarpunk",
+    "numberOfAssets": 15
+  },
+  {
+    "id": "lake-constanze",
+    "title": "Lake Constanze Panoramas",
+    "numberOfAssets": 14
+  },
+  {
+    "id": "paris",
+    "title": "Paris Panoramas",
+    "numberOfAssets": 14
+  },
+  {
+    "id": "forest-ways",
+    "title": "Forest Ways",
+    "numberOfAssets": 7
+  },
+  {
+    "id": "bedroom",
+    "title": "Bedroom",
+    "numberOfAssets": 7
+  },
+  {
+    "id": "bentheim-castle",
+    "title": "Bentheim Castle",
+    "numberOfAssets": 4
+  }
+]

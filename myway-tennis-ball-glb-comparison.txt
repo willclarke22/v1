@@ -1,0 +1,445 @@
+{
+  "SOURCE_GLB": {
+    "summary": {
+      "file": "sandbox\\probe-lab\\assets\\inbox\\manual\\tennis_ball_man_ms2dzqbm-source.glb",
+      "file_size_bytes": 533968,
+      "glb_version": 2,
+      "declared_length": 533968,
+      "scene_count": 1,
+      "node_count": 2,
+      "mesh_count": 1,
+      "material_count": 0,
+      "texture_count": 0,
+      "image_count": 0,
+      "sampler_count": 0,
+      "animation_count": 0,
+      "accessor_count": 4,
+      "buffer_view_count": 4,
+      "extensions_used": [],
+      "extensions_required": []
+    },
+    "primitive_attributes": [
+      {
+        "mesh_index": 0,
+        "mesh_name": "tennis_ball",
+        "primitive_index": 0,
+        "material_index": null,
+        "mode": 4,
+        "attributes": {
+          "POSITION": 1,
+          "COLOR_0": 2,
+          "NORMAL": 3
+        },
+        "has_COLOR_0": true,
+        "has_TEXCOORD_0": false,
+        "has_NORMAL": true
+      }
+    ],
+    "materials": [],
+    "textures": [],
+    "images": [],
+    "meshes": [
+      {
+        "name": "tennis_ball",
+        "extras": {
+          "shape": "sphere",
+          "radius": 0.0335
+        },
+        "primitives": [
+          {
+            "attributes": {
+              "POSITION": 1,
+              "COLOR_0": 2,
+              "NORMAL": 3
+            },
+            "indices": 0,
+            "mode": 4
+          }
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "name": "world",
+        "children": [
+          1
+        ]
+      },
+      {
+        "name": "tennis_ball",
+        "mesh": 0
+      }
+    ],
+    "asset": {
+      "version": "2.0",
+      "generator": "https://github.com/mikedh/trimesh"
+    },
+    "full_gltf_json": {
+      "scene": 0,
+      "scenes": [
+        {
+          "nodes": [
+            0
+          ],
+          "extras": {
+            "asset_name": "Detailed Tennis Ball",
+            "units": "meters",
+            "notes": "Procedurally generated tennis ball with two seam stripes, subtle seam grooves, and lightly varied felt-like vertex colors."
+          }
+        }
+      ],
+      "asset": {
+        "version": "2.0",
+        "generator": "https://github.com/mikedh/trimesh"
+      },
+      "accessors": [
+        {
+          "componentType": 5125,
+          "type": "SCALAR",
+          "bufferView": 0,
+          "count": 61440,
+          "max": [
+            10241
+          ],
+          "min": [
+            0
+          ]
+        },
+        {
+          "componentType": 5126,
+          "type": "VEC3",
+          "byteOffset": 0,
+          "bufferView": 1,
+          "count": 10242,
+          "max": [
+            0.03350000083446503,
+            0.03350000083446503,
+            0.03350000083446503
+          ],
+          "min": [
+            -0.03350000083446503,
+            -0.03350000083446503,
+            -0.03350000083446503
+          ]
+        },
+        {
+          "componentType": 5121,
+          "normalized": true,
+          "type": "VEC4",
+          "byteOffset": 0,
+          "bufferView": 2,
+          "count": 10242,
+          "max": [
+            245,
+            245,
+            235,
+            255
+          ],
+          "min": [
+            170,
+            191,
+            46,
+            255
+          ]
+        },
+        {
+          "componentType": 5126,
+          "count": 10242,
+          "type": "VEC3",
+          "byteOffset": 0,
+          "bufferView": 3,
+          "max": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "min": [
+            -1.0,
+            -1.0,
+            -1.0
+          ]
+        }
+      ],
+      "meshes": [
+        {
+          "name": "tennis_ball",
+          "extras": {
+            "shape": "sphere",
+            "radius": 0.0335
+          },
+          "primitives": [
+            {
+              "attributes": {
+                "POSITION": 1,
+                "COLOR_0": 2,
+                "NORMAL": 3
+              },
+              "indices": 0,
+              "mode": 4
+            }
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "name": "world",
+          "children": [
+            1
+          ]
+        },
+        {
+          "name": "tennis_ball",
+          "mesh": 0
+        }
+      ],
+      "buffers": [
+        {
+          "byteLength": 532536
+        }
+      ],
+      "bufferViews": [
+        {
+          "buffer": 0,
+          "byteOffset": 0,
+          "byteLength": 245760
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 245760,
+          "byteLength": 122904
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 368664,
+          "byteLength": 40968
+        },
+        {
+          "buffer": 0,
+          "byteOffset": 409632,
+          "byteLength": 122904
+        }
+      ]
+    }
+  },
+  "NORMALIZED_GLB": {
+    "summary": {
+      "file": "public\\sandbox-assets\\myway\\models\\manual\\tennis_ball_man_ms2dzqbm.glb",
+      "file_size_bytes": 492896,
+      "glb_version": 2,
+      "declared_length": 492896,
+      "scene_count": 1,
+      "node_count": 2,
+      "mesh_count": 1,
+      "material_count": 1,
+      "texture_count": 0,
+      "image_count": 0,
+      "sampler_count": 0,
+      "animation_count": 0,
+      "accessor_count": 4,
+      "buffer_view_count": 4,
+      "extensions_used": [],
+      "extensions_required": []
+    },
+    "primitive_attributes": [
+      {
+        "mesh_index": 0,
+        "mesh_name": "tennis_ball",
+        "primitive_index": 0,
+        "material_index": 0,
+        "mode": 4,
+        "attributes": {
+          "POSITION": 0,
+          "NORMAL": 1,
+          "COLOR_0": 2
+        },
+        "has_COLOR_0": true,
+        "has_TEXCOORD_0": false,
+        "has_NORMAL": true
+      }
+    ],
+    "materials": [
+      {
+        "doubleSided": true,
+        "name": "DefaultMaterial",
+        "pbrMetallicRoughness": {
+          "metallicFactor": 0,
+          "roughnessFactor": 0.5
+        }
+      }
+    ],
+    "textures": [],
+    "images": [],
+    "meshes": [
+      {
+        "name": "tennis_ball",
+        "primitives": [
+          {
+            "attributes": {
+              "POSITION": 0,
+              "NORMAL": 1,
+              "COLOR_0": 2
+            },
+            "indices": 3,
+            "material": 0
+          }
+        ]
+      }
+    ],
+    "nodes": [
+      {
+        "mesh": 0,
+        "name": "tennis_ball"
+      },
+      {
+        "children": [
+          0
+        ],
+        "name": "world",
+        "scale": [
+          29.850746154785156,
+          29.850746154785156,
+          29.850746154785156
+        ],
+        "translation": [
+          0,
+          1,
+          0
+        ]
+      }
+    ],
+    "asset": {
+      "generator": "Khronos glTF Blender I/O v5.1.20",
+      "version": "2.0"
+    },
+    "full_gltf_json": {
+      "asset": {
+        "generator": "Khronos glTF Blender I/O v5.1.20",
+        "version": "2.0"
+      },
+      "scene": 0,
+      "scenes": [
+        {
+          "name": "Scene",
+          "nodes": [
+            1
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "mesh": 0,
+          "name": "tennis_ball"
+        },
+        {
+          "children": [
+            0
+          ],
+          "name": "world",
+          "scale": [
+            29.850746154785156,
+            29.850746154785156,
+            29.850746154785156
+          ],
+          "translation": [
+            0,
+            1,
+            0
+          ]
+        }
+      ],
+      "materials": [
+        {
+          "doubleSided": true,
+          "name": "DefaultMaterial",
+          "pbrMetallicRoughness": {
+            "metallicFactor": 0,
+            "roughnessFactor": 0.5
+          }
+        }
+      ],
+      "meshes": [
+        {
+          "name": "tennis_ball",
+          "primitives": [
+            {
+              "attributes": {
+                "POSITION": 0,
+                "NORMAL": 1,
+                "COLOR_0": 2
+              },
+              "indices": 3,
+              "material": 0
+            }
+          ]
+        }
+      ],
+      "accessors": [
+        {
+          "bufferView": 0,
+          "componentType": 5126,
+          "count": 10242,
+          "max": [
+            0.03350000083446503,
+            0.03350000083446503,
+            0.03350000083446503
+          ],
+          "min": [
+            -0.03350000083446503,
+            -0.03350000083446503,
+            -0.03350000083446503
+          ],
+          "type": "VEC3"
+        },
+        {
+          "bufferView": 1,
+          "componentType": 5126,
+          "count": 10242,
+          "type": "VEC3"
+        },
+        {
+          "bufferView": 2,
+          "componentType": 5126,
+          "count": 10242,
+          "type": "VEC3"
+        },
+        {
+          "bufferView": 3,
+          "componentType": 5123,
+          "count": 61440,
+          "type": "SCALAR"
+        }
+      ],
+      "bufferViews": [
+        {
+          "buffer": 0,
+          "byteLength": 122904,
+          "byteOffset": 0,
+          "target": 34962
+        },
+        {
+          "buffer": 0,
+          "byteLength": 122904,
+          "byteOffset": 122904,
+          "target": 34962
+        },
+        {
+          "buffer": 0,
+          "byteLength": 122904,
+          "byteOffset": 245808,
+          "target": 34962
+        },
+        {
+          "buffer": 0,
+          "byteLength": 122880,
+          "byteOffset": 368712,
+          "target": 34963
+        }
+      ],
+      "buffers": [
+        {
+          "byteLength": 491592
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,125 @@
+cd C:\Users\willc\projects\MyWay\v1
+
+$Out = "myway-sandbox-all-files-one-notepad.txt"
+
+if (Test-Path -LiteralPath $Out) {
+  Remove-Item -LiteralPath $Out -Force
+}
+
+$TextExtensions = @(
+  ".ts", ".tsx", ".js", ".jsx", ".cjs", ".mjs",
+  ".json", ".md", ".txt", ".py", ".css", ".scss",
+  ".html", ".yml", ".yaml"
+)
+
+function Is-TextFile {
+  param([System.IO.FileInfo]$File)
+
+  return $TextExtensions -contains $File.Extension.ToLowerInvariant()
+}
+
+function Add-Line {
+  param([string]$Text = "")
+
+  Add-Content -LiteralPath $Out -Value $Text -Encoding UTF8
+}
+
+$ExcludedJobsPath = Join-Path `
+  (Resolve-Path -LiteralPath ".").Path `
+  "sandbox\probe-lab\assets\jobs"
+
+$Files = Get-ChildItem -LiteralPath "." -Recurse -File |
+  Where-Object {
+    $_.FullName -match "\\sandbox(\\|$)" -and
+    $_.FullName -notmatch "\\.git\\" -and
+    $_.FullName -notmatch "\\.next\\" -and
+    $_.FullName -notmatch "\\node_modules\\" -and
+    $_.FullName -notmatch "\\archive\\" -and
+    $_.FullName -notmatch "\\.venv\\" -and
+    -not $_.FullName.StartsWith(
+      $ExcludedJobsPath + [System.IO.Path]::DirectorySeparatorChar,
+      [System.StringComparison]::OrdinalIgnoreCase
+    ) -and
+    (Is-TextFile $_)
+  } |
+  Sort-Object FullName
+
+Add-Line "MYWAY SANDBOX ALL FILES - ONE NOTEPAD FILE"
+Add-Line ("Generated: " + (Get-Date).ToString("o"))
+Add-Line "Project root: C:\Users\willc\projects\MyWay\v1"
+Add-Line ""
+Add-Line "Selection rule:"
+Add-Line "- Include text files whose path contains a folder named sandbox."
+Add-Line "- Exclude .git, .next, node_modules, archive, and .venv."
+Add-Line "- Exclude sandbox\probe-lab\assets\jobs and all files below it."
+Add-Line ""
+Add-Line ("Included files: " + $Files.Count)
+Add-Line ""
+
+Add-Line ("=" * 120)
+Add-Line "INDEX"
+Add-Line ("=" * 120)
+
+$Counter = 1
+
+foreach ($File in $Files) {
+  $Relative = Resolve-Path -LiteralPath $File.FullName -Relative
+  $CleanRelative = $Relative.TrimStart(".\")
+
+  Add-Line (
+    "{0:D3}: {1} [{2} bytes]" -f `
+      $Counter,
+      $CleanRelative,
+      $File.Length
+  )
+
+  $Counter++
+}
+
+Add-Line ""
+Add-Line ""
+Add-Line ("=" * 120)
+Add-Line "FULL FILE CONTENTS"
+Add-Line ("=" * 120)
+
+$Counter = 1
+
+foreach ($File in $Files) {
+  $Relative = Resolve-Path -LiteralPath $File.FullName -Relative
+  $CleanRelative = $Relative.TrimStart(".\")
+
+  Add-Line ""
+  Add-Line ""
+  Add-Line ("#" * 120)
+  Add-Line ("FILE {0:D3}: {1}" -f $Counter, $CleanRelative)
+  Add-Line ("SIZE BYTES: " + $File.Length)
+  Add-Line ("#" * 120)
+  Add-Line ""
+
+  try {
+    Get-Content `
+      -LiteralPath $File.FullName `
+      -Raw `
+      -ErrorAction Stop |
+      Add-Content `
+        -LiteralPath $Out `
+        -Encoding UTF8
+  }
+  catch {
+    Add-Line ("ERROR READING FILE: " + $_.Exception.Message)
+  }
+
+  $Counter++
+}
+
+Write-Host ""
+Write-Host "Done."
+Write-Host "Included files: $($Files.Count)"
+Write-Host "Excluded folder:"
+Write-Host "  sandbox\probe-lab\assets\jobs"
+Write-Host ""
+Write-Host "Output:"
+Write-Host "  $Out"
+Write-Host ""
+
+notepad $Out

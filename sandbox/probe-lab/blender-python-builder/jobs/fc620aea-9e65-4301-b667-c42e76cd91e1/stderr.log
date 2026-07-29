@@ -1,0 +1,2 @@
+C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\fc620aea-9e65-4301-b667-c42e76cd91e1\build_asset.py:163: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True

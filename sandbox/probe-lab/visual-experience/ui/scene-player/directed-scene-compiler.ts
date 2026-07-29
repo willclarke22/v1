@@ -38,7 +38,14 @@ export type RenderRole =
 export type MotionTrack = {
   entity_id: string;
   kind: "fade" | "pop" | "glow" | "slide" | "rotate" | "trace" | "transform" | "connector_follow" | "none";
+  /** Canonical semantic behaviour retained even when the current renderer uses a simpler motion kind. */
+  canonical_behaviour?: string | null;
   beat_id?: string | null;
+  target_entity_id?: string | null;
+  start_ms?: number;
+  duration_ms?: number;
+  easing?: string | null;
+  parameters?: Record<string, unknown>;
   axis?: "x" | "y" | "z";
   direction?: "up" | "down" | "left" | "right" | "forward" | "back";
   amount?: number;
@@ -745,14 +752,79 @@ function resolveEntityGeometry(input: CompileInput, constraints: SpatialConstrai
   return input.entities.map((entity) => geometry.get(entity.id)).filter((item): item is CompiledEntityGeometry => Boolean(item));
 }
 
-function inferMotionKind(eventType: string, description: string, entity: SemanticSceneEntity | undefined): MotionTrack["kind"] {
-  const lower = norm(`${eventType} ${description} ${entity ? entityText(entity) : ""}`);
-  if (eventType === "pop" || lower.includes("burst") || lower.includes("expanding")) return "pop";
-  if (eventType === "glow" || lower.includes("glow") || lower.includes("highlight")) return "glow";
-  if (eventType === "fade" || eventType === "fade_in" || eventType === "fade_out") return "fade";
-  if (eventType === "trace" || lower.includes("trace") || lower.includes("trail")) return "trace";
-  if (eventType === "transform") return lower.includes("rotate") || lower.includes("spin") || lower.includes("turn") ? "rotate" : "transform";
-  if (eventType === "move" || lower.includes("slide") || lower.includes("move") || lower.includes("travel")) return "slide";
+function inferMotionKind(
+  eventType: string,
+  canonicalBehaviour: string,
+  description: string,
+  entity: SemanticSceneEntity | undefined,
+): MotionTrack["kind"] {
+  const lower = norm(
+    `${eventType} ${canonicalBehaviour} ${description} ${entity ? entityText(entity) : ""}`,
+  );
+  if (
+    canonicalBehaviour === "show" ||
+    canonicalBehaviour === "emit" ||
+    canonicalBehaviour === "accumulate" ||
+    eventType === "pop" ||
+    lower.includes("burst") ||
+    lower.includes("expanding")
+  ) return "pop";
+  if (
+    canonicalBehaviour === "highlight" ||
+    canonicalBehaviour === "dim_others" ||
+    canonicalBehaviour === "pulse" ||
+    canonicalBehaviour === "pause" ||
+    eventType === "glow" ||
+    lower.includes("glow") ||
+    lower.includes("highlight")
+  ) return "glow";
+  if (
+    canonicalBehaviour === "hide" ||
+    eventType === "fade" ||
+    eventType === "fade_in" ||
+    eventType === "fade_out"
+  ) return "fade";
+  if (
+    canonicalBehaviour === "trace" ||
+    canonicalBehaviour === "flow" ||
+    canonicalBehaviour === "fill" ||
+    canonicalBehaviour === "drain" ||
+    canonicalBehaviour === "filter" ||
+    eventType === "trace" ||
+    lower.includes("trace") ||
+    lower.includes("trail")
+  ) return "trace";
+  if (
+    canonicalBehaviour === "rotate" ||
+    canonicalBehaviour === "orbit"
+  ) return "rotate";
+  if (
+    canonicalBehaviour === "move_to" ||
+    canonicalBehaviour === "move_along_path" ||
+    canonicalBehaviour === "insert_into" ||
+    canonicalBehaviour === "remove_from" ||
+    canonicalBehaviour === "pour" ||
+    eventType === "move" ||
+    lower.includes("slide") ||
+    lower.includes("move") ||
+    lower.includes("travel")
+  ) return "slide";
+  if (
+    canonicalBehaviour === "transform" ||
+    canonicalBehaviour === "merge" ||
+    canonicalBehaviour === "split" ||
+    canonicalBehaviour === "assemble" ||
+    canonicalBehaviour === "disassemble" ||
+    canonicalBehaviour === "replace" ||
+    canonicalBehaviour === "reveal_cutaway" ||
+    eventType === "transform"
+  ) {
+    return lower.includes("rotate") ||
+      lower.includes("spin") ||
+      lower.includes("turn")
+      ? "rotate"
+      : "transform";
+  }
   return "none";
 }
 
@@ -778,15 +850,46 @@ function inferMotionTracks(input: CompileInput, constraints: SpatialConstraint[]
       if (!entityId || !input.entities.some((entity) => entity.id === entityId)) continue;
       const entity = input.entities.find((candidate) => candidate.id === entityId);
       const eventType = text(record.type, "none");
-      const description = text(record.description, eventType);
-      const kind = inferMotionKind(eventType, description, entity);
-      const direction = inferMotionDirection(description);
+      const canonicalBehaviour = text(
+        record.behaviour,
+        eventType,
+      );
+      const description = text(record.description, canonicalBehaviour);
+      const kind = inferMotionKind(
+        eventType,
+        canonicalBehaviour,
+        description,
+        entity,
+      );
+      const direction = inferMotionDirection(
+        `${description} ${text(record.path_hint, "")}`,
+      );
       const rotateAmount = norm(description).includes("quarter") ? Math.PI / 2 : norm(description).includes("half") ? Math.PI : Math.PI * 2;
 
       tracks.push({
         entity_id: entityId,
         kind,
+        canonical_behaviour:
+          canonicalBehaviour,
         beat_id: beatId,
+        target_entity_id:
+          text(record.target_entity_id, "") ||
+          null,
+        start_ms:
+          Number.isFinite(Number(record.start_ms))
+            ? Number(record.start_ms)
+            : 0,
+        duration_ms:
+          Number.isFinite(Number(record.duration_ms))
+            ? Number(record.duration_ms)
+            : undefined,
+        easing:
+          text(record.easing, "") ||
+          null,
+        parameters:
+          asRecord(record.params) ??
+          asRecord(record.parameters) ??
+          {},
         axis: direction === "left" || direction === "right" ? "x" : direction === "forward" || direction === "back" ? "z" : "y",
         direction,
         amount: kind === "slide" ? 0.92 : undefined,
@@ -855,6 +958,18 @@ function addFaithfulnessWarnings(input: CompileInput, constraints: SpatialConstr
   const warnings: string[] = [];
   const allText = fullSceneText(input);
   const inferredTracks = inferMotionTracks(input, constraints);
+
+  for (const track of inferredTracks) {
+    if (
+      track.kind === "none" &&
+      track.canonical_behaviour &&
+      track.canonical_behaviour !== "none"
+    ) {
+      warnings.push(
+        `${track.entity_id} requests canonical behaviour ${track.canonical_behaviour}, which is preserved in the director plan but currently has no dedicated Three.js motion compiler.`,
+      );
+    }
+  }
 
   for (const constraint of constraints) {
     const entity = entityGeometryById(geometry, constraint.entity_id);

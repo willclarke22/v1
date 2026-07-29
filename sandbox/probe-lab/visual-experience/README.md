@@ -1,56 +1,60 @@
+
 # Visual Experience Sandbox
 
-This folder is the clean sandbox lane for asset-aware generated learning scenes.
+Visual Experience is the educational directing and immediate interactive
+playback lane.
 
-The proof of concept already showed that a Blender/BlenderKit `.glb` can be exported, placed under `public/`, and displayed in MyWay with React Three Fiber. This folder organizes that into a path that can later be promoted into the main app.
+## Canonical source of truth
 
-## Current boundary
+`semantic_scene_plan.director_plan` uses
+`myway_educational_scene_director_v1` and owns:
 
-- `schema.ts` defines the compact contracts.
-- `assets.ts` loads and filters the visual asset registry.
-- `compiler.ts` builds the future model input and returns a scaffold output for now.
-- `validate.ts` checks output references against registered assets and renderer capabilities.
-- `adapters.ts` converts visual-experience output into current MyWay-facing shapes.
-- `ui/` contains the visual-experience workbench and GLB player.
-- `routes/` contains the sandbox API route implementations.
-- `../assets/library/registry.json` is the source of truth for which assets the model may reference.
+- the scene thesis and learner takeaway;
+- representation strategy;
+- stable actor ids and semantic roles;
+- one learner-attention job per moment;
+- semantic behaviours and timing;
+- camera focus and framing intent;
+- concise timed text cues;
+- success observations;
+- late-binding policy for missing actors.
 
-## Asset rule
+The model no longer needs to author separate `directed_scene`,
+`scene_moments`, `story_beats`, and renderer beats. MyWay derives those
+compatibility views from the director plan.
 
-Browser-loadable assets do **not** live in this sandbox folder. They live under the real Next.js public folder:
+## Current execution path
 
-```txt
-public/sandbox-assets/myway/models/<domain>/<asset_id>.glb
-```
+1. Build a compact semantic draft from the learner message and diagnosis.
+2. Normalize and validate the director plan.
+3. Derive legacy story beats and executable semantic beats.
+4. Resolve reviewed assets without changing actor ids or direction.
+5. Compile spatial constraints, motion tracks, camera tracks, and geometry.
+6. Play immediately in React Three Fiber with scrubbing and guided interaction.
+7. Preserve warnings for behaviours or actors that need a richer future
+   compiler.
 
-The sandbox folder stores metadata and organization:
+## Asset independence
 
-```txt
-sandbox/probe-lab/assets/library/registry.json
-sandbox/probe-lab/visual-experience/assets/licenses/
-sandbox/probe-lab/visual-experience/assets/source/blender/
-sandbox/probe-lab/visual-experience/assets/generated/
-```
+The scene must remain exceptionally directed before final assets exist.
+Diagrammatic actors, paths, labels, and procedural effects can communicate the
+mechanism while physical actors are unresolved. Later GLBs bind to the same
+entity ids.
 
-## Promotion path
+## Renderer growth
 
-When this works, promote the feature like this:
+The director behaviour vocabulary is intentionally broader than the current
+Three.js implementation. Each semantic event keeps a simpler compatibility
+behaviour so current playback remains functional while richer behaviour
+compilers are added.
 
-```txt
-sandbox/probe-lab/visual-experience/schema.ts      -> lib/visual-experience/schema.ts
-sandbox/probe-lab/visual-experience/assets.ts      -> lib/visual-experience/assets.ts
-sandbox/probe-lab/visual-experience/compiler.ts    -> lib/visual-experience/compiler.ts
-sandbox/probe-lab/visual-experience/validate.ts    -> lib/visual-experience/validate.ts
-sandbox/probe-lab/visual-experience/adapters.ts    -> lib/visual-experience/adapters.ts
-sandbox/probe-lab/visual-experience/ui/*           -> ui/learning-space/probes/visual-experience/*
-public/sandbox-assets/myway/*          -> public/myway-assets/visual-experience/* or external asset storage
-```
+A future Blender Scene Compiler should consume the same director plan for
+premium rendering rather than creating a second lesson-planning format.
 
-## Next after Step 3
+## Key files
 
-Step 4 is the model/compiler request-debug lane:
-
-1. Build a real `VisualExperienceCompilerInput` from learner message + diagnosis + selected assets.
-2. Show the exact model prompt/request.
-3. Keep the model restricted to registered `asset_id`s.
-4. Let the model declare `asset_requests` when the registry is missing something useful.
+- `../director/` — canonical contract, normalization, validation, adapters.
+- `visual-learning-turn-request.ts` — model prompt and response contract.
+- `assemble-visual-learning-turn.ts` — semantic draft to canonical output.
+- `ui/scene-player/` — compatibility compilation and interactive playback.
+- `resolve-visual-learning-turn-assets.server.ts` — late-bound reviewed actors.

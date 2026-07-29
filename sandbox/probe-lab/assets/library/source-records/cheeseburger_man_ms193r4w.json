@@ -1,0 +1,26 @@
+{
+  "schema_version": "myway_manual_asset_source_record_v1",
+  "asset_id": "cheeseburger_ms193r4w",
+  "requested_concept": "cheeseburger",
+  "original_file_name": "cheeseburger.glb",
+  "browser_reported_mime_type": "application/octet-stream",
+  "source_provider": "Hi3D",
+  "source_url": null,
+  "license_kind_asserted_by_user": "self_owned",
+  "attribution": null,
+  "provenance_notes": null,
+  "source_file_project_path": "sandbox/probe-lab/assets/inbox/manual/cheeseburger_man_ms193r4w-source.glb",
+  "normalized_runtime_glb": "public/sandbox-assets/myway/models/manual/cheeseburger_man_ms193r4w.glb",
+  "normalized_thumbnail": "public/sandbox-assets/myway/thumbnails/cheeseburger_man_ms193r4w.png",
+  "source_file_size_bytes": 89331916,
+  "normalized_file_size_bytes": 89344388,
+  "content_hash": "023089f66666ae44698494961d8e65c27d9f86dea35dff30cf70c23217b5e0a5",
+  "glb_validation": {
+    "version": 2,
+    "declared_length": 89331916,
+    "json_chunk_length": 2324,
+    "generator": "THREE.GLTFExporter r178"
+  },
+  "geometry_profile_generator": "myway_blender_geometry_profile_v3_spatial_regions",
+  "imported_at": "2026-07-26T03:43:23.443Z"
+}

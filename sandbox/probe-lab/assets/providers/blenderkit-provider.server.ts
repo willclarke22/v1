@@ -85,6 +85,7 @@ export async function acquireFromBlenderKit(input: {
   searchQuery?: string;
   requiredLicenseKind?: "cc0";
   excludedSourceAssetIds?: string[];
+  selectedSourceAssetId?: string | null;
   jobTimeoutMs?: number;
 }) {
   await ensureAssetDirectories();
@@ -120,6 +121,8 @@ export async function acquireFromBlenderKit(input: {
     required_license_kind: requiredLicenseKind,
     excluded_source_asset_ids:
       input.excludedSourceAssetIds ?? [],
+    selected_source_asset_id:
+      input.selectedSourceAssetId?.trim() || null,
     result: null,
     error: null,
   });
@@ -173,6 +176,8 @@ export async function acquireFromBlenderKit(input: {
         myway_required_license_kind: requiredLicenseKind,
         excluded_source_asset_ids:
           input.excludedSourceAssetIds ?? [],
+        selected_source_asset_id:
+          input.selectedSourceAssetId?.trim() || null,
         normalized_runtime_glb: path
           .relative(process.cwd(), outputPath)
           .replace(/\\/g, "/"),

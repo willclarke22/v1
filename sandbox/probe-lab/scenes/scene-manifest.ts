@@ -13,6 +13,11 @@ import type {
   PrimitiveBuilderSurfaceReference,
 } from "../primitive-builder/asset-requirement-plan";
 
+import type {
+  EducationalSceneDirectorPlanV1,
+  EducationalSceneDirectorValidationReport,
+} from "../director";
+
 export type SceneAssetInstance = {
   instance_id: string;
   concept?: string;
@@ -75,6 +80,10 @@ export type MyWaySceneManifestV2 = {
   source: "primitive_builder" | "visual_experience";
   assets: SceneAssetInstance[];
   procedural_nodes: unknown[];
+  /** Canonical teaching and choreography source of truth. */
+  director_plan?: EducationalSceneDirectorPlanV1 | null;
+  director_validation?: EducationalSceneDirectorValidationReport | null;
+  /** Compatibility graph retained for layout proxies and refreshable asset resolution. */
   scene_graph?: unknown;
   primitive_plan?: unknown;
   asset_requirements?: unknown[];

@@ -1,0 +1,431 @@
+import { mkdir, rm, stat, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+import type { MyWayAssetRecord } from "../asset-types";
+import {
+  assetWithFileStats,
+  registerMyWayAsset,
+} from "../asset-library.server";
+import { createNormalizeJob } from "../blender/blender-job-store.server";
+import { runBlenderJob } from "../blender/blender-bridge.server";
+import { hashFile } from "../content-hash.server";
+import {
+  compareGlbAppearance,
+  inspectGlbAppearanceBuffer,
+  inspectGlbAppearanceFile,
+} from "../glb-appearance-inspection.server";
+import { queueAssetEnrichment } from "../enrichment/asset-enrichment-worker.server";
+import { safeAssetId } from "../normalize-asset-record";
+import {
+  ensureAssetDirectories,
+  projectPath,
+} from "../paths.server";
+
+import {
+  MAX_MANUAL_GLB_BYTES,
+  validateManualGlbBuffer,
+} from "./manual-glb-validation";
+
+type ManualLicenseKind = Extract<
+  MyWayAssetRecord["license_kind"],
+  "unknown" | "self_owned" | "cc0" | "royalty_free"
+>;
+
+export type ManualGlbFileLike = {
+  name: string;
+  size: number;
+  type?: string;
+  arrayBuffer(): Promise<ArrayBuffer>;
+};
+
+export type ManualGlbImportInput = {
+  file: ManualGlbFileLike;
+  concept: string;
+  aliases?: string[];
+  semanticTags?: string[];
+  domain?: string;
+  targetExtentM?: number;
+  sourceProvider?: string;
+  sourceUrl?: string | null;
+  licenseKind?: ManualLicenseKind;
+  attribution?: string | null;
+  provenanceNotes?: string | null;
+};
+
+function cleanText(value: string | null | undefined, maxLength: number) {
+  const cleaned = String(value ?? "")
+    .replace(/\u0000/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned.slice(0, maxLength);
+}
+
+function cleanFileName(value: string) {
+  const base = path.basename(value.replace(/\\/g, "/"));
+  const cleaned = base
+    .replace(/[^a-zA-Z0-9._()\- ]+/g, "_")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (cleaned || "uploaded-asset.glb").slice(0, 180);
+}
+
+function licenseFlags(kind: ManualLicenseKind) {
+  if (kind === "cc0") {
+    return {
+      licenseStatus: "recorded" as const,
+      commercialUseAllowed: true,
+      rawRedistributionAllowed: true,
+    };
+  }
+
+  if (kind === "self_owned") {
+    return {
+      licenseStatus: "recorded" as const,
+      commercialUseAllowed: true,
+      rawRedistributionAllowed: false,
+    };
+  }
+
+  if (kind === "royalty_free") {
+    return {
+      licenseStatus: "recorded" as const,
+      commercialUseAllowed: true,
+      rawRedistributionAllowed: false,
+    };
+  }
+
+  return {
+    licenseStatus: "needs_review" as const,
+    commercialUseAllowed: false,
+    rawRedistributionAllowed: false,
+  };
+}
+
+async function writeDebug(payload: Record<string, unknown>) {
+  const debugPath = projectPath(
+    "sandbox/probe-lab/assets/debug/latest-manual-glb-import.json",
+  );
+  await mkdir(path.dirname(debugPath), { recursive: true });
+  await writeFile(
+    debugPath,
+    `${JSON.stringify(payload, null, 2)}\n`,
+    "utf8",
+  ).catch(() => undefined);
+}
+
+export async function importManualGlb(input: ManualGlbImportInput) {
+  await ensureAssetDirectories();
+
+  const concept = cleanText(input.concept, 120);
+  if (!concept) {
+    throw new Error("A canonical object identity is required.");
+  }
+
+  const originalFileName = cleanFileName(input.file.name);
+  if (!originalFileName.toLowerCase().endsWith(".glb")) {
+    throw new Error("Choose a .glb file. .gltf and other formats are not supported by this importer.");
+  }
+
+  if (input.file.size <= 0) {
+    throw new Error("The selected GLB file is empty.");
+  }
+
+  if (input.file.size > MAX_MANUAL_GLB_BYTES) {
+    throw new Error(
+      `The selected GLB is ${Math.ceil(input.file.size / (1024 * 1024))} MB. The manual importer limit is 400 MB.`,
+    );
+  }
+
+  const buffer = Buffer.from(await input.file.arrayBuffer());
+  const glbValidation = validateManualGlbBuffer(buffer);
+  const sourceAppearance = inspectGlbAppearanceBuffer(buffer);
+
+  const baseId = safeAssetId(concept) || `manual_${Date.now()}`;
+  const assetId = `${baseId}_man_${Date.now().toString(36)}`;
+  const sourcePath = projectPath(
+    "sandbox/probe-lab/assets/inbox/manual",
+    `${assetId}-source.glb`,
+  );
+  const outputPath = projectPath(
+    "public/sandbox-assets/myway/models/manual",
+    `${assetId}.glb`,
+  );
+  const thumbnailPath = projectPath(
+    "public/sandbox-assets/myway/thumbnails",
+    `${assetId}.png`,
+  );
+  const sourceRecordRelativePath =
+    `sandbox/probe-lab/assets/library/source-records/${assetId}.json`;
+  const sourceRecordPath = projectPath(sourceRecordRelativePath);
+  const licenseRelativePath =
+    `sandbox/probe-lab/assets/library/licenses/${assetId}.manual.review.json`;
+  const licensePath = projectPath(licenseRelativePath);
+
+  const targetExtentM =
+    typeof input.targetExtentM === "number" &&
+    Number.isFinite(input.targetExtentM)
+      ? Math.min(20, Math.max(0.05, input.targetExtentM))
+      : 2;
+  const sourceProvider = cleanText(input.sourceProvider, 120) || "Manual upload";
+  const sourceUrl = cleanText(input.sourceUrl, 500) || null;
+  const attribution = cleanText(input.attribution, 500) || null;
+  const provenanceNotes = cleanText(input.provenanceNotes, 1200) || null;
+  const licenseKind = input.licenseKind ?? "unknown";
+
+  await mkdir(path.dirname(sourcePath), { recursive: true });
+  await writeFile(sourcePath, buffer);
+
+  await writeDebug({
+    status: "source_saved",
+    asset_id: assetId,
+    concept,
+    original_file_name: originalFileName,
+    source_provider: sourceProvider,
+    source_url: sourceUrl,
+    uploaded_bytes: buffer.length,
+    glb_validation: glbValidation,
+    target_extent_m: targetExtentM,
+    timestamp: new Date().toISOString(),
+  });
+
+  const { jobPath } = await createNormalizeJob({
+    kind: "normalize_asset",
+    input_path: sourcePath,
+    output_path: outputPath,
+    thumbnail_path: thumbnailPath,
+    target_extent_m: targetExtentM,
+    source_type: "manual",
+    result: null,
+    error: null,
+  });
+
+  const completed = await runBlenderJob(jobPath);
+  if (completed.kind !== "normalize_asset" || !completed.result) {
+    throw new Error(
+      "Blender completed without returning normalized manual-asset metadata.",
+    );
+  }
+
+  const result = completed.result;
+  const normalizedAppearance = await inspectGlbAppearanceFile(outputPath);
+  const appearanceComparison = compareGlbAppearance(
+    sourceAppearance,
+    normalizedAppearance,
+  );
+  const contentHash = await hashFile(outputPath);
+  const sourceFileStats = await stat(sourcePath);
+  const normalizedFileStats = await stat(outputPath);
+  const flags = licenseFlags(licenseKind);
+  const now = new Date().toISOString();
+
+  await mkdir(path.dirname(sourceRecordPath), { recursive: true });
+  await mkdir(path.dirname(licensePath), { recursive: true });
+  await writeFile(
+    sourceRecordPath,
+    `${JSON.stringify(
+      {
+        schema_version: "myway_manual_asset_source_record_v1",
+        asset_id: assetId,
+        requested_concept: concept,
+        original_file_name: originalFileName,
+        browser_reported_mime_type: input.file.type || null,
+        source_provider: sourceProvider,
+        source_url: sourceUrl,
+        license_kind_asserted_by_user: licenseKind,
+        attribution,
+        provenance_notes: provenanceNotes,
+        source_file_project_path: path
+          .relative(process.cwd(), sourcePath)
+          .replace(/\\/g, "/"),
+        normalized_runtime_glb: path
+          .relative(process.cwd(), outputPath)
+          .replace(/\\/g, "/"),
+        normalized_thumbnail: path
+          .relative(process.cwd(), thumbnailPath)
+          .replace(/\\/g, "/"),
+        source_file_size_bytes: sourceFileStats.size,
+        normalized_file_size_bytes: normalizedFileStats.size,
+        content_hash: contentHash,
+        glb_validation: glbValidation,
+        appearance: {
+          source: sourceAppearance,
+          normalized: normalizedAppearance,
+          comparison: appearanceComparison,
+        },
+        geometry_profile_generator:
+          result.geometry_profile?.generator ?? null,
+        imported_at: now,
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+
+  await writeFile(
+    licensePath,
+    `${JSON.stringify(
+      {
+        schema_version: "myway_manual_asset_license_review_v1",
+        asset_id: assetId,
+        review_status: "needs_human_review",
+        source_provider: sourceProvider,
+        source_url: sourceUrl,
+        license_kind_asserted_by_user: licenseKind,
+        commercial_use_allowed_asserted_by_user:
+          flags.commercialUseAllowed,
+        raw_redistribution_allowed_asserted_by_user:
+          flags.rawRedistributionAllowed,
+        attribution,
+        provenance_notes: provenanceNotes,
+        warning:
+          "MyWay records the uploader's assertion but does not independently verify third-party terms. Verify the source terms before app promotion.",
+        created_at: now,
+      },
+      null,
+      2,
+    )}
+`,
+    "utf8",
+  );
+
+  const record: MyWayAssetRecord = {
+    asset_id: assetId,
+    canonical_label: concept.toLowerCase(),
+    display_name: concept,
+    aliases: input.aliases ?? [],
+    semantic_tags: [concept, ...(input.semanticTags ?? [])],
+    asset_type: "glb",
+    domain: cleanText(input.domain, 120) || "asset_library_manual_upload",
+    requested_concept: concept,
+    source_display_name: `${sourceProvider}: ${originalFileName}`,
+    verified_canonical_label: null,
+    verified_aliases: [],
+    semantic_review_status: "pending",
+    semantic_reviewed_at: null,
+    semantic_review_notes: null,
+    object_composition: "unknown",
+    contains: [],
+    affordances: [],
+    support_surfaces: result.geometry_profile?.support_surfaces ?? [],
+    geometry_profile: result.geometry_profile ?? null,
+    preferred_for_concepts: [],
+    source_type: "manual",
+    source_asset_id: originalFileName,
+    source_prompt: null,
+    source_url: sourceUrl,
+    source_path: path
+      .relative(process.cwd(), sourcePath)
+      .replace(/\\/g, "/"),
+    public_path: `/sandbox-assets/myway/models/manual/${assetId}.glb`,
+    thumbnail_path: `/sandbox-assets/myway/thumbnails/${assetId}.png`,
+    license_record_path: licenseRelativePath,
+    storage_provider: "local",
+    storage_object_key: null,
+    storage_etag: null,
+    file_size_bytes: normalizedFileStats.size,
+    thumbnail_storage_provider: "local",
+    thumbnail_object_key: null,
+    thumbnail_etag: null,
+    thumbnail_file_size_bytes: null,
+    source_storage_provider: "local",
+    source_object_key: null,
+    source_storage_etag: null,
+    source_file_size_bytes: sourceFileStats.size,
+    source_archived_at: now,
+    promoted_at: null,
+    license_review_id: null,
+    dimensions_m:
+      result.geometry_profile?.local_bounds.size ??
+      [
+        result.dimensions_m[0],
+        result.dimensions_m[2],
+        result.dimensions_m[1],
+      ],
+    default_scale: 1,
+    default_rotation: [0, 0, 0],
+    ground_offset_m: 0,
+    polygon_count: result.polygon_count,
+    rigged: result.rigged,
+    animation_clips: result.animation_clips,
+    content_hash: contentHash,
+    quality_score: appearanceComparison.appearance_preserved ? 0.75 : 0.4,
+    reuse_count: 0,
+    license_kind: licenseKind,
+    license_status: flags.licenseStatus,
+    commercial_use_allowed: flags.commercialUseAllowed,
+    raw_redistribution_allowed: flags.rawRedistributionAllowed,
+    safe_to_use_in_sandbox: appearanceComparison.appearance_preserved,
+    safe_to_promote_to_app: false,
+    status: "normalized",
+    scene_review_status: "pending",
+    scene_reviewed_at: null,
+    scene_review_notes: null,
+    notes: [
+      `Manually uploaded from ${sourceProvider} as ${originalFileName}.`,
+      attribution ? `Attribution: ${attribution}.` : null,
+      provenanceNotes,
+      appearanceComparison.appearance_preserved
+        ? "Input and normalized GLB appearance channels were preserved."
+        : `Appearance preservation failed: ${appearanceComparison.warnings.join(" ")}`,
+      "The original GLB was preserved in the manual inbox. Review identity, geometry, appearance, licensing, and scene eligibility before promotion.",
+    ]
+      .filter(Boolean)
+      .join(" "),
+    created_at: now,
+    updated_at: now,
+  };
+
+  const registered = await registerMyWayAsset(record);
+
+  if (!registered.created) {
+    await Promise.all(
+      [sourcePath, outputPath, thumbnailPath, sourceRecordPath, licensePath].map(
+        (candidatePath) => rm(candidatePath, { force: true }).catch(() => undefined),
+      ),
+    );
+
+    return {
+      created: false,
+      duplicate_of: registered.duplicate_of,
+      asset: await assetWithFileStats(registered.asset),
+      enrichment_entry: null,
+      source_record_path: registered.asset.license_record_path ?? null,
+    };
+  }
+
+  const enrichmentEntry = queueAssetEnrichment(registered.asset.asset_id, {
+    force: true,
+  });
+
+  await writeDebug({
+    status: "completed",
+    asset_id: registered.asset.asset_id,
+    original_file_name: originalFileName,
+    source_provider: sourceProvider,
+    source_url: sourceUrl,
+    source_record_path: sourceRecordRelativePath,
+    public_path: registered.asset.public_path,
+    polygon_count: registered.asset.polygon_count ?? null,
+    dimensions_m: registered.asset.dimensions_m,
+    appearance: {
+      source: sourceAppearance,
+      normalized: normalizedAppearance,
+      comparison: appearanceComparison,
+    },
+    timestamp: new Date().toISOString(),
+  });
+
+  return {
+    created: true,
+    duplicate_of: null,
+    asset: await assetWithFileStats(registered.asset),
+    enrichment_entry: enrichmentEntry,
+    source_record_path: sourceRecordRelativePath,
+    appearance: {
+      source: sourceAppearance,
+      normalized: normalizedAppearance,
+      comparison: appearanceComparison,
+    },
+  };
+}

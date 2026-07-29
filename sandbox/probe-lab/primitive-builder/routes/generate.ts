@@ -206,6 +206,10 @@ export async function POST(request: NextRequest) {
     parse_retry: parseRetry,
     warnings,
     scene_graph: preparedAssets.scene_graph,
+    director_plan:
+      preparedAssets.scene_graph.director_plan,
+    director_validation:
+      preparedAssets.scene_graph.director_validation,
     asset_requirements:
       preparedAssets.scene_graph.asset_requirements,
     asset_inference:

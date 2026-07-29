@@ -1087,6 +1087,10 @@ export async function resolvePrimitiveBuilderSceneAssets(
   return {
     schema_version:
       "primitive_builder_scene_asset_resolution_v2",
+    director_plan:
+      sceneGraph.director_plan,
+    director_validation:
+      sceneGraph.director_validation,
     bindings,
     unresolved_requirements: unresolved,
     unresolved_diagnostics:
