@@ -1,6 +1,5 @@
+import { AssetLibraryLab } from "@/sandbox/probe-lab/assets/ui";
 
-import { AmbientCgLibraryLab } from "@/sandbox/probe-lab/assets/ui/ambientcg-library-lab";
-
-export default function AmbientCgAssetLibraryPage() {
-  return <AmbientCgLibraryLab />;
+export default function AmbientCgAssetLibraryCompatibilityPage() {
+  return <AssetLibraryLab initialSection="resources" />;
 }

@@ -11,6 +11,15 @@ export type AssetStorageUploadInput = {
   metadata?: Record<string, string>;
 };
 
+export type AssetStorageUploadBytesInput = {
+  body: Uint8Array | string;
+  object_key: string;
+  content_type: string;
+  visibility: AssetStorageVisibility;
+  cache_control?: string;
+  metadata?: Record<string, string>;
+};
+
 export type AssetStorageObject = {
   provider: "r2";
   bucket: string;
@@ -21,6 +30,16 @@ export type AssetStorageObject = {
   content_type: string;
 };
 
+export type AssetStorageReadResult = {
+  provider: "r2";
+  bucket: string;
+  object_key: string;
+  body: Uint8Array;
+  etag: string | null;
+  size_bytes: number;
+  content_type: string | null;
+};
+
 export type AssetStorageProvider = {
   readonly provider: "r2";
   readonly bucket: string;
@@ -29,6 +48,14 @@ export type AssetStorageProvider = {
   upload(
     input: AssetStorageUploadInput,
   ): Promise<AssetStorageObject>;
+
+  uploadBytes(
+    input: AssetStorageUploadBytesInput,
+  ): Promise<AssetStorageObject>;
+
+  read(
+    objectKey: string,
+  ): Promise<AssetStorageReadResult | null>;
 
   exists(objectKey: string): Promise<boolean>;
 

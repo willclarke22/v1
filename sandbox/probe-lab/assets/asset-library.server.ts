@@ -29,8 +29,17 @@ import {
   readJsonFileWithRetry,
   writeJsonFileAtomic,
 } from "./json-file.server";
+import {
+  cloudAssetMetadataEnabled,
+  keepLocalAssetMetadataMirror,
+  readCloudJson,
+  writeCloudJson,
+} from "./storage/cloud-json.server";
 
 let writeQueue: Promise<unknown> = Promise.resolve();
+
+const MYWAY_ASSET_REGISTRY_CLOUD_KEY =
+  "metadata/myway/assets/registry-v2.json";
 
 type JsonReferenceMutation = {
   file_path: string;
@@ -209,67 +218,196 @@ function emptyRegistry(): MyWayAssetRegistryV2 {
   };
 }
 
-export async function loadMyWayAssetRegistry(): Promise<MyWayAssetRegistryV2> {
-  await ensureAssetDirectories();
-  const registryPath = projectPath(
-    MYWAY_ASSET_REGISTRY_PROJECT_PATH,
-  );
+function normalizeLoadedRegistry(
+  parsed: Partial<MyWayAssetRegistryV2>,
+): MyWayAssetRegistryV2 {
+  return {
+    ...emptyRegistry(),
+    updated_at:
+      typeof parsed.updated_at === "string"
+        ? parsed.updated_at
+        : new Date().toISOString(),
+    notes:
+      typeof parsed.notes === "string"
+        ? parsed.notes
+        : null,
+    assets: Array.isArray(parsed.assets)
+      ? parsed.assets
+          .map(normalizeMyWayAssetRecord)
+          .filter(
+            (
+              asset,
+            ): asset is MyWayAssetRecord =>
+              Boolean(asset),
+          )
+      : [],
+  };
+}
 
+
+function registryUpdatedAtMs(
+  registry: MyWayAssetRegistryV2,
+) {
+  const parsed =
+    Date.parse(registry.updated_at);
+
+  return Number.isFinite(parsed)
+    ? parsed
+    : 0;
+}
+
+function isCompactedLocalRegistry(
+  registry: MyWayAssetRegistryV2,
+) {
+  return (
+    registry.assets.length === 0 &&
+    Boolean(
+      registry.notes
+        ?.toLowerCase()
+        .includes(
+          "authoritative copy is stored in r2",
+        ),
+    )
+  );
+}
+
+async function readLocalMyWayAssetRegistry(
+  registryPath: string,
+) {
   try {
     const parsed =
       await readJsonFileWithRetry<
         Partial<MyWayAssetRegistryV2>
       >(registryPath);
 
-    return {
-      ...emptyRegistry(),
-      updated_at:
-        typeof parsed.updated_at === "string"
-          ? parsed.updated_at
-          : new Date().toISOString(),
-      notes:
-        typeof parsed.notes === "string"
-          ? parsed.notes
-          : null,
-      assets: Array.isArray(parsed.assets)
-        ? parsed.assets
-            .map(normalizeMyWayAssetRecord)
-            .filter(
-              (
-                asset,
-              ): asset is MyWayAssetRecord =>
-                Boolean(asset),
-            )
-        : [],
-    };
+    return normalizeLoadedRegistry(
+      parsed,
+    );
   } catch (caught) {
     if (
-      (caught as NodeJS.ErrnoException).code !==
+      (caught as NodeJS.ErrnoException).code ===
       "ENOENT"
     ) {
-      throw caught;
+      return null;
     }
 
-    const registry = emptyRegistry();
+    throw caught;
+  }
+}
+
+export async function loadMyWayAssetRegistry(): Promise<MyWayAssetRegistryV2> {
+  const registryPath =
+    projectPath(
+      MYWAY_ASSET_REGISTRY_PROJECT_PATH,
+    );
+  const local =
+    await readLocalMyWayAssetRegistry(
+      registryPath,
+    );
+
+  if (cloudAssetMetadataEnabled()) {
+    const remoteRaw =
+      await readCloudJson<
+        Partial<MyWayAssetRegistryV2>
+      >(
+        MYWAY_ASSET_REGISTRY_CLOUD_KEY,
+      );
+    const remote =
+      remoteRaw
+        ? normalizeLoadedRegistry(
+            remoteRaw,
+          )
+        : null;
+
+    const localCanRestoreCloud =
+      process.env.VERCEL !== "1" &&
+      Boolean(local) &&
+      !isCompactedLocalRegistry(
+        local!,
+      );
+    const localIsNewer =
+      localCanRestoreCloud &&
+      (!remote ||
+        registryUpdatedAtMs(
+          local!,
+        ) >
+          registryUpdatedAtMs(
+            remote,
+          ));
+
+    if (
+      local &&
+      localIsNewer
+    ) {
+      await writeCloudJson(
+        MYWAY_ASSET_REGISTRY_CLOUD_KEY,
+        local,
+      );
+
+      return local;
+    }
+
+    if (remote) {
+      return remote;
+    }
+
+    if (local) {
+      if (localCanRestoreCloud) {
+        await writeCloudJson(
+          MYWAY_ASSET_REGISTRY_CLOUD_KEY,
+          local,
+        );
+      }
+
+      return local;
+    }
+  } else if (local) {
+    return local;
+  }
+
+  const registry =
+    emptyRegistry();
+
+  if (cloudAssetMetadataEnabled()) {
+    await writeCloudJson(
+      MYWAY_ASSET_REGISTRY_CLOUD_KEY,
+      registry,
+    );
+  }
+
+  if (keepLocalAssetMetadataMirror()) {
+    await ensureAssetDirectories();
     await writeJsonFileAtomic(
       registryPath,
       registry,
     );
-    return registry;
   }
+
+  return registry;
 }
 
 async function saveRegistryUnlocked(
   registry: MyWayAssetRegistryV2,
 ) {
-  registry.updated_at = new Date().toISOString();
+  registry.updated_at =
+    new Date().toISOString();
 
-  await writeJsonFileAtomic(
-    projectPath(
-      MYWAY_ASSET_REGISTRY_PROJECT_PATH,
-    ),
-    registry,
-  );
+  if (cloudAssetMetadataEnabled()) {
+    await writeCloudJson(
+      MYWAY_ASSET_REGISTRY_CLOUD_KEY,
+      registry,
+    );
+  }
+
+  if (keepLocalAssetMetadataMirror()) {
+    await ensureAssetDirectories();
+    await writeJsonFileAtomic(
+      projectPath(
+        MYWAY_ASSET_REGISTRY_PROJECT_PATH,
+      ),
+      registry,
+    );
+  }
 }
 
 export function saveMyWayAssetRegistry(

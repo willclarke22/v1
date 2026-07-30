@@ -3,8 +3,9 @@ import { stat } from "node:fs/promises";
 
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
-  NotFound,
+  PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
@@ -12,6 +13,7 @@ import { Upload } from "@aws-sdk/lib-storage";
 import type {
   AssetStorageObject,
   AssetStorageProvider,
+  AssetStorageUploadBytesInput,
   AssetStorageUploadInput,
   AssetStorageVisibility,
 } from "./asset-storage";
@@ -65,6 +67,41 @@ function normalizeMetadata(
         value.slice(0, 1024),
       ])
       .filter(([key]) => Boolean(key)),
+  );
+}
+
+function isNotFound(caught: unknown) {
+  return (
+    (caught as {
+      name?: string;
+      $metadata?: {
+        httpStatusCode?: number;
+      };
+    }).name === "NoSuchKey" ||
+    (caught as {
+      $metadata?: {
+        httpStatusCode?: number;
+      };
+    }).$metadata?.httpStatusCode === 404
+  );
+}
+
+function bodyBuffer(
+  body: AssetStorageUploadBytesInput["body"],
+) {
+  return typeof body === "string"
+    ? Buffer.from(body, "utf8")
+    : Buffer.from(body);
+}
+
+export function hasR2AssetStorageEnvironment() {
+  return Boolean(
+    process.env.R2_ACCOUNT_ID?.trim() &&
+      process.env.R2_ACCESS_KEY_ID?.trim() &&
+      process.env.R2_SECRET_ACCESS_KEY?.trim() &&
+      process.env.R2_RUNTIME_BUCKET_NAME?.trim() &&
+      process.env.R2_SOURCE_BUCKET_NAME?.trim() &&
+      process.env.R2_PUBLIC_BASE_URL?.trim(),
   );
 }
 
@@ -149,6 +186,26 @@ export function createR2AssetStorage(
     )}`;
   }
 
+  function objectResult(input: {
+    objectKey: string;
+    sizeBytes: number;
+    contentType: string;
+    etag?: string | null;
+  }): AssetStorageObject {
+    return {
+      provider: "r2",
+      bucket: config.bucket,
+      object_key: input.objectKey,
+      public_url: publicUrl(input.objectKey),
+      etag:
+        typeof input.etag === "string"
+          ? input.etag.replace(/^"|"$/g, "")
+          : null,
+      size_bytes: input.sizeBytes,
+      content_type: input.contentType,
+    };
+  }
+
   return {
     provider: "r2",
     bucket: config.bucket,
@@ -194,20 +251,84 @@ export function createR2AssetStorage(
 
       const result = await uploader.done();
 
-      return {
-        provider: "r2",
-        bucket: config.bucket,
-        object_key: input.object_key,
-        public_url: publicUrl(
-          input.object_key,
-        ),
-        etag:
-          typeof result.ETag === "string"
-            ? result.ETag.replace(/^"|"$/g, "")
-            : null,
-        size_bytes: info.size,
-        content_type: input.content_type,
-      };
+      return objectResult({
+        objectKey: input.object_key,
+        sizeBytes: info.size,
+        contentType: input.content_type,
+        etag: result.ETag,
+      });
+    },
+
+    async uploadBytes(
+      input: AssetStorageUploadBytesInput,
+    ): Promise<AssetStorageObject> {
+      if (
+        input.visibility !== config.visibility
+      ) {
+        throw new Error(
+          `Storage visibility mismatch: provider=${config.visibility}, upload=${input.visibility}`,
+        );
+      }
+
+      const body = bodyBuffer(input.body);
+      const result = await client.send(
+        new PutObjectCommand({
+          Bucket: config.bucket,
+          Key: input.object_key,
+          Body: body,
+          ContentLength: body.byteLength,
+          ContentType: input.content_type,
+          CacheControl: input.cache_control,
+          Metadata: normalizeMetadata(
+            input.metadata,
+          ),
+        }),
+      );
+
+      return objectResult({
+        objectKey: input.object_key,
+        sizeBytes: body.byteLength,
+        contentType: input.content_type,
+        etag: result.ETag,
+      });
+    },
+
+    async read(objectKey: string) {
+      try {
+        const result = await client.send(
+          new GetObjectCommand({
+            Bucket: config.bucket,
+            Key: objectKey,
+          }),
+        );
+
+        if (!result.Body) {
+          return null;
+        }
+
+        const body = await result.Body.transformToByteArray();
+
+        return {
+          provider: "r2" as const,
+          bucket: config.bucket,
+          object_key: objectKey,
+          body,
+          etag:
+            typeof result.ETag === "string"
+              ? result.ETag.replace(/^"|"$/g, "")
+              : null,
+          size_bytes:
+            typeof result.ContentLength === "number"
+              ? result.ContentLength
+              : body.byteLength,
+          content_type: result.ContentType ?? null,
+        };
+      } catch (caught) {
+        if (isNotFound(caught)) {
+          return null;
+        }
+        throw caught;
+      }
     },
 
     async exists(objectKey: string) {
@@ -220,14 +341,7 @@ export function createR2AssetStorage(
         );
         return true;
       } catch (caught) {
-        if (
-          caught instanceof NotFound ||
-          (caught as {
-            $metadata?: {
-              httpStatusCode?: number;
-            };
-          }).$metadata?.httpStatusCode === 404
-        ) {
+        if (isNotFound(caught)) {
           return false;
         }
 

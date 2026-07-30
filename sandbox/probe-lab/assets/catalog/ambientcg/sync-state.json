@@ -1,13 +1,13 @@
 {
   "schema_version": "myway_ambientcg_sync_state_v1",
-  "status": "complete",
-  "run_id": "4626d48f-6553-4ff6-9ae7-ff288aa65d0b",
-  "last_started_at": "2026-07-29T04:25:17.234Z",
-  "last_completed_at": "2026-07-29T04:25:42.708Z",
+  "status": "idle",
+  "run_id": null,
+  "last_started_at": null,
+  "last_completed_at": null,
   "next_offset": 0,
   "page_limit": 250,
-  "total_results": 2873,
-  "records_seen": 2873,
-  "records_written": 2873,
+  "total_results": null,
+  "records_seen": 0,
+  "records_written": 0,
   "last_error": null
 }

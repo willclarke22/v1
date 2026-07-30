@@ -28,7 +28,7 @@ import {
 
 type ManualLicenseKind = Extract<
   MyWayAssetRecord["license_kind"],
-  "unknown" | "self_owned" | "cc0" | "royalty_free"
+  "unknown" | "self_owned" | "cc0" | "cc_by_4_0" | "royalty_free"
 >;
 
 export type ManualGlbFileLike = {
@@ -71,6 +71,14 @@ function cleanFileName(value: string) {
 
 function licenseFlags(kind: ManualLicenseKind) {
   if (kind === "cc0") {
+    return {
+      licenseStatus: "recorded" as const,
+      commercialUseAllowed: true,
+      rawRedistributionAllowed: true,
+    };
+  }
+
+  if (kind === "cc_by_4_0") {
     return {
       licenseStatus: "recorded" as const,
       commercialUseAllowed: true,

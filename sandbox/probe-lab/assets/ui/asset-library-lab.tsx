@@ -13,7 +13,13 @@ import {
 import type { ErrorInfo, ReactNode } from "react";
 import * as THREE from "three";
 
+import { AmbientCgLibraryLab } from "./ambientcg-library-lab";
+
 type Vec3 = [number, number, number];
+
+type AssetLibraryLabProps = {
+  initialSection?: "models" | "resources";
+};
 
 type AssetFileStats = {
   exists: boolean;
@@ -190,7 +196,7 @@ type LibraryAsset = {
   content_hash?: string | null;
   quality_score: number;
   reuse_count: number;
-  license_kind: "cc0" | "royalty_free" | "self_owned" | "unknown";
+  license_kind: "cc0" | "cc_by_4_0" | "royalty_free" | "self_owned" | "unknown";
   license_status: "recorded" | "needs_review" | "sandbox_only" | "app_ready";
   commercial_use_allowed: boolean;
   raw_redistribution_allowed: boolean;
@@ -816,7 +822,12 @@ function geometryTerminalSignature(
 }
 
 
-export function AssetLibraryLab() {
+export function AssetLibraryLab({
+  initialSection = "models",
+}: AssetLibraryLabProps = {}) {
+  const [librarySection, setLibrarySection] = useState<
+    "models" | "resources"
+  >(initialSection);
   const [assets, setAssets] = useState<LibraryAsset[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -3135,6 +3146,28 @@ export function AssetLibraryLab() {
       asset.semantic_review_status === "verified",
   ).length;
 
+  if (librarySection === "resources") {
+    return (
+      <AmbientCgLibraryLab
+        embedded
+        onShowModels={(input) => {
+          if (input?.needsReview) {
+            setReviewView("needs_review");
+          }
+          if (input?.assetId) {
+            setSelectedAssetId(
+              input.assetId,
+            );
+          }
+          setRefreshToken(
+            (value) => value + 1,
+          );
+          setLibrarySection("models");
+        }}
+      />
+    );
+  }
+
   return (
     <main className="asset-library-page">
       <style>{`
@@ -4212,12 +4245,14 @@ export function AssetLibraryLab() {
             <a className="asset-library-link" href="/sandbox/probe-lab">
               Back to Probe Lab
             </a>
-            <a
-              className="asset-library-link"
-              href="/sandbox/probe-lab/asset-library/ambientcg"
+            <button
+              className="asset-library-button"
+              data-secondary="true"
+              onClick={() => setLibrarySection("resources")}
+              type="button"
             >
-              ambientCG Materials & HDRIs
-            </a>
+              Materials, HDRIs & ambientCG
+            </button>
             <button
               className="asset-library-button"
               data-secondary="true"
@@ -4803,6 +4838,9 @@ export function AssetLibraryLab() {
                     <option value="unknown">Unknown / needs review</option>
                     <option value="self_owned">I own the usable rights</option>
                     <option value="cc0">CC0 / public-domain dedication</option>
+                    <option value="cc_by_4_0">
+                      CC BY 4.0 / attribution required
+                    </option>
                     <option value="royalty_free">
                       Royalty-free and commercially usable
                     </option>

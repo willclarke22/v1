@@ -23,6 +23,7 @@ function csvValues(value: string) {
 function licenseKind(value: string): MyWayAssetRecord["license_kind"] {
   if (value === "self_owned") return "self_owned";
   if (value === "cc0") return "cc0";
+  if (value === "cc_by_4_0") return "cc_by_4_0";
   if (value === "royalty_free") return "royalty_free";
   return "unknown";
 }

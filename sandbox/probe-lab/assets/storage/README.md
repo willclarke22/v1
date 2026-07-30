@@ -1,78 +1,70 @@
 # MyWay Cloudflare R2 asset storage
 
-MyWay keeps Blender and TRELLIS in the asset-production path, while the
-runtime reads finished GLBs directly from object storage.
+The Asset Library uses the existing two-bucket R2 setup as its durable source
+of truth.
 
 ## Buckets
 
-- `myway-runtime-assets`: public, browser-ready GLBs and thumbnails.
-- `myway-source-archive`: private, optional raw/editable source files.
+- Runtime bucket: public browser-ready GLBs, thumbnails, material maps, HDRIs,
+  manifests, and standardized previews.
+- Source bucket: private registries, ambientCG catalog metadata, job state,
+  license reviews, source records, and optional source archives.
 
-The exact bucket names are configurable in `.env.local`.
+## Existing environment variables
 
-## Required environment variables
+- `R2_ACCOUNT_ID`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+- `R2_RUNTIME_BUCKET_NAME`
+- `R2_SOURCE_BUCKET_NAME`
+- `R2_PUBLIC_BASE_URL`
 
-Copy the values from `.env.r2.example` into `.env.local`. Never commit the
-access key or secret key.
+When all variables are configured, cloud mode is selected automatically.
 
-## Public URL
+## Optional environment variables
 
-`R2_PUBLIC_BASE_URL` must be either:
+- `MYWAY_ASSET_METADATA_STORAGE=r2|local`
+  - Overrides automatic cloud detection.
+- `MYWAY_KEEP_LOCAL_ASSET_MIRROR=true|false`
+  - Defaults to `false` when R2 is configured and `true` without R2.
+- `MYWAY_CLOUD_METADATA_CACHE_MS=30000`
+  - In-memory metadata cache duration for each server process.
+- `MYWAY_KEEP_ASSET_JOB_FILES=true`
+  - Retains temporary ambientCG job folders for debugging. The default removes
+    them after each job.
+- `MYWAY_AMBIENTCG_MAX_DOWNLOAD_BYTES`
+  - Maximum package size accepted by the ambientCG cache worker.
+- `MYWAY_AMBIENTCG_DOWNLOAD_TIMEOUT_MS`
+  - Per-attempt ambientCG download timeout.
 
-- the bucket's public `r2.dev` URL for initial testing; or
-- a custom domain such as `https://assets.example.com` for production.
+## Unified Asset Library
 
-Do not use the S3 API endpoint as the browser-facing public URL.
+`/sandbox/probe-lab/asset-library` now contains:
 
-## CORS
+- MyWay model assets and their rotating GLB previews.
+- The complete ambientCG catalog.
+- Cloud-ready materials and HDRIs.
+- Download jobs.
+- Cloud migration and local-compaction controls.
 
-Apply `r2-cors.json` to the public runtime bucket. It allows public GET and
-HEAD requests but does not allow browser uploads. Uploads use server-side
-S3 credentials from the local promotion script.
+The old `/asset-library/ambientcg` URL is only a compatibility entry and renders
+the same unified Asset Library in its resource section.
 
-## License safety
+## Local storage policy
 
-Public promotion requires a review record under:
+With R2 configured:
 
-`sandbox/probe-lab/assets/library/licenses/`
+- ambientCG downloads and extraction occur under the operating-system temporary
+  directory;
+- normalized files are uploaded to R2;
+- temporary jobs are removed after completion;
+- Blender can hydrate only the selected material or HDRI into a temporary cache;
+- the model and ambientCG registries are read from and written to private R2
+  metadata objects.
 
-The code deliberately blocks:
+The Asset Library's Cloud storage tab can migrate current local models in
+verified batches. Local model and thumbnail deletion is optional and occurs only
+after R2 HEAD verification.
 
-- every asset without an approved review;
-- BlendKit Royalty Free assets as standalone public GLBs;
-- any review missing a required attestation.
-
-A private source archive is not the same as approval for public
-redistribution.
-
-## Commands
-
-Create an unapproved review template:
-
-`pnpm exec tsx scripts/assets/create-myway-license-review.ts --asset-id ASSET_ID --reviewed-by "NAME"`
-
-Check environment configuration:
-
-`pnpm exec tsx scripts/assets/check-myway-r2.ts`
-
-Promote an approved asset:
-
-`pnpm exec tsx scripts/assets/promote-myway-asset-to-r2.ts --asset-id ASSET_ID --review-file REVIEW_JSON`
-
-Add `--archive-source` only when the private source bucket is configured
-and the asset's `source_path` should also be archived.
-
-## Git policy
-
-Commit:
-
-- registry metadata;
-- source/license records;
-- application code.
-
-Do not commit:
-
-- R2 credentials;
-- generated GLBs after their R2 URLs are verified;
-- raw TRELLIS output;
-- temporary Blender downloads and jobs.
+The local-compaction action verifies every required private metadata object
+before replacing large local JSON files with tiny bootstrap records.

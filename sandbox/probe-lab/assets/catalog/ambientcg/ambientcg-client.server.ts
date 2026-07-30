@@ -1,4 +1,3 @@
-
 import { randomUUID } from "node:crypto";
 
 import type {
@@ -92,7 +91,7 @@ function inferResolution(text: string) {
 }
 
 function inferFileFormat(text: string) {
-  return text.match(/(?:^|[^A-Z])(JPG|JPEG|PNG|HDR|EXR|BLEND|SBSAR)(?:[^A-Z]|$)/i)?.[1]?.toUpperCase().replace("JPEG", "JPG") ?? null;
+  return text.match(/(?:^|[^A-Z])(JPG|JPEG|PNG|HDR|EXR|BLEND|SBSAR|GLB|GLTF|FBX|OBJ)(?:[^A-Z]|$)/i)?.[1]?.toUpperCase().replace("JPEG", "JPG") ?? null;
 }
 
 function inferArchiveFormat(url: string, text: string) {
@@ -113,7 +112,7 @@ function flattenDownloadVariants(value: unknown) {
 
   function walk(node: unknown, path: string[]) {
     if (typeof node === "string") {
-      if (/^https?:\/\//i.test(node) && /download|cdn|\.zip|\.hdr|\.exr/i.test(node)) {
+      if (/^https?:\/\//i.test(node) && /download|cdn|\.zip|\.hdr|\.exr|\.glb|\.gltf|\.fbx|\.obj|\.blend/i.test(node)) {
         const label = path.join(" ") || "Download";
         variants.push({
           variant_id: `${inferResolution(label) ?? "native"}-${inferFileFormat(label) ?? "file"}-${variants.length}`.toLowerCase(),
@@ -237,7 +236,15 @@ function normalizeAsset(raw: unknown, existing?: AmbientCgCatalogAsset) {
     thumbnail_urls: unique(collectUrls(object.thumbnails)),
     catalog_status: existing?.catalog_status ?? "cataloged",
     cached_resource_id: existing?.cached_resource_id ?? null,
-    source_record: object,
+    source_record: {
+      id: sourceAssetId,
+      type: normalizeType(object.type),
+      title: stringValue(object.title) ?? sourceAssetId,
+      url: sourceUrl,
+      releaseDate: stringValue(object.releaseDate),
+      technique: stringValue(object.technique),
+      license: "CC0-1.0",
+    },
     cataloged_at: existing?.cataloged_at ?? now,
     updated_at: now,
   } satisfies AmbientCgCatalogAsset;

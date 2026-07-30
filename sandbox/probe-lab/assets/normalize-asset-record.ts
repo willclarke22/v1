@@ -1025,6 +1025,7 @@ export function normalizeMyWayAssetRecord(
 
   const licenseKind = [
     "cc0",
+    "cc_by_4_0",
     "royalty_free",
     "self_owned",
     "unknown",

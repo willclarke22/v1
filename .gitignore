@@ -81,3 +81,8 @@ myway-sandbox-all-files-one-notepad.txt
 scripts-assets-dump.txt
 sandbox/probe-lab/assets/library/registry.json.before-r2-promotion.backup
 archive/patch-backups/
+# MyWay cloud-backed asset processing
+.myway-cache/
+sandbox/probe-lab/assets/jobs/ambientcg/
+public/sandbox-assets/myway/materials/ambientcg/
+public/sandbox-assets/myway/hdri/ambientcg/

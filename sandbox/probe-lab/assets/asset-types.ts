@@ -29,6 +29,7 @@ export type MyWayAssetObjectComposition =
 
 export type MyWayAssetLicenseKind =
   | "cc0"
+  | "cc_by_4_0"
   | "royalty_free"
   | "self_owned"
   | "unknown";
