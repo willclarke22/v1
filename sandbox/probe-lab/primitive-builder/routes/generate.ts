@@ -36,6 +36,11 @@ export async function POST(request: NextRequest) {
   const sceneSessionId =
     `primitive_${Date.now().toString(36)}_${randomUUID().slice(0, 8)}`;
   const body = await request.json().catch(() => ({}));
+  const acquisitionPolicy =
+    body.acquisition_policy === "queue_only" ||
+    body.acquisition_policy === "sandbox_synchronous"
+      ? body.acquisition_policy
+      : "never";
   const userRequest = text(body.prompt, "build something interesting");
   const provider = normalizePrimitiveBuilderProvider(body.provider);
   const fallbackProvider = normalizePrimitiveBuilderFallback(body.fallback_provider, provider);
@@ -153,33 +158,51 @@ export async function POST(request: NextRequest) {
   warnings.push(...assetResolution.warnings);
 
   const acquisitionJobs =
-    await enqueueMissingAssetRequirements({
-      sceneSessionId,
-      source: "primitive_builder",
-      title: plan.scene_title,
-      originalPrompt: userRequest,
-      requirements:
-        assetResolution.unresolved_requirements,
-    });
+    acquisitionPolicy === "never"
+      ? []
+      : await enqueueMissingAssetRequirements({
+          sceneSessionId,
+          source: "primitive_builder",
+          title: plan.scene_title,
+          originalPrompt: userRequest,
+          requirements:
+            assetResolution.unresolved_requirements,
+        });
 
-  startMissingAssetAcquisitions(
-    acquisitionJobs
-      .filter(
-        (job) =>
-          job.status === "missing" ||
-          job.status === "unavailable",
-      )
-      .map((job) => job.job_id),
-  );
+  if (
+    acquisitionPolicy === "sandbox_synchronous"
+  ) {
+    startMissingAssetAcquisitions(
+      acquisitionJobs
+        .filter(
+          (job) =>
+            job.status === "missing" ||
+            job.status === "unavailable",
+        )
+        .map((job) => job.job_id),
+    );
+  }
 
   const acquisitionJobSummaries =
-    await listMissingAssetJobs({
-      sceneSessionId,
-    });
+    acquisitionPolicy === "never"
+      ? []
+      : await listMissingAssetJobs({
+          sceneSessionId,
+        });
 
   if (acquisitionJobs.length) {
     warnings.push(
-      `${acquisitionJobs.length} missing asset acquisition job(s) were queued automatically.`,
+      acquisitionPolicy === "queue_only"
+        ? `${acquisitionJobs.length} missing asset acquisition job(s) were queued explicitly; the current scene continues with declared fallbacks.`
+        : `${acquisitionJobs.length} missing asset acquisition job(s) were queued and started by an explicit sandbox acquisition request.`,
+    );
+  } else if (
+    acquisitionPolicy === "never" &&
+    assetResolution
+      .unresolved_requirements.length
+  ) {
+    warnings.push(
+      `${assetResolution.unresolved_requirements.length} asset requirement(s) remain unresolved. Acquisition policy is never, so no provider or acquisition worker was invoked.`,
     );
   }
 
@@ -188,6 +211,8 @@ export async function POST(request: NextRequest) {
     route: "primitive-builder-generate",
     schema_version: "primitive_scene_graph_v2",
     scene_session_id: sceneSessionId,
+    acquisition_policy:
+      acquisitionPolicy,
     acquisition_jobs:
       acquisitionJobSummaries,
     provider_requested: provider,

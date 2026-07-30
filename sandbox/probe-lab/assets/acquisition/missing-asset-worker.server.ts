@@ -13,8 +13,8 @@ import {
   appearanceAcquisitionTerms,
 } from "../appearance-request";
 import {
-  resolveMyWayAsset,
-} from "../asset-resolver.server";
+  resolveReviewedAsset,
+} from "../reviewed-asset-resolver.server";
 import {
   acquireFromBlenderKit,
 } from "../providers/blenderkit-provider.server";
@@ -178,14 +178,14 @@ async function adoptExistingCandidate(
   );
 
   const approvedResolution =
-    await resolveMyWayAsset({
+    await resolveReviewedAsset({
       concept: job.concept,
       aliases: job.aliases,
       semantic_tags: job.semantic_tags,
       appearance_request:
         job.appearance_request,
-      allow_blenderkit: false,
-      allow_trellis: false,
+      acquisition_policy: "never",
+      require_cloud_ready: false,
       require_scene_approved: true,
       require_semantic_verified: true,
       minimum_match_score: 48,

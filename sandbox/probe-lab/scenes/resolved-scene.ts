@@ -21,6 +21,11 @@ import type {
   EducationalSceneDirectorPlanV1,
   EducationalSceneDirectorValidationReport,
 } from "../director";
+import type {
+  ResolvedSceneResourcesV1,
+  SceneResourcePlanV1,
+  SceneResourcePlanValidationReport,
+} from "../scene-resources";
 
 export type ResolvedSceneAssetBinding = {
   instance_id: string;
@@ -83,6 +88,9 @@ export type PrimitiveBuilderSceneAssetResolution = {
   schema_version: "primitive_builder_scene_asset_resolution_v2";
   director_plan?: EducationalSceneDirectorPlanV1;
   director_validation?: EducationalSceneDirectorValidationReport;
+  resource_plan?: SceneResourcePlanV1;
+  resource_plan_validation?: SceneResourcePlanValidationReport;
+  resolved_resources?: ResolvedSceneResourcesV1;
   bindings: ResolvedSceneAssetBinding[];
   unresolved_requirements: PrimitiveBuilderAssetRequirement[];
   unresolved_diagnostics?: PrimitiveBuilderUnresolvedAssetDiagnostic[];

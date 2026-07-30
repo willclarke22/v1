@@ -392,6 +392,43 @@ export type AssetMatchScoreBreakdown = {
   total: number;
 };
 
+export const ASSET_ACQUISITION_POLICIES = [
+  "never",
+  "queue_only",
+  "sandbox_synchronous",
+] as const;
+
+export type AssetAcquisitionPolicy =
+  (typeof ASSET_ACQUISITION_POLICIES)[number];
+
+export type AssetCandidateEligibilityDiagnostic = {
+  asset_id: string;
+  eligible: boolean;
+  reasons: string[];
+  scene_review_status: MyWayAssetSceneReviewStatus | "pending";
+  semantic_review_status: MyWayAssetSemanticReviewStatus | "pending";
+  license_status: MyWayAssetLicenseStatus;
+  storage_provider: MyWayAssetStorageProvider;
+  cloud_ready: boolean;
+  file_exists: boolean | null;
+};
+
+export type AssetSelectionReason = {
+  summary: string;
+  eligibility_checks: string[];
+  score_components: Record<string, number>;
+  candidate_rank: number;
+};
+
+export type AssetAcquisitionQueueContext = {
+  scene_session_id: string;
+  scene_id?: string | null;
+  source: "primitive_builder" | "visual_experience";
+  title?: string | null;
+  original_prompt?: string | null;
+  requirement_instance_id?: string | null;
+};
+
 export type AssetResolveRequest = {
   concept: string;
   aliases?: string[];
@@ -402,19 +439,34 @@ export type AssetResolveRequest = {
   desired_composition?: MyWayAssetObjectComposition;
   preferred_asset_id?: string;
   appearance_request?: MyWayAssetAppearanceRequestV1;
-  appearance_ranking?: boolean;
-  allow_blenderkit?: boolean;
-  allow_trellis?: boolean;
 
-  // Deprecated compatibility input. The asset resolver never returns
-  // primitive substitutes; unavailable assets resolve as source "none".
-  allow_primitive_fallback?: boolean;
-  force_refresh?: boolean;
+  // Canonical Phase 2 resolution uses deterministic profile/trait checks.
+  // Provider-backed vector reranking is opt-in and must not be enabled by
+  // normal scene-runtime callers.
+  appearance_ranking?: boolean;
+
+  acquisition_policy?: AssetAcquisitionPolicy;
+  acquisition_queue_context?: AssetAcquisitionQueueContext;
+
   require_scene_approved?: boolean;
   require_semantic_verified?: boolean;
+  require_license_eligible?: boolean;
+  require_cloud_ready?: boolean;
+  require_rigged?: boolean;
+  required_animation_clips?: string[];
   minimum_match_score?: number;
   minimum_match_margin?: number;
   candidate_limit?: number;
+  debug_write?: boolean;
+
+  // Deprecated compatibility inputs. New code must use acquisition_policy.
+  allow_blenderkit?: boolean;
+  allow_trellis?: boolean;
+  allow_primitive_fallback?: boolean;
+  force_refresh?: boolean;
+
+  // Deprecated telemetry input. Canonical resolution never mutates reuse
+  // counters; callers may record usage separately after selection.
   record_reuse?: boolean;
 };
 
@@ -424,6 +476,7 @@ export type AssetResolveResult = {
     | "library"
     | "blenderkit"
     | "trellis"
+    | "queued"
     | "primitive"
     | "none";
   asset: MyWayAssetRecord | null;
@@ -433,6 +486,15 @@ export type AssetResolveResult = {
     ok: boolean;
     error?: string;
   }>;
+  resolver_version: string;
+  registry_snapshot_id: string;
+  registry_content_hash: string;
+  request_hash: string;
+  resolved_at: string;
+  acquisition_policy: AssetAcquisitionPolicy;
+  selection_reason: AssetSelectionReason | null;
+  eligibility_diagnostics: AssetCandidateEligibilityDiagnostic[];
+  queued_job_ids?: string[];
   match_score?: number | null;
   match_margin?: number | null;
   candidate_scores?: AssetMatchScoreBreakdown[];
@@ -440,3 +502,4 @@ export type AssetResolveResult = {
   failure_reason?: string | null;
   requires_scene_review?: boolean;
 };
+

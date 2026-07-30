@@ -1,6 +1,7 @@
 cd C:\Users\willc\projects\MyWay\v1
 
-$Out = "myway-sandbox-all-files-one-notepad.txt"
+$ProjectRoot = (Resolve-Path -LiteralPath ".").Path
+$Out = Join-Path $ProjectRoot "myway-sandbox-active-files-one-notepad.txt"
 
 if (Test-Path -LiteralPath $Out) {
   Remove-Item -LiteralPath $Out -Force
@@ -13,43 +14,113 @@ $TextExtensions = @(
 )
 
 function Is-TextFile {
-  param([System.IO.FileInfo]$File)
+  param(
+    [Parameter(Mandatory)]
+    [System.IO.FileInfo]$File
+  )
 
   return $TextExtensions -contains $File.Extension.ToLowerInvariant()
 }
 
 function Add-Line {
-  param([string]$Text = "")
+  param(
+    [AllowEmptyString()]
+    [string]$Text = ""
+  )
 
-  Add-Content -LiteralPath $Out -Value $Text -Encoding UTF8
+  Add-Content `
+    -LiteralPath $Out `
+    -Value $Text `
+    -Encoding UTF8
 }
 
-$ExcludedJobsPath = Join-Path `
-  (Resolve-Path -LiteralPath ".").Path `
-  "sandbox\probe-lab\assets\jobs"
+function Get-NormalizedRelativePath {
+  param(
+    [Parameter(Mandatory)]
+    [System.IO.FileInfo]$File
+  )
 
-$Files = Get-ChildItem -LiteralPath "." -Recurse -File |
-  Where-Object {
-    $_.FullName -match "\\sandbox(\\|$)" -and
-    $_.FullName -notmatch "\\.git\\" -and
-    $_.FullName -notmatch "\\.next\\" -and
-    $_.FullName -notmatch "\\node_modules\\" -and
-    $_.FullName -notmatch "\\archive\\" -and
-    $_.FullName -notmatch "\\.venv\\" -and
-    -not $_.FullName.StartsWith(
-      $ExcludedJobsPath + [System.IO.Path]::DirectorySeparatorChar,
-      [System.StringComparison]::OrdinalIgnoreCase
-    ) -and
-    (Is-TextFile $_)
-  } |
-  Sort-Object FullName
+  return [System.IO.Path]::GetRelativePath(
+    $ProjectRoot,
+    $File.FullName
+  ).Replace("/", "\")
+}
 
-Add-Line "MYWAY SANDBOX ALL FILES - ONE NOTEPAD FILE"
+function Is-ActiveSandboxFile {
+  param(
+    [Parameter(Mandatory)]
+    [System.IO.FileInfo]$File
+  )
+
+  $RelativePath = Get-NormalizedRelativePath $File
+
+  # Include only the active sandbox source locations.
+  $IsActiveSandboxPath =
+    $RelativePath -like "sandbox\*" -or
+    $RelativePath -like "app\sandbox\*" -or
+    $RelativePath -like "app\api\sandbox\*" -or
+    $RelativePath -like "lib\sandbox\*"
+
+  if (-not $IsActiveSandboxPath) {
+    return $false
+  }
+
+  # Exclude large or generated runtime job files.
+  if (
+    $RelativePath -eq "sandbox\probe-lab\assets\jobs" -or
+    $RelativePath -like "sandbox\probe-lab\assets\jobs\*"
+  ) {
+    return $false
+  }
+
+  # Defensive exclusions. These should already be outside the explicit
+  # active roots, but keeping them here prevents accidental future inclusion.
+  $ExcludedDirectoryNames = @(
+    ".git",
+    ".next",
+    "node_modules",
+    "archive",
+    ".venv",
+    ".myway-patch-backups"
+  )
+
+  $PathParts = $RelativePath -split "\\"
+
+  foreach ($ExcludedDirectoryName in $ExcludedDirectoryNames) {
+    if (
+      $PathParts -contains $ExcludedDirectoryName
+    ) {
+      return $false
+    }
+  }
+
+  return Is-TextFile $File
+}
+
+$Files = @(
+  Get-ChildItem `
+    -LiteralPath $ProjectRoot `
+    -Recurse `
+    -File `
+    -ErrorAction SilentlyContinue |
+    Where-Object {
+      Is-ActiveSandboxFile $_
+    } |
+    Sort-Object {
+      Get-NormalizedRelativePath $_
+    }
+)
+
+Add-Line "MYWAY ACTIVE SANDBOX FILES - ONE NOTEPAD FILE"
 Add-Line ("Generated: " + (Get-Date).ToString("o"))
-Add-Line "Project root: C:\Users\willc\projects\MyWay\v1"
+Add-Line ("Project root: " + $ProjectRoot)
 Add-Line ""
 Add-Line "Selection rule:"
-Add-Line "- Include text files whose path contains a folder named sandbox."
+Add-Line "- Include active text files under sandbox\."
+Add-Line "- Include active text files under app\sandbox\."
+Add-Line "- Include active text files under app\api\sandbox\."
+Add-Line "- Include active text files under lib\sandbox\."
+Add-Line "- Exclude .myway-patch-backups and all historical patch copies."
 Add-Line "- Exclude .git, .next, node_modules, archive, and .venv."
 Add-Line "- Exclude sandbox\probe-lab\assets\jobs and all files below it."
 Add-Line ""
@@ -63,13 +134,12 @@ Add-Line ("=" * 120)
 $Counter = 1
 
 foreach ($File in $Files) {
-  $Relative = Resolve-Path -LiteralPath $File.FullName -Relative
-  $CleanRelative = $Relative.TrimStart(".\")
+  $RelativePath = Get-NormalizedRelativePath $File
 
   Add-Line (
     "{0:D3}: {1} [{2} bytes]" -f `
       $Counter,
-      $CleanRelative,
+      $RelativePath,
       $File.Length
   )
 
@@ -85,25 +155,31 @@ Add-Line ("=" * 120)
 $Counter = 1
 
 foreach ($File in $Files) {
-  $Relative = Resolve-Path -LiteralPath $File.FullName -Relative
-  $CleanRelative = $Relative.TrimStart(".\")
+  $RelativePath = Get-NormalizedRelativePath $File
 
   Add-Line ""
   Add-Line ""
   Add-Line ("#" * 120)
-  Add-Line ("FILE {0:D3}: {1}" -f $Counter, $CleanRelative)
+  Add-Line ("FILE {0:D3}: {1}" -f $Counter, $RelativePath)
   Add-Line ("SIZE BYTES: " + $File.Length)
   Add-Line ("#" * 120)
   Add-Line ""
 
   try {
-    Get-Content `
+    $Content = Get-Content `
       -LiteralPath $File.FullName `
       -Raw `
-      -ErrorAction Stop |
+      -ErrorAction Stop
+
+    if ($null -ne $Content) {
       Add-Content `
         -LiteralPath $Out `
+        -Value $Content `
         -Encoding UTF8
+    }
+    else {
+      Add-Line "[EMPTY FILE]"
+    }
   }
   catch {
     Add-Line ("ERROR READING FILE: " + $_.Exception.Message)
@@ -114,9 +190,18 @@ foreach ($File in $Files) {
 
 Write-Host ""
 Write-Host "Done."
-Write-Host "Included files: $($Files.Count)"
-Write-Host "Excluded folder:"
-Write-Host "  sandbox\probe-lab\assets\jobs"
+Write-Host "Included active files: $($Files.Count)"
+Write-Host ""
+Write-Host "Included roots:"
+Write-Host "  sandbox\"
+Write-Host "  app\sandbox\"
+Write-Host "  app\api\sandbox\"
+Write-Host "  lib\sandbox\"
+Write-Host ""
+Write-Host "Excluded:"
+Write-Host "  .myway-patch-backups\"
+Write-Host "  sandbox\probe-lab\assets\jobs\"
+Write-Host "  .git\, .next\, node_modules\, archive\, .venv\"
 Write-Host ""
 Write-Host "Output:"
 Write-Host "  $Out"

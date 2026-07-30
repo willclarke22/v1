@@ -29,6 +29,13 @@ Compatibility adapters
   - Primitive Builder reveal beats
   - directed-scene hints
         ↓
+Shared Scene Resource Plan
+  - entity model requirements
+  - surface material requirements
+  - scene environment requirements
+  - auxiliary authoring/runtime requirements
+  - explicit fallbacks and performance budgets
+        ↓
 Set and casting
   - asset requirements
   - reviewed asset resolver
@@ -76,6 +83,19 @@ Own set construction and safe placement:
 - collision-safe final placement;
 - unresolved diagnostics and acquisition jobs.
 
+### Shared scene resource plan
+
+Owns the deterministic execution-resource request derived from the Director:
+
+- entity model requirements tied to stable Director ids;
+- material-slot and surface requirements;
+- scene-level environment intent;
+- auxiliary runtime versus authoring-only resources;
+- explicit fallback and performance budgets;
+- validation before resource resolution.
+
+It does not choose provider ids, URLs, object keys, or acquire missing files.
+
 ### Asset runtime
 
 Own actor availability and quality:
@@ -85,7 +105,9 @@ Own actor availability and quality:
 - geometry profiles;
 - reusable GLBs;
 - BlendKit, TRELLIS, local import, and GLM procedural acquisition;
-- late binding to stable director entity ids.
+- late binding to stable director entity ids;
+- future reviewed-resource resolution from `myway_scene_resource_plan_v1`;
+- acquisition as a separate explicit operation rather than hidden resolution behavior.
 
 ### Three.js player
 
@@ -137,3 +159,50 @@ weaken:
 
 This lets a better actor plug in later without regenerating or reinterpreting
 the educational direction.
+
+## Phase 2C resolution boundary
+
+```text
+SceneResourcePlanV1
+  -> pure reviewed-resource resolution
+  -> ResolvedSceneResourcesV1 or declared fallback
+
+Explicit acquisition request
+  -> queue or sandbox provider
+  -> normalization and review
+  -> future registry snapshot
+```
+
+Scene compilation never invokes providers, mutates reuse telemetry, or selects
+pending resources.
+
+## Phase 2D runtime hydration
+
+The first canonical execution proof lives under
+`sandbox/probe-lab/resource-runtime/`.
+
+```txt
+ResolvedSceneResourcesV1
+→ RuntimeModelBindingV1
+→ shared browser GLB runtime
+→ independent render instance
+→ lifecycle diagnostics and disposal
+```
+
+The runtime may hydrate only bindings emitted by the reviewed Phase 2C
+resolver. It does not search providers, change the scene plan, or enqueue
+acquisition. R2 bindings require HTTPS URLs. Loading failures preserve the
+Director entity id and render a declared diagrammatic proxy.
+
+The existing `useGLTF` paths in the Asset Library, Primitive Builder, and Visual
+Experience remain compatibility loaders until those labs are migrated in later
+Phase 2 integration patches.
+
+## Phase 2F material runtime
+
+The reviewed Resource Runtime now includes a deterministic material lane.
+Published ambientCG materials are resolved without acquisition, normalized into
+`myway_material_runtime_v1`, hydrated through one browser texture cache, and
+applied to primitives or explicit GLB overrides. Colour-space, normal-map,
+packed-channel, UV, fallback, and Blender Principled BSDF rules are centralized
+in `resource-runtime/material-map-policy.ts`. HDRI execution remains Phase 2G.

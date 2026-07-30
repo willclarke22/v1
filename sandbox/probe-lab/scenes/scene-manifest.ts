@@ -17,6 +17,11 @@ import type {
   EducationalSceneDirectorPlanV1,
   EducationalSceneDirectorValidationReport,
 } from "../director";
+import type {
+  ResolvedSceneResourcesV1,
+  SceneResourcePlanV1,
+  SceneResourcePlanValidationReport,
+} from "../scene-resources";
 
 export type SceneAssetInstance = {
   instance_id: string;
@@ -83,6 +88,11 @@ export type MyWaySceneManifestV2 = {
   /** Canonical teaching and choreography source of truth. */
   director_plan?: EducationalSceneDirectorPlanV1 | null;
   director_validation?: EducationalSceneDirectorValidationReport | null;
+  /** Shared Phase 2 resource intent derived from the Director plan. */
+  resource_plan?: SceneResourcePlanV1 | null;
+  resource_plan_validation?: SceneResourcePlanValidationReport | null;
+  /** Populated by the Phase 2C reviewed-resource resolver. */
+  resolved_resources?: ResolvedSceneResourcesV1 | null;
   /** Compatibility graph retained for layout proxies and refreshable asset resolution. */
   scene_graph?: unknown;
   primitive_plan?: unknown;

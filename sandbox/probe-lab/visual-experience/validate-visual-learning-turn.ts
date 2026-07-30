@@ -50,6 +50,9 @@ function emptyReport(fatalErrors: string[], warnings: string[] = []): VisualLear
     director_plan_present: false,
     director_plan_valid: false,
     director_plan_issue_count: 0,
+    resource_plan_present: false,
+    resource_plan_valid: false,
+    resource_plan_issue_count: 0,
   };
 }
 
@@ -70,6 +73,20 @@ function validateProceedOutput(
   const directorPlanValid =
     directorPlanPresent &&
     directorValidation?.valid !== false;
+  const resourcePlan = asRecord(
+    scenePlan?.resource_plan,
+  );
+  const resourceValidation = asRecord(
+    scenePlan?.resource_plan_validation,
+  );
+  const resourceIssues = asArray(
+    resourceValidation?.issues,
+  );
+  const resourcePlanPresent =
+    Boolean(resourcePlan);
+  const resourcePlanValid =
+    resourcePlanPresent &&
+    resourceValidation?.valid !== false;
   const followupProbe = asRecord(output.followup_probe);
   const followupPrompt = asRecord(followupProbe?.prompt);
 
@@ -83,6 +100,16 @@ function validateProceedOutput(
   } else if (!directorPlanValid) {
     warnings.push(
       "semantic_scene_plan.director_plan failed canonical validation. Renderer compatibility views may be incomplete.",
+    );
+  }
+
+  if (!resourcePlanPresent) {
+    warnings.push(
+      "semantic_scene_plan.resource_plan is missing. The Director remains usable, but shared Phase 2 resource resolution cannot run yet.",
+    );
+  } else if (!resourcePlanValid) {
+    warnings.push(
+      "semantic_scene_plan.resource_plan failed validation. Resource resolution must not run until its references and invariants are repaired.",
     );
   }
 
@@ -199,6 +226,12 @@ function validateProceedOutput(
       directorPlanValid,
     director_plan_issue_count:
       directorIssues.length,
+    resource_plan_present:
+      resourcePlanPresent,
+    resource_plan_valid:
+      resourcePlanValid,
+    resource_plan_issue_count:
+      resourceIssues.length,
   };
 }
 
@@ -228,6 +261,9 @@ export function validateVisualLearningTurnOutput(
       director_plan_present: false,
       director_plan_valid: false,
       director_plan_issue_count: 0,
+      resource_plan_present: false,
+      resource_plan_valid: false,
+      resource_plan_issue_count: 0,
     };
   }
 

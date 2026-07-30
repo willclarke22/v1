@@ -9,6 +9,7 @@ must not reinterpret or weaken the educational sequence.
 ## Inputs
 
 - canonical `director_plan` with stable entity ids;
+- validated `resource_plan` derived from the Director;
 - Primitive Builder layout proxies and asset requirements;
 - reviewed GLB bindings;
 - logical size decisions;
@@ -16,6 +17,7 @@ must not reinterpret or weaken the educational sequence.
 
 ## Outputs
 
+- resource-plan validation and future `resolved_resources`;
 - resolved actor bindings;
 - unresolved actor diagnostics;
 - spatial constraints;
@@ -39,4 +41,5 @@ event and stable actor id remain intact.
 - `on_ground` and `absolute`: nearby collision-free root positions.
 
 Saved scenes hydrate reusable assets from the current registry and preserve the
-director contract so actor upgrades do not require re-directing the lesson.
+director and resource contracts so actor, material, or environment upgrades do
+not require re-directing the lesson.

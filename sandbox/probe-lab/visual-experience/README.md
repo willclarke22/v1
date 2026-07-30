@@ -27,11 +27,12 @@ compatibility views from the director plan.
 
 1. Build a compact semantic draft from the learner message and diagnosis.
 2. Normalize and validate the director plan.
-3. Derive legacy story beats and executable semantic beats.
-4. Resolve reviewed assets without changing actor ids or direction.
-5. Compile spatial constraints, motion tracks, camera tracks, and geometry.
-6. Play immediately in React Three Fiber with scrubbing and guided interaction.
-7. Preserve warnings for behaviours or actors that need a richer future
+3. Derive and validate `myway_scene_resource_plan_v1`.
+4. Derive legacy story beats and executable semantic beats.
+5. Resolve reviewed assets without changing actor ids or direction.
+6. Compile spatial constraints, motion tracks, camera tracks, and geometry.
+7. Play immediately in React Three Fiber with scrubbing and guided interaction.
+8. Preserve warnings for behaviours or actors that need a richer future
    compiler.
 
 ## Asset independence
@@ -53,7 +54,8 @@ premium rendering rather than creating a second lesson-planning format.
 
 ## Key files
 
-- `../director/` — canonical contract, normalization, validation, adapters.
+- `../director/` — canonical educational contract, normalization, validation, adapters.
+- `../scene-resources/` — shared execution-resource intent, validation, and Director adapter.
 - `visual-learning-turn-request.ts` — model prompt and response contract.
 - `assemble-visual-learning-turn.ts` — semantic draft to canonical output.
 - `ui/scene-player/` — compatibility compilation and interactive playback.

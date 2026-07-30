@@ -140,3 +140,32 @@ but the UI exposes every download variant mirrored from the API record. Set
 `MYWAY_AMBIENTCG_MAX_DOWNLOAD_BYTES` or
 `MYWAY_AMBIENTCG_DOWNLOAD_TIMEOUT_MS` to override the local sandbox safety
 limits.
+
+## Phase 2C implemented resolver boundary
+
+The canonical scene-runtime resolver is
+`reviewed-asset-resolver.server.ts`.
+
+It is pure with respect to asset selection:
+
+- no BlendKit, TRELLIS, or missing-asset worker calls;
+- no `reuse_count` mutation or registry save;
+- deterministic registry and request hashes;
+- stable asset-id tie breaking;
+- explicit eligibility rejection reasons;
+- scene approval, semantic verification, licence eligibility, runtime file
+  availability, and cloud readiness required by default;
+- provider-backed appearance-vector reranking disabled for normal runtime use.
+
+`asset-resolver.server.ts` is now a compatibility facade for explicit manual
+tools. Acquisition requires `acquisition_policy: "queue_only"` or
+`"sandbox_synchronous"`. New scene-runtime code calls
+`resolveReviewedAsset()` directly with acquisition policy `never`.
+
+## Phase 2F runtime materials
+
+The ambientCG material registry is now consumed by the shared Resource Runtime.
+Runtime eligibility requires CC0 metadata, a content hash, authoritative R2
+publication, and HTTPS map URLs. Runtime resolution is pure and never invokes
+ambientCG downloading or replacement. Acquisition remains an explicit Asset
+Library operation.

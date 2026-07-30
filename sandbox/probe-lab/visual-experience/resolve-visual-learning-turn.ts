@@ -56,6 +56,9 @@ export function resolveVisualLearningTurn(
     return {
       schema_version: "myway_resolved_visual_learning_turn_v1",
       source_output_valid: validation.valid,
+      resource_plan: null,
+      resource_plan_validation: null,
+      resolved_resources: null,
       render_bindings: [],
       queued_asset_needs: [],
       validation,
@@ -64,12 +67,22 @@ export function resolveVisualLearningTurn(
 
   const visualExperience = asRecord(output.visual_experience);
   const scenePlan = asRecord(visualExperience?.semantic_scene_plan);
+  const resourcePlan =
+    asRecord(scenePlan?.resource_plan) as
+      MyWayResolvedVisualLearningTurn["resource_plan"];
+  const resourcePlanValidation =
+    asRecord(scenePlan?.resource_plan_validation) as
+      MyWayResolvedVisualLearningTurn["resource_plan_validation"];
   const entities = Array.isArray(scenePlan?.entities) ? scenePlan.entities : [];
 
   if (!validation.valid || !entities.length) {
     return {
       schema_version: "myway_resolved_visual_learning_turn_v1",
       source_output_valid: validation.valid,
+      resource_plan: resourcePlan ?? null,
+      resource_plan_validation:
+        resourcePlanValidation ?? null,
+      resolved_resources: null,
       render_bindings: [],
       queued_asset_needs: [],
       validation,
@@ -134,6 +147,10 @@ export function resolveVisualLearningTurn(
   return {
     schema_version: "myway_resolved_visual_learning_turn_v1",
     source_output_valid: validation.valid,
+    resource_plan: resourcePlan ?? null,
+    resource_plan_validation:
+      resourcePlanValidation ?? null,
+    resolved_resources: null,
     render_bindings: renderBindings,
     queued_asset_needs: queuedAssetNeeds,
     validation,

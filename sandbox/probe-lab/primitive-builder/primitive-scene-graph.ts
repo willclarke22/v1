@@ -10,6 +10,12 @@ import {
   type EducationalSceneDirectorPlanV1,
   type EducationalSceneDirectorValidationReport,
 } from "../director";
+import {
+  buildSceneResourcePlanFromDirector,
+  normalizeSceneResourcePlan,
+  type SceneResourcePlanV1,
+  type SceneResourcePlanValidationReport,
+} from "../scene-resources";
 
 export const SCENE_GRAPH_NODE_KINDS = [
   "group",
@@ -120,6 +126,9 @@ export type PrimitiveSceneGraphV2 = {
   /** Canonical educational direction. Assets and layout are late-bound to these stable entity ids. */
   director_plan: EducationalSceneDirectorPlanV1;
   director_validation: EducationalSceneDirectorValidationReport;
+  /** Shared Phase 2 execution-resource intent derived from the Director plan. */
+  resource_plan: SceneResourcePlanV1;
+  resource_plan_validation: SceneResourcePlanValidationReport;
   /** Compatibility reveal beats derived from director_plan or accepted from older saved scenes. */
   beats: PrimitiveSceneGraphBeat[];
   camera?: {
@@ -367,6 +376,16 @@ function makeScaffoldSceneGraph(
       },
     );
 
+  const resourceResult =
+    buildSceneResourcePlanFromDirector(
+      directorResult.plan,
+      {
+        source: "scaffold",
+        scene_id: "request_safe_asset_scene",
+        primitive_requirements: [],
+      },
+    );
+
   return {
     schema_version: "primitive_scene_graph_v2",
     user_request: userRequest,
@@ -395,6 +414,10 @@ function makeScaffoldSceneGraph(
       directorResult.plan,
     director_validation:
       directorResult.validation,
+    resource_plan:
+      resourceResult.plan,
+    resource_plan_validation:
+      resourceResult.validation,
     beats: [],
   };
 }
@@ -669,6 +692,40 @@ export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string):
       ids,
       nodes.map((node) => node.id),
     );
+  const resourceSceneId = text(
+    source.scene_id,
+    cleanId(
+      text(
+        source.scene_title,
+        userRequest,
+      ),
+      "primitive_scene",
+    ),
+  );
+  const resourceResult =
+    source.resource_plan
+      ? normalizeSceneResourcePlan(
+          source.resource_plan,
+          {
+            source: "primitive_builder",
+            scene_id: resourceSceneId,
+            director_schema_version:
+              directorResult.plan
+                .schema_version,
+          },
+        )
+      : buildSceneResourcePlanFromDirector(
+          directorResult.plan,
+          {
+            source: "primitive_builder",
+            scene_id: resourceSceneId,
+            primitive_requirements:
+              assetRequirements,
+          },
+        );
+  warnings.push(
+    ...resourceResult.warnings,
+  );
 
   const cameraRecord = asRecord(source.camera) ?? {};
   const lightingRecord = asRecord(source.lighting) ?? {};
@@ -691,6 +748,10 @@ export function normalizePrimitiveSceneGraph(raw: unknown, userRequest: string):
         directorResult.plan,
       director_validation:
         directorResult.validation,
+      resource_plan:
+        resourceResult.plan,
+      resource_plan_validation:
+        resourceResult.validation,
       beats: directorBeats.length
         ? directorBeats
         : compatibilityBeats.length

@@ -22,6 +22,11 @@ import type {
   EducationalSceneDirectorPlanV1,
   EducationalSceneDirectorValidationReport,
 } from "../director";
+import type {
+  ResolvedSceneResourcesV1,
+  SceneResourcePlanV1,
+  SceneResourcePlanValidationReport,
+} from "../scene-resources";
 export type VisualLearningTurnInput = {
   schema_version: "myway_visual_learning_turn_input_v1";
   input_kind: "user_message" | "evaluated_probe_attempt";
@@ -266,6 +271,10 @@ export type SemanticScenePlan = {
   director_plan?: EducationalSceneDirectorPlanV1 | null;
   /** Validation produced when the canonical director plan is normalized. */
   director_validation?: EducationalSceneDirectorValidationReport | null;
+  /** Shared Phase 2 resource intent derived from the canonical Director plan. */
+  resource_plan?: SceneResourcePlanV1 | null;
+  /** Validation for resource ids, targets, fallbacks, and budgets. */
+  resource_plan_validation?: SceneResourcePlanValidationReport | null;
   /** Compatibility view derived from director_plan for the current renderer. */
   directed_scene?: Record<string, unknown> | null;
   /** Optional beat-level director instructions. The older beats array remains the executable compatibility layer. */
@@ -375,6 +384,9 @@ export type VisualPersonalizationHypothesis = {
 export type MyWayResolvedVisualLearningTurn = {
   schema_version: "myway_resolved_visual_learning_turn_v1";
   source_output_valid: boolean;
+  resource_plan?: SceneResourcePlanV1 | null;
+  resource_plan_validation?: SceneResourcePlanValidationReport | null;
+  resolved_resources?: ResolvedSceneResourcesV1 | null;
   render_bindings: RenderBinding[];
   queued_asset_needs: QueuedAssetNeed[];
   asset_resolution_warnings?: string[];
@@ -425,6 +437,9 @@ export type VisualLearningTurnValidationReport = {
   director_plan_present?: boolean;
   director_plan_valid?: boolean;
   director_plan_issue_count?: number;
+  resource_plan_present?: boolean;
+  resource_plan_valid?: boolean;
+  resource_plan_issue_count?: number;
 };
 
 export const DEFAULT_VISUAL_LEARNING_RENDERER_CAPABILITIES: VisualLearningRendererCapabilities = {

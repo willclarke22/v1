@@ -21,6 +21,10 @@ import {
   directorPlanToLegacyStoryBeats,
   normalizeEducationalSceneDirectorPlan,
 } from "../director";
+import {
+  buildSceneResourcePlanFromDirector,
+  normalizeSceneResourcePlan,
+} from "../scene-resources";
 
 const EXPERIENCE_MODES: VisualExperienceMode[] = [
   "model_selected_scene",
@@ -574,6 +578,33 @@ export function normalizeVisualLearningTurnOutput(
           legacy_beats: scenePlan.beats,
         },
       );
+    const resourceSceneId = text(
+      strictOutput.topic_resolution
+        ?.topic_id,
+      text(
+        visualExperience.title,
+        "visual_experience_scene",
+      ),
+    );
+    const resourceResult =
+      scenePlan.resource_plan
+        ? normalizeSceneResourcePlan(
+            scenePlan.resource_plan,
+            {
+              source: "visual_experience",
+              scene_id: resourceSceneId,
+              director_schema_version:
+                directorResult.plan
+                  .schema_version,
+            },
+          )
+        : buildSceneResourcePlanFromDirector(
+            directorResult.plan,
+            {
+              source: "visual_experience",
+              scene_id: resourceSceneId,
+            },
+          );
     const orientationIds = asArray(
       visualExperience.orientation_segments,
     )
@@ -603,6 +634,10 @@ export function normalizeVisualLearningTurnOutput(
               directorResult.plan,
             director_validation:
               directorResult.validation,
+            resource_plan:
+              resourceResult.plan,
+            resource_plan_validation:
+              resourceResult.validation,
             directed_scene:
               directorPlanToLegacyDirectedScene(
                 directorResult.plan,
@@ -633,8 +668,10 @@ export function normalizeVisualLearningTurnOutput(
             ? "Strict output already contained a director plan; MyWay normalized and validated it."
             : "Strict output was upgraded with a canonical director plan and derived compatibility views.",
         ],
-        warnings:
-          directorResult.warnings,
+        warnings: [
+          ...directorResult.warnings,
+          ...resourceResult.warnings,
+        ],
       },
     };
   }
@@ -711,6 +748,32 @@ export function normalizeVisualLearningTurnOutput(
     );
   const directorPlan =
     directorResult.plan;
+  const resourceSceneId = text(
+    asRecord(raw.topic_resolution)
+      ?.topic_id,
+    text(
+      visualExperience?.title,
+      `${topicLabel} visual model`,
+    ),
+  );
+  const resourceResult =
+    rawScenePlan?.resource_plan
+      ? normalizeSceneResourcePlan(
+          rawScenePlan.resource_plan,
+          {
+            source: "visual_experience",
+            scene_id: resourceSceneId,
+            director_schema_version:
+              directorPlan.schema_version,
+          },
+        )
+      : buildSceneResourcePlanFromDirector(
+          directorPlan,
+          {
+            source: "visual_experience",
+            scene_id: resourceSceneId,
+          },
+        );
   const storyBeats =
     directorPlanToLegacyStoryBeats(
       directorPlan,
@@ -778,6 +841,10 @@ export function normalizeVisualLearningTurnOutput(
         director_plan: directorPlan,
         director_validation:
           directorResult.validation,
+        resource_plan:
+          resourceResult.plan,
+        resource_plan_validation:
+          resourceResult.validation,
         directed_scene:
           directorPlanToLegacyDirectedScene(
             directorPlan,
@@ -812,6 +879,7 @@ export function normalizeVisualLearningTurnOutput(
       warnings: [
         ...warnings,
         ...directorResult.warnings,
+        ...resourceResult.warnings,
       ],
     },
   };

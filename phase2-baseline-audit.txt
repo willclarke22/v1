@@ -1,0 +1,81 @@
+﻿MYWAY PHASE 2 BASELINE AUDIT
+Generated: 2026-07-30T10:49:19.9877700-07:00
+Project root: C:\Users\willc\projects\MyWay\v1
+
+--- Git branch ---
+main
+
+--- Git commit ---
+5a5566317cf7579849f60c4fe2acdb85bb9d9ae2
+
+--- Git status --short ---
+ M sandbox-content-command-without-jobs.txt
+ M sandbox/probe-lab/ARCHITECTURE.md
+ M sandbox/probe-lab/primitive-builder/README.md
+ M sandbox/probe-lab/primitive-builder/primitive-scene-graph.ts
+ M sandbox/probe-lab/scenes/README.md
+ M sandbox/probe-lab/scenes/resolve-scene-assets.server.ts
+ M sandbox/probe-lab/scenes/resolved-scene.ts
+ M sandbox/probe-lab/scenes/scene-manifest.ts
+ M sandbox/probe-lab/scenes/validate-scene-manifest.ts
+ M sandbox/probe-lab/visual-experience/README.md
+ M sandbox/probe-lab/visual-experience/normalize-visual-learning-turn-output.ts
+ M sandbox/probe-lab/visual-experience/resolve-visual-learning-turn.ts
+ M sandbox/probe-lab/visual-experience/validate-visual-learning-turn.ts
+ M sandbox/probe-lab/visual-experience/visual-learning-turn.ts
+?? archive/structure-snapshots/project-file-structure-20260730-000817.txt
+?? myway-sandbox-active-files-one-notepad.txt
+?? phase2-baseline-audit.txt
+?? sandbox/probe-lab/CLEANUP_INVENTORY.md
+?? sandbox/probe-lab/PHASE2_BASELINE.md
+?? sandbox/probe-lab/scene-resources/
+?? scripts/sandbox/
+
+--- Node version ---
+v22.16.0
+
+--- pnpm version ---
+10.32.1
+
+--- Canonical Phase 2 files ---
+sandbox\probe-lab\ARCHITECTURE.md | exists=True | files=1 | bytes=4460
+sandbox\probe-lab\PHASE2_BASELINE.md | exists=True | files=1 | bytes=4592
+sandbox\probe-lab\CLEANUP_INVENTORY.md | exists=True | files=1 | bytes=4066
+sandbox\probe-lab\director\director-contract.ts | exists=True | files=1 | bytes=6062
+sandbox\probe-lab\director\normalize-director-plan.ts | exists=True | files=1 | bytes=48516
+sandbox\probe-lab\scene-resources\scene-resource-contract.ts | exists=True | files=1 | bytes=10099
+sandbox\probe-lab\scene-resources\normalize-scene-resource-plan.ts | exists=True | files=1 | bytes=17901
+sandbox\probe-lab\scene-resources\resource-plan-adapters.ts | exists=True | files=1 | bytes=8928
+sandbox\probe-lab\scene-resources\validate-scene-resource-plan.ts | exists=True | files=1 | bytes=14904
+sandbox\probe-lab\primitive-builder\primitive-scene-graph.ts | exists=True | files=1 | bytes=29629
+sandbox\probe-lab\visual-experience\visual-learning-turn.ts | exists=True | files=1 | bytes=15074
+sandbox\probe-lab\visual-experience\normalize-visual-learning-turn-output.ts | exists=True | files=1 | bytes=34473
+sandbox\probe-lab\scenes\scene-manifest.ts | exists=True | files=1 | bytes=3539
+sandbox\probe-lab\scenes\validate-scene-manifest.ts | exists=True | files=1 | bytes=8996
+sandbox\probe-lab\assets\asset-types.ts | exists=True | files=1 | bytes=11429
+sandbox\probe-lab\assets\asset-library.server.ts | exists=True | files=1 | bytes=35391
+sandbox\probe-lab\assets\asset-resolver.server.ts | exists=True | files=1 | bytes=23019
+sandbox\probe-lab\assets\catalog\ambientcg\ambientcg-types.ts | exists=True | files=1 | bytes=7159
+sandbox\probe-lab\assets\storage\r2-asset-storage.server.ts | exists=True | files=1 | bytes=8539
+
+--- Generated-state and cleanup candidates ---
+sandbox\probe-lab\assets\debug | exists=True | files=17 | bytes=549616
+sandbox\probe-lab\assets\embeddings | exists=True | files=41 | bytes=1526119
+sandbox\probe-lab\assets\acquisition\missing-asset-jobs.json | exists=True | files=1 | bytes=12491
+sandbox\probe-lab\assets\downloads\ambientcg\jobs.json | exists=True | files=1 | bytes=95
+sandbox\probe-lab\blender-python-builder\jobs | exists=True | files=36 | bytes=137107
+sandbox\probe-lab\assets\library\source-records | exists=True | files=41 | bytes=138625
+sandbox\probe-lab\assets\library\licenses | exists=True | files=42 | bytes=64991
+
+--- Active sandbox text-file count ---
+Files: 372
+Bytes: 4490221
+
+--- Phase 2B contract invariants ---
+Director remains educational source of truth.
+Resource plan schema: myway_scene_resource_plan_v1
+Default acquisition policy: never
+Stable entity ids preserved by fallback policy: true
+Environment intent is scene-level.
+Materials target entity slots or named surfaces.
+

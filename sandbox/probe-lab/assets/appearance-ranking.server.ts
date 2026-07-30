@@ -415,11 +415,14 @@ export async function evaluateAppearanceRanking(input: {
   request: unknown;
   candidates: MyWayAssetRecord[];
   enabled?: boolean;
+  vectorSimilarity?: boolean;
 }): Promise<AssetAppearanceRankingResult> {
   const request = normalizeAppearanceRequest(input.request);
   const requested =
     input.enabled !== false &&
     hasAppearanceIntent(request);
+  const vectorSimilarityEnabled =
+    input.vectorSimilarity === true;
 
   if (!requested || !request) {
     return {
@@ -485,7 +488,10 @@ export async function evaluateAppearanceRanking(input: {
     | null = null;
   let reason: string | null = null;
 
-  if (validStoredVectors.length < 2) {
+  if (!vectorSimilarityEnabled) {
+    reason =
+      "Provider-backed appearance vector similarity is disabled for deterministic Phase 2 resolution. Reviewed appearance-profile traits were still evaluated.";
+  } else if (validStoredVectors.length < 2) {
     reason =
       "Fewer than two eligible candidates had valid local appearance embeddings, so vector similarity was not used.";
   } else {

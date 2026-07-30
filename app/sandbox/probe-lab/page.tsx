@@ -26,6 +26,13 @@ const activeLabs = [
       "GLM 5.2 converts a learner need into a constrained video brief, then Cosmos3 Nano generates and saves an MP4.",
   },
   {
+    href: "/sandbox/probe-lab/resource-runtime",
+    title: "Reviewed Resource Runtime",
+    status: "Phase 2D + 2F runtime proof",
+    description:
+      "Resolve reviewed R2 models and PBR materials, inspect deterministic bindings, compare independent cached instances, test declared fallbacks, and verify Blender temporary hydration.",
+  },
+  {
     href: "/sandbox/probe-lab/visual-experience",
     title: "Visual Experience Workbench",
     status: "active lane",

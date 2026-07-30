@@ -1,4 +1,7 @@
-import { resolveMyWayAsset } from "../assets/asset-resolver.server";
+import {
+  loadReviewedAssetResolverSnapshot,
+  resolveReviewedAsset,
+} from "../assets/reviewed-asset-resolver.server";
 import {
   applyLogicalAssetSizing,
   logicalAssetSizeDecision,
@@ -20,6 +23,9 @@ import {
 import {
   compilePrimitiveGeometryConstraints,
 } from "./primitive-geometry-constraints";
+import {
+  resolveReviewedSceneResources,
+} from "../scene-resources/resolve-reviewed-scene-resources.server";
 
 type SceneNodeReference = {
   node: PrimitiveSceneGraphNode;
@@ -988,6 +994,43 @@ export async function resolvePrimitiveBuilderSceneAssets(
   sceneGraph.asset_requirements =
     sized.requirements;
 
+  const resourceExecution =
+    sceneGraph.resource_plan &&
+    sceneGraph.resource_plan_validation
+      ?.valid !== false
+      ? await resolveReviewedSceneResources(
+          sceneGraph.resource_plan,
+          {
+            require_cloud_ready: true,
+          },
+        )
+      : null;
+  const resourceResultByEntityId =
+    new Map(
+      (
+        resourceExecution
+          ?.model_resolutions ?? []
+      ).map((entry) => [
+        entry.intent.entity_id,
+        entry.result,
+      ]),
+    );
+  const sharedSnapshot =
+    resourceExecution?.snapshot ??
+    (await loadReviewedAssetResolverSnapshot());
+
+  if (resourceExecution) {
+    warnings.push(
+      ...resourceExecution
+        .resolved_resources.warnings.map(
+          (warning) =>
+            warning.intent_id
+              ? `${warning.intent_id}: ${warning.message}`
+              : warning.message,
+        ),
+    );
+  }
+
   for (const requirement of sized.requirements) {
     const sizeDecision =
       sized.decisions.get(
@@ -1006,25 +1049,44 @@ export async function resolvePrimitiveBuilderSceneAssets(
         `${requirement.concept}: logical size adjusted from ${sizeDecision.requested_target_extent_m.toFixed(2)} m to ${sizeDecision.target_extent_m.toFixed(2)} m. ${sizeDecision.reason}`,
       );
     }
-    const result = await resolveMyWayAsset({
-      concept: requirement.concept,
-      aliases: requirement.aliases,
-      semantic_tags: requirement.semantic_tags,
-      appearance_request:
-        requirement.appearance_request,
-      target_extent_m: requirement.target_extent_m,
-      desired_composition:
-        requirement.must_be_separate
-          ? "single_object"
-          : undefined,
-      allow_blenderkit: false,
-      allow_trellis: false,
-      require_scene_approved: true,
-      require_semantic_verified: true,
-      minimum_match_score: 48,
-      minimum_match_margin: 6,
-      candidate_limit: 5,
-    });
+    const sharedResult =
+      resourceResultByEntityId.get(
+        requirement.instance_id,
+      );
+    const result =
+      sharedResult ??
+      (await resolveReviewedAsset(
+        {
+          concept:
+            requirement.concept,
+          aliases:
+            requirement.aliases,
+          semantic_tags:
+            requirement.semantic_tags,
+          appearance_request:
+            requirement.appearance_request,
+          appearance_ranking: false,
+          target_extent_m:
+            requirement.target_extent_m,
+          desired_composition:
+            requirement.must_be_separate
+              ? "single_object"
+              : undefined,
+          acquisition_policy: "never",
+          require_scene_approved: true,
+          require_semantic_verified: true,
+          require_license_eligible: true,
+          require_cloud_ready: true,
+          minimum_match_score: 48,
+          minimum_match_margin: 6,
+          candidate_limit: 8,
+          record_reuse: false,
+          debug_write: false,
+        },
+        {
+          snapshot: sharedSnapshot,
+        },
+      ));
 
     warnings.push(
       ...result.warnings.map(
@@ -1091,6 +1153,13 @@ export async function resolvePrimitiveBuilderSceneAssets(
       sceneGraph.director_plan,
     director_validation:
       sceneGraph.director_validation,
+    resource_plan:
+      sceneGraph.resource_plan,
+    resource_plan_validation:
+      sceneGraph.resource_plan_validation,
+    resolved_resources:
+      resourceExecution
+        ?.resolved_resources,
     bindings,
     unresolved_requirements: unresolved,
     unresolved_diagnostics:

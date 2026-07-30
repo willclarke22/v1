@@ -6,6 +6,11 @@ import type {
 import {
   normalizeEducationalSceneDirectorPlan,
 } from "../director";
+import {
+  buildSceneResourcePlanFromDirector,
+  normalizeSceneResourcePlan,
+  type PrimitiveAssetRequirementLike,
+} from "../scene-resources";
 
 export function safeSceneId(value: string) {
   return value
@@ -266,6 +271,38 @@ export function validateSceneManifest(
         },
       )
     : null;
+  const rawResourcePlan =
+    item.resource_plan ??
+    sceneGraphRecord?.resource_plan ??
+    null;
+  const resourceResult = rawResourcePlan
+    ? normalizeSceneResourcePlan(
+        rawResourcePlan,
+        {
+          source,
+          scene_id: sceneId,
+          director_schema_version:
+            directorResult?.plan
+              .schema_version ?? null,
+        },
+      )
+    : directorResult
+      ? buildSceneResourcePlanFromDirector(
+          directorResult.plan,
+          {
+            source,
+            scene_id: sceneId,
+            primitive_requirements:
+              Array.isArray(
+                sceneGraphRecord
+                  ?.asset_requirements,
+              )
+                ? (sceneGraphRecord
+                    ?.asset_requirements as PrimitiveAssetRequirementLike[])
+                : [],
+          },
+        )
+      : null;
 
   const scene: MyWaySceneManifestV2 = {
     schema_version: "myway_scene_manifest_v2",
@@ -285,6 +322,14 @@ export function validateSceneManifest(
       directorResult?.plan ?? null,
     director_validation:
       directorResult?.validation ?? null,
+    resource_plan:
+      resourceResult?.plan ?? null,
+    resource_plan_validation:
+      resourceResult?.validation ?? null,
+    resolved_resources:
+      record(item.resolved_resources)
+        ? (item.resolved_resources as MyWaySceneManifestV2["resolved_resources"])
+        : null,
     scene_graph: item.scene_graph ?? null,
     primitive_plan: item.primitive_plan ?? null,
     asset_requirements: Array.isArray(

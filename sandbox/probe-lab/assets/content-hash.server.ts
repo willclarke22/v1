@@ -16,3 +16,37 @@ export async function hashFile(filePath: string) {
 export function stableTextHash(value: string) {
   return createHash("sha256").update(value).digest("hex");
 }
+
+function stableJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stableJsonValue);
+  }
+
+  if (
+    value !== null &&
+    typeof value === "object"
+  ) {
+    return Object.fromEntries(
+      Object.keys(
+        value as Record<string, unknown>,
+      )
+        .sort()
+        .map((key) => [
+          key,
+          stableJsonValue(
+            (value as Record<string, unknown>)[key],
+          ),
+        ]),
+    );
+  }
+
+  return value;
+}
+
+export function stableJsonStringify(value: unknown) {
+  return JSON.stringify(stableJsonValue(value));
+}
+
+export function stableJsonHash(value: unknown) {
+  return stableTextHash(stableJsonStringify(value));
+}
