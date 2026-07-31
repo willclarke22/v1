@@ -191,10 +191,16 @@ function StatePanel({
 
 export function MaterialRuntimeSection({
   modelBinding,
+  onBindingChange,
 }: {
   modelBinding:
     | RuntimeModelBindingV1
     | null;
+  onBindingChange?: (
+    binding:
+      | RuntimeMaterialBindingV1
+      | null,
+  ) => void;
 }) {
   const [
     materials,
@@ -304,6 +310,15 @@ export function MaterialRuntimeSection({
         selectedMaterialId,
       ],
     );
+
+  useEffect(() => {
+    onBindingChange?.(
+      binding,
+    );
+  }, [
+    binding,
+    onBindingChange,
+  ]);
 
   const refreshCache =
     useCallback(() => {
@@ -1017,3 +1032,5 @@ export function MaterialRuntimeSection({
     </section>
   );
 }
+
+

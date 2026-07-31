@@ -157,3 +157,17 @@ loads PBR maps with correct colour-space policy, applies independent material
 instances to primitives and explicit GLB overrides, and translates the same
 binding into a temporary Blender Principled BSDF hydration report. Full HDRI
 environment execution and teaching-lab migration remain open.
+
+## Phase 2G baseline
+
+The Resource Runtime now contains an isolated reviewed environment and lighting
+proof. It includes deterministic ambientCG HDRI resolution, no-acquisition
+fallback behavior, an exact-URL R2 proxy, HDR/EXR loader selection, renderer-
+local PMREM ownership, independent lighting/background controls, ACES Filmic
+tone mapping, exposure and shadow policy, deterministic fallback rigs, browser
+cache diagnostics, and Blender World hydration/cleanup.
+
+The active ambientCG HDRI registry may legitimately be empty. In that state the
+fallback bindings remain the required production-safe behavior, and the HDRI
+button remains unavailable until an HDRI has been reviewed and published to R2.
+

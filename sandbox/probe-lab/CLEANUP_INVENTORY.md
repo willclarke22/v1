@@ -157,3 +157,30 @@ canonical future runtime path, not an additional selection system.
   each request.
 - Material resolver diagnostics are response data, not source-controlled debug
   artifacts.
+
+## Phase 2G lighting classification
+
+Canonical shared runtime:
+
+- `resource-runtime/environment-runtime-contract.ts`
+- `resource-runtime/environment-runtime-policy.ts`
+- `resource-runtime/reviewed-environment-resolver.server.ts`
+- `resource-runtime/browser-environment-runtime.ts`
+- `resource-runtime/environment-proxy.server.ts`
+- `resource-runtime/hydrate-runtime-environment-for-blender.server.ts`
+
+Compatibility or lab-specific lighting:
+
+- Resource Runtime model/material canvases retain their earlier local light rigs
+  for isolated Phase 2D/2F tests.
+- Primitive Builder, Manual Turn, Motion & Camera Library, and Visual Experience
+  light setups remain lab-specific until Phase 2H composition/migration work.
+- No existing lab light rig is deleted in Phase 2G.
+
+Generated or temporary environment output:
+
+- browser PMREM targets are renderer-owned and disposable;
+- source downloads are memory-cache entries, not project files;
+- Blender HDR/EXR files live under operating-system temporary directories and
+  are removed before the route returns.
+

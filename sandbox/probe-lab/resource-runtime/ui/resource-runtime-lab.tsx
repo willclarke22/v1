@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -21,9 +22,21 @@ import {
   type ResourceRuntimeInstanceState,
 } from "./resource-runtime-canvas";
 
+import type {
+  RuntimeMaterialBindingV1,
+} from "../material-runtime-contract";
+import type {
+  RuntimeEnvironmentBindingV1,
+} from "../environment-runtime-contract";
 import {
   MaterialRuntimeSection,
 } from "./material-runtime-section";
+import {
+  EnvironmentRuntimeSection,
+} from "./environment-runtime-section";
+import {
+  SharedSceneRuntimeSection,
+} from "./shared-scene-runtime-section";
 
 const cardStyle = {
   border:
@@ -222,6 +235,18 @@ function StatusPanel({
 }
 
 export function ResourceRuntimeLab() {
+  const [
+    materialBinding,
+    setMaterialBinding,
+  ] = useState<
+    RuntimeMaterialBindingV1 | null
+  >(null);
+  const [
+    environmentBinding,
+    setEnvironmentBinding,
+  ] = useState<
+    RuntimeEnvironmentBindingV1 | null
+  >(null);
   const [
     assets,
     setAssets,
@@ -552,7 +577,7 @@ export function ResourceRuntimeLab() {
               "uppercase",
           }}
         >
-          Phase 2D + 2F runtime proof
+          Phase 2D + 2F + 2G + 2H runtime proof
         </p>
         <h1
           style={{
@@ -573,14 +598,13 @@ export function ResourceRuntimeLab() {
             lineHeight: 1.7,
           }}
         >
-          Resolve one reviewed,
-          scene-approved R2 model,
-          hydrate it through the
-          shared browser runtime,
-          inspect lifecycle
-          diagnostics, and verify
-          the temporary Blender
-          download boundary.
+          Resolve reviewed models,
+          materials, and environments;
+          hydrate them through shared
+          browser runtimes; then compose
+          multiple Director-owned actors
+          through one Phase 2H scene
+          lifecycle and diagnostics boundary.
         </p>
 
         <section
@@ -900,6 +924,30 @@ export function ResourceRuntimeLab() {
 
         <MaterialRuntimeSection
           modelBinding={binding}
+          onBindingChange={
+            setMaterialBinding
+          }
+        />
+
+        <EnvironmentRuntimeSection
+          modelBinding={binding}
+          materialBinding={
+            materialBinding
+          }
+          onBindingChange={
+            setEnvironmentBinding
+          }
+        />
+
+        <SharedSceneRuntimeSection
+          assets={assets}
+          primaryModelBinding={binding}
+          primaryMaterialBinding={
+            materialBinding
+          }
+          environmentBinding={
+            environmentBinding
+          }
         />
       </div>
     </main>

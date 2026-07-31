@@ -63,3 +63,12 @@ binding used by the Resource Runtime harness. Full automatic attachment of
 resolved material bindings to every scene pipeline is intentionally deferred
 until the shared runtime migration patch; current teaching-lab behavior is not
 silently changed.
+
+## Environment handoff
+
+Phase 2G keeps environment selection in the reviewed Resource Runtime rather than
+embedding renderer objects in `SceneResourcePlanV1`. The Director may declare
+lighting/background intent; the environment resolver turns that intent into a
+versioned `RuntimeEnvironmentBindingV1`. Model and material entity bindings are
+not rewritten when an environment changes.
+

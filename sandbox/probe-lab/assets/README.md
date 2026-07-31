@@ -169,3 +169,13 @@ Runtime eligibility requires CC0 metadata, a content hash, authoritative R2
 publication, and HTTPS map URLs. Runtime resolution is pure and never invokes
 ambientCG downloading or replacement. Acquisition remains an explicit Asset
 Library operation.
+
+## Reviewed HDRI runtime eligibility
+
+Phase 2G consumes the existing ambientCG HDRI registry without introducing a
+second environment registry. A runtime HDRI must be CC0, content-hashed,
+published to R2, identify its R2 object key, and expose an HTTPS `.hdr` or `.exr`
+URL. Runtime selection is deterministic and never triggers download/acquisition.
+The Resource Runtime uses an exact-registry-URL proxy so browser CORS settings do
+not broaden the trusted resource boundary.
+

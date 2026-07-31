@@ -28,9 +28,9 @@ const activeLabs = [
   {
     href: "/sandbox/probe-lab/resource-runtime",
     title: "Reviewed Resource Runtime",
-    status: "Phase 2D + 2F runtime proof",
+    status: "Phase 2D + 2F + 2G runtime proof",
     description:
-      "Resolve reviewed R2 models and PBR materials, inspect deterministic bindings, compare independent cached instances, test declared fallbacks, and verify Blender temporary hydration.",
+      "Resolve reviewed R2 models, PBR materials, and HDRI environments; inspect deterministic bindings, compare shared caches and fallbacks, and verify Blender temporary hydration.",
   },
   {
     href: "/sandbox/probe-lab/visual-experience",
@@ -122,3 +122,6 @@ export default function ProbeLabPage() {
     </main>
   );
 }
+
+
+

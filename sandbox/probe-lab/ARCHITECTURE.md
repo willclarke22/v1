@@ -1,4 +1,3 @@
-
 # MyWay Probe Lab Architecture
 
 The sandbox is organized around one principle:
@@ -206,3 +205,26 @@ Published ambientCG materials are resolved without acquisition, normalized into
 applied to primitives or explicit GLB overrides. Colour-space, normal-map,
 packed-channel, UV, fallback, and Blender Principled BSDF rules are centralized
 in `resource-runtime/material-map-policy.ts`. HDRI execution remains Phase 2G.
+
+## Phase 2G: reviewed environment runtime
+
+The shared renderer boundary now has a third reviewed-resource lane:
+
+```txt
+Director lighting intent
+→ environment resolver
+→ RuntimeEnvironmentBindingV1
+→ HDRI proxy / deterministic light rig
+→ renderer-local PMREM
+→ scene.environment and background policy
+```
+
+Environment resources remain subordinate to the Director. They may satisfy
+lighting, reflection, background, exposure, and shadow intent, but they may not
+change entity IDs, lesson structure, camera meaning, motion meaning, or
+educational sequencing.
+
+PMREM targets are renderer-owned rather than globally shared across WebGL
+contexts. Downloaded source bytes may be deduplicated globally. This distinction
+prevents cross-canvas GPU resource ownership bugs while retaining network reuse.
+

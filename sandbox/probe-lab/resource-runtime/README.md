@@ -1,3 +1,4 @@
+
 # Reviewed Resource Runtime
 
 The Resource Runtime is the controlled execution boundary between deterministic
@@ -103,3 +104,81 @@ The harness provides:
 HDRI lighting and background execution belongs to Phase 2G. Manual Turn,
 Primitive Builder, and Visual Experience continue using compatibility loaders
 until the shared runtime is migrated into each lab deliberately.
+
+## Phase 2G environment and lighting proof
+
+The environment section proves:
+
+```txt
+Scene lighting intent
+→ deterministic reviewed HDRI selection
+→ allowlisted same-origin hydration
+→ HDR or EXR decoding
+→ renderer-local PMREM processing
+→ PBR environment lighting
+→ independent visible background policy
+→ deterministic light-rig fallback
+→ Blender World translation and cleanup
+```
+
+Only CC0 ambientCG HDRIs that are content-hashed, R2-published, and backed by an
+HTTPS `.hdr` or `.exr` object are eligible. Runtime resolution never starts
+acquisition. An empty or ineligible registry produces an explicit studio,
+diagrammatic, dramatic, or outdoor-daylight fallback binding.
+
+Browser ownership is split deliberately:
+
+- immutable source bytes are deduplicated in the shared download cache;
+- decoded source textures and PMREM render targets are owned per WebGL renderer;
+- active references prevent disposal;
+- idle renderer entries and source downloads can be cleared from the harness;
+- a failed or unsupported environment leaves the model visible under a declared
+  fallback rig rather than producing a black scene.
+
+The canonical renderer policy is ACES Filmic tone mapping, sRGB output, binding-
+controlled exposure, binding-controlled environment/background intensity, and a
+versioned shadow budget. HDRI lighting may be used with an environment
+background, a solid MyWay background, no background, or transparent composition.
+
+Blender hydration maps the same binding to Environment Texture, Texture
+Coordinate, Mapping, Background, and World Output nodes, uses AgX, records
+horizontal rotation and strength, and removes the temporary HDR/EXR afterward.
+
+## Browser HDRI safety budget
+
+Reviewed 8K and 16K HDR/EXR sources remain valid R2 and Blender resources, but the
+browser runtime never uploads those full decoded textures directly to WebGL. The
+source is decoded, then reduced before DataTexture creation and PMREM processing to
+the largest renderer-safe size that fits both the WebGL texture limit and a 96 MiB
+decoded-pixel budget. WebGL2 is capped at 4096 pixels wide and WebGL1 at 2048 pixels
+wide. Half-float 8K environments normally become 4K in the browser; float 8K
+environments normally become 2K. Blender hydration continues using the original
+reviewed 8K file. Runtime diagnostics report source size, browser size, estimated
+bytes, and whether a safety downsample occurred.
+
+## Phase 2H shared scene composition proof
+
+Phase 2H combines the completed model, material, and environment runtimes behind
+one versioned `RuntimeSceneBindingV1`. The binding preserves Director entity ids,
+contains explicit entity-targeted material assignments, carries one renderer and
+environment policy, and declares fallbacks without asking the runtime to invent
+lesson geometry or reinterpret educational direction.
+
+The browser scene coordinator executes one ordered lifecycle:
+
+```txt
+renderer policy
+→ reviewed environment hydration
+→ parallel reviewed model hydration
+→ entity-targeted material application
+→ stable actor placement
+→ ready or degraded scene state
+→ reverse-order release and cache-reference cleanup
+```
+
+The Resource Runtime harness proves two independently owned actors, shared
+immutable downloads, independently mutable material instances, one shared HDRI,
+actor-failure isolation, environment fallback, aggregate timings, total bytes,
+and composition diagnostics. Compatibility adapters are exported for Primitive
+Builder, Visual Experience, and Manual Turn; those lanes remain unmigrated until
+Phase 2I deliberately replaces their compatibility renderers.
