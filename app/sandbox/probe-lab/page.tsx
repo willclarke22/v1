@@ -103,7 +103,7 @@ export default function ProbeLabPage() {
                 color: "inherit",
                 padding: "1rem 1.1rem",
                 borderRadius: "1rem",
-                border: "1px solid rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.09)",
                 background: "rgba(255,255,255,0.04)",
                 boxShadow: "0 18px 40px rgba(0,0,0,0.24)",
               }}
