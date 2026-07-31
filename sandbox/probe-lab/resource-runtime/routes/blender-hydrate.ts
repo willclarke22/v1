@@ -61,6 +61,8 @@ export async function POST(
             body.verify_hash ===
             true,
           retain_debug: false,
+          runtime_origin:
+            request.nextUrl.origin,
         },
       );
 
@@ -111,3 +113,4 @@ export async function POST(
     );
   }
 }
+

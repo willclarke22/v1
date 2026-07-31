@@ -1,9 +1,7 @@
 import {
-  copyFile,
   mkdtemp,
   rm,
   stat,
-  writeFile,
 } from "node:fs/promises";
 import {
   tmpdir,
@@ -11,8 +9,8 @@ import {
 import path from "node:path";
 
 import {
-  publicUrlToProjectPath,
-} from "../assets/paths.server";
+  hydrateRuntimeUrlToFile,
+} from "./hydrate-runtime-url.server";
 import {
   blenderColorSpaceForRole,
   MATERIAL_ROLE_POLICY,
@@ -117,47 +115,24 @@ async function hydrateOne(
   publicUrl: string,
   destination: string,
   fetchImpl: typeof fetch,
+  runtimeOrigin: string | undefined,
 ) {
-  if (
-    /^https:\/\//i.test(
-      publicUrl,
-    )
-  ) {
-    const response =
-      await fetchImpl(
-        publicUrl,
-        {
-          cache: "no-store",
-        },
-      );
-
-    if (!response.ok) {
-      throw new Error(
-        `Material texture download failed (${response.status} ${response.statusText}).`,
-      );
-    }
-
-    await writeFile(
-      destination,
-      Buffer.from(
-        await response.arrayBuffer(),
-      ),
-    );
-    return;
-  }
-
-  await copyFile(
-    publicUrlToProjectPath(
-      publicUrl,
-    ),
+  await hydrateRuntimeUrlToFile({
+    public_url: publicUrl,
     destination,
-  );
+    fetch_impl: fetchImpl,
+    runtime_origin: runtimeOrigin,
+    cache: "no-store",
+    error_label:
+      "Material texture download",
+  });
 }
 
 export async function hydrateRuntimeMaterialForBlender(
   binding: RuntimeMaterialBindingV1,
   options: {
     fetch_impl?: typeof fetch;
+    runtime_origin?: string;
   } = {},
 ): Promise<BlenderHydratedMaterial> {
   if (
@@ -226,6 +201,7 @@ export async function hydrateRuntimeMaterialForBlender(
           localPath,
           options.fetch_impl ??
             fetch,
+          options.runtime_origin,
         );
         const stats =
           await stat(localPath);
@@ -292,3 +268,4 @@ export async function hydrateRuntimeMaterialForBlender(
     throw error;
   }
 }
+

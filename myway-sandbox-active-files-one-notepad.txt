@@ -1,5 +1,5 @@
 MYWAY ACTIVE SANDBOX FILES - ONE NOTEPAD FILE
-Generated: 2026-07-30T15:18:37.8706853-07:00
+Generated: 2026-07-31T14:23:03.4701075-07:00
 Project root: C:\Users\willc\projects\MyWay\v1
 
 Selection rule:
@@ -11,7 +11,7 @@ Selection rule:
 - Exclude .git, .next, node_modules, archive, and .venv.
 - Exclude sandbox\probe-lab\assets\jobs and all files below it.
 
-Included files: 422
+Included files: 429
 
 ========================================================================================================================
 INDEX
@@ -347,97 +347,104 @@ INDEX
 329: sandbox\probe-lab\resource-runtime\browser-environment-runtime.ts [19426 bytes]
 330: sandbox\probe-lab\resource-runtime\browser-glb-runtime.ts [12113 bytes]
 331: sandbox\probe-lab\resource-runtime\browser-material-runtime.ts [16121 bytes]
-332: sandbox\probe-lab\resource-runtime\browser-texture-runtime.ts [11014 bytes]
-333: sandbox\probe-lab\resource-runtime\build-runtime-binding.ts [3080 bytes]
-334: sandbox\probe-lab\resource-runtime\environment-proxy.server.ts [2053 bytes]
-335: sandbox\probe-lab\resource-runtime\environment-runtime-contract.ts [6472 bytes]
-336: sandbox\probe-lab\resource-runtime\environment-runtime-policy.ts [9305 bytes]
-337: sandbox\probe-lab\resource-runtime\hydrate-resolved-model-for-blender.server.ts [4444 bytes]
-338: sandbox\probe-lab\resource-runtime\hydrate-runtime-environment-for-blender.server.ts [5000 bytes]
-339: sandbox\probe-lab\resource-runtime\hydrate-runtime-material-for-blender.server.ts [5328 bytes]
-340: sandbox\probe-lab\resource-runtime\index.ts [179 bytes]
-341: sandbox\probe-lab\resource-runtime\material-map-policy.ts [2613 bytes]
-342: sandbox\probe-lab\resource-runtime\material-runtime-contract.ts [5251 bytes]
-343: sandbox\probe-lab\resource-runtime\material-texture-proxy.server.ts [2235 bytes]
-344: sandbox\probe-lab\resource-runtime\README.md [6630 bytes]
-345: sandbox\probe-lab\resource-runtime\resource-runtime-contract.ts [3176 bytes]
-346: sandbox\probe-lab\resource-runtime\reviewed-environment-resolver.server.ts [16305 bytes]
-347: sandbox\probe-lab\resource-runtime\reviewed-material-resolver.server.ts [16208 bytes]
-348: sandbox\probe-lab\resource-runtime\routes\blender-environment-hydrate.ts [3503 bytes]
-349: sandbox\probe-lab\resource-runtime\routes\blender-hydrate.ts [2338 bytes]
-350: sandbox\probe-lab\resource-runtime\routes\blender-material-hydrate.ts [2937 bytes]
-351: sandbox\probe-lab\resource-runtime\routes\environment-file.ts [3082 bytes]
-352: sandbox\probe-lab\resource-runtime\routes\environments.ts [5333 bytes]
-353: sandbox\probe-lab\resource-runtime\routes\material-texture.ts [2839 bytes]
-354: sandbox\probe-lab\resource-runtime\routes\materials.ts [6587 bytes]
-355: sandbox\probe-lab\resource-runtime\routes\runtime.ts [8109 bytes]
-356: sandbox\probe-lab\resource-runtime\tests\verify-phase2d-runtime.ts [4204 bytes]
-357: sandbox\probe-lab\resource-runtime\tests\verify-phase2f-material-runtime.ts [8874 bytes]
-358: sandbox\probe-lab\resource-runtime\tests\verify-phase2f-texture-proxy.ts [2591 bytes]
-359: sandbox\probe-lab\resource-runtime\tests\verify-phase2g-environment-runtime.ts [8354 bytes]
-360: sandbox\probe-lab\resource-runtime\ui\environment-runtime-canvas.tsx [21214 bytes]
-361: sandbox\probe-lab\resource-runtime\ui\environment-runtime-section.tsx [30350 bytes]
-362: sandbox\probe-lab\resource-runtime\ui\index.ts [205 bytes]
-363: sandbox\probe-lab\resource-runtime\ui\material-runtime-canvas.tsx [15818 bytes]
-364: sandbox\probe-lab\resource-runtime\ui\material-runtime-section.tsx [22724 bytes]
-365: sandbox\probe-lab\resource-runtime\ui\resource-runtime-canvas.tsx [11900 bytes]
-366: sandbox\probe-lab\resource-runtime\ui\resource-runtime-lab.tsx [20402 bytes]
-367: sandbox\probe-lab\scene-resources\index.ts [182 bytes]
-368: sandbox\probe-lab\scene-resources\normalize-scene-resource-plan.ts [17901 bytes]
-369: sandbox\probe-lab\scene-resources\README.md [3275 bytes]
-370: sandbox\probe-lab\scene-resources\resolve-reviewed-scene-resources.server.ts [12527 bytes]
-371: sandbox\probe-lab\scene-resources\resource-plan-adapters.ts [8928 bytes]
-372: sandbox\probe-lab\scene-resources\scene-resource-contract.ts [10899 bytes]
-373: sandbox\probe-lab\scene-resources\validate-scene-resource-plan.ts [14904 bytes]
-374: sandbox\probe-lab\scenes\primitive-geometry-constraints.ts [25645 bytes]
-375: sandbox\probe-lab\scenes\README.md [1618 bytes]
-376: sandbox\probe-lab\scenes\resolve-scene-assets.server.ts [27797 bytes]
-377: sandbox\probe-lab\scenes\resolved-scene.ts [6290 bytes]
-378: sandbox\probe-lab\scenes\routes\scenes.ts [1000 bytes]
-379: sandbox\probe-lab\scenes\scene-manifest.ts [3539 bytes]
-380: sandbox\probe-lab\scenes\scene-store.server.ts [5618 bytes]
-381: sandbox\probe-lab\scenes\ui\constraint-layout.ts [30347 bytes]
-382: sandbox\probe-lab\scenes\ui\index.ts [479 bytes]
-383: sandbox\probe-lab\scenes\ui\resolved-asset-model.tsx [30376 bytes]
-384: sandbox\probe-lab\scenes\validate-scene-manifest.ts [8996 bytes]
-385: sandbox\probe-lab\ui\learning-space\probes\probe-lab\probe-template-gallery.tsx [17222 bytes]
-386: sandbox\probe-lab\visual-experience\adapters.ts [1312 bytes]
-387: sandbox\probe-lab\visual-experience\assemble-visual-learning-turn.ts [39774 bytes]
-388: sandbox\probe-lab\visual-experience\asset-intake.md [1901 bytes]
-389: sandbox\probe-lab\visual-experience\asset-store.server.ts [3617 bytes]
-390: sandbox\probe-lab\visual-experience\assets.ts [6589 bytes]
-391: sandbox\probe-lab\visual-experience\compiler-request.md [1450 bytes]
-392: sandbox\probe-lab\visual-experience\compiler.ts [11151 bytes]
-393: sandbox\probe-lab\visual-experience\diagnostic-relationships.ts [16887 bytes]
-394: sandbox\probe-lab\visual-experience\json-extract.ts [1505 bytes]
-395: sandbox\probe-lab\visual-experience\model-provider.server.ts [40283 bytes]
-396: sandbox\probe-lab\visual-experience\model-request.ts [7251 bytes]
-397: sandbox\probe-lab\visual-experience\normalize-visual-learning-turn-output.ts [34473 bytes]
-398: sandbox\probe-lab\visual-experience\README.md [2487 bytes]
-399: sandbox\probe-lab\visual-experience\resolve-visual-learning-turn-assets.server.ts [5985 bytes]
-400: sandbox\probe-lab\visual-experience\resolve-visual-learning-turn.ts [5996 bytes]
-401: sandbox\probe-lab\visual-experience\routes\compile-experience.ts [3286 bytes]
-402: sandbox\probe-lab\visual-experience\routes\full-turn-debug.ts [1852 bytes]
-403: sandbox\probe-lab\visual-experience\routes\generate-full-turn.ts [16881 bytes]
-404: sandbox\probe-lab\visual-experience\routes\request-debug.ts [2627 bytes]
-405: sandbox\probe-lab\visual-experience\routes\resolve-full-turn.ts [1651 bytes]
-406: sandbox\probe-lab\visual-experience\schema.ts [10055 bytes]
-407: sandbox\probe-lab\visual-experience\ui\index.ts [190 bytes]
-408: sandbox\probe-lab\visual-experience\ui\scene-player\directed-scene-compiler.ts [47590 bytes]
-409: sandbox\probe-lab\visual-experience\ui\scene-player\index.ts [333 bytes]
-410: sandbox\probe-lab\visual-experience\ui\scene-player\semantic-scene-canvas.tsx [35541 bytes]
-411: sandbox\probe-lab\visual-experience\ui\scene-player\semantic-scene-layout.ts [26764 bytes]
-412: sandbox\probe-lab\visual-experience\ui\scene-player\semantic-scene-player.tsx [16098 bytes]
-413: sandbox\probe-lab\visual-experience\ui\visual-experience-lab.tsx [31941 bytes]
-414: sandbox\probe-lab\visual-experience\ui\visual-experience-player.tsx [3915 bytes]
-415: sandbox\probe-lab\visual-experience\validate-visual-learning-turn.ts [11167 bytes]
-416: sandbox\probe-lab\visual-experience\validate.ts [23539 bytes]
-417: sandbox\probe-lab\visual-experience\visual-learning-semantic-draft.ts [8383 bytes]
-418: sandbox\probe-lab\visual-experience\visual-learning-turn-examples.ts [15929 bytes]
-419: sandbox\probe-lab\visual-experience\visual-learning-turn-request.ts [44826 bytes]
-420: sandbox\probe-lab\visual-experience\visual-learning-turn.ts [15158 bytes]
-421: sandbox\README.md [570 bytes]
-422: sandbox\sandbox-reorg-manifest.txt [3272 bytes]
+332: sandbox\probe-lab\resource-runtime\browser-scene-runtime.ts [17243 bytes]
+333: sandbox\probe-lab\resource-runtime\browser-texture-runtime.ts [11014 bytes]
+334: sandbox\probe-lab\resource-runtime\build-runtime-binding.ts [3080 bytes]
+335: sandbox\probe-lab\resource-runtime\build-scene-runtime-binding.ts [7789 bytes]
+336: sandbox\probe-lab\resource-runtime\environment-proxy.server.ts [2053 bytes]
+337: sandbox\probe-lab\resource-runtime\environment-runtime-contract.ts [6472 bytes]
+338: sandbox\probe-lab\resource-runtime\environment-runtime-policy.ts [9305 bytes]
+339: sandbox\probe-lab\resource-runtime\hydrate-resolved-model-for-blender.server.ts [4444 bytes]
+340: sandbox\probe-lab\resource-runtime\hydrate-runtime-environment-for-blender.server.ts [5000 bytes]
+341: sandbox\probe-lab\resource-runtime\hydrate-runtime-material-for-blender.server.ts [5328 bytes]
+342: sandbox\probe-lab\resource-runtime\index.ts [311 bytes]
+343: sandbox\probe-lab\resource-runtime\material-map-policy.ts [2613 bytes]
+344: sandbox\probe-lab\resource-runtime\material-runtime-contract.ts [5251 bytes]
+345: sandbox\probe-lab\resource-runtime\material-texture-proxy.server.ts [2235 bytes]
+346: sandbox\probe-lab\resource-runtime\README.md [7831 bytes]
+347: sandbox\probe-lab\resource-runtime\resource-runtime-contract.ts [3176 bytes]
+348: sandbox\probe-lab\resource-runtime\reviewed-environment-resolver.server.ts [16305 bytes]
+349: sandbox\probe-lab\resource-runtime\reviewed-material-resolver.server.ts [16208 bytes]
+350: sandbox\probe-lab\resource-runtime\routes\blender-environment-hydrate.ts [3503 bytes]
+351: sandbox\probe-lab\resource-runtime\routes\blender-hydrate.ts [2338 bytes]
+352: sandbox\probe-lab\resource-runtime\routes\blender-material-hydrate.ts [2937 bytes]
+353: sandbox\probe-lab\resource-runtime\routes\environment-file.ts [3082 bytes]
+354: sandbox\probe-lab\resource-runtime\routes\environments.ts [5333 bytes]
+355: sandbox\probe-lab\resource-runtime\routes\material-texture.ts [2839 bytes]
+356: sandbox\probe-lab\resource-runtime\routes\materials.ts [6587 bytes]
+357: sandbox\probe-lab\resource-runtime\routes\runtime.ts [8109 bytes]
+358: sandbox\probe-lab\resource-runtime\scene-runtime-adapters.ts [2322 bytes]
+359: sandbox\probe-lab\resource-runtime\scene-runtime-contract.ts [4249 bytes]
+360: sandbox\probe-lab\resource-runtime\tests\verify-phase2d-runtime.ts [4204 bytes]
+361: sandbox\probe-lab\resource-runtime\tests\verify-phase2f-material-runtime.ts [8874 bytes]
+362: sandbox\probe-lab\resource-runtime\tests\verify-phase2f-texture-proxy.ts [2591 bytes]
+363: sandbox\probe-lab\resource-runtime\tests\verify-phase2g-environment-runtime.ts [8354 bytes]
+364: sandbox\probe-lab\resource-runtime\tests\verify-phase2h-scene-runtime.ts [7207 bytes]
+365: sandbox\probe-lab\resource-runtime\ui\environment-runtime-canvas.tsx [21214 bytes]
+366: sandbox\probe-lab\resource-runtime\ui\environment-runtime-section.tsx [30599 bytes]
+367: sandbox\probe-lab\resource-runtime\ui\index.ts [356 bytes]
+368: sandbox\probe-lab\resource-runtime\ui\material-runtime-canvas.tsx [15818 bytes]
+369: sandbox\probe-lab\resource-runtime\ui\material-runtime-section.tsx [22724 bytes]
+370: sandbox\probe-lab\resource-runtime\ui\resource-runtime-canvas.tsx [11900 bytes]
+371: sandbox\probe-lab\resource-runtime\ui\resource-runtime-lab.tsx [21059 bytes]
+372: sandbox\probe-lab\resource-runtime\ui\shared-scene-runtime-canvas.tsx [9709 bytes]
+373: sandbox\probe-lab\resource-runtime\ui\shared-scene-runtime-section.tsx [17083 bytes]
+374: sandbox\probe-lab\scene-resources\index.ts [182 bytes]
+375: sandbox\probe-lab\scene-resources\normalize-scene-resource-plan.ts [17901 bytes]
+376: sandbox\probe-lab\scene-resources\README.md [3275 bytes]
+377: sandbox\probe-lab\scene-resources\resolve-reviewed-scene-resources.server.ts [12527 bytes]
+378: sandbox\probe-lab\scene-resources\resource-plan-adapters.ts [8928 bytes]
+379: sandbox\probe-lab\scene-resources\scene-resource-contract.ts [10899 bytes]
+380: sandbox\probe-lab\scene-resources\validate-scene-resource-plan.ts [14904 bytes]
+381: sandbox\probe-lab\scenes\primitive-geometry-constraints.ts [25645 bytes]
+382: sandbox\probe-lab\scenes\README.md [1618 bytes]
+383: sandbox\probe-lab\scenes\resolve-scene-assets.server.ts [27797 bytes]
+384: sandbox\probe-lab\scenes\resolved-scene.ts [6290 bytes]
+385: sandbox\probe-lab\scenes\routes\scenes.ts [1000 bytes]
+386: sandbox\probe-lab\scenes\scene-manifest.ts [3539 bytes]
+387: sandbox\probe-lab\scenes\scene-store.server.ts [5618 bytes]
+388: sandbox\probe-lab\scenes\ui\constraint-layout.ts [30347 bytes]
+389: sandbox\probe-lab\scenes\ui\index.ts [479 bytes]
+390: sandbox\probe-lab\scenes\ui\resolved-asset-model.tsx [30376 bytes]
+391: sandbox\probe-lab\scenes\validate-scene-manifest.ts [8996 bytes]
+392: sandbox\probe-lab\ui\learning-space\probes\probe-lab\probe-template-gallery.tsx [17222 bytes]
+393: sandbox\probe-lab\visual-experience\adapters.ts [1312 bytes]
+394: sandbox\probe-lab\visual-experience\assemble-visual-learning-turn.ts [39774 bytes]
+395: sandbox\probe-lab\visual-experience\asset-intake.md [1901 bytes]
+396: sandbox\probe-lab\visual-experience\asset-store.server.ts [3617 bytes]
+397: sandbox\probe-lab\visual-experience\assets.ts [6589 bytes]
+398: sandbox\probe-lab\visual-experience\compiler-request.md [1450 bytes]
+399: sandbox\probe-lab\visual-experience\compiler.ts [11151 bytes]
+400: sandbox\probe-lab\visual-experience\diagnostic-relationships.ts [16887 bytes]
+401: sandbox\probe-lab\visual-experience\json-extract.ts [1505 bytes]
+402: sandbox\probe-lab\visual-experience\model-provider.server.ts [40283 bytes]
+403: sandbox\probe-lab\visual-experience\model-request.ts [7251 bytes]
+404: sandbox\probe-lab\visual-experience\normalize-visual-learning-turn-output.ts [34473 bytes]
+405: sandbox\probe-lab\visual-experience\README.md [2487 bytes]
+406: sandbox\probe-lab\visual-experience\resolve-visual-learning-turn-assets.server.ts [5985 bytes]
+407: sandbox\probe-lab\visual-experience\resolve-visual-learning-turn.ts [5996 bytes]
+408: sandbox\probe-lab\visual-experience\routes\compile-experience.ts [3286 bytes]
+409: sandbox\probe-lab\visual-experience\routes\full-turn-debug.ts [1852 bytes]
+410: sandbox\probe-lab\visual-experience\routes\generate-full-turn.ts [16881 bytes]
+411: sandbox\probe-lab\visual-experience\routes\request-debug.ts [2627 bytes]
+412: sandbox\probe-lab\visual-experience\routes\resolve-full-turn.ts [1651 bytes]
+413: sandbox\probe-lab\visual-experience\schema.ts [10055 bytes]
+414: sandbox\probe-lab\visual-experience\ui\index.ts [190 bytes]
+415: sandbox\probe-lab\visual-experience\ui\scene-player\directed-scene-compiler.ts [47590 bytes]
+416: sandbox\probe-lab\visual-experience\ui\scene-player\index.ts [333 bytes]
+417: sandbox\probe-lab\visual-experience\ui\scene-player\semantic-scene-canvas.tsx [35541 bytes]
+418: sandbox\probe-lab\visual-experience\ui\scene-player\semantic-scene-layout.ts [26764 bytes]
+419: sandbox\probe-lab\visual-experience\ui\scene-player\semantic-scene-player.tsx [16098 bytes]
+420: sandbox\probe-lab\visual-experience\ui\visual-experience-lab.tsx [31941 bytes]
+421: sandbox\probe-lab\visual-experience\ui\visual-experience-player.tsx [3915 bytes]
+422: sandbox\probe-lab\visual-experience\validate-visual-learning-turn.ts [11167 bytes]
+423: sandbox\probe-lab\visual-experience\validate.ts [23539 bytes]
+424: sandbox\probe-lab\visual-experience\visual-learning-semantic-draft.ts [8383 bytes]
+425: sandbox\probe-lab\visual-experience\visual-learning-turn-examples.ts [15929 bytes]
+426: sandbox\probe-lab\visual-experience\visual-learning-turn-request.ts [44826 bytes]
+427: sandbox\probe-lab\visual-experience\visual-learning-turn.ts [15158 bytes]
+428: sandbox\README.md [570 bytes]
+429: sandbox\sandbox-reorg-manifest.txt [3272 bytes]
 
 
 ========================================================================================================================
@@ -1033,7 +1040,7 @@ export default function ProbeLabPage() {
                 color: "inherit",
                 padding: "1rem 1.1rem",
                 borderRadius: "1rem",
-                border: "1px solid rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.09)",
                 background: "rgba(255,255,255,0.04)",
                 boxShadow: "0 18px 40px rgba(0,0,0,0.24)",
               }}
@@ -155056,7 +155063,641 @@ export async function acquireRuntimeMaterial(
 
 
 ########################################################################################################################
-FILE 332: sandbox\probe-lab\resource-runtime\browser-texture-runtime.ts
+FILE 332: sandbox\probe-lab\resource-runtime\browser-scene-runtime.ts
+SIZE BYTES: 17243
+########################################################################################################################
+
+"use client";
+
+import * as THREE from "three";
+
+import {
+  acquireRuntimeEnvironment,
+  type RuntimeEnvironmentInstance,
+} from "./browser-environment-runtime";
+import {
+  acquireRuntimeGlb,
+  disposeRuntimeScene,
+} from "./browser-glb-runtime";
+import {
+  acquireRuntimeMaterial,
+  applyRuntimeMaterialToScene,
+  disposeRuntimeMaterial,
+} from "./browser-material-runtime";
+import {
+  validateRuntimeSceneBinding,
+} from "./build-scene-runtime-binding";
+import type {
+  RuntimeSceneActorBindingV1,
+  RuntimeSceneActorState,
+  RuntimeSceneBindingV1,
+  RuntimeSceneDiagnostics,
+  RuntimeSceneState,
+} from "./scene-runtime-contract";
+
+export type RuntimeSceneProgressListener = (
+  state: RuntimeSceneState,
+) => void;
+
+export type RuntimeSceneInstance = {
+  group: THREE.Group;
+  environment: RuntimeEnvironmentInstance | null;
+  state: RuntimeSceneState;
+  release: () => void;
+};
+
+function emptyActorState(
+  actor: RuntimeSceneActorBindingV1,
+): RuntimeSceneActorState {
+  return {
+    entity_id: actor.entity_id,
+    asset_id: actor.model?.asset_id ?? null,
+    phase: "idle",
+    fallback_used: null,
+    error: null,
+    model_metrics: null,
+    material_metrics: [],
+    warnings: [],
+  };
+}
+
+function publish(
+  listener: RuntimeSceneProgressListener | undefined,
+  state: RuntimeSceneState,
+  updates: Partial<RuntimeSceneState>,
+) {
+  const next = {
+    ...state,
+    ...updates,
+  } satisfies RuntimeSceneState;
+  listener?.(next);
+  return next;
+}
+
+function fitActor(
+  group: THREE.Group,
+  actor: RuntimeSceneActorBindingV1,
+) {
+  group.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(group);
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
+  const largest = Math.max(size.x, size.y, size.z, 0.001);
+  const normalizedScale = 2.3 / largest;
+
+  group.position.sub(center);
+  group.scale.setScalar(
+    normalizedScale * actor.transform.scale,
+  );
+  group.rotation.set(...actor.transform.rotation_radians);
+  group.updateMatrixWorld(true);
+
+  const fittedBounds = new THREE.Box3().setFromObject(group);
+  group.position.y -= fittedBounds.min.y;
+  group.position.x += actor.transform.position[0];
+  group.position.y += actor.transform.position[1];
+  group.position.z += actor.transform.position[2];
+  group.name = `runtime_actor:${actor.entity_id}`;
+  group.userData.myway_entity_id = actor.entity_id;
+  group.userData.myway_intent_id = actor.intent_id;
+
+  return group;
+}
+
+function fallbackProxy(
+  actor: RuntimeSceneActorBindingV1,
+  label: string,
+) {
+  const group = new THREE.Group();
+  const geometry =
+    actor.model?.fallback?.fallback_used === "abstract_proxy"
+      ? new THREE.IcosahedronGeometry(0.9, 1)
+      : new THREE.BoxGeometry(1.45, 1.45, 1.45);
+  const material = new THREE.MeshStandardMaterial({
+    color: "#f59e0b",
+    roughness: 0.58,
+    metalness: 0.04,
+    wireframe: true,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.y = 0.75;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.name = `fallback_proxy:${actor.entity_id}`;
+  mesh.userData.fallback_label = label;
+  group.add(mesh);
+  group.position.set(...actor.transform.position);
+  group.rotation.set(...actor.transform.rotation_radians);
+  group.scale.setScalar(actor.transform.scale);
+  group.name = `runtime_actor:${actor.entity_id}`;
+  group.userData.myway_entity_id = actor.entity_id;
+  group.userData.myway_fallback = true;
+  return group;
+}
+
+function materialBindingsForActor(
+  binding: RuntimeSceneBindingV1,
+  actor: RuntimeSceneActorBindingV1,
+) {
+  const ids = new Set(actor.material_binding_ids);
+  return binding.materials.filter((material) =>
+    ids.has(material.material_binding_id),
+  );
+}
+
+function isAbort(error: unknown) {
+  return (
+    error instanceof DOMException &&
+    error.name === "AbortError"
+  );
+}
+
+async function hydrateActor(
+  sceneBinding: RuntimeSceneBindingV1,
+  actor: RuntimeSceneActorBindingV1,
+  options: {
+    signal?: AbortSignal;
+    verify_hash?: boolean;
+    simulate_failure_entity_id?: string | null;
+    on_actor_state?: (
+      state: RuntimeSceneActorState,
+    ) => void;
+  },
+) {
+  const releases: Array<() => void> = [];
+  let ownedScene: THREE.Group | null = null;
+  let state = emptyActorState(actor);
+
+  const update = (
+    updates: Partial<RuntimeSceneActorState>,
+  ) => {
+    state = {
+      ...state,
+      ...updates,
+    };
+    options.on_actor_state?.(state);
+  };
+
+  try {
+    update({ phase: "hydrating_model" });
+
+    if (
+      options.simulate_failure_entity_id === actor.entity_id
+    ) {
+      throw new Error(
+        `Intentional Phase 2H actor failure for ${actor.entity_id}.`,
+      );
+    }
+
+    if (!actor.model) {
+      throw new Error(
+        `No runtime model binding exists for ${actor.entity_id}.`,
+      );
+    }
+
+    const model = await acquireRuntimeGlb(actor.model, {
+      signal: options.signal,
+      verify_hash: options.verify_hash,
+    });
+    releases.push(model.release);
+    ownedScene = fitActor(model.scene, actor);
+    update({
+      model_metrics: model.metrics,
+      phase: "applying_materials",
+    });
+
+    for (const materialBinding of materialBindingsForActor(
+      sceneBinding,
+      actor,
+    )) {
+      let acquired:
+        | Awaited<ReturnType<typeof acquireRuntimeMaterial>>
+        | null = null;
+      try {
+        acquired = await acquireRuntimeMaterial(
+          materialBinding,
+          {
+            signal: options.signal,
+          },
+        );
+        const application = applyRuntimeMaterialToScene(
+          ownedScene,
+          acquired.material,
+          materialBinding,
+        );
+        acquired.metrics.applied_mesh_count =
+          application.applied_mesh_count;
+        acquired.metrics.applied_slot_count =
+          application.applied_slot_count;
+        acquired.metrics.application = application.application;
+        releases.push(acquired.release);
+        update({
+          material_metrics: [
+            ...state.material_metrics,
+            acquired.metrics,
+          ],
+          warnings: [
+            ...state.warnings,
+            ...acquired.warnings,
+            ...(application.warning
+              ? [application.warning]
+              : []),
+          ],
+        });
+        acquired = null;
+      } catch (error) {
+        if (acquired) {
+          disposeRuntimeMaterial(acquired.material);
+          acquired.release();
+        }
+        if (isAbort(error)) throw error;
+        if (
+          sceneBinding.fallback_policy.missing_material ===
+          "fail_scene"
+        ) {
+          throw error;
+        }
+        update({
+          fallback_used:
+            state.fallback_used ?? "preserve_original_material",
+          warnings: [
+            ...state.warnings,
+            `${materialBinding.material_resource_id}: ${
+              error instanceof Error
+                ? error.message
+                : String(error)
+            }`,
+          ],
+        });
+      }
+    }
+
+    update({ phase: "ready" });
+
+    return {
+      object: ownedScene,
+      state,
+      releases,
+    };
+  } catch (error) {
+    if (isAbort(error)) {
+      if (ownedScene) disposeRuntimeScene(ownedScene);
+      [...releases].reverse().forEach((release) => release());
+      throw error;
+    }
+
+    if (
+      sceneBinding.fallback_policy.missing_model ===
+      "fail_scene" &&
+      actor.required
+    ) {
+      if (ownedScene) disposeRuntimeScene(ownedScene);
+      [...releases].reverse().forEach((release) => release());
+      throw error;
+    }
+
+    if (ownedScene) disposeRuntimeScene(ownedScene);
+    [...releases].reverse().forEach((release) => release());
+
+    const reason =
+      error instanceof Error ? error.message : String(error);
+    const object = fallbackProxy(
+      actor,
+      actor.fallback_label ?? reason,
+    );
+    state = {
+      ...state,
+      phase: "fallback",
+      fallback_used:
+        sceneBinding.fallback_policy.missing_model,
+      error: reason,
+      warnings: [...state.warnings, reason],
+    };
+    options.on_actor_state?.(state);
+
+    return {
+      object,
+      state,
+      releases: [] as Array<() => void>,
+    };
+  }
+}
+
+export async function acquireRuntimeScene(
+  binding: RuntimeSceneBindingV1,
+  renderer: THREE.WebGLRenderer,
+  options: {
+    signal?: AbortSignal;
+    verify_hash?: boolean;
+    simulate_failure_entity_id?: string | null;
+    on_progress?: RuntimeSceneProgressListener;
+  } = {},
+): Promise<RuntimeSceneInstance> {
+  const validation = validateRuntimeSceneBinding(binding);
+  if (!validation.valid) {
+    throw new Error(
+      `Runtime scene binding is invalid: ${validation.issues.join(
+        "; ",
+      )}`,
+    );
+  }
+
+  const startedAt = performance.now();
+  let state: RuntimeSceneState = {
+    phase: "idle",
+    scene_id: binding.scene_id,
+    models_ready: 0,
+    materials_ready: 0,
+    environment_ready: false,
+    actor_states: binding.actors.map(emptyActorState),
+    fallbacks_active: [],
+    warnings: [...binding.warnings],
+    error: null,
+    diagnostics: null,
+  };
+  const group = new THREE.Group();
+  group.name = `runtime_scene:${binding.scene_id}`;
+  group.userData.myway_scene_id = binding.scene_id;
+
+  let environment: RuntimeEnvironmentInstance | null = null;
+  const environmentStartedAt = performance.now();
+  const fallbackRecords:
+    RuntimeSceneDiagnostics["fallback_records"] = [];
+
+  state = publish(options.on_progress, state, {
+    phase: "hydrating_environment",
+  });
+
+  if (
+    binding.environment?.lighting_mode === "hdri" &&
+    binding.environment.public_url
+  ) {
+    try {
+      environment = await acquireRuntimeEnvironment(
+        binding.environment,
+        renderer,
+        {
+          verify_hash: options.verify_hash,
+        },
+      );
+      state = publish(options.on_progress, state, {
+        environment_ready: true,
+      });
+    } catch (error) {
+      if (isAbort(error)) throw error;
+      if (
+        binding.fallback_policy.missing_environment ===
+        "fail_scene"
+      ) {
+        throw error;
+      }
+      const reason =
+        error instanceof Error ? error.message : String(error);
+      fallbackRecords.push({
+        resource_kind: "environment",
+        entity_id: null,
+        fallback_used:
+          binding.fallback_policy.missing_environment,
+        reason,
+      });
+      state = publish(options.on_progress, state, {
+        warnings: [...state.warnings, reason],
+        fallbacks_active: [
+          ...state.fallbacks_active,
+          binding.fallback_policy.missing_environment,
+        ],
+      });
+    }
+  } else {
+    fallbackRecords.push({
+      resource_kind: "environment",
+      entity_id: null,
+      fallback_used:
+        binding.fallback_policy.missing_environment,
+      reason: "No reviewed HDRI binding was supplied to the composed scene.",
+    });
+    state = publish(options.on_progress, state, {
+      fallbacks_active: [
+        ...state.fallbacks_active,
+        binding.fallback_policy.missing_environment,
+      ],
+    });
+  }
+
+  const environmentMs = performance.now() - environmentStartedAt;
+  const actorsStartedAt = performance.now();
+  state = publish(options.on_progress, state, {
+    phase: "hydrating_models",
+  });
+
+  const actorStates = new Map(
+    state.actor_states.map((actor) => [actor.entity_id, actor]),
+  );
+
+  try {
+    const hydratedActors = await Promise.all(
+      binding.actors.map((actor) =>
+        hydrateActor(binding, actor, {
+          signal: options.signal,
+          verify_hash: options.verify_hash,
+          simulate_failure_entity_id:
+            options.simulate_failure_entity_id,
+          on_actor_state: (actorState) => {
+            actorStates.set(actorState.entity_id, actorState);
+            state = publish(options.on_progress, state, {
+              phase:
+                actorState.phase === "applying_materials"
+                  ? "applying_materials"
+                  : "hydrating_models",
+              actor_states: binding.actors.map(
+                (candidate) =>
+                  actorStates.get(candidate.entity_id) ??
+                  emptyActorState(candidate),
+              ),
+            });
+          },
+        }),
+      ),
+    );
+
+    hydratedActors.forEach((actor) => group.add(actor.object));
+    const modelsReady = hydratedActors.filter(
+      (actor) => actor.state.phase === "ready",
+    ).length;
+    const materialsReady = hydratedActors.reduce(
+      (sum, actor) =>
+        sum + actor.state.material_metrics.length,
+      0,
+    );
+
+    for (const actor of hydratedActors) {
+      if (actor.state.phase === "fallback") {
+        fallbackRecords.push({
+          resource_kind: "model",
+          entity_id: actor.state.entity_id,
+          fallback_used:
+            actor.state.fallback_used ??
+            binding.fallback_policy.missing_model,
+          reason:
+            actor.state.error ??
+            "The model runtime used a declared fallback.",
+        });
+      }
+      const actorBinding = binding.actors.find(
+        (candidate) =>
+          candidate.entity_id === actor.state.entity_id,
+      );
+      if (
+        actorBinding &&
+        actor.state.warnings.length &&
+        actor.state.material_metrics.length <
+          materialBindingsForActor(
+            binding,
+            actorBinding,
+          ).length
+      ) {
+        fallbackRecords.push({
+          resource_kind: "material",
+          entity_id: actor.state.entity_id,
+          fallback_used:
+            binding.fallback_policy.missing_material,
+          reason: actor.state.warnings.join("; "),
+        });
+      }
+    }
+
+    const modelsAndMaterialsMs =
+      performance.now() - actorsStartedAt;
+    const compositionStartedAt = performance.now();
+    group.updateMatrixWorld(true);
+    const compositionMs =
+      performance.now() - compositionStartedAt;
+    const totalMs = performance.now() - startedAt;
+    const finalActorStates = hydratedActors.map(
+      (actor) => actor.state,
+    );
+    const totalDownloadBytes =
+      finalActorStates.reduce(
+        (sum, actor) =>
+          sum +
+          (actor.model_metrics?.byte_size ?? 0) +
+          actor.material_metrics.reduce(
+            (materialSum, material) =>
+              materialSum + material.total_bytes,
+            0,
+          ),
+        environment?.metrics.byte_size ?? 0,
+      );
+
+    const diagnostics: RuntimeSceneDiagnostics = {
+      scene_id: binding.scene_id,
+      source: binding.source,
+      entity_ids: binding.actors.map(
+        (actor) => actor.entity_id,
+      ),
+      model_resource_ids: binding.actors
+        .map((actor) => actor.model?.asset_id ?? null)
+        .filter((value): value is string => Boolean(value)),
+      material_assignments: binding.materials.map(
+        (material) => ({
+          material_binding_id:
+            material.material_binding_id,
+          material_resource_id:
+            material.material_resource_id,
+          target_entity_id:
+            material.target_entity_id,
+        }),
+      ),
+      environment_resource_id:
+        binding.environment?.environment_resource_id ?? null,
+      renderer: binding.renderer,
+      fallback_records: fallbackRecords,
+      total_download_bytes: totalDownloadBytes,
+      environment_metrics: environment?.metrics ?? null,
+      timing: {
+        started_at_ms: startedAt,
+        environment_ms: environmentMs,
+        models_and_materials_ms: modelsAndMaterialsMs,
+        composition_ms: compositionMs,
+        total_ms: totalMs,
+      },
+      cleanup_status: "active",
+    };
+
+    state = publish(options.on_progress, state, {
+      phase:
+        fallbackRecords.length > 0 ||
+        finalActorStates.some(
+          (actor) => actor.warnings.length > 0,
+        )
+          ? "degraded"
+          : "ready",
+      models_ready: modelsReady,
+      materials_ready: materialsReady,
+      environment_ready: Boolean(environment),
+      actor_states: finalActorStates,
+      fallbacks_active: fallbackRecords.map(
+        (record) => record.fallback_used,
+      ),
+      warnings: Array.from(
+        new Set([
+          ...state.warnings,
+          ...finalActorStates.flatMap(
+            (actor) => actor.warnings,
+          ),
+        ]),
+      ),
+      diagnostics,
+    });
+
+    let released = false;
+
+    return {
+      group,
+      environment,
+      state,
+      release: () => {
+        if (released) return;
+        released = true;
+        disposeRuntimeScene(group);
+        [...hydratedActors]
+          .reverse()
+          .forEach((actor) =>
+            [...actor.releases]
+              .reverse()
+              .forEach((release) => release()),
+          );
+        environment?.release();
+        if (state.diagnostics) {
+          state.diagnostics.cleanup_status = "released";
+        }
+      },
+    };
+  } catch (error) {
+    environment?.release();
+    disposeRuntimeScene(group);
+    if (isAbort(error)) {
+      publish(options.on_progress, state, {
+        phase: "cancelled",
+        error: null,
+      });
+      throw error;
+    }
+    const message =
+      error instanceof Error ? error.message : String(error);
+    publish(options.on_progress, state, {
+      phase: "failed",
+      error: message,
+      warnings: [...state.warnings, message],
+    });
+    throw error;
+  }
+}
+
+
+
+########################################################################################################################
+FILE 333: sandbox\probe-lab\resource-runtime\browser-texture-runtime.ts
 SIZE BYTES: 11014
 ########################################################################################################################
 
@@ -155657,7 +156298,7 @@ export function runtimeTextureCacheSnapshot() {
 
 
 ########################################################################################################################
-FILE 333: sandbox\probe-lab\resource-runtime\build-runtime-binding.ts
+FILE 334: sandbox\probe-lab\resource-runtime\build-runtime-binding.ts
 SIZE BYTES: 3080
 ########################################################################################################################
 
@@ -155786,7 +156427,314 @@ export function fallbackForIntent(
 
 
 ########################################################################################################################
-FILE 334: sandbox\probe-lab\resource-runtime\environment-proxy.server.ts
+FILE 335: sandbox\probe-lab\resource-runtime\build-scene-runtime-binding.ts
+SIZE BYTES: 7789
+########################################################################################################################
+
+import {
+  DEFAULT_ENVIRONMENT_SHADOW_POLICY,
+  type RuntimeEnvironmentBindingV1,
+} from "./environment-runtime-contract";
+import type {
+  RuntimeMaterialBindingV1,
+} from "./material-runtime-contract";
+import {
+  DEFAULT_RUNTIME_SCENE_FALLBACK_POLICY,
+  SCENE_RUNTIME_SCHEMA_VERSION,
+  type RuntimeSceneActorTransform,
+  type RuntimeSceneBindingV1,
+  type RuntimeSceneFallbackPolicy,
+  type RuntimeSceneSource,
+} from "./scene-runtime-contract";
+import type {
+  RuntimeModelBindingV1,
+} from "./resource-runtime-contract";
+
+export const SCENE_RUNTIME_ADAPTER_VERSION =
+  "myway_scene_runtime_adapter_v1" as const;
+
+const DEFAULT_TRANSFORM: RuntimeSceneActorTransform = {
+  position: [0, 0, 0],
+  rotation_radians: [0, 0, 0],
+  scale: 1,
+};
+
+function cleanId(value: string, label: string) {
+  const cleaned = value.trim();
+  if (!cleaned) {
+    throw new Error(`${label} cannot be empty.`);
+  }
+  return cleaned;
+}
+
+function finiteTuple(
+  value: [number, number, number] | undefined,
+  fallback: [number, number, number],
+): [number, number, number] {
+  if (
+    value &&
+    value.length === 3 &&
+    value.every(Number.isFinite)
+  ) {
+    return [...value] as [number, number, number];
+  }
+  return [...fallback];
+}
+
+function defaultActorPosition(
+  index: number,
+  count: number,
+): [number, number, number] {
+  if (count <= 1) return [0, 0, 0];
+  const spacing = 3.2;
+  return [
+    (index - (count - 1) / 2) * spacing,
+    0,
+    0,
+  ];
+}
+
+export type BuildRuntimeSceneBindingInput = {
+  scene_id: string;
+  source: RuntimeSceneSource;
+  models: RuntimeModelBindingV1[];
+  materials?: RuntimeMaterialBindingV1[];
+  environment?: RuntimeEnvironmentBindingV1 | null;
+  actor_transforms?: Record<
+    string,
+    Partial<RuntimeSceneActorTransform>
+  >;
+  required_entity_ids?: string[];
+  fallback_labels?: Record<string, string>;
+  fallback_policy?: Partial<RuntimeSceneFallbackPolicy>;
+  created_at?: string;
+  warnings?: string[];
+};
+
+export function validateRuntimeSceneBinding(
+  binding: RuntimeSceneBindingV1,
+) {
+  const issues: string[] = [];
+
+  if (
+    binding.schema_version !==
+    SCENE_RUNTIME_SCHEMA_VERSION
+  ) {
+    issues.push("Unsupported scene runtime schema.");
+  }
+  if (!binding.scene_id.trim()) {
+    issues.push("scene_id is required.");
+  }
+
+  const entityIds = binding.actors.map(
+    (actor) => actor.entity_id,
+  );
+  const duplicateEntityIds = entityIds.filter(
+    (value, index) =>
+      entityIds.indexOf(value) !== index,
+  );
+  if (duplicateEntityIds.length) {
+    issues.push(
+      `Duplicate actor entity ids: ${Array.from(
+        new Set(duplicateEntityIds),
+      ).join(", ")}.`,
+    );
+  }
+
+  const materialIds = binding.materials.map(
+    (material) => material.material_binding_id,
+  );
+  const duplicateMaterialIds = materialIds.filter(
+    (value, index) =>
+      materialIds.indexOf(value) !== index,
+  );
+  if (duplicateMaterialIds.length) {
+    issues.push(
+      `Duplicate material binding ids: ${Array.from(
+        new Set(duplicateMaterialIds),
+      ).join(", ")}.`,
+    );
+  }
+
+  const entitySet = new Set(entityIds);
+  for (const material of binding.materials) {
+    if (!entitySet.has(material.target_entity_id)) {
+      issues.push(
+        `Material ${material.material_binding_id} targets missing entity ${material.target_entity_id}.`,
+      );
+    }
+  }
+
+  for (const actor of binding.actors) {
+    if (
+      actor.model &&
+      actor.model.entity_id !== actor.entity_id
+    ) {
+      issues.push(
+        `Actor ${actor.entity_id} does not match model entity ${actor.model.entity_id}.`,
+      );
+    }
+    for (const materialId of actor.material_binding_ids) {
+      if (!materialIds.includes(materialId)) {
+        issues.push(
+          `Actor ${actor.entity_id} references missing material binding ${materialId}.`,
+        );
+      }
+    }
+  }
+
+  return {
+    valid: issues.length === 0,
+    issues,
+  };
+}
+
+export function buildRuntimeSceneBinding(
+  input: BuildRuntimeSceneBindingInput,
+): RuntimeSceneBindingV1 {
+  const sceneId = cleanId(input.scene_id, "scene_id");
+  const modelEntityIds = input.models.map((model) =>
+    cleanId(model.entity_id, "model entity_id"),
+  );
+  const duplicateModelIds = modelEntityIds.filter(
+    (value, index) =>
+      modelEntityIds.indexOf(value) !== index,
+  );
+  if (duplicateModelIds.length) {
+    throw new Error(
+      `Runtime scene models contain duplicate Director entity ids: ${Array.from(
+        new Set(duplicateModelIds),
+      ).join(", ")}.`,
+    );
+  }
+
+  const required = new Set(
+    input.required_entity_ids ?? modelEntityIds,
+  );
+  const materials: RuntimeMaterialBindingV1[] =
+    (input.materials ?? []).map((material) => ({
+      ...material,
+      maps: { ...material.maps },
+      parameters: { ...material.parameters },
+      uv_transform: {
+        ...material.uv_transform,
+        repeat: [
+          ...material.uv_transform.repeat,
+        ] as [number, number],
+        offset: [
+          ...material.uv_transform.offset,
+        ] as [number, number],
+        center: [
+          ...material.uv_transform.center,
+        ] as [number, number],
+      },
+      warnings: [...material.warnings],
+    }));
+
+  const actors = input.models.map((model, index) => {
+    const override =
+      input.actor_transforms?.[model.entity_id];
+    const transform: RuntimeSceneActorTransform = {
+      position: finiteTuple(
+        override?.position,
+        defaultActorPosition(index, input.models.length),
+      ),
+      rotation_radians: finiteTuple(
+        override?.rotation_radians,
+        DEFAULT_TRANSFORM.rotation_radians,
+      ),
+      scale:
+        typeof override?.scale === "number" &&
+        Number.isFinite(override.scale) &&
+        override.scale > 0
+          ? override.scale
+          : 1,
+    };
+
+    return {
+      entity_id: model.entity_id,
+      intent_id: model.intent_id,
+      model: {
+        ...model,
+        scene_id: sceneId,
+      },
+      material_binding_ids: materials
+        .filter(
+          (material) =>
+            material.target_entity_id === model.entity_id,
+        )
+        .map((material) => material.material_binding_id),
+      required: required.has(model.entity_id),
+      transform,
+      fallback_label:
+        input.fallback_labels?.[model.entity_id] ??
+        model.fallback?.reason ??
+        null,
+    };
+  });
+
+  const environment = input.environment
+    ? {
+        ...input.environment,
+        shadow_policy: {
+          ...input.environment.shadow_policy,
+        },
+        fallback: {
+          ...input.environment.fallback,
+        },
+        provenance: {
+          ...input.environment.provenance,
+        },
+        warnings: [...input.environment.warnings],
+      }
+    : null;
+
+  const binding: RuntimeSceneBindingV1 = {
+    schema_version: SCENE_RUNTIME_SCHEMA_VERSION,
+    scene_id: sceneId,
+    source: input.source,
+    actors,
+    materials,
+    environment,
+    renderer: {
+      tone_mapping: "ACESFilmic",
+      output_color_space: "srgb",
+      exposure: environment?.exposure ?? 1,
+      shadows_enabled:
+        environment?.shadow_policy.enabled ?? true,
+      shadow_policy: {
+        ...(environment?.shadow_policy ??
+          DEFAULT_ENVIRONMENT_SHADOW_POLICY),
+      },
+    },
+    fallback_policy: {
+      ...DEFAULT_RUNTIME_SCENE_FALLBACK_POLICY,
+      ...input.fallback_policy,
+      preserve_entity_ids: true,
+      preserve_direction: true,
+    },
+    created_at:
+      input.created_at ?? new Date().toISOString(),
+    adapter_version: SCENE_RUNTIME_ADAPTER_VERSION,
+    warnings: [...(input.warnings ?? [])],
+  };
+
+  const validation = validateRuntimeSceneBinding(binding);
+  if (!validation.valid) {
+    throw new Error(
+      `Runtime scene binding is invalid: ${validation.issues.join(
+        "; ",
+      )}`,
+    );
+  }
+
+  return binding;
+}
+
+
+
+########################################################################################################################
+FILE 336: sandbox\probe-lab\resource-runtime\environment-proxy.server.ts
 SIZE BYTES: 2053
 ########################################################################################################################
 
@@ -155902,7 +156850,7 @@ export async function resolveReviewedEnvironmentUrl(
 
 
 ########################################################################################################################
-FILE 335: sandbox\probe-lab\resource-runtime\environment-runtime-contract.ts
+FILE 337: sandbox\probe-lab\resource-runtime\environment-runtime-contract.ts
 SIZE BYTES: 6472
 ########################################################################################################################
 
@@ -156168,7 +157116,7 @@ export const DEFAULT_ENVIRONMENT_FALLBACK:
 
 
 ########################################################################################################################
-FILE 336: sandbox\probe-lab\resource-runtime\environment-runtime-policy.ts
+FILE 338: sandbox\probe-lab\resource-runtime\environment-runtime-policy.ts
 SIZE BYTES: 9305
 ########################################################################################################################
 
@@ -156609,7 +157557,7 @@ export function normalizeShadowPolicy(
 
 
 ########################################################################################################################
-FILE 337: sandbox\probe-lab\resource-runtime\hydrate-resolved-model-for-blender.server.ts
+FILE 339: sandbox\probe-lab\resource-runtime\hydrate-resolved-model-for-blender.server.ts
 SIZE BYTES: 4444
 ########################################################################################################################
 
@@ -156849,7 +157797,7 @@ export async function readHydratedModelBytes(
 
 
 ########################################################################################################################
-FILE 338: sandbox\probe-lab\resource-runtime\hydrate-runtime-environment-for-blender.server.ts
+FILE 340: sandbox\probe-lab\resource-runtime\hydrate-runtime-environment-for-blender.server.ts
 SIZE BYTES: 5000
 ########################################################################################################################
 
@@ -157120,7 +158068,7 @@ export async function hydrateRuntimeEnvironmentForBlender(
 
 
 ########################################################################################################################
-FILE 339: sandbox\probe-lab\resource-runtime\hydrate-runtime-material-for-blender.server.ts
+FILE 341: sandbox\probe-lab\resource-runtime\hydrate-runtime-material-for-blender.server.ts
 SIZE BYTES: 5328
 ########################################################################################################################
 
@@ -157422,19 +158370,23 @@ export async function hydrateRuntimeMaterialForBlender(
 
 
 ########################################################################################################################
-FILE 340: sandbox\probe-lab\resource-runtime\index.ts
-SIZE BYTES: 179
+FILE 342: sandbox\probe-lab\resource-runtime\index.ts
+SIZE BYTES: 311
 ########################################################################################################################
+
 
 export * from "./resource-runtime-contract";
 export * from "./build-runtime-binding";
 export * from "./material-runtime-contract";
 export * from "./environment-runtime-contract";
+export * from "./scene-runtime-contract";
+export * from "./build-scene-runtime-binding";
+export * from "./scene-runtime-adapters";
 
 
 
 ########################################################################################################################
-FILE 341: sandbox\probe-lab\resource-runtime\material-map-policy.ts
+FILE 343: sandbox\probe-lab\resource-runtime\material-map-policy.ts
 SIZE BYTES: 2613
 ########################################################################################################################
 
@@ -157582,7 +158534,7 @@ export function uniqueTextureUrls(
 
 
 ########################################################################################################################
-FILE 342: sandbox\probe-lab\resource-runtime\material-runtime-contract.ts
+FILE 344: sandbox\probe-lab\resource-runtime\material-runtime-contract.ts
 SIZE BYTES: 5251
 ########################################################################################################################
 
@@ -157821,7 +158773,7 @@ export type BlenderMaterialHydrationReport = {
 
 
 ########################################################################################################################
-FILE 343: sandbox\probe-lab\resource-runtime\material-texture-proxy.server.ts
+FILE 345: sandbox\probe-lab\resource-runtime\material-texture-proxy.server.ts
 SIZE BYTES: 2235
 ########################################################################################################################
 
@@ -157922,9 +158874,10 @@ export async function resolveReviewedMaterialTextureUrl(
 
 
 ########################################################################################################################
-FILE 344: sandbox\probe-lab\resource-runtime\README.md
-SIZE BYTES: 6630
+FILE 346: sandbox\probe-lab\resource-runtime\README.md
+SIZE BYTES: 7831
 ########################################################################################################################
+
 
 # Reviewed Resource Runtime
 
@@ -158083,10 +159036,37 @@ environments normally become 2K. Blender hydration continues using the original
 reviewed 8K file. Runtime diagnostics report source size, browser size, estimated
 bytes, and whether a safety downsample occurred.
 
+## Phase 2H shared scene composition proof
+
+Phase 2H combines the completed model, material, and environment runtimes behind
+one versioned `RuntimeSceneBindingV1`. The binding preserves Director entity ids,
+contains explicit entity-targeted material assignments, carries one renderer and
+environment policy, and declares fallbacks without asking the runtime to invent
+lesson geometry or reinterpret educational direction.
+
+The browser scene coordinator executes one ordered lifecycle:
+
+```txt
+renderer policy
+→ reviewed environment hydration
+→ parallel reviewed model hydration
+→ entity-targeted material application
+→ stable actor placement
+→ ready or degraded scene state
+→ reverse-order release and cache-reference cleanup
+```
+
+The Resource Runtime harness proves two independently owned actors, shared
+immutable downloads, independently mutable material instances, one shared HDRI,
+actor-failure isolation, environment fallback, aggregate timings, total bytes,
+and composition diagnostics. Compatibility adapters are exported for Primitive
+Builder, Visual Experience, and Manual Turn; those lanes remain unmigrated until
+Phase 2I deliberately replaces their compatibility renderers.
+
 
 
 ########################################################################################################################
-FILE 345: sandbox\probe-lab\resource-runtime\resource-runtime-contract.ts
+FILE 347: sandbox\probe-lab\resource-runtime\resource-runtime-contract.ts
 SIZE BYTES: 3176
 ########################################################################################################################
 
@@ -158224,7 +159204,7 @@ export const EMPTY_RESOURCE_RUNTIME_METRICS: ResourceRuntimeMetrics = {
 
 
 ########################################################################################################################
-FILE 346: sandbox\probe-lab\resource-runtime\reviewed-environment-resolver.server.ts
+FILE 348: sandbox\probe-lab\resource-runtime\reviewed-environment-resolver.server.ts
 SIZE BYTES: 16305
 ########################################################################################################################
 
@@ -158932,7 +159912,7 @@ export function resolveReviewedEnvironment(
 
 
 ########################################################################################################################
-FILE 347: sandbox\probe-lab\resource-runtime\reviewed-material-resolver.server.ts
+FILE 349: sandbox\probe-lab\resource-runtime\reviewed-material-resolver.server.ts
 SIZE BYTES: 16208
 ########################################################################################################################
 
@@ -159686,7 +160666,7 @@ export function isReviewedRuntimeMaterial(
 
 
 ########################################################################################################################
-FILE 348: sandbox\probe-lab\resource-runtime\routes\blender-environment-hydrate.ts
+FILE 350: sandbox\probe-lab\resource-runtime\routes\blender-environment-hydrate.ts
 SIZE BYTES: 3503
 ########################################################################################################################
 
@@ -159845,7 +160825,7 @@ export async function POST(
 
 
 ########################################################################################################################
-FILE 349: sandbox\probe-lab\resource-runtime\routes\blender-hydrate.ts
+FILE 351: sandbox\probe-lab\resource-runtime\routes\blender-hydrate.ts
 SIZE BYTES: 2338
 ########################################################################################################################
 
@@ -159966,7 +160946,7 @@ export async function POST(
 
 
 ########################################################################################################################
-FILE 350: sandbox\probe-lab\resource-runtime\routes\blender-material-hydrate.ts
+FILE 352: sandbox\probe-lab\resource-runtime\routes\blender-material-hydrate.ts
 SIZE BYTES: 2937
 ########################################################################################################################
 
@@ -160107,7 +161087,7 @@ export async function POST(
 
 
 ########################################################################################################################
-FILE 351: sandbox\probe-lab\resource-runtime\routes\environment-file.ts
+FILE 353: sandbox\probe-lab\resource-runtime\routes\environment-file.ts
 SIZE BYTES: 3082
 ########################################################################################################################
 
@@ -160264,7 +161244,7 @@ export async function GET(
 
 
 ########################################################################################################################
-FILE 352: sandbox\probe-lab\resource-runtime\routes\environments.ts
+FILE 354: sandbox\probe-lab\resource-runtime\routes\environments.ts
 SIZE BYTES: 5333
 ########################################################################################################################
 
@@ -160511,7 +161491,7 @@ export async function POST(
 
 
 ########################################################################################################################
-FILE 353: sandbox\probe-lab\resource-runtime\routes\material-texture.ts
+FILE 355: sandbox\probe-lab\resource-runtime\routes\material-texture.ts
 SIZE BYTES: 2839
 ########################################################################################################################
 
@@ -160654,7 +161634,7 @@ export async function GET(
 
 
 ########################################################################################################################
-FILE 354: sandbox\probe-lab\resource-runtime\routes\materials.ts
+FILE 356: sandbox\probe-lab\resource-runtime\routes\materials.ts
 SIZE BYTES: 6587
 ########################################################################################################################
 
@@ -160968,7 +161948,7 @@ export async function POST(
 
 
 ########################################################################################################################
-FILE 355: sandbox\probe-lab\resource-runtime\routes\runtime.ts
+FILE 357: sandbox\probe-lab\resource-runtime\routes\runtime.ts
 SIZE BYTES: 8109
 ########################################################################################################################
 
@@ -161274,7 +162254,293 @@ export async function POST(
 
 
 ########################################################################################################################
-FILE 356: sandbox\probe-lab\resource-runtime\tests\verify-phase2d-runtime.ts
+FILE 358: sandbox\probe-lab\resource-runtime\scene-runtime-adapters.ts
+SIZE BYTES: 2322
+########################################################################################################################
+
+import type {
+  ResolvedSceneResourcesV1,
+  SceneResourcePlanSource,
+} from "../scene-resources/scene-resource-contract";
+import {
+  buildRuntimeModelBinding,
+  fallbackForIntent,
+} from "./build-runtime-binding";
+import {
+  buildRuntimeSceneBinding,
+  type BuildRuntimeSceneBindingInput,
+} from "./build-scene-runtime-binding";
+import type {
+  RuntimeSceneBindingV1,
+  RuntimeSceneSource,
+} from "./scene-runtime-contract";
+
+function sourceForPlan(
+  source: SceneResourcePlanSource,
+): RuntimeSceneSource {
+  if (source === "primitive_builder") {
+    return "primitive_builder";
+  }
+  if (source === "visual_experience") {
+    return "visual_experience";
+  }
+  if (source === "manual_turn") {
+    return "manual_turn";
+  }
+  return "compatibility_adapter";
+}
+
+export type ResolvedSceneRuntimeAdapterInput = Omit<
+  BuildRuntimeSceneBindingInput,
+  "scene_id" | "models" | "source"
+> & {
+  resolved: ResolvedSceneResourcesV1;
+  source?: RuntimeSceneSource;
+};
+
+export function adaptResolvedSceneResourcesToRuntime(
+  input: ResolvedSceneRuntimeAdapterInput,
+): RuntimeSceneBindingV1 {
+  const models = input.resolved.models.map((model) =>
+    buildRuntimeModelBinding(
+      input.resolved,
+      model,
+      fallbackForIntent(
+        input.resolved,
+        model.intent_id,
+      ),
+    ),
+  );
+
+  return buildRuntimeSceneBinding({
+    ...input,
+    scene_id: input.resolved.scene_id,
+    source: input.source ?? "compatibility_adapter",
+    models,
+    warnings: [
+      ...input.resolved.warnings.map(
+        (warning) => warning.message,
+      ),
+      ...(input.warnings ?? []),
+    ],
+  });
+}
+
+export function adaptPrimitiveBuilderSceneRuntime(
+  input: ResolvedSceneRuntimeAdapterInput,
+) {
+  return adaptResolvedSceneResourcesToRuntime({
+    ...input,
+    source: "primitive_builder",
+  });
+}
+
+export function adaptVisualExperienceSceneRuntime(
+  input: ResolvedSceneRuntimeAdapterInput,
+) {
+  return adaptResolvedSceneResourcesToRuntime({
+    ...input,
+    source: "visual_experience",
+  });
+}
+
+export function adaptManualTurnSceneRuntime(
+  input: ResolvedSceneRuntimeAdapterInput,
+) {
+  return adaptResolvedSceneResourcesToRuntime({
+    ...input,
+    source: "manual_turn",
+  });
+}
+
+export function runtimeSceneSourceFromPlanSource(
+  source: SceneResourcePlanSource,
+) {
+  return sourceForPlan(source);
+}
+
+
+
+########################################################################################################################
+FILE 359: sandbox\probe-lab\resource-runtime\scene-runtime-contract.ts
+SIZE BYTES: 4249
+########################################################################################################################
+
+import type {
+  EnvironmentCacheMetric,
+  RuntimeEnvironmentBindingV1,
+  RuntimeShadowPolicy,
+} from "./environment-runtime-contract";
+import type {
+  MaterialRuntimeMetrics,
+  RuntimeMaterialBindingV1,
+} from "./material-runtime-contract";
+import type {
+  ResourceRuntimeMetrics,
+  RuntimeModelBindingV1,
+} from "./resource-runtime-contract";
+
+export const SCENE_RUNTIME_SCHEMA_VERSION =
+  "myway_scene_runtime_v1" as const;
+
+export const SCENE_RUNTIME_PHASES = [
+  "idle",
+  "hydrating_environment",
+  "hydrating_models",
+  "applying_materials",
+  "composing",
+  "ready",
+  "degraded",
+  "failed",
+  "cancelled",
+  "disposed",
+] as const;
+
+export type RuntimeScenePhase =
+  (typeof SCENE_RUNTIME_PHASES)[number];
+
+export type RuntimeSceneSource =
+  | "resource_runtime_harness"
+  | "primitive_builder"
+  | "visual_experience"
+  | "manual_turn"
+  | "compatibility_adapter";
+
+export type RuntimeSceneActorTransform = {
+  position: [number, number, number];
+  rotation_radians: [number, number, number];
+  scale: number;
+};
+
+export type RuntimeSceneActorBindingV1 = {
+  entity_id: string;
+  intent_id: string;
+  model: RuntimeModelBindingV1 | null;
+  material_binding_ids: string[];
+  required: boolean;
+  transform: RuntimeSceneActorTransform;
+  fallback_label: string | null;
+};
+
+export type RuntimeSceneRendererPolicy = {
+  tone_mapping: "ACESFilmic";
+  output_color_space: "srgb";
+  exposure: number;
+  shadows_enabled: boolean;
+  shadow_policy: RuntimeShadowPolicy;
+};
+
+export type RuntimeSceneFallbackPolicy = {
+  preserve_entity_ids: true;
+  preserve_direction: true;
+  missing_model:
+    | "diagrammatic_proxy"
+    | "abstract_proxy"
+    | "preserve_direction_without_actor"
+    | "fail_scene";
+  missing_material:
+    | "neutral_material"
+    | "preserve_original"
+    | "fail_scene";
+  missing_environment:
+    | "studio_rig"
+    | "renderer_default"
+    | "fail_scene";
+};
+
+export type RuntimeSceneBindingV1 = {
+  schema_version:
+    typeof SCENE_RUNTIME_SCHEMA_VERSION;
+  scene_id: string;
+  source: RuntimeSceneSource;
+  actors: RuntimeSceneActorBindingV1[];
+  materials: RuntimeMaterialBindingV1[];
+  environment: RuntimeEnvironmentBindingV1 | null;
+  renderer: RuntimeSceneRendererPolicy;
+  fallback_policy: RuntimeSceneFallbackPolicy;
+  created_at: string;
+  adapter_version: string;
+  warnings: string[];
+};
+
+export type RuntimeSceneActorPhase =
+  | "idle"
+  | "hydrating_model"
+  | "applying_materials"
+  | "ready"
+  | "fallback"
+  | "failed"
+  | "disposed";
+
+export type RuntimeSceneActorState = {
+  entity_id: string;
+  asset_id: string | null;
+  phase: RuntimeSceneActorPhase;
+  fallback_used: string | null;
+  error: string | null;
+  model_metrics: ResourceRuntimeMetrics | null;
+  material_metrics: MaterialRuntimeMetrics[];
+  warnings: string[];
+};
+
+export type RuntimeSceneTiming = {
+  started_at_ms: number;
+  environment_ms: number;
+  models_and_materials_ms: number;
+  composition_ms: number;
+  total_ms: number;
+};
+
+export type RuntimeSceneDiagnostics = {
+  scene_id: string;
+  source: RuntimeSceneSource;
+  entity_ids: string[];
+  model_resource_ids: string[];
+  material_assignments: Array<{
+    material_binding_id: string;
+    material_resource_id: string;
+    target_entity_id: string;
+  }>;
+  environment_resource_id: string | null;
+  renderer: RuntimeSceneRendererPolicy;
+  fallback_records: Array<{
+    resource_kind: "model" | "material" | "environment";
+    entity_id: string | null;
+    fallback_used: string;
+    reason: string;
+  }>;
+  total_download_bytes: number;
+  environment_metrics: EnvironmentCacheMetric | null;
+  timing: RuntimeSceneTiming;
+  cleanup_status: "active" | "released";
+};
+
+export type RuntimeSceneState = {
+  phase: RuntimeScenePhase;
+  scene_id: string | null;
+  models_ready: number;
+  materials_ready: number;
+  environment_ready: boolean;
+  actor_states: RuntimeSceneActorState[];
+  fallbacks_active: string[];
+  warnings: string[];
+  error: string | null;
+  diagnostics: RuntimeSceneDiagnostics | null;
+};
+
+export const DEFAULT_RUNTIME_SCENE_FALLBACK_POLICY:
+  RuntimeSceneFallbackPolicy = {
+    preserve_entity_ids: true,
+    preserve_direction: true,
+    missing_model: "diagrammatic_proxy",
+    missing_material: "preserve_original",
+    missing_environment: "studio_rig",
+  };
+
+
+
+########################################################################################################################
+FILE 360: sandbox\probe-lab\resource-runtime\tests\verify-phase2d-runtime.ts
 SIZE BYTES: 4204
 ########################################################################################################################
 
@@ -161479,7 +162745,7 @@ void main().catch((error) => {
 
 
 ########################################################################################################################
-FILE 357: sandbox\probe-lab\resource-runtime\tests\verify-phase2f-material-runtime.ts
+FILE 361: sandbox\probe-lab\resource-runtime\tests\verify-phase2f-material-runtime.ts
 SIZE BYTES: 8874
 ########################################################################################################################
 
@@ -161941,7 +163207,7 @@ verifyBlenderHydration()
 
 
 ########################################################################################################################
-FILE 358: sandbox\probe-lab\resource-runtime\tests\verify-phase2f-texture-proxy.ts
+FILE 362: sandbox\probe-lab\resource-runtime\tests\verify-phase2f-texture-proxy.ts
 SIZE BYTES: 2591
 ########################################################################################################################
 
@@ -162060,7 +163326,7 @@ console.log(
 
 
 ########################################################################################################################
-FILE 359: sandbox\probe-lab\resource-runtime\tests\verify-phase2g-environment-runtime.ts
+FILE 363: sandbox\probe-lab\resource-runtime\tests\verify-phase2g-environment-runtime.ts
 SIZE BYTES: 8354
 ########################################################################################################################
 
@@ -162477,7 +163743,293 @@ void main();
 
 
 ########################################################################################################################
-FILE 360: sandbox\probe-lab\resource-runtime\ui\environment-runtime-canvas.tsx
+FILE 364: sandbox\probe-lab\resource-runtime\tests\verify-phase2h-scene-runtime.ts
+SIZE BYTES: 7207
+########################################################################################################################
+
+import assert from "node:assert/strict";
+import { access } from "node:fs/promises";
+import { resolve } from "node:path";
+
+import {
+  buildRuntimeSceneBinding,
+  validateRuntimeSceneBinding,
+} from "../build-scene-runtime-binding";
+import {
+  runtimeSceneSourceFromPlanSource,
+} from "../scene-runtime-adapters";
+import type {
+  RuntimeEnvironmentBindingV1,
+} from "../environment-runtime-contract";
+import type {
+  RuntimeMaterialBindingV1,
+} from "../material-runtime-contract";
+import type {
+  RuntimeModelBindingV1,
+} from "../resource-runtime-contract";
+
+function model(
+  entityId: string,
+  assetId: string,
+): RuntimeModelBindingV1 {
+  return {
+    schema_version: "myway_resource_runtime_v1",
+    resource_kind: "model",
+    scene_id: "source_scene",
+    intent_id: `model_${entityId}`,
+    entity_id: entityId,
+    asset_id: assetId,
+    variant_id: `${assetId}:glb`,
+    public_url:
+      `https://assets.example.test/${assetId}.glb`,
+    content_hash: "a".repeat(64),
+    storage_provider: "r2",
+    registry_snapshot_id: "assets:test",
+    registry_content_hash: "b".repeat(64),
+    request_hash: "c".repeat(64),
+    resolver_version:
+      "myway_reviewed_scene_resource_resolver_v1",
+    resolved_at: "2026-07-30T00:00:00.000Z",
+    fallback: null,
+    license: {
+      license_kind: "cc0",
+      license_status: "app_ready",
+      attribution_required: false,
+      attribution_text: null,
+      source_url: null,
+      license_record_path: null,
+    },
+  };
+}
+
+function material(
+  id: string,
+  entityId: string,
+): RuntimeMaterialBindingV1 {
+  return {
+    schema_version: "myway_material_runtime_v1",
+    resource_kind: "material",
+    material_binding_id: id,
+    material_resource_id: "ambientcg_material_test",
+    variant_id: "2k-jpg",
+    content_hash: "d".repeat(64),
+    target_entity_id: entityId,
+    target_slot: null,
+    source_mode: "replace_all",
+    display_name: "Test material",
+    resolution: "2K",
+    normal_map_convention: "opengl",
+    maps: {},
+    parameters: {
+      base_color_factor: "#ffffff",
+      roughness_factor: 0.7,
+      metalness_factor: 0,
+      opacity: 1,
+      emissive_color: "#000000",
+      emissive_intensity: 0,
+      normal_scale: 1,
+      displacement_scale: 0,
+    },
+    uv_transform: {
+      repeat: [2, 2],
+      offset: [0, 0],
+      rotation_radians: 0,
+      center: [0.5, 0.5],
+    },
+    registry_snapshot_id: "materials:test",
+    registry_content_hash: "e".repeat(64),
+    request_hash: "f".repeat(64),
+    resolver_version:
+      "myway_reviewed_material_resolver_v1",
+    resolved_at: "2026-07-30T00:00:00.000Z",
+    provenance: {
+      source_type: "ambientcg",
+      source_asset_id: "TestMaterial",
+      source_url:
+        "https://ambientcg.com/a/TestMaterial",
+      license: "CC0-1.0",
+      attribution_required: false,
+      commercial_use_allowed: true,
+      raw_distribution_allowed: true,
+    },
+    warnings: [],
+  };
+}
+
+const environment: RuntimeEnvironmentBindingV1 = {
+  schema_version: "myway_environment_runtime_v1",
+  resource_kind: "environment",
+  environment_binding_id: "environment:test",
+  environment_resource_id: "ambientcg_hdri_test",
+  variant_id: "2k-hdr",
+  content_hash: "1".repeat(64),
+  display_name: "Test HDRI",
+  format: "hdr",
+  lighting_mode: "hdri",
+  background_mode: "solid_color",
+  public_url:
+    "https://assets.example.test/environment.hdr",
+  object_key: "runtime/hdri/test/environment.hdr",
+  intensity: 1,
+  rotation_radians: 0,
+  background_intensity: 1,
+  background_blurriness: 0,
+  background_color: "#0f172a",
+  exposure: 1,
+  shadow_policy: {
+    enabled: true,
+    quality: "medium",
+    max_shadow_lights: 1,
+    map_size: 1024,
+    softness: 2,
+    bias: -0.0002,
+    normal_bias: 0.02,
+  },
+  fallback: {
+    used: false,
+    reason: null,
+    rig: "studio_rig",
+    ambient_intensity: 0.55,
+    key_light_intensity: 2.6,
+    fill_light_intensity: 1.15,
+    rim_light_intensity: 1.5,
+  },
+  registry_snapshot_id: "environments:test",
+  registry_content_hash: "2".repeat(64),
+  request_hash: "3".repeat(64),
+  resolver_version:
+    "myway_reviewed_environment_resolver_v1",
+  resolved_at: "2026-07-30T00:00:00.000Z",
+  provenance: {
+    source_type: "ambientcg",
+    source_asset_id: "TestHDRI",
+    source_url: "https://ambientcg.com/a/TestHDRI",
+    license: "CC0-1.0",
+    attribution_required: false,
+    commercial_use_allowed: true,
+    raw_distribution_allowed: true,
+  },
+  warnings: [],
+};
+
+async function main() {
+  const primary = model("actor_primary", "apple_asset");
+  const secondary = model("actor_secondary", "barrel_asset");
+  const firstMaterial = material(
+    "material:primary",
+    primary.entity_id,
+  );
+  const secondMaterial = material(
+    "material:secondary",
+    secondary.entity_id,
+  );
+
+  const binding = buildRuntimeSceneBinding({
+    scene_id: "phase2h_fixture",
+    source: "resource_runtime_harness",
+    models: [primary, secondary],
+    materials: [firstMaterial, secondMaterial],
+    environment,
+    actor_transforms: {
+      actor_primary: {
+        position: [-1.5, 0, 0],
+      },
+      actor_secondary: {
+        position: [1.5, 0, 0],
+      },
+    },
+    created_at: "2026-07-30T00:00:00.000Z",
+  });
+
+  assert.equal(
+    binding.schema_version,
+    "myway_scene_runtime_v1",
+  );
+  assert.deepEqual(
+    binding.actors.map((actor) => actor.entity_id),
+    ["actor_primary", "actor_secondary"],
+  );
+  assert.deepEqual(
+    binding.actors[0]?.material_binding_ids,
+    ["material:primary"],
+  );
+  assert.deepEqual(
+    binding.actors[1]?.material_binding_ids,
+    ["material:secondary"],
+  );
+  assert.equal(
+    binding.environment?.environment_resource_id,
+    "ambientcg_hdri_test",
+  );
+  assert.equal(validateRuntimeSceneBinding(binding).valid, true);
+  assert.equal(primary.scene_id, "source_scene");
+  assert.equal(firstMaterial.target_entity_id, "actor_primary");
+
+  assert.throws(
+    () =>
+      buildRuntimeSceneBinding({
+        scene_id: "duplicates",
+        source: "resource_runtime_harness",
+        models: [primary, primary],
+      }),
+    /duplicate Director entity ids/i,
+  );
+
+  assert.throws(
+    () =>
+      buildRuntimeSceneBinding({
+        scene_id: "missing_target",
+        source: "resource_runtime_harness",
+        models: [primary],
+        materials: [
+          material("material:missing", "missing_actor"),
+        ],
+      }),
+    /targets missing entity/i,
+  );
+
+  assert.equal(
+    runtimeSceneSourceFromPlanSource("primitive_builder"),
+    "primitive_builder",
+  );
+  assert.equal(
+    runtimeSceneSourceFromPlanSource("visual_experience"),
+    "visual_experience",
+  );
+  assert.equal(
+    runtimeSceneSourceFromPlanSource("manual_turn"),
+    "manual_turn",
+  );
+  assert.equal(
+    runtimeSceneSourceFromPlanSource("scaffold"),
+    "compatibility_adapter",
+  );
+
+  await access(
+    resolve(
+      process.cwd(),
+      "sandbox/probe-lab/resource-runtime/ui/shared-scene-runtime-canvas.tsx",
+    ),
+  );
+  await access(
+    resolve(
+      process.cwd(),
+      "sandbox/probe-lab/resource-runtime/browser-scene-runtime.ts",
+    ),
+  );
+
+  console.log("Phase 2H scene runtime fixture passed.");
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
+
+
+
+########################################################################################################################
+FILE 365: sandbox\probe-lab\resource-runtime\ui\environment-runtime-canvas.tsx
 SIZE BYTES: 21214
 ########################################################################################################################
 
@@ -163538,9 +165090,10 @@ export {
 
 
 ########################################################################################################################
-FILE 361: sandbox\probe-lab\resource-runtime\ui\environment-runtime-section.tsx
-SIZE BYTES: 30350
+FILE 366: sandbox\probe-lab\resource-runtime\ui\environment-runtime-section.tsx
+SIZE BYTES: 30599
 ########################################################################################################################
+
 
 "use client";
 
@@ -163789,6 +165342,7 @@ function StatePanel({
 export function EnvironmentRuntimeSection({
   modelBinding,
   materialBinding,
+  onBindingChange,
 }: {
   modelBinding:
     | RuntimeModelBindingV1
@@ -163796,6 +165350,11 @@ export function EnvironmentRuntimeSection({
   materialBinding:
     | RuntimeMaterialBindingV1
     | null;
+  onBindingChange?: (
+    binding:
+      | RuntimeEnvironmentBindingV1
+      | null,
+  ) => void;
 }) {
   const [
     environments,
@@ -163936,6 +165495,15 @@ export function EnvironmentRuntimeSection({
       intensity,
       rotationDegrees,
     ]);
+
+  useEffect(() => {
+    onBindingChange?.(
+      effectiveBinding,
+    );
+  }, [
+    effectiveBinding,
+    onBindingChange,
+  ]);
 
   const refreshCache =
     useCallback(() => {
@@ -164891,18 +166459,21 @@ export function EnvironmentRuntimeSection({
 
 
 ########################################################################################################################
-FILE 362: sandbox\probe-lab\resource-runtime\ui\index.ts
-SIZE BYTES: 205
+FILE 367: sandbox\probe-lab\resource-runtime\ui\index.ts
+SIZE BYTES: 356
 ########################################################################################################################
+
 
 export { ResourceRuntimeLab } from "./resource-runtime-lab";
 export { MaterialRuntimeSection } from "./material-runtime-section";
 export { EnvironmentRuntimeSection } from "./environment-runtime-section";
+export { SharedSceneRuntimeCanvas } from "./shared-scene-runtime-canvas";
+export { SharedSceneRuntimeSection } from "./shared-scene-runtime-section";
 
 
 
 ########################################################################################################################
-FILE 363: sandbox\probe-lab\resource-runtime\ui\material-runtime-canvas.tsx
+FILE 368: sandbox\probe-lab\resource-runtime\ui\material-runtime-canvas.tsx
 SIZE BYTES: 15818
 ########################################################################################################################
 
@@ -165670,7 +167241,7 @@ export function MaterialRuntimeCanvas({
 
 
 ########################################################################################################################
-FILE 364: sandbox\probe-lab\resource-runtime\ui\material-runtime-section.tsx
+FILE 369: sandbox\probe-lab\resource-runtime\ui\material-runtime-section.tsx
 SIZE BYTES: 22724
 ########################################################################################################################
 
@@ -166714,7 +168285,7 @@ export function MaterialRuntimeSection({
 
 
 ########################################################################################################################
-FILE 365: sandbox\probe-lab\resource-runtime\ui\resource-runtime-canvas.tsx
+FILE 370: sandbox\probe-lab\resource-runtime\ui\resource-runtime-canvas.tsx
 SIZE BYTES: 11900
 ########################################################################################################################
 
@@ -167330,9 +168901,10 @@ export type {
 
 
 ########################################################################################################################
-FILE 366: sandbox\probe-lab\resource-runtime\ui\resource-runtime-lab.tsx
-SIZE BYTES: 20402
+FILE 371: sandbox\probe-lab\resource-runtime\ui\resource-runtime-lab.tsx
+SIZE BYTES: 21059
 ########################################################################################################################
+
 
 "use client";
 
@@ -167360,12 +168932,18 @@ import {
 import type {
   RuntimeMaterialBindingV1,
 } from "../material-runtime-contract";
+import type {
+  RuntimeEnvironmentBindingV1,
+} from "../environment-runtime-contract";
 import {
   MaterialRuntimeSection,
 } from "./material-runtime-section";
 import {
   EnvironmentRuntimeSection,
 } from "./environment-runtime-section";
+import {
+  SharedSceneRuntimeSection,
+} from "./shared-scene-runtime-section";
 
 const cardStyle = {
   border:
@@ -167569,6 +169147,12 @@ export function ResourceRuntimeLab() {
     setMaterialBinding,
   ] = useState<
     RuntimeMaterialBindingV1 | null
+  >(null);
+  const [
+    environmentBinding,
+    setEnvironmentBinding,
+  ] = useState<
+    RuntimeEnvironmentBindingV1 | null
   >(null);
   const [
     assets,
@@ -167900,7 +169484,7 @@ export function ResourceRuntimeLab() {
               "uppercase",
           }}
         >
-          Phase 2D + 2F runtime proof
+          Phase 2D + 2F + 2G + 2H runtime proof
         </p>
         <h1
           style={{
@@ -167921,14 +169505,13 @@ export function ResourceRuntimeLab() {
             lineHeight: 1.7,
           }}
         >
-          Resolve one reviewed,
-          scene-approved R2 model,
-          hydrate it through the
-          shared browser runtime,
-          inspect lifecycle
-          diagnostics, and verify
-          the temporary Blender
-          download boundary.
+          Resolve reviewed models,
+          materials, and environments;
+          hydrate them through shared
+          browser runtimes; then compose
+          multiple Director-owned actors
+          through one Phase 2H scene
+          lifecycle and diagnostics boundary.
         </p>
 
         <section
@@ -168258,6 +169841,20 @@ export function ResourceRuntimeLab() {
           materialBinding={
             materialBinding
           }
+          onBindingChange={
+            setEnvironmentBinding
+          }
+        />
+
+        <SharedSceneRuntimeSection
+          assets={assets}
+          primaryModelBinding={binding}
+          primaryMaterialBinding={
+            materialBinding
+          }
+          environmentBinding={
+            environmentBinding
+          }
         />
       </div>
     </main>
@@ -168266,11 +169863,1099 @@ export function ResourceRuntimeLab() {
 
 
 
+########################################################################################################################
+FILE 372: sandbox\probe-lab\resource-runtime\ui\shared-scene-runtime-canvas.tsx
+SIZE BYTES: 9709
+########################################################################################################################
+
+"use client";
+
+import {
+  Html,
+  OrbitControls,
+} from "@react-three/drei";
+import {
+  Canvas,
+  useThree,
+} from "@react-three/fiber";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import * as THREE from "three";
+
+import {
+  acquireRuntimeScene,
+} from "../browser-scene-runtime";
+import {
+  fallbackRigLights,
+  type RuntimeFallbackLight,
+} from "../environment-runtime-policy";
+import type {
+  RuntimeSceneBindingV1,
+  RuntimeSceneState,
+} from "../scene-runtime-contract";
+
+function FallbackLight({
+  light,
+  shadowMapSize,
+  shadowBias,
+  shadowNormalBias,
+}: {
+  light: RuntimeFallbackLight;
+  shadowMapSize: number;
+  shadowBias: number;
+  shadowNormalBias: number;
+}) {
+  if (light.kind === "ambient") {
+    return (
+      <ambientLight
+        color={light.color}
+        intensity={light.intensity}
+      />
+    );
+  }
+
+  if (light.kind === "hemisphere") {
+    return (
+      <hemisphereLight
+        color={light.color}
+        groundColor={
+          light.ground_color ?? "#334155"
+        }
+        intensity={light.intensity}
+      />
+    );
+  }
+
+  if (light.kind === "spot") {
+    return (
+      <spotLight
+        color={light.color}
+        intensity={light.intensity}
+        position={light.position ?? [4, 7, 4]}
+        angle={0.65}
+        penumbra={0.8}
+        decay={2}
+        distance={28}
+        castShadow={light.cast_shadow}
+        shadow-mapSize-width={shadowMapSize}
+        shadow-mapSize-height={shadowMapSize}
+        shadow-bias={shadowBias}
+        shadow-normalBias={shadowNormalBias}
+      />
+    );
+  }
+
+  return (
+    <directionalLight
+      color={light.color}
+      intensity={light.intensity}
+      position={light.position ?? [4, 7, 5]}
+      castShadow={light.cast_shadow}
+      shadow-mapSize-width={shadowMapSize}
+      shadow-mapSize-height={shadowMapSize}
+      shadow-bias={shadowBias}
+      shadow-normalBias={shadowNormalBias}
+    />
+  );
+}
+
+function SceneController({
+  binding,
+  verifyHash,
+  simulateFailureEntityId,
+  onState,
+  onFallbackActive,
+}: {
+  binding: RuntimeSceneBindingV1;
+  verifyHash: boolean;
+  simulateFailureEntityId: string | null;
+  onState: (state: RuntimeSceneState) => void;
+  onFallbackActive: (active: boolean) => void;
+}) {
+  const { gl, scene } = useThree();
+  const [group, setGroup] =
+    useState<THREE.Group | null>(null);
+
+  useEffect(() => {
+    const previousToneMapping = gl.toneMapping;
+    const previousExposure = gl.toneMappingExposure;
+    const previousOutput = gl.outputColorSpace;
+
+    gl.toneMapping = THREE.ACESFilmicToneMapping;
+    gl.toneMappingExposure = binding.renderer.exposure;
+    gl.outputColorSpace = THREE.SRGBColorSpace;
+
+    return () => {
+      gl.toneMapping = previousToneMapping;
+      gl.toneMappingExposure = previousExposure;
+      gl.outputColorSpace = previousOutput;
+    };
+  }, [binding.renderer.exposure, gl]);
+
+  useEffect(() => {
+    const dynamicScene = scene as THREE.Scene & {
+      environmentIntensity?: number;
+      backgroundIntensity?: number;
+      backgroundBlurriness?: number;
+      environmentRotation?: THREE.Euler;
+      backgroundRotation?: THREE.Euler;
+    };
+    const environment = binding.environment;
+
+    dynamicScene.environmentIntensity =
+      environment?.intensity ?? 1;
+    dynamicScene.backgroundIntensity =
+      environment?.background_intensity ?? 1;
+    dynamicScene.backgroundBlurriness =
+      environment?.background_blurriness ?? 0;
+    dynamicScene.environmentRotation?.set(
+      0,
+      environment?.rotation_radians ?? 0,
+      0,
+    );
+    dynamicScene.backgroundRotation?.set(
+      0,
+      environment?.rotation_radians ?? 0,
+      0,
+    );
+    gl.toneMappingExposure = binding.renderer.exposure;
+  }, [binding, gl, scene]);
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const previousEnvironment = scene.environment;
+    const previousBackground = scene.background;
+    let release: (() => void) | null = null;
+
+    setGroup(null);
+    onFallbackActive(true);
+
+    acquireRuntimeScene(binding, gl, {
+      signal: controller.signal,
+      verify_hash: verifyHash,
+      simulate_failure_entity_id:
+        simulateFailureEntityId,
+      on_progress: (state) => {
+        if (active) onState(state);
+      },
+    })
+      .then((instance) => {
+        if (!active) {
+          instance.release();
+          return;
+        }
+
+        release = instance.release;
+        setGroup(instance.group);
+
+        const environmentBinding = binding.environment;
+        if (instance.environment) {
+          scene.environment =
+            instance.environment.environment_texture;
+
+          if (
+            environmentBinding?.background_mode ===
+            "environment"
+          ) {
+            scene.background =
+              instance.environment.source_texture;
+          } else if (
+            environmentBinding?.background_mode ===
+            "solid_color"
+          ) {
+            scene.background = new THREE.Color(
+              environmentBinding.background_color,
+            );
+          } else {
+            scene.background = null;
+          }
+          onFallbackActive(false);
+        } else {
+          scene.environment = null;
+          scene.background =
+            environmentBinding?.background_mode ===
+            "solid_color"
+              ? new THREE.Color(
+                  environmentBinding.background_color,
+                )
+              : new THREE.Color("#0f172a");
+          onFallbackActive(true);
+        }
+      })
+      .catch((error) => {
+        if (!active) return;
+        if (
+          error instanceof DOMException &&
+          error.name === "AbortError"
+        ) {
+          return;
+        }
+        onFallbackActive(true);
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+      setGroup(null);
+      release?.();
+      scene.environment = previousEnvironment;
+      scene.background = previousBackground;
+    };
+  }, [
+    binding,
+    gl,
+    onFallbackActive,
+    onState,
+    scene,
+    simulateFailureEntityId,
+    verifyHash,
+  ]);
+
+  if (!group) {
+    return (
+      <Html center position={[0, 1.4, 0]}>
+        <div
+          style={{
+            border:
+              "1px solid rgba(125,211,252,0.42)",
+            borderRadius: "0.8rem",
+            background: "rgba(2,6,23,0.9)",
+            color: "#dbeafe",
+            padding: "0.65rem 0.85rem",
+            fontSize: "0.75rem",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Hydrating and composing shared scene…
+        </div>
+      </Html>
+    );
+  }
+
+  return <primitive object={group} />;
+}
+
+export function SharedSceneRuntimeCanvas({
+  binding,
+  verifyHash,
+  simulateFailureEntityId,
+  onState,
+}: {
+  binding: RuntimeSceneBindingV1;
+  verifyHash: boolean;
+  simulateFailureEntityId: string | null;
+  onState: (state: RuntimeSceneState) => void;
+}) {
+  const [fallbackActive, setFallbackActive] =
+    useState(true);
+
+  const environment = binding.environment;
+  const shadowPolicy = binding.renderer.shadow_policy;
+  const fallbackLights = useMemo(
+    () =>
+      fallbackRigLights(
+        environment?.fallback.rig ?? "studio_rig",
+        {
+          ambient:
+            environment?.fallback.ambient_intensity ??
+            0.55,
+          key:
+            environment?.fallback.key_light_intensity ??
+            2.6,
+          fill:
+            environment?.fallback.fill_light_intensity ??
+            1.15,
+          rim:
+            environment?.fallback.rim_light_intensity ??
+            1.5,
+        },
+      ),
+    [environment],
+  );
+
+  const onFallbackChange = useCallback(
+    (active: boolean) => setFallbackActive(active),
+    [],
+  );
+
+  return (
+    <div
+      style={{
+        height: "min(72vh, 760px)",
+        minHeight: "540px",
+        overflow: "hidden",
+        borderRadius: "1rem",
+        border:
+          "1px solid rgba(34,211,238,0.28)",
+        background:
+          "linear-gradient(180deg, #0f172a, #020617)",
+      }}
+    >
+      <Canvas
+        shadows={binding.renderer.shadows_enabled}
+        camera={{
+          position: [7.5, 4.8, 9.5],
+          fov: 40,
+          near: 0.05,
+          far: 140,
+        }}
+        gl={{ antialias: true, alpha: true }}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure =
+            binding.renderer.exposure;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+        }}
+      >
+        <SceneController
+          binding={binding}
+          verifyHash={verifyHash}
+          simulateFailureEntityId={
+            simulateFailureEntityId
+          }
+          onState={onState}
+          onFallbackActive={onFallbackChange}
+        />
+
+        {fallbackActive
+          ? fallbackLights.map((light, index) => (
+              <FallbackLight
+                key={`${light.role}:${index}`}
+                light={light}
+                shadowMapSize={shadowPolicy.map_size}
+                shadowBias={shadowPolicy.bias}
+                shadowNormalBias={
+                  shadowPolicy.normal_bias
+                }
+              />
+            ))
+          : null}
+
+        <mesh
+          rotation={[-Math.PI / 2, 0, 0]}
+          receiveShadow
+        >
+          <planeGeometry args={[26, 20]} />
+          <meshStandardMaterial
+            color="#475569"
+            roughness={0.84}
+            metalness={0}
+          />
+        </mesh>
+
+        <gridHelper
+          args={[26, 26, "#64748b", "#334155"]}
+          position={[0, 0.006, 0]}
+        />
+
+        <OrbitControls
+          makeDefault
+          target={[0, 1.1, 0]}
+          enableDamping
+        />
+      </Canvas>
+    </div>
+  );
+}
 
 
 
 ########################################################################################################################
-FILE 367: sandbox\probe-lab\scene-resources\index.ts
+FILE 373: sandbox\probe-lab\resource-runtime\ui\shared-scene-runtime-section.tsx
+SIZE BYTES: 17083
+########################################################################################################################
+
+"use client";
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  buildRuntimeSceneBinding,
+} from "../build-scene-runtime-binding";
+import type {
+  RuntimeEnvironmentBindingV1,
+} from "../environment-runtime-contract";
+import type {
+  RuntimeMaterialBindingV1,
+} from "../material-runtime-contract";
+import type {
+  ResourceRuntimeAssetSummary,
+  ResourceRuntimeResolveResponse,
+  RuntimeModelBindingV1,
+} from "../resource-runtime-contract";
+import type {
+  RuntimeSceneBindingV1,
+  RuntimeSceneState,
+} from "../scene-runtime-contract";
+import {
+  SharedSceneRuntimeCanvas,
+} from "./shared-scene-runtime-canvas";
+
+const cardStyle = {
+  border:
+    "1px solid rgba(34,211,238,0.2)",
+  borderRadius: "1rem",
+  background: "rgba(15,23,42,0.74)",
+  padding: "1rem",
+} as const;
+
+const buttonStyle = {
+  border:
+    "1px solid rgba(34,211,238,0.42)",
+  borderRadius: "0.75rem",
+  background: "rgba(14,116,144,0.28)",
+  color: "#cffafe",
+  padding: "0.65rem 0.85rem",
+  cursor: "pointer",
+  fontWeight: 700,
+} as const;
+
+function JsonPanel({
+  title,
+  value,
+}: {
+  title: string;
+  value: unknown;
+}) {
+  return (
+    <section style={cardStyle}>
+      <h3
+        style={{
+          margin: "0 0 0.65rem",
+          fontSize: "0.9rem",
+        }}
+      >
+        {title}
+      </h3>
+      <pre
+        style={{
+          margin: 0,
+          maxHeight: "360px",
+          overflow: "auto",
+          whiteSpace: "pre-wrap",
+          overflowWrap: "anywhere",
+          color: "rgba(226,232,240,0.82)",
+          fontSize: "0.69rem",
+          lineHeight: 1.5,
+        }}
+      >
+        {JSON.stringify(value, null, 2)}
+      </pre>
+    </section>
+  );
+}
+
+function remapModelBinding(
+  binding: RuntimeModelBindingV1,
+  input: {
+    scene_id: string;
+    intent_id: string;
+    entity_id: string;
+  },
+): RuntimeModelBindingV1 {
+  return {
+    ...binding,
+    scene_id: input.scene_id,
+    intent_id: input.intent_id,
+    entity_id: input.entity_id,
+  };
+}
+
+function clonedMaterialForEntity(
+  binding: RuntimeMaterialBindingV1,
+  entityId: string,
+  suffix: string,
+  repeatMultiplier = 1,
+): RuntimeMaterialBindingV1 {
+  return {
+    ...binding,
+    material_binding_id:
+      `${binding.material_binding_id}:${suffix}`,
+    target_entity_id: entityId,
+    maps: { ...binding.maps },
+    parameters: { ...binding.parameters },
+    uv_transform: {
+      ...binding.uv_transform,
+      repeat: [
+        binding.uv_transform.repeat[0] *
+          repeatMultiplier,
+        binding.uv_transform.repeat[1] *
+          repeatMultiplier,
+      ],
+      offset: [
+        ...binding.uv_transform.offset,
+      ] as [number, number],
+      center: [
+        ...binding.uv_transform.center,
+      ] as [number, number],
+    },
+    warnings: [...binding.warnings],
+  };
+}
+
+function StatusPanel({
+  state,
+}: {
+  state: RuntimeSceneState | null;
+}) {
+  return (
+    <section style={cardStyle}>
+      <h3
+        style={{
+          margin: "0 0 0.7rem",
+          fontSize: "0.92rem",
+        }}
+      >
+        Effective composed scene
+      </h3>
+      {state ? (
+        <div
+          style={{
+            display: "grid",
+            gap: "0.42rem",
+            fontSize: "0.76rem",
+          }}
+        >
+          <div>
+            Phase: <strong>{state.phase}</strong>
+          </div>
+          <div>
+            Models ready: {state.models_ready}/
+            {state.actor_states.length}
+          </div>
+          <div>
+            Materials ready: {state.materials_ready}
+          </div>
+          <div>
+            Environment: {state.environment_ready
+              ? "reviewed HDRI"
+              : "fallback rig"}
+          </div>
+          <div>
+            Fallbacks: {state.fallbacks_active.length
+              ? state.fallbacks_active.join(", ")
+              : "none"}
+          </div>
+          <div>
+            Bytes: {state.diagnostics
+              ? `${(
+                  state.diagnostics.total_download_bytes /
+                  (1024 * 1024)
+                ).toFixed(2)} MB`
+              : "—"}
+          </div>
+          <div>
+            Total composition: {state.diagnostics
+              ? `${state.diagnostics.timing.total_ms.toFixed(
+                  1,
+                )} ms`
+              : "—"}
+          </div>
+          {state.error ? (
+            <div style={{ color: "#fecaca" }}>
+              {state.error}
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div
+          style={{
+            color: "rgba(226,232,240,0.55)",
+            fontSize: "0.76rem",
+          }}
+        >
+          Compose the scene to run the shared lifecycle.
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function SharedSceneRuntimeSection({
+  assets,
+  primaryModelBinding,
+  primaryMaterialBinding,
+  environmentBinding,
+}: {
+  assets: ResourceRuntimeAssetSummary[];
+  primaryModelBinding: RuntimeModelBindingV1 | null;
+  primaryMaterialBinding:
+    | RuntimeMaterialBindingV1
+    | null;
+  environmentBinding:
+    | RuntimeEnvironmentBindingV1
+    | null;
+}) {
+  const [secondaryAssetId, setSecondaryAssetId] =
+    useState("");
+  const [secondaryModelBinding, setSecondaryModelBinding] =
+    useState<RuntimeModelBindingV1 | null>(null);
+  const [sceneBinding, setSceneBinding] =
+    useState<RuntimeSceneBindingV1 | null>(null);
+  const [runtimeState, setRuntimeState] =
+    useState<RuntimeSceneState | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [verifyHash, setVerifyHash] = useState(false);
+  const [applyMaterialToSecondary, setApplyMaterialToSecondary] =
+    useState(true);
+  const [simulateSecondaryFailure, setSimulateSecondaryFailure] =
+    useState(false);
+
+  const secondaryOptions = useMemo(
+    () =>
+      assets.filter(
+        (asset) =>
+          asset.asset_id !== primaryModelBinding?.asset_id,
+      ),
+    [assets, primaryModelBinding?.asset_id],
+  );
+
+  useEffect(() => {
+    if (
+      secondaryAssetId &&
+      secondaryOptions.some(
+        (asset) => asset.asset_id === secondaryAssetId,
+      )
+    ) {
+      return;
+    }
+    setSecondaryAssetId(
+      secondaryOptions[0]?.asset_id ?? "",
+    );
+    setSecondaryModelBinding(null);
+    setSceneBinding(null);
+    setRuntimeState(null);
+  }, [secondaryAssetId, secondaryOptions]);
+
+  const resolveSecondary = useCallback(async () => {
+    if (!secondaryAssetId) return;
+    setLoading(true);
+    setError(null);
+    setSecondaryModelBinding(null);
+    setSceneBinding(null);
+    setRuntimeState(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/resource-runtime",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            asset_id: secondaryAssetId,
+            simulate_failure: false,
+          }),
+        },
+      );
+      const payload =
+        (await response.json()) as ResourceRuntimeResolveResponse;
+
+      if (
+        !response.ok ||
+        !payload.ok ||
+        !payload.runtime_binding
+      ) {
+        throw new Error(
+          payload.error ??
+            "Unable to resolve the secondary reviewed actor.",
+        );
+      }
+
+      setSecondaryModelBinding(
+        remapModelBinding(payload.runtime_binding, {
+          scene_id: "phase2h_composed_scene",
+          intent_id: "phase2h_secondary_model",
+          entity_id: "phase2h_secondary_actor",
+        }),
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [secondaryAssetId]);
+
+  const composeScene = useCallback(() => {
+    if (!primaryModelBinding) {
+      setError(
+        "Resolve the primary model in Phase 2D before composing the shared scene.",
+      );
+      return;
+    }
+    if (!secondaryModelBinding) {
+      setError(
+        "Resolve a secondary reviewed model before composing the multi-actor proof.",
+      );
+      return;
+    }
+
+    setError(null);
+    setRuntimeState(null);
+
+    try {
+      const primary = remapModelBinding(
+        primaryModelBinding,
+        {
+          scene_id: "phase2h_composed_scene",
+          intent_id: "phase2h_primary_model",
+          entity_id: "resource_runtime_actor",
+        },
+      );
+      const materials: RuntimeMaterialBindingV1[] = [];
+
+      if (primaryMaterialBinding) {
+        materials.push(
+          clonedMaterialForEntity(
+            primaryMaterialBinding,
+            primary.entity_id,
+            "primary",
+          ),
+        );
+        if (applyMaterialToSecondary) {
+          materials.push(
+            clonedMaterialForEntity(
+              primaryMaterialBinding,
+              secondaryModelBinding.entity_id,
+              "secondary",
+              1.6,
+            ),
+          );
+        }
+      }
+
+      const next = buildRuntimeSceneBinding({
+        scene_id: "phase2h_composed_scene",
+        source: "resource_runtime_harness",
+        models: [primary, secondaryModelBinding],
+        materials,
+        environment: environmentBinding,
+        required_entity_ids: [
+          primary.entity_id,
+          secondaryModelBinding.entity_id,
+        ],
+        actor_transforms: {
+          [primary.entity_id]: {
+            position: [-1.8, 0, 0],
+          },
+          [secondaryModelBinding.entity_id]: {
+            position: [1.8, 0, 0],
+            rotation_radians: [0, -0.35, 0],
+          },
+        },
+        warnings: environmentBinding
+          ? []
+          : [
+              "No reviewed environment binding is active; the composed scene will use the declared studio fallback rig.",
+            ],
+      });
+
+      setSceneBinding(next);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    }
+  }, [
+    applyMaterialToSecondary,
+    environmentBinding,
+    primaryMaterialBinding,
+    primaryModelBinding,
+    secondaryModelBinding,
+  ]);
+
+  const onRuntimeState = useCallback(
+    (state: RuntimeSceneState) => {
+      setRuntimeState(state);
+    },
+    [],
+  );
+
+  return (
+    <section
+      style={{
+        marginTop: "1.4rem",
+        borderTop:
+          "1px solid rgba(34,211,238,0.2)",
+        paddingTop: "1.4rem",
+      }}
+    >
+      <p
+        style={{
+          margin: 0,
+          color: "rgba(103,232,249,0.78)",
+          fontSize: "0.72rem",
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+        }}
+      >
+        Phase 2H composition proof
+      </p>
+      <h2
+        style={{
+          margin: "0.55rem 0 0.45rem",
+          fontSize: "clamp(1.45rem, 3vw, 2.25rem)",
+        }}
+      >
+        Shared Scene Runtime
+      </h2>
+      <p
+        style={{
+          margin: 0,
+          maxWidth: "980px",
+          color: "rgba(226,232,240,0.7)",
+          lineHeight: 1.65,
+        }}
+      >
+        Compose two independently owned model instances, entity-targeted
+        materials, one reviewed environment, renderer policy, lifecycle
+        cleanup, failure isolation, and declared fallbacks through a single
+        scene binding. The composer executes resource decisions; it does not
+        reinterpret the educational direction.
+      </p>
+
+      <section
+        style={{
+          ...cardStyle,
+          marginTop: "1rem",
+          display: "grid",
+          gap: "0.85rem",
+        }}
+      >
+        <label
+          style={{
+            display: "grid",
+            gap: "0.35rem",
+            fontSize: "0.78rem",
+          }}
+        >
+          Secondary reviewed R2 model
+          <select
+            value={secondaryAssetId}
+            onChange={(event) => {
+              setSecondaryAssetId(event.target.value);
+              setSecondaryModelBinding(null);
+              setSceneBinding(null);
+              setRuntimeState(null);
+            }}
+            style={{
+              borderRadius: "0.7rem",
+              border:
+                "1px solid rgba(148,163,184,0.3)",
+              background: "#0f172a",
+              color: "#f8fafc",
+              padding: "0.7rem 0.8rem",
+            }}
+          >
+            {secondaryOptions.map((asset) => (
+              <option
+                key={asset.asset_id}
+                value={asset.asset_id}
+              >
+                {asset.canonical_label} — {asset.asset_id}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "0.65rem",
+          }}
+        >
+          <button
+            type="button"
+            style={buttonStyle}
+            disabled={loading || !secondaryAssetId}
+            onClick={() => void resolveSecondary()}
+          >
+            Resolve secondary actor
+          </button>
+          <button
+            type="button"
+            style={buttonStyle}
+            disabled={
+              loading ||
+              !primaryModelBinding ||
+              !secondaryModelBinding
+            }
+            onClick={composeScene}
+          >
+            Compose shared scene
+          </button>
+
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              fontSize: "0.76rem",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={applyMaterialToSecondary}
+              onChange={(event) =>
+                setApplyMaterialToSecondary(
+                  event.target.checked,
+                )
+              }
+            />
+            Independent material on second actor
+          </label>
+
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              fontSize: "0.76rem",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={simulateSecondaryFailure}
+              onChange={(event) =>
+                setSimulateSecondaryFailure(
+                  event.target.checked,
+                )
+              }
+            />
+            Isolate second-actor failure
+          </label>
+
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              fontSize: "0.76rem",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={verifyHash}
+              onChange={(event) =>
+                setVerifyHash(event.target.checked)
+              }
+            />
+            Verify SHA-256
+          </label>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.8rem",
+            color: "rgba(226,232,240,0.65)",
+            fontSize: "0.74rem",
+          }}
+        >
+          <span>
+            Primary: {primaryModelBinding?.asset_id ?? "not resolved"}
+          </span>
+          <span>
+            Secondary: {secondaryModelBinding?.asset_id ?? "not resolved"}
+          </span>
+          <span>
+            Material: {primaryMaterialBinding?.material_resource_id ??
+              "preserve original"}
+          </span>
+          <span>
+            Environment: {environmentBinding?.display_name ??
+              "studio fallback"}
+          </span>
+        </div>
+
+        {error ? (
+          <div
+            style={{
+              borderRadius: "0.75rem",
+              border:
+                "1px solid rgba(248,113,113,0.35)",
+              background: "rgba(127,29,29,0.18)",
+              color: "#fecaca",
+              padding: "0.7rem 0.8rem",
+              fontSize: "0.78rem",
+            }}
+          >
+            {error}
+          </div>
+        ) : null}
+      </section>
+
+      {sceneBinding ? (
+        <div style={{ marginTop: "1rem" }}>
+          <SharedSceneRuntimeCanvas
+            binding={sceneBinding}
+            verifyHash={verifyHash}
+            simulateFailureEntityId={
+              simulateSecondaryFailure
+                ? "phase2h_secondary_actor"
+                : null
+            }
+            onState={onRuntimeState}
+          />
+        </div>
+      ) : null}
+
+      <section
+        style={{
+          marginTop: "1rem",
+          display: "grid",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "1rem",
+        }}
+      >
+        <StatusPanel state={runtimeState} />
+        <JsonPanel
+          title="Scene runtime binding"
+          value={sceneBinding ?? { status: "not composed" }}
+        />
+        <JsonPanel
+          title="Composition diagnostics"
+          value={
+            runtimeState?.diagnostics ?? {
+              status: "not run",
+            }
+          }
+        />
+        <JsonPanel
+          title="Actor lifecycle states"
+          value={runtimeState?.actor_states ?? []}
+        />
+      </section>
+    </section>
+  );
+}
+
+
+
+########################################################################################################################
+FILE 374: sandbox\probe-lab\scene-resources\index.ts
 SIZE BYTES: 182
 ########################################################################################################################
 
@@ -168282,7 +170967,7 @@ export * from "./validate-scene-resource-plan";
 
 
 ########################################################################################################################
-FILE 368: sandbox\probe-lab\scene-resources\normalize-scene-resource-plan.ts
+FILE 375: sandbox\probe-lab\scene-resources\normalize-scene-resource-plan.ts
 SIZE BYTES: 17901
 ########################################################################################################################
 
@@ -169051,7 +171736,7 @@ export function normalizeSceneResourcePlan(
 
 
 ########################################################################################################################
-FILE 369: sandbox\probe-lab\scene-resources\README.md
+FILE 376: sandbox\probe-lab\scene-resources\README.md
 SIZE BYTES: 3275
 ########################################################################################################################
 
@@ -169133,7 +171818,7 @@ not rewritten when an environment changes.
 
 
 ########################################################################################################################
-FILE 370: sandbox\probe-lab\scene-resources\resolve-reviewed-scene-resources.server.ts
+FILE 377: sandbox\probe-lab\scene-resources\resolve-reviewed-scene-resources.server.ts
 SIZE BYTES: 12527
 ########################################################################################################################
 
@@ -169643,7 +172328,7 @@ export async function resolveReviewedSceneResources(
 
 
 ########################################################################################################################
-FILE 371: sandbox\probe-lab\scene-resources\resource-plan-adapters.ts
+FILE 378: sandbox\probe-lab\scene-resources\resource-plan-adapters.ts
 SIZE BYTES: 8928
 ########################################################################################################################
 
@@ -170000,7 +172685,7 @@ export function buildSceneResourcePlanFromDirector(
 
 
 ########################################################################################################################
-FILE 372: sandbox\probe-lab\scene-resources\scene-resource-contract.ts
+FILE 379: sandbox\probe-lab\scene-resources\scene-resource-contract.ts
 SIZE BYTES: 10899
 ########################################################################################################################
 
@@ -170400,7 +173085,7 @@ export const DEFAULT_SCENE_RESOURCE_PERFORMANCE_BUDGET: SceneResourcePerformance
 
 
 ########################################################################################################################
-FILE 373: sandbox\probe-lab\scene-resources\validate-scene-resource-plan.ts
+FILE 380: sandbox\probe-lab\scene-resources\validate-scene-resource-plan.ts
 SIZE BYTES: 14904
 ########################################################################################################################
 
@@ -171050,7 +173735,7 @@ export function isSceneResourcePlanV1(
 
 
 ########################################################################################################################
-FILE 374: sandbox\probe-lab\scenes\primitive-geometry-constraints.ts
+FILE 381: sandbox\probe-lab\scenes\primitive-geometry-constraints.ts
 SIZE BYTES: 25645
 ########################################################################################################################
 
@@ -172240,7 +174925,7 @@ export function compilePrimitiveGeometryConstraints(
 
 
 ########################################################################################################################
-FILE 375: sandbox\probe-lab\scenes\README.md
+FILE 382: sandbox\probe-lab\scenes\README.md
 SIZE BYTES: 1618
 ########################################################################################################################
 
@@ -172293,7 +174978,7 @@ not require re-directing the lesson.
 
 
 ########################################################################################################################
-FILE 376: sandbox\probe-lab\scenes\resolve-scene-assets.server.ts
+FILE 383: sandbox\probe-lab\scenes\resolve-scene-assets.server.ts
 SIZE BYTES: 27797
 ########################################################################################################################
 
@@ -173470,7 +176155,7 @@ export async function resolvePrimitiveBuilderSceneAssets(
 
 
 ########################################################################################################################
-FILE 377: sandbox\probe-lab\scenes\resolved-scene.ts
+FILE 384: sandbox\probe-lab\scenes\resolved-scene.ts
 SIZE BYTES: 6290
 ########################################################################################################################
 
@@ -173669,7 +176354,7 @@ export function makeResolvedSceneAssetBinding(input: {
 
 
 ########################################################################################################################
-FILE 378: sandbox\probe-lab\scenes\routes\scenes.ts
+FILE 385: sandbox\probe-lab\scenes\routes\scenes.ts
 SIZE BYTES: 1000
 ########################################################################################################################
 
@@ -173733,7 +176418,7 @@ export async function POST(request: NextRequest) {
 
 
 ########################################################################################################################
-FILE 379: sandbox\probe-lab\scenes\scene-manifest.ts
+FILE 386: sandbox\probe-lab\scenes\scene-manifest.ts
 SIZE BYTES: 3539
 ########################################################################################################################
 
@@ -173851,7 +176536,7 @@ export type MyWaySceneManifestV1 =
 
 
 ########################################################################################################################
-FILE 380: sandbox\probe-lab\scenes\scene-store.server.ts
+FILE 387: sandbox\probe-lab\scenes\scene-store.server.ts
 SIZE BYTES: 5618
 ########################################################################################################################
 
@@ -174111,7 +176796,7 @@ export async function listSceneManifests(): Promise<
 
 
 ########################################################################################################################
-FILE 381: sandbox\probe-lab\scenes\ui\constraint-layout.ts
+FILE 388: sandbox\probe-lab\scenes\ui\constraint-layout.ts
 SIZE BYTES: 30347
 ########################################################################################################################
 
@@ -175088,7 +177773,7 @@ export function solveResolvedAssetLayout(input: {
 
 
 ########################################################################################################################
-FILE 382: sandbox\probe-lab\scenes\ui\index.ts
+FILE 389: sandbox\probe-lab\scenes\ui\index.ts
 SIZE BYTES: 479
 ########################################################################################################################
 
@@ -175114,7 +177799,7 @@ export type {
 
 
 ########################################################################################################################
-FILE 383: sandbox\probe-lab\scenes\ui\resolved-asset-model.tsx
+FILE 390: sandbox\probe-lab\scenes\ui\resolved-asset-model.tsx
 SIZE BYTES: 30376
 ########################################################################################################################
 
@@ -176319,7 +179004,7 @@ export function preloadResolvedAsset(
 
 
 ########################################################################################################################
-FILE 384: sandbox\probe-lab\scenes\validate-scene-manifest.ts
+FILE 391: sandbox\probe-lab\scenes\validate-scene-manifest.ts
 SIZE BYTES: 8996
 ########################################################################################################################
 
@@ -176689,7 +179374,7 @@ export function validateSceneManifest(
 
 
 ########################################################################################################################
-FILE 385: sandbox\probe-lab\ui\learning-space\probes\probe-lab\probe-template-gallery.tsx
+FILE 392: sandbox\probe-lab\ui\learning-space\probes\probe-lab\probe-template-gallery.tsx
 SIZE BYTES: 17222
 ########################################################################################################################
 
@@ -177145,7 +179830,7 @@ export function ProbeTemplateGallery() {
 
 
 ########################################################################################################################
-FILE 386: sandbox\probe-lab\visual-experience\adapters.ts
+FILE 393: sandbox\probe-lab\visual-experience\adapters.ts
 SIZE BYTES: 1312
 ########################################################################################################################
 
@@ -177191,7 +179876,7 @@ export function visualExperienceToProbeContractDraft(input: {
 
 
 ########################################################################################################################
-FILE 387: sandbox\probe-lab\visual-experience\assemble-visual-learning-turn.ts
+FILE 394: sandbox\probe-lab\visual-experience\assemble-visual-learning-turn.ts
 SIZE BYTES: 39774
 ########################################################################################################################
 
@@ -178205,7 +180890,7 @@ export function assembleVisualLearningTurnFromSemanticDraft(
 
 
 ########################################################################################################################
-FILE 388: sandbox\probe-lab\visual-experience\asset-intake.md
+FILE 395: sandbox\probe-lab\visual-experience\asset-intake.md
 SIZE BYTES: 1901
 ########################################################################################################################
 
@@ -178271,7 +180956,7 @@ http://localhost:3000/sandbox/probe-lab/visual-experience
 
 
 ########################################################################################################################
-FILE 389: sandbox\probe-lab\visual-experience\asset-store.server.ts
+FILE 396: sandbox\probe-lab\visual-experience\asset-store.server.ts
 SIZE BYTES: 3617
 ########################################################################################################################
 
@@ -178368,7 +181053,7 @@ export async function selectAssetsForVisualExperience(input: VisualAssetSelectio
 
 
 ########################################################################################################################
-FILE 390: sandbox\probe-lab\visual-experience\assets.ts
+FILE 397: sandbox\probe-lab\visual-experience\assets.ts
 SIZE BYTES: 6589
 ########################################################################################################################
 
@@ -178565,7 +181250,7 @@ export function publicPathToProjectRelativePath(publicPath: string) {
 
 
 ########################################################################################################################
-FILE 391: sandbox\probe-lab\visual-experience\compiler-request.md
+FILE 398: sandbox\probe-lab\visual-experience\compiler-request.md
 SIZE BYTES: 1450
 ########################################################################################################################
 
@@ -178606,7 +181291,7 @@ Rules for the model:
 
 
 ########################################################################################################################
-FILE 392: sandbox\probe-lab\visual-experience\compiler.ts
+FILE 399: sandbox\probe-lab\visual-experience\compiler.ts
 SIZE BYTES: 11151
 ########################################################################################################################
 
@@ -178893,7 +181578,7 @@ function inferTopicLabel(message: string) {
 
 
 ########################################################################################################################
-FILE 393: sandbox\probe-lab\visual-experience\diagnostic-relationships.ts
+FILE 400: sandbox\probe-lab\visual-experience\diagnostic-relationships.ts
 SIZE BYTES: 16887
 ########################################################################################################################
 
@@ -179361,7 +182046,7 @@ export function buildSandboxDiagnosticRelationshipPreview(args: {
 
 
 ########################################################################################################################
-FILE 394: sandbox\probe-lab\visual-experience\json-extract.ts
+FILE 401: sandbox\probe-lab\visual-experience\json-extract.ts
 SIZE BYTES: 1505
 ########################################################################################################################
 
@@ -179447,7 +182132,7 @@ export function parseJsonObjectFromText<T = unknown>(rawText: string): JsonParse
 
 
 ########################################################################################################################
-FILE 395: sandbox\probe-lab\visual-experience\model-provider.server.ts
+FILE 402: sandbox\probe-lab\visual-experience\model-provider.server.ts
 SIZE BYTES: 40283
 ########################################################################################################################
 
@@ -180628,7 +183313,7 @@ export async function callVisualLearningTurnModel(args: {
 
 
 ########################################################################################################################
-FILE 396: sandbox\probe-lab\visual-experience\model-request.ts
+FILE 403: sandbox\probe-lab\visual-experience\model-request.ts
 SIZE BYTES: 7251
 ########################################################################################################################
 
@@ -180815,7 +183500,7 @@ export function buildVisualExperienceModelRequest(
 
 
 ########################################################################################################################
-FILE 397: sandbox\probe-lab\visual-experience\normalize-visual-learning-turn-output.ts
+FILE 404: sandbox\probe-lab\visual-experience\normalize-visual-learning-turn-output.ts
 SIZE BYTES: 34473
 ########################################################################################################################
 
@@ -181709,7 +184394,7 @@ export function normalizeVisualLearningTurnOutput(
 
 
 ########################################################################################################################
-FILE 398: sandbox\probe-lab\visual-experience\README.md
+FILE 405: sandbox\probe-lab\visual-experience\README.md
 SIZE BYTES: 2487
 ########################################################################################################################
 
@@ -181779,7 +184464,7 @@ premium rendering rather than creating a second lesson-planning format.
 
 
 ########################################################################################################################
-FILE 399: sandbox\probe-lab\visual-experience\resolve-visual-learning-turn-assets.server.ts
+FILE 406: sandbox\probe-lab\visual-experience\resolve-visual-learning-turn-assets.server.ts
 SIZE BYTES: 5985
 ########################################################################################################################
 
@@ -182034,7 +184719,7 @@ export async function attachApprovedAssetsToVisualTurn(
 
 
 ########################################################################################################################
-FILE 400: sandbox\probe-lab\visual-experience\resolve-visual-learning-turn.ts
+FILE 407: sandbox\probe-lab\visual-experience\resolve-visual-learning-turn.ts
 SIZE BYTES: 5996
 ########################################################################################################################
 
@@ -182200,7 +184885,7 @@ export function resolveVisualLearningTurn(
 
 
 ########################################################################################################################
-FILE 401: sandbox\probe-lab\visual-experience\routes\compile-experience.ts
+FILE 408: sandbox\probe-lab\visual-experience\routes\compile-experience.ts
 SIZE BYTES: 3286
 ########################################################################################################################
 
@@ -182294,7 +184979,7 @@ export async function GET() {
 
 
 ########################################################################################################################
-FILE 402: sandbox\probe-lab\visual-experience\routes\full-turn-debug.ts
+FILE 409: sandbox\probe-lab\visual-experience\routes\full-turn-debug.ts
 SIZE BYTES: 1852
 ########################################################################################################################
 
@@ -182361,7 +185046,7 @@ export async function POST(request: Request) {
 
 
 ########################################################################################################################
-FILE 403: sandbox\probe-lab\visual-experience\routes\generate-full-turn.ts
+FILE 410: sandbox\probe-lab\visual-experience\routes\generate-full-turn.ts
 SIZE BYTES: 16881
 ########################################################################################################################
 
@@ -182766,7 +185451,7 @@ export async function POST(request: Request) {
 
 
 ########################################################################################################################
-FILE 404: sandbox\probe-lab\visual-experience\routes\request-debug.ts
+FILE 411: sandbox\probe-lab\visual-experience\routes\request-debug.ts
 SIZE BYTES: 2627
 ########################################################################################################################
 
@@ -182845,7 +185530,7 @@ export async function GET() {
 
 
 ########################################################################################################################
-FILE 405: sandbox\probe-lab\visual-experience\routes\resolve-full-turn.ts
+FILE 412: sandbox\probe-lab\visual-experience\routes\resolve-full-turn.ts
 SIZE BYTES: 1651
 ########################################################################################################################
 
@@ -182912,7 +185597,7 @@ export async function POST(request: Request) {
 
 
 ########################################################################################################################
-FILE 406: sandbox\probe-lab\visual-experience\schema.ts
+FILE 413: sandbox\probe-lab\visual-experience\schema.ts
 SIZE BYTES: 10055
 ########################################################################################################################
 
@@ -183284,7 +185969,7 @@ export type VisualExperienceModelRequest = {
 
 
 ########################################################################################################################
-FILE 407: sandbox\probe-lab\visual-experience\ui\index.ts
+FILE 414: sandbox\probe-lab\visual-experience\ui\index.ts
 SIZE BYTES: 190
 ########################################################################################################################
 
@@ -183296,7 +185981,7 @@ export { SemanticScenePlayer } from "./scene-player";
 
 
 ########################################################################################################################
-FILE 408: sandbox\probe-lab\visual-experience\ui\scene-player\directed-scene-compiler.ts
+FILE 415: sandbox\probe-lab\visual-experience\ui\scene-player\directed-scene-compiler.ts
 SIZE BYTES: 47590
 ########################################################################################################################
 
@@ -184350,7 +187035,7 @@ export function compileDirectedSceneRenderPlan(input: CompileInput): DirectedSce
 
 
 ########################################################################################################################
-FILE 409: sandbox\probe-lab\visual-experience\ui\scene-player\index.ts
+FILE 416: sandbox\probe-lab\visual-experience\ui\scene-player\index.ts
 SIZE BYTES: 333
 ########################################################################################################################
 
@@ -184361,7 +187046,7 @@ export type { PreparedSemanticScene, PreparedSemanticSceneEntity } from "./seman
 
 
 ########################################################################################################################
-FILE 410: sandbox\probe-lab\visual-experience\ui\scene-player\semantic-scene-canvas.tsx
+FILE 417: sandbox\probe-lab\visual-experience\ui\scene-player\semantic-scene-canvas.tsx
 SIZE BYTES: 35541
 ########################################################################################################################
 
@@ -185268,7 +187953,7 @@ export function SemanticSceneCanvas({
 
 
 ########################################################################################################################
-FILE 411: sandbox\probe-lab\visual-experience\ui\scene-player\semantic-scene-layout.ts
+FILE 418: sandbox\probe-lab\visual-experience\ui\scene-player\semantic-scene-layout.ts
 SIZE BYTES: 26764
 ########################################################################################################################
 
@@ -185966,7 +188651,7 @@ export function prepareSemanticSceneFromTurnResult(input: {
 
 
 ########################################################################################################################
-FILE 412: sandbox\probe-lab\visual-experience\ui\scene-player\semantic-scene-player.tsx
+FILE 419: sandbox\probe-lab\visual-experience\ui\scene-player\semantic-scene-player.tsx
 SIZE BYTES: 16098
 ########################################################################################################################
 
@@ -186412,7 +189097,7 @@ export function SemanticScenePlayer({ result }: { result: unknown }) {
 
 
 ########################################################################################################################
-FILE 413: sandbox\probe-lab\visual-experience\ui\visual-experience-lab.tsx
+FILE 420: sandbox\probe-lab\visual-experience\ui\visual-experience-lab.tsx
 SIZE BYTES: 31941
 ########################################################################################################################
 
@@ -187126,7 +189811,7 @@ export default VisualExperienceLab;
 
 
 ########################################################################################################################
-FILE 414: sandbox\probe-lab\visual-experience\ui\visual-experience-player.tsx
+FILE 421: sandbox\probe-lab\visual-experience\ui\visual-experience-player.tsx
 SIZE BYTES: 3915
 ########################################################################################################################
 
@@ -187281,7 +189966,7 @@ export function VisualExperiencePlayer({ asset }: { asset: VisualAssetWithStats 
 
 
 ########################################################################################################################
-FILE 415: sandbox\probe-lab\visual-experience\validate-visual-learning-turn.ts
+FILE 422: sandbox\probe-lab\visual-experience\validate-visual-learning-turn.ts
 SIZE BYTES: 11167
 ########################################################################################################################
 
@@ -187564,7 +190249,7 @@ export function validateVisualLearningTurnOutput(
 
 
 ########################################################################################################################
-FILE 416: sandbox\probe-lab\visual-experience\validate.ts
+FILE 423: sandbox\probe-lab\visual-experience\validate.ts
 SIZE BYTES: 23539
 ########################################################################################################################
 
@@ -188272,7 +190957,7 @@ export function validateVisualExperienceOutput(input: {
 
 
 ########################################################################################################################
-FILE 417: sandbox\probe-lab\visual-experience\visual-learning-semantic-draft.ts
+FILE 424: sandbox\probe-lab\visual-experience\visual-learning-semantic-draft.ts
 SIZE BYTES: 8383
 ########################################################################################################################
 
@@ -188508,7 +191193,7 @@ export function isVisualLearningSemanticDraftLike(value: unknown): value is Visu
 
 
 ########################################################################################################################
-FILE 418: sandbox\probe-lab\visual-experience\visual-learning-turn-examples.ts
+FILE 425: sandbox\probe-lab\visual-experience\visual-learning-turn-examples.ts
 SIZE BYTES: 15929
 ########################################################################################################################
 
@@ -188933,7 +191618,7 @@ export const krebsProbeAttemptEvaluatorInputExample: ProbeAttemptEvaluatorInput 
 
 
 ########################################################################################################################
-FILE 419: sandbox\probe-lab\visual-experience\visual-learning-turn-request.ts
+FILE 426: sandbox\probe-lab\visual-experience\visual-learning-turn-request.ts
 SIZE BYTES: 44826
 ########################################################################################################################
 
@@ -189992,7 +192677,7 @@ export function buildVisualLearningTurnScaffoldOutput(
 
 
 ########################################################################################################################
-FILE 420: sandbox\probe-lab\visual-experience\visual-learning-turn.ts
+FILE 427: sandbox\probe-lab\visual-experience\visual-learning-turn.ts
 SIZE BYTES: 15158
 ########################################################################################################################
 
@@ -190488,7 +193173,7 @@ export const DEFAULT_JARGON_LEVEL: JargonLevel = "none";
 
 
 ########################################################################################################################
-FILE 421: sandbox\README.md
+FILE 428: sandbox\README.md
 SIZE BYTES: 570
 ########################################################################################################################
 
@@ -190509,7 +193194,7 @@ Useful sandbox code can later be promoted into `lib/visual-story`, `lib/visual-c
 
 
 ########################################################################################################################
-FILE 422: sandbox\sandbox-reorg-manifest.txt
+FILE 429: sandbox\sandbox-reorg-manifest.txt
 SIZE BYTES: 3272
 ########################################################################################################################
 

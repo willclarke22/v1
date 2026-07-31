@@ -60,6 +60,10 @@ export async function POST(
     const hydrated =
       await hydrateRuntimeEnvironmentForBlender(
         binding,
+        {
+          runtime_origin:
+            request.nextUrl.origin,
+        },
       );
 
     let cleanedUp = false;
@@ -149,3 +153,4 @@ export async function POST(
     );
   }
 }
+

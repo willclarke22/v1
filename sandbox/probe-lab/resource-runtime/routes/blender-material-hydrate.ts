@@ -57,6 +57,10 @@ export async function POST(
     const hydration =
       await hydrateRuntimeMaterialForBlender(
         binding,
+        {
+          runtime_origin:
+            request.nextUrl.origin,
+        },
       );
 
     try {
@@ -131,3 +135,4 @@ export async function POST(
     );
   }
 }
+

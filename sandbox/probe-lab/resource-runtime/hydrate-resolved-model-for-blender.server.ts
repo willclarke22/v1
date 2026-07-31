@@ -1,10 +1,8 @@
 import {
-  copyFile,
   mkdtemp,
   readFile,
   rm,
   stat,
-  writeFile,
 } from "node:fs/promises";
 import {
   tmpdir,
@@ -14,20 +12,21 @@ import path from "node:path";
 import {
   hashFile,
 } from "../assets/content-hash.server";
-import {
-  publicUrlToProjectPath,
-} from "../assets/paths.server";
 import type {
   RuntimeModelBindingV1,
 } from "./resource-runtime-contract";
 import {
   validateRuntimeModelUrl,
 } from "./build-runtime-binding";
+import {
+  hydrateRuntimeUrlToFile,
+} from "./hydrate-runtime-url.server";
 
 export type BlenderHydrationOptions = {
   verify_hash?: boolean;
   retain_debug?: boolean;
   fetch_impl?: typeof fetch;
+  runtime_origin?: string;
 };
 
 export type BlenderHydratedModel = {
@@ -81,33 +80,6 @@ function extensionForUrl(
   return ".glb";
 }
 
-async function writeRemoteFile(
-  url: string,
-  destination: string,
-  fetchImpl: typeof fetch,
-) {
-  const response =
-    await fetchImpl(url, {
-      cache: "no-store",
-    });
-
-  if (!response.ok) {
-    throw new Error(
-      `Blender hydration download failed (${response.status} ${response.statusText}).`,
-    );
-  }
-
-  const bytes =
-    Buffer.from(
-      await response.arrayBuffer(),
-    );
-
-  await writeFile(
-    destination,
-    bytes,
-  );
-}
-
 export async function hydrateResolvedModelForBlender(
   binding: RuntimeModelBindingV1,
   options: BlenderHydrationOptions = {},
@@ -134,25 +106,17 @@ export async function hydrateResolvedModelForBlender(
     );
 
   try {
-    if (
-      /^https:\/\//i.test(
-        publicUrl,
-      )
-    ) {
-      await writeRemoteFile(
-        publicUrl,
-        localPath,
-        options.fetch_impl ??
-          fetch,
-      );
-    } else {
-      await copyFile(
-        publicUrlToProjectPath(
-          publicUrl,
-        ),
-        localPath,
-      );
-    }
+    await hydrateRuntimeUrlToFile({
+      public_url: publicUrl,
+      destination: localPath,
+      fetch_impl:
+        options.fetch_impl ?? fetch,
+      runtime_origin:
+        options.runtime_origin,
+      cache: "no-store",
+      error_label:
+        "Blender hydration download",
+    });
 
     const fileStats =
       await stat(localPath);
@@ -230,3 +194,4 @@ export async function readHydratedModelBytes(
     hydration.local_path,
   );
 }
+

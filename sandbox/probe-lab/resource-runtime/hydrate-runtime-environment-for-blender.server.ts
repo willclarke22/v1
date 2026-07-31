@@ -1,9 +1,7 @@
 import {
-  copyFile,
   mkdtemp,
   rm,
   stat,
-  writeFile,
 } from "node:fs/promises";
 import {
   tmpdir,
@@ -11,8 +9,8 @@ import {
 import path from "node:path";
 
 import {
-  publicUrlToProjectPath,
-} from "../assets/paths.server";
+  hydrateRuntimeUrlToFile,
+} from "./hydrate-runtime-url.server";
 import {
   environmentFormatFromUrl,
 } from "./environment-runtime-policy";
@@ -89,42 +87,17 @@ async function hydrateOne(
   publicUrl: string,
   destination: string,
   fetchImpl: typeof fetch,
+  runtimeOrigin: string | undefined,
 ) {
-  if (
-    /^https:\/\//i.test(
-      publicUrl,
-    )
-  ) {
-    const response =
-      await fetchImpl(
-        publicUrl,
-        {
-          cache:
-            "force-cache",
-        },
-      );
-
-    if (!response.ok) {
-      throw new Error(
-        `Environment download failed (${response.status} ${response.statusText}).`,
-      );
-    }
-
-    const bytes =
-      await response.arrayBuffer();
-
-    await writeFile(
-      destination,
-      Buffer.from(bytes),
-    );
-  } else {
-    await copyFile(
-      publicUrlToProjectPath(
-        publicUrl,
-      ),
-      destination,
-    );
-  }
+  await hydrateRuntimeUrlToFile({
+    public_url: publicUrl,
+    destination,
+    fetch_impl: fetchImpl,
+    runtime_origin: runtimeOrigin,
+    cache: "force-cache",
+    error_label:
+      "Environment download",
+  });
 
   return (
     await stat(destination)
@@ -135,6 +108,7 @@ export async function hydrateRuntimeEnvironmentForBlender(
   binding: RuntimeEnvironmentBindingV1,
   options: {
     fetch_impl?: typeof fetch;
+    runtime_origin?: string;
   } = {},
 ): Promise<BlenderHydratedEnvironment> {
   if (
@@ -188,6 +162,7 @@ export async function hydrateRuntimeEnvironmentForBlender(
         localPath,
         options.fetch_impl ??
           fetch,
+        options.runtime_origin,
       );
 
     return {
@@ -261,3 +236,4 @@ export async function hydrateRuntimeEnvironmentForBlender(
     throw error;
   }
 }
+

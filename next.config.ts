@@ -1,7 +1,29 @@
 import type { NextConfig } from "next";
 
+const blenderHydrationTraceExcludes = [
+  "./.git/**/*",
+  "./datasets/**/*",
+  "./assets/**/*",
+  "./public/sandbox-assets/myway/**/*",
+  "./sandbox/probe-lab/assets/debug/**/*",
+  "./sandbox/probe-lab/assets/jobs/**/*",
+  "./sandbox/probe-lab/assets/inbox/**/*",
+  "./sandbox/probe-lab/assets/downloads/**/*",
+  "./sandbox/probe-lab/assets/embeddings/**/*",
+  "./sandbox/probe-lab/assets/enrichment/cache/**/*",
+  "./sandbox/probe-lab/blender-python-builder/jobs/**/*",
+  "./myway-sandbox-active-files-one-notepad.txt",
+];
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  outputFileTracingExcludes: {
+    "/api/sandbox/probe-lab/resource-runtime/blender-hydrate":
+      blenderHydrationTraceExcludes,
+    "/api/sandbox/probe-lab/resource-runtime/materials/blender-hydrate":
+      blenderHydrationTraceExcludes,
+    "/api/sandbox/probe-lab/resource-runtime/environments/blender-hydrate":
+      blenderHydrationTraceExcludes,
+  },
 };
 
 export default nextConfig;
