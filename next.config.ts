@@ -13,10 +13,15 @@ const blenderHydrationTraceExcludes = [
   "./sandbox/probe-lab/assets/enrichment/cache/**/*",
   "./sandbox/probe-lab/blender-python-builder/jobs/**/*",
   "./myway-sandbox-active-files-one-notepad.txt",
+  "./myway-blenderkit-tennis-ball-diagnosis.txt",
 ];
 
 const nextConfig: NextConfig = {
   outputFileTracingExcludes: {
+    "/api/sandbox/probe-lab/blender-python-builder/execute-with-repair":
+      blenderHydrationTraceExcludes,
+    "/api/sandbox/probe-lab/blender-python-builder/execute":
+      blenderHydrationTraceExcludes,
     "/api/sandbox/probe-lab/resource-runtime/blender-hydrate":
       blenderHydrationTraceExcludes,
     "/api/sandbox/probe-lab/resource-runtime/materials/blender-hydrate":
