@@ -4,6 +4,10 @@ import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
 import { ContinuousDirectorPlayer } from "./continuous-director-player";
+import {
+  extractResourcePlanFromLabResult,
+  LabSceneRuntimePanel,
+} from "../../scene-resources/ui";
 
 const storySteps = [
   {
@@ -304,6 +308,8 @@ export function ManualTurnLab() {
   const diagnostics = asRecord(result?.diagnostics);
   const resolved = asRecord(result?.resolved);
   const sourceShape = String(result?.detected_source_shape ?? "not run");
+  const sharedResourcePlan =
+    extractResourcePlanFromLabResult(result);
 
   return <main style={{ minHeight: "100vh", background: "radial-gradient(circle at top, #172554 0, #07111f 42%, #030712 100%)", color: "white", padding: 28 }}>
     <div style={{ width: "min(1640px, 100%)", margin: "0 auto", display: "grid", gap: 20 }}>
@@ -312,6 +318,11 @@ export function ManualTurnLab() {
         <Panel title="Manual JSON input"><textarea value={source} onChange={(event) => setSource(event.target.value)} spellCheck={false} style={textareaStyle} /><div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}><button onClick={renderManualTurn} disabled={isRunning} style={primaryButtonStyle}>{isRunning ? "Rendering…" : "Validate + render"}</button><button onClick={formatJson} style={buttonStyle}>Format JSON</button><button onClick={() => { setSource(JSON.stringify(starterJson, null, 2)); setResult(null); setParseError(null); setRequestError(null); }} style={buttonStyle}>Load 1:1 story example</button><button onClick={() => { setSource(""); setResult(null); }} style={buttonStyle}>Clear</button></div>{parseError ? <pre style={errorStyle}>JSON parse error: {parseError}</pre> : null}{requestError ? <pre style={errorStyle}>{requestError}</pre> : null}<div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}><span style={pillStyle}>{parsedPreview ? "JSON parses" : "Waiting for valid JSON"}</span><span style={pillStyle}>source: {sourceShape}</span>{diagnostics ? <span style={pillStyle}>1:1 story: {String(diagnostics.story_one_to_one_valid ?? false)}</span> : null}{diagnostics ? <span style={pillStyle}>bindings: {String(diagnostics.render_binding_count ?? 0)}</span> : null}</div></Panel>
         <div style={{ display: "grid", gap: 18 }}><Panel title="Live MyWay output">{result ? <ContinuousDirectorPlayer result={result} /> : <div style={{ minHeight: 620, borderRadius: 18, border: "1px dashed rgba(255,255,255,0.18)", display: "grid", placeItems: "center", color: "rgba(255,255,255,0.55)", padding: 28, textAlign: "center" }}>Select Validate + render to play the canonical story-driven example.</div>}</Panel><ScriptPanel result={result} /></div>
       </div>
+      <LabSceneRuntimePanel
+        source="manual_turn"
+        resourcePlan={sharedResourcePlan}
+        heading="Manual Turn reviewed-resource runtime"
+      />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: 18 }}>
         <JsonPanel title="1:1 story-to-scene audit" value={result?.story_sync ?? null} />
         <JsonPanel title="Authoring quality + motion/camera audit" value={result?.quality_audit ?? null} />

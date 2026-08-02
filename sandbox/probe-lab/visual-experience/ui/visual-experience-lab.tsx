@@ -4,6 +4,10 @@ import type { CSSProperties, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { SemanticScenePlayer } from "./scene-player";
 import { getSemanticSceneTimelineBeats, prepareSemanticSceneFromTurnResult } from "./scene-player/semantic-scene-layout";
+import {
+  extractResourcePlanFromLabResult,
+  LabSceneRuntimePanel,
+} from "../../scene-resources/ui";
 
 type JsonValue = Record<string, unknown> | unknown[] | string | number | boolean | null;
 
@@ -535,6 +539,14 @@ export function VisualExperienceLab() {
   const modelStoryJson = useMemo(() => buildModelStoryJson(activeResult), [activeResult]);
   const rendererJson = useMemo(() => buildRendererInspectionJson(activeResult), [activeResult]);
   const relationshipPreviewJson = useMemo(() => buildRelationshipPreviewJson(activeResult), [activeResult]);
+  const sharedResourcePlan =
+    useMemo(
+      () =>
+        extractResourcePlanFromLabResult(
+          activeResult,
+        ),
+      [activeResult],
+    );
 
   async function run(path: string, setter: (value: JsonValue) => void) {
     setIsLoading(true);
@@ -681,6 +693,12 @@ export function VisualExperienceLab() {
 
           <FullTurnSummary result={activeResult} />
         </div>
+
+        <LabSceneRuntimePanel
+          source="visual_experience"
+          resourcePlan={sharedResourcePlan}
+          heading="Visual Experience reviewed-resource runtime"
+        />
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: 18 }}>
           <JsonInspectionPanel

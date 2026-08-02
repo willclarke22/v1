@@ -1,0 +1,741 @@
+{
+  "schema_version": "myway_foundry_resource_plan_v1",
+  "created_at": "2026-08-01T19:49:19.477Z",
+  "design_brief_asset_id": "treasure_chest_001",
+  "quality_mode": "standard",
+  "material_bindings": [
+    {
+      "slot": {
+        "slot_id": "slot_wood_warm",
+        "display_name": "Warm Oak Wood",
+        "assigned_part_ids": [
+          "chest_base_body",
+          "chest_lid_shell",
+          "wood_plank_seams"
+        ],
+        "material_family": "wood",
+        "intent": "Primary surface material for chest body and lid. Reads as crafted oak planks with visible grain, warm tone, and subtle plank seam grooves.",
+        "semantic_tags": [
+          "wood",
+          "oak",
+          "planks",
+          "warm",
+          "crafted"
+        ],
+        "color_hint": "#8B6B47",
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "physical_scale_m": 0.15,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "ambient_occlusion"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.545,
+            0.42,
+            0.278,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.75
+        }
+      },
+      "status": "ready_r2",
+      "selected": {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_material_Asphalt008_4k-jpg",
+        "source_asset_id": "Asphalt008",
+        "variant_id": "4k-jpg-2",
+        "display_name": "Asphalt 008",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Asphalt008/4k-jpg/preview.png",
+        "resolution": "4K",
+        "file_format": "JPG",
+        "score": 138,
+        "reasons": [
+          "all required maps available"
+        ],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "base_color",
+          "normal_gl",
+          "normal_dx",
+          "roughness",
+          "ambient_occlusion",
+          "height"
+        ],
+        "missing_required_maps": []
+      },
+      "candidates": [
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Asphalt008_4k-jpg",
+          "source_asset_id": "Asphalt008",
+          "variant_id": "4k-jpg-2",
+          "display_name": "Asphalt 008",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Asphalt008/4k-jpg/preview.png",
+          "resolution": "4K",
+          "file_format": "JPG",
+          "score": 138,
+          "reasons": [
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "ambient_occlusion",
+            "height"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Bricks001_4k-jpg",
+          "source_asset_id": "Bricks001",
+          "variant_id": "4k-jpg-2",
+          "display_name": "Bricks 001",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Bricks001/4k-jpg/preview.png",
+          "resolution": "4K",
+          "file_format": "JPG",
+          "score": 103,
+          "reasons": [
+            "matches dark"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "height"
+          ],
+          "missing_required_maps": [
+            "ambient_occlusion"
+          ]
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Planks009",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Planks 009",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks009/Planks009_SQ_Color.jpg?35112&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks009/Planks009_SQ_Displacement.jpg?40441&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks009/Planks009_SQ_NormalDX.jpg?60389&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks009/Planks009_SQ_Roughness.jpg?23372&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks009/Planks009_SQ_AmbientOcclusion.jpg?85847",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 101,
+          "reasons": [
+            "matches wood",
+            "matches surface",
+            "matches planks",
+            "matches plank",
+            "matches clean",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": [
+            "base_color"
+          ]
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Rocks006",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Rocks 006",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_Color.jpg?27386&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_Displacement.jpg?29035&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_NormalDX.jpg?20485&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_Roughness.jpg?52053&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_AmbientOcclusion.jpg?9750",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 101,
+          "reasons": [
+            "matches surface",
+            "matches material",
+            "matches for",
+            "matches the",
+            "matches edges",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": [
+            "base_color"
+          ]
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Bricks038",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Bricks 038",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bricks038/Bricks038_SQ_Color.jpg?69064&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bricks038/Bricks038_SQ_Displacement.jpg?1227&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bricks038/Bricks038_SQ_NormalDX.jpg?78174&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bricks038/Bricks038_SQ_Roughness.jpg?99181&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bricks038/Bricks038_SQ_AmbientOcclusion.jpg?90207",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 87,
+          "reasons": [
+            "matches surface",
+            "matches material",
+            "matches for",
+            "matches the",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": [
+            "base_color"
+          ]
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Gravel011",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Gravel 011",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel011/Gravel011_SQ_Color.jpg?536&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel011/Gravel011_SQ_Displacement.jpg?2265&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel011/Gravel011_SQ_NormalDX.jpg?86667&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel011/Gravel011_SQ_Roughness.jpg?90266&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel011/Gravel011_SQ_AmbientOcclusion.jpg?46820",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 87,
+          "reasons": [
+            "matches surface",
+            "matches material",
+            "matches and",
+            "matches the",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": [
+            "base_color"
+          ]
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Gravel012",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Gravel 012",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel012/Gravel012_SQ_Color.jpg?95935&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel012/Gravel012_SQ_Displacement.jpg?61231&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel012/Gravel012_SQ_NormalDX.jpg?66265&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel012/Gravel012_SQ_Roughness.jpg?55064&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel012/Gravel012_SQ_AmbientOcclusion.jpg?43428",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 87,
+          "reasons": [
+            "matches surface",
+            "matches material",
+            "matches and",
+            "matches the",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": [
+            "base_color"
+          ]
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Gravel013",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Gravel 013",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel013/Gravel013_SQ_Color.jpg?7647&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel013/Gravel013_SQ_Displacement.jpg?33889&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel013/Gravel013_SQ_NormalDX.jpg?9712&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel013/Gravel013_SQ_Roughness.jpg?97355&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Gravel013/Gravel013_SQ_AmbientOcclusion.jpg?18182",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 87,
+          "reasons": [
+            "matches surface",
+            "matches material",
+            "matches and",
+            "matches the",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": [
+            "base_color"
+          ]
+        }
+      ],
+      "texture_scale_m": 0.15
+    },
+    {
+      "slot": {
+        "slot_id": "slot_metal_dark_iron",
+        "display_name": "Dark Iron Hardware",
+        "assigned_part_ids": [
+          "band_horizontal_front",
+          "band_horizontal_back",
+          "band_lid_curved",
+          "hinge_left",
+          "hinge_right",
+          "lock_plate_front",
+          "lock_hasp",
+          "handle_left",
+          "handle_right",
+          "corner_bracket_fl",
+          "corner_bracket_fr",
+          "corner_bracket_bl",
+          "corner_bracket_br",
+          "lid_top_ornament"
+        ],
+        "material_family": "metal",
+        "intent": "Dark forged iron for all hardware: bands, hinges, lock, handles, brackets, ornament. Reads as heavy, slightly weathered metal with subtle highlights on bevels and rivets.",
+        "semantic_tags": [
+          "metal",
+          "iron",
+          "forged",
+          "dark",
+          "hardware"
+        ],
+        "color_hint": "#3A3530",
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "physical_scale_m": 0.05,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "metallic",
+          "ambient_occlusion"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.227,
+            0.208,
+            0.188,
+            1
+          ],
+          "metallic": 0.9,
+          "roughness": 0.55
+        }
+      },
+      "status": "ready_r2",
+      "selected": {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_material_Asphalt008_4k-jpg",
+        "source_asset_id": "Asphalt008",
+        "variant_id": "4k-jpg-2",
+        "display_name": "Asphalt 008",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Asphalt008/4k-jpg/preview.png",
+        "resolution": "4K",
+        "file_format": "JPG",
+        "score": 92,
+        "reasons": [],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "base_color",
+          "normal_gl",
+          "normal_dx",
+          "roughness",
+          "ambient_occlusion",
+          "height"
+        ],
+        "missing_required_maps": [
+          "metallic"
+        ]
+      },
+      "candidates": [
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Asphalt008_4k-jpg",
+          "source_asset_id": "Asphalt008",
+          "variant_id": "4k-jpg-2",
+          "display_name": "Asphalt 008",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Asphalt008/4k-jpg/preview.png",
+          "resolution": "4K",
+          "file_format": "JPG",
+          "score": 92,
+          "reasons": [],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "ambient_occlusion",
+            "height"
+          ],
+          "missing_required_maps": [
+            "metallic"
+          ]
+        },
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Bricks001_4k-jpg",
+          "source_asset_id": "Bricks001",
+          "variant_id": "4k-jpg-2",
+          "display_name": "Bricks 001",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Bricks001/4k-jpg/preview.png",
+          "resolution": "4K",
+          "file_format": "JPG",
+          "score": 87,
+          "reasons": [
+            "matches dark"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "height"
+          ],
+          "missing_required_maps": [
+            "metallic",
+            "ambient_occlusion"
+          ]
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Rocks006",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Rocks 006",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_Color.jpg?27386&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_Displacement.jpg?29035&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_NormalDX.jpg?20485&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_Roughness.jpg?52053&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_AmbientOcclusion.jpg?9750",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 82,
+          "reasons": [
+            "matches for",
+            "matches on",
+            "matches the",
+            "matches edges",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": [
+            "base_color",
+            "metallic"
+          ]
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Bricks038",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Bricks 038",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bricks038/Bricks038_SQ_Color.jpg?69064&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bricks038/Bricks038_SQ_Displacement.jpg?1227&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bricks038/Bricks038_SQ_NormalDX.jpg?78174&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bricks038/Bricks038_SQ_Roughness.jpg?99181&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bricks038/Bricks038_SQ_AmbientOcclusion.jpg?90207",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 68,
+          "reasons": [
+            "matches for",
+            "matches on",
+            "matches the",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": [
+            "base_color",
+            "metallic"
+          ]
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Ground022",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Ground 022",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground022/Ground022_SQ_Color.jpg?52221&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground022/Ground022_SQ_Displacement.jpg?85056&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground022/Ground022_SQ_NormalDX.jpg?9467&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground022/Ground022_SQ_Roughness.jpg?36552&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground022/Ground022_SQ_AmbientOcclusion.jpg?73099",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 68,
+          "reasons": [
+            "matches for",
+            "matches on",
+            "matches the",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": [
+            "base_color",
+            "metallic"
+          ]
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Ground029",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Ground 029",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground029/Ground029_SQ_Color.jpg?8652&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground029/Ground029_SQ_Displacement.jpg?90023&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground029/Ground029_SQ_NormalDX.jpg?8488&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground029/Ground029_SQ_Roughness.jpg?10809&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground029/Ground029_SQ_AmbientOcclusion.jpg?87923",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 68,
+          "reasons": [
+            "matches for",
+            "matches on",
+            "matches the",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": [
+            "base_color",
+            "metallic"
+          ]
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Ground037",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Ground 037",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground037/Ground037_SQ_Color.jpg?88382&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground037/Ground037_SQ_Displacement.jpg?52769&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground037/Ground037_SQ_NormalDX.jpg?49265&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground037/Ground037_SQ_Roughness.jpg?65528&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground037/Ground037_SQ_AmbientOcclusion.jpg?45701",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 68,
+          "reasons": [
+            "matches for",
+            "matches on",
+            "matches the",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": [
+            "base_color",
+            "metallic"
+          ]
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "PavingStones055",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Paving Stones 055",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/PavingStones055/PavingStones055_SQ_Color.jpg?46798&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/PavingStones055/PavingStones055_SQ_Displacement.jpg?65980&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/PavingStones055/PavingStones055_SQ_NormalDX.jpg?60282&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/PavingStones055/PavingStones055_SQ_Roughness.jpg?53204&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/PavingStones055/PavingStones055_SQ_AmbientOcclusion.jpg?71379",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 68,
+          "reasons": [
+            "matches for",
+            "matches on",
+            "matches the",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": [
+            "base_color",
+            "metallic"
+          ]
+        }
+      ],
+      "texture_scale_m": 0.05
+    }
+  ],
+  "environment": {
+    "status": "ready_r2",
+    "intent": {
+      "intent": "neutral product look development",
+      "semantic_tags": [],
+      "preferred_environment_class": "studio",
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "background_visible": false
+    },
+    "selected": {
+      "candidate_kind": "cached_r2",
+      "resource_id": "ambientcg_hdri_DayEnvironmentHDRI005_8k-file",
+      "source_asset_id": "DayEnvironmentHDRI005",
+      "variant_id": "8k-file-3",
+      "display_name": "Day Environment HDRI 005",
+      "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/hdri/ambientcg/DayEnvironmentHDRI005/8k-file/preview.png",
+      "resolution": "8K",
+      "file_format": "EXR",
+      "score": 90,
+      "reasons": [],
+      "published_to_r2": true,
+      "required_maps_available": [
+        "environment"
+      ],
+      "missing_required_maps": []
+    },
+    "candidates": [
+      {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_hdri_DayEnvironmentHDRI005_8k-file",
+        "source_asset_id": "DayEnvironmentHDRI005",
+        "variant_id": "8k-file-3",
+        "display_name": "Day Environment HDRI 005",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/hdri/ambientcg/DayEnvironmentHDRI005/8k-file/preview.png",
+        "resolution": "8K",
+        "file_format": "EXR",
+        "score": 90,
+        "reasons": [],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      },
+      {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_hdri_DayEnvironmentHDRI059_8k-file",
+        "source_asset_id": "DayEnvironmentHDRI059",
+        "variant_id": "8k-file-3",
+        "display_name": "Day Environment HDRI 059",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/hdri/ambientcg/DayEnvironmentHDRI059/8k-file/preview.png",
+        "resolution": "8K",
+        "file_format": "EXR",
+        "score": 90,
+        "reasons": [],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      },
+      {
+        "candidate_kind": "ambientcg_catalog",
+        "resource_id": null,
+        "source_asset_id": "DayEnvironmentHDRI001",
+        "variant_id": "1k-file-0",
+        "display_name": "Day Environment HDRI 001",
+        "preview_url": "https://releases.pbr.one/main/hdri-shading.html#environment_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI001/DayEnvironmentHDRI001_LQ.exr?31799,https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI001/DayEnvironmentHDRI001_HQ.exr?7471&environment_name=LQ,HQ",
+        "resolution": "1K",
+        "file_format": null,
+        "score": 24,
+        "reasons": [],
+        "published_to_r2": false,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      },
+      {
+        "candidate_kind": "ambientcg_catalog",
+        "resource_id": null,
+        "source_asset_id": "DayEnvironmentHDRI002",
+        "variant_id": "1k-file-0",
+        "display_name": "Day Environment HDRI 002",
+        "preview_url": "https://releases.pbr.one/main/hdri-shading.html#environment_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI002/DayEnvironmentHDRI002_LQ.exr?33428,https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI002/DayEnvironmentHDRI002_HQ.exr?81865&environment_name=LQ,HQ",
+        "resolution": "1K",
+        "file_format": null,
+        "score": 24,
+        "reasons": [],
+        "published_to_r2": false,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      },
+      {
+        "candidate_kind": "ambientcg_catalog",
+        "resource_id": null,
+        "source_asset_id": "DayEnvironmentHDRI003",
+        "variant_id": "1k-file-0",
+        "display_name": "Day Environment HDRI 003",
+        "preview_url": "https://releases.pbr.one/main/hdri-shading.html#environment_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI003/DayEnvironmentHDRI003_LQ.exr?79349,https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI003/DayEnvironmentHDRI003_HQ.exr?54264&environment_name=LQ,HQ",
+        "resolution": "1K",
+        "file_format": null,
+        "score": 24,
+        "reasons": [],
+        "published_to_r2": false,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      },
+      {
+        "candidate_kind": "ambientcg_catalog",
+        "resource_id": null,
+        "source_asset_id": "DayEnvironmentHDRI004",
+        "variant_id": "1k-file-0",
+        "display_name": "Day Environment HDRI 004",
+        "preview_url": "https://releases.pbr.one/main/hdri-shading.html#environment_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI004/DayEnvironmentHDRI004_LQ.exr?33989,https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI004/DayEnvironmentHDRI004_HQ.exr?36783&environment_name=LQ,HQ",
+        "resolution": "1K",
+        "file_format": null,
+        "score": 24,
+        "reasons": [],
+        "published_to_r2": false,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      },
+      {
+        "candidate_kind": "ambientcg_catalog",
+        "resource_id": null,
+        "source_asset_id": "DayEnvironmentHDRI005",
+        "variant_id": "1k-file-0",
+        "display_name": "Day Environment HDRI 005",
+        "preview_url": "https://releases.pbr.one/main/hdri-shading.html#environment_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI005/DayEnvironmentHDRI005_LQ.exr?33278,https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI005/DayEnvironmentHDRI005_HQ.exr?48383&environment_name=LQ,HQ",
+        "resolution": "1K",
+        "file_format": null,
+        "score": 24,
+        "reasons": [],
+        "published_to_r2": false,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      },
+      {
+        "candidate_kind": "ambientcg_catalog",
+        "resource_id": null,
+        "source_asset_id": "DayEnvironmentHDRI006",
+        "variant_id": "1k-file-0",
+        "display_name": "Day Environment HDRI 006",
+        "preview_url": "https://releases.pbr.one/main/hdri-shading.html#environment_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI006/DayEnvironmentHDRI006_LQ.exr?38462,https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI006/DayEnvironmentHDRI006_HQ.exr?14525&environment_name=LQ,HQ",
+        "resolution": "1K",
+        "file_format": null,
+        "score": 24,
+        "reasons": [],
+        "published_to_r2": false,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      }
+    ]
+  },
+  "summary": {
+    "ready_r2": 3,
+    "catalog_matches": 0,
+    "procedural_fallbacks": 0,
+    "missing": 0,
+    "requires_preparation": false
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "schema_version": "myway_blender_foundry_resource_manifest_v1",
+  "created_at": "2026-08-01T23:28:48.296Z",
+  "design_brief_asset_id": "myway_wheelchair_v1",
+  "quality_mode": "standard",
+  "material_slots": {
+    "mat_metal_frame": {
+      "slot_id": "mat_metal_frame",
+      "display_name": "Metal 063",
+      "source": "ambientcg_r2",
+      "resource_id": "ambientcg_material_Metal063_2k-jpg",
+      "source_asset_id": "Metal063",
+      "variant_id": "2k-jpg-1",
+      "content_sha256": "4c4a995457002ff5288c337254893d3bd42bdd13cecba3e3dadf84e71ebae4a6",
+      "maps": {
+        "base_color": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal063_2k-jpg\\base_color.jpg",
+        "height": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal063_2k-jpg\\height.jpg",
+        "metallic": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal063_2k-jpg\\metallic.jpg",
+        "normal_dx": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal063_2k-jpg\\normal_dx.jpg",
+        "normal_gl": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal063_2k-jpg\\normal_gl.jpg",
+        "roughness": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal063_2k-jpg\\roughness.jpg"
+      },
+      "texture_scale_m": 0.05,
+      "fallback": {
+        "color_rgba": [
+          0.69,
+          0.71,
+          0.74,
+          1
+        ],
+        "metallic": 1,
+        "roughness": 0.35
+      }
+    },
+    "mat_rubber_tire": {
+      "slot_id": "mat_rubber_tire",
+      "display_name": "Rubber 001",
+      "source": "ambientcg_r2",
+      "resource_id": "ambientcg_material_Rubber001_2k-jpg",
+      "source_asset_id": "Rubber001",
+      "variant_id": "2k-jpg-1",
+      "content_sha256": "f98b7b58f5f2539432ea79aa96daa1c547deb332b83e1c6b9efa89a7c65a7d0e",
+      "maps": {
+        "base_color": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Rubber001_2k-jpg\\base_color.jpg",
+        "height": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Rubber001_2k-jpg\\height.jpg",
+        "normal_dx": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Rubber001_2k-jpg\\normal_dx.jpg",
+        "normal_gl": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Rubber001_2k-jpg\\normal_gl.jpg",
+        "roughness": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Rubber001_2k-jpg\\roughness.jpg"
+      },
+      "texture_scale_m": 0.2,
+      "fallback": {
+        "color_rgba": [
+          0.1,
+          0.1,
+          0.11,
+          1
+        ],
+        "metallic": 0,
+        "roughness": 0.85
+      }
+    },
+    "mat_metal_rim": {
+      "slot_id": "mat_metal_rim",
+      "display_name": "Metal 063",
+      "source": "ambientcg_r2",
+      "resource_id": "ambientcg_material_Metal063_2k-jpg",
+      "source_asset_id": "Metal063",
+      "variant_id": "2k-jpg-1",
+      "content_sha256": "4c4a995457002ff5288c337254893d3bd42bdd13cecba3e3dadf84e71ebae4a6",
+      "maps": {
+        "base_color": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal063_2k-jpg\\base_color.jpg",
+        "height": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal063_2k-jpg\\height.jpg",
+        "metallic": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal063_2k-jpg\\metallic.jpg",
+        "normal_dx": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal063_2k-jpg\\normal_dx.jpg",
+        "normal_gl": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal063_2k-jpg\\normal_gl.jpg",
+        "roughness": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal063_2k-jpg\\roughness.jpg"
+      },
+      "texture_scale_m": 0.02,
+      "fallback": {
+        "color_rgba": [
+          0.9,
+          0.91,
+          0.92,
+          1
+        ],
+        "metallic": 1,
+        "roughness": 0.25
+      }
+    },
+    "mat_fabric_seat": {
+      "slot_id": "mat_fabric_seat",
+      "display_name": "Fabric 080",
+      "source": "ambientcg_r2",
+      "resource_id": "ambientcg_material_Fabric080_2k-jpg",
+      "source_asset_id": "Fabric080",
+      "variant_id": "2k-jpg-1",
+      "content_sha256": "b3339de91b4754abbb483a2c0d07372e0b2189662b2ca6936fb034d91303f64a",
+      "maps": {
+        "base_color": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Fabric080_2k-jpg\\base_color.jpg",
+        "height": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Fabric080_2k-jpg\\height.jpg",
+        "normal_dx": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Fabric080_2k-jpg\\normal_dx.jpg",
+        "normal_gl": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Fabric080_2k-jpg\\normal_gl.jpg",
+        "roughness": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Fabric080_2k-jpg\\roughness.jpg"
+      },
+      "texture_scale_m": 0.1,
+      "fallback": {
+        "color_rgba": [
+          0.12,
+          0.16,
+          0.23,
+          1
+        ],
+        "metallic": 0,
+        "roughness": 0.95
+      }
+    }
+  },
+  "part_material_slots": {
+    "frame_main": "mat_metal_frame",
+    "frame_cross_brace_left": "mat_metal_frame",
+    "frame_cross_brace_right": "mat_metal_frame",
+    "wheel_rear_left": "mat_rubber_tire",
+    "wheel_rear_right": "mat_rubber_tire",
+    "hand_rim_left": "mat_metal_rim",
+    "hand_rim_right": "mat_metal_rim",
+    "caster_assembly_front_left": "mat_metal_frame",
+    "caster_assembly_front_right": "mat_metal_frame",
+    "seat_sling": "mat_fabric_seat",
+    "backrest_sling": "mat_fabric_seat",
+    "armrest_left": "mat_metal_frame",
+    "armrest_right": "mat_metal_frame",
+    "footrest_left": "mat_metal_frame",
+    "footrest_right": "mat_metal_frame",
+    "brake_lever_left": "mat_metal_frame",
+    "brake_lever_right": "mat_metal_frame"
+  },
+  "environment": {
+    "source": "ambientcg_r2",
+    "resource_id": "ambientcg_hdri_DayEnvironmentHDRI005_8k-file",
+    "source_asset_id": "DayEnvironmentHDRI005",
+    "variant_id": "8k-file-3",
+    "content_sha256": "f1e9375394b3fffd9259981eaf2a6f9f59778ba019fba9a93edf1288cddcadd0",
+    "environment_path": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_hdri_DayEnvironmentHDRI005_8k-file\\environment.exr",
+    "strength": 0.8,
+    "rotation_degrees": 0,
+    "background_visible": false
+  }
+}

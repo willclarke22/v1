@@ -44,10 +44,39 @@ export type RuntimeSceneActorTransform = {
   scale: number;
 };
 
+export const RUNTIME_SCENE_PRIMITIVE_KINDS = [
+  "box",
+  "cylinder",
+  "sphere",
+  "plane",
+  "cone",
+  "torus",
+  "rod",
+] as const;
+
+export type RuntimeScenePrimitiveKind =
+  (typeof RUNTIME_SCENE_PRIMITIVE_KINDS)[number];
+
+export type RuntimeScenePrimitiveBindingV1 = {
+  entity_id: string;
+  primitive_kind: RuntimeScenePrimitiveKind;
+  dimensions: [number, number, number];
+  color: string;
+  metalness: number;
+  roughness: number;
+  opacity: number;
+  generated_uvs: true;
+  cast_shadow: boolean;
+  receive_shadow: boolean;
+};
+
 export type RuntimeSceneActorBindingV1 = {
   entity_id: string;
   intent_id: string;
   model: RuntimeModelBindingV1 | null;
+  primitive: RuntimeScenePrimitiveBindingV1 | null;
+  fallback_only: boolean;
+  fallback_reason: string | null;
   material_binding_ids: string[];
   required: boolean;
   transform: RuntimeSceneActorTransform;
@@ -128,6 +157,7 @@ export type RuntimeSceneDiagnostics = {
   source: RuntimeSceneSource;
   entity_ids: string[];
   model_resource_ids: string[];
+  primitive_entity_ids: string[];
   material_assignments: Array<{
     material_binding_id: string;
     material_resource_id: string;

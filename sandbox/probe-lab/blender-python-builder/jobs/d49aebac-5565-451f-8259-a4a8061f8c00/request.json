@@ -1,0 +1,1508 @@
+{
+  "job_id": "d49aebac-5565-451f-8259-a4a8061f8c00",
+  "asset_name": "treasure_chest_stylized_001",
+  "parent_job_id": null,
+  "revision_number": 1,
+  "revision_label": "initial build",
+  "critique": null,
+  "asset_spec": {
+    "schema_version": "myway_procedural_asset_spec_v1",
+    "asset_id": "treasure_chest_stylized_001",
+    "concept": "A high-quality stylized wooden treasure chest with a curved separate lid, substantial dark metal bands wrapping the chest, real hinges, corner brackets, side handles, a front lock plate, and softened manufactured edges. Designed for animation with a clear lid pivot.",
+    "target_extent_m": 2,
+    "max_triangles": 45000,
+    "style_tags": [
+      "stylized",
+      "high_quality",
+      "treasure_chest",
+      "wood",
+      "metal",
+      "game_ready",
+      "animation_ready",
+      "high-quality clean stylized"
+    ],
+    "realism": "stylized",
+    "parts": [
+      {
+        "part_id": "chest_base",
+        "semantic_role": "main_structure",
+        "geometry_intent": "compound",
+        "parent_part_id": null,
+        "material_intent": "wood_primary",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "lid_shell",
+        "semantic_role": "cover",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_base",
+        "material_intent": "wood_primary",
+        "animation_role": "rotating_cover",
+        "required": true
+      },
+      {
+        "part_id": "metal_bands_base",
+        "semantic_role": "reinforcement",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_base",
+        "material_intent": "metal_dark",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "metal_bands_lid",
+        "semantic_role": "reinforcement",
+        "geometry_intent": "compound",
+        "parent_part_id": "lid_shell",
+        "material_intent": "metal_dark",
+        "animation_role": "rotating_cover",
+        "required": true
+      },
+      {
+        "part_id": "corner_brackets",
+        "semantic_role": "hardware",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_base",
+        "material_intent": "metal_dark",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "hinges",
+        "semantic_role": "mechanical_joint",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_base",
+        "material_intent": "metal_hardware",
+        "animation_role": "mechanical_joint",
+        "required": true
+      },
+      {
+        "part_id": "side_handles",
+        "semantic_role": "hardware",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_base",
+        "material_intent": "metal_hardware",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "lock_plate",
+        "semantic_role": "hardware",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_base",
+        "material_intent": "metal_hardware",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "lock_hasp",
+        "semantic_role": "mechanical_lock",
+        "geometry_intent": "compound",
+        "parent_part_id": "lid_shell",
+        "material_intent": "metal_hardware",
+        "animation_role": "rotating_lock",
+        "required": true
+      }
+    ],
+    "requirements": {
+      "uv_required": true,
+      "rig_required": false,
+      "movable_parts": [],
+      "collision_required": false,
+      "ground_contact_required": true
+    }
+  },
+  "asset_spec_validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "design_brief": {
+    "schema_version": "myway_asset_design_brief_v2",
+    "asset_id": "treasure_chest_stylized_001",
+    "concept": "A high-quality stylized wooden treasure chest with a curved separate lid, substantial dark metal bands wrapping the chest, real hinges, corner brackets, side handles, a front lock plate, and softened manufactured edges. Designed for animation with a clear lid pivot.",
+    "asset_class": "hard_surface_assembly",
+    "intended_use": [],
+    "target_extent_m": 2,
+    "axis_dimensions_m": [
+      1.6,
+      1,
+      1.2
+    ],
+    "max_triangles": 45000,
+    "quality_mode": "standard",
+    "realism": "stylized",
+    "style_tags": [
+      "stylized",
+      "high_quality",
+      "treasure_chest",
+      "wood",
+      "metal",
+      "game_ready",
+      "animation_ready",
+      "high-quality clean stylized",
+      "manual code"
+    ],
+    "silhouette": {
+      "primary_shapes": [],
+      "identifying_features": [],
+      "important_negative_spaces": [],
+      "camera_readability": []
+    },
+    "proportions": [],
+    "parts": [
+      {
+        "part_id": "chest_base",
+        "semantic_role": "main_structure",
+        "geometry_strategy": [],
+        "parent_part_id": null,
+        "connection_strategy": "Static root part. The lid pivot is located at the back top edge of this base.",
+        "material_slot_id": "wood_primary",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at the center of the base floor.",
+        "required": true,
+        "identifying_features": [
+          "Recessed top lip",
+          "Heavy edge bevels",
+          "Wood plank seams"
+        ]
+      },
+      {
+        "part_id": "lid_shell",
+        "semantic_role": "cover",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_base",
+        "connection_strategy": "Connected via hinges to the base. Rotates around the Z-axis.",
+        "material_slot_id": "wood_primary",
+        "animation_role": "rotating_cover",
+        "pivot_requirement": "Pivot point at the back top edge of the base (y = -0.5m, z = 0.7m from base origin).",
+        "required": true,
+        "identifying_features": [
+          "Curved half-cylinder shape",
+          "Flat back",
+          "Overhanging front edge"
+        ]
+      },
+      {
+        "part_id": "metal_bands_base",
+        "semantic_role": "reinforcement",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_base",
+        "connection_strategy": "Boolean intersected or manually merged to the base wood surface, appearing to wrap tightly.",
+        "material_slot_id": "metal_dark",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at chest base origin.",
+        "required": true,
+        "identifying_features": [
+          "Horizontal wrapping bands",
+          "Rivets along the bands",
+          "Dark metallic material"
+        ]
+      },
+      {
+        "part_id": "metal_bands_lid",
+        "semantic_role": "reinforcement",
+        "geometry_strategy": [],
+        "parent_part_id": "lid_shell",
+        "connection_strategy": "Attached to the lid shell, moving and rotating with it.",
+        "material_slot_id": "metal_dark",
+        "animation_role": "rotating_cover",
+        "pivot_requirement": "Origin at lid pivot point.",
+        "required": true,
+        "identifying_features": [
+          "Vertical wrapping bands on lid",
+          "Rivets",
+          "Curved conforming shape"
+        ]
+      },
+      {
+        "part_id": "corner_brackets",
+        "semantic_role": "hardware",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_base",
+        "connection_strategy": "Merged to the base corners.",
+        "material_slot_id": "metal_dark",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at chest base origin.",
+        "required": true,
+        "identifying_features": [
+          "L-shape",
+          "Rounded corners",
+          "Large rivets"
+        ]
+      },
+      {
+        "part_id": "hinges",
+        "semantic_role": "mechanical_joint",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_base",
+        "connection_strategy": "The fixed knuckles are merged to the base. The moving knuckles are merged to the lid. A central pin connects them visually.",
+        "material_slot_id": "metal_hardware",
+        "animation_role": "mechanical_joint",
+        "pivot_requirement": "The moving hinge parts pivot with the lid.",
+        "required": true,
+        "identifying_features": [
+          "Barrel shape",
+          "Interlocking knuckles",
+          "Central pin"
+        ]
+      },
+      {
+        "part_id": "side_handles",
+        "semantic_role": "hardware",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_base",
+        "connection_strategy": "The brackets are merged to the side wood panels. The loops are separate objects parented to the base.",
+        "material_slot_id": "metal_hardware",
+        "animation_role": "static",
+        "pivot_requirement": "Handle loops pivot at their connection to the bracket.",
+        "required": true,
+        "identifying_features": [
+          "Raised bracket",
+          "Curved handle loop",
+          "Rivets"
+        ]
+      },
+      {
+        "part_id": "lock_plate",
+        "semantic_role": "hardware",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_base",
+        "connection_strategy": "Merged to the front wood panel.",
+        "material_slot_id": "metal_hardware",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at chest base origin.",
+        "required": true,
+        "identifying_features": [
+          "Recessed plate",
+          "Keyhole",
+          "Ornamental edges"
+        ]
+      },
+      {
+        "part_id": "lock_hasp",
+        "semantic_role": "mechanical_lock",
+        "geometry_strategy": [],
+        "parent_part_id": "lid_shell",
+        "connection_strategy": "Pivots at its top connection to the lid shell.",
+        "material_slot_id": "metal_hardware",
+        "animation_role": "rotating_lock",
+        "pivot_requirement": "Pivot at the top attachment point on the lid front.",
+        "required": true,
+        "identifying_features": [
+          "Hinged strap",
+          "Padlock hole",
+          "Rivets"
+        ]
+      }
+    ],
+    "material_slots": [
+      {
+        "slot_id": "wood_primary",
+        "display_name": "Stylized Chest Wood",
+        "assigned_part_ids": [
+          "chest_base",
+          "lid_shell"
+        ],
+        "material_family": "wood",
+        "intent": "A warm, rich wood texture with visible plank lines and a soft sheen. Stylized implies clean, readable grain, not photoreal noise.",
+        "semantic_tags": [
+          "wood",
+          "planks",
+          "warm",
+          "structural"
+        ],
+        "color_hint": "#6B4E2E",
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "physical_scale_m": 0.5,
+        "required_maps": [
+          "roughness"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.42,
+            0.31,
+            0.18,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.6
+        }
+      },
+      {
+        "slot_id": "metal_dark",
+        "display_name": "Dark Wrapping Metal",
+        "assigned_part_ids": [
+          "metal_bands_base",
+          "metal_bands_lid",
+          "corner_brackets"
+        ],
+        "material_family": "metal",
+        "intent": "A heavy, dark, slightly rough metal for the structural bands and corner protection. Should look forged, not polished.",
+        "semantic_tags": [
+          "metal",
+          "dark",
+          "forged",
+          "bands",
+          "structural"
+        ],
+        "color_hint": "#3A3A42",
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "physical_scale_m": 0.2,
+        "required_maps": [
+          "roughness",
+          "metallic"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.23,
+            0.23,
+            0.26,
+            1
+          ],
+          "metallic": 1,
+          "roughness": 0.5
+        }
+      },
+      {
+        "slot_id": "metal_hardware",
+        "display_name": "Hardware Metal",
+        "assigned_part_ids": [
+          "hinges",
+          "side_handles",
+          "lock_plate",
+          "lock_hasp"
+        ],
+        "material_family": "metal",
+        "intent": "A slightly lighter, more defined metal for the mechanical hardware and handles. Reads clearly against the dark bands.",
+        "semantic_tags": [
+          "metal",
+          "hardware",
+          "hinges",
+          "locks",
+          "mechanical"
+        ],
+        "color_hint": "#5A5A62",
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "physical_scale_m": 0.1,
+        "required_maps": [
+          "roughness",
+          "metallic"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.35,
+            0.35,
+            0.38,
+            1
+          ],
+          "metallic": 1,
+          "roughness": 0.4
+        }
+      }
+    ],
+    "environment": {
+      "intent": "neutral product look development",
+      "semantic_tags": [],
+      "preferred_environment_class": "studio",
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "background_visible": false
+    },
+    "requirements": {
+      "uv_required": true,
+      "rig_required": false,
+      "collision_required": false,
+      "ground_contact_required": true,
+      "animation_ready": true,
+      "movable_part_ids": []
+    },
+    "acceptance_criteria": [],
+    "benchmark_priorities": [
+      "Strong curved-lid silhouette",
+      "Substantial wrapping metal bands",
+      "Real hinges/hardware",
+      "Softened manufactured edges",
+      "Separate wood and metal regions",
+      "Readable ornament"
+    ]
+  },
+  "design_brief_validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": [
+      "Add at least three measurable acceptance criteria before final generation.",
+      "The design brief has few silhouette-identifying features."
+    ]
+  },
+  "resource_plan": {
+    "schema_version": "myway_foundry_resource_plan_v1",
+    "created_at": "2026-08-01T00:40:46.678Z",
+    "design_brief_asset_id": "treasure_chest_stylized_001",
+    "quality_mode": "standard",
+    "material_bindings": [
+      {
+        "slot": {
+          "slot_id": "wood_primary",
+          "display_name": "Stylized Chest Wood",
+          "assigned_part_ids": [
+            "chest_base",
+            "lid_shell"
+          ],
+          "material_family": "wood",
+          "intent": "A warm, rich wood texture with visible plank lines and a soft sheen. Stylized implies clean, readable grain, not photoreal noise.",
+          "semantic_tags": [
+            "wood",
+            "planks",
+            "warm",
+            "structural"
+          ],
+          "color_hint": "#6B4E2E",
+          "roughness_hint": null,
+          "metallic_hint": null,
+          "physical_scale_m": 0.5,
+          "required_maps": [
+            "roughness"
+          ],
+          "procedural_fallback": {
+            "color_rgba": [
+              0.42,
+              0.31,
+              0.18,
+              1
+            ],
+            "metallic": 0,
+            "roughness": 0.6
+          }
+        },
+        "status": "ready_r2",
+        "selected": {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Bricks001_4k-jpg",
+          "source_asset_id": "Bricks001",
+          "variant_id": "4k-jpg-2",
+          "display_name": "Bricks 001",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Bricks001/4k-jpg/preview.png",
+          "resolution": "4K",
+          "file_format": "JPG",
+          "score": 149,
+          "reasons": [
+            "matches dark",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "height"
+          ],
+          "missing_required_maps": []
+        },
+        "candidates": [
+          {
+            "candidate_kind": "cached_r2",
+            "resource_id": "ambientcg_material_Bricks001_4k-jpg",
+            "source_asset_id": "Bricks001",
+            "variant_id": "4k-jpg-2",
+            "display_name": "Bricks 001",
+            "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Bricks001/4k-jpg/preview.png",
+            "resolution": "4K",
+            "file_format": "JPG",
+            "score": 149,
+            "reasons": [
+              "matches dark",
+              "all required maps available"
+            ],
+            "published_to_r2": true,
+            "required_maps_available": [
+              "base_color",
+              "normal_gl",
+              "normal_dx",
+              "roughness",
+              "height"
+            ],
+            "missing_required_maps": []
+          },
+          {
+            "candidate_kind": "cached_r2",
+            "resource_id": "ambientcg_material_Asphalt008_4k-jpg",
+            "source_asset_id": "Asphalt008",
+            "variant_id": "4k-jpg-2",
+            "display_name": "Asphalt 008",
+            "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Asphalt008/4k-jpg/preview.png",
+            "resolution": "4K",
+            "file_format": "JPG",
+            "score": 138,
+            "reasons": [
+              "all required maps available"
+            ],
+            "published_to_r2": true,
+            "required_maps_available": [
+              "base_color",
+              "normal_gl",
+              "normal_dx",
+              "roughness",
+              "ambient_occlusion",
+              "height"
+            ],
+            "missing_required_maps": []
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Planks009",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Planks 009",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks009/Planks009_SQ_Color.jpg?35112&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks009/Planks009_SQ_Displacement.jpg?40441&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks009/Planks009_SQ_NormalDX.jpg?60389&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks009/Planks009_SQ_Roughness.jpg?23372&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks009/Planks009_SQ_AmbientOcclusion.jpg?85847",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 92,
+            "reasons": [
+              "matches wood",
+              "matches plank",
+              "matches clean",
+              "matches planks",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": []
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Metal046A",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Metal 046 A",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Color.jpg?25478&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Displacement.jpg?40650&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_NormalDX.jpg?45792&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Roughness.jpg?5022&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Metalness.jpg?69022",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 78,
+            "reasons": [
+              "matches clean",
+              "matches dark",
+              "matches metal",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": []
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Planks014",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Planks 014",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks014/Planks014_SQ_Color.jpg?34372&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks014/Planks014_SQ_Displacement.jpg?44271&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks014/Planks014_SQ_NormalDX.jpg?40277&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks014/Planks014_SQ_Roughness.jpg?77486&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks014/Planks014_SQ_AmbientOcclusion.jpg?34870&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks014/Planks014_SQ_Metalness.jpg?52487",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 78,
+            "reasons": [
+              "matches wood",
+              "matches planks",
+              "matches dark",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": []
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Planks023A",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Planks 023 A",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023A/Planks023A_SQ_Color.jpg?42775&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023A/Planks023A_SQ_Displacement.jpg?61137&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023A/Planks023A_SQ_NormalDX.jpg?45815&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023A/Planks023A_SQ_Roughness.jpg?78104&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023A/Planks023A_SQ_AmbientOcclusion.jpg?46581&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023A/Planks023A_SQ_Metalness.jpg?756",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 78,
+            "reasons": [
+              "matches wood",
+              "matches planks",
+              "matches dark",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": []
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Planks023B",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Planks 023 B",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023B/Planks023B_SQ_Color.jpg?82468&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023B/Planks023B_SQ_Displacement.jpg?68830&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023B/Planks023B_SQ_NormalDX.jpg?49891&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023B/Planks023B_SQ_Roughness.jpg?69066&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023B/Planks023B_SQ_AmbientOcclusion.jpg?11784&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023B/Planks023B_SQ_Metalness.jpg?34080",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 78,
+            "reasons": [
+              "matches wood",
+              "matches planks",
+              "matches dark",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": []
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Planks023C",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Planks 023 C",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023C/Planks023C_SQ_Color.jpg?73570&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023C/Planks023C_SQ_Displacement.jpg?6251&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023C/Planks023C_SQ_NormalDX.jpg?44465&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023C/Planks023C_SQ_Roughness.jpg?17580&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023C/Planks023C_SQ_AmbientOcclusion.jpg?65412&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Planks023C/Planks023C_SQ_Metalness.jpg?90325",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 78,
+            "reasons": [
+              "matches wood",
+              "matches planks",
+              "matches dark",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": []
+          }
+        ],
+        "texture_scale_m": 0.5
+      },
+      {
+        "slot": {
+          "slot_id": "metal_dark",
+          "display_name": "Dark Wrapping Metal",
+          "assigned_part_ids": [
+            "metal_bands_base",
+            "metal_bands_lid",
+            "corner_brackets"
+          ],
+          "material_family": "metal",
+          "intent": "A heavy, dark, slightly rough metal for the structural bands and corner protection. Should look forged, not polished.",
+          "semantic_tags": [
+            "metal",
+            "dark",
+            "forged",
+            "bands",
+            "structural"
+          ],
+          "color_hint": "#3A3A42",
+          "roughness_hint": null,
+          "metallic_hint": null,
+          "physical_scale_m": 0.2,
+          "required_maps": [
+            "roughness",
+            "metallic"
+          ],
+          "procedural_fallback": {
+            "color_rgba": [
+              0.23,
+              0.23,
+              0.26,
+              1
+            ],
+            "metallic": 1,
+            "roughness": 0.5
+          }
+        },
+        "status": "ready_r2",
+        "selected": {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Asphalt008_4k-jpg",
+          "source_asset_id": "Asphalt008",
+          "variant_id": "4k-jpg-2",
+          "display_name": "Asphalt 008",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Asphalt008/4k-jpg/preview.png",
+          "resolution": "4K",
+          "file_format": "JPG",
+          "score": 106,
+          "reasons": [
+            "matches rough"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "ambient_occlusion",
+            "height"
+          ],
+          "missing_required_maps": [
+            "metallic"
+          ]
+        },
+        "candidates": [
+          {
+            "candidate_kind": "cached_r2",
+            "resource_id": "ambientcg_material_Asphalt008_4k-jpg",
+            "source_asset_id": "Asphalt008",
+            "variant_id": "4k-jpg-2",
+            "display_name": "Asphalt 008",
+            "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Asphalt008/4k-jpg/preview.png",
+            "resolution": "4K",
+            "file_format": "JPG",
+            "score": 106,
+            "reasons": [
+              "matches rough"
+            ],
+            "published_to_r2": true,
+            "required_maps_available": [
+              "base_color",
+              "normal_gl",
+              "normal_dx",
+              "roughness",
+              "ambient_occlusion",
+              "height"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "cached_r2",
+            "resource_id": "ambientcg_material_Bricks001_4k-jpg",
+            "source_asset_id": "Bricks001",
+            "variant_id": "4k-jpg-2",
+            "display_name": "Bricks 001",
+            "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Bricks001/4k-jpg/preview.png",
+            "resolution": "4K",
+            "file_format": "JPG",
+            "score": 103,
+            "reasons": [
+              "matches dark"
+            ],
+            "published_to_r2": true,
+            "required_maps_available": [
+              "base_color",
+              "normal_gl",
+              "normal_dx",
+              "roughness",
+              "height"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Wood004",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Wood 004",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood004/Wood004_SQ_Color.jpg?76535&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood004/Wood004_SQ_Displacement.jpg?74186&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood004/Wood004_SQ_NormalDX.jpg?67294&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood004/Wood004_SQ_Roughness.jpg?98887",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 87,
+            "reasons": [
+              "matches dark",
+              "matches rough",
+              "matches wood",
+              "matches clean",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Wood037",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Wood 037",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood037/Wood037_SQ_Color.jpg?74347&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood037/Wood037_SQ_Displacement.jpg?42014&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood037/Wood037_SQ_NormalDX.jpg?4640&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood037/Wood037_SQ_Roughness.jpg?4425",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 87,
+            "reasons": [
+              "matches dark",
+              "matches rough",
+              "matches wooden",
+              "matches wood",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "CorrugatedSteel009",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Corrugated Steel 009",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel009/CorrugatedSteel009_SQ_Color.jpg?59647&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel009/CorrugatedSteel009_SQ_Displacement.jpg?47722&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel009/CorrugatedSteel009_SQ_NormalDX.jpg?60299&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel009/CorrugatedSteel009_SQ_Roughness.jpg?57929&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel009/CorrugatedSteel009_SQ_AmbientOcclusion.jpg?81460&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel009/CorrugatedSteel009_SQ_Metalness.jpg?76800",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 73,
+            "reasons": [
+              "matches dark",
+              "matches metal",
+              "matches rough",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Ground037",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Ground 037",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground037/Ground037_SQ_Color.jpg?88382&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground037/Ground037_SQ_Displacement.jpg?52769&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground037/Ground037_SQ_NormalDX.jpg?49265&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground037/Ground037_SQ_Roughness.jpg?65528&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground037/Ground037_SQ_AmbientOcclusion.jpg?45701",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 73,
+            "reasons": [
+              "matches rough",
+              "matches for",
+              "matches the",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Metal013",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Metal 013",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal013/Metal013_SQ_Color.jpg?4261&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal013/Metal013_SQ_Displacement.jpg?25182&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal013/Metal013_SQ_NormalDX.jpg?67925&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal013/Metal013_SQ_Roughness.jpg?27373&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal013/Metal013_SQ_Metalness.jpg?16292",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 73,
+            "reasons": [
+              "matches dark",
+              "matches metal",
+              "matches rough",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Metal014",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Metal 014",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_Color.jpg?47863&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_Displacement.jpg?33136&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_NormalDX.jpg?6026&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_Roughness.jpg?1303&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_Metalness.jpg?26135",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 73,
+            "reasons": [
+              "matches metal",
+              "matches rough",
+              "matches clean",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          }
+        ],
+        "texture_scale_m": 0.2
+      },
+      {
+        "slot": {
+          "slot_id": "metal_hardware",
+          "display_name": "Hardware Metal",
+          "assigned_part_ids": [
+            "hinges",
+            "side_handles",
+            "lock_plate",
+            "lock_hasp"
+          ],
+          "material_family": "metal",
+          "intent": "A slightly lighter, more defined metal for the mechanical hardware and handles. Reads clearly against the dark bands.",
+          "semantic_tags": [
+            "metal",
+            "hardware",
+            "hinges",
+            "locks",
+            "mechanical"
+          ],
+          "color_hint": "#5A5A62",
+          "roughness_hint": null,
+          "metallic_hint": null,
+          "physical_scale_m": 0.1,
+          "required_maps": [
+            "roughness",
+            "metallic"
+          ],
+          "procedural_fallback": {
+            "color_rgba": [
+              0.35,
+              0.35,
+              0.38,
+              1
+            ],
+            "metallic": 1,
+            "roughness": 0.4
+          }
+        },
+        "status": "ready_r2",
+        "selected": {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Bricks001_4k-jpg",
+          "source_asset_id": "Bricks001",
+          "variant_id": "4k-jpg-2",
+          "display_name": "Bricks 001",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Bricks001/4k-jpg/preview.png",
+          "resolution": "4K",
+          "file_format": "JPG",
+          "score": 103,
+          "reasons": [
+            "matches dark"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "height"
+          ],
+          "missing_required_maps": [
+            "metallic"
+          ]
+        },
+        "candidates": [
+          {
+            "candidate_kind": "cached_r2",
+            "resource_id": "ambientcg_material_Bricks001_4k-jpg",
+            "source_asset_id": "Bricks001",
+            "variant_id": "4k-jpg-2",
+            "display_name": "Bricks 001",
+            "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Bricks001/4k-jpg/preview.png",
+            "resolution": "4K",
+            "file_format": "JPG",
+            "score": 103,
+            "reasons": [
+              "matches dark"
+            ],
+            "published_to_r2": true,
+            "required_maps_available": [
+              "base_color",
+              "normal_gl",
+              "normal_dx",
+              "roughness",
+              "height"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "cached_r2",
+            "resource_id": "ambientcg_material_Asphalt008_4k-jpg",
+            "source_asset_id": "Asphalt008",
+            "variant_id": "4k-jpg-2",
+            "display_name": "Asphalt 008",
+            "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Asphalt008/4k-jpg/preview.png",
+            "resolution": "4K",
+            "file_format": "JPG",
+            "score": 92,
+            "reasons": [],
+            "published_to_r2": true,
+            "required_maps_available": [
+              "base_color",
+              "normal_gl",
+              "normal_dx",
+              "roughness",
+              "ambient_occlusion",
+              "height"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Metal046A",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Metal 046 A",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Color.jpg?25478&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Displacement.jpg?40650&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_NormalDX.jpg?45792&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Roughness.jpg?5022&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Metalness.jpg?69022",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 73,
+            "reasons": [
+              "matches metal",
+              "matches dark",
+              "matches clean",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Rocks006",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Rocks 006",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_Color.jpg?27386&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_Displacement.jpg?29035&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_NormalDX.jpg?20485&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_Roughness.jpg?52053&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rocks006/Rocks006_SQ_AmbientOcclusion.jpg?9750",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 73,
+            "reasons": [
+              "matches for",
+              "matches the",
+              "matches edges",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Wood004",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Wood 004",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood004/Wood004_SQ_Color.jpg?76535&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood004/Wood004_SQ_Displacement.jpg?74186&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood004/Wood004_SQ_NormalDX.jpg?67294&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood004/Wood004_SQ_Roughness.jpg?98887",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 73,
+            "reasons": [
+              "matches dark",
+              "matches wood",
+              "matches clean",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Wood006",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Wood 006",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood006/Wood006_SQ_Color.jpg?11859&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood006/Wood006_SQ_Displacement.jpg?91725&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood006/Wood006_SQ_NormalDX.jpg?82593&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood006/Wood006_SQ_Roughness.jpg?86740",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 73,
+            "reasons": [
+              "matches dark",
+              "matches wood",
+              "matches clean",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Wood007",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Wood 007",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood007/Wood007_SQ_Color.jpg?55262&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood007/Wood007_SQ_Displacement.jpg?65142&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood007/Wood007_SQ_NormalDX.jpg?963&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood007/Wood007_SQ_Roughness.jpg?82812",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 73,
+            "reasons": [
+              "matches dark",
+              "matches wood",
+              "matches clean",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Wood008",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Wood 008",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood008/Wood008_SQ_Color.jpg?71406&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood008/Wood008_SQ_Displacement.jpg?23163&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood008/Wood008_SQ_NormalDX.jpg?71366&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wood008/Wood008_SQ_Roughness.jpg?98660",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 73,
+            "reasons": [
+              "matches dark",
+              "matches wood",
+              "matches clean",
+              "2K standard variant"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "roughness"
+            ],
+            "missing_required_maps": [
+              "metallic"
+            ]
+          }
+        ],
+        "texture_scale_m": 0.1
+      }
+    ],
+    "environment": {
+      "status": "ready_r2",
+      "intent": {
+        "intent": "neutral product look development",
+        "semantic_tags": [],
+        "preferred_environment_class": "studio",
+        "strength": 0.8,
+        "rotation_degrees": 0,
+        "background_visible": false
+      },
+      "selected": {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_hdri_DayEnvironmentHDRI005_8k-file",
+        "source_asset_id": "DayEnvironmentHDRI005",
+        "variant_id": "8k-file-3",
+        "display_name": "Day Environment HDRI 005",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/hdri/ambientcg/DayEnvironmentHDRI005/8k-file/preview.png",
+        "resolution": "8K",
+        "file_format": "EXR",
+        "score": 90,
+        "reasons": [],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      },
+      "candidates": [
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_hdri_DayEnvironmentHDRI005_8k-file",
+          "source_asset_id": "DayEnvironmentHDRI005",
+          "variant_id": "8k-file-3",
+          "display_name": "Day Environment HDRI 005",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/hdri/ambientcg/DayEnvironmentHDRI005/8k-file/preview.png",
+          "resolution": "8K",
+          "file_format": "EXR",
+          "score": 90,
+          "reasons": [],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "environment"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_hdri_DayEnvironmentHDRI059_8k-file",
+          "source_asset_id": "DayEnvironmentHDRI059",
+          "variant_id": "8k-file-3",
+          "display_name": "Day Environment HDRI 059",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/hdri/ambientcg/DayEnvironmentHDRI059/8k-file/preview.png",
+          "resolution": "8K",
+          "file_format": "EXR",
+          "score": 90,
+          "reasons": [],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "environment"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "DayEnvironmentHDRI001",
+          "variant_id": "1k-file-0",
+          "display_name": "Day Environment HDRI 001",
+          "preview_url": "https://releases.pbr.one/main/hdri-shading.html#environment_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI001/DayEnvironmentHDRI001_LQ.exr?31799,https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI001/DayEnvironmentHDRI001_HQ.exr?7471&environment_name=LQ,HQ",
+          "resolution": "1K",
+          "file_format": null,
+          "score": 24,
+          "reasons": [],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "environment"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "DayEnvironmentHDRI002",
+          "variant_id": "1k-file-0",
+          "display_name": "Day Environment HDRI 002",
+          "preview_url": "https://releases.pbr.one/main/hdri-shading.html#environment_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI002/DayEnvironmentHDRI002_LQ.exr?33428,https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI002/DayEnvironmentHDRI002_HQ.exr?81865&environment_name=LQ,HQ",
+          "resolution": "1K",
+          "file_format": null,
+          "score": 24,
+          "reasons": [],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "environment"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "DayEnvironmentHDRI003",
+          "variant_id": "1k-file-0",
+          "display_name": "Day Environment HDRI 003",
+          "preview_url": "https://releases.pbr.one/main/hdri-shading.html#environment_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI003/DayEnvironmentHDRI003_LQ.exr?79349,https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI003/DayEnvironmentHDRI003_HQ.exr?54264&environment_name=LQ,HQ",
+          "resolution": "1K",
+          "file_format": null,
+          "score": 24,
+          "reasons": [],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "environment"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "DayEnvironmentHDRI004",
+          "variant_id": "1k-file-0",
+          "display_name": "Day Environment HDRI 004",
+          "preview_url": "https://releases.pbr.one/main/hdri-shading.html#environment_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI004/DayEnvironmentHDRI004_LQ.exr?33989,https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI004/DayEnvironmentHDRI004_HQ.exr?36783&environment_name=LQ,HQ",
+          "resolution": "1K",
+          "file_format": null,
+          "score": 24,
+          "reasons": [],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "environment"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "DayEnvironmentHDRI005",
+          "variant_id": "1k-file-0",
+          "display_name": "Day Environment HDRI 005",
+          "preview_url": "https://releases.pbr.one/main/hdri-shading.html#environment_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI005/DayEnvironmentHDRI005_LQ.exr?33278,https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI005/DayEnvironmentHDRI005_HQ.exr?48383&environment_name=LQ,HQ",
+          "resolution": "1K",
+          "file_format": null,
+          "score": 24,
+          "reasons": [],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "environment"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "DayEnvironmentHDRI006",
+          "variant_id": "1k-file-0",
+          "display_name": "Day Environment HDRI 006",
+          "preview_url": "https://releases.pbr.one/main/hdri-shading.html#environment_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI006/DayEnvironmentHDRI006_LQ.exr?38462,https://f003.backblazeb2.com/file/ambientCG-Web/media/hdri-preview/DayEnvironmentHDRI006/DayEnvironmentHDRI006_HQ.exr?14525&environment_name=LQ,HQ",
+          "resolution": "1K",
+          "file_format": null,
+          "score": 24,
+          "reasons": [],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "environment"
+          ],
+          "missing_required_maps": []
+        }
+      ]
+    },
+    "summary": {
+      "ready_r2": 4,
+      "catalog_matches": 0,
+      "procedural_fallbacks": 0,
+      "missing": 0,
+      "requires_preparation": false
+    }
+  },
+  "resource_manifest": {
+    "schema_version": "myway_blender_foundry_resource_manifest_v1",
+    "created_at": "2026-08-01T00:45:25.078Z",
+    "design_brief_asset_id": "treasure_chest_stylized_001",
+    "quality_mode": "standard",
+    "material_slots": {
+      "wood_primary": {
+        "slot_id": "wood_primary",
+        "display_name": "Bricks 001",
+        "source": "ambientcg_r2",
+        "resource_id": "ambientcg_material_Bricks001_4k-jpg",
+        "source_asset_id": "Bricks001",
+        "variant_id": "4k-jpg-2",
+        "content_sha256": "cd01234e90c76fc4f477ee15056f2b7c14f8d3a80a9e8e9b3cdecef357c32f5c",
+        "maps": {
+          "base_color": "base_color.jpg",
+          "height": "height.jpg",
+          "normal_dx": "normal_dx.jpg",
+          "normal_gl": "normal_gl.jpg",
+          "roughness": "roughness.jpg"
+        },
+        "texture_scale_m": 0.5,
+        "fallback": {
+          "color_rgba": [
+            0.42,
+            0.31,
+            0.18,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.6
+        }
+      },
+      "metal_dark": {
+        "slot_id": "metal_dark",
+        "display_name": "Asphalt 008",
+        "source": "ambientcg_r2",
+        "resource_id": "ambientcg_material_Asphalt008_4k-jpg",
+        "source_asset_id": "Asphalt008",
+        "variant_id": "4k-jpg-2",
+        "content_sha256": "ae3b90ff511e1a9db8b485876cd493777286c3e531ea57e97bf141a7a6fd0893",
+        "maps": {
+          "ambient_occlusion": "ambient_occlusion.jpg",
+          "base_color": "base_color.jpg",
+          "height": "height.jpg",
+          "normal_dx": "normal_dx.jpg",
+          "normal_gl": "normal_gl.jpg",
+          "roughness": "roughness.jpg"
+        },
+        "texture_scale_m": 0.2,
+        "fallback": {
+          "color_rgba": [
+            0.23,
+            0.23,
+            0.26,
+            1
+          ],
+          "metallic": 1,
+          "roughness": 0.5
+        }
+      },
+      "metal_hardware": {
+        "slot_id": "metal_hardware",
+        "display_name": "Bricks 001",
+        "source": "ambientcg_r2",
+        "resource_id": "ambientcg_material_Bricks001_4k-jpg",
+        "source_asset_id": "Bricks001",
+        "variant_id": "4k-jpg-2",
+        "content_sha256": "cd01234e90c76fc4f477ee15056f2b7c14f8d3a80a9e8e9b3cdecef357c32f5c",
+        "maps": {
+          "base_color": "base_color.jpg",
+          "height": "height.jpg",
+          "normal_dx": "normal_dx.jpg",
+          "normal_gl": "normal_gl.jpg",
+          "roughness": "roughness.jpg"
+        },
+        "texture_scale_m": 0.1,
+        "fallback": {
+          "color_rgba": [
+            0.35,
+            0.35,
+            0.38,
+            1
+          ],
+          "metallic": 1,
+          "roughness": 0.4
+        }
+      }
+    },
+    "part_material_slots": {
+      "chest_base": "wood_primary",
+      "lid_shell": "wood_primary",
+      "metal_bands_base": "metal_dark",
+      "metal_bands_lid": "metal_dark",
+      "corner_brackets": "metal_dark",
+      "hinges": "metal_hardware",
+      "side_handles": "metal_hardware",
+      "lock_plate": "metal_hardware",
+      "lock_hasp": "metal_hardware"
+    },
+    "environment": {
+      "source": "ambientcg_r2",
+      "resource_id": "ambientcg_hdri_DayEnvironmentHDRI005_8k-file",
+      "source_asset_id": "DayEnvironmentHDRI005",
+      "variant_id": "8k-file-3",
+      "content_sha256": "f1e9375394b3fffd9259981eaf2a6f9f59778ba019fba9a93edf1288cddcadd0",
+      "environment_path": "environment.exr",
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "background_visible": false
+    }
+  },
+  "helper_library_version": "myway_blender_foundry_helpers_v2",
+  "inspection_footer_version": "myway_blender_foundry_inspection_v2",
+  "created_at": "2026-08-01T00:45:25.087Z"
+}

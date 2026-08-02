@@ -318,6 +318,20 @@ export type ResolvedAuxiliaryResourceBinding = {
   storage_provider: "local" | "r2";
   selection_reason: ResolvedResourceSelectionReason;
   license: ResolvedResourceLicenseReference;
+  /** Honest Phase 2 runtime classification for non-model resources. */
+  runtime_status?:
+    | "direct_runtime"
+    | "requires_compilation"
+    | "blender_only"
+    | "unsupported";
+  compiler?:
+    | "atlas_billboard"
+    | "terrain_heightfield"
+    | "decal_projector"
+    | "image_plane"
+    | "blender_bake"
+    | null;
+  runtime_target?: SceneResourceRuntimeTarget;
 };
 
 export type SceneModelResolutionDiagnostic = {

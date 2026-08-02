@@ -1,0 +1,1589 @@
+{
+  "schema_version": "myway_foundry_resource_plan_v1",
+  "created_at": "2026-08-01T22:18:57.822Z",
+  "design_brief_asset_id": "native_vintage_camera_cloud_proof",
+  "quality_mode": "standard",
+  "material_bindings": [
+    {
+      "slot": {
+        "slot_id": "camera_body_paint",
+        "display_name": "Black Painted Camera Metal",
+        "assigned_part_ids": [
+          "camerabody"
+        ],
+        "material_family": "metal",
+        "intent": "Subtle black painted or powder-coated metal suitable for a vintage camera body; clean enough for a stylized product asset, with restrained micro-surface variation.",
+        "semantic_tags": [
+          "metal",
+          "painted metal",
+          "black",
+          "dark",
+          "coated",
+          "camera body"
+        ],
+        "color_hint": "black",
+        "roughness_hint": "medium satin",
+        "metallic_hint": "metal beneath paint",
+        "physical_scale_m": 0.08,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "normal_gl",
+          "metallic"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.035,
+            0.04,
+            0.05,
+            1
+          ],
+          "metallic": 0.55,
+          "roughness": 0.38
+        }
+      },
+      "status": "ready_r2",
+      "selected": {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_material_Metal063_2k-jpg",
+        "source_asset_id": "Metal063",
+        "variant_id": "2k-jpg-1",
+        "display_name": "Metal 063",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal063/2k-jpg/preview.png",
+        "resolution": "2K",
+        "file_format": "JPG",
+        "score": 298,
+        "reasons": [
+          "metal family match (metal)",
+          "matches black",
+          "matches metal",
+          "matches dark",
+          "matches aged",
+          "matches fine",
+          "all required maps available"
+        ],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "base_color",
+          "normal_gl",
+          "normal_dx",
+          "roughness",
+          "metallic",
+          "height"
+        ],
+        "missing_required_maps": []
+      },
+      "candidates": [
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Metal063_2k-jpg",
+          "source_asset_id": "Metal063",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 063",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal063/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 298,
+          "reasons": [
+            "metal family match (metal)",
+            "matches black",
+            "matches metal",
+            "matches dark",
+            "matches aged",
+            "matches fine",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "metallic",
+            "height"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal063",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 063",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_Color.jpg?36758&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_Displacement.jpg?79319&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_NormalDX.jpg?80695&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_Roughness.jpg?51869&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_Metalness.jpg?61030",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 210,
+          "reasons": [
+            "metal family match (metal)",
+            "matches black",
+            "matches metal",
+            "matches surface",
+            "matches dark",
+            "matches aged",
+            "matches fine",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal027",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 027",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal027/Metal027_SQ_Color.jpg?58549&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal027/Metal027_SQ_Displacement.jpg?92422&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal027/Metal027_SQ_NormalDX.jpg?21703&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal027/Metal027_SQ_Roughness.jpg?36358&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal027/Metal027_SQ_Metalness.jpg?51663",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 196,
+          "reasons": [
+            "metal family match (metal)",
+            "matches black",
+            "matches painted",
+            "matches metal",
+            "matches powder",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal028",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 028",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal028/Metal028_SQ_Color.jpg?7380&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal028/Metal028_SQ_Displacement.jpg?9411&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal028/Metal028_SQ_NormalDX.jpg?52940&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal028/Metal028_SQ_Roughness.jpg?44878&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal028/Metal028_SQ_Metalness.jpg?43055",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 196,
+          "reasons": [
+            "metal family match (metal)",
+            "matches black",
+            "matches painted",
+            "matches metal",
+            "matches powder",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal029",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 029",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal029/Metal029_SQ_Color.jpg?42469&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal029/Metal029_SQ_Displacement.jpg?20059&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal029/Metal029_SQ_NormalDX.jpg?5361&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal029/Metal029_SQ_Roughness.jpg?31097&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal029/Metal029_SQ_Metalness.jpg?31686",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 196,
+          "reasons": [
+            "metal family match (metal)",
+            "matches black",
+            "matches painted",
+            "matches metal",
+            "matches powder",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal046A",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 046 A",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Color.jpg?25478&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Displacement.jpg?40650&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_NormalDX.jpg?45792&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Roughness.jpg?5022&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Metalness.jpg?69022",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 196,
+          "reasons": [
+            "metal family match (metal)",
+            "matches black",
+            "matches metal",
+            "matches clean",
+            "matches surface",
+            "matches dark",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal046B",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 046 B",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046B/Metal046B_SQ_Color.jpg?31378&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046B/Metal046B_SQ_Displacement.jpg?33450&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046B/Metal046B_SQ_NormalDX.jpg?10074&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046B/Metal046B_SQ_Roughness.jpg?13893&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046B/Metal046B_SQ_Metalness.jpg?99568",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "metal family match (metal)",
+            "matches black",
+            "matches metal",
+            "matches surface",
+            "matches dark",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "CorrugatedSteel005",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Corrugated Steel 005",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel005/CorrugatedSteel005_SQ_Color.jpg?75153&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel005/CorrugatedSteel005_SQ_Displacement.jpg?61274&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel005/CorrugatedSteel005_SQ_NormalDX.jpg?18838&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel005/CorrugatedSteel005_SQ_Roughness.jpg?33365&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel005/CorrugatedSteel005_SQ_AmbientOcclusion.jpg?92692&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel005/CorrugatedSteel005_SQ_Metalness.jpg?98537",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "metal family match (metal)",
+            "matches painted",
+            "matches metal",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "ambient_occlusion",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        }
+      ],
+      "texture_scale_m": 0.08
+    },
+    {
+      "slot": {
+        "slot_id": "leather_grip",
+        "display_name": "Fine Brown Vintage Leather",
+        "assigned_part_ids": [
+          "frontleatherpanel"
+        ],
+        "material_family": "leather",
+        "intent": "Warm medium-dark brown leather with fine grain appropriate to a handheld camera, not oversized furniture grain and not heavily damaged.",
+        "semantic_tags": [
+          "leather",
+          "brown",
+          "fine grain",
+          "warm",
+          "vintage",
+          "handheld"
+        ],
+        "color_hint": "warm brown",
+        "roughness_hint": "soft matte",
+        "metallic_hint": "nonmetal",
+        "physical_scale_m": 0.045,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "normal_gl"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.19,
+            0.085,
+            0.032,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.7
+        }
+      },
+      "status": "ready_r2",
+      "selected": {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_material_Leather037_2k-jpg",
+        "source_asset_id": "Leather037",
+        "variant_id": "2k-jpg-1",
+        "display_name": "Leather 037",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Leather037/2k-jpg/preview.png",
+        "resolution": "2K",
+        "file_format": "JPG",
+        "score": 281,
+        "reasons": [
+          "leather family match (leather)",
+          "matches brown",
+          "matches leather",
+          "matches dark",
+          "matches clean",
+          "all required maps available"
+        ],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "base_color",
+          "normal_gl",
+          "normal_dx",
+          "roughness",
+          "height"
+        ],
+        "missing_required_maps": []
+      },
+      "candidates": [
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Leather037_2k-jpg",
+          "source_asset_id": "Leather037",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Leather 037",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Leather037/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 281,
+          "reasons": [
+            "leather family match (leather)",
+            "matches brown",
+            "matches leather",
+            "matches dark",
+            "matches clean",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "height"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Leather037",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Leather 037",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather037/Leather037_SQ_Color.jpg?15686&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather037/Leather037_SQ_Displacement.jpg?53667&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather037/Leather037_SQ_NormalDX.jpg?77740&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather037/Leather037_SQ_Roughness.jpg?25824",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 196,
+          "reasons": [
+            "leather family match (leather)",
+            "matches brown",
+            "matches leather",
+            "matches dark",
+            "matches clean",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Leather006",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Leather 006",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather006/Leather006_SQ_Color.jpg?45619&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather006/Leather006_SQ_Displacement.jpg?6871&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather006/Leather006_SQ_NormalDX.jpg?20284&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather006/Leather006_SQ_Roughness.jpg?85915",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "leather family match (leather)",
+            "matches brown",
+            "matches leather",
+            "matches dark",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Leather007",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Leather 007",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather007/Leather007_SQ_Color.jpg?98341&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather007/Leather007_SQ_Displacement.jpg?32694&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather007/Leather007_SQ_NormalDX.jpg?97959&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather007/Leather007_SQ_Roughness.jpg?67043",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "leather family match (leather)",
+            "matches brown",
+            "matches leather",
+            "matches dark",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Leather014",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Leather 014",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather014/Leather014_SQ_Color.jpg?31760&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather014/Leather014_SQ_Displacement.jpg?11370&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather014/Leather014_SQ_NormalDX.jpg?51149&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather014/Leather014_SQ_Roughness.jpg?52590",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "leather family match (leather)",
+            "matches brown",
+            "matches vintage",
+            "matches leather",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Leather015",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Leather 015",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather015/Leather015_SQ_Color.jpg?55455&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather015/Leather015_SQ_Displacement.jpg?72686&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather015/Leather015_SQ_NormalDX.jpg?54566&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather015/Leather015_SQ_Roughness.jpg?42295&opacity_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather015/Leather015_SQ_Opacity.jpg?76538&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather015/Leather015_SQ_AmbientOcclusion.jpg?1295",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "leather family match (leather)",
+            "matches brown",
+            "matches leather",
+            "matches dark",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "opacity",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Leather019",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Leather 019",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather019/Leather019_SQ_Color.jpg?33754&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather019/Leather019_SQ_Displacement.jpg?81965&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather019/Leather019_SQ_NormalDX.jpg?6525&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather019/Leather019_SQ_Roughness.jpg?3044&opacity_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather019/Leather019_SQ_Opacity.jpg?25775&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather019/Leather019_SQ_AmbientOcclusion.jpg?11774",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "leather family match (leather)",
+            "matches brown",
+            "matches leather",
+            "matches dark",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "opacity",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Leather021",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Leather 021",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather021/Leather021_SQ_Color.jpg?92070&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather021/Leather021_SQ_Displacement.jpg?52502&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather021/Leather021_SQ_NormalDX.jpg?75834&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Leather021/Leather021_SQ_Roughness.jpg?32213",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "leather family match (leather)",
+            "matches brown",
+            "matches leather",
+            "matches dark",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        }
+      ],
+      "texture_scale_m": 0.045
+    },
+    {
+      "slot": {
+        "slot_id": "aged_brass",
+        "display_name": "Aged Brass Camera Hardware",
+        "assigned_part_ids": [
+          "lensmount",
+          "shutterdial",
+          "viewfinderframe"
+        ],
+        "material_family": "metal",
+        "intent": "Warm aged brass or bronze mechanical hardware with controlled patina and readable highlights; not rusty structural steel.",
+        "semantic_tags": [
+          "metal",
+          "brass",
+          "bronze",
+          "aged",
+          "warm",
+          "hardware"
+        ],
+        "color_hint": "warm brass",
+        "roughness_hint": "semi-polished worn",
+        "metallic_hint": "high",
+        "physical_scale_m": 0.035,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "normal_gl",
+          "metallic"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.58,
+            0.36,
+            0.09,
+            1
+          ],
+          "metallic": 1,
+          "roughness": 0.3
+        }
+      },
+      "status": "ready_r2",
+      "selected": {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_material_Metal063_2k-jpg",
+        "source_asset_id": "Metal063",
+        "variant_id": "2k-jpg-1",
+        "display_name": "Metal 063",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal063/2k-jpg/preview.png",
+        "resolution": "2K",
+        "file_format": "JPG",
+        "score": 312,
+        "reasons": [
+          "metal family match (metal)",
+          "matches aged",
+          "matches metal",
+          "matches rusty",
+          "matches steel",
+          "matches polished",
+          "matches fine",
+          "all required maps available"
+        ],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "base_color",
+          "normal_gl",
+          "normal_dx",
+          "roughness",
+          "metallic",
+          "height"
+        ],
+        "missing_required_maps": []
+      },
+      "candidates": [
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Metal063_2k-jpg",
+          "source_asset_id": "Metal063",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 063",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal063/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 312,
+          "reasons": [
+            "metal family match (metal)",
+            "matches aged",
+            "matches metal",
+            "matches rusty",
+            "matches steel",
+            "matches polished",
+            "matches fine",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "metallic",
+            "height"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal063",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 063",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_Color.jpg?36758&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_Displacement.jpg?79319&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_NormalDX.jpg?80695&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_Roughness.jpg?51869&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_Metalness.jpg?61030",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 224,
+          "reasons": [
+            "metal family match (metal)",
+            "matches aged",
+            "matches metal",
+            "matches rusty",
+            "matches steel",
+            "matches polished",
+            "matches fine",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "CorrugatedSteel009",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Corrugated Steel 009",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel009/CorrugatedSteel009_SQ_Color.jpg?59647&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel009/CorrugatedSteel009_SQ_Displacement.jpg?47722&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel009/CorrugatedSteel009_SQ_NormalDX.jpg?60299&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel009/CorrugatedSteel009_SQ_Roughness.jpg?57929&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel009/CorrugatedSteel009_SQ_AmbientOcclusion.jpg?81460&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel009/CorrugatedSteel009_SQ_Metalness.jpg?76800",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches steel",
+            "matches worn",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "ambient_occlusion",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal008",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 008",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal008/Metal008_SQ_Color.jpg?78261&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal008/Metal008_SQ_Displacement.jpg?72706&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal008/Metal008_SQ_NormalDX.jpg?6508&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal008/Metal008_SQ_Roughness.jpg?82172&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal008/Metal008_SQ_Metalness.jpg?98339",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches bronze",
+            "matches steel",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal014",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 014",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_Color.jpg?47863&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_Displacement.jpg?33136&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_NormalDX.jpg?6026&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_Roughness.jpg?1303&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_Metalness.jpg?26135",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches steel",
+            "matches clean",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal020",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 020",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal020/Metal020_SQ_Color.jpg?38587&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal020/Metal020_SQ_Displacement.jpg?63607&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal020/Metal020_SQ_NormalDX.jpg?99838&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal020/Metal020_SQ_Roughness.jpg?65062&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal020/Metal020_SQ_Metalness.jpg?40355",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches rusty",
+            "matches steel",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal021",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 021",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal021/Metal021_SQ_Color.jpg?48820&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal021/Metal021_SQ_Displacement.jpg?90169&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal021/Metal021_SQ_NormalDX.jpg?95807&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal021/Metal021_SQ_Roughness.jpg?74689&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal021/Metal021_SQ_Metalness.jpg?82257",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches rusty",
+            "matches steel",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal022",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 022",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal022/Metal022_SQ_Color.jpg?18115&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal022/Metal022_SQ_Displacement.jpg?63442&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal022/Metal022_SQ_NormalDX.jpg?48848&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal022/Metal022_SQ_Roughness.jpg?69510&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal022/Metal022_SQ_Metalness.jpg?61874",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches rusty",
+            "matches steel",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        }
+      ],
+      "texture_scale_m": 0.035
+    },
+    {
+      "slot": {
+        "slot_id": "matte_rubber",
+        "display_name": "Fine Matte Black Rubber",
+        "assigned_part_ids": [
+          "focusring"
+        ],
+        "material_family": "rubber",
+        "intent": "Fine-grain matte black rubber appropriate to a camera focus ring, with restrained normal detail and no tire tread.",
+        "semantic_tags": [
+          "rubber",
+          "black",
+          "matte",
+          "fine grain",
+          "camera grip"
+        ],
+        "color_hint": "black",
+        "roughness_hint": "high",
+        "metallic_hint": "nonmetal",
+        "physical_scale_m": 0.025,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "normal_gl"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.018,
+            0.02,
+            0.024,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.78
+        }
+      },
+      "status": "ready_r2",
+      "selected": {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_material_Rubber001_2k-jpg",
+        "source_asset_id": "Rubber001",
+        "variant_id": "2k-jpg-1",
+        "display_name": "Rubber 001",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Rubber001/2k-jpg/preview.png",
+        "resolution": "2K",
+        "file_format": "JPG",
+        "score": 253,
+        "reasons": [
+          "rubber family match (rubber)",
+          "matches black",
+          "matches rubber",
+          "all required maps available"
+        ],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "base_color",
+          "normal_gl",
+          "normal_dx",
+          "roughness",
+          "height"
+        ],
+        "missing_required_maps": []
+      },
+      "candidates": [
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Rubber001_2k-jpg",
+          "source_asset_id": "Rubber001",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Rubber 001",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Rubber001/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 253,
+          "reasons": [
+            "rubber family match (rubber)",
+            "matches black",
+            "matches rubber",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "height"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Rubber001",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Rubber 001",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber001/Rubber001_SQ_Color.jpg?81712&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber001/Rubber001_SQ_Displacement.jpg?39156&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber001/Rubber001_SQ_NormalDX.jpg?11338&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber001/Rubber001_SQ_Roughness.jpg?17646",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "rubber family match (rubber)",
+            "matches black",
+            "matches rubber",
+            "matches normal",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Rubber002",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Rubber 002",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber002/Rubber002_SQ_Color.jpg?53815&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber002/Rubber002_SQ_Displacement.jpg?57195&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber002/Rubber002_SQ_NormalDX.jpg?96387&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber002/Rubber002_SQ_Roughness.jpg?19842",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "rubber family match (rubber)",
+            "matches black",
+            "matches rubber",
+            "matches normal",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Rubber003",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Rubber 003",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber003/Rubber003_SQ_Color.jpg?41578&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber003/Rubber003_SQ_Displacement.jpg?74278&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber003/Rubber003_SQ_NormalDX.jpg?14424&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber003/Rubber003_SQ_Roughness.jpg?2053",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "rubber family match (rubber)",
+            "matches black",
+            "matches rubber",
+            "matches normal",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Rubber004",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Rubber 004",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber004/Rubber004_SQ_Color.jpg?50667&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber004/Rubber004_SQ_Displacement.jpg?55785&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber004/Rubber004_SQ_NormalDX.jpg?27221&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber004/Rubber004_SQ_Roughness.jpg?67693",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "rubber family match (rubber)",
+            "matches black",
+            "matches rubber",
+            "matches normal",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Ground017",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Ground 017",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground017/Ground017_SQ_Color.jpg?72320&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground017/Ground017_SQ_Displacement.jpg?42309&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground017/Ground017_SQ_NormalDX.jpg?46464&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground017/Ground017_SQ_Roughness.jpg?92423",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "rubber family match (tire)",
+            "matches normal",
+            "matches tire",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Metal063_2k-jpg",
+          "source_asset_id": "Metal063",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 063",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal063/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 14,
+          "reasons": [
+            "missing rubber family identity",
+            "matches fine",
+            "matches black",
+            "matches aged",
+            "matches metal",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "metallic",
+            "height"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "procedural",
+          "resource_id": null,
+          "source_asset_id": null,
+          "variant_id": null,
+          "display_name": "Fine Matte Black Rubber procedural fallback",
+          "preview_url": null,
+          "resolution": null,
+          "file_format": null,
+          "score": 1,
+          "reasons": [
+            "trusted Principled fallback"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [],
+          "missing_required_maps": [
+            "base_color",
+            "roughness",
+            "normal_gl"
+          ]
+        }
+      ],
+      "texture_scale_m": 0.025
+    },
+    {
+      "slot": {
+        "slot_id": "dark_metal",
+        "display_name": "Dark Camera Barrel Metal",
+        "assigned_part_ids": [
+          "lensbarrelouter"
+        ],
+        "material_family": "metal",
+        "intent": "Dark coated metal for the lens barrel and small structural camera parts, slightly more metallic than the painted body and without obvious large scratches.",
+        "semantic_tags": [
+          "metal",
+          "dark",
+          "black",
+          "coated",
+          "lens barrel"
+        ],
+        "color_hint": "charcoal black",
+        "roughness_hint": "medium",
+        "metallic_hint": "high",
+        "physical_scale_m": 0.04,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "normal_gl",
+          "metallic"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.04,
+            0.045,
+            0.055,
+            1
+          ],
+          "metallic": 0.9,
+          "roughness": 0.34
+        }
+      },
+      "status": "ready_r2",
+      "selected": {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_material_Metal063_2k-jpg",
+        "source_asset_id": "Metal063",
+        "variant_id": "2k-jpg-1",
+        "display_name": "Metal 063",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal063/2k-jpg/preview.png",
+        "resolution": "2K",
+        "file_format": "JPG",
+        "score": 298,
+        "reasons": [
+          "metal family match (metal)",
+          "matches dark",
+          "matches metal",
+          "matches black",
+          "matches aged",
+          "matches fine",
+          "all required maps available"
+        ],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "base_color",
+          "normal_gl",
+          "normal_dx",
+          "roughness",
+          "metallic",
+          "height"
+        ],
+        "missing_required_maps": []
+      },
+      "candidates": [
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Metal063_2k-jpg",
+          "source_asset_id": "Metal063",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 063",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal063/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 298,
+          "reasons": [
+            "metal family match (metal)",
+            "matches dark",
+            "matches metal",
+            "matches black",
+            "matches aged",
+            "matches fine",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "metallic",
+            "height"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal063",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 063",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_Color.jpg?36758&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_Displacement.jpg?79319&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_NormalDX.jpg?80695&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_Roughness.jpg?51869&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal063/Metal063_SQ_Metalness.jpg?61030",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 210,
+          "reasons": [
+            "metal family match (metal)",
+            "matches dark",
+            "matches metal",
+            "matches black",
+            "matches aged",
+            "matches fine",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal046A",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 046 A",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Color.jpg?25478&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Displacement.jpg?40650&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_NormalDX.jpg?45792&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Roughness.jpg?5022&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046A/Metal046A_SQ_Metalness.jpg?69022",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 196,
+          "reasons": [
+            "metal family match (metal)",
+            "matches dark",
+            "matches metal",
+            "matches black",
+            "matches clean",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal017",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 017",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal017/Metal017_SQ_Color.jpg?76473&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal017/Metal017_SQ_Displacement.jpg?97912&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal017/Metal017_SQ_NormalDX.jpg?72166&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal017/Metal017_SQ_Roughness.jpg?30471&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal017/Metal017_SQ_Metalness.jpg?34177",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "metal family match (metal)",
+            "matches dark",
+            "matches metal",
+            "matches scratches",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal018",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 018",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal018/Metal018_SQ_Color.jpg?22772&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal018/Metal018_SQ_Displacement.jpg?63199&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal018/Metal018_SQ_NormalDX.jpg?46899&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal018/Metal018_SQ_Roughness.jpg?45807&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal018/Metal018_SQ_Metalness.jpg?73413",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "metal family match (metal)",
+            "matches dark",
+            "matches metal",
+            "matches scratches",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal027",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 027",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal027/Metal027_SQ_Color.jpg?58549&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal027/Metal027_SQ_Displacement.jpg?92422&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal027/Metal027_SQ_NormalDX.jpg?21703&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal027/Metal027_SQ_Roughness.jpg?36358&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal027/Metal027_SQ_Metalness.jpg?51663",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches painted",
+            "matches black",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal028",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 028",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal028/Metal028_SQ_Color.jpg?7380&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal028/Metal028_SQ_Displacement.jpg?9411&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal028/Metal028_SQ_NormalDX.jpg?52940&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal028/Metal028_SQ_Roughness.jpg?44878&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal028/Metal028_SQ_Metalness.jpg?43055",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches painted",
+            "matches black",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal029",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 029",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal029/Metal029_SQ_Color.jpg?42469&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal029/Metal029_SQ_Displacement.jpg?20059&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal029/Metal029_SQ_NormalDX.jpg?5361&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal029/Metal029_SQ_Roughness.jpg?31097&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal029/Metal029_SQ_Metalness.jpg?31686",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 182,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches painted",
+            "matches black",
+            "matches surface",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        }
+      ],
+      "texture_scale_m": 0.04
+    }
+  ],
+  "environment": {
+    "status": "ready_r2",
+    "intent": {
+      "intent": "Soft neutral product-photography studio HDRI with broad highlights that reveal black paint, leather grain, brass, and lens glass.",
+      "semantic_tags": [
+        "studio",
+        "product",
+        "softbox",
+        "neutral",
+        "indoor"
+      ],
+      "preferred_environment_class": "studio",
+      "strength": 0.85,
+      "rotation_degrees": 28,
+      "background_visible": false
+    },
+    "selected": {
+      "candidate_kind": "cached_r2",
+      "resource_id": "ambientcg_hdri_DayEnvironmentHDRI005_8k-file",
+      "source_asset_id": "DayEnvironmentHDRI005",
+      "variant_id": "8k-file-3",
+      "display_name": "Day Environment HDRI 005",
+      "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/hdri/ambientcg/DayEnvironmentHDRI005/8k-file/preview.png",
+      "resolution": "8K",
+      "file_format": "EXR",
+      "score": 104,
+      "reasons": [
+        "matches hdri"
+      ],
+      "published_to_r2": true,
+      "required_maps_available": [
+        "environment"
+      ],
+      "missing_required_maps": []
+    },
+    "candidates": [
+      {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_hdri_DayEnvironmentHDRI005_8k-file",
+        "source_asset_id": "DayEnvironmentHDRI005",
+        "variant_id": "8k-file-3",
+        "display_name": "Day Environment HDRI 005",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/hdri/ambientcg/DayEnvironmentHDRI005/8k-file/preview.png",
+        "resolution": "8K",
+        "file_format": "EXR",
+        "score": 104,
+        "reasons": [
+          "matches hdri"
+        ],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      },
+      {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_hdri_DayEnvironmentHDRI059_8k-file",
+        "source_asset_id": "DayEnvironmentHDRI059",
+        "variant_id": "8k-file-3",
+        "display_name": "Day Environment HDRI 059",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/hdri/ambientcg/DayEnvironmentHDRI059/8k-file/preview.png",
+        "resolution": "8K",
+        "file_format": "EXR",
+        "score": 104,
+        "reasons": [
+          "matches hdri"
+        ],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      },
+      {
+        "candidate_kind": "procedural",
+        "resource_id": null,
+        "source_asset_id": null,
+        "variant_id": null,
+        "display_name": "Trusted neutral studio rig",
+        "preview_url": null,
+        "resolution": null,
+        "file_format": null,
+        "score": 1,
+        "reasons": [
+          "trusted fallback lighting"
+        ],
+        "published_to_r2": false,
+        "required_maps_available": [],
+        "missing_required_maps": []
+      }
+    ]
+  },
+  "summary": {
+    "ready_r2": 6,
+    "catalog_matches": 0,
+    "procedural_fallbacks": 0,
+    "missing": 0,
+    "requires_preparation": false
+  }
+}

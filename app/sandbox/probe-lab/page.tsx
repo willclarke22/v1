@@ -1,10 +1,10 @@
 const activeLabs = [
   {
     href: "/sandbox/probe-lab/blender-python-builder",
-    title: "Blender Python Asset Builder",
-    status: "GLM 5.2 procedural experiment",
+    title: "Blender Asset Foundry",
+    status: "focused asset-quality foundation",
     description:
-      "Ask GLM 5.2 to write editable Blender Python, paste or revise scripts, run Blender headlessly, and inspect the exported GLB in Three.js.",
+      "Design benchmark-quality procedural assets, match R2 or AmbientCG materials and HDRIs, generate or paste Blender Python, inspect geometry and look-development passes, improve revisions, and save review candidates.",
   },
   {
     href: "/sandbox/probe-lab/motion-camera-library",
@@ -28,9 +28,9 @@ const activeLabs = [
   {
     href: "/sandbox/probe-lab/resource-runtime",
     title: "Reviewed Resource Runtime",
-    status: "Phase 2D + 2F + 2G runtime proof",
+    status: "Phase 2 shared runtime + closeout",
     description:
-      "Resolve reviewed R2 models, PBR materials, and HDRI environments; inspect deterministic bindings, compare shared caches and fallbacks, and verify Blender temporary hydration.",
+      "Resolve reviewed R2 models, PBR materials, HDRIs, and mixed primitives through one shared runtime with cache, fallback, Blender hydration, and run-inspector diagnostics.",
   },
   {
     href: "/sandbox/probe-lab/visual-experience",
@@ -122,6 +122,3 @@ export default function ProbeLabPage() {
     </main>
   );
 }
-
-
-

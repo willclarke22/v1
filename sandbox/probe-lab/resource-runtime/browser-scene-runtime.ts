@@ -95,6 +95,166 @@ function fitActor(
   return group;
 }
 
+function primitiveGeometry(
+  actor: RuntimeSceneActorBindingV1,
+) {
+  const primitive = actor.primitive;
+  if (!primitive) {
+    throw new Error(
+      `Primitive binding is missing for ${actor.entity_id}.`,
+    );
+  }
+
+  const [width, height, depth] =
+    primitive.dimensions.map(
+      (value) =>
+        Math.max(
+          0.02,
+          Number.isFinite(value)
+            ? Math.abs(value)
+            : 1,
+        ),
+    ) as [number, number, number];
+
+  if (primitive.primitive_kind === "sphere") {
+    return new THREE.SphereGeometry(
+      Math.max(width, height, depth) / 2,
+      48,
+      28,
+    );
+  }
+  if (
+    primitive.primitive_kind === "cylinder" ||
+    primitive.primitive_kind === "rod"
+  ) {
+    return new THREE.CylinderGeometry(
+      Math.max(width, depth) / 2,
+      Math.max(width, depth) / 2,
+      height,
+      40,
+      1,
+      false,
+    );
+  }
+  if (primitive.primitive_kind === "cone") {
+    return new THREE.ConeGeometry(
+      Math.max(width, depth) / 2,
+      height,
+      40,
+    );
+  }
+  if (primitive.primitive_kind === "torus") {
+    return new THREE.TorusGeometry(
+      Math.max(width, depth) * 0.34,
+      Math.max(
+        0.02,
+        Math.min(width, depth) * 0.14,
+      ),
+      20,
+      64,
+    );
+  }
+  if (primitive.primitive_kind === "plane") {
+    return new THREE.PlaneGeometry(
+      width,
+      depth,
+      1,
+      1,
+    );
+  }
+  return new THREE.BoxGeometry(
+    width,
+    height,
+    depth,
+  );
+}
+
+function primitiveActorGroup(
+  actor: RuntimeSceneActorBindingV1,
+) {
+  const primitive = actor.primitive;
+  if (!primitive) {
+    throw new Error(
+      `Primitive binding is missing for ${actor.entity_id}.`,
+    );
+  }
+
+  const group = new THREE.Group();
+  const geometry =
+    primitiveGeometry(actor);
+  const material =
+    new THREE.MeshStandardMaterial({
+      color: primitive.color,
+      roughness:
+        THREE.MathUtils.clamp(
+          primitive.roughness,
+          0,
+          1,
+        ),
+      metalness:
+        THREE.MathUtils.clamp(
+          primitive.metalness,
+          0,
+          1,
+        ),
+      transparent:
+        primitive.opacity < 1,
+      opacity:
+        THREE.MathUtils.clamp(
+          primitive.opacity,
+          0.02,
+          1,
+        ),
+      side:
+        primitive.primitive_kind ===
+        "plane"
+          ? THREE.DoubleSide
+          : THREE.FrontSide,
+    });
+  const mesh =
+    new THREE.Mesh(
+      geometry,
+      material,
+    );
+  mesh.name =
+    `runtime_primitive:${actor.entity_id}`;
+  mesh.castShadow =
+    primitive.cast_shadow;
+  mesh.receiveShadow =
+    primitive.receive_shadow;
+
+  if (
+    primitive.primitive_kind ===
+    "plane"
+  ) {
+    mesh.rotation.x =
+      -Math.PI / 2;
+  }
+
+  group.add(mesh);
+  group.position.set(
+    ...actor.transform.position,
+  );
+  group.rotation.set(
+    ...actor.transform.rotation_radians,
+  );
+  group.scale.setScalar(
+    actor.transform.scale,
+  );
+  group.name =
+    `runtime_actor:${actor.entity_id}`;
+  group.userData.myway_entity_id =
+    actor.entity_id;
+  group.userData.myway_intent_id =
+    actor.intent_id;
+  group.userData.myway_primitive_kind =
+    primitive.primitive_kind;
+  group.userData.myway_generated_uvs =
+    primitive.generated_uvs;
+
+  return group;
+}
+
 function fallbackProxy(
   actor: RuntimeSceneActorBindingV1,
   label: string,
@@ -172,6 +332,13 @@ async function hydrateActor(
   try {
     update({ phase: "hydrating_model" });
 
+    if (actor.fallback_only) {
+      throw new Error(
+        actor.fallback_reason ??
+        `A reviewed model was unavailable for ${actor.entity_id}.`,
+      );
+    }
+
     if (
       options.simulate_failure_entity_id === actor.entity_id
     ) {
@@ -180,22 +347,31 @@ async function hydrateActor(
       );
     }
 
-    if (!actor.model) {
-      throw new Error(
-        `No runtime model binding exists for ${actor.entity_id}.`,
-      );
-    }
+    if (actor.primitive) {
+      ownedScene =
+        primitiveActorGroup(actor);
+      update({
+        model_metrics: null,
+        phase: "applying_materials",
+      });
+    } else {
+      if (!actor.model) {
+        throw new Error(
+          `No runtime model or primitive binding exists for ${actor.entity_id}.`,
+        );
+      }
 
-    const model = await acquireRuntimeGlb(actor.model, {
-      signal: options.signal,
-      verify_hash: options.verify_hash,
-    });
-    releases.push(model.release);
-    ownedScene = fitActor(model.scene, actor);
-    update({
-      model_metrics: model.metrics,
-      phase: "applying_materials",
-    });
+      const model = await acquireRuntimeGlb(actor.model, {
+        signal: options.signal,
+        verify_hash: options.verify_hash,
+      });
+      releases.push(model.release);
+      ownedScene = fitActor(model.scene, actor);
+      update({
+        model_metrics: model.metrics,
+        phase: "applying_materials",
+      });
+    }
 
     for (const materialBinding of materialBindingsForActor(
       sceneBinding,
@@ -529,6 +705,9 @@ export async function acquireRuntimeScene(
       model_resource_ids: binding.actors
         .map((actor) => actor.model?.asset_id ?? null)
         .filter((value): value is string => Boolean(value)),
+      primitive_entity_ids: binding.actors
+        .filter((actor) => Boolean(actor.primitive))
+        .map((actor) => actor.entity_id),
       material_assignments: binding.materials.map(
         (material) => ({
           material_binding_id:

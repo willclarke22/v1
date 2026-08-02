@@ -193,9 +193,10 @@ resolver. It does not search providers, change the scene plan, or enqueue
 acquisition. R2 bindings require HTTPS URLs. Loading failures preserve the
 Director entity id and render a declared diagrammatic proxy.
 
-The existing `useGLTF` paths in the Asset Library, Primitive Builder, and Visual
-Experience remain compatibility loaders until those labs are migrated in later
-Phase 2 integration patches.
+Existing `useGLTF` paths remain compatibility renderers for saved scenes and
+side-by-side verification. Manual Turn, Primitive Builder, and Visual Experience
+also expose the shared reviewed-resource runtime through one resolution route and
+one `RuntimeSceneBindingV1` contract.
 
 ## Phase 2F material runtime
 
@@ -228,3 +229,25 @@ PMREM targets are renderer-owned rather than globally shared across WebGL
 contexts. Downloaded source bytes may be deduplicated globally. This distinction
 prevents cross-canvas GPU resource ownership bugs while retaining network reuse.
 
+
+## Phase 2 closeout boundary
+
+The deterministic Phase 2 execution path is now:
+
+```text
+existing Director plan and stable ids
+→ SceneResourcePlanV1
+→ reviewed model/material/environment resolution
+→ auxiliary runtime classification
+→ primitive compatibility adapter
+→ RuntimeSceneBindingV1
+→ shared browser scene runtime
+→ unified run inspector
+```
+
+Manual resource choices are execution overrides only. They cannot regenerate or
+reinterpret educational direction. The resolver remains acquisition-free and
+R2-authoritative. Blender/Python generation uses a structured asset
+specification, trusted helpers, bounded execution/repair, GLB validation, and
+standardized inspection outputs; generated results still require the normal
+review and promotion pipeline.

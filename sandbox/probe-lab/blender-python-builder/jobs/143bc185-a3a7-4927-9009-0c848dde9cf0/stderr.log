@@ -1,0 +1,10 @@
+C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\143bc185-a3a7-4927-9009-0c848dde9cf0\build_asset.py:88: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  material.use_nodes = True
+C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\143bc185-a3a7-4927-9009-0c848dde9cf0\build_asset.py:115: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  material.use_nodes = True
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\143bc185-a3a7-4927-9009-0c848dde9cf0\build_asset.py", line 948, in <module>
+    camerabody = myway_box(body_w, body_h, body_d, name="camerabody")
+TypeError: myway_box() got multiple values for argument 'name'
+
+Error: script failed, file: 'C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\143bc185-a3a7-4927-9009-0c848dde9cf0\build_asset.py', exiting.

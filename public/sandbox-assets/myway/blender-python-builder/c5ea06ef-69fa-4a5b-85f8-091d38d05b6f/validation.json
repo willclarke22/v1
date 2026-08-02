@@ -1,0 +1,2484 @@
+{
+  "mesh_count": 98,
+  "material_slot_count": 98,
+  "triangle_count": 16072,
+  "object_names": [
+    "ArmPad_L",
+    "ArmPad_R",
+    "ArmSupportFront_L",
+    "ArmSupportFront_R",
+    "ArmSupportRear_L",
+    "ArmSupportRear_R",
+    "BackPost_L",
+    "BackPost_R",
+    "Backrest",
+    "CasterAssembly_L",
+    "CasterAssembly_R",
+    "CasterFork_L_A",
+    "CasterFork_L_B",
+    "CasterFork_R_A",
+    "CasterFork_R_B",
+    "CasterHub_L",
+    "CasterHub_R",
+    "CasterSwivelCap_L",
+    "CasterSwivelCap_R",
+    "CasterWheel_L",
+    "CasterWheel_R",
+    "CrossBracePivot",
+    "CrossBrace_A",
+    "CrossBrace_B",
+    "FootrestHanger_L",
+    "FootrestHanger_R",
+    "FootrestSupport_L",
+    "FootrestSupport_R",
+    "Footrest_L",
+    "Footrest_R",
+    "FrontFrameRiser_L",
+    "FrontFrameRiser_R",
+    "FrontSeatCrossbar",
+    "HandRim_L",
+    "HandRim_R",
+    "LowerFrameRail_L",
+    "LowerFrameRail_R",
+    "PushHandleStem_L",
+    "PushHandleStem_R",
+    "PushHandle_L",
+    "PushHandle_R",
+    "RearAxleCollar_L",
+    "RearAxleCollar_R",
+    "RearAxleCrossbar",
+    "RearFrameDiagonal_L",
+    "RearFrameDiagonal_R",
+    "RearHubCap_L",
+    "RearHubCap_R",
+    "RearHub_L",
+    "RearHub_R",
+    "RearSpoke_L_01",
+    "RearSpoke_L_02",
+    "RearSpoke_L_03",
+    "RearSpoke_L_04",
+    "RearSpoke_L_05",
+    "RearSpoke_L_06",
+    "RearSpoke_L_07",
+    "RearSpoke_L_08",
+    "RearSpoke_L_09",
+    "RearSpoke_L_10",
+    "RearSpoke_L_11",
+    "RearSpoke_L_12",
+    "RearSpoke_L_13",
+    "RearSpoke_L_14",
+    "RearSpoke_L_15",
+    "RearSpoke_L_16",
+    "RearSpoke_L_17",
+    "RearSpoke_L_18",
+    "RearSpoke_R_01",
+    "RearSpoke_R_02",
+    "RearSpoke_R_03",
+    "RearSpoke_R_04",
+    "RearSpoke_R_05",
+    "RearSpoke_R_06",
+    "RearSpoke_R_07",
+    "RearSpoke_R_08",
+    "RearSpoke_R_09",
+    "RearSpoke_R_10",
+    "RearSpoke_R_11",
+    "RearSpoke_R_12",
+    "RearSpoke_R_13",
+    "RearSpoke_R_14",
+    "RearSpoke_R_15",
+    "RearSpoke_R_16",
+    "RearSpoke_R_17",
+    "RearSpoke_R_18",
+    "RearWheelRim_L",
+    "RearWheelRim_R",
+    "RearWheel_L",
+    "RearWheel_R",
+    "SeatCushion",
+    "SeatRail_L",
+    "SeatRail_R",
+    "WheelBrakeBlock_L",
+    "WheelBrakeBlock_R",
+    "WheelBrakeLever_L",
+    "WheelBrakeLever_R",
+    "WheelchairFrame"
+  ],
+  "objects": [
+    {
+      "name": "SeatCushion",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_seat_upholstery_fabric"
+      ],
+      "dimensions": [
+        0.4699999988079071,
+        0.4050000011920929,
+        0.03799999877810478
+      ],
+      "location": [
+        0.0,
+        -0.03500000014901161,
+        0.47200000286102295
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "Backrest",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_seat_upholstery_fabric"
+      ],
+      "dimensions": [
+        0.4650000035762787,
+        0.03999999538064003,
+        0.4050000011920929
+      ],
+      "location": [
+        0.0,
+        0.1860000044107437,
+        0.7120000123977661
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearWheel_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_wheelchair_tire_rubber"
+      ],
+      "dimensions": [
+        0.6039999723434448,
+        0.6039999723434448,
+        0.046796541661024094
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearWheelRim_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.5189999938011169,
+        0.5189999938011169,
+        0.014265847392380238
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "HandRim_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.4880000054836273,
+        0.4880000054836273,
+        0.01141267828643322
+      ],
+      "location": [
+        -0.37299999594688416,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearHub_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.052000001072883606,
+        0.052000001072883606,
+        0.0820000022649765
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearHubCap_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.029999999329447746,
+        0.029999999329447746,
+        0.08799999952316284
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_01",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.17400000989437103,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_02",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.16682343184947968,
+        0.34270036220550537
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_03",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.14615929126739502,
+        0.37849169969558716
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_04",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.1145000010728836,
+        0.40505701303482056
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_05",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.07566413283348083,
+        0.4191921055316925
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_06",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.03433586657047272,
+        0.4191921055316925
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_07",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        -0.004500001668930054,
+        0.40505701303482056
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_08",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        -0.03615928813815117,
+        0.37849169969558716
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_09",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        -0.05682342126965523,
+        0.34270036220550537
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_10",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        -0.06399999558925629,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_11",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        -0.05682342126965523,
+        0.26129958033561707
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_12",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        -0.03615928813815117,
+        0.22550825774669647
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_13",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        -0.004500001668930054,
+        0.19894295930862427
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_14",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.03433586657047272,
+        0.18480786681175232
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_15",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.07566413283348083,
+        0.18480786681175232
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_16",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.1145000010728836,
+        0.19894295930862427
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_17",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.14615929126739502,
+        0.22550825774669647
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_L_18",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        -0.33500000834465027,
+        0.16682343184947968,
+        0.26129958033561707
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearAxleCollar_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.06800000369548798,
+        0.06800000369548798,
+        0.026000000536441803
+      ],
+      "location": [
+        -0.28299999237060547,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearWheel_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_wheelchair_tire_rubber"
+      ],
+      "dimensions": [
+        0.6039999723434448,
+        0.6039999723434448,
+        0.046796541661024094
+      ],
+      "location": [
+        0.33500000834465027,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearWheelRim_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.5189999938011169,
+        0.5189999938011169,
+        0.014265847392380238
+      ],
+      "location": [
+        0.33500000834465027,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "HandRim_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.4880000054836273,
+        0.4880000054836273,
+        0.01141267828643322
+      ],
+      "location": [
+        0.37299999594688416,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearHub_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.052000001072883606,
+        0.052000001072883606,
+        0.0820000022649765
+      ],
+      "location": [
+        0.33500000834465027,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearHubCap_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.029999999329447746,
+        0.029999999329447746,
+        0.08799999952316284
+      ],
+      "location": [
+        0.33500000834465027,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_01",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        0.33500000834465027,
+        0.17387953400611877,
+        0.3073531985282898
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_02",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        0.33500000834465027,
+        0.16487932205200195,
+        0.34768953919410706
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_03",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        0.33500000834465027,
+        0.14262603223323822,
+        0.3825150728225708
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_04",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        0.33500000834465027,
+        0.10980376601219177,
+        0.4076292812824249
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_05",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.2380000203847885
+      ],
+      "location": [
+        0.33500000834465027,
+        0.0703713446855545,
+        0.4200030565261841
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_06",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        0.33500000834465027,
+        0.02908491902053356,
+        0.4181438982486725
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_07",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.2380000203847885
+      ],
+      "location": [
+        0.33500000834465027,
+        -0.009075768291950226,
+        0.40227609872817993
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_08",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        0.33500000834465027,
+        -0.039507973939180374,
+        0.37431347370147705
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_09",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.2380000203847885
+      ],
+      "location": [
+        0.33500000834465027,
+        -0.05854112282395363,
+        0.3376288414001465
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_10",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        0.33500000834465027,
+        -0.06387953460216522,
+        0.29664677381515503
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_11",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        0.33500000834465027,
+        -0.0548793189227581,
+        0.25631043314933777
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_12",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        0.33500000834465027,
+        -0.032626040279865265,
+        0.22148491442203522
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_13",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        0.33500000834465027,
+        0.00019623339176177979,
+        0.1963706910610199
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_14",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        0.33500000834465027,
+        0.03962865099310875,
+        0.18399693071842194
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_15",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        0.33500000834465027,
+        0.08091507852077484,
+        0.18585607409477234
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_16",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        0.33500000834465027,
+        0.11907576024532318,
+        0.2017238885164261
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_17",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23800000548362732
+      ],
+      "location": [
+        0.33500000834465027,
+        0.14950796961784363,
+        0.22968646883964539
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearSpoke_R_18",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.004279754124581814,
+        0.004357559140771627,
+        0.23799999058246613
+      ],
+      "location": [
+        0.33500000834465027,
+        0.16854111850261688,
+        0.26637113094329834
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearAxleCollar_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.06800000369548798,
+        0.06800000369548798,
+        0.026000000536441803
+      ],
+      "location": [
+        0.28299999237060547,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "WheelchairFrame",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03200000151991844,
+        0.03200000151991844,
+        0.49000000953674316
+      ],
+      "location": [
+        0.0,
+        0.16500000655651093,
+        0.43199998140335083
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "FrontSeatCrossbar",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03200000151991844,
+        0.03200000151991844,
+        0.49000000953674316
+      ],
+      "location": [
+        0.0,
+        -0.23499999940395355,
+        0.43199998140335083
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearAxleCrossbar",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03400000184774399,
+        0.03400000184774399,
+        0.5699999928474426
+      ],
+      "location": [
+        0.0,
+        0.054999999701976776,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "SeatRail_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03400000184774399,
+        0.03400000184774399,
+        0.4000000059604645
+      ],
+      "location": [
+        -0.24500000476837158,
+        -0.034999996423721313,
+        0.44200000166893005
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "LowerFrameRail_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03200000151991844,
+        0.03200000151991844,
+        0.4613296091556549
+      ],
+      "location": [
+        -0.24500000476837158,
+        -0.11499999463558197,
+        0.2694999873638153
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "FrontFrameRiser_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03200000151991844,
+        0.03200000151991844,
+        0.21954500675201416
+      ],
+      "location": [
+        -0.24500000476837158,
+        -0.28999999165534973,
+        0.34700000286102295
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearFrameDiagonal_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03200000151991844,
+        0.03200000151991844,
+        0.16286498308181763
+      ],
+      "location": [
+        -0.24500000476837158,
+        0.14000000059604645,
+        0.3644999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "BackPost_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03400000184774399,
+        0.03400000184774399,
+        0.6289077997207642
+      ],
+      "location": [
+        -0.24500000476837158,
+        0.17000000178813934,
+        0.6294999718666077
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "PushHandleStem_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.029544230550527573,
+        0.029999999329447746,
+        0.114017553627491
+      ],
+      "location": [
+        -0.24500000476837158,
+        0.25999999046325684,
+        0.9570000171661377
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "PushHandle_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_wheelchair_tire_rubber"
+      ],
+      "dimensions": [
+        0.041999999433755875,
+        0.041999999433755875,
+        0.108669213950634
+      ],
+      "location": [
+        -0.24500000476837158,
+        0.3374999761581421,
+        0.9779999852180481
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "ArmSupportFront_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.02560500241816044,
+        0.026000000536441803,
+        0.250798761844635
+      ],
+      "location": [
+        -0.24500000476837158,
+        -0.17000000178813934,
+        0.5820000171661377
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "ArmSupportRear_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.02560500241816044,
+        0.026000000536441803,
+        0.2500000298023224
+      ],
+      "location": [
+        -0.24500000476837158,
+        0.11999999731779099,
+        0.5820000171661377
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "ArmPad_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.06599999964237213,
+        0.3149999976158142,
+        0.03799999877810478
+      ],
+      "location": [
+        -0.24500000476837158,
+        -0.019999999552965164,
+        0.7289999723434448
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "WheelBrakeBlock_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.04500000178813934,
+        0.054999999701976776,
+        0.03500000014901161
+      ],
+      "location": [
+        -0.27000001072883606,
+        -0.03999999910593033,
+        0.4819999933242798
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "WheelBrakeLever_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "WheelchairBrakeAccent"
+      ],
+      "dimensions": [
+        0.015598847530782223,
+        0.01600000075995922,
+        0.0947839543223381
+      ],
+      "location": [
+        -0.28600001335144043,
+        -0.07500000298023224,
+        0.531999945640564
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "SeatRail_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03400000184774399,
+        0.03400000184774399,
+        0.4000000059604645
+      ],
+      "location": [
+        0.24500000476837158,
+        -0.034999996423721313,
+        0.44200000166893005
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "LowerFrameRail_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03200000151991844,
+        0.03200000151991844,
+        0.4613296091556549
+      ],
+      "location": [
+        0.24500000476837158,
+        -0.11499999463558197,
+        0.2694999873638153
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "FrontFrameRiser_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03200000151991844,
+        0.03200000151991844,
+        0.21954500675201416
+      ],
+      "location": [
+        0.24500000476837158,
+        -0.28999999165534973,
+        0.34700000286102295
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "RearFrameDiagonal_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03200000151991844,
+        0.03200000151991844,
+        0.16286498308181763
+      ],
+      "location": [
+        0.24500000476837158,
+        0.14000000059604645,
+        0.3644999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "BackPost_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03400000184774399,
+        0.03400000184774399,
+        0.6289077997207642
+      ],
+      "location": [
+        0.24500000476837158,
+        0.17000000178813934,
+        0.6294999718666077
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "PushHandleStem_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.029544230550527573,
+        0.029999999329447746,
+        0.114017553627491
+      ],
+      "location": [
+        0.24500000476837158,
+        0.25999999046325684,
+        0.9570000171661377
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "PushHandle_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_wheelchair_tire_rubber"
+      ],
+      "dimensions": [
+        0.041999999433755875,
+        0.041999999433755875,
+        0.108669213950634
+      ],
+      "location": [
+        0.24500000476837158,
+        0.3374999761581421,
+        0.9779999852180481
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "ArmSupportFront_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.02560500241816044,
+        0.026000000536441803,
+        0.250798761844635
+      ],
+      "location": [
+        0.24500000476837158,
+        -0.17000000178813934,
+        0.5820000171661377
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "ArmSupportRear_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.02560500241816044,
+        0.026000000536441803,
+        0.2500000298023224
+      ],
+      "location": [
+        0.24500000476837158,
+        0.11999999731779099,
+        0.5820000171661377
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "ArmPad_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.06599999964237213,
+        0.3149999976158142,
+        0.03799999877810478
+      ],
+      "location": [
+        0.24500000476837158,
+        -0.019999999552965164,
+        0.7289999723434448
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "WheelBrakeBlock_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.04500000178813934,
+        0.054999999701976776,
+        0.03500000014901161
+      ],
+      "location": [
+        0.27000001072883606,
+        -0.03999999910593033,
+        0.4819999933242798
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "WheelBrakeLever_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "WheelchairBrakeAccent"
+      ],
+      "dimensions": [
+        0.015598847530782223,
+        0.01600000075995922,
+        0.0947839543223381
+      ],
+      "location": [
+        0.28600001335144043,
+        -0.07500000298023224,
+        0.531999945640564
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CrossBrace_A",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.024000000208616257,
+        0.024000000208616257,
+        0.6287288665771484
+      ],
+      "location": [
+        0.0,
+        -0.03500000387430191,
+        0.3319999873638153
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CrossBrace_B",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.024000000208616257,
+        0.024000000208616257,
+        0.6287288665771484
+      ],
+      "location": [
+        0.0,
+        -0.03500000387430191,
+        0.3319999873638153
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CrossBracePivot",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.04399999976158142,
+        0.04399999976158142,
+        0.09000000357627869
+      ],
+      "location": [
+        0.0,
+        -0.03500000014901161,
+        0.3319999873638153
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CasterAssembly_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03400000184774399,
+        0.03400000184774399,
+        0.11999999731779099
+      ],
+      "location": [
+        -0.2150000035762787,
+        -0.36500000953674316,
+        0.2719999849796295
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CasterSwivelCap_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.0560000017285347,
+        0.0560000017285347,
+        0.024000000208616257
+      ],
+      "location": [
+        -0.2150000035762787,
+        -0.36500000953674316,
+        0.3319999873638153
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CasterFork_L_A",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.015598847530782223,
+        0.01600000075995922,
+        0.15524174273014069
+      ],
+      "location": [
+        -0.23800000548362732,
+        -0.38499999046325684,
+        0.15699999034404755
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CasterFork_L_B",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.015598847530782223,
+        0.01600000075995922,
+        0.15524174273014069
+      ],
+      "location": [
+        -0.19200000166893005,
+        -0.38499999046325684,
+        0.15699999034404755
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CasterWheel_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_wheelchair_tire_rubber"
+      ],
+      "dimensions": [
+        0.16200000047683716,
+        0.16200000047683716,
+        0.02800000086426735
+      ],
+      "location": [
+        -0.2150000035762787,
+        -0.4050000011920929,
+        0.08199998736381531
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CasterHub_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.02800000086426735,
+        0.02800000086426735,
+        0.06400000303983688
+      ],
+      "location": [
+        -0.2150000035762787,
+        -0.4050000011920929,
+        0.08199998736381531
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CasterAssembly_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.03400000184774399,
+        0.03400000184774399,
+        0.11999999731779099
+      ],
+      "location": [
+        0.2150000035762787,
+        -0.36500000953674316,
+        0.2719999849796295
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CasterSwivelCap_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.0560000017285347,
+        0.0560000017285347,
+        0.024000000208616257
+      ],
+      "location": [
+        0.2150000035762787,
+        -0.36500000953674316,
+        0.3319999873638153
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CasterFork_R_A",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.015598847530782223,
+        0.01600000075995922,
+        0.15524174273014069
+      ],
+      "location": [
+        0.19200000166893005,
+        -0.38499999046325684,
+        0.15699999034404755
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CasterFork_R_B",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.015598847530782223,
+        0.01600000075995922,
+        0.15524174273014069
+      ],
+      "location": [
+        0.23800000548362732,
+        -0.38499999046325684,
+        0.15699999034404755
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CasterWheel_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_wheelchair_tire_rubber"
+      ],
+      "dimensions": [
+        0.16200000047683716,
+        0.16200000047683716,
+        0.02800000086426735
+      ],
+      "location": [
+        0.2150000035762787,
+        -0.4050000011920929,
+        0.08199998736381531
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "CasterHub_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_polished_handrim_metal"
+      ],
+      "dimensions": [
+        0.02800000086426735,
+        0.02800000086426735,
+        0.06400000303983688
+      ],
+      "location": [
+        0.2150000035762787,
+        -0.4050000011920929,
+        0.08199998736381531
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "FootrestSupport_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.02757461741566658,
+        0.02800000086426735,
+        0.3292795419692993
+      ],
+      "location": [
+        -0.14499999582767487,
+        -0.3474999964237213,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "FootrestHanger_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.024000000208616257,
+        0.024000000208616257,
+        0.064031220972538
+      ],
+      "location": [
+        -0.14499999582767487,
+        -0.4950000047683716,
+        0.171999990940094
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "Footrest_L",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.17000000178813934,
+        0.14499999582767487,
+        0.02500000037252903
+      ],
+      "location": [
+        -0.14499999582767487,
+        -0.5350000262260437,
+        0.13199998438358307
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "FootrestSupport_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.02757461741566658,
+        0.02800000086426735,
+        0.3292795419692993
+      ],
+      "location": [
+        0.14499999582767487,
+        -0.3474999964237213,
+        0.3019999861717224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "FootrestHanger_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_tubular_frame_metal"
+      ],
+      "dimensions": [
+        0.024000000208616257,
+        0.024000000208616257,
+        0.064031220972538
+      ],
+      "location": [
+        0.14499999582767487,
+        -0.4950000047683716,
+        0.171999990940094
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "Footrest_R",
+      "parent": "Wheelchair_Root",
+      "materials": [
+        "MyWaySlot_molded_black_plastic"
+      ],
+      "dimensions": [
+        0.17000000178813934,
+        0.14499999582767487,
+        0.02500000037252903
+      ],
+      "location": [
+        0.14499999582767487,
+        -0.5350000262260437,
+        0.13199998438358307
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    }
+  ],
+  "uv_missing_object_names": [],
+  "zero_scale_object_names": [],
+  "negative_scale_object_names": [],
+  "bounds_min": [
+    -0.38807880878448486,
+    -0.6193991303443909,
+    -1.766520374424374e-09
+  ],
+  "bounds_max": [
+    0.39383578300476074,
+    0.3752678334712982,
+    1.032334566116333
+  ],
+  "dimensions": [
+    0.7819145917892456,
+    0.9946669638156891,
+    1.0323345678828533
+  ],
+  "ground_offset": -1.766520374424374e-09,
+  "topology_totals": {
+    "non_manifold_edges": 0,
+    "loose_edges": 0,
+    "loose_vertices": 0,
+    "degenerate_faces": 0
+  }
+}

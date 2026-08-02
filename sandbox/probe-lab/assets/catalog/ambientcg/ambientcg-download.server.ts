@@ -1,3 +1,4 @@
+
 import {
   createHash,
   randomUUID,
@@ -6,6 +7,7 @@ import { execFile } from "node:child_process";
 import {
   copyFile,
   mkdir,
+  open,
   readdir,
   rm,
   stat,
@@ -391,7 +393,7 @@ function mapRole(
     return "roughness";
   }
   if (
-    /metalness|metallic|metal/.test(
+    /metalness|metallic|(?:^|[-_.])metal(?:[-_.]|$)/.test(
       name,
     )
   ) {
@@ -405,7 +407,7 @@ function mapRole(
     return "ambient_occlusion";
   }
   if (
-    /displacement|height|disp/.test(
+    /displacement|height|(?:^|[-_.])disp(?:[-_.]|$)/.test(
       name,
     )
   ) {
@@ -424,7 +426,7 @@ function mapRole(
     return "emission";
   }
   if (
-    /color|basecolor|base[_-]?color|albedo|diffuse/.test(
+    /basecolou?r|base[_-]?colou?r|(?:^|[-_.])colou?r(?:[-_.]|$)|albedo|diffuse|(?:^|[-_.])diff(?:[-_.]|$)/.test(
       name,
     )
   ) {
@@ -447,6 +449,7 @@ function imageExtension(
     ".tif",
     ".tiff",
     ".exr",
+    ".webp",
   ].includes(extension)
     ? extension.replace(
         ".jpeg",
@@ -545,22 +548,64 @@ export function chooseAmbientCgVariant(
     asset.download_variants[0]!;
 }
 
+export function ambientCgVariantFileExtension(
+  variant: AmbientCgDownloadVariant,
+) {
+  const parsed = new URL(variant.url);
+  const candidates = [
+    parsed.searchParams.get("file"),
+    parsed.pathname,
+    typeof variant.attributes.extension === "string"
+      ? `source.${variant.attributes.extension}`
+      : null,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const extension =
+      path.extname(candidate).toLowerCase();
+    if (extension) return extension;
+  }
+
+  return variant.archive_format === "ZIP"
+    ? ".zip"
+    : ".bin";
+}
+
+async function fileLooksLikeZip(
+  filePath: string,
+) {
+  const handle = await open(filePath, "r");
+  try {
+    const signature = Buffer.alloc(4);
+    const { bytesRead } = await handle.read(
+      signature,
+      0,
+      signature.length,
+      0,
+    );
+    if (bytesRead < 4) return false;
+
+    return (
+      signature[0] === 0x50 &&
+      signature[1] === 0x4b &&
+      (
+        (signature[2] === 0x03 && signature[3] === 0x04) ||
+        (signature[2] === 0x05 && signature[3] === 0x06) ||
+        (signature[2] === 0x07 && signature[3] === 0x08)
+      )
+    );
+  } finally {
+    await handle.close();
+  }
+}
+
 export async function prepareAmbientCgDownloadedFiles(
   variant: AmbientCgDownloadVariant,
   jobRoot: string,
 ) {
-  const urlPath =
-    new URL(variant.url).pathname;
-
   const extension =
-    path.extname(
-      urlPath,
-    ).toLowerCase() ||
-    (
-      variant.archive_format === "ZIP"
-        ? ".zip"
-        : ".bin"
-    );
+    ambientCgVariantFileExtension(variant);
 
   const downloadPath =
     path.join(
@@ -574,10 +619,12 @@ export async function prepareAmbientCgDownloadedFiles(
       downloadPath,
     );
 
-  if (
+  const isZip =
     extension === ".zip" ||
-    variant.archive_format === "ZIP"
-  ) {
+    variant.archive_format === "ZIP" ||
+    await fileLooksLikeZip(downloadPath);
+
+  if (isZip) {
     const extracted =
       path.join(
         jobRoot,
@@ -716,8 +763,13 @@ async function cacheMaterial(
   }
 
   if (!localMaps.base_color) {
+    const inspected = files
+      .map((file) => path.basename(file))
+      .sort()
+      .slice(0, 40);
     throw new Error(
-      "The downloaded package did not contain a recognizable base-color map.",
+      `The downloaded package for ${asset.source_asset_id} (${variant.variant_id}) did not contain a recognizable base-color map. ` +
+      `Inspected ${files.length} file(s): ${inspected.join(", ") || "none"}.`,
     );
   }
 

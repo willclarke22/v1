@@ -11,31 +11,84 @@ import {
   stableJsonHash,
 } from "../assets/content-hash.server";
 import {
+  resolveReviewedEnvironment,
+  loadReviewedEnvironmentResolverSnapshot,
+  type ReviewedEnvironmentResolverSnapshot,
+} from "../resource-runtime/reviewed-environment-resolver.server";
+import {
+  loadReviewedMaterialResolverSnapshot,
+  resolveReviewedMaterialWithSnapshot,
+  type ReviewedMaterialResolverSnapshot,
+} from "../resource-runtime/reviewed-material-resolver.server";
+import type {
+  EnvironmentResolverDiagnostics,
+  RuntimeEnvironmentBindingV1,
+} from "../resource-runtime/environment-runtime-contract";
+import type {
+  MaterialResolveDiagnostics,
+  MaterialTextureRole,
+  RuntimeMaterialBindingV1,
+} from "../resource-runtime/material-runtime-contract";
+import {
+  classifyAuxiliaryResourceIntent,
+  type AuxiliaryResourceRuntimeDescriptor,
+} from "./auxiliary-resource-policy";
+import {
   RESOLVED_SCENE_RESOURCES_SCHEMA_VERSION,
+  type ResolvedAuxiliaryResourceBinding,
+  type ResolvedEnvironmentResourceBinding,
+  type ResolvedMaterialResourceBinding,
   type ResolvedModelResourceBinding,
+  type ResolvedResourceLicenseReference,
+  type ResolvedResourceSelectionReason,
   type ResolvedSceneResourcesV1,
+  type SceneAuxiliaryResourceIntent,
   type SceneEntityResourceIntent,
+  type SceneEnvironmentResourceIntent,
   type SceneModelResolutionDiagnostic,
   type SceneResourceFallbackRecord,
   type SceneResourcePlanV1,
   type SceneResourceResolutionWarning,
+  type SceneSurfaceResourceIntent,
 } from "./scene-resource-contract";
 import {
   validateSceneResourcePlan,
 } from "./validate-scene-resource-plan";
 
 export const REVIEWED_SCENE_RESOURCE_RESOLVER_VERSION =
-  "myway_reviewed_scene_resource_resolver_v1" as const;
+  "myway_reviewed_scene_resource_resolver_v2" as const;
 
 export type SceneModelResolutionExecution = {
   intent: SceneEntityResourceIntent;
   result: AssetResolveResult | null;
 };
 
+export type SceneMaterialResolutionExecution = {
+  intent: SceneSurfaceResourceIntent;
+  binding: RuntimeMaterialBindingV1 | null;
+  diagnostics: MaterialResolveDiagnostics;
+};
+
+export type SceneEnvironmentResolutionExecution = {
+  intent: SceneEnvironmentResourceIntent;
+  binding: RuntimeEnvironmentBindingV1;
+  diagnostics: EnvironmentResolverDiagnostics;
+};
+
+export type SceneAuxiliaryResolutionExecution = {
+  intent: SceneAuxiliaryResourceIntent;
+  descriptor: AuxiliaryResourceRuntimeDescriptor;
+};
+
 export type ReviewedSceneResourceResolutionExecution = {
   resolved_resources: ResolvedSceneResourcesV1;
   model_resolutions: SceneModelResolutionExecution[];
+  material_resolutions: SceneMaterialResolutionExecution[];
+  environment_resolution: SceneEnvironmentResolutionExecution | null;
+  auxiliary_resolutions: SceneAuxiliaryResolutionExecution[];
   snapshot: ReviewedAssetResolverSnapshot;
+  material_snapshot: ReviewedMaterialResolverSnapshot;
+  environment_snapshot: ReviewedEnvironmentResolverSnapshot;
 };
 
 function unique(values: string[]) {
@@ -61,7 +114,7 @@ function conceptForIntent(
 
 function licenseReference(
   asset: MyWayAssetRecord,
-) {
+): ResolvedResourceLicenseReference {
   return {
     license_kind: asset.license_kind,
     license_status:
@@ -80,6 +133,25 @@ function licenseReference(
     license_record_path:
       asset.license_record_path ??
       null,
+  };
+}
+
+function runtimeLicenseReference(input: {
+  license: string;
+  attribution_required: boolean;
+  source_url: string | null;
+}): ResolvedResourceLicenseReference {
+  return {
+    license_kind: input.license,
+    license_status: "approved",
+    attribution_required:
+      input.attribution_required,
+    attribution_text:
+      input.attribution_required
+        ? input.source_url
+        : null,
+    source_url: input.source_url,
+    license_record_path: null,
   };
 }
 
@@ -200,13 +272,266 @@ function modelFallback(
   };
 }
 
+function materialRole(
+  value: string,
+): MaterialTextureRole | null {
+  if (value === "emission") {
+    return "emissive";
+  }
+  if (
+    value === "base_color" ||
+    value === "normal" ||
+    value === "roughness" ||
+    value === "metalness" ||
+    value === "ambient_occlusion" ||
+    value === "height" ||
+    value === "opacity"
+  ) {
+    return value;
+  }
+  return null;
+}
+
+function selectionReasonFromCandidate(
+  resourceId: string,
+  candidates: Array<{
+    resource_id: string;
+    score: number;
+    reasons: string[];
+    eligible: boolean;
+  }>,
+): ResolvedResourceSelectionReason {
+  const eligible = candidates.filter(
+    (candidate) => candidate.eligible,
+  );
+  const index = eligible.findIndex(
+    (candidate) =>
+      candidate.resource_id ===
+      resourceId,
+  );
+  const selected =
+    candidates.find(
+      (candidate) =>
+        candidate.resource_id ===
+        resourceId,
+    );
+
+  return {
+    summary: selected
+      ? `Selected ${resourceId} through deterministic reviewed-resource ranking.`
+      : `Selected ${resourceId}.`,
+    eligibility_checks:
+      selected?.reasons ?? [],
+    score_components: {
+      deterministic_score:
+        selected?.score ?? 0,
+    },
+    candidate_rank:
+      index >= 0 ? index + 1 : 1,
+  };
+}
+
+function materialSummary(
+  intent: SceneSurfaceResourceIntent,
+  binding: RuntimeMaterialBindingV1,
+  diagnostics: MaterialResolveDiagnostics,
+): ResolvedMaterialResourceBinding {
+  const mapUrls: ResolvedMaterialResourceBinding["map_urls"] =
+    {};
+
+  for (const [role, map] of Object.entries(
+    binding.maps,
+  )) {
+    if (!map) continue;
+    const contractRole =
+      role === "emissive"
+        ? "emission"
+        : role;
+    if (
+      contractRole === "base_color" ||
+      contractRole === "normal" ||
+      contractRole === "roughness" ||
+      contractRole === "metalness" ||
+      contractRole === "ambient_occlusion" ||
+      contractRole === "height" ||
+      contractRole === "opacity" ||
+      contractRole === "emission"
+    ) {
+      mapUrls[contractRole] =
+        map.public_url;
+    }
+  }
+
+  return {
+    intent_id: intent.intent_id,
+    target_entity_id:
+      intent.target_entity_id,
+    material_slot:
+      intent.material_slot,
+    resource_id:
+      binding.material_resource_id,
+    variant_id:
+      binding.variant_id,
+    map_urls: mapUrls,
+    content_hash:
+      binding.content_hash,
+    storage_provider: "r2",
+    selection_reason:
+      selectionReasonFromCandidate(
+        binding.material_resource_id,
+        diagnostics.candidate_diagnostics,
+      ),
+    license:
+      runtimeLicenseReference({
+        license:
+          binding.provenance.license,
+        attribution_required:
+          binding.provenance
+            .attribution_required,
+        source_url:
+          binding.provenance.source_url,
+      }),
+  };
+}
+
+function environmentSummary(
+  intent: SceneEnvironmentResourceIntent,
+  binding: RuntimeEnvironmentBindingV1,
+  diagnostics: EnvironmentResolverDiagnostics,
+): ResolvedEnvironmentResourceBinding | null {
+  if (
+    !binding.environment_resource_id ||
+    !binding.public_url ||
+    !binding.content_hash ||
+    !binding.variant_id
+  ) {
+    return null;
+  }
+
+  return {
+    intent_id: intent.intent_id,
+    resource_id:
+      binding.environment_resource_id,
+    variant_id:
+      binding.variant_id,
+    environment_url:
+      binding.public_url,
+    content_hash:
+      binding.content_hash,
+    storage_provider: "r2",
+    selection_reason:
+      selectionReasonFromCandidate(
+        binding.environment_resource_id,
+        diagnostics.candidate_diagnostics,
+      ),
+    license:
+      runtimeLicenseReference({
+        license:
+          binding.provenance.license,
+        attribution_required:
+          binding.provenance
+            .attribution_required,
+        source_url:
+          binding.provenance.source_url,
+      }),
+  };
+}
+
+function auxiliaryBinding(
+  intent: SceneAuxiliaryResourceIntent,
+  descriptor: AuxiliaryResourceRuntimeDescriptor,
+): ResolvedAuxiliaryResourceBinding | null {
+  if (
+    descriptor.runtime_status !==
+      "direct_runtime" ||
+    !descriptor.primary_url ||
+    !descriptor.content_hash
+  ) {
+    return null;
+  }
+
+  const metadata =
+    intent.metadata ?? {};
+  const resourceId =
+    typeof metadata.resource_id === "string" &&
+    metadata.resource_id.trim()
+      ? metadata.resource_id.trim()
+      : `aux:${intent.intent_id}`;
+  const variantId =
+    typeof metadata.variant_id === "string" &&
+    metadata.variant_id.trim()
+      ? metadata.variant_id.trim()
+      : null;
+  const sourceUrl =
+    typeof metadata.source_url === "string"
+      ? metadata.source_url
+      : descriptor.primary_url;
+  const licenseKind =
+    typeof metadata.license_kind === "string"
+      ? metadata.license_kind
+      : "internal";
+
+  return {
+    intent_id: intent.intent_id,
+    resource_kind:
+      intent.resource_kind,
+    resource_id: resourceId,
+    variant_id: variantId,
+    primary_url:
+      descriptor.primary_url,
+    file_urls:
+      descriptor.file_urls,
+    content_hash:
+      descriptor.content_hash,
+    storage_provider: "r2",
+    selection_reason: {
+      summary:
+        "Accepted an explicit reviewed auxiliary derivative through the Phase 2 runtime policy.",
+      eligibility_checks:
+        descriptor.reasons,
+      score_components: {
+        direct_runtime: 1,
+      },
+      candidate_rank: 1,
+    },
+    license: {
+      license_kind: licenseKind,
+      license_status:
+        typeof metadata.license_status === "string"
+          ? metadata.license_status
+          : "approved",
+      attribution_required:
+        metadata.attribution_required === true,
+      attribution_text:
+        typeof metadata.attribution_text === "string"
+          ? metadata.attribution_text
+          : null,
+      source_url: sourceUrl,
+      license_record_path:
+        typeof metadata.license_record_path === "string"
+          ? metadata.license_record_path
+          : null,
+    },
+    runtime_status:
+      descriptor.runtime_status,
+    compiler:
+      descriptor.compiler,
+    runtime_target:
+      descriptor.runtime_target,
+  };
+}
+
 export async function resolveReviewedSceneResources(
   plan: SceneResourcePlanV1,
   options: {
     snapshot?: ReviewedAssetResolverSnapshot;
+    material_snapshot?: ReviewedMaterialResolverSnapshot;
+    environment_snapshot?: ReviewedEnvironmentResolverSnapshot;
     resolved_at?: string;
     require_cloud_ready?: boolean;
     preferred_asset_ids_by_intent?: Record<string, string>;
+    preferred_material_ids_by_intent?: Record<string, string>;
+    preferred_environment_id?: string | null;
   } = {},
 ): Promise<ReviewedSceneResourceResolutionExecution> {
   const validation =
@@ -228,9 +553,18 @@ export async function resolveReviewedSceneResources(
     );
   }
 
-  const snapshot =
+  const [
+    snapshot,
+    materialSnapshot,
+    environmentSnapshot,
+  ] = await Promise.all([
     options.snapshot ??
-    (await loadReviewedAssetResolverSnapshot());
+      loadReviewedAssetResolverSnapshot(),
+    options.material_snapshot ??
+      loadReviewedMaterialResolverSnapshot(),
+    options.environment_snapshot ??
+      loadReviewedEnvironmentResolverSnapshot(),
+  ]);
   const resolvedAt =
     options.resolved_at ??
     new Date().toISOString();
@@ -243,9 +577,27 @@ export async function resolveReviewedSceneResources(
   const models:
     ResolvedModelResourceBinding[] =
       [];
+  const materials:
+    ResolvedMaterialResourceBinding[] =
+      [];
+  const auxiliary:
+    ResolvedAuxiliaryResourceBinding[] =
+      [];
   const modelResolutions:
     SceneModelResolutionExecution[] =
       [];
+  const materialResolutions:
+    SceneMaterialResolutionExecution[] =
+      [];
+  const auxiliaryResolutions:
+    SceneAuxiliaryResolutionExecution[] =
+      [];
+  let environmentResolution:
+    SceneEnvironmentResolutionExecution | null =
+      null;
+  let environment:
+    ResolvedEnvironmentResourceBinding | null =
+      null;
 
   if (
     plan.fallback_policy
@@ -256,7 +608,7 @@ export async function resolveReviewedSceneResources(
         "acquisition_policy_forced_never",
       intent_id: null,
       message:
-        "Phase 2C reviewed scene resolution is pure. Acquisition was forced to never; queueing or synchronous acquisition must be requested separately.",
+        "Reviewed scene resolution is pure. Acquisition was forced to never; queueing or generation must be requested separately.",
     });
   }
 
@@ -284,7 +636,7 @@ export async function resolveReviewedSceneResources(
           "model_capability_checks_partial",
         intent_id: intent.intent_id,
         message:
-          `${concept}: rigging, animation clips, and explicit affordances are enforced in Phase 2C; broader capability and anchor-profile checks remain for the geometry/capability resolver.`,
+          `${concept}: rigging, animation clips, explicit affordances, and reviewed geometry gates are enforced; broad semantic capability interpretation remains deterministic and conservative.`,
       });
     }
 
@@ -385,6 +737,94 @@ export async function resolveReviewedSceneResources(
 
   for (const intent of
     plan.surface_intents) {
+    const requirement =
+      intent.material_requirement;
+    const resolution =
+      resolveReviewedMaterialWithSnapshot(
+        materialSnapshot,
+        {
+          preferred_material_id:
+            options.preferred_material_ids_by_intent?.[
+              intent.intent_id
+            ] ?? null,
+          query:
+            requirement.appearance_tags.join(
+              " ",
+            ),
+          semantic_tags: [
+            ...requirement.semantic_tags,
+            ...requirement.appearance_tags,
+          ],
+          required_maps:
+            requirement.required_maps
+              .map(materialRole)
+              .filter(
+                (
+                  value,
+                ): value is MaterialTextureRole =>
+                  Boolean(value),
+              ),
+          target_entity_id:
+            intent.target_entity_id,
+          target_slot:
+            intent.material_slot ===
+            "default"
+              ? null
+              : intent.material_slot,
+          source_mode:
+            requirement.uv_assumption ===
+            "generated_primitive_uv"
+              ? "primitive_surface"
+              : intent.material_slot &&
+                  intent.material_slot !==
+                    "default"
+                ? "replace_slot"
+                : "replace_all",
+          uv_transform: {
+            repeat:
+              requirement.tiling,
+            rotation_radians:
+              (requirement.rotation_degrees *
+                Math.PI) /
+              180,
+          },
+          parameters: {
+            opacity:
+              requirement.transparency ===
+              "required"
+                ? 0.82
+                : 1,
+            displacement_scale:
+              requirement.displacement ===
+              "allowed"
+                ? 0.04
+                : 0,
+          },
+        },
+        {
+          resolved_at: resolvedAt,
+        },
+      );
+
+    materialResolutions.push({
+      intent,
+      binding:
+        resolution.binding,
+      diagnostics:
+        resolution.diagnostics,
+    });
+
+    if (resolution.binding) {
+      materials.push(
+        materialSummary(
+          intent,
+          resolution.binding,
+          resolution.diagnostics,
+        ),
+      );
+      continue;
+    }
+
     fallbacks.push({
       intent_id: intent.intent_id,
       resource_kind: "material",
@@ -392,64 +832,151 @@ export async function resolveReviewedSceneResources(
         plan.fallback_policy
           .missing_material,
       reason:
-        "Material registry resolution is intentionally deferred to Phase 2F.",
+        "No reviewed R2 material satisfied the deterministic material requirement.",
       preserved_entity_id:
         intent.target_entity_id,
     });
     warnings.push({
       code:
-        "material_resolution_deferred",
+        "material_fallback_used",
       intent_id: intent.intent_id,
       message:
-        "Material intent was preserved, but material selection is deferred to Phase 2F.",
+        "No reviewed material matched. The declared material fallback remains active without changing the entity or educational direction.",
     });
   }
 
   if (plan.environment_intent) {
-    fallbacks.push({
-      intent_id:
-        plan.environment_intent
-          .intent_id,
-      resource_kind: "environment",
-      fallback_used:
-        plan.fallback_policy
-          .missing_environment,
-      reason:
-        "Environment registry resolution is intentionally deferred to Phase 2G.",
-      preserved_entity_id: null,
-    });
-    warnings.push({
-      code:
-        "environment_resolution_deferred",
-      intent_id:
-        plan.environment_intent
-          .intent_id,
-      message:
-        "Environment intent was preserved, but HDRI/environment selection is deferred to Phase 2G.",
-    });
+    const requirement =
+      plan.environment_intent
+        .environment_requirement;
+    const resolvedEnvironment =
+      resolveReviewedEnvironment(
+        {
+          preferred_environment_id:
+            options.preferred_environment_id ??
+            null,
+          intent:
+            requirement.lighting_mood,
+          semantic_tags:
+            requirement.semantic_tags,
+          background_mode:
+            requirement.background_mode ===
+            "visible"
+              ? "environment"
+              : "none",
+          intensity:
+            requirement.intensity,
+          rotation_radians:
+            (requirement.rotation_degrees *
+              Math.PI) /
+            180,
+          exposure:
+            requirement.exposure,
+          fallback_rig:
+            plan.fallback_policy
+                .missing_environment ===
+              "renderer_default"
+              ? "diagrammatic_rig"
+              : "studio_rig",
+        },
+        environmentSnapshot,
+      );
+
+    environmentResolution = {
+      intent:
+        plan.environment_intent,
+      binding:
+        resolvedEnvironment.binding,
+      diagnostics:
+        resolvedEnvironment.diagnostics,
+    };
+    environment =
+      environmentSummary(
+        plan.environment_intent,
+        resolvedEnvironment.binding,
+        resolvedEnvironment.diagnostics,
+      );
+
+    if (
+      resolvedEnvironment.diagnostics
+        .fallback_used
+    ) {
+      fallbacks.push({
+        intent_id:
+          plan.environment_intent
+            .intent_id,
+        resource_kind: "environment",
+        fallback_used:
+          plan.fallback_policy
+            .missing_environment,
+        reason:
+          resolvedEnvironment.binding
+            .fallback.reason ??
+          "No reviewed environment was eligible.",
+        preserved_entity_id: null,
+      });
+      warnings.push({
+        code:
+          "environment_fallback_used",
+        intent_id:
+          plan.environment_intent
+            .intent_id,
+        message:
+          resolvedEnvironment.binding
+            .fallback.reason ??
+          "The deterministic environment fallback is active.",
+      });
+    }
   }
 
   for (const intent of
     plan.auxiliary_intents) {
-    fallbacks.push({
-      intent_id: intent.intent_id,
-      resource_kind:
-        intent.resource_kind,
-      fallback_used:
-        plan.fallback_policy
-          .missing_auxiliary,
-      reason:
-        "Auxiliary resource resolution is deferred until the corresponding Phase 2 capability is implemented.",
-      preserved_entity_id:
-        intent.target_entity_id ??
-        null,
+    const descriptor =
+      classifyAuxiliaryResourceIntent(
+        intent,
+      );
+    auxiliaryResolutions.push({
+      intent,
+      descriptor,
     });
+
+    const binding =
+      auxiliaryBinding(
+        intent,
+        descriptor,
+      );
+    if (binding) {
+      auxiliary.push(binding);
+      continue;
+    }
+
+    if (
+      descriptor.fallback_required ||
+      intent.required
+    ) {
+      fallbacks.push({
+        intent_id: intent.intent_id,
+        resource_kind:
+          intent.resource_kind,
+        fallback_used:
+          plan.fallback_policy
+            .missing_auxiliary,
+        reason:
+          descriptor.reasons.join(
+            " ",
+          ),
+        preserved_entity_id:
+          intent.target_entity_id ??
+          null,
+      });
+    }
+
     warnings.push({
       code:
-        "auxiliary_resolution_deferred",
+        `auxiliary_${descriptor.runtime_status}`,
       intent_id: intent.intent_id,
       message:
-        `${intent.resource_kind} intent was preserved for a later Phase 2 resolver.`,
+        `${intent.resource_kind}: ${descriptor.reasons.join(" ")}`,
     });
   }
 
@@ -469,9 +996,9 @@ export async function resolveReviewedSceneResources(
       resolved_at: resolvedAt,
       acquisition_policy: "never",
       models,
-      materials: [],
-      environment: null,
-      auxiliary: [],
+      materials,
+      environment,
+      auxiliary,
       model_resolution_diagnostics:
         plan.entity_intents.map(
           (intent) => {
@@ -497,6 +1024,16 @@ export async function resolveReviewedSceneResources(
       resolvedResources,
     model_resolutions:
       modelResolutions,
+    material_resolutions:
+      materialResolutions,
+    environment_resolution:
+      environmentResolution,
+    auxiliary_resolutions:
+      auxiliaryResolutions,
     snapshot,
+    material_snapshot:
+      materialSnapshot,
+    environment_snapshot:
+      environmentSnapshot,
   };
 }

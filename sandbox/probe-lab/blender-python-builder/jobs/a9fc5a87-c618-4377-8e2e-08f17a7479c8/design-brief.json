@@ -1,0 +1,407 @@
+{
+  "schema_version": "myway_asset_design_brief_v2",
+  "asset_id": "myway_wheelchair_v1",
+  "concept": "Modern manual folding wheelchair with tubular frame, large spoked rear wheels with hand rims, front caster assemblies, fabric seating, and tubular footrests.",
+  "asset_class": "mechanical_vehicle",
+  "intended_use": [],
+  "target_extent_m": 2,
+  "axis_dimensions_m": null,
+  "max_triangles": 45000,
+  "quality_mode": "standard",
+  "realism": "stylized",
+  "style_tags": [
+    "clean stylized",
+    "mechanical",
+    "mobility aid",
+    "tubular frame",
+    "functional",
+    "high-quality clean stylized",
+    "manual code"
+  ],
+  "silhouette": {
+    "primary_shapes": [],
+    "identifying_features": [],
+    "important_negative_spaces": [],
+    "camera_readability": []
+  },
+  "proportions": [],
+  "parts": [
+    {
+      "part_id": "frame_main",
+      "semantic_role": "primary structural tubular frame",
+      "geometry_strategy": [],
+      "parent_part_id": null,
+      "connection_strategy": "Welded continuous tube structure.",
+      "material_slot_id": "mat_metal_frame",
+      "animation_role": "static",
+      "pivot_requirement": "none",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "frame_cross_brace_left",
+      "semantic_role": "folding mechanism support",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Pivot joint at center, sliding/rotating connections at ends.",
+      "material_slot_id": "mat_metal_frame",
+      "animation_role": "folding_axis",
+      "pivot_requirement": "center_pivot",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "frame_cross_brace_right",
+      "semantic_role": "folding mechanism support",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Pivot joint at center, sliding/rotating connections at ends.",
+      "material_slot_id": "mat_metal_frame",
+      "animation_role": "folding_axis",
+      "pivot_requirement": "center_pivot",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "wheel_rear_left",
+      "semantic_role": "traction and manual propulsion",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Axle bolt connection to rear seat rail junction.",
+      "material_slot_id": "mat_rubber_tire",
+      "animation_role": "rotation_z",
+      "pivot_requirement": "wheel_hub",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "wheel_rear_right",
+      "semantic_role": "traction and manual propulsion",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Axle bolt connection to rear seat rail junction.",
+      "material_slot_id": "mat_rubber_tire",
+      "animation_role": "rotation_z",
+      "pivot_requirement": "wheel_hub",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "hand_rim_left",
+      "semantic_role": "manual propulsion interface",
+      "geometry_strategy": [],
+      "parent_part_id": "wheel_rear_left",
+      "connection_strategy": "Standoff brackets connecting rim to hub.",
+      "material_slot_id": "mat_metal_rim",
+      "animation_role": "rotation_z",
+      "pivot_requirement": "wheel_hub",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "hand_rim_right",
+      "semantic_role": "manual propulsion interface",
+      "geometry_strategy": [],
+      "parent_part_id": "wheel_rear_right",
+      "connection_strategy": "Standoff brackets connecting rim to hub.",
+      "material_slot_id": "mat_metal_rim",
+      "animation_role": "rotation_z",
+      "pivot_requirement": "wheel_hub",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "caster_assembly_front_left",
+      "semantic_role": "front steering and support",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Swivel joint at fork stem.",
+      "material_slot_id": "mat_metal_frame",
+      "animation_role": "rotation_y",
+      "pivot_requirement": "swivel_stem",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "caster_assembly_front_right",
+      "semantic_role": "front steering and support",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Swivel joint at fork stem.",
+      "material_slot_id": "mat_metal_frame",
+      "animation_role": "rotation_y",
+      "pivot_requirement": "swivel_stem",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "seat_sling",
+      "semantic_role": "user seating surface",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Wrapped and tensioned over side rails.",
+      "material_slot_id": "mat_fabric_seat",
+      "animation_role": "static",
+      "pivot_requirement": "none",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "backrest_sling",
+      "semantic_role": "back support surface",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Wrapped and tensioned between uprights.",
+      "material_slot_id": "mat_fabric_seat",
+      "animation_role": "static",
+      "pivot_requirement": "none",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "armrest_left",
+      "semantic_role": "user arm support",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Bolted bracket to seat rail.",
+      "material_slot_id": "mat_metal_frame",
+      "animation_role": "static",
+      "pivot_requirement": "none",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "armrest_right",
+      "semantic_role": "user arm support",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Bolted bracket to seat rail.",
+      "material_slot_id": "mat_metal_frame",
+      "animation_role": "static",
+      "pivot_requirement": "none",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "footrest_left",
+      "semantic_role": "user foot support",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Telescoping/swing-away joint at front frame.",
+      "material_slot_id": "mat_metal_frame",
+      "animation_role": "rotation_y",
+      "pivot_requirement": "swing_away_pivot",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "footrest_right",
+      "semantic_role": "user foot support",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Telescoping/swing-away joint at front frame.",
+      "material_slot_id": "mat_metal_frame",
+      "animation_role": "rotation_y",
+      "pivot_requirement": "swing_away_pivot",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "brake_lever_left",
+      "semantic_role": "wheel lock mechanism",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Pivot joint on seat rail.",
+      "material_slot_id": "mat_metal_frame",
+      "animation_role": "rotation_x",
+      "pivot_requirement": "lock_pivot",
+      "required": true,
+      "identifying_features": []
+    },
+    {
+      "part_id": "brake_lever_right",
+      "semantic_role": "wheel lock mechanism",
+      "geometry_strategy": [],
+      "parent_part_id": "frame_main",
+      "connection_strategy": "Pivot joint on seat rail.",
+      "material_slot_id": "mat_metal_frame",
+      "animation_role": "rotation_x",
+      "pivot_requirement": "lock_pivot",
+      "required": true,
+      "identifying_features": []
+    }
+  ],
+  "material_slots": [
+    {
+      "slot_id": "mat_metal_frame",
+      "display_name": "Brushed Aluminum Frame",
+      "assigned_part_ids": [
+        "frame_main",
+        "frame_cross_brace_left",
+        "frame_cross_brace_right",
+        "caster_assembly_front_left",
+        "caster_assembly_front_right",
+        "armrest_left",
+        "armrest_right",
+        "footrest_left",
+        "footrest_right",
+        "brake_lever_left",
+        "brake_lever_right"
+      ],
+      "material_family": "metal",
+      "intent": "Structural support and mechanical hardware.",
+      "semantic_tags": [
+        "metal",
+        "brushed",
+        "structural",
+        "tube"
+      ],
+      "color_hint": "#B0B5BD",
+      "roughness_hint": null,
+      "metallic_hint": null,
+      "physical_scale_m": 0.05,
+      "required_maps": [
+        "base_color",
+        "roughness",
+        "normal_gl"
+      ],
+      "procedural_fallback": {
+        "color_rgba": [
+          0.69,
+          0.71,
+          0.74,
+          1
+        ],
+        "metallic": 1,
+        "roughness": 0.35
+      }
+    },
+    {
+      "slot_id": "mat_rubber_tire",
+      "display_name": "Wheel Rubber Tire",
+      "assigned_part_ids": [
+        "wheel_rear_left",
+        "wheel_rear_right"
+      ],
+      "material_family": "rubber",
+      "intent": "Traction and shock absorption.",
+      "semantic_tags": [
+        "rubber",
+        "tire",
+        "wheel",
+        "matte"
+      ],
+      "color_hint": "#1A1A1D",
+      "roughness_hint": null,
+      "metallic_hint": null,
+      "physical_scale_m": 0.2,
+      "required_maps": [
+        "base_color",
+        "roughness",
+        "normal_gl"
+      ],
+      "procedural_fallback": {
+        "color_rgba": [
+          0.1,
+          0.1,
+          0.11,
+          1
+        ],
+        "metallic": 0,
+        "roughness": 0.85
+      }
+    },
+    {
+      "slot_id": "mat_metal_rim",
+      "display_name": "Hand Rim Metal",
+      "assigned_part_ids": [
+        "hand_rim_left",
+        "hand_rim_right"
+      ],
+      "material_family": "metal",
+      "intent": "Propulsion grip surface.",
+      "semantic_tags": [
+        "metal",
+        "rim",
+        "grip"
+      ],
+      "color_hint": "#E5E7EB",
+      "roughness_hint": null,
+      "metallic_hint": null,
+      "physical_scale_m": 0.02,
+      "required_maps": [
+        "base_color",
+        "roughness",
+        "normal_gl"
+      ],
+      "procedural_fallback": {
+        "color_rgba": [
+          0.9,
+          0.91,
+          0.92,
+          1
+        ],
+        "metallic": 1,
+        "roughness": 0.25
+      }
+    },
+    {
+      "slot_id": "mat_fabric_seat",
+      "display_name": "Seat Sling Fabric",
+      "assigned_part_ids": [
+        "seat_sling",
+        "backrest_sling"
+      ],
+      "material_family": "fabric",
+      "intent": "User support and comfort.",
+      "semantic_tags": [
+        "fabric",
+        "nylon",
+        "upholstery"
+      ],
+      "color_hint": "#1E293B",
+      "roughness_hint": null,
+      "metallic_hint": null,
+      "physical_scale_m": 0.1,
+      "required_maps": [
+        "base_color",
+        "roughness",
+        "normal_gl"
+      ],
+      "procedural_fallback": {
+        "color_rgba": [
+          0.12,
+          0.16,
+          0.23,
+          1
+        ],
+        "metallic": 0,
+        "roughness": 0.95
+      }
+    }
+  ],
+  "environment": {
+    "intent": "neutral product look development",
+    "semantic_tags": [],
+    "preferred_environment_class": "studio",
+    "strength": 0.8,
+    "rotation_degrees": 0,
+    "background_visible": false
+  },
+  "requirements": {
+    "uv_required": true,
+    "rig_required": false,
+    "collision_required": false,
+    "ground_contact_required": true,
+    "animation_ready": true,
+    "movable_part_ids": []
+  },
+  "acceptance_criteria": [],
+  "benchmark_priorities": [
+    "Prioritize silhouette and proportion accuracy to match standard manual wheelchair dimensions.",
+    "Ensure coherent assembly with believable mechanical connections (axles, swivels, pivots).",
+    "Maintain strict semantic material regions (Metal, Rubber, Fabric).",
+    "Apply consistent edge bevels to all tubular frame sections to catch highlights.",
+    "Include useful mechanical details (spokes, hub bearings, swing-away joints) without exceeding triangle budget."
+  ]
+}

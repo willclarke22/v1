@@ -39,6 +39,10 @@ import type {
   PrimitiveBuilderSceneAssetResolution,
   ResolvedSceneAssetBinding,
 } from "@/sandbox/probe-lab/scenes/resolved-scene";
+import {
+  extractResourcePlanFromLabResult,
+  LabSceneRuntimePanel,
+} from "@/sandbox/probe-lab/scene-resources/ui";
 
 type Vec3 = [number, number, number];
 
@@ -1135,6 +1139,18 @@ export function PrimitiveBuilderLab() {
     result?.director_plan ?? null;
   const directorValidation =
     result?.director_validation ?? null;
+  const sharedResourcePlan =
+    extractResourcePlanFromLabResult(
+      result,
+    );
+  const sharedPrimitiveNodes =
+    (
+      result?.scene_graph as
+        | {
+            nodes?: unknown;
+          }
+        | undefined
+    )?.nodes;
   const currentBeat = plan
     ? plan.beats[activeStep - 1] ??
       plan.beats[0]
@@ -2751,6 +2767,15 @@ export function PrimitiveBuilderLab() {
           </aside>
         </section>
       </section>
+
+      <div className="mx-auto mt-6 w-full max-w-[1800px]">
+        <LabSceneRuntimePanel
+          source="primitive_builder"
+          resourcePlan={sharedResourcePlan}
+          primitiveNodes={sharedPrimitiveNodes}
+          heading="Primitive Builder mixed primitive and reviewed-asset runtime"
+        />
+      </div>
     </main>
   );
 }

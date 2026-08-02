@@ -99,11 +99,6 @@ The harness provides:
 - `tests/verify-phase2d-runtime.ts` — model runtime fixture.
 - `tests/verify-phase2f-material-runtime.ts` — deterministic material fixture.
 
-## Deferred work
-
-HDRI lighting and background execution belongs to Phase 2G. Manual Turn,
-Primitive Builder, and Visual Experience continue using compatibility loaders
-until the shared runtime is migrated into each lab deliberately.
 
 ## Phase 2G environment and lighting proof
 
@@ -179,6 +174,32 @@ renderer policy
 The Resource Runtime harness proves two independently owned actors, shared
 immutable downloads, independently mutable material instances, one shared HDRI,
 actor-failure isolation, environment fallback, aggregate timings, total bytes,
-and composition diagnostics. Compatibility adapters are exported for Primitive
-Builder, Visual Experience, and Manual Turn; those lanes remain unmigrated until
-Phase 2I deliberately replaces their compatibility renderers.
+and composition diagnostics. Compatibility adapters remain available for saved scenes, while Manual Turn,
+Primitive Builder, and Visual Experience now expose the shared reviewed-resource
+runtime as an explicit execution lane. The original teaching renderers remain
+visible during verification so migration can be compared without erasing legacy
+behavior.
+
+
+## Phase 2 closeout: cross-lab runtime
+
+The shared scene runtime now supports reviewed GLB actors and generated-UV
+primitive actors in one binding. Materials target stable entity ids, one HDRI
+lights the whole scene, and actor failures are isolated behind declared
+fallbacks. The three teaching labs call the same resolution route:
+
+```text
+POST /api/sandbox/probe-lab/scene-runtime/resolve
+```
+
+The route never invokes providers or acquisition. It returns the normalized
+resource plan, deterministic resolved resources, a `RuntimeSceneBindingV1`, and
+a unified run inspector. Primitive Builder maps supported boxes, cylinders,
+spheres, planes, cones, toruses, rods, `softBox`, and `glow` nodes into the
+shared runtime; unsupported custom geometry stays on the compatibility renderer
+with an explicit warning.
+
+`tests/verify-phase2-closeout.ts` verifies auxiliary classification, primitive
+UV generation, mixed runtime composition, per-entity material targeting,
+procedural asset specifications, all three lab integrations, and the Vercel
+function-trace guard.

@@ -1,0 +1,21 @@
+{
+  "score": 60,
+  "grade": "developing",
+  "asset_class": "hard_surface_assembly",
+  "findings": [
+    {
+      "severity": "error",
+      "code": "missing_required_parts",
+      "message": "Missing required semantic parts: camerabody, frontleatherpanel, lensbarrelouter, focusring, lensmount, shutterdial, viewfinderframe"
+    }
+  ],
+  "benchmark_checks": {
+    "silhouette_requires_visual_review": true,
+    "proportions_require_visual_review": true,
+    "connections_require_visual_review": true,
+    "material_response_requires_visual_review": true,
+    "semantic_parts_present": false,
+    "topology_clean": true,
+    "material_regions_present": true
+  }
+}

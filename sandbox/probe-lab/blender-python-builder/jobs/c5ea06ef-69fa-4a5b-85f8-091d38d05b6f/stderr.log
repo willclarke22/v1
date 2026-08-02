@@ -1,0 +1,10 @@
+C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\c5ea06ef-69fa-4a5b-85f8-091d38d05b6f\build_asset.py:88: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  material.use_nodes = True
+C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\c5ea06ef-69fa-4a5b-85f8-091d38d05b6f\build_asset.py:115: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  material.use_nodes = True
+C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\c5ea06ef-69fa-4a5b-85f8-091d38d05b6f\build_asset.py:979: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  material.use_nodes = True
+C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\c5ea06ef-69fa-4a5b-85f8-091d38d05b6f\build_asset.py:280: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  world.use_nodes = True
+C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\c5ea06ef-69fa-4a5b-85f8-091d38d05b6f\build_asset.py:1995: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  normal_material.use_nodes = True

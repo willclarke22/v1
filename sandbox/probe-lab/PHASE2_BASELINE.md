@@ -171,3 +171,23 @@ The active ambientCG HDRI registry may legitimately be empty. In that state the
 fallback bindings remain the required production-safe behavior, and the HDRI
 button remains unavailable until an HDRI has been reviewed and published to R2.
 
+
+## Closeout patch verification
+
+The closeout patch adds a common reviewed-resource execution lane to Manual
+Turn, Primitive Builder, and Visual Experience while preserving their existing
+compatibility renderers. Passing criteria are checked by
+`resource-runtime/tests/verify-phase2-closeout.ts` plus the existing Phase 2D,
+2F, 2G, 2H, and Vercel trace fixtures.
+
+A Phase 2 closeout run must demonstrate:
+
+- reviewed model, material, and HDRI resolution from authoritative R2 metadata;
+- mixed reviewed GLB and generated-UV primitive actors;
+- stable entity ids and entity-targeted material bindings;
+- declared model/material/environment/auxiliary fallbacks;
+- requested, resolved, compiled, loaded, and substituted diagnostics;
+- resource replacement without educational regeneration;
+- deterministic Blender/Python specification, validation, inspection, and
+  bounded repair behavior;
+- successful `pnpm build` and Vercel-safe Blender hydration traces.

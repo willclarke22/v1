@@ -11,6 +11,7 @@ import {
   type RuntimeSceneActorTransform,
   type RuntimeSceneBindingV1,
   type RuntimeSceneFallbackPolicy,
+  type RuntimeScenePrimitiveBindingV1,
   type RuntimeSceneSource,
 } from "./scene-runtime-contract";
 import type {
@@ -65,6 +66,13 @@ export type BuildRuntimeSceneBindingInput = {
   scene_id: string;
   source: RuntimeSceneSource;
   models: RuntimeModelBindingV1[];
+  primitives?: RuntimeScenePrimitiveBindingV1[];
+  fallback_actors?: Array<{
+    entity_id: string;
+    intent_id: string;
+    label: string;
+    required: boolean;
+  }>;
   materials?: RuntimeMaterialBindingV1[];
   environment?: RuntimeEnvironmentBindingV1 | null;
   actor_transforms?: Record<
@@ -134,6 +142,28 @@ export function validateRuntimeSceneBinding(
 
   for (const actor of binding.actors) {
     if (
+      !actor.model &&
+      !actor.primitive &&
+      !actor.fallback_only
+    ) {
+      issues.push(
+        `Actor ${actor.entity_id} has neither a model, primitive, nor declared fallback binding.`,
+      );
+    }
+    if (
+      actor.fallback_only &&
+      (actor.model || actor.primitive)
+    ) {
+      issues.push(
+        `Fallback-only actor ${actor.entity_id} cannot bind a model or primitive.`,
+      );
+    }
+    if (actor.model && actor.primitive) {
+      issues.push(
+        `Actor ${actor.entity_id} cannot bind both a model and a primitive.`,
+      );
+    }
+    if (
       actor.model &&
       actor.model.entity_id !== actor.entity_id
     ) {
@@ -163,20 +193,49 @@ export function buildRuntimeSceneBinding(
   const modelEntityIds = input.models.map((model) =>
     cleanId(model.entity_id, "model entity_id"),
   );
-  const duplicateModelIds = modelEntityIds.filter(
+  const primitiveBindings =
+    (input.primitives ?? []).map((primitive) => ({
+      ...primitive,
+      entity_id: cleanId(
+        primitive.entity_id,
+        "primitive entity_id",
+      ),
+      dimensions: [
+        ...primitive.dimensions,
+      ] as [number, number, number],
+    }));
+  const primitiveEntityIds =
+    primitiveBindings.map(
+      (primitive) => primitive.entity_id,
+    );
+  const fallbackActors =
+    (input.fallback_actors ?? []).map((actor) => ({
+      entity_id: cleanId(actor.entity_id, "fallback actor entity_id"),
+      intent_id: cleanId(actor.intent_id, "fallback actor intent_id"),
+      label: actor.label.trim() || "Reviewed model unavailable.",
+      required: actor.required,
+    }));
+  const fallbackEntityIds =
+    fallbackActors.map((actor) => actor.entity_id);
+  const allEntityIds = [
+    ...modelEntityIds,
+    ...primitiveEntityIds,
+    ...fallbackEntityIds,
+  ];
+  const duplicateEntityIds = allEntityIds.filter(
     (value, index) =>
-      modelEntityIds.indexOf(value) !== index,
+      allEntityIds.indexOf(value) !== index,
   );
-  if (duplicateModelIds.length) {
+  if (duplicateEntityIds.length) {
     throw new Error(
-      `Runtime scene models contain duplicate Director entity ids: ${Array.from(
-        new Set(duplicateModelIds),
+      `Runtime scene actors contain duplicate Director entity ids: ${Array.from(
+        new Set(duplicateEntityIds),
       ).join(", ")}.`,
     );
   }
 
   const required = new Set(
-    input.required_entity_ids ?? modelEntityIds,
+    input.required_entity_ids ?? allEntityIds,
   );
   const materials: RuntimeMaterialBindingV1[] =
     (input.materials ?? []).map((material) => ({
@@ -198,13 +257,13 @@ export function buildRuntimeSceneBinding(
       warnings: [...material.warnings],
     }));
 
-  const actors = input.models.map((model, index) => {
+  const modelActors = input.models.map((model, index) => {
     const override =
       input.actor_transforms?.[model.entity_id];
     const transform: RuntimeSceneActorTransform = {
       position: finiteTuple(
         override?.position,
-        defaultActorPosition(index, input.models.length),
+        defaultActorPosition(index, allEntityIds.length),
       ),
       rotation_radians: finiteTuple(
         override?.rotation_radians,
@@ -225,6 +284,9 @@ export function buildRuntimeSceneBinding(
         ...model,
         scene_id: sceneId,
       },
+      primitive: null,
+      fallback_only: false,
+      fallback_reason: null,
       material_binding_ids: materials
         .filter(
           (material) =>
@@ -239,6 +301,117 @@ export function buildRuntimeSceneBinding(
         null,
     };
   });
+
+  const primitiveActors =
+    primitiveBindings.map(
+      (primitive, primitiveIndex) => {
+        const actorIndex =
+          input.models.length +
+          primitiveIndex;
+        const override =
+          input.actor_transforms?.[
+            primitive.entity_id
+          ];
+        const transform:
+          RuntimeSceneActorTransform = {
+            position: finiteTuple(
+              override?.position,
+              defaultActorPosition(
+                actorIndex,
+                allEntityIds.length,
+              ),
+            ),
+            rotation_radians: finiteTuple(
+              override?.rotation_radians,
+              DEFAULT_TRANSFORM.rotation_radians,
+            ),
+            scale:
+              typeof override?.scale === "number" &&
+              Number.isFinite(override.scale) &&
+              override.scale > 0
+                ? override.scale
+                : 1,
+          };
+
+        return {
+          entity_id:
+            primitive.entity_id,
+          intent_id:
+            `primitive_${primitive.entity_id}`,
+          model: null,
+          primitive,
+          fallback_only: false,
+          fallback_reason: null,
+          material_binding_ids:
+            materials
+              .filter(
+                (material) =>
+                  material.target_entity_id ===
+                  primitive.entity_id,
+              )
+              .map(
+                (material) =>
+                  material.material_binding_id,
+              ),
+          required:
+            required.has(
+              primitive.entity_id,
+            ),
+          transform,
+          fallback_label: null,
+        };
+      },
+    );
+
+  const fallbackOnlyActors =
+    fallbackActors.map(
+      (fallbackActor, fallbackIndex) => {
+        const actorIndex =
+          input.models.length +
+          primitiveBindings.length +
+          fallbackIndex;
+        const override =
+          input.actor_transforms?.[
+            fallbackActor.entity_id
+          ];
+        return {
+          entity_id: fallbackActor.entity_id,
+          intent_id: fallbackActor.intent_id,
+          model: null,
+          primitive: null,
+          fallback_only: true,
+          fallback_reason: fallbackActor.label,
+          material_binding_ids: [],
+          required: fallbackActor.required,
+          transform: {
+            position: finiteTuple(
+              override?.position,
+              defaultActorPosition(
+                actorIndex,
+                allEntityIds.length,
+              ),
+            ),
+            rotation_radians: finiteTuple(
+              override?.rotation_radians,
+              DEFAULT_TRANSFORM.rotation_radians,
+            ),
+            scale:
+              typeof override?.scale === "number" &&
+              Number.isFinite(override.scale) &&
+              override.scale > 0
+                ? override.scale
+                : 1,
+          },
+          fallback_label: fallbackActor.label,
+        };
+      },
+    );
+
+  const actors = [
+    ...modelActors,
+    ...primitiveActors,
+    ...fallbackOnlyActors,
+  ];
 
   const environment = input.environment
     ? {

@@ -1,0 +1,1207 @@
+{
+  "schema_version": "myway_foundry_resource_plan_v1",
+  "created_at": "2026-08-01T23:26:35.063Z",
+  "design_brief_asset_id": "myway_wheelchair_v1",
+  "quality_mode": "standard",
+  "material_bindings": [
+    {
+      "slot": {
+        "slot_id": "mat_metal_frame",
+        "display_name": "Brushed Aluminum Frame",
+        "assigned_part_ids": [
+          "frame_main",
+          "frame_cross_brace_left",
+          "frame_cross_brace_right",
+          "caster_assembly_front_left",
+          "caster_assembly_front_right",
+          "armrest_left",
+          "armrest_right",
+          "footrest_left",
+          "footrest_right",
+          "brake_lever_left",
+          "brake_lever_right"
+        ],
+        "material_family": "metal",
+        "intent": "Structural support and mechanical hardware.",
+        "semantic_tags": [
+          "metal",
+          "brushed",
+          "structural",
+          "tube"
+        ],
+        "color_hint": "#B0B5BD",
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "physical_scale_m": 0.05,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "normal_gl"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.69,
+            0.71,
+            0.74,
+            1
+          ],
+          "metallic": 1,
+          "roughness": 0.35
+        }
+      },
+      "status": "ready_r2",
+      "selected": {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_material_Metal063_2k-jpg",
+        "source_asset_id": "Metal063",
+        "variant_id": "2k-jpg-1",
+        "display_name": "Metal 063",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal063/2k-jpg/preview.png",
+        "resolution": "2K",
+        "file_format": "JPG",
+        "score": 242,
+        "reasons": [
+          "metal family match (metal)",
+          "matches metal",
+          "all required maps available"
+        ],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "base_color",
+          "normal_gl",
+          "normal_dx",
+          "roughness",
+          "metallic",
+          "height"
+        ],
+        "missing_required_maps": []
+      },
+      "candidates": [
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Metal063_2k-jpg",
+          "source_asset_id": "Metal063",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 063",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal063/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 242,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "metallic",
+            "height"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal050A",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 050 A",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal050A/Metal050A_SQ_Color.jpg?27370&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal050A/Metal050A_SQ_Displacement.jpg?85791&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal050A/Metal050A_SQ_NormalDX.jpg?2171&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal050A/Metal050A_SQ_Roughness.jpg?33339&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal050A/Metal050A_SQ_Metalness.jpg?59795",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "metal family match (metal)",
+            "matches aluminum",
+            "matches metal",
+            "matches clean",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal051A",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 051 A",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051A/Metal051A_SQ_Color.jpg?78511&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051A/Metal051A_SQ_Displacement.jpg?33746&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051A/Metal051A_SQ_NormalDX.jpg?23977&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051A/Metal051A_SQ_Roughness.jpg?69410&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051A/Metal051A_SQ_Metalness.jpg?21867",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "metal family match (metal)",
+            "matches brushed",
+            "matches aluminum",
+            "matches metal",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal051B",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 051 B",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051B/Metal051B_SQ_Color.jpg?25351&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051B/Metal051B_SQ_Displacement.jpg?76069&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051B/Metal051B_SQ_NormalDX.jpg?44165&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051B/Metal051B_SQ_Roughness.jpg?19920&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051B/Metal051B_SQ_Metalness.jpg?4677",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "metal family match (metal)",
+            "matches brushed",
+            "matches aluminum",
+            "matches metal",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal051C",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 051 C",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051C/Metal051C_SQ_Color.jpg?28177&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051C/Metal051C_SQ_Displacement.jpg?6910&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051C/Metal051C_SQ_NormalDX.jpg?19625&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051C/Metal051C_SQ_Roughness.jpg?45572&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal051C/Metal051C_SQ_Metalness.jpg?82780",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "metal family match (metal)",
+            "matches brushed",
+            "matches aluminum",
+            "matches metal",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Chainmail001",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Chainmail 001",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail001/Chainmail001_SQ_Color.jpg?8982&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail001/Chainmail001_SQ_Displacement.jpg?72940&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail001/Chainmail001_SQ_NormalDX.jpg?70029&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail001/Chainmail001_SQ_Roughness.jpg?99773&opacity_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail001/Chainmail001_SQ_Opacity.jpg?86068&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail001/Chainmail001_SQ_Metalness.jpg?98254",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 154,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches fabric",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "opacity",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Chainmail002",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Chainmail 002",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail002/Chainmail002_SQ_Color.jpg?58884&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail002/Chainmail002_SQ_Displacement.jpg?73564&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail002/Chainmail002_SQ_NormalDX.jpg?96817&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail002/Chainmail002_SQ_Roughness.jpg?12280&opacity_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail002/Chainmail002_SQ_Opacity.jpg?28858&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail002/Chainmail002_SQ_Metalness.jpg?82234",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 154,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches fabric",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "opacity",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Chainmail003",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Chainmail 003",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail003/Chainmail003_SQ_Color.jpg?19270&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail003/Chainmail003_SQ_Displacement.jpg?36225&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail003/Chainmail003_SQ_NormalDX.jpg?76687&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail003/Chainmail003_SQ_Roughness.jpg?23864&opacity_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail003/Chainmail003_SQ_Opacity.jpg?28116&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail003/Chainmail003_SQ_Metalness.jpg?19129",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 154,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches fabric",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "opacity",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        }
+      ],
+      "texture_scale_m": 0.05
+    },
+    {
+      "slot": {
+        "slot_id": "mat_rubber_tire",
+        "display_name": "Wheel Rubber Tire",
+        "assigned_part_ids": [
+          "wheel_rear_left",
+          "wheel_rear_right"
+        ],
+        "material_family": "rubber",
+        "intent": "Traction and shock absorption.",
+        "semantic_tags": [
+          "rubber",
+          "tire",
+          "wheel",
+          "matte"
+        ],
+        "color_hint": "#1A1A1D",
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "physical_scale_m": 0.2,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "normal_gl"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.1,
+            0.1,
+            0.11,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.85
+        }
+      },
+      "status": "ready_r2",
+      "selected": {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_material_Rubber001_2k-jpg",
+        "source_asset_id": "Rubber001",
+        "variant_id": "2k-jpg-1",
+        "display_name": "Rubber 001",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Rubber001/2k-jpg/preview.png",
+        "resolution": "2K",
+        "file_format": "JPG",
+        "score": 239,
+        "reasons": [
+          "rubber family match (rubber)",
+          "matches rubber",
+          "all required maps available"
+        ],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "base_color",
+          "normal_gl",
+          "normal_dx",
+          "roughness",
+          "height"
+        ],
+        "missing_required_maps": []
+      },
+      "candidates": [
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Rubber001_2k-jpg",
+          "source_asset_id": "Rubber001",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Rubber 001",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Rubber001/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 239,
+          "reasons": [
+            "rubber family match (rubber)",
+            "matches rubber",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "height"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Ground017",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Ground 017",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground017/Ground017_SQ_Color.jpg?72320&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground017/Ground017_SQ_Displacement.jpg?42309&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground017/Ground017_SQ_NormalDX.jpg?46464&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Ground017/Ground017_SQ_Roughness.jpg?92423",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 140,
+          "reasons": [
+            "rubber family match (tire)",
+            "matches tire",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Rubber001",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Rubber 001",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber001/Rubber001_SQ_Color.jpg?81712&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber001/Rubber001_SQ_Displacement.jpg?39156&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber001/Rubber001_SQ_NormalDX.jpg?11338&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber001/Rubber001_SQ_Roughness.jpg?17646",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 140,
+          "reasons": [
+            "rubber family match (rubber)",
+            "matches rubber",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Rubber002",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Rubber 002",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber002/Rubber002_SQ_Color.jpg?53815&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber002/Rubber002_SQ_Displacement.jpg?57195&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber002/Rubber002_SQ_NormalDX.jpg?96387&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber002/Rubber002_SQ_Roughness.jpg?19842",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 140,
+          "reasons": [
+            "rubber family match (rubber)",
+            "matches rubber",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Rubber003",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Rubber 003",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber003/Rubber003_SQ_Color.jpg?41578&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber003/Rubber003_SQ_Displacement.jpg?74278&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber003/Rubber003_SQ_NormalDX.jpg?14424&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber003/Rubber003_SQ_Roughness.jpg?2053",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 140,
+          "reasons": [
+            "rubber family match (rubber)",
+            "matches rubber",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Rubber004",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Rubber 004",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber004/Rubber004_SQ_Color.jpg?50667&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber004/Rubber004_SQ_Displacement.jpg?55785&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber004/Rubber004_SQ_NormalDX.jpg?27221&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Rubber004/Rubber004_SQ_Roughness.jpg?67693",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 140,
+          "reasons": [
+            "rubber family match (rubber)",
+            "matches rubber",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "procedural",
+          "resource_id": null,
+          "source_asset_id": null,
+          "variant_id": null,
+          "display_name": "Wheel Rubber Tire procedural fallback",
+          "preview_url": null,
+          "resolution": null,
+          "file_format": null,
+          "score": 1,
+          "reasons": [
+            "trusted Principled fallback"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [],
+          "missing_required_maps": [
+            "base_color",
+            "roughness",
+            "normal_gl"
+          ]
+        },
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Fabric080_2k-jpg",
+          "source_asset_id": "Fabric080",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Fabric 080",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Fabric080/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": -3,
+          "reasons": [
+            "missing rubber family identity",
+            "matches modern",
+            "matches fabric",
+            "matches clean",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "height"
+          ],
+          "missing_required_maps": []
+        }
+      ],
+      "texture_scale_m": 0.2
+    },
+    {
+      "slot": {
+        "slot_id": "mat_metal_rim",
+        "display_name": "Hand Rim Metal",
+        "assigned_part_ids": [
+          "hand_rim_left",
+          "hand_rim_right"
+        ],
+        "material_family": "metal",
+        "intent": "Propulsion grip surface.",
+        "semantic_tags": [
+          "metal",
+          "rim",
+          "grip"
+        ],
+        "color_hint": "#E5E7EB",
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "physical_scale_m": 0.02,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "normal_gl"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.9,
+            0.91,
+            0.92,
+            1
+          ],
+          "metallic": 1,
+          "roughness": 0.25
+        }
+      },
+      "status": "ready_r2",
+      "selected": {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_material_Metal063_2k-jpg",
+        "source_asset_id": "Metal063",
+        "variant_id": "2k-jpg-1",
+        "display_name": "Metal 063",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal063/2k-jpg/preview.png",
+        "resolution": "2K",
+        "file_format": "JPG",
+        "score": 242,
+        "reasons": [
+          "metal family match (metal)",
+          "matches metal",
+          "all required maps available"
+        ],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "base_color",
+          "normal_gl",
+          "normal_dx",
+          "roughness",
+          "metallic",
+          "height"
+        ],
+        "missing_required_maps": []
+      },
+      "candidates": [
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Metal063_2k-jpg",
+          "source_asset_id": "Metal063",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 063",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal063/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 242,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "metallic",
+            "height"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Chainmail001",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Chainmail 001",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail001/Chainmail001_SQ_Color.jpg?8982&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail001/Chainmail001_SQ_Displacement.jpg?72940&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail001/Chainmail001_SQ_NormalDX.jpg?70029&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail001/Chainmail001_SQ_Roughness.jpg?99773&opacity_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail001/Chainmail001_SQ_Opacity.jpg?86068&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail001/Chainmail001_SQ_Metalness.jpg?98254",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches surface",
+            "matches fabric",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "opacity",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Chainmail002",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Chainmail 002",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail002/Chainmail002_SQ_Color.jpg?58884&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail002/Chainmail002_SQ_Displacement.jpg?73564&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail002/Chainmail002_SQ_NormalDX.jpg?96817&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail002/Chainmail002_SQ_Roughness.jpg?12280&opacity_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail002/Chainmail002_SQ_Opacity.jpg?28858&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail002/Chainmail002_SQ_Metalness.jpg?82234",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches surface",
+            "matches fabric",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "opacity",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Chainmail003",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Chainmail 003",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail003/Chainmail003_SQ_Color.jpg?19270&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail003/Chainmail003_SQ_Displacement.jpg?36225&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail003/Chainmail003_SQ_NormalDX.jpg?76687&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail003/Chainmail003_SQ_Roughness.jpg?23864&opacity_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail003/Chainmail003_SQ_Opacity.jpg?28116&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail003/Chainmail003_SQ_Metalness.jpg?19129",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches surface",
+            "matches fabric",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "opacity",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Chainmail004",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Chainmail 004",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail004/Chainmail004_SQ_Color.jpg?66299&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail004/Chainmail004_SQ_Displacement.jpg?47014&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail004/Chainmail004_SQ_NormalDX.jpg?79564&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail004/Chainmail004_SQ_Roughness.jpg?84710&opacity_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail004/Chainmail004_SQ_Opacity.jpg?30365&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chainmail004/Chainmail004_SQ_Metalness.jpg?37939",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches surface",
+            "matches fabric",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "opacity",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "CorrugatedSteel006A",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Corrugated Steel 006 A",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel006A/CorrugatedSteel006A_SQ_Color.jpg?77809&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel006A/CorrugatedSteel006A_SQ_Displacement.jpg?95394&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel006A/CorrugatedSteel006A_SQ_NormalDX.jpg?90028&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel006A/CorrugatedSteel006A_SQ_Roughness.jpg?76690&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel006A/CorrugatedSteel006A_SQ_AmbientOcclusion.jpg?60658&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/CorrugatedSteel006A/CorrugatedSteel006A_SQ_Metalness.jpg?10393",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches surface",
+            "matches eb",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "ambient_occlusion",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal014",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 014",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_Color.jpg?47863&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_Displacement.jpg?33136&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_NormalDX.jpg?6026&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_Roughness.jpg?1303&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal014/Metal014_SQ_Metalness.jpg?26135",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches surface",
+            "matches clean",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Metal041A",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 041 A",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal041A/Metal041A_SQ_Color.jpg?2047&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal041A/Metal041A_SQ_Displacement.jpg?6879&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal041A/Metal041A_SQ_NormalDX.jpg?59520&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal041A/Metal041A_SQ_Roughness.jpg?68752&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal041A/Metal041A_SQ_Metalness.jpg?46562",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "metal family match (metal)",
+            "matches metal",
+            "matches surface",
+            "matches clean",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        }
+      ],
+      "texture_scale_m": 0.02
+    },
+    {
+      "slot": {
+        "slot_id": "mat_fabric_seat",
+        "display_name": "Seat Sling Fabric",
+        "assigned_part_ids": [
+          "seat_sling",
+          "backrest_sling"
+        ],
+        "material_family": "fabric",
+        "intent": "User support and comfort.",
+        "semantic_tags": [
+          "fabric",
+          "nylon",
+          "upholstery"
+        ],
+        "color_hint": "#1E293B",
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "physical_scale_m": 0.1,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "normal_gl"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.12,
+            0.16,
+            0.23,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.95
+        }
+      },
+      "status": "ready_r2",
+      "selected": {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_material_Fabric080_2k-jpg",
+        "source_asset_id": "Fabric080",
+        "variant_id": "2k-jpg-1",
+        "display_name": "Fabric 080",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Fabric080/2k-jpg/preview.png",
+        "resolution": "2K",
+        "file_format": "JPG",
+        "score": 267,
+        "reasons": [
+          "fabric family match (fabric)",
+          "matches fabric",
+          "matches modern",
+          "matches clean",
+          "all required maps available"
+        ],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "base_color",
+          "normal_gl",
+          "normal_dx",
+          "roughness",
+          "height"
+        ],
+        "missing_required_maps": []
+      },
+      "candidates": [
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Fabric080_2k-jpg",
+          "source_asset_id": "Fabric080",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Fabric 080",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Fabric080/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 267,
+          "reasons": [
+            "fabric family match (fabric)",
+            "matches fabric",
+            "matches modern",
+            "matches clean",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "height"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Fabric010_2k-jpg",
+          "source_asset_id": "Fabric010",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Fabric 010",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Fabric010/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 242,
+          "reasons": [
+            "fabric family match (fabric)",
+            "matches fabric",
+            "all required maps available"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "height",
+            "opacity"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Fabric004",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Fabric 004",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric004/Fabric004_SQ_Color.jpg?84365&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric004/Fabric004_SQ_Displacement.jpg?18147&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric004/Fabric004_SQ_NormalDX.jpg?45373&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric004/Fabric004_SQ_Roughness.jpg?71894&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric004/Fabric004_SQ_Metalness.jpg?15029",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "fabric family match (fabric)",
+            "matches fabric",
+            "matches modern",
+            "matches clean",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "metallic"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Fabric080",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Fabric 080",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric080/Fabric080_SQ_Color.jpg?56874&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric080/Fabric080_SQ_Displacement.jpg?3956&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric080/Fabric080_SQ_NormalDX.jpg?45987&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric080/Fabric080_SQ_Roughness.jpg?25180",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 168,
+          "reasons": [
+            "fabric family match (fabric)",
+            "matches fabric",
+            "matches modern",
+            "matches clean",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Fabric003",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Fabric 003",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric003/Fabric003_SQ_Color.jpg?54175&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric003/Fabric003_SQ_Displacement.jpg?50558&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric003/Fabric003_SQ_NormalDX.jpg?47883&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric003/Fabric003_SQ_Roughness.jpg?51555",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 154,
+          "reasons": [
+            "fabric family match (fabric)",
+            "matches fabric",
+            "matches clean",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Fabric031",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Fabric 031",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric031/Fabric031_SQ_Color.jpg?2147&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric031/Fabric031_SQ_Displacement.jpg?1269&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric031/Fabric031_SQ_NormalDX.jpg?34447&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric031/Fabric031_SQ_Roughness.jpg?64434",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 154,
+          "reasons": [
+            "fabric family match (fabric)",
+            "matches fabric",
+            "matches large",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Fabric035",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Fabric 035",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric035/Fabric035_SQ_Color.jpg?16850&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric035/Fabric035_SQ_Displacement.jpg?49937&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric035/Fabric035_SQ_NormalDX.jpg?91042&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric035/Fabric035_SQ_Roughness.jpg?87980&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric035/Fabric035_SQ_AmbientOcclusion.jpg?98686",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 154,
+          "reasons": [
+            "fabric family match (fabric)",
+            "matches fabric",
+            "matches clean",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": []
+        },
+        {
+          "candidate_kind": "ambientcg_catalog",
+          "resource_id": null,
+          "source_asset_id": "Fabric036",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Fabric 036",
+          "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric036/Fabric036_SQ_Color.jpg?19418&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric036/Fabric036_SQ_Displacement.jpg?20885&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric036/Fabric036_SQ_NormalDX.jpg?15004&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric036/Fabric036_SQ_Roughness.jpg?85505&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Fabric036/Fabric036_SQ_AmbientOcclusion.jpg?70194",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 154,
+          "reasons": [
+            "fabric family match (fabric)",
+            "matches fabric",
+            "matches clean",
+            "2K standard variant"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [
+            "base_color",
+            "height",
+            "normal_gl",
+            "roughness",
+            "ambient_occlusion"
+          ],
+          "missing_required_maps": []
+        }
+      ],
+      "texture_scale_m": 0.1
+    }
+  ],
+  "environment": {
+    "status": "ready_r2",
+    "intent": {
+      "intent": "neutral product look development",
+      "semantic_tags": [],
+      "preferred_environment_class": "studio",
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "background_visible": false
+    },
+    "selected": {
+      "candidate_kind": "cached_r2",
+      "resource_id": "ambientcg_hdri_DayEnvironmentHDRI005_8k-file",
+      "source_asset_id": "DayEnvironmentHDRI005",
+      "variant_id": "8k-file-3",
+      "display_name": "Day Environment HDRI 005",
+      "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/hdri/ambientcg/DayEnvironmentHDRI005/8k-file/preview.png",
+      "resolution": "8K",
+      "file_format": "EXR",
+      "score": 90,
+      "reasons": [],
+      "published_to_r2": true,
+      "required_maps_available": [
+        "environment"
+      ],
+      "missing_required_maps": []
+    },
+    "candidates": [
+      {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_hdri_DayEnvironmentHDRI005_8k-file",
+        "source_asset_id": "DayEnvironmentHDRI005",
+        "variant_id": "8k-file-3",
+        "display_name": "Day Environment HDRI 005",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/hdri/ambientcg/DayEnvironmentHDRI005/8k-file/preview.png",
+        "resolution": "8K",
+        "file_format": "EXR",
+        "score": 90,
+        "reasons": [],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      },
+      {
+        "candidate_kind": "cached_r2",
+        "resource_id": "ambientcg_hdri_DayEnvironmentHDRI059_8k-file",
+        "source_asset_id": "DayEnvironmentHDRI059",
+        "variant_id": "8k-file-3",
+        "display_name": "Day Environment HDRI 059",
+        "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/hdri/ambientcg/DayEnvironmentHDRI059/8k-file/preview.png",
+        "resolution": "8K",
+        "file_format": "EXR",
+        "score": 90,
+        "reasons": [],
+        "published_to_r2": true,
+        "required_maps_available": [
+          "environment"
+        ],
+        "missing_required_maps": []
+      },
+      {
+        "candidate_kind": "procedural",
+        "resource_id": null,
+        "source_asset_id": null,
+        "variant_id": null,
+        "display_name": "Trusted neutral studio rig",
+        "preview_url": null,
+        "resolution": null,
+        "file_format": null,
+        "score": 1,
+        "reasons": [
+          "trusted fallback lighting"
+        ],
+        "published_to_r2": false,
+        "required_maps_available": [],
+        "missing_required_maps": []
+      }
+    ]
+  },
+  "summary": {
+    "ready_r2": 5,
+    "catalog_matches": 0,
+    "procedural_fallbacks": 0,
+    "missing": 0,
+    "requires_preparation": false
+  }
+}

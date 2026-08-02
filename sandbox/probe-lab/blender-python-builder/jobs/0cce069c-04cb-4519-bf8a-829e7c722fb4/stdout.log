@@ -1,0 +1,112 @@
+MYWAY_PROGRESS:building native vintage camera
+MYWAY_PROGRESS:native vintage camera geometry complete
+Info: Saved as "native_vintage_camera_cloud_proof.blend"
+INFO Draco mesh compression is available, use library at C:\Program Files\Blender Foundation\Blender 5.1\5.1\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+15:19:20 | INFO: Starting glTF 2.0 export
+15:19:20 | INFO: Extracting primitive: Cube.011
+15:19:22 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+15:19:22 | INFO: Primitives created: 1
+15:19:22 | INFO: Extracting primitive: Cube.003
+15:19:23 | INFO: Primitives created: 1
+15:19:23 | INFO: Extracting primitive: Cube
+15:19:24 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+15:19:24 | INFO: Primitives created: 1
+15:19:24 | INFO: Extracting primitive: Cube.012
+15:19:24 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+15:19:24 | INFO: Primitives created: 1
+15:19:24 | INFO: Extracting primitive: Cylinder.002
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.006
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.005
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cube.002
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.004
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cube.010
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.007
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.001
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.003
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Torus
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Torus.001
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Torus.002
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cube.008
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cube.009
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.008
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.009
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Sphere
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Sphere.001
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Sphere.002
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Sphere.003
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.013
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.012
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.010
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.011
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cube.004
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cube.005
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Torus.003
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Torus.004
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cube.001
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cylinder.014
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cube.006
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Extracting primitive: Cube.007
+15:19:26 | INFO: Primitives created: 1
+15:19:26 | INFO: Finished glTF 2.0 export in 6.423801898956299 s
+00:29.890  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview.png'
+00:31.687  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_front.png'
+00:33.219  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_right.png'
+00:34.859  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_back.png'
+00:36.594  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_left.png'
+00:38.250  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_top.png'
+00:39.953  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_clay.png'
+00:41.531  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_material_id.png'
+00:42.828  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_normals.png'
+00:44.859  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_wireframe.png'
+00:46.515  render           | Saved: 'C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_dimensions.png'
+
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview.png
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_front.png
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_right.png
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_back.png
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_left.png
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_top.png
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_clay.png
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_material_id.png
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_normals.png
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_wireframe.png
+MYWAY_PREVIEW_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\preview_dimensions.png
+MYWAY_VALIDATION_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\validation.json
+MYWAY_QUALITY_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\quality.json
+MYWAY_ASSET_BUILD_COMPLETE:C:\Users\willc\projects\MyWay\v1\public\sandbox-assets\myway\blender-python-builder\0cce069c-04cb-4519-bf8a-829e7c722fb4\native_vintage_camera_cloud_proof.glb
+Blender 5.1.2 (hash ec6e62d40fa9 built 2026-05-19 01:37:34)
+
+Blender quit

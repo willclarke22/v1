@@ -42,8 +42,10 @@ intents and emits `ResolvedSceneResourcesV1` with registry hashes, request
 hashes, candidate diagnostics, selection explanations, stable entity ids,
 warnings, and fallbacks.
 
-Material, environment, and auxiliary intents remain preserved but explicitly
-deferred to their later Phase 2 resolvers. Scene resolution always forces
+Model, material, and environment intents now resolve through reviewed,
+deterministic R2-backed resolvers. Auxiliary intents receive an honest runtime
+classification (`direct_runtime`, `requires_compilation`, `blender_only`, or
+`unsupported`) and preserve explicit fallbacks. Scene resolution always forces
 acquisition policy to `never`.
 
 ## Phase 2D handoff
@@ -59,10 +61,10 @@ scene resolution remains score-driven and acquisition-free.
 
 `SceneResourcePlanV1.surface_intents` remain the canonical material intent
 source. Phase 2F adds the deterministic reviewed-material resolver and runtime
-binding used by the Resource Runtime harness. Full automatic attachment of
-resolved material bindings to every scene pipeline is intentionally deferred
-until the shared runtime migration patch; current teaching-lab behavior is not
-silently changed.
+binding used by the Resource Runtime harness. Resolved material bindings are attached to the shared runtime only after the
+educational direction and stable entity ids are fixed. Manual Turn, Primitive
+Builder, and Visual Experience expose the same execution panel and may change
+resource choices without regenerating teaching content.
 
 ## Environment handoff
 
@@ -72,3 +74,34 @@ lighting/background intent; the environment resolver turns that intent into a
 versioned `RuntimeEnvironmentBindingV1`. Model and material entity bindings are
 not rewritten when an environment changes.
 
+
+## Phase 2 closeout integration
+
+`lab-runtime-resolution.server.ts` is the common Manual Turn, Primitive Builder,
+and Visual Experience composition boundary. It normalizes an existing
+`myway_scene_resource_plan_v1`, applies only explicit execution overrides,
+resolves reviewed resources, adapts supported primitive nodes, builds
+`RuntimeSceneBindingV1`, and emits one `myway_phase2_run_inspector_v1` record.
+
+The inspector traces:
+
+```text
+educational direction
+→ normalized resource intent
+→ deterministic candidate diagnostics
+→ selected bindings and declared fallbacks
+→ compiled shared runtime scene
+→ browser lifecycle diagnostics
+```
+
+Resource replacement never rewrites narration, timing, camera cues, semantic
+roles, or stable entity ids. Missing resources remain visible through declared
+proxies or renderer fallbacks. Acquisition stays separate and never runs inside
+scene compilation.
+
+Auxiliary resource policy is intentionally honest:
+
+- atlases and reviewed images can enter direct runtime binding;
+- terrain and decals require deterministic compilation before runtime use;
+- brushes and substances are Blender authoring inputs and require baking;
+- unsupported resources never pretend to be browser-ready.
