@@ -23,7 +23,7 @@ async function main() {
   assert.match(service, /if \(!family\.compatible\)/);
   assert.match(
     service,
-    /slot\.required_maps\.includes\(\s*"base_color"/,
+    /hasRequiredMap\(\s*normalizedAvailable,\s*"base_color"/,
   );
 
   console.log(

@@ -209,7 +209,8 @@ const glmSource = await readFile(
   "sandbox/probe-lab/blender-python-builder/glm-blender-python.server.ts",
   "utf8",
 );
-assert.match(glmSource, /buildFoundryHelperContractPrompt/);
+assert.match(glmSource, /const DIRECT_MYWAY_BOUNDARY/);
+assert.doesNotMatch(glmSource, /const HELPER_CAPABILITIES/);
 assert.match(glmSource, /repairGeneratedCodeAfterPreflight/);
 assert.match(glmSource, /preflight_validation/);
 

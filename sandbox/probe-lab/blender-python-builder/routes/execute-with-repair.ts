@@ -8,6 +8,7 @@ import {
 } from "../asset-design-brief";
 import {
   executeBlenderPython,
+  foundryExecutionDiagnostics,
 } from "../blender-python-runner.server";
 import {
   repairBlenderPython,
@@ -101,6 +102,8 @@ export async function POST(
           string | null;
         repair_elapsed_ms:
           number | null;
+        execution_diagnostics?:
+          unknown;
       }> = [];
 
     for (
@@ -175,6 +178,10 @@ export async function POST(
             null,
           repair_elapsed_ms:
             null,
+          execution_diagnostics:
+            foundryExecutionDiagnostics(
+              error,
+            ),
         });
 
         if (
@@ -192,6 +199,10 @@ export async function POST(
                 attempts,
               final_code:
                 code,
+              execution_diagnostics:
+                foundryExecutionDiagnostics(
+                  error,
+                ),
             },
             { status: 422 },
           );
@@ -233,6 +244,10 @@ export async function POST(
           caught instanceof Error
             ? caught.message
             : String(caught),
+        execution_diagnostics:
+          foundryExecutionDiagnostics(
+            caught,
+          ),
       },
       { status: 502 },
     );

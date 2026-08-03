@@ -11,6 +11,10 @@ import {
   cacheAmbientCgAsset,
 } from "../catalog/ambientcg/ambientcg-download.server";
 import {
+  analyzeAmbientCgMaterialAppearance,
+  analyzeAmbientCgMaterialBatch,
+} from "../catalog/ambientcg/ambientcg-material-appearance.server";
+import {
   importAmbientCgModel,
 } from "../catalog/ambientcg/ambientcg-model-import.server";
 import {
@@ -23,6 +27,7 @@ import {
   readAmbientCgCatalog,
   readAmbientCgDownloadJobs,
   readAmbientCgHdriRegistry,
+  readAmbientCgMaterialAppearanceRegistry,
   readAmbientCgMaterialRegistry,
   readAmbientCgResourceRegistry,
   readAmbientCgSyncState,
@@ -105,6 +110,7 @@ export async function GET(
       const [
         sync,
         materials,
+        materialAppearances,
         hdris,
         resources,
         jobs,
@@ -112,6 +118,7 @@ export async function GET(
       ] = await Promise.all([
         readAmbientCgSyncState(),
         readAmbientCgMaterialRegistry(),
+        readAmbientCgMaterialAppearanceRegistry(),
         readAmbientCgHdriRegistry(),
         readAmbientCgResourceRegistry(),
         readAmbientCgDownloadJobs(),
@@ -135,6 +142,11 @@ export async function GET(
         counts: {
           materials:
             materials.materials.length,
+          material_appearances:
+            materialAppearances.profiles.filter(
+              (profile) =>
+                profile.status === "ready",
+            ).length,
           hdris:
             hdris.hdris.length,
           resources:
@@ -147,11 +159,24 @@ export async function GET(
     }
 
     if (view === "materials") {
-      const [registry, catalog] =
-        await Promise.all([
-          readAmbientCgMaterialRegistry(),
-          readAmbientCgCatalog(),
-        ]);
+      const [
+        registry,
+        catalog,
+        appearances,
+      ] = await Promise.all([
+        readAmbientCgMaterialRegistry(),
+        readAmbientCgCatalog(),
+        readAmbientCgMaterialAppearanceRegistry(),
+      ]);
+      const appearanceById =
+        new Map(
+          appearances.profiles.map(
+            (profile) => [
+              profile.source_asset_id,
+              profile,
+            ],
+          ),
+        );
 
       return NextResponse.json({
         ok: true,
@@ -159,7 +184,13 @@ export async function GET(
         materials: attachCatalogVariants(
           registry.materials,
           catalog,
-        ),
+        ).map((material) => ({
+          ...material,
+          appearance_profile:
+            appearanceById.get(
+              material.source_asset_id,
+            ) ?? null,
+        })),
       });
     }
 
@@ -201,6 +232,15 @@ export async function GET(
       });
     }
 
+    if (view === "material_appearances") {
+      const registry =
+        await readAmbientCgMaterialAppearanceRegistry();
+      return NextResponse.json({
+        ok: true,
+        ...registry,
+      });
+    }
+
     if (view === "jobs") {
       const registry =
         await readAmbientCgDownloadJobs();
@@ -211,8 +251,11 @@ export async function GET(
       });
     }
 
-    const result =
-      await searchAmbientCgCatalog({
+    const [
+      result,
+      appearances,
+    ] = await Promise.all([
+      searchAmbientCgCatalog({
         query:
           request.nextUrl.searchParams.get(
             "q",
@@ -239,11 +282,32 @@ export async function GET(
             ),
             24,
           ),
-      });
+      }),
+      readAmbientCgMaterialAppearanceRegistry(),
+    ]);
+    const appearanceById =
+      new Map(
+        appearances.profiles.map(
+          (profile) => [
+            profile.source_asset_id,
+            profile,
+          ],
+        ),
+      );
 
     return NextResponse.json({
       ok: true,
       ...result,
+      assets:
+        result.assets.map((asset) => ({
+          ...asset,
+          appearance_profile:
+            asset.asset_type === "material"
+              ? appearanceById.get(
+                  asset.source_asset_id,
+                ) ?? null
+              : null,
+        })),
     });
   } catch (caught) {
     return errorResponse(
@@ -277,6 +341,50 @@ export async function POST(
               : undefined,
         });
 
+      return NextResponse.json({
+        ok: true,
+        ...result,
+      });
+    }
+
+    if (
+      body.action ===
+      "analyze_material"
+    ) {
+      const sourceAssetId =
+        typeof body.source_asset_id ===
+        "string"
+          ? body.source_asset_id.trim()
+          : "";
+      if (!sourceAssetId) {
+        throw new Error(
+          "source_asset_id is required.",
+        );
+      }
+      const profile =
+        await analyzeAmbientCgMaterialAppearance(
+          sourceAssetId,
+        );
+      return NextResponse.json({
+        ok: true,
+        profile,
+      });
+    }
+
+    if (
+      body.action ===
+      "analyze_material_batch"
+    ) {
+      const result =
+        await analyzeAmbientCgMaterialBatch({
+          limit:
+            typeof body.limit ===
+            "number"
+              ? body.limit
+              : 1,
+          force:
+            body.force === true,
+        });
       return NextResponse.json({
         ok: true,
         ...result,

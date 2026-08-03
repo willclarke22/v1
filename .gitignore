@@ -86,3 +86,6 @@ archive/patch-backups/
 sandbox/probe-lab/assets/jobs/ambientcg/
 public/sandbox-assets/myway/materials/ambientcg/
 public/sandbox-assets/myway/hdri/ambientcg/
+
+# Generated AmbientCG visual material descriptions
+sandbox/probe-lab/assets/library/materials/appearance-registry.json

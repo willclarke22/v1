@@ -1,4 +1,3 @@
-
 # Blender Asset Foundry
 
 Local-development sandbox:
@@ -19,13 +18,12 @@ to the intended camera distance.
 Initial benchmark classes:
 
 - treasure chest: curved lid, wrapping bands, real hardware, wood/metal regions;
-- wheelchair: connected tube frame, layered wheels, spokes, casters, fabric;
 - camera: layered lens, recessed glass, body bevels, controls and strap;
 - furniture: repeated slats, frame thickness, connected supports;
 - apple: shaped silhouette, top depression, stem and surface response;
 - burger: distinct irregular layers, controlled asymmetry and repeated details.
 
-Dog and human-character quality remain later advanced-organic benchmarks.
+Organic characters remain a later advanced benchmark after direct native-bpy reliability is stable.
 
 ## Two page modes
 
@@ -56,6 +54,19 @@ revision history.
 - measurable acceptance criteria and benchmark priorities.
 
 Generation is staged: planning is separate from Blender Python generation.
+
+## Direct GLM context package
+
+GLM receives a compact direct-Blender context package rather than a procedural
+geometry specification. The package contains the exact configured Blender and
+Python versions, the semantic asset contract, only the selected material and
+environment bindings, the compact MyWay resource/lifecycle boundary, and the
+native vintage-camera script as the single proven code example.
+
+Native `bpy`, `bmesh`, and `mathutils` are the primary modelling language.
+MyWay remains responsible for trusted resource hydration, inspection, saving,
+and export. The wheelchair reference path has been removed from the active
+Foundry.
 
 ## R2 and AmbientCG resource boundary
 
@@ -133,3 +144,31 @@ The first proof still writes generated `.blend`, `.glb`, inspection renders, and
 job records to the existing local Foundry output folders. After the visual result
 is approved, the next storage step is to publish those generated outputs to R2
 and clean the local job/output copies after successful verification.
+
+## Compile smoke and execution diagnostics
+
+Before a full asset run, Blender compiles both the model-authored source and the
+assembled helper/source/footer script under `--background --factory-startup`.
+Failures are classified as model code, trusted helper, trusted footer, or trusted
+resource-layer failures. Traceback lines are mapped back to the editable source
+line when possible and are passed into the bounded GLM repair loop.
+
+
+## Material selection V2
+
+Material matching now treats the ambientCG id as identity, not as a visual
+description. Cached R2 materials and uncached catalog candidates pass the same
+hard family gate. A material-family mismatch cannot be rescued by an R2-ready
+bonus or a previous selection.
+
+When an ambientCG material has a ready appearance profile, the Foundry compares
+the slot's color, brightness, visible texture, finish, and avoid tags against the
+profile's concise Nemotron description plus measured dominant colors and
+brightness. A low-confidence material no longer automatically wins; the trusted
+procedural material remains selected when no texture candidate clears the
+confidence threshold.
+
+Product-studio environment intent rejects forest, natural-exterior, urban, and
+other incompatible HDRIs. The neutral studio rig wins when no compatible HDRI is
+available. NormalDX maps are identified separately and their green channel is
+inverted before Blender's Normal Map node.

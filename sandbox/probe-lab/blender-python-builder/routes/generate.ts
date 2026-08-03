@@ -127,66 +127,6 @@ export async function POST(
       }
     }
 
-    const suppliedAssetSpec =
-      body.asset_spec &&
-      typeof body.asset_spec ===
-        "object"
-        ? normalizeProceduralAssetSpec(
-            body.asset_spec,
-            {
-              concept:
-                buildRequest,
-              target_extent_m:
-                targetExtentM,
-              max_triangles:
-                maxTriangles,
-              animation_ready:
-                body.animation_ready !==
-                false,
-            },
-          )
-        : designBrief
-          ? normalizeProceduralAssetSpec(
-              designBriefToProceduralSpec(
-                designBrief,
-              ),
-              {
-                concept:
-                  buildRequest,
-                target_extent_m:
-                  targetExtentM,
-                max_triangles:
-                  maxTriangles,
-                animation_ready:
-                  body.animation_ready !==
-                  false,
-              },
-            )
-          : null;
-
-    if (suppliedAssetSpec) {
-      const validation =
-        validateProceduralAssetSpec(
-          suppliedAssetSpec,
-        );
-      if (!validation.valid) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error:
-              validation.errors.join(
-                "; ",
-              ),
-            asset_spec:
-              suppliedAssetSpec,
-            asset_spec_validation:
-              validation,
-          },
-          { status: 400 },
-        );
-      }
-    }
-
     const resourcePlan =
       designBrief
         ? normalizeFoundryResourcePlan(
@@ -210,8 +150,6 @@ export async function POST(
         targetExtentM,
         maxTriangles,
         qualityMode,
-        assetSpec:
-          suppliedAssetSpec,
         designBrief,
         resourcePlan,
       });
@@ -223,7 +161,9 @@ export async function POST(
       );
     const assetSpec =
       normalizeProceduralAssetSpec(
-        result.asset_spec,
+        designBriefToProceduralSpec(
+          finalBrief,
+        ),
         {
           concept:
             buildRequest,

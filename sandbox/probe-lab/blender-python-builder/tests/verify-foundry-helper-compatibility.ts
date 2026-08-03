@@ -80,13 +80,18 @@ async function main() {
 
   assert.match(
     generatorSource,
-    /buildFoundryHelperContractPrompt/,
-    "The GLM generator must import the exact helper-contract renderer.",
+    /const DIRECT_MYWAY_BOUNDARY/,
+    "The direct GLM generator must expose a compact resource and lifecycle boundary.",
   );
   assert.match(
     generatorSource,
+    /native bpy, bmesh and mathutils as the primary modelling language/,
+    "The direct GLM generator must prefer native Blender modelling over helper-authored geometry.",
+  );
+  assert.doesNotMatch(
+    generatorSource,
     /const HELPER_CAPABILITIES\s*=\s*buildFoundryHelperContractPrompt\(\);/,
-    "The GLM generation and repair prompts must consume the rendered helper contract.",
+    "The direct generation prompt must not inject the entire geometry-helper contract.",
   );
 
   console.log(

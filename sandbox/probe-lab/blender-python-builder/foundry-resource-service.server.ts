@@ -11,12 +11,14 @@ import {
 import {
   readAmbientCgCatalog,
   readAmbientCgHdriRegistry,
+  readAmbientCgMaterialAppearanceRegistry,
   readAmbientCgMaterialRegistry,
 } from "../assets/catalog/ambientcg/ambientcg-store.server";
 import type {
   AmbientCgCachedHdri,
   AmbientCgCachedMaterial,
   AmbientCgCatalogAsset,
+  AmbientCgMaterialAppearanceProfile,
   AmbientCgMaterialMaps,
 } from "../assets/catalog/ambientcg/ambientcg-types";
 import type {
@@ -28,6 +30,8 @@ import {
   foundryResourceWords,
   foundryResourceWordSet,
   scoreFoundryResourceWords,
+  scoreEnvironmentCompatibility,
+  scoreMaterialAppearanceCompatibility,
   scoreMaterialFamilyCompatibility,
 } from "./foundry-resource-ranking";
 import {
@@ -179,84 +183,211 @@ function mapAvailability(
     );
 }
 
+function requiredMapsForSlot(
+  slot:
+    AssetMaterialSlotIntentV2,
+  quality:
+    FoundryQualityMode,
+) {
+  const special =
+    slot.required_maps.filter(
+      (map) =>
+        map === "opacity" ||
+        map === "emission" ||
+        map === "metallic",
+    );
+  const baseline:
+    Array<
+      keyof AmbientCgMaterialMaps
+    > =
+      quality === "draft"
+        ? [
+            "base_color",
+            "roughness",
+          ]
+        : quality === "standard"
+          ? [
+              "base_color",
+              "roughness",
+              "normal_gl",
+            ]
+          : slot.required_maps;
+
+  return Array.from(
+    new Set([
+      ...baseline,
+      ...special,
+    ]),
+  );
+}
+
+function hasRequiredMap(
+  available:
+    Array<
+      keyof AmbientCgMaterialMaps
+    >,
+  required:
+    keyof AmbientCgMaterialMaps,
+) {
+  if (required === "normal_gl") {
+    return (
+      available.includes(
+        "normal_gl",
+      ) ||
+      available.includes(
+        "normal_dx",
+      )
+    );
+  }
+  return available.includes(
+    required,
+  );
+}
+
+function missingRequiredMaps(
+  available:
+    Array<
+      keyof AmbientCgMaterialMaps
+    >,
+  required:
+    Array<
+      keyof AmbientCgMaterialMaps
+    >,
+) {
+  return required.filter(
+    (map) =>
+      !hasRequiredMap(
+        available,
+        map,
+      ),
+  );
+}
+
+function clampConfidence(
+  value: number,
+) {
+  return Math.max(
+    0,
+    Math.min(1, value),
+  );
+}
+
 function cachedMaterialCandidate(
   material:
     AmbientCgCachedMaterial,
   slot:
     AssetMaterialSlotIntentV2,
+  quality:
+    FoundryQualityMode,
   requestWords:
     Set<string>,
   preferred:
     FoundryResourceCandidate | null,
-): FoundryResourceCandidate {
-  const candidateWords =
+  profile:
+    AmbientCgMaterialAppearanceProfile | null,
+): FoundryResourceCandidate | null {
+  const identityWords =
     foundryResourceWords([
       material.display_name,
       material.source_asset_id,
       ...material.semantic_tags,
+      profile?.summary,
     ]);
-  const lexical =
-    scoreFoundryResourceWords(
-      requestWords,
-      candidateWords,
-    );
   const family =
     scoreMaterialFamilyCompatibility(
       slot,
-      candidateWords,
+      identityWords,
+    );
+  if (!family.compatible) {
+    return null;
+  }
+  const appearance =
+    scoreMaterialAppearanceCompatibility(
+      slot,
+      profile,
+    );
+  if (!appearance.compatible) {
+    return null;
+  }
+  const lexical =
+    scoreFoundryResourceWords(
+      requestWords,
+      identityWords,
     );
   const available =
     mapAvailability(
       material,
     );
-  const missing =
-    slot.required_maps.filter(
-      (map) =>
-        !available.includes(
-          map,
-        ),
+  const required =
+    requiredMapsForSlot(
+      slot,
+      quality,
     );
+  const missing =
+    missingRequiredMaps(
+      available,
+      required,
+    );
+  if (
+    !hasRequiredMap(
+      available,
+      "base_color",
+    )
+  ) {
+    return null;
+  }
+
   let score =
-    lexical.score +
     family.score +
+    appearance.score +
+    lexical.score +
     (
       material.published_to_r2 &&
       material.storage_provider ===
         "r2"
-        ? 90
-        : -150
+        ? 18
+        : -120
     ) +
     available.length * 3 -
-    missing.length * 16;
-
+    missing.length * 20;
   const reasons = [
     ...family.reasons,
+    ...appearance.reasons,
     ...lexical.reasons,
   ];
+
   if (
     preferred?.resource_id ===
-    material.resource_id
-  ) {
-    score += 1000;
-    reasons.unshift(
-      "explicit resource selection",
-    );
-  }
-  if (
+      material.resource_id ||
     preferred?.source_asset_id ===
-    material.source_asset_id
+      material.source_asset_id
   ) {
-    score += 500;
+    score += 60;
     reasons.unshift(
-      "explicit AmbientCG selection",
+      "previous compatible selection",
     );
   }
   if (!missing.length) {
-    score += 30;
+    score += 24;
     reasons.push(
-      "all required maps available",
+      `all ${quality} maps available`,
+    );
+  } else {
+    reasons.push(
+      `missing ${missing.join(", ")}`,
     );
   }
+
+  const matchConfidence =
+    clampConfidence(
+      0.2 +
+      appearance.confidence * 0.35 +
+      Math.min(
+        0.2,
+        lexical.match_count * 0.04,
+      ) -
+      missing.length * 0.08,
+    );
 
   return {
     candidate_kind:
@@ -277,7 +408,8 @@ function cachedMaterialCandidate(
     file_format:
       material.file_format,
     score,
-    reasons,
+    reasons:
+      reasons.slice(0, 12),
     published_to_r2:
       material.published_to_r2 ===
         true &&
@@ -287,6 +419,18 @@ function cachedMaterialCandidate(
       available,
     missing_required_maps:
       missing,
+    appearance_summary:
+      profile?.summary ?? null,
+    dominant_colors:
+      profile?.dominant_colors ?? [],
+    brightness:
+      profile?.brightness ?? null,
+    appearance_confidence:
+      profile?.status === "ready"
+        ? profile.confidence
+        : null,
+    match_confidence:
+      matchConfidence,
   };
 }
 
@@ -298,7 +442,13 @@ function catalogMaterialMapRole(
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_");
 
-  if (/normal_?gl|normal/.test(name)) {
+  if (/normal_?dx|directx/.test(name)) {
+    return "normal_dx";
+  }
+  if (/normal_?gl|opengl/.test(name)) {
+    return "normal_gl";
+  }
+  if (/normal/.test(name)) {
     return "normal_gl";
   }
   if (/rough/.test(name)) {
@@ -337,6 +487,8 @@ function catalogMaterialCandidate(
     Set<string>,
   preferred:
     FoundryResourceCandidate | null,
+  profile:
+    AmbientCgMaterialAppearanceProfile | null,
 ): FoundryResourceCandidate | null {
   const variant =
     chooseVariant(
@@ -356,7 +508,24 @@ function catalogMaterialCandidate(
       ...asset.semantic_tags,
       ...asset.colors,
       ...asset.collections,
+      profile?.summary,
     ]);
+  const family =
+    scoreMaterialFamilyCompatibility(
+      slot,
+      identityWords,
+    );
+  if (!family.compatible) {
+    return null;
+  }
+  const appearance =
+    scoreMaterialAppearanceCompatibility(
+      slot,
+      profile,
+    );
+  if (!appearance.compatible) {
+    return null;
+  }
   const candidateWords = [
     ...identityWords,
     ...foundryResourceWords(
@@ -368,16 +537,13 @@ function catalogMaterialCandidate(
       requestWords,
       candidateWords,
     );
-  const family =
-    scoreMaterialFamilyCompatibility(
-      slot,
-      identityWords,
-    );
   const normalizedAvailable =
     Array.from(
       new Set(
         asset.maps
-          .map(catalogMaterialMapRole)
+          .map(
+            catalogMaterialMapRole,
+          )
           .filter(
             (
               role,
@@ -386,45 +552,44 @@ function catalogMaterialCandidate(
           ),
       ),
     );
-
-  if (!family.compatible) {
-    return null;
-  }
-
+  const required =
+    requiredMapsForSlot(
+      slot,
+      quality,
+    );
+  const missing =
+    missingRequiredMaps(
+      normalizedAvailable,
+      required,
+    );
   if (
     asset.maps.length > 0 &&
-    slot.required_maps.includes(
-      "base_color",
-    ) &&
-    !normalizedAvailable.includes(
+    !hasRequiredMap(
+      normalizedAvailable,
       "base_color",
     )
   ) {
     return null;
   }
-  const missing =
-    slot.required_maps.filter(
-      (required) =>
-        !normalizedAvailable.includes(
-          required,
-        ),
-    );
+
   let score =
-    lexical.score +
     family.score +
-    24 -
-    missing.length * 5;
+    appearance.score +
+    lexical.score +
+    8 -
+    missing.length * 18;
   const reasons = [
     ...family.reasons,
+    ...appearance.reasons,
     ...lexical.reasons,
   ];
   if (
     preferred?.source_asset_id ===
     asset.source_asset_id
   ) {
-    score += 1000;
+    score += 60;
     reasons.unshift(
-      "explicit AmbientCG selection",
+      "previous compatible selection",
     );
   }
   if (
@@ -438,6 +603,27 @@ function catalogMaterialCandidate(
       `${variant.resolution} ${quality} variant`,
     );
   }
+  if (!missing.length) {
+    score += 20;
+    reasons.push(
+      `all ${quality} maps available`,
+    );
+  } else {
+    reasons.push(
+      `missing ${missing.join(", ")}`,
+    );
+  }
+
+  const matchConfidence =
+    clampConfidence(
+      0.18 +
+      appearance.confidence * 0.36 +
+      Math.min(
+        0.2,
+        lexical.match_count * 0.04,
+      ) -
+      missing.length * 0.08,
+    );
 
   return {
     candidate_kind:
@@ -458,12 +644,25 @@ function catalogMaterialCandidate(
     file_format:
       variant.file_format,
     score,
-    reasons,
+    reasons:
+      reasons.slice(0, 12),
     published_to_r2: false,
     required_maps_available:
       normalizedAvailable,
     missing_required_maps:
       missing,
+    appearance_summary:
+      profile?.summary ?? null,
+    dominant_colors:
+      profile?.dominant_colors ?? [],
+    brightness:
+      profile?.brightness ?? null,
+    appearance_confidence:
+      profile?.status === "ready"
+        ? profile.confidence
+        : null,
+    match_confidence:
+      matchConfidence,
   };
 }
 
@@ -482,20 +681,24 @@ function fallbackMaterialCandidate(
     preview_url: null,
     resolution: null,
     file_format: null,
-    score: 1,
+    score: 100,
     reasons: [
-      "trusted Principled fallback",
+      "trusted fallback preferred over a weak or incompatible texture match",
     ],
     published_to_r2: false,
     required_maps_available: [],
     missing_required_maps:
       slot.required_maps,
+    appearance_summary:
+      "Controlled procedural Principled material using the design brief fallback values.",
+    dominant_colors: [],
+    brightness: null,
+    appearance_confidence: null,
+    match_confidence: 1,
   };
 }
 
 function materialRequestWords(
-  brief:
-    AssetDesignBriefV2,
   slot:
     AssetMaterialSlotIntentV2,
 ) {
@@ -506,9 +709,9 @@ function materialRequestWords(
     slot.color_hint,
     slot.roughness_hint,
     slot.metallic_hint,
+    slot.texture_hint,
+    slot.brightness_hint,
     ...slot.semantic_tags,
-    brief.concept,
-    ...brief.style_tags,
   ]);
 }
 
@@ -523,10 +726,14 @@ function resolveMaterialBinding(
     AmbientCgCatalogAsset[],
   preferred:
     FoundryResourceCandidate | null,
+  appearanceById:
+    Map<
+      string,
+      AmbientCgMaterialAppearanceProfile
+    >,
 ): FoundryMaterialBindingPlan {
   const requestWords =
     materialRequestWords(
-      brief,
       slot,
     );
   const cached =
@@ -535,12 +742,20 @@ function resolveMaterialBinding(
         cachedMaterialCandidate(
           material,
           slot,
+          brief.quality_mode,
           requestWords,
           preferred,
+          appearanceById.get(
+            material.source_asset_id,
+          ) ?? null,
         ),
       )
       .filter(
-        (candidate) =>
+        (
+          candidate,
+        ): candidate is
+          FoundryResourceCandidate =>
+          candidate !== null &&
           candidate.published_to_r2,
       );
   const catalogCandidates =
@@ -557,6 +772,9 @@ function resolveMaterialBinding(
           brief.quality_mode,
           requestWords,
           preferred,
+          appearanceById.get(
+            asset.source_asset_id,
+          ) ?? null,
         ),
       )
       .filter(
@@ -579,6 +797,8 @@ function resolveMaterialBinding(
       (left, right) =>
         right.score -
         left.score ||
+        right.match_confidence -
+        left.match_confidence ||
         left.display_name.localeCompare(
           right.display_name,
         ),
@@ -588,26 +808,45 @@ function resolveMaterialBinding(
   const preferredCandidate =
     candidates.find(
       (candidate) =>
+        candidate.candidate_kind !==
+          "procedural" &&
+        candidate.match_confidence >=
+          0.58 &&
         (
-          preferred?.resource_id &&
-          candidate.resource_id ===
-            preferred.resource_id
-        ) ||
-        (
-          preferred?.source_asset_id &&
-          candidate.source_asset_id ===
-            preferred.source_asset_id &&
           (
-            !preferred.variant_id ||
-            candidate.variant_id ===
-              preferred.variant_id
+            preferred?.resource_id &&
+            candidate.resource_id ===
+              preferred.resource_id
+          ) ||
+          (
+            preferred?.source_asset_id &&
+            candidate.source_asset_id ===
+              preferred.source_asset_id &&
+            (
+              !preferred.variant_id ||
+              candidate.variant_id ===
+                preferred.variant_id
+            )
           )
         ),
     );
+  const highestTexture =
+    candidates.find(
+      (candidate) =>
+        candidate.candidate_kind !==
+        "procedural",
+    );
   const selected =
     preferredCandidate ??
-    candidates[0] ??
-    fallback;
+    (
+      highestTexture &&
+      highestTexture.score >=
+        fallback.score + 8 &&
+      highestTexture.match_confidence >=
+        0.55
+        ? highestTexture
+        : fallback
+    );
   const status =
     selected.candidate_kind ===
       "cached_r2"
@@ -630,48 +869,56 @@ function resolveMaterialBinding(
 function cachedEnvironmentCandidate(
   environment:
     AmbientCgCachedHdri,
+  intent:
+    AssetDesignBriefV2["environment"],
   requestWords:
     Set<string>,
   preferred:
     FoundryResourceCandidate | null,
-): FoundryResourceCandidate {
+): FoundryResourceCandidate | null {
+  const candidateValues = [
+    environment.display_name,
+    environment.source_asset_id,
+    ...environment.semantic_tags,
+  ];
+  const compatibility =
+    scoreEnvironmentCompatibility(
+      intent,
+      candidateValues,
+    );
+  if (!compatibility.compatible) {
+    return null;
+  }
   const lexical =
     scoreFoundryResourceWords(
       requestWords,
-      foundryResourceWords([
-        environment.display_name,
-        environment.source_asset_id,
-        ...environment.semantic_tags,
-      ]),
+      foundryResourceWords(
+        candidateValues,
+      ),
     );
   let score =
+    compatibility.score +
     lexical.score +
     (
       environment.published_to_r2 &&
       environment.storage_provider ===
         "r2"
-        ? 90
-        : -150
+        ? 18
+        : -120
     );
   const reasons = [
+    ...compatibility.reasons,
     ...lexical.reasons,
   ];
   if (
     preferred?.resource_id ===
-    environment.resource_id
-  ) {
-    score += 1000;
-    reasons.unshift(
-      "explicit environment selection",
-    );
-  }
-  if (
+      environment.resource_id ||
     preferred?.source_asset_id ===
-    environment.source_asset_id
+      environment.source_asset_id
   ) {
-    score += 500;
+    score += 60;
     reasons.unshift(
-      "explicit AmbientCG selection",
+      "previous compatible environment selection",
     );
   }
 
@@ -694,7 +941,8 @@ function cachedEnvironmentCandidate(
     file_format:
       environment.file_format,
     score,
-    reasons,
+    reasons:
+      reasons.slice(0, 10),
     published_to_r2:
       environment.published_to_r2 ===
         true &&
@@ -704,12 +952,27 @@ function cachedEnvironmentCandidate(
       "environment",
     ],
     missing_required_maps: [],
+    appearance_summary:
+      compatibility.candidate.replaceAll(
+        "_",
+        " ",
+      ),
+    dominant_colors: [],
+    brightness: null,
+    appearance_confidence: null,
+    match_confidence:
+      compatibility.candidate ===
+        compatibility.requested
+        ? 0.9
+        : 0.65,
   };
 }
 
 function catalogEnvironmentCandidate(
   asset:
     AmbientCgCatalogAsset,
+  intent:
+    AssetDesignBriefV2["environment"],
   quality:
     FoundryQualityMode,
   requestWords:
@@ -725,30 +988,44 @@ function catalogEnvironmentCandidate(
   if (!variant) {
     return null;
   }
+  const candidateValues = [
+    asset.display_name,
+    asset.source_asset_id,
+    asset.short_description,
+    asset.long_description,
+    ...asset.semantic_tags,
+    ...asset.collections,
+  ];
+  const compatibility =
+    scoreEnvironmentCompatibility(
+      intent,
+      candidateValues,
+    );
+  if (!compatibility.compatible) {
+    return null;
+  }
   const lexical =
     scoreFoundryResourceWords(
       requestWords,
-      foundryResourceWords([
-        asset.display_name,
-        asset.source_asset_id,
-        asset.short_description,
-        asset.long_description,
-        ...asset.semantic_tags,
-        ...asset.collections,
-      ]),
+      foundryResourceWords(
+        candidateValues,
+      ),
     );
   let score =
-    lexical.score + 24;
+    compatibility.score +
+    lexical.score +
+    8;
   const reasons = [
+    ...compatibility.reasons,
     ...lexical.reasons,
   ];
   if (
     preferred?.source_asset_id ===
     asset.source_asset_id
   ) {
-    score += 1000;
+    score += 60;
     reasons.unshift(
-      "explicit AmbientCG selection",
+      "previous compatible environment selection",
     );
   }
   if (
@@ -782,12 +1059,26 @@ function catalogEnvironmentCandidate(
     file_format:
       variant.file_format,
     score,
-    reasons,
+    reasons:
+      reasons.slice(0, 10),
     published_to_r2: false,
     required_maps_available: [
       "environment",
     ],
     missing_required_maps: [],
+    appearance_summary:
+      compatibility.candidate.replaceAll(
+        "_",
+        " ",
+      ),
+    dominant_colors: [],
+    brightness: null,
+    appearance_confidence: null,
+    match_confidence:
+      compatibility.candidate ===
+        compatibility.requested
+        ? 0.9
+        : 0.65,
   };
 }
 
@@ -804,13 +1095,19 @@ function fallbackEnvironmentCandidate():
     preview_url: null,
     resolution: null,
     file_format: null,
-    score: 1,
+    score: 100,
     reasons: [
-      "trusted fallback lighting",
+      "trusted studio fallback preferred over an unrelated HDRI",
     ],
     published_to_r2: false,
     required_maps_available: [],
     missing_required_maps: [],
+    appearance_summary:
+      "Neutral product look-development studio.",
+    dominant_colors: [],
+    brightness: null,
+    appearance_confidence: null,
+    match_confidence: 1,
   };
 }
 
@@ -831,20 +1128,23 @@ function resolveEnvironmentBinding(
         .preferred_environment_class,
       ...brief.environment
         .semantic_tags,
-      "studio",
-      "lookdev",
     ]);
   const cached =
     environments
       .map((environment) =>
         cachedEnvironmentCandidate(
           environment,
+          brief.environment,
           requestWords,
           preferred,
         ),
       )
       .filter(
-        (candidate) =>
+        (
+          candidate,
+        ): candidate is
+          FoundryResourceCandidate =>
+          candidate !== null &&
           candidate.published_to_r2,
       );
   const catalogCandidates =
@@ -857,6 +1157,7 @@ function resolveEnvironmentBinding(
       .map((asset) =>
         catalogEnvironmentCandidate(
           asset,
+          brief.environment,
           brief.quality_mode,
           requestWords,
           preferred,
@@ -880,6 +1181,8 @@ function resolveEnvironmentBinding(
       (left, right) =>
         right.score -
         left.score ||
+        right.match_confidence -
+        left.match_confidence ||
         left.display_name.localeCompare(
           right.display_name,
         ),
@@ -889,26 +1192,45 @@ function resolveEnvironmentBinding(
   const preferredCandidate =
     candidates.find(
       (candidate) =>
+        candidate.candidate_kind !==
+          "procedural" &&
+        candidate.match_confidence >=
+          0.6 &&
         (
-          preferred?.resource_id &&
-          candidate.resource_id ===
-            preferred.resource_id
-        ) ||
-        (
-          preferred?.source_asset_id &&
-          candidate.source_asset_id ===
-            preferred.source_asset_id &&
           (
-            !preferred.variant_id ||
-            candidate.variant_id ===
-              preferred.variant_id
+            preferred?.resource_id &&
+            candidate.resource_id ===
+              preferred.resource_id
+          ) ||
+          (
+            preferred?.source_asset_id &&
+            candidate.source_asset_id ===
+              preferred.source_asset_id &&
+            (
+              !preferred.variant_id ||
+              candidate.variant_id ===
+                preferred.variant_id
+            )
           )
         ),
     );
+  const highestHdri =
+    candidates.find(
+      (candidate) =>
+        candidate.candidate_kind !==
+        "procedural",
+    );
   const selected =
     preferredCandidate ??
-    candidates[0] ??
-    fallback;
+    (
+      highestHdri &&
+      highestHdri.score >=
+        fallback.score + 5 &&
+      highestHdri.match_confidence >=
+        0.6
+        ? highestHdri
+        : fallback
+    );
   const status =
     selected.candidate_kind ===
       "cached_r2"
@@ -934,10 +1256,12 @@ export async function resolveFoundryResourcePlan(
 ): Promise<FoundryResourcePlanV1> {
   const [
     materialRegistry,
+    materialAppearances,
     hdriRegistry,
     catalog,
   ] = await Promise.all([
     readAmbientCgMaterialRegistry(),
+    readAmbientCgMaterialAppearanceRegistry(),
     readAmbientCgHdriRegistry(),
     readAmbientCgCatalog(),
   ]);
@@ -960,6 +1284,16 @@ export async function resolveFoundryResourcePlan(
       ]),
     );
 
+  const appearanceById =
+    new Map(
+      materialAppearances.profiles.map(
+        (profile) => [
+          profile.source_asset_id,
+          profile,
+        ],
+      ),
+    );
+
   const materialBindings =
     brief.material_slots.map(
       (slot) =>
@@ -971,6 +1305,7 @@ export async function resolveFoundryResourcePlan(
           preferredBySlot.get(
             slot.slot_id,
           ) ?? null,
+          appearanceById,
         ),
     );
   const environment =

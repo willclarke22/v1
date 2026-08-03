@@ -1,4 +1,3 @@
-
 import {
   spawn,
 } from "node:child_process";
@@ -33,6 +32,13 @@ import {
   FOUNDRY_INSPECTION_FOOTER_VERSION,
 } from "./blender-inspection-footer";
 import {
+  buildCompileSmokeScript,
+  resolveFoundryBlenderRuntime,
+  runFoundryCompileSmoke,
+  type FoundryCompileSmokeResult,
+  type FoundryBlenderRuntimeInfo,
+} from "./blender-runtime.server";
+import {
   hydrateFoundryResourcesForBlender,
   publicResourceManifest,
 } from "./foundry-resource-service.server";
@@ -51,6 +57,293 @@ import {
   formatBlenderPythonPreflightFailure,
   validateBlenderPythonPreflight,
 } from "./blender-python-preflight";
+
+export const FOUNDRY_EXECUTION_DIAGNOSTICS_SCHEMA_VERSION =
+  "myway_blender_execution_diagnostics_v1" as const;
+
+export type FoundryExecutionDiagnostics = {
+  schema_version:
+    typeof FOUNDRY_EXECUTION_DIAGNOSTICS_SCHEMA_VERSION;
+  phase:
+    | "resource_hydration"
+    | "compile_smoke"
+    | "blender_execution"
+    | "output_verification";
+  failure_source:
+    | "model_code"
+    | "trusted_helper"
+    | "trusted_footer"
+    | "trusted_resource_layer"
+    | "unknown";
+  message: string;
+  generated_line: number | null;
+  editor_line: number | null;
+  excerpt: string | null;
+  runtime:
+    FoundryBlenderRuntimeInfo | null;
+  compile_smoke:
+    FoundryCompileSmokeResult | null;
+};
+
+export class FoundryBlenderExecutionError
+  extends Error {
+  diagnostics:
+    FoundryExecutionDiagnostics;
+
+  constructor(
+    message: string,
+    diagnostics:
+      FoundryExecutionDiagnostics,
+  ) {
+    super(message);
+    this.name =
+      "FoundryBlenderExecutionError";
+    this.diagnostics =
+      diagnostics;
+  }
+}
+
+export function foundryExecutionDiagnostics(
+  caught: unknown,
+) {
+  return caught instanceof
+    FoundryBlenderExecutionError
+    ? caught.diagnostics
+    : null;
+}
+
+type ScriptLineMap = {
+  source_start_line: number;
+  source_end_line: number;
+  footer_start_line: number;
+};
+
+function lineCount(
+  value: string,
+) {
+  return value.split(
+    /\r?\n/,
+  ).length;
+}
+
+function buildCompleteScript(
+  sourceCode: string,
+) {
+  const header =
+    "import bpy\nimport mathutils\n" +
+    buildTrustedBlenderHelperPrelude() +
+    "\n";
+  const footer =
+    buildTrustedBlenderInspectionFooter();
+  const sourceStartLine =
+    lineCount(header);
+  const sourceEndLine =
+    sourceStartLine +
+    lineCount(sourceCode) -
+    1;
+  return {
+    script:
+      header +
+      sourceCode +
+      footer,
+    line_map: {
+      source_start_line:
+        sourceStartLine,
+      source_end_line:
+        sourceEndLine,
+      footer_start_line:
+        sourceEndLine +
+        1,
+    } satisfies ScriptLineMap,
+  };
+}
+
+function sourceExcerpt(
+  sourceCode: string,
+  editorLine: number | null,
+) {
+  if (!editorLine) return null;
+  const lines =
+    sourceCode.split(/\r?\n/);
+  const start =
+    Math.max(
+      0,
+      editorLine - 3,
+    );
+  const end =
+    Math.min(
+      lines.length,
+      editorLine + 2,
+    );
+  return lines
+    .slice(start, end)
+    .map(
+      (value, index) =>
+        `${start + index + 1}: ${value}`,
+    )
+    .join("\n");
+}
+
+function tracebackLines(
+  output: string,
+  scriptPath: string,
+) {
+  const normalizedPath =
+    scriptPath.replace(
+      /\\/g,
+      "/",
+    );
+  const frames:
+    number[] = [];
+  for (const line of
+    output.split(/\r?\n/)) {
+    const match =
+      line.match(
+        /File "([^"]+)", line (\d+)/,
+      );
+    if (!match) continue;
+    const framePath =
+      (match[1] ?? "")
+        .replace(/\\/g, "/");
+    if (
+      framePath ===
+        normalizedPath ||
+      framePath.endsWith(
+        "/build_asset.py",
+      )
+    ) {
+      frames.push(
+        Number(match[2]),
+      );
+    }
+  }
+  return frames.filter(
+    Number.isFinite,
+  );
+}
+
+function runtimeDiagnostics(
+  input: {
+    message: string;
+    output: string;
+    scriptPath: string;
+    sourceCode: string;
+    lineMap:
+      ScriptLineMap;
+    runtime:
+      FoundryBlenderRuntimeInfo;
+    compileSmoke:
+      FoundryCompileSmokeResult;
+  },
+): FoundryExecutionDiagnostics {
+  const frames =
+    tracebackLines(
+      input.output,
+      input.scriptPath,
+    );
+  const modelFrame =
+    [...frames]
+      .reverse()
+      .find(
+        (line) =>
+          line >=
+            input.lineMap
+              .source_start_line &&
+          line <=
+            input.lineMap
+              .source_end_line,
+      );
+  const generatedLine =
+    modelFrame ??
+    frames.at(-1) ??
+    null;
+  let failureSource:
+    FoundryExecutionDiagnostics[
+      "failure_source"
+    ] = "unknown";
+  let editorLine:
+    number | null = null;
+
+  if (
+    generatedLine != null &&
+    generatedLine >=
+      input.lineMap
+        .source_start_line &&
+    generatedLine <=
+      input.lineMap
+        .source_end_line
+  ) {
+    failureSource =
+      "model_code";
+    editorLine =
+      generatedLine -
+      input.lineMap
+        .source_start_line +
+      1;
+  } else if (
+    generatedLine != null &&
+    generatedLine <
+      input.lineMap
+        .source_start_line
+  ) {
+    failureSource =
+      "trusted_helper";
+  } else if (
+    generatedLine != null &&
+    generatedLine >=
+      input.lineMap
+        .footer_start_line
+  ) {
+    failureSource =
+      "trusted_footer";
+  }
+
+  return {
+    schema_version:
+      FOUNDRY_EXECUTION_DIAGNOSTICS_SCHEMA_VERSION,
+    phase:
+      "blender_execution",
+    failure_source:
+      failureSource,
+    message:
+      input.message,
+    generated_line:
+      generatedLine,
+    editor_line:
+      editorLine,
+    excerpt:
+      sourceExcerpt(
+        input.sourceCode,
+        editorLine,
+      ),
+    runtime:
+      input.runtime,
+    compile_smoke:
+      input.compileSmoke,
+  };
+}
+
+function diagnosticMessage(
+  diagnostics:
+    FoundryExecutionDiagnostics,
+  ) {
+  const location =
+    diagnostics.editor_line
+      ? `Editor line ${diagnostics.editor_line}`
+      : diagnostics.generated_line
+        ? `Generated script line ${diagnostics.generated_line}`
+        : "No script line resolved";
+  return [
+    `[MyWay ${diagnostics.phase}] failure source: ${diagnostics.failure_source}.`,
+    location + ".",
+    diagnostics.message,
+    diagnostics.excerpt
+      ? `Model-source excerpt:\n${diagnostics.excerpt}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
 
 const TIMEOUT_MS =
   4 * 60 * 1000;
@@ -964,11 +1257,50 @@ export async function executeBlenderPython(
       input.resourcePlan,
       designBrief,
     );
-  const resourceManifest =
-    await hydrateFoundryResourcesForBlender(
-      designBrief,
-      resourcePlan,
+  let resourceManifest:
+    Awaited<
+      ReturnType<
+        typeof hydrateFoundryResourcesForBlender
+      >
+    >;
+  try {
+    resourceManifest =
+      await hydrateFoundryResourcesForBlender(
+        designBrief,
+        resourcePlan,
+      );
+  } catch (caught) {
+    const message =
+      caught instanceof Error
+        ? caught.message
+        : String(caught);
+    const diagnostics:
+      FoundryExecutionDiagnostics = {
+        schema_version:
+          FOUNDRY_EXECUTION_DIAGNOSTICS_SCHEMA_VERSION,
+        phase:
+          "resource_hydration",
+        failure_source:
+          "trusted_resource_layer",
+        message,
+        generated_line:
+          null,
+        editor_line:
+          null,
+        excerpt:
+          null,
+        runtime:
+          null,
+        compile_smoke:
+          null,
+      };
+    throw new FoundryBlenderExecutionError(
+      diagnosticMessage(
+        diagnostics,
+      ),
+      diagnostics,
     );
+  }
 
   const assetSpec =
     normalizeProceduralAssetSpec(
@@ -1068,12 +1400,17 @@ export async function executeBlenderPython(
       privateDir,
       "resource-manifest.json",
     );
+  const complete =
+    buildCompleteScript(
+      input.code,
+    );
   const completeScript =
-    "import bpy\nimport mathutils\n" +
-    buildTrustedBlenderHelperPrelude() +
-    "\n" +
-    input.code +
-    buildTrustedBlenderInspectionFooter();
+    complete.script;
+  const smokeScriptPath =
+    path.join(
+      privateDir,
+      "compile_smoke.py",
+    );
 
   await Promise.all([
     writeFile(
@@ -1111,6 +1448,14 @@ export async function executeBlenderPython(
         null,
         2,
       ) + "\n",
+      "utf8",
+    ),
+    writeFile(
+      smokeScriptPath,
+      buildCompileSmokeScript(
+        sourceCodePath,
+        scriptPath,
+      ),
       "utf8",
     ),
     writeFile(
@@ -1171,6 +1516,96 @@ export async function executeBlenderPython(
 
   const blender =
     await resolveBlenderExecutable();
+  const runtime =
+    await resolveFoundryBlenderRuntime();
+  const compileSmoke =
+    await runFoundryCompileSmoke({
+      executable:
+        blender,
+      smokeScriptPath,
+      runtime,
+    });
+  await writeFile(
+    path.join(
+      privateDir,
+      "compile-smoke.json",
+    ),
+    JSON.stringify(
+      compileSmoke,
+      null,
+      2,
+    ) + "\n",
+    "utf8",
+  );
+  if (!compileSmoke.valid) {
+    const assembledLine =
+      compileSmoke.stage ===
+        "assembled_script"
+        ? compileSmoke.line
+        : null;
+    const assembledSourceLine =
+      assembledLine != null &&
+      assembledLine >=
+        complete.line_map
+          .source_start_line &&
+      assembledLine <=
+        complete.line_map
+          .source_end_line
+        ? assembledLine -
+          complete.line_map
+            .source_start_line +
+          1
+        : null;
+    const editorLine =
+      compileSmoke.stage ===
+        "model_source"
+        ? compileSmoke.line
+        : assembledSourceLine;
+    const failureSource:
+      FoundryExecutionDiagnostics[
+        "failure_source"
+      ] =
+      compileSmoke.stage ===
+        "model_source" ||
+      assembledSourceLine != null
+        ? "model_code"
+        : assembledLine != null &&
+            assembledLine >=
+              complete.line_map
+                .footer_start_line
+          ? "trusted_footer"
+          : "trusted_helper";
+    const diagnostics:
+      FoundryExecutionDiagnostics = {
+        schema_version:
+          FOUNDRY_EXECUTION_DIAGNOSTICS_SCHEMA_VERSION,
+        phase:
+          "compile_smoke",
+        failure_source:
+          failureSource,
+        message:
+          compileSmoke.message,
+        generated_line:
+          assembledLine,
+        editor_line:
+          editorLine,
+        excerpt:
+          sourceExcerpt(
+            input.code,
+            editorLine,
+          ),
+        runtime,
+        compile_smoke:
+          compileSmoke,
+      };
+    throw new FoundryBlenderExecutionError(
+      diagnosticMessage(
+        diagnostics,
+      ),
+      diagnostics,
+    );
+  }
+
   const result =
     await runBlender(
       blender,
@@ -1222,17 +1657,35 @@ export async function executeBlenderPython(
     result.exitCode !==
     0
   ) {
-    throw new Error(
-      [
-        `Blender exited with code ${result.exitCode}.`,
-        result.stderr
-          .trim(),
-        result.stdout
-          .trim()
-          .slice(-7000),
-      ]
-        .filter(Boolean)
-        .join("\n"),
+    const rawMessage = [
+      `Blender exited with code ${result.exitCode}.`,
+      result.stderr
+        .trim(),
+      result.stdout
+        .trim()
+        .slice(-7000),
+    ]
+      .filter(Boolean)
+      .join("\n");
+    const diagnostics =
+      runtimeDiagnostics({
+        message:
+          rawMessage,
+        output:
+          `${result.stderr}\n${result.stdout}`,
+        scriptPath,
+        sourceCode:
+          input.code,
+        lineMap:
+          complete.line_map,
+        runtime,
+        compileSmoke,
+      });
+    throw new FoundryBlenderExecutionError(
+      diagnosticMessage(
+        diagnostics,
+      ),
+      diagnostics,
     );
   }
 
@@ -1243,8 +1696,31 @@ export async function executeBlenderPython(
       )
     )
   ) {
-    throw new Error(
-      "Blender exited successfully but the expected GLB was not created.",
+    const diagnostics:
+      FoundryExecutionDiagnostics = {
+        schema_version:
+          FOUNDRY_EXECUTION_DIAGNOSTICS_SCHEMA_VERSION,
+        phase:
+          "output_verification",
+        failure_source:
+          "trusted_footer",
+        message:
+          "Blender exited successfully but the expected GLB was not created.",
+        generated_line:
+          null,
+        editor_line:
+          null,
+        excerpt:
+          null,
+        runtime,
+        compile_smoke:
+          compileSmoke,
+      };
+    throw new FoundryBlenderExecutionError(
+      diagnosticMessage(
+        diagnostics,
+      ),
+      diagnostics,
     );
   }
 
@@ -1406,6 +1882,10 @@ export async function executeBlenderPython(
       FOUNDRY_HELPER_LIBRARY_VERSION,
     inspection_footer_version:
       FOUNDRY_INSPECTION_FOOTER_VERSION,
+    blender_runtime:
+      runtime,
+    compile_smoke:
+      compileSmoke,
     glb_bytes:
       glbStats.size,
     elapsed_ms:

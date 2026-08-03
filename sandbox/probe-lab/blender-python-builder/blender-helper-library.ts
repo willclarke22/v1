@@ -184,11 +184,47 @@ def _myway_build_pbr_material(slot_id, slot):
         if target is not None:
             links.new(metal.outputs["Color"], target)
 
-    normal = texture_nodes.get("normal_gl") or texture_nodes.get("normal_dx")
-    if normal is not None:
+    normal_gl = texture_nodes.get("normal_gl")
+    normal_dx = texture_nodes.get("normal_dx")
+    normal_socket = normal_gl.outputs["Color"] if normal_gl is not None else None
+    if normal_socket is None and normal_dx is not None:
+        try:
+            separate = nodes.new("ShaderNodeSeparateColor")
+            combine = nodes.new("ShaderNodeCombineColor")
+            separate.mode = "RGB"
+            combine.mode = "RGB"
+            red_output = separate.outputs.get("Red")
+            green_output = separate.outputs.get("Green")
+            blue_output = separate.outputs.get("Blue")
+            red_input = combine.inputs.get("Red")
+            green_input = combine.inputs.get("Green")
+            blue_input = combine.inputs.get("Blue")
+        except Exception:
+            separate = nodes.new("ShaderNodeSeparateRGB")
+            combine = nodes.new("ShaderNodeCombineRGB")
+            red_output = separate.outputs.get("R")
+            green_output = separate.outputs.get("G")
+            blue_output = separate.outputs.get("B")
+            red_input = combine.inputs.get("R")
+            green_input = combine.inputs.get("G")
+            blue_input = combine.inputs.get("B")
+        invert_green = nodes.new("ShaderNodeMath")
+        invert_green.operation = "SUBTRACT"
+        invert_green.inputs[0].default_value = 1.0
+        links.new(normal_dx.outputs["Color"], separate.inputs[0])
+        if red_output is not None and red_input is not None:
+            links.new(red_output, red_input)
+        if green_output is not None:
+            links.new(green_output, invert_green.inputs[1])
+        if green_input is not None:
+            links.new(invert_green.outputs[0], green_input)
+        if blue_output is not None and blue_input is not None:
+            links.new(blue_output, blue_input)
+        normal_socket = combine.outputs[0]
+    if normal_socket is not None:
         normal_map = nodes.new("ShaderNodeNormalMap")
         normal_map.space = "TANGENT"
-        links.new(normal.outputs["Color"], normal_map.inputs["Color"])
+        links.new(normal_socket, normal_map.inputs["Color"])
         target = _myway_node_input(principled, "Normal")
         if target is not None:
             links.new(normal_map.outputs["Normal"], target)

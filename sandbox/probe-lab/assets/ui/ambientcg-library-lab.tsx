@@ -61,6 +61,7 @@ type StatusResponse = {
   migration?: MigrationStatus;
   counts?: {
     materials: number;
+    material_appearances: number;
     hdris: number;
     resources: number;
     by_type: Record<string, number>;
@@ -371,6 +372,16 @@ export function AmbientCgLibraryLab({
   ] = useState<
     string | null
   >(null);
+  const [
+    analyzingMaterialId,
+    setAnalyzingMaterialId,
+  ] = useState<
+    string | null
+  >(null);
+  const [
+    materialAnalysisRunning,
+    setMaterialAnalysisRunning,
+  ] = useState(false);
   const [
     selectedVariants,
     setSelectedVariants,
@@ -709,6 +720,105 @@ export function AmbientCgLibraryLab({
       );
     } finally {
       setSyncing(false);
+    }
+  }
+
+  async function analyzeMaterial(
+    sourceAssetId: string,
+  ) {
+    setAnalyzingMaterialId(
+      sourceAssetId,
+    );
+    setError(null);
+    setCloudMessage(
+      `Analyzing ${sourceAssetId} from its official ambientCG preview…`,
+    );
+
+    try {
+      await jsonRequest(
+        API,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            action:
+              "analyze_material",
+            source_asset_id:
+              sourceAssetId,
+          }),
+        },
+      );
+      setCloudMessage(
+        `${sourceAssetId} now has a concise visual material description, dominant colors, and brightness.`,
+      );
+      await Promise.all([
+        loadCatalog(),
+        loadMaterials(),
+        loadStatus(),
+      ]);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    } finally {
+      setAnalyzingMaterialId(
+        null,
+      );
+    }
+  }
+
+  async function analyzeNextMaterials() {
+    setMaterialAnalysisRunning(
+      true,
+    );
+    setError(null);
+    setCloudMessage(
+      "Analyzing the next three ambientCG materials with Nemotron Nano 12B v2 VL…",
+    );
+
+    try {
+      const payload =
+        await jsonRequest<{
+          completed?: number;
+          failed?: number;
+        }>(
+          API,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              action:
+                "analyze_material_batch",
+              limit: 3,
+            }),
+          },
+        );
+      setCloudMessage(
+        `Material analysis finished: ${payload.completed ?? 0} completed, ${payload.failed ?? 0} failed.`,
+      );
+      await Promise.all([
+        loadCatalog(),
+        loadMaterials(),
+        loadStatus(),
+      ]);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    } finally {
+      setMaterialAnalysisRunning(
+        false,
+      );
     }
   }
 
@@ -1349,6 +1459,38 @@ export function AmbientCgLibraryLab({
             </div>
           ) : null}
 
+          {resource.asset_type ===
+            "material" &&
+          resource.appearance_profile ? (
+            <div
+              style={{
+                display: "grid",
+                gap: 4,
+                color: "#cbd5e1",
+                fontSize: 12,
+                lineHeight: 1.45,
+              }}
+            >
+              <div>
+                {resource.appearance_profile.summary ??
+                  "Appearance analysis is pending."}
+              </div>
+              <small
+                style={{
+                  color: "#94a3b8",
+                }}
+              >
+                Colors:{" "}
+                {resource.appearance_profile.dominant_colors.join(
+                  ", ",
+                ) || "pending"}{" "}
+                · Brightness:{" "}
+                {resource.appearance_profile.brightness ??
+                  "pending"}
+              </small>
+            </div>
+          ) : null}
+
           <div className="ambientcg-card-actions ambientcg-card-actions-stack">
             <select
               className="ambientcg-select"
@@ -1467,6 +1609,22 @@ export function AmbientCgLibraryLab({
               Models
             </a>
           )}
+
+          <button
+            className="ambientcg-button"
+            data-secondary="true"
+            disabled={
+              materialAnalysisRunning
+            }
+            onClick={() =>
+              void analyzeNextMaterials()
+            }
+            type="button"
+          >
+            {materialAnalysisRunning
+              ? "Analyzing materials…"
+              : "Analyze next 3 materials"}
+          </button>
 
           <button
             className="ambientcg-button"
@@ -1748,6 +1906,22 @@ export function AmbientCgLibraryLab({
                               }{" "}
                               · ambientCG
                             </div>
+                            {asset.asset_type ===
+                              "material" &&
+                            asset.appearance_profile?.summary ? (
+                              <p
+                                style={{
+                                  margin: "7px 0 0",
+                                  color: "#cbd5e1",
+                                  fontSize: 11,
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {
+                                  asset.appearance_profile.summary
+                                }
+                              </p>
+                            ) : null}
                             <div className="ambientcg-tags">
                               {asset.semantic_tags
                                 .slice(0, 5)
@@ -1829,6 +2003,72 @@ export function AmbientCgLibraryLab({
                           selectedAsset.long_description ??
                           "This asset is discoverable immediately. Cache a selected resource variant to R2, or send a 3D model through Blender into Models → Needs Review."}
                       </p>
+
+                      {selectedAsset.asset_type ===
+                        "material" ? (
+                        <section
+                          style={{
+                            display: "grid",
+                            gap: 8,
+                            padding: 12,
+                            marginBottom: 14,
+                            border:
+                              "1px solid rgba(148,163,184,0.18)",
+                            borderRadius: 12,
+                            background:
+                              "rgba(15,23,42,0.45)",
+                          }}
+                        >
+                          <strong>
+                            Visual material description
+                          </strong>
+                          <p
+                            style={{
+                              margin: 0,
+                              color: "#cbd5e1",
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {selectedAsset.appearance_profile?.summary ??
+                              "This material has not been visually analyzed yet."}
+                          </p>
+                          <small
+                            style={{
+                              color: "#94a3b8",
+                            }}
+                          >
+                            Dominant colors:{" "}
+                            {selectedAsset.appearance_profile?.dominant_colors.join(
+                              ", ",
+                            ) || "pending"}{" "}
+                            · Brightness:{" "}
+                            {selectedAsset.appearance_profile?.brightness ??
+                              "pending"}
+                          </small>
+                          <button
+                            className="ambientcg-button"
+                            data-secondary="true"
+                            disabled={
+                              analyzingMaterialId !==
+                              null
+                            }
+                            onClick={() =>
+                              void analyzeMaterial(
+                                selectedAsset.source_asset_id,
+                              )
+                            }
+                            type="button"
+                          >
+                            {analyzingMaterialId ===
+                            selectedAsset.source_asset_id
+                              ? "Analyzing preview…"
+                              : selectedAsset.appearance_profile?.status ===
+                                  "ready"
+                                ? "Re-analyze material appearance"
+                                : "Analyze material appearance"}
+                          </button>
+                        </section>
+                      ) : null}
 
                       <dl className="ambientcg-definition-list">
                         <div>

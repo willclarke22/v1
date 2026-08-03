@@ -18,6 +18,7 @@ import type {
   AmbientCgCatalogDocument,
   AmbientCgDownloadJobRegistry,
   AmbientCgHdriRegistry,
+  AmbientCgMaterialAppearanceRegistry,
   AmbientCgMaterialRegistry,
   AmbientCgResourceRegistry,
   AmbientCgStorageStatus,
@@ -36,6 +37,8 @@ export const AMBIENTCG_COLLECTIONS_FILE =
   `${AMBIENTCG_CATALOG_ROOT}/collections.json`;
 export const AMBIENTCG_MATERIAL_REGISTRY_FILE =
   "sandbox/probe-lab/assets/library/materials/registry.json";
+export const AMBIENTCG_MATERIAL_APPEARANCE_REGISTRY_FILE =
+  "sandbox/probe-lab/assets/library/materials/appearance-registry.json";
 export const AMBIENTCG_HDRI_REGISTRY_FILE =
   "sandbox/probe-lab/assets/library/hdri/registry.json";
 export const AMBIENTCG_RESOURCE_REGISTRY_FILE =
@@ -57,6 +60,8 @@ export const AMBIENTCG_CLOUD_KEYS = {
   categories: "metadata/ambientcg/categories-v1.json",
   collections: "metadata/ambientcg/collections-v1.json",
   materials: "metadata/ambientcg/material-registry-v1.json",
+  materialAppearances:
+    "metadata/ambientcg/material-appearance-registry-v1.json",
   hdris: "metadata/ambientcg/hdri-registry-v1.json",
   resources: "metadata/ambientcg/resource-registry-v1.json",
   jobs: "metadata/ambientcg/download-jobs-v1.json",
@@ -89,6 +94,14 @@ const EMPTY_MATERIALS: AmbientCgMaterialRegistry = {
   updated_at: null,
   materials: [],
 };
+
+const EMPTY_MATERIAL_APPEARANCES:
+  AmbientCgMaterialAppearanceRegistry = {
+    schema_version:
+      "myway_ambientcg_material_appearance_registry_v1",
+    updated_at: null,
+    profiles: [],
+  };
 
 const EMPTY_HDRIS: AmbientCgHdriRegistry = {
   schema_version: "myway_ambientcg_hdri_registry_v1",
@@ -124,6 +137,9 @@ export async function ensureAmbientCgDirectories() {
     AMBIENTCG_CATALOG_ROOT,
     path.dirname(AMBIENTCG_MATERIAL_REGISTRY_FILE),
     path.dirname(AMBIENTCG_HDRI_REGISTRY_FILE),
+    path.dirname(
+      AMBIENTCG_MATERIAL_APPEARANCE_REGISTRY_FILE,
+    ),
     path.dirname(AMBIENTCG_RESOURCE_REGISTRY_FILE),
     path.dirname(AMBIENTCG_DOWNLOAD_JOB_REGISTRY_FILE),
     AMBIENTCG_JOB_ROOT,
@@ -267,6 +283,30 @@ export function writeAmbientCgMaterialRegistry(
   });
 }
 
+export function readAmbientCgMaterialAppearanceRegistry() {
+  return readDocument({
+    projectFile:
+      AMBIENTCG_MATERIAL_APPEARANCE_REGISTRY_FILE,
+    cloudKey:
+      AMBIENTCG_CLOUD_KEYS.materialAppearances,
+    fallback:
+      EMPTY_MATERIAL_APPEARANCES,
+  });
+}
+
+export function writeAmbientCgMaterialAppearanceRegistry(
+  value:
+    AmbientCgMaterialAppearanceRegistry,
+) {
+  return writeDocument({
+    projectFile:
+      AMBIENTCG_MATERIAL_APPEARANCE_REGISTRY_FILE,
+    cloudKey:
+      AMBIENTCG_CLOUD_KEYS.materialAppearances,
+    value,
+  });
+}
+
 export function readAmbientCgHdriRegistry() {
   return readDocument({
     projectFile: AMBIENTCG_HDRI_REGISTRY_FILE,
@@ -367,6 +407,7 @@ export async function bootstrapAmbientCgCloudMetadata() {
     catalog,
     sync,
     materials,
+    materialAppearances,
     hdris,
     resources,
     jobs,
@@ -374,6 +415,7 @@ export async function bootstrapAmbientCgCloudMetadata() {
     readAmbientCgCatalog(),
     readAmbientCgSyncState(),
     readAmbientCgMaterialRegistry(),
+    readAmbientCgMaterialAppearanceRegistry(),
     readAmbientCgHdriRegistry(),
     readAmbientCgResourceRegistry(),
     readAmbientCgDownloadJobs(),
@@ -393,6 +435,10 @@ export async function bootstrapAmbientCgCloudMetadata() {
       materials,
     ),
     writeCloudJson(
+      AMBIENTCG_CLOUD_KEYS.materialAppearances,
+      materialAppearances,
+    ),
+    writeCloudJson(
       AMBIENTCG_CLOUD_KEYS.hdris,
       hdris,
     ),
@@ -410,6 +456,8 @@ export async function bootstrapAmbientCgCloudMetadata() {
     catalog_count: catalog.assets.length,
     material_count:
       materials.materials.length,
+    material_appearance_count:
+      materialAppearances.profiles.length,
     hdri_count: hdris.hdris.length,
     resource_count:
       resources.resources.length,

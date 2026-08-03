@@ -62,6 +62,8 @@ export type AmbientCgCatalogAsset = {
   source_record: Record<string, unknown>;
   cataloged_at: string;
   updated_at: string;
+  appearance_profile?:
+    AmbientCgMaterialAppearanceProfile | null;
 };
 
 export type AmbientCgCatalogDocument = {
@@ -100,6 +102,42 @@ export type AmbientCgMaterialMaps = {
   height: string | null;
   opacity: string | null;
   emission: string | null;
+};
+
+
+export type AmbientCgMaterialBrightness =
+  | "dark"
+  | "medium"
+  | "light";
+
+export type AmbientCgMaterialAppearanceProfile = {
+  schema_version:
+    "myway_ambientcg_material_appearance_v1";
+  source_asset_id: string;
+  status:
+    | "pending"
+    | "analyzing"
+    | "ready"
+    | "failed";
+  summary: string | null;
+  dominant_colors: string[];
+  brightness:
+    AmbientCgMaterialBrightness | null;
+  confidence: number;
+  warnings: string[];
+  preview_url: string | null;
+  model: string | null;
+  prompt_version: string;
+  analyzed_at: string | null;
+  error: string | null;
+};
+
+export type AmbientCgMaterialAppearanceRegistry = {
+  schema_version:
+    "myway_ambientcg_material_appearance_registry_v1";
+  updated_at: string | null;
+  profiles:
+    AmbientCgMaterialAppearanceProfile[];
 };
 
 export type AmbientCgCloudStorage = {
@@ -141,6 +179,8 @@ export type AmbientCgCachedMaterial = {
   published_to_r2: boolean;
   storage_provider?: "local" | "r2";
   storage?: AmbientCgCloudStorage;
+  appearance_profile?:
+    AmbientCgMaterialAppearanceProfile | null;
 };
 
 export type AmbientCgCachedHdri = {

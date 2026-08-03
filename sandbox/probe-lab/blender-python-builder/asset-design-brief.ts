@@ -48,6 +48,9 @@ export type AssetMaterialSlotIntentV2 = {
   color_hint: string | null;
   roughness_hint: string | null;
   metallic_hint: string | null;
+  texture_hint?: string | null;
+  brightness_hint?: string | null;
+  avoid_tags?: string[];
   physical_scale_m: number | null;
   required_maps: Array<
     | "base_color"
@@ -344,6 +347,19 @@ function normalizeMaterialSlot(
       text(
         item.metallic_hint,
       ) || null,
+    texture_hint:
+      text(
+        item.texture_hint,
+      ) || null,
+    brightness_hint:
+      text(
+        item.brightness_hint,
+      ) || null,
+    avoid_tags:
+      stringArray(
+        item.avoid_tags,
+        24,
+      ),
     physical_scale_m:
       nullableNumber(
         item.physical_scale_m,

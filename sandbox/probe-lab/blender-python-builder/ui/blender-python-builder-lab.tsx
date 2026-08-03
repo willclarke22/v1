@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -129,6 +128,28 @@ type GenerateResponse =
       initial_error_count?: number;
       final_error_count?: number;
     };
+    context_package?: {
+      schema_version?: string;
+      modelling_strategy?: string;
+      runtime?: {
+        blender_version?: string;
+        python_version?: string;
+        execution_mode?: string;
+      };
+      asset_id?: string;
+      asset_class?: string;
+      required_part_count?: number;
+      optional_part_count?: number;
+      material_slot_count?: number;
+      selected_material_count?: number;
+      environment_selected?: boolean;
+      reference_example?: {
+        id?: string;
+        line_count?: number;
+        purpose?: string;
+      };
+      excluded_context?: string[];
+    };
   };
 
 type ExecuteResponse =
@@ -166,6 +187,8 @@ type ExecuteResponse =
       repair_elapsed_ms:
         | number
         | null;
+      execution_diagnostics?:
+        unknown;
     }>;
     build_validation?: {
       valid?: boolean;
@@ -191,6 +214,26 @@ type ExecuteResponse =
       AssetDesignBriefV2;
     resource_plan?:
       FoundryResourcePlanV1;
+    blender_runtime?: {
+      blender_version?: string;
+      python_version?: string;
+      execution_mode?: string;
+    };
+    compile_smoke?: {
+      valid?: boolean;
+      stage?: string;
+      message?: string;
+      line?: number | null;
+      elapsed_ms?: number;
+    };
+    execution_diagnostics?: {
+      phase?: string;
+      failure_source?: string;
+      generated_line?: number | null;
+      editor_line?: number | null;
+      excerpt?: string | null;
+      message?: string;
+    } | null;
   };
 
 type Revision = {
@@ -561,106 +604,6 @@ export function BlenderPythonBuilderLab() {
         throw new Error(
           payload.error ??
             "The native camera proof fixture could not be loaded.",
-        );
-      }
-
-      const fixture =
-        payload.fixture;
-      setRequest(
-        fixture.request,
-      );
-      setAssetName(
-        fixture.asset_name,
-      );
-      setStyle(
-        fixture.style,
-      );
-      setQualityMode(
-        fixture.quality_mode,
-      );
-      setTargetExtent(
-        fixture.target_extent_m,
-      );
-      setMaxTriangles(
-        fixture.max_triangles,
-      );
-      setAnimationReady(
-        fixture.animation_ready,
-      );
-      setDesignBrief(
-        fixture.design_brief,
-      );
-      setDesignBriefText(
-        JSON.stringify(
-          fixture.design_brief,
-          null,
-          2,
-        ),
-      );
-      setResourcePlan(
-        null,
-      );
-      setCode(
-        fixture.code,
-      );
-      setMode(
-        "guided",
-      );
-    } catch (caught) {
-      setPlanResponse({
-        ok: false,
-        error:
-          caught instanceof Error
-            ? caught.message
-            : String(caught),
-      });
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function loadNativeWheelchairProof() {
-    setBusy(
-      "fixture",
-    );
-    setPlanResponse(
-      null,
-    );
-    setResourceResponse(
-      null,
-    );
-    setGeneration(
-      null,
-    );
-    setExecution(
-      null,
-    );
-    setImproveResponse(
-      null,
-    );
-    setCandidateMessage(
-      null,
-    );
-    setRevisions([]);
-    try {
-      const response =
-        await fetch(
-          "/api/sandbox/probe-lab/blender-python-builder/native-wheelchair-proof",
-          {
-            cache:
-              "no-store",
-          },
-        );
-      const payload =
-        (await response.json()) as
-          NativeProofFixtureResponse;
-      if (
-        !payload.ok ||
-        !payload.fixture
-      ) {
-        throw new Error(
-          payload.error ??
-            "The native wheelchair proof fixture could not be loaded.",
         );
       }
 
@@ -1592,7 +1535,7 @@ export function BlenderPythonBuilderLab() {
               lineHeight: 1.65,
             }}
           >
-            Build assets toward the quality of the chest, wheelchair, camera,
+            Build assets toward the construction quality of the native camera,
             furniture, burger, and apple benchmarks: strong silhouettes,
             coherent construction, softened edges, semantic material regions,
             real PBR response, and useful inspection—not merely valid GLBs.
@@ -1747,89 +1690,6 @@ export function BlenderPythonBuilderLab() {
           </button>
         </section>
 
-        <section
-          style={{
-            ...panelStyle,
-            padding:
-              "14px 16px",
-            marginBottom: 18,
-            display:
-              "flex",
-            alignItems:
-              "center",
-            justifyContent:
-              "space-between",
-            gap: 14,
-            flexWrap:
-              "wrap",
-            border:
-              "1px solid rgba(14,165,233,0.38)",
-            background:
-              "linear-gradient(135deg, rgba(3,105,161,0.18), rgba(15,23,42,0.82))",
-          }}
-        >
-          <div
-            style={{
-              minWidth: 260,
-              flex: "1 1 620px",
-            }}
-          >
-            <strong
-              style={{
-                color:
-                  "#bae6fd",
-              }}
-            >
-              Native stylized-wheelchair reference build
-            </strong>
-            <div
-              style={{
-                marginTop: 4,
-                color:
-                  "#94a3b8",
-                fontSize: 13,
-                lineHeight: 1.55,
-              }}
-            >
-              Loads a native-bpy manual wheelchair with a connected tube frame,
-              two layered spoked rear wheels, hand rims, caster forks, upholstery,
-              push handles, brakes, folding braces, and footrests. Use this as the
-              human-authored reference before asking GLM 5.2 to generate the same
-              asset independently.
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={
-              loadNativeWheelchairProof
-            }
-            disabled={
-              busy !== null
-            }
-            style={{
-              border: 0,
-              borderRadius: 11,
-              padding:
-                "11px 15px",
-              fontWeight: 850,
-              background:
-                "#38bdf8",
-              color:
-                "#082f49",
-              cursor:
-                "pointer",
-              opacity:
-                busy === null
-                  ? 1
-                  : 0.55,
-            }}
-          >
-            {busy ===
-            "fixture"
-              ? "Loading proof…"
-              : "Load native wheelchair proof"}
-          </button>
-        </section>
 
         {mode ===
         "guided" ? (
@@ -2323,10 +2183,48 @@ export function BlenderPythonBuilderLab() {
                 >
                   <div>
                     {generation.ok
-                      ? `${generation.model ?? "GLM"} returned ${generation.line_count ?? "—"} lines in ${formatDurationMs(generation.elapsed_ms)}. Helper-contract preflight passed${generation.preflight_repair?.attempted ? " after one automatic correction pass" : ""}.`
+                      ? `${generation.model ?? "GLM"} returned ${generation.line_count ?? "—"} lines in ${formatDurationMs(generation.elapsed_ms)} using native bpy with the camera as the only code example. Preflight passed${generation.preflight_repair?.attempted ? " after one automatic correction pass" : ""}.`
                       : generation.error ??
                         `GLM code is available for review, but ${generation.preflight_validation?.errors?.length ?? 0} preflight error(s) still block Blender execution.`}
                   </div>
+                  {generation.context_package ? (
+                    <details
+                      style={{
+                        marginTop: 8,
+                        color: "#cbd5e1",
+                      }}
+                    >
+                      <summary
+                        style={{
+                          cursor: "pointer",
+                          fontWeight: 800,
+                        }}
+                      >
+                        GLM context package · {generation.context_package.runtime?.blender_version ?? "Blender runtime"} · native bpy · camera example only
+                      </summary>
+                      <pre
+                        style={{
+                          margin: "8px 0 0",
+                          maxHeight: 320,
+                          overflow: "auto",
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
+                          background: "#020617",
+                          borderRadius: 10,
+                          padding: 12,
+                          fontSize: 11,
+                          lineHeight: 1.5,
+                          color: "#bfdbfe",
+                        }}
+                      >
+                        {JSON.stringify(
+                          generation.context_package,
+                          null,
+                          2,
+                        )}
+                      </pre>
+                    </details>
+                  ) : null}
                   {(generation.preflight_validation?.errors?.length ||
                     generation.preflight_validation?.warnings?.length) ? (
                     <details
@@ -2617,6 +2515,42 @@ export function BlenderPythonBuilderLab() {
                             ),
                           )}
                         </select>
+                        <div
+                          style={{
+                            display: "grid",
+                            gap: 4,
+                            marginTop: 7,
+                            color: "#94a3b8",
+                            fontSize: 11,
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          {binding.selected.appearance_summary ? (
+                            <div
+                              style={{
+                                color: "#cbd5e1",
+                              }}
+                            >
+                              {binding.selected.appearance_summary}
+                            </div>
+                          ) : null}
+                          <div>
+                            Match confidence:{" "}
+                            {Math.round(
+                              binding.selected.match_confidence * 100,
+                            )}
+                            %
+                            {binding.selected.dominant_colors.length
+                              ? ` · Colors: ${binding.selected.dominant_colors.join(", ")}`
+                              : ""}
+                            {binding.selected.brightness
+                              ? ` · ${binding.selected.brightness} brightness`
+                              : ""}
+                          </div>
+                          <div>
+                            {binding.selected.reasons.join(" · ")}
+                          </div>
+                        </div>
                       </div>
                     ),
                   )}
@@ -2707,6 +2641,36 @@ export function BlenderPythonBuilderLab() {
                         ),
                       )}
                     </select>
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: 4,
+                        marginTop: 7,
+                        color: "#94a3b8",
+                        fontSize: 11,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {resourcePlan.environment.selected.appearance_summary ? (
+                        <div
+                          style={{
+                            color: "#cbd5e1",
+                          }}
+                        >
+                          {resourcePlan.environment.selected.appearance_summary}
+                        </div>
+                      ) : null}
+                      <div>
+                        Match confidence:{" "}
+                        {Math.round(
+                          resourcePlan.environment.selected.match_confidence * 100,
+                        )}
+                        %
+                      </div>
+                      <div>
+                        {resourcePlan.environment.selected.reasons.join(" · ")}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </section>
@@ -3456,6 +3420,15 @@ export function BlenderPythonBuilderLab() {
                     {
                       validation:
                         execution.build_validation,
+                      blender_runtime:
+                        execution.blender_runtime ??
+                        null,
+                      compile_smoke:
+                        execution.compile_smoke ??
+                        null,
+                      execution_diagnostics:
+                        execution.execution_diagnostics ??
+                        null,
                       repair_attempts:
                         execution.repair_attempts ??
                         [],
@@ -3588,7 +3561,18 @@ export function BlenderPythonBuilderLab() {
                         ]
                           .filter(Boolean)
                           .join("\n")
-                      : execution.error
+                      : [
+                          execution.error,
+                          execution.execution_diagnostics
+                            ? JSON.stringify(
+                                execution.execution_diagnostics,
+                                null,
+                                2,
+                              )
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join("\n\n")
                     : "No Blender run yet."}
               </pre>
             </details>

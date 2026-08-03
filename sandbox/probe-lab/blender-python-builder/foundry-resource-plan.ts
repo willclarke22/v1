@@ -24,6 +24,16 @@ export type FoundryResourceCandidate = {
   published_to_r2: boolean;
   required_maps_available: string[];
   missing_required_maps: string[];
+  appearance_summary:
+    string | null;
+  dominant_colors:
+    string[];
+  brightness:
+    "dark" | "medium" | "light" | null;
+  appearance_confidence:
+    number | null;
+  match_confidence:
+    number;
 };
 
 export type FoundryMaterialBindingPlan = {
@@ -196,6 +206,47 @@ function candidate(
             )
             .filter(Boolean)
         : [],
+    appearance_summary:
+      text(
+        item.appearance_summary,
+      ) || null,
+    dominant_colors:
+      Array.isArray(
+        item.dominant_colors,
+      )
+        ? item.dominant_colors
+            .map((color) =>
+              text(color),
+            )
+            .filter(Boolean)
+        : [],
+    brightness:
+      item.brightness === "dark" ||
+      item.brightness === "medium" ||
+      item.brightness === "light"
+        ? item.brightness
+        : null,
+    appearance_confidence:
+      Number.isFinite(
+        Number(
+          item.appearance_confidence,
+        ),
+      )
+        ? Math.max(
+            0,
+            Math.min(
+              1,
+              Number(
+                item.appearance_confidence,
+              ),
+            ),
+          )
+        : null,
+    match_confidence:
+      numberValue(
+        item.match_confidence,
+        fallback.match_confidence,
+      ),
   };
 }
 
@@ -222,6 +273,12 @@ function proceduralCandidate(
     required_maps_available: [],
     missing_required_maps:
       slot.required_maps,
+    appearance_summary:
+      "Controlled procedural Principled material fallback.",
+    dominant_colors: [],
+    brightness: null,
+    appearance_confidence: null,
+    match_confidence: 1,
   };
 }
 
@@ -393,6 +450,12 @@ export function normalizeFoundryResourcePlan(
       published_to_r2: false,
       required_maps_available: [],
       missing_required_maps: [],
+      appearance_summary:
+        "Trusted neutral studio lighting fallback.",
+      dominant_colors: [],
+      brightness: null,
+      appearance_confidence: null,
+      match_confidence: 1,
     };
   const environmentCandidates =
     Array.isArray(

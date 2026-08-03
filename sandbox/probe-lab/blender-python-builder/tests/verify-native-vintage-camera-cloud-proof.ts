@@ -145,7 +145,7 @@ async function main() {
   );
   assert.match(
     service,
-    /!normalizedAvailable\.includes\(\s*"base_color"/,
+    /!hasRequiredMap\(\s*normalizedAvailable,\s*"base_color"/,
     "Catalog materials that explicitly lack base color must be excluded from automatic surface selection.",
   );
 

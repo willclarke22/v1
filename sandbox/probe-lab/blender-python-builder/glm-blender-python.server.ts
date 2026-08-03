@@ -1,5 +1,4 @@
 import {
-  designBriefToProceduralSpec,
   normalizeAssetDesignBrief,
   type AssetDesignBriefV2,
   type FoundryQualityMode,
@@ -7,12 +6,14 @@ import {
 import type {
   FoundryResourcePlanV1,
 } from "./foundry-resource-plan";
-import type {
-  ProceduralAssetSpecV1,
-} from "./procedural-asset-spec";
 import {
-  buildFoundryHelperContractPrompt,
-} from "./blender-helper-contract";
+  buildDirectGlmContextPackage,
+  publicDirectGlmContextSummary,
+} from "./direct-glm-context.server";
+import {
+  resolveFoundryBlenderRuntime,
+  type FoundryBlenderRuntimeInfo,
+} from "./blender-runtime.server";
 import {
   validateBlenderPythonPreflight,
   type BlenderPythonPreflightResult,
@@ -501,23 +502,23 @@ async function requestGlm(
   }
 }
 
-const BENCHMARK_QUALITY_RULES = `MyWay benchmark quality bar:
-- Treasure-chest quality: a strong curved-lid silhouette, substantial wrapping metal bands, real hinges/hardware, softened edges, separate wood and metal regions, and readable ornament.
-- Wheelchair quality: connected tubular frame, layered wheels with tires/rims/hubs/spokes/push rims, separate casters, fabric seating, and believable support structure.
-- Camera quality: layered lens barrels and rings, recessed front glass, body bevels, controls, strap curves, and distinct body/metal/glass/rubber materials.
-- Furniture quality: repeated slats, believable frame thickness, connected supports, softened manufactured edges, and separate wood/metal construction.
-- Burger quality: distinct irregular ingredient layers with volume, controlled asymmetry, material diversity, and repeated details such as seeds.
-- Apple quality: non-spherical sculpted silhouette, top depression, stem, subtle asymmetry, gloss and roughness variation.
-Prioritize silhouette, proportion, coherent assembly, semantic material regions, edge treatment, and useful detail over merely increasing triangle count.`;
+const GENERAL_QUALITY_RULES = `MyWay asset-quality bar:
+- The asset must read clearly in front, side, top and three-quarter views.
+- Prioritize recognizable silhouette, believable proportions, coherent assembly, real structural connections, meaningful negative space, softened manufactured edges and useful detail.
+- Geometry must remain convincing in neutral clay before textures.
+- Use layered construction rather than one undifferentiated mass.
+- Repeated parts should be consistently placed through loops, arrays or reusable functions.
+- Keep movable parts separate and place origins at useful pivots.
+- Stay within the approved browser triangle budget.`;
 
 const ASSET_CLASS_STRATEGIES = `Asset-class strategies:
-- hard_surface_assembly: profile-based pieces, bevelled edges, real hardware, arrays/symmetry, meaningful gaps and layered construction.
-- furniture_architecture: structural frames, repeated slats/panels, believable joints, consistent thickness and real support members.
+- hard_surface_assembly: native mesh/profile pieces, bevelled edges, real hardware, arrays or symmetry, meaningful gaps and layered construction.
+- furniture_architecture: structural frames, repeated slats or panels, believable joints, consistent thickness and real support members.
 - mechanical_vehicle: nested cylinders, tubes, hubs, bearings, brackets, fasteners and mechanically plausible connections.
 - layered_organic: smooth sculptural masses, controlled asymmetry, irregular boundaries, overlapping layers and surface variation.
-- plant: stems/branches as curves, leaf instances, natural variation and hierarchy.
-- educational_anatomy: clear landmarks and readable semantic parts without disconnected diagram-spheres.
-- advanced_organic or character: landmark-based proportions, blended masses, recognizable head/limbs/appendages and smooth transitions.`;
+- plant: stems and branches as curves, leaf instances, natural variation and hierarchy.
+- educational_anatomy: clear landmarks and readable semantic parts without disconnected diagram spheres.
+- advanced_organic or character: landmark-based proportions, blended masses, recognizable head, limbs or appendages and smooth transitions.`;
 
 const BLENDER_STATE_RULES = `Blender operator-state rules:
 - Treat bpy.ops as context-sensitive. Before modifier application, explicitly enter OBJECT mode, deselect all, select the intended object, and set it active.
@@ -526,11 +527,16 @@ const BLENDER_STATE_RULES = `Blender operator-state rules:
 - Before transforms, origins, parenting, joins, conversions, or modifier application, establish the correct mode and active object.
 - Use modifier.name rather than a guessed string when applying a modifier.
 - Avoid UI-area-dependent operators. Prefer direct data APIs.
-- Use version-tolerant Blender 5.1+ APIs.
 - The script must run from --background --factory-startup without interaction.`;
 
-const HELPER_CAPABILITIES =
-  buildFoundryHelperContractPrompt();
+const DIRECT_MYWAY_BOUNDARY = `Required MyWay boundary helpers:
+- myway_reset_scene()
+- myway_print_progress(message)
+- myway_material_slot(slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55)
+- myway_assign_material_slot(obj, slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55)
+- myway_normalize_extent(target_extent, root_or_iterable)
+
+Use native bpy, bmesh and mathutils for modelling. MyWay geometry constructors are optional and should not be used unless their exact signature is already known from the camera reference. MyWay appends trusted resource hydration, UV fallback, grounding, environment setup, inspection, .blend save and GLB export.`;
 
 type GlmPreflightRepairMetadata = {
   attempted: boolean;
@@ -547,9 +553,11 @@ async function repairGeneratedCodeAfterPreflight(
     request: string;
     designBrief: AssetDesignBriefV2;
     preflight: BlenderPythonPreflightResult;
+    runtime:
+      FoundryBlenderRuntimeInfo;
   },
 ) {
-  const system = `You are correcting a Blender 5.1+ Python script that failed MyWay's static helper-contract preflight before Blender was launched.
+  const system = `You are correcting a Blender ${input.runtime.blender_version} Python script that failed MyWay's static helper-contract preflight before Blender was launched.
 
 Return only the complete corrected Python script inside one Python markdown fence.
 Preserve the approved asset design, exact required part ids, exact material slot ids, hierarchy, pivots and successful geometry.
@@ -557,7 +565,7 @@ Correct every listed preflight error together; do not make a one-line patch that
 
 ${BLENDER_STATE_RULES}
 
-${HELPER_CAPABILITIES}
+${DIRECT_MYWAY_BOUNDARY}
 
 Do not add export, save or rendering code. Do not use unsafe imports, network access, external commands, add-ons or file-system scanning.`;
 
@@ -623,11 +631,17 @@ material_family, intent, semantic_tags, color_hint, roughness_hint,
 metallic_hint, physical_scale_m, required_maps, and procedural_fallback with
 color_rgba, metallic and roughness.
 
-Make the brief specific enough that another modeller could build the asset
+For every material slot, describe the desired visible texture in texture_hint
+  when the request supports it, such as fine pebbled grain, smooth molded surface,
+  brushed directional grain, woven texture, or subtle hammered variation. Put
+  clearly unwanted visible qualities in avoid_tags. Keep brightness_hint to dark,
+  medium, or light when it is visually important.
+
+  Make the brief specific enough that another modeller could build the asset
 without guessing its silhouette, proportions, connections, pivots or surface
 regions. Use 3-32 semantic parts when appropriate; do not create fake parts.
 
-${BENCHMARK_QUALITY_RULES}
+${GENERAL_QUALITY_RULES}
 
 ${ASSET_CLASS_STRATEGIES}`;
 
@@ -705,9 +719,6 @@ export async function generateBlenderPython(
     maxTriangles: number;
     qualityMode?:
       FoundryQualityMode;
-    assetSpec?:
-      ProceduralAssetSpecV1
-      | null;
     designBrief?:
       AssetDesignBriefV2
       | null;
@@ -738,18 +749,34 @@ export async function generateBlenderPython(
         qualityMode,
       })
     ).design_brief;
-  const spec =
-    input.assetSpec ??
-    designBriefToProceduralSpec(
+  const runtime =
+    await resolveFoundryBlenderRuntime();
+  const contextPackage =
+    buildDirectGlmContextPackage({
       brief,
-    );
+      resourcePlan:
+        input.resourcePlan ??
+        null,
+      runtime,
+    });
+  const promptContext = {
+    ...contextPackage,
+    reference_example: {
+      id:
+        contextPackage.reference_example.id,
+      purpose:
+        contextPackage.reference_example.purpose,
+      line_count:
+        contextPackage.reference_example.line_count,
+    },
+  };
 
-  const system = `You are a senior Blender procedural modeller writing one complete asset-specific Python script for Blender 5.1+.
+  const system = `You are a senior Blender procedural modeller writing one complete asset-specific Python script for the exact configured runtime: Blender ${runtime.blender_version} with Python ${runtime.python_version}.
 
 Return only one Python markdown fence and no prose.
 
 Execution contract:
-- Import bpy and only safe standard-library modules such as math.
+- Import bpy, bmesh, math, mathutils and only other safe standard-library modules when needed.
 - Do not use subprocess, socket, requests, urllib, external commands, package installation, add-ons, network access, or file-system scanning.
 - Use Z as vertical.
 - Begin with myway_reset_scene().
@@ -763,47 +790,41 @@ Execution contract:
 - Print concise MYWAY_PROGRESS messages.
 - Repeated parts must use loops, arrays or helper functions.
 - Preserve real structural connections; avoid floating or paper-thin parts.
-- Before returning, verify every myway_* call against the exact helper contract below.
-- Use exact target_extent_m from the approved brief; never hardcode a default extent.
+- Use native bpy, bmesh and mathutils as the primary modelling language.
+- Use MyWay only at the compact resource and lifecycle boundary below.
+- Use exact target_extent_m from the approved contract; never hardcode a generic default.
+- Do not copy the camera's dimensions, names or geometry unless the requested asset is actually that camera.
 
 ${BLENDER_STATE_RULES}
 
-${HELPER_CAPABILITIES}
+${DIRECT_MYWAY_BOUNDARY}
 
-${BENCHMARK_QUALITY_RULES}
+${GENERAL_QUALITY_RULES}
 
 ${ASSET_CLASS_STRATEGIES}
+
+The only proven code example follows. Study its native-bpy construction discipline, helper functions, object-state handling, material boundary and connected assembly. Do not turn unrelated requests into cameras.
+
+\`\`\`python
+${contextPackage.reference_example.code}
+\`\`\`
 
 Before returning, mentally inspect front, side and three-quarter silhouettes and trace every context-sensitive operation.`;
 
   const user = `Original asset request:
 ${input.request}
 
-Approved Asset Design Brief V2:
+Compact direct-Blender context package:
 ${JSON.stringify(
-  brief,
+  promptContext,
   null,
   2,
 )}
 
-Compatible procedural specification:
-${JSON.stringify(
-  spec,
-  null,
-  2,
-)}
-
-Prepared resource plan:
-${JSON.stringify(
-  input.resourcePlan ??
-    null,
-  null,
-  2,
-)}
-
-Write the complete asset-specific Blender Python. Preserve all required part ids,
-material slot ids, hierarchy, connections, pivots, scale and acceptance criteria.
-The geometry must remain readable in neutral clay without textures.`;
+Write the complete asset-specific Blender Python. Preserve every required part id,
+material slot id, hierarchy, connection, pivot, target scale and acceptance
+criterion. Use native Blender geometry and make the result readable in neutral
+clay without textures. Return only the complete Python script.`;
 
   const result =
     await requestGlm(
@@ -859,6 +880,7 @@ The geometry must remain readable in neutral clay without textures.`;
         designBrief:
           brief,
         preflight,
+        runtime,
       });
     code =
       repaired.code;
@@ -886,10 +908,12 @@ The geometry must remain readable in neutral clay without textures.`;
 
   return {
     code,
-    asset_spec:
-      spec,
     design_brief:
       brief,
+    context_package:
+      publicDirectGlmContextSummary(
+        contextPackage,
+      ),
     model:
       result.model,
     elapsed_ms:
@@ -931,7 +955,9 @@ export async function repairBlenderPython(
     );
   }
 
-  const system = `You are repairing a Blender 5.1+ Python script after a real headless execution failure.
+  const runtime =
+    await resolveFoundryBlenderRuntime();
+  const system = `You are repairing a Blender ${runtime.blender_version} Python script after a real headless execution failure.
 
 Return only the complete corrected Python script inside one Python markdown fence.
 Preserve the asset, design brief, object names, material-slot ids, hierarchy,
@@ -940,7 +966,7 @@ fix, while correcting directly related context hazards.
 
 ${BLENDER_STATE_RULES}
 
-${HELPER_CAPABILITIES}
+${DIRECT_MYWAY_BOUNDARY}
 
 Do not add export or rendering code. Do not use unsafe imports, network access,
 external commands, package installation, add-ons or file-system scanning.`;
@@ -1021,7 +1047,9 @@ export async function improveBlenderPython(
     );
   }
 
-  const system = `You are improving an already successful Blender asset toward MyWay's benchmark quality bar.
+  const runtime =
+    await resolveFoundryBlenderRuntime();
+  const system = `You are improving an already successful Blender ${runtime.blender_version} asset toward MyWay's benchmark quality bar.
 
 Return only the complete revised Python script in one Python markdown fence.
 This is a targeted revision, not a fresh unrelated design.
@@ -1038,9 +1066,9 @@ Rules:
 
 ${BLENDER_STATE_RULES}
 
-${HELPER_CAPABILITIES}
+${DIRECT_MYWAY_BOUNDARY}
 
-${BENCHMARK_QUALITY_RULES}
+${GENERAL_QUALITY_RULES}
 
 ${ASSET_CLASS_STRATEGIES}`;
 

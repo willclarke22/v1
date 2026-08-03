@@ -5,6 +5,7 @@ import {
 
 import {
   executeBlenderPython,
+  foundryExecutionDiagnostics,
 } from "../blender-python-runner.server";
 
 export const runtime =
@@ -75,6 +76,10 @@ export async function POST(
           caught instanceof Error
             ? caught.message
             : String(caught),
+        execution_diagnostics:
+          foundryExecutionDiagnostics(
+            caught,
+          ),
       },
       { status: 502 },
     );
