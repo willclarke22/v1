@@ -22,6 +22,16 @@ const nextConfig: NextConfig = {
       blenderHydrationTraceExcludes,
     "/api/sandbox/probe-lab/blender-python-builder/execute":
       blenderHydrationTraceExcludes,
+    "/api/sandbox/probe-lab/blender-python-builder/generate":
+      blenderHydrationTraceExcludes,
+    "/api/sandbox/probe-lab/blender-python-builder/improve":
+      blenderHydrationTraceExcludes,
+    "/api/sandbox/probe-lab/blender-python-builder/repair":
+      blenderHydrationTraceExcludes,
+    "/api/sandbox/probe-lab/blender-python-builder/plan":
+      blenderHydrationTraceExcludes,
+    "/api/sandbox/probe-lab/blender-python-builder/visual-critique":
+      blenderHydrationTraceExcludes,
     "/api/sandbox/probe-lab/resource-runtime/blender-hydrate":
       blenderHydrationTraceExcludes,
     "/api/sandbox/probe-lab/resource-runtime/materials/blender-hydrate":

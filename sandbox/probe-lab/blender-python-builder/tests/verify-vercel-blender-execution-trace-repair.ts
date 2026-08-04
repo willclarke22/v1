@@ -11,6 +11,11 @@ async function main() {
   for (const route of [
     "/api/sandbox/probe-lab/blender-python-builder/execute",
     "/api/sandbox/probe-lab/blender-python-builder/execute-with-repair",
+    "/api/sandbox/probe-lab/blender-python-builder/generate",
+    "/api/sandbox/probe-lab/blender-python-builder/improve",
+    "/api/sandbox/probe-lab/blender-python-builder/repair",
+    "/api/sandbox/probe-lab/blender-python-builder/plan",
+    "/api/sandbox/probe-lab/blender-python-builder/visual-critique",
   ]) {
     assert.ok(
       config.includes(JSON.stringify(route)),
@@ -38,7 +43,7 @@ async function main() {
   );
 
   console.log(
-    "Vercel Blender execution-route trace repair fixture passed.",
+    "Vercel Blender Foundry-route trace repair fixture passed.",
   );
 }
 
