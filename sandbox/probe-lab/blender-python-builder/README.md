@@ -29,7 +29,7 @@ Organic characters remain a later advanced benchmark after direct native-bpy rel
 
 ### Guided build
 
-`Describe -> Design brief -> Match resources -> Prepare -> Generate -> Run -> Improve`
+`Describe -> Visual design + brief -> Match resources -> Prepare -> Generate -> Run -> Improve`
 
 The main UI stays compact. The complete design JSON and detailed diagnostics are
 collapsible.
@@ -54,6 +54,31 @@ revision history.
 - measurable acceptance criteria and benchmark priorities.
 
 Generation is staged: planning is separate from Blender Python generation.
+
+## Text-authored visual description V1
+
+The first guided-build action now creates an imagined reference sheet inside the
+design brief instead of asking the code model to invent proportions while it is
+writing Blender Python. `myway_asset_visual_description_v1` records:
+
+- a design summary and explicit shape language;
+- front, right, top and three-quarter descriptions;
+- overall dimensions in asset-local metres;
+- measurable normalized proportions with tolerances;
+- one dimensioned and positioned layout entry for every semantic part;
+- one visible material-region description for every semantic material slot;
+- visual acceptance tests and uncertainty notes.
+
+Planning uses two text-only GLM passes. The first authors the design and the
+second independently audits dimensional consistency, supports, pivots,
+orthographic agreement, material regions and missing construction choices. If
+the review call fails, the normalized first-pass blueprint is retained and the
+UI reports the fallback.
+
+The visual description is included in the compact direct-GLM context and is the
+primary source of truth for dimensions, part centres, normalized ratios and
+view-dependent silhouette. This is the image-free reference-guided proof; an
+automatic blockout and Nemotron comparison remain separate later steps.
 
 ## Direct GLM context package
 
@@ -172,3 +197,114 @@ Product-studio environment intent rejects forest, natural-exterior, urban, and
 other incompatible HDRIs. The neutral studio rig wins when no compatible HDRI is
 available. NormalDX maps are identified separately and their green channel is
 inverted before Blender's Normal Map node.
+
+## Context fidelity and image-grounded visual critic
+
+The direct GLM context now preserves every part's `geometry_strategy` instead of
+silently dropping the construction approach after planning. Code generation and
+targeted improvement receive only the active asset-class strategy; the complete
+class reference remains limited to the planning step. `soft_goods_upholstery` is
+available for padded furniture, bags, cushions, and related non-character assets.
+
+After a successful Blender run, `Analyze rendered asset` sends a controlled set
+of standardized inspection views to the configured Nemotron vision model. The
+critic compares visible evidence with the approved design brief and selected
+resource intent, then stores `visual-critique.json` beside the job outputs.
+Findings are routed explicitly:
+
+- silhouette, proportion, structural connection, construction detail, part
+  readability, and material-region assignment -> Blender code revision;
+- texture scale/orientation/stretching and PBR response -> material mapping;
+- exposure, reflections, and HDRI concerns -> look development;
+- findings that the supplied views cannot diagnose -> human review.
+
+`Critique + revise code` receives only the findings routed to Blender code while
+also seeing the deferred findings and selected resource plan. It is told not to
+rewrite geometry as a substitute for future material-mapping or look-development
+controls. Saved review candidates retain the visual critique provenance, but no
+visual score automatically approves an asset for normal scene use.
+
+Optional Foundry-specific overrides are `MYWAY_FOUNDRY_VISION_MODEL`,
+`MYWAY_FOUNDRY_VISION_BASE_URL`, and `MYWAY_FOUNDRY_VISION_API_KEY`. Without
+those overrides, the critic reuses the Asset Library vision configuration and
+then the normal NVIDIA configuration.
+
+## Patch 3C: actionable material mapping and look development
+
+The selected material and HDRI identities remain immutable after resource resolution.
+The Foundry stores a separate `myway_foundry_look_adjustments_v1` layer that can be
+changed without asking GLM to rewrite geometry:
+
+- material physical scale, UV repeat, rotation and offset;
+- UV or object-box mapping;
+- normal, roughness and height strength;
+- slot defaults with optional per-part overrides;
+- HDRI strength and rotation, renderer exposure, background visibility and
+  fallback-light energy.
+
+`Re-run same code with look adjustments` executes the current Blender Python again
+with the same resource IDs and a new look-adjustment manifest. Visual-critic
+material-mapping and look-development findings may include one bounded adjustment
+direction. Applying it changes one reviewable step only; the vision model never
+writes unrestricted numerical settings.
+
+## Patch 3D: frozen benchmark and regression harness
+
+The frozen benchmark manifest covers the camera reference, treasure chest, thin-part
+desk fan, upholstered chair, layered burger and an unseen hand-crank egg-beater
+holdout. The holdout runs twice so planner, required-part, repair, visual-blocker and
+material-selection stability can be compared.
+
+The technical footer now uses `technical_ready` / `technical_strong` language. A
+technical score is not release approval. Benchmark release requires all three gates:
+
+1. measurable technical checks pass;
+2. no unresolved high-confidence error-level geometry, mapping or look-development
+   blocker remains;
+3. a human reviewer approves the final revision.
+
+Start the local app, then run the complete resumable harness:
+
+```powershell
+pnpm dev
+```
+
+In another PowerShell window:
+
+```powershell
+pnpm foundry:benchmark
+```
+
+Run one case or resume a prior run:
+
+```powershell
+pnpm foundry:benchmark -- -CaseId treasure_chest_connections
+pnpm foundry:benchmark -- -ResumeRunId 20260803-013000
+```
+
+Benchmark checkpoints and reports are written outside the repository under
+`Documents\MyWayBenchmarkRuns` by default. Successful expensive stages are reused
+when a run is resumed. Automated passes remain pending until human review.
+
+### Optional human-review input
+
+Automated benchmark passes remain `pending_human_review`. To apply an explicit review without rerunning expensive planning, generation, Blender, or vision stages, create a JSON file keyed by `case_id` or by the repeated `case_run_id`:
+
+```json
+{
+  "treasure_chest_connections": {
+    "status": "approved",
+    "reviewer": "Will",
+    "reviewed_at": "2026-08-03T00:00:00.000Z",
+    "notes": "Silhouette, connections, mapping, and look development approved."
+  }
+}
+```
+
+Then resume the existing benchmark run:
+
+```powershell
+pnpm foundry:benchmark -- -ResumeRunId <run-id> -HumanReviewFile C:\path\to\foundry-reviews.json
+```
+
+The inexpensive gate evaluation is recalculated on every resume, while successful expensive stages remain checkpointed.

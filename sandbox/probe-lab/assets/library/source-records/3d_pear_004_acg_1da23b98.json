@@ -1,0 +1,33 @@
+{
+  "schema_version": "myway_ambientcg_model_source_record_v1",
+  "asset_id": "pear_acg_1da23b98",
+  "source_provider": "ambientCG",
+  "source_asset_id": "3DPear004",
+  "source_url": "https://ambientcg.com/a/3DPear004",
+  "source_license": "CC0-1.0",
+  "selected_variant": {
+    "variant_id": "4k-jpg-2",
+    "label": "2",
+    "resolution": "4K",
+    "file_format": "JPG",
+    "archive_format": "ZIP",
+    "url": "https://ambientcg.com/get?file=3DPear004_LQ-4K-JPG.zip",
+    "size_bytes": 34735308,
+    "attributes": {
+      "attributes": "LQ-4K-JPG",
+      "extension": "zip",
+      "url": "https://ambientcg.com/get?file=3DPear004_LQ-4K-JPG.zip",
+      "size": 34735308
+    }
+  },
+  "selected_model_file": "3DPear004_LQ-4K-JPG.obj",
+  "source_package_sha256": "a9a997e89e240a22c84ebcbdfc10f7346594f70a252d93508e0d4a3684e22426",
+  "normalized_runtime_glb": "public/sandbox-assets/myway/models/ambientcg/3d_pear_004_acg_1da23b98.glb",
+  "normalized_thumbnail": "public/sandbox-assets/myway/thumbnails/3d_pear_004_acg_1da23b98.png",
+  "preserved_source_glb": "sandbox/probe-lab/assets/inbox/ambientcg/3d_pear_004_acg_1da23b98-source.glb",
+  "normalized_file_size_bytes": 24058232,
+  "source_file_size_bytes": 24058232,
+  "content_hash": "9aa9d0c502a11be9ae6a18ea14312a9b4221505e329e87b7323a402ab0b6b7f4",
+  "geometry_profile_generator": "myway_blender_geometry_profile_v3_spatial_regions",
+  "imported_at": "2026-08-03T18:14:42.545Z"
+}

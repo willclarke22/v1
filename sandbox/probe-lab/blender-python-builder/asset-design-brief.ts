@@ -1,10 +1,67 @@
 export const ASSET_DESIGN_BRIEF_SCHEMA_VERSION =
   "myway_asset_design_brief_v2" as const;
 
+export const ASSET_VISUAL_DESCRIPTION_SCHEMA_VERSION =
+  "myway_asset_visual_description_v1" as const;
+
+export type AssetVisualDescriptionV1 = {
+  schema_version:
+    typeof ASSET_VISUAL_DESCRIPTION_SCHEMA_VERSION;
+  design_summary: string;
+  shape_language: {
+    primary_forms: string[];
+    edge_character: string;
+    symmetry: string;
+    detail_density:
+      | "low"
+      | "medium"
+      | "high";
+    proportion_emphasis: string[];
+  };
+  orthographic_views: {
+    front: string;
+    right: string;
+    top: string;
+    three_quarter: string;
+  };
+  overall_dimensions_m:
+    | [number, number, number]
+    | null;
+  normalized_proportions: Array<{
+    relationship: string;
+    ratio: number;
+    tolerance: number;
+  }>;
+  part_layout: Array<{
+    part_id: string;
+    shape_description: string;
+    dimensions_m:
+      | [number, number, number]
+      | null;
+    position_m:
+      | [number, number, number]
+      | null;
+    rotation_degrees:
+      [number, number, number];
+    visible_from: string[];
+    construction_notes: string[];
+  }>;
+  material_regions: Array<{
+    slot_id: string;
+    visible_description: string;
+    dominant_color_hex: string | null;
+    finish: string;
+    mapping_intent: string;
+  }>;
+  visual_acceptance_tests: string[];
+  uncertainty_notes: string[];
+};
+
 export const FOUNDRY_ASSET_CLASSES = [
   "hard_surface_assembly",
   "furniture_architecture",
   "mechanical_vehicle",
+  "soft_goods_upholstery",
   "layered_organic",
   "plant",
   "educational_anatomy",
@@ -103,6 +160,12 @@ export type AssetDesignBriefV2 = {
     camera_readability: string[];
   };
   proportions: string[];
+  /**
+   * A text-authored visual blueprint. Optional on legacy fixtures, but every
+   * newly normalized/planned brief receives a complete V1 value.
+   */
+  visual_description?:
+    AssetVisualDescriptionV1;
   parts: AssetDesignPartV2[];
   material_slots:
     AssetMaterialSlotIntentV2[];
@@ -231,6 +294,52 @@ function nullableNumber(
         Math.min(max, parsed),
       )
     : null;
+}
+
+function nullableVector3(
+  value: unknown,
+  min: number,
+  max: number,
+): [number, number, number] | null {
+  if (
+    !Array.isArray(value) ||
+    value.length < 3
+  ) {
+    return null;
+  }
+  const parsed =
+    value.slice(0, 3).map(
+      (item) => Number(item),
+    );
+  if (
+    parsed.some(
+      (item) =>
+        !Number.isFinite(item),
+    )
+  ) {
+    return null;
+  }
+  return parsed.map(
+    (item) =>
+      Math.max(
+        min,
+        Math.min(max, item),
+      ),
+  ) as [number, number, number];
+}
+
+function vector3(
+  value: unknown,
+  fallback:
+    [number, number, number],
+  min: number,
+  max: number,
+): [number, number, number] {
+  return nullableVector3(
+    value,
+    min,
+    max,
+  ) ?? fallback;
 }
 
 function rgba(
@@ -582,6 +691,326 @@ export function normalizeAssetDesignBrief(
         ]
       : null;
 
+  const visualRoot =
+    record(
+      root.visual_description,
+    );
+  const shapeLanguage =
+    record(
+      visualRoot.shape_language,
+    );
+  const orthographicViews =
+    record(
+      visualRoot.orthographic_views,
+    );
+  const partIdSet =
+    new Set(
+      parts.map(
+        (part) => part.part_id,
+      ),
+    );
+  const slotIdSet =
+    new Set(
+      materialSlots.map(
+        (slot) => slot.slot_id,
+      ),
+    );
+  const rawPartLayout =
+    Array.isArray(
+      visualRoot.part_layout,
+    )
+      ? visualRoot.part_layout
+      : [];
+  const normalizedPartLayout =
+    rawPartLayout
+      .slice(0, 128)
+      .map((value, index) => {
+        const item =
+          record(value);
+        const partId =
+          cleanId(
+            item.part_id,
+            parts[index]
+              ?.part_id ??
+              `part_${index + 1}`,
+          );
+        return {
+          part_id: partId,
+          shape_description:
+            text(
+              item.shape_description,
+              parts.find(
+                (part) =>
+                  part.part_id ===
+                  partId,
+              )?.semantic_role ??
+                partId.replaceAll(
+                  "_",
+                  " ",
+                ),
+            ),
+          dimensions_m:
+            nullableVector3(
+              item.dimensions_m,
+              0,
+              100,
+            ),
+          position_m:
+            nullableVector3(
+              item.position_m,
+              -100,
+              100,
+            ),
+          rotation_degrees:
+            vector3(
+              item.rotation_degrees,
+              [0, 0, 0],
+              -360,
+              360,
+            ),
+          visible_from:
+            stringArray(
+              item.visible_from,
+              12,
+            ),
+          construction_notes:
+            stringArray(
+              item.construction_notes,
+              16,
+            ),
+        };
+      })
+      .filter((item) =>
+        partIdSet.has(
+          item.part_id,
+        ),
+      );
+
+  for (const part of parts) {
+    if (
+      !normalizedPartLayout.some(
+        (item) =>
+          item.part_id ===
+          part.part_id,
+      )
+    ) {
+      normalizedPartLayout.push({
+        part_id:
+          part.part_id,
+        shape_description:
+          part.semantic_role,
+        dimensions_m: null,
+        position_m: null,
+        rotation_degrees:
+          [0, 0, 0],
+        visible_from: [],
+        construction_notes:
+          part.geometry_strategy,
+      });
+    }
+  }
+
+  const rawMaterialRegions =
+    Array.isArray(
+      visualRoot.material_regions,
+    )
+      ? visualRoot.material_regions
+      : [];
+  const normalizedMaterialRegions =
+    rawMaterialRegions
+      .slice(0, 32)
+      .map((value, index) => {
+        const item =
+          record(value);
+        const slotId =
+          cleanId(
+            item.slot_id,
+            materialSlots[index]
+              ?.slot_id ??
+              `material_${index + 1}`,
+          );
+        return {
+          slot_id: slotId,
+          visible_description:
+            text(
+              item.visible_description,
+              materialSlots.find(
+                (slot) =>
+                  slot.slot_id ===
+                  slotId,
+              )?.intent ??
+                "visible material region",
+            ),
+          dominant_color_hex:
+            text(
+              item.dominant_color_hex,
+            ) || null,
+          finish:
+            text(
+              item.finish,
+              "matte to satin",
+            ),
+          mapping_intent:
+            text(
+              item.mapping_intent,
+              "scale-consistent mapping",
+            ),
+        };
+      })
+      .filter((item) =>
+        slotIdSet.has(
+          item.slot_id,
+        ),
+      );
+
+  for (const slot of materialSlots) {
+    if (
+      !normalizedMaterialRegions.some(
+        (item) =>
+          item.slot_id ===
+          slot.slot_id,
+      )
+    ) {
+      normalizedMaterialRegions.push({
+        slot_id:
+          slot.slot_id,
+        visible_description:
+          slot.intent,
+        dominant_color_hex:
+          slot.color_hint,
+        finish:
+          slot.roughness_hint ??
+          "matte to satin",
+        mapping_intent:
+          slot.texture_hint ??
+          "scale-consistent mapping",
+      });
+    }
+  }
+
+  const rawRatios =
+    Array.isArray(
+      visualRoot.normalized_proportions,
+    )
+      ? visualRoot.normalized_proportions
+      : [];
+  const normalizedRatios =
+    rawRatios
+      .slice(0, 48)
+      .map((value) => {
+        const item =
+          record(value);
+        return {
+          relationship:
+            text(
+              item.relationship,
+            ),
+          ratio:
+            numberValue(
+              item.ratio,
+              1,
+              0.001,
+              1000,
+            ),
+          tolerance:
+            numberValue(
+              item.tolerance,
+              0.08,
+              0,
+              1,
+            ),
+        };
+      })
+      .filter((item) =>
+        Boolean(
+          item.relationship,
+        ),
+      );
+
+  const visualDescription:
+    AssetVisualDescriptionV1 = {
+    schema_version:
+      ASSET_VISUAL_DESCRIPTION_SCHEMA_VERSION,
+    design_summary:
+      text(
+        visualRoot.design_summary,
+        `Buildable visual blueprint for ${concept}.`,
+      ),
+    shape_language: {
+      primary_forms:
+        stringArray(
+          shapeLanguage.primary_forms,
+          24,
+        ),
+      edge_character:
+        text(
+          shapeLanguage.edge_character,
+          "softened manufactured edges",
+        ),
+      symmetry:
+        text(
+          shapeLanguage.symmetry,
+          "use symmetry where structurally appropriate",
+        ),
+      detail_density:
+        shapeLanguage.detail_density ===
+          "low" ||
+        shapeLanguage.detail_density ===
+          "high"
+          ? shapeLanguage.detail_density
+          : "medium",
+      proportion_emphasis:
+        stringArray(
+          shapeLanguage.proportion_emphasis,
+          24,
+        ),
+    },
+    orthographic_views: {
+      front:
+        text(
+          orthographicViews.front,
+          `Front view of ${concept}.`,
+        ),
+      right:
+        text(
+          orthographicViews.right,
+          `Right-side view of ${concept}.`,
+        ),
+      top:
+        text(
+          orthographicViews.top,
+          `Top view of ${concept}.`,
+        ),
+      three_quarter:
+        text(
+          orthographicViews.three_quarter,
+          `Three-quarter hero view of ${concept}.`,
+        ),
+    },
+    overall_dimensions_m:
+      nullableVector3(
+        visualRoot.overall_dimensions_m,
+        0.001,
+        100,
+      ) ?? dimensions,
+    normalized_proportions:
+      normalizedRatios,
+    part_layout:
+      normalizedPartLayout,
+    material_regions:
+      normalizedMaterialRegions,
+    visual_acceptance_tests:
+      stringArray(
+        visualRoot.visual_acceptance_tests,
+        40,
+      ),
+    uncertainty_notes:
+      stringArray(
+        visualRoot.uncertainty_notes,
+        24,
+      ),
+  };
+
   const realism =
     root.realism ===
       "diagrammatic" ||
@@ -677,6 +1106,8 @@ export function normalizeAssetDesignBrief(
         root.proportions,
         32,
       ),
+    visual_description:
+      visualDescription,
     parts,
     material_slots:
       materialSlots,
@@ -841,6 +1272,88 @@ export function validateAssetDesignBrief(
         );
       }
     }
+  }
+
+  const visual =
+    brief.visual_description;
+  if (!visual) {
+    warnings.push(
+      "The design brief is missing its visual description blueprint.",
+    );
+  } else {
+    if (
+      visual.shape_language
+        .primary_forms.length < 2
+    ) {
+      warnings.push(
+        "The visual description needs at least two primary forms.",
+      );
+    }
+    if (
+      visual.normalized_proportions.length <
+      3
+    ) {
+      warnings.push(
+        "The visual description needs at least three measurable proportion relationships.",
+      );
+    }
+    const dimensionedPartCount =
+      visual.part_layout.filter(
+        (item) =>
+          item.dimensions_m &&
+          item.position_m,
+      ).length;
+    if (
+      dimensionedPartCount <
+      Math.min(
+        3,
+        brief.parts.length,
+      )
+    ) {
+      warnings.push(
+        "Too few visual-description parts have both dimensions and positions.",
+      );
+    }
+    const missingVisualPartIds =
+      brief.parts
+        .filter((part) =>
+          !visual.part_layout.some(
+            (item) =>
+              item.part_id ===
+              part.part_id,
+          ),
+        )
+        .map((part) =>
+          part.part_id,
+        );
+    if (missingVisualPartIds.length) {
+      warnings.push(
+        `Visual description is missing part layouts: ${missingVisualPartIds.join(", ")}.`,
+      );
+    }
+    if (
+      visual.visual_acceptance_tests.length <
+      3
+    ) {
+      warnings.push(
+        "The visual description needs at least three visual acceptance tests.",
+      );
+    }
+  }
+
+  const partsWithoutGeometry =
+    brief.parts
+      .filter((part) =>
+        part.geometry_strategy.length ===
+        0,
+      )
+      .map((part) =>
+        part.part_id,
+      );
+  if (partsWithoutGeometry.length) {
+    warnings.push(
+      `Parts need explicit geometry strategies: ${partsWithoutGeometry.join(", ")}.`,
+    );
   }
 
   if (

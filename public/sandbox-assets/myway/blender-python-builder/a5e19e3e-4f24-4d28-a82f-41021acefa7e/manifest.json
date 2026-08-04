@@ -1,0 +1,1581 @@
+{
+  "schema_version": "myway_blender_foundry_job_v2",
+  "job_id": "a5e19e3e-4f24-4d28-a82f-41021acefa7e",
+  "asset_name": "foundry_treasure_chest",
+  "status": "review_required",
+  "technical_status": "needs_revision",
+  "release_status": "visual_and_human_review_required",
+  "parent_job_id": null,
+  "revision_number": 1,
+  "revision_label": "initial build",
+  "critique": null,
+  "glb_url": "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/foundry_treasure_chest.glb",
+  "blend_url": "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/foundry_treasure_chest.blend",
+  "preview_url": "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/preview.png",
+  "inspection_urls": [
+    "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/preview.png",
+    "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/preview_front.png",
+    "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/preview_right.png",
+    "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/preview_back.png",
+    "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/preview_left.png",
+    "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/preview_top.png",
+    "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/preview_clay.png",
+    "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/preview_material_id.png",
+    "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/preview_normals.png",
+    "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/preview_wireframe.png",
+    "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/preview_dimensions.png"
+  ],
+  "validation_url": "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/validation.json",
+  "quality_url": "/sandbox-assets/myway/blender-python-builder/a5e19e3e-4f24-4d28-a82f-41021acefa7e/quality.json",
+  "asset_spec": {
+    "schema_version": "myway_procedural_asset_spec_v1",
+    "asset_id": "foundry_treasure_chest",
+    "concept": "foundry_treasure_chest",
+    "target_extent_m": 2,
+    "max_triangles": 30000,
+    "style_tags": [
+      "manual code"
+    ],
+    "realism": "stylized",
+    "parts": [
+      {
+        "part_id": "main_body",
+        "semantic_role": "main foundry_treasure_chest body",
+        "geometry_intent": "compound",
+        "parent_part_id": null,
+        "material_intent": "primary_surface",
+        "animation_role": null,
+        "required": true
+      }
+    ],
+    "requirements": {
+      "uv_required": true,
+      "rig_required": false,
+      "movable_parts": [],
+      "collision_required": false,
+      "ground_contact_required": true
+    }
+  },
+  "asset_spec_validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "design_brief": {
+    "schema_version": "myway_asset_design_brief_v2",
+    "asset_id": "foundry_treasure_chest",
+    "concept": "foundry_treasure_chest",
+    "asset_class": "general",
+    "intended_use": [],
+    "target_extent_m": 2,
+    "axis_dimensions_m": null,
+    "max_triangles": 30000,
+    "quality_mode": "standard",
+    "realism": "stylized",
+    "style_tags": [
+      "manual code"
+    ],
+    "silhouette": {
+      "primary_shapes": [],
+      "identifying_features": [],
+      "important_negative_spaces": [],
+      "camera_readability": []
+    },
+    "proportions": [],
+    "visual_description": {
+      "schema_version": "myway_asset_visual_description_v1",
+      "design_summary": "Buildable visual blueprint for foundry_treasure_chest.",
+      "shape_language": {
+        "primary_forms": [],
+        "edge_character": "softened manufactured edges",
+        "symmetry": "use symmetry where structurally appropriate",
+        "detail_density": "medium",
+        "proportion_emphasis": []
+      },
+      "orthographic_views": {
+        "front": "Front view of foundry_treasure_chest.",
+        "right": "Right-side view of foundry_treasure_chest.",
+        "top": "Top view of foundry_treasure_chest.",
+        "three_quarter": "Three-quarter hero view of foundry_treasure_chest."
+      },
+      "overall_dimensions_m": null,
+      "normalized_proportions": [],
+      "part_layout": [
+        {
+          "part_id": "main_body",
+          "shape_description": "main foundry_treasure_chest body",
+          "dimensions_m": null,
+          "position_m": null,
+          "rotation_degrees": [
+            0,
+            0,
+            0
+          ],
+          "visible_from": [],
+          "construction_notes": [
+            "compound"
+          ]
+        }
+      ],
+      "material_regions": [
+        {
+          "slot_id": "primary_surface",
+          "visible_description": "visually suitable surface",
+          "dominant_color_hex": null,
+          "finish": "matte to satin",
+          "mapping_intent": "scale-consistent mapping"
+        }
+      ],
+      "visual_acceptance_tests": [],
+      "uncertainty_notes": []
+    },
+    "parts": [
+      {
+        "part_id": "main_body",
+        "semantic_role": "main foundry_treasure_chest body",
+        "geometry_strategy": [
+          "compound"
+        ],
+        "parent_part_id": null,
+        "connection_strategy": null,
+        "material_slot_id": "primary_surface",
+        "animation_role": null,
+        "pivot_requirement": null,
+        "required": true,
+        "identifying_features": []
+      }
+    ],
+    "material_slots": [
+      {
+        "slot_id": "primary_surface",
+        "display_name": "Primary surface",
+        "assigned_part_ids": [
+          "main_body"
+        ],
+        "material_family": "general",
+        "intent": "visually suitable surface",
+        "semantic_tags": [
+          "foundry_treasure_chest",
+          "manual code"
+        ],
+        "color_hint": null,
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "texture_hint": null,
+        "brightness_hint": null,
+        "avoid_tags": [],
+        "physical_scale_m": null,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "normal_gl"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.5,
+            0.5,
+            0.5,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.55
+        }
+      }
+    ],
+    "environment": {
+      "intent": "neutral product look development",
+      "semantic_tags": [],
+      "preferred_environment_class": "studio",
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "background_visible": false
+    },
+    "requirements": {
+      "uv_required": true,
+      "rig_required": false,
+      "collision_required": false,
+      "ground_contact_required": true,
+      "animation_ready": true,
+      "movable_part_ids": []
+    },
+    "acceptance_criteria": [],
+    "benchmark_priorities": []
+  },
+  "design_brief_validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": [
+      "The visual description needs at least two primary forms.",
+      "The visual description needs at least three measurable proportion relationships.",
+      "Too few visual-description parts have both dimensions and positions.",
+      "The visual description needs at least three visual acceptance tests.",
+      "Add at least three measurable acceptance criteria before final generation.",
+      "The design brief has few silhouette-identifying features."
+    ]
+  },
+  "resource_plan": {
+    "schema_version": "myway_foundry_resource_plan_v1",
+    "created_at": "2026-08-04T00:32:29.205Z",
+    "design_brief_asset_id": "foundry_treasure_chest",
+    "quality_mode": "standard",
+    "material_bindings": [
+      {
+        "slot": {
+          "slot_id": "primary_surface",
+          "display_name": "Primary surface",
+          "assigned_part_ids": [
+            "main_body"
+          ],
+          "material_family": "general",
+          "intent": "visually suitable surface",
+          "semantic_tags": [
+            "foundry_treasure_chest",
+            "manual code"
+          ],
+          "color_hint": null,
+          "roughness_hint": null,
+          "metallic_hint": null,
+          "texture_hint": null,
+          "brightness_hint": null,
+          "avoid_tags": [],
+          "physical_scale_m": null,
+          "required_maps": [
+            "base_color",
+            "roughness",
+            "normal_gl"
+          ],
+          "procedural_fallback": {
+            "color_rgba": [
+              0.5,
+              0.5,
+              0.5,
+              1
+            ],
+            "metallic": 0,
+            "roughness": 0.55
+          }
+        },
+        "status": "procedural_fallback",
+        "selected": {
+          "candidate_kind": "procedural",
+          "resource_id": null,
+          "source_asset_id": null,
+          "variant_id": null,
+          "display_name": "Primary surface procedural fallback",
+          "preview_url": null,
+          "resolution": null,
+          "file_format": null,
+          "score": 1,
+          "reasons": [
+            "trusted Principled BSDF fallback"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [],
+          "missing_required_maps": [],
+          "appearance_summary": null,
+          "dominant_colors": [],
+          "brightness": null,
+          "appearance_confidence": null,
+          "match_confidence": 1
+        },
+        "candidates": [
+          {
+            "candidate_kind": "procedural",
+            "resource_id": null,
+            "source_asset_id": null,
+            "variant_id": null,
+            "display_name": "Primary surface procedural fallback",
+            "preview_url": null,
+            "resolution": null,
+            "file_format": null,
+            "score": 1,
+            "reasons": [
+              "trusted Principled BSDF fallback"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [],
+            "missing_required_maps": [
+              "base_color",
+              "roughness",
+              "normal_gl"
+            ],
+            "appearance_summary": "Controlled procedural Principled material fallback.",
+            "dominant_colors": [],
+            "brightness": null,
+            "appearance_confidence": null,
+            "match_confidence": 1
+          }
+        ],
+        "texture_scale_m": null
+      }
+    ],
+    "environment": {
+      "status": "trusted_studio_fallback",
+      "intent": {
+        "intent": "neutral product look development",
+        "semantic_tags": [],
+        "preferred_environment_class": "studio",
+        "strength": 0.8,
+        "rotation_degrees": 0,
+        "background_visible": false
+      },
+      "selected": {
+        "candidate_kind": "procedural",
+        "resource_id": null,
+        "source_asset_id": null,
+        "variant_id": null,
+        "display_name": "Trusted neutral studio rig",
+        "preview_url": null,
+        "resolution": null,
+        "file_format": null,
+        "score": 1,
+        "reasons": [
+          "trusted fallback lighting"
+        ],
+        "published_to_r2": false,
+        "required_maps_available": [],
+        "missing_required_maps": [],
+        "appearance_summary": null,
+        "dominant_colors": [],
+        "brightness": null,
+        "appearance_confidence": null,
+        "match_confidence": 1
+      },
+      "candidates": [
+        {
+          "candidate_kind": "procedural",
+          "resource_id": null,
+          "source_asset_id": null,
+          "variant_id": null,
+          "display_name": "Trusted neutral studio rig",
+          "preview_url": null,
+          "resolution": null,
+          "file_format": null,
+          "score": 1,
+          "reasons": [
+            "trusted fallback lighting"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [],
+          "missing_required_maps": [],
+          "appearance_summary": "Trusted neutral studio lighting fallback.",
+          "dominant_colors": [],
+          "brightness": null,
+          "appearance_confidence": null,
+          "match_confidence": 1
+        }
+      ]
+    },
+    "summary": {
+      "ready_r2": 0,
+      "catalog_matches": 0,
+      "procedural_fallbacks": 2,
+      "missing": 0,
+      "requires_preparation": false
+    }
+  },
+  "resource_manifest": {
+    "schema_version": "myway_blender_foundry_resource_manifest_v1",
+    "created_at": "2026-08-04T00:32:29.228Z",
+    "design_brief_asset_id": "foundry_treasure_chest",
+    "quality_mode": "standard",
+    "material_slots": {
+      "primary_surface": {
+        "slot_id": "primary_surface",
+        "display_name": "Primary surface",
+        "source": "procedural",
+        "resource_id": null,
+        "source_asset_id": null,
+        "variant_id": null,
+        "content_sha256": null,
+        "maps": {},
+        "texture_scale_m": 0,
+        "look": {
+          "physical_scale_m": 0,
+          "uv_repeat": [
+            1,
+            1
+          ],
+          "rotation_degrees": 0,
+          "offset": [
+            0,
+            0
+          ],
+          "normal_strength": 1,
+          "roughness_factor": 1,
+          "height_strength": 0.18,
+          "mapping_mode": "uv",
+          "part_overrides": {}
+        },
+        "fallback": {
+          "color_rgba": [
+            0.5,
+            0.5,
+            0.5,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.55
+        }
+      }
+    },
+    "part_material_slots": {
+      "main_body": "primary_surface"
+    },
+    "environment": {
+      "source": "trusted_studio",
+      "resource_id": null,
+      "source_asset_id": null,
+      "variant_id": null,
+      "content_sha256": null,
+      "environment_path": null,
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "exposure": 0,
+      "background_visible": false,
+      "fallback_light_energy_scale": 1
+    },
+    "look_adjustments": {
+      "schema_version": "myway_foundry_look_adjustments_v1",
+      "material_slots": {
+        "primary_surface": {
+          "physical_scale_m": 0,
+          "uv_repeat": [
+            1,
+            1
+          ],
+          "rotation_degrees": 0,
+          "offset": [
+            0,
+            0
+          ],
+          "normal_strength": 1,
+          "roughness_factor": 1,
+          "height_strength": 0.18,
+          "mapping_mode": "uv",
+          "part_overrides": {}
+        }
+      },
+      "environment": {
+        "strength": 0.8,
+        "rotation_degrees": 0,
+        "exposure": 0,
+        "background_visible": false,
+        "fallback_light_energy_scale": 1
+      }
+    }
+  },
+  "look_adjustments": {
+    "schema_version": "myway_foundry_look_adjustments_v1",
+    "material_slots": {
+      "primary_surface": {
+        "physical_scale_m": 0,
+        "uv_repeat": [
+          1,
+          1
+        ],
+        "rotation_degrees": 0,
+        "offset": [
+          0,
+          0
+        ],
+        "normal_strength": 1,
+        "roughness_factor": 1,
+        "height_strength": 0.18,
+        "mapping_mode": "uv",
+        "part_overrides": {}
+      }
+    },
+    "environment": {
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "exposure": 0,
+      "background_visible": false,
+      "fallback_light_energy_scale": 1
+    }
+  },
+  "build_validation": {
+    "valid": false,
+    "errors": [
+      "Triangle count 30938 exceeds the requested budget 30000."
+    ],
+    "warnings": [],
+    "footer": {
+      "mesh_count": 37,
+      "material_slot_count": 37,
+      "triangle_count": 30938,
+      "object_names": [
+        "cat_body",
+        "chest_ruff",
+        "chest_ruff_tuft_01",
+        "chest_ruff_tuft_02",
+        "chest_ruff_tuft_03",
+        "chest_ruff_tuft_04",
+        "chest_ruff_tuft_05",
+        "chest_ruff_tuft_06",
+        "chest_ruff_tuft_07",
+        "fluffy_fur_coat",
+        "head",
+        "left_ear",
+        "left_eye",
+        "left_front_leg",
+        "left_front_paw",
+        "left_front_paw_toe_01",
+        "left_front_paw_toe_02",
+        "left_front_paw_toe_03",
+        "left_hind_haunch",
+        "left_inner_ear_region",
+        "left_pupil_region",
+        "muzzle_left_lobe",
+        "muzzle_right_lobe",
+        "neck_bridge",
+        "nose",
+        "right_ear",
+        "right_eye",
+        "right_front_leg",
+        "right_front_paw",
+        "right_front_paw_toe_01",
+        "right_front_paw_toe_02",
+        "right_front_paw_toe_03",
+        "right_hind_haunch",
+        "right_inner_ear_region",
+        "right_pupil_region",
+        "tail",
+        "whisker_set"
+      ],
+      "objects": [
+        {
+          "name": "left_ear",
+          "parent": "head",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.2896662652492523,
+            0.2290373593568802,
+            0.3991974890232086
+          ],
+          "location": [
+            -0.1120000034570694,
+            0.009999997913837433,
+            0.1300000548362732
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "right_ear",
+          "parent": "head",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.2896662652492523,
+            0.2290373593568802,
+            0.3991974890232086
+          ],
+          "location": [
+            0.1120000034570694,
+            0.009999997913837433,
+            0.1300000548362732
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "left_inner_ear_region",
+          "parent": "left_ear",
+          "materials": [
+            "MyWaySlot_ear_nose_pink"
+          ],
+          "dimensions": [
+            0.16340655088424683,
+            0.04072123393416405,
+            0.25405359268188477
+          ],
+          "location": [
+            0,
+            -0.04800000041723251,
+            0
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "right_inner_ear_region",
+          "parent": "right_ear",
+          "materials": [
+            "MyWaySlot_ear_nose_pink"
+          ],
+          "dimensions": [
+            0.16340655088424683,
+            0.04072123393416405,
+            0.25405359268188477
+          ],
+          "location": [
+            0,
+            -0.04800000041723251,
+            0
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "nose",
+          "parent": "muzzle",
+          "materials": [
+            "MyWaySlot_ear_nose_pink"
+          ],
+          "dimensions": [
+            0.10442901402711868,
+            0.07001154869794846,
+            0.0765560120344162
+          ],
+          "location": [
+            0,
+            -0.2549999952316284,
+            0.6150000095367432
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "chest_ruff_tuft_01",
+          "parent": "chest_ruff",
+          "materials": [
+            "MyWaySlot_cream_fur"
+          ],
+          "dimensions": [
+            0.1048630103468895,
+            0.09845373779535294,
+            0.1914599984884262
+          ],
+          "location": [
+            -0.10499999672174454,
+            -0.05700001120567322,
+            -0.1809999942779541
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "chest_ruff_tuft_02",
+          "parent": "chest_ruff",
+          "materials": [
+            "MyWaySlot_cream_fur"
+          ],
+          "dimensions": [
+            0.1048630103468895,
+            0.09845373779535294,
+            0.1914599984884262
+          ],
+          "location": [
+            -0.07000000029802322,
+            -0.05700001120567322,
+            -0.1629999876022339
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "chest_ruff_tuft_03",
+          "parent": "chest_ruff",
+          "materials": [
+            "MyWaySlot_cream_fur"
+          ],
+          "dimensions": [
+            0.1268555223941803,
+            0.09845373779535294,
+            0.2461438775062561
+          ],
+          "location": [
+            -0.03500000014901161,
+            -0.05700001120567322,
+            -0.14499998092651367
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "chest_ruff_tuft_04",
+          "parent": "chest_ruff",
+          "materials": [
+            "MyWaySlot_cream_fur"
+          ],
+          "dimensions": [
+            0.1268555223941803,
+            0.09845373779535294,
+            0.2461438775062561
+          ],
+          "location": [
+            0,
+            -0.05700001120567322,
+            -0.12700000405311584
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "chest_ruff_tuft_05",
+          "parent": "chest_ruff",
+          "materials": [
+            "MyWaySlot_cream_fur"
+          ],
+          "dimensions": [
+            0.1268555223941803,
+            0.09845373779535294,
+            0.2461438775062561
+          ],
+          "location": [
+            0.03500000014901161,
+            -0.05700001120567322,
+            -0.14499998092651367
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "chest_ruff_tuft_06",
+          "parent": "chest_ruff",
+          "materials": [
+            "MyWaySlot_cream_fur"
+          ],
+          "dimensions": [
+            0.1048630103468895,
+            0.09845373779535294,
+            0.1914599984884262
+          ],
+          "location": [
+            0.07000000029802322,
+            -0.05700001120567322,
+            -0.1629999876022339
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "chest_ruff_tuft_07",
+          "parent": "chest_ruff",
+          "materials": [
+            "MyWaySlot_cream_fur"
+          ],
+          "dimensions": [
+            0.1048630103468895,
+            0.09845373779535294,
+            0.1914599984884262
+          ],
+          "location": [
+            0.10499999672174454,
+            -0.05700001120567322,
+            -0.1809999942779541
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "tail",
+          "parent": "cat_body",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            1.6286824941635132,
+            1.2822394371032715,
+            0.7461002469062805
+          ],
+          "location": [
+            0,
+            -0.054999999701976776,
+            -0.38999998569488525
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "fluffy_fur_coat",
+          "parent": "cat_body",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            1.683766484260559,
+            1.3330963850021362,
+            1.8680464029312134
+          ],
+          "location": [
+            0,
+            -0.054999999701976776,
+            -0.38999998569488525
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 43
+          }
+        },
+        {
+          "name": "whisker_set",
+          "parent": "muzzle",
+          "materials": [
+            "MyWaySlot_whisker_ivory"
+          ],
+          "dimensions": [
+            1.2385729551315308,
+            0.11083366721868515,
+            0.23870274424552917
+          ],
+          "location": [
+            0,
+            0,
+            0
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 8
+          }
+        },
+        {
+          "name": "cat_body",
+          "parent": "fluffy_orange_cat_seated_root",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.9189020991325378,
+            0.833595871925354,
+            1.200392246246338
+          ],
+          "location": [
+            0,
+            0.12033233791589737,
+            0.853265643119812
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "neck_bridge",
+          "parent": "cat_body",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.5688434839248657,
+            0.5466316938400269,
+            0.5247666835784912
+          ],
+          "location": [
+            0,
+            -0.05999999865889549,
+            0.16500002145767212
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "left_hind_haunch",
+          "parent": "cat_body",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.6353991627693176,
+            0.7410647869110107,
+            0.7876299023628235
+          ],
+          "location": [
+            -0.18000000715255737,
+            0.03500000387430191,
+            -0.16999998688697815
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "right_hind_haunch",
+          "parent": "cat_body",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.6353991627693176,
+            0.7410645484924316,
+            0.7876299023628235
+          ],
+          "location": [
+            0.18000000715255737,
+            0.03500000387430191,
+            -0.16999998688697815
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "head",
+          "parent": "cat_body",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.7438731789588928,
+            0.6559586524963379,
+            0.6122278571128845
+          ],
+          "location": [
+            0,
+            -0.14000000059604645,
+            0.26499998569488525
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "left_eye",
+          "parent": "head",
+          "materials": [
+            "MyWaySlot_green_eye"
+          ],
+          "dimensions": [
+            0.13968193531036377,
+            0.0704045221209526,
+            0.15752597153186798
+          ],
+          "location": [
+            -0.07400000095367432,
+            -0.12799999117851257,
+            0.005000054836273193
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "right_eye",
+          "parent": "head",
+          "materials": [
+            "MyWaySlot_green_eye"
+          ],
+          "dimensions": [
+            0.13968193531036377,
+            0.070404551923275,
+            0.15752597153186798
+          ],
+          "location": [
+            0.07400000095367432,
+            -0.12799999117851257,
+            0.005000054836273193
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "left_pupil_region",
+          "parent": "left_eye",
+          "materials": [
+            "MyWaySlot_dark_pupil"
+          ],
+          "dimensions": [
+            0.03928554430603981,
+            0.01968446746468544,
+            0.10501731932163239
+          ],
+          "location": [
+            0,
+            -0.018999993801116943,
+            0
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "right_pupil_region",
+          "parent": "right_eye",
+          "materials": [
+            "MyWaySlot_dark_pupil"
+          ],
+          "dimensions": [
+            0.03928554430603981,
+            0.01968446932733059,
+            0.10501731932163239
+          ],
+          "location": [
+            0,
+            -0.018999993801116943,
+            0
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "muzzle_left_lobe",
+          "parent": "muzzle",
+          "materials": [
+            "MyWaySlot_cream_fur"
+          ],
+          "dimensions": [
+            0.2731076180934906,
+            0.229410320520401,
+            0.2078467607498169
+          ],
+          "location": [
+            -0.052000001072883606,
+            -0.22599999606609344,
+            0.5920000076293945
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "muzzle_right_lobe",
+          "parent": "muzzle",
+          "materials": [
+            "MyWaySlot_cream_fur"
+          ],
+          "dimensions": [
+            0.2731076180934906,
+            0.229410320520401,
+            0.2078467607498169
+          ],
+          "location": [
+            0.052000001072883606,
+            -0.22599999606609344,
+            0.5920000076293945
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "chest_ruff",
+          "parent": "cat_body",
+          "materials": [
+            "MyWaySlot_cream_fur"
+          ],
+          "dimensions": [
+            0.7001156806945801,
+            0.2861018478870392,
+            0.6554586887359619
+          ],
+          "location": [
+            0,
+            -0.22999998927116394,
+            0.05500000715255737
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "left_front_leg",
+          "parent": "cat_body",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.22958528995513916,
+            0.2623431086540222,
+            0.7437593936920166
+          ],
+          "location": [
+            -0.10499999672174454,
+            -0.22499999403953552,
+            -0.17499998211860657
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "right_front_leg",
+          "parent": "cat_body",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.22958528995513916,
+            0.2623431086540222,
+            0.7437593936920166
+          ],
+          "location": [
+            0.10499999672174454,
+            -0.22499999403953552,
+            -0.17499998211860657
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "left_front_paw",
+          "parent": "left_front_leg",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.34957775473594666,
+            0.41512346267700195,
+            0.24066467583179474
+          ],
+          "location": [
+            -0.005000002682209015,
+            -0.07500001788139343,
+            -0.1599999964237213
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "right_front_paw",
+          "parent": "right_front_leg",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.34957775473594666,
+            0.41512346267700195,
+            0.24066467583179474
+          ],
+          "location": [
+            0.005000002682209015,
+            -0.07500001788139343,
+            -0.1599999964237213
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "left_front_paw_toe_01",
+          "parent": "left_front_paw",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.10932642966508865,
+            0.10495339334011078,
+            0.06563582271337509
+          ],
+          "location": [
+            -0.034999996423721313,
+            -0.08100000023841858,
+            -0.005000006407499313
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "left_front_paw_toe_02",
+          "parent": "left_front_paw",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.10932642966508865,
+            0.10495339334011078,
+            0.06563582271337509
+          ],
+          "location": [
+            0,
+            -0.08100000023841858,
+            -0.005000006407499313
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "left_front_paw_toe_03",
+          "parent": "left_front_paw",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.10932642966508865,
+            0.10495339334011078,
+            0.06563582271337509
+          ],
+          "location": [
+            0.034999996423721313,
+            -0.08100000023841858,
+            -0.005000006407499313
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "right_front_paw_toe_01",
+          "parent": "right_front_paw",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.10932642966508865,
+            0.10495339334011078,
+            0.06563582271337509
+          ],
+          "location": [
+            -0.034999996423721313,
+            -0.08100000023841858,
+            -0.005000006407499313
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "right_front_paw_toe_02",
+          "parent": "right_front_paw",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.10932642966508865,
+            0.10495339334011078,
+            0.06563582271337509
+          ],
+          "location": [
+            0,
+            -0.08100000023841858,
+            -0.005000006407499313
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "right_front_paw_toe_03",
+          "parent": "right_front_paw",
+          "materials": [
+            "MyWaySlot_orange_fur"
+          ],
+          "dimensions": [
+            0.10932642966508865,
+            0.10495339334011078,
+            0.06563582271337509
+          ],
+          "location": [
+            0.034999996423721313,
+            -0.08100000023841858,
+            -0.005000006407499313
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        }
+      ],
+      "uv_missing_object_names": [],
+      "zero_scale_object_names": [],
+      "negative_scale_object_names": [],
+      "bounds_min": [
+        -0.787900984287262,
+        -0.9262809157371521,
+        -7.450580596923828e-9
+      ],
+      "bounds_max": [
+        0.8958653807640076,
+        0.5674399137496948,
+        2
+      ],
+      "dimensions": [
+        1.6837663650512695,
+        1.493720829486847,
+        2.0000000074505806
+      ],
+      "ground_offset": -7.450580596923828e-9,
+      "topology_totals": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0
+      }
+    },
+    "glb": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "version": 2,
+      "declared_length": 813056,
+      "actual_length": 813056,
+      "mesh_count": 37,
+      "material_count": 6,
+      "animation_count": 0,
+      "node_names": [
+        "chest_ruff_tuft_01",
+        "chest_ruff_tuft_02",
+        "chest_ruff_tuft_03",
+        "chest_ruff_tuft_04",
+        "chest_ruff_tuft_05",
+        "chest_ruff_tuft_06",
+        "chest_ruff_tuft_07",
+        "chest_ruff",
+        "fluffy_fur_coat",
+        "left_inner_ear_region",
+        "left_ear",
+        "left_pupil_region",
+        "left_eye",
+        "right_inner_ear_region",
+        "right_ear",
+        "right_pupil_region",
+        "right_eye",
+        "muzzle_left_lobe",
+        "muzzle_right_lobe",
+        "nose",
+        "whisker_set",
+        "head",
+        "left_front_paw_toe_01",
+        "left_front_paw_toe_02",
+        "left_front_paw_toe_03",
+        "left_front_paw",
+        "left_front_leg",
+        "left_hind_haunch",
+        "neck_bridge",
+        "right_front_paw_toe_01",
+        "right_front_paw_toe_02",
+        "right_front_paw_toe_03",
+        "right_front_paw",
+        "right_front_leg",
+        "right_hind_haunch",
+        "tail",
+        "cat_body"
+      ],
+      "primitive_count": 37,
+      "primitives_missing_uvs": 0
+    },
+    "required_part_count": 0,
+    "matched_required_part_count": 0
+  },
+  "quality_report": {
+    "score": 92,
+    "grade": "technical_ready",
+    "asset_class": "general",
+    "findings": [
+      {
+        "severity": "error",
+        "code": "missing_required_parts",
+        "message": "Missing required semantic parts: main_body"
+      }
+    ],
+    "technical_only": true,
+    "release_requires_visual_and_human_review": true,
+    "benchmark_checks": {
+      "silhouette_requires_visual_review": true,
+      "proportions_require_visual_review": true,
+      "connections_require_visual_review": true,
+      "material_response_requires_visual_review": true,
+      "semantic_parts_present": false,
+      "topology_clean": true,
+      "material_regions_present": true
+    }
+  },
+  "helper_library_version": "myway_blender_foundry_helpers_v3_0",
+  "inspection_footer_version": "myway_blender_foundry_inspection_v4",
+  "blender_runtime": {
+    "schema_version": "myway_blender_runtime_v1",
+    "blender_version": "5.1.2",
+    "blender_version_tuple": [
+      5,
+      1,
+      2
+    ],
+    "python_version": "3.13.9",
+    "executable_name": "blender.exe",
+    "execution_mode": "background_factory_startup"
+  },
+  "compile_smoke": {
+    "schema_version": "myway_blender_compile_smoke_v1",
+    "valid": true,
+    "stage": "assembled_script",
+    "message": "Model source and assembled Foundry script compile in the configured Blender runtime.",
+    "line": null,
+    "offset": null,
+    "text": null,
+    "runtime": {
+      "schema_version": "myway_blender_runtime_v1",
+      "blender_version": "5.1.2",
+      "blender_version_tuple": [
+        5,
+        1,
+        2
+      ],
+      "python_version": "3.13.9",
+      "executable_name": "blender.exe",
+      "execution_mode": "background_factory_startup"
+    },
+    "stdout": "MYWAY_COMPILE_SMOKE:{\"valid\": true, \"stage\": \"assembled_script\", \"message\": \"Model source and assembled Foundry script compile in the configured Blender runtime.\", \"line\": null, \"offset\": null, \"text\": null}\r\nBlender 5.1.2 (hash ec6e62d40fa9 built 2026-05-19 01:37:34)\n\nBlender quit\n",
+    "stderr": "",
+    "elapsed_ms": 4118
+  },
+  "glb_bytes": 813056,
+  "elapsed_ms": 34648,
+  "completed_at": "2026-08-04T00:33:08.978Z"
+}

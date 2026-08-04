@@ -1181,6 +1181,7 @@ export async function executeBlenderPython(
     assetSpec?: unknown;
     designBrief?: unknown;
     resourcePlan?: unknown;
+    lookAdjustments?: unknown;
     parentJobId?: string | null;
     revisionNumber?: number | null;
     revisionLabel?: string | null;
@@ -1268,6 +1269,7 @@ export async function executeBlenderPython(
       await hydrateFoundryResourcesForBlender(
         designBrief,
         resourcePlan,
+        input.lookAdjustments,
       );
   } catch (caught) {
     const message =
@@ -1400,6 +1402,11 @@ export async function executeBlenderPython(
       privateDir,
       "resource-manifest.json",
     );
+  const lookAdjustmentsPath =
+    path.join(
+      privateDir,
+      "look-adjustments.json",
+    );
   const complete =
     buildCompleteScript(
       input.code,
@@ -1445,6 +1452,16 @@ export async function executeBlenderPython(
       resourceManifestPath,
       JSON.stringify(
         resourceManifest,
+        null,
+        2,
+      ) + "\n",
+      "utf8",
+    ),
+    writeFile(
+      lookAdjustmentsPath,
+      JSON.stringify(
+        resourceManifest
+          .look_adjustments,
         null,
         2,
       ) + "\n",
@@ -1499,6 +1516,9 @@ export async function executeBlenderPython(
             publicResourceManifest(
               resourceManifest,
             ),
+          look_adjustments:
+            resourceManifest
+              .look_adjustments,
           helper_library_version:
             FOUNDRY_HELPER_LIBRARY_VERSION,
           inspection_footer_version:
@@ -1810,17 +1830,23 @@ export async function executeBlenderPython(
     asset_name:
       assetName,
     status:
-      buildValidation.valid
-        ? (
-            (
-              qualityReport
-                ?.score ??
-              0
-            ) >= 78
-              ? "strong"
-              : "review_required"
-          )
+      buildValidation.valid &&
+      (
+        qualityReport?.score ??
+        0
+      ) >= 78
+        ? "technical_ready"
         : "review_required",
+    technical_status:
+      buildValidation.valid &&
+      (
+        qualityReport?.score ??
+        0
+      ) >= 78
+        ? "passed"
+        : "needs_revision",
+    release_status:
+      "visual_and_human_review_required",
     parent_job_id:
       input.parentJobId ??
       null,
@@ -1874,6 +1900,9 @@ export async function executeBlenderPython(
       publicResourceManifest(
         resourceManifest,
       ),
+    look_adjustments:
+      resourceManifest
+        .look_adjustments,
     build_validation:
       buildValidation,
     quality_report:

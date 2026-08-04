@@ -1,0 +1,536 @@
+{
+  "mesh_count": 20,
+  "material_slot_count": 21,
+  "triangle_count": 11298,
+  "object_names": [
+    "band_horizontal_back",
+    "band_horizontal_front",
+    "band_vertical_corner_01",
+    "band_vertical_corner_02",
+    "band_vertical_corner_03",
+    "band_vertical_corner_04",
+    "chest_body",
+    "corner_bracket_bl_01",
+    "corner_bracket_bl_02",
+    "corner_bracket_br_01",
+    "corner_bracket_br_02",
+    "handle_left",
+    "handle_right",
+    "hinge_left",
+    "hinge_right",
+    "lid",
+    "lid.001",
+    "lock_hasp",
+    "lock_plate",
+    "rivets"
+  ],
+  "objects": [
+    {
+      "name": "lid",
+      "parent": null,
+      "materials": [
+        "MyWaySlot_wood_oak__lid"
+      ],
+      "dimensions": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "location": [
+        0.0,
+        0.0,
+        1.1949738976113622e-09
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 0
+      }
+    },
+    {
+      "name": "chest_body",
+      "parent": "TreasureChest_Root",
+      "materials": [
+        "MyWaySlot_wood_oak__chest_body"
+      ],
+      "dimensions": [
+        1.6568045616149902,
+        0.9467455148696899,
+        0.9467455148696899
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.47337275743484497
+      ],
+      "topology": {
+        "non_manifold_edges": 4,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "lid.001",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_wood_oak"
+      ],
+      "dimensions": [
+        1.6568045616149902,
+        1.297378420829773,
+        0.9784014225006104
+      ],
+      "location": [
+        0.0,
+        0.4000000059604645,
+        0.4000000059604645
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "band_horizontal_front",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__band_horizontal_front"
+      ],
+      "dimensions": [
+        1.7041418552398682,
+        0.9822484254837036,
+        0.142011821269989
+      ],
+      "location": [
+        0.0,
+        -0.4000000059604645,
+        -0.20000000298023224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 3
+      }
+    },
+    {
+      "name": "band_horizontal_back",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__band_horizontal_back"
+      ],
+      "dimensions": [
+        1.7041418552398682,
+        0.9822484254837036,
+        0.142011821269989
+      ],
+      "location": [
+        0.0,
+        0.4000000059604645,
+        -0.20000000298023224
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 3
+      }
+    },
+    {
+      "name": "band_vertical_corner_01",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__band_vertical_corner_01"
+      ],
+      "dimensions": [
+        0.11834314465522766,
+        0.11834318190813065,
+        0.9704141020774841
+      ],
+      "location": [
+        -0.699999988079071,
+        -0.36000001430511475,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 2
+      }
+    },
+    {
+      "name": "band_vertical_corner_02",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__band_vertical_corner_02"
+      ],
+      "dimensions": [
+        0.11834314465522766,
+        0.11834318190813065,
+        0.9704141020774841
+      ],
+      "location": [
+        0.699999988079071,
+        -0.36000001430511475,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 2
+      }
+    },
+    {
+      "name": "band_vertical_corner_03",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__band_vertical_corner_03"
+      ],
+      "dimensions": [
+        0.11834314465522766,
+        0.11834318190813065,
+        0.9704141020774841
+      ],
+      "location": [
+        -0.699999988079071,
+        0.36000001430511475,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 2
+      }
+    },
+    {
+      "name": "band_vertical_corner_04",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__band_vertical_corner_04"
+      ],
+      "dimensions": [
+        0.11834314465522766,
+        0.11834318190813065,
+        0.9704141020774841
+      ],
+      "location": [
+        0.699999988079071,
+        0.36000001430511475,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 2
+      }
+    },
+    {
+      "name": "hinge_left",
+      "parent": "lid.001",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__hinge_left"
+      ],
+      "dimensions": [
+        0.142011821269989,
+        0.11834318935871124,
+        0.23076921701431274
+      ],
+      "location": [
+        -0.49000000953674316,
+        -2.9405484269773297e-08,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 3
+      }
+    },
+    {
+      "name": "hinge_right",
+      "parent": "lid.001",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__hinge_right"
+      ],
+      "dimensions": [
+        0.142011821269989,
+        0.11834318935871124,
+        0.23076921701431274
+      ],
+      "location": [
+        0.49000000953674316,
+        -2.9405484269773297e-08,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 3
+      }
+    },
+    {
+      "name": "lock_plate",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__lock_plate"
+      ],
+      "dimensions": [
+        0.284023642539978,
+        0.04733727499842644,
+        0.3550295829772949
+      ],
+      "location": [
+        0.0,
+        -0.4099999964237213,
+        0.03999999165534973
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "lock_hasp",
+      "parent": "lid.001",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__lock_hasp"
+      ],
+      "dimensions": [
+        0.33136093616485596,
+        0.16568046808242798,
+        0.04596778377890587
+      ],
+      "location": [
+        -8.881784197001252e-16,
+        -8.980380528100795e-08,
+        0.800000011920929
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "handle_left",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__handle_left"
+      ],
+      "dimensions": [
+        0.2958579659461975,
+        0.09467454999685287,
+        0.49704140424728394
+      ],
+      "location": [
+        -0.7200000286102295,
+        0.0,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 3
+      }
+    },
+    {
+      "name": "handle_right",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__handle_right"
+      ],
+      "dimensions": [
+        0.2958579659461975,
+        0.09467454999685287,
+        0.49704140424728394
+      ],
+      "location": [
+        0.7200000286102295,
+        0.0,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 3
+      }
+    },
+    {
+      "name": "corner_bracket_bl_01",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__corner_bracket_bl_01"
+      ],
+      "dimensions": [
+        0.20118340849876404,
+        0.20118343830108643,
+        0.17751479148864746
+      ],
+      "location": [
+        -0.699999988079071,
+        -0.32499998807907104,
+        -0.32499998807907104
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 2
+      }
+    },
+    {
+      "name": "corner_bracket_br_01",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__corner_bracket_br_01"
+      ],
+      "dimensions": [
+        0.20118340849876404,
+        0.20118343830108643,
+        0.17751479148864746
+      ],
+      "location": [
+        0.699999988079071,
+        -0.32499998807907104,
+        -0.32499998807907104
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 2
+      }
+    },
+    {
+      "name": "corner_bracket_bl_02",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__corner_bracket_bl_02"
+      ],
+      "dimensions": [
+        0.20118340849876404,
+        0.20118343830108643,
+        0.17751479148864746
+      ],
+      "location": [
+        -0.699999988079071,
+        0.32499998807907104,
+        -0.32499998807907104
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 2
+      }
+    },
+    {
+      "name": "corner_bracket_br_02",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__corner_bracket_br_02"
+      ],
+      "dimensions": [
+        0.20118340849876404,
+        0.20118343830108643,
+        0.17751479148864746
+      ],
+      "location": [
+        0.699999988079071,
+        0.32499998807907104,
+        -0.32499998807907104
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 2
+      }
+    },
+    {
+      "name": "rivets",
+      "parent": "chest_body",
+      "materials": [
+        "MyWaySlot_metal_dark_iron__rivets"
+      ],
+      "dimensions": [
+        1.73878812789917,
+        1.0405634641647339,
+        0.6982247233390808
+      ],
+      "location": [
+        -0.5,
+        -0.41999998688697815,
+        -0.1600000113248825
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 56
+      }
+    }
+  ],
+  "uv_missing_object_names": [
+    "lid"
+  ],
+  "zero_scale_object_names": [],
+  "negative_scale_object_names": [],
+  "bounds_min": [
+    -1.0,
+    -0.615384578704834,
+    -1.1949738976113622e-09
+  ],
+  "bounds_max": [
+    1.0,
+    0.615384578704834,
+    1.557733416557312
+  ],
+  "dimensions": [
+    2.0,
+    1.230769157409668,
+    1.557733417752286
+  ],
+  "ground_offset": -1.1949738976113622e-09,
+  "topology_totals": {
+    "non_manifold_edges": 4,
+    "loose_edges": 0,
+    "loose_vertices": 0,
+    "degenerate_faces": 0
+  }
+}

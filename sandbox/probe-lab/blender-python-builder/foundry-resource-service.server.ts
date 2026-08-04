@@ -43,6 +43,11 @@ import {
   type FoundryResourceCandidate,
   type FoundryResourcePlanV1,
 } from "./foundry-resource-plan";
+import {
+  normalizeFoundryLookAdjustments,
+  type FoundryLookAdjustmentsV1,
+  type FoundryMaterialSlotLookAdjustmentV1,
+} from "./foundry-look-adjustments";
 
 const MATERIAL_MAP_KEYS =
   new Set<keyof AmbientCgMaterialMaps>([
@@ -1549,6 +1554,8 @@ export type BlenderFoundryResourceManifest = {
       texture_scale_m:
         | number
         | null;
+      look:
+        FoundryMaterialSlotLookAdjustmentV1;
       fallback: {
         color_rgba:
           [number, number, number, number];
@@ -1580,14 +1587,20 @@ export type BlenderFoundryResourceManifest = {
       | null;
     strength: number;
     rotation_degrees: number;
+    exposure: number;
     background_visible: boolean;
+    fallback_light_energy_scale: number;
   };
+  look_adjustments:
+    FoundryLookAdjustmentsV1;
 };
 
 export async function hydrateFoundryResourcesForBlender(
   brief:
     AssetDesignBriefV2,
   rawPlan:
+    unknown,
+  rawLookAdjustments?:
     unknown,
 ): Promise<
   BlenderFoundryResourceManifest
@@ -1596,6 +1609,12 @@ export async function hydrateFoundryResourcesForBlender(
     normalizeFoundryResourcePlan(
       rawPlan,
       brief,
+    );
+  const lookAdjustments =
+    normalizeFoundryLookAdjustments(
+      rawLookAdjustments,
+      brief,
+      plan,
     );
   const materialSlots:
     BlenderFoundryResourceManifest[
@@ -1640,7 +1659,16 @@ export async function hydrateFoundryResourcesForBlender(
         maps:
           hydrated.maps,
         texture_scale_m:
+          lookAdjustments
+            .material_slots[
+              binding.slot.slot_id
+            ]?.physical_scale_m ??
           binding.texture_scale_m,
+        look:
+          lookAdjustments
+            .material_slots[
+              binding.slot.slot_id
+            ],
         fallback:
           binding.slot
             .procedural_fallback,
@@ -1662,7 +1690,16 @@ export async function hydrateFoundryResourcesForBlender(
         content_sha256: null,
         maps: {},
         texture_scale_m:
+          lookAdjustments
+            .material_slots[
+              binding.slot.slot_id
+            ]?.physical_scale_m ??
           binding.texture_scale_m,
+        look:
+          lookAdjustments
+            .material_slots[
+              binding.slot.slot_id
+            ],
         fallback:
           binding.slot
             .procedural_fallback,
@@ -1706,14 +1743,20 @@ export async function hydrateFoundryResourcesForBlender(
     content_sha256: null,
     environment_path: null,
     strength:
-      brief.environment
+      lookAdjustments.environment
         .strength,
     rotation_degrees:
-      brief.environment
+      lookAdjustments.environment
         .rotation_degrees,
+    exposure:
+      lookAdjustments.environment
+        .exposure,
     background_visible:
-      brief.environment
+      lookAdjustments.environment
         .background_visible,
+    fallback_light_energy_scale:
+      lookAdjustments.environment
+        .fallback_light_energy_scale,
   };
 
   if (
@@ -1745,14 +1788,20 @@ export async function hydrateFoundryResourcesForBlender(
       environment_path:
         hydrated.environment_path,
       strength:
-        brief.environment
+        lookAdjustments.environment
           .strength,
       rotation_degrees:
-        brief.environment
+        lookAdjustments.environment
           .rotation_degrees,
+      exposure:
+        lookAdjustments.environment
+          .exposure,
       background_visible:
-        brief.environment
+        lookAdjustments.environment
           .background_visible,
+      fallback_light_energy_scale:
+        lookAdjustments.environment
+          .fallback_light_energy_scale,
     };
   }
 
@@ -1770,6 +1819,8 @@ export async function hydrateFoundryResourcesForBlender(
     part_material_slots:
       partMaterialSlots,
     environment,
+    look_adjustments:
+      lookAdjustments,
   };
 }
 

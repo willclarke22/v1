@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "foundry:benchmark": "powershell -NoProfile -ExecutionPolicy Bypass -File sandbox/probe-lab/blender-python-builder/scripts/run-foundry-benchmark.ps1"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1085.0",

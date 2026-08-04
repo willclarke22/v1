@@ -1,0 +1,478 @@
+{
+  "job_id": "a5e19e3e-4f24-4d28-a82f-41021acefa7e",
+  "asset_name": "foundry_treasure_chest",
+  "parent_job_id": null,
+  "revision_number": 1,
+  "revision_label": "initial build",
+  "critique": null,
+  "asset_spec": {
+    "schema_version": "myway_procedural_asset_spec_v1",
+    "asset_id": "foundry_treasure_chest",
+    "concept": "foundry_treasure_chest",
+    "target_extent_m": 2,
+    "max_triangles": 30000,
+    "style_tags": [
+      "manual code"
+    ],
+    "realism": "stylized",
+    "parts": [
+      {
+        "part_id": "main_body",
+        "semantic_role": "main foundry_treasure_chest body",
+        "geometry_intent": "compound",
+        "parent_part_id": null,
+        "material_intent": "primary_surface",
+        "animation_role": null,
+        "required": true
+      }
+    ],
+    "requirements": {
+      "uv_required": true,
+      "rig_required": false,
+      "movable_parts": [],
+      "collision_required": false,
+      "ground_contact_required": true
+    }
+  },
+  "asset_spec_validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "design_brief": {
+    "schema_version": "myway_asset_design_brief_v2",
+    "asset_id": "foundry_treasure_chest",
+    "concept": "foundry_treasure_chest",
+    "asset_class": "general",
+    "intended_use": [],
+    "target_extent_m": 2,
+    "axis_dimensions_m": null,
+    "max_triangles": 30000,
+    "quality_mode": "standard",
+    "realism": "stylized",
+    "style_tags": [
+      "manual code"
+    ],
+    "silhouette": {
+      "primary_shapes": [],
+      "identifying_features": [],
+      "important_negative_spaces": [],
+      "camera_readability": []
+    },
+    "proportions": [],
+    "visual_description": {
+      "schema_version": "myway_asset_visual_description_v1",
+      "design_summary": "Buildable visual blueprint for foundry_treasure_chest.",
+      "shape_language": {
+        "primary_forms": [],
+        "edge_character": "softened manufactured edges",
+        "symmetry": "use symmetry where structurally appropriate",
+        "detail_density": "medium",
+        "proportion_emphasis": []
+      },
+      "orthographic_views": {
+        "front": "Front view of foundry_treasure_chest.",
+        "right": "Right-side view of foundry_treasure_chest.",
+        "top": "Top view of foundry_treasure_chest.",
+        "three_quarter": "Three-quarter hero view of foundry_treasure_chest."
+      },
+      "overall_dimensions_m": null,
+      "normalized_proportions": [],
+      "part_layout": [
+        {
+          "part_id": "main_body",
+          "shape_description": "main foundry_treasure_chest body",
+          "dimensions_m": null,
+          "position_m": null,
+          "rotation_degrees": [
+            0,
+            0,
+            0
+          ],
+          "visible_from": [],
+          "construction_notes": [
+            "compound"
+          ]
+        }
+      ],
+      "material_regions": [
+        {
+          "slot_id": "primary_surface",
+          "visible_description": "visually suitable surface",
+          "dominant_color_hex": null,
+          "finish": "matte to satin",
+          "mapping_intent": "scale-consistent mapping"
+        }
+      ],
+      "visual_acceptance_tests": [],
+      "uncertainty_notes": []
+    },
+    "parts": [
+      {
+        "part_id": "main_body",
+        "semantic_role": "main foundry_treasure_chest body",
+        "geometry_strategy": [
+          "compound"
+        ],
+        "parent_part_id": null,
+        "connection_strategy": null,
+        "material_slot_id": "primary_surface",
+        "animation_role": null,
+        "pivot_requirement": null,
+        "required": true,
+        "identifying_features": []
+      }
+    ],
+    "material_slots": [
+      {
+        "slot_id": "primary_surface",
+        "display_name": "Primary surface",
+        "assigned_part_ids": [
+          "main_body"
+        ],
+        "material_family": "general",
+        "intent": "visually suitable surface",
+        "semantic_tags": [
+          "foundry_treasure_chest",
+          "manual code"
+        ],
+        "color_hint": null,
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "texture_hint": null,
+        "brightness_hint": null,
+        "avoid_tags": [],
+        "physical_scale_m": null,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "normal_gl"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.5,
+            0.5,
+            0.5,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.55
+        }
+      }
+    ],
+    "environment": {
+      "intent": "neutral product look development",
+      "semantic_tags": [],
+      "preferred_environment_class": "studio",
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "background_visible": false
+    },
+    "requirements": {
+      "uv_required": true,
+      "rig_required": false,
+      "collision_required": false,
+      "ground_contact_required": true,
+      "animation_ready": true,
+      "movable_part_ids": []
+    },
+    "acceptance_criteria": [],
+    "benchmark_priorities": []
+  },
+  "design_brief_validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": [
+      "The visual description needs at least two primary forms.",
+      "The visual description needs at least three measurable proportion relationships.",
+      "Too few visual-description parts have both dimensions and positions.",
+      "The visual description needs at least three visual acceptance tests.",
+      "Add at least three measurable acceptance criteria before final generation.",
+      "The design brief has few silhouette-identifying features."
+    ]
+  },
+  "resource_plan": {
+    "schema_version": "myway_foundry_resource_plan_v1",
+    "created_at": "2026-08-04T00:32:29.205Z",
+    "design_brief_asset_id": "foundry_treasure_chest",
+    "quality_mode": "standard",
+    "material_bindings": [
+      {
+        "slot": {
+          "slot_id": "primary_surface",
+          "display_name": "Primary surface",
+          "assigned_part_ids": [
+            "main_body"
+          ],
+          "material_family": "general",
+          "intent": "visually suitable surface",
+          "semantic_tags": [
+            "foundry_treasure_chest",
+            "manual code"
+          ],
+          "color_hint": null,
+          "roughness_hint": null,
+          "metallic_hint": null,
+          "texture_hint": null,
+          "brightness_hint": null,
+          "avoid_tags": [],
+          "physical_scale_m": null,
+          "required_maps": [
+            "base_color",
+            "roughness",
+            "normal_gl"
+          ],
+          "procedural_fallback": {
+            "color_rgba": [
+              0.5,
+              0.5,
+              0.5,
+              1
+            ],
+            "metallic": 0,
+            "roughness": 0.55
+          }
+        },
+        "status": "procedural_fallback",
+        "selected": {
+          "candidate_kind": "procedural",
+          "resource_id": null,
+          "source_asset_id": null,
+          "variant_id": null,
+          "display_name": "Primary surface procedural fallback",
+          "preview_url": null,
+          "resolution": null,
+          "file_format": null,
+          "score": 1,
+          "reasons": [
+            "trusted Principled BSDF fallback"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [],
+          "missing_required_maps": [],
+          "appearance_summary": null,
+          "dominant_colors": [],
+          "brightness": null,
+          "appearance_confidence": null,
+          "match_confidence": 1
+        },
+        "candidates": [
+          {
+            "candidate_kind": "procedural",
+            "resource_id": null,
+            "source_asset_id": null,
+            "variant_id": null,
+            "display_name": "Primary surface procedural fallback",
+            "preview_url": null,
+            "resolution": null,
+            "file_format": null,
+            "score": 1,
+            "reasons": [
+              "trusted Principled BSDF fallback"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [],
+            "missing_required_maps": [
+              "base_color",
+              "roughness",
+              "normal_gl"
+            ],
+            "appearance_summary": "Controlled procedural Principled material fallback.",
+            "dominant_colors": [],
+            "brightness": null,
+            "appearance_confidence": null,
+            "match_confidence": 1
+          }
+        ],
+        "texture_scale_m": null
+      }
+    ],
+    "environment": {
+      "status": "trusted_studio_fallback",
+      "intent": {
+        "intent": "neutral product look development",
+        "semantic_tags": [],
+        "preferred_environment_class": "studio",
+        "strength": 0.8,
+        "rotation_degrees": 0,
+        "background_visible": false
+      },
+      "selected": {
+        "candidate_kind": "procedural",
+        "resource_id": null,
+        "source_asset_id": null,
+        "variant_id": null,
+        "display_name": "Trusted neutral studio rig",
+        "preview_url": null,
+        "resolution": null,
+        "file_format": null,
+        "score": 1,
+        "reasons": [
+          "trusted fallback lighting"
+        ],
+        "published_to_r2": false,
+        "required_maps_available": [],
+        "missing_required_maps": [],
+        "appearance_summary": null,
+        "dominant_colors": [],
+        "brightness": null,
+        "appearance_confidence": null,
+        "match_confidence": 1
+      },
+      "candidates": [
+        {
+          "candidate_kind": "procedural",
+          "resource_id": null,
+          "source_asset_id": null,
+          "variant_id": null,
+          "display_name": "Trusted neutral studio rig",
+          "preview_url": null,
+          "resolution": null,
+          "file_format": null,
+          "score": 1,
+          "reasons": [
+            "trusted fallback lighting"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [],
+          "missing_required_maps": [],
+          "appearance_summary": "Trusted neutral studio lighting fallback.",
+          "dominant_colors": [],
+          "brightness": null,
+          "appearance_confidence": null,
+          "match_confidence": 1
+        }
+      ]
+    },
+    "summary": {
+      "ready_r2": 0,
+      "catalog_matches": 0,
+      "procedural_fallbacks": 2,
+      "missing": 0,
+      "requires_preparation": false
+    }
+  },
+  "resource_manifest": {
+    "schema_version": "myway_blender_foundry_resource_manifest_v1",
+    "created_at": "2026-08-04T00:32:29.228Z",
+    "design_brief_asset_id": "foundry_treasure_chest",
+    "quality_mode": "standard",
+    "material_slots": {
+      "primary_surface": {
+        "slot_id": "primary_surface",
+        "display_name": "Primary surface",
+        "source": "procedural",
+        "resource_id": null,
+        "source_asset_id": null,
+        "variant_id": null,
+        "content_sha256": null,
+        "maps": {},
+        "texture_scale_m": 0,
+        "look": {
+          "physical_scale_m": 0,
+          "uv_repeat": [
+            1,
+            1
+          ],
+          "rotation_degrees": 0,
+          "offset": [
+            0,
+            0
+          ],
+          "normal_strength": 1,
+          "roughness_factor": 1,
+          "height_strength": 0.18,
+          "mapping_mode": "uv",
+          "part_overrides": {}
+        },
+        "fallback": {
+          "color_rgba": [
+            0.5,
+            0.5,
+            0.5,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.55
+        }
+      }
+    },
+    "part_material_slots": {
+      "main_body": "primary_surface"
+    },
+    "environment": {
+      "source": "trusted_studio",
+      "resource_id": null,
+      "source_asset_id": null,
+      "variant_id": null,
+      "content_sha256": null,
+      "environment_path": null,
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "exposure": 0,
+      "background_visible": false,
+      "fallback_light_energy_scale": 1
+    },
+    "look_adjustments": {
+      "schema_version": "myway_foundry_look_adjustments_v1",
+      "material_slots": {
+        "primary_surface": {
+          "physical_scale_m": 0,
+          "uv_repeat": [
+            1,
+            1
+          ],
+          "rotation_degrees": 0,
+          "offset": [
+            0,
+            0
+          ],
+          "normal_strength": 1,
+          "roughness_factor": 1,
+          "height_strength": 0.18,
+          "mapping_mode": "uv",
+          "part_overrides": {}
+        }
+      },
+      "environment": {
+        "strength": 0.8,
+        "rotation_degrees": 0,
+        "exposure": 0,
+        "background_visible": false,
+        "fallback_light_energy_scale": 1
+      }
+    }
+  },
+  "look_adjustments": {
+    "schema_version": "myway_foundry_look_adjustments_v1",
+    "material_slots": {
+      "primary_surface": {
+        "physical_scale_m": 0,
+        "uv_repeat": [
+          1,
+          1
+        ],
+        "rotation_degrees": 0,
+        "offset": [
+          0,
+          0
+        ],
+        "normal_strength": 1,
+        "roughness_factor": 1,
+        "height_strength": 0.18,
+        "mapping_mode": "uv",
+        "part_overrides": {}
+      }
+    },
+    "environment": {
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "exposure": 0,
+      "background_visible": false,
+      "fallback_light_energy_scale": 1
+    }
+  },
+  "helper_library_version": "myway_blender_foundry_helpers_v3_0",
+  "inspection_footer_version": "myway_blender_foundry_inspection_v4",
+  "created_at": "2026-08-04T00:32:29.845Z"
+}

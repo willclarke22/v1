@@ -35,10 +35,10 @@ export const FOUNDRY_HELPER_CONTRACT: Record<
   },
   myway_material_slot: {
     signature:
-      "myway_material_slot(slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55)",
-    positional: ["slot_id", "fallback_color", "metallic", "roughness"],
+      "myway_material_slot(slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55, part_id=None)",
+    positional: ["slot_id", "fallback_color", "metallic", "roughness", "part_id"],
     required: ["slot_id"],
-    keywords: ["slot_id", "fallback_color", "metallic", "roughness"],
+    keywords: ["slot_id", "fallback_color", "metallic", "roughness", "part_id"],
   },
   myway_assign_material: {
     signature: "myway_assign_material(obj, material)",
@@ -48,10 +48,10 @@ export const FOUNDRY_HELPER_CONTRACT: Record<
   },
   myway_assign_material_slot: {
     signature:
-      "myway_assign_material_slot(obj, slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55)",
-    positional: ["obj", "slot_id", "fallback_color", "metallic", "roughness"],
+      "myway_assign_material_slot(obj, slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55, part_id=None)",
+    positional: ["obj", "slot_id", "fallback_color", "metallic", "roughness", "part_id"],
     required: ["obj", "slot_id"],
-    keywords: ["obj", "slot_id", "fallback_color", "metallic", "roughness"],
+    keywords: ["obj", "slot_id", "fallback_color", "metallic", "roughness", "part_id"],
   },
   myway_auto_assign_foundry_materials: {
     signature: "myway_auto_assign_foundry_materials()",

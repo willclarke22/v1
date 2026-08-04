@@ -1,0 +1,834 @@
+{
+  "mesh_count": 32,
+  "material_slot_count": 32,
+  "triangle_count": 39968,
+  "object_names": [
+    "base_rubber_pad",
+    "blade_01",
+    "blade_02",
+    "blade_03",
+    "cage_depth_connectors",
+    "central_hub",
+    "central_hub_cap",
+    "control_knob_ring_01",
+    "control_knob_ring_02",
+    "control_knob_ring_03",
+    "fan_base_lower",
+    "fan_base_upper",
+    "front_cage",
+    "front_cage_cross_support",
+    "motor_front_neck",
+    "motor_housing",
+    "motor_rear_cap",
+    "motor_vent_ring_01",
+    "motor_vent_ring_02",
+    "motor_vent_ring_03",
+    "motor_vent_ring_04",
+    "rear_cage",
+    "rear_control_knob",
+    "rotor_hub_rear",
+    "support_column",
+    "support_column_base_collar",
+    "support_column_top_collar",
+    "support_yoke",
+    "tilt_pivot_left",
+    "tilt_pivot_right",
+    "tilt_pivot_washer_left",
+    "tilt_pivot_washer_right"
+  ],
+  "objects": [
+    {
+      "name": "blade_01",
+      "parent": "rotor_pivot",
+      "materials": [
+        "MyWaySlot_matte_translucent_blade"
+      ],
+      "dimensions": [
+        0.4680185616016388,
+        0.044661715626716614,
+        0.395903080701828
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "blade_02",
+      "parent": "rotor_pivot",
+      "materials": [
+        "MyWaySlot_matte_translucent_blade"
+      ],
+      "dimensions": [
+        0.4680185616016388,
+        0.044661715626716614,
+        0.395903080701828
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "blade_03",
+      "parent": "rotor_pivot",
+      "materials": [
+        "MyWaySlot_matte_translucent_blade"
+      ],
+      "dimensions": [
+        0.4680185616016388,
+        0.044661715626716614,
+        0.395903080701828
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "base_rubber_pad",
+      "parent": "DeskFan_Root",
+      "materials": [
+        "MyWaySlot_black_rubber"
+      ],
+      "dimensions": [
+        1.0547945499420166,
+        1.0547945499420166,
+        0.03913894295692444
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.01956947147846222
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "fan_base_lower",
+      "parent": "DeskFan_Root",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        1.0763208866119385,
+        1.0763208866119385,
+        0.09412915259599686
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.08620351552963257
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "fan_base_upper",
+      "parent": "DeskFan_Root",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.9686888456344604,
+        0.9686888456344604,
+        0.058512717485427856
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.1332681030035019
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "support_column",
+      "parent": "DeskFan_Root",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.17612522840499878,
+        0.17612522840499878,
+        0.5088062882423401
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.38160470128059387
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "support_column_base_collar",
+      "parent": "DeskFan_Root",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.25538161396980286,
+        0.25538161396980286,
+        0.06849315017461777
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.15655577182769775
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "support_column_top_collar",
+      "parent": "DeskFan_Root",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.22015656530857086,
+        0.22015656530857086,
+        0.07827788591384888
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.6164383292198181
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "support_yoke",
+      "parent": "DeskFan_Root",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        1.6419686079025269,
+        0.07338564842939377,
+        0.6704491376876831
+      ],
+      "location": [
+        -0.7901174426078796,
+        0.03913894295692444,
+        1.1448140144348145
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 10
+      }
+    },
+    {
+      "name": "tilt_pivot_left",
+      "parent": "DeskFan_Root",
+      "materials": [
+        "MyWaySlot_brushed_silver_metal"
+      ],
+      "dimensions": [
+        0.14677104353904724,
+        0.13209393620491028,
+        0.13209395110607147
+      ],
+      "location": [
+        -0.7974559664726257,
+        0.03913894295692444,
+        1.247553825378418
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "tilt_pivot_washer_left",
+      "parent": "DeskFan_Root",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.029354214668273926,
+        0.18101760745048523,
+        0.18101760745048523
+      ],
+      "location": [
+        -0.8806262612342834,
+        0.03913894295692444,
+        1.247553825378418
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "tilt_pivot_right",
+      "parent": "DeskFan_Root",
+      "materials": [
+        "MyWaySlot_brushed_silver_metal"
+      ],
+      "dimensions": [
+        0.14677104353904724,
+        0.13209393620491028,
+        0.13209395110607147
+      ],
+      "location": [
+        0.7974559664726257,
+        0.03913894295692444,
+        1.247553825378418
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "tilt_pivot_washer_right",
+      "parent": "DeskFan_Root",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.029354214668273926,
+        0.18101760745048523,
+        0.18101760745048523
+      ],
+      "location": [
+        0.8806262612342834,
+        0.03913894295692444,
+        1.247553825378418
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "motor_housing",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_charcoal_molded_plastic"
+      ],
+      "dimensions": [
+        0.5675146579742432,
+        0.38160473108291626,
+        0.5675146579742432
+      ],
+      "location": [
+        0.0,
+        0.07000000029802322,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "motor_front_neck",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_charcoal_molded_plastic"
+      ],
+      "dimensions": [
+        0.4207436442375183,
+        0.14677104353904724,
+        0.4207436442375183
+      ],
+      "location": [
+        0.0,
+        0.017000000923871994,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "motor_rear_cap",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_charcoal_molded_plastic"
+      ],
+      "dimensions": [
+        0.4994129240512848,
+        0.09784737229347229,
+        0.4994129240512848
+      ],
+      "location": [
+        0.0,
+        0.11800000071525574,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "motor_vent_ring_01",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.5624266266822815,
+        0.01761256530880928,
+        0.5624266266822815
+      ],
+      "location": [
+        0.0,
+        0.041999999433755875,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "motor_vent_ring_02",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.5624266266822815,
+        0.01761256530880928,
+        0.5624266266822815
+      ],
+      "location": [
+        0.0,
+        0.05999999865889549,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "motor_vent_ring_03",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.5624266266822815,
+        0.01761256530880928,
+        0.5624266266822815
+      ],
+      "location": [
+        0.0,
+        0.07800000160932541,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "motor_vent_ring_04",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.5624266266822815,
+        0.01761256530880928,
+        0.5624266266822815
+      ],
+      "location": [
+        0.0,
+        0.09600000083446503,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "rear_control_knob",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_black_rubber"
+      ],
+      "dimensions": [
+        0.17612522840499878,
+        0.11741684377193451,
+        0.17612522840499878
+      ],
+      "location": [
+        0.0,
+        0.14000000059604645,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "control_knob_ring_01",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_black_rubber"
+      ],
+      "dimensions": [
+        0.18297456204891205,
+        0.010168609209358692,
+        0.18297456204891205
+      ],
+      "location": [
+        0.0,
+        0.13199999928474426,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "control_knob_ring_02",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_black_rubber"
+      ],
+      "dimensions": [
+        0.18297456204891205,
+        0.010168609209358692,
+        0.18297456204891205
+      ],
+      "location": [
+        0.0,
+        0.14000000059604645,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "control_knob_ring_03",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_black_rubber"
+      ],
+      "dimensions": [
+        0.18297456204891205,
+        0.010168609209358692,
+        0.18297456204891205
+      ],
+      "location": [
+        0.0,
+        0.14800000190734863,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "rotor_hub_rear",
+      "parent": "rotor_pivot",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.32583171129226685,
+        0.1076321080327034,
+        0.32583171129226685
+      ],
+      "location": [
+        0.0,
+        0.006000000052154064,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "central_hub",
+      "parent": "rotor_pivot",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.36203521490097046,
+        0.13698631525039673,
+        0.36203521490097046
+      ],
+      "location": [
+        0.0,
+        -0.04600000008940697,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "central_hub_cap",
+      "parent": "rotor_pivot",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        0.28238749504089355,
+        0.048923689872026443,
+        0.28238749504089355
+      ],
+      "location": [
+        0.0,
+        -0.06400000303983688,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "front_cage",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        1.5048924684524536,
+        0.03718210756778717,
+        1.5048924684524536
+      ],
+      "location": [
+        0.0,
+        -0.029999999329447746,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 19
+      }
+    },
+    {
+      "name": "rear_cage",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        1.5048924684524536,
+        0.03718210756778717,
+        1.5048924684524536
+      ],
+      "location": [
+        0.0,
+        0.029999999329447746,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 19
+      }
+    },
+    {
+      "name": "cage_depth_connectors",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        1.4882582426071167,
+        0.2935420870780945,
+        1.4882583618164062
+      ],
+      "location": [
+        0.15000000596046448,
+        0.0,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 8
+      }
+    },
+    {
+      "name": "front_cage_cross_support",
+      "parent": "fan_head_pivot",
+      "materials": [
+        "MyWaySlot_painted_blue_gray_metal"
+      ],
+      "dimensions": [
+        1.418786644935608,
+        0.023483367636799812,
+        1.4187867641448975
+      ],
+      "location": [
+        0.0,
+        -0.03099999949336052,
+        0.2549999952316284
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 2
+      }
+    }
+  ],
+  "uv_missing_object_names": [],
+  "zero_scale_object_names": [],
+  "negative_scale_object_names": [],
+  "bounds_min": [
+    -0.8953033685684204,
+    -0.5381604433059692,
+    0.0
+  ],
+  "bounds_max": [
+    0.8953033685684204,
+    0.8125215768814087,
+    2.005913257598877
+  ],
+  "dimensions": [
+    1.7906067371368408,
+    1.350682020187378,
+    2.005913257598877
+  ],
+  "ground_offset": 0.0,
+  "topology_totals": {
+    "non_manifold_edges": 0,
+    "loose_edges": 0,
+    "loose_vertices": 0,
+    "degenerate_faces": 0
+  }
+}

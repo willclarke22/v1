@@ -40,6 +40,8 @@ export async function POST(
           body.design_brief,
         resourcePlan:
           body.resource_plan,
+        lookAdjustments:
+          body.look_adjustments,
         parentJobId:
           typeof body.parent_job_id ===
             "string"

@@ -21,6 +21,14 @@ import type {
   FoundryResourceCandidate,
   FoundryResourcePlanV1,
 } from "../foundry-resource-plan";
+import {
+  applyBoundedFoundryAdjustment,
+  createDefaultFoundryLookAdjustments,
+  normalizeFoundryLookAdjustments,
+  type FoundryLookAdjustmentDirection,
+  type FoundryLookAdjustmentsV1,
+  type FoundryMaterialLookOverrideV1,
+} from "../foundry-look-adjustments";
 
 type ApiBase = {
   ok: boolean;
@@ -38,6 +46,15 @@ type PlanResponse =
       valid?: boolean;
       errors?: string[];
       warnings?: string[];
+    };
+    design_review?: {
+      schema_version?: string;
+      reviewed?: boolean;
+      draft_model?: string | null;
+      review_model?: string | null;
+      draft_elapsed_ms?: number | null;
+      review_elapsed_ms?: number | null;
+      review_error?: string | null;
     };
   };
 
@@ -214,6 +231,12 @@ type ExecuteResponse =
       AssetDesignBriefV2;
     resource_plan?:
       FoundryResourcePlanV1;
+    resource_manifest?:
+      Record<string, unknown>;
+    look_adjustments?:
+      FoundryLookAdjustmentsV1;
+    technical_status?: string;
+    release_status?: string;
     blender_runtime?: {
       blender_version?: string;
       python_version?: string;
@@ -234,6 +257,71 @@ type ExecuteResponse =
       excerpt?: string | null;
       message?: string;
     } | null;
+    visual_critique?:
+      VisualCritiqueReport
+      | null;
+    visual_critique_url?:
+      string | null;
+  };
+
+type VisualCritiqueFinding = {
+  finding_id: string;
+  category: string;
+  severity:
+    | "info"
+    | "warning"
+    | "error";
+  revision_route:
+    | "blender_code"
+    | "material_mapping"
+    | "look_development"
+    | "human_review";
+  affected_part_ids: string[];
+  affected_material_slot_ids: string[];
+  evidence_views: string[];
+  suggested_adjustment: {
+    direction:
+      FoundryLookAdjustmentDirection;
+  } | null;
+  finding: string;
+  recommended_revision: string;
+  confidence: number;
+};
+
+type VisualCritiqueReport = {
+  schema_version: string;
+  prompt_version: string;
+  job_id: string;
+  asset_id: string;
+  asset_class: string;
+  model: string;
+  created_at: string;
+  analyzed_views: string[];
+  overall_assessment:
+    | "passes_visual_review"
+    | "targeted_revision"
+    | "human_review";
+  summary: string;
+  findings:
+    VisualCritiqueFinding[];
+  routing_summary: {
+    blender_code: number;
+    material_mapping: number;
+    look_development: number;
+    human_review: number;
+  };
+};
+
+type VisualCritiqueResponse =
+  ApiBase & {
+    report?:
+      VisualCritiqueReport;
+    visual_critique_url?:
+      string;
+    analyzed_views?: Array<{
+      label: string;
+      file_name: string;
+    }>;
   };
 
 type Revision = {
@@ -481,6 +569,19 @@ export function BlenderPythonBuilderLab() {
     | null
   >(null);
   const [
+    lookAdjustments,
+    setLookAdjustments,
+  ] = useState<
+    FoundryLookAdjustmentsV1
+    | null
+  >(null);
+  const [
+    lookTargetBySlot,
+    setLookTargetBySlot,
+  ] = useState<
+    Record<string, string>
+  >({});
+  const [
     planResponse,
     setPlanResponse,
   ] = useState<
@@ -504,6 +605,13 @@ export function BlenderPythonBuilderLab() {
     setExecution,
   ] = useState<
     ExecuteResponse
+    | null
+  >(null);
+  const [
+    visualCritique,
+    setVisualCritique,
+  ] = useState<
+    VisualCritiqueResponse
     | null
   >(null);
   const [
@@ -539,10 +647,20 @@ export function BlenderPythonBuilderLab() {
     | "prepare"
     | "generate"
     | "execute"
+    | "visual-critique"
     | "improve"
     | "candidate"
     | null
   >(null);
+
+  const visibleLookAdjustments =
+    designBrief
+      ? normalizeFoundryLookAdjustments(
+          lookAdjustments,
+          designBrief,
+          resourcePlan,
+        )
+      : null;
 
   function currentBrief() {
     if (
@@ -562,6 +680,227 @@ export function BlenderPythonBuilderLab() {
     return designBrief;
   }
 
+  function normalizedLookAdjustments(
+    briefOverride?:
+      AssetDesignBriefV2 | null,
+    planOverride?:
+      FoundryResourcePlanV1 | null,
+  ) {
+    const brief =
+      briefOverride ??
+      currentBrief();
+    if (!brief) {
+      return null;
+    }
+    return normalizeFoundryLookAdjustments(
+      lookAdjustments,
+      brief,
+      planOverride ??
+        resourcePlan,
+    );
+  }
+
+  function resetLookDevelopment(
+    brief:
+      AssetDesignBriefV2,
+    plan?:
+      FoundryResourcePlanV1 | null,
+  ) {
+    setLookAdjustments(
+      createDefaultFoundryLookAdjustments(
+        brief,
+        plan ?? null,
+      ),
+    );
+    setLookTargetBySlot({});
+  }
+
+  function materialLookTarget(
+    slotId: string,
+  ): FoundryMaterialLookOverrideV1 | null {
+    const slot =
+      visibleLookAdjustments
+        ?.material_slots[
+        slotId
+      ];
+    if (!slot) {
+      return null;
+    }
+    const partId =
+      lookTargetBySlot[
+        slotId
+      ];
+    return partId &&
+      partId !== "__slot__"
+      ? slot.part_overrides[
+          partId
+        ] ?? slot
+      : slot;
+  }
+
+  function updateMaterialLook(
+    slotId: string,
+    patch:
+      Partial<
+        FoundryMaterialLookOverrideV1
+      >,
+  ) {
+    const brief =
+      currentBrief();
+    if (!brief) {
+      return;
+    }
+    setLookAdjustments(
+      (currentValue) => {
+        const current =
+          normalizeFoundryLookAdjustments(
+            currentValue,
+            brief,
+            resourcePlan,
+          );
+        const slot =
+          current.material_slots[
+            slotId
+          ];
+        if (!slot) {
+          return current;
+        }
+        const partId =
+          lookTargetBySlot[
+            slotId
+          ];
+        if (
+          partId &&
+          partId !== "__slot__"
+        ) {
+          const base =
+            slot.part_overrides[
+              partId
+            ] ?? {
+              physical_scale_m:
+                slot.physical_scale_m,
+              uv_repeat: [
+                ...slot.uv_repeat,
+              ] as [number, number],
+              rotation_degrees:
+                slot.rotation_degrees,
+              offset: [
+                ...slot.offset,
+              ] as [number, number],
+              normal_strength:
+                slot.normal_strength,
+              roughness_factor:
+                slot.roughness_factor,
+              height_strength:
+                slot.height_strength,
+              mapping_mode:
+                slot.mapping_mode,
+            };
+          slot.part_overrides[
+            partId
+          ] = {
+            ...base,
+            ...patch,
+            uv_repeat:
+              patch.uv_repeat ??
+              base.uv_repeat,
+            offset:
+              patch.offset ??
+              base.offset,
+          };
+        } else {
+          Object.assign(
+            slot,
+            patch,
+          );
+        }
+        return {
+          ...current,
+          material_slots: {
+            ...current.material_slots,
+            [slotId]: {
+              ...slot,
+              part_overrides: {
+                ...slot.part_overrides,
+              },
+            },
+          },
+        };
+      },
+    );
+  }
+
+  function updateEnvironmentLook(
+    patch:
+      Partial<
+        FoundryLookAdjustmentsV1[
+          "environment"
+        ]
+      >,
+  ) {
+    const brief =
+      currentBrief();
+    if (!brief) {
+      return;
+    }
+    setLookAdjustments(
+      (currentValue) => {
+        const current =
+          normalizeFoundryLookAdjustments(
+            currentValue,
+            brief,
+            resourcePlan,
+          );
+        return {
+          ...current,
+          environment: {
+            ...current.environment,
+            ...patch,
+          },
+        };
+      },
+    );
+  }
+
+  function applyVisualAdjustment(
+    finding:
+      VisualCritiqueFinding,
+  ) {
+    if (
+      !finding
+        .suggested_adjustment
+    ) {
+      return;
+    }
+    const brief =
+      currentBrief();
+    if (!brief) {
+      return;
+    }
+    setLookAdjustments(
+      (currentValue) =>
+        applyBoundedFoundryAdjustment(
+          normalizeFoundryLookAdjustments(
+            currentValue,
+            brief,
+            resourcePlan,
+          ),
+          {
+            direction:
+              finding
+                .suggested_adjustment!
+                .direction,
+            affected_material_slot_ids:
+              finding
+                .affected_material_slot_ids,
+            affected_part_ids:
+              finding
+                .affected_part_ids,
+          },
+        ),
+    );
+  }
+
   async function loadNativeVintageCameraProof() {
     setBusy(
       "fixture",
@@ -576,6 +915,9 @@ export function BlenderPythonBuilderLab() {
       null,
     );
     setExecution(
+      null,
+    );
+    setVisualCritique(
       null,
     );
     setImproveResponse(
@@ -632,6 +974,10 @@ export function BlenderPythonBuilderLab() {
       );
       setDesignBrief(
         fixture.design_brief,
+      );
+      resetLookDevelopment(
+        fixture.design_brief,
+        null,
       );
       setDesignBriefText(
         JSON.stringify(
@@ -711,6 +1057,10 @@ export function BlenderPythonBuilderLab() {
         setDesignBrief(
           payload.design_brief,
         );
+        resetLookDevelopment(
+          payload.design_brief,
+          null,
+        );
         setDesignBriefText(
           JSON.stringify(
             payload.design_brief,
@@ -748,7 +1098,7 @@ export function BlenderPythonBuilderLab() {
         currentBrief();
       if (!brief) {
         throw new Error(
-          "Create an asset design brief first.",
+          "Create a visual design and build brief first.",
         );
       }
       const response =
@@ -796,6 +1146,15 @@ export function BlenderPythonBuilderLab() {
       ) {
         setResourcePlan(
           payload.plan,
+        );
+        setLookAdjustments(
+          (currentValue) =>
+            normalizeFoundryLookAdjustments(
+              currentValue,
+              payload.design_brief ??
+                brief,
+              payload.plan,
+            ),
         );
       }
     } catch (caught) {
@@ -940,6 +1299,14 @@ export function BlenderPythonBuilderLab() {
 
       setResourcePlan(
         refreshedPlan,
+      );
+      setLookAdjustments(
+        (currentValue) =>
+          normalizeFoundryLookAdjustments(
+            currentValue,
+            brief,
+            refreshedPlan,
+          ),
       );
       setResourceResponse({
         ...preparedPayload,
@@ -1182,9 +1549,14 @@ export function BlenderPythonBuilderLab() {
   async function executeCode(
     boundedRepair =
       false,
+    revisionLabelOverride?:
+      string,
   ) {
     setBusy("execute");
     setExecution(
+      null,
+    );
+    setVisualCritique(
       null,
     );
     try {
@@ -1194,6 +1566,24 @@ export function BlenderPythonBuilderLab() {
         revisions.at(
           -1,
         );
+      const revisionLabel =
+        revisionLabelOverride ??
+        (
+          critique.trim()
+            ? "quality improvement"
+            : (
+                revisions.length
+                  ? "manual revision"
+                  : "initial build"
+              )
+        );
+      const activeLookAdjustments =
+        brief
+          ? normalizedLookAdjustments(
+              brief,
+              resourcePlan,
+            )
+          : null;
       const response =
         await fetch(
           boundedRepair
@@ -1228,6 +1618,8 @@ export function BlenderPythonBuilderLab() {
                   brief,
                 resource_plan:
                   resourcePlan,
+                look_adjustments:
+                  activeLookAdjustments,
                 max_repair_attempts:
                   boundedRepair
                     ? 2
@@ -1241,13 +1633,7 @@ export function BlenderPythonBuilderLab() {
                   revisions.length +
                   1,
                 revision_label:
-                  critique.trim()
-                    ? "quality improvement"
-                    : (
-                        revisions.length
-                          ? "manual revision"
-                          : "initial build"
-                      ),
+                  revisionLabel,
                 critique:
                   critique.trim() ||
                   null,
@@ -1260,6 +1646,13 @@ export function BlenderPythonBuilderLab() {
       setExecution(
         payload,
       );
+      if (
+        payload.look_adjustments
+      ) {
+        setLookAdjustments(
+          payload.look_adjustments,
+        );
+      }
       if (
         payload.final_code &&
         payload.final_code !==
@@ -1281,13 +1674,7 @@ export function BlenderPythonBuilderLab() {
                 current.length +
                 1,
               label:
-                critique.trim()
-                  ? "quality improvement"
-                  : (
-                      current.length
-                        ? "manual revision"
-                        : "initial build"
-                    ),
+                revisionLabel,
               code:
                 payload
                   .final_code ??
@@ -1311,6 +1698,98 @@ export function BlenderPythonBuilderLab() {
     }
   }
 
+  async function analyzeVisualCritique() {
+    if (
+      !execution?.job_id
+    ) {
+      return;
+    }
+    const jobId =
+      execution.job_id;
+    setBusy(
+      "visual-critique",
+    );
+    setVisualCritique(
+      null,
+    );
+    try {
+      const response =
+        await fetch(
+          "/api/sandbox/probe-lab/blender-python-builder/visual-critique",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body:
+              JSON.stringify({
+                job_id:
+                  jobId,
+              }),
+          },
+        );
+      const payload =
+        (await response.json()) as
+          VisualCritiqueResponse;
+      setVisualCritique(
+        payload,
+      );
+      if (
+        payload.ok &&
+        payload.report
+      ) {
+        const report =
+          payload.report;
+        setExecution(
+          (current) =>
+            current?.job_id ===
+            jobId
+              ? {
+                  ...current,
+                  visual_critique:
+                    report,
+                  visual_critique_url:
+                    payload.visual_critique_url ??
+                    null,
+                }
+              : current,
+        );
+        setRevisions(
+          (current) =>
+            current.map(
+              (revision) =>
+                revision.execution
+                  .job_id ===
+                jobId
+                  ? {
+                      ...revision,
+                      execution: {
+                        ...revision.execution,
+                        visual_critique:
+                          report,
+                        visual_critique_url:
+                          payload.visual_critique_url ??
+                          null,
+                      },
+                    }
+                  : revision,
+            ),
+        );
+      }
+    } catch (caught) {
+      setVisualCritique({
+        ok: false,
+        error:
+          caught instanceof Error
+            ? caught.message
+            : String(caught),
+      });
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function improveCode() {
     setBusy("improve");
     setImproveResponse(
@@ -1321,12 +1800,26 @@ export function BlenderPythonBuilderLab() {
         currentBrief();
       if (!brief) {
         throw new Error(
-          "A design brief is required for targeted improvement.",
+          "A visual design and build brief is required for targeted improvement.",
         );
       }
       if (!execution?.ok) {
         throw new Error(
           "Run the current code successfully before requesting a quality improvement.",
+        );
+      }
+      const visualReport =
+        visualCritique?.report ??
+        execution.visual_critique ??
+        null;
+      if (
+        visualReport &&
+        visualReport.routing_summary
+          .blender_code === 0 &&
+        !critique.trim()
+      ) {
+        throw new Error(
+          "The visual critic found no Blender-code revision. Its remaining findings belong to material mapping, look development, or human review; add a specific geometry critique to revise the script anyway.",
         );
       }
       const response =
@@ -1362,6 +1855,12 @@ export function BlenderPythonBuilderLab() {
                     .quality_report
                     ?.findings ??
                   [],
+                resource_plan:
+                  execution
+                    .resource_plan ??
+                  resourcePlan,
+                visual_critique:
+                  visualReport,
               }),
           },
         );
@@ -1465,6 +1964,10 @@ export function BlenderPythonBuilderLab() {
       ?.summary
       .requires_preparation ===
     true;
+  const visualDescription =
+    designBrief
+      ?.visual_description ??
+    null;
 
   return (
     <main
@@ -1515,7 +2018,7 @@ export function BlenderPythonBuilderLab() {
                 "uppercase",
             }}
           >
-            Design brief → resources → Blender Python → benchmark inspection
+            Visual design + brief → resources → Blender Python → benchmark inspection
           </div>
           <h1
             style={{
@@ -2016,8 +2519,8 @@ export function BlenderPythonBuilderLab() {
                 >
                   {busy ===
                   "plan"
-                    ? "Planning…"
-                    : "1. Create design brief"}
+                    ? "Designing + reviewing…"
+                    : "1. Create visual design + brief"}
                 </button>
                 <button
                   type="button"
@@ -2147,8 +2650,19 @@ export function BlenderPythonBuilderLab() {
                   }}
                 >
                   {planResponse.ok
-                    ? `${planResponse.model ?? "GLM"} created the brief in ${formatDurationMs(planResponse.elapsed_ms)}.`
+                    ? `${planResponse.model ?? "GLM"} created the visual design and build brief in ${formatDurationMs(planResponse.elapsed_ms)}${planResponse.design_review?.reviewed ? " after an independent design-review pass" : ""}.`
                     : planResponse.error}
+                  {planResponse.ok &&
+                  planResponse.design_review?.review_error ? (
+                    <div
+                      style={{
+                        marginTop: 4,
+                        color: "#fde68a",
+                      }}
+                    >
+                      The visual-design review call failed, so the initial blueprint was kept: {planResponse.design_review.review_error}
+                    </div>
+                  ) : null}
                 </div>
               )}
               {resourceResponse && (
@@ -2295,7 +2809,7 @@ export function BlenderPythonBuilderLab() {
                 >
                   <div>
                     <strong>
-                      Design brief
+                      Visual design + build brief
                     </strong>
                     <div
                       style={{
@@ -2307,7 +2821,8 @@ export function BlenderPythonBuilderLab() {
                     >
                       {designBrief.asset_class.replaceAll("_", " ")} ·{" "}
                       {designBrief.parts.length} parts ·{" "}
-                      {designBrief.material_slots.length} material slots
+                      {designBrief.material_slots.length} material slots ·{" "}
+                      {visualDescription?.normalized_proportions.length ?? 0} measured proportions
                     </div>
                   </div>
                   <span
@@ -2320,6 +2835,157 @@ export function BlenderPythonBuilderLab() {
                     Editable before generation
                   </span>
                 </div>
+                {visualDescription ? (
+                  <div
+                    style={{
+                      marginTop: 14,
+                      border: "1px solid rgba(56,189,248,0.26)",
+                      borderRadius: 14,
+                      background: "rgba(14,165,233,0.07)",
+                      padding: 14,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                      }}
+                    >
+                      <strong
+                        style={{
+                          color: "#bae6fd",
+                        }}
+                      >
+                        Text-authored visual reference
+                      </strong>
+                      <span
+                        style={{
+                          color: "#7dd3fc",
+                          fontSize: 12,
+                        }}
+                      >
+                        {visualDescription.part_layout.filter(
+                          (part) =>
+                            Boolean(
+                              part.dimensions_m &&
+                              part.position_m,
+                            ),
+                        ).length} dimensioned parts
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#dbeafe",
+                        fontSize: 13,
+                        lineHeight: 1.55,
+                      }}
+                    >
+                      {visualDescription.design_summary}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(190px, 1fr))",
+                        gap: 8,
+                        color: "#cbd5e1",
+                        fontSize: 12,
+                      }}
+                    >
+                      <div>
+                        <strong>Overall dimensions</strong>
+                        <div style={{ marginTop: 3 }}>
+                          {visualDescription.overall_dimensions_m
+                            ? visualDescription.overall_dimensions_m
+                                .map((value) => `${value.toFixed(3)} m`)
+                                .join(" × ")
+                            : "Not specified"}
+                        </div>
+                      </div>
+                      <div>
+                        <strong>Shape language</strong>
+                        <div style={{ marginTop: 3 }}>
+                          {visualDescription.shape_language.primary_forms.join(", ") || "Not specified"}
+                        </div>
+                      </div>
+                      <div>
+                        <strong>Edge character</strong>
+                        <div style={{ marginTop: 3 }}>
+                          {visualDescription.shape_language.edge_character}
+                        </div>
+                      </div>
+                    </div>
+                    <details
+                      style={{
+                        marginTop: 12,
+                      }}
+                    >
+                      <summary
+                        style={{
+                          cursor: "pointer",
+                          color: "#bae6fd",
+                          fontWeight: 750,
+                        }}
+                      >
+                        Orthographic descriptions and measured ratios
+                      </summary>
+                      <div
+                        style={{
+                          marginTop: 10,
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(240px, 1fr))",
+                          gap: 10,
+                          color: "#cbd5e1",
+                          fontSize: 12,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {[
+                          ["Front", visualDescription.orthographic_views.front],
+                          ["Right", visualDescription.orthographic_views.right],
+                          ["Top", visualDescription.orthographic_views.top],
+                          ["Three-quarter", visualDescription.orthographic_views.three_quarter],
+                        ].map(([label, description]) => (
+                          <div
+                            key={label}
+                            style={{
+                              background: "rgba(2,6,23,0.48)",
+                              borderRadius: 10,
+                              padding: 10,
+                            }}
+                          >
+                            <strong>{label}</strong>
+                            <div style={{ marginTop: 4 }}>{description}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 10,
+                          display: "grid",
+                          gap: 5,
+                          color: "#bfdbfe",
+                          fontSize: 12,
+                        }}
+                      >
+                        {visualDescription.normalized_proportions.map(
+                          (item) => (
+                            <div key={item.relationship}>
+                              {item.relationship}: {item.ratio.toFixed(3)} ± {item.tolerance.toFixed(3)}
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </details>
+                  </div>
+                ) : null}
+
                 <details
                   style={{
                     marginTop: 12,
@@ -2673,6 +3339,555 @@ export function BlenderPythonBuilderLab() {
                     </div>
                   </div>
                 </div>
+
+                {visibleLookAdjustments ? (
+                  <details
+                    open
+                    style={{
+                      marginTop: 16,
+                      borderTop:
+                        "1px solid rgba(148,163,184,0.18)",
+                      paddingTop: 14,
+                    }}
+                  >
+                    <summary
+                      style={{
+                        cursor: "pointer",
+                        fontWeight: 850,
+                        color: "#e0f2fe",
+                      }}
+                    >
+                      Material mapping & look development
+                    </summary>
+                    <div
+                      style={{
+                        marginTop: 7,
+                        color: "#94a3b8",
+                        fontSize: 12,
+                        lineHeight: 1.55,
+                      }}
+                    >
+                      Material IDs and selected R2 resources stay immutable. These controls only change mapping, PBR response, exposure, and the trusted fallback light rig. Re-running uses the same Blender Python without calling GLM.
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: 12,
+                        marginTop: 14,
+                      }}
+                    >
+                      {resourcePlan.material_bindings.map(
+                        (binding) => {
+                          const slotId =
+                            binding.slot.slot_id;
+                          const look =
+                            materialLookTarget(
+                              slotId,
+                            ) ??
+                            visibleLookAdjustments
+                              .material_slots[
+                                slotId
+                              ];
+                          if (!look) {
+                            return null;
+                          }
+                          const target =
+                            lookTargetBySlot[
+                              slotId
+                            ] ??
+                            "__slot__";
+                          return (
+                            <div
+                              key={`look-${slotId}`}
+                              style={{
+                                border:
+                                  "1px solid rgba(56,189,248,0.18)",
+                                borderRadius: 12,
+                                padding: 12,
+                                background:
+                                  "rgba(2,6,23,0.36)",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: 10,
+                                  justifyContent:
+                                    "space-between",
+                                  alignItems:
+                                    "center",
+                                  flexWrap: "wrap",
+                                }}
+                              >
+                                <strong>
+                                  {binding.slot.display_name}
+                                </strong>
+                                <select
+                                  value={target}
+                                  onChange={(event) =>
+                                    setLookTargetBySlot(
+                                      (current) => ({
+                                        ...current,
+                                        [slotId]:
+                                          event.target.value,
+                                      }),
+                                    )
+                                  }
+                                  style={{
+                                    ...inputStyle,
+                                    padding: 8,
+                                    minWidth: 220,
+                                  }}
+                                >
+                                  <option value="__slot__">
+                                    Slot default
+                                  </option>
+                                  {binding.slot.assigned_part_ids.map(
+                                    (partId) => (
+                                      <option
+                                        key={partId}
+                                        value={partId}
+                                      >
+                                        Part override: {partId}
+                                      </option>
+                                    ),
+                                  )}
+                                </select>
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(150px, 1fr))",
+                                  gap: 9,
+                                  marginTop: 10,
+                                }}
+                              >
+                                <label>
+                                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                                    Mapping
+                                  </div>
+                                  <select
+                                    value={look.mapping_mode}
+                                    onChange={(event) =>
+                                      updateMaterialLook(
+                                        slotId,
+                                        {
+                                          mapping_mode:
+                                            event.target.value ===
+                                            "object_box"
+                                              ? "object_box"
+                                              : "uv",
+                                        },
+                                      )
+                                    }
+                                    style={{ ...inputStyle, width: "100%" }}
+                                  >
+                                    <option value="uv">UV</option>
+                                    <option value="object_box">Object box</option>
+                                  </select>
+                                </label>
+                                <label>
+                                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                                    Physical scale (m)
+                                  </div>
+                                  <input
+                                    type="number"
+                                    min="0.000001"
+                                    step="0.005"
+                                    value={look.physical_scale_m ?? ""}
+                                    onChange={(event) =>
+                                      updateMaterialLook(
+                                        slotId,
+                                        {
+                                          physical_scale_m:
+                                            event.target.value
+                                              ? Number(event.target.value)
+                                              : null,
+                                        },
+                                      )
+                                    }
+                                    style={{ ...inputStyle, width: "100%" }}
+                                  />
+                                </label>
+                                <label>
+                                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                                    Repeat X
+                                  </div>
+                                  <input
+                                    type="number"
+                                    min="0.05"
+                                    step="0.1"
+                                    value={look.uv_repeat[0]}
+                                    onChange={(event) =>
+                                      updateMaterialLook(
+                                        slotId,
+                                        {
+                                          uv_repeat: [
+                                            Number(event.target.value),
+                                            look.uv_repeat[1],
+                                          ],
+                                        },
+                                      )
+                                    }
+                                    style={{ ...inputStyle, width: "100%" }}
+                                  />
+                                </label>
+                                <label>
+                                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                                    Repeat Y
+                                  </div>
+                                  <input
+                                    type="number"
+                                    min="0.05"
+                                    step="0.1"
+                                    value={look.uv_repeat[1]}
+                                    onChange={(event) =>
+                                      updateMaterialLook(
+                                        slotId,
+                                        {
+                                          uv_repeat: [
+                                            look.uv_repeat[0],
+                                            Number(event.target.value),
+                                          ],
+                                        },
+                                      )
+                                    }
+                                    style={{ ...inputStyle, width: "100%" }}
+                                  />
+                                </label>
+                                <label>
+                                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                                    Rotation (°)
+                                  </div>
+                                  <input
+                                    type="number"
+                                    step="5"
+                                    value={look.rotation_degrees}
+                                    onChange={(event) =>
+                                      updateMaterialLook(
+                                        slotId,
+                                        {
+                                          rotation_degrees:
+                                            Number(event.target.value),
+                                        },
+                                      )
+                                    }
+                                    style={{ ...inputStyle, width: "100%" }}
+                                  />
+                                </label>
+                                <label>
+                                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                                    Offset X
+                                  </div>
+                                  <input
+                                    type="number"
+                                    step="0.05"
+                                    value={look.offset[0]}
+                                    onChange={(event) =>
+                                      updateMaterialLook(
+                                        slotId,
+                                        {
+                                          offset: [
+                                            Number(event.target.value),
+                                            look.offset[1],
+                                          ],
+                                        },
+                                      )
+                                    }
+                                    style={{ ...inputStyle, width: "100%" }}
+                                  />
+                                </label>
+                                <label>
+                                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                                    Offset Y
+                                  </div>
+                                  <input
+                                    type="number"
+                                    step="0.05"
+                                    value={look.offset[1]}
+                                    onChange={(event) =>
+                                      updateMaterialLook(
+                                        slotId,
+                                        {
+                                          offset: [
+                                            look.offset[0],
+                                            Number(event.target.value),
+                                          ],
+                                        },
+                                      )
+                                    }
+                                    style={{ ...inputStyle, width: "100%" }}
+                                  />
+                                </label>
+                                <label>
+                                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                                    Normal strength
+                                  </div>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="4"
+                                    step="0.05"
+                                    value={look.normal_strength}
+                                    onChange={(event) =>
+                                      updateMaterialLook(
+                                        slotId,
+                                        {
+                                          normal_strength:
+                                            Number(event.target.value),
+                                        },
+                                      )
+                                    }
+                                    style={{ ...inputStyle, width: "100%" }}
+                                  />
+                                </label>
+                                <label>
+                                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                                    Roughness factor
+                                  </div>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="2"
+                                    step="0.05"
+                                    value={look.roughness_factor}
+                                    onChange={(event) =>
+                                      updateMaterialLook(
+                                        slotId,
+                                        {
+                                          roughness_factor:
+                                            Number(event.target.value),
+                                        },
+                                      )
+                                    }
+                                    style={{ ...inputStyle, width: "100%" }}
+                                  />
+                                </label>
+                                <label>
+                                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                                    Height strength
+                                  </div>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="1"
+                                    step="0.02"
+                                    value={look.height_strength}
+                                    onChange={(event) =>
+                                      updateMaterialLook(
+                                        slotId,
+                                        {
+                                          height_strength:
+                                            Number(event.target.value),
+                                        },
+                                      )
+                                    }
+                                    style={{ ...inputStyle, width: "100%" }}
+                                  />
+                                </label>
+                              </div>
+                              {target !== "__slot__" ? (
+                                <div
+                                  style={{
+                                    marginTop: 8,
+                                    color: "#7dd3fc",
+                                    fontSize: 11,
+                                  }}
+                                >
+                                  Editing a part-specific override for {target}. Other parts retain the slot default.
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        },
+                      )}
+
+                      <div
+                        style={{
+                          border:
+                            "1px solid rgba(168,85,247,0.2)",
+                          borderRadius: 12,
+                          padding: 12,
+                          background:
+                            "rgba(30,5,48,0.2)",
+                        }}
+                      >
+                        <strong>
+                          Environment & fallback rig
+                        </strong>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(150px, 1fr))",
+                            gap: 9,
+                            marginTop: 10,
+                          }}
+                        >
+                          <label>
+                            <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                              HDRI strength
+                            </div>
+                            <input
+                              type="number"
+                              min="0"
+                              max="8"
+                              step="0.05"
+                              value={visibleLookAdjustments.environment.strength}
+                              onChange={(event) =>
+                                updateEnvironmentLook({
+                                  strength:
+                                    Number(event.target.value),
+                                })
+                              }
+                              style={{ ...inputStyle, width: "100%" }}
+                            />
+                          </label>
+                          <label>
+                            <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                              HDRI rotation (°)
+                            </div>
+                            <input
+                              type="number"
+                              step="5"
+                              value={visibleLookAdjustments.environment.rotation_degrees}
+                              onChange={(event) =>
+                                updateEnvironmentLook({
+                                  rotation_degrees:
+                                    Number(event.target.value),
+                                })
+                              }
+                              style={{ ...inputStyle, width: "100%" }}
+                            />
+                          </label>
+                          <label>
+                            <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                              Exposure
+                            </div>
+                            <input
+                              type="number"
+                              min="-8"
+                              max="8"
+                              step="0.1"
+                              value={visibleLookAdjustments.environment.exposure}
+                              onChange={(event) =>
+                                updateEnvironmentLook({
+                                  exposure:
+                                    Number(event.target.value),
+                                })
+                              }
+                              style={{ ...inputStyle, width: "100%" }}
+                            />
+                          </label>
+                          <label>
+                            <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>
+                              Fallback light energy
+                            </div>
+                            <input
+                              type="number"
+                              min="0"
+                              max="8"
+                              step="0.05"
+                              value={visibleLookAdjustments.environment.fallback_light_energy_scale}
+                              onChange={(event) =>
+                                updateEnvironmentLook({
+                                  fallback_light_energy_scale:
+                                    Number(event.target.value),
+                                })
+                              }
+                              style={{ ...inputStyle, width: "100%" }}
+                            />
+                          </label>
+                          <label
+                            style={{
+                              display: "flex",
+                              gap: 8,
+                              alignItems: "center",
+                              alignSelf: "end",
+                              minHeight: 42,
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={visibleLookAdjustments.environment.background_visible}
+                              onChange={(event) =>
+                                updateEnvironmentLook({
+                                  background_visible:
+                                    event.target.checked,
+                                })
+                              }
+                            />
+                            Visible environment background
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 9,
+                        flexWrap: "wrap",
+                        marginTop: 14,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (designBrief) {
+                            resetLookDevelopment(
+                              designBrief,
+                              resourcePlan,
+                            );
+                          }
+                        }}
+                        disabled={
+                          busy !== null ||
+                          !designBrief
+                        }
+                        style={{
+                          borderRadius: 10,
+                          border:
+                            "1px solid rgba(148,163,184,0.3)",
+                          background: "transparent",
+                          color: "#cbd5e1",
+                          padding: "9px 12px",
+                        }}
+                      >
+                        Reset look controls
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void executeCode(
+                            false,
+                            "look-development rerender",
+                          )
+                        }
+                        disabled={
+                          busy !== null ||
+                          !code.trim()
+                        }
+                        style={{
+                          borderRadius: 10,
+                          border:
+                            "1px solid rgba(168,85,247,0.5)",
+                          background:
+                            "rgba(168,85,247,0.14)",
+                          color: "#e9d5ff",
+                          padding: "9px 13px",
+                          fontWeight: 850,
+                        }}
+                      >
+                        {busy === "execute"
+                          ? "Re-rendering…"
+                          : "Re-run same code with look adjustments"}
+                      </button>
+                    </div>
+                  </details>
+                ) : null}
               </section>
             )}
           </div>
@@ -3152,9 +4367,10 @@ export function BlenderPythonBuilderLab() {
                     1.55,
                 }}
               >
-                Use the inspection views and benchmark quality bar. The model
-                receives the existing script, design brief, validation findings,
-                and your targeted feedback instead of rebuilding blindly.
+                Run the image-grounded critic to compare the rendered views with
+                the approved brief. Geometry findings are routed into Blender-code
+                revision; material mapping, lighting, and uncertain findings remain
+                separate instead of triggering an unrelated geometry rewrite.
               </p>
               <textarea
                 value={
@@ -3193,6 +4409,43 @@ export function BlenderPythonBuilderLab() {
                     "wrap",
                 }}
               >
+                <button
+                  type="button"
+                  onClick={
+                    analyzeVisualCritique
+                  }
+                  disabled={
+                    busy !==
+                      null ||
+                    !execution
+                      ?.job_id ||
+                    !execution
+                      ?.inspection_urls
+                      ?.length
+                  }
+                  style={{
+                    border:
+                      "1px solid rgba(56,189,248,0.55)",
+                    borderRadius:
+                      10,
+                    padding:
+                      "10px 14px",
+                    fontWeight:
+                      850,
+                    background:
+                      "rgba(56,189,248,0.14)",
+                    color:
+                      "#bae6fd",
+                  }}
+                >
+                  {busy ===
+                  "visual-critique"
+                    ? "Inspecting renders…"
+                    : visualCritique
+                        ?.report
+                      ? "Re-run visual critic"
+                      : "Analyze rendered asset"}
+                </button>
                 <button
                   type="button"
                   onClick={
@@ -3290,6 +4543,194 @@ export function BlenderPythonBuilderLab() {
                 </div>
               )}
             </div>
+
+            {visualCritique && (
+              <div
+                style={{
+                  ...panelStyle,
+                  padding: 16,
+                }}
+              >
+                <strong>
+                  Image-grounded visual critique
+                </strong>
+                {!visualCritique.ok ? (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color:
+                        "#fca5a5",
+                      fontSize: 12,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {visualCritique.error}
+                  </div>
+                ) : visualCritique.report ? (
+                  <>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color:
+                          "#cbd5e1",
+                        fontSize: 12,
+                        lineHeight: 1.55,
+                      }}
+                    >
+                      {visualCritique.report.summary}
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 7,
+                        flexWrap: "wrap",
+                        marginTop: 10,
+                        color: "#94a3b8",
+                        fontSize: 11,
+                      }}
+                    >
+                      <span>
+                        Code {visualCritique.report.routing_summary.blender_code}
+                      </span>
+                      <span>
+                        Mapping {visualCritique.report.routing_summary.material_mapping}
+                      </span>
+                      <span>
+                        Lookdev {visualCritique.report.routing_summary.look_development}
+                      </span>
+                      <span>
+                        Human {visualCritique.report.routing_summary.human_review}
+                      </span>
+                      <span>
+                        {visualCritique.report.model}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: 8,
+                        marginTop: 12,
+                      }}
+                    >
+                      {visualCritique.report.findings.length ? (
+                        visualCritique.report.findings.map(
+                          (finding) => (
+                            <div
+                              key={finding.finding_id}
+                              style={{
+                                border:
+                                  "1px solid rgba(148,163,184,0.16)",
+                                borderRadius: 10,
+                                padding: 10,
+                                fontSize: 12,
+                                lineHeight: 1.5,
+                                color:
+                                  finding.severity ===
+                                  "error"
+                                    ? "#fca5a5"
+                                    : finding.severity ===
+                                        "warning"
+                                      ? "#fde68a"
+                                      : "#cbd5e1",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  color: "#94a3b8",
+                                  fontSize: 10,
+                                  textTransform: "uppercase",
+                                  letterSpacing: ".08em",
+                                  marginBottom: 4,
+                                }}
+                              >
+                                {finding.category.replaceAll("_", " ")} · {finding.revision_route.replaceAll("_", " ")} · {Math.round(finding.confidence * 100)}%
+                              </div>
+                              <div>
+                                {finding.finding}
+                              </div>
+                              <div
+                                style={{
+                                  color: "#c4b5fd",
+                                  marginTop: 5,
+                                }}
+                              >
+                                Revision: {finding.recommended_revision}
+                              </div>
+                              {finding.evidence_views.length ? (
+                                <div
+                                  style={{
+                                    color: "#64748b",
+                                    marginTop: 5,
+                                  }}
+                                >
+                                  Views: {finding.evidence_views.join(", ")}
+                                </div>
+                              ) : null}
+                              {(finding.affected_material_slot_ids.length ||
+                                finding.affected_part_ids.length) ? (
+                                <div
+                                  style={{
+                                    color: "#64748b",
+                                    marginTop: 4,
+                                  }}
+                                >
+                                  {finding.affected_material_slot_ids.length
+                                    ? `Slots: ${finding.affected_material_slot_ids.join(", ")}`
+                                    : ""}
+                                  {finding.affected_material_slot_ids.length &&
+                                  finding.affected_part_ids.length
+                                    ? " · "
+                                    : ""}
+                                  {finding.affected_part_ids.length
+                                    ? `Parts: ${finding.affected_part_ids.join(", ")}`
+                                    : ""}
+                                </div>
+                              ) : null}
+                              {finding.suggested_adjustment &&
+                              (finding.revision_route === "look_development" ||
+                                (finding.revision_route === "material_mapping" &&
+                                  finding.affected_material_slot_ids.length > 0)) ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    applyVisualAdjustment(
+                                      finding,
+                                    )
+                                  }
+                                  disabled={busy !== null}
+                                  style={{
+                                    marginTop: 8,
+                                    borderRadius: 9,
+                                    border:
+                                      "1px solid rgba(168,85,247,0.45)",
+                                    background:
+                                      "rgba(168,85,247,0.12)",
+                                    color: "#e9d5ff",
+                                    padding: "7px 10px",
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  Apply bounded {finding.suggested_adjustment.direction.replaceAll("_", " ")} step
+                                </button>
+                              ) : null}
+                            </div>
+                          ),
+                        )
+                      ) : (
+                        <div
+                          style={{
+                            color: "#86efac",
+                            fontSize: 12,
+                          }}
+                        >
+                          No clear visible issue was identified in the supplied views.
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            )}
 
             {execution
               ?.quality_report && (
@@ -3476,6 +4917,21 @@ export function BlenderPythonBuilderLab() {
                           );
                           setExecution(
                             revision.execution,
+                          );
+                          setVisualCritique(
+                            revision.execution
+                              .visual_critique
+                              ? {
+                                  ok: true,
+                                  report:
+                                    revision.execution
+                                      .visual_critique,
+                                  visual_critique_url:
+                                    revision.execution
+                                      .visual_critique_url ??
+                                    undefined,
+                                }
+                              : null,
                           );
                           setMode(
                             "code",

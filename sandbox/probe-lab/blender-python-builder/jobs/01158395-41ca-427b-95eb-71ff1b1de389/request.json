@@ -1,0 +1,1857 @@
+{
+  "job_id": "01158395-41ca-427b-95eb-71ff1b1de389",
+  "asset_name": "treasure_chest_stylized_v1",
+  "parent_job_id": null,
+  "revision_number": 1,
+  "revision_label": "initial build",
+  "critique": null,
+  "asset_spec": {
+    "schema_version": "myway_procedural_asset_spec_v1",
+    "asset_id": "treasure_chest_stylized_v1",
+    "concept": "A high-quality stylized wooden treasure chest with a curved separate lid, substantial dark metal bands, hinges, corner hardware, side handles, a front lock, softened manufactured edges, and useful pivots for opening.",
+    "target_extent_m": 2,
+    "max_triangles": 45000,
+    "style_tags": [
+      "high-quality clean stylized",
+      "adventure",
+      "treasure",
+      "wood",
+      "metal hardware"
+    ],
+    "realism": "stylized",
+    "parts": [
+      {
+        "part_id": "chest_body",
+        "semantic_role": "main_container",
+        "geometry_intent": "compound",
+        "parent_part_id": null,
+        "material_intent": "wood_oak",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "lid",
+        "semantic_role": "cover",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "wood_oak",
+        "animation_role": "rotating_lid",
+        "required": true
+      },
+      {
+        "part_id": "band_horizontal_front",
+        "semantic_role": "reinforcement_band",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "band_horizontal_back",
+        "semantic_role": "reinforcement_band",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "band_vertical_corner_01",
+        "semantic_role": "reinforcement_band",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "band_vertical_corner_02",
+        "semantic_role": "reinforcement_band",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "band_vertical_corner_03",
+        "semantic_role": "reinforcement_band",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "band_vertical_corner_04",
+        "semantic_role": "reinforcement_band",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "hinge_left",
+        "semantic_role": "hinge",
+        "geometry_intent": "compound",
+        "parent_part_id": "lid",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "mechanical_hinge",
+        "required": true
+      },
+      {
+        "part_id": "hinge_right",
+        "semantic_role": "hinge",
+        "geometry_intent": "compound",
+        "parent_part_id": "lid",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "mechanical_hinge",
+        "required": true
+      },
+      {
+        "part_id": "lock_plate",
+        "semantic_role": "lock_front",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "lock_hasp",
+        "semantic_role": "lock_mechanism",
+        "geometry_intent": "compound",
+        "parent_part_id": "lid",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "handle_left",
+        "semantic_role": "handle_side",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "handle_right",
+        "semantic_role": "handle_side",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "corner_bracket_bl_01",
+        "semantic_role": "corner_hardware",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "corner_bracket_br_01",
+        "semantic_role": "corner_hardware",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "corner_bracket_bl_02",
+        "semantic_role": "corner_hardware",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "corner_bracket_br_02",
+        "semantic_role": "corner_hardware",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      },
+      {
+        "part_id": "rivets",
+        "semantic_role": "fasteners",
+        "geometry_intent": "compound",
+        "parent_part_id": "chest_body",
+        "material_intent": "metal_dark_iron",
+        "animation_role": "static",
+        "required": true
+      }
+    ],
+    "requirements": {
+      "uv_required": true,
+      "rig_required": false,
+      "movable_parts": [],
+      "collision_required": false,
+      "ground_contact_required": true
+    }
+  },
+  "asset_spec_validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "design_brief": {
+    "schema_version": "myway_asset_design_brief_v2",
+    "asset_id": "treasure_chest_stylized_v1",
+    "concept": "A high-quality stylized wooden treasure chest with a curved separate lid, substantial dark metal bands, hinges, corner hardware, side handles, a front lock, softened manufactured edges, and useful pivots for opening.",
+    "asset_class": "hard_surface_assembly",
+    "intended_use": [],
+    "target_extent_m": 2,
+    "axis_dimensions_m": null,
+    "max_triangles": 45000,
+    "quality_mode": "standard",
+    "realism": "stylized",
+    "style_tags": [
+      "high-quality clean stylized",
+      "adventure",
+      "treasure",
+      "wood",
+      "metal hardware",
+      "manual code"
+    ],
+    "silhouette": {
+      "primary_shapes": [],
+      "identifying_features": [],
+      "important_negative_spaces": [],
+      "camera_readability": []
+    },
+    "proportions": [],
+    "parts": [
+      {
+        "part_id": "chest_body",
+        "semantic_role": "main_container",
+        "geometry_strategy": [],
+        "parent_part_id": null,
+        "connection_strategy": "Self-contained structural base. Sits on ground plane at z=0.",
+        "material_slot_id": "wood_oak",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin (0,0,0) at the base center.",
+        "required": true,
+        "identifying_features": [
+          "rectangular wooden box",
+          "hollow interior",
+          "softened outer edges",
+          "slight base taper"
+        ]
+      },
+      {
+        "part_id": "lid",
+        "semantic_role": "cover",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Sits on top of chest_body with a 0.005 m clearance gap. Hinged at the back edge.",
+        "material_slot_id": "wood_oak",
+        "animation_role": "rotating_lid",
+        "pivot_requirement": "Origin at the center of the back top edge of the chest_body (y=0.6, z=1.0).",
+        "required": true,
+        "identifying_features": [
+          "curved barrel shape",
+          "matches body footprint",
+          "separate mesh"
+        ]
+      },
+      {
+        "part_id": "band_horizontal_front",
+        "semantic_role": "reinforcement_band",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Overlaps and wraps flush around the lower front third of the chest_body. Fastened visually by rivets.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin.",
+        "required": true,
+        "identifying_features": [
+          "dark metal band",
+          "wraps front and sides",
+          "flush with wood"
+        ]
+      },
+      {
+        "part_id": "band_horizontal_back",
+        "semantic_role": "reinforcement_band",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Overlaps and wraps flush around the lower back third of the chest_body. Fastened visually by rivets.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin.",
+        "required": true,
+        "identifying_features": [
+          "dark metal band",
+          "wraps back and sides",
+          "flush with wood"
+        ]
+      },
+      {
+        "part_id": "band_vertical_corner_01",
+        "semantic_role": "reinforcement_band",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Wraps flush over the vertical edges of the chest_body. Overlaps the horizontal bands.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin.",
+        "required": true,
+        "identifying_features": [
+          "L-shaped metal band",
+          "vertical corner placement",
+          "overlaps horizontal bands"
+        ]
+      },
+      {
+        "part_id": "band_vertical_corner_02",
+        "semantic_role": "reinforcement_band",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Wraps flush over the vertical edge. Overlaps horizontal bands.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin.",
+        "required": true,
+        "identifying_features": [
+          "L-shaped metal band",
+          "vertical corner placement"
+        ]
+      },
+      {
+        "part_id": "band_vertical_corner_03",
+        "semantic_role": "reinforcement_band",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Wraps flush over the vertical edge. Overlaps horizontal bands.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin.",
+        "required": true,
+        "identifying_features": [
+          "L-shaped metal band",
+          "vertical corner placement"
+        ]
+      },
+      {
+        "part_id": "band_vertical_corner_04",
+        "semantic_role": "reinforcement_band",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Wraps flush over the vertical edge. Overlaps horizontal bands.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin.",
+        "required": true,
+        "identifying_features": [
+          "L-shaped metal band",
+          "vertical corner placement"
+        ]
+      },
+      {
+        "part_id": "hinge_left",
+        "semantic_role": "hinge",
+        "geometry_strategy": [],
+        "parent_part_id": "lid",
+        "connection_strategy": "Knuckle cylinder aligned with the lid pivot axis. One leaf plate overlaps the chest_body back top edge, the other overlaps the lid back bottom edge. Visible axle seam.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "mechanical_hinge",
+        "pivot_requirement": "Origin at the center of the knuckle cylinder, aligned with the lid pivot.",
+        "required": true,
+        "identifying_features": [
+          "cylindrical knuckle",
+          "two leaf plates",
+          "dark metal"
+        ]
+      },
+      {
+        "part_id": "hinge_right",
+        "semantic_role": "hinge",
+        "geometry_strategy": [],
+        "parent_part_id": "lid",
+        "connection_strategy": "Knuckle cylinder aligned with the lid pivot axis. One leaf plate overlaps the chest_body back top edge, the other overlaps the lid back bottom edge. Visible axle seam.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "mechanical_hinge",
+        "pivot_requirement": "Origin at the center of the knuckle cylinder, aligned with the lid pivot.",
+        "required": true,
+        "identifying_features": [
+          "cylindrical knuckle",
+          "two leaf plates",
+          "dark metal"
+        ]
+      },
+      {
+        "part_id": "lock_plate",
+        "semantic_role": "lock_front",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Overlaps the front center of the chest_body, just below the lid seam. Fastened visually by rivets.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin.",
+        "required": true,
+        "identifying_features": [
+          "rectangular plate",
+          "keyhole cutout",
+          "front center placement"
+        ]
+      },
+      {
+        "part_id": "lock_hasp",
+        "semantic_role": "lock_mechanism",
+        "geometry_strategy": [],
+        "parent_part_id": "lid",
+        "connection_strategy": "Attached to the front bottom edge of the lid. Loops over the lock_plate when closed. Visible hinge seam where it meets the lid.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at the hinge point on the lid front bottom edge.",
+        "required": true,
+        "identifying_features": [
+          "curved metal loop",
+          "overlaps lock_plate",
+          "attached to lid"
+        ]
+      },
+      {
+        "part_id": "handle_left",
+        "semantic_role": "handle_side",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Anchor plates overlap the left side of the chest_body. Grip cylinder hangs freely with a visible clearance gap from the wood.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at the center of the grip cylinder.",
+        "required": true,
+        "identifying_features": [
+          "cylindrical grip",
+          "two anchor plates",
+          "side placement"
+        ]
+      },
+      {
+        "part_id": "handle_right",
+        "semantic_role": "handle_side",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Anchor plates overlap the right side of the chest_body. Grip cylinder hangs freely with a visible clearance gap from the wood.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at the center of the grip cylinder.",
+        "required": true,
+        "identifying_features": [
+          "cylindrical grip",
+          "two anchor plates",
+          "side placement"
+        ]
+      },
+      {
+        "part_id": "corner_bracket_bl_01",
+        "semantic_role": "corner_hardware",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Overlaps the bottom left front corner of the chest_body. Fastened visually by rivets.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin.",
+        "required": true,
+        "identifying_features": [
+          "L-shaped bracket",
+          "bottom corner placement",
+          "dark metal"
+        ]
+      },
+      {
+        "part_id": "corner_bracket_br_01",
+        "semantic_role": "corner_hardware",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Overlaps the bottom right front corner. Fastened visually by rivets.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin.",
+        "required": true,
+        "identifying_features": [
+          "L-shaped bracket",
+          "bottom corner placement"
+        ]
+      },
+      {
+        "part_id": "corner_bracket_bl_02",
+        "semantic_role": "corner_hardware",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Overlaps the bottom left back corner. Fastened visually by rivets.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin.",
+        "required": true,
+        "identifying_features": [
+          "L-shaped bracket",
+          "bottom corner placement"
+        ]
+      },
+      {
+        "part_id": "corner_bracket_br_02",
+        "semantic_role": "corner_hardware",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Overlaps the bottom right back corner. Fastened visually by rivets.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin.",
+        "required": true,
+        "identifying_features": [
+          "L-shaped bracket",
+          "bottom corner placement"
+        ]
+      },
+      {
+        "part_id": "rivets",
+        "semantic_role": "fasteners",
+        "geometry_strategy": [],
+        "parent_part_id": "chest_body",
+        "connection_strategy": "Embedded flush into the surface of the metal hardware parts.",
+        "material_slot_id": "metal_dark_iron",
+        "animation_role": "static",
+        "pivot_requirement": "Origin at world origin.",
+        "required": true,
+        "identifying_features": [
+          "small hemispheres",
+          "even distribution",
+          "dark metal"
+        ]
+      }
+    ],
+    "material_slots": [
+      {
+        "slot_id": "wood_oak",
+        "display_name": "Stylized Oak Wood",
+        "assigned_part_ids": [
+          "chest_body",
+          "lid"
+        ],
+        "material_family": "wood",
+        "intent": "Warm, stylized wood with visible grain and a slightly weathered appearance.",
+        "semantic_tags": [
+          "wood",
+          "oak",
+          "planks",
+          "stylized"
+        ],
+        "color_hint": "#8B5A2B",
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "texture_hint": "Clean, stylized plank lines with a subtle directional grain pattern. Soft, non-noisy surface.",
+        "brightness_hint": "medium",
+        "avoid_tags": [
+          "realistic_high_frequency_grain",
+          "knots",
+          "paint"
+        ],
+        "physical_scale_m": 0.2,
+        "required_maps": [
+          "base_color",
+          "roughness"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.545,
+            0.353,
+            0.169,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.7
+        }
+      },
+      {
+        "slot_id": "metal_dark_iron",
+        "display_name": "Dark Iron Hardware",
+        "assigned_part_ids": [
+          "band_horizontal_front",
+          "band_horizontal_back",
+          "band_vertical_corner_01",
+          "band_vertical_corner_02",
+          "band_vertical_corner_03",
+          "band_vertical_corner_04",
+          "hinge_left",
+          "hinge_right",
+          "lock_plate",
+          "lock_hasp",
+          "handle_left",
+          "handle_right",
+          "corner_bracket_bl_01",
+          "corner_bracket_br_01",
+          "corner_bracket_bl_02",
+          "corner_bracket_br_02",
+          "rivets"
+        ],
+        "material_family": "metal",
+        "intent": "Heavy, dark iron hardware with a slightly rough, cast appearance.",
+        "semantic_tags": [
+          "metal",
+          "iron",
+          "hardware",
+          "dark"
+        ],
+        "color_hint": "#3A3A3A",
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "texture_hint": "Smooth, slightly rough cast iron surface with subtle hammered variation on edges.",
+        "brightness_hint": "dark",
+        "avoid_tags": [
+          "shiny_chrome",
+          "rust_heavy",
+          "painted"
+        ],
+        "physical_scale_m": 0.1,
+        "required_maps": [
+          "base_color",
+          "roughness"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.227,
+            0.227,
+            0.227,
+            1
+          ],
+          "metallic": 0.9,
+          "roughness": 0.8
+        }
+      }
+    ],
+    "environment": {
+      "intent": "neutral product look development",
+      "semantic_tags": [],
+      "preferred_environment_class": "studio",
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "background_visible": false
+    },
+    "requirements": {
+      "uv_required": true,
+      "rig_required": false,
+      "collision_required": false,
+      "ground_contact_required": true,
+      "animation_ready": true,
+      "movable_part_ids": []
+    },
+    "acceptance_criteria": [
+      "Lid rotates cleanly on its pivot without intersecting the chest body.",
+      "All metal hardware parts are separate meshes and correctly assigned to the metal_dark_iron material slot.",
+      "Wooden parts (chest_body, lid) are separate meshes and correctly assigned to the wood_oak material slot.",
+      "Total triangle count is below 45000.",
+      "The asset presents a coherent silhouette from all primary viewing angles.",
+      "All edges are softened with a bevel modifier or equivalent."
+    ],
+    "benchmark_priorities": [
+      "silhouette_clarity",
+      "proportions",
+      "coherent_assembly",
+      "real_structural_connections",
+      "meaningful_negative_space",
+      "softened_manufactured_edges"
+    ]
+  },
+  "design_brief_validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": [
+      "The design brief has few silhouette-identifying features."
+    ]
+  },
+  "resource_plan": {
+    "schema_version": "myway_foundry_resource_plan_v1",
+    "created_at": "2026-08-03T17:48:37.514Z",
+    "design_brief_asset_id": "treasure_chest_stylized_v1",
+    "quality_mode": "standard",
+    "material_bindings": [
+      {
+        "slot": {
+          "slot_id": "wood_oak",
+          "display_name": "Stylized Oak Wood",
+          "assigned_part_ids": [
+            "chest_body",
+            "lid"
+          ],
+          "material_family": "wood",
+          "intent": "Warm, stylized wood with visible grain and a slightly weathered appearance.",
+          "semantic_tags": [
+            "wood",
+            "oak",
+            "planks",
+            "stylized"
+          ],
+          "color_hint": "#8B5A2B",
+          "roughness_hint": null,
+          "metallic_hint": null,
+          "texture_hint": "Clean, stylized plank lines with a subtle directional grain pattern. Soft, non-noisy surface.",
+          "brightness_hint": "medium",
+          "avoid_tags": [
+            "realistic_high_frequency_grain",
+            "knots",
+            "paint"
+          ],
+          "physical_scale_m": 0.2,
+          "required_maps": [
+            "base_color",
+            "roughness"
+          ],
+          "procedural_fallback": {
+            "color_rgba": [
+              0.545,
+              0.353,
+              0.169,
+              1
+            ],
+            "metallic": 0,
+            "roughness": 0.7
+          }
+        },
+        "status": "ready_r2",
+        "selected": {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Chipboard002_2k-jpg",
+          "source_asset_id": "Chipboard002",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Chipboard 002",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Chipboard002/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 443,
+          "reasons": [
+            "previous compatible selection",
+            "wood family match (wood)",
+            "matches with",
+            "matches pattern",
+            "matches surface",
+            "matches wood",
+            "matches visible",
+            "matches and",
+            "matches appearance",
+            "medium brightness match",
+            "visible texture description match",
+            "matches wood"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "ambient_occlusion",
+            "height"
+          ],
+          "missing_required_maps": [],
+          "appearance_summary": "The material has a light brown color with a rough, fibrous texture, displaying a random pattern of wood chips and fibers, with visible surface variations and an unfinished appearance.",
+          "dominant_colors": [
+            "tan",
+            "beige",
+            "dark brown"
+          ],
+          "brightness": "medium",
+          "appearance_confidence": 0.85,
+          "match_confidence": 0.6975
+        },
+        "candidates": [
+          {
+            "candidate_kind": "cached_r2",
+            "resource_id": "ambientcg_material_Chipboard002_2k-jpg",
+            "source_asset_id": "Chipboard002",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Chipboard 002",
+            "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Chipboard002/2k-jpg/preview.png",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 443,
+            "reasons": [
+              "previous compatible selection",
+              "wood family match (wood)",
+              "matches with",
+              "matches pattern",
+              "matches surface",
+              "matches wood",
+              "matches visible",
+              "matches and",
+              "matches appearance",
+              "medium brightness match",
+              "visible texture description match",
+              "matches wood"
+            ],
+            "published_to_r2": true,
+            "required_maps_available": [
+              "base_color",
+              "normal_gl",
+              "normal_dx",
+              "roughness",
+              "ambient_occlusion",
+              "height"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material has a light brown color with a rough, fibrous texture, displaying a random pattern of wood chips and fibers, with visible surface variations and an unfinished appearance.",
+            "dominant_colors": [
+              "tan",
+              "beige",
+              "dark brown"
+            ],
+            "brightness": "medium",
+            "appearance_confidence": 0.85,
+            "match_confidence": 0.6975
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Chipboard002",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Chipboard 002",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chipboard002/Chipboard002_SQ_Color.jpg?46706&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chipboard002/Chipboard002_SQ_Displacement.jpg?35686&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chipboard002/Chipboard002_SQ_NormalDX.jpg?45559&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chipboard002/Chipboard002_SQ_Roughness.jpg?72959&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Chipboard002/Chipboard002_SQ_AmbientOcclusion.jpg?37244",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 423,
+            "reasons": [
+              "previous compatible selection",
+              "wood family match (wood)",
+              "matches with",
+              "matches pattern",
+              "matches surface",
+              "matches wood",
+              "matches visible",
+              "matches and",
+              "matches appearance",
+              "medium brightness match",
+              "visible texture description match",
+              "matches wood"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness",
+              "ambient_occlusion"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material has a light brown color with a rough, fibrous texture, displaying a random pattern of wood chips and fibers, with visible surface variations and an unfinished appearance.",
+            "dominant_colors": [
+              "tan",
+              "beige",
+              "dark brown"
+            ],
+            "brightness": "medium",
+            "appearance_confidence": 0.85,
+            "match_confidence": 0.6859999999999999
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "WoodChips003",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Wood Chips 003",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/WoodChips003/WoodChips003_SQ_Color.jpg?51364&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/WoodChips003/WoodChips003_SQ_Displacement.jpg?16814&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/WoodChips003/WoodChips003_SQ_NormalDX.jpg?26588&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/WoodChips003/WoodChips003_SQ_Roughness.jpg?81231&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/WoodChips003/WoodChips003_SQ_AmbientOcclusion.jpg?91699",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 328,
+            "reasons": [
+              "wood family match (wood)",
+              "matches with",
+              "matches pattern",
+              "matches surface",
+              "matches wood",
+              "matches visible",
+              "matches appearance",
+              "medium brightness match",
+              "visible texture description match",
+              "matches wood",
+              "matches with",
+              "matches visible"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness",
+              "ambient_occlusion"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "A spherical surface covered with a dense, irregular pattern of small, light brown wood chips, creating a textured, grainy appearance with no visible finish or uniformity.",
+            "dominant_colors": [
+              "tan",
+              "beige",
+              "brown"
+            ],
+            "brightness": "medium",
+            "appearance_confidence": 0.95,
+            "match_confidence": 0.722
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Bark001",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Bark 001",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark001/Bark001_SQ_Color.jpg?64593&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark001/Bark001_SQ_Displacement.jpg?45120&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark001/Bark001_SQ_NormalDX.jpg?35696&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark001/Bark001_SQ_Roughness.jpg?40646",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 315,
+            "reasons": [
+              "wood family match (wood)",
+              "matches with",
+              "matches subtle",
+              "matches pattern",
+              "matches surface",
+              "matches and",
+              "medium brightness match",
+              "visible texture description match",
+              "matches wood",
+              "matches with",
+              "matches and",
+              "matches subtle"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material displays a rough, textured surface with a network of deep grooves and ridges, resembling the natural pattern of tree bark, in a muted gray color with subtle variations in tone.",
+            "dominant_colors": [
+              "gray",
+              "charcoal"
+            ],
+            "brightness": "medium",
+            "appearance_confidence": 0.9,
+            "match_confidence": 0.704
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Bark002",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Bark 002",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark002/Bark002_SQ_Color.jpg?20677&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark002/Bark002_SQ_Displacement.jpg?92450&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark002/Bark002_SQ_NormalDX.jpg?1909&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark002/Bark002_SQ_Roughness.jpg?9383&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark002/Bark002_SQ_AmbientOcclusion.jpg?1142",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 315,
+            "reasons": [
+              "wood family match (wood)",
+              "matches lines",
+              "matches with",
+              "matches pattern",
+              "matches surface",
+              "matches and",
+              "medium brightness match",
+              "visible texture description match",
+              "matches wood",
+              "matches with",
+              "matches and",
+              "matches lines"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness",
+              "ambient_occlusion"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material displays a rough, fibrous texture with a natural brown color, featuring a pattern of vertical lines and grooves that suggest a bark-like surface.",
+            "dominant_colors": [
+              "beige",
+              "gray",
+              "dark gray"
+            ],
+            "brightness": "medium",
+            "appearance_confidence": 0.9,
+            "match_confidence": 0.704
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Bark007",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Bark 007",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark007/Bark007_SQ_Color.jpg?42222&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark007/Bark007_SQ_Displacement.jpg?32151&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark007/Bark007_SQ_NormalDX.jpg?89299&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark007/Bark007_SQ_Roughness.jpg?80882&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Bark007/Bark007_SQ_AmbientOcclusion.jpg?78563",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 315,
+            "reasons": [
+              "wood family match (wood)",
+              "matches with",
+              "matches subtle",
+              "matches pattern",
+              "matches surface",
+              "matches and",
+              "medium brightness match",
+              "visible texture description match",
+              "matches wood",
+              "matches with",
+              "matches and",
+              "matches subtle"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness",
+              "ambient_occlusion"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material displays a rough, textured surface with a predominantly gray color, featuring deep grooves and ridges that create a natural bark-like pattern, with subtle variations in tone and depth across the surface.",
+            "dominant_colors": [
+              "light gray",
+              "beige",
+              "dark gray"
+            ],
+            "brightness": "medium",
+            "appearance_confidence": 0.9,
+            "match_confidence": 0.704
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Wicker002",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Wicker 002",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wicker002/Wicker002_SQ_Color.jpg?37042&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wicker002/Wicker002_SQ_Displacement.jpg?77618&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wicker002/Wicker002_SQ_NormalDX.jpg?98452&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wicker002/Wicker002_SQ_Roughness.jpg?61344&opacity_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wicker002/Wicker002_SQ_Opacity.jpg?56955&ambientocclusion_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Wicker002/Wicker002_SQ_AmbientOcclusion.jpg?7936",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 315,
+            "reasons": [
+              "wood family match (wood)",
+              "matches with",
+              "matches pattern",
+              "matches surface",
+              "matches and",
+              "matches appearance",
+              "medium brightness match",
+              "visible texture description match",
+              "matches wood",
+              "matches with",
+              "matches and",
+              "matches appearance"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness",
+              "opacity",
+              "ambient_occlusion"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material displays a tightly woven, interlaced pattern with alternating light and dark brown strands, creating a textured, three-dimensional surface that suggests a sturdy, basket-weave appearance.",
+            "dominant_colors": [
+              "brown",
+              "beige"
+            ],
+            "brightness": "medium",
+            "appearance_confidence": 0.9,
+            "match_confidence": 0.704
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "WoodFloor063",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Wood Floor 063",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/WoodFloor063/WoodFloor063_SQ_Color.jpg?79864&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/WoodFloor063/WoodFloor063_SQ_Displacement.jpg?1496&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/WoodFloor063/WoodFloor063_SQ_NormalDX.jpg?33744&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/WoodFloor063/WoodFloor063_SQ_Roughness.jpg?54813",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 315,
+            "reasons": [
+              "wood family match (wood)",
+              "matches with",
+              "matches pattern",
+              "matches surface",
+              "matches warm",
+              "matches wood",
+              "medium brightness match",
+              "visible texture description match",
+              "matches wood",
+              "matches warm",
+              "matches with",
+              "matches pattern"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material displays a smooth, polished wooden surface with a warm orange-brown color, featuring a consistent, fine-grained pattern that suggests a natural wood texture.",
+            "dominant_colors": [
+              "yellow",
+              "beige",
+              "orange"
+            ],
+            "brightness": "medium",
+            "appearance_confidence": 0.9,
+            "match_confidence": 0.704
+          }
+        ],
+        "texture_scale_m": 0.2
+      },
+      {
+        "slot": {
+          "slot_id": "metal_dark_iron",
+          "display_name": "Dark Iron Hardware",
+          "assigned_part_ids": [
+            "band_horizontal_front",
+            "band_horizontal_back",
+            "band_vertical_corner_01",
+            "band_vertical_corner_02",
+            "band_vertical_corner_03",
+            "band_vertical_corner_04",
+            "hinge_left",
+            "hinge_right",
+            "lock_plate",
+            "lock_hasp",
+            "handle_left",
+            "handle_right",
+            "corner_bracket_bl_01",
+            "corner_bracket_br_01",
+            "corner_bracket_bl_02",
+            "corner_bracket_br_02",
+            "rivets"
+          ],
+          "material_family": "metal",
+          "intent": "Heavy, dark iron hardware with a slightly rough, cast appearance.",
+          "semantic_tags": [
+            "metal",
+            "iron",
+            "hardware",
+            "dark"
+          ],
+          "color_hint": "#3A3A3A",
+          "roughness_hint": null,
+          "metallic_hint": null,
+          "texture_hint": "Smooth, slightly rough cast iron surface with subtle hammered variation on edges.",
+          "brightness_hint": "dark",
+          "avoid_tags": [
+            "shiny_chrome",
+            "rust_heavy",
+            "painted"
+          ],
+          "physical_scale_m": 0.1,
+          "required_maps": [
+            "base_color",
+            "roughness"
+          ],
+          "procedural_fallback": {
+            "color_rgba": [
+              0.227,
+              0.227,
+              0.227,
+              1
+            ],
+            "metallic": 0.9,
+            "roughness": 0.8
+          }
+        },
+        "status": "ready_r2",
+        "selected": {
+          "candidate_kind": "cached_r2",
+          "resource_id": "ambientcg_material_Metal046B_2k-jpg",
+          "source_asset_id": "Metal046B",
+          "variant_id": "2k-jpg-1",
+          "display_name": "Metal 046 B",
+          "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal046B/2k-jpg/preview.png",
+          "resolution": "2K",
+          "file_format": "JPG",
+          "score": 419,
+          "reasons": [
+            "previous compatible selection",
+            "metal family match (metal)",
+            "matches rough",
+            "matches surface",
+            "matches with",
+            "matches subtle",
+            "matches dark",
+            "matches appearance",
+            "dark brightness match",
+            "visible texture description match",
+            "matches dark",
+            "matches metal"
+          ],
+          "published_to_r2": true,
+          "required_maps_available": [
+            "base_color",
+            "normal_gl",
+            "normal_dx",
+            "roughness",
+            "metallic",
+            "height"
+          ],
+          "missing_required_maps": [],
+          "appearance_summary": "The material has a dark, metallic appearance with a rough, uneven texture and subtle variations in color and reflectivity, suggesting a coarse, possibly oxidized surface.",
+          "dominant_colors": [
+            "black",
+            "charcoal",
+            "dark gray"
+          ],
+          "brightness": "dark",
+          "appearance_confidence": 0.85,
+          "match_confidence": 0.6975
+        },
+        "candidates": [
+          {
+            "candidate_kind": "cached_r2",
+            "resource_id": "ambientcg_material_Metal046B_2k-jpg",
+            "source_asset_id": "Metal046B",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Metal 046 B",
+            "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal046B/2k-jpg/preview.png",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 419,
+            "reasons": [
+              "previous compatible selection",
+              "metal family match (metal)",
+              "matches rough",
+              "matches surface",
+              "matches with",
+              "matches subtle",
+              "matches dark",
+              "matches appearance",
+              "dark brightness match",
+              "visible texture description match",
+              "matches dark",
+              "matches metal"
+            ],
+            "published_to_r2": true,
+            "required_maps_available": [
+              "base_color",
+              "normal_gl",
+              "normal_dx",
+              "roughness",
+              "metallic",
+              "height"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material has a dark, metallic appearance with a rough, uneven texture and subtle variations in color and reflectivity, suggesting a coarse, possibly oxidized surface.",
+            "dominant_colors": [
+              "black",
+              "charcoal",
+              "dark gray"
+            ],
+            "brightness": "dark",
+            "appearance_confidence": 0.85,
+            "match_confidence": 0.6975
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Metal046B",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Metal 046 B",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046B/Metal046B_SQ_Color.jpg?31378&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046B/Metal046B_SQ_Displacement.jpg?33450&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046B/Metal046B_SQ_NormalDX.jpg?10074&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046B/Metal046B_SQ_Roughness.jpg?13893&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal046B/Metal046B_SQ_Metalness.jpg?99568",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 399,
+            "reasons": [
+              "previous compatible selection",
+              "metal family match (metal)",
+              "matches rough",
+              "matches surface",
+              "matches with",
+              "matches subtle",
+              "matches dark",
+              "matches appearance",
+              "dark brightness match",
+              "visible texture description match",
+              "matches dark",
+              "matches metal"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness",
+              "metallic"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material has a dark, metallic appearance with a rough, uneven texture and subtle variations in color and reflectivity, suggesting a coarse, possibly oxidized surface.",
+            "dominant_colors": [
+              "black",
+              "charcoal",
+              "dark gray"
+            ],
+            "brightness": "dark",
+            "appearance_confidence": 0.85,
+            "match_confidence": 0.6859999999999999
+          },
+          {
+            "candidate_kind": "cached_r2",
+            "resource_id": "ambientcg_material_Metal063_2k-jpg",
+            "source_asset_id": "Metal063",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Metal 063",
+            "preview_url": "https://pub-f447804bbafb44fa84ffda8fd1ed133c.r2.dev/runtime/materials/ambientcg/Metal063/2k-jpg/preview.png",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 335,
+            "reasons": [
+              "metal family match (metal)",
+              "matches smooth",
+              "matches surface",
+              "matches with",
+              "matches subtle",
+              "matches dark",
+              "dark brightness match",
+              "visible texture description match",
+              "matches dark",
+              "matches metal",
+              "matches with",
+              "matches smooth"
+            ],
+            "published_to_r2": true,
+            "required_maps_available": [
+              "base_color",
+              "normal_gl",
+              "normal_dx",
+              "roughness",
+              "metallic",
+              "height"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material has a glossy black surface with a reflective sheen, displaying a smooth texture with subtle speckles of brown and gray, suggesting a metallic finish with minor surface variations.",
+            "dominant_colors": [
+              "black",
+              "dark gray",
+              "cream"
+            ],
+            "brightness": "dark",
+            "appearance_confidence": 0.85,
+            "match_confidence": 0.6975
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Metal033",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Metal 033",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal033/Metal033_SQ_Color.jpg?97605&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal033/Metal033_SQ_Displacement.jpg?98544&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal033/Metal033_SQ_NormalDX.jpg?17343&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal033/Metal033_SQ_Roughness.jpg?56527&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal033/Metal033_SQ_Metalness.jpg?4535",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 327,
+            "reasons": [
+              "metal family match (metal)",
+              "matches smooth",
+              "matches surface",
+              "matches with",
+              "matches subtle",
+              "matches dark",
+              "matches metal",
+              "dark brightness match",
+              "visible texture description match",
+              "matches dark",
+              "matches metal",
+              "matches with"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness",
+              "metallic"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material displays a smooth, reflective surface with a dark gray color and subtle variations in shading, suggesting a polished metal finish.",
+            "dominant_colors": [
+              "charcoal",
+              "light gray"
+            ],
+            "brightness": "dark",
+            "appearance_confidence": 0.9,
+            "match_confidence": 0.704
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Metal041C",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Metal 041 C",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal041C/Metal041C_SQ_Color.jpg?63639&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal041C/Metal041C_SQ_Displacement.jpg?75589&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal041C/Metal041C_SQ_NormalDX.jpg?4276&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal041C/Metal041C_SQ_Roughness.jpg?15091&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal041C/Metal041C_SQ_Metalness.jpg?81317",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 327,
+            "reasons": [
+              "metal family match (metal)",
+              "matches rough",
+              "matches surface",
+              "matches with",
+              "matches variation",
+              "matches dark",
+              "matches metal",
+              "dark brightness match",
+              "visible texture description match",
+              "matches iron",
+              "matches metal",
+              "matches with"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness",
+              "metallic"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material displays a rusted metal surface with a predominantly reddish-brown color, interspersed with patches of lighter grayish-white areas, suggesting oxidation or weathering. The texture appears rough and uneven, with a mottled pattern that varies in intensity across the surface, indicating a lack of uniformity in the material's finish. There are no clear patterns or grains, and the surface variation is consist",
+            "dominant_colors": [
+              "brown",
+              "dark brown",
+              "tan"
+            ],
+            "brightness": "dark",
+            "appearance_confidence": 0.85,
+            "match_confidence": 0.6859999999999999
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "Metal059A",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Metal 059 A",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal059A/Metal059A_SQ_Color.jpg?31264&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal059A/Metal059A_SQ_Displacement.jpg?51474&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal059A/Metal059A_SQ_NormalDX.jpg?78090&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal059A/Metal059A_SQ_Roughness.jpg?46552&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/Metal059A/Metal059A_SQ_Metalness.jpg?2778",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 316,
+            "reasons": [
+              "metal family match (metal)",
+              "matches smooth",
+              "matches surface",
+              "matches with",
+              "matches subtle",
+              "matches dark",
+              "dark brightness match",
+              "visible texture description match",
+              "matches dark",
+              "matches metal",
+              "matches with",
+              "matches smooth"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness",
+              "metallic"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material has a highly reflective, mirror-like surface with a smooth finish, displaying a bright highlight and subtle gradient from dark to light gray, without any visible texture, pattern, or grain.",
+            "dominant_colors": [
+              "black",
+              "gray",
+              "white"
+            ],
+            "brightness": "dark",
+            "appearance_confidence": 0.95,
+            "match_confidence": 0.722
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "MetalPlates004",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Metal Plates 004",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/MetalPlates004/MetalPlates004_SQ_Color.jpg?4018&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/MetalPlates004/MetalPlates004_SQ_Displacement.jpg?98161&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/MetalPlates004/MetalPlates004_SQ_NormalDX.jpg?88016&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/MetalPlates004/MetalPlates004_SQ_Roughness.jpg?12255&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/MetalPlates004/MetalPlates004_SQ_Metalness.jpg?55709",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 316,
+            "reasons": [
+              "metal family match (metal)",
+              "matches smooth",
+              "matches surface",
+              "matches with",
+              "matches subtle",
+              "matches dark",
+              "dark brightness match",
+              "visible texture description match",
+              "matches dark",
+              "matches metal",
+              "matches with",
+              "matches smooth"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness",
+              "metallic"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "A highly reflective, dark gray metallic surface with a grid-like pattern of raised square panels, exhibiting a smooth and polished finish with subtle variations in light reflection across the surface.",
+            "dominant_colors": [
+              "charcoal",
+              "dark gray",
+              "light gray"
+            ],
+            "brightness": "dark",
+            "appearance_confidence": 0.95,
+            "match_confidence": 0.722
+          },
+          {
+            "candidate_kind": "ambientcg_catalog",
+            "resource_id": null,
+            "source_asset_id": "MetalPlates005",
+            "variant_id": "2k-jpg-1",
+            "display_name": "Metal Plates 005",
+            "preview_url": "https://releases.pbr.one/main/material-shading.html#normal_type=directx&color_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/MetalPlates005/MetalPlates005_SQ_Color.jpg?24425&displacement_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/MetalPlates005/MetalPlates005_SQ_Displacement.jpg?64958&normal_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/MetalPlates005/MetalPlates005_SQ_NormalDX.jpg?75921&roughness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/MetalPlates005/MetalPlates005_SQ_Roughness.jpg?9921&metalness_url=https://f003.backblazeb2.com/file/ambientCG-Web/media/surface-preview/MetalPlates005/MetalPlates005_SQ_Metalness.jpg?13017",
+            "resolution": "2K",
+            "file_format": "JPG",
+            "score": 316,
+            "reasons": [
+              "metal family match (metal)",
+              "matches smooth",
+              "matches surface",
+              "matches with",
+              "matches subtle",
+              "matches dark",
+              "dark brightness match",
+              "visible texture description match",
+              "matches dark",
+              "matches metal",
+              "matches with",
+              "matches smooth"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [
+              "base_color",
+              "height",
+              "normal_gl",
+              "roughness",
+              "metallic"
+            ],
+            "missing_required_maps": [],
+            "appearance_summary": "The material displays a smooth, reflective metallic surface with a uniform dark gray color and a subtle, consistent grid-like pattern across its entirety, suggesting a seamless and polished finish.",
+            "dominant_colors": [
+              "black",
+              "dark gray",
+              "light gray"
+            ],
+            "brightness": "dark",
+            "appearance_confidence": 0.95,
+            "match_confidence": 0.722
+          }
+        ],
+        "texture_scale_m": 0.1
+      }
+    ],
+    "environment": {
+      "status": "trusted_studio_fallback",
+      "intent": {
+        "intent": "neutral product look development",
+        "semantic_tags": [],
+        "preferred_environment_class": "studio",
+        "strength": 0.8,
+        "rotation_degrees": 0,
+        "background_visible": false
+      },
+      "selected": {
+        "candidate_kind": "procedural",
+        "resource_id": null,
+        "source_asset_id": null,
+        "variant_id": null,
+        "display_name": "Trusted neutral studio rig",
+        "preview_url": null,
+        "resolution": null,
+        "file_format": null,
+        "score": 100,
+        "reasons": [
+          "trusted studio fallback preferred over an unrelated HDRI"
+        ],
+        "published_to_r2": false,
+        "required_maps_available": [],
+        "missing_required_maps": [],
+        "appearance_summary": "Neutral product look-development studio.",
+        "dominant_colors": [],
+        "brightness": null,
+        "appearance_confidence": 0,
+        "match_confidence": 1
+      },
+      "candidates": [
+        {
+          "candidate_kind": "procedural",
+          "resource_id": null,
+          "source_asset_id": null,
+          "variant_id": null,
+          "display_name": "Trusted neutral studio rig",
+          "preview_url": null,
+          "resolution": null,
+          "file_format": null,
+          "score": 100,
+          "reasons": [
+            "trusted studio fallback preferred over an unrelated HDRI"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [],
+          "missing_required_maps": [],
+          "appearance_summary": "Neutral product look-development studio.",
+          "dominant_colors": [],
+          "brightness": null,
+          "appearance_confidence": 0,
+          "match_confidence": 1
+        }
+      ]
+    },
+    "summary": {
+      "ready_r2": 2,
+      "catalog_matches": 0,
+      "procedural_fallbacks": 1,
+      "missing": 0,
+      "requires_preparation": false
+    }
+  },
+  "resource_manifest": {
+    "schema_version": "myway_blender_foundry_resource_manifest_v1",
+    "created_at": "2026-08-03T17:58:00.894Z",
+    "design_brief_asset_id": "treasure_chest_stylized_v1",
+    "quality_mode": "standard",
+    "material_slots": {
+      "wood_oak": {
+        "slot_id": "wood_oak",
+        "display_name": "Chipboard 002",
+        "source": "ambientcg_r2",
+        "resource_id": "ambientcg_material_Chipboard002_2k-jpg",
+        "source_asset_id": "Chipboard002",
+        "variant_id": "2k-jpg-1",
+        "content_sha256": "69ab77d30b3a17abb1d28ad39d6dc5089f4c7f014bc3b64b9c0c2aca6a375823",
+        "maps": {
+          "ambient_occlusion": "ambient_occlusion.jpg",
+          "base_color": "base_color.jpg",
+          "height": "height.jpg",
+          "normal_dx": "normal_dx.jpg",
+          "normal_gl": "normal_gl.jpg",
+          "roughness": "roughness.jpg"
+        },
+        "texture_scale_m": 0.2,
+        "look": {
+          "physical_scale_m": 0.2,
+          "uv_repeat": [
+            1,
+            1
+          ],
+          "rotation_degrees": 0,
+          "offset": [
+            0,
+            0
+          ],
+          "normal_strength": 1,
+          "roughness_factor": 1,
+          "height_strength": 0.18,
+          "mapping_mode": "uv",
+          "part_overrides": {}
+        },
+        "fallback": {
+          "color_rgba": [
+            0.545,
+            0.353,
+            0.169,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.7
+        }
+      },
+      "metal_dark_iron": {
+        "slot_id": "metal_dark_iron",
+        "display_name": "Metal 046 B",
+        "source": "ambientcg_r2",
+        "resource_id": "ambientcg_material_Metal046B_2k-jpg",
+        "source_asset_id": "Metal046B",
+        "variant_id": "2k-jpg-1",
+        "content_sha256": "b10bffa3d74ce925ee12b9425b077609a1775e1aeebdc2dab2a750c55b882521",
+        "maps": {
+          "base_color": "base_color.jpg",
+          "height": "height.jpg",
+          "metallic": "metallic.jpg",
+          "normal_dx": "normal_dx.jpg",
+          "normal_gl": "normal_gl.jpg",
+          "roughness": "roughness.jpg"
+        },
+        "texture_scale_m": 0.1,
+        "look": {
+          "physical_scale_m": 0.1,
+          "uv_repeat": [
+            1,
+            1
+          ],
+          "rotation_degrees": 0,
+          "offset": [
+            0,
+            0
+          ],
+          "normal_strength": 1,
+          "roughness_factor": 1,
+          "height_strength": 0.18,
+          "mapping_mode": "uv",
+          "part_overrides": {}
+        },
+        "fallback": {
+          "color_rgba": [
+            0.227,
+            0.227,
+            0.227,
+            1
+          ],
+          "metallic": 0.9,
+          "roughness": 0.8
+        }
+      }
+    },
+    "part_material_slots": {
+      "chest_body": "wood_oak",
+      "lid": "wood_oak",
+      "band_horizontal_front": "metal_dark_iron",
+      "band_horizontal_back": "metal_dark_iron",
+      "band_vertical_corner_01": "metal_dark_iron",
+      "band_vertical_corner_02": "metal_dark_iron",
+      "band_vertical_corner_03": "metal_dark_iron",
+      "band_vertical_corner_04": "metal_dark_iron",
+      "hinge_left": "metal_dark_iron",
+      "hinge_right": "metal_dark_iron",
+      "lock_plate": "metal_dark_iron",
+      "lock_hasp": "metal_dark_iron",
+      "handle_left": "metal_dark_iron",
+      "handle_right": "metal_dark_iron",
+      "corner_bracket_bl_01": "metal_dark_iron",
+      "corner_bracket_br_01": "metal_dark_iron",
+      "corner_bracket_bl_02": "metal_dark_iron",
+      "corner_bracket_br_02": "metal_dark_iron",
+      "rivets": "metal_dark_iron"
+    },
+    "environment": {
+      "source": "trusted_studio",
+      "resource_id": null,
+      "source_asset_id": null,
+      "variant_id": null,
+      "content_sha256": null,
+      "environment_path": null,
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "exposure": 0,
+      "background_visible": false,
+      "fallback_light_energy_scale": 1
+    },
+    "look_adjustments": {
+      "schema_version": "myway_foundry_look_adjustments_v1",
+      "material_slots": {
+        "wood_oak": {
+          "physical_scale_m": 0.2,
+          "uv_repeat": [
+            1,
+            1
+          ],
+          "rotation_degrees": 0,
+          "offset": [
+            0,
+            0
+          ],
+          "normal_strength": 1,
+          "roughness_factor": 1,
+          "height_strength": 0.18,
+          "mapping_mode": "uv",
+          "part_overrides": {}
+        },
+        "metal_dark_iron": {
+          "physical_scale_m": 0.1,
+          "uv_repeat": [
+            1,
+            1
+          ],
+          "rotation_degrees": 0,
+          "offset": [
+            0,
+            0
+          ],
+          "normal_strength": 1,
+          "roughness_factor": 1,
+          "height_strength": 0.18,
+          "mapping_mode": "uv",
+          "part_overrides": {}
+        }
+      },
+      "environment": {
+        "strength": 0.8,
+        "rotation_degrees": 0,
+        "exposure": 0,
+        "background_visible": false,
+        "fallback_light_energy_scale": 1
+      }
+    }
+  },
+  "look_adjustments": {
+    "schema_version": "myway_foundry_look_adjustments_v1",
+    "material_slots": {
+      "wood_oak": {
+        "physical_scale_m": 0.2,
+        "uv_repeat": [
+          1,
+          1
+        ],
+        "rotation_degrees": 0,
+        "offset": [
+          0,
+          0
+        ],
+        "normal_strength": 1,
+        "roughness_factor": 1,
+        "height_strength": 0.18,
+        "mapping_mode": "uv",
+        "part_overrides": {}
+      },
+      "metal_dark_iron": {
+        "physical_scale_m": 0.1,
+        "uv_repeat": [
+          1,
+          1
+        ],
+        "rotation_degrees": 0,
+        "offset": [
+          0,
+          0
+        ],
+        "normal_strength": 1,
+        "roughness_factor": 1,
+        "height_strength": 0.18,
+        "mapping_mode": "uv",
+        "part_overrides": {}
+      }
+    },
+    "environment": {
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "exposure": 0,
+      "background_visible": false,
+      "fallback_light_energy_scale": 1
+    }
+  },
+  "helper_library_version": "myway_blender_foundry_helpers_v3_0",
+  "inspection_footer_version": "myway_blender_foundry_inspection_v4",
+  "created_at": "2026-08-03T17:58:00.903Z"
+}

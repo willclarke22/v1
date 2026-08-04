@@ -12,7 +12,7 @@ import {
 } from "./native-vintage-camera-proof";
 
 export const DIRECT_GLM_CONTEXT_SCHEMA_VERSION =
-  "myway_direct_glm_context_v1" as const;
+  "myway_direct_glm_context_v2" as const;
 
 export type DirectGlmContextPackage = {
   schema_version:
@@ -40,9 +40,12 @@ export type DirectGlmContextPackage = {
     silhouette:
       AssetDesignBriefV2["silhouette"];
     proportions: string[];
+    visual_description:
+      AssetDesignBriefV2["visual_description"] | null;
     required_parts: Array<{
       part_id: string;
       semantic_role: string;
+      geometry_strategy: string[];
       parent_part_id: string | null;
       connection_strategy: string | null;
       material_slot_id: string | null;
@@ -53,6 +56,7 @@ export type DirectGlmContextPackage = {
     optional_parts: Array<{
       part_id: string;
       semantic_role: string;
+      geometry_strategy: string[];
       parent_part_id: string | null;
       connection_strategy: string | null;
       material_slot_id: string | null;
@@ -134,6 +138,8 @@ function compactPart(
       part.part_id,
     semantic_role:
       part.semantic_role,
+    geometry_strategy:
+      part.geometry_strategy,
     parent_part_id:
       part.parent_part_id,
     connection_strategy:
@@ -222,6 +228,9 @@ export function buildDirectGlmContextPackage(
         input.brief.silhouette,
       proportions:
         input.brief.proportions,
+      visual_description:
+        input.brief.visual_description ??
+        null,
       required_parts:
         requiredParts,
       optional_parts:
@@ -362,8 +371,8 @@ export function buildDirectGlmContextPackage(
       required_myway_helpers: [
         "myway_reset_scene()",
         "myway_print_progress(message)",
-        "myway_material_slot(slot_id, fallback_color=(...), metallic=0.0, roughness=0.55)",
-        "myway_assign_material_slot(obj, slot_id, fallback_color=(...), metallic=0.0, roughness=0.55)",
+        "myway_material_slot(slot_id, fallback_color=(...), metallic=0.0, roughness=0.55, part_id=None)",
+        "myway_assign_material_slot(obj, slot_id, fallback_color=(...), metallic=0.0, roughness=0.55, part_id=None)",
         "myway_normalize_extent(target_extent, root_or_iterable)",
       ],
       native_blender_modules: [
@@ -427,6 +436,32 @@ export function publicDirectGlmContextSummary(
     optional_part_count:
       context.asset_contract
         .optional_parts.length,
+    visual_blueprint: {
+      present:
+        context.asset_contract
+          .visual_description !==
+        null,
+      proportion_count:
+        context.asset_contract
+          .visual_description
+          ?.normalized_proportions
+          .length ?? 0,
+      dimensioned_part_count:
+        context.asset_contract
+          .visual_description
+          ?.part_layout
+          .filter((part) =>
+            Boolean(
+              part.dimensions_m &&
+              part.position_m,
+            ),
+          ).length ?? 0,
+      visual_test_count:
+        context.asset_contract
+          .visual_description
+          ?.visual_acceptance_tests
+          .length ?? 0,
+    },
     material_slot_count:
       context.resources
         .material_slots.length,

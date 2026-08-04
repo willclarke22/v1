@@ -1,0 +1,1400 @@
+{
+  "schema_version": "myway_blender_foundry_job_v2",
+  "job_id": "0453ed9d-5629-443d-bd05-6d7e45741dec",
+  "asset_name": "foundry_treasure_chest",
+  "status": "review_required",
+  "technical_status": "needs_revision",
+  "release_status": "visual_and_human_review_required",
+  "parent_job_id": null,
+  "revision_number": 1,
+  "revision_label": "initial build",
+  "critique": null,
+  "glb_url": "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/foundry_treasure_chest.glb",
+  "blend_url": "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/foundry_treasure_chest.blend",
+  "preview_url": "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/preview.png",
+  "inspection_urls": [
+    "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/preview.png",
+    "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/preview_front.png",
+    "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/preview_right.png",
+    "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/preview_back.png",
+    "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/preview_left.png",
+    "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/preview_top.png",
+    "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/preview_clay.png",
+    "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/preview_material_id.png",
+    "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/preview_normals.png",
+    "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/preview_wireframe.png",
+    "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/preview_dimensions.png"
+  ],
+  "validation_url": "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/validation.json",
+  "quality_url": "/sandbox-assets/myway/blender-python-builder/0453ed9d-5629-443d-bd05-6d7e45741dec/quality.json",
+  "asset_spec": {
+    "schema_version": "myway_procedural_asset_spec_v1",
+    "asset_id": "foundry_treasure_chest",
+    "concept": "foundry_treasure_chest",
+    "target_extent_m": 2,
+    "max_triangles": 30000,
+    "style_tags": [
+      "manual code"
+    ],
+    "realism": "stylized",
+    "parts": [
+      {
+        "part_id": "main_body",
+        "semantic_role": "main foundry_treasure_chest body",
+        "geometry_intent": "compound",
+        "parent_part_id": null,
+        "material_intent": "primary_surface",
+        "animation_role": null,
+        "required": true
+      }
+    ],
+    "requirements": {
+      "uv_required": true,
+      "rig_required": false,
+      "movable_parts": [],
+      "collision_required": false,
+      "ground_contact_required": true
+    }
+  },
+  "asset_spec_validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "design_brief": {
+    "schema_version": "myway_asset_design_brief_v2",
+    "asset_id": "foundry_treasure_chest",
+    "concept": "foundry_treasure_chest",
+    "asset_class": "general",
+    "intended_use": [],
+    "target_extent_m": 2,
+    "axis_dimensions_m": null,
+    "max_triangles": 30000,
+    "quality_mode": "standard",
+    "realism": "stylized",
+    "style_tags": [
+      "manual code"
+    ],
+    "silhouette": {
+      "primary_shapes": [],
+      "identifying_features": [],
+      "important_negative_spaces": [],
+      "camera_readability": []
+    },
+    "proportions": [],
+    "parts": [
+      {
+        "part_id": "main_body",
+        "semantic_role": "main foundry_treasure_chest body",
+        "geometry_strategy": [
+          "compound"
+        ],
+        "parent_part_id": null,
+        "connection_strategy": null,
+        "material_slot_id": "primary_surface",
+        "animation_role": null,
+        "pivot_requirement": null,
+        "required": true,
+        "identifying_features": []
+      }
+    ],
+    "material_slots": [
+      {
+        "slot_id": "primary_surface",
+        "display_name": "Primary surface",
+        "assigned_part_ids": [
+          "main_body"
+        ],
+        "material_family": "general",
+        "intent": "visually suitable surface",
+        "semantic_tags": [
+          "foundry_treasure_chest",
+          "manual code"
+        ],
+        "color_hint": null,
+        "roughness_hint": null,
+        "metallic_hint": null,
+        "texture_hint": null,
+        "brightness_hint": null,
+        "avoid_tags": [],
+        "physical_scale_m": null,
+        "required_maps": [
+          "base_color",
+          "roughness",
+          "normal_gl"
+        ],
+        "procedural_fallback": {
+          "color_rgba": [
+            0.5,
+            0.5,
+            0.5,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.55
+        }
+      }
+    ],
+    "environment": {
+      "intent": "neutral product look development",
+      "semantic_tags": [],
+      "preferred_environment_class": "studio",
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "background_visible": false
+    },
+    "requirements": {
+      "uv_required": true,
+      "rig_required": false,
+      "collision_required": false,
+      "ground_contact_required": true,
+      "animation_ready": true,
+      "movable_part_ids": []
+    },
+    "acceptance_criteria": [],
+    "benchmark_priorities": []
+  },
+  "design_brief_validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": [
+      "Add at least three measurable acceptance criteria before final generation.",
+      "The design brief has few silhouette-identifying features."
+    ]
+  },
+  "resource_plan": {
+    "schema_version": "myway_foundry_resource_plan_v1",
+    "created_at": "2026-08-03T18:51:52.789Z",
+    "design_brief_asset_id": "foundry_treasure_chest",
+    "quality_mode": "standard",
+    "material_bindings": [
+      {
+        "slot": {
+          "slot_id": "primary_surface",
+          "display_name": "Primary surface",
+          "assigned_part_ids": [
+            "main_body"
+          ],
+          "material_family": "general",
+          "intent": "visually suitable surface",
+          "semantic_tags": [
+            "foundry_treasure_chest",
+            "manual code"
+          ],
+          "color_hint": null,
+          "roughness_hint": null,
+          "metallic_hint": null,
+          "texture_hint": null,
+          "brightness_hint": null,
+          "avoid_tags": [],
+          "physical_scale_m": null,
+          "required_maps": [
+            "base_color",
+            "roughness",
+            "normal_gl"
+          ],
+          "procedural_fallback": {
+            "color_rgba": [
+              0.5,
+              0.5,
+              0.5,
+              1
+            ],
+            "metallic": 0,
+            "roughness": 0.55
+          }
+        },
+        "status": "procedural_fallback",
+        "selected": {
+          "candidate_kind": "procedural",
+          "resource_id": null,
+          "source_asset_id": null,
+          "variant_id": null,
+          "display_name": "Primary surface procedural fallback",
+          "preview_url": null,
+          "resolution": null,
+          "file_format": null,
+          "score": 1,
+          "reasons": [
+            "trusted Principled BSDF fallback"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [],
+          "missing_required_maps": [],
+          "appearance_summary": null,
+          "dominant_colors": [],
+          "brightness": null,
+          "appearance_confidence": null,
+          "match_confidence": 1
+        },
+        "candidates": [
+          {
+            "candidate_kind": "procedural",
+            "resource_id": null,
+            "source_asset_id": null,
+            "variant_id": null,
+            "display_name": "Primary surface procedural fallback",
+            "preview_url": null,
+            "resolution": null,
+            "file_format": null,
+            "score": 1,
+            "reasons": [
+              "trusted Principled BSDF fallback"
+            ],
+            "published_to_r2": false,
+            "required_maps_available": [],
+            "missing_required_maps": [
+              "base_color",
+              "roughness",
+              "normal_gl"
+            ],
+            "appearance_summary": "Controlled procedural Principled material fallback.",
+            "dominant_colors": [],
+            "brightness": null,
+            "appearance_confidence": null,
+            "match_confidence": 1
+          }
+        ],
+        "texture_scale_m": null
+      }
+    ],
+    "environment": {
+      "status": "trusted_studio_fallback",
+      "intent": {
+        "intent": "neutral product look development",
+        "semantic_tags": [],
+        "preferred_environment_class": "studio",
+        "strength": 0.8,
+        "rotation_degrees": 0,
+        "background_visible": false
+      },
+      "selected": {
+        "candidate_kind": "procedural",
+        "resource_id": null,
+        "source_asset_id": null,
+        "variant_id": null,
+        "display_name": "Trusted neutral studio rig",
+        "preview_url": null,
+        "resolution": null,
+        "file_format": null,
+        "score": 1,
+        "reasons": [
+          "trusted fallback lighting"
+        ],
+        "published_to_r2": false,
+        "required_maps_available": [],
+        "missing_required_maps": [],
+        "appearance_summary": null,
+        "dominant_colors": [],
+        "brightness": null,
+        "appearance_confidence": null,
+        "match_confidence": 1
+      },
+      "candidates": [
+        {
+          "candidate_kind": "procedural",
+          "resource_id": null,
+          "source_asset_id": null,
+          "variant_id": null,
+          "display_name": "Trusted neutral studio rig",
+          "preview_url": null,
+          "resolution": null,
+          "file_format": null,
+          "score": 1,
+          "reasons": [
+            "trusted fallback lighting"
+          ],
+          "published_to_r2": false,
+          "required_maps_available": [],
+          "missing_required_maps": [],
+          "appearance_summary": "Trusted neutral studio lighting fallback.",
+          "dominant_colors": [],
+          "brightness": null,
+          "appearance_confidence": null,
+          "match_confidence": 1
+        }
+      ]
+    },
+    "summary": {
+      "ready_r2": 0,
+      "catalog_matches": 0,
+      "procedural_fallbacks": 2,
+      "missing": 0,
+      "requires_preparation": false
+    }
+  },
+  "resource_manifest": {
+    "schema_version": "myway_blender_foundry_resource_manifest_v1",
+    "created_at": "2026-08-03T18:51:52.801Z",
+    "design_brief_asset_id": "foundry_treasure_chest",
+    "quality_mode": "standard",
+    "material_slots": {
+      "primary_surface": {
+        "slot_id": "primary_surface",
+        "display_name": "Primary surface",
+        "source": "procedural",
+        "resource_id": null,
+        "source_asset_id": null,
+        "variant_id": null,
+        "content_sha256": null,
+        "maps": {},
+        "texture_scale_m": 0,
+        "look": {
+          "physical_scale_m": 0,
+          "uv_repeat": [
+            1,
+            1
+          ],
+          "rotation_degrees": 0,
+          "offset": [
+            0,
+            0
+          ],
+          "normal_strength": 1,
+          "roughness_factor": 1,
+          "height_strength": 0.18,
+          "mapping_mode": "uv",
+          "part_overrides": {}
+        },
+        "fallback": {
+          "color_rgba": [
+            0.5,
+            0.5,
+            0.5,
+            1
+          ],
+          "metallic": 0,
+          "roughness": 0.55
+        }
+      }
+    },
+    "part_material_slots": {
+      "main_body": "primary_surface"
+    },
+    "environment": {
+      "source": "trusted_studio",
+      "resource_id": null,
+      "source_asset_id": null,
+      "variant_id": null,
+      "content_sha256": null,
+      "environment_path": null,
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "exposure": 0,
+      "background_visible": false,
+      "fallback_light_energy_scale": 1
+    },
+    "look_adjustments": {
+      "schema_version": "myway_foundry_look_adjustments_v1",
+      "material_slots": {
+        "primary_surface": {
+          "physical_scale_m": 0,
+          "uv_repeat": [
+            1,
+            1
+          ],
+          "rotation_degrees": 0,
+          "offset": [
+            0,
+            0
+          ],
+          "normal_strength": 1,
+          "roughness_factor": 1,
+          "height_strength": 0.18,
+          "mapping_mode": "uv",
+          "part_overrides": {}
+        }
+      },
+      "environment": {
+        "strength": 0.8,
+        "rotation_degrees": 0,
+        "exposure": 0,
+        "background_visible": false,
+        "fallback_light_energy_scale": 1
+      }
+    }
+  },
+  "look_adjustments": {
+    "schema_version": "myway_foundry_look_adjustments_v1",
+    "material_slots": {
+      "primary_surface": {
+        "physical_scale_m": 0,
+        "uv_repeat": [
+          1,
+          1
+        ],
+        "rotation_degrees": 0,
+        "offset": [
+          0,
+          0
+        ],
+        "normal_strength": 1,
+        "roughness_factor": 1,
+        "height_strength": 0.18,
+        "mapping_mode": "uv",
+        "part_overrides": {}
+      }
+    },
+    "environment": {
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "exposure": 0,
+      "background_visible": false,
+      "fallback_light_energy_scale": 1
+    }
+  },
+  "build_validation": {
+    "valid": false,
+    "errors": [
+      "Triangle count 39968 exceeds the requested budget 30000."
+    ],
+    "warnings": [],
+    "footer": {
+      "mesh_count": 32,
+      "material_slot_count": 32,
+      "triangle_count": 39968,
+      "object_names": [
+        "base_rubber_pad",
+        "blade_01",
+        "blade_02",
+        "blade_03",
+        "cage_depth_connectors",
+        "central_hub",
+        "central_hub_cap",
+        "control_knob_ring_01",
+        "control_knob_ring_02",
+        "control_knob_ring_03",
+        "fan_base_lower",
+        "fan_base_upper",
+        "front_cage",
+        "front_cage_cross_support",
+        "motor_front_neck",
+        "motor_housing",
+        "motor_rear_cap",
+        "motor_vent_ring_01",
+        "motor_vent_ring_02",
+        "motor_vent_ring_03",
+        "motor_vent_ring_04",
+        "rear_cage",
+        "rear_control_knob",
+        "rotor_hub_rear",
+        "support_column",
+        "support_column_base_collar",
+        "support_column_top_collar",
+        "support_yoke",
+        "tilt_pivot_left",
+        "tilt_pivot_right",
+        "tilt_pivot_washer_left",
+        "tilt_pivot_washer_right"
+      ],
+      "objects": [
+        {
+          "name": "blade_01",
+          "parent": "rotor_pivot",
+          "materials": [
+            "MyWaySlot_matte_translucent_blade"
+          ],
+          "dimensions": [
+            0.4985044002532959,
+            0.04757089167833328,
+            0.4216914176940918
+          ],
+          "location": [
+            0,
+            0,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "blade_02",
+          "parent": "rotor_pivot",
+          "materials": [
+            "MyWaySlot_matte_translucent_blade"
+          ],
+          "dimensions": [
+            0.4985044002532959,
+            0.04757089167833328,
+            0.4216914176940918
+          ],
+          "location": [
+            0,
+            0,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "blade_03",
+          "parent": "rotor_pivot",
+          "materials": [
+            "MyWaySlot_matte_translucent_blade"
+          ],
+          "dimensions": [
+            0.4985044002532959,
+            0.04757089167833328,
+            0.4216914176940918
+          ],
+          "location": [
+            0,
+            0,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "base_rubber_pad",
+          "parent": "DeskFan_Root",
+          "materials": [
+            "MyWaySlot_black_rubber"
+          ],
+          "dimensions": [
+            1.1235017776489258,
+            1.1235017776489258,
+            0.041688378900289536
+          ],
+          "location": [
+            0,
+            0,
+            0.020844189450144768
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "fan_base_lower",
+          "parent": "DeskFan_Root",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            1.1464303731918335,
+            1.1464303731918335,
+            0.10026054084300995
+          ],
+          "location": [
+            0,
+            0,
+            0.09181864559650421
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "fan_base_upper",
+          "parent": "DeskFan_Root",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            1.0317872762680054,
+            1.0317872762680054,
+            0.062324121594429016
+          ],
+          "location": [
+            0,
+            0,
+            0.14194892346858978
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "support_column",
+          "parent": "DeskFan_Root",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            0.18759769201278687,
+            0.18759769201278687,
+            0.4116727411746979
+          ],
+          "location": [
+            0,
+            0,
+            0.341323584318161
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "support_column_base_collar",
+          "parent": "DeskFan_Root",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            0.2720166742801666,
+            0.2720166742801666,
+            0.07295466214418411
+          ],
+          "location": [
+            0,
+            0,
+            0.16675351560115814
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "support_column_top_collar",
+          "parent": "DeskFan_Root",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            0.23449712991714478,
+            0.23449712991714478,
+            0.08337675780057907
+          ],
+          "location": [
+            0,
+            0,
+            0.5263158082962036
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "support_yoke",
+          "parent": "DeskFan_Root",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            1.7489231824874878,
+            0.07816589623689651,
+            0.7141209244728088
+          ],
+          "location": [
+            -0.8415841460227966,
+            0.041688378900289536,
+            1.0891088247299194
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 10
+          }
+        },
+        {
+          "name": "tilt_pivot_left",
+          "parent": "DeskFan_Root",
+          "materials": [
+            "MyWaySlot_brushed_silver_metal"
+          ],
+          "dimensions": [
+            0.15633141994476318,
+            0.14069828391075134,
+            0.14069828391075134
+          ],
+          "location": [
+            -0.8494006991386414,
+            0.041688378900289536,
+            1.1985409259796143
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "tilt_pivot_washer_left",
+          "parent": "DeskFan_Root",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            0.031266290694475174,
+            0.19280874729156494,
+            0.19280874729156494
+          ],
+          "location": [
+            -0.9379885196685791,
+            0.041688378900289536,
+            1.1985409259796143
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "tilt_pivot_right",
+          "parent": "DeskFan_Root",
+          "materials": [
+            "MyWaySlot_brushed_silver_metal"
+          ],
+          "dimensions": [
+            0.15633141994476318,
+            0.14069828391075134,
+            0.14069828391075134
+          ],
+          "location": [
+            0.8494006991386414,
+            0.041688378900289536,
+            1.1985409259796143
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "tilt_pivot_washer_right",
+          "parent": "DeskFan_Root",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            0.031266290694475174,
+            0.19280874729156494,
+            0.19280874729156494
+          ],
+          "location": [
+            0.9379885196685791,
+            0.041688378900289536,
+            1.1985409259796143
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "motor_housing",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_charcoal_molded_plastic"
+          ],
+          "dimensions": [
+            0.6044814586639404,
+            0.4064617156982422,
+            0.6044814586639404
+          ],
+          "location": [
+            0,
+            0.07000000029802322,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "motor_front_neck",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_charcoal_molded_plastic"
+          ],
+          "dimensions": [
+            0.44815006852149963,
+            0.15633143484592438,
+            0.44815006852149963
+          ],
+          "location": [
+            0,
+            0.017000000923871994,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "motor_rear_cap",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_charcoal_molded_plastic"
+          ],
+          "dimensions": [
+            0.531943678855896,
+            0.10422096401453018,
+            0.531943678855896
+          ],
+          "location": [
+            0,
+            0.11800000071525574,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "motor_vent_ring_01",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            0.5990619659423828,
+            0.01875981315970421,
+            0.5990619659423828
+          ],
+          "location": [
+            0,
+            0.041999999433755875,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "motor_vent_ring_02",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            0.5990619659423828,
+            0.01875981315970421,
+            0.5990619659423828
+          ],
+          "location": [
+            0,
+            0.05999999865889549,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "motor_vent_ring_03",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            0.5990619659423828,
+            0.01875981315970421,
+            0.5990619659423828
+          ],
+          "location": [
+            0,
+            0.07800000160932541,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "motor_vent_ring_04",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            0.5990619659423828,
+            0.01875981315970421,
+            0.5990619659423828
+          ],
+          "location": [
+            0,
+            0.09600000083446503,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "rear_control_knob",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_black_rubber"
+          ],
+          "dimensions": [
+            0.18759769201278687,
+            0.1250651478767395,
+            0.18759769201278687
+          ],
+          "location": [
+            0,
+            0.14000000059604645,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "control_knob_ring_01",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_black_rubber"
+          ],
+          "dimensions": [
+            0.19489316642284393,
+            0.010830973275005817,
+            0.19489316642284393
+          ],
+          "location": [
+            0,
+            0.13199999928474426,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "control_knob_ring_02",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_black_rubber"
+          ],
+          "dimensions": [
+            0.19489316642284393,
+            0.010830973275005817,
+            0.19489316642284393
+          ],
+          "location": [
+            0,
+            0.14000000059604645,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "control_knob_ring_03",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_black_rubber"
+          ],
+          "dimensions": [
+            0.19489316642284393,
+            0.010830973275005817,
+            0.19489316642284393
+          ],
+          "location": [
+            0,
+            0.14800000190734863,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "rotor_hub_rear",
+          "parent": "rotor_pivot",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            0.3470557630062103,
+            0.11464305967092514,
+            0.3470557630062103
+          ],
+          "location": [
+            0,
+            0.006000000052154064,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "central_hub",
+          "parent": "rotor_pivot",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            0.3856174945831299,
+            0.14590933918952942,
+            0.3856174945831299
+          ],
+          "location": [
+            0,
+            -0.04600000008940697,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "central_hub_cap",
+          "parent": "rotor_pivot",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            0.30078163743019104,
+            0.05211048573255539,
+            0.30078163743019104
+          ],
+          "location": [
+            0,
+            -0.06400000303983688,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 1
+          }
+        },
+        {
+          "name": "front_cage",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            1.602918267250061,
+            0.039604078978300095,
+            1.602918267250061
+          ],
+          "location": [
+            0,
+            -0.029999999329447746,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 19
+          }
+        },
+        {
+          "name": "rear_cage",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            1.602918267250061,
+            0.039604078978300095,
+            1.602918267250061
+          ],
+          "location": [
+            0,
+            0.029999999329447746,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 19
+          }
+        },
+        {
+          "name": "cage_depth_connectors",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            1.585200548171997,
+            0.31266286969184875,
+            1.585200548171997
+          ],
+          "location": [
+            0.15000000596046448,
+            0,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 8
+          }
+        },
+        {
+          "name": "front_cage_cross_support",
+          "parent": "fan_head_pivot",
+          "materials": [
+            "MyWaySlot_painted_blue_gray_metal"
+          ],
+          "dimensions": [
+            1.511203646659851,
+            0.02501302771270275,
+            1.511203646659851
+          ],
+          "location": [
+            0,
+            -0.03099999949336052,
+            0.23000000417232513
+          ],
+          "topology": {
+            "non_manifold_edges": 0,
+            "loose_edges": 0,
+            "loose_vertices": 0,
+            "degenerate_faces": 0,
+            "connected_components": 2
+          }
+        }
+      ],
+      "uv_missing_object_names": [],
+      "zero_scale_object_names": [],
+      "negative_scale_object_names": [],
+      "bounds_min": [
+        -0.9536216855049133,
+        -0.5732151865959167,
+        0
+      ],
+      "bounds_max": [
+        0.9536216855049133,
+        0.8586295247077942,
+        2.0064773559570312
+      ],
+      "dimensions": [
+        1.9072433710098267,
+        1.431844711303711,
+        2.0064773559570312
+      ],
+      "ground_offset": 0,
+      "topology_totals": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0
+      }
+    },
+    "glb": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "version": 2,
+      "declared_length": 1015248,
+      "actual_length": 1015248,
+      "mesh_count": 32,
+      "material_count": 5,
+      "animation_count": 0,
+      "node_names": [
+        "base_rubber_pad",
+        "fan_base_lower",
+        "fan_base_upper",
+        "cage_depth_connectors",
+        "control_knob_ring_01",
+        "control_knob_ring_02",
+        "control_knob_ring_03",
+        "front_cage",
+        "front_cage_cross_support",
+        "motor_front_neck",
+        "motor_housing",
+        "motor_rear_cap",
+        "motor_vent_ring_01",
+        "motor_vent_ring_02",
+        "motor_vent_ring_03",
+        "motor_vent_ring_04",
+        "rear_cage",
+        "rear_control_knob",
+        "blade_01",
+        "blade_02",
+        "blade_03",
+        "central_hub",
+        "central_hub_cap",
+        "rotor_hub_rear",
+        "support_column",
+        "support_column_base_collar",
+        "support_column_top_collar",
+        "support_yoke",
+        "tilt_pivot_left",
+        "tilt_pivot_right",
+        "tilt_pivot_washer_left",
+        "tilt_pivot_washer_right"
+      ],
+      "primitive_count": 32,
+      "primitives_missing_uvs": 0
+    },
+    "required_part_count": 0,
+    "matched_required_part_count": 0
+  },
+  "quality_report": {
+    "score": 92,
+    "grade": "technical_ready",
+    "asset_class": "general",
+    "findings": [
+      {
+        "severity": "error",
+        "code": "missing_required_parts",
+        "message": "Missing required semantic parts: main_body"
+      }
+    ],
+    "technical_only": true,
+    "release_requires_visual_and_human_review": true,
+    "benchmark_checks": {
+      "silhouette_requires_visual_review": true,
+      "proportions_require_visual_review": true,
+      "connections_require_visual_review": true,
+      "material_response_requires_visual_review": true,
+      "semantic_parts_present": false,
+      "topology_clean": true,
+      "material_regions_present": true
+    }
+  },
+  "helper_library_version": "myway_blender_foundry_helpers_v3_0",
+  "inspection_footer_version": "myway_blender_foundry_inspection_v4",
+  "blender_runtime": {
+    "schema_version": "myway_blender_runtime_v1",
+    "blender_version": "5.1.2",
+    "blender_version_tuple": [
+      5,
+      1,
+      2
+    ],
+    "python_version": "3.13.9",
+    "executable_name": "blender.exe",
+    "execution_mode": "background_factory_startup"
+  },
+  "compile_smoke": {
+    "schema_version": "myway_blender_compile_smoke_v1",
+    "valid": true,
+    "stage": "assembled_script",
+    "message": "Model source and assembled Foundry script compile in the configured Blender runtime.",
+    "line": null,
+    "offset": null,
+    "text": null,
+    "runtime": {
+      "schema_version": "myway_blender_runtime_v1",
+      "blender_version": "5.1.2",
+      "blender_version_tuple": [
+        5,
+        1,
+        2
+      ],
+      "python_version": "3.13.9",
+      "executable_name": "blender.exe",
+      "execution_mode": "background_factory_startup"
+    },
+    "stdout": "MYWAY_COMPILE_SMOKE:{\"valid\": true, \"stage\": \"assembled_script\", \"message\": \"Model source and assembled Foundry script compile in the configured Blender runtime.\", \"line\": null, \"offset\": null, \"text\": null}\r\nBlender 5.1.2 (hash ec6e62d40fa9 built 2026-05-19 01:37:34)\n\nBlender quit\n",
+    "stderr": "",
+    "elapsed_ms": 5282
+  },
+  "glb_bytes": 1015248,
+  "elapsed_ms": 32078,
+  "completed_at": "2026-08-03T18:52:30.700Z"
+}

@@ -1,0 +1,17 @@
+C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\0f895b8a-10c4-4bce-9a15-bff21af450e6\build_asset.py:90: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  material.use_nodes = True
+C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\0f895b8a-10c4-4bce-9a15-bff21af450e6\build_asset.py:158: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  material.use_nodes = True
+Traceback (most recent call last):
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\0f895b8a-10c4-4bce-9a15-bff21af450e6\build_asset.py", line 1207, in <module>
+    apply_scale(chest_body)
+    ~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\0f895b8a-10c4-4bce-9a15-bff21af450e6\build_asset.py", line 1106, in apply_scale
+    activate(obj)
+    ~~~~~~~~^^^^^
+  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\0f895b8a-10c4-4bce-9a15-bff21af450e6\build_asset.py", line 1103, in activate
+    bpy.context.view_layer.objects_active = obj
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ViewLayer' object has no attribute 'objects_active'
+
+Error: script failed, file: 'C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\0f895b8a-10c4-4bce-9a15-bff21af450e6\build_asset.py', exiting.

@@ -8,6 +8,12 @@ import {
   validateAssetDesignBrief,
 } from "../asset-design-brief";
 import {
+  normalizeFoundryResourcePlan,
+} from "../foundry-resource-plan";
+import type {
+  FoundryVisualCritiqueReport,
+} from "../foundry-visual-critic.server";
+import {
   improveBlenderPython,
 } from "../glm-blender-python.server";
 
@@ -98,6 +104,28 @@ export async function POST(
           body.build_validation,
         qualityFindings:
           body.quality_findings,
+        resourcePlan:
+          body.resource_plan &&
+          typeof body.resource_plan ===
+            "object" &&
+          !Array.isArray(
+            body.resource_plan,
+          )
+            ? normalizeFoundryResourcePlan(
+                body.resource_plan,
+                brief,
+              )
+            : null,
+        visualCritique:
+          body.visual_critique &&
+          typeof body.visual_critique ===
+            "object" &&
+          !Array.isArray(
+            body.visual_critique,
+          )
+            ? body.visual_critique as
+                FoundryVisualCritiqueReport
+            : null,
       });
 
     return NextResponse.json({

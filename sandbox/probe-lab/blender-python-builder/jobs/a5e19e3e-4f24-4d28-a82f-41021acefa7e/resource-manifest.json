@@ -1,0 +1,91 @@
+{
+  "schema_version": "myway_blender_foundry_resource_manifest_v1",
+  "created_at": "2026-08-04T00:32:29.228Z",
+  "design_brief_asset_id": "foundry_treasure_chest",
+  "quality_mode": "standard",
+  "material_slots": {
+    "primary_surface": {
+      "slot_id": "primary_surface",
+      "display_name": "Primary surface",
+      "source": "procedural",
+      "resource_id": null,
+      "source_asset_id": null,
+      "variant_id": null,
+      "content_sha256": null,
+      "maps": {},
+      "texture_scale_m": 0,
+      "look": {
+        "physical_scale_m": 0,
+        "uv_repeat": [
+          1,
+          1
+        ],
+        "rotation_degrees": 0,
+        "offset": [
+          0,
+          0
+        ],
+        "normal_strength": 1,
+        "roughness_factor": 1,
+        "height_strength": 0.18,
+        "mapping_mode": "uv",
+        "part_overrides": {}
+      },
+      "fallback": {
+        "color_rgba": [
+          0.5,
+          0.5,
+          0.5,
+          1
+        ],
+        "metallic": 0,
+        "roughness": 0.55
+      }
+    }
+  },
+  "part_material_slots": {
+    "main_body": "primary_surface"
+  },
+  "environment": {
+    "source": "trusted_studio",
+    "resource_id": null,
+    "source_asset_id": null,
+    "variant_id": null,
+    "content_sha256": null,
+    "environment_path": null,
+    "strength": 0.8,
+    "rotation_degrees": 0,
+    "exposure": 0,
+    "background_visible": false,
+    "fallback_light_energy_scale": 1
+  },
+  "look_adjustments": {
+    "schema_version": "myway_foundry_look_adjustments_v1",
+    "material_slots": {
+      "primary_surface": {
+        "physical_scale_m": 0,
+        "uv_repeat": [
+          1,
+          1
+        ],
+        "rotation_degrees": 0,
+        "offset": [
+          0,
+          0
+        ],
+        "normal_strength": 1,
+        "roughness_factor": 1,
+        "height_strength": 0.18,
+        "mapping_mode": "uv",
+        "part_overrides": {}
+      }
+    },
+    "environment": {
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "exposure": 0,
+      "background_visible": false,
+      "fallback_light_energy_scale": 1
+    }
+  }
+}

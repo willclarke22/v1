@@ -1,13 +1,13 @@
 
 export const FOUNDRY_INSPECTION_FOOTER_VERSION =
-  "myway_blender_foundry_inspection_v3" as const;
+  "myway_blender_foundry_inspection_v4" as const;
 
 export function buildTrustedBlenderInspectionFooter() {
   return String.raw`
 
 # ---------------------------------------------------------------------------
 # Trusted MyWay export, validation and benchmark inspection footer.
-# Version: myway_blender_foundry_inspection_v3
+# Version: myway_blender_foundry_inspection_v4
 # ---------------------------------------------------------------------------
 import os as _myway_os
 import math as _myway_math
@@ -297,13 +297,15 @@ _myway_quality_score = max(0, min(100, _myway_quality_score))
 _myway_quality = {
     "score": _myway_quality_score,
     "grade": (
-        "benchmark_ready" if _myway_quality_score >= 90 else
-        "strong" if _myway_quality_score >= 78 else
+        "technical_ready" if _myway_quality_score >= 90 else
+        "technical_strong" if _myway_quality_score >= 78 else
         "developing" if _myway_quality_score >= 60 else
         "needs_revision"
     ),
     "asset_class": _myway_asset_class,
     "findings": _myway_quality_findings,
+    "technical_only": True,
+    "release_requires_visual_and_human_review": True,
     "benchmark_checks": {
         "silhouette_requires_visual_review": True,
         "proportions_require_visual_review": True,
@@ -384,6 +386,13 @@ def _myway_add_fallback_lights():
     environment = _MYWAY_RESOURCE_MANIFEST.get("environment") or {}
     if environment.get("environment_path"):
         return []
+    try:
+        energy_scale = max(
+            0.0,
+            float(environment.get("fallback_light_energy_scale") or 1.0),
+        )
+    except Exception:
+        energy_scale = 1.0
     lights = []
     for location, energy, size in [
         ((_myway_center.x + _myway_extent * 1.4,
@@ -398,7 +407,7 @@ def _myway_add_fallback_lights():
     ]:
         bpy.ops.object.light_add(type="AREA", location=location)
         light = bpy.context.object
-        light.data.energy = energy
+        light.data.energy = energy * energy_scale
         light.data.shape = "DISK"
         light.data.size = size
         light.rotation_euler = (

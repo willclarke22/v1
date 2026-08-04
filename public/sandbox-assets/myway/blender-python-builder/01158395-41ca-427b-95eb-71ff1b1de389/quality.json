@@ -1,0 +1,28 @@
+{
+  "score": 40,
+  "grade": "needs_revision",
+  "asset_class": "hard_surface_assembly",
+  "findings": [
+    {
+      "severity": "error",
+      "code": "missing_required_parts",
+      "message": "Missing required semantic parts: band_vertical_corner_01, band_vertical_corner_02, band_vertical_corner_03, band_vertical_corner_04, hinge_left, hinge_right, handle_left, handle_right, corner_bracket_bl_01, corner_bracket_br_01, corner_bracket_bl_02, corner_bracket_br_02"
+    },
+    {
+      "severity": "warning",
+      "code": "non_manifold_geometry",
+      "message": "50 non-manifold edge(s) detected."
+    }
+  ],
+  "technical_only": true,
+  "release_requires_visual_and_human_review": true,
+  "benchmark_checks": {
+    "silhouette_requires_visual_review": true,
+    "proportions_require_visual_review": true,
+    "connections_require_visual_review": true,
+    "material_response_requires_visual_review": true,
+    "semantic_parts_present": false,
+    "topology_clean": false,
+    "material_regions_present": true
+  }
+}

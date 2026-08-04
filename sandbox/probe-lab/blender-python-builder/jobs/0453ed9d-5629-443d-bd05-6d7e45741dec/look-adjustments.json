@@ -1,0 +1,29 @@
+{
+  "schema_version": "myway_foundry_look_adjustments_v1",
+  "material_slots": {
+    "primary_surface": {
+      "physical_scale_m": 0,
+      "uv_repeat": [
+        1,
+        1
+      ],
+      "rotation_degrees": 0,
+      "offset": [
+        0,
+        0
+      ],
+      "normal_strength": 1,
+      "roughness_factor": 1,
+      "height_strength": 0.18,
+      "mapping_mode": "uv",
+      "part_overrides": {}
+    }
+  },
+  "environment": {
+    "strength": 0.8,
+    "rotation_degrees": 0,
+    "exposure": 0,
+    "background_visible": false,
+    "fallback_light_energy_scale": 1
+  }
+}

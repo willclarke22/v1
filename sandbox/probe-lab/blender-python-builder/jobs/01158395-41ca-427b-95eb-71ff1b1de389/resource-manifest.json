@@ -1,0 +1,178 @@
+{
+  "schema_version": "myway_blender_foundry_resource_manifest_v1",
+  "created_at": "2026-08-03T17:58:00.894Z",
+  "design_brief_asset_id": "treasure_chest_stylized_v1",
+  "quality_mode": "standard",
+  "material_slots": {
+    "wood_oak": {
+      "slot_id": "wood_oak",
+      "display_name": "Chipboard 002",
+      "source": "ambientcg_r2",
+      "resource_id": "ambientcg_material_Chipboard002_2k-jpg",
+      "source_asset_id": "Chipboard002",
+      "variant_id": "2k-jpg-1",
+      "content_sha256": "69ab77d30b3a17abb1d28ad39d6dc5089f4c7f014bc3b64b9c0c2aca6a375823",
+      "maps": {
+        "ambient_occlusion": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Chipboard002_2k-jpg\\ambient_occlusion.jpg",
+        "base_color": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Chipboard002_2k-jpg\\base_color.jpg",
+        "height": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Chipboard002_2k-jpg\\height.jpg",
+        "normal_dx": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Chipboard002_2k-jpg\\normal_dx.jpg",
+        "normal_gl": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Chipboard002_2k-jpg\\normal_gl.jpg",
+        "roughness": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Chipboard002_2k-jpg\\roughness.jpg"
+      },
+      "texture_scale_m": 0.2,
+      "look": {
+        "physical_scale_m": 0.2,
+        "uv_repeat": [
+          1,
+          1
+        ],
+        "rotation_degrees": 0,
+        "offset": [
+          0,
+          0
+        ],
+        "normal_strength": 1,
+        "roughness_factor": 1,
+        "height_strength": 0.18,
+        "mapping_mode": "uv",
+        "part_overrides": {}
+      },
+      "fallback": {
+        "color_rgba": [
+          0.545,
+          0.353,
+          0.169,
+          1
+        ],
+        "metallic": 0,
+        "roughness": 0.7
+      }
+    },
+    "metal_dark_iron": {
+      "slot_id": "metal_dark_iron",
+      "display_name": "Metal 046 B",
+      "source": "ambientcg_r2",
+      "resource_id": "ambientcg_material_Metal046B_2k-jpg",
+      "source_asset_id": "Metal046B",
+      "variant_id": "2k-jpg-1",
+      "content_sha256": "b10bffa3d74ce925ee12b9425b077609a1775e1aeebdc2dab2a750c55b882521",
+      "maps": {
+        "base_color": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal046B_2k-jpg\\base_color.jpg",
+        "height": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal046B_2k-jpg\\height.jpg",
+        "metallic": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal046B_2k-jpg\\metallic.jpg",
+        "normal_dx": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal046B_2k-jpg\\normal_dx.jpg",
+        "normal_gl": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal046B_2k-jpg\\normal_gl.jpg",
+        "roughness": "C:\\Users\\willc\\AppData\\Local\\Temp\\myway-asset-cache\\ambientcg\\ambientcg_material_Metal046B_2k-jpg\\roughness.jpg"
+      },
+      "texture_scale_m": 0.1,
+      "look": {
+        "physical_scale_m": 0.1,
+        "uv_repeat": [
+          1,
+          1
+        ],
+        "rotation_degrees": 0,
+        "offset": [
+          0,
+          0
+        ],
+        "normal_strength": 1,
+        "roughness_factor": 1,
+        "height_strength": 0.18,
+        "mapping_mode": "uv",
+        "part_overrides": {}
+      },
+      "fallback": {
+        "color_rgba": [
+          0.227,
+          0.227,
+          0.227,
+          1
+        ],
+        "metallic": 0.9,
+        "roughness": 0.8
+      }
+    }
+  },
+  "part_material_slots": {
+    "chest_body": "wood_oak",
+    "lid": "wood_oak",
+    "band_horizontal_front": "metal_dark_iron",
+    "band_horizontal_back": "metal_dark_iron",
+    "band_vertical_corner_01": "metal_dark_iron",
+    "band_vertical_corner_02": "metal_dark_iron",
+    "band_vertical_corner_03": "metal_dark_iron",
+    "band_vertical_corner_04": "metal_dark_iron",
+    "hinge_left": "metal_dark_iron",
+    "hinge_right": "metal_dark_iron",
+    "lock_plate": "metal_dark_iron",
+    "lock_hasp": "metal_dark_iron",
+    "handle_left": "metal_dark_iron",
+    "handle_right": "metal_dark_iron",
+    "corner_bracket_bl_01": "metal_dark_iron",
+    "corner_bracket_br_01": "metal_dark_iron",
+    "corner_bracket_bl_02": "metal_dark_iron",
+    "corner_bracket_br_02": "metal_dark_iron",
+    "rivets": "metal_dark_iron"
+  },
+  "environment": {
+    "source": "trusted_studio",
+    "resource_id": null,
+    "source_asset_id": null,
+    "variant_id": null,
+    "content_sha256": null,
+    "environment_path": null,
+    "strength": 0.8,
+    "rotation_degrees": 0,
+    "exposure": 0,
+    "background_visible": false,
+    "fallback_light_energy_scale": 1
+  },
+  "look_adjustments": {
+    "schema_version": "myway_foundry_look_adjustments_v1",
+    "material_slots": {
+      "wood_oak": {
+        "physical_scale_m": 0.2,
+        "uv_repeat": [
+          1,
+          1
+        ],
+        "rotation_degrees": 0,
+        "offset": [
+          0,
+          0
+        ],
+        "normal_strength": 1,
+        "roughness_factor": 1,
+        "height_strength": 0.18,
+        "mapping_mode": "uv",
+        "part_overrides": {}
+      },
+      "metal_dark_iron": {
+        "physical_scale_m": 0.1,
+        "uv_repeat": [
+          1,
+          1
+        ],
+        "rotation_degrees": 0,
+        "offset": [
+          0,
+          0
+        ],
+        "normal_strength": 1,
+        "roughness_factor": 1,
+        "height_strength": 0.18,
+        "mapping_mode": "uv",
+        "part_overrides": {}
+      }
+    },
+    "environment": {
+      "strength": 0.8,
+      "rotation_degrees": 0,
+      "exposure": 0,
+      "background_visible": false,
+      "fallback_light_energy_scale": 1
+    }
+  }
+}

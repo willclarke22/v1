@@ -1,0 +1,23 @@
+{
+  "score": 92,
+  "grade": "technical_ready",
+  "asset_class": "general",
+  "findings": [
+    {
+      "severity": "error",
+      "code": "missing_required_parts",
+      "message": "Missing required semantic parts: main_body"
+    }
+  ],
+  "technical_only": true,
+  "release_requires_visual_and_human_review": true,
+  "benchmark_checks": {
+    "silhouette_requires_visual_review": true,
+    "proportions_require_visual_review": true,
+    "connections_require_visual_review": true,
+    "material_response_requires_visual_review": true,
+    "semantic_parts_present": false,
+    "topology_clean": true,
+    "material_regions_present": true
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "schema_version": "myway_foundry_visual_critique_v2",
+  "prompt_version": "myway_foundry_visual_critic_v2_actionable_lookdev",
+  "job_id": "01158395-41ca-427b-95eb-71ff1b1de389",
+  "asset_id": "treasure_chest_stylized_v1",
+  "asset_class": "hard_surface_assembly",
+  "model": "nvidia/nemotron-nano-12b-v2-vl",
+  "created_at": "2026-08-03T18:03:54.406Z",
+  "analyzed_views": [
+    "hero",
+    "front",
+    "right",
+    "back",
+    "top",
+    "neutral_clay",
+    "material_id"
+  ],
+  "overall_assessment": "targeted_revision",
+  "summary": "The treasure chest model requires structural revisions to include missing metal hardware parts and address non-manifold geometry issues.",
+  "findings": [
+    {
+      "finding_id": "finding_1",
+      "category": "structural_connection",
+      "severity": "error",
+      "revision_route": "blender_code",
+      "affected_part_ids": [],
+      "affected_material_slot_ids": [],
+      "evidence_views": [
+        "hero",
+        "front",
+        "right",
+        "back",
+        "top"
+      ],
+      "suggested_adjustment": null,
+      "finding": "Visible evidence only",
+      "recommended_revision": "Add missing metal hardware parts (band_vertical_corner_01, band_vertical_corner_02, band_vertical_corner_03, band_vertical_corner_04, hinge_left, hinge_right, handle_left, handle_right, corner_bracket_bl_01, corner_bracket_br_01, corner_bracket_bl_02, corner_bracket_br_02) to ensure proper structural assembly and connection points.",
+      "confidence": 0.95
+    },
+    {
+      "finding_id": "finding_2",
+      "category": "uncertain",
+      "severity": "warning",
+      "revision_route": "human_review",
+      "affected_part_ids": [],
+      "affected_material_slot_ids": [],
+      "evidence_views": [
+        "hero",
+        "front",
+        "right",
+        "back",
+        "top"
+      ],
+      "suggested_adjustment": null,
+      "finding": "Visible evidence only",
+      "recommended_revision": "Fix 50 non-manifold edges to ensure clean geometry and proper surface rendering.",
+      "confidence": 0.9
+    }
+  ],
+  "routing_summary": {
+    "blender_code": 1,
+    "material_mapping": 0,
+    "look_development": 0,
+    "human_review": 1
+  }
+}

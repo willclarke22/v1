@@ -1,6 +1,8 @@
 import {
+  FOUNDRY_ASSET_CLASSES,
   normalizeAssetDesignBrief,
   type AssetDesignBriefV2,
+  type FoundryAssetClass,
   type FoundryQualityMode,
 } from "./asset-design-brief";
 import type {
@@ -14,6 +16,11 @@ import {
   resolveFoundryBlenderRuntime,
   type FoundryBlenderRuntimeInfo,
 } from "./blender-runtime.server";
+import {
+  visualCritiqueCodeFindings,
+  visualCritiqueDeferredFindings,
+  type FoundryVisualCritiqueReport,
+} from "./foundry-visual-critic.server";
 import {
   validateBlenderPythonPreflight,
   type BlenderPythonPreflightResult,
@@ -511,14 +518,46 @@ const GENERAL_QUALITY_RULES = `MyWay asset-quality bar:
 - Keep movable parts separate and place origins at useful pivots.
 - Stay within the approved browser triangle budget.`;
 
-const ASSET_CLASS_STRATEGIES = `Asset-class strategies:
-- hard_surface_assembly: native mesh/profile pieces, bevelled edges, real hardware, arrays or symmetry, meaningful gaps and layered construction.
-- furniture_architecture: structural frames, repeated slats or panels, believable joints, consistent thickness and real support members.
-- mechanical_vehicle: nested cylinders, tubes, hubs, bearings, brackets, fasteners and mechanically plausible connections.
-- layered_organic: smooth sculptural masses, controlled asymmetry, irregular boundaries, overlapping layers and surface variation.
-- plant: stems and branches as curves, leaf instances, natural variation and hierarchy.
-- educational_anatomy: clear landmarks and readable semantic parts without disconnected diagram spheres.
-- advanced_organic or character: landmark-based proportions, blended masses, recognizable head, limbs or appendages and smooth transitions.`;
+const ASSET_CLASS_STRATEGY_BY_CLASS: Record<
+  FoundryAssetClass,
+  string
+> = {
+  hard_surface_assembly:
+    "Use native mesh/profile pieces, softened manufactured edges, real hardware, symmetry or repeated arrays, meaningful gaps, and layered construction. Make attachments visible rather than relying on intersections alone.",
+  furniture_architecture:
+    "Build a load-bearing frame first, then repeated slats, panels, cushions, or trim. Keep believable joints, consistent member thickness, grounded feet, real support members, and readable gaps between structural layers.",
+  mechanical_vehicle:
+    "Use nested cylinders, tubes, hubs, bearings, brackets, axles, fasteners, and mechanically plausible connections. Keep moving components separate with aligned origins and visible support paths.",
+  soft_goods_upholstery:
+    "Build padded volumes with controlled compression, rounded seams, believable panel thickness, restrained folds, piping or stitched boundaries when visible, and clear support from any underlying frame. Avoid rigid box-like cushions and noisy micro-wrinkles.",
+  layered_organic:
+    "Use smooth sculptural masses, controlled asymmetry, irregular boundaries, overlapping layers, and surface variation. Preserve a clean silhouette and avoid disconnected blobs.",
+  plant:
+    "Use stems and branches as hierarchical curves or tapered geometry, leaf instances, natural variation, coherent branching, and readable primary masses before small foliage detail.",
+  educational_anatomy:
+    "Prioritize clear landmarks, readable semantic parts, coherent attachment, and instructional separation without disconnected diagram spheres or misleading hidden detail.",
+  advanced_organic:
+    "Use landmark-based proportions, blended masses, controlled topology, recognizable appendages, and smooth transitions. Keep this conservative unless the brief contains enough visible construction guidance.",
+  character:
+    "Use landmark-based proportions, coherent head and limb masses, readable joints, controlled symmetry, and smooth transitions. Preserve semantic part identity and avoid treating a character as assembled primitive capsules.",
+  general:
+    "Choose the simplest native-Blender construction that preserves the requested silhouette, proportions, part hierarchy, structural attachments, negative spaces, and camera-readable details.",
+};
+
+export function buildAssetClassStrategyPrompt(
+  assetClass:
+    FoundryAssetClass,
+) {
+  return `Active asset-class strategy (${assetClass}):
+${ASSET_CLASS_STRATEGY_BY_CLASS[assetClass]}`;
+}
+
+const ALL_ASSET_CLASS_STRATEGIES =
+  `Asset-class strategy reference for planning:
+${FOUNDRY_ASSET_CLASSES.map(
+    (assetClass) =>
+      `- ${assetClass}: ${ASSET_CLASS_STRATEGY_BY_CLASS[assetClass]}`,
+  ).join("\n")}`;
 
 const BLENDER_STATE_RULES = `Blender operator-state rules:
 - Treat bpy.ops as context-sensitive. Before modifier application, explicitly enter OBJECT mode, deselect all, select the intended object, and set it active.
@@ -532,8 +571,8 @@ const BLENDER_STATE_RULES = `Blender operator-state rules:
 const DIRECT_MYWAY_BOUNDARY = `Required MyWay boundary helpers:
 - myway_reset_scene()
 - myway_print_progress(message)
-- myway_material_slot(slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55)
-- myway_assign_material_slot(obj, slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55)
+- myway_material_slot(slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55, part_id=None)
+- myway_assign_material_slot(obj, slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55, part_id=None)
 - myway_normalize_extent(target_extent, root_or_iterable)
 
 Use native bpy, bmesh and mathutils for modelling. MyWay geometry constructors are optional and should not be used unless their exact signature is already known from the camera reference. MyWay appends trusted resource hydration, UV fallback, grounding, environment setup, inspection, .blend save and GLB export.`;
@@ -612,38 +651,63 @@ export async function planAssetDesign(
       FoundryQualityMode;
   },
 ) {
-  const system = `You are MyWay's senior asset designer. Produce a construction-ready Asset Design Brief V2 before any Blender code is written.
+  const system = `You are MyWay's senior industrial designer. Before any Blender code is written, author both a construction-ready Asset Design Brief V2 and a dimensionally coherent text-authored visual blueprint.
 
 Return exactly one JSON markdown fence and no prose. Use schema_version "myway_asset_design_brief_v2".
 
-Required fields:
+Required top-level fields:
 schema_version, asset_id, concept, asset_class, intended_use, target_extent_m,
 axis_dimensions_m, max_triangles, quality_mode, realism, style_tags, silhouette,
-proportions, parts, material_slots, environment, requirements,
+proportions, visual_description, parts, material_slots, environment, requirements,
 acceptance_criteria, benchmark_priorities.
+
+The visual_description is the imagined reference sheet that the Blender code model will follow. Use schema_version "myway_asset_visual_description_v1" and include:
+- design_summary;
+- shape_language with primary_forms, edge_character, symmetry, detail_density and proportion_emphasis;
+- orthographic_views with front, right, top and three_quarter descriptions;
+- overall_dimensions_m in [width_x, depth_y, height_z] order;
+- normalized_proportions as objects with relationship, numeric ratio and tolerance;
+- part_layout with exactly one item for every semantic part;
+- material_regions with exactly one item for every material slot;
+- visual_acceptance_tests;
+- uncertainty_notes.
+
+Coordinate and measurement rules:
+- Use asset-local metres with +X right, +Y back and +Z up.
+- Ground-contact geometry begins at Z=0.
+- part_layout dimensions_m are [width_x, depth_y, height_z].
+- part_layout position_m is the intended object centre or clearly stated pivot-centred location in the same asset-local frame.
+- part_layout rotation_degrees is [x, y, z].
+- axis_dimensions_m and visual_description.overall_dimensions_m must agree.
+- Choose concrete, internally consistent dimensions. Do not leave important dimensions or positions null.
+- Include at least five measurable normalized_proportions for standard or hero quality, and at least three for draft quality.
+- Ratios must describe visible relationships such as cage diameter / total height, seat thickness / chair height or wheel diameter / body length. Avoid meaningless ratios.
 
 Each part needs part_id, semantic_role, geometry_strategy, parent_part_id,
 connection_strategy, material_slot_id, animation_role, pivot_requirement,
-required, identifying_features.
+required and identifying_features. Geometry strategy must encode the native-Blender construction approach, relative thickness or scale, symmetry/repetition, and view-critical details. Connection strategy must describe the visible support, clearance, axle, hinge, seam, socket, overlap or fastener rather than merely saying attached.
+
+Each visual_description.part_layout item needs part_id, shape_description,
+dimensions_m, position_m, rotation_degrees, visible_from and construction_notes.
+The part_id must exactly match a parts entry. Construction notes should clarify the shape in ways that dimensions alone cannot, including taper, profile, curvature, ring counts, spoke counts, blade sweep, padding bulge, panel recess or similar visible details.
 
 Each material slot needs slot_id, display_name, assigned_part_ids,
 material_family, intent, semantic_tags, color_hint, roughness_hint,
 metallic_hint, physical_scale_m, required_maps, and procedural_fallback with
-color_rgba, metallic and roughness.
+color_rgba, metallic and roughness. Describe visible texture in texture_hint,
+clearly unwanted qualities in avoid_tags, and brightness_hint as dark, medium or
+light when important.
 
-For every material slot, describe the desired visible texture in texture_hint
-  when the request supports it, such as fine pebbled grain, smooth molded surface,
-  brushed directional grain, woven texture, or subtle hammered variation. Put
-  clearly unwanted visible qualities in avoid_tags. Keep brightness_hint to dark,
-  medium, or light when it is visually important.
+Each visual_description.material_regions item needs slot_id,
+visible_description, dominant_color_hex, finish and mapping_intent. The slot_id
+must exactly match a material_slots entry. Author appearance intent only; do not
+invent AmbientCG ids.
 
-  Make the brief specific enough that another modeller could build the asset
-without guessing its silhouette, proportions, connections, pivots or surface
-regions. Use 3-32 semantic parts when appropriate; do not create fake parts.
+The visual description must be specific enough that another modeller could draw consistent front, side, top and three-quarter views without guessing. Use 3-32 semantic parts when appropriate; do not create fake parts.
 
 ${GENERAL_QUALITY_RULES}
 
-${ASSET_CLASS_STRATEGIES}`;
+${ALL_ASSET_CLASS_STRATEGIES}`;
 
   const user = `Asset request:
 ${input.request}
@@ -663,9 +727,9 @@ ${input.targetExtentM} metres
 Browser triangle budget:
 ${input.maxTriangles}
 
-Design the asset for a Three.js learning scene and controlled Blender look-development.`;
+Design an original asset for a Three.js learning scene and controlled Blender look-development. Commit to one coherent visual design before coding.`;
 
-  const result =
+  const draftResult =
     await requestGlm(
       [
         {
@@ -679,34 +743,129 @@ Design the asset for a Three.js learning scene and controlled Blender look-devel
       ],
       {
         temperature: 0.15,
-        maxTokens: 8000,
+        maxTokens: 10_000,
       },
     );
-  const designBrief =
+  const fallback = {
+    concept:
+      input.request,
+    target_extent_m:
+      input.targetExtentM,
+    max_triangles:
+      input.maxTriangles,
+    quality_mode:
+      input.qualityMode,
+    style:
+      input.style,
+    animation_ready:
+      input.animationReady,
+  };
+  const draftBrief =
     normalizeAssetDesignBrief(
       extractJson(
-        result.content,
+        draftResult.content,
       ),
-      {
-        concept:
-          input.request,
-        target_extent_m:
-          input.targetExtentM,
-        max_triangles:
-          input.maxTriangles,
-        quality_mode:
-          input.qualityMode,
-        style:
-          input.style,
-        animation_ready:
-          input.animationReady,
-      },
+      fallback,
     );
 
+  const reviewSystem = `You are MyWay's independent visual-design auditor. Review a draft Asset Design Brief V2 before it reaches the Blender code model.
+
+Return exactly one complete corrected JSON markdown fence and no prose. Preserve schema_version "myway_asset_design_brief_v2" and visual_description.schema_version "myway_asset_visual_description_v1".
+
+Audit and correct all of these together:
+- silhouette and proportions form one recognizable original design;
+- axis_dimensions_m equals visual_description.overall_dimensions_m;
+- every required part has a useful non-empty geometry_strategy;
+- every part appears exactly once in visual_description.part_layout;
+- important parts have concrete dimensions_m and position_m;
+- all part dimensions fit inside the overall bounds unless an intentional overhang is described;
+- parents, supports, clearances, pivots and moving-part dependencies are physically coherent;
+- orthographic descriptions agree with the numeric part layout;
+- normalized ratios agree with the dimensions and are visually meaningful;
+- every material slot appears in material_regions and its assigned parts are consistent;
+- visual acceptance tests are measurable from controlled Blender renders;
+- the design is not a generic placeholder and can be built without inventing missing proportions.
+
+Use asset-local metres with +X right, +Y back, +Z up and ground at Z=0. Correct the whole blueprint instead of appending comments about problems. Keep the user's requested concept and style.`;
+
+  let reviewedBrief =
+    draftBrief;
+  let reviewResult:
+    Awaited<ReturnType<typeof requestGlm>> | null =
+    null;
+  let reviewError:
+    string | null = null;
+  try {
+    reviewResult =
+      await requestGlm(
+        [
+          {
+            role: "system",
+            content:
+              reviewSystem,
+          },
+          {
+            role: "user",
+            content: `Original request:\n${input.request}\n\nRequested style:\n${input.style}\n\nDraft design and visual blueprint:\n${JSON.stringify(
+              draftBrief,
+              null,
+              2,
+            )}\n\nReturn the complete corrected design brief JSON.`,
+          },
+        ],
+        {
+          temperature: 0.05,
+          maxTokens: 10_000,
+        },
+      );
+    reviewedBrief =
+      normalizeAssetDesignBrief(
+        extractJson(
+          reviewResult.content,
+        ),
+        fallback,
+      );
+  } catch (caught) {
+    reviewError =
+      caught instanceof Error
+        ? caught.message
+        : String(caught);
+  }
+
   return {
-    ...result,
+    content:
+      reviewResult?.content ??
+      draftResult.content,
+    model:
+      reviewResult?.model ??
+      draftResult.model,
+    elapsed_ms:
+      draftResult.elapsed_ms +
+      (reviewResult?.elapsed_ms ?? 0),
+    transport:
+      reviewResult
+        ? `${draftResult.transport}+${reviewResult.transport}`
+        : draftResult.transport,
     design_brief:
-      designBrief,
+      reviewedBrief,
+    design_review: {
+      schema_version:
+        "myway_visual_design_review_v1",
+      reviewed:
+        reviewResult !== null,
+      draft_model:
+        draftResult.model,
+      review_model:
+        reviewResult?.model ??
+        null,
+      draft_elapsed_ms:
+        draftResult.elapsed_ms,
+      review_elapsed_ms:
+        reviewResult?.elapsed_ms ??
+        null,
+      review_error:
+        reviewError,
+    },
   };
 }
 
@@ -782,6 +941,10 @@ Execution contract:
 - Begin with myway_reset_scene().
 - Build a cohesive asset, not a loose pile of primitives.
 - Exact required part_ids from the design brief must be exact Blender object names.
+- Follow each part's geometry_strategy, connection_strategy, identifying features, and parent relationship from the compact context.
+- Treat asset_contract.visual_description as the text-authored reference sheet and primary source of truth for visible proportions, part dimensions, part centres, orthographic silhouettes, shape language and material regions.
+- Establish the overall coordinate frame and dimensioned primary masses before adding secondary detail. Do not replace the approved blueprint with generic proportions.
+- Use visual_description.part_layout dimensions and positions as build targets, allowing only small construction-driven adjustments that preserve the listed normalized ratios.
 - Use semantic material slots with myway_material_slot("slot_id"). The trusted runtime resolves prepared AmbientCG PBR maps or a procedural fallback.
 - Give movable parts useful origins/pivots and preserve their separate object identity.
 - Ground the asset near Z=0 and normalize toward the requested extent.
@@ -801,7 +964,9 @@ ${DIRECT_MYWAY_BOUNDARY}
 
 ${GENERAL_QUALITY_RULES}
 
-${ASSET_CLASS_STRATEGIES}
+${buildAssetClassStrategyPrompt(
+  brief.asset_class,
+)}
 
 The only proven code example follows. Study its native-bpy construction discipline, helper functions, object-state handling, material boundary and connected assembly. Do not turn unrelated requests into cameras.
 
@@ -809,7 +974,7 @@ The only proven code example follows. Study its native-bpy construction discipli
 ${contextPackage.reference_example.code}
 \`\`\`
 
-Before returning, mentally inspect front, side and three-quarter silhouettes and trace every context-sensitive operation.`;
+Before returning, mentally compare front, right, top and three-quarter silhouettes against asset_contract.visual_description, verify the normalized proportions, and trace every context-sensitive operation.`;
 
   const user = `Original asset request:
 ${input.request}
@@ -822,9 +987,10 @@ ${JSON.stringify(
 )}
 
 Write the complete asset-specific Blender Python. Preserve every required part id,
-material slot id, hierarchy, connection, pivot, target scale and acceptance
-criterion. Use native Blender geometry and make the result readable in neutral
-clay without textures. Return only the complete Python script.`;
+material slot id, hierarchy, connection, pivot, target scale, visual-description
+dimension, normalized proportion and acceptance criterion. Use native Blender
+geometry and make the result readable in neutral clay without textures. Return
+only the complete Python script.`;
 
   const result =
     await requestGlm(
@@ -1034,6 +1200,12 @@ export async function improveBlenderPython(
       AssetDesignBriefV2;
     buildValidation?: unknown;
     qualityFindings?: unknown;
+    resourcePlan?:
+      FoundryResourcePlanV1
+      | null;
+    visualCritique?:
+      FoundryVisualCritiqueReport
+      | null;
     preservePartIds?: boolean;
   },
 ) {
@@ -1070,7 +1242,9 @@ ${DIRECT_MYWAY_BOUNDARY}
 
 ${GENERAL_QUALITY_RULES}
 
-${ASSET_CLASS_STRATEGIES}`;
+${buildAssetClassStrategyPrompt(
+  input.designBrief.asset_class,
+)}`;
 
   const user = `Original request:
 ${input.request}
@@ -1102,6 +1276,32 @@ ${JSON.stringify(
   2,
 )}
 
+Visual findings routed to Blender code:
+${JSON.stringify(
+  visualCritiqueCodeFindings(
+    input.visualCritique,
+  ),
+  null,
+  2,
+)}
+
+Deferred material-mapping, look-development, or human-review findings:
+${JSON.stringify(
+  visualCritiqueDeferredFindings(
+    input.visualCritique,
+  ),
+  null,
+  2,
+)}
+
+Selected resource plan and appearance intent:
+${JSON.stringify(
+  input.resourcePlan ??
+    null,
+  null,
+  2,
+)}
+
 Current complete script:
 \`\`\`python
 ${input.code.slice(
@@ -1110,8 +1310,7 @@ ${input.code.slice(
 )}
 \`\`\`
 
-Revise only what is needed to address the critique and findings while preserving
-the approved design.`;
+Revise only what is needed to address the user critique and findings routed to Blender code while preserving the approved design. Preserve selected material ids and material-slot intent. Do not attempt to solve deferred texture-scale, mapping, roughness, normal-strength, HDRI, exposure, or uncertain findings by unrelated geometry changes.`;
 
   const result =
     await requestGlm(

@@ -1,11 +1,11 @@
 export const FOUNDRY_HELPER_LIBRARY_VERSION =
-  "myway_blender_foundry_helpers_v2_1" as const;
+  "myway_blender_foundry_helpers_v3_0" as const;
 
 export function buildTrustedBlenderHelperPrelude() {
   return String.raw`
 # ---------------------------------------------------------------------------
 # Trusted MyWay Blender Asset Foundry helper library.
-# Version: myway_blender_foundry_helpers_v2_1
+# Version: myway_blender_foundry_helpers_v3_0
 # Generated or manually pasted scripts may call these helpers. MyWay owns the
 # resource manifest, validation, export and inspection footer.
 # ---------------------------------------------------------------------------
@@ -23,7 +23,9 @@ _MYWAY_RESOURCE_MANIFEST = {
         "environment_path": None,
         "strength": 0.8,
         "rotation_degrees": 0.0,
+        "exposure": 0.0,
         "background_visible": False,
+        "fallback_light_energy_scale": 1.0,
     },
 }
 
@@ -103,16 +105,57 @@ def myway_material(name, color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.6
     material.diffuse_color = color
     return material
 
-def _myway_build_pbr_material(slot_id, slot):
+def _myway_float(value, fallback, minimum=None, maximum=None):
+    try:
+        parsed = float(value)
+    except Exception:
+        parsed = float(fallback)
+    if minimum is not None:
+        parsed = max(float(minimum), parsed)
+    if maximum is not None:
+        parsed = min(float(maximum), parsed)
+    return parsed
+
+
+def _myway_pair(value, fallback=(1.0, 1.0)):
+    if not isinstance(value, (list, tuple)) or len(value) < 2:
+        return (float(fallback[0]), float(fallback[1]))
+    return (
+        _myway_float(value[0], fallback[0]),
+        _myway_float(value[1], fallback[1]),
+    )
+
+
+def _myway_material_look(slot, part_id=None):
+    look = dict(slot.get("look") or {})
+    if "physical_scale_m" not in look:
+        look["physical_scale_m"] = slot.get("texture_scale_m")
+    part_overrides = look.get("part_overrides") or {}
+    if part_id and isinstance(part_overrides, dict):
+        override = part_overrides.get(str(part_id))
+        if isinstance(override, dict):
+            look.update(override)
+    look.pop("part_overrides", None)
+    return look
+
+
+def _myway_build_pbr_material(slot_id, slot, part_id=None):
+    look = _myway_material_look(slot, part_id)
     fallback = slot.get("fallback") or {}
     color = tuple(fallback.get("color_rgba") or (0.5, 0.5, 0.5, 1.0))
-    metallic = float(fallback.get("metallic") or 0.0)
-    roughness = float(fallback.get("roughness") or 0.55)
+    metallic = _myway_float(fallback.get("metallic"), 0.0, 0.0, 1.0)
+    roughness_factor = _myway_float(
+        look.get("roughness_factor"), 1.0, 0.0, 2.0
+    )
+    roughness = _myway_float(
+        fallback.get("roughness"), 0.55, 0.0, 1.0
+    ) * roughness_factor
+    material_suffix = "__" + str(part_id) if part_id else ""
     material = myway_material(
-        "MyWaySlot_" + slot_id,
+        "MyWaySlot_" + str(slot_id) + material_suffix,
         color=color,
         metallic=metallic,
-        roughness=roughness,
+        roughness=max(0.0, min(1.0, roughness)),
     )
     material.use_nodes = True
     nodes = material.node_tree.nodes
@@ -125,19 +168,41 @@ def _myway_build_pbr_material(slot_id, slot):
     if not isinstance(maps, dict) or not maps:
         return material
 
+    mapping_mode = str(look.get("mapping_mode") or "uv")
+    if mapping_mode not in ("uv", "object_box"):
+        mapping_mode = "uv"
     texcoord = nodes.new("ShaderNodeTexCoord")
     texcoord.name = "MyWayTextureCoordinates"
     mapping = nodes.new("ShaderNodeMapping")
-    mapping.name = "MyWayTextureScale"
-    texture_scale_m = slot.get("texture_scale_m")
-    scale = 1.0
+    mapping.name = "MyWayTextureTransform"
+
+    physical_scale_m = look.get("physical_scale_m")
+    base_scale = 1.0
     try:
-        if texture_scale_m is not None and float(texture_scale_m) > 0.000001:
-            scale = 1.0 / float(texture_scale_m)
+        if physical_scale_m is not None and float(physical_scale_m) > 0.000001:
+            base_scale = 1.0 / float(physical_scale_m)
     except Exception:
-        scale = 1.0
-    mapping.inputs["Scale"].default_value = (scale, scale, scale)
-    links.new(texcoord.outputs["UV"], mapping.inputs["Vector"])
+        base_scale = 1.0
+    repeat = _myway_pair(look.get("uv_repeat"), (1.0, 1.0))
+    offset = _myway_pair(look.get("offset"), (0.0, 0.0))
+    average_repeat = max(0.05, (abs(repeat[0]) + abs(repeat[1])) * 0.5)
+    mapping.inputs["Scale"].default_value = (
+        base_scale * max(0.05, repeat[0]),
+        base_scale * max(0.05, repeat[1]),
+        base_scale * average_repeat,
+    )
+    mapping.inputs["Location"].default_value = (offset[0], offset[1], 0.0)
+    mapping.inputs["Rotation"].default_value[2] = _myway_helper_math.radians(
+        _myway_float(look.get("rotation_degrees"), 0.0)
+    )
+    source_socket = (
+        texcoord.outputs.get("Object")
+        if mapping_mode == "object_box"
+        else texcoord.outputs.get("UV")
+    )
+    if source_socket is None:
+        source_socket = texcoord.outputs[0]
+    links.new(source_socket, mapping.inputs["Vector"])
 
     texture_nodes = {}
     for role, image_path in maps.items():
@@ -153,6 +218,9 @@ def _myway_build_pbr_material(slot_id, slot):
         node.image = image
         node.interpolation = "Linear"
         node.extension = "REPEAT"
+        if mapping_mode == "object_box":
+            node.projection = "BOX"
+            node.projection_blend = 0.22
         links.new(mapping.outputs["Vector"], node.inputs["Vector"])
         texture_nodes[role] = node
 
@@ -176,7 +244,15 @@ def _myway_build_pbr_material(slot_id, slot):
     if rough is not None:
         target = _myway_node_input(principled, "Roughness")
         if target is not None:
-            links.new(rough.outputs["Color"], target)
+            if abs(roughness_factor - 1.0) > 0.0001:
+                rough_multiply = nodes.new("ShaderNodeMath")
+                rough_multiply.operation = "MULTIPLY"
+                rough_multiply.use_clamp = True
+                rough_multiply.inputs[1].default_value = roughness_factor
+                links.new(rough.outputs["Color"], rough_multiply.inputs[0])
+                links.new(rough_multiply.outputs[0], target)
+            else:
+                links.new(rough.outputs["Color"], target)
 
     metal = texture_nodes.get("metallic")
     if metal is not None:
@@ -224,6 +300,9 @@ def _myway_build_pbr_material(slot_id, slot):
     if normal_socket is not None:
         normal_map = nodes.new("ShaderNodeNormalMap")
         normal_map.space = "TANGENT"
+        normal_map.inputs["Strength"].default_value = _myway_float(
+            look.get("normal_strength"), 1.0, 0.0, 4.0
+        )
         links.new(normal_socket, normal_map.inputs["Color"])
         target = _myway_node_input(principled, "Normal")
         if target is not None:
@@ -232,7 +311,9 @@ def _myway_build_pbr_material(slot_id, slot):
     height = texture_nodes.get("height")
     if height is not None:
         bump = nodes.new("ShaderNodeBump")
-        bump.inputs["Strength"].default_value = 0.18
+        bump.inputs["Strength"].default_value = _myway_float(
+            look.get("height_strength"), 0.18, 0.0, 1.0
+        )
         bump.inputs["Distance"].default_value = 0.08
         links.new(height.outputs["Color"], bump.inputs["Height"])
         target = _myway_node_input(principled, "Normal")
@@ -264,22 +345,25 @@ def _myway_build_pbr_material(slot_id, slot):
 
     return material
 
-def myway_material_slot(slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55):
-    if slot_id in _MYWAY_MATERIAL_CACHE:
-        return _MYWAY_MATERIAL_CACHE[slot_id]
+
+def myway_material_slot(slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55, part_id=None):
+    cache_key = str(slot_id) + ("::" + str(part_id) if part_id else "")
+    if cache_key in _MYWAY_MATERIAL_CACHE:
+        return _MYWAY_MATERIAL_CACHE[cache_key]
     slots = _MYWAY_RESOURCE_MANIFEST.get("material_slots") or {}
     slot = slots.get(slot_id)
     if isinstance(slot, dict):
-        material = _myway_build_pbr_material(slot_id, slot)
+        material = _myway_build_pbr_material(slot_id, slot, part_id=part_id)
     else:
         material = myway_material(
-            "MyWaySlot_" + str(slot_id),
+            "MyWaySlot_" + str(slot_id) + ("__" + str(part_id) if part_id else ""),
             color=fallback_color,
             metallic=metallic,
             roughness=roughness,
         )
-    _MYWAY_MATERIAL_CACHE[slot_id] = material
+    _MYWAY_MATERIAL_CACHE[cache_key] = material
     return material
+
 
 def myway_assign_material(obj, material):
     if obj is None:
@@ -294,10 +378,17 @@ def myway_assign_material(obj, material):
         materials[0] = material
     return obj
 
-def myway_assign_material_slot(obj, slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55):
+def myway_assign_material_slot(obj, slot_id, fallback_color=(0.5, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.55, part_id=None):
+    resolved_part_id = part_id or (obj.name if obj is not None else None)
     return myway_assign_material(
         obj,
-        myway_material_slot(slot_id, fallback_color, metallic, roughness),
+        myway_material_slot(
+            slot_id,
+            fallback_color,
+            metallic,
+            roughness,
+            part_id=resolved_part_id,
+        ),
     )
 
 def myway_auto_assign_foundry_materials():
@@ -307,7 +398,7 @@ def myway_auto_assign_foundry_materials():
     for object_name, slot_id in mapping.items():
         obj = bpy.data.objects.get(object_name)
         if obj is not None:
-            myway_assign_material_slot(obj, str(slot_id))
+            myway_assign_material_slot(obj, str(slot_id), part_id=str(object_name))
 
 def myway_apply_foundry_environment():
     environment = _MYWAY_RESOURCE_MANIFEST.get("environment") or {}
@@ -325,6 +416,12 @@ def myway_apply_foundry_environment():
         0.0,
         float(environment.get("strength") or 0.8),
     )
+    try:
+        bpy.context.scene.view_settings.exposure = _myway_float(
+            environment.get("exposure"), 0.0, -8.0, 8.0
+        )
+    except Exception:
+        pass
     path = environment.get("environment_path")
     if path and _myway_helper_os.path.isfile(path):
         texture = nodes.new("ShaderNodeTexEnvironment")

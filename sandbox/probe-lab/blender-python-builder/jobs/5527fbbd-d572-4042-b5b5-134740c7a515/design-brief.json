@@ -1,0 +1,140 @@
+{
+  "schema_version": "myway_asset_design_brief_v2",
+  "asset_id": "foundry_treasure_chest",
+  "concept": "foundry_treasure_chest",
+  "asset_class": "general",
+  "intended_use": [],
+  "target_extent_m": 2,
+  "axis_dimensions_m": null,
+  "max_triangles": 30000,
+  "quality_mode": "standard",
+  "realism": "stylized",
+  "style_tags": [
+    "manual code"
+  ],
+  "silhouette": {
+    "primary_shapes": [],
+    "identifying_features": [],
+    "important_negative_spaces": [],
+    "camera_readability": []
+  },
+  "proportions": [],
+  "visual_description": {
+    "schema_version": "myway_asset_visual_description_v1",
+    "design_summary": "Buildable visual blueprint for foundry_treasure_chest.",
+    "shape_language": {
+      "primary_forms": [],
+      "edge_character": "softened manufactured edges",
+      "symmetry": "use symmetry where structurally appropriate",
+      "detail_density": "medium",
+      "proportion_emphasis": []
+    },
+    "orthographic_views": {
+      "front": "Front view of foundry_treasure_chest.",
+      "right": "Right-side view of foundry_treasure_chest.",
+      "top": "Top view of foundry_treasure_chest.",
+      "three_quarter": "Three-quarter hero view of foundry_treasure_chest."
+    },
+    "overall_dimensions_m": null,
+    "normalized_proportions": [],
+    "part_layout": [
+      {
+        "part_id": "main_body",
+        "shape_description": "main foundry_treasure_chest body",
+        "dimensions_m": null,
+        "position_m": null,
+        "rotation_degrees": [
+          0,
+          0,
+          0
+        ],
+        "visible_from": [],
+        "construction_notes": [
+          "compound"
+        ]
+      }
+    ],
+    "material_regions": [
+      {
+        "slot_id": "primary_surface",
+        "visible_description": "visually suitable surface",
+        "dominant_color_hex": null,
+        "finish": "matte to satin",
+        "mapping_intent": "scale-consistent mapping"
+      }
+    ],
+    "visual_acceptance_tests": [],
+    "uncertainty_notes": []
+  },
+  "parts": [
+    {
+      "part_id": "main_body",
+      "semantic_role": "main foundry_treasure_chest body",
+      "geometry_strategy": [
+        "compound"
+      ],
+      "parent_part_id": null,
+      "connection_strategy": null,
+      "material_slot_id": "primary_surface",
+      "animation_role": null,
+      "pivot_requirement": null,
+      "required": true,
+      "identifying_features": []
+    }
+  ],
+  "material_slots": [
+    {
+      "slot_id": "primary_surface",
+      "display_name": "Primary surface",
+      "assigned_part_ids": [
+        "main_body"
+      ],
+      "material_family": "general",
+      "intent": "visually suitable surface",
+      "semantic_tags": [
+        "foundry_treasure_chest",
+        "manual code"
+      ],
+      "color_hint": null,
+      "roughness_hint": null,
+      "metallic_hint": null,
+      "texture_hint": null,
+      "brightness_hint": null,
+      "avoid_tags": [],
+      "physical_scale_m": null,
+      "required_maps": [
+        "base_color",
+        "roughness",
+        "normal_gl"
+      ],
+      "procedural_fallback": {
+        "color_rgba": [
+          0.5,
+          0.5,
+          0.5,
+          1
+        ],
+        "metallic": 0,
+        "roughness": 0.55
+      }
+    }
+  ],
+  "environment": {
+    "intent": "neutral product look development",
+    "semantic_tags": [],
+    "preferred_environment_class": "studio",
+    "strength": 0.8,
+    "rotation_degrees": 0,
+    "background_visible": false
+  },
+  "requirements": {
+    "uv_required": true,
+    "rig_required": false,
+    "collision_required": false,
+    "ground_contact_required": true,
+    "animation_ready": true,
+    "movable_part_ids": []
+  },
+  "acceptance_criteria": [],
+  "benchmark_priorities": []
+}

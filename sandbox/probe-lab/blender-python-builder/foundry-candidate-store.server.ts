@@ -134,6 +134,16 @@ export async function saveFoundryCandidate(
       requestRecord.resource_manifest ??
       publicManifest.resource_manifest ??
       null,
+    look_adjustments:
+      requestRecord.look_adjustments ??
+      publicManifest.look_adjustments ??
+      null,
+    technical_status:
+      publicManifest.technical_status ??
+      null,
+    release_status:
+      publicManifest.release_status ??
+      "visual_and_human_review_required",
     asset_spec:
       requestRecord.asset_spec ??
       publicManifest.asset_spec ??
@@ -151,6 +161,12 @@ export async function saveFoundryCandidate(
       null,
     build_validation:
       publicManifest.build_validation ??
+      null,
+    visual_critique:
+      publicManifest.visual_critique ??
+      null,
+    visual_critique_url:
+      publicManifest.visual_critique_url ??
       null,
     outputs: {
       glb_url:

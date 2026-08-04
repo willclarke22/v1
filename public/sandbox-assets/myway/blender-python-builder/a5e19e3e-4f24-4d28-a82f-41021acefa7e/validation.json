@@ -1,0 +1,959 @@
+{
+  "mesh_count": 37,
+  "material_slot_count": 37,
+  "triangle_count": 30938,
+  "object_names": [
+    "cat_body",
+    "chest_ruff",
+    "chest_ruff_tuft_01",
+    "chest_ruff_tuft_02",
+    "chest_ruff_tuft_03",
+    "chest_ruff_tuft_04",
+    "chest_ruff_tuft_05",
+    "chest_ruff_tuft_06",
+    "chest_ruff_tuft_07",
+    "fluffy_fur_coat",
+    "head",
+    "left_ear",
+    "left_eye",
+    "left_front_leg",
+    "left_front_paw",
+    "left_front_paw_toe_01",
+    "left_front_paw_toe_02",
+    "left_front_paw_toe_03",
+    "left_hind_haunch",
+    "left_inner_ear_region",
+    "left_pupil_region",
+    "muzzle_left_lobe",
+    "muzzle_right_lobe",
+    "neck_bridge",
+    "nose",
+    "right_ear",
+    "right_eye",
+    "right_front_leg",
+    "right_front_paw",
+    "right_front_paw_toe_01",
+    "right_front_paw_toe_02",
+    "right_front_paw_toe_03",
+    "right_hind_haunch",
+    "right_inner_ear_region",
+    "right_pupil_region",
+    "tail",
+    "whisker_set"
+  ],
+  "objects": [
+    {
+      "name": "left_ear",
+      "parent": "head",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.2896662652492523,
+        0.2290373593568802,
+        0.3991974890232086
+      ],
+      "location": [
+        -0.1120000034570694,
+        0.009999997913837433,
+        0.1300000548362732
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "right_ear",
+      "parent": "head",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.2896662652492523,
+        0.2290373593568802,
+        0.3991974890232086
+      ],
+      "location": [
+        0.1120000034570694,
+        0.009999997913837433,
+        0.1300000548362732
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "left_inner_ear_region",
+      "parent": "left_ear",
+      "materials": [
+        "MyWaySlot_ear_nose_pink"
+      ],
+      "dimensions": [
+        0.16340655088424683,
+        0.04072123393416405,
+        0.25405359268188477
+      ],
+      "location": [
+        0.0,
+        -0.04800000041723251,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "right_inner_ear_region",
+      "parent": "right_ear",
+      "materials": [
+        "MyWaySlot_ear_nose_pink"
+      ],
+      "dimensions": [
+        0.16340655088424683,
+        0.04072123393416405,
+        0.25405359268188477
+      ],
+      "location": [
+        0.0,
+        -0.04800000041723251,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "nose",
+      "parent": "muzzle",
+      "materials": [
+        "MyWaySlot_ear_nose_pink"
+      ],
+      "dimensions": [
+        0.10442901402711868,
+        0.07001154869794846,
+        0.0765560120344162
+      ],
+      "location": [
+        0.0,
+        -0.2549999952316284,
+        0.6150000095367432
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "chest_ruff_tuft_01",
+      "parent": "chest_ruff",
+      "materials": [
+        "MyWaySlot_cream_fur"
+      ],
+      "dimensions": [
+        0.1048630103468895,
+        0.09845373779535294,
+        0.1914599984884262
+      ],
+      "location": [
+        -0.10499999672174454,
+        -0.05700001120567322,
+        -0.1809999942779541
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "chest_ruff_tuft_02",
+      "parent": "chest_ruff",
+      "materials": [
+        "MyWaySlot_cream_fur"
+      ],
+      "dimensions": [
+        0.1048630103468895,
+        0.09845373779535294,
+        0.1914599984884262
+      ],
+      "location": [
+        -0.07000000029802322,
+        -0.05700001120567322,
+        -0.1629999876022339
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "chest_ruff_tuft_03",
+      "parent": "chest_ruff",
+      "materials": [
+        "MyWaySlot_cream_fur"
+      ],
+      "dimensions": [
+        0.1268555223941803,
+        0.09845373779535294,
+        0.2461438775062561
+      ],
+      "location": [
+        -0.03500000014901161,
+        -0.05700001120567322,
+        -0.14499998092651367
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "chest_ruff_tuft_04",
+      "parent": "chest_ruff",
+      "materials": [
+        "MyWaySlot_cream_fur"
+      ],
+      "dimensions": [
+        0.1268555223941803,
+        0.09845373779535294,
+        0.2461438775062561
+      ],
+      "location": [
+        0.0,
+        -0.05700001120567322,
+        -0.12700000405311584
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "chest_ruff_tuft_05",
+      "parent": "chest_ruff",
+      "materials": [
+        "MyWaySlot_cream_fur"
+      ],
+      "dimensions": [
+        0.1268555223941803,
+        0.09845373779535294,
+        0.2461438775062561
+      ],
+      "location": [
+        0.03500000014901161,
+        -0.05700001120567322,
+        -0.14499998092651367
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "chest_ruff_tuft_06",
+      "parent": "chest_ruff",
+      "materials": [
+        "MyWaySlot_cream_fur"
+      ],
+      "dimensions": [
+        0.1048630103468895,
+        0.09845373779535294,
+        0.1914599984884262
+      ],
+      "location": [
+        0.07000000029802322,
+        -0.05700001120567322,
+        -0.1629999876022339
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "chest_ruff_tuft_07",
+      "parent": "chest_ruff",
+      "materials": [
+        "MyWaySlot_cream_fur"
+      ],
+      "dimensions": [
+        0.1048630103468895,
+        0.09845373779535294,
+        0.1914599984884262
+      ],
+      "location": [
+        0.10499999672174454,
+        -0.05700001120567322,
+        -0.1809999942779541
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "tail",
+      "parent": "cat_body",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        1.6286824941635132,
+        1.2822394371032715,
+        0.7461002469062805
+      ],
+      "location": [
+        0.0,
+        -0.054999999701976776,
+        -0.38999998569488525
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "fluffy_fur_coat",
+      "parent": "cat_body",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        1.683766484260559,
+        1.3330963850021362,
+        1.8680464029312134
+      ],
+      "location": [
+        0.0,
+        -0.054999999701976776,
+        -0.38999998569488525
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 43
+      }
+    },
+    {
+      "name": "whisker_set",
+      "parent": "muzzle",
+      "materials": [
+        "MyWaySlot_whisker_ivory"
+      ],
+      "dimensions": [
+        1.2385729551315308,
+        0.11083366721868515,
+        0.23870274424552917
+      ],
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 8
+      }
+    },
+    {
+      "name": "cat_body",
+      "parent": "fluffy_orange_cat_seated_root",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.9189020991325378,
+        0.833595871925354,
+        1.200392246246338
+      ],
+      "location": [
+        0.0,
+        0.12033233791589737,
+        0.853265643119812
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "neck_bridge",
+      "parent": "cat_body",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.5688434839248657,
+        0.5466316938400269,
+        0.5247666835784912
+      ],
+      "location": [
+        0.0,
+        -0.05999999865889549,
+        0.16500002145767212
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "left_hind_haunch",
+      "parent": "cat_body",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.6353991627693176,
+        0.7410647869110107,
+        0.7876299023628235
+      ],
+      "location": [
+        -0.18000000715255737,
+        0.03500000387430191,
+        -0.16999998688697815
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "right_hind_haunch",
+      "parent": "cat_body",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.6353991627693176,
+        0.7410645484924316,
+        0.7876299023628235
+      ],
+      "location": [
+        0.18000000715255737,
+        0.03500000387430191,
+        -0.16999998688697815
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "head",
+      "parent": "cat_body",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.7438731789588928,
+        0.6559586524963379,
+        0.6122278571128845
+      ],
+      "location": [
+        0.0,
+        -0.14000000059604645,
+        0.26499998569488525
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "left_eye",
+      "parent": "head",
+      "materials": [
+        "MyWaySlot_green_eye"
+      ],
+      "dimensions": [
+        0.13968193531036377,
+        0.0704045221209526,
+        0.15752597153186798
+      ],
+      "location": [
+        -0.07400000095367432,
+        -0.12799999117851257,
+        0.005000054836273193
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "right_eye",
+      "parent": "head",
+      "materials": [
+        "MyWaySlot_green_eye"
+      ],
+      "dimensions": [
+        0.13968193531036377,
+        0.070404551923275,
+        0.15752597153186798
+      ],
+      "location": [
+        0.07400000095367432,
+        -0.12799999117851257,
+        0.005000054836273193
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "left_pupil_region",
+      "parent": "left_eye",
+      "materials": [
+        "MyWaySlot_dark_pupil"
+      ],
+      "dimensions": [
+        0.03928554430603981,
+        0.01968446746468544,
+        0.10501731932163239
+      ],
+      "location": [
+        0.0,
+        -0.018999993801116943,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "right_pupil_region",
+      "parent": "right_eye",
+      "materials": [
+        "MyWaySlot_dark_pupil"
+      ],
+      "dimensions": [
+        0.03928554430603981,
+        0.01968446932733059,
+        0.10501731932163239
+      ],
+      "location": [
+        0.0,
+        -0.018999993801116943,
+        0.0
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "muzzle_left_lobe",
+      "parent": "muzzle",
+      "materials": [
+        "MyWaySlot_cream_fur"
+      ],
+      "dimensions": [
+        0.2731076180934906,
+        0.229410320520401,
+        0.2078467607498169
+      ],
+      "location": [
+        -0.052000001072883606,
+        -0.22599999606609344,
+        0.5920000076293945
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "muzzle_right_lobe",
+      "parent": "muzzle",
+      "materials": [
+        "MyWaySlot_cream_fur"
+      ],
+      "dimensions": [
+        0.2731076180934906,
+        0.229410320520401,
+        0.2078467607498169
+      ],
+      "location": [
+        0.052000001072883606,
+        -0.22599999606609344,
+        0.5920000076293945
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "chest_ruff",
+      "parent": "cat_body",
+      "materials": [
+        "MyWaySlot_cream_fur"
+      ],
+      "dimensions": [
+        0.7001156806945801,
+        0.2861018478870392,
+        0.6554586887359619
+      ],
+      "location": [
+        0.0,
+        -0.22999998927116394,
+        0.05500000715255737
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "left_front_leg",
+      "parent": "cat_body",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.22958528995513916,
+        0.2623431086540222,
+        0.7437593936920166
+      ],
+      "location": [
+        -0.10499999672174454,
+        -0.22499999403953552,
+        -0.17499998211860657
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "right_front_leg",
+      "parent": "cat_body",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.22958528995513916,
+        0.2623431086540222,
+        0.7437593936920166
+      ],
+      "location": [
+        0.10499999672174454,
+        -0.22499999403953552,
+        -0.17499998211860657
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "left_front_paw",
+      "parent": "left_front_leg",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.34957775473594666,
+        0.41512346267700195,
+        0.24066467583179474
+      ],
+      "location": [
+        -0.005000002682209015,
+        -0.07500001788139343,
+        -0.1599999964237213
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "right_front_paw",
+      "parent": "right_front_leg",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.34957775473594666,
+        0.41512346267700195,
+        0.24066467583179474
+      ],
+      "location": [
+        0.005000002682209015,
+        -0.07500001788139343,
+        -0.1599999964237213
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "left_front_paw_toe_01",
+      "parent": "left_front_paw",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.10932642966508865,
+        0.10495339334011078,
+        0.06563582271337509
+      ],
+      "location": [
+        -0.034999996423721313,
+        -0.08100000023841858,
+        -0.005000006407499313
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "left_front_paw_toe_02",
+      "parent": "left_front_paw",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.10932642966508865,
+        0.10495339334011078,
+        0.06563582271337509
+      ],
+      "location": [
+        0.0,
+        -0.08100000023841858,
+        -0.005000006407499313
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "left_front_paw_toe_03",
+      "parent": "left_front_paw",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.10932642966508865,
+        0.10495339334011078,
+        0.06563582271337509
+      ],
+      "location": [
+        0.034999996423721313,
+        -0.08100000023841858,
+        -0.005000006407499313
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "right_front_paw_toe_01",
+      "parent": "right_front_paw",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.10932642966508865,
+        0.10495339334011078,
+        0.06563582271337509
+      ],
+      "location": [
+        -0.034999996423721313,
+        -0.08100000023841858,
+        -0.005000006407499313
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "right_front_paw_toe_02",
+      "parent": "right_front_paw",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.10932642966508865,
+        0.10495339334011078,
+        0.06563582271337509
+      ],
+      "location": [
+        0.0,
+        -0.08100000023841858,
+        -0.005000006407499313
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    },
+    {
+      "name": "right_front_paw_toe_03",
+      "parent": "right_front_paw",
+      "materials": [
+        "MyWaySlot_orange_fur"
+      ],
+      "dimensions": [
+        0.10932642966508865,
+        0.10495339334011078,
+        0.06563582271337509
+      ],
+      "location": [
+        0.034999996423721313,
+        -0.08100000023841858,
+        -0.005000006407499313
+      ],
+      "topology": {
+        "non_manifold_edges": 0,
+        "loose_edges": 0,
+        "loose_vertices": 0,
+        "degenerate_faces": 0,
+        "connected_components": 1
+      }
+    }
+  ],
+  "uv_missing_object_names": [],
+  "zero_scale_object_names": [],
+  "negative_scale_object_names": [],
+  "bounds_min": [
+    -0.787900984287262,
+    -0.9262809157371521,
+    -7.450580596923828e-09
+  ],
+  "bounds_max": [
+    0.8958653807640076,
+    0.5674399137496948,
+    2.0
+  ],
+  "dimensions": [
+    1.6837663650512695,
+    1.493720829486847,
+    2.0000000074505806
+  ],
+  "ground_offset": -7.450580596923828e-09,
+  "topology_totals": {
+    "non_manifold_edges": 0,
+    "loose_edges": 0,
+    "loose_vertices": 0,
+    "degenerate_faces": 0
+  }
+}
