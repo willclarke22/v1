@@ -2,6 +2,7 @@ import type {
   AssetCandidateEligibilityDiagnostic,
   AssetMatchScoreBreakdown,
   MyWayAssetAppearanceRankingDiagnostics,
+  MyWayThirdPartyAssetCreditV1,
 } from "../assets/asset-types";
 
 /**
@@ -267,6 +268,14 @@ export type ResolvedResourceLicenseReference = {
   license_status: string;
   attribution_required: boolean;
   attribution_text: string | null;
+  asset_title?: string | null;
+  creator_name?: string | null;
+  source_provider?: string | null;
+  source_asset_id?: string | null;
+  license_name?: string | null;
+  license_version?: string | null;
+  license_url?: string | null;
+  modification_notice?: string | null;
   source_url: string | null;
   license_record_path: string | null;
 };
@@ -381,6 +390,7 @@ export type ResolvedSceneResourcesV1 = {
   materials: ResolvedMaterialResourceBinding[];
   environment: ResolvedEnvironmentResourceBinding | null;
   auxiliary: ResolvedAuxiliaryResourceBinding[];
+  third_party_assets?: MyWayThirdPartyAssetCreditV1[];
   model_resolution_diagnostics: SceneModelResolutionDiagnostic[];
   warnings: SceneResourceResolutionWarning[];
   fallbacks_used: SceneResourceFallbackRecord[];

@@ -1,4 +1,7 @@
 import type {
+  MyWayThirdPartyAssetCreditV1,
+} from "../assets/asset-types";
+import type {
   EnvironmentCacheMetric,
   RuntimeEnvironmentBindingV1,
   RuntimeShadowPolicy,
@@ -117,6 +120,7 @@ export type RuntimeSceneBindingV1 = {
   actors: RuntimeSceneActorBindingV1[];
   materials: RuntimeMaterialBindingV1[];
   environment: RuntimeEnvironmentBindingV1 | null;
+  third_party_assets?: MyWayThirdPartyAssetCreditV1[];
   renderer: RuntimeSceneRendererPolicy;
   fallback_policy: RuntimeSceneFallbackPolicy;
   created_at: string;

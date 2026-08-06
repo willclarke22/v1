@@ -20,6 +20,10 @@ import {
 import {
   stableJsonHash,
 } from "./content-hash.server";
+import {
+  attributionCompletenessIssues,
+  isAttributionRequiredLicense,
+} from "./asset-attribution";
 import { projectPath } from "./paths.server";
 
 export const REVIEWED_ASSET_RESOLVER_VERSION =
@@ -254,10 +258,19 @@ function cloudReady(asset: MyWayAssetRecord) {
 }
 
 function licenseEligible(asset: MyWayAssetRecord) {
+  const attributionReady =
+    !isAttributionRequiredLicense(
+      asset.license_kind,
+    ) ||
+    attributionCompletenessIssues(
+      asset.attribution,
+    ).length === 0;
+
   return (
     asset.license_kind !== "unknown" &&
     asset.license_status !== "needs_review" &&
-    asset.safe_to_use_in_sandbox
+    asset.safe_to_use_in_sandbox &&
+    attributionReady
   );
 }
 

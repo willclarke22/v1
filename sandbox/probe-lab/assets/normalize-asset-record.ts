@@ -14,6 +14,9 @@ import type {
   MyWayAssetSupportSurface,
   Vec3,
 } from "./asset-types";
+import {
+  normalizeAssetAttribution,
+} from "./asset-attribution";
 
 function stringList(value: unknown) {
   if (!Array.isArray(value)) return [];
@@ -1025,6 +1028,7 @@ export function normalizeMyWayAssetRecord(
 
   const licenseKind = [
     "cc0",
+    "cc_by",
     "cc_by_4_0",
     "royalty_free",
     "self_owned",
@@ -1057,6 +1061,45 @@ export function normalizeMyWayAssetRecord(
   const sourceDisplayName =
     nullableString(item.source_display_name) ??
     displayName;
+  const attribution = normalizeAssetAttribution(
+    item.attribution,
+    {
+      licenseKind,
+      attributionText: nullableString(
+        item.attribution_text,
+      ),
+      assetTitle:
+        nullableString(item.asset_title) ??
+        displayName,
+      creatorName: nullableString(
+        item.creator_name,
+      ),
+      sourceProvider:
+        nullableString(item.source_provider) ??
+        (sourceDisplayName.includes(":")
+          ? sourceDisplayName.split(":")[0]
+          : null),
+      sourceAssetId: nullableString(
+        item.source_asset_id,
+      ),
+      sourceUrl: nullableString(
+        item.source_url,
+      ),
+      modificationNotice:
+        nullableString(
+          item.modification_notice,
+        ) ??
+        ((licenseKind === "cc_by" ||
+          licenseKind === "cc_by_4_0") &&
+        nullableString(item.notes)
+          ? "Processed and normalized for real-time use by MyWay."
+          : null),
+      downloadedAt: nullableString(
+        item.downloaded_at,
+      ),
+      notes: nullableString(item.notes),
+    },
+  );
 
   let semanticReviewStatus:
     MyWayAssetSemanticReviewStatus;
@@ -1091,15 +1134,13 @@ export function normalizeMyWayAssetRecord(
   const geometry = geometryProfile(
     item.geometry_profile,
   );
+  // Geometric support regions are kept in support_surfaces. They do not
+  // automatically imply the semantic affordance "support_surface"; a mouse,
+  // sculpture, or appliance may contain upward polygons without being a surface
+  // that scene composition should place other objects on.
   const affordances = stringList(
     item.affordances,
   );
-  if (
-    geometry?.support_surfaces.length &&
-    !affordances.includes("support_surface")
-  ) {
-    affordances.push("support_surface");
-  }
 
   const contentHash = nullableString(item.content_hash);
   const normalizedAppearanceProfile = appearanceProfile(
@@ -1275,6 +1316,7 @@ export function normalizeMyWayAssetRecord(
     ),
 
     license_kind: licenseKind,
+    attribution,
     license_status: licenseStatus,
     commercial_use_allowed: booleanOr(
       item.commercial_use_allowed,

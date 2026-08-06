@@ -29,6 +29,7 @@ export type MyWayAssetObjectComposition =
 
 export type MyWayAssetLicenseKind =
   | "cc0"
+  | "cc_by"
   | "cc_by_4_0"
   | "royalty_free"
   | "self_owned"
@@ -39,6 +40,44 @@ export type MyWayAssetLicenseStatus =
   | "needs_review"
   | "sandbox_only"
   | "app_ready";
+
+export type MyWayAssetAttributionV1 = {
+  schema_version: "myway_asset_attribution_v1";
+  required: boolean;
+  text: string | null;
+  asset_title: string | null;
+  creator_name: string | null;
+  source_provider: string | null;
+  source_asset_id: string | null;
+  source_url: string | null;
+  license_name: string;
+  license_version: string | null;
+  license_url: string | null;
+  modification_notice: string | null;
+  downloaded_at: string | null;
+};
+
+export type MyWayThirdPartyAssetCreditV1 = {
+  schema_version: "myway_third_party_asset_credit_v1";
+  asset_id: string;
+  asset_title: string | null;
+  creator_name: string | null;
+  source_provider: string | null;
+  source_asset_id: string | null;
+  source_url: string | null;
+  license_kind: MyWayAssetLicenseKind;
+  license_name: string;
+  license_version: string | null;
+  license_url: string | null;
+  attribution_text: string;
+  modification_notice: string | null;
+};
+
+export type MyWayThirdPartyAssetManifestV1 = {
+  schema_version: "myway_third_party_assets_v1";
+  generated_at: string;
+  assets: MyWayThirdPartyAssetCreditV1[];
+};
 
 export type MyWayAssetStorageProvider =
   | "local"
@@ -334,6 +373,7 @@ export type MyWayAssetRecord = {
   reuse_count: number;
 
   license_kind: MyWayAssetLicenseKind;
+  attribution?: MyWayAssetAttributionV1 | null;
   license_status: MyWayAssetLicenseStatus;
   commercial_use_allowed: boolean;
   raw_redistribution_allowed: boolean;
@@ -502,4 +542,3 @@ export type AssetResolveResult = {
   failure_reason?: string | null;
   requires_scene_review?: boolean;
 };
-

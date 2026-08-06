@@ -38,6 +38,7 @@ export type VisualAssetSourceType =
 
 export type VisualAssetLicenseKind =
   | "cc0"
+  | "cc_by"
   | "cc_by_4_0"
   | "royalty_free"
   | "self_owned"

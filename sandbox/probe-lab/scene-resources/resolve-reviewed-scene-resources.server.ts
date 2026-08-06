@@ -11,6 +11,10 @@ import {
   stableJsonHash,
 } from "../assets/content-hash.server";
 import {
+  buildThirdPartyAssetManifest,
+  isAttributionRequiredLicense,
+} from "../assets/asset-attribution";
+import {
   resolveReviewedEnvironment,
   loadReviewedEnvironmentResolverSnapshot,
   type ReviewedEnvironmentResolverSnapshot,
@@ -115,20 +119,40 @@ function conceptForIntent(
 function licenseReference(
   asset: MyWayAssetRecord,
 ): ResolvedResourceLicenseReference {
+  const attribution =
+    asset.attribution ?? null;
   return {
     license_kind: asset.license_kind,
     license_status:
       asset.license_status,
     attribution_required:
-      asset.license_kind ===
-      "cc_by_4_0",
+      isAttributionRequiredLicense(
+        asset.license_kind,
+      ),
     attribution_text:
-      asset.license_kind ===
-      "cc_by_4_0"
-        ? asset.notes ??
-          asset.display_name
-        : null,
+      attribution?.text ?? null,
+    asset_title:
+      attribution?.asset_title ??
+      asset.display_name,
+    creator_name:
+      attribution?.creator_name ?? null,
+    source_provider:
+      attribution?.source_provider ?? null,
+    source_asset_id:
+      attribution?.source_asset_id ??
+      asset.source_asset_id ??
+      null,
+    license_name:
+      attribution?.license_name ?? null,
+    license_version:
+      attribution?.license_version ?? null,
+    license_url:
+      attribution?.license_url ?? null,
+    modification_notice:
+      attribution?.modification_notice ??
+      null,
     source_url:
+      attribution?.source_url ??
       asset.source_url ?? null,
     license_record_path:
       asset.license_record_path ??
@@ -980,6 +1004,19 @@ export async function resolveReviewedSceneResources(
     });
   }
 
+  const thirdPartyAssets =
+    buildThirdPartyAssetManifest(
+      modelResolutions
+        .map((entry) =>
+          entry.result?.asset ?? null,
+        )
+        .filter(
+          (asset): asset is MyWayAssetRecord =>
+            Boolean(asset),
+        ),
+      resolvedAt,
+    ).assets;
+
   const resolvedResources:
     ResolvedSceneResourcesV1 = {
       schema_version:
@@ -999,6 +1036,8 @@ export async function resolveReviewedSceneResources(
       materials,
       environment,
       auxiliary,
+      third_party_assets:
+        thirdPartyAssets,
       model_resolution_diagnostics:
         plan.entity_intents.map(
           (intent) => {

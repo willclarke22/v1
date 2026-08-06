@@ -4,6 +4,7 @@ import path from "node:path";
 import type { MyWayAssetRecord } from "../asset-types";
 import {
   assetWithFileStats,
+  listMyWayAssets,
   registerMyWayAsset,
 } from "../asset-library.server";
 import { createNormalizeJob } from "../blender/blender-job-store.server";
@@ -17,6 +18,15 @@ import {
 import { queueAssetEnrichment } from "../enrichment/asset-enrichment-worker.server";
 import { safeAssetId } from "../normalize-asset-record";
 import {
+  attributionCompletenessIssues,
+  buildAssetAttribution,
+  licensePolicyForKind,
+} from "../asset-attribution";
+import {
+  buildPolyPizzaAttributionText,
+  polyPizzaAssetId,
+} from "../poly-pizza-manual-intake";
+import {
   ensureAssetDirectories,
   projectPath,
 } from "../paths.server";
@@ -28,7 +38,7 @@ import {
 
 type ManualLicenseKind = Extract<
   MyWayAssetRecord["license_kind"],
-  "unknown" | "self_owned" | "cc0" | "cc_by_4_0" | "royalty_free"
+  "unknown" | "self_owned" | "cc0" | "cc_by" | "cc_by_4_0" | "royalty_free"
 >;
 
 export type ManualGlbFileLike = {
@@ -47,8 +57,14 @@ export type ManualGlbImportInput = {
   targetExtentM?: number;
   sourceProvider?: string;
   sourceUrl?: string | null;
+  sourceAssetId?: string | null;
+  assetTitle?: string | null;
+  creatorName?: string | null;
   licenseKind?: ManualLicenseKind;
+  licenseVersion?: string | null;
   attribution?: string | null;
+  modificationNotice?: string | null;
+  downloadedAt?: string | null;
   provenanceNotes?: string | null;
 };
 
@@ -70,43 +86,7 @@ function cleanFileName(value: string) {
 }
 
 function licenseFlags(kind: ManualLicenseKind) {
-  if (kind === "cc0") {
-    return {
-      licenseStatus: "recorded" as const,
-      commercialUseAllowed: true,
-      rawRedistributionAllowed: true,
-    };
-  }
-
-  if (kind === "cc_by_4_0") {
-    return {
-      licenseStatus: "recorded" as const,
-      commercialUseAllowed: true,
-      rawRedistributionAllowed: true,
-    };
-  }
-
-  if (kind === "self_owned") {
-    return {
-      licenseStatus: "recorded" as const,
-      commercialUseAllowed: true,
-      rawRedistributionAllowed: false,
-    };
-  }
-
-  if (kind === "royalty_free") {
-    return {
-      licenseStatus: "recorded" as const,
-      commercialUseAllowed: true,
-      rawRedistributionAllowed: false,
-    };
-  }
-
-  return {
-    licenseStatus: "needs_review" as const,
-    commercialUseAllowed: false,
-    rawRedistributionAllowed: false,
-  };
+  return licensePolicyForKind(kind);
 }
 
 async function writeDebug(payload: Record<string, unknown>) {
@@ -148,8 +128,90 @@ export async function importManualGlb(input: ManualGlbImportInput) {
   const glbValidation = validateManualGlbBuffer(buffer);
   const sourceAppearance = inspectGlbAppearanceBuffer(buffer);
 
-  const baseId = safeAssetId(concept) || `manual_${Date.now()}`;
-  const assetId = `${baseId}_man_${Date.now().toString(36)}`;
+  const targetExtentM =
+    typeof input.targetExtentM === "number" &&
+    Number.isFinite(input.targetExtentM)
+      ? Math.min(20, Math.max(0.05, input.targetExtentM))
+      : 2;
+  const sourceProvider =
+    cleanText(input.sourceProvider, 120) ||
+    "Manual upload";
+  const sourceUrl =
+    cleanText(input.sourceUrl, 1000) ||
+    null;
+  const sourceAssetId =
+    cleanText(input.sourceAssetId, 240) ||
+    originalFileName;
+  const assetTitle =
+    cleanText(input.assetTitle, 240) ||
+    concept;
+  const creatorName =
+    cleanText(input.creatorName, 240) ||
+    null;
+  const modificationNotice =
+    cleanText(input.modificationNotice, 1000) ||
+    null;
+  const downloadedAt =
+    cleanText(input.downloadedAt, 80) ||
+    null;
+  const provenanceNotes =
+    cleanText(input.provenanceNotes, 1200) ||
+    null;
+  const licenseKind =
+    input.licenseKind ?? "unknown";
+  const isPolyPizza =
+    sourceProvider.toLowerCase() ===
+    "poly pizza";
+  const polyPizzaLicenseKind =
+    licenseKind === "cc0" ||
+    licenseKind === "cc_by" ||
+    licenseKind ===
+      "cc_by_4_0"
+      ? licenseKind
+      : null;
+  const generatedPolyPizzaAttribution =
+    isPolyPizza &&
+    polyPizzaLicenseKind
+      ? buildPolyPizzaAttributionText({
+          sourceTitle: assetTitle,
+          creatorName:
+            creatorName ?? "",
+          licenseKind:
+            polyPizzaLicenseKind,
+        })
+      : "";
+  const attributionText =
+    cleanText(input.attribution, 1200) ||
+    generatedPolyPizzaAttribution ||
+    null;
+  const attribution =
+    buildAssetAttribution({
+      licenseKind,
+      attributionText,
+      assetTitle,
+      creatorName,
+      sourceProvider,
+      sourceAssetId,
+      sourceUrl,
+      modificationNotice,
+      downloadedAt,
+      licenseVersion:
+        input.licenseVersion,
+    });
+
+  const baseId =
+    safeAssetId(concept) ||
+    `manual_${Date.now()}`;
+  const deterministicPolyPizzaId =
+    isPolyPizza
+      ? polyPizzaAssetId(
+          concept,
+          sourceAssetId,
+        )
+      : "";
+  const assetId =
+    deterministicPolyPizzaId ||
+    `${baseId}_man_${Date.now().toString(36)}`;
   const sourcePath = projectPath(
     "sandbox/probe-lab/assets/inbox/manual",
     `${assetId}-source.glb`,
@@ -164,21 +226,53 @@ export async function importManualGlb(input: ManualGlbImportInput) {
   );
   const sourceRecordRelativePath =
     `sandbox/probe-lab/assets/library/source-records/${assetId}.json`;
-  const sourceRecordPath = projectPath(sourceRecordRelativePath);
+  const sourceRecordPath =
+    projectPath(
+      sourceRecordRelativePath,
+    );
   const licenseRelativePath =
     `sandbox/probe-lab/assets/library/licenses/${assetId}.manual.review.json`;
-  const licensePath = projectPath(licenseRelativePath);
+  const licensePath =
+    projectPath(
+      licenseRelativePath,
+    );
 
-  const targetExtentM =
-    typeof input.targetExtentM === "number" &&
-    Number.isFinite(input.targetExtentM)
-      ? Math.min(20, Math.max(0.05, input.targetExtentM))
-      : 2;
-  const sourceProvider = cleanText(input.sourceProvider, 120) || "Manual upload";
-  const sourceUrl = cleanText(input.sourceUrl, 500) || null;
-  const attribution = cleanText(input.attribution, 500) || null;
-  const provenanceNotes = cleanText(input.provenanceNotes, 1200) || null;
-  const licenseKind = input.licenseKind ?? "unknown";
+  const attributionIssues =
+    attributionCompletenessIssues(
+      attribution,
+    );
+  if (attributionIssues.length) {
+    throw new Error(
+      `Attribution-required import is incomplete: ${attributionIssues.join(
+        "; ",
+      )}`,
+    );
+  }
+
+  const duplicateSource =
+    (await listMyWayAssets()).find(
+      (candidate) =>
+        candidate.attribution
+          ?.source_provider
+          ?.toLowerCase() ===
+          sourceProvider.toLowerCase() &&
+        candidate.source_asset_id ===
+          sourceAssetId,
+    );
+  if (duplicateSource) {
+    return {
+      created: false,
+      duplicate_of:
+        duplicateSource.asset_id,
+      asset: await assetWithFileStats(
+        duplicateSource,
+      ),
+      enrichment_entry: null,
+      source_record_path:
+        duplicateSource.license_record_path ??
+        null,
+    };
+  }
 
   await mkdir(path.dirname(sourcePath), { recursive: true });
   await writeFile(sourcePath, buffer);
@@ -189,6 +283,7 @@ export async function importManualGlb(input: ManualGlbImportInput) {
     concept,
     original_file_name: originalFileName,
     source_provider: sourceProvider,
+    source_asset_id: sourceAssetId,
     source_url: sourceUrl,
     uploaded_bytes: buffer.length,
     glb_validation: glbValidation,
@@ -238,8 +333,13 @@ export async function importManualGlb(input: ManualGlbImportInput) {
         original_file_name: originalFileName,
         browser_reported_mime_type: input.file.type || null,
         source_provider: sourceProvider,
+        source_asset_id: sourceAssetId,
         source_url: sourceUrl,
+        asset_title: assetTitle,
+        creator_name: creatorName,
         license_kind_asserted_by_user: licenseKind,
+        license_version_asserted_by_user:
+          attribution.license_version,
         attribution,
         provenance_notes: provenanceNotes,
         source_file_project_path: path
@@ -278,8 +378,13 @@ export async function importManualGlb(input: ManualGlbImportInput) {
         asset_id: assetId,
         review_status: "needs_human_review",
         source_provider: sourceProvider,
+        source_asset_id: sourceAssetId,
         source_url: sourceUrl,
+        asset_title: assetTitle,
+        creator_name: creatorName,
         license_kind_asserted_by_user: licenseKind,
+        license_version_asserted_by_user:
+          attribution.license_version,
         commercial_use_allowed_asserted_by_user:
           flags.commercialUseAllowed,
         raw_redistribution_allowed_asserted_by_user:
@@ -300,13 +405,16 @@ export async function importManualGlb(input: ManualGlbImportInput) {
   const record: MyWayAssetRecord = {
     asset_id: assetId,
     canonical_label: concept.toLowerCase(),
-    display_name: concept,
+    display_name:
+      isPolyPizza
+        ? assetId
+        : concept,
     aliases: input.aliases ?? [],
     semantic_tags: [concept, ...(input.semanticTags ?? [])],
     asset_type: "glb",
     domain: cleanText(input.domain, 120) || "asset_library_manual_upload",
     requested_concept: concept,
-    source_display_name: `${sourceProvider}: ${originalFileName}`,
+    source_display_name: `${sourceProvider}: ${assetTitle}`,
     verified_canonical_label: null,
     verified_aliases: [],
     semantic_review_status: "pending",
@@ -319,7 +427,7 @@ export async function importManualGlb(input: ManualGlbImportInput) {
     geometry_profile: result.geometry_profile ?? null,
     preferred_for_concepts: [],
     source_type: "manual",
-    source_asset_id: originalFileName,
+    source_asset_id: sourceAssetId,
     source_prompt: null,
     source_url: sourceUrl,
     source_path: path
@@ -360,6 +468,7 @@ export async function importManualGlb(input: ManualGlbImportInput) {
     quality_score: appearanceComparison.appearance_preserved ? 0.75 : 0.4,
     reuse_count: 0,
     license_kind: licenseKind,
+    attribution,
     license_status: flags.licenseStatus,
     commercial_use_allowed: flags.commercialUseAllowed,
     raw_redistribution_allowed: flags.rawRedistributionAllowed,
@@ -371,7 +480,10 @@ export async function importManualGlb(input: ManualGlbImportInput) {
     scene_review_notes: null,
     notes: [
       `Manually uploaded from ${sourceProvider} as ${originalFileName}.`,
-      attribution ? `Attribution: ${attribution}.` : null,
+      attributionText ? `Attribution: ${attributionText}.` : null,
+      modificationNotice
+        ? `Changes: ${modificationNotice}.`
+        : null,
       provenanceNotes,
       appearanceComparison.appearance_preserved
         ? "Input and normalized GLB appearance channels were preserved."
@@ -411,6 +523,7 @@ export async function importManualGlb(input: ManualGlbImportInput) {
     asset_id: registered.asset.asset_id,
     original_file_name: originalFileName,
     source_provider: sourceProvider,
+    source_asset_id: sourceAssetId,
     source_url: sourceUrl,
     source_record_path: sourceRecordRelativePath,
     public_path: registered.asset.public_path,

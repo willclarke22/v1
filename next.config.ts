@@ -18,6 +18,12 @@ const blenderHydrationTraceExcludes = [
 
 const nextConfig: NextConfig = {
   outputFileTracingExcludes: {
+    "/api/sandbox/probe-lab/assets/import-local":
+      blenderHydrationTraceExcludes,
+    "/api/sandbox/probe-lab/assets/library":
+      blenderHydrationTraceExcludes,
+    "/api/sandbox/probe-lab/assets/attributions":
+      blenderHydrationTraceExcludes,
     "/api/sandbox/probe-lab/blender-python-builder/execute-with-repair":
       blenderHydrationTraceExcludes,
     "/api/sandbox/probe-lab/blender-python-builder/execute":

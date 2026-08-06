@@ -62,6 +62,74 @@ function defaultActorPosition(
   ];
 }
 
+function thirdPartyAssetCredits(
+  models: RuntimeModelBindingV1[],
+) {
+  const seen = new Set<string>();
+  return models
+    .filter(
+      (model) =>
+        model.license
+          .attribution_required &&
+        Boolean(
+          model.license
+            .attribution_text,
+        ),
+    )
+    .map((model) => ({
+      schema_version:
+        "myway_third_party_asset_credit_v1" as const,
+      asset_id: model.asset_id,
+      asset_title:
+        model.license.asset_title ??
+        model.asset_id,
+      creator_name:
+        model.license.creator_name ??
+        null,
+      source_provider:
+        model.license.source_provider ??
+        null,
+      source_asset_id:
+        model.license.source_asset_id ??
+        null,
+      source_url:
+        model.license.source_url,
+      license_kind:
+        model.license.license_kind as
+          | "cc0"
+          | "cc_by"
+          | "cc_by_4_0"
+          | "royalty_free"
+          | "self_owned"
+          | "unknown",
+      license_name:
+        model.license.license_name ??
+        model.license.license_kind,
+      license_version:
+        model.license.license_version ??
+        null,
+      license_url:
+        model.license.license_url ??
+        null,
+      attribution_text:
+        model.license
+          .attribution_text!,
+      modification_notice:
+        model.license
+          .modification_notice ?? null,
+    }))
+    .filter((credit) => {
+      const key = [
+        credit.source_provider ?? "",
+        credit.source_asset_id ?? "",
+        credit.attribution_text,
+      ].join("|").toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
 export type BuildRuntimeSceneBindingInput = {
   scene_id: string;
   source: RuntimeSceneSource;
@@ -436,6 +504,10 @@ export function buildRuntimeSceneBinding(
     actors,
     materials,
     environment,
+    third_party_assets:
+      thirdPartyAssetCredits(
+        input.models,
+      ),
     renderer: {
       tone_mapping: "ACESFilmic",
       output_color_space: "srgb",

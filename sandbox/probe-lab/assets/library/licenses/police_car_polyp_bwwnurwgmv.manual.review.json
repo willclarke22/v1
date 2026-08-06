@@ -1,0 +1,32 @@
+{
+  "schema_version": "myway_manual_asset_license_review_v1",
+  "asset_id": "police_car_polyp_bwwnurwgmv",
+  "review_status": "needs_human_review",
+  "source_provider": "Poly Pizza",
+  "source_asset_id": "BwwnUrWGmV",
+  "source_url": "https://poly.pizza/m/BwwnUrWGmV",
+  "asset_title": "Police Car",
+  "creator_name": "Quaternius",
+  "license_kind_asserted_by_user": "cc0",
+  "license_version_asserted_by_user": null,
+  "commercial_use_allowed_asserted_by_user": true,
+  "raw_redistribution_allowed_asserted_by_user": true,
+  "attribution": {
+    "schema_version": "myway_asset_attribution_v1",
+    "required": false,
+    "text": "Police Car by Quaternius [CC0] via Poly Pizza",
+    "asset_title": "Police Car",
+    "creator_name": "Quaternius",
+    "source_provider": "Poly Pizza",
+    "source_asset_id": "BwwnUrWGmV",
+    "source_url": "https://poly.pizza/m/BwwnUrWGmV",
+    "license_name": "CC0",
+    "license_version": null,
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "modification_notice": "Normalized and processed for real-time use by MyWay.",
+    "downloaded_at": "2026-08-05"
+  },
+  "provenance_notes": "Manually selected and downloaded from the public Poly Pizza website. No scraping or automated Poly Pizza download was used.",
+  "warning": "MyWay records the uploader's assertion but does not independently verify third-party terms. Verify the source terms before app promotion.",
+  "created_at": "2026-08-05T08:06:58.319Z"
+}

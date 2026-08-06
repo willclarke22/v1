@@ -16,6 +16,9 @@ async function main() {
     "/api/sandbox/probe-lab/blender-python-builder/repair",
     "/api/sandbox/probe-lab/blender-python-builder/plan",
     "/api/sandbox/probe-lab/blender-python-builder/visual-critique",
+    "/api/sandbox/probe-lab/assets/import-local",
+    "/api/sandbox/probe-lab/assets/library",
+    "/api/sandbox/probe-lab/assets/attributions",
   ]) {
     assert.ok(
       config.includes(JSON.stringify(route)),

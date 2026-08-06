@@ -122,6 +122,9 @@ export async function POST(
       typeof body.note === "string"
         ? body.note
         : null;
+    const confirmManualLicenseReview =
+      body.confirm_manual_license_review ===
+      true;
 
     if (action === "approve_publish") {
       if (!assetId) {
@@ -133,6 +136,9 @@ export async function POST(
       const result =
         await approveAndPublishAsset(
           assetId,
+          {
+            confirmManualLicenseReview,
+          },
         );
 
       return NextResponse.json({

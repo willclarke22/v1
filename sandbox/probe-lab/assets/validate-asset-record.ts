@@ -1,4 +1,8 @@
 import type { MyWayAssetRecord } from "./asset-types";
+import {
+  attributionCompletenessIssues,
+  isAttributionRequiredLicense,
+} from "./asset-attribution";
 
 function isSupportedPublicPath(value: string) {
   return (
@@ -70,6 +74,26 @@ export function validateMyWayAssetRecord(
   }
 
   if (
+    (asset.safe_to_promote_to_app ||
+      asset.license_status === "app_ready") &&
+    isAttributionRequiredLicense(
+      asset.license_kind,
+    )
+  ) {
+    const attributionIssues =
+      attributionCompletenessIssues(
+        asset.attribution,
+      );
+    if (attributionIssues.length) {
+      errors.push(
+        `Attribution-required assets are incomplete: ${attributionIssues.join(
+          "; ",
+        )}`,
+      );
+    }
+  }
+
+  if (
     !["pending", "approved", "rejected"].includes(
       asset.scene_review_status ?? "pending",
     )
@@ -94,4 +118,3 @@ export function validateMyWayAssetRecord(
     errors,
   };
 }
-

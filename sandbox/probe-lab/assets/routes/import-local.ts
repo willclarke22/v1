@@ -23,6 +23,7 @@ function csvValues(value: string) {
 function licenseKind(value: string): MyWayAssetRecord["license_kind"] {
   if (value === "self_owned") return "self_owned";
   if (value === "cc0") return "cc0";
+  if (value === "cc_by") return "cc_by";
   if (value === "cc_by_4_0") return "cc_by_4_0";
   if (value === "royalty_free") return "royalty_free";
   return "unknown";
@@ -61,8 +62,15 @@ export async function POST(request: NextRequest) {
           : 2,
       sourceProvider: formText(formData, "source_provider") || "Manual upload",
       sourceUrl: formText(formData, "source_url") || null,
+      sourceAssetId: formText(formData, "source_asset_id") || null,
+      assetTitle: formText(formData, "asset_title") || null,
+      creatorName: formText(formData, "creator_name") || null,
       licenseKind: licenseKind(formText(formData, "license_kind")),
+      licenseVersion: formText(formData, "license_version") || null,
       attribution: formText(formData, "attribution") || null,
+      modificationNotice:
+        formText(formData, "modification_notice") || null,
+      downloadedAt: formText(formData, "downloaded_at") || null,
       provenanceNotes: formText(formData, "provenance_notes") || null,
     });
 

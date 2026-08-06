@@ -1,0 +1,39 @@
+{
+  "schema_version": "myway_asset_license_review_v1",
+  "review_id": "police_car_polyp_bwwnurwgmv_poly_pizza_cc0_review_v1",
+  "asset_id": "police_car_polyp_bwwnurwgmv",
+  "decision": "approved_public_distribution",
+  "reviewed_by": "MyWay user-confirmed Poly Pizza manual intake review",
+  "reviewed_at": "2026-08-06T03:17:58.117Z",
+  "basis": [
+    {
+      "label": "Poly Pizza model page",
+      "url": "https://poly.pizza/m/BwwnUrWGmV",
+      "finding": "The reviewer confirmed the stored Poly Pizza page, model ID BwwnUrWGmV, creator, and CC0 licence record."
+    },
+    {
+      "label": "MyWay manual acquisition record",
+      "url": "https://poly.pizza/m/BwwnUrWGmV",
+      "finding": "The model was manually selected and downloaded, its original file was preserved, and its normalized runtime copy retains structured provenance and credit metadata."
+    }
+  ],
+  "attestations": {
+    "reviewed_source_terms": true,
+    "production_use_allowed": true,
+    "public_raw_distribution_allowed": true,
+    "commercial_use_allowed": true,
+    "no_known_third_party_restrictions": true,
+    "generic_or_authorized_subject": true
+  },
+  "attribution": {
+    "required": false,
+    "text": "Police Car by Quaternius [CC0] via Poly Pizza",
+    "license": "CC0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "creator_name": "Quaternius",
+    "source_url": "https://poly.pizza/m/BwwnUrWGmV",
+    "source_asset_id": "BwwnUrWGmV",
+    "modification_notice": "Normalized and processed for real-time use by MyWay."
+  },
+  "notes": "The reviewer explicitly confirmed the stored Poly Pizza source, licence, creator credit, redistribution permission, and absence of known third-party restrictions before public scene use."
+}

@@ -65,25 +65,63 @@ Manual TRELLIS creation does not alter Primitive Builder's automatic missing-ass
 
 TRELLIS produces a generated candidate rather than a catalogue preview, so identity, geometry, appearance, and licensing status must still be reviewed before production promotion.
 
-## Manual local GLB import
+## Manual CC0 and CC BY GLB batch import
 
-The Asset Library manual acquisition panel also supports **Import local GLB**.
-The browser sends the selected `.glb` file plus identity and provenance fields to
-`POST /api/sandbox/probe-lab/assets/import-local` as multipart form data.
+The Asset Library now separates manually downloaded model intake by licence:
 
-The importer:
+- **Import CC0 GLB** accepts up to 50 GLBs per batch, fixes the recorded licence
+  to `cc0`, derives a starting concept from each filename, and submits selected
+  rows sequentially to the existing manual-import route.
+- **Import CC BY GLB** accepts up to 50 GLBs per batch and records the source
+  title, creator, source provider, source page, stable source ID, selected CC BY
+  variant, generated credit, and modification notice for each asset.
 
-1. validates the GLB 2.0 binary header, declared length, and JSON chunk;
-2. preserves the original source file in `assets/inbox/manual`;
-3. normalizes the runtime copy and thumbnail through headless Blender;
-4. generates Spatial Geometry Profile v3 during normalization;
-5. writes source and manual-license review records;
-6. registers the asset as `source_type: manual` with pending semantic and scene review;
-7. queues appearance analysis and the identity-aware embedding.
+Both tabs send one multipart request at a time to
+`POST /api/sandbox/probe-lab/assets/import-local`. The importer validates the GLB
+2.0 binary, preserves the original source, runs headless Blender normalization,
+generates Spatial Geometry Profile v3, writes source and manual-license review
+records, registers the asset with pending semantic and scene review, and queues
+appearance and embedding analysis. Completed assets appear in **Needs review**;
+manual import never means automatic scene or app approval.
 
-Manual imports are sandbox-usable but never app-promotable on ingestion. The
-uploader's license selection is recorded as an assertion, not treated as an
-independent legal verification.
+The 50-file cap is intentionally conservative. Browser file handles remain
+lightweight, but every item can trigger a separate upload, Blender process,
+thumbnail render, geometry audit, and enrichment job. Very large GLBs should be
+split into smaller batches even though the existing per-file limit remains
+400 MB.
+
+## CC BY sources and the Poly Pizza toggle
+
+The **Import CC BY GLB** tab supports Poly Pizza and other CC BY sources. The
+**Poly Pizza source** toggle controls the source-specific behaviour:
+
+- when enabled, MyWay parses filenames such as
+  `Mouse by jeremy - 6DOjEGKd8nx.glb`, fixes the provider to Poly Pizza, derives
+  `https://poly.pizza/m/6DOjEGKd8nx`, generates the credit, and uses the
+  deterministic technical ID `mouse_polyp_6dojegkd8nx`;
+- when disabled, the user records the actual source provider, source page,
+  source title, creator, and stable source asset ID. Generic CC BY imports use
+  the normal manual asset-ID path and never receive the `_polyp_` suffix.
+
+Generic `cc_by` remains distinct from `cc_by_4_0`. Both variants require
+structured source and attribution metadata plus a modification notice. MyWay
+generates the displayed credit from the recorded title, creator, licence, and
+provider rather than asking for a separate attribution text field.
+
+Attribution-required assets remain blocked from public promotion until a formal
+licence review confirms complete attribution. Scene and runtime bindings expose
+a deduplicated `third_party_assets` collection. The attribution endpoint can
+export selected records as JSON or `THIRD_PARTY_LICENSES.txt`:
+
+`GET /api/sandbox/probe-lab/assets/attributions?asset_ids=<comma-separated ids>`
+
+`GET /api/sandbox/probe-lab/assets/attributions?format=text&asset_ids=<ids>`
+
+Existing local, unpromoted manual assets can be corrected with **Edit licence
+and source** without re-running Blender normalization. The edit resets formal
+licence and scene approval while preserving the normalized GLB, thumbnail,
+geometry profile, and enrichment artifacts.
+
 
 ## Manual GLM 5.2 procedural builder
 
@@ -178,4 +216,3 @@ published to R2, identify its R2 object key, and expose an HTTPS `.hdr` or `.exr
 URL. Runtime selection is deterministic and never triggers download/acquisition.
 The Resource Runtime uses an exact-registry-URL proxy so browser CORS settings do
 not broaden the trusted resource boundary.
-

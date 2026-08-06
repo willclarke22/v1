@@ -2,6 +2,7 @@ import {
   mkdir,
   readdir,
   rename as renameFile,
+  rm,
   stat,
 } from "node:fs/promises";
 import path from "node:path";
@@ -25,6 +26,11 @@ import {
   publicUrlToProjectPath,
 } from "./paths.server";
 import { validateMyWayAssetRecord } from "./validate-asset-record";
+import {
+  attributionCompletenessIssues,
+  buildAssetAttribution,
+  licensePolicyForKind,
+} from "./asset-attribution";
 import {
   readJsonFileWithRetry,
   writeJsonFileAtomic,
@@ -580,6 +586,259 @@ export async function updateMyWayAsset(
   return normalized;
 }
 
+
+export type UpdateMyWayAssetProvenanceInput = {
+  assetId: string;
+  sourceProvider: string;
+  sourceAssetId: string;
+  sourceUrl: string;
+  assetTitle: string;
+  creatorName?: string | null;
+  licenseKind: MyWayAssetRecord["license_kind"];
+  licenseVersion?: string | null;
+  attributionText?: string | null;
+  modificationNotice?: string | null;
+  downloadedAt?: string | null;
+  provenanceNotes?: string | null;
+};
+
+async function readJsonIfPresent(
+  filePath: string,
+) {
+  try {
+    return await readJsonFileWithRetry<
+      Record<string, unknown>
+    >(filePath);
+  } catch (caught) {
+    if (
+      (caught as NodeJS.ErrnoException)
+        .code === "ENOENT"
+    ) {
+      return null;
+    }
+    throw caught;
+  }
+}
+
+export async function updateMyWayAssetProvenance(
+  input: UpdateMyWayAssetProvenanceInput,
+) {
+  await ensureAssetDirectories();
+  const current = await getMyWayAsset(
+    input.assetId,
+  );
+  if (!current) {
+    throw new Error(
+      `Asset was not found in the registry: ${safeAssetId(
+        input.assetId,
+      )}`,
+    );
+  }
+  if (
+    current.storage_provider === "r2" ||
+    current.promoted_at ||
+    current.license_review_id
+  ) {
+    throw new Error(
+      "Licence and source metadata cannot be rewritten after public promotion or formal licence approval. Create a new reviewed asset version instead.",
+    );
+  }
+
+  const sourceProvider =
+    input.sourceProvider.trim();
+  const sourceAssetId =
+    input.sourceAssetId.trim();
+  const sourceUrl = input.sourceUrl.trim();
+  const assetTitle = input.assetTitle.trim();
+  if (
+    !sourceProvider ||
+    !sourceAssetId ||
+    !sourceUrl ||
+    !assetTitle
+  ) {
+    throw new Error(
+      "Source provider, stable source asset ID, source URL, and asset title are required.",
+    );
+  }
+
+  const attribution = buildAssetAttribution({
+    licenseKind: input.licenseKind,
+    attributionText:
+      input.attributionText,
+    assetTitle,
+    creatorName: input.creatorName,
+    sourceProvider,
+    sourceAssetId,
+    sourceUrl,
+    modificationNotice:
+      input.modificationNotice,
+    downloadedAt: input.downloadedAt,
+    licenseVersion: input.licenseVersion,
+  });
+  const issues =
+    attributionCompletenessIssues(
+      attribution,
+    );
+  if (issues.length) {
+    throw new Error(
+      `Attribution-required provenance is incomplete: ${issues.join(
+        "; ",
+      )}`,
+    );
+  }
+
+  const sourceRecordRelativePath =
+    `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/source-records/${current.asset_id}.json`;
+  const sourceRecordPath = projectPath(
+    sourceRecordRelativePath,
+  );
+  const licenseRelativePath =
+    current.license_record_path &&
+    !/^https?:\/\//i.test(
+      current.license_record_path,
+    )
+      ? current.license_record_path
+      : `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/licenses/${current.asset_id}.manual.review.json`;
+  const licensePath = projectPath(
+    licenseRelativePath,
+  );
+  const previousSource =
+    await readJsonIfPresent(
+      sourceRecordPath,
+    );
+  const previousLicense =
+    await readJsonIfPresent(licensePath);
+  const now = new Date().toISOString();
+  const sourceRecord = {
+    ...(previousSource ?? {}),
+    schema_version:
+      previousSource?.schema_version ??
+      "myway_manual_asset_source_record_v1",
+    asset_id: current.asset_id,
+    source_provider: sourceProvider,
+    source_asset_id: sourceAssetId,
+    source_url: sourceUrl,
+    asset_title: assetTitle,
+    creator_name:
+      attribution.creator_name,
+    license_kind_asserted_by_user:
+      input.licenseKind,
+    license_version_asserted_by_user:
+      attribution.license_version,
+    attribution,
+    provenance_notes:
+      input.provenanceNotes?.trim() ||
+      null,
+    updated_at: now,
+  };
+  const policy = licensePolicyForKind(
+    input.licenseKind,
+  );
+  const licenseDraft = {
+    ...(previousLicense ?? {}),
+    schema_version:
+      "myway_manual_asset_license_review_v1",
+    asset_id: current.asset_id,
+    review_status:
+      "needs_human_review",
+    source_provider: sourceProvider,
+    source_asset_id: sourceAssetId,
+    source_url: sourceUrl,
+    asset_title: assetTitle,
+    creator_name:
+      attribution.creator_name,
+    license_kind_asserted_by_user:
+      input.licenseKind,
+    license_version_asserted_by_user:
+      attribution.license_version,
+    commercial_use_allowed_asserted_by_user:
+      policy.commercialUseAllowed,
+    raw_redistribution_allowed_asserted_by_user:
+      policy.rawRedistributionAllowed,
+    attribution,
+    provenance_notes:
+      input.provenanceNotes?.trim() ||
+      null,
+    warning:
+      "MyWay records the uploader's assertion but does not independently verify third-party terms. Verify the source terms before app promotion.",
+    updated_at: now,
+  };
+
+  try {
+    await writeJsonFileAtomic(
+      sourceRecordPath,
+      sourceRecord,
+    );
+    await writeJsonFileAtomic(
+      licensePath,
+      licenseDraft,
+    );
+
+    const asset = await updateMyWayAsset(
+      current.asset_id,
+      {
+        source_display_name:
+          `${sourceProvider}: ${assetTitle}`,
+        source_asset_id: sourceAssetId,
+        source_url: sourceUrl,
+        attribution,
+        license_kind: input.licenseKind,
+        license_record_path:
+          licenseRelativePath,
+        license_status:
+          policy.licenseStatus,
+        commercial_use_allowed:
+          policy.commercialUseAllowed,
+        raw_redistribution_allowed:
+          policy.rawRedistributionAllowed,
+        safe_to_promote_to_app: false,
+        license_review_id: null,
+        promoted_at: null,
+        status: "normalized",
+        scene_review_status: "pending",
+        scene_reviewed_at: null,
+        scene_review_notes:
+          "Licence or provenance changed; scene eligibility must be reviewed again.",
+        notes: [
+          current.notes,
+          `Licence and provenance updated on ${now}; formal licence and scene review were reset.`,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      },
+    );
+
+    return {
+      asset,
+      source_record_path:
+        sourceRecordRelativePath,
+      license_record_path:
+        licenseRelativePath,
+    };
+  } catch (caught) {
+    if (previousSource) {
+      await writeJsonFileAtomic(
+        sourceRecordPath,
+        previousSource,
+      ).catch(() => undefined);
+    } else {
+      await rm(sourceRecordPath, {
+        force: true,
+      }).catch(() => undefined);
+    }
+    if (previousLicense) {
+      await writeJsonFileAtomic(
+        licensePath,
+        previousLicense,
+      ).catch(() => undefined);
+    } else {
+      await rm(licensePath, {
+        force: true,
+      }).catch(() => undefined);
+    }
+    throw caught;
+  }
+}
 
 export async function renameMyWayAssetId(input: {
   assetId: string;

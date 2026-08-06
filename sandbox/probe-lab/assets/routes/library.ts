@@ -10,6 +10,7 @@ import {
   repairMyWayAssetIdentityArtifacts,
   updateMyWayAssetCanonicalLabel,
   updateMyWayAssetAliases,
+  updateMyWayAssetProvenance,
   reviewMyWayAssetForScenes,
   reviewMyWayAssetSemanticIdentity,
 } from "../asset-library.server";
@@ -216,6 +217,75 @@ export async function PATCH(request: NextRequest) {
           ),
         aliases_updated_from:
           result.updated_from,
+      });
+    }
+
+    if (body.action === "update_provenance") {
+      const licenseKind =
+        body.license_kind === "cc0" ||
+        body.license_kind === "cc_by" ||
+        body.license_kind === "cc_by_4_0" ||
+        body.license_kind === "royalty_free" ||
+        body.license_kind === "self_owned" ||
+        body.license_kind === "unknown"
+          ? body.license_kind
+          : "unknown";
+      const result =
+        await updateMyWayAssetProvenance({
+          assetId,
+          sourceProvider:
+            typeof body.source_provider === "string"
+              ? body.source_provider
+              : "",
+          sourceAssetId:
+            typeof body.source_asset_id === "string"
+              ? body.source_asset_id
+              : "",
+          sourceUrl:
+            typeof body.source_url === "string"
+              ? body.source_url
+              : "",
+          assetTitle:
+            typeof body.asset_title === "string"
+              ? body.asset_title
+              : "",
+          creatorName:
+            typeof body.creator_name === "string"
+              ? body.creator_name
+              : null,
+          licenseKind,
+          licenseVersion:
+            typeof body.license_version === "string"
+              ? body.license_version
+              : null,
+          attributionText:
+            typeof body.attribution_text === "string"
+              ? body.attribution_text
+              : null,
+          modificationNotice:
+            typeof body.modification_notice === "string"
+              ? body.modification_notice
+              : null,
+          downloadedAt:
+            typeof body.downloaded_at === "string"
+              ? body.downloaded_at
+              : null,
+          provenanceNotes:
+            typeof body.provenance_notes === "string"
+              ? body.provenance_notes
+              : null,
+        });
+
+      return NextResponse.json({
+        ok: true,
+        asset:
+          await assetWithFileStats(
+            result.asset,
+          ),
+        source_record_path:
+          result.source_record_path,
+        license_record_path:
+          result.license_record_path,
       });
     }
 

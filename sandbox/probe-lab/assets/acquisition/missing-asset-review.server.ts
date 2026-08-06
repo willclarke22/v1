@@ -1,3 +1,6 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+
 import {
   assetWithFileStats,
   getMyWayAsset,
@@ -9,6 +12,16 @@ import {
 import {
   promoteMyWayAssetToR2,
 } from "../asset-promotion.server";
+import {
+  buildManualCc0LicenseReview,
+  buildPolyPizzaManualLicenseReview,
+  isManualCc0PublicSceneCandidate,
+  isPolyPizzaManualLicenseCandidate,
+} from "../licensing/asset-license-review";
+import {
+  MYWAY_ASSET_LIBRARY_PROJECT_PATH,
+  projectPath,
+} from "../paths.server";
 import {
   findMissingAssetJobForAsset,
   markMissingAssetCandidateApproved,
@@ -77,8 +90,64 @@ function verifiedIdentityMatches(
   );
 }
 
+
+async function writeApprovedPolyPizzaLicenseReview(
+  asset: NonNullable<
+    Awaited<ReturnType<typeof getMyWayAsset>>
+  >,
+) {
+  const review =
+    buildPolyPizzaManualLicenseReview(
+      asset,
+    );
+  const relativePath =
+    `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/licenses/${asset.asset_id}.review.json`;
+  const absolutePath =
+    projectPath(relativePath);
+
+  await mkdir(path.dirname(absolutePath), {
+    recursive: true,
+  });
+  await writeFile(
+    absolutePath,
+    `${JSON.stringify(review, null, 2)}\n`,
+    "utf8",
+  );
+
+  return relativePath;
+}
+
+async function writeApprovedManualCc0LicenseReview(
+  asset: NonNullable<
+    Awaited<ReturnType<typeof getMyWayAsset>>
+  >,
+) {
+  const review =
+    buildManualCc0LicenseReview(
+      asset,
+    );
+  const relativePath =
+    `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/licenses/${asset.asset_id}.review.json`;
+  const absolutePath =
+    projectPath(relativePath);
+
+  await mkdir(path.dirname(absolutePath), {
+    recursive: true,
+  });
+  await writeFile(
+    absolutePath,
+    `${JSON.stringify(review, null, 2)}\n`,
+    "utf8",
+  );
+
+  return relativePath;
+}
+
 export async function approveAndPublishAsset(
   assetId: string,
+  options: {
+    confirmManualLicenseReview?: boolean;
+  } = {},
 ) {
   const current =
     await getMyWayAsset(assetId);
@@ -127,14 +196,65 @@ export async function approveAndPublishAsset(
   let asset = current;
   let published =
     current.storage_provider === "r2";
+  let reviewFile: string | null = null;
+
+  const polyPizzaManualCandidate =
+    isPolyPizzaManualLicenseCandidate(
+      current,
+    );
+  const manualCc0Candidate =
+    !polyPizzaManualCandidate &&
+    isManualCc0PublicSceneCandidate(
+      current,
+    );
 
   if (
     !published &&
-    current.safe_to_promote_to_app
+    !current.safe_to_promote_to_app &&
+    polyPizzaManualCandidate
+  ) {
+    if (
+      options.confirmManualLicenseReview !==
+      true
+    ) {
+      throw new Error(
+        "Confirm the Poly Pizza source page, licence, creator credit, redistribution permission, and absence of known third-party restrictions before approving this asset for public scene use.",
+      );
+    }
+
+    reviewFile =
+      await writeApprovedPolyPizzaLicenseReview(
+        current,
+      );
+  } else if (
+    !published &&
+    !current.safe_to_promote_to_app &&
+    manualCc0Candidate
+  ) {
+    if (
+      options.confirmManualLicenseReview !==
+      true
+    ) {
+      throw new Error(
+        "Confirm the recorded source, CC0 licence, redistribution permission, and absence of known third-party restrictions before approving this asset for public scene use.",
+      );
+    }
+
+    reviewFile =
+      await writeApprovedManualCc0LicenseReview(
+        current,
+      );
+  }
+
+  if (
+    !published &&
+    (current.safe_to_promote_to_app ||
+      reviewFile)
   ) {
     const promoted =
       await promoteMyWayAssetToR2({
         assetId: current.asset_id,
+        reviewFile,
         archiveSource: false,
       });
     asset = promoted.asset;
@@ -159,6 +279,8 @@ export async function approveAndPublishAsset(
     asset:
       await assetWithFileStats(asset),
     published,
+    license_review_created:
+      Boolean(reviewFile),
     jobs,
   };
 }

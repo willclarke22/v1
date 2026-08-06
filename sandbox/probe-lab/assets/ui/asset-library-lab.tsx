@@ -14,6 +14,8 @@ import type { ErrorInfo, ReactNode } from "react";
 import * as THREE from "three";
 
 import { AmbientCgLibraryLab } from "./ambientcg-library-lab";
+import { Cc0BatchImportLab } from "./cc0-batch-import-lab";
+import { CcByBatchImportLab } from "./cc-by-batch-import-lab";
 
 type Vec3 = [number, number, number];
 
@@ -176,6 +178,21 @@ type LibraryAsset = {
   source_prompt?: string | null;
   source_url?: string | null;
   source_path?: string | null;
+  attribution?: {
+    schema_version: "myway_asset_attribution_v1";
+    required: boolean;
+    text: string | null;
+    asset_title: string | null;
+    creator_name: string | null;
+    source_provider: string | null;
+    source_asset_id: string | null;
+    source_url: string | null;
+    license_name: string;
+    license_version: string | null;
+    license_url: string | null;
+    modification_notice: string | null;
+    downloaded_at: string | null;
+  } | null;
   public_path: string;
   thumbnail_path?: string | null;
   license_record_path?: string | null;
@@ -196,7 +213,7 @@ type LibraryAsset = {
   content_hash?: string | null;
   quality_score: number;
   reuse_count: number;
-  license_kind: "cc0" | "cc_by_4_0" | "royalty_free" | "self_owned" | "unknown";
+  license_kind: "cc0" | "cc_by" | "cc_by_4_0" | "royalty_free" | "self_owned" | "unknown";
   license_status: "recorded" | "needs_review" | "sandbox_only" | "app_ready";
   commercial_use_allowed: boolean;
   raw_redistribution_allowed: boolean;
@@ -287,6 +304,41 @@ type AcquisitionResponse = {
   removed_remote_objects?: string[];
   error?: string;
 };
+
+function isPolyPizzaPublicSceneCandidate(
+  asset: LibraryAsset,
+) {
+  return (
+    asset.source_type === "manual" &&
+    asset.attribution
+      ?.source_provider
+      ?.trim()
+      .toLowerCase() === "poly pizza" &&
+    (asset.license_kind === "cc0" ||
+      asset.license_kind === "cc_by" ||
+      asset.license_kind === "cc_by_4_0")
+  );
+}
+
+function isManualCc0PublicSceneCandidate(
+  asset: LibraryAsset,
+) {
+  return (
+    asset.source_type === "manual" &&
+    asset.license_kind === "cc0" &&
+    asset.commercial_use_allowed &&
+    asset.raw_redistribution_allowed
+  );
+}
+
+function isManualPublicSceneCandidate(
+  asset: LibraryAsset,
+) {
+  return (
+    isPolyPizzaPublicSceneCandidate(asset) ||
+    isManualCc0PublicSceneCandidate(asset)
+  );
+}
 
 
 type EnrichmentQueueEntry = {
@@ -402,19 +454,12 @@ type DirectGlmProceduralResponse = {
   debug_path?: string;
 };
 
-type DirectLocalGlbImportResponse = {
-  ok: boolean;
-  created?: boolean;
-  duplicate_of?: string | null;
-  asset?: LibraryAsset;
-  enrichment_entry?: EnrichmentQueueEntry | null;
-  source_record_path?: string | null;
-  message?: string;
-  error?: string;
-  debug_path?: string;
-};
-
-type ManualAcquisitionMode = "blenderkit" | "trellis" | "glm" | "local";
+type ManualAcquisitionMode =
+  | "blenderkit"
+  | "trellis"
+  | "glm"
+  | "cc0"
+  | "cc_by";
 
 type ReviewView =
   | "all"
@@ -876,22 +921,8 @@ export function AssetLibraryLab({
   const [glmStyle, setGlmStyle] = useState("clean stylized");
   const [glmTargetExtentM, setGlmTargetExtentM] = useState("2");
   const [glmCreating, setGlmCreating] = useState(false);
-  const [localGlbFile, setLocalGlbFile] = useState<File | null>(null);
-  const [localGlbConcept, setLocalGlbConcept] = useState("");
-  const [localGlbAliases, setLocalGlbAliases] = useState("");
-  const [localGlbSemanticTags, setLocalGlbSemanticTags] = useState("");
-  const [localGlbDomain, setLocalGlbDomain] =
-    useState("asset_library_manual_upload");
-  const [localGlbTargetExtentM, setLocalGlbTargetExtentM] =
-    useState("2");
-  const [localGlbSourceProvider, setLocalGlbSourceProvider] = useState("");
-  const [localGlbSourceUrl, setLocalGlbSourceUrl] = useState("");
-  const [localGlbLicenseKind, setLocalGlbLicenseKind] =
-    useState("unknown");
-  const [localGlbAttribution, setLocalGlbAttribution] = useState("");
-  const [localGlbProvenanceNotes, setLocalGlbProvenanceNotes] = useState("");
-  const [localGlbImporting, setLocalGlbImporting] = useState(false);
-  const localGlbFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [cc0Importing, setCc0Importing] = useState(false);
+  const [ccByImporting, setCcByImporting] = useState(false);
   const [licenseFilter, setLicenseFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [refreshToken, setRefreshToken] = useState(0);
@@ -907,6 +938,7 @@ export function AssetLibraryLab({
     | "rename"
     | "canonical_label"
     | "aliases"
+    | "provenance"
     | "blenderkit"
     | "trellis"
     | null
@@ -1368,6 +1400,7 @@ export function AssetLibraryLab({
     assetId?: string;
     jobId?: string;
     note?: string | null;
+    confirmManualLicenseReview?: boolean;
   }) {
     const actionId =
       input.assetId ??
@@ -1402,6 +1435,9 @@ export function AssetLibraryLab({
             job_id:
               input.jobId ?? null,
             note: input.note ?? null,
+            confirm_manual_license_review:
+              input.confirmManualLicenseReview ===
+              true,
           }),
         },
       );
@@ -1472,16 +1508,55 @@ export function AssetLibraryLab({
     );
     if (!asset) return;
 
+    const polyPizzaPublicSceneApproval =
+      asset.storage_provider !== "r2" &&
+      !asset.safe_to_promote_to_app &&
+      isPolyPizzaPublicSceneCandidate(
+        asset,
+      );
+    const manualCc0PublicSceneApproval =
+      asset.storage_provider !== "r2" &&
+      !asset.safe_to_promote_to_app &&
+      !isPolyPizzaPublicSceneCandidate(
+        asset,
+      ) &&
+      isManualCc0PublicSceneCandidate(
+        asset,
+      );
+    const requiresManualLicenseReview =
+      polyPizzaPublicSceneApproval ||
+      manualCc0PublicSceneApproval;
+
     const actionLabel =
       asset.storage_provider === "r2"
         ? "Approve this asset for automatic scene use?"
-        : asset.safe_to_promote_to_app
-          ? "Approve this asset and publish its GLB and thumbnail to Cloudflare R2?"
-          : "Approve this asset for local sandbox scene use? It is not currently cleared for public R2 promotion.";
+        : polyPizzaPublicSceneApproval
+          ? "Approve this Poly Pizza asset for scene use and publish its GLB and thumbnail to Cloudflare R2?"
+          : manualCc0PublicSceneApproval
+            ? "Approve this CC0 asset for scene use and publish its GLB and thumbnail to Cloudflare R2?"
+            : asset.safe_to_promote_to_app
+              ? "Approve this asset and publish its GLB and thumbnail to Cloudflare R2?"
+              : "Approve this asset for local sandbox scene use? It is not currently cleared for public R2 promotion.";
+
+    const confirmationDetails =
+      polyPizzaPublicSceneApproval
+        ? [
+            "Continue only after verifying the stored Poly Pizza model page and creator.",
+            "Confirm that the recorded CC0 or CC BY licence permits commercial use and redistribution.",
+            "For CC BY, confirm that the generated creator credit is complete.",
+            "Confirm that the model is generic or otherwise authorized and has no known third-party restrictions.",
+          ].join("\n")
+        : manualCc0PublicSceneApproval
+          ? [
+              "Continue only after verifying the recorded source and CC0 licence.",
+              "Confirm that CC0 permits commercial use and redistribution for this asset.",
+              "Confirm that the model is generic or otherwise authorized and has no known third-party restrictions.",
+            ].join("\n")
+          : "Review the rotating 3D model and verified identity before continuing.";
 
     if (
       !window.confirm(
-        `${actionLabel}\n\nReview the rotating 3D model and verified identity before continuing.`,
+        `${actionLabel}\n\n${confirmationDetails}`,
       )
     ) {
       return;
@@ -1490,6 +1565,8 @@ export function AssetLibraryLab({
     await runAcquisitionAction({
       action: "approve_publish",
       assetId: asset.asset_id,
+      confirmManualLicenseReview:
+        requiresManualLicenseReview,
     });
   }
 
@@ -2560,107 +2637,172 @@ export function AssetLibraryLab({
     }
   }
 
-  async function importLocalGlbAsset() {
-    const concept = localGlbConcept.trim();
-    const parsedTargetExtent = Number(localGlbTargetExtentM);
-
-    if (!localGlbFile) {
-      setError("Choose a GLB file to import.");
-      return;
-    }
-
-    if (!concept) {
-      setError("Enter the canonical identity of the uploaded object.");
-      return;
-    }
-
+  async function editSelectedAssetProvenance() {
+    if (!selectedAssetId) return;
+    const asset = assets.find(
+      (candidate) =>
+        candidate.asset_id ===
+        selectedAssetId,
+    );
+    if (!asset) return;
     if (
-      !Number.isFinite(parsedTargetExtent) ||
-      parsedTargetExtent <= 0
+      asset.storage_provider === "r2" ||
+      asset.promoted_at
     ) {
       setError(
-        "The manual GLB normalization extent must be greater than zero.",
+        "Promoted R2 assets cannot have their licence record rewritten in place. Create a new reviewed asset version.",
       );
       return;
     }
 
-    setLocalGlbImporting(true);
-    setPromotionMessage(null);
+    const sourceProvider = window.prompt(
+      "Source provider",
+      asset.attribution
+        ?.source_provider ??
+        (asset.source_display_name
+          ?.split(":")[0] ??
+          "Poly Pizza"),
+    );
+    if (sourceProvider == null) return;
+    const sourceAssetId = window.prompt(
+      "Stable source asset ID",
+      asset.attribution
+        ?.source_asset_id ??
+        asset.source_asset_id ??
+        "",
+    );
+    if (sourceAssetId == null) return;
+    const sourceUrl = window.prompt(
+      "Source page URL",
+      asset.attribution?.source_url ??
+        asset.source_url ??
+        "",
+    );
+    if (sourceUrl == null) return;
+    const assetTitle = window.prompt(
+      "Source asset title",
+      asset.attribution?.asset_title ??
+        asset.display_name,
+    );
+    if (assetTitle == null) return;
+    const creatorName = window.prompt(
+      "Creator name",
+      asset.attribution?.creator_name ??
+        "",
+    );
+    if (creatorName == null) return;
+    const licenseKind = window.prompt(
+      "Licence kind: cc0, cc_by, cc_by_4_0, royalty_free, self_owned, or unknown",
+      asset.license_kind,
+    );
+    if (licenseKind == null) return;
+    if (
+      ![
+        "cc0",
+        "cc_by",
+        "cc_by_4_0",
+        "royalty_free",
+        "self_owned",
+        "unknown",
+      ].includes(licenseKind)
+    ) {
+      setError(
+        "The licence kind was not recognized.",
+      );
+      return;
+    }
+    const attributionText = window.prompt(
+      "Exact creator-supplied attribution",
+      asset.attribution?.text ?? "",
+    );
+    if (attributionText == null) return;
+    const modificationNotice = window.prompt(
+      "Modification notice",
+      asset.attribution
+        ?.modification_notice ??
+        "Normalized and processed for real-time use by MyWay.",
+    );
+    if (modificationNotice == null) return;
+    const downloadedAt = window.prompt(
+      "Downloaded date (YYYY-MM-DD)",
+      asset.attribution?.downloaded_at ??
+        new Date().toISOString().slice(0, 10),
+    );
+    if (downloadedAt == null) return;
+
+    setMaintenanceAction("provenance");
+    setMaintenanceAssetId(asset.asset_id);
     setError(null);
-
+    setPromotionMessage(null);
     try {
-      const formData = new FormData();
-      formData.set("file", localGlbFile);
-      formData.set("concept", concept);
-      formData.set("aliases", localGlbAliases);
-      formData.set("semantic_tags", localGlbSemanticTags);
-      formData.set(
-        "domain",
-        localGlbDomain.trim() || "asset_library_manual_upload",
-      );
-      formData.set("target_extent_m", String(parsedTargetExtent));
-      formData.set(
-        "source_provider",
-        localGlbSourceProvider.trim() || "Manual upload",
-      );
-      formData.set("source_url", localGlbSourceUrl.trim());
-      formData.set("license_kind", localGlbLicenseKind);
-      formData.set("attribution", localGlbAttribution.trim());
-      formData.set(
-        "provenance_notes",
-        localGlbProvenanceNotes.trim(),
-      );
-
       const response = await fetch(
-        "/api/sandbox/probe-lab/assets/import-local",
+        "/api/sandbox/probe-lab/assets/library",
         {
-          method: "POST",
-          body: formData,
+          method: "PATCH",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            action: "update_provenance",
+            asset_id: asset.asset_id,
+            source_provider:
+              sourceProvider,
+            source_asset_id:
+              sourceAssetId,
+            source_url: sourceUrl,
+            asset_title: assetTitle,
+            creator_name: creatorName,
+            license_kind: licenseKind,
+            license_version:
+              licenseKind ===
+              "cc_by_4_0"
+                ? "4.0"
+                : null,
+            attribution_text:
+              attributionText,
+            modification_notice:
+              modificationNotice,
+            downloaded_at: downloadedAt,
+          }),
         },
       );
       const payload =
-        (await response.json()) as DirectLocalGlbImportResponse;
-
-      if (!response.ok || !payload.ok || !payload.asset) {
+        await response.json() as
+          LibraryResponse;
+      if (
+        !response.ok ||
+        !payload.ok ||
+        !payload.asset
+      ) {
         throw new Error(
-          payload.error || "The local GLB import failed.",
+          payload.error ??
+            "Licence and source update failed.",
         );
       }
-
-      if (payload.enrichment_entry) {
-        setEnrichmentQueue((current) => {
-          const next = current.filter(
-            (entry) =>
-              entry.asset_id !== payload.enrichment_entry!.asset_id,
-          );
-          next.push(payload.enrichment_entry!);
-          return next;
-        });
-      }
-
-      setSelectedAssetId(payload.asset.asset_id);
-      setReviewView(payload.created === false ? "all" : "needs_review");
-      setLocalGlbFile(null);
-      setLocalGlbConcept("");
-      setLocalGlbAliases("");
-      setLocalGlbSemanticTags("");
-      setLocalGlbSourceUrl("");
-      setLocalGlbAttribution("");
-      setLocalGlbProvenanceNotes("");
-      if (localGlbFileInputRef.current) {
-        localGlbFileInputRef.current.value = "";
-      }
-      setPromotionMessage(
-        payload.message ||
-          `${payload.asset.display_name} was imported and queued for analysis.`,
+      setAssets((current) =>
+        current.map((candidate) =>
+          candidate.asset_id ===
+          payload.asset!.asset_id
+            ? payload.asset!
+            : candidate,
+        ),
       );
-      setRefreshToken((value) => value + 1);
+      setPromotionMessage(
+        "Licence and provenance were updated. Formal licence and scene approval were reset for review.",
+      );
+      setRefreshToken((value) =>
+        value + 1,
+      );
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : String(caught),
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
       );
     } finally {
-      setLocalGlbImporting(false);
+      setMaintenanceAction(null);
+      setMaintenanceAssetId(null);
     }
   }
 
@@ -4293,7 +4435,7 @@ export function AssetLibraryLab({
           >
             <button
               data-active={manualAcquisitionMode === "blenderkit"}
-              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || localGlbImporting}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || cc0Importing || ccByImporting}
               onClick={() => setManualAcquisitionMode("blenderkit")}
               type="button"
             >
@@ -4301,7 +4443,7 @@ export function AssetLibraryLab({
             </button>
             <button
               data-active={manualAcquisitionMode === "trellis"}
-              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || localGlbImporting}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || cc0Importing || ccByImporting}
               onClick={() => setManualAcquisitionMode("trellis")}
               type="button"
             >
@@ -4309,19 +4451,27 @@ export function AssetLibraryLab({
             </button>
             <button
               data-active={manualAcquisitionMode === "glm"}
-              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || localGlbImporting}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || cc0Importing || ccByImporting}
               onClick={() => setManualAcquisitionMode("glm")}
               type="button"
             >
               Build with GLM 5.2
             </button>
             <button
-              data-active={manualAcquisitionMode === "local"}
-              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || localGlbImporting}
-              onClick={() => setManualAcquisitionMode("local")}
+              data-active={manualAcquisitionMode === "cc0"}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || cc0Importing || ccByImporting}
+              onClick={() => setManualAcquisitionMode("cc0")}
               type="button"
             >
-              Import local GLB
+              Import CC0 GLB
+            </button>
+            <button
+              data-active={manualAcquisitionMode === "cc_by"}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || cc0Importing || ccByImporting}
+              onClick={() => setManualAcquisitionMode("cc_by")}
+              type="button"
+            >
+              Import CC BY GLB
             </button>
           </div>
 
@@ -4680,207 +4830,30 @@ export function AssetLibraryLab({
               </div>
               <p className="asset-library-trellis-warning">Best for geometric, mechanical, furniture, toy-like, symbolic, and educational objects. Organic or photorealistic requests may produce stylized approximations and remain pending review.</p>
             </form>
-          ) : (
-            <form
-              className="asset-library-trellis-form asset-library-local-glb-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void importLocalGlbAsset();
+          ) : manualAcquisitionMode === "cc_by" ? (
+            <CcByBatchImportLab
+              onImportComplete={(assetId) => {
+                setSelectedAssetId(assetId);
+                setReviewView("needs_review");
+                setPromotionMessage(
+                  `${assetId} was imported from a manually downloaded CC BY GLB and placed in Needs review.`,
+                );
+                setRefreshToken((value) => value + 1);
               }}
-            >
-              <div className="asset-library-trellis-intro">
-                <div>
-                  <strong>Import an existing GLB into the reusable library</strong>
-                  <small>
-                    MyWay validates the binary GLB, preserves the original source,
-                    normalizes it in Blender, creates Spatial Geometry Profile v3,
-                    and queues appearance and embedding analysis before approval.
-                  </small>
-                </div>
-                <button
-                  className="asset-library-button"
-                  data-primary="true"
-                  disabled={
-                    localGlbImporting ||
-                    !localGlbFile ||
-                    !localGlbConcept.trim()
-                  }
-                  type="submit"
-                >
-                  {localGlbImporting
-                    ? "Uploading and processing GLB…"
-                    : "Import GLB"}
-                </button>
-              </div>
-
-              <div className="asset-library-trellis-fields">
-                <label className="asset-library-trellis-wide asset-library-local-file">
-                  GLB file
-                  <input
-                    accept=".glb,model/gltf-binary,application/octet-stream"
-                    aria-label="Local GLB file"
-                    disabled={localGlbImporting}
-                    onChange={(event) =>
-                      setLocalGlbFile(event.target.files?.[0] ?? null)
-                    }
-                    ref={localGlbFileInputRef}
-                    type="file"
-                  />
-                  <small>
-                    GLB 2.0 only, up to 400 MB. The original source file is kept in
-                    the manual inbox; the normalized runtime copy receives a stable
-                    MyWay asset ID.
-                  </small>
-                </label>
-
-                <label className="asset-library-trellis-wide">
-                  Canonical object identity
-                  <input
-                    aria-label="Local GLB canonical identity"
-                    disabled={localGlbImporting}
-                    onChange={(event) => setLocalGlbConcept(event.target.value)}
-                    placeholder="For example: cheeseburger"
-                    value={localGlbConcept}
-                  />
-                  <small>
-                    This controls the library identity. The original filename remains
-                    unchanged in the provenance record.
-                  </small>
-                </label>
-
-                <label>
-                  Aliases
-                  <input
-                    aria-label="Local GLB aliases"
-                    disabled={localGlbImporting}
-                    onChange={(event) => setLocalGlbAliases(event.target.value)}
-                    placeholder="burger, cheese burger, hamburger"
-                    value={localGlbAliases}
-                  />
-                </label>
-
-                <label>
-                  Semantic tags
-                  <input
-                    aria-label="Local GLB semantic tags"
-                    disabled={localGlbImporting}
-                    onChange={(event) =>
-                      setLocalGlbSemanticTags(event.target.value)
-                    }
-                    placeholder="food, sandwich, meal"
-                    value={localGlbSemanticTags}
-                  />
-                </label>
-
-                <label>
-                  Domain
-                  <input
-                    aria-label="Local GLB domain"
-                    disabled={localGlbImporting}
-                    onChange={(event) => setLocalGlbDomain(event.target.value)}
-                    value={localGlbDomain}
-                  />
-                </label>
-
-                <label>
-                  Normalization extent (m)
-                  <input
-                    aria-label="Local GLB normalization extent"
-                    disabled={localGlbImporting}
-                    min="0.05"
-                    onChange={(event) =>
-                      setLocalGlbTargetExtentM(event.target.value)
-                    }
-                    step="0.05"
-                    type="number"
-                    value={localGlbTargetExtentM}
-                  />
-                  <small>
-                    Standardized working size; logical scene sizing can adjust it later.
-                  </small>
-                </label>
-
-                <label>
-                  Source or generator
-                  <input
-                    aria-label="Local GLB source provider"
-                    disabled={localGlbImporting}
-                    onChange={(event) =>
-                      setLocalGlbSourceProvider(event.target.value)
-                    }
-                    placeholder="For example: Hi3D"
-                    value={localGlbSourceProvider}
-                  />
-                </label>
-
-                <label className="asset-library-trellis-wide">
-                  Source page
-                  <input
-                    aria-label="Local GLB source URL"
-                    disabled={localGlbImporting}
-                    onChange={(event) => setLocalGlbSourceUrl(event.target.value)}
-                    placeholder="Optional URL for the tool, model page, or original source"
-                    type="url"
-                    value={localGlbSourceUrl}
-                  />
-                </label>
-
-                <label>
-                  License information
-                  <select
-                    aria-label="Local GLB license kind"
-                    disabled={localGlbImporting}
-                    onChange={(event) =>
-                      setLocalGlbLicenseKind(event.target.value)
-                    }
-                    value={localGlbLicenseKind}
-                  >
-                    <option value="unknown">Unknown / needs review</option>
-                    <option value="self_owned">I own the usable rights</option>
-                    <option value="cc0">CC0 / public-domain dedication</option>
-                    <option value="cc_by_4_0">
-                      CC BY 4.0 / attribution required
-                    </option>
-                    <option value="royalty_free">
-                      Royalty-free and commercially usable
-                    </option>
-                  </select>
-                </label>
-
-                <label>
-                  Attribution
-                  <input
-                    aria-label="Local GLB attribution"
-                    disabled={localGlbImporting}
-                    onChange={(event) =>
-                      setLocalGlbAttribution(event.target.value)
-                    }
-                    placeholder="Creator or required credit"
-                    value={localGlbAttribution}
-                  />
-                </label>
-
-                <label className="asset-library-trellis-wide">
-                  Provenance notes
-                  <textarea
-                    aria-label="Local GLB provenance notes"
-                    disabled={localGlbImporting}
-                    onChange={(event) =>
-                      setLocalGlbProvenanceNotes(event.target.value)
-                    }
-                    placeholder="How it was generated, plan or credit used, input ownership, or any restrictions to verify"
-                    rows={3}
-                    value={localGlbProvenanceNotes}
-                  />
-                </label>
-              </div>
-
-              <p className="asset-library-trellis-warning">
-                Manual upload does not mean automatic approval. MyWay keeps the
-                asset sandbox-only and blocks app promotion until its identity,
-                geometry, appearance, licensing, and scene eligibility are reviewed.
-              </p>
-            </form>
+              onRunningChange={setCcByImporting}
+            />
+          ) : (
+            <Cc0BatchImportLab
+              onImportComplete={(assetId) => {
+                setSelectedAssetId(assetId);
+                setReviewView("needs_review");
+                setPromotionMessage(
+                  `${assetId} was imported from a manually downloaded CC0 GLB and placed in Needs review.`,
+                );
+                setRefreshToken((value) => value + 1);
+              }}
+              onRunningChange={setCc0Importing}
+            />
           )}
         </section>
 
@@ -5804,8 +5777,15 @@ export function AssetLibraryLab({
                       disabled={
                         acquisitionActionId ===
                           selectedAsset.asset_id ||
-                        selectedAsset.scene_review_status ===
-                          "approved" ||
+                        (selectedAsset.scene_review_status ===
+                          "approved" &&
+                          !(
+                            selectedAsset.storage_provider !==
+                              "r2" &&
+                            isManualPublicSceneCandidate(
+                              selectedAsset,
+                            )
+                          )) ||
                         !selectedAsset.file_stats.exists ||
                         !selectedAsset.safe_to_use_in_sandbox ||
                         selectedAsset.status ===
@@ -5825,9 +5805,13 @@ export function AssetLibraryLab({
                         : selectedAsset.storage_provider ===
                             "r2"
                           ? "Approve for scene use"
-                          : selectedAsset.safe_to_promote_to_app
-                            ? "Approve & publish"
-                            : "Approve for local scene"}
+                          : isManualPublicSceneCandidate(
+                                selectedAsset,
+                              )
+                            ? "Approve for scene use"
+                            : selectedAsset.safe_to_promote_to_app
+                              ? "Approve & publish"
+                              : "Approve for local scene"}
                     </button>
 
                     {selectedAcquisitionJob &&
@@ -5918,6 +5902,25 @@ export function AssetLibraryLab({
                         maintenanceAssetId === selectedAsset.asset_id
                           ? "Removing asset…"
                           : "Remove from library"}
+                      </button>
+
+                      <button
+                        className="asset-library-button"
+                        data-secondary="true"
+                        disabled={
+                          maintenanceAssetId === selectedAsset.asset_id ||
+                          selectedAsset.storage_provider === "r2" ||
+                          Boolean(selectedAsset.promoted_at)
+                        }
+                        onClick={() => {
+                          void editSelectedAssetProvenance();
+                        }}
+                        type="button"
+                      >
+                        {maintenanceAction === "provenance" &&
+                        maintenanceAssetId === selectedAsset.asset_id
+                          ? "Updating licence and source…"
+                          : "Edit licence and source"}
                       </button>
 
                       <button
@@ -6028,8 +6031,70 @@ export function AssetLibraryLab({
                       {selectedAsset.scene_review_notes || "None"}
                     </MetadataRow>
                     <MetadataRow label="License">
-                      {selectedAsset.license_kind} ·{" "}
+                      {selectedAsset.attribution?.license_name ||
+                        selectedAsset.license_kind} ·{" "}
                       {selectedAsset.license_status}
+                    </MetadataRow>
+                    <MetadataRow label="Attribution">
+                      {selectedAsset.attribution?.required
+                        ? selectedAsset.attribution.text || "Missing required credit"
+                        : "Not required"}
+                    </MetadataRow>
+                    <MetadataRow label="Creator">
+                      {selectedAsset.attribution?.creator_name || "Not recorded"}
+                    </MetadataRow>
+                    <MetadataRow label="Source provider">
+                      {selectedAsset.attribution?.source_provider || "Not recorded"}
+                    </MetadataRow>
+                    <MetadataRow label="Source asset ID">
+                      {selectedAsset.attribution?.source_asset_id ||
+                        selectedAsset.source_asset_id ||
+                        "Not recorded"}
+                    </MetadataRow>
+                    <MetadataRow label="Source page">
+                      {selectedAsset.attribution?.source_url ||
+                      selectedAsset.source_url ? (
+                        <a
+                          href={
+                            selectedAsset.attribution?.source_url ||
+                            selectedAsset.source_url ||
+                            "#"
+                          }
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Open source page
+                        </a>
+                      ) : (
+                        "Not recorded"
+                      )}
+                    </MetadataRow>
+                    <MetadataRow label="Modification notice">
+                      {selectedAsset.attribution?.modification_notice ||
+                        "Not recorded"}
+                    </MetadataRow>
+                    <MetadataRow label="Downloaded">
+                      {selectedAsset.attribution?.downloaded_at || "Not recorded"}
+                    </MetadataRow>
+                    <MetadataRow label="Credit exports">
+                      <span>
+                        <a
+                          href={`/api/sandbox/probe-lab/assets/attributions?asset_ids=${encodeURIComponent(
+                            selectedAsset.asset_id,
+                          )}`}
+                          target="_blank"
+                        >
+                          JSON
+                        </a>{" "}
+                        ·{" "}
+                        <a
+                          href={`/api/sandbox/probe-lab/assets/attributions?format=text&asset_ids=${encodeURIComponent(
+                            selectedAsset.asset_id,
+                          )}`}
+                        >
+                          THIRD_PARTY_LICENSES.txt
+                        </a>
+                      </span>
                     </MetadataRow>
                     <MetadataRow label="Storage">
                       {selectedAsset.storage_provider === "r2"
