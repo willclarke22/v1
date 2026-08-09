@@ -1,0 +1,79 @@
+{
+  "schema_version": "myway_manual_asset_source_record_v1",
+  "asset_id": "cupcake_man_msk1xqld",
+  "requested_concept": "cupcake",
+  "original_file_name": "Cupcake.glb",
+  "browser_reported_mime_type": "model/gltf-binary",
+  "source_provider": "Manual CC0 source",
+  "source_asset_id": "ultimate_food_pack__cupcake",
+  "source_url": null,
+  "asset_title": "Cupcake",
+  "creator_name": null,
+  "license_kind_asserted_by_user": "cc0",
+  "license_version_asserted_by_user": null,
+  "attribution": {
+    "schema_version": "myway_asset_attribution_v1",
+    "required": false,
+    "text": null,
+    "asset_title": "Cupcake",
+    "creator_name": null,
+    "source_provider": "Manual CC0 source",
+    "source_asset_id": "ultimate_food_pack__cupcake",
+    "source_url": null,
+    "license_name": "CC0",
+    "license_version": null,
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "modification_notice": "Normalized and processed for real-time use by MyWay.",
+    "downloaded_at": "2026-08-08"
+  },
+  "provenance_notes": "Imported from CC0 bundle ZIP \"Ultimate Food Pack\" entry \"Cupcake.glb\" through MyWay's CC0 bundle intake. Bundle source ID: Ultimate Food Pack. Source and licence remain subject to human review before scene approval.",
+  "source_file_project_path": "sandbox/probe-lab/assets/inbox/manual/cupcake_man_msk1xqld-source.glb",
+  "normalized_runtime_glb": "public/sandbox-assets/myway/models/manual/cupcake_man_msk1xqld.glb",
+  "normalized_thumbnail": "public/sandbox-assets/myway/thumbnails/cupcake_man_msk1xqld.png",
+  "source_file_size_bytes": 27188,
+  "normalized_file_size_bytes": 26488,
+  "content_hash": "8e04da186b09a426dddd7d6b8d6535f51c70ba164f619ef8249993fc02ef5825",
+  "glb_validation": {
+    "version": 2,
+    "declared_length": 27188,
+    "json_chunk_length": 3760,
+    "generator": "FBX2glTF v0.9.7"
+  },
+  "appearance": {
+    "source": {
+      "material_count": 3,
+      "image_count": 0,
+      "texture_count": 0,
+      "mesh_primitive_count": 3,
+      "primitives_with_material": 3,
+      "primitives_with_vertex_colors": 0,
+      "vertex_color_attributes": [],
+      "has_materials": true,
+      "has_image_textures": false,
+      "has_vertex_colors": false,
+      "has_visual_appearance_data": true
+    },
+    "normalized": {
+      "material_count": 3,
+      "image_count": 0,
+      "texture_count": 0,
+      "mesh_primitive_count": 3,
+      "primitives_with_material": 3,
+      "primitives_with_vertex_colors": 0,
+      "vertex_color_attributes": [],
+      "has_materials": true,
+      "has_image_textures": false,
+      "has_vertex_colors": false,
+      "has_visual_appearance_data": true
+    },
+    "comparison": {
+      "appearance_preserved": true,
+      "lost_image_textures": false,
+      "lost_vertex_colors": false,
+      "lost_materials": false,
+      "warnings": []
+    }
+  },
+  "geometry_profile_generator": "myway_blender_geometry_profile_v3_spatial_regions",
+  "imported_at": "2026-08-08T07:29:00.698Z"
+}

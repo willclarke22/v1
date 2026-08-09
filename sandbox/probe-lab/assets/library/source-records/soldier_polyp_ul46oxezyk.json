@@ -1,0 +1,79 @@
+{
+  "schema_version": "myway_manual_asset_source_record_v1",
+  "asset_id": "soldier_polyp_ul46oxezyk",
+  "requested_concept": "soldier",
+  "original_file_name": "Soldier by madtrollstudio - UL46oXeZYK.glb",
+  "browser_reported_mime_type": "application/octet-stream",
+  "source_provider": "Poly Pizza",
+  "source_asset_id": "UL46oXeZYK",
+  "source_url": "https://poly.pizza/m/UL46oXeZYK",
+  "asset_title": "Soldier",
+  "creator_name": "madtrollstudio",
+  "license_kind_asserted_by_user": "cc_by",
+  "license_version_asserted_by_user": null,
+  "attribution": {
+    "schema_version": "myway_asset_attribution_v1",
+    "required": true,
+    "text": "Soldier by madtrollstudio [CC-BY] via Poly Pizza",
+    "asset_title": "Soldier",
+    "creator_name": "madtrollstudio",
+    "source_provider": "Poly Pizza",
+    "source_asset_id": "UL46oXeZYK",
+    "source_url": "https://poly.pizza/m/UL46oXeZYK",
+    "license_name": "CC BY",
+    "license_version": null,
+    "license_url": null,
+    "modification_notice": "Normalized and processed for real-time use by MyWay.",
+    "downloaded_at": "2026-08-06"
+  },
+  "provenance_notes": "Manually downloaded from Poly Pizza and imported through MyWay's CC BY multi-GLB intake.",
+  "source_file_project_path": "sandbox/probe-lab/assets/inbox/manual/soldier_polyp_ul46oxezyk-source.glb",
+  "normalized_runtime_glb": "public/sandbox-assets/myway/models/manual/soldier_polyp_ul46oxezyk.glb",
+  "normalized_thumbnail": "public/sandbox-assets/myway/thumbnails/soldier_polyp_ul46oxezyk.png",
+  "source_file_size_bytes": 504424,
+  "normalized_file_size_bytes": 513020,
+  "content_hash": "80df9d6b9100ae4c6324e5d1c0dd4517f08f86e7b6739be326e16a84eb861438",
+  "glb_validation": {
+    "version": 2,
+    "declared_length": 504424,
+    "json_chunk_length": 2084,
+    "generator": "FBX2glTF v0.9.7"
+  },
+  "appearance": {
+    "source": {
+      "material_count": 1,
+      "image_count": 1,
+      "texture_count": 1,
+      "mesh_primitive_count": 1,
+      "primitives_with_material": 1,
+      "primitives_with_vertex_colors": 0,
+      "vertex_color_attributes": [],
+      "has_materials": true,
+      "has_image_textures": true,
+      "has_vertex_colors": false,
+      "has_visual_appearance_data": true
+    },
+    "normalized": {
+      "material_count": 1,
+      "image_count": 1,
+      "texture_count": 1,
+      "mesh_primitive_count": 1,
+      "primitives_with_material": 1,
+      "primitives_with_vertex_colors": 0,
+      "vertex_color_attributes": [],
+      "has_materials": true,
+      "has_image_textures": true,
+      "has_vertex_colors": false,
+      "has_visual_appearance_data": true
+    },
+    "comparison": {
+      "appearance_preserved": true,
+      "lost_image_textures": false,
+      "lost_vertex_colors": false,
+      "lost_materials": false,
+      "warnings": []
+    }
+  },
+  "geometry_profile_generator": "myway_blender_geometry_profile_v3_spatial_regions",
+  "imported_at": "2026-08-06T05:10:35.089Z"
+}

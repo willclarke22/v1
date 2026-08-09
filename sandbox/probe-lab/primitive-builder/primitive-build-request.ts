@@ -8,9 +8,20 @@ import {
 
 import {
   DIRECTOR_BEHAVIOURS,
+  DIRECTOR_BLOCKING_RELATIONS,
+  DIRECTOR_CAMERA_ANGLES,
+  DIRECTOR_CAMERA_FRAMINGS,
+  DIRECTOR_CAMERA_LENSES,
   DIRECTOR_CAMERA_MOVEMENTS,
   DIRECTOR_CAMERA_SHOTS,
+  DIRECTOR_CAPTION_SAFE_REGIONS,
+  DIRECTOR_CONTINUITY_RULES,
+  DIRECTOR_COORDINATE_SPACES,
+  DIRECTOR_LIGHTING_INTENTS,
+  DIRECTOR_KINEMATIC_CONSTRAINTS,
+  DIRECTOR_NARRATIVE_JOBS,
   DIRECTOR_REPRESENTATION_MODES,
+  DIRECTOR_SCREEN_ANCHORS,
 } from "../director";
 
 export type PrimitiveBuilderModelProvider = "deepseek" | "glm";
@@ -98,6 +109,7 @@ function compactResponseContract() {
     director_plan: {
       schema_version:
         "myway_educational_scene_director_v1",
+      capability_language_version: "v2",
       title: "short scene title",
       scene_thesis:
         "what the scene must make visually undeniable",
@@ -141,8 +153,114 @@ function compactResponseContract() {
               DIRECTOR_CAMERA_MOVEMENTS.join(" | "),
             focus_entity_ids: [],
             framing_intent:
-              "what must remain readable",
+              "compact V1 compatibility cue derived from the richer shot direction",
             keep_visible_entity_ids: [],
+          },
+          shot: {
+            narrative_job:
+              DIRECTOR_NARRATIVE_JOBS.join(" | "),
+            visual_claim:
+              "what this shot makes visually undeniable",
+            composition: {
+              framing:
+                DIRECTOR_CAMERA_FRAMINGS.join(" | "),
+              angle:
+                DIRECTOR_CAMERA_ANGLES.join(" | "),
+              screen_anchor:
+                DIRECTOR_SCREEN_ANCHORS.join(" | "),
+              keep_visible_entity_ids: [],
+              foreground_entity_ids: [],
+              background_entity_ids: [],
+              preserve_relationship_entity_ids: [],
+              preserve_relative_scale: false,
+              caption_safe_region:
+                DIRECTOR_CAPTION_SAFE_REGIONS.join(" | "),
+              negative_space_side:
+                "left | right | none",
+            },
+            lens: {
+              preset:
+                DIRECTOR_CAMERA_LENSES.join(" | "),
+              focal_length_mm: 50,
+              field_of_view_degrees: 44,
+              depth_of_field:
+                "deep | moderate | shallow",
+              aperture_f: 5.6,
+              focus_entity_id:
+                "actor id or null",
+            },
+            camera: {
+              focus_entity_ids: [],
+              movement_steps: [
+                {
+                  movement:
+                    DIRECTOR_CAMERA_MOVEMENTS.join(" | "),
+                  start_progress: 0,
+                  end_progress: 1,
+                  strength: 0.55,
+                  easing:
+                    "linear | ease_in | ease_out | ease_in_out | spring | step",
+                  coordinate_space:
+                    DIRECTOR_COORDINATE_SPACES.join(" | "),
+                  target_entity_id:
+                    "actor id or null",
+                  parameters: {},
+                },
+              ],
+              start_intent:
+                "what is framed first",
+              end_intent:
+                "what is framed after the move",
+              movement_reason:
+                "why the camera movement helps the teaching job",
+            },
+            blocking: [
+              {
+                relation:
+                  DIRECTOR_BLOCKING_RELATIONS.join(" | "),
+                actor_entity_id:
+                  "actor id",
+                target_entity_id:
+                  "actor id or null",
+                screen_region:
+                  DIRECTOR_SCREEN_ANCHORS.join(" | "),
+                preserve_clearance: true,
+                parameters: {},
+              },
+            ],
+            constraints: [
+              {
+                kind:
+                  DIRECTOR_KINEMATIC_CONSTRAINTS.join(" | "),
+                actor_entity_id:
+                  "actor id",
+                target_entity_id:
+                  "optional actor id or null",
+                secondary_target_entity_id:
+                  "optional second actor id for rigid_link",
+                axis: "x | y | z | auto",
+                distance_m: null,
+                parameters: {},
+              },
+            ],
+            lighting: {
+              intents:
+                [DIRECTOR_LIGHTING_INTENTS[0]],
+              motivated_source_entity_id:
+                "actor id or null",
+              emphasized_entity_ids: [],
+              preserve_shadow_entity_ids: [],
+            },
+            continuity: {
+              rules:
+                ["keep_visible", "avoid_occlusion"],
+              maximum_occlusion_ratio: 0.2,
+              maintain_axis_entity_ids: [],
+            },
+            reveal_at: null,
+            hold_after_ms: 700,
+            success_observation:
+              "what should be visually obvious when the shot ends",
           },
           events: [
             {
@@ -278,10 +396,15 @@ Return exactly one valid JSON object. Do not use markdown, code fences, commenta
 Build a clear grouped primitive_scene_graph_v2 from the request.
 The director_plan is the source of truth for teaching sequence, movement, camera, timed text, and stable actor ids.
 Direct the scene before casting final assets. The direction must remain exceptional even when every physical actor is unresolved.
-Each director moment must have one learning_job, one director_intent, explicit camera framing, at least one semantic event, and concise timed text.
+Each director moment must have one learning_job, one director_intent, a rich shot direction, at least one semantic event, and concise timed text.
+Use Director Capability Language V2: compose narrative job, framing, angle, lens, one or more parameterized camera movement steps, blocking, lighting, continuity, and success observation into one coherent shot.
+Prefer semantic target-relative instructions over raw coordinates. A shot may combine several compatible capabilities; do not reduce a cinematic idea to one camera word.
+Use movement strength and parameters to vary execution. Use camera_relative or target_relative coordinates when direction depends on the camera or another actor.
+Treat physical placement (on_surface, inside, attached_to) separately from cinematic blocking (foreground, behind, screen_left, facing). MyWay resolves final geometry and collisions.
 Use asset requirement instance_ids as the actor ids for physical objects and procedural node ids for abstract effects.
 Never omit a requested actor or weaken the motion sequence because MyWay may not have the asset yet.
 Describe semantic behaviours and actor capability/anchor needs; MyWay compiles them into supported Three.js or Blender execution later.
+Use shot.constraints for relationships that must remain true during motion (axis locks, attachments, maintained distance, rigid links, look-at constraints) instead of hoping independent keyframes line up.
 The primitive nodes are invisible layout proxies only. They communicate approximate bounds, grouping, relative position, support relationships, and motion intent; they are never shown as substitutes for missing assets.
 Use local child coordinates inside meaningful groups and use only allowed values.
 Create an asset requirement for every physical object that should appear in the final scene.
@@ -354,6 +477,10 @@ RULES:
 - Every layout_proxy_node_id must exist in nodes.
 - Every director event, camera focus, and text anchor must reference a physical asset requirement instance_id or a procedural_required node id.
 - Give each director moment one visual job and preserve stable actor ids across the full sequence.
+- Fill moment.shot with the composable V2 direction. Combine framing + angle + lens + camera movement + blocking + lighting + continuity when they clarify the visual argument.
+- Never output exact camera/world coordinates inside moment.shot. Use semantic actor ids, coordinate spaces, strengths, durations/progress windows, screen anchors, and movement parameters; MyWay solves the exact camera against final asset geometry.
+- Use 1-3 camera movement_steps for a normal shot. Use more only when the request truly needs a continuous complex take. Include settle or a hold when the viewer needs time to understand the result.
+- Use shot.constraints only for semantic kinematic relationships that must remain true during motion. Do not use constraints to bypass measured physical placement or collision safety.
 - Missing assets may be absent from the current rendered scene, but their direction, capability needs, anchors, movement, camera cues, and text cues must remain complete.
 - MyWay will preserve explicit spatial intent, infer missing relations from proxy geometry, and enforce collision-safe final placement after assets load.`;
 

@@ -519,7 +519,7 @@ const cc0BatchUiSource = readFileSync(
 );
 assert.match(
   cc0BatchUiSource,
-  /Import manually downloaded CC0 GLBs/,
+  /Import CC0 GLBs or bundle ZIPs/,
 );
 assert.match(
   cc0BatchUiSource,
@@ -528,6 +528,14 @@ assert.match(
 assert.match(
   cc0BatchUiSource,
   /MAX_MANUAL_GLB_BATCH_FILES/,
+);
+assert.match(
+  cc0BatchUiSource,
+  /Add CC0 bundle ZIP/,
+);
+assert.match(
+  cc0BatchUiSource,
+  /extractCc0GlbBundleBuffer/,
 );
 assert.match(
   cc0BatchUiSource,
@@ -664,7 +672,11 @@ assert.match(
 );
 assert.match(
   libraryUiSource,
-  /selectedAsset\.storage_provider !==\s*"r2"[\s\S]*isPolyPizzaPublicSceneCandidate/,
+  /const\s+polyPizzaPublicSceneApproval\s*=\s*asset\.storage_provider\s*!==\s*"r2"[\s\S]*?isPolyPizzaPublicSceneCandidate\(\s*asset/,
+);
+assert.match(
+  libraryUiSource,
+  /const\s+manualCc0PublicSceneApproval\s*=\s*asset\.storage_provider\s*!==\s*"r2"[\s\S]*?isManualCc0PublicSceneCandidate\(\s*asset/,
 );
 
 console.log(

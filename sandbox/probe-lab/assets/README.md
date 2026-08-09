@@ -90,6 +90,30 @@ thumbnail render, geometry audit, and enrichment job. Very large GLBs should be
 split into smaller batches even though the existing per-file limit remains
 400 MB.
 
+### CC0 bundle ZIP intake
+
+The **Import CC0 GLB** panel also accepts a `.zip` containing up to 50 standalone
+GLB 2.0 members. This is an intake convenience, not a new runtime format:
+
+1. The browser reads the ZIP central directory without writing archive paths to disk.
+2. Unsafe paths, encryption, ZIP64, unsupported compression methods, excessive
+   expanded size, CRC mismatches, and non-GLB model members are rejected before
+   import.
+3. Stored and deflated `.glb` members are unpacked in memory and validated for the
+   GLB 2.0 header. Non-GLB files such as READMEs are ignored and reported.
+4. Bundle-level title, creator, provider, source page, stable bundle ID, and tags
+   are snapshotted onto each generated review row. The full ZIP member path is
+   preserved in provenance and contributes to a deterministic member source ID,
+   so similarly named variants do not collapse into one source identity.
+5. Each generated `File` is then submitted sequentially to the unchanged
+   `/api/sandbox/probe-lab/assets/import-local` route. Blender normalization,
+   geometry profiling, enrichment, duplicate detection, licence review, and scene
+   review therefore behave exactly like individual CC0 GLB imports.
+
+The bundle intake intentionally supports **standalone GLBs only**. A ZIP containing
+`.gltf` files with external `.bin` or texture dependencies should be converted to
+GLB first rather than introducing a second downstream asset format.
+
 ## CC BY sources and the Poly Pizza toggle
 
 The **Import CC BY GLB** tab supports Poly Pizza and other CC BY sources. The

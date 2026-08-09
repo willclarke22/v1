@@ -669,6 +669,18 @@ function detectSupportSurfaces(
   return surfaces;
 }
 
+export type ResolvedAssetRuntimeMotionSample = {
+  position?: Vec3;
+  rotation?: Vec3;
+  scale_multiplier?: number | Vec3;
+};
+
+export type ResolvedAssetRuntimeMotion = {
+  duration_ms: number;
+  loop?: boolean;
+  sample: (progress: number) => ResolvedAssetRuntimeMotionSample;
+};
+
 export function fittedResolvedAssetScale(
   binding: ResolvedSceneAssetBinding,
   sourceSize: Vec3,
@@ -699,6 +711,7 @@ export function ResolvedAssetModel({
   positionOverride,
   rotationOverride,
   targetExtentOverride,
+  runtimeMotion,
   onClick,
   onMetrics,
 }: {
@@ -707,6 +720,7 @@ export function ResolvedAssetModel({
   positionOverride?: Vec3;
   rotationOverride?: Vec3;
   targetExtentOverride?: number;
+  runtimeMotion?: ResolvedAssetRuntimeMotion;
   onClick?: () => void;
   onMetrics?: (
     metrics: ResolvedAssetRuntimeMetrics,
@@ -1120,6 +1134,43 @@ export function ResolvedAssetModel({
     );
     group.rotation.set(...baseRotation);
     group.scale.set(...baseScale);
+
+    if (runtimeMotion) {
+      const durationMs = Math.max(1, runtimeMotion.duration_ms);
+      const rawProgress = (clock.elapsedTime * 1000) / durationMs;
+      const progress = runtimeMotion.loop === false
+        ? THREE.MathUtils.clamp(rawProgress, 0, 1)
+        : rawProgress % 1;
+      const sampled = runtimeMotion.sample(progress);
+      if (sampled.position) {
+        group.position.set(
+          sampled.position[0],
+          sampled.position[1] + binding.ground_offset_m * baseScale[1],
+          sampled.position[2],
+        );
+      }
+      if (sampled.rotation) {
+        group.rotation.set(
+          sampled.rotation[0] + binding.default_rotation[0],
+          sampled.rotation[1] + binding.default_rotation[1],
+          sampled.rotation[2] + binding.default_rotation[2],
+        );
+      }
+      if (typeof sampled.scale_multiplier === "number") {
+        group.scale.set(
+          baseScale[0] * sampled.scale_multiplier,
+          baseScale[1] * sampled.scale_multiplier,
+          baseScale[2] * sampled.scale_multiplier,
+        );
+      } else if (sampled.scale_multiplier) {
+        group.scale.set(
+          baseScale[0] * sampled.scale_multiplier[0],
+          baseScale[1] * sampled.scale_multiplier[1],
+          baseScale[2] * sampled.scale_multiplier[2],
+        );
+      }
+      return;
+    }
 
     if (type === "oscillateY" || type === "driftY") {
       group.position.y += Math.sin(time) * amplitude;

@@ -8,6 +8,8 @@ export type {
   ResolvedAssetRuntimeInteriorVolume,
   ResolvedAssetRuntimeMetrics,
   ResolvedAssetRuntimeSupportSurface,
+  ResolvedAssetRuntimeMotion,
+  ResolvedAssetRuntimeMotionSample,
 } from "./resolved-asset-model";
 export {
   solveResolvedAssetLayout,
@@ -16,3 +18,20 @@ export type {
   ResolvedPlacementDiagnostic,
   ResolvedPlacementStatus,
 } from "./constraint-layout";
+export {
+  applyDirectorBlocking,
+  DirectorShotCameraController,
+  DirectorShotLightingRig,
+  DirectorShotPathGuide,
+  legacyShotForMoment,
+  sampleDirectorActorState,
+  sampleDirectorCameraPose,
+  validateDirectorShot,
+} from "./director-shot-runtime";
+export type {
+  DirectorActorSample,
+  DirectorCameraPose,
+  DirectorRuntimeActor,
+  DirectorRuntimeVec3,
+  DirectorShotValidation,
+} from "./director-shot-runtime";

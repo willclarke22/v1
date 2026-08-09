@@ -2,8 +2,19 @@
 import {
   DIRECTOR_ACTOR_KINDS,
   DIRECTOR_BEHAVIOURS,
+  DIRECTOR_CAMERA_ANGLES,
+  DIRECTOR_CAMERA_FRAMINGS,
+  DIRECTOR_CAMERA_LENSES,
   DIRECTOR_CAMERA_MOVEMENTS,
   DIRECTOR_CAMERA_SHOTS,
+  DIRECTOR_CAPTION_SAFE_REGIONS,
+  DIRECTOR_CONTINUITY_RULES,
+  DIRECTOR_COORDINATE_SPACES,
+  DIRECTOR_LIGHTING_INTENTS,
+  DIRECTOR_KINEMATIC_CONSTRAINTS,
+  DIRECTOR_NARRATIVE_JOBS,
+  DIRECTOR_SCREEN_ANCHORS,
+  DIRECTOR_BLOCKING_RELATIONS,
   DIRECTOR_EASINGS,
   DIRECTOR_FALLBACK_REPRESENTATIONS,
   DIRECTOR_REPRESENTATION_MODES,
@@ -11,13 +22,26 @@ import {
   DIRECTOR_TEXT_PLACEMENTS,
   type DirectorActorKind,
   type DirectorBehaviour,
+  type DirectorBlockingRelation,
+  type DirectorCameraAngle,
+  type DirectorCameraFraming,
+  type DirectorCameraLens,
   type DirectorCameraMovement,
+  type DirectorCameraMovementStep,
   type DirectorCameraShot,
+  type DirectorCaptionSafeRegion,
+  type DirectorContinuityRule,
+  type DirectorCoordinateSpace,
   type DirectorEasing,
   type DirectorEntityIntent,
+  type DirectorLightingIntent,
+  type DirectorKinematicConstraintKind,
+  type DirectorNarrativeJob,
   type DirectorFallbackRepresentation,
   type DirectorMoment,
   type DirectorRelationshipIntent,
+  type DirectorScreenAnchor,
+  type DirectorShotDirectionV2,
   type DirectorRepresentationMode,
   type DirectorTextKind,
   type DirectorTextPlacement,
@@ -64,6 +88,39 @@ const cameraShotSet = new Set<string>(
 );
 const cameraMovementSet = new Set<string>(
   DIRECTOR_CAMERA_MOVEMENTS,
+);
+const cameraFramingSet = new Set<string>(
+  DIRECTOR_CAMERA_FRAMINGS,
+);
+const cameraAngleSet = new Set<string>(
+  DIRECTOR_CAMERA_ANGLES,
+);
+const cameraLensSet = new Set<string>(
+  DIRECTOR_CAMERA_LENSES,
+);
+const narrativeJobSet = new Set<string>(
+  DIRECTOR_NARRATIVE_JOBS,
+);
+const screenAnchorSet = new Set<string>(
+  DIRECTOR_SCREEN_ANCHORS,
+);
+const captionSafeRegionSet = new Set<string>(
+  DIRECTOR_CAPTION_SAFE_REGIONS,
+);
+const coordinateSpaceSet = new Set<string>(
+  DIRECTOR_COORDINATE_SPACES,
+);
+const blockingRelationSet = new Set<string>(
+  DIRECTOR_BLOCKING_RELATIONS,
+);
+const lightingIntentSet = new Set<string>(
+  DIRECTOR_LIGHTING_INTENTS,
+);
+const kinematicConstraintSet = new Set<string>(
+  DIRECTOR_KINEMATIC_CONSTRAINTS,
+);
+const continuityRuleSet = new Set<string>(
+  DIRECTOR_CONTINUITY_RULES,
 );
 const textKindSet = new Set<string>(
   DIRECTOR_TEXT_KINDS,
@@ -758,6 +815,298 @@ function normalizeCamera(
   };
 }
 
+
+function legacyFramingFromShot(
+  shot: DirectorCameraShot,
+): DirectorCameraFraming {
+  if (shot === "wide") return "wide";
+  if (shot === "close_up") return "close";
+  if (shot === "macro") return "macro";
+  if (shot === "cutaway") return "cutaway";
+  return "medium";
+}
+
+function legacyAngleFromShot(
+  shot: DirectorCameraShot,
+): DirectorCameraAngle {
+  if (shot === "top_down") return "top_down";
+  if (shot === "isometric") return "isometric";
+  if (shot === "side_profile") return "side_profile";
+  return "three_quarter_front";
+}
+
+function legacyMovementToStep(
+  movement: DirectorCameraMovement,
+): DirectorCameraMovementStep {
+  return {
+    movement,
+    start_progress: 0,
+    end_progress: 1,
+    strength: movement === "static" ? 0 : 0.55,
+    easing: "ease_in_out",
+    coordinate_space: "target_relative",
+    target_entity_id: null,
+    parameters: {},
+  };
+}
+
+function normalizeMovementStep(
+  value: unknown,
+  fallbackMovement: DirectorCameraMovement,
+): DirectorCameraMovementStep {
+  const item = record(value) ?? {};
+  const rawMovement = text(item.movement ?? item.capability, fallbackMovement);
+  const movement = oneOf<DirectorCameraMovement>(
+    rawMovement === "pull_out" ? "pull_back" : rawMovement === "truck_right" ? "truck" : rawMovement,
+    cameraMovementSet,
+    fallbackMovement,
+  );
+  const start = bounded(item.start_progress, 0, 0, 0.99);
+  const end = bounded(item.end_progress, 1, Math.min(1, start + 0.01), 1);
+  return {
+    movement,
+    start_progress: start,
+    end_progress: end,
+    strength: bounded(item.strength, movement === "static" ? 0 : 0.55, 0, 1.5),
+    easing: oneOf<DirectorEasing>(item.easing, easingSet, "ease_in_out"),
+    coordinate_space: oneOf<DirectorCoordinateSpace>(
+      item.coordinate_space,
+      coordinateSpaceSet,
+      "target_relative",
+    ),
+    target_entity_id: text(item.target_entity_id) ? cleanId(item.target_entity_id, "") : null,
+    parameters: record(item.parameters) ?? {},
+  };
+}
+
+function normalizeShotDirectionV2(
+  value: unknown,
+  legacyCamera: ReturnType<typeof normalizeCamera>,
+  activeIds: string[],
+  keptIds: string[],
+  directorIntent: string,
+  successObservation: string | null,
+): DirectorShotDirectionV2 {
+  const item = record(value) ?? {};
+  const composition = record(item.composition) ?? {};
+  const lens = record(item.lens) ?? {};
+  const camera = record(item.camera) ?? {};
+  const lighting = record(item.lighting) ?? {};
+  const continuity = record(item.continuity) ?? {};
+
+  const rawSteps = list(camera.movement_steps ?? item.movement_steps);
+  const movementSteps = rawSteps.length
+    ? rawSteps.slice(0, 4).map((step) =>
+        normalizeMovementStep(step, legacyCamera.movement),
+      )
+    : [legacyMovementToStep(legacyCamera.movement)];
+
+  const focusIds = strings(camera.focus_entity_ids ?? legacyCamera.focus_entity_ids)
+    .map((id, index) => cleanId(id, `focus_${index + 1}`));
+  const keepVisible = strings(
+    composition.keep_visible_entity_ids ??
+      legacyCamera.keep_visible_entity_ids ??
+      keptIds,
+  ).map((id, index) => cleanId(id, `kept_${index + 1}`));
+
+  const rawNarrative = text(item.narrative_job);
+  const narrativeJob = oneOf<DirectorNarrativeJob>(
+    rawNarrative,
+    narrativeJobSet,
+    "orient",
+  );
+
+  const framing = oneOf<DirectorCameraFraming>(
+    composition.framing,
+    cameraFramingSet,
+    legacyFramingFromShot(legacyCamera.shot_type),
+  );
+  const angle = oneOf<DirectorCameraAngle>(
+    composition.angle,
+    cameraAngleSet,
+    legacyAngleFromShot(legacyCamera.shot_type),
+  );
+  const screenAnchor = oneOf<DirectorScreenAnchor>(
+    composition.screen_anchor,
+    screenAnchorSet,
+    "center",
+  );
+  const captionSafeRegion = oneOf<DirectorCaptionSafeRegion>(
+    composition.caption_safe_region,
+    captionSafeRegionSet,
+    "auto",
+  );
+  const lensPreset = oneOf<DirectorCameraLens>(
+    lens.preset,
+    cameraLensSet,
+    framing === "extreme_wide" ? "wide" : framing === "macro" ? "macro" : "normal",
+  );
+  const lightingIntents = strings(lighting.intents, 5)
+    .map((entry) => oneOf<DirectorLightingIntent>(entry, lightingIntentSet, "neutral_studio"));
+  const continuityRules = strings(continuity.rules, 8)
+    .map((entry) => oneOf<DirectorContinuityRule>(entry, continuityRuleSet, "keep_visible"));
+
+  const blocking = list(item.blocking)
+    .slice(0, 12)
+    .map((entry) => {
+      const cue = record(entry) ?? {};
+      return {
+        relation: oneOf<DirectorBlockingRelation>(
+          cue.relation,
+          blockingRelationSet,
+          "beside",
+        ),
+        actor_entity_id: cleanId(
+          cue.actor_entity_id,
+          activeIds[0] ?? focusIds[0] ?? "main_actor",
+        ),
+        target_entity_id: text(cue.target_entity_id)
+          ? cleanId(cue.target_entity_id, "")
+          : null,
+        screen_region: text(cue.screen_region)
+          ? oneOf<DirectorScreenAnchor>(cue.screen_region, screenAnchorSet, "center")
+          : null,
+        preserve_clearance: cue.preserve_clearance !== false,
+        parameters: record(cue.parameters) ?? {},
+      };
+    });
+
+  const constraints = list(item.constraints)
+    .slice(0, 12)
+    .map((entry) => {
+      const cue = record(entry) ?? {};
+      return {
+        kind: oneOf<DirectorKinematicConstraintKind>(
+          cue.kind,
+          kinematicConstraintSet,
+          "axis_lock",
+        ),
+        actor_entity_id: cleanId(
+          cue.actor_entity_id,
+          activeIds[0] ?? focusIds[0] ?? "main_actor",
+        ),
+        target_entity_id: text(cue.target_entity_id)
+          ? cleanId(cue.target_entity_id, "")
+          : null,
+        secondary_target_entity_id: text(cue.secondary_target_entity_id)
+          ? cleanId(cue.secondary_target_entity_id, "")
+          : null,
+        axis: (
+          cue.axis === "x" || cue.axis === "y" || cue.axis === "z"
+            ? cue.axis
+            : "auto"
+        ) as "x" | "y" | "z" | "auto",
+        distance_m:
+          cue.distance_m === null || typeof cue.distance_m === "undefined"
+            ? null
+            : bounded(cue.distance_m, 1, 0, 100),
+        parameters: record(cue.parameters) ?? {},
+      };
+    });
+
+  const fovDefault = lensPreset === "ultra_wide"
+    ? 72
+    : lensPreset === "wide"
+      ? 58
+      : lensPreset === "portrait"
+        ? 34
+        : lensPreset === "telephoto"
+          ? 24
+          : lensPreset === "macro"
+            ? 28
+            : 44;
+  const focalDefault = lensPreset === "ultra_wide"
+    ? 18
+    : lensPreset === "wide"
+      ? 28
+      : lensPreset === "portrait"
+        ? 85
+        : lensPreset === "telephoto"
+          ? 135
+          : lensPreset === "macro"
+            ? 100
+            : 50;
+
+  return {
+    narrative_job: narrativeJob,
+    visual_claim: text(item.visual_claim, directorIntent),
+    composition: {
+      framing,
+      angle,
+      screen_anchor: screenAnchor,
+      keep_visible_entity_ids: keepVisible,
+      foreground_entity_ids: strings(composition.foreground_entity_ids).map((id, index) => cleanId(id, `foreground_${index + 1}`)),
+      background_entity_ids: strings(composition.background_entity_ids).map((id, index) => cleanId(id, `background_${index + 1}`)),
+      preserve_relationship_entity_ids: strings(composition.preserve_relationship_entity_ids).map((id, index) => cleanId(id, `relationship_${index + 1}`)),
+      preserve_relative_scale: composition.preserve_relative_scale === true,
+      caption_safe_region: captionSafeRegion,
+      negative_space_side:
+        composition.negative_space_side === "left" || composition.negative_space_side === "right"
+          ? composition.negative_space_side
+          : "none",
+    },
+    lens: {
+      preset: lensPreset,
+      focal_length_mm: bounded(lens.focal_length_mm, focalDefault, 8, 300),
+      field_of_view_degrees: bounded(lens.field_of_view_degrees, fovDefault, 10, 100),
+      depth_of_field:
+        lens.depth_of_field === "shallow" || lens.depth_of_field === "moderate"
+          ? lens.depth_of_field
+          : "deep",
+      aperture_f: bounded(lens.aperture_f, lens.depth_of_field === "shallow" ? 2.8 : 5.6, 1, 22),
+      focus_entity_id: text(lens.focus_entity_id)
+        ? cleanId(lens.focus_entity_id, "")
+        : focusIds[0] ?? null,
+    },
+    camera: {
+      focus_entity_ids: focusIds.length ? focusIds : activeIds.slice(0, 3),
+      movement_steps: movementSteps,
+      start_intent: text(camera.start_intent, legacyCamera.framing_intent),
+      end_intent: text(camera.end_intent, "End with the teaching relationship readable and settled."),
+      movement_reason: text(camera.movement_reason, legacyCamera.framing_intent),
+    },
+    blocking,
+    constraints,
+    lighting: {
+      intents: lightingIntents.length ? lightingIntents : ["neutral_studio"],
+      motivated_source_entity_id: text(lighting.motivated_source_entity_id)
+        ? cleanId(lighting.motivated_source_entity_id, "")
+        : null,
+      emphasized_entity_ids: strings(lighting.emphasized_entity_ids).map((id, index) => cleanId(id, `emphasis_${index + 1}`)),
+      preserve_shadow_entity_ids: strings(lighting.preserve_shadow_entity_ids).map((id, index) => cleanId(id, `shadow_${index + 1}`)),
+    },
+    continuity: {
+      rules: continuityRules.length ? continuityRules : ["keep_visible", "avoid_occlusion"],
+      maximum_occlusion_ratio: bounded(continuity.maximum_occlusion_ratio, 0.2, 0, 1),
+      maintain_axis_entity_ids: strings(continuity.maintain_axis_entity_ids).map((id, index) => cleanId(id, `axis_${index + 1}`)),
+    },
+    reveal_at:
+      item.reveal_at === null || typeof item.reveal_at === "undefined"
+        ? null
+        : bounded(item.reveal_at, 0.55, 0, 1),
+    hold_after_ms: bounded(item.hold_after_ms, 700, 0, 5000),
+    success_observation: text(item.success_observation, successObservation ?? "") || null,
+  };
+}
+
+function referencedIdsFromShot(shot: DirectorShotDirectionV2): string[] {
+  return Array.from(
+    new Set([
+      ...shot.composition.keep_visible_entity_ids,
+      ...shot.composition.foreground_entity_ids,
+      ...shot.composition.background_entity_ids,
+      ...shot.camera.focus_entity_ids,
+      ...(shot.lens.focus_entity_id ? [shot.lens.focus_entity_id] : []),
+      ...(shot.lighting.motivated_source_entity_id ? [shot.lighting.motivated_source_entity_id] : []),
+      ...shot.lighting.emphasized_entity_ids,
+      ...shot.lighting.preserve_shadow_entity_ids,
+      ...shot.blocking.flatMap((cue) => [cue.actor_entity_id, cue.target_entity_id].filter((id): id is string => Boolean(id))),
+      ...shot.constraints.flatMap((cue) => [cue.actor_entity_id, cue.target_entity_id, cue.secondary_target_entity_id].filter((id): id is string => Boolean(id))),
+      ...shot.camera.movement_steps.map((step) => step.target_entity_id).filter((id): id is string => Boolean(id)),
+    ].filter((id): id is string => Boolean(id))),
+  );
+}
+
 function sourceMoments(
   rawPlan: Record<string, unknown>,
   context: DirectorNormalizationContext,
@@ -910,6 +1259,18 @@ function normalizeMoment(
     activeIds,
     keptIds,
   );
+  const successObservation =
+    text(item.success_observation)
+      ? text(item.success_observation)
+      : null;
+  const shot = normalizeShotDirectionV2(
+    item.shot ?? item.shot_v2,
+    camera,
+    activeIds,
+    keptIds,
+    directorIntent,
+    successObservation,
+  );
   const rawTextCues = list(
     item.text_cues,
   );
@@ -977,14 +1338,10 @@ function normalizeMoment(
       active_entity_ids:
         activeIds,
       camera,
+      shot,
       events,
       text_cues: textCues,
-      success_observation:
-        text(item.success_observation)
-          ? text(
-              item.success_observation,
-            )
-          : null,
+      success_observation: successObservation,
     },
     referenced_entity_ids: Array.from(
       new Set([
@@ -993,6 +1350,7 @@ function normalizeMoment(
         ...activeIds,
         ...camera.focus_entity_ids,
         ...camera.keep_visible_entity_ids,
+        ...referencedIdsFromShot(shot),
         ...textCues
           .map(
             (cue) =>
@@ -1222,6 +1580,20 @@ export function normalizeEducationalSceneDirectorPlan(
           "Keep the first actor centered and leave room for later actors.",
         keep_visible_entity_ids: [],
       },
+      shot: normalizeShotDirectionV2(
+        null,
+        {
+          shot_type: "medium",
+          movement: "push_in",
+          focus_entity_ids: [entities[0].id],
+          framing_intent: "Keep the first actor centered and leave room for later actors.",
+          keep_visible_entity_ids: [],
+        },
+        [entities[0].id],
+        [],
+        "Give the learner one clear visual relationship before adding complexity.",
+        "The first actor and its role are visually clear.",
+      ),
       events: [
         {
           id: "event_1",
@@ -1297,6 +1669,7 @@ export function normalizeEducationalSceneDirectorPlan(
   const plan: EducationalSceneDirectorPlanV1 = {
     schema_version:
       "myway_educational_scene_director_v1",
+    capability_language_version: "v2",
     source: normalizeSource(
       rawPlan.source,
       context.source ??

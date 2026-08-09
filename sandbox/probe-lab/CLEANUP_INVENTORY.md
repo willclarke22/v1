@@ -1,3 +1,4 @@
+
 # Phase 2 Cleanup Inventory
 
 Cleanup is a gate at the end of every subphase, not a single destructive step.
@@ -173,7 +174,7 @@ Compatibility or lab-specific lighting:
 
 - Resource Runtime model/material canvases retain their earlier local light rigs
   for isolated Phase 2D/2F tests.
-- Primitive Builder, Manual Turn, Motion & Camera Library, and Visual Experience
+- Primitive Builder, Manual Turn, Director Capability Library, and Visual Experience
   light setups remain lab-specific until Phase 2H composition/migration work.
 - No existing lab light rig is deleted in Phase 2G.
 
@@ -183,4 +184,3 @@ Generated or temporary environment output:
 - source downloads are memory-cache entries, not project files;
 - Blender HDR/EXR files live under operating-system temporary directories and
   are removed before the route returns.
-

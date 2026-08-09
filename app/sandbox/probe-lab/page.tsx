@@ -1,3 +1,5 @@
+
+
 const activeLabs = [
   {
     href: "/sandbox/probe-lab/blender-python-builder",
@@ -7,11 +9,11 @@ const activeLabs = [
       "Design benchmark-quality procedural assets, match R2 or AmbientCG materials and HDRIs, generate or paste Blender Python, inspect geometry and look-development passes, improve revisions, and save review candidates.",
   },
   {
-    href: "/sandbox/probe-lab/motion-camera-library",
-    title: "Motion & Camera Library",
-    status: "3D execution catalogue",
+    href: "/sandbox/probe-lab/director-capability-library",
+    title: "Director Capability Library",
+    status: "directing language proof",
     description:
-      "Inspect every registered motion and camera direction in richer 3D preview scenes with varied objects, JSON keywords, and direct/controller/declared capability status.",
+      "Visually prove the narrative, camera, motion, blocking, lighting, transition, and continuity vocabulary GLM may direct, using one WebGL viewer and real reviewed Asset Library examples.",
   },{
     href: "/sandbox/probe-lab/manual-turn",
     title: "Manual Turn Lab",

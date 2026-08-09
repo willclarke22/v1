@@ -1,5 +1,5 @@
-import { MotionCameraLibraryLab } from "@/sandbox/probe-lab/motion-camera-library/ui";
+import { redirect } from "next/navigation";
 
-export default function MotionCameraLibraryPage() {
-  return <MotionCameraLibraryLab />;
+export default function LegacyMotionCameraLibraryPage() {
+  redirect("/sandbox/probe-lab/director-capability-library");
 }

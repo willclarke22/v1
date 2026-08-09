@@ -74,3 +74,30 @@ Final placement uses logical real-world size, measured geometry regions,
 support/containment/attachment/adjacency constraints, fit, clearance, and
 collision checks. Invalid placement remains unresolved rather than silently
 shrinking, intersecting, or burying an actor.
+
+## Director V2 execution bridge
+
+The Asset Scene Builder now consumes the canonical V2 `moment.shot` after assets
+load. The integration deliberately preserves the builder's set-construction
+authority:
+
+1. invisible proxies and asset requirements establish the requested set;
+2. measured asset geometry produces real-world sizes and spatial regions;
+3. cinematic blocking may adjust desired root staging **before** the existing
+   layout solver runs; physical relations such as on-surface, inside, attached,
+   and beside remain owned by the measured placement system;
+4. the collision-safe solved positions become the actor inputs to the shared
+   Director runtime;
+5. actor motion/constraints, semantic lighting, and parameterized camera
+   choreography execute from the same moment clock;
+6. the page samples camera clearance, required visibility, and approximate
+   occlusion as shot diagnostics.
+
+When no Director moment is available, the previous `Bounds` + `OrbitControls`
+inspection path remains the fallback. When V2 direction is active, automatic
+bounds fitting is disabled so it cannot fight the directed camera.
+
+The V2 runtime does not replace collision-safe placement or claim full physics.
+It is the renderer bridge that turns semantic direction into reproducible
+Three.js execution and prepares the same contract for later Blender compilation.
+

@@ -9,6 +9,7 @@ import {
 import {
   ChangeEvent,
   FormEvent,
+  ReactNode,
   Suspense,
   useCallback,
   useEffect,
@@ -18,6 +19,7 @@ import {
 } from "react";
 
 import type {
+  DirectorMoment,
   EducationalSceneDirectorPlanV1,
   EducationalSceneDirectorValidationReport,
 } from "@/sandbox/probe-lab/director";
@@ -30,8 +32,14 @@ import type {
   PrimitiveBuilderAssetRequirement,
 } from "../asset-requirement-plan";
 import {
+  applyDirectorBlocking,
+  DirectorShotCameraController,
+  DirectorShotLightingRig,
   ResolvedAssetModel,
+  sampleDirectorActorState,
   solveResolvedAssetLayout,
+  validateDirectorShot,
+  type DirectorRuntimeActor,
   type ResolvedAssetRuntimeMetrics,
   type ResolvedPlacementDiagnostic,
 } from "@/sandbox/probe-lab/scenes/ui";
@@ -601,10 +609,26 @@ function ProceduralEffect({
   );
 }
 
+function SceneBoundsGate({
+  directed,
+  children,
+}: {
+  directed: boolean;
+  children: ReactNode;
+}) {
+  if (directed) return <>{children}</>;
+  return (
+    <Bounds fit clip observe margin={1.25}>
+      {children}
+    </Bounds>
+  );
+}
+
 function AssetScene({
   plan,
   sceneGraph,
   activeStep,
+  directorMoment,
   showLabels,
   assetBindings,
   onRuntimeDiagnostics,
@@ -612,6 +636,7 @@ function AssetScene({
   plan: PrimitiveBuildPlanV1;
   sceneGraph: unknown;
   activeStep: number;
+  directorMoment?: DirectorMoment | null;
   showLabels: boolean;
   assetBindings: ResolvedSceneAssetBinding[];
   onRuntimeDiagnostics: (
@@ -768,17 +793,40 @@ function AssetScene({
     layoutScene,
     proxyIdsByBinding,
   ]);
+  const stagedBaseAssetPositions = useMemo(() => {
+    if (!directorMoment) return baseAssetPositions;
+    const actors: DirectorRuntimeActor[] = assetBindings.map((binding) => {
+      const base = baseAssetPositions.get(binding.instance_id) ?? binding.position;
+      const metrics = assetMetrics.get(binding.instance_id);
+      const extent = Math.max(0.1, binding.target_extent_m);
+      return {
+        id: binding.instance_id,
+        position: [...base] as Vec3,
+        rotation: [...binding.rotation] as Vec3,
+        size: metrics?.world_size ?? [extent, extent, extent],
+      };
+    });
+    const staged = applyDirectorBlocking(directorMoment, actors, { cinematic_only: true });
+    return new Map(
+      staged.map((actor) => [actor.id, [...actor.position] as Vec3]),
+    );
+  }, [
+    assetBindings,
+    assetMetrics,
+    baseAssetPositions,
+    directorMoment,
+  ]);
   const solvedLayout = useMemo(
     () =>
       solveResolvedAssetLayout({
         bindings: assetBindings,
-        basePositions: baseAssetPositions,
+        basePositions: stagedBaseAssetPositions,
         metrics: assetMetrics,
       }),
     [
       assetBindings,
       assetMetrics,
-      baseAssetPositions,
+      stagedBaseAssetPositions,
     ],
   );
   const renderableAssetBindings =
@@ -789,6 +837,35 @@ function AssetScene({
           binding.instance_id,
         ),
     );
+
+  const directorActors = useMemo<DirectorRuntimeActor[]>(
+    () =>
+      renderableAssetBindings.map((binding) => {
+        const position =
+          solvedLayout.positions.get(binding.instance_id) ??
+          binding.position;
+        const metrics = assetMetrics.get(binding.instance_id);
+        const extent = Math.max(0.1, binding.target_extent_m);
+        return {
+          id: binding.instance_id,
+          position: [...position] as Vec3,
+          rotation: [...binding.rotation] as Vec3,
+          size: metrics?.world_size ?? [extent, extent, extent],
+        };
+      }),
+    [
+      assetMetrics,
+      renderableAssetBindings,
+      solvedLayout.positions,
+    ],
+  );
+  const directorShotValidation = useMemo(
+    () =>
+      directorMoment && directorActors.length > 0
+        ? validateDirectorShot(directorMoment, directorActors)
+        : null,
+    [directorActors, directorMoment],
+  );
 
   function recordMetrics(
     metrics: ResolvedAssetRuntimeMetrics,
@@ -908,30 +985,35 @@ function AssetScene({
           attach="background"
           args={["#020617"]}
         />
-        <ambientLight intensity={0.52} />
-        <directionalLight
-          position={[4, 7, 5]}
-          intensity={1.25}
-          castShadow
-        />
-        <pointLight
-          position={[-4, 3, -4]}
-          intensity={0.6}
-          color="#60a5fa"
-        />
-        <pointLight
-          position={[3, 2.5, 3]}
-          intensity={0.35}
-          color="#fbbf24"
-        />
+        {directorMoment && directorActors.length > 0 ? (
+          <DirectorShotLightingRig
+            moment={directorMoment}
+            actors={directorActors}
+            autoLoop
+          />
+        ) : (
+          <>
+            <ambientLight intensity={0.52} />
+            <directionalLight
+              position={[4, 7, 5]}
+              intensity={1.25}
+              castShadow
+            />
+            <pointLight
+              position={[-4, 3, -4]}
+              intensity={0.6}
+              color="#60a5fa"
+            />
+            <pointLight
+              position={[3, 2.5, 3]}
+              intensity={0.35}
+              color="#fbbf24"
+            />
+          </>
+        )}
 
-        <Bounds
-          fit
-          clip
-          observe
-          margin={1.25}
-        >
-          <group rotation={[0, -0.35, 0]}>
+        <SceneBoundsGate directed={Boolean(directorMoment)}>
+          <group rotation={[0, directorMoment ? 0 : -0.35, 0]}>
             {visibleProceduralParts.map(
               (part) => (
                 <ProceduralEffect
@@ -954,6 +1036,12 @@ function AssetScene({
                   assetMetrics.get(
                     binding.instance_id,
                   );
+                const directorActor =
+                  directorActors.find(
+                    (candidate) =>
+                      candidate.id ===
+                      binding.instance_id,
+                  ) ?? null;
                 const labelHeight =
                   metrics?.world_size[1] ??
                   binding.target_extent_m;
@@ -977,9 +1065,46 @@ function AssetScene({
                         onMetrics={
                           recordMetrics
                         }
+                        runtimeMotion={
+                          directorMoment &&
+                          directorActor
+                            ? {
+                                duration_ms:
+                                  directorMoment.duration_ms,
+                                loop: true,
+                                sample: (progress) => {
+                                  const sampled =
+                                    sampleDirectorActorState(
+                                      directorMoment,
+                                      directorActor,
+                                      progress,
+                                      directorActors,
+                                    );
+                                  return {
+                                    position: [
+                                      sampled.position.x,
+                                      sampled.position.y,
+                                      sampled.position.z,
+                                    ],
+                                    rotation: [
+                                      sampled.rotation.x,
+                                      sampled.rotation.y,
+                                      sampled.rotation.z,
+                                    ],
+                                    scale_multiplier: [
+                                      sampled.scale.x,
+                                      sampled.scale.y,
+                                      sampled.scale.z,
+                                    ],
+                                  };
+                                },
+                              }
+                            : undefined
+                        }
                       />
                     </Suspense>
                     {showLabels &&
+                    !directorMoment &&
                     bindingIntersects(
                       binding,
                       activeIds,
@@ -1005,7 +1130,15 @@ function AssetScene({
               },
             )}
           </group>
-        </Bounds>
+        </SceneBoundsGate>
+
+        {directorMoment && directorActors.length > 0 ? (
+          <DirectorShotCameraController
+            moment={directorMoment}
+            actors={directorActors}
+            autoLoop
+          />
+        ) : null}
 
         <gridHelper
           args={[
@@ -1016,11 +1149,23 @@ function AssetScene({
           ]}
           position={[0, -0.04, 0]}
         />
-        <OrbitControls
-          enableDamping
-          makeDefault
-        />
+        {!directorMoment ? (
+          <OrbitControls
+            enableDamping
+            makeDefault
+          />
+        ) : null}
       </Canvas>
+
+      {directorMoment && directorShotValidation ? (
+        <div className="pointer-events-none absolute right-3 top-3 z-10 grid gap-1 rounded-2xl border border-cyan-200/20 bg-slate-950/82 px-3 py-2 text-[10px] font-semibold text-cyan-50/80 shadow-2xl backdrop-blur">
+          <span className="font-black uppercase tracking-[0.12em] text-cyan-200">Director V2 live</span>
+          <span>Camera path: {directorShotValidation.camera_path_clear ? "clear" : "review"}</span>
+          <span>Required visible: {Math.round(directorShotValidation.required_visible_fraction * 100)}%</span>
+          <span>Approx. occlusion: {Math.round(directorShotValidation.approximate_occlusion_ratio * 100)}%</span>
+          <span>Motion overlap: {Math.round(directorShotValidation.approximate_actor_collision_ratio * 100)}%</span>
+        </div>
+      ) : null}
 
       {renderableAssetBindings.length === 0 &&
       visibleProceduralParts.length === 0 ? (
@@ -2042,6 +2187,11 @@ export function PrimitiveBuilderLab() {
                     result?.scene_graph
                   }
                   activeStep={activeStep}
+                  directorMoment={
+                    directorPlan?.moments[activeStep - 1] ??
+                    directorPlan?.moments[0] ??
+                    null
+                  }
                   showLabels={showLabels}
                   assetBindings={
                     resolvedBindings

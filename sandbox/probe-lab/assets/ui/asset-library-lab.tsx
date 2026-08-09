@@ -4463,7 +4463,7 @@ export function AssetLibraryLab({
               onClick={() => setManualAcquisitionMode("cc0")}
               type="button"
             >
-              Import CC0 GLB
+              Import CC0 GLB / bundle
             </button>
             <button
               data-active={manualAcquisitionMode === "cc_by"}
