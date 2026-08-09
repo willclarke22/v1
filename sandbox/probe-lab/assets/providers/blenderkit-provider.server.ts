@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import path from "node:path";
 
 import type { MyWayAssetRecord } from "../asset-types";
@@ -17,6 +17,10 @@ import {
   ensureAssetDirectories,
   projectPath,
 } from "../paths.server";
+import {
+  deleteDurableAssetJson,
+  writeDurableAssetJson,
+} from "../storage/asset-durable-artifacts.server";
 
 function tokenizeSearchPart(value: string) {
   return String(value ?? "")
@@ -158,38 +162,29 @@ export async function acquireFromBlenderKit(input: {
   const contentHash = await hashFile(outputPath);
   const sourceRecordRelativePath =
     `sandbox/probe-lab/assets/library/source-records/${assetId}.json`;
-  const sourceRecordPath = projectPath(sourceRecordRelativePath);
   const licenseRelativePath =
     `sandbox/probe-lab/assets/library/licenses/${assetId}.review.json`;
-  const licensePath = projectPath(licenseRelativePath);
+  const sourceRecord = {
+    ...(result.source_record ?? {}),
+    myway_requested_concept: input.concept,
+    myway_blenderkit_search_query: searchQuery,
+    myway_required_license_kind: requiredLicenseKind,
+    excluded_source_asset_ids:
+      input.excludedSourceAssetIds ?? [],
+    selected_source_asset_id:
+      input.selectedSourceAssetId?.trim() || null,
+    normalized_runtime_glb: path
+      .relative(process.cwd(), outputPath)
+      .replace(/\\/g, "/"),
+    normalized_thumbnail: path
+      .relative(process.cwd(), thumbnailPath)
+      .replace(/\\/g, "/"),
+    content_hash: contentHash,
+  };
 
-  await mkdir(path.dirname(sourceRecordPath), { recursive: true });
-  await mkdir(path.dirname(licensePath), { recursive: true });
-
-  await writeFile(
-    sourceRecordPath,
-    `${JSON.stringify(
-      {
-        ...(result.source_record ?? {}),
-        myway_requested_concept: input.concept,
-        myway_blenderkit_search_query: searchQuery,
-        myway_required_license_kind: requiredLicenseKind,
-        excluded_source_asset_ids:
-          input.excludedSourceAssetIds ?? [],
-        selected_source_asset_id:
-          input.selectedSourceAssetId?.trim() || null,
-        normalized_runtime_glb: path
-          .relative(process.cwd(), outputPath)
-          .replace(/\\/g, "/"),
-        normalized_thumbnail: path
-          .relative(process.cwd(), thumbnailPath)
-          .replace(/\\/g, "/"),
-        content_hash: contentHash,
-      },
-      null,
-      2,
-    )}\n`,
-    "utf8",
+  await writeDurableAssetJson(
+    sourceRecordRelativePath,
+    sourceRecord,
   );
 
   const now = new Date().toISOString();
@@ -281,18 +276,22 @@ export async function acquireFromBlenderKit(input: {
   const registered = await registerMyWayAsset(record);
 
   if (!registered.created) {
-    await Promise.all(
-      [
+    await Promise.all([
+      ...[
         outputPath,
         thumbnailPath,
-        sourceRecordPath,
-        licensePath,
       ].map((candidatePath) =>
         rm(candidatePath, { force: true }).catch(
           () => undefined,
         ),
       ),
-    );
+      deleteDurableAssetJson(
+        sourceRecordRelativePath,
+      ).catch(() => undefined),
+      deleteDurableAssetJson(
+        licenseRelativePath,
+      ).catch(() => undefined),
+    ]);
 
     return {
       ...registered,
@@ -305,10 +304,9 @@ export async function acquireFromBlenderKit(input: {
 
   const review = buildBlenderKitCc0LicenseReview(registered.asset);
 
-  await writeFile(
-    licensePath,
-    `${JSON.stringify(review, null, 2)}\n`,
-    "utf8",
+  await writeDurableAssetJson(
+    licenseRelativePath,
+    review,
   );
 
   const updated = await updateMyWayAsset(

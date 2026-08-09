@@ -38,7 +38,6 @@ export async function ensureAssetDirectories() {
     `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/licenses`,
     `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/source-records`,
     "sandbox/probe-lab/assets/embeddings",
-    "sandbox/probe-lab/assets/enrichment/cache",
     MYWAY_SCENE_MANIFEST_PROJECT_PATH,
     MYWAY_ASSET_DEBUG_PROJECT_PATH,
     "sandbox/probe-lab/assets/acquisition",

@@ -4,7 +4,6 @@ import {
   mkdir,
   rm,
   stat,
-  writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -23,6 +22,12 @@ import {
   ensureAssetDirectories,
   projectPath,
 } from "../../paths.server";
+import {
+  archivePrivateAssetSource,
+  deleteDurableAssetJson,
+  deletePrivateAssetObject,
+  writeDurableAssetJson,
+} from "../../storage/asset-durable-artifacts.server";
 import type {
   AmbientCgDownloadJob,
 } from "./ambientcg-types";
@@ -176,8 +181,6 @@ export async function importAmbientCgModel(input: {
       `sandbox/probe-lab/assets/library/source-records/${assetId}.json`;
     const licenseRelativePath =
       `sandbox/probe-lab/assets/library/licenses/${assetId}.review.json`;
-    const sourceRecordPath = projectPath(sourceRecordRelativePath);
-    const licensePath = projectPath(licenseRelativePath);
     const targetExtentM =
       typeof input.targetExtentM === "number" && Number.isFinite(input.targetExtentM)
         ? Math.min(20, Math.max(0.05, input.targetExtentM))
@@ -202,91 +205,116 @@ export async function importAmbientCgModel(input: {
     }
 
     const result = completed.result;
-    await mkdir(path.dirname(sourcePath), { recursive: true });
-    await copyFile(outputPath, sourcePath);
+    const [contentHash, outputInfo, thumbnailInfo] =
+      await Promise.all([
+        hashFile(outputPath),
+        stat(outputPath),
+        stat(thumbnailPath),
+      ]);
+    const sourceArchive =
+      await archivePrivateAssetSource({
+        assetId,
+        sourceType: "ambientcg",
+        localPath: outputPath,
+      });
 
-    const [contentHash, sourceInfo, outputInfo, thumbnailInfo] = await Promise.all([
-      hashFile(outputPath),
-      stat(sourcePath),
-      stat(outputPath),
-      stat(thumbnailPath),
-    ]);
+    let sourceInfo = outputInfo;
+    if (!sourceArchive) {
+      await mkdir(
+        path.dirname(sourcePath),
+        { recursive: true },
+      );
+      await copyFile(
+        outputPath,
+        sourcePath,
+      );
+      sourceInfo =
+        await stat(sourcePath);
+    }
+
     const now = new Date().toISOString();
     const reviewId = `${assetId}_ambientcg_cc0_review_v1`;
 
+    const sourceRecord = {
+      schema_version: "myway_ambientcg_model_source_record_v1",
+      asset_id: assetId,
+      source_provider: "ambientCG",
+      source_asset_id: asset.source_asset_id,
+      source_url: asset.source_url,
+      source_license: "CC0-1.0",
+      selected_variant: variant,
+      selected_model_file:
+        path
+          .relative(prepared.root, modelInput)
+          .replace(/\\/g, "/"),
+      source_package_sha256:
+        prepared.download.sha256,
+      normalized_runtime_glb:
+        projectRelative(outputPath),
+      normalized_thumbnail:
+        projectRelative(thumbnailPath),
+      preserved_source_glb:
+        sourceArchive
+          ? null
+          : projectRelative(sourcePath),
+      source_storage_provider:
+        sourceArchive ? "r2" : "local",
+      source_object_key:
+        sourceArchive?.object_key ?? null,
+      normalized_file_size_bytes:
+        outputInfo.size,
+      source_file_size_bytes:
+        sourceInfo.size,
+      content_hash: contentHash,
+      geometry_profile_generator:
+        result.geometry_profile?.generator ?? null,
+      imported_at: now,
+    };
+
+    const licenseReview = {
+      schema_version: "myway_asset_license_review_v1",
+      review_id: reviewId,
+      asset_id: assetId,
+      decision: "approved_public_distribution",
+      reviewed_by:
+        "MyWay automated ambientCG CC0 intake policy",
+      reviewed_at: now,
+      basis: [
+        {
+          label: "ambientCG asset record",
+          url: asset.source_url,
+          finding:
+            "The ambientCG catalog record identifies this downloadable model and its preview/source package as CC0 1.0.",
+        },
+        {
+          label: "ambientCG license",
+          url: "https://ambientcg.com/license",
+          finding:
+            "ambientCG publishes its downloadable assets under CC0 1.0, allowing use, modification, commercial use, and redistribution without attribution.",
+        },
+      ],
+      attestations: {
+        reviewed_source_terms: true,
+        production_use_allowed: true,
+        public_raw_distribution_allowed: true,
+        commercial_use_allowed: true,
+        no_known_third_party_restrictions: true,
+        generic_or_authorized_subject: true,
+      },
+      notes:
+        "The user still reviews the normalized rotating model, identity, geometry, and visual quality before scene approval and R2 publication.",
+    };
+
     await Promise.all([
-      mkdir(path.dirname(sourceRecordPath), { recursive: true }),
-      mkdir(path.dirname(licensePath), { recursive: true }),
+      writeDurableAssetJson(
+        sourceRecordRelativePath,
+        sourceRecord,
+      ),
+      writeDurableAssetJson(
+        licenseRelativePath,
+        licenseReview,
+      ),
     ]);
-
-    await writeFile(
-      sourceRecordPath,
-      `${JSON.stringify(
-        {
-          schema_version: "myway_ambientcg_model_source_record_v1",
-          asset_id: assetId,
-          source_provider: "ambientCG",
-          source_asset_id: asset.source_asset_id,
-          source_url: asset.source_url,
-          source_license: "CC0-1.0",
-          selected_variant: variant,
-          selected_model_file: path.relative(prepared.root, modelInput).replace(/\\/g, "/"),
-          source_package_sha256: prepared.download.sha256,
-          normalized_runtime_glb: projectRelative(outputPath),
-          normalized_thumbnail: projectRelative(thumbnailPath),
-          preserved_source_glb: projectRelative(sourcePath),
-          normalized_file_size_bytes: outputInfo.size,
-          source_file_size_bytes: sourceInfo.size,
-          content_hash: contentHash,
-          geometry_profile_generator: result.geometry_profile?.generator ?? null,
-          imported_at: now,
-        },
-        null,
-        2,
-      )}\n`,
-      "utf8",
-    );
-
-    await writeFile(
-      licensePath,
-      `${JSON.stringify(
-        {
-          schema_version: "myway_asset_license_review_v1",
-          review_id: reviewId,
-          asset_id: assetId,
-          decision: "approved_public_distribution",
-          reviewed_by: "MyWay automated ambientCG CC0 intake policy",
-          reviewed_at: now,
-          basis: [
-            {
-              label: "ambientCG asset record",
-              url: asset.source_url,
-              finding:
-                "The ambientCG catalog record identifies this downloadable model and its preview/source package as CC0 1.0.",
-            },
-            {
-              label: "ambientCG license",
-              url: "https://ambientcg.com/license",
-              finding:
-                "ambientCG publishes its downloadable assets under CC0 1.0, allowing use, modification, commercial use, and redistribution without attribution.",
-            },
-          ],
-          attestations: {
-            reviewed_source_terms: true,
-            production_use_allowed: true,
-            public_raw_distribution_allowed: true,
-            commercial_use_allowed: true,
-            no_known_third_party_restrictions: true,
-            generic_or_authorized_subject: true,
-          },
-          notes:
-            "The user still reviews the normalized rotating model, identity, geometry, and visual quality before scene approval and R2 publication.",
-        },
-        null,
-        2,
-      )}\n`,
-      "utf8",
-    );
 
     const record: MyWayAssetRecord = {
       asset_id: assetId,
@@ -313,7 +341,10 @@ export async function importAmbientCgModel(input: {
       source_asset_id: asset.source_asset_id,
       source_prompt: null,
       source_url: asset.source_url,
-      source_path: projectRelative(sourcePath),
+      source_path:
+        sourceArchive
+          ? null
+          : projectRelative(sourcePath),
       public_path: `/sandbox-assets/myway/models/ambientcg/${assetId}.glb`,
       thumbnail_path: `/sandbox-assets/myway/thumbnails/${assetId}.png`,
       license_record_path: licenseRelativePath,
@@ -325,11 +356,17 @@ export async function importAmbientCgModel(input: {
       thumbnail_object_key: null,
       thumbnail_etag: null,
       thumbnail_file_size_bytes: thumbnailInfo.size,
-      source_storage_provider: "local",
-      source_object_key: null,
-      source_storage_etag: null,
-      source_file_size_bytes: sourceInfo.size,
-      source_archived_at: now,
+      source_storage_provider:
+        sourceArchive ? "r2" : "local",
+      source_object_key:
+        sourceArchive?.object_key ?? null,
+      source_storage_etag:
+        sourceArchive?.etag ?? null,
+      source_file_size_bytes:
+        sourceArchive?.size_bytes ??
+        sourceInfo.size,
+      source_archived_at:
+        sourceArchive ? now : null,
       promoted_at: null,
       license_review_id: reviewId,
       dimensions_m:
@@ -364,11 +401,28 @@ export async function importAmbientCgModel(input: {
     const registered = await registerMyWayAsset(record);
 
     if (!registered.created) {
-      await Promise.all(
-        [sourcePath, outputPath, thumbnailPath, sourceRecordPath, licensePath].map(
-          (candidate) => rm(candidate, { force: true }).catch(() => undefined),
+      await Promise.all([
+        ...[
+          sourcePath,
+          outputPath,
+          thumbnailPath,
+        ].map((candidate) =>
+          rm(candidate, {
+            force: true,
+          }).catch(() => undefined),
         ),
-      );
+        deleteDurableAssetJson(
+          sourceRecordRelativePath,
+        ).catch(() => undefined),
+        deleteDurableAssetJson(
+          licenseRelativePath,
+        ).catch(() => undefined),
+        sourceArchive
+          ? deletePrivateAssetObject(
+              sourceArchive.object_key,
+            ).catch(() => undefined)
+          : Promise.resolve(false),
+      ]);
     }
 
     const finalAsset = registered.asset;

@@ -41,6 +41,11 @@ import {
   readCloudJson,
   writeCloudJson,
 } from "./storage/cloud-json.server";
+import {
+  deleteDurableAssetJson,
+  readDurableAssetJson,
+  writeDurableAssetJson,
+} from "./storage/asset-durable-artifacts.server";
 
 let writeQueue: Promise<unknown> = Promise.resolve();
 
@@ -689,9 +694,6 @@ export async function updateMyWayAssetProvenance(
 
   const sourceRecordRelativePath =
     `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/source-records/${current.asset_id}.json`;
-  const sourceRecordPath = projectPath(
-    sourceRecordRelativePath,
-  );
   const licenseRelativePath =
     current.license_record_path &&
     !/^https?:\/\//i.test(
@@ -699,15 +701,14 @@ export async function updateMyWayAssetProvenance(
     )
       ? current.license_record_path
       : `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/licenses/${current.asset_id}.manual.review.json`;
-  const licensePath = projectPath(
-    licenseRelativePath,
-  );
   const previousSource =
-    await readJsonIfPresent(
-      sourceRecordPath,
+    await readDurableAssetJson<Record<string, unknown>>(
+      sourceRecordRelativePath,
     );
   const previousLicense =
-    await readJsonIfPresent(licensePath);
+    await readDurableAssetJson<Record<string, unknown>>(
+      licenseRelativePath,
+    );
   const now = new Date().toISOString();
   const sourceRecord = {
     ...(previousSource ?? {}),
@@ -765,12 +766,12 @@ export async function updateMyWayAssetProvenance(
   };
 
   try {
-    await writeJsonFileAtomic(
-      sourceRecordPath,
+    await writeDurableAssetJson(
+      sourceRecordRelativePath,
       sourceRecord,
     );
-    await writeJsonFileAtomic(
-      licensePath,
+    await writeDurableAssetJson(
+      licenseRelativePath,
       licenseDraft,
     );
 
@@ -817,24 +818,24 @@ export async function updateMyWayAssetProvenance(
     };
   } catch (caught) {
     if (previousSource) {
-      await writeJsonFileAtomic(
-        sourceRecordPath,
+      await writeDurableAssetJson(
+        sourceRecordRelativePath,
         previousSource,
       ).catch(() => undefined);
     } else {
-      await rm(sourceRecordPath, {
-        force: true,
-      }).catch(() => undefined);
+      await deleteDurableAssetJson(
+        sourceRecordRelativePath,
+      ).catch(() => undefined);
     }
     if (previousLicense) {
-      await writeJsonFileAtomic(
-        licensePath,
+      await writeDurableAssetJson(
+        licenseRelativePath,
         previousLicense,
       ).catch(() => undefined);
     } else {
-      await rm(licensePath, {
-        force: true,
-      }).catch(() => undefined);
+      await deleteDurableAssetJson(
+        licenseRelativePath,
+      ).catch(() => undefined);
     }
     throw caught;
   }
@@ -924,10 +925,17 @@ export async function renameMyWayAssetId(input: {
     previousVectorPath
       ? await fileExists(previousVectorPath)
       : false;
+  const previousDurableVector =
+    previousVectorKey
+      ? await readDurableAssetJson<
+          Record<string, unknown>
+        >(previousVectorKey)
+      : null;
   const embeddingRefreshQueued =
     Boolean(
       current.appearance_embedding &&
-      !previousVectorExists,
+      !previousVectorExists &&
+      !previousDurableVector,
     );
 
   const renamed: MyWayAssetRecord = {
@@ -1028,6 +1036,7 @@ export async function renameMyWayAssetId(input: {
   const applied: JsonReferenceMutation[] =
     [];
   let vectorMoved = false;
+  let durableVectorCopied = false;
 
   try {
     for (const mutation of mutations) {
@@ -1036,6 +1045,23 @@ export async function renameMyWayAssetId(input: {
         mutation.next,
       );
       applied.push(mutation);
+    }
+
+    if (
+      previousDurableVector &&
+      !previousVectorExists &&
+      previousVectorKey &&
+      nextVectorKey &&
+      previousVectorKey !== nextVectorKey
+    ) {
+      await writeDurableAssetJson(
+        nextVectorKey,
+        {
+          ...previousDurableVector,
+          asset_id: nextAssetId,
+        },
+      );
+      durableVectorCopied = true;
     }
 
     if (
@@ -1062,7 +1088,25 @@ export async function renameMyWayAssetId(input: {
 
     registry.assets[index] = renamed;
     await saveMyWayAssetRegistry(registry);
+
+    if (
+      durableVectorCopied &&
+      previousVectorKey &&
+      previousVectorKey !== nextVectorKey
+    ) {
+      await deleteDurableAssetJson(
+        previousVectorKey,
+      );
+    }
   } catch (caught) {
+    if (
+      durableVectorCopied &&
+      nextVectorKey
+    ) {
+      await deleteDurableAssetJson(
+        nextVectorKey,
+      ).catch(() => undefined);
+    }
     if (
       vectorMoved &&
       previousVectorPath &&
@@ -1103,9 +1147,11 @@ export async function renameMyWayAssetId(input: {
             mutation.file_path,
           ),
       ),
-    moved_identity_files: vectorMoved && nextVectorKey
-      ? [nextVectorKey]
-      : [],
+    moved_identity_files:
+      (vectorMoved || durableVectorCopied) &&
+      nextVectorKey
+        ? [nextVectorKey]
+        : [],
     embedding_refresh_queued:
       embeddingRefreshQueued,
   };
@@ -1232,6 +1278,18 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
     : false;
   const expectedExists =
     await fileExists(expectedVectorPath);
+  const durableCurrent =
+    currentVectorKey
+      ? await readDurableAssetJson<
+          Record<string, unknown>
+        >(currentVectorKey)
+      : null;
+  const durableExpected =
+    expectedVectorKey === currentVectorKey
+      ? durableCurrent
+      : await readDurableAssetJson<
+          Record<string, unknown>
+        >(expectedVectorKey);
 
   if (
     currentVectorPath &&
@@ -1253,7 +1311,16 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
     ? currentVectorKey
     : expectedExists
       ? expectedVectorKey
-      : null;
+      : durableCurrent
+        ? currentVectorKey
+        : durableExpected
+          ? expectedVectorKey
+          : null;
+  const sourceVectorRecord =
+    sourceVectorPath
+      ? null
+      : durableCurrent ??
+        durableExpected;
 
   const replacements = new Map<string, string>();
   if (
@@ -1283,12 +1350,16 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
 
   let sourceTextNeedsRefresh = false;
   const warnings: string[] = [];
-  if (sourceVectorPath) {
+  if (
+    sourceVectorPath ||
+    sourceVectorRecord
+  ) {
     try {
       const stored =
+        sourceVectorRecord ??
         await readJsonFileWithRetry<
           Record<string, unknown>
-        >(sourceVectorPath);
+        >(sourceVectorPath!);
       const storedAssetId =
         typeof stored.asset_id === "string"
           ? safeAssetId(stored.asset_id)
@@ -1331,7 +1402,7 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
   } else {
     sourceTextNeedsRefresh = true;
     warnings.push(
-      "The embedding metadata exists, but its vector file is missing.",
+      "The embedding metadata exists, but neither its local nor private-R2 vector object could be found.",
     );
   }
 
@@ -1387,6 +1458,7 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
 
   const applied: JsonReferenceMutation[] = [];
   let vectorMoved = false;
+  let durableVectorCopied = false;
 
   try {
     for (const mutation of mutations) {
@@ -1395,6 +1467,21 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
         mutation.next,
       );
       applied.push(mutation);
+    }
+
+    if (
+      sourceVectorRecord &&
+      sourceVectorKey &&
+      sourceVectorKey !== expectedVectorKey
+    ) {
+      await writeDurableAssetJson(
+        expectedVectorKey,
+        {
+          ...sourceVectorRecord,
+          asset_id: current.asset_id,
+        },
+      );
+      durableVectorCopied = true;
     }
 
     if (
@@ -1414,7 +1501,22 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
 
     registry.assets[index] = repaired;
     await saveMyWayAssetRegistry(registry);
+
+    if (
+      durableVectorCopied &&
+      sourceVectorKey &&
+      sourceVectorKey !== expectedVectorKey
+    ) {
+      await deleteDurableAssetJson(
+        sourceVectorKey,
+      );
+    }
   } catch (caught) {
+    if (durableVectorCopied) {
+      await deleteDurableAssetJson(
+        expectedVectorKey,
+      ).catch(() => undefined);
+    }
     if (
       vectorMoved &&
       sourceVectorPath
@@ -1446,7 +1548,7 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
   return {
     asset: repaired,
     moved_identity_files:
-      vectorMoved
+      vectorMoved || durableVectorCopied
         ? [expectedVectorKey]
         : [],
     updated_reference_files:

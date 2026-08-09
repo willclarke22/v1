@@ -1,6 +1,3 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-
 import {
   assetWithFileStats,
   getMyWayAsset,
@@ -20,8 +17,10 @@ import {
 } from "../licensing/asset-license-review";
 import {
   MYWAY_ASSET_LIBRARY_PROJECT_PATH,
-  projectPath,
 } from "../paths.server";
+import {
+  writeDurableAssetJson,
+} from "../storage/asset-durable-artifacts.server";
 import {
   findMissingAssetJobForAsset,
   markMissingAssetCandidateApproved,
@@ -102,16 +101,10 @@ async function writeApprovedPolyPizzaLicenseReview(
     );
   const relativePath =
     `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/licenses/${asset.asset_id}.review.json`;
-  const absolutePath =
-    projectPath(relativePath);
 
-  await mkdir(path.dirname(absolutePath), {
-    recursive: true,
-  });
-  await writeFile(
-    absolutePath,
-    `${JSON.stringify(review, null, 2)}\n`,
-    "utf8",
+  await writeDurableAssetJson(
+    relativePath,
+    review,
   );
 
   return relativePath;
@@ -128,16 +121,10 @@ async function writeApprovedManualCc0LicenseReview(
     );
   const relativePath =
     `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/licenses/${asset.asset_id}.review.json`;
-  const absolutePath =
-    projectPath(relativePath);
 
-  await mkdir(path.dirname(absolutePath), {
-    recursive: true,
-  });
-  await writeFile(
-    absolutePath,
-    `${JSON.stringify(review, null, 2)}\n`,
-    "utf8",
+  await writeDurableAssetJson(
+    relativePath,
+    review,
   );
 
   return relativePath;
@@ -255,7 +242,8 @@ export async function approveAndPublishAsset(
       await promoteMyWayAssetToR2({
         assetId: current.asset_id,
         reviewFile,
-        archiveSource: false,
+        archiveSource: true,
+        removeLocalAfterVerification: true,
       });
     asset = promoted.asset;
     published = true;

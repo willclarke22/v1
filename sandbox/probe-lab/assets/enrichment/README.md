@@ -32,7 +32,7 @@ aesthetic language, shape language, material treatment, palette, surface
 condition, ornamentation, mood, detail level, and visual scene compatibility.
 These fields lead the embedding source text so future contextual learner
 preferences can rank identity-valid assets by visual fit. Existing profiles remain
-readable; re-analysis fills the new fields and replaces the local embedding.
+readable; re-analysis fills the new fields and replaces the durable embedding.
 
 ## Analyze every existing asset
 
@@ -54,26 +54,50 @@ reaches a terminal state.
 
 ## Identity-safe embedding artifacts
 
-The canonical local embedding filename is derived from the current technical
-asset ID:
+The registry keeps a stable logical embedding reference derived from the current
+technical asset ID:
 
 ```text
 sandbox/probe-lab/assets/embeddings/<asset_id>.json
 ```
 
-Renaming an asset ID now moves that local vector file, rewrites the vector
-record's `asset_id`, updates `appearance_embedding.vector_key`, and updates
-exact saved JSON references in one rollback-safe transaction. Model, thumbnail,
-license, and R2 source paths remain unchanged because those are immutable import
-provenance rather than derived identity artifacts.
+With R2 configured, that reference resolves cloud-first to the private source
+bucket at `metadata/myway/assets/embeddings/<asset_id>.json`; a repository copy is
+written only when the local metadata mirror is explicitly enabled. Local-only
+mode keeps the existing on-disk behavior.
 
 Changing the verified canonical label marks only the appearance embedding as
 pending and queues an embedding-only refresh using the existing ready appearance
 profile. It does not rerender the GLB or rerun vision analysis unless the ready
-profile is unavailable.
+profile is unavailable. Identity repair remains compatible with the logical
+reference while the cloud object is authoritative.
 
-After installing this behavior, repair older mismatches with `pnpm dev` running:
+## Temporary hydration policy
 
-```powershell
-& ".\sandbox\probe-lab\assets\scripts\repair-identity-artifacts.ps1"
+When an asset's `public_path` is already an HTTPS/R2 URL, appearance enrichment
+downloads the GLB only into a unique OS-temporary MyWay workspace. The workspace
+is removed in a `finally` path whether analysis succeeds or fails. New remote
+enrichment runs therefore no longer populate
+`sandbox/probe-lab/assets/enrichment/cache`.
+
+Local-only candidates continue to use their existing project model while they are
+pending review. In Phase 2, however, the four analysis renders are generated in
+a temporary workspace and uploaded to the public runtime bucket, and the
+appearance embedding is written to the private source bucket. The registry stores
+R2 URLs for analysis views and the same stable logical key for the embedding.
+Temporary render/input files are removed in `finally` paths.
+
+The shared temporary root defaults to:
+
+```text
+%TEMP%\myway-assets\
 ```
+
+Optional controls:
+
+```env
+MYWAY_ASSET_TEMP_ROOT=D:\MyWayTemp
+MYWAY_ASSET_TEMP_MAX_AGE_HOURS=24
+```
+
+`MYWAY_ASSET_TEMP_ROOT` must be outside the MyWay project.

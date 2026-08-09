@@ -10,7 +10,19 @@ import path from "node:path";
 
 import {
   projectPath,
+  publicUrlToProjectPath,
 } from "../assets/paths.server";
+import {
+  durableAssetCloudEnabled,
+  uploadRuntimeAssetFile,
+} from "../assets/storage/asset-durable-artifacts.server";
+import {
+  keepLocalAssetMetadataMirror,
+  writeCloudJson,
+} from "../assets/storage/cloud-json.server";
+import {
+  getR2SourceStorage,
+} from "../assets/storage/r2-asset-storage.server";
 
 function safeId(
   value: string,
@@ -39,6 +51,159 @@ async function readJson(
     string,
     unknown
   >;
+}
+
+function stringOrNull(
+  value: unknown,
+) {
+  return typeof value === "string"
+    ? value
+    : null;
+}
+
+function localPublicArtifact(
+  value: unknown,
+) {
+  if (
+    typeof value !== "string" ||
+    !value.startsWith(
+      "/sandbox-assets/myway/",
+    )
+  ) {
+    return null;
+  }
+
+  return {
+    url: value,
+    path:
+      publicUrlToProjectPath(
+        value,
+      ),
+  };
+}
+
+async function publishFoundryRuntimeArtifact(
+  input: {
+    candidateId: string;
+    value: unknown;
+    label: string;
+  },
+) {
+  const local =
+    localPublicArtifact(
+      input.value,
+    );
+  if (!local) {
+    return typeof input.value ===
+      "string"
+      ? input.value
+      : null;
+  }
+
+  const uploaded =
+    await uploadRuntimeAssetFile({
+      localPath: local.path,
+      objectKey:
+        `runtime/foundry/candidates/${input.candidateId}/` +
+        `${input.label}-${path.basename(local.path)}`,
+      metadata: {
+        "candidate-id":
+          input.candidateId,
+        "artifact-kind":
+          input.label,
+      },
+    });
+
+  return (
+    uploaded?.public_url ??
+    local.url
+  );
+}
+
+async function publishFoundryPrivateFile(
+  input: {
+    candidateId: string;
+    localPath: string;
+    objectName: string;
+    contentType:
+      string;
+  },
+) {
+  const storage =
+    getR2SourceStorage();
+  const objectKey =
+    `source/foundry/candidates/${input.candidateId}/${input.objectName}`;
+  const uploaded =
+    await storage.upload({
+      local_path:
+        input.localPath,
+      object_key:
+        objectKey,
+      content_type:
+        input.contentType,
+      visibility:
+        "private",
+      cache_control:
+        "no-store",
+      metadata: {
+        "candidate-id":
+          input.candidateId,
+      },
+    });
+
+  if (
+    !(await storage.exists(
+      objectKey,
+    ))
+  ) {
+    throw new Error(
+      `Foundry private artifact verification failed: ${objectKey}`,
+    );
+  }
+
+  return uploaded;
+}
+
+async function publishFoundryPrivateBytes(
+  input: {
+    candidateId: string;
+    objectName: string;
+    body: string;
+    contentType: string;
+  },
+) {
+  const storage =
+    getR2SourceStorage();
+  const objectKey =
+    `source/foundry/candidates/${input.candidateId}/${input.objectName}`;
+  const uploaded =
+    await storage.uploadBytes({
+      body: input.body,
+      object_key:
+        objectKey,
+      content_type:
+        input.contentType,
+      visibility:
+        "private",
+      cache_control:
+        "no-store",
+      metadata: {
+        "candidate-id":
+          input.candidateId,
+      },
+    });
+
+  if (
+    !(await storage.exists(
+      objectKey,
+    ))
+  ) {
+    throw new Error(
+      `Foundry private artifact verification failed: ${objectKey}`,
+    );
+  }
+
+  return uploaded;
 }
 
 export async function saveFoundryCandidate(
@@ -95,13 +260,145 @@ export async function saveFoundryCandidate(
     ),
   ]);
 
-  await mkdir(
-    privateCandidateDir,
-    {
-      recursive:
-        true,
-    },
-  );
+  const cloud =
+    durableAssetCloudEnabled();
+
+  let glbUrl =
+    stringOrNull(
+      publicManifest.glb_url,
+    );
+  let blendUrl =
+    stringOrNull(
+      publicManifest.blend_url,
+    );
+  let previewUrl =
+    stringOrNull(
+      publicManifest.preview_url,
+    );
+  let inspectionUrls =
+    Array.isArray(
+      publicManifest.inspection_urls,
+    )
+      ? publicManifest
+          .inspection_urls
+          .filter(
+            (value: unknown): value is string =>
+              typeof value ===
+              "string",
+          )
+      : [];
+  let validationUrl =
+    stringOrNull(
+      publicManifest.validation_url,
+    );
+  let qualityUrl =
+    stringOrNull(
+      publicManifest.quality_url,
+    );
+  let visualCritiqueUrl =
+    stringOrNull(
+      publicManifest.visual_critique_url,
+    );
+  let manifestUrl: string | null =
+    `/sandbox-assets/myway/blender-python-builder/${jobId}/manifest.json`;
+  let blendSourceObjectKey:
+    string | null = null;
+  let sourceCodeObjectKey:
+    string | null = null;
+
+  if (cloud) {
+    [
+      glbUrl,
+      previewUrl,
+      validationUrl,
+      qualityUrl,
+      visualCritiqueUrl,
+      manifestUrl,
+    ] = await Promise.all([
+      publishFoundryRuntimeArtifact({
+        candidateId,
+        value: glbUrl,
+        label: "glb",
+      }),
+      publishFoundryRuntimeArtifact({
+        candidateId,
+        value: previewUrl,
+        label: "preview",
+      }),
+      publishFoundryRuntimeArtifact({
+        candidateId,
+        value: validationUrl,
+        label: "validation",
+      }),
+      publishFoundryRuntimeArtifact({
+        candidateId,
+        value: qualityUrl,
+        label: "quality",
+      }),
+      publishFoundryRuntimeArtifact({
+        candidateId,
+        value: visualCritiqueUrl,
+        label: "visual-critique",
+      }),
+      publishFoundryRuntimeArtifact({
+        candidateId,
+        value: manifestUrl,
+        label: "manifest",
+      }),
+    ]);
+
+    inspectionUrls =
+      await Promise.all(
+        inspectionUrls.map(
+          async (
+            value: string,
+            index: number,
+          ) =>
+            (
+              await publishFoundryRuntimeArtifact({
+                candidateId,
+                value,
+                label:
+                  `inspection-${String(index + 1).padStart(2, "0")}`,
+              })
+            ) ?? value,
+        ),
+      );
+
+    const localBlend =
+      localPublicArtifact(
+        blendUrl,
+      );
+    if (localBlend) {
+      const blendUpload =
+        await publishFoundryPrivateFile({
+          candidateId,
+          localPath:
+            localBlend.path,
+          objectName:
+            path.basename(
+              localBlend.path,
+            ),
+          contentType:
+            "application/octet-stream",
+        });
+      blendSourceObjectKey =
+        blendUpload.object_key;
+      blendUrl = null;
+    }
+
+    const sourceUpload =
+      await publishFoundryPrivateBytes({
+        candidateId,
+        objectName:
+          "source_code.py",
+        body: sourceCode,
+        contentType:
+          "text/x-python; charset=utf-8",
+      });
+    sourceCodeObjectKey =
+      sourceUpload.object_key;
+  }
 
   const candidate = {
     schema_version:
@@ -166,54 +463,107 @@ export async function saveFoundryCandidate(
       publicManifest.visual_critique ??
       null,
     visual_critique_url:
-      publicManifest.visual_critique_url ??
-      null,
+      visualCritiqueUrl,
+    cloud_storage: {
+      provider:
+        cloud ? "r2" : "local",
+      candidate_metadata_object_key:
+        cloud
+          ? `metadata/myway/foundry/candidates/${candidateId}.json`
+          : null,
+      source_code_object_key:
+        sourceCodeObjectKey,
+      blend_source_object_key:
+        blendSourceObjectKey,
+    },
     outputs: {
       glb_url:
-        publicManifest.glb_url ??
-        null,
+        glbUrl,
       blend_url:
-        publicManifest.blend_url ??
-        null,
+        blendUrl,
       preview_url:
-        publicManifest.preview_url ??
-        null,
+        previewUrl,
       inspection_urls:
-        publicManifest.inspection_urls ??
-        [],
+        inspectionUrls,
       validation_url:
-        publicManifest.validation_url ??
-        null,
+        validationUrl,
       quality_url:
-        publicManifest.quality_url ??
-        null,
+        qualityUrl,
       manifest_url:
-        `/sandbox-assets/myway/blender-python-builder/${jobId}/manifest.json`,
+        manifestUrl,
     },
   };
 
-  await Promise.all([
-    writeFile(
-      path.join(
+  if (cloud) {
+    await writeCloudJson(
+      `metadata/myway/foundry/candidates/${candidateId}.json`,
+      candidate,
+    );
+
+    if (
+      keepLocalAssetMetadataMirror()
+    ) {
+      await mkdir(
         privateCandidateDir,
-        "candidate.json",
+        {
+          recursive:
+            true,
+        },
+      );
+      await Promise.all([
+        writeFile(
+          path.join(
+            privateCandidateDir,
+            "candidate.json",
+          ),
+          JSON.stringify(
+            candidate,
+            null,
+            2,
+          ) + "\n",
+          "utf8",
+        ),
+        writeFile(
+          path.join(
+            privateCandidateDir,
+            "source_code.py",
+          ),
+          sourceCode,
+          "utf8",
+        ),
+      ]);
+    }
+  } else {
+    await mkdir(
+      privateCandidateDir,
+      {
+        recursive:
+          true,
+      },
+    );
+    await Promise.all([
+      writeFile(
+        path.join(
+          privateCandidateDir,
+          "candidate.json",
+        ),
+        JSON.stringify(
+          candidate,
+          null,
+          2,
+        ) + "\n",
+        "utf8",
       ),
-      JSON.stringify(
-        candidate,
-        null,
-        2,
-      ) + "\n",
-      "utf8",
-    ),
-    writeFile(
-      path.join(
-        privateCandidateDir,
-        "source_code.py",
+      writeFile(
+        path.join(
+          privateCandidateDir,
+          "source_code.py",
+        ),
+        sourceCode,
+        "utf8",
       ),
-      sourceCode,
-      "utf8",
-    ),
-  ]);
+    ]);
+  }
 
   return candidate;
 }

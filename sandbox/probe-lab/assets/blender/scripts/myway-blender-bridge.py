@@ -2,7 +2,10 @@ import argparse
 import json
 import math
 import os
+import shutil
 import sys
+import tempfile
+import time
 import traceback
 import urllib.error
 import urllib.parse
@@ -16,6 +19,56 @@ from mathutils import Vector
 
 def log(message):
     print(f"[MyWay Blender] {message}", flush=True)
+
+
+def asset_temp_root():
+    configured = os.environ.get("MYWAY_ASSET_TEMP_ROOT", "").strip()
+    root = Path(configured).expanduser().resolve() if configured else Path(tempfile.gettempdir()) / "myway-assets"
+    if configured:
+        project_root = Path.cwd().resolve()
+        try:
+            root.resolve().relative_to(project_root)
+            raise RuntimeError(
+                f"MYWAY_ASSET_TEMP_ROOT must be outside the MyWay project: {root}"
+            )
+        except ValueError:
+            pass
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def prune_stale_asset_temp_workspaces():
+    root = asset_temp_root()
+    configured = os.environ.get("MYWAY_ASSET_TEMP_MAX_AGE_HOURS", "24").strip()
+    try:
+        max_age_hours = float(configured)
+    except ValueError:
+        max_age_hours = 24.0
+    if not math.isfinite(max_age_hours) or max_age_hours <= 0:
+        max_age_hours = 24.0
+    cutoff = time.time() - max_age_hours * 60.0 * 60.0
+    for candidate in root.iterdir():
+        if not candidate.is_dir():
+            continue
+        try:
+            if candidate.stat().st_mtime < cutoff:
+                shutil.rmtree(candidate, ignore_errors=True)
+        except OSError:
+            continue
+
+
+def create_asset_temp_workspace(kind):
+    prune_stale_asset_temp_workspaces()
+    safe_kind = "".join(
+        char if char.isalnum() or char in {"-", "_"} else "-"
+        for char in str(kind).strip().lower()
+    ).strip("-") or "job"
+    return Path(
+        tempfile.mkdtemp(
+            prefix=f"{safe_kind}-",
+            dir=str(asset_temp_root()),
+        )
+    )
 
 
 def read_json(path):
@@ -1682,6 +1735,7 @@ def geometry_profile():
     }
 
 def execute(job):
+    temp_workspace = None
     source_metadata = {}
     texture_report = {
         "texture_directory": None,
@@ -1724,42 +1778,50 @@ def execute(job):
             "analysis_views": views,
         }
     elif job["kind"] == "blenderkit_acquire":
-        temp_dir = Path(job["output_path"]).parent / ".blenderkit-download"
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        blend_path, source_metadata = acquire_blenderkit(
-            job["query"],
-            job.get("resolution", "resolution_1K"),
-            bool(job.get("free_only", True)),
-            job.get("required_license_kind"),
-            job.get("excluded_source_asset_ids", []),
-            job.get("selected_source_asset_id"),
-            temp_dir,
-        )
-        append_blend_file(blend_path)
-        texture_report = prepare_blenderkit_textures(
-            blend_path.parent,
-            job.get("resolution", "resolution_1K"),
-        )
+        temp_workspace = create_asset_temp_workspace("blenderkit")
+        try:
+            blend_path, source_metadata = acquire_blenderkit(
+                job["query"],
+                job.get("resolution", "resolution_1K"),
+                bool(job.get("free_only", True)),
+                job.get("required_license_kind"),
+                job.get("excluded_source_asset_ids", []),
+                job.get("selected_source_asset_id"),
+                temp_workspace,
+            )
+            append_blend_file(blend_path)
+            texture_report = prepare_blenderkit_textures(
+                blend_path.parent,
+                job.get("resolution", "resolution_1K"),
+            )
+        except Exception:
+            shutil.rmtree(temp_workspace, ignore_errors=True)
+            temp_workspace = None
+            raise
     else:
         raise RuntimeError(f"Unknown Blender job kind: {job['kind']}")
 
-    appearance_report = preserve_imported_appearance()
-    dimensions = normalize_scene(float(job.get("target_extent_m", 2.0)))
-    profile = geometry_profile()
-    export_glb(job["output_path"])
-    make_thumbnail(job["thumbnail_path"], dimensions)
-    return {
-        "output_path": job["output_path"],
-        "thumbnail_path": job["thumbnail_path"],
-        "dimensions_m": dimensions,
-        "polygon_count": polygon_count(),
-        "rigged": any(obj.type == "ARMATURE" for obj in asset_objects()),
-        "animation_clips": animation_clips(),
-        "geometry_profile": profile,
-        "texture_report": texture_report,
-        "appearance_report": appearance_report,
-        **source_metadata,
-    }
+    try:
+        appearance_report = preserve_imported_appearance()
+        dimensions = normalize_scene(float(job.get("target_extent_m", 2.0)))
+        profile = geometry_profile()
+        export_glb(job["output_path"])
+        make_thumbnail(job["thumbnail_path"], dimensions)
+        return {
+            "output_path": job["output_path"],
+            "thumbnail_path": job["thumbnail_path"],
+            "dimensions_m": dimensions,
+            "polygon_count": polygon_count(),
+            "rigged": any(obj.type == "ARMATURE" for obj in asset_objects()),
+            "animation_clips": animation_clips(),
+            "geometry_profile": profile,
+            "texture_report": texture_report,
+            "appearance_report": appearance_report,
+            **source_metadata,
+        }
+    finally:
+        if temp_workspace is not None:
+            shutil.rmtree(temp_workspace, ignore_errors=True)
 
 
 def main():

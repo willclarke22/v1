@@ -1,6 +1,5 @@
 import {
-  copyFile,
-  readFile,
+  rm,
   stat,
 } from "node:fs/promises";
 import path from "node:path";
@@ -9,6 +8,10 @@ import {
   getMyWayAsset,
   updateMyWayAsset,
 } from "./asset-library.server";
+import type {
+  MyWayAssetAppearanceView,
+  MyWayAssetRecord,
+} from "./asset-types";
 import { hashFile } from "./content-hash.server";
 import {
   applyApprovedLicenseReview,
@@ -16,10 +19,18 @@ import {
   validateAssetLicenseReview,
 } from "./licensing/asset-license-review";
 import {
-  MYWAY_ASSET_REGISTRY_PROJECT_PATH,
+  MYWAY_ASSET_LIBRARY_PROJECT_PATH,
   projectPath,
   publicUrlToProjectPath,
 } from "./paths.server";
+import {
+  archivePrivateAssetSource,
+  durableAssetCloudEnabled,
+  ensureDurableAssetJson,
+  readDurableAssetJson,
+  removeLocalDurableAssetJson,
+  uploadRuntimeAssetFile,
+} from "./storage/asset-durable-artifacts.server";
 import {
   getR2RuntimeStorage,
   getR2SourceStorage,
@@ -39,17 +50,6 @@ function extensionFor(filePath: string, fallback: string) {
   return path.extname(filePath).toLowerCase() || fallback;
 }
 
-function contentTypeFor(extension: string) {
-  if (extension === ".glb") return "model/gltf-binary";
-  if (extension === ".gltf") return "model/gltf+json";
-  if (extension === ".png") return "image/png";
-  if (extension === ".jpg" || extension === ".jpeg") {
-    return "image/jpeg";
-  }
-  if (extension === ".blend") return "application/octet-stream";
-  return "application/octet-stream";
-}
-
 async function ensureFile(filePath: string) {
   const info = await stat(filePath);
   if (!info.isFile()) {
@@ -58,10 +58,148 @@ async function ensureFile(filePath: string) {
   return info;
 }
 
+function logicalLicenseReference(
+  reviewInput: string,
+) {
+  if (path.isAbsolute(reviewInput)) {
+    return path
+      .relative(process.cwd(), reviewInput)
+      .replace(/\\/g, "/");
+  }
+
+  return reviewInput
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "");
+}
+
+async function publishAnalysisViews(
+  asset: MyWayAssetRecord,
+) {
+  const views =
+    asset.appearance_profile?.analysis_views ??
+    [];
+
+  if (
+    !views.length ||
+    !durableAssetCloudEnabled()
+  ) {
+    return {
+      views,
+      local_files: [] as string[],
+    };
+  }
+
+  const localFiles: string[] = [];
+  const published:
+    MyWayAssetAppearanceView[] = [];
+
+  for (const view of views) {
+    if (/^https:\/\//i.test(view.public_path)) {
+      published.push(view);
+      continue;
+    }
+
+    let localPath: string;
+    try {
+      localPath =
+        localPathFromPublicPath(
+          view.public_path,
+        );
+    } catch {
+      published.push(view);
+      continue;
+    }
+
+    const hash =
+      await hashFile(localPath);
+    const uploaded =
+      await uploadRuntimeAssetFile({
+        localPath,
+        objectKey:
+          `runtime/analysis/${asset.asset_id}/${view.name}/` +
+          `${hash.slice(0, 16)}${extensionFor(localPath, ".png")}`,
+        metadata: {
+          "asset-id": asset.asset_id,
+          "analysis-view": view.name,
+          "content-hash": hash,
+        },
+      });
+
+    if (!uploaded?.public_url) {
+      throw new Error(
+        `Analysis view ${view.name} did not produce an R2 URL.`,
+      );
+    }
+
+    localFiles.push(localPath);
+    published.push({
+      name: view.name,
+      public_path:
+        uploaded.public_url,
+    });
+  }
+
+  return {
+    views: published,
+    local_files: localFiles,
+  };
+}
+
+async function publishDurableMetadata(
+  asset: MyWayAssetRecord,
+  licenseReference: string,
+) {
+  await ensureDurableAssetJson(
+    licenseReference,
+  );
+
+  const sourceRecordReference =
+    `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/source-records/${asset.asset_id}.json`;
+  const sourceRecord =
+    await readDurableAssetJson<unknown>(
+      sourceRecordReference,
+    );
+
+  if (sourceRecord != null) {
+    await ensureDurableAssetJson(
+      sourceRecordReference,
+    );
+  }
+
+  const vectorReference =
+    asset.appearance_embedding?.status ===
+      "ready"
+      ? asset.appearance_embedding
+          .vector_key
+      : null;
+
+  if (vectorReference) {
+    const vector =
+      await readDurableAssetJson<unknown>(
+        vectorReference,
+      );
+    if (vector != null) {
+      await ensureDurableAssetJson(
+        vectorReference,
+      );
+    }
+  }
+
+  return {
+    source_record_reference:
+      sourceRecord != null
+        ? sourceRecordReference
+        : null,
+    vector_reference:
+      vectorReference,
+  };
+}
+
 export async function promoteMyWayAssetToR2(input: {
   assetId: string;
   reviewFile?: string | null;
   archiveSource?: boolean;
+  removeLocalAfterVerification?: boolean;
 }) {
   const asset = await getMyWayAsset(input.assetId);
 
@@ -85,6 +223,12 @@ export async function promoteMyWayAssetToR2(input: {
     };
   }
 
+  if (!durableAssetCloudEnabled()) {
+    throw new Error(
+      "Cloudflare R2 is not fully configured. Durable cloud promotion requires both the runtime and private source buckets.",
+    );
+  }
+
   const reviewInput =
     input.reviewFile ?? asset.license_record_path;
 
@@ -94,13 +238,25 @@ export async function promoteMyWayAssetToR2(input: {
     );
   }
 
-  const reviewPath = path.isAbsolute(reviewInput)
-    ? reviewInput
-    : projectPath(reviewInput);
-  const reviewRaw = JSON.parse(
-    await readFile(reviewPath, "utf8"),
-  );
-  const validation = validateAssetLicenseReview(reviewRaw);
+  const licenseReference =
+    logicalLicenseReference(
+      reviewInput,
+    );
+  const reviewRaw =
+    await readDurableAssetJson<unknown>(
+      licenseReference,
+    );
+
+  if (!reviewRaw) {
+    throw new Error(
+      `The license review could not be read from durable storage: ${licenseReference}`,
+    );
+  }
+
+  const validation =
+    validateAssetLicenseReview(
+      reviewRaw,
+    );
 
   if (!validation.ok || !validation.review) {
     throw new Error(
@@ -109,169 +265,387 @@ export async function promoteMyWayAssetToR2(input: {
   }
 
   const review = validation.review;
-  assertPublicPromotionAllowed(asset, review);
+  assertPublicPromotionAllowed(
+    asset,
+    review,
+  );
 
-  const modelPath = localPathFromPublicPath(asset.public_path);
+  const modelPath =
+    localPathFromPublicPath(
+      asset.public_path,
+    );
   await ensureFile(modelPath);
 
   const modelHash =
-    asset.content_hash ?? (await hashFile(modelPath));
-  const modelExtension = extensionFor(modelPath, ".glb");
-  const modelKey =
-    `runtime/models/${asset.source_type}/` +
-    `${asset.asset_id}/` +
-    `${modelHash.slice(0, 16)}${modelExtension}`;
+    asset.content_hash ??
+    (await hashFile(modelPath));
+  const modelExtension =
+    extensionFor(
+      modelPath,
+      ".glb",
+    );
+  const modelUpload =
+    await uploadRuntimeAssetFile({
+      localPath: modelPath,
+      objectKey:
+        `runtime/models/${asset.source_type}/${asset.asset_id}/` +
+        `${modelHash.slice(0, 16)}${modelExtension}`,
+      metadata: {
+        "asset-id":
+          asset.asset_id,
+        "source-type":
+          asset.source_type,
+        "content-hash":
+          modelHash,
+        "license-review-id":
+          review.review_id,
+      },
+    });
 
-  const runtimeStorage = getR2RuntimeStorage();
-
-  const modelUpload = await runtimeStorage.upload({
-    local_path: modelPath,
-    object_key: modelKey,
-    content_type: contentTypeFor(modelExtension),
-    visibility: "public",
-    cache_control: "public, max-age=31536000, immutable",
-    metadata: {
-      "asset-id": asset.asset_id,
-      "source-type": asset.source_type,
-      "content-hash": modelHash,
-      "license-review-id": review.review_id,
-    },
-  });
-
-  if (!modelUpload.public_url) {
+  if (!modelUpload?.public_url) {
     throw new Error(
-      "Runtime upload did not produce a public URL.",
+      "Runtime model upload did not produce a public URL.",
     );
   }
 
   let thumbnailUpload:
-    | Awaited<ReturnType<typeof runtimeStorage.upload>>
-    | null = null;
+    Awaited<
+      ReturnType<
+        typeof uploadRuntimeAssetFile
+      >
+    > = null;
+  let thumbnailPath:
+    string | null = null;
 
   if (asset.thumbnail_path) {
-    const thumbnailPath = localPathFromPublicPath(
-      asset.thumbnail_path,
+    const localThumbnailPath =
+      localPathFromPublicPath(
+        asset.thumbnail_path,
+      );
+    thumbnailPath =
+      localThumbnailPath;
+    await ensureFile(
+      localThumbnailPath,
     );
-    await ensureFile(thumbnailPath);
-    const thumbnailHash = await hashFile(thumbnailPath);
-    const thumbnailExtension = extensionFor(
-      thumbnailPath,
-      ".png",
-    );
-    const thumbnailKey =
-      `runtime/thumbnails/${asset.asset_id}/` +
-      `${thumbnailHash.slice(0, 16)}${thumbnailExtension}`;
+    const thumbnailHash =
+      await hashFile(
+        localThumbnailPath,
+      );
+    const thumbnailExtension =
+      extensionFor(
+        localThumbnailPath,
+        ".png",
+      );
 
-    thumbnailUpload = await runtimeStorage.upload({
-      local_path: thumbnailPath,
-      object_key: thumbnailKey,
-      content_type: contentTypeFor(thumbnailExtension),
-      visibility: "public",
-      cache_control: "public, max-age=31536000, immutable",
-      metadata: {
-        "asset-id": asset.asset_id,
-        "content-hash": thumbnailHash,
-        "license-review-id": review.review_id,
-      },
-    });
+    thumbnailUpload =
+      await uploadRuntimeAssetFile({
+        localPath:
+          localThumbnailPath,
+        objectKey:
+          `runtime/thumbnails/${asset.asset_id}/` +
+          `${thumbnailHash.slice(0, 16)}${thumbnailExtension}`,
+        metadata: {
+          "asset-id":
+            asset.asset_id,
+          "content-hash":
+            thumbnailHash,
+          "license-review-id":
+            review.review_id,
+        },
+      });
   }
 
   let sourceArchive:
-    | Awaited<
-        ReturnType<
-          ReturnType<typeof getR2SourceStorage>["upload"]
-        >
+    Awaited<
+      ReturnType<
+        typeof archivePrivateAssetSource
       >
-    | null = null;
+    > = null;
+  let sourcePath:
+    string | null = null;
 
-  if (input.archiveSource) {
-    if (!asset.source_path) {
+  if (
+    asset.source_storage_provider ===
+      "r2" &&
+    asset.source_object_key
+  ) {
+    if (
+      !(await getR2SourceStorage().exists(
+        asset.source_object_key,
+      ))
+    ) {
       throw new Error(
-        "Asset has no source_path to archive.",
+        "The previously archived private source object could not be verified in R2.",
       );
     }
 
-    const sourcePath = path.isAbsolute(asset.source_path)
-      ? asset.source_path
-      : projectPath(asset.source_path);
-    await ensureFile(sourcePath);
+    if (asset.source_path) {
+      sourcePath =
+        path.isAbsolute(
+          asset.source_path,
+        )
+          ? asset.source_path
+          : projectPath(
+              asset.source_path,
+            );
+    }
 
-    const sourceHash = await hashFile(sourcePath);
-    const sourceExtension = extensionFor(sourcePath, ".bin");
-    const sourceKey =
-      `source/${asset.source_type}/${asset.asset_id}/` +
-      `${sourceHash.slice(0, 16)}${sourceExtension}`;
-
-    const sourceStorage = getR2SourceStorage();
-    sourceArchive = await sourceStorage.upload({
-      local_path: sourcePath,
-      object_key: sourceKey,
-      content_type: contentTypeFor(sourceExtension),
-      visibility: "private",
-      metadata: {
-        "asset-id": asset.asset_id,
-        "source-type": asset.source_type,
-        "content-hash": sourceHash,
-      },
-    });
+    sourceArchive = {
+      provider: "r2",
+      bucket: "",
+      object_key:
+        asset.source_object_key,
+      public_url: null,
+      etag:
+        asset.source_storage_etag ??
+        null,
+      size_bytes:
+        asset.source_file_size_bytes ??
+        0,
+      content_type:
+        "application/octet-stream",
+      content_hash:
+        asset.content_hash ??
+        "",
+    };
+  } else if (
+    input.archiveSource &&
+    asset.source_path
+  ) {
+    const localSourcePath =
+      path.isAbsolute(
+        asset.source_path,
+      )
+        ? asset.source_path
+        : projectPath(
+            asset.source_path,
+          );
+    sourcePath =
+      localSourcePath;
+    await ensureFile(
+      localSourcePath,
+    );
+    sourceArchive =
+      await archivePrivateAssetSource({
+        assetId:
+          asset.asset_id,
+        sourceType:
+          asset.source_type,
+        localPath:
+          localSourcePath,
+      });
   }
 
-  const registryPath = projectPath(
-    MYWAY_ASSET_REGISTRY_PROJECT_PATH,
-  );
-  await copyFile(
-    registryPath,
-    `${registryPath}.before-r2-promotion.backup`,
-  );
+  const analysis =
+    await publishAnalysisViews(
+      asset,
+    );
+  const metadata =
+    await publishDurableMetadata(
+      asset,
+      licenseReference,
+    );
 
-  const relativeLicensePath = path
-    .relative(process.cwd(), reviewPath)
-    .replace(/\\/g, "/");
+  const licensed =
+    applyApprovedLicenseReview(
+      asset,
+      review,
+      licenseReference,
+    );
 
-  const licensed = applyApprovedLicenseReview(
-    asset,
-    review,
-    relativeLicensePath,
-  );
+  const nextAppearance =
+    asset.appearance_profile
+      ? {
+          ...asset.appearance_profile,
+          analysis_views:
+            analysis.views,
+        }
+      : undefined;
 
-  const updated = await updateMyWayAsset(asset.asset_id, {
-    ...licensed,
-    public_path: modelUpload.public_url,
-    thumbnail_path:
-      thumbnailUpload?.public_url ??
-      asset.thumbnail_path ??
-      null,
-    storage_provider: "r2",
-    storage_object_key: modelUpload.object_key,
-    storage_etag: modelUpload.etag,
-    file_size_bytes: modelUpload.size_bytes,
-    thumbnail_storage_provider:
-      thumbnailUpload ? "r2" : null,
-    thumbnail_object_key:
-      thumbnailUpload?.object_key ?? null,
-    thumbnail_etag: thumbnailUpload?.etag ?? null,
-    thumbnail_file_size_bytes:
-      thumbnailUpload?.size_bytes ?? null,
-    source_storage_provider:
-      sourceArchive ? "r2" : null,
-    source_object_key:
-      sourceArchive?.object_key ?? null,
-    source_storage_etag:
-      sourceArchive?.etag ?? null,
-    source_file_size_bytes:
-      sourceArchive?.size_bytes ?? null,
-    source_archived_at:
-      sourceArchive ? new Date().toISOString() : null,
-    content_hash: modelHash,
-    promoted_at: new Date().toISOString(),
-    notes:
-      `${licensed.notes ?? ""}`.trim() +
-      `${licensed.notes ? " " : ""}` +
-      `Promoted to Cloudflare R2 with license review ${review.review_id}.`,
-  });
+  const updated =
+    await updateMyWayAsset(
+      asset.asset_id,
+      {
+        ...licensed,
+        public_path:
+          modelUpload.public_url,
+        thumbnail_path:
+          thumbnailUpload?.public_url ??
+          asset.thumbnail_path ??
+          null,
+        storage_provider: "r2",
+        storage_object_key:
+          modelUpload.object_key,
+        storage_etag:
+          modelUpload.etag,
+        file_size_bytes:
+          modelUpload.size_bytes,
+        thumbnail_storage_provider:
+          thumbnailUpload
+            ? "r2"
+            : asset
+                .thumbnail_storage_provider ??
+              null,
+        thumbnail_object_key:
+          thumbnailUpload
+            ?.object_key ??
+          asset.thumbnail_object_key ??
+          null,
+        thumbnail_etag:
+          thumbnailUpload?.etag ??
+          asset.thumbnail_etag ??
+          null,
+        thumbnail_file_size_bytes:
+          thumbnailUpload
+            ?.size_bytes ??
+          asset
+            .thumbnail_file_size_bytes ??
+          null,
+        source_storage_provider:
+          sourceArchive
+            ? "r2"
+            : asset
+                .source_storage_provider ??
+              null,
+        source_object_key:
+          sourceArchive
+            ?.object_key ??
+          asset.source_object_key ??
+          null,
+        source_storage_etag:
+          sourceArchive?.etag ??
+          asset
+            .source_storage_etag ??
+          null,
+        source_file_size_bytes:
+          sourceArchive
+            ?.size_bytes ??
+          asset
+            .source_file_size_bytes ??
+          null,
+        source_archived_at:
+          sourceArchive
+            ? new Date()
+                .toISOString()
+            : asset
+                .source_archived_at ??
+              null,
+        appearance_profile:
+          nextAppearance,
+        content_hash:
+          modelHash,
+        promoted_at:
+          new Date()
+            .toISOString(),
+        notes:
+          `${licensed.notes ?? ""}`.trim() +
+          `${licensed.notes ? " " : ""}` +
+          `Promoted to Cloudflare R2 with license review ${review.review_id}. Durable asset metadata is stored in the private source bucket.`,
+      },
+    );
+
+  const runtime =
+    getR2RuntimeStorage();
+  if (
+    !(await runtime.exists(
+      modelUpload.object_key,
+    ))
+  ) {
+    throw new Error(
+      "The promoted model could not be re-verified in R2 after the registry update.",
+    );
+  }
+
+  if (
+    thumbnailUpload &&
+    !(await runtime.exists(
+      thumbnailUpload.object_key,
+    ))
+  ) {
+    throw new Error(
+      "The promoted thumbnail could not be re-verified in R2 after the registry update.",
+    );
+  }
+
+  const removeLocal =
+    input.removeLocalAfterVerification ===
+      true;
+
+  if (removeLocal) {
+    await Promise.all([
+      rm(
+        modelPath,
+        { force: true },
+      ),
+      thumbnailPath
+        ? rm(
+            thumbnailPath,
+            { force: true },
+          )
+        : Promise.resolve(),
+      sourcePath &&
+      sourceArchive
+        ? rm(
+            sourcePath,
+            { force: true },
+          )
+        : Promise.resolve(),
+      ...analysis.local_files.map(
+        (filePath) =>
+          rm(
+            filePath,
+            { force: true },
+          ),
+      ),
+      removeLocalDurableAssetJson(
+        licenseReference,
+      ),
+      metadata.source_record_reference
+        ? removeLocalDurableAssetJson(
+            metadata
+              .source_record_reference,
+          )
+        : Promise.resolve(false),
+      metadata.vector_reference
+        ? removeLocalDurableAssetJson(
+            metadata.vector_reference,
+          )
+        : Promise.resolve(false),
+    ]);
+
+    if (
+      sourcePath &&
+      sourceArchive
+    ) {
+      await updateMyWayAsset(
+        updated.asset_id,
+        {
+          source_path: null,
+        },
+      );
+    }
+  }
 
   return {
-    asset: updated,
+    asset:
+      removeLocal &&
+      sourcePath &&
+      sourceArchive
+        ? await getMyWayAsset(
+            updated.asset_id,
+          ) ?? updated
+        : updated,
     already_promoted: false,
+    local_runtime_removed:
+      removeLocal,
+    durable_metadata: {
+      license:
+        licenseReference,
+      source_record:
+        metadata
+          .source_record_reference,
+      appearance_embedding:
+        metadata.vector_reference,
+    },
   };
 }

@@ -19,6 +19,10 @@ import {
   getR2RuntimeStorage,
   getR2SourceStorage,
 } from "./storage/r2-asset-storage.server";
+import {
+  deleteDurableAssetJson,
+  runtimeObjectKeyFromPublicUrl,
+} from "./storage/asset-durable-artifacts.server";
 
 function isRemoteUrl(value: string | null | undefined) {
   return Boolean(value && /^https:\/\//i.test(value));
@@ -152,6 +156,26 @@ async function deleteRemoteObjects(asset: MyWayAssetRecord) {
     );
   }
 
+  const runtime =
+    getR2RuntimeStorage();
+  for (
+    const view of
+      asset.appearance_profile?.analysis_views ??
+      []
+  ) {
+    const objectKey =
+      runtimeObjectKeyFromPublicUrl(
+        view.public_path,
+      );
+    if (!objectKey) continue;
+    await runtime
+      .delete(objectKey)
+      .catch(() => undefined);
+    removed.push(
+      `${runtime.bucket}/${objectKey}`,
+    );
+  }
+
   return removed;
 }
 
@@ -166,6 +190,24 @@ export async function removeMyWayAssetCompletely(
 
   const removedRemoteObjects =
     await deleteRemoteObjects(asset);
+
+  const durableReferences = [
+    asset.license_record_path,
+    asset.appearance_embedding
+      ?.vector_key ??
+      null,
+    `sandbox/probe-lab/assets/library/source-records/${asset.asset_id}.json`,
+  ].filter(
+    (value): value is string =>
+      Boolean(value),
+  );
+
+  for (const reference of durableReferences) {
+    await deleteDurableAssetJson(
+      reference,
+    ).catch(() => undefined);
+  }
+
   const removedLocalFiles: string[] = [];
 
   for (const candidate of possibleLocalAssetFiles(asset)) {

@@ -11,6 +11,11 @@ import {
   ensureAssetDirectories,
   projectPath,
 } from "../paths.server";
+import {
+  archivePrivateAssetSource,
+  deletePrivateAssetObject,
+  durableAssetCloudEnabled,
+} from "../storage/asset-durable-artifacts.server";
 import { requestTrellisGlb } from "./trellis-provider.server";
 
 function compactTrellisPrompt(input: {
@@ -115,6 +120,23 @@ export async function acquireFromTrellis(input: {
   }
 
   const result = completed.result;
+  const sourceArchive =
+    await archivePrivateAssetSource({
+      assetId,
+      sourceType: "trellis",
+      localPath: inboxPath,
+    });
+
+  if (
+    sourceArchive &&
+    durableAssetCloudEnabled()
+  ) {
+    await rm(
+      inboxPath,
+      { force: true },
+    );
+  }
+
   const record: MyWayAssetRecord = {
     asset_id: assetId,
     canonical_label: input.concept.toLowerCase(),
@@ -145,14 +167,37 @@ export async function acquireFromTrellis(input: {
     source_asset_id: null,
     source_prompt: generated.prompt,
     source_url: "https://build.nvidia.com/microsoft/trellis",
-    source_path: path
-      .relative(process.cwd(), inboxPath)
-      .replace(/\\/g, "/"),
+    source_path:
+      sourceArchive
+        ? null
+        : path
+            .relative(process.cwd(), inboxPath)
+            .replace(/\\/g, "/"),
     public_path:
       `/sandbox-assets/myway/models/trellis/${assetId}.glb`,
     thumbnail_path:
       `/sandbox-assets/myway/thumbnails/${assetId}.png`,
     license_record_path: null,
+    storage_provider: "local",
+    storage_object_key: null,
+    storage_etag: null,
+    file_size_bytes: null,
+    thumbnail_storage_provider: "local",
+    thumbnail_object_key: null,
+    thumbnail_etag: null,
+    thumbnail_file_size_bytes: null,
+    source_storage_provider:
+      sourceArchive ? "r2" : "local",
+    source_object_key:
+      sourceArchive?.object_key ?? null,
+    source_storage_etag:
+      sourceArchive?.etag ?? null,
+    source_file_size_bytes:
+      sourceArchive?.size_bytes ?? null,
+    source_archived_at:
+      sourceArchive
+        ? new Date().toISOString()
+        : null,
     dimensions_m:
       result.geometry_profile?.local_bounds.size ??
       [
@@ -188,14 +233,19 @@ export async function acquireFromTrellis(input: {
   const registered = await registerMyWayAsset(record);
 
   if (!registered.created) {
-    await Promise.all(
-      [inboxPath, outputPath, thumbnailPath].map(
+    await Promise.all([
+      ...[inboxPath, outputPath, thumbnailPath].map(
         (candidatePath) =>
           rm(candidatePath, { force: true }).catch(
             () => undefined,
           ),
       ),
-    );
+      sourceArchive
+        ? deletePrivateAssetObject(
+            sourceArchive.object_key,
+          ).catch(() => undefined)
+        : Promise.resolve(false),
+    ]);
   }
 
   return registered;

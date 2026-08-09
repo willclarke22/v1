@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -25,8 +25,13 @@ import {
   publicUrlToProjectPath,
 } from "../paths.server";
 import {
-  writeJsonFileAtomic,
-} from "../json-file.server";
+  createAssetTempWorkspace,
+} from "../storage/asset-temp-workspace.server";
+import {
+  durableAssetCloudEnabled,
+  uploadRuntimeAssetFile,
+  writeDurableAssetJson,
+} from "../storage/asset-durable-artifacts.server";
 import {
   analyzeAssetAppearance,
   ASSET_ANALYSIS_RENDER_VERSION,
@@ -113,24 +118,47 @@ function pendingAppearance(
 
 async function materializeAssetInput(asset: MyWayAssetRecord) {
   if (!/^https:\/\//i.test(asset.public_path)) {
-    return publicUrlToProjectPath(asset.public_path);
+    return {
+      input_path: publicUrlToProjectPath(asset.public_path),
+      temporary: false,
+      cleanup: async () => undefined,
+    };
   }
 
-  const response = await fetch(asset.public_path);
-  if (!response.ok) {
-    throw new Error(
-      `Could not download remote asset ${asset.asset_id}: ${response.status}`,
+  const workspace =
+    await createAssetTempWorkspace("enrichment");
+  try {
+    const response = await fetch(asset.public_path);
+    if (!response.ok) {
+      throw new Error(
+        `Could not download remote asset ${asset.asset_id}: ${response.status}`,
+      );
+    }
+
+    const bytes = Buffer.from(
+      await response.arrayBuffer(),
     );
+    const suffix =
+      path.extname(
+        new URL(asset.public_path).pathname,
+      ) || ".glb";
+    const inputPath = path.join(
+      workspace.path,
+      `${asset.asset_id}${suffix}`,
+    );
+    await writeFile(inputPath, bytes);
+
+    return {
+      input_path: inputPath,
+      temporary: true,
+      cleanup: workspace.cleanup,
+    };
+  } catch (caught) {
+    await workspace.cleanup().catch(
+      () => undefined,
+    );
+    throw caught;
   }
-  const bytes = Buffer.from(await response.arrayBuffer());
-  const suffix = path.extname(new URL(asset.public_path).pathname) || ".glb";
-  const cachePath = projectPath(
-    "sandbox/probe-lab/assets/enrichment/cache",
-    `${asset.asset_id}${suffix}`,
-  );
-  await mkdir(path.dirname(cachePath), { recursive: true });
-  await writeFile(cachePath, bytes);
-  return cachePath;
 }
 
 function appearanceText(
@@ -190,10 +218,9 @@ async function writeAppearanceEmbedding(
   const embedded = await embedAssetAppearance(sourceText);
   const vectorRelativePath =
     `sandbox/probe-lab/assets/embeddings/${asset.asset_id}.json`;
-  const vectorPath = projectPath(vectorRelativePath);
-  await mkdir(path.dirname(vectorPath), { recursive: true });
-  await writeJsonFileAtomic(
-    vectorPath,
+
+  await writeDurableAssetJson(
+    vectorRelativePath,
     {
       schema_version: "myway_asset_embedding_vector_v1",
       asset_id: asset.asset_id,
@@ -218,6 +245,86 @@ async function writeAppearanceEmbedding(
       error: null,
     },
   });
+}
+
+async function analysisRenderDestination(
+  assetId: string,
+) {
+  if (!durableAssetCloudEnabled()) {
+    return {
+      cloud: false,
+      render_directory: projectPath(
+        "public/sandbox-assets/myway/analysis",
+        assetId,
+      ),
+      public_url_root:
+        `/sandbox-assets/myway/analysis/${assetId}`,
+      cleanup: async () => undefined,
+    };
+  }
+
+  const workspace =
+    await createAssetTempWorkspace("analysis");
+
+  return {
+    cloud: true,
+    render_directory:
+      path.join(workspace.path, assetId),
+    public_url_root:
+      `/__myway-temporary-analysis/${assetId}`,
+    cleanup: workspace.cleanup,
+  };
+}
+
+async function publishAnalysisViews(
+  assetId: string,
+  views: Array<{
+    name:
+      | "front_three_quarter"
+      | "rear_three_quarter"
+      | "side"
+      | "elevated_front";
+    file_path: string;
+    public_path: string;
+  }>,
+  cloud: boolean,
+) {
+  if (!cloud) {
+    return views.map((view) => ({
+      name: view.name,
+      public_path: view.public_path,
+    }));
+  }
+
+  return Promise.all(
+    views.map(async (view) => {
+      const hash =
+        await hashFile(view.file_path);
+      const uploaded =
+        await uploadRuntimeAssetFile({
+          localPath: view.file_path,
+          objectKey:
+            `runtime/analysis/${assetId}/${view.name}/` +
+            `${hash.slice(0, 16)}.png`,
+          metadata: {
+            "asset-id": assetId,
+            "analysis-view": view.name,
+            "content-hash": hash,
+          },
+        });
+
+      if (!uploaded?.public_url) {
+        throw new Error(
+          `Analysis view ${view.name} did not produce an R2 public URL.`,
+        );
+      }
+
+      return {
+        name: view.name,
+        public_path: uploaded.public_url,
+      };
+    }),
+  );
 }
 
 async function refreshAssetEmbeddingOnly(assetId: string) {
@@ -265,15 +372,36 @@ async function enrichAsset(assetId: string, force: boolean) {
     return asset;
   }
 
-  const inputPath = await materializeAssetInput(asset);
-  const contentHash = await hashFile(inputPath);
-  if (asset.content_hash !== contentHash) {
+  const materialized =
+    await materializeAssetInput(asset);
+  const inputPath = materialized.input_path;
+
+  try {
+    const contentHash = await hashFile(inputPath);
+    if (asset.content_hash !== contentHash) {
+      asset = await updateMyWayAsset(asset.asset_id, {
+        content_hash: contentHash,
+        appearance_profile: pendingAppearance(
+          { ...asset, content_hash: contentHash },
+          "pending",
+        ),
+        appearance_embedding: {
+          schema_version: "myway_asset_appearance_embedding_v1",
+          status: "pending",
+          model:
+            process.env.MYWAY_ASSET_EMBED_MODEL?.trim() ||
+            "nvidia/nemotron-3-embed-1b",
+          dimensions: null,
+          vector_key: null,
+          source_text_hash: null,
+          embedded_at: null,
+          error: null,
+        },
+      });
+    }
+
     asset = await updateMyWayAsset(asset.asset_id, {
-      content_hash: contentHash,
-      appearance_profile: pendingAppearance(
-        { ...asset, content_hash: contentHash },
-        "pending",
-      ),
+      appearance_profile: pendingAppearance(asset, "rendering"),
       appearance_embedding: {
         schema_version: "myway_asset_appearance_embedding_v1",
         status: "pending",
@@ -287,132 +415,125 @@ async function enrichAsset(assetId: string, force: boolean) {
         error: null,
       },
     });
-  }
 
-  asset = await updateMyWayAsset(asset.asset_id, {
-    appearance_profile: pendingAppearance(asset, "rendering"),
-    appearance_embedding: {
-      schema_version: "myway_asset_appearance_embedding_v1",
-      status: "pending",
-      model:
-        process.env.MYWAY_ASSET_EMBED_MODEL?.trim() ||
-        "nvidia/nemotron-3-embed-1b",
-      dimensions: null,
-      vector_key: null,
-      source_text_hash: null,
-      embedded_at: null,
-      error: null,
-    },
-  });
-
-  let appearanceReady = false;
-
-  try {
-    const renderDirectory = projectPath(
-      "public/sandbox-assets/myway/analysis",
-      asset.asset_id,
-    );
-    const publicUrlRoot =
-      `/sandbox-assets/myway/analysis/${asset.asset_id}`;
-    const { jobPath } = await createAnalysisRenderJob({
-      kind: "render_asset_analysis",
-      input_path: inputPath,
-      render_directory: renderDirectory,
-      public_url_root: publicUrlRoot,
-      target_extent_m: 2,
-      result: null,
-      error: null,
-    });
-    const completed = await runBlenderJob(jobPath);
-    if (
-      completed.kind !== "render_asset_analysis" ||
-      !completed.result
-    ) {
-      throw new Error(
-        "Blender completed without returning the four analysis renders.",
+    let appearanceReady = false;
+    const analysisDestination =
+      await analysisRenderDestination(
+        asset.asset_id,
       );
-    }
 
-    const views = completed.result.analysis_views;
-    if (views.length !== 4) {
-      throw new Error(
-        `Blender returned ${views.length} analysis renders instead of four.`,
-      );
-    }
-
-    asset = await updateMyWayAsset(asset.asset_id, {
-      appearance_profile: {
-        ...pendingAppearance(asset, "analyzing"),
-        analysis_views: views.map((view) => ({
-          name: view.name,
-          public_path: view.public_path,
-        })),
-      },
-    });
-
-    const vision = await analyzeAssetAppearance({
-      asset,
-      viewFilePaths: views.map((view) => view.file_path),
-    });
-    const analyzedAt = now();
-    const readyAppearance: MyWayAssetAppearanceProfileV1 = {
-      schema_version: "myway_asset_appearance_profile_v1",
-      status: "ready",
-      ...vision.analysis,
-      analysis_views: views.map((view) => ({
-        name: view.name,
-        public_path: view.public_path,
-      })),
-      model: vision.model,
-      prompt_version: ASSET_APPEARANCE_PROMPT_VERSION,
-      render_version: ASSET_ANALYSIS_RENDER_VERSION,
-      content_hash: asset.content_hash ?? contentHash,
-      analyzed_at: analyzedAt,
-      error: null,
-    };
-
-    asset = await updateMyWayAsset(asset.asset_id, {
-      appearance_profile: readyAppearance,
-    });
-    appearanceReady = true;
-
-    asset = await writeAppearanceEmbedding(
-      asset,
-      readyAppearance,
-    );
-
-    return asset;
-  } catch (caught) {
-    const message = errorMessage(caught);
-    const current = (await getMyWayAsset(asset.asset_id)) ?? asset;
-
-    if (appearanceReady) {
-      await updateMyWayAsset(asset.asset_id, {
-        appearance_embedding: {
-          schema_version: "myway_asset_appearance_embedding_v1",
-          status: "failed",
-          model:
-            process.env.MYWAY_ASSET_EMBED_MODEL?.trim() ||
-            "nvidia/nemotron-3-embed-1b",
-          dimensions: null,
-          vector_key: null,
-          source_text_hash: null,
-          embedded_at: null,
-          error: message,
-        },
+    try {
+      const { jobPath } = await createAnalysisRenderJob({
+        kind: "render_asset_analysis",
+        input_path: inputPath,
+        render_directory:
+          analysisDestination.render_directory,
+        public_url_root:
+          analysisDestination.public_url_root,
+        target_extent_m: 2,
+        result: null,
+        error: null,
       });
-    } else {
-      await updateMyWayAsset(asset.asset_id, {
+      const completed = await runBlenderJob(jobPath);
+      if (
+        completed.kind !== "render_asset_analysis" ||
+        !completed.result
+      ) {
+        throw new Error(
+          "Blender completed without returning the four analysis renders.",
+        );
+      }
+
+      const views = completed.result.analysis_views;
+      if (views.length !== 4) {
+        throw new Error(
+          `Blender returned ${views.length} analysis renders instead of four.`,
+        );
+      }
+
+      asset = await updateMyWayAsset(asset.asset_id, {
         appearance_profile: {
-          ...pendingAppearance(current, "failed", message),
-          analysis_views:
-            current.appearance_profile?.analysis_views ?? [],
+          ...pendingAppearance(asset, "analyzing"),
+          analysis_views: [],
         },
       });
-    }
 
-    throw caught;
+      const vision = await analyzeAssetAppearance({
+        asset,
+        viewFilePaths: views.map((view) => view.file_path),
+      });
+      const publishedViews =
+        await publishAnalysisViews(
+          asset.asset_id,
+          views,
+          analysisDestination.cloud,
+        );
+      const analyzedAt = now();
+      const readyAppearance: MyWayAssetAppearanceProfileV1 = {
+        schema_version: "myway_asset_appearance_profile_v1",
+        status: "ready",
+        ...vision.analysis,
+        analysis_views: publishedViews,
+        model: vision.model,
+        prompt_version: ASSET_APPEARANCE_PROMPT_VERSION,
+        render_version: ASSET_ANALYSIS_RENDER_VERSION,
+        content_hash: asset.content_hash ?? contentHash,
+        analyzed_at: analyzedAt,
+        error: null,
+      };
+
+      asset = await updateMyWayAsset(asset.asset_id, {
+        appearance_profile: readyAppearance,
+      });
+      appearanceReady = true;
+
+      asset = await writeAppearanceEmbedding(
+        asset,
+        readyAppearance,
+      );
+
+      return asset;
+    } catch (caught) {
+      const message = errorMessage(caught);
+      const current = (await getMyWayAsset(asset.asset_id)) ?? asset;
+
+      if (appearanceReady) {
+        await updateMyWayAsset(asset.asset_id, {
+          appearance_embedding: {
+            schema_version: "myway_asset_appearance_embedding_v1",
+            status: "failed",
+            model:
+              process.env.MYWAY_ASSET_EMBED_MODEL?.trim() ||
+              "nvidia/nemotron-3-embed-1b",
+            dimensions: null,
+            vector_key: null,
+            source_text_hash: null,
+            embedded_at: null,
+            error: message,
+          },
+        });
+      } else {
+        await updateMyWayAsset(asset.asset_id, {
+          appearance_profile: {
+            ...pendingAppearance(current, "failed", message),
+            analysis_views:
+              current.appearance_profile?.analysis_views ?? [],
+          },
+        });
+      }
+
+      throw caught;
+    } finally {
+      await analysisDestination.cleanup().catch(
+        () => undefined,
+      );
+    }
+  } finally {
+    await materialized.cleanup().catch(
+      () => undefined,
+    );
   }
+
 }
 
 export function queueAssetEnrichment(

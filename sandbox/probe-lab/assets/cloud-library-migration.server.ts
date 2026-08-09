@@ -43,6 +43,10 @@ import {
   getR2SourceStorage,
 } from "./storage/r2-asset-storage.server";
 import {
+  ensureDurableAssetJson,
+  readDurableAssetJson,
+} from "./storage/asset-durable-artifacts.server";
+import {
   writeJsonFileAtomic,
 } from "./json-file.server";
 import {
@@ -116,87 +120,66 @@ function localPublicPath(
   }
 }
 
-async function archiveJsonFile(input: {
-  localPath: string | null;
-  objectKey: string;
-  assetId: string;
-  kind: string;
-}) {
-  if (
-    !input.localPath ||
-    !(await exists(input.localPath))
-  ) {
-    return null;
-  }
-
-  return getR2SourceStorage()
-    .upload({
-      local_path:
-        input.localPath,
-      object_key:
-        input.objectKey,
-      content_type:
-        "application/json; charset=utf-8",
-      visibility: "private",
-      cache_control: "no-store",
-      metadata: {
-        "asset-id":
-          input.assetId,
-        "record-kind":
-          input.kind,
-      },
-    });
-}
-
 async function archiveAssetMetadata(
   asset: MyWayAssetRecord,
 ) {
-  const licensePath =
-    asset.license_record_path &&
-    !/^https?:\/\//i.test(
-      asset.license_record_path,
-    )
-      ? projectPath(
-          asset.license_record_path,
-        )
-      : null;
-  const sourceRecordPath =
-    projectPath(
-      MYWAY_ASSET_LIBRARY_PROJECT_PATH,
-      "source-records",
-      `${asset.asset_id}.json`,
-    );
+  const licenseReference =
+    asset.license_record_path ??
+    null;
+  const sourceRecordReference =
+    `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/source-records/${asset.asset_id}.json`;
+  const embeddingReference =
+    asset.appearance_embedding?.vector_key ??
+    null;
 
-  const [
-    license,
-    sourceRecord,
-  ] = await Promise.all([
-    archiveJsonFile({
-      localPath: licensePath,
-      objectKey:
-        `metadata/myway/assets/${asset.asset_id}/license.json`,
-      assetId:
-        asset.asset_id,
-      kind:
-        "license-review",
-    }),
-    archiveJsonFile({
-      localPath:
-        sourceRecordPath,
-      objectKey:
-        `metadata/myway/assets/${asset.asset_id}/source-record.json`,
-      assetId:
-        asset.asset_id,
-      kind:
-        "source-record",
-    }),
-  ]);
+  const [license, sourceRecord, embedding] =
+    await Promise.all([
+      licenseReference
+        ? readDurableAssetJson<unknown>(
+            licenseReference,
+          )
+        : Promise.resolve(null),
+      readDurableAssetJson<unknown>(
+        sourceRecordReference,
+      ),
+      embeddingReference
+        ? readDurableAssetJson<unknown>(
+            embeddingReference,
+          )
+        : Promise.resolve(null),
+    ]);
+
+  if (
+    licenseReference &&
+    license != null
+  ) {
+    await ensureDurableAssetJson(
+      licenseReference,
+    );
+  }
+
+  if (sourceRecord != null) {
+    await ensureDurableAssetJson(
+      sourceRecordReference,
+    );
+  }
+
+  if (
+    embeddingReference &&
+    embedding != null
+  ) {
+    await ensureDurableAssetJson(
+      embeddingReference,
+    );
+  }
 
   return {
     license_archived:
       Boolean(license),
     source_record_archived:
       Boolean(sourceRecord),
+    embedding_archived:
+      Boolean(embedding),
   };
 }
 
@@ -478,6 +461,8 @@ export async function migrateCloudAssetBatch(input: {
           metadata.license_archived,
         source_record_archived:
           metadata.source_record_archived,
+        embedding_archived:
+          metadata.embedding_archived,
       });
     } catch (caught) {
       failed += 1;
@@ -791,6 +776,8 @@ export async function archiveCloudSourceBatch(input: {
           metadata.license_archived,
         source_record_archived:
           metadata.source_record_archived,
+        embedding_archived:
+          metadata.embedding_archived,
       });
     } catch (caught) {
       results.push({

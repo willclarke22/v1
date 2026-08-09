@@ -1,5 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { readFile, rename, writeFile } from "node:fs/promises";
+import {
+  readFile,
+  readdir,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 
 import type {
@@ -13,6 +20,27 @@ import { ensureAssetDirectories, MYWAY_ASSET_JOB_PROJECT_PATH, projectPath } fro
 
 function now() {
   return new Date().toISOString();
+}
+
+const DEFAULT_TERMINAL_JOB_HISTORY_LIMIT = 100;
+
+function keepAllBlenderJobHistory() {
+  const value =
+    process.env.MYWAY_KEEP_BLENDER_JOB_HISTORY
+      ?.trim()
+      .toLowerCase();
+  return value === "true" || value === "1";
+}
+
+function terminalJobHistoryLimit() {
+  const configured = Number(
+    process.env.MYWAY_BLENDER_JOB_HISTORY_LIMIT ??
+      DEFAULT_TERMINAL_JOB_HISTORY_LIMIT,
+  );
+  if (!Number.isFinite(configured)) {
+    return DEFAULT_TERMINAL_JOB_HISTORY_LIMIT;
+  }
+  return Math.max(0, Math.floor(configured));
 }
 
 export async function createGeometryProfileJob(
@@ -93,3 +121,64 @@ export async function moveBlenderJob(jobPath: string, status: "running" | "compl
   await rename(jobPath, destination);
   return destination;
 }
+
+export async function pruneBlenderJobHistory() {
+  if (keepAllBlenderJobHistory()) {
+    return;
+  }
+
+  await ensureAssetDirectories();
+  const limit = terminalJobHistoryLimit();
+
+  for (const status of [
+    "completed",
+    "failed",
+  ] as const) {
+    const directory = projectPath(
+      MYWAY_ASSET_JOB_PROJECT_PATH,
+      status,
+    );
+    const entries = (
+      await readdir(directory, {
+        withFileTypes: true,
+      }).catch(() => [])
+    ).filter(
+      (entry) =>
+        entry.isFile() &&
+        entry.name.toLowerCase().endsWith(".json"),
+    );
+
+    const ranked = (
+      await Promise.all(
+        entries.map(async (entry) => {
+          const filePath = path.join(
+            directory,
+            entry.name,
+          );
+          const info = await stat(filePath).catch(
+            () => null,
+          );
+          return {
+            filePath,
+            modifiedAt:
+              info?.mtimeMs ?? 0,
+          };
+        }),
+      )
+    ).sort(
+      (a, b) =>
+        b.modifiedAt - a.modifiedAt,
+    );
+
+    await Promise.all(
+      ranked
+        .slice(limit)
+        .map((item) =>
+          rm(item.filePath, {
+            force: true,
+          }).catch(() => undefined),
+        ),
+    );
+  }
+}
+

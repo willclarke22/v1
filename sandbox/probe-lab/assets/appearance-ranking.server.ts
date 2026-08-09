@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises";
-
 import type {
   MyWayAssetAppearanceRankingDiagnostics,
   MyWayAssetAppearanceRequestV1,
@@ -14,7 +12,7 @@ import { stableTextHash } from "./content-hash.server";
 import {
   embedAppearanceQuery,
 } from "./enrichment/asset-enrichment-provider.server";
-import { projectPath } from "./paths.server";
+import { readDurableAssetJson } from "./storage/asset-durable-artifacts.server";
 
 type StoredAppearanceVector = {
   asset_id: string;
@@ -250,22 +248,6 @@ function cosineSimilarity(a: number[], b: number[]) {
   return dot / (Math.sqrt(left) * Math.sqrt(right));
 }
 
-function safeVectorProjectPath(vectorKey: string) {
-  const normalized = vectorKey.replace(/\\/g, "/").replace(/^\/+/, "");
-  if (
-    !normalized.startsWith(
-      "sandbox/probe-lab/assets/embeddings/",
-    ) ||
-    normalized.includes("../")
-  ) {
-    throw new Error(
-      `Appearance vector key is outside the local embedding store: ${vectorKey}`,
-    );
-  }
-
-  return projectPath(...normalized.split("/"));
-}
-
 async function loadAssetVector(
   asset: MyWayAssetRecord,
 ): Promise<
@@ -283,12 +265,16 @@ async function loadAssetVector(
   }
 
   try {
-    const parsed = JSON.parse(
-      await readFile(
-        safeVectorProjectPath(metadata.vector_key),
-        "utf8",
-      ),
-    ) as Record<string, unknown>;
+    const parsed =
+      await readDurableAssetJson<Record<string, unknown>>(
+        metadata.vector_key,
+      );
+
+    if (!parsed) {
+      throw new Error(
+        `Stored appearance embedding was not found: ${metadata.vector_key}`,
+      );
+    }
     const rawVector = parsed.vector;
     const vector = Array.isArray(rawVector)
       ? rawVector.map(Number)
@@ -493,7 +479,7 @@ export async function evaluateAppearanceRanking(input: {
       "Provider-backed appearance vector similarity is disabled for deterministic Phase 2 resolution. Reviewed appearance-profile traits were still evaluated.";
   } else if (validStoredVectors.length < 2) {
     reason =
-      "Fewer than two eligible candidates had valid local appearance embeddings, so vector similarity was not used.";
+      "Fewer than two eligible candidates had valid appearance embeddings, so vector similarity was not used.";
   } else {
     const sourceText = canonicalAppearanceQueryText({
       concept: input.concept,

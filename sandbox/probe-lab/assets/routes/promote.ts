@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
 
     const result = await promoteMyWayAssetToR2({
       assetId,
-      archiveSource: false,
+      archiveSource: true,
+      removeLocalAfterVerification: true,
     });
 
     return NextResponse.json({

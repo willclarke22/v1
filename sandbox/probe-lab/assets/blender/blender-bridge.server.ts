@@ -2,7 +2,11 @@ import { spawn } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 
 import type { MyWayBlenderJob } from "./blender-job-types";
-import { moveBlenderJob, readBlenderJob } from "./blender-job-store.server";
+import {
+  moveBlenderJob,
+  pruneBlenderJobHistory,
+  readBlenderJob,
+} from "./blender-job-store.server";
 import { projectPath, resolveBlenderExecutable } from "../paths.server";
 
 const DEFAULT_TIMEOUT_MS = 12 * 60 * 1000;
@@ -135,6 +139,9 @@ async function recordFailedRunningJob(
     runningPath,
     "failed",
   ).catch(() => undefined);
+  await pruneBlenderJobHistory().catch(
+    () => undefined,
+  );
 }
 
 export async function runBlenderJob(
@@ -178,6 +185,9 @@ export async function runBlenderJob(
     const finalJob = await readBlenderJob(
       finalPath,
     ).catch(() => job);
+    await pruneBlenderJobHistory().catch(
+      () => undefined,
+    );
 
     if (!succeeded || !finalJob) {
       const detail =
