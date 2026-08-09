@@ -192,6 +192,7 @@ export async function hydrateRuntimeMaterialForBlender(
           )}_${safeStem(role)}${extensionForUrl(publicUrl)}`;
         const localPath =
           path.join(
+            /* turbopackIgnore: true */
             temporaryDirectory,
             fileName,
           );
@@ -268,4 +269,3 @@ export async function hydrateRuntimeMaterialForBlender(
     throw error;
   }
 }
-

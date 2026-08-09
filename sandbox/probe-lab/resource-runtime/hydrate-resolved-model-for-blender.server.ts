@@ -101,6 +101,7 @@ export async function hydrateResolvedModelForBlender(
   )}${extensionForUrl(publicUrl)}`;
   const localPath =
     path.join(
+      /* turbopackIgnore: true */
       temporaryDirectory,
       fileName,
     );
@@ -194,4 +195,3 @@ export async function readHydratedModelBytes(
     hydration.local_path,
   );
 }
-

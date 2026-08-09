@@ -151,6 +151,7 @@ export async function hydrateRuntimeEnvironmentForBlender(
     )}.${format}`;
   const localPath =
     path.join(
+      /* turbopackIgnore: true */
       temporaryDirectory,
       fileName,
     );
@@ -236,4 +237,3 @@ export async function hydrateRuntimeEnvironmentForBlender(
     throw error;
   }
 }
-
