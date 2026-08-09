@@ -1,0 +1,29 @@
+{
+  "schema_version": "myway_asset_license_review_v1",
+  "review_id": "chocolate_bar_msk1tcdy_manual_cc0_review_v1",
+  "asset_id": "chocolate_bar_msk1tcdy",
+  "decision": "approved_public_distribution",
+  "reviewed_by": "MyWay user-confirmed manual CC0 intake review",
+  "reviewed_at": "2026-08-09T04:59:08.679Z",
+  "basis": [
+    {
+      "label": "Manual CC0 source acquisition record",
+      "url": null,
+      "finding": "The reviewer confirmed the recorded Manual CC0 source source, asset ID ultimate_food_pack__chocolate_bar, and CC0 licence for Chocolate Bar."
+    },
+    {
+      "label": "MyWay manual acquisition record",
+      "url": null,
+      "finding": "The model was manually selected and downloaded, its original file was preserved, and its normalized runtime copy retains the recorded provenance metadata."
+    }
+  ],
+  "attestations": {
+    "reviewed_source_terms": true,
+    "production_use_allowed": true,
+    "public_raw_distribution_allowed": true,
+    "commercial_use_allowed": true,
+    "no_known_third_party_restrictions": true,
+    "generic_or_authorized_subject": true
+  },
+  "notes": "The reviewer explicitly confirmed the recorded source, CC0 licence, redistribution permission, and absence of known third-party restrictions before public scene use."
+}

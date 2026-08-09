@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_manual_asset_license_review_v1",
-  "asset_id": "steak_man_msk2iv0v",
+  "asset_id": "steak_msk2iv0v",
   "review_status": "needs_human_review",
   "source_provider": "Manual CC0 source",
   "source_asset_id": "ultimate_food_pack__steak",

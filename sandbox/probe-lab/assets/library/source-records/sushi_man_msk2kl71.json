@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_manual_asset_source_record_v1",
-  "asset_id": "sushi_man_msk2kl71",
+  "asset_id": "sushi_msk2kl71",
   "requested_concept": "sushi",
   "original_file_name": "Sushi.glb",
   "browser_reported_mime_type": "model/gltf-binary",

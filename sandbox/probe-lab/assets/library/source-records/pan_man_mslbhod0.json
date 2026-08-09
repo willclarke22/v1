@@ -1,0 +1,79 @@
+{
+  "schema_version": "myway_manual_asset_source_record_v1",
+  "asset_id": "pan_man_mslbhod0",
+  "requested_concept": "pan",
+  "original_file_name": "Pan by Quaternius - f9my9iJZMv.glb",
+  "browser_reported_mime_type": "application/octet-stream",
+  "source_provider": "Manual CC0 source",
+  "source_asset_id": "pan_by_quaternius_-_f9my9ijzmv",
+  "source_url": null,
+  "asset_title": "Pan",
+  "creator_name": "Quaternius f9my9iJZMv",
+  "license_kind_asserted_by_user": "cc0",
+  "license_version_asserted_by_user": null,
+  "attribution": {
+    "schema_version": "myway_asset_attribution_v1",
+    "required": false,
+    "text": null,
+    "asset_title": "Pan",
+    "creator_name": "Quaternius f9my9iJZMv",
+    "source_provider": "Manual CC0 source",
+    "source_asset_id": "pan_by_quaternius_-_f9my9ijzmv",
+    "source_url": null,
+    "license_name": "CC0",
+    "license_version": null,
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "modification_notice": "Normalized and processed for real-time use by MyWay.",
+    "downloaded_at": "2026-08-09"
+  },
+  "provenance_notes": "Imported through MyWay's CC0 multi-GLB intake. Source and licence remain subject to human review before scene approval.",
+  "source_file_project_path": "sandbox/probe-lab/assets/inbox/manual/pan_man_mslbhod0-source.glb",
+  "normalized_runtime_glb": "public/sandbox-assets/myway/models/manual/pan_man_mslbhod0.glb",
+  "normalized_thumbnail": "public/sandbox-assets/myway/thumbnails/pan_man_mslbhod0.png",
+  "source_file_size_bytes": 16756,
+  "normalized_file_size_bytes": 16060,
+  "content_hash": "5dd72afe45d0b23dbf35c87b2005cfdf67c4f85a961879a31e431431c35783d8",
+  "glb_validation": {
+    "version": 2,
+    "declared_length": 16756,
+    "json_chunk_length": 3780,
+    "generator": "FBX2glTF v0.9.7"
+  },
+  "appearance": {
+    "source": {
+      "material_count": 3,
+      "image_count": 0,
+      "texture_count": 0,
+      "mesh_primitive_count": 3,
+      "primitives_with_material": 3,
+      "primitives_with_vertex_colors": 0,
+      "vertex_color_attributes": [],
+      "has_materials": true,
+      "has_image_textures": false,
+      "has_vertex_colors": false,
+      "has_visual_appearance_data": true
+    },
+    "normalized": {
+      "material_count": 3,
+      "image_count": 0,
+      "texture_count": 0,
+      "mesh_primitive_count": 3,
+      "primitives_with_material": 3,
+      "primitives_with_vertex_colors": 0,
+      "vertex_color_attributes": [],
+      "has_materials": true,
+      "has_image_textures": false,
+      "has_vertex_colors": false,
+      "has_visual_appearance_data": true
+    },
+    "comparison": {
+      "appearance_preserved": true,
+      "lost_image_textures": false,
+      "lost_vertex_colors": false,
+      "lost_materials": false,
+      "warnings": []
+    }
+  },
+  "geometry_profile_generator": "myway_blender_geometry_profile_v3_spatial_regions",
+  "imported_at": "2026-08-09T04:43:48.110Z"
+}

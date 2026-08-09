@@ -4,6 +4,7 @@ import math
 import os
 import sys
 import traceback
+import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
@@ -702,33 +703,42 @@ def animation_clips():
 
 
 def get_blenderkit_api_key():
-    explicit = os.environ.get("BLENDERKIT_API_KEY", "").strip()
-    if explicit:
-        return explicit
-    for key, addon in bpy.context.preferences.addons.items():
-        if "blenderkit" not in key.lower():
-            continue
-        value = getattr(addon.preferences, "api_key", "")
-        if value:
-            return value
-    return ""
+    # MyWay owns its BlenderKit credential explicitly through the server
+    # environment. Do not silently inherit Blender add-on preferences: a stale
+    # interactive-Blender token can otherwise make public CC0 requests fail
+    # even when the same request succeeds anonymously.
+    return os.environ.get("BLENDERKIT_API_KEY", "").strip()
+
+
+def blenderkit_request(url, api_key="", timeout=90, accept_json=False):
+    def open_request(token):
+        headers = {"User-Agent": "MyWay-Blender-Bridge/1.0"}
+        if accept_json:
+            headers["Accept"] = "application/json"
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        request = urllib.request.Request(url, headers=headers)
+        return urllib.request.urlopen(request, timeout=timeout)
+
+    try:
+        return open_request(api_key)
+    except urllib.error.HTTPError as exc:
+        if exc.code != 401 or not api_key:
+            raise
+        # BlenderKit exposes free assets without login. If a configured token
+        # has expired or been revoked, retry the public request instead of
+        # allowing stale authentication to break MyWay's CC0 acquisition path.
+        log("BlendKit rejected the configured API key with HTTP 401; retrying this public request without Authorization.")
+        return open_request("")
 
 
 def http_json(url, api_key=""):
-    headers = {"User-Agent": "MyWay-Blender-Bridge/1.0", "Accept": "application/json"}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-    request = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(request, timeout=90) as response:
+    with blenderkit_request(url, api_key, timeout=90, accept_json=True) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
 def http_bytes(url, api_key=""):
-    headers = {"User-Agent": "MyWay-Blender-Bridge/1.0"}
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
-    request = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(request, timeout=600) as response:
+    with blenderkit_request(url, api_key, timeout=600) as response:
         return response.headers.get("content-type", ""), response.read()
 
 

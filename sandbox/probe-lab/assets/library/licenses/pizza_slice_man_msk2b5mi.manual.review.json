@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_manual_asset_license_review_v1",
-  "asset_id": "pizza_slice_man_msk2b5mi",
+  "asset_id": "pizza_slice_msk2b5mi",
   "review_status": "needs_human_review",
   "source_provider": "Manual CC0 source",
   "source_asset_id": "ultimate_food_pack__pizza_slice",

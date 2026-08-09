@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_manual_asset_source_record_v1",
-  "asset_id": "tomato_slice_man_msk2lyy4",
+  "asset_id": "tomato_slice_msk2lyy4",
   "requested_concept": "tomato slice",
   "original_file_name": "Tomato Slice.glb",
   "browser_reported_mime_type": "model/gltf-binary",

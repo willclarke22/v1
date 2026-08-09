@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_manual_asset_license_review_v1",
-  "asset_id": "soda_man_msk2hlt3",
+  "asset_id": "soda_cup_msk2hlt3",
   "review_status": "needs_human_review",
   "source_provider": "Manual CC0 source",
   "source_asset_id": "ultimate_food_pack__soda",

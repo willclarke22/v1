@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_manual_asset_source_record_v1",
-  "asset_id": "ketchup_bottle_man_msk251np",
+  "asset_id": "ketchup_bottle_msk251np",
   "requested_concept": "ketchup bottle",
   "original_file_name": "Ketchup Bottle.glb",
   "browser_reported_mime_type": "model/gltf-binary",

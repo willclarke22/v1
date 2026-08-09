@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_manual_asset_source_record_v1",
-  "asset_id": "banana_man_msk1pe9y",
+  "asset_id": "banana_msk1pe9y",
   "requested_concept": "banana",
   "original_file_name": "Banana.glb",
   "browser_reported_mime_type": "model/gltf-binary",

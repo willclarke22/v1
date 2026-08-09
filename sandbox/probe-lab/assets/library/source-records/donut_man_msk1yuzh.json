@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_manual_asset_source_record_v1",
-  "asset_id": "donut_man_msk1yuzh",
+  "asset_id": "donut_msk1yuzh",
   "requested_concept": "donut",
   "original_file_name": "Donut.glb",
   "browser_reported_mime_type": "model/gltf-binary",

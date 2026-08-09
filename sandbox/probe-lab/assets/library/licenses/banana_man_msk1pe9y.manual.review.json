@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_manual_asset_license_review_v1",
-  "asset_id": "banana_man_msk1pe9y",
+  "asset_id": "banana_msk1pe9y",
   "review_status": "needs_human_review",
   "source_provider": "Manual CC0 source",
   "source_asset_id": "ultimate_food_pack__banana",

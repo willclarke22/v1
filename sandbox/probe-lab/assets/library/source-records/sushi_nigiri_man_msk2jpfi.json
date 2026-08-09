@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_manual_asset_source_record_v1",
-  "asset_id": "sushi_nigiri_man_msk2jpfi",
+  "asset_id": "sushi_nigiri_msk2jpfi",
   "requested_concept": "sushi nigiri",
   "original_file_name": "Sushi Nigiri.glb",
   "browser_reported_mime_type": "model/gltf-binary",

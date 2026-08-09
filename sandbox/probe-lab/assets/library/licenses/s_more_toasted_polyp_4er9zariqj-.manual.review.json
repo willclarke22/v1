@@ -1,0 +1,32 @@
+{
+  "schema_version": "myway_manual_asset_license_review_v1",
+  "asset_id": "smores_polyp_4er9zariqj-",
+  "review_status": "needs_human_review",
+  "source_provider": "Poly Pizza",
+  "source_asset_id": "4Er9zaRIQj-",
+  "source_url": "https://poly.pizza/m/4Er9zaRIQj-",
+  "asset_title": "S'more - toasted",
+  "creator_name": "sirkitree",
+  "license_kind_asserted_by_user": "cc_by",
+  "license_version_asserted_by_user": null,
+  "commercial_use_allowed_asserted_by_user": true,
+  "raw_redistribution_allowed_asserted_by_user": true,
+  "attribution": {
+    "schema_version": "myway_asset_attribution_v1",
+    "required": true,
+    "text": "S'more toasted by sirkitree [CC-BY] via Poly Pizza",
+    "asset_title": "S'more - toasted",
+    "creator_name": "sirkitree",
+    "source_provider": "Poly Pizza",
+    "source_asset_id": "4Er9zaRIQj-",
+    "source_url": "https://poly.pizza/m/4Er9zaRIQj-",
+    "license_name": "CC BY",
+    "license_version": null,
+    "license_url": null,
+    "modification_notice": "Normalized and processed for real-time use by MyWay.",
+    "downloaded_at": "2026-08-09"
+  },
+  "provenance_notes": "Manually downloaded from Poly Pizza and imported through MyWay's CC BY multi-GLB intake.",
+  "warning": "MyWay records the uploader's assertion but does not independently verify third-party terms. Verify the source terms before app promotion.",
+  "created_at": "2026-08-09T04:32:51.120Z"
+}

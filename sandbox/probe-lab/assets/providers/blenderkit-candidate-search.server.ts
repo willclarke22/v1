@@ -264,15 +264,26 @@ function polygonCount(result: BlenderKitSearchResult) {
 
 async function fetchJson(url: string, signal: AbortSignal) {
   const apiKey = process.env.BLENDERKIT_API_KEY?.trim();
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "MyWay-BlendKit-Candidate-Search/1.0",
-      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-    },
-    cache: "no-store",
-    signal,
-  });
+
+  async function request(token?: string) {
+    return fetch(url, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "MyWay-BlendKit-Candidate-Search/1.0",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      cache: "no-store",
+      signal,
+    });
+  }
+
+  let response = await request(apiKey);
+  if (response.status === 401 && apiKey) {
+    console.warn(
+      "[MyWay BlendKit] Configured BLENDERKIT_API_KEY returned HTTP 401; retrying public candidate search without Authorization.",
+    );
+    response = await request();
+  }
 
   if (!response.ok) {
     throw new Error(

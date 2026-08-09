@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_manual_asset_license_review_v1",
-  "asset_id": "spoon_man_msk2i6hr",
+  "asset_id": "spoon_msk2i6hr",
   "review_status": "needs_human_review",
   "source_provider": "Manual CC0 source",
   "source_asset_id": "ultimate_food_pack__spoon",

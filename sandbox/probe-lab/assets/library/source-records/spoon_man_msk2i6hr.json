@@ -1,6 +1,6 @@
 {
   "schema_version": "myway_manual_asset_source_record_v1",
-  "asset_id": "spoon_man_msk2i6hr",
+  "asset_id": "spoon_msk2i6hr",
   "requested_concept": "spoon",
   "original_file_name": "Spoon.glb",
   "browser_reported_mime_type": "model/gltf-binary",
