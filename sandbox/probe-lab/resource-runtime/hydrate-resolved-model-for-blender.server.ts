@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import {
   mkdtemp,
   readFile,
@@ -9,9 +11,6 @@ import {
 } from "node:os";
 import path from "node:path";
 
-import {
-  hashFile,
-} from "../assets/content-hash.server";
 import type {
   RuntimeModelBindingV1,
 } from "./resource-runtime-contract";
@@ -80,6 +79,46 @@ function extensionForUrl(
   return ".glb";
 }
 
+async function hashHydratedTemporaryFile(
+  filePath: string,
+) {
+  const traceSafeFilePath = filePath;
+
+  return new Promise<string>(
+    (resolve, reject) => {
+      const hash = createHash("sha256");
+      const stream = createReadStream(
+        /* turbopackIgnore: true */
+        traceSafeFilePath,
+      );
+
+      stream.on("error", reject);
+      stream.on("data", (chunk) => {
+        hash.update(chunk);
+      });
+      stream.on("end", () => {
+        resolve(hash.digest("hex"));
+      });
+    },
+  );
+}
+
+async function removeHydrationTemporaryDirectory(
+  temporaryDirectory: string,
+) {
+  const traceSafeTemporaryDirectory =
+    temporaryDirectory;
+
+  await rm(
+    /* turbopackIgnore: true */
+    traceSafeTemporaryDirectory,
+    {
+      recursive: true,
+      force: true,
+    },
+  );
+}
+
 export async function hydrateResolvedModelForBlender(
   binding: RuntimeModelBindingV1,
   options: BlenderHydrationOptions = {},
@@ -119,8 +158,12 @@ export async function hydrateResolvedModelForBlender(
         "Blender hydration download",
     });
 
+    const traceSafeLocalPath = localPath;
     const fileStats =
-      await stat(localPath);
+      await stat(
+        /* turbopackIgnore: true */
+        traceSafeLocalPath,
+      );
     let actualContentHash:
       | string
       | null = null;
@@ -133,7 +176,9 @@ export async function hydrateResolvedModelForBlender(
       binding.content_hash
     ) {
       actualContentHash =
-        await hashFile(localPath);
+        await hashHydratedTemporaryFile(
+          traceSafeLocalPath,
+        );
       hashVerified =
         actualContentHash.toLowerCase() ===
         binding.content_hash.toLowerCase();
@@ -167,22 +212,14 @@ export async function hydrateResolvedModelForBlender(
           return;
         }
 
-        await rm(
+        await removeHydrationTemporaryDirectory(
           temporaryDirectory,
-          {
-            recursive: true,
-            force: true,
-          },
         );
       },
     };
   } catch (error) {
-    await rm(
+    await removeHydrationTemporaryDirectory(
       temporaryDirectory,
-      {
-        recursive: true,
-        force: true,
-      },
     );
     throw error;
   }
@@ -191,7 +228,11 @@ export async function hydrateResolvedModelForBlender(
 export async function readHydratedModelBytes(
   hydration: BlenderHydratedModel,
 ) {
+  const traceSafeHydratedPath =
+    hydration.local_path;
+
   return readFile(
-    hydration.local_path,
+    /* turbopackIgnore: true */
+    traceSafeHydratedPath,
   );
 }

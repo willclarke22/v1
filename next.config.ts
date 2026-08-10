@@ -4,6 +4,7 @@ const sandboxProbeLabTraceExcludes = [
   "./.git/**/*",
   "./.venv/**/*",
   "./.turbo/**/*",
+  "./.myway-patch-backups/**/*",
   "./archive/**/*",
   "./datasets/**/*",
   "./models/**/*",
@@ -18,6 +19,8 @@ const sandboxProbeLabTraceExcludes = [
   "./sandbox/probe-lab/blender-python-builder/jobs/**/*",
   "./sandbox/probe-lab/visual-experience/assets/generated/**/*",
   "./sandbox/probe-lab/visual-experience/assets/source/blender/**/*",
+  "./myway-sandbox-selected-files-notepad/**/*",
+  "./scripts-assets-dump.txt",
   "./myway-*.txt",
   "./visual-experience-context.txt",
 ];

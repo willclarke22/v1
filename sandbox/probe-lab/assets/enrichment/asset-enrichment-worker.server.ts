@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -16,13 +18,10 @@ import {
 } from "../blender/blender-job-store.server";
 import { runBlenderJob } from "../blender/blender-bridge.server";
 import {
-  hashFile,
   stableTextHash,
 } from "../content-hash.server";
 import {
   ensureAssetDirectories,
-  projectPath,
-  publicUrlToProjectPath,
 } from "../paths.server";
 import {
   createAssetTempWorkspace,
@@ -53,6 +52,129 @@ export type AssetEnrichmentQueueEntry = {
 const queueEntries = new Map<string, AssetEnrichmentQueueEntry>();
 const embeddingRefreshAfterFull = new Set<string>();
 let enrichmentTail: Promise<void> = Promise.resolve();
+
+const MYWAY_PUBLIC_ASSET_URL_ROOT =
+  "/sandbox-assets/myway";
+
+const MYWAY_PUBLIC_ASSET_FILE_ROOT =
+  path.join(
+    /* turbopackIgnore: true */
+    process.cwd(),
+    "public",
+    "sandbox-assets",
+    "myway",
+  );
+
+const MYWAY_LOCAL_ANALYSIS_FILE_ROOT =
+  `${MYWAY_PUBLIC_ASSET_FILE_ROOT}${path.sep}analysis`;
+
+function safeRuntimePathSegment(
+  value: string,
+  label: string,
+) {
+  if (
+    !value ||
+    value === "." ||
+    value === ".." ||
+    value.includes("/") ||
+    value.includes("\\") ||
+    value.includes("\0")
+  ) {
+    throw new Error(
+      `Unsafe ${label}: ${value}`,
+    );
+  }
+  return value;
+}
+
+function opaqueRuntimeChild(
+  root: string,
+  child: string,
+  label: string,
+) {
+  return `${root}${path.sep}${safeRuntimePathSegment(
+    child,
+    label,
+  )}`;
+}
+
+function localPublicAssetPath(
+  publicPath: string,
+) {
+  const normalized =
+    publicPath.replace(/\\/g, "/");
+  const prefix =
+    `${MYWAY_PUBLIC_ASSET_URL_ROOT}/`;
+
+  if (!normalized.startsWith(prefix)) {
+    throw new Error(
+      `Asset path must start with ${prefix}`,
+    );
+  }
+
+  const relative =
+    normalized.slice(prefix.length);
+  const segments =
+    relative
+      .split("/")
+      .filter(Boolean)
+      .map((segment) =>
+        safeRuntimePathSegment(
+          segment,
+          "public asset path segment",
+        ),
+      );
+
+  if (!segments.length) {
+    throw new Error(
+      "Asset path must include a file below the MyWay public asset root.",
+    );
+  }
+
+  return (
+    `${MYWAY_PUBLIC_ASSET_FILE_ROOT}${path.sep}` +
+    segments.join(path.sep)
+  );
+}
+
+async function writeRuntimeFile(
+  filePath: string,
+  bytes: Uint8Array,
+) {
+  const traceSafeFilePath =
+    filePath;
+
+  await writeFile(
+    /* turbopackIgnore: true */
+    traceSafeFilePath,
+    bytes,
+  );
+}
+
+async function hashRuntimeFile(
+  filePath: string,
+) {
+  const traceSafeFilePath =
+    filePath;
+
+  return new Promise<string>(
+    (resolve, reject) => {
+      const hash = createHash("sha256");
+      const stream = createReadStream(
+        /* turbopackIgnore: true */
+        traceSafeFilePath,
+      );
+
+      stream.on("error", reject);
+      stream.on("data", (chunk) => {
+        hash.update(chunk);
+      });
+      stream.on("end", () => {
+        resolve(hash.digest("hex"));
+      });
+    },
+  );
+}
 
 function now() {
   return new Date().toISOString();
@@ -119,7 +241,7 @@ function pendingAppearance(
 async function materializeAssetInput(asset: MyWayAssetRecord) {
   if (!/^https:\/\//i.test(asset.public_path)) {
     return {
-      input_path: publicUrlToProjectPath(asset.public_path),
+      input_path: localPublicAssetPath(asset.public_path),
       temporary: false,
       cleanup: async () => undefined,
     };
@@ -142,11 +264,16 @@ async function materializeAssetInput(asset: MyWayAssetRecord) {
       path.extname(
         new URL(asset.public_path).pathname,
       ) || ".glb";
-    const inputPath = path.join(
-      workspace.path,
-      `${asset.asset_id}${suffix}`,
+    const inputPath =
+      opaqueRuntimeChild(
+        workspace.path,
+        `${asset.asset_id}${suffix}`,
+        "enrichment input filename",
+      );
+    await writeRuntimeFile(
+      inputPath,
+      bytes,
     );
-    await writeFile(inputPath, bytes);
 
     return {
       input_path: inputPath,
@@ -253,10 +380,12 @@ async function analysisRenderDestination(
   if (!durableAssetCloudEnabled()) {
     return {
       cloud: false,
-      render_directory: projectPath(
-        "public/sandbox-assets/myway/analysis",
-        assetId,
-      ),
+      render_directory:
+        opaqueRuntimeChild(
+          MYWAY_LOCAL_ANALYSIS_FILE_ROOT,
+          assetId,
+          "analysis asset id",
+        ),
       public_url_root:
         `/sandbox-assets/myway/analysis/${assetId}`,
       cleanup: async () => undefined,
@@ -269,7 +398,11 @@ async function analysisRenderDestination(
   return {
     cloud: true,
     render_directory:
-      path.join(workspace.path, assetId),
+      opaqueRuntimeChild(
+        workspace.path,
+        assetId,
+        "analysis asset id",
+      ),
     public_url_root:
       `/__myway-temporary-analysis/${assetId}`,
     cleanup: workspace.cleanup,
@@ -299,7 +432,9 @@ async function publishAnalysisViews(
   return Promise.all(
     views.map(async (view) => {
       const hash =
-        await hashFile(view.file_path);
+        await hashRuntimeFile(
+          view.file_path,
+        );
       const uploaded =
         await uploadRuntimeAssetFile({
           localPath: view.file_path,
@@ -377,7 +512,10 @@ async function enrichAsset(assetId: string, force: boolean) {
   const inputPath = materialized.input_path;
 
   try {
-    const contentHash = await hashFile(inputPath);
+    const contentHash =
+      await hashRuntimeFile(
+        inputPath,
+      );
     if (asset.content_hash !== contentHash) {
       asset = await updateMyWayAsset(asset.asset_id, {
         content_hash: contentHash,

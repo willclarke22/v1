@@ -14,7 +14,6 @@ import {
 import path from "node:path";
 
 import {
-  projectPath,
   resolveBlenderExecutable,
 } from "../assets/paths.server";
 import {
@@ -350,6 +349,74 @@ const TIMEOUT_MS =
 const MAX_SCRIPT_CHARS =
   500_000;
 
+const FOUNDRY_PRIVATE_JOB_ROOT =
+  path.join(
+    /* turbopackIgnore: true */
+    process.cwd(),
+    "sandbox",
+    "probe-lab",
+    "blender-python-builder",
+    "jobs",
+  );
+
+const FOUNDRY_PUBLIC_JOB_ROOT =
+  path.join(
+    /* turbopackIgnore: true */
+    process.cwd(),
+    "public",
+    "sandbox-assets",
+    "myway",
+    "blender-python-builder",
+  );
+
+function runtimeChild(
+  root: string,
+  ...segments: string[]
+) {
+  return [
+    root,
+    ...segments,
+  ].join(path.sep);
+}
+
+async function ensureRuntimeDirectory(
+  directory: string,
+) {
+  const traceSafeDirectory =
+    directory;
+  await mkdir(
+    /* turbopackIgnore: true */
+    traceSafeDirectory,
+    { recursive: true },
+  );
+}
+
+async function writeRuntimeText(
+  filePath: string,
+  value: string,
+  _encoding: "utf8" = "utf8",
+) {
+  const traceSafeFilePath =
+    filePath;
+  await writeFile(
+    /* turbopackIgnore: true */
+    traceSafeFilePath,
+    value,
+    "utf8",
+  );
+}
+
+async function runtimeStat(
+  filePath: string,
+) {
+  const traceSafeFilePath =
+    filePath;
+  return stat(
+    /* turbopackIgnore: true */
+    traceSafeFilePath,
+  );
+}
+
 const FORBIDDEN_PATTERNS:
   Array<[RegExp, string]> = [
     [
@@ -639,9 +706,12 @@ function runBlender(
 async function exists(
   filePath: string,
 ) {
+  const traceSafeFilePath =
+    filePath;
   try {
     await access(
-      filePath,
+      /* turbopackIgnore: true */
+      traceSafeFilePath,
     );
     return true;
   } catch {
@@ -664,9 +734,12 @@ async function readJsonFile<
     return null;
   }
   try {
+    const traceSafeFilePath =
+      filePath;
     return JSON.parse(
       await readFile(
-        filePath,
+        /* turbopackIgnore: true */
+        traceSafeFilePath,
         "utf8",
       ),
     ) as T;
@@ -714,9 +787,12 @@ type FooterQualityReport = {
 async function inspectGlb(
   filePath: string,
 ) {
+  const traceSafeFilePath =
+    filePath;
   const bytes =
     await readFile(
-      filePath,
+      /* turbopackIgnore: true */
+      traceSafeFilePath,
     );
   const errors:
     string[] = [];
@@ -1344,8 +1420,8 @@ export async function executeBlenderPython(
       input.assetName,
     );
   const privateDir =
-    projectPath(
-      "sandbox/probe-lab/blender-python-builder/jobs",
+    runtimeChild(
+      FOUNDRY_PRIVATE_JOB_ROOT,
       jobId,
     );
   const publicRelative = [
@@ -1355,55 +1431,47 @@ export async function executeBlenderPython(
     jobId,
   ];
   const publicDir =
-    projectPath(
-      "public",
-      ...publicRelative,
+    runtimeChild(
+      FOUNDRY_PUBLIC_JOB_ROOT,
+      jobId,
     );
 
   await Promise.all([
-    mkdir(
+    ensureRuntimeDirectory(
       privateDir,
-      {
-        recursive:
-          true,
-      },
     ),
-    mkdir(
+    ensureRuntimeDirectory(
       publicDir,
-      {
-        recursive:
-          true,
-      },
     ),
   ]);
 
   const scriptPath =
-    path.join(
+    runtimeChild(
       privateDir,
       "build_asset.py",
     );
   const sourceCodePath =
-    path.join(
+    runtimeChild(
       privateDir,
       "source_code.py",
     );
   const briefPath =
-    path.join(
+    runtimeChild(
       privateDir,
       "design-brief.json",
     );
   const resourcePlanPath =
-    path.join(
+    runtimeChild(
       privateDir,
       "resource-plan.json",
     );
   const resourceManifestPath =
-    path.join(
+    runtimeChild(
       privateDir,
       "resource-manifest.json",
     );
   const lookAdjustmentsPath =
-    path.join(
+    runtimeChild(
       privateDir,
       "look-adjustments.json",
     );
@@ -1414,23 +1482,23 @@ export async function executeBlenderPython(
   const completeScript =
     complete.script;
   const smokeScriptPath =
-    path.join(
+    runtimeChild(
       privateDir,
       "compile_smoke.py",
     );
 
   await Promise.all([
-    writeFile(
+    writeRuntimeText(
       scriptPath,
       completeScript,
       "utf8",
     ),
-    writeFile(
+    writeRuntimeText(
       sourceCodePath,
       input.code,
       "utf8",
     ),
-    writeFile(
+    writeRuntimeText(
       briefPath,
       JSON.stringify(
         designBrief,
@@ -1439,7 +1507,7 @@ export async function executeBlenderPython(
       ) + "\n",
       "utf8",
     ),
-    writeFile(
+    writeRuntimeText(
       resourcePlanPath,
       JSON.stringify(
         resourcePlan,
@@ -1448,7 +1516,7 @@ export async function executeBlenderPython(
       ) + "\n",
       "utf8",
     ),
-    writeFile(
+    writeRuntimeText(
       resourceManifestPath,
       JSON.stringify(
         resourceManifest,
@@ -1457,7 +1525,7 @@ export async function executeBlenderPython(
       ) + "\n",
       "utf8",
     ),
-    writeFile(
+    writeRuntimeText(
       lookAdjustmentsPath,
       JSON.stringify(
         resourceManifest
@@ -1467,7 +1535,7 @@ export async function executeBlenderPython(
       ) + "\n",
       "utf8",
     ),
-    writeFile(
+    writeRuntimeText(
       smokeScriptPath,
       buildCompileSmokeScript(
         sourceCodePath,
@@ -1475,8 +1543,8 @@ export async function executeBlenderPython(
       ),
       "utf8",
     ),
-    writeFile(
-      path.join(
+    writeRuntimeText(
+      runtimeChild(
         privateDir,
         "request.json",
       ),
@@ -1545,8 +1613,8 @@ export async function executeBlenderPython(
       smokeScriptPath,
       runtime,
     });
-  await writeFile(
-    path.join(
+  await writeRuntimeText(
+    runtimeChild(
       privateDir,
       "compile-smoke.json",
     ),
@@ -1644,16 +1712,16 @@ export async function executeBlenderPython(
     );
 
   await Promise.all([
-    writeFile(
-      path.join(
+    writeRuntimeText(
+      runtimeChild(
         privateDir,
         "stdout.log",
       ),
       result.stdout,
       "utf8",
     ),
-    writeFile(
-      path.join(
+    writeRuntimeText(
+      runtimeChild(
         privateDir,
         "stderr.log",
       ),
@@ -1663,12 +1731,12 @@ export async function executeBlenderPython(
   ]);
 
   const glbPath =
-    path.join(
+    runtimeChild(
       publicDir,
       `${assetName}.glb`,
     );
   const blendPath =
-    path.join(
+    runtimeChild(
       publicDir,
       `${assetName}.blend`,
     );
@@ -1745,16 +1813,16 @@ export async function executeBlenderPython(
   }
 
   const glbStats =
-    await stat(
+    await runtimeStat(
       glbPath,
     );
   const validationPath =
-    path.join(
+    runtimeChild(
       publicDir,
       "validation.json",
     );
   const qualityPath =
-    path.join(
+    runtimeChild(
       publicDir,
       "quality.json",
     );
@@ -1804,7 +1872,7 @@ export async function executeBlenderPython(
             name,
             exists:
               await exists(
-                path.join(
+                runtimeChild(
                   publicDir,
                   name,
                 ),
@@ -1924,8 +1992,8 @@ export async function executeBlenderPython(
         .toISOString(),
   };
 
-  await writeFile(
-    path.join(
+  await writeRuntimeText(
+    runtimeChild(
       publicDir,
       "manifest.json",
     ),

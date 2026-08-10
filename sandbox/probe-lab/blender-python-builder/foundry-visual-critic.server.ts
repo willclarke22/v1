@@ -6,9 +6,6 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 
-import {
-  projectPath,
-} from "../assets/paths.server";
 import type {
   AssetDesignBriefV2,
 } from "./asset-design-brief";
@@ -766,11 +763,44 @@ export function visualCritiqueDeferredFindings(
   ) ?? [];
 }
 
+const FOUNDRY_PRIVATE_JOB_ROOT =
+  path.join(
+    /* turbopackIgnore: true */
+    process.cwd(),
+    "sandbox",
+    "probe-lab",
+    "blender-python-builder",
+    "jobs",
+  );
+
+const FOUNDRY_PUBLIC_JOB_ROOT =
+  path.join(
+    /* turbopackIgnore: true */
+    process.cwd(),
+    "public",
+    "sandbox-assets",
+    "myway",
+    "blender-python-builder",
+  );
+
+function runtimeChildPath(
+  parent: string,
+  child: string,
+) {
+  return `${parent}${path.sep}${child}`;
+}
+
 async function exists(
   filePath: string,
 ) {
+  const traceSafeFilePath =
+    filePath;
+
   try {
-    await access(filePath);
+    await access(
+      /* turbopackIgnore: true */
+      traceSafeFilePath,
+    );
     return true;
   } catch {
     return false;
@@ -780,9 +810,13 @@ async function exists(
 async function readJson(
   filePath: string,
 ) {
+  const traceSafeFilePath =
+    filePath;
+
   return JSON.parse(
     await readFile(
-      filePath,
+      /* turbopackIgnore: true */
+      traceSafeFilePath,
       "utf8",
     ),
   ) as Record<string, unknown>;
@@ -796,7 +830,7 @@ async function inspectionViews(
   for (const [label, fileName] of
     VIEW_PRIORITY) {
     const filePath =
-      path.join(
+      runtimeChildPath(
         publicDir,
         fileName,
       );
@@ -978,22 +1012,22 @@ export async function critiqueFoundryJob(
       input.jobId,
     );
   const privateDir =
-    projectPath(
-      "sandbox/probe-lab/blender-python-builder/jobs",
+    runtimeChildPath(
+      FOUNDRY_PRIVATE_JOB_ROOT,
       jobId,
     );
   const publicDir =
-    projectPath(
-      "public/sandbox-assets/myway/blender-python-builder",
+    runtimeChildPath(
+      FOUNDRY_PUBLIC_JOB_ROOT,
       jobId,
     );
   const manifestPath =
-    path.join(
+    runtimeChildPath(
       publicDir,
       "manifest.json",
     );
   const requestPath =
-    path.join(
+    runtimeChildPath(
       privateDir,
       "request.json",
     );
@@ -1044,9 +1078,12 @@ export async function critiqueFoundryJob(
     await Promise.all(
       views.map(
         async (view) => {
+          const traceSafeViewPath =
+            view.file_path;
           const bytes =
             await readFile(
-              view.file_path,
+              /* turbopackIgnore: true */
+              traceSafeViewPath,
             );
           return `data:image/png;base64,${bytes.toString("base64")}`;
         },
@@ -1127,22 +1164,33 @@ export async function critiqueFoundryJob(
     });
 
   const publicReportPath =
-    path.join(
+    runtimeChildPath(
       publicDir,
       "visual-critique.json",
     );
   const privateReportPath =
-    path.join(
+    runtimeChildPath(
       privateDir,
       "visual-critique.json",
     );
+  const traceSafePrivateDir =
+    privateDir;
+  const traceSafePublicReportPath =
+    publicReportPath;
+  const traceSafePrivateReportPath =
+    privateReportPath;
+  const traceSafeManifestPath =
+    manifestPath;
+
   await mkdir(
-    privateDir,
+    /* turbopackIgnore: true */
+    traceSafePrivateDir,
     { recursive: true },
   );
   await Promise.all([
     writeFile(
-      publicReportPath,
+      /* turbopackIgnore: true */
+      traceSafePublicReportPath,
       JSON.stringify(
         report,
         null,
@@ -1151,7 +1199,8 @@ export async function critiqueFoundryJob(
       "utf8",
     ),
     writeFile(
-      privateReportPath,
+      /* turbopackIgnore: true */
+      traceSafePrivateReportPath,
       JSON.stringify(
         report,
         null,
@@ -1171,7 +1220,8 @@ export async function critiqueFoundryJob(
       report,
   };
   await writeFile(
-    manifestPath,
+    /* turbopackIgnore: true */
+    traceSafeManifestPath,
     JSON.stringify(
       updatedManifest,
       null,
