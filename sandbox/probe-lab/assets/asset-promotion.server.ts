@@ -28,6 +28,7 @@ import {
   durableAssetCloudEnabled,
   ensureDurableAssetJson,
   readDurableAssetJson,
+  recoverDurableAssetJsonFromLocal,
   removeLocalDurableAssetJson,
   uploadRuntimeAssetFile,
 } from "./storage/asset-durable-artifacts.server";
@@ -35,6 +36,31 @@ import {
   getR2RuntimeStorage,
   getR2SourceStorage,
 } from "./storage/r2-asset-storage.server";
+
+async function readOrRecoverDurableAssetJson<T>(
+  reference: string,
+): Promise<T | null> {
+  const remote =
+    await readDurableAssetJson<T>(
+      reference,
+    );
+
+  if (remote != null) {
+    return remote;
+  }
+
+  try {
+    await recoverDurableAssetJsonFromLocal(
+      reference,
+    );
+  } catch {
+    return null;
+  }
+
+  return readDurableAssetJson<T>(
+    reference,
+  );
+}
 
 function localPathFromPublicPath(publicPath: string) {
   if (/^https?:\/\//i.test(publicPath)) {
@@ -149,6 +175,17 @@ async function publishDurableMetadata(
   asset: MyWayAssetRecord,
   licenseReference: string,
 ) {
+  const license =
+    await readOrRecoverDurableAssetJson<unknown>(
+      licenseReference,
+    );
+
+  if (license == null) {
+    throw new Error(
+      `The license review could not be recovered to authoritative R2 storage: ${licenseReference}`,
+    );
+  }
+
   await ensureDurableAssetJson(
     licenseReference,
   );
@@ -156,7 +193,7 @@ async function publishDurableMetadata(
   const sourceRecordReference =
     `${MYWAY_ASSET_LIBRARY_PROJECT_PATH}/source-records/${asset.asset_id}.json`;
   const sourceRecord =
-    await readDurableAssetJson<unknown>(
+    await readOrRecoverDurableAssetJson<unknown>(
       sourceRecordReference,
     );
 
@@ -175,7 +212,7 @@ async function publishDurableMetadata(
 
   if (vectorReference) {
     const vector =
-      await readDurableAssetJson<unknown>(
+      await readOrRecoverDurableAssetJson<unknown>(
         vectorReference,
       );
     if (vector != null) {
@@ -243,7 +280,7 @@ export async function promoteMyWayAssetToR2(input: {
       reviewInput,
     );
   const reviewRaw =
-    await readDurableAssetJson<unknown>(
+    await readOrRecoverDurableAssetJson<unknown>(
       licenseReference,
     );
 

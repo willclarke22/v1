@@ -5,12 +5,14 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 
 import type {
+  AssetStorageListObject,
   AssetStorageObject,
   AssetStorageProvider,
   AssetStorageUploadBytesInput,
@@ -347,6 +349,49 @@ export function createR2AssetStorage(
 
         throw caught;
       }
+    },
+
+    async list(input = {}) {
+      const output:
+        AssetStorageListObject[] = [];
+      let continuationToken:
+        string | undefined;
+
+      do {
+        const result = await client.send(
+          new ListObjectsV2Command({
+            Bucket: config.bucket,
+            Prefix: input.prefix,
+            ContinuationToken:
+              continuationToken,
+          }),
+        );
+
+        for (const item of result.Contents ?? []) {
+          if (!item.Key) continue;
+          output.push({
+            object_key:
+              item.Key,
+            size_bytes:
+              item.Size ?? 0,
+            etag:
+              typeof item.ETag === "string"
+                ? item.ETag.replace(/^"|"$/g, "")
+                : null,
+            last_modified:
+              item.LastModified
+                ? item.LastModified.toISOString()
+                : null,
+          });
+        }
+
+        continuationToken =
+          result.IsTruncated
+            ? result.NextContinuationToken
+            : undefined;
+      } while (continuationToken);
+
+      return output;
     },
 
     async delete(objectKey: string) {

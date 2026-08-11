@@ -43,6 +43,7 @@ import {
 } from "./storage/cloud-json.server";
 import {
   deleteDurableAssetJson,
+  durableAssetCloudEnabled,
   readDurableAssetJson,
   writeDurableAssetJson,
 } from "./storage/asset-durable-artifacts.server";
@@ -256,17 +257,6 @@ function normalizeLoadedRegistry(
 }
 
 
-function registryUpdatedAtMs(
-  registry: MyWayAssetRegistryV2,
-) {
-  const parsed =
-    Date.parse(registry.updated_at);
-
-  return Number.isFinite(parsed)
-    ? parsed
-    : 0;
-}
-
 function isCompactedLocalRegistry(
   registry: MyWayAssetRegistryV2,
 ) {
@@ -306,7 +296,19 @@ async function readLocalMyWayAssetRegistry(
   }
 }
 
-export async function loadMyWayAssetRegistry(): Promise<MyWayAssetRegistryV2> {
+export async function restoreMyWayAssetRegistryToCloudFromLocal(): Promise<MyWayAssetRegistryV2> {
+  if (!cloudAssetMetadataEnabled()) {
+    throw new Error(
+      "R2 asset metadata storage is not enabled.",
+    );
+  }
+
+  if (process.env.VERCEL === "1") {
+    throw new Error(
+      "Local asset-registry recovery is only available from the local development environment.",
+    );
+  }
+
   const registryPath =
     projectPath(
       MYWAY_ASSET_REGISTRY_PROJECT_PATH,
@@ -316,6 +318,47 @@ export async function loadMyWayAssetRegistry(): Promise<MyWayAssetRegistryV2> {
       registryPath,
     );
 
+  if (!local) {
+    throw new Error(
+      "The local asset registry is missing, so it cannot be used for explicit R2 recovery.",
+    );
+  }
+
+  if (isCompactedLocalRegistry(local)) {
+    throw new Error(
+      "The local asset registry is only a compact cloud bootstrap record. It cannot restore the authoritative R2 registry.",
+    );
+  }
+
+  await writeCloudJson(
+    MYWAY_ASSET_REGISTRY_CLOUD_KEY,
+    local,
+  );
+
+  const restored =
+    await readCloudJson<
+      Partial<MyWayAssetRegistryV2>
+    >(
+      MYWAY_ASSET_REGISTRY_CLOUD_KEY,
+    );
+
+  if (!restored) {
+    throw new Error(
+      "Explicit asset-registry recovery wrote to R2 but verification failed.",
+    );
+  }
+
+  return normalizeLoadedRegistry(
+    restored,
+  );
+}
+
+export async function loadMyWayAssetRegistry(): Promise<MyWayAssetRegistryV2> {
+  const registryPath =
+    projectPath(
+      MYWAY_ASSET_REGISTRY_PROJECT_PATH,
+    );
+
   if (cloudAssetMetadataEnabled()) {
     const remoteRaw =
       await readCloudJson<
@@ -323,68 +366,30 @@ export async function loadMyWayAssetRegistry(): Promise<MyWayAssetRegistryV2> {
       >(
         MYWAY_ASSET_REGISTRY_CLOUD_KEY,
       );
-    const remote =
-      remoteRaw
-        ? normalizeLoadedRegistry(
-            remoteRaw,
-          )
-        : null;
 
-    const localCanRestoreCloud =
-      process.env.VERCEL !== "1" &&
-      Boolean(local) &&
-      !isCompactedLocalRegistry(
-        local!,
+    if (!remoteRaw) {
+      throw new Error(
+        `Authoritative R2 asset registry is missing: ${MYWAY_ASSET_REGISTRY_CLOUD_KEY}. ` +
+        "Normal reads never restore it from this laptop. Use the explicit cloud migration/recovery action if a verified local source still exists.",
       );
-    const localIsNewer =
-      localCanRestoreCloud &&
-      (!remote ||
-        registryUpdatedAtMs(
-          local!,
-        ) >
-          registryUpdatedAtMs(
-            remote,
-          ));
-
-    if (
-      local &&
-      localIsNewer
-    ) {
-      await writeCloudJson(
-        MYWAY_ASSET_REGISTRY_CLOUD_KEY,
-        local,
-      );
-
-      return local;
     }
 
-    if (remote) {
-      return remote;
-    }
+    return normalizeLoadedRegistry(
+      remoteRaw,
+    );
+  }
 
-    if (local) {
-      if (localCanRestoreCloud) {
-        await writeCloudJson(
-          MYWAY_ASSET_REGISTRY_CLOUD_KEY,
-          local,
-        );
-      }
+  const local =
+    await readLocalMyWayAssetRegistry(
+      registryPath,
+    );
 
-      return local;
-    }
-  } else if (local) {
+  if (local) {
     return local;
   }
 
   const registry =
     emptyRegistry();
-
-  if (cloudAssetMetadataEnabled()) {
-    await writeCloudJson(
-      MYWAY_ASSET_REGISTRY_CLOUD_KEY,
-      registry,
-    );
-  }
 
   if (keepLocalAssetMetadataMirror()) {
     await ensureAssetDirectories();
@@ -921,6 +926,8 @@ export async function renameMyWayAssetId(input: {
         nextVectorKey,
       )
     : null;
+  const cloudDurableMetadata =
+    durableAssetCloudEnabled();
   const previousVectorExists =
     previousVectorPath
       ? await fileExists(previousVectorPath)
@@ -934,8 +941,12 @@ export async function renameMyWayAssetId(input: {
   const embeddingRefreshQueued =
     Boolean(
       current.appearance_embedding &&
-      !previousVectorExists &&
-      !previousDurableVector,
+      (
+        cloudDurableMetadata
+          ? !previousDurableVector
+          : !previousVectorExists &&
+            !previousDurableVector
+      ),
     );
 
   const renamed: MyWayAssetRecord = {
@@ -1068,7 +1079,11 @@ export async function renameMyWayAssetId(input: {
       previousVectorPath &&
       nextVectorPath &&
       previousVectorPath !== nextVectorPath &&
-      previousVectorExists
+      previousVectorExists &&
+      (
+        !cloudDurableMetadata ||
+        keepLocalAssetMetadataMirror()
+      )
     ) {
       if (await fileExists(nextVectorPath)) {
         throw new Error(

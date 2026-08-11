@@ -166,38 +166,29 @@ async function readDocument<T>(input: {
   cloudKey: string;
   fallback: T;
 }): Promise<T> {
-  const remote = await readCloudJson<T>(
-    input.cloudKey,
-  );
+  if (cloudAssetMetadataEnabled()) {
+    const remote = await readCloudJson<T>(
+      input.cloudKey,
+    );
 
-  if (remote) return remote;
+    if (remote != null) {
+      return remote;
+    }
+
+    throw new Error(
+      `Authoritative R2 ambientCG metadata is missing: ${input.cloudKey}. ` +
+      "Normal reads never restore it from this laptop. Use the explicit cloud metadata recovery/bootstrap action.",
+    );
+  }
 
   const filePath = projectPath(
     input.projectFile,
   );
 
   if (await exists(filePath)) {
-    const local =
-      await readJsonFileWithRetry<T>(
-        filePath,
-      );
-
-    if (cloudAssetMetadataEnabled()) {
-      await writeCloudJson(
-        input.cloudKey,
-        local,
-      );
-    }
-
-    return local;
-  }
-
-  if (cloudAssetMetadataEnabled()) {
-    await writeCloudJson(
-      input.cloudKey,
-      input.fallback,
+    return readJsonFileWithRetry<T>(
+      filePath,
     );
-    return structuredClone(input.fallback);
   }
 
   await ensureAmbientCgDirectories();
@@ -206,6 +197,74 @@ async function readDocument<T>(input: {
     input.fallback,
   );
   return structuredClone(input.fallback);
+}
+
+async function recoverDocumentFromLocal<T>(input: {
+  projectFile: string;
+  cloudKey: string;
+}): Promise<{
+  cloud_key: string;
+  status: "already_present" | "recovered";
+}> {
+  if (!cloudAssetMetadataEnabled()) {
+    throw new Error(
+      "R2 ambientCG metadata storage is not enabled.",
+    );
+  }
+
+  if (process.env.VERCEL === "1") {
+    throw new Error(
+      "Local ambientCG metadata recovery is only available from the local development environment.",
+    );
+  }
+
+  const existing =
+    await readCloudJson<T>(
+      input.cloudKey,
+    );
+
+  if (existing != null) {
+    return {
+      cloud_key: input.cloudKey,
+      status: "already_present",
+    };
+  }
+
+  const filePath = projectPath(
+    input.projectFile,
+  );
+
+  if (!(await exists(filePath))) {
+    throw new Error(
+      `Local recovery source is missing for ${input.cloudKey}: ${input.projectFile}`,
+    );
+  }
+
+  const local =
+    await readJsonFileWithRetry<T>(
+      filePath,
+    );
+
+  await writeCloudJson(
+    input.cloudKey,
+    local,
+  );
+
+  const verified =
+    await readCloudJson<T>(
+      input.cloudKey,
+    );
+
+  if (verified == null) {
+    throw new Error(
+      `Explicit ambientCG recovery failed R2 verification: ${input.cloudKey}`,
+    );
+  }
+
+  return {
+    cloud_key: input.cloudKey,
+    status: "recovered",
+  };
 }
 
 async function writeDocument<T>(input: {
@@ -402,10 +461,59 @@ export function getAmbientCgStorageStatus():
   };
 }
 
+export async function recoverAmbientCgCloudMetadataFromLocal() {
+  const recoveries =
+    await Promise.all([
+      recoverDocumentFromLocal({
+        projectFile: AMBIENTCG_CATALOG_FILE,
+        cloudKey: AMBIENTCG_CLOUD_KEYS.catalog,
+      }),
+      recoverDocumentFromLocal({
+        projectFile: AMBIENTCG_SYNC_STATE_FILE,
+        cloudKey: AMBIENTCG_CLOUD_KEYS.sync,
+      }),
+      recoverDocumentFromLocal({
+        projectFile: AMBIENTCG_CATEGORIES_FILE,
+        cloudKey: AMBIENTCG_CLOUD_KEYS.categories,
+      }),
+      recoverDocumentFromLocal({
+        projectFile: AMBIENTCG_COLLECTIONS_FILE,
+        cloudKey: AMBIENTCG_CLOUD_KEYS.collections,
+      }),
+      recoverDocumentFromLocal({
+        projectFile: AMBIENTCG_MATERIAL_REGISTRY_FILE,
+        cloudKey: AMBIENTCG_CLOUD_KEYS.materials,
+      }),
+      recoverDocumentFromLocal({
+        projectFile:
+          AMBIENTCG_MATERIAL_APPEARANCE_REGISTRY_FILE,
+        cloudKey:
+          AMBIENTCG_CLOUD_KEYS.materialAppearances,
+      }),
+      recoverDocumentFromLocal({
+        projectFile: AMBIENTCG_HDRI_REGISTRY_FILE,
+        cloudKey: AMBIENTCG_CLOUD_KEYS.hdris,
+      }),
+      recoverDocumentFromLocal({
+        projectFile: AMBIENTCG_RESOURCE_REGISTRY_FILE,
+        cloudKey: AMBIENTCG_CLOUD_KEYS.resources,
+      }),
+      recoverDocumentFromLocal({
+        projectFile:
+          AMBIENTCG_DOWNLOAD_JOB_REGISTRY_FILE,
+        cloudKey: AMBIENTCG_CLOUD_KEYS.jobs,
+      }),
+    ]);
+
+  return recoveries;
+}
+
 export async function bootstrapAmbientCgCloudMetadata() {
+  const recovery =
+    await recoverAmbientCgCloudMetadataFromLocal();
+
   const [
     catalog,
-    sync,
     materials,
     materialAppearances,
     hdris,
@@ -413,7 +521,6 @@ export async function bootstrapAmbientCgCloudMetadata() {
     jobs,
   ] = await Promise.all([
     readAmbientCgCatalog(),
-    readAmbientCgSyncState(),
     readAmbientCgMaterialRegistry(),
     readAmbientCgMaterialAppearanceRegistry(),
     readAmbientCgHdriRegistry(),
@@ -421,38 +528,8 @@ export async function bootstrapAmbientCgCloudMetadata() {
     readAmbientCgDownloadJobs(),
   ]);
 
-  await Promise.all([
-    writeCloudJson(
-      AMBIENTCG_CLOUD_KEYS.catalog,
-      catalog,
-    ),
-    writeCloudJson(
-      AMBIENTCG_CLOUD_KEYS.sync,
-      sync,
-    ),
-    writeCloudJson(
-      AMBIENTCG_CLOUD_KEYS.materials,
-      materials,
-    ),
-    writeCloudJson(
-      AMBIENTCG_CLOUD_KEYS.materialAppearances,
-      materialAppearances,
-    ),
-    writeCloudJson(
-      AMBIENTCG_CLOUD_KEYS.hdris,
-      hdris,
-    ),
-    writeCloudJson(
-      AMBIENTCG_CLOUD_KEYS.resources,
-      resources,
-    ),
-    writeCloudJson(
-      AMBIENTCG_CLOUD_KEYS.jobs,
-      jobs,
-    ),
-  ]);
-
   return {
+    recovery,
     catalog_count: catalog.assets.length,
     material_count:
       materials.materials.length,

@@ -40,6 +40,13 @@ export type AssetStorageReadResult = {
   content_type: string | null;
 };
 
+export type AssetStorageListObject = {
+  object_key: string;
+  size_bytes: number;
+  etag: string | null;
+  last_modified: string | null;
+};
+
 export type AssetStorageProvider = {
   readonly provider: "r2";
   readonly bucket: string;
@@ -58,6 +65,10 @@ export type AssetStorageProvider = {
   ): Promise<AssetStorageReadResult | null>;
 
   exists(objectKey: string): Promise<boolean>;
+
+  list(input?: {
+    prefix?: string;
+  }): Promise<AssetStorageListObject[]>;
 
   delete(objectKey: string): Promise<void>;
 };

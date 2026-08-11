@@ -14,6 +14,9 @@ import path from "node:path";
 import {
   listMyWayAssets,
 } from "../asset-library.server";
+import {
+  hashFile,
+} from "../content-hash.server";
 import type {
   MyWayAssetRecord,
 } from "../asset-types";
@@ -47,7 +50,8 @@ export type Phase3CleanupVerification = {
     | "transient_history"
     | "active_job_guard"
     | "git_tracking"
-    | "retention_policy";
+    | "retention_policy"
+    | "legacy_identity";
   ok: boolean | null;
   object_key?: string | null;
   detail: string;
@@ -572,6 +576,468 @@ function trackedClassification(
   };
 }
 
+
+type LegacySourceRecord = Record<string, unknown>;
+type LegacyPathKind =
+  | "runtime_model"
+  | "thumbnail"
+  | "source";
+
+type LegacyPathBridge = {
+  asset: MyWayAssetRecord;
+  kind: LegacyPathKind;
+  record_object_key: string;
+  record_field: string;
+  record: LegacySourceRecord;
+};
+
+const SOURCE_RECORD_PREFIX =
+  "metadata/myway/assets/source-records/";
+
+function recordString(
+  record: LegacySourceRecord,
+  key: string,
+) {
+  const value = record[key];
+  return typeof value === "string" &&
+    value.trim()
+    ? value.trim()
+    : null;
+}
+
+function recordNumber(
+  record: LegacySourceRecord,
+  key: string,
+) {
+  const value = record[key];
+  return typeof value === "number" &&
+    Number.isFinite(value)
+    ? value
+    : null;
+}
+
+function normalizedComparableUrl(
+  value: string,
+) {
+  return value.trim().replace(/\/+$/g, "");
+}
+
+function recordStableSourceIds(
+  record: LegacySourceRecord,
+) {
+  return Array.from(
+    new Set(
+      [
+        "source_asset_id",
+        "asset_base_id",
+        "selected_source_asset_id",
+      ]
+        .map((key) =>
+          recordString(record, key),
+        )
+        .filter(
+          (value): value is string =>
+            Boolean(value),
+        ),
+    ),
+  );
+}
+
+function recordSourceUrls(
+  record: LegacySourceRecord,
+) {
+  return Array.from(
+    new Set(
+      [
+        "source_url",
+        "source_page_url",
+        "source_api_url",
+      ]
+        .map((key) =>
+          recordString(record, key),
+        )
+        .filter(
+          (value): value is string =>
+            Boolean(value),
+        )
+        .map(normalizedComparableUrl),
+    ),
+  );
+}
+
+function resolveSourceRecordAsset(
+  record: LegacySourceRecord,
+  assets: MyWayAssetRecord[],
+  assetsById: Map<string, MyWayAssetRecord>,
+) {
+  const directId =
+    recordString(record, "asset_id");
+  const direct = directId
+    ? assetsById.get(directId) ?? null
+    : null;
+  const recordHash =
+    recordString(record, "content_hash");
+
+  if (
+    direct &&
+    (!recordHash ||
+      !direct.content_hash ||
+      direct.content_hash === recordHash)
+  ) {
+    return direct;
+  }
+
+  const stableIds =
+    recordStableSourceIds(record);
+  if (!stableIds.length) {
+    return null;
+  }
+
+  const urls = recordSourceUrls(record);
+  const candidates = assets.filter(
+    (asset) => {
+      if (
+        !asset.source_asset_id ||
+        !stableIds.includes(
+          asset.source_asset_id,
+        )
+      ) {
+        return false;
+      }
+      if (
+        recordHash &&
+        asset.content_hash &&
+        asset.content_hash !== recordHash
+      ) {
+        return false;
+      }
+      if (
+        urls.length &&
+        asset.source_url &&
+        !urls.includes(
+          normalizedComparableUrl(
+            asset.source_url,
+          ),
+        )
+      ) {
+        return false;
+      }
+      return true;
+    },
+  );
+
+  return candidates.length === 1
+    ? candidates[0]!
+    : null;
+}
+
+function recordPathEntries(
+  record: LegacySourceRecord,
+) {
+  return [
+    {
+      field: "normalized_runtime_glb",
+      kind: "runtime_model" as const,
+    },
+    {
+      field: "normalized_thumbnail",
+      kind: "thumbnail" as const,
+    },
+    {
+      field: "preserved_source_glb",
+      kind: "source" as const,
+    },
+    {
+      field: "source_file_project_path",
+      kind: "source" as const,
+    },
+  ]
+    .map(({ field, kind }) => ({
+      field,
+      kind,
+      value: recordString(record, field),
+    }))
+    .filter(
+      (item): item is {
+        field: string;
+        kind: LegacyPathKind;
+        value: string;
+      } => Boolean(item.value),
+    );
+}
+
+async function buildLegacyPathBridgeIndex(
+  input: {
+    assets: MyWayAssetRecord[];
+    assetsById: Map<string, MyWayAssetRecord>;
+    sourceStorage: ReturnType<
+      typeof getR2SourceStorage
+    >;
+  },
+) {
+  const result =
+    new Map<string, LegacyPathBridge[]>();
+  const sourceRecords =
+    await input.sourceStorage.list({
+      prefix: SOURCE_RECORD_PREFIX,
+    });
+
+  await Promise.all(
+    sourceRecords.map(async (object) => {
+      try {
+        const remote =
+          await input.sourceStorage.read(
+            object.object_key,
+          );
+        if (!remote) return;
+        const parsed = JSON.parse(
+          Buffer.from(remote.body)
+            .toString("utf8"),
+        ) as unknown;
+        if (
+          !parsed ||
+          typeof parsed !== "object" ||
+          Array.isArray(parsed)
+        ) {
+          return;
+        }
+        const record =
+          parsed as LegacySourceRecord;
+        const asset =
+          resolveSourceRecordAsset(
+            record,
+            input.assets,
+            input.assetsById,
+          );
+        if (!asset) return;
+
+        for (
+          const entry of
+          recordPathEntries(record)
+        ) {
+          const absolutePath =
+            localPathFromStoredReference(
+              entry.value,
+            );
+          if (!absolutePath) continue;
+          const key = pathKey(
+            absolutePath,
+          );
+          const list =
+            result.get(key) ?? [];
+          list.push({
+            asset,
+            kind: entry.kind,
+            record_object_key:
+              object.object_key,
+            record_field:
+              entry.field,
+            record,
+          });
+          result.set(key, list);
+        }
+      } catch {
+        // An unreadable/unparseable source record cannot authorize deletion.
+      }
+    }),
+  );
+
+  return result;
+}
+
+function uniqueLegacyBridge(
+  index: Map<string, LegacyPathBridge[]>,
+  absolutePath: string,
+  kind: LegacyPathKind,
+) {
+  const candidates =
+    (index.get(pathKey(absolutePath)) ?? [])
+      .filter((item) =>
+        item.kind === kind,
+      );
+  const byAsset = new Map<
+    string,
+    LegacyPathBridge
+  >();
+  for (const candidate of candidates) {
+    if (
+      !byAsset.has(
+        candidate.asset.asset_id,
+      )
+    ) {
+      byAsset.set(
+        candidate.asset.asset_id,
+        candidate,
+      );
+    }
+  }
+  return byAsset.size === 1
+    ? Array.from(byAsset.values())[0]!
+    : null;
+}
+
+function objectKeyMatchesContentHash(
+  objectKey: string,
+  hash: string,
+) {
+  const basename =
+    path.posix.basename(objectKey);
+  return basename.startsWith(
+    `${hash.slice(0, 16)}.`,
+  );
+}
+
+async function verifyLegacyRuntimeIdentity(
+  input: {
+    bridge: LegacyPathBridge;
+    filePath: string;
+    objectKey: string | null;
+    runtimeCheck: R2Check | null;
+  },
+): Promise<Phase3CleanupVerification> {
+  const recordHash =
+    recordString(
+      input.bridge.record,
+      "content_hash",
+    );
+  const assetHash =
+    input.bridge.asset.content_hash ?? null;
+  const expectedSize =
+    recordNumber(
+      input.bridge.record,
+      "normalized_file_size_bytes",
+    ) ??
+    input.bridge.asset.file_size_bytes ??
+    null;
+
+  if (
+    !recordHash ||
+    !assetHash ||
+    recordHash !== assetHash
+  ) {
+    return {
+      kind: "legacy_identity",
+      ok: false,
+      detail:
+        "The authoritative source record and current asset do not expose the same normalized content hash.",
+    };
+  }
+  if (
+    !input.objectKey ||
+    !input.runtimeCheck?.ok ||
+    !objectKeyMatchesContentHash(
+      input.objectKey,
+      assetHash,
+    )
+  ) {
+    return {
+      kind: "legacy_identity",
+      ok: false,
+      object_key:
+        input.objectKey,
+      detail:
+        "The current runtime R2 object is missing or its immutable object key does not encode the authoritative content hash.",
+    };
+  }
+
+  const [localHash, info] =
+    await Promise.all([
+      hashFile(input.filePath),
+      stat(input.filePath),
+    ]);
+  if (localHash !== assetHash) {
+    return {
+      kind: "legacy_identity",
+      ok: false,
+      object_key:
+        input.objectKey,
+      detail:
+        "The historical local runtime file hash does not match the authoritative current asset hash.",
+    };
+  }
+  if (
+    expectedSize != null &&
+    info.size !== expectedSize
+  ) {
+    return {
+      kind: "legacy_identity",
+      ok: false,
+      object_key:
+        input.objectKey,
+      detail:
+        `The historical local runtime file size (${info.size}) does not match the authoritative normalized size (${expectedSize}).`,
+    };
+  }
+
+  return {
+    kind: "legacy_identity",
+    ok: true,
+    object_key:
+      input.objectKey,
+    detail:
+      `Authoritative R2 source record ${input.bridge.record_object_key} maps this historical path to current asset ${input.bridge.asset.asset_id}; the local normalized GLB hash matches the authoritative asset hash.`,
+  };
+}
+
+async function verifyLegacyExactR2Copy(
+  input: {
+    bridge: LegacyPathBridge;
+    filePath: string;
+    objectKey: string | null;
+    storage: ReturnType<
+      typeof getR2RuntimeStorage
+    > | ReturnType<
+      typeof getR2SourceStorage
+    >;
+    label: string;
+  },
+): Promise<Phase3CleanupVerification> {
+  if (!input.objectKey) {
+    return {
+      kind: "legacy_identity",
+      ok: false,
+      detail:
+        `No current R2 object key is recorded for the ${input.label}.`,
+    };
+  }
+  try {
+    const [localBytes, remote] =
+      await Promise.all([
+        readFile(input.filePath),
+        input.storage.read(
+          input.objectKey,
+        ),
+      ]);
+    const matches = Boolean(
+      remote &&
+      Buffer.compare(
+        localBytes,
+        Buffer.from(remote.body),
+      ) === 0,
+    );
+    return {
+      kind: "legacy_identity",
+      ok: matches,
+      object_key:
+        input.objectKey,
+      detail: matches
+        ? `Authoritative R2 source record ${input.bridge.record_object_key} maps this historical path to current asset ${input.bridge.asset.asset_id}, and the local ${input.label} is byte-identical to the current R2 object.`
+        : `The historical local ${input.label} is not byte-identical to the current R2 object.`,
+    };
+  } catch (caught) {
+    return {
+      kind: "legacy_identity",
+      ok: false,
+      object_key:
+        input.objectKey,
+      detail:
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+    };
+  }
+}
+
 export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupAudit> {
   if (!durableAssetCloudEnabled()) {
     throw new Error(
@@ -652,6 +1118,12 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
       asset,
     ]),
   );
+  const legacyPathBridges =
+    await buildLegacyPathBridgeIndex({
+      assets,
+      assetsById,
+      sourceStorage,
+    });
   const items: Phase3CleanupItem[] = [];
   const claimedPaths = new Set<string>();
 
@@ -862,8 +1334,19 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
         filePath,
         extension,
       );
-    const asset =
+    const directAsset =
       assetsById.get(assetId);
+    const legacyBridge = directAsset
+      ? null
+      : uniqueLegacyBridge(
+          legacyPathBridges,
+          filePath,
+          "runtime_model",
+        );
+    const asset =
+      directAsset ??
+      legacyBridge?.asset ??
+      null;
     const tracking =
       trackingForPath(
         filePath,
@@ -882,6 +1365,15 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
         ? await checkRuntime(
             runtimeKey,
           )
+        : null;
+    const legacyIdentity =
+      legacyBridge
+        ? await verifyLegacyRuntimeIdentity({
+            bridge: legacyBridge,
+            filePath,
+            objectKey: runtimeKey,
+            runtimeCheck,
+          })
         : null;
     const doublesAsSource =
       asset
@@ -911,7 +1403,9 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
       !tracked.blocked &&
         runtimeKey &&
         runtimeCheck?.ok &&
-        sourceSafe,
+        sourceSafe &&
+        (!legacyBridge ||
+          legacyIdentity?.ok === true),
     );
 
     await addItem(items, {
@@ -926,20 +1420,27 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
       project_path:
         projectRelative(filePath),
       absolute_path: filePath,
-      asset_id: assetId,
+      asset_id:
+        asset?.asset_id ?? assetId,
       reason: tracked.blocked
         ? tracked.reason
         : safe
-          ? doublesAsSource
-            ? "Both the public runtime model and the private source archive were verified in R2."
-            : "The public runtime model was verified in R2 and this file is not the only recorded source copy."
-          : asset &&
-              asset.storage_provider !== "r2"
-            ? "This asset is still local/pending and its normalized model must remain available for review."
-            : doublesAsSource &&
-                !sourceSafe
-              ? "The runtime model is cloud-backed, but this same file is also the recorded source and its private source archive is not verified."
-              : "The R2 runtime model could not be verified.",
+          ? legacyBridge
+            ? `This historical runtime filename is mapped by authoritative R2 provenance to current asset ${asset?.asset_id}; its local content hash matches the authoritative asset hash and the current runtime object is verified in R2.`
+            : doublesAsSource
+              ? "Both the public runtime model and the private source archive were verified in R2."
+              : "The public runtime model was verified in R2 and this file is not the only recorded source copy."
+          : legacyBridge &&
+              legacyIdentity?.ok !== true
+            ? legacyIdentity?.detail ??
+              "The historical runtime path could not be proven to match the current authoritative asset."
+            : asset &&
+                asset.storage_provider !== "r2"
+              ? "This asset is still local/pending and its normalized model must remain available for review."
+              : doublesAsSource &&
+                  !sourceSafe
+                ? "The runtime model is cloud-backed, but this same file is also the recorded source and its private source archive is not verified."
+                : "The R2 runtime model could not be verified.",
       verifications: [
         {
           kind: "git_tracking",
@@ -948,6 +1449,9 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
             : null,
           detail: tracking.detail,
         },
+        ...(legacyIdentity
+          ? [legacyIdentity]
+          : []),
         {
           kind: "r2_runtime",
           ok: runtimeCheck?.ok ?? false,
@@ -1001,8 +1505,19 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
         filePath,
         extension,
       );
-    const asset =
+    const directAsset =
       assetsById.get(assetId);
+    const legacyBridge = directAsset
+      ? null
+      : uniqueLegacyBridge(
+          legacyPathBridges,
+          filePath,
+          "thumbnail",
+        );
+    const asset =
+      directAsset ??
+      legacyBridge?.asset ??
+      null;
     const tracking =
       trackingForPath(
         filePath,
@@ -1022,10 +1537,22 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
             objectKey,
           )
         : null;
+    const legacyIdentity =
+      legacyBridge
+        ? await verifyLegacyExactR2Copy({
+            bridge: legacyBridge,
+            filePath,
+            objectKey,
+            storage: runtimeStorage,
+            label: "thumbnail",
+          })
+        : null;
     const safe = Boolean(
       !tracked.blocked &&
         objectKey &&
-        verification?.ok,
+        verification?.ok &&
+        (!legacyBridge ||
+          legacyIdentity?.ok === true),
     );
 
     await addItem(items, {
@@ -1040,15 +1567,22 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
       project_path:
         projectRelative(filePath),
       absolute_path: filePath,
-      asset_id: assetId,
+      asset_id:
+        asset?.asset_id ?? assetId,
       reason: tracked.blocked
         ? tracked.reason
         : safe
-          ? "The asset thumbnail was independently verified in runtime R2."
-          : asset &&
-              asset.thumbnail_storage_provider !== "r2"
-            ? "This thumbnail is still the local review copy for a non-cloud/pending asset."
-            : "The R2 thumbnail could not be verified.",
+          ? legacyBridge
+            ? `This historical thumbnail filename is mapped by authoritative R2 provenance to current asset ${asset?.asset_id}, and the local thumbnail is byte-identical to the current R2 thumbnail.`
+            : "The asset thumbnail was independently verified in runtime R2."
+          : legacyBridge &&
+              legacyIdentity?.ok !== true
+            ? legacyIdentity?.detail ??
+              "The historical thumbnail could not be proven identical to the current R2 thumbnail."
+            : asset &&
+                asset.thumbnail_storage_provider !== "r2"
+              ? "This thumbnail is still the local review copy for a non-cloud/pending asset."
+              : "The R2 thumbnail could not be verified.",
       verifications: [
         {
           kind: "git_tracking",
@@ -1057,6 +1591,9 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
             : null,
           detail: tracking.detail,
         },
+        ...(legacyIdentity
+          ? [legacyIdentity]
+          : []),
         {
           kind: "r2_runtime",
           ok: verification?.ok ?? false,
@@ -1201,10 +1738,21 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
       inboxRoot,
     )) {
     if (!claim(filePath)) continue;
-    const asset =
+    const directAsset =
       sourceAssetByPath.get(
         pathKey(filePath),
       );
+    const legacyBridge = directAsset
+      ? null
+      : uniqueLegacyBridge(
+          legacyPathBridges,
+          filePath,
+          "source",
+        );
+    const asset =
+      directAsset ??
+      legacyBridge?.asset ??
+      null;
     const objectKey =
       asset?.source_storage_provider === "r2"
         ? asset.source_object_key ?? null
@@ -1214,6 +1762,16 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
         ? await checkSource(
             objectKey,
           )
+        : null;
+    const legacyIdentity =
+      legacyBridge
+        ? await verifyLegacyExactR2Copy({
+            bridge: legacyBridge,
+            filePath,
+            objectKey,
+            storage: sourceStorage,
+            label: "source file",
+          })
         : null;
     const tracking =
       trackingForPath(
@@ -1228,7 +1786,9 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
       !tracked.blocked &&
         asset &&
         objectKey &&
-        verification?.ok,
+        verification?.ok &&
+        (!legacyBridge ||
+          legacyIdentity?.ok === true),
     );
 
     await addItem(items, {
@@ -1247,11 +1807,17 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
       reason: tracked.blocked
         ? tracked.reason
         : safe
-          ? "This exact source_path has a verified private R2 source archive."
-          : asset &&
-              asset.source_storage_provider !== "r2"
-            ? "The asset still depends on this local source because no private R2 source archive is recorded."
-            : "This source file could not be tied to a verified private R2 archive.",
+          ? legacyBridge
+            ? `This historical source path is mapped by authoritative R2 provenance to current asset ${asset?.asset_id}, and the local source file is byte-identical to the current private R2 source object.`
+            : "This exact source_path has a verified private R2 source archive."
+          : legacyBridge &&
+              legacyIdentity?.ok !== true
+            ? legacyIdentity?.detail ??
+              "The historical source file could not be proven identical to the current private R2 source object."
+            : asset &&
+                asset.source_storage_provider !== "r2"
+              ? "The asset still depends on this local source because no private R2 source archive is recorded."
+              : "This source file could not be tied to a verified private R2 archive.",
       verifications: [
         {
           kind: "git_tracking",
@@ -1260,6 +1826,9 @@ export async function auditHistoricalLocalAssetStorage(): Promise<Phase3CleanupA
             : null,
           detail: tracking.detail,
         },
+        ...(legacyIdentity
+          ? [legacyIdentity]
+          : []),
         {
           kind: "r2_source",
           ok: verification?.ok ?? false,
@@ -2188,6 +2757,7 @@ export async function runHistoricalLocalAssetCleanup(
   input: {
     apply?: boolean;
     confirmation?: string | null;
+    item_ids?: string[];
   } = {},
 ): Promise<Phase3CleanupRunResult> {
   const apply = input.apply === true;
@@ -2203,6 +2773,34 @@ export async function runHistoricalLocalAssetCleanup(
 
   const before =
     await auditHistoricalLocalAssetStorage();
+  const requestedItemIds =
+    input.item_ids?.length
+      ? new Set(input.item_ids)
+      : null;
+  if (apply && requestedItemIds) {
+    const beforeById = new Map(
+      before.items.map((item) => [
+        item.id,
+        item,
+      ]),
+    );
+    for (const itemId of requestedItemIds) {
+      const item = beforeById.get(itemId);
+      if (!item) {
+        throw new Error(
+          `Requested Phase 3 cleanup item was not found in the fresh audit: ${itemId}`,
+        );
+      }
+      if (
+        item.classification !==
+        "safe_to_remove"
+      ) {
+        throw new Error(
+          `Requested Phase 3 cleanup item is no longer safe_to_remove: ${item.project_path}`,
+        );
+      }
+    }
+  }
   const deleted = {
     item_count: 0,
     file_count: 0,
@@ -2214,7 +2812,11 @@ export async function runHistoricalLocalAssetCleanup(
     for (const item of before.items) {
       if (
         item.classification !==
-        "safe_to_remove"
+          "safe_to_remove" ||
+        (requestedItemIds &&
+          !requestedItemIds.has(
+            item.id,
+          ))
       ) {
         continue;
       }
@@ -2304,3 +2906,4 @@ export async function runHistoricalLocalAssetCleanup(
 export function phase3ApplyConfirmation() {
   return APPLY_CONFIRMATION;
 }
+

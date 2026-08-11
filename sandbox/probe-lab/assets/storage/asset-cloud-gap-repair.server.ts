@@ -14,6 +14,9 @@ import type {
 } from "../asset-types";
 import { hashFile } from "../content-hash.server";
 import {
+  readJsonFileWithRetry,
+} from "../json-file.server";
+import {
   projectPath,
   publicUrlToProjectPath,
 } from "../paths.server";
@@ -21,7 +24,9 @@ import {
   archivePrivateAssetSource,
   durableAssetCloudEnabled,
   durableJsonCloudKey,
-  ensureDurableAssetJson,
+  recoverDurableAssetJsonFromExplicitLocalFile,
+  recoverDurableAssetJsonFromLocal,
+  runtimeObjectKeyFromPublicUrl,
   uploadRuntimeAssetFile,
 } from "./asset-durable-artifacts.server";
 import {
@@ -45,6 +50,9 @@ export type CloudGapRepairPlanItem = {
   local_path: string;
   bytes: number;
   object_key: string | null;
+  analysis_view_name?:
+    MyWayAssetAppearanceView["name"] | null;
+  durable_reference?: string | null;
   reason: string;
 };
 
@@ -168,23 +176,288 @@ function localSourcePath(
 ) {
   const source = asset.source_path;
   if (!source) return null;
-  if (path.isAbsolute(source)) {
-    return source;
-  }
+
+  // Browser-rooted MyWay public URLs (for example
+  // /sandbox-assets/myway/...) are considered absolute by
+  // path.isAbsolute() on Windows. Resolve them as project public URLs
+  // before treating a value as a real filesystem-absolute path.
   if (source.startsWith("/")) {
     try {
       return publicUrlToProjectPath(
         source,
       );
     } catch {
-      // Fall through to a project-relative reference.
+      // Not a MyWay public URL; a real absolute path may follow.
     }
   }
+
+  if (path.isAbsolute(source)) {
+    return source;
+  }
+
   const normalized =
     normalizeProjectReference(source);
   return projectPath(
     ...normalized.split("/").filter(Boolean),
   );
+}
+
+function localReferencePath(
+  value: string | null | undefined,
+) {
+  if (
+    !value ||
+    /^https?:\/\//i.test(value)
+  ) {
+    return null;
+  }
+
+  // On Windows, path.isAbsolute("/sandbox-assets/...") is true even
+  // though this is a browser URL rooted at MyWay's public directory.
+  // Resolve browser-rooted public URLs first so repair planning sees
+  // the same local file that the authority audit sees.
+  if (value.startsWith("/")) {
+    try {
+      return publicUrlToProjectPath(
+        value,
+      );
+    } catch {
+      // Not a MyWay public URL; a real absolute path may follow.
+    }
+  }
+
+  if (path.isAbsolute(value)) {
+    return value;
+  }
+
+  const normalized =
+    normalizeProjectReference(value);
+  return projectPath(
+    ...normalized.split("/").filter(Boolean),
+  );
+}
+
+type LocalSourceRecordCandidate = {
+  file_path: string;
+  value: Record<string, unknown>;
+};
+
+function cleanIdentityValue(
+  value: unknown,
+) {
+  return typeof value === "string"
+    ? value.trim()
+    : "";
+}
+
+function sourceRecordStableSourceIds(
+  candidate: LocalSourceRecordCandidate,
+) {
+  return Array.from(
+    new Set(
+      [
+        candidate.value.source_asset_id,
+        candidate.value.asset_base_id,
+        candidate.value.selected_source_asset_id,
+      ]
+        .map(cleanIdentityValue)
+        .filter(Boolean),
+    ),
+  );
+}
+
+function sourceRecordMatchesAsset(
+  asset: MyWayAssetRecord,
+  candidate: LocalSourceRecordCandidate,
+) {
+  const recordAssetId =
+    cleanIdentityValue(
+      candidate.value.asset_id,
+    );
+  const assetSourceId =
+    cleanIdentityValue(
+      asset.source_asset_id ??
+        asset.attribution?.source_asset_id,
+    );
+  const recordStableSourceIds =
+    sourceRecordStableSourceIds(
+      candidate,
+    );
+  const directMyWayIdentity =
+    recordAssetId === asset.asset_id;
+  const stableProviderIdentity =
+    Boolean(
+      assetSourceId &&
+        recordStableSourceIds.includes(
+          assetSourceId,
+        ),
+    );
+
+  if (
+    !directMyWayIdentity &&
+    !stableProviderIdentity
+  ) {
+    return false;
+  }
+
+  const comparisons: Array<[string, string]> = [];
+
+  if (
+    assetSourceId &&
+    recordStableSourceIds.length > 0
+  ) {
+    comparisons.push([
+      stableProviderIdentity
+        ? assetSourceId
+        : recordStableSourceIds[0]!,
+      assetSourceId,
+    ]);
+  }
+
+  const recordSourceUrl =
+    cleanIdentityValue(
+      candidate.value.source_url ??
+        candidate.value.source_page_url,
+    );
+  const assetSourceUrl =
+    cleanIdentityValue(
+      asset.source_url ??
+        asset.attribution?.source_url,
+    );
+  if (
+    recordSourceUrl &&
+    assetSourceUrl
+  ) {
+    comparisons.push([
+      recordSourceUrl,
+      assetSourceUrl,
+    ]);
+  }
+
+  const recordHash =
+    cleanIdentityValue(
+      candidate.value.content_hash,
+    );
+  const assetHash =
+    cleanIdentityValue(
+      asset.content_hash,
+    );
+  if (recordHash && assetHash) {
+    comparisons.push([
+      recordHash,
+      assetHash,
+    ]);
+  }
+
+  return (
+    comparisons.length > 0 &&
+    comparisons.every(
+      ([left, right]) =>
+        left === right,
+    )
+  );
+}
+
+type LocalSourceRecordIndex = {
+  by_asset_id: Map<
+    string,
+    LocalSourceRecordCandidate[]
+  >;
+  by_source_id: Map<
+    string,
+    LocalSourceRecordCandidate[]
+  >;
+};
+
+function addSourceRecordIndexEntry(
+  index: Map<
+    string,
+    LocalSourceRecordCandidate[]
+  >,
+  key: string,
+  candidate: LocalSourceRecordCandidate,
+) {
+  if (!key) return;
+  const entries = index.get(key) ?? [];
+  if (
+    !entries.some(
+      (entry) =>
+        entry.file_path ===
+        candidate.file_path,
+    )
+  ) {
+    entries.push(candidate);
+    index.set(key, entries);
+  }
+}
+
+async function localSourceRecordIndex(): Promise<LocalSourceRecordIndex> {
+  const root = projectPath(
+    "sandbox",
+    "probe-lab",
+    "assets",
+    "library",
+    "source-records",
+  );
+  const byAssetId = new Map<
+    string,
+    LocalSourceRecordCandidate[]
+  >();
+  const bySourceId = new Map<
+    string,
+    LocalSourceRecordCandidate[]
+  >();
+
+  for (const filePath of
+    await listFilesRecursive(root)) {
+    if (
+      path.extname(filePath)
+        .toLowerCase() !== ".json"
+    ) {
+      continue;
+    }
+
+    let value:
+      Record<string, unknown>;
+    try {
+      value =
+        await readJsonFileWithRetry<
+          Record<string, unknown>
+        >(filePath);
+    } catch {
+      continue;
+    }
+
+    const candidate = {
+      file_path: filePath,
+      value,
+    };
+    const assetId =
+      cleanIdentityValue(
+        value.asset_id,
+      );
+    addSourceRecordIndexEntry(
+      byAssetId,
+      assetId,
+      candidate,
+    );
+
+    for (const sourceId of
+      sourceRecordStableSourceIds(
+        candidate,
+      )) {
+      addSourceRecordIndexEntry(
+        bySourceId,
+        sourceId,
+        candidate,
+      );
+    }
+  }
+
+  return {
+    by_asset_id: byAssetId,
+    by_source_id: bySourceId,
+  };
 }
 
 function durableMetadataReferences(
@@ -409,152 +682,160 @@ export async function buildCloudGapRepairPlan(): Promise<CloudGapRepairPlan> {
     });
   }
 
-  const analysisRoot = projectPath(
-    "public",
-    "sandbox-assets",
-    "myway",
-    "analysis",
-  );
-  for (const filePath of
-    await listFilesRecursive(
-      analysisRoot,
-    )) {
-    const relative = path.relative(
-      analysisRoot,
-      filePath,
-    );
-    const parts = relative.split(
-      path.sep,
-    );
-    const assetId = parts[0] ?? "";
-    const viewName = path.basename(
-      filePath,
-      path.extname(filePath),
-    );
-    if (
-      !assetId ||
-      !ANALYSIS_VIEW_NAMES.has(
-        viewName,
-      )
-    ) {
-      continue;
-    }
-    const asset = byId.get(assetId);
-    if (!asset?.appearance_profile) {
-      continue;
-    }
-    const existing =
-      asset.appearance_profile.analysis_views.find(
-        (view) =>
-          view.name === viewName,
-      );
-    const recordedKey = existing
-      ? (() => {
-          const base =
-            process.env.R2_PUBLIC_BASE_URL
-              ?.trim()
-              .replace(/\/+$/g, "");
-          if (
-            !base ||
-            !existing.public_path.startsWith(
-              `${base}/`,
-            )
-          ) {
-            return null;
-          }
-          try {
-            return existing.public_path
-              .slice(base.length + 1)
-              .split("/")
-              .map((segment) =>
-                decodeURIComponent(segment),
-              )
-              .join("/");
-          } catch {
-            return null;
-          }
-        })()
-      : null;
-    if (
-      recordedKey &&
-      (await runtimeExists(
-        recordedKey,
-      ))
-    ) {
-      continue;
-    }
-    const info = await fileInfo(filePath);
-    if (!info) continue;
-    items.push({
-      category: "analysis_render",
-      asset_id: asset.asset_id,
-      local_path: filePath,
-      bytes: info.size,
-      object_key: recordedKey,
-      reason:
-        "The local standardized analysis view has no matching verified runtime R2 object; it can be republished and the appearance profile URL repaired.",
-    });
-  }
-
-  const durableRoots = [
-    projectPath(
-      "sandbox",
-      "probe-lab",
-      "assets",
-      "embeddings",
-    ),
-    projectPath(
-      "sandbox",
-      "probe-lab",
-      "assets",
-      "library",
-      "licenses",
-    ),
-    projectPath(
-      "sandbox",
-      "probe-lab",
-      "assets",
-      "library",
-      "source-records",
-    ),
-  ];
-  for (const root of durableRoots) {
-    for (const filePath of
-      await listFilesRecursive(root)) {
+  for (const asset of assets) {
+    for (const view of
+      asset.appearance_profile
+        ?.analysis_views ?? []) {
+      const recordedKey =
+        runtimeObjectKeyFromPublicUrl(
+          view.public_path,
+        );
       if (
-        path.extname(filePath)
-          .toLowerCase() !== ".json"
+        recordedKey &&
+        (await runtimeExists(
+          recordedKey,
+        ))
       ) {
         continue;
       }
-      const info = await fileInfo(
-        filePath,
-      );
-      if (!info) continue;
-      const reference =
-        referenceFromLocalDurablePath(
-          filePath,
+
+      const expectedPrefix =
+        `runtime/analysis/${asset.asset_id}/${view.name}/`;
+      if (!recordedKey) {
+        const existingUnderPrefix =
+          await getR2RuntimeStorage()
+            .list({
+              prefix:
+                expectedPrefix,
+            });
+        if (
+          existingUnderPrefix.length > 0
+        ) {
+          continue;
+        }
+      }
+
+      const localPath =
+        localReferencePath(
+          view.public_path,
         );
-      let alreadyVerified = false;
+      if (!localPath) continue;
+      const info =
+        await fileInfo(localPath);
+      if (!info) continue;
+
+      items.push({
+        category: "analysis_render",
+        asset_id: asset.asset_id,
+        local_path: localPath,
+        bytes: info.size,
+        object_key:
+          recordedKey ??
+          `${expectedPrefix}*`,
+        analysis_view_name:
+          view.name,
+        reason:
+          "The authoritative registry references a local analysis image whose expected R2 object/prefix is missing; repair uses the registry view name and exact referenced local file rather than assuming a historical filename convention.",
+      });
+    }
+  }
+
+  const sourceRecordIndex =
+    await localSourceRecordIndex();
+
+  for (const asset of assets) {
+    for (const reference of
+      durableMetadataReferences(
+        asset,
+      )) {
+      let objectKey: string;
       try {
-        const key =
+        objectKey =
           durableJsonCloudKey(
             reference,
           );
-        alreadyVerified =
-          await sourceExists(key);
       } catch {
         continue;
       }
-      if (alreadyVerified) continue;
+
+      if (await sourceExists(objectKey)) {
+        continue;
+      }
+
+      const canonicalLocalPath =
+        localReferencePath(reference);
+      let localPath =
+        canonicalLocalPath;
+      let info = localPath
+        ? await fileInfo(localPath)
+        : null;
+      let reason =
+        "An authoritative asset metadata object is missing from private R2, and its canonical local historical mirror can explicitly restore the expected cloud key.";
+
+      const canonicalSourceReference =
+        `sandbox/probe-lab/assets/library/source-records/${asset.asset_id}.json`;
+      if (
+        !info &&
+        reference ===
+          canonicalSourceReference
+      ) {
+        const stableSourceId =
+          cleanIdentityValue(
+            asset.source_asset_id ??
+              asset.attribution?.source_asset_id,
+          );
+        const candidates =
+          Array.from(
+            new Map(
+              [
+                ...(sourceRecordIndex.by_asset_id.get(
+                  asset.asset_id,
+                ) ?? []),
+                ...(stableSourceId
+                  ? sourceRecordIndex.by_source_id.get(
+                      stableSourceId,
+                    ) ?? []
+                  : []),
+              ].map((candidate) => [
+                candidate.file_path,
+                candidate,
+              ]),
+            ).values(),
+          ).filter(
+            (candidate) =>
+              sourceRecordMatchesAsset(
+                asset,
+                candidate,
+              ),
+          );
+
+        if (candidates.length === 1) {
+          localPath =
+            candidates[0]!.file_path;
+          info =
+            await fileInfo(localPath);
+          reason =
+            "The canonical source-record filename is missing after an asset-ID rename, but exactly one local historical source record matches the current MyWay asset by either current asset_id or stable provider source identity plus consistent provenance. Repair writes that verified record to the canonical private R2 key without renaming or deleting the local historical file.";
+        }
+      }
+
+      if (!localPath || !info) {
+        continue;
+      }
+
       items.push({
-        category: "durable_metadata",
-        asset_id: null,
-        local_path: filePath,
+        category:
+          "durable_metadata",
+        asset_id:
+          asset.asset_id,
+        local_path:
+          localPath,
         bytes: info.size,
-        object_key: null,
-        reason:
-          "A local durable metadata JSON exists but its canonical private R2 object is not verified; it can be restored from the local mirror.",
+        object_key:
+          objectKey,
+        durable_reference:
+          reference,
+        reason,
       });
     }
   }
@@ -763,10 +1044,12 @@ async function repairAnalysisRender(
       `Appearance profile not found: ${item.asset_id}`,
     );
   }
-  const viewName = path.basename(
-    item.local_path,
-    path.extname(item.local_path),
-  );
+  const viewName =
+    item.analysis_view_name ??
+    path.basename(
+      item.local_path,
+      path.extname(item.local_path),
+    );
   if (
     !ANALYSIS_VIEW_NAMES.has(
       viewName,
@@ -830,17 +1113,33 @@ async function repairDurableMetadata(
   item: CloudGapRepairPlanItem,
 ) {
   const reference =
+    item.durable_reference ??
     referenceFromLocalDurablePath(
       item.local_path,
     );
+  const canonicalLocalPath =
+    localReferencePath(reference);
   const result =
-    await ensureDurableAssetJson(
-      reference,
-    );
+    canonicalLocalPath &&
+    path.resolve(
+      canonicalLocalPath,
+    ) ===
+      path.resolve(
+        item.local_path,
+      )
+      ? await recoverDurableAssetJsonFromLocal(
+          reference,
+        )
+      : await recoverDurableAssetJsonFromExplicitLocalFile(
+          reference,
+          item.local_path,
+        );
   return {
     objectKey:
       result.cloud_object_key,
-    alreadyVerified: false,
+    alreadyVerified:
+      result.status ===
+      "already_present",
   };
 }
 
@@ -909,6 +1208,7 @@ export async function repairCloudGapPlan(input: {
   confirmation: string;
   limit?: number;
   categories?: CloudGapRepairCategory[];
+  objectKeys?: string[];
 }) {
   if (
     input.confirmation !==
@@ -923,11 +1223,21 @@ export async function repairCloudGapPlan(input: {
   const categories = input.categories?.length
     ? new Set(input.categories)
     : null;
+  const objectKeys = input.objectKeys?.length
+    ? new Set(input.objectKeys)
+    : null;
   const selected = plan.items
     .filter(
       (item) =>
-        !categories ||
-        categories.has(item.category),
+        (!categories ||
+          categories.has(item.category)) &&
+        (!objectKeys ||
+          Boolean(
+            item.object_key &&
+            objectKeys.has(
+              item.object_key,
+            ),
+          )),
     )
     .slice(
       0,

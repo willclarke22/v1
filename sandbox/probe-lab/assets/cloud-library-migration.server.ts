@@ -7,6 +7,7 @@ import path from "node:path";
 import {
   listMyWayAssets,
   loadMyWayAssetRegistry,
+  restoreMyWayAssetRegistryToCloudFromLocal,
   updateMyWayAsset,
 } from "./asset-library.server";
 import {
@@ -43,8 +44,8 @@ import {
   getR2SourceStorage,
 } from "./storage/r2-asset-storage.server";
 import {
-  ensureDurableAssetJson,
   readDurableAssetJson,
+  recoverDurableAssetJsonFromLocal,
 } from "./storage/asset-durable-artifacts.server";
 import {
   writeJsonFileAtomic,
@@ -120,6 +121,30 @@ function localPublicPath(
   }
 }
 
+async function recoverMetadataReference(
+  reference: string | null,
+) {
+  if (!reference) return false;
+
+  const existing =
+    await readDurableAssetJson<unknown>(
+      reference,
+    );
+
+  if (existing != null) {
+    return true;
+  }
+
+  try {
+    await recoverDurableAssetJsonFromLocal(
+      reference,
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function archiveAssetMetadata(
   asset: MyWayAssetRecord,
 ) {
@@ -132,54 +157,29 @@ async function archiveAssetMetadata(
     asset.appearance_embedding?.vector_key ??
     null;
 
-  const [license, sourceRecord, embedding] =
-    await Promise.all([
-      licenseReference
-        ? readDurableAssetJson<unknown>(
-            licenseReference,
-          )
-        : Promise.resolve(null),
-      readDurableAssetJson<unknown>(
-        sourceRecordReference,
-      ),
-      embeddingReference
-        ? readDurableAssetJson<unknown>(
-            embeddingReference,
-          )
-        : Promise.resolve(null),
-    ]);
-
-  if (
-    licenseReference &&
-    license != null
-  ) {
-    await ensureDurableAssetJson(
+  const [
+    licenseArchived,
+    sourceRecordArchived,
+    embeddingArchived,
+  ] = await Promise.all([
+    recoverMetadataReference(
       licenseReference,
-    );
-  }
-
-  if (sourceRecord != null) {
-    await ensureDurableAssetJson(
+    ),
+    recoverMetadataReference(
       sourceRecordReference,
-    );
-  }
-
-  if (
-    embeddingReference &&
-    embedding != null
-  ) {
-    await ensureDurableAssetJson(
+    ),
+    recoverMetadataReference(
       embeddingReference,
-    );
-  }
+    ),
+  ]);
 
   return {
     license_archived:
-      Boolean(license),
+      licenseArchived,
     source_record_archived:
-      Boolean(sourceRecord),
+      sourceRecordArchived,
     embedding_archived:
-      Boolean(embedding),
+      embeddingArchived,
   };
 }
 
@@ -819,23 +819,40 @@ export async function bootstrapAllCloudAssetMetadata() {
     );
   }
 
+  let remoteModelRegistry =
+    await readCloudJson<unknown>(
+      MODEL_REGISTRY_KEY,
+    );
+  let registryRecovery:
+    | "already_present"
+    | "recovered" =
+    "already_present";
+
+  if (!remoteModelRegistry) {
+    await restoreMyWayAssetRegistryToCloudFromLocal();
+    registryRecovery =
+      "recovered";
+    remoteModelRegistry =
+      await readCloudJson<unknown>(
+        MODEL_REGISTRY_KEY,
+      );
+  }
+
+  if (!remoteModelRegistry) {
+    throw new Error(
+      "The model registry could not be recovered to R2.",
+    );
+  }
+
   const modelRegistry =
     await loadMyWayAssetRegistry();
   const ambient =
     await bootstrapAmbientCgCloudMetadata();
-  const remoteModelRegistry =
-    await readCloudJson<unknown>(
-      MODEL_REGISTRY_KEY,
-    );
-
-  if (!remoteModelRegistry) {
-    throw new Error(
-      "The model registry could not be bootstrapped to R2.",
-    );
-  }
 
   return {
     ambient,
+    registry_recovery:
+      registryRecovery,
     model_registry_ready: true,
     model_asset_count:
       modelRegistry.assets.length,
@@ -857,7 +874,10 @@ export async function compactVerifiedLocalMetadata() {
     MODEL_REGISTRY_KEY,
     "metadata/ambientcg/catalog-v1.json",
     "metadata/ambientcg/sync-state-v1.json",
+    "metadata/ambientcg/categories-v1.json",
+    "metadata/ambientcg/collections-v1.json",
     "metadata/ambientcg/material-registry-v1.json",
+    "metadata/ambientcg/material-appearance-registry-v1.json",
     "metadata/ambientcg/hdri-registry-v1.json",
     "metadata/ambientcg/resource-registry-v1.json",
     "metadata/ambientcg/download-jobs-v1.json",

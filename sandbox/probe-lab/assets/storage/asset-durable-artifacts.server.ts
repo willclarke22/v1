@@ -148,16 +148,161 @@ export async function readDurableAssetJson<T>(
   reference: string,
 ): Promise<T | null> {
   if (durableAssetCloudEnabled()) {
-    const remote =
-      await readCloudJson<T>(
-        durableJsonCloudKey(reference),
-      );
-    if (remote != null) {
-      return remote;
-    }
+    return readCloudJson<T>(
+      durableJsonCloudKey(reference),
+    );
   }
 
   return localJsonOrNull<T>(reference);
+}
+
+export async function recoverDurableAssetJsonFromLocal(
+  reference: string,
+) {
+  if (!durableAssetCloudEnabled()) {
+    throw new Error(
+      "R2 durable asset metadata storage is not enabled.",
+    );
+  }
+
+  if (process.env.VERCEL === "1") {
+    throw new Error(
+      "Local durable-asset metadata recovery is only available from the local development environment.",
+    );
+  }
+
+  const existing =
+    await readCloudJson<unknown>(
+      durableJsonCloudKey(reference),
+    );
+
+  if (existing != null) {
+    return {
+      reference:
+        normalizeProjectReference(reference),
+      cloud_object_key:
+        durableJsonCloudKey(reference),
+      status: "already_present" as const,
+    };
+  }
+
+  const local =
+    await localJsonOrNull<unknown>(
+      reference,
+    );
+
+  if (local == null) {
+    throw new Error(
+      `Local recovery source is missing for durable asset metadata: ${reference}`,
+    );
+  }
+
+  const written =
+    await writeCloudJson(
+      durableJsonCloudKey(reference),
+      local,
+    );
+
+  if (
+    !written ||
+    !(await getR2SourceStorage().exists(
+      written.object_key,
+    ))
+  ) {
+    throw new Error(
+      `Explicit durable asset metadata recovery failed R2 verification: ${reference}`,
+    );
+  }
+
+  return {
+    reference:
+      normalizeProjectReference(reference),
+    cloud_object_key:
+      written.object_key,
+    status: "recovered" as const,
+  };
+}
+
+export async function recoverDurableAssetJsonFromExplicitLocalFile(
+  reference: string,
+  localPath: string,
+) {
+  if (!durableAssetCloudEnabled()) {
+    throw new Error(
+      "R2 durable asset metadata storage is not enabled.",
+    );
+  }
+
+  if (process.env.VERCEL === "1") {
+    throw new Error(
+      "Explicit local durable-asset recovery is only available from the local development environment.",
+    );
+  }
+
+  const objectKey =
+    durableJsonCloudKey(reference);
+  const existing =
+    await readCloudJson<unknown>(
+      objectKey,
+    );
+
+  if (existing != null) {
+    return {
+      reference:
+        normalizeProjectReference(reference),
+      cloud_object_key:
+        objectKey,
+      status: "already_present" as const,
+    };
+  }
+
+  const root = path.resolve(
+    projectPath(),
+  );
+  const resolvedLocalPath =
+    path.resolve(localPath);
+  const rootPrefix =
+    `${root}${path.sep}`;
+  if (
+    resolvedLocalPath !== root &&
+    !resolvedLocalPath.startsWith(
+      rootPrefix,
+    )
+  ) {
+    throw new Error(
+      `Explicit durable metadata recovery source is outside the project root: ${localPath}`,
+    );
+  }
+
+  const local =
+    await readJsonFileWithRetry<unknown>(
+      resolvedLocalPath,
+    );
+
+  const written =
+    await writeCloudJson(
+      objectKey,
+      local,
+    );
+
+  if (
+    !written ||
+    !(await getR2SourceStorage().exists(
+      written.object_key,
+    ))
+  ) {
+    throw new Error(
+      `Explicit durable asset metadata recovery failed R2 verification: ${reference}`,
+    );
+  }
+
+  return {
+    reference:
+      normalizeProjectReference(reference),
+    cloud_object_key:
+      written.object_key,
+    status: "recovered" as const,
+  };
 }
 
 export async function writeDurableAssetJson(
