@@ -1,9 +1,0 @@
-C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\8c5e0739-5795-4fde-a888-bb9b209fcb63\build_asset.py:24: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
-  material.use_nodes = True
-Traceback (most recent call last):
-  File "C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\8c5e0739-5795-4fde-a888-bb9b209fcb63\build_asset.py", line 133, in <module>
-    bpy.context.scene.render.engine = "BLENDER_EEVEE_NEXT"
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: bpy_struct: item.attr = val: enum "BLENDER_EEVEE_NEXT" not found in ('BLENDER_EEVEE', 'BLENDER_WORKBENCH', 'CYCLES')
-
-Error: script failed, file: 'C:\Users\willc\projects\MyWay\v1\sandbox\probe-lab\blender-python-builder\jobs\8c5e0739-5795-4fde-a888-bb9b209fcb63\build_asset.py', exiting.

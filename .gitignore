@@ -95,3 +95,7 @@ sandbox/probe-lab/assets/library/materials/appearance-registry.json
 /sandbox/probe-lab/assets/library/licenses/*.json
 /sandbox/probe-lab/assets/library/source-records/*.json
 # END MyWay cloud-authoritative generated asset mirrors (v20)
+
+# MyWay generated Foundry / Blender Python workspaces
+/public/sandbox-assets/myway/blender-python-builder/
+/sandbox/probe-lab/blender-python-builder/jobs/
