@@ -212,3 +212,26 @@ process receives the same R2 environment as the Next.js app. The CLI defaults to
 dry-run mode and requires the explicit confirmation token
 `REPAIR_MISSING_R2_ASSET_OBJECTS` for apply mode.
 
+## Step 3 durable workflow state
+
+Persistent sandbox workflow JSON follows the same cloud-authority rule as
+durable Asset Library metadata.
+
+Private source-bucket objects now include:
+
+- `metadata/myway/workflows/missing-asset-queue-v1.json`
+- `metadata/myway/scenes/manifests/<scene_id>.json`
+
+With R2 configured, normal queue and scene reads/writes never restore or mirror
+these records from the laptop. Local queue/scene JSON is accepted only by the
+explicit verified Step 3 migration. The migration refuses to overwrite a
+different existing R2 document and removes local source JSON only after a
+direct source-bucket read confirms equivalent data.
+
+Asset-ID rename and identity-repair operations also rewrite references inside
+the private queue and saved-scene documents, with rollback if the enclosing
+asset mutation fails.
+
+The cloud-authority audit treats the queue and existing private scene manifests
+as managed expected R2 objects so they do not inflate the unreferenced-object
+review set.

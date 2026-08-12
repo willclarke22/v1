@@ -30,6 +30,10 @@ import {
   getR2RuntimeStorage,
   getR2SourceStorage,
 } from "./r2-asset-storage.server";
+import {
+  MYWAY_MISSING_ASSET_QUEUE_CLOUD_KEY,
+  MYWAY_SCENE_MANIFEST_CLOUD_PREFIX,
+} from "./workflow-durable-state.server";
 
 const ASSET_REGISTRY_KEY =
   "metadata/myway/assets/registry-v2.json";
@@ -41,6 +45,7 @@ const FOUNDRY_CANDIDATE_PREFIX =
 const FIXED_SOURCE_METADATA_KEYS = [
   ASSET_REGISTRY_KEY,
   CLOUD_MIGRATION_KEY,
+  MYWAY_MISSING_ASSET_QUEUE_CLOUD_KEY,
   ...Object.values(
     AMBIENTCG_CLOUD_KEYS,
   ),
@@ -953,6 +958,39 @@ export async function runAssetCloudAuthorityAudit() {
           });
         }
       }
+    }
+  }
+
+  for (
+    const object of
+    sourceMetadataObjects
+  ) {
+    if (
+      object.object_key.startsWith(
+        MYWAY_SCENE_MANIFEST_CLOUD_PREFIX,
+      ) &&
+      object.object_key.endsWith(
+        ".json",
+      )
+    ) {
+      addExpected(
+        expected,
+        {
+          bucket:
+            "source",
+          object_key:
+            object.object_key,
+          category:
+            "scene_manifest",
+          owner_id:
+            path.basename(
+              object.object_key,
+              ".json",
+            ),
+          expected_bytes:
+            null,
+        },
+      );
     }
   }
 

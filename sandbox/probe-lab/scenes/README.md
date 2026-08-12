@@ -43,3 +43,18 @@ event and stable actor id remain intact.
 Saved scenes hydrate reusable assets from the current registry and preserve the
 director and resource contracts so actor, material, or environment upgrades do
 not require re-directing the lesson.
+
+## Durable saved-scene storage
+
+With R2 metadata mode enabled, each saved scene manifest is authoritative in the
+private source bucket under:
+
+`metadata/myway/scenes/manifests/<scene_id>.json`
+
+Saving, loading, listing, refreshing, and asset-ID reference maintenance use
+those private objects directly. Normal cloud mode never falls back to the
+repository-local `sandbox/probe-lab/scenes/manifests` directory.
+
+The local manifest directory remains a compatibility path only when R2 metadata
+storage is genuinely disabled, and as an explicit one-time migration source for
+pre-Step-3 saved scenes.

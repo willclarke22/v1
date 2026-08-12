@@ -15,6 +15,12 @@ import {
   readJsonFileWithRetry,
   writeJsonFileAtomic,
 } from "../json-file.server";
+import {
+  MYWAY_MISSING_ASSET_QUEUE_CLOUD_KEY,
+  readWorkflowCloudJson,
+  workflowDurableStateCloudEnabled,
+  writeWorkflowCloudJson,
+} from "../storage/workflow-durable-state.server";
 import type {
   MissingAssetAcquisitionJob,
   MissingAssetAcquisitionJobSummary,
@@ -245,6 +251,50 @@ function normalizeJob(
 
 async function loadQueueUnlocked():
   Promise<MissingAssetAcquisitionQueueV1> {
+  if (
+    workflowDurableStateCloudEnabled()
+  ) {
+    const parsed =
+      await readWorkflowCloudJson<
+        Partial<MissingAssetAcquisitionQueueV1>
+      >(
+        MYWAY_MISSING_ASSET_QUEUE_CLOUD_KEY,
+      );
+
+    if (!parsed) {
+      throw new Error(
+        `Authoritative private-R2 missing-asset queue is missing: ${MYWAY_MISSING_ASSET_QUEUE_CLOUD_KEY}. ` +
+        "Normal reads never restore it from this laptop. Run the explicit Step 3 workflow-state migration/bootstrap action.",
+      );
+    }
+
+    return {
+      schema_version:
+        "myway_missing_asset_acquisition_queue_v1",
+      updated_at:
+        typeof parsed.updated_at === "string"
+          ? parsed.updated_at
+          : now(),
+      jobs: Array.isArray(parsed.jobs)
+        ? parsed.jobs
+            .filter(
+              (
+                job,
+              ): job is
+                MissingAssetAcquisitionJob =>
+                Boolean(
+                  job &&
+                    typeof job === "object" &&
+                    typeof (
+                      job as MissingAssetAcquisitionJob
+                    ).concept === "string",
+                ),
+            )
+            .map(normalizeJob)
+        : [],
+    };
+  }
+
   if (process.env.VERCEL === "1") {
     ephemeralQueue ??= emptyQueue();
     return JSON.parse(
@@ -307,6 +357,16 @@ async function saveQueueUnlocked(
   queue: MissingAssetAcquisitionQueueV1,
 ) {
   queue.updated_at = now();
+
+  if (
+    workflowDurableStateCloudEnabled()
+  ) {
+    await writeWorkflowCloudJson(
+      MYWAY_MISSING_ASSET_QUEUE_CLOUD_KEY,
+      queue,
+    );
+    return;
+  }
 
   if (process.env.VERCEL === "1") {
     ephemeralQueue = JSON.parse(

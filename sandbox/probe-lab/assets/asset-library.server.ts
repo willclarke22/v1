@@ -47,6 +47,12 @@ import {
   readDurableAssetJson,
   writeDurableAssetJson,
 } from "./storage/asset-durable-artifacts.server";
+import {
+  applyWorkflowCloudReferenceMutation,
+  collectWorkflowCloudReferenceMutations,
+  rollbackWorkflowCloudReferenceMutation,
+  type WorkflowCloudReferenceMutation,
+} from "./storage/workflow-durable-state.server";
 
 let writeQueue: Promise<unknown> = Promise.resolve();
 
@@ -1044,7 +1050,15 @@ export async function renameMyWayAssetId(input: {
       Boolean(mutation),
   );
 
+  const workflowCloudMutations =
+    await collectWorkflowCloudReferenceMutations(
+      replacements,
+    );
+
   const applied: JsonReferenceMutation[] =
+    [];
+  const appliedWorkflowCloudMutations:
+    WorkflowCloudReferenceMutation[] =
     [];
   let vectorMoved = false;
   let durableVectorCopied = false;
@@ -1056,6 +1070,18 @@ export async function renameMyWayAssetId(input: {
         mutation.next,
       );
       applied.push(mutation);
+    }
+
+    for (
+      const mutation of
+      workflowCloudMutations
+    ) {
+      await applyWorkflowCloudReferenceMutation(
+        mutation,
+      );
+      appliedWorkflowCloudMutations.push(
+        mutation,
+      );
     }
 
     if (
@@ -1133,6 +1159,19 @@ export async function renameMyWayAssetId(input: {
       ).catch(() => undefined);
     }
     for (
+      const mutation of
+      appliedWorkflowCloudMutations
+        .slice()
+        .reverse()
+    ) {
+      await rollbackWorkflowCloudReferenceMutation(
+        mutation,
+      ).catch(
+        () => undefined,
+      );
+    }
+
+    for (
       const mutation of applied
         .slice()
         .reverse()
@@ -1154,14 +1193,19 @@ export async function renameMyWayAssetId(input: {
   return {
     asset: renamed,
     renamed_from: previousAssetId,
-    updated_reference_files:
-      mutations.map(
+    updated_reference_files: [
+      ...mutations.map(
         (mutation) =>
           path.relative(
             projectRoot(),
             mutation.file_path,
           ),
       ),
+      ...workflowCloudMutations.map(
+        (mutation) =>
+          `r2-source:${mutation.object_key}`,
+      ),
+    ],
     moved_identity_files:
       (vectorMoved || durableVectorCopied) &&
       nextVectorKey
@@ -1439,6 +1483,13 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
       )
     : [];
 
+  const workflowCloudMutations =
+    replacements.size > 0
+      ? await collectWorkflowCloudReferenceMutations(
+          replacements,
+        )
+      : [];
+
   const shouldQueueRefresh =
     input.queueEmbeddingRefresh !== false &&
     sourceTextNeedsRefresh;
@@ -1472,6 +1523,9 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
   }
 
   const applied: JsonReferenceMutation[] = [];
+  const appliedWorkflowCloudMutations:
+    WorkflowCloudReferenceMutation[] =
+    [];
   let vectorMoved = false;
   let durableVectorCopied = false;
 
@@ -1482,6 +1536,18 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
         mutation.next,
       );
       applied.push(mutation);
+    }
+
+    for (
+      const mutation of
+      workflowCloudMutations
+    ) {
+      await applyWorkflowCloudReferenceMutation(
+        mutation,
+      );
+      appliedWorkflowCloudMutations.push(
+        mutation,
+      );
     }
 
     if (
@@ -1542,6 +1608,19 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
       ).catch(() => undefined);
     }
     for (
+      const mutation of
+      appliedWorkflowCloudMutations
+        .slice()
+        .reverse()
+    ) {
+      await rollbackWorkflowCloudReferenceMutation(
+        mutation,
+      ).catch(
+        () => undefined,
+      );
+    }
+
+    for (
       const mutation of applied
         .slice()
         .reverse()
@@ -1566,13 +1645,18 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
       vectorMoved || durableVectorCopied
         ? [expectedVectorKey]
         : [],
-    updated_reference_files:
-      mutations.map((mutation) =>
+    updated_reference_files: [
+      ...mutations.map((mutation) =>
         path.relative(
           projectRoot(),
           mutation.file_path,
         ),
       ),
+      ...workflowCloudMutations.map(
+        (mutation) =>
+          `r2-source:${mutation.object_key}`,
+      ),
+    ],
     embedding_refresh_queued:
       shouldQueueRefresh,
     warnings,
