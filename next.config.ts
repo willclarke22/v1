@@ -17,6 +17,7 @@ const sandboxProbeLabTraceExcludes = [
   "./sandbox/probe-lab/assets/embeddings/**/*",
   "./sandbox/probe-lab/assets/enrichment/cache/**/*",
   "./sandbox/probe-lab/blender-python-builder/jobs/**/*",
+  "./sandbox/probe-lab/blender-python-builder/candidates/**/*",
   "./sandbox/probe-lab/visual-experience/assets/generated/**/*",
   "./sandbox/probe-lab/visual-experience/assets/source/blender/**/*",
   "./myway-sandbox-selected-files-notepad/**/*",
@@ -33,3 +34,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
