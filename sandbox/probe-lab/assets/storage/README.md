@@ -235,3 +235,22 @@ asset mutation fails.
 The cloud-authority audit treats the queue and existing private scene manifests
 as managed expected R2 objects so they do not inflate the unreferenced-object
 review set.
+
+## Step 4 Foundry ambientCG hydration lifecycle
+
+Blender Foundry hydration now follows a strict temporary-file lease model:
+
+1. a unique per-execution cache scope is created under the operating-system
+   temporary directory;
+2. selected ambientCG material maps and HDRIs are read from runtime R2 into
+   that scope;
+3. Blender consumes those paths for compile/execution/render/export;
+4. the Foundry runner removes the complete scope in `finally`;
+5. abandoned scopes from terminated processes are eligible for stale cleanup
+   after 24 hours by default.
+
+`MYWAY_AMBIENTCG_HYDRATION_MAX_AGE_HOURS` controls the abandoned-scope
+threshold.
+
+Hydration scopes are execution scratch only. They are not durable metadata,
+runtime assets, source archives, or a local mirror of R2.

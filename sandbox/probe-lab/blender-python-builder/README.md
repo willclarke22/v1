@@ -331,3 +331,23 @@ pnpm foundry:benchmark -- -ResumeRunId <run-id> -HumanReviewFile C:\path\to\foun
 ```
 
 The inexpensive gate evaluation is recalculated on every resume, while successful expensive stages remain checkpointed.
+
+## ambientCG hydration lifecycle
+
+Foundry ambientCG material maps and HDRIs are R2-authoritative and are hydrated
+only as temporary Blender inputs.
+
+Every `executeBlenderPython()` call receives its own unique hydration scope under:
+
+`%TEMP%\myway-asset-cache\ambientcg\foundry\<scope_id>\`
+
+This prevents concurrent Foundry executions that use the same ambientCG
+resource from deleting or overwriting one another's temporary files.
+
+The execution runner owns the scope and clears it in `finally` after Blender
+success or failure. If the Node/Blender process is terminated before `finally`
+can execute, a later Foundry hydration prunes abandoned scopes older than
+`MYWAY_AMBIENTCG_HYDRATION_MAX_AGE_HOURS`, which defaults to 24 hours.
+
+The private/public R2 resource remains authoritative throughout; the hydration
+scope is never durable asset storage and is not published back to R2.

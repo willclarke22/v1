@@ -38,6 +38,7 @@ import {
   type FoundryBlenderRuntimeInfo,
 } from "./blender-runtime.server";
 import {
+  cleanupFoundryResourceHydration,
   hydrateFoundryResourcesForBlender,
   publicResourceManifest,
 } from "./foundry-resource-service.server";
@@ -1383,6 +1384,7 @@ export async function executeBlenderPython(
     );
   }
 
+  try {
   const assetSpec =
     normalizeProceduralAssetSpec(
       input.assetSpec ??
@@ -2020,11 +2022,26 @@ export async function executeBlenderPython(
     "utf8",
   );
 
-  return {
-    ...manifest,
-    stdout:
-      result.stdout,
-    stderr:
-      result.stderr,
-  };
+    return {
+      ...manifest,
+      stdout:
+        result.stdout,
+      stderr:
+        result.stderr,
+    };
+  }
+  finally {
+    await cleanupFoundryResourceHydration(
+      resourceManifest,
+    ).catch(
+      (caught) => {
+        console.warn(
+          "Foundry ambientCG hydration cleanup warning:",
+          caught instanceof Error
+            ? caught.message
+            : String(caught),
+        );
+      },
+    );
+  }
 }

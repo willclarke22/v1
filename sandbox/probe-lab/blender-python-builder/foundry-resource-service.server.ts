@@ -5,8 +5,11 @@ import {
   cacheAmbientCgAsset,
 } from "../assets/catalog/ambientcg/ambientcg-download.server";
 import {
+  beginAmbientCgHydrationScope,
   hydrateAmbientCgHdri,
   hydrateAmbientCgMaterial,
+  pruneStaleAmbientCgHydrationCache,
+  removeAmbientCgHydrationScope,
 } from "../assets/catalog/ambientcg/ambientcg-hydration.server";
 import {
   readAmbientCgCatalog,
@@ -1522,6 +1525,7 @@ export type BlenderFoundryResourceManifest = {
   schema_version:
     "myway_blender_foundry_resource_manifest_v1";
   created_at: string;
+  hydration_scope_id: string;
   design_brief_asset_id: string;
   quality_mode:
     FoundryQualityMode;
@@ -1605,6 +1609,18 @@ export async function hydrateFoundryResourcesForBlender(
 ): Promise<
   BlenderFoundryResourceManifest
 > {
+
+  const hydrationScopeId =
+    beginAmbientCgHydrationScope();
+
+  try {
+    await pruneStaleAmbientCgHydrationCache({
+      preserveScopeIds: [
+        hydrationScopeId,
+      ],
+    }).catch(
+      () => undefined,
+    );
   const plan =
     normalizeFoundryResourcePlan(
       rawPlan,
@@ -1633,6 +1649,10 @@ export async function hydrateFoundryResourcesForBlender(
       const hydrated =
         await hydrateAmbientCgMaterial(
           selected.resource_id,
+          {
+            scopeId:
+              hydrationScopeId,
+          },
         );
       materialSlots[
         binding.slot.slot_id
@@ -1769,6 +1789,10 @@ export async function hydrateFoundryResourcesForBlender(
       await hydrateAmbientCgHdri(
         plan.environment.selected
           .resource_id,
+        {
+          scopeId:
+            hydrationScopeId,
+        },
       );
     environment = {
       source:
@@ -1805,23 +1829,44 @@ export async function hydrateFoundryResourcesForBlender(
     };
   }
 
-  return {
-    schema_version:
-      "myway_blender_foundry_resource_manifest_v1",
-    created_at:
-      new Date().toISOString(),
-    design_brief_asset_id:
-      brief.asset_id,
-    quality_mode:
-      brief.quality_mode,
-    material_slots:
-      materialSlots,
-    part_material_slots:
-      partMaterialSlots,
-    environment,
-    look_adjustments:
-      lookAdjustments,
-  };
+    return {
+      schema_version:
+        "myway_blender_foundry_resource_manifest_v1",
+      created_at:
+        new Date().toISOString(),
+      hydration_scope_id:
+        hydrationScopeId,
+      design_brief_asset_id:
+        brief.asset_id,
+      quality_mode:
+        brief.quality_mode,
+      material_slots:
+        materialSlots,
+      part_material_slots:
+        partMaterialSlots,
+      environment,
+      look_adjustments:
+        lookAdjustments,
+    };
+  }
+  catch (caught) {
+    await removeAmbientCgHydrationScope(
+      hydrationScopeId,
+    ).catch(
+      () => undefined,
+    );
+
+    throw caught;
+  }
+}
+
+export async function cleanupFoundryResourceHydration(
+  manifest:
+    BlenderFoundryResourceManifest,
+) {
+  await removeAmbientCgHydrationScope(
+    manifest.hydration_scope_id,
+  );
 }
 
 export function publicResourceManifest(
@@ -1829,7 +1874,15 @@ export function publicResourceManifest(
     BlenderFoundryResourceManifest,
 ) {
   return {
-    ...manifest,
+    schema_version:
+      manifest.schema_version,
+    created_at:
+      manifest.created_at,
+    design_brief_asset_id:
+      manifest
+        .design_brief_asset_id,
+    quality_mode:
+      manifest.quality_mode,
     material_slots:
       Object.fromEntries(
         Object.entries(
@@ -1861,6 +1914,9 @@ export function publicResourceManifest(
           ],
         ),
       ),
+    part_material_slots:
+      manifest
+        .part_material_slots,
     environment: {
       ...manifest.environment,
       environment_path:
@@ -1872,5 +1928,7 @@ export function publicResourceManifest(
             )
           : null,
     },
+    look_adjustments:
+      manifest.look_adjustments,
   };
 }
