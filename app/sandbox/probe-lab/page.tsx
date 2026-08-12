@@ -20,12 +20,6 @@ const activeLabs = [
     status: "manual model lane",
     description:
       "Paste MyWay learning-turn JSON, normalize and validate it, resolve assets, and run the existing semantic scene renderer without calling a model.",
-  },  {
-    href: "/sandbox/probe-lab/cosmos-video",
-    title: "GLM + Cosmos Video Lab",
-    status: "new experiment",
-    description:
-      "GLM 5.2 converts a learner need into a constrained video brief, then Cosmos3 Nano generates and saves an MP4.",
   },
   {
     href: "/sandbox/probe-lab/resource-runtime",

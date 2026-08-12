@@ -56,6 +56,9 @@ import {
   formatBlenderPythonPreflightFailure,
   validateBlenderPythonPreflight,
 } from "./blender-python-preflight";
+import {
+  pruneFoundryExecutionWorkspaces,
+} from "./foundry-workspace-lifecycle.server";
 
 export const FOUNDRY_EXECUTION_DIAGNOSTICS_SCHEMA_VERSION =
   "myway_blender_execution_diagnostics_v1" as const;
@@ -1435,6 +1438,18 @@ export async function executeBlenderPython(
       FOUNDRY_PUBLIC_JOB_ROOT,
       jobId,
     );
+
+  // Foundry execution output is temporary review state, not durable storage.
+  // Before creating a new workspace, keep room for this run and remove stale
+  // or overflow workspaces. Saved candidates remain durable through R2.
+  await pruneFoundryExecutionWorkspaces({
+    privateRoot:
+      FOUNDRY_PRIVATE_JOB_ROOT,
+    publicRoot:
+      FOUNDRY_PUBLIC_JOB_ROOT,
+    reserveSlots:
+      1,
+  });
 
   await Promise.all([
     ensureRuntimeDirectory(

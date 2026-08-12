@@ -141,6 +141,28 @@ revision. Revisions keep separate job ids and can be restored from the page.
 validation and output references with status `needs_review`. Export success
 never auto-approves an asset for normal scene use.
 
+## Execution-workspace lifecycle
+
+The active Blender Foundry still uses repository-local private/public workspaces
+while a run is being inspected, critiqued, or restored in the lab. Those
+workspaces are temporary review state, not durable asset storage.
+
+Before every new Foundry execution, MyWay prunes both sides of the workspace
+pair together:
+
+- `MYWAY_FOUNDRY_WORKSPACE_LIMIT=5`
+  keeps at most five active/recent Foundry execution workspaces by default.
+- `MYWAY_FOUNDRY_WORKSPACE_MAX_AGE_HOURS=24`
+  removes abandoned workspaces older than 24 hours.
+- `MYWAY_KEEP_FOUNDRY_WORKSPACES=true`
+  disables pruning only for an explicit debugging session.
+
+The runner reserves one slot before starting the new job, so continued
+experimentation cannot grow the Foundry workspace directories without bound.
+A saved candidate is durable through the existing R2 candidate pipeline; its
+local source execution remains only temporary review state and is governed by
+the same bounded lifecycle.
+
 ## Safety
 
 This remains a local sandbox, not a public Python execution service. User/model
@@ -165,10 +187,11 @@ The proof deliberately uses MyWay helpers only at the trusted resource boundary
 not use the custom primitive geometry helpers. This separates modelling quality
 from resource acquisition and avoids the earlier helper-signature failure mode.
 
-The first proof still writes generated `.blend`, `.glb`, inspection renders, and
-job records to the existing local Foundry output folders. After the visual result
-is approved, the next storage step is to publish those generated outputs to R2
-and clean the local job/output copies after successful verification.
+A live proof execution writes `.blend`, `.glb`, inspection renders, and job
+records only into the bounded Foundry review workspace. `Save as library
+candidate` uses the existing R2 candidate pipeline for durable runtime/private
+artifacts. The local execution workspace is not authoritative storage and is
+removed by the Foundry age/count retention policy as experimentation continues.
 
 ## Compile smoke and execution diagnostics
 
