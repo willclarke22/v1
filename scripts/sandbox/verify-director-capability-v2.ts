@@ -18,6 +18,10 @@ import {
   DIRECTOR_CAPABILITY_CATEGORIES,
   directorCapabilityDemoMoment,
 } from "../../sandbox/probe-lab/motion-camera-library/director-capability-registry";
+import {
+  DIRECTOR_CAMERA_MOVEMENT_RUNTIME_COVERAGE,
+  DIRECTOR_RUNTIME_COVERAGE_VERSION,
+} from "../../sandbox/probe-lab/scenes/director-runtime-coverage";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -55,6 +59,7 @@ for (const capability of DIRECTOR_CAPABILITIES) {
   for (const step of moment.shot.camera.movement_steps) {
     assert(step.start_progress >= 0 && step.start_progress < 1, `${capability.id} has invalid movement start.`);
     assert(step.end_progress > step.start_progress && step.end_progress <= 1, `${capability.id} has invalid movement end.`);
+    assert(DIRECTOR_CAMERA_MOVEMENT_RUNTIME_COVERAGE[step.movement], `${capability.id} movement ${step.movement} has no Phase 1A runtime coverage.`);
   }
 }
 
@@ -138,6 +143,8 @@ for (const marker of [
   "approximate_actor_collision_ratio",
   "rigid_link",
   "camera_relative",
+  "directorCameraMovementRuntimeAlias",
+  "assertDirectorRuntimeNever",
 ]) {
   assert(runtime.includes(marker), `Shared Director runtime is missing ${marker}.`);
 }
@@ -159,4 +166,5 @@ const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>((coun
 console.log("Director Capability V2 verification passed.");
 console.log(`Capabilities: ${DIRECTOR_CAPABILITIES.length} across ${DIRECTOR_CAPABILITY_CATEGORIES.length} categories.`);
 console.log(`Three.js support: ${JSON.stringify(supportCounts)}.`);
-console.log("Canonical Director, shared runtime, and Asset Scene Builder bridge markers are present.");
+console.log(`Runtime coverage: ${DIRECTOR_RUNTIME_COVERAGE_VERSION}.`);
+console.log("Canonical Director, shared runtime, Asset Scene Builder bridge, and Phase 1A runtime-coverage markers are present.");

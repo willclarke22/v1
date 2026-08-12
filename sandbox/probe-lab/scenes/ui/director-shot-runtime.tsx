@@ -11,6 +11,10 @@ import type {
   DirectorMoment,
   DirectorShotDirectionV2,
 } from "../../director";
+import {
+  assertDirectorRuntimeNever,
+  directorCameraMovementRuntimeAlias,
+} from "../director-runtime-coverage";
 
 export type DirectorRuntimeVec3 = [number, number, number];
 
@@ -175,7 +179,7 @@ export function applyDirectorBlocking(
       }
       case "cluster": position.multiplyScalar(0.68); break;
       case "symmetrical_pair": position.x = actor.id === shot.camera.focus_entity_ids[0] ? -1.6 : 1.6; break;
-      default: break;
+      default: assertDirectorRuntimeNever(cue.relation, "DirectorBlockingRelation");
     }
     actor.position = [position.x, position.y, position.z];
   }
@@ -388,8 +392,23 @@ function sampleDirectorActorEventState(
         scale.multiplyScalar(pulse);
         break;
       }
-      default:
+      // These behaviours are intentionally owned by presentation/semantic layers.
+      // Keeping them explicit here prevents a newly added canonical behaviour from
+      // silently falling through the actor transform sampler.
+      case "show":
+      case "hide":
+      case "highlight":
+      case "dim_others":
+      case "trace":
+      case "filter":
+      case "replace":
+      case "pause":
+      case "compare":
+      case "reveal_cutaway":
+      case "custom_semantic":
         break;
+      default:
+        assertDirectorRuntimeNever(event.behaviour, "DirectorBehaviour");
     }
   }
 
@@ -428,70 +447,79 @@ export function sampleDirectorActorState(
       ? sampleDirectorActorEventState(moment, secondActor, progress, actors)
       : null;
 
-    if (constraint.kind === "axis_lock") {
-      const origin = vecParam(constraint.parameters.origin, actor.position);
-      if (constraint.axis === "x") {
-        sampled.position.y = origin.y;
-        sampled.position.z = origin.z;
-      } else if (constraint.axis === "z") {
-        sampled.position.x = origin.x;
-        sampled.position.y = origin.y;
-      } else {
-        sampled.position.x = origin.x;
-        sampled.position.z = origin.z;
+    switch (constraint.kind) {
+      case "axis_lock": {
+        const origin = vecParam(constraint.parameters.origin, actor.position);
+        if (constraint.axis === "x") {
+          sampled.position.y = origin.y;
+          sampled.position.z = origin.z;
+        } else if (constraint.axis === "z") {
+          sampled.position.x = origin.x;
+          sampled.position.y = origin.y;
+        } else {
+          sampled.position.x = origin.x;
+          sampled.position.z = origin.z;
+        }
+        break;
       }
-      continue;
-    }
-
-    if (constraint.kind === "attach" && targetSample && targetActor) {
-      const offset = vecParam(
-        constraint.parameters.offset,
-        [0, Math.max(0.05, targetActor.size[1] * 0.55), 0],
-      );
-      sampled.position.copy(targetSample.position).add(offset);
-      continue;
-    }
-
-    if (constraint.kind === "maintain_distance" && targetSample) {
-      const fallbackDistance = Math.max(
-        0.05,
-        new THREE.Vector3(...actor.position).distanceTo(targetSample.position),
-      );
-      const desired = Math.max(
-        0.01,
-        constraint.distance_m ?? numberParam(constraint.parameters.distance_m, fallbackDistance),
-      );
-      const direction = sampled.position.clone().sub(targetSample.position);
-      if (direction.lengthSq() < 0.0001) direction.set(1, 0, 0);
-      sampled.position.copy(targetSample.position).add(direction.normalize().multiplyScalar(desired));
-      continue;
-    }
-
-    if (constraint.kind === "look_at" && targetSample) {
-      const delta = targetSample.position.clone().sub(sampled.position);
-      if (delta.lengthSq() > 0.0001) sampled.rotation.y = Math.atan2(delta.x, delta.z);
-      continue;
-    }
-
-    if (constraint.kind === "rigid_link" && targetSample && secondSample) {
-      const start = targetSample.position;
-      const end = secondSample.position;
-      const direction = end.clone().sub(start);
-      const length = direction.length();
-      if (length > 0.0001) {
-        sampled.position.lerpVectors(start, end, 0.5);
-        const localAxis = constraintAxisVector(constraint.axis === "auto" ? "z" : constraint.axis);
-        const quaternion = new THREE.Quaternion().setFromUnitVectors(
-          localAxis.clone().normalize(),
-          direction.clone().normalize(),
-        );
-        sampled.rotation.setFromQuaternion(quaternion, "XYZ");
-        const axis = constraint.axis === "x" ? 0 : constraint.axis === "y" ? 1 : 2;
-        const sourceLength = Math.max(0.05, actor.size[axis]);
-        if (axis === 0) sampled.scale.x = length / sourceLength;
-        else if (axis === 1) sampled.scale.y = length / sourceLength;
-        else sampled.scale.z = length / sourceLength;
+      case "attach": {
+        if (targetSample && targetActor) {
+          const offset = vecParam(
+            constraint.parameters.offset,
+            [0, Math.max(0.05, targetActor.size[1] * 0.55), 0],
+          );
+          sampled.position.copy(targetSample.position).add(offset);
+        }
+        break;
       }
+      case "maintain_distance": {
+        if (targetSample) {
+          const fallbackDistance = Math.max(
+            0.05,
+            new THREE.Vector3(...actor.position).distanceTo(targetSample.position),
+          );
+          const desired = Math.max(
+            0.01,
+            constraint.distance_m ?? numberParam(constraint.parameters.distance_m, fallbackDistance),
+          );
+          const direction = sampled.position.clone().sub(targetSample.position);
+          if (direction.lengthSq() < 0.0001) direction.set(1, 0, 0);
+          sampled.position.copy(targetSample.position).add(direction.normalize().multiplyScalar(desired));
+        }
+        break;
+      }
+      case "look_at": {
+        if (targetSample) {
+          const delta = targetSample.position.clone().sub(sampled.position);
+          if (delta.lengthSq() > 0.0001) sampled.rotation.y = Math.atan2(delta.x, delta.z);
+        }
+        break;
+      }
+      case "rigid_link": {
+        if (targetSample && secondSample) {
+          const start = targetSample.position;
+          const end = secondSample.position;
+          const direction = end.clone().sub(start);
+          const length = direction.length();
+          if (length > 0.0001) {
+            sampled.position.lerpVectors(start, end, 0.5);
+            const localAxis = constraintAxisVector(constraint.axis === "auto" ? "z" : constraint.axis);
+            const quaternion = new THREE.Quaternion().setFromUnitVectors(
+              localAxis.clone().normalize(),
+              direction.clone().normalize(),
+            );
+            sampled.rotation.setFromQuaternion(quaternion, "XYZ");
+            const axis = constraint.axis === "x" ? 0 : constraint.axis === "y" ? 1 : 2;
+            const sourceLength = Math.max(0.05, actor.size[axis]);
+            if (axis === 0) sampled.scale.x = length / sourceLength;
+            else if (axis === 1) sampled.scale.y = length / sourceLength;
+            else sampled.scale.z = length / sourceLength;
+          }
+        }
+        break;
+      }
+      default:
+        assertDirectorRuntimeNever(constraint.kind, "DirectorKinematicConstraintKind");
     }
   }
 
@@ -515,7 +543,7 @@ function framingFactor(framing: DirectorShotDirectionV2["composition"]["framing"
     case "insert": return 1.45;
     case "point_of_view": return 2.8;
     case "cutaway": return 3.6;
-    default: return 3.4;
+    default: return assertDirectorRuntimeNever(framing, "DirectorCameraFraming");
   }
 }
 
@@ -534,8 +562,8 @@ function angleDirection(angle: DirectorShotDirectionV2["composition"]["angle"]) 
     case "inside_object": return new THREE.Vector3(0.05, 0.05, 0.3);
     case "three_quarter_front": return new THREE.Vector3(0.9, 0.35, 0.9);
     case "dutch_angle":
-    case "eye_level":
-    default: return new THREE.Vector3(0.65, 0.05, 1);
+    case "eye_level": return new THREE.Vector3(0.65, 0.05, 1);
+    default: return assertDirectorRuntimeNever(angle, "DirectorCameraAngle");
   }
 }
 
@@ -620,8 +648,11 @@ function applyMovementStep(
   const distance = Math.max(0.1, offset.length());
   const forward = pose.target.clone().sub(pose.position).normalize();
   const right = new THREE.Vector3().crossVectors(forward, UP).normalize();
+  const runtimeMovement = directorCameraMovementRuntimeAlias(step.movement);
 
-  switch (step.movement) {
+  switch (runtimeMovement) {
+    case "static":
+      break;
     case "cut": {
       // `step` easing keeps t at zero until the cut boundary, then jumps to 1.
       if (t < 1) break;
@@ -698,12 +729,12 @@ function applyMovementStep(
     case "arc_left":
     case "arc_right":
     case "reverse_reveal": {
-      const defaultDegrees = step.movement === "orbit" ? 110 : step.movement === "reverse_reveal" ? 52 : 38;
-      const sign = step.movement === "arc_left" ? -1 : 1;
+      const defaultDegrees = runtimeMovement === "orbit" ? 110 : runtimeMovement === "reverse_reveal" ? 52 : 38;
+      const sign = runtimeMovement === "arc_left" ? -1 : 1;
       const degrees = numberParam(step.parameters.degrees, defaultDegrees) * sign * step.strength;
       const rotated = pose.position.clone().sub(pose.target).applyAxisAngle(UP, THREE.MathUtils.degToRad(degrees) * t);
       pose.position.copy(pose.target).add(rotated);
-      if (step.movement === "reverse_reveal" && shot.camera.focus_entity_ids.length > 1) {
+      if (runtimeMovement === "reverse_reveal" && shot.camera.focus_entity_ids.length > 1) {
         const first = actorById(actors, shot.camera.focus_entity_ids[0]);
         const second = actorById(actors, shot.camera.focus_entity_ids[1]);
         if (first && second) {
@@ -721,9 +752,9 @@ function applyMovementStep(
       // position, so ordinary follow needs no second copy of the actor travel.
       // Lead/lag only bias the composed camera relative to travel direction.
       const travel = actorTravelDelta(moment, targetActor, progress, actors);
-      if (step.movement !== "follow" && travel.lengthSq() > 0.0001) {
+      if (runtimeMovement !== "follow" && travel.lengthSq() > 0.0001) {
         const direction = travel.clone().normalize();
-        const sign = step.movement === "lag_follow" ? -1 : 1;
+        const sign = runtimeMovement === "lag_follow" ? -1 : 1;
         const bias = direction.multiplyScalar(radius * step.strength * 0.7 * sign * t);
         pose.position.add(bias);
         pose.target.add(bias);
@@ -789,8 +820,9 @@ function applyMovementStep(
       break;
     }
     case "semantic":
-    default:
       break;
+    default:
+      assertDirectorRuntimeNever(runtimeMovement, "DirectorCameraMovement");
   }
 }
 
@@ -812,7 +844,8 @@ function screenAnchorOffset(
     case "center_right": offset.addScaledVector(right, -horizontal * 0.6); break;
     case "upper_third": offset.y -= vertical; break;
     case "lower_third": offset.y += vertical; break;
-    default: break;
+    case "center": break;
+    default: assertDirectorRuntimeNever(shot.composition.screen_anchor, "DirectorScreenAnchor");
   }
   if (shot.composition.negative_space_side === "left") offset.addScaledVector(right, -horizontal * 0.45);
   if (shot.composition.negative_space_side === "right") offset.addScaledVector(right, horizontal * 0.45);
@@ -829,7 +862,7 @@ export function sampleDirectorCameraPose(
   const actorRelativeCamera =
     shot.composition.angle === "object_attached" ||
     shot.camera.movement_steps.some((step) =>
-      ["follow", "lead_subject", "lag_follow", "track_parallel", "object_attached"].includes(step.movement),
+      ["follow", "track", "lead_subject", "lag_follow", "track_parallel", "object_attached"].includes(step.movement),
     );
   // Camera composition is world-fixed unless the Director explicitly selects an
   // actor-relative tracking move. This keeps `static` truly static and prevents
