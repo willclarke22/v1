@@ -1,4 +1,7 @@
 import {
+  materializePendingAssetReviewModel,
+} from "../storage/pending-asset-storage.server";
+import {
   access,
   mkdir,
   writeFile,
@@ -216,6 +219,7 @@ async function profileAssetGeometry(
   await ensureAssetDirectories();
   const asset =
     await getMyWayAsset(assetId);
+
   if (!asset) {
     throw new Error(
       `Asset was not found: ${assetId}`,
@@ -236,98 +240,111 @@ async function profileAssetGeometry(
     } as const;
   }
 
-  const file = await assetWithFileStats(
-    asset,
-  );
+  const file =
+    await assetWithFileStats(asset);
   if (!file.file_stats.exists) {
     throw new Error(
       `The registered asset file is unavailable: ${asset.public_path}`,
     );
   }
 
-  const inputPath =
-    await localInputPath(asset);
-  const contentHash =
-    await hashFile(inputPath);
+  const materialized =
+    asset.storage_provider ===
+      "r2_private_pending"
+      ? await materializePendingAssetReviewModel(
+          asset,
+        )
+      : {
+          local_path:
+            await localInputPath(asset),
+          cleanup:
+            async () => undefined,
+        };
 
-  if (
-    !force &&
-    !profileNeedsRefresh(
-      asset,
-      contentHash,
-    )
-  ) {
+  try {
+    const inputPath = materialized.local_path;
+    const contentHash =
+      await hashFile(inputPath);
+
+    if (
+      !force &&
+      !profileNeedsRefresh(
+        asset,
+        contentHash,
+      )
+    ) {
+      return {
+        skipped: true,
+        reason:
+          "Spatial Geometry Profile v3 already matches the current GLB.",
+      } as const;
+    }
+
+    const { jobPath } =
+      await createGeometryProfileJob({
+        kind: "profile_asset_geometry",
+        input_path: inputPath,
+        result: null,
+        error: null,
+      });
+    const completed =
+      await runBlenderJob(jobPath);
+
+    if (
+      completed.kind !== "profile_asset_geometry" ||
+      !completed.result?.geometry_profile
+    ) {
+      throw new Error(
+        "Blender completed without returning Spatial Geometry Profile v3.",
+      );
+    }
+
+    const measuredProfile =
+      completed.result.geometry_profile;
+    const manualSurfaces =
+      (asset.support_surfaces ?? []).filter(
+        (surface) => surface.source === "manual",
+      );
+    const manualIds = new Set(
+      manualSurfaces.map(
+        (surface) => surface.id,
+      ),
+    );
+    const profile: MyWayAssetGeometryProfileV1 = {
+      ...measuredProfile,
+      support_surfaces: [
+        ...manualSurfaces,
+        ...measuredProfile.support_surfaces.filter(
+          (surface) => !manualIds.has(surface.id),
+        ),
+      ],
+      primary_support_surface_id:
+        manualSurfaces[0]?.id ??
+        measuredProfile.primary_support_surface_id ??
+        null,
+      content_hash: contentHash,
+    };
+
+    const updated =
+      await updateMyWayAsset(
+        asset.asset_id,
+        {
+          geometry_profile: profile,
+          support_surfaces:
+            profile.support_surfaces,
+        },
+      );
+
     return {
-      skipped: true,
-      reason:
-        "Spatial Geometry Profile v3 already matches the current GLB.",
+      skipped: false,
+      asset: updated,
+      profile,
     } as const;
   }
-
-  const { jobPath } =
-    await createGeometryProfileJob({
-      kind: "profile_asset_geometry",
-      input_path: inputPath,
-      result: null,
-      error: null,
-    });
-  const completed =
-    await runBlenderJob(jobPath);
-
-  if (
-    completed.kind !==
-      "profile_asset_geometry" ||
-    !completed.result
-      ?.geometry_profile
-  ) {
-    throw new Error(
-      "Blender completed without returning Spatial Geometry Profile v3.",
-    );
+  finally {
+    await materialized.cleanup()
+      .catch(() => undefined);
   }
-
-  const measuredProfile =
-    completed.result.geometry_profile;
-  const manualSurfaces =
-    (asset.support_surfaces ?? []).filter(
-      (surface) =>
-        surface.source === "manual",
-    );
-  const manualIds = new Set(
-    manualSurfaces.map(
-      (surface) => surface.id,
-    ),
-  );
-  const profile: MyWayAssetGeometryProfileV1 = {
-    ...measuredProfile,
-    support_surfaces: [
-      ...manualSurfaces,
-      ...measuredProfile.support_surfaces.filter(
-        (surface) =>
-          !manualIds.has(surface.id),
-      ),
-    ],
-    primary_support_surface_id:
-      manualSurfaces[0]?.id ??
-      measuredProfile.primary_support_surface_id ??
-      null,
-    content_hash: contentHash,
-  };
-
-  const updated =
-    await updateMyWayAsset(
-      asset.asset_id,
-      {
-        geometry_profile: profile,
-        support_surfaces:
-          profile.support_surfaces,
-      },
-    );
-
-  return {
-    skipped: false,
-    asset: updated,
-    profile,
-  } as const;
 }
 
 export function queueAssetGeometryProfile(

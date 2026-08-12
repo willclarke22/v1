@@ -1,4 +1,10 @@
 import {
+  cleanupLocalPendingStageFiles,
+  pendingAssetReviewObjectExists,
+  rollbackPrivatePendingStage,
+  stageLocalAssetAsPrivatePending,
+} from "./storage/pending-asset-storage.server";
+import {
   mkdir,
   readdir,
   rename as renameFile,
@@ -473,7 +479,8 @@ export async function listMyWayAssets() {
 export async function registerMyWayAsset(
   raw: unknown,
 ) {
-  const asset = normalizeMyWayAssetRecord(raw);
+  let asset =
+    normalizeMyWayAssetRecord(raw);
 
   if (!asset) {
     throw new Error(
@@ -481,49 +488,112 @@ export async function registerMyWayAsset(
     );
   }
 
-  const validation =
+  let validation =
     validateMyWayAssetRecord(asset);
 
   if (!validation.ok) {
-    throw new Error(validation.errors.join("; "));
+    throw new Error(
+      validation.errors.join("; "),
+    );
   }
 
-  const registry = await loadMyWayAssetRegistry();
-  const duplicateHash = asset.content_hash
-    ? registry.assets.find(
-        (candidate) =>
-          candidate.content_hash &&
-          candidate.content_hash ===
-            asset.content_hash,
-      )
-    : null;
+  const registry =
+    await loadMyWayAssetRegistry();
+
+  // Dedupe BEFORE private-R2 staging.
+  const duplicateHash =
+    asset.content_hash
+      ? registry.assets.find(
+          (candidate) =>
+            candidate.content_hash &&
+            candidate.content_hash ===
+              asset!.content_hash,
+        )
+      : null;
 
   if (duplicateHash) {
     return {
-      asset: duplicateHash,
-      created: false,
-      duplicate_of: duplicateHash.asset_id,
+      asset:
+        duplicateHash,
+      created:
+        false,
+      duplicate_of:
+        duplicateHash.asset_id,
     };
+  }
+
+  const pendingStage =
+    await stageLocalAssetAsPrivatePending(
+      asset,
+    );
+
+  asset = pendingStage.asset;
+
+  validation =
+    validateMyWayAssetRecord(asset);
+
+  if (!validation.ok) {
+    await rollbackPrivatePendingStage(
+      pendingStage,
+    ).catch(
+      () => undefined,
+    );
+
+    throw new Error(
+      validation.errors.join("; "),
+    );
   }
 
   const existingIndex =
     registry.assets.findIndex(
       (candidate) =>
-        candidate.asset_id === asset.asset_id,
+        candidate.asset_id ===
+        asset!.asset_id,
     );
 
   if (existingIndex >= 0) {
     const existing =
       registry.assets[existingIndex]!;
-    asset.created_at = existing.created_at;
-    registry.assets[existingIndex] = asset;
-  } else {
+    asset.created_at =
+      existing.created_at;
+    registry.assets[existingIndex] =
+      asset;
+  }
+  else {
     registry.assets.push(asset);
   }
 
-  await saveMyWayAssetRegistry(registry);
+  try {
+    await saveMyWayAssetRegistry(
+      registry,
+    );
+  }
+  catch (caught) {
+    await rollbackPrivatePendingStage(
+      pendingStage,
+    ).catch(
+      () => undefined,
+    );
+    throw caught;
+  }
 
-  const created = existingIndex < 0;
+  if (pendingStage.staged) {
+    const cleanup =
+      await cleanupLocalPendingStageFiles(
+        pendingStage,
+      );
+
+    if (cleanup.failed.length) {
+      console.warn(
+        "Private pending asset was registered, but verified local review files could not all be removed:",
+        cleanup.failed,
+      );
+    }
+  }
+
+  const created =
+    existingIndex < 0;
+
   if (
     created &&
     asset.asset_type !== "primitive" &&
@@ -532,16 +602,23 @@ export async function registerMyWayAsset(
     void import(
       "./enrichment/asset-enrichment-worker.server"
     )
-      .then(({ queueAssetEnrichment }) => {
-        queueAssetEnrichment(asset.asset_id);
-      })
-      .catch(() => undefined);
+      .then(
+        ({ queueAssetEnrichment }) => {
+          queueAssetEnrichment(
+            asset!.asset_id,
+          );
+        },
+      )
+      .catch(
+        () => undefined,
+      );
   }
 
   return {
     asset,
     created,
-    duplicate_of: null,
+    duplicate_of:
+      null,
   };
 }
 
@@ -1994,6 +2071,33 @@ export async function assetWithFileStats(
     };
   }
 
+  if (
+    asset.storage_provider ===
+      "r2_private_pending"
+  ) {
+    const exists =
+      await pendingAssetReviewObjectExists(
+        asset,
+        "model",
+      );
+
+    return {
+      ...asset,
+      file_stats: {
+        exists,
+        file_size_bytes:
+          exists
+            ? asset.file_size_bytes ?? null
+            : null,
+        project_relative_path: null,
+        storage_provider:
+          "r2_private_pending" as const,
+        remote_url:
+          asset.public_path,
+      },
+    };
+  }
+
   if (isRemoteUrl(asset.public_path)) {
     return {
       ...asset,
@@ -2004,18 +2108,19 @@ export async function assetWithFileStats(
         project_relative_path: null,
         storage_provider:
           asset.storage_provider ?? "r2",
-        remote_url: asset.public_path,
+        remote_url:
+          asset.public_path,
       },
     };
   }
 
-  const fullPath = publicUrlToProjectPath(
-    asset.public_path,
-  );
+  const fullPath =
+    publicUrlToProjectPath(
+      asset.public_path,
+    );
 
   try {
     const info = await stat(fullPath);
-
     return {
       ...asset,
       file_stats: {
@@ -2029,7 +2134,8 @@ export async function assetWithFileStats(
         remote_url: null,
       },
     };
-  } catch {
+  }
+  catch {
     return {
       ...asset,
       file_stats: {

@@ -1,3 +1,6 @@
+import {
+  materializePendingAssetReviewModel,
+} from "../storage/pending-asset-storage.server";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { writeFile } from "node:fs/promises";
@@ -239,6 +242,22 @@ function pendingAppearance(
 }
 
 async function materializeAssetInput(asset: MyWayAssetRecord) {
+  if (
+    asset.storage_provider ===
+      "r2_private_pending"
+  ) {
+    const materialized =
+      await materializePendingAssetReviewModel(
+        asset,
+      );
+
+    return {
+      input_path: materialized.local_path,
+      temporary: true,
+      cleanup: materialized.cleanup,
+    };
+  }
+
   if (!/^https:\/\//i.test(asset.public_path)) {
     return {
       input_path: localPublicAssetPath(asset.public_path),

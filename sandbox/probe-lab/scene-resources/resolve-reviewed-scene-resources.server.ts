@@ -191,7 +191,9 @@ function modelBinding(
     !result.ok ||
     result.source !== "library" ||
     !asset ||
-    !reason
+    !reason ||
+    asset.storage_provider ===
+      "r2_private_pending"
   ) {
     return null;
   }

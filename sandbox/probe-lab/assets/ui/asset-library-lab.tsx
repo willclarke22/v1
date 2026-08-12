@@ -27,7 +27,7 @@ type AssetFileStats = {
   exists: boolean;
   file_size_bytes: number | null;
   project_relative_path: string | null;
-  storage_provider?: "local" | "r2";
+  storage_provider?: "local" | "r2_private_pending" | "r2";
   remote_url?: string | null;
 };
 
@@ -196,11 +196,11 @@ type LibraryAsset = {
   public_path: string;
   thumbnail_path?: string | null;
   license_record_path?: string | null;
-  storage_provider?: "local" | "r2";
+  storage_provider?: "local" | "r2_private_pending" | "r2";
   storage_object_key?: string | null;
   storage_etag?: string | null;
   file_size_bytes?: number | null;
-  thumbnail_storage_provider?: "local" | "r2" | null;
+  thumbnail_storage_provider?: "local" | "r2_private_pending" | "r2" | null;
   thumbnail_object_key?: string | null;
   promoted_at?: string | null;
   dimensions_m: Vec3;
@@ -1536,7 +1536,9 @@ export function AssetLibraryLab({
             ? "Approve this CC0 asset for scene use and publish its GLB and thumbnail to Cloudflare R2?"
             : asset.safe_to_promote_to_app
               ? "Approve this asset and publish its GLB and thumbnail to Cloudflare R2?"
-              : "Approve this asset for local sandbox scene use? It is not currently cleared for public R2 promotion.";
+              : asset.storage_provider === "r2_private_pending"
+                ? "This private review candidate is not yet cleared for runtime publication. Update its licence/provenance before approval."
+                : "Approve this asset for local sandbox scene use? It is not currently cleared for public R2 promotion.";
 
     const confirmationDetails =
       polyPizzaPublicSceneApproval
@@ -1634,8 +1636,10 @@ export function AssetLibraryLab({
 
     const remoteWarning =
       asset.storage_provider === "r2"
-        ? "\n\nThis candidate is stored in Cloudflare R2. Its remote GLB, thumbnail, and archived source object will also be deleted."
-        : "";
+        ? "\n\nThis candidate is published in Cloudflare R2. Its runtime GLB, thumbnail, and archived source object will also be deleted."
+        : asset.storage_provider === "r2_private_pending"
+          ? "\n\nThis candidate is stored privately in Cloudflare R2. Its private review GLB and thumbnail, plus any archived source object, will also be deleted."
+          : "";
 
     const confirmed = window.confirm(
       `Reject and permanently remove "${assetTitle(asset)}"?${remoteWarning}\n\nIts registry record, local model files, thumbnail, source and license records, appearance renders, and local embedding will be removed. The linked missing-asset job will remain available under Acquiring, but MyWay will not automatically fetch another candidate.`,
@@ -2817,8 +2821,10 @@ export function AssetLibraryLab({
 
     const remoteWarning =
       asset.storage_provider === "r2"
-        ? "\n\nThis asset is stored in Cloudflare R2. Its remote GLB, thumbnail, and any archived source object will also be deleted."
-        : "";
+        ? "\n\nThis asset is published in Cloudflare R2. Its runtime GLB, thumbnail, and any archived source object will also be deleted."
+        : asset.storage_provider === "r2_private_pending"
+          ? "\n\nThis asset is a private R2 review candidate. Its private GLB, thumbnail, and any archived source object will also be deleted."
+          : "";
 
     const confirmed = window.confirm(
       `Permanently remove "${asset.display_name}" from the MyWay Asset Library?${remoteWarning}\n\nThe registry entry, local model files, thumbnail, source and license records, appearance renders, and local embedding will be removed. This cannot be undone.`,
@@ -5286,8 +5292,11 @@ export function AssetLibraryLab({
                     >
                       {selectedAsset.storage_provider ===
                       "r2"
-                        ? "Stored in Cloudflare R2"
-                        : "Local candidate"}
+                        ? "Published Cloudflare R2"
+                        : selectedAsset.storage_provider ===
+                            "r2_private_pending"
+                          ? "Private R2 review candidate"
+                          : "Local candidate"}
                     </span>
                   </div>
 
@@ -5295,8 +5304,8 @@ export function AssetLibraryLab({
                     Review the rotating model and verify its identity first.
                     One approval action now publishes eligible CC0 files to
                     Cloudflare R2 and approves them for automatic scene use.
-                    Assets that are not cleared for public promotion may still
-                    be approved for this local sandbox.
+                    Assets that are not cleared for runtime publication remain
+                    private review candidates until their licence/provenance is updated.
                   </div>
 
                   {selectedAcquisitionJob ? (
@@ -5786,6 +5795,12 @@ export function AssetLibraryLab({
                               selectedAsset,
                             )
                           )) ||
+                        (selectedAsset.storage_provider ===
+                          "r2_private_pending" &&
+                          !selectedAsset.safe_to_promote_to_app &&
+                          !isManualPublicSceneCandidate(
+                            selectedAsset,
+                          )) ||
                         !selectedAsset.file_stats.exists ||
                         !selectedAsset.safe_to_use_in_sandbox ||
                         selectedAsset.status ===
@@ -5811,7 +5826,10 @@ export function AssetLibraryLab({
                             ? "Approve for scene use"
                             : selectedAsset.safe_to_promote_to_app
                               ? "Approve & publish"
-                              : "Approve for local scene"}
+                              : selectedAsset.storage_provider ===
+                                  "r2_private_pending"
+                                ? "Awaiting licence clearance"
+                                : "Approve for local scene"}
                     </button>
 
                     {selectedAcquisitionJob &&
@@ -6098,8 +6116,11 @@ export function AssetLibraryLab({
                     </MetadataRow>
                     <MetadataRow label="Storage">
                       {selectedAsset.storage_provider === "r2"
-                        ? "Cloudflare R2"
-                        : "Local review copy"}
+                        ? "Published Cloudflare R2"
+                        : selectedAsset.storage_provider ===
+                            "r2_private_pending"
+                          ? "Private R2 review candidate"
+                          : "Local review copy"}
                     </MetadataRow>
                     <MetadataRow label="License record">
                       <code>

@@ -81,6 +81,7 @@ export type MyWayThirdPartyAssetManifestV1 = {
 
 export type MyWayAssetStorageProvider =
   | "local"
+  | "r2_private_pending"
   | "r2";
 
 export type MyWayAssetAppearanceStatus =

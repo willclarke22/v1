@@ -69,7 +69,9 @@ function storageProvider(
   value: unknown,
   fallback: MyWayAssetStorageProvider | null,
 ) {
-  return value === "local" || value === "r2"
+  return value === "local" ||
+    value === "r2_private_pending" ||
+    value === "r2"
     ? value
     : fallback;
 }

@@ -249,6 +249,16 @@ export async function approveAndPublishAsset(
     published = true;
   }
 
+  if (
+    !published &&
+    current.storage_provider ===
+      "r2_private_pending"
+  ) {
+    throw new Error(
+      "This review candidate is safely stored in private R2, but it cannot be approved for automatic scene use until its licence/provenance clears public runtime-R2 promotion.",
+    );
+  }
+
   asset =
     await reviewMyWayAssetForScenes({
       assetId: asset.asset_id,
@@ -315,10 +325,14 @@ export async function rejectAndRetryMissingAsset(
       {
         assetId: asset.asset_id,
         note: input.note ?? null,
-        nextProvider:
-          input.provider,
+        nextProvider: input.provider,
       },
     );
+
+  // Candidate history is already durable in the acquisition queue.
+  await removeMyWayAssetCompletely(
+    asset.asset_id,
+  );
 
   void startMissingAssetAcquisition(
     job.job_id,
@@ -327,10 +341,10 @@ export async function rejectAndRetryMissingAsset(
 
   return {
     job: updated,
-    rejected_asset_id:
-      asset.asset_id,
+    rejected_asset_id: asset.asset_id,
   };
 }
+
 export async function rejectAndRemoveMissingAsset(
   input: {
     assetId: string;

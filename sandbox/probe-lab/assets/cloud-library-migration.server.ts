@@ -203,10 +203,14 @@ export async function cloudAssetMigrationStatus() {
   const cloudReady =
     eligible.filter(
       (asset) =>
-        asset.storage_provider ===
-          "r2" &&
-        /^https:\/\//i.test(
-          asset.public_path,
+        (
+          asset.storage_provider === "r2" &&
+          /^https:\/\//i.test(asset.public_path)
+        ) ||
+        (
+          asset.storage_provider ===
+            "r2_private_pending" &&
+          Boolean(asset.storage_object_key)
         ),
     );
 
@@ -294,15 +298,13 @@ export async function migrateCloudAssetBatch(input: {
   const candidates =
     assets.filter(
       (asset) =>
-        asset.asset_type !==
-          "primitive" &&
-        asset.status !==
-          "rejected" &&
-        asset.storage_provider !==
-          "r2" &&
-        !/^https?:\/\//i.test(
-          asset.public_path,
-        ),
+        asset.asset_type !== "primitive" &&
+        asset.status !== "rejected" &&
+        asset.storage_provider === "local" &&
+        asset.scene_review_status === "approved" &&
+        asset.semantic_review_status === "verified" &&
+        asset.safe_to_use_in_sandbox &&
+        !/^https?:\/\//i.test(asset.public_path),
     );
   const selected =
     candidates.slice(0, limit);

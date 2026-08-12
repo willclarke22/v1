@@ -41,6 +41,14 @@ function insideProject(candidatePath: string) {
 function localProjectPath(value: string | null | undefined) {
   if (!value || isRemoteUrl(value)) return null;
 
+  if (
+    value.startsWith(
+      "/api/sandbox/probe-lab/assets/pending-file",
+    )
+  ) {
+    return null;
+  }
+
   const candidate = value.startsWith("/")
     ? publicUrlToProjectPath(value)
     : path.isAbsolute(value)
@@ -122,6 +130,40 @@ function possibleLocalAssetFiles(asset: MyWayAssetRecord) {
 
 async function deleteRemoteObjects(asset: MyWayAssetRecord) {
   const removed: string[] = [];
+
+  if (
+    asset.storage_provider ===
+      "r2_private_pending" &&
+    asset.storage_object_key
+  ) {
+    const storage = getR2SourceStorage();
+    await storage.delete(asset.storage_object_key);
+    if (await storage.exists(asset.storage_object_key)) {
+      throw new Error(
+        `Private pending model still exists after delete: ${asset.storage_object_key}`,
+      );
+    }
+    removed.push(
+      `${storage.bucket}/${asset.storage_object_key}`,
+    );
+  }
+
+  if (
+    asset.thumbnail_storage_provider ===
+      "r2_private_pending" &&
+    asset.thumbnail_object_key
+  ) {
+    const storage = getR2SourceStorage();
+    await storage.delete(asset.thumbnail_object_key);
+    if (await storage.exists(asset.thumbnail_object_key)) {
+      throw new Error(
+        `Private pending thumbnail still exists after delete: ${asset.thumbnail_object_key}`,
+      );
+    }
+    removed.push(
+      `${storage.bucket}/${asset.thumbnail_object_key}`,
+    );
+  }
 
   if (
     asset.storage_provider === "r2" &&

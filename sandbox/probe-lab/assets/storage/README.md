@@ -254,3 +254,42 @@ threshold.
 
 Hydration scopes are execution scratch only. They are not durable metadata,
 runtime assets, source archives, or a local mirror of R2.
+
+## Step 5 private pending review assets
+
+Normalized Asset Library candidates have three explicit storage states:
+
+- `local` — local-only fallback when cloud storage is genuinely disabled;
+- `r2_private_pending` — unapproved review GLB/thumbnail in private source R2;
+- `r2` — approved browser/runtime object in public runtime R2.
+
+With R2 enabled, the shared `registerMyWayAsset()` boundary stages new
+non-primitive pending candidates to:
+
+- `pending/assets/<asset_id>/normalized.glb`
+- `pending/assets/<asset_id>/thumbnail.png`
+
+before the candidate is committed to the authoritative registry. Existing
+objects at those deterministic keys are accepted only when their bytes match
+exactly. A different existing object is a conflict and is never overwritten.
+
+The browser reviews private objects through the same-origin
+`/api/sandbox/probe-lab/assets/pending-file` proxy. The caller supplies only an
+asset ID plus `model|thumbnail`; it cannot provide an arbitrary source-R2 key.
+
+After a successful registry commit, verified normalized review bytes can be
+removed from the laptop. Appearance and geometry workers rehydrate private
+pending models into bounded operating-system temporary workspaces and clean
+those workspaces after use.
+
+Approval is ordered as:
+
+`private pending -> runtime upload -> runtime verification -> registry update -> private pending delete`
+
+A private pending candidate cannot enter reviewed scene/runtime model binding
+until public/runtime promotion has completed.
+
+Rejection preserves acquisition history first, then removes the rejected asset
+record and its private pending model/thumbnail. The historical general
+cloud-migration utility is restricted to already-reviewed local assets and
+cannot publish an unreviewed private candidate.

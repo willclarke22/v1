@@ -62,6 +62,90 @@ export function validateMyWayAssetRecord(
       "R2 assets must use an HTTPS public_path",
     );
   }
+  if (
+    asset.storage_provider ===
+      "r2_private_pending"
+  ) {
+    if (
+      !asset.storage_object_key ||
+      !asset.storage_object_key.startsWith(
+        "pending/assets/",
+      )
+    ) {
+      errors.push(
+        "Private-R2 pending assets require a pending/assets/ storage_object_key",
+      );
+    }
+
+    if (
+      !asset.public_path.startsWith(
+        "/api/sandbox/probe-lab/assets/pending-file?",
+      ) ||
+      !asset.public_path.includes(
+        "kind=model",
+      )
+    ) {
+      errors.push(
+        "Private-R2 pending assets must use the private pending-file model proxy",
+      );
+    }
+
+    if (
+      asset.scene_review_status ===
+        "approved"
+    ) {
+      errors.push(
+        "A private-R2 pending asset cannot be scene-approved before runtime R2 promotion",
+      );
+    }
+
+    if (asset.promoted_at) {
+      errors.push(
+        "A private-R2 pending asset cannot already have promoted_at",
+      );
+    }
+  }
+
+  if (
+    asset.thumbnail_storage_provider ===
+      "r2_private_pending"
+  ) {
+    if (
+      !asset.thumbnail_object_key ||
+      !asset.thumbnail_object_key.startsWith(
+        "pending/assets/",
+      )
+    ) {
+      errors.push(
+        "Private-R2 pending thumbnails require a pending/assets/ thumbnail_object_key",
+      );
+    }
+
+    if (
+      !asset.thumbnail_path ||
+      !asset.thumbnail_path.startsWith(
+        "/api/sandbox/probe-lab/assets/pending-file?",
+      ) ||
+      !asset.thumbnail_path.includes(
+        "kind=thumbnail",
+      )
+    ) {
+      errors.push(
+        "Private-R2 pending thumbnails must use the private pending-file thumbnail proxy",
+      );
+    }
+  }
+
+  if (
+    asset.source_storage_provider ===
+      "r2_private_pending"
+  ) {
+    errors.push(
+      "source_storage_provider cannot be r2_private_pending; source archives use ordinary private R2 source storage",
+    );
+  }
+
+
 
   if (
     asset.safe_to_promote_to_app &&

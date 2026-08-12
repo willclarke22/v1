@@ -789,6 +789,49 @@ export async function runAssetCloudAuthorityAudit() {
             });
           }
         } else if (
+          asset.storage_provider ===
+            "r2_private_pending"
+        ) {
+          if (asset.storage_object_key) {
+            addExpected(
+              expected,
+              {
+                bucket: "source",
+                object_key:
+                  asset.storage_object_key,
+                category:
+                  "pending_review_model",
+                owner_id:
+                  asset.asset_id,
+                expected_bytes:
+                  asset.file_size_bytes ?? null,
+              },
+            );
+          }
+          else {
+            issues.push({
+              classification:
+                "ambiguous_reference",
+              category:
+                "pending_review_model",
+              owner_id:
+                asset.asset_id,
+              detail:
+                "Registry says storage_provider=r2_private_pending but storage_object_key is missing.",
+            });
+          }
+
+          if (approvedForRuntime(asset)) {
+            issues.push({
+              classification:
+                "approved_asset_not_cloud_backed",
+              category: "runtime_model",
+              owner_id: asset.asset_id,
+              detail:
+                "The asset is scene-approved but is still stored only as a private pending review candidate.",
+            });
+          }
+        } else if (
           approvedForRuntime(
             asset,
           )
@@ -807,6 +850,38 @@ export async function runAssetCloudAuthorityAudit() {
       }
 
       if (
+        asset.thumbnail_storage_provider ===
+          "r2_private_pending"
+      ) {
+        if (asset.thumbnail_object_key) {
+          addExpected(
+            expected,
+            {
+              bucket: "source",
+              object_key:
+                asset.thumbnail_object_key,
+              category:
+                "pending_review_thumbnail",
+              owner_id:
+                asset.asset_id,
+              expected_bytes:
+                asset.thumbnail_file_size_bytes ?? null,
+            },
+          );
+        }
+        else {
+          issues.push({
+            classification:
+              "ambiguous_reference",
+            category:
+              "pending_review_thumbnail",
+            owner_id:
+              asset.asset_id,
+            detail:
+              "Registry says thumbnail_storage_provider=r2_private_pending but thumbnail_object_key is missing.",
+          });
+        }
+      } else if (
         asset.thumbnail_storage_provider ===
           "r2"
       ) {
