@@ -137,7 +137,7 @@ type FoundryCandidateVerification = {
 
 const APPLY_CONFIRMATION =
   "DELETE_VERIFIED_LOCAL_ASSET_DUPLICATES";
-const DEFAULT_TERMINAL_JOB_HISTORY_LIMIT = 100;
+const DEFAULT_TERMINAL_JOB_HISTORY_LIMIT = 25;
 
 const GENERATED_ROOTS = [
   "public/sandbox-assets/myway/models",
@@ -2906,4 +2906,5 @@ export async function runHistoricalLocalAssetCleanup(
 export function phase3ApplyConfirmation() {
   return APPLY_CONFIRMATION;
 }
+
 

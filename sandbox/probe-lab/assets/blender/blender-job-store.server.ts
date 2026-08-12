@@ -22,7 +22,7 @@ function now() {
   return new Date().toISOString();
 }
 
-const DEFAULT_TERMINAL_JOB_HISTORY_LIMIT = 100;
+const DEFAULT_TERMINAL_JOB_HISTORY_LIMIT = 25;
 
 function keepAllBlenderJobHistory() {
   const value =
@@ -181,4 +181,5 @@ export async function pruneBlenderJobHistory() {
     );
   }
 }
+
 

@@ -88,8 +88,8 @@ workspace threshold and defaults to `24`.
 
 Blender terminal job JSON is bounded independently from ambientCG download jobs:
 
-- `MYWAY_BLENDER_JOB_HISTORY_LIMIT=100`
-  - Keeps the newest 100 completed and newest 100 failed Blender job records.
+- `MYWAY_BLENDER_JOB_HISTORY_LIMIT=25`
+  - Keeps the newest 25 completed and newest 25 failed Blender job records.
   - Set to `0` to keep no terminal Blender job history.
 - `MYWAY_KEEP_BLENDER_JOB_HISTORY=true`
   - Disables terminal Blender-job pruning for explicit debugging sessions.
@@ -211,3 +211,4 @@ Run the repair CLI with Node's `--env-file=.env.local` flag so the standalone
 process receives the same R2 environment as the Next.js app. The CLI defaults to
 dry-run mode and requires the explicit confirmation token
 `REPAIR_MISSING_R2_ASSET_OBJECTS` for apply mode.
+
