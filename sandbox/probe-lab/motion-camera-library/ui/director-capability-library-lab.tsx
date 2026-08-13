@@ -1,9 +1,8 @@
 
 "use client";
 
-import { Canvas } from "@react-three/fiber";
-import type { CSSProperties, ChangeEvent, ErrorInfo, ReactNode } from "react";
-import { Component, useEffect, useMemo, useState } from "react";
+import type { CSSProperties, ChangeEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   DIRECTOR_CAPABILITIES,
@@ -15,10 +14,28 @@ import {
   type DirectorCapabilitySupportLevel,
 } from "../director-capability-registry";
 import {
-  DirectorCapabilityPreview,
+  buildDirectorCameraFidelityReport,
+  type DirectorCameraFidelityReport,
+} from "../director-camera-fidelity";
+import {
+  buildDirectorObjectMotionFidelityReport,
+  type DirectorObjectMotionFidelityReport,
+} from "../director-object-motion-fidelity";
+import {
+  DIRECTOR_VISUAL_AUDIT_VERSION,
+  directorVisualAuditDefinition,
+  emptyDirectorVisualAuditState,
+  normalizeDirectorVisualAuditState,
+  reviewForCapability,
+  reviewedCapabilityCount,
+  type DirectorVisualAuditState,
+  type DirectorVisualAuditStatus,
+} from "../director-visual-audit";
+import {
   type DirectorLibraryAsset,
   type ResolvedDirectorRole,
 } from "./director-capability-preview";
+import { DirectorAuditViewer } from "./director-audit-viewer";
 import {
   applyDirectorBlocking,
   validateDirectorShot,
@@ -181,45 +198,6 @@ function formatJson(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
-class PreviewErrorBoundary extends Component<
-  { children: ReactNode; resetKey: string },
-  { error: string | null }
-> {
-  state = { error: null as string | null };
-
-  static getDerivedStateFromError(error: unknown) {
-    return {
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-
-  componentDidUpdate(previous: { resetKey: string }) {
-    if (previous.resetKey !== this.props.resetKey && this.state.error) {
-      this.setState({ error: null });
-    }
-  }
-
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("Director Capability Library preview failed.", error, info);
-  }
-
-  render() {
-    if (this.state.error) {
-      return (
-        <div style={viewerMessageStyle}>
-          <strong>The selected asset preview failed.</strong>
-          <span>{this.state.error}</span>
-          <span>
-            Select another capability or refresh the Asset Library snapshot. The
-            capability contract remains available in the inspector.
-          </span>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
 function Stat({ label, value, detail }: { label: string; value: string | number; detail: string }) {
   return (
     <div style={statStyle}>
@@ -284,26 +262,242 @@ function CapabilityCard({
 }
 
 function JsonPanel({ title, value }: { title: string; value: unknown }) {
+  const [open, setOpen] = useState(false);
   return (
-    <details style={detailsStyle}>
+    <details
+      style={detailsStyle}
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
       <summary style={summaryStyle}>{title}</summary>
-      <pre style={preStyle}>{formatJson(value)}</pre>
+      {open ? <pre style={preStyle}>{formatJson(value)}</pre> : null}
     </details>
   );
 }
 
+function CameraFidelityEvidence({
+  report,
+}: {
+  report: DirectorCameraFidelityReport;
+}) {
+  const keySamples = [report.samples[0], report.samples[2], report.samples[4]].filter(
+    (sample): sample is DirectorCameraFidelityReport["samples"][number] => Boolean(sample),
+  );
+  const passed = report.checks.filter((check) => check.passed).length;
+  return (
+    <div style={fidelityPanelStyle}>
+      <div style={fidelityHeaderStyle}>
+        <div style={{ display: "grid", gap: 5 }}>
+          <span style={eyebrowStyle}>Phase 1B controlled camera proof</span>
+          <strong style={{ fontSize: 16 }}>
+            {report.fixture.replace(/_/g, " ")}
+          </strong>
+        </div>
+        <span
+          style={{
+            ...badgeStyle,
+            color: report.automated_status === "pass" ? "#86efac" : "#fbbf24",
+            borderColor:
+              report.automated_status === "pass"
+                ? "rgba(134,239,172,0.35)"
+                : "rgba(251,191,36,0.35)",
+            background:
+              report.automated_status === "pass"
+                ? "rgba(22,101,52,0.2)"
+                : "rgba(146,64,14,0.2)",
+          }}
+        >
+          {passed}/{report.checks.length} automated checks
+        </span>
+      </div>
+
+      <div style={fidelitySamplesStyle}>
+        {keySamples.map((sample) => (
+          <div key={sample.progress} style={fidelitySampleStyle}>
+            <span style={statLabelStyle}>
+              {sample.progress === 0
+                ? "start"
+                : sample.progress === 0.5
+                  ? "mid"
+                  : "end"}
+            </span>
+            <strong>{sample.camera_target_distance_m.toFixed(2)} m</strong>
+            <small style={mutedStyle}>
+              camera → target · FOV {sample.fov_degrees.toFixed(1)}°
+            </small>
+            <code style={fidelityVectorStyle}>
+              [{sample.camera_position.map((value) => value.toFixed(2)).join(", ")}]
+            </code>
+          </div>
+        ))}
+      </div>
+
+      <div style={fidelityChecksStyle}>
+        {report.checks.map((check) => (
+          <div key={check.id} style={fidelityCheckStyle}>
+            <span
+              aria-hidden="true"
+              style={{
+                color: check.passed ? "#86efac" : "#fbbf24",
+                fontWeight: 900,
+              }}
+            >
+              {check.passed ? "✓" : "!"}
+            </span>
+            <div style={{ display: "grid", gap: 2 }}>
+              <strong style={{ fontSize: 12 }}>{check.description}</strong>
+              <small style={mutedStyle}>{check.measured}</small>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {report.limitations.length ? (
+        <div style={fidelityLimitationStyle}>
+          <strong>Known fidelity boundary</strong>
+          <span>{report.limitations.join(" ")}</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+
+function ObjectMotionFidelityEvidence({
+  report,
+}: {
+  report: DirectorObjectMotionFidelityReport;
+}) {
+  const keySamples = [
+    report.samples[0],
+    report.samples[2],
+    report.samples[4],
+  ].filter(
+    (
+      sample,
+    ): sample is DirectorObjectMotionFidelityReport["samples"][number] =>
+      Boolean(sample),
+  );
+  const statusColor =
+    report.automated_status === "pass"
+      ? "#86efac"
+      : report.automated_status === "known_redundancy"
+        ? "#fda4af"
+        : "#fbbf24";
+  const statusLabel =
+    report.qualification_state === "frozen_canary"
+      ? "frozen regression canary"
+      : report.qualification_state === "needs_semantic_strengthening"
+        ? "known semantic overlap"
+        : "fixture ready for review";
+
+  return (
+    <div style={fidelityPanelStyle}>
+      <div style={fidelityHeaderStyle}>
+        <div style={{ display: "grid", gap: 5 }}>
+          <span style={eyebrowStyle}>
+            Phase 1B.4.1 controlled object-motion proof
+          </span>
+          <strong style={{ fontSize: 16 }}>
+            {report.fixture.replace(/_/g, " ")}
+          </strong>
+        </div>
+        <span
+          style={{
+            ...badgeStyle,
+            color: statusColor,
+            borderColor: `${statusColor}55`,
+            background: `${statusColor}14`,
+          }}
+        >
+          {statusLabel}
+        </span>
+      </div>
+
+      <div style={fidelitySamplesStyle}>
+        {keySamples.map((sample) => (
+          <div key={sample.progress} style={fidelitySampleStyle}>
+            <span style={statLabelStyle}>
+              {sample.progress === 0
+                ? "start"
+                : sample.progress === 0.5
+                  ? "mid"
+                  : "end"}
+            </span>
+            <strong>
+              [{sample.primary_position.map((value) => value.toFixed(2)).join(", ")}]
+            </strong>
+            <small style={mutedStyle}>
+              primary position · target distance{" "}
+              {sample.distance_to_secondary_m.toFixed(2)} m
+            </small>
+            <code style={fidelityVectorStyle}>
+              rot [
+              {sample.primary_rotation_degrees
+                .map((value) => value.toFixed(0))
+                .join(", ")}
+              ]° · scale [
+              {sample.primary_scale.map((value) => value.toFixed(2)).join(", ")}
+              ]
+            </code>
+          </div>
+        ))}
+      </div>
+
+      <div style={fidelityChecksStyle}>
+        {report.checks.map((check) => (
+          <div key={check.id} style={fidelityCheckStyle}>
+            <span
+              aria-hidden="true"
+              style={{
+                color: check.passed ? "#86efac" : "#fbbf24",
+                fontWeight: 900,
+              }}
+            >
+              {check.passed ? "✓" : "!"}
+            </span>
+            <div style={{ display: "grid", gap: 2 }}>
+              <strong style={{ fontSize: 12 }}>{check.description}</strong>
+              <small style={mutedStyle}>{check.measured}</small>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {report.redundancy_peers.length ? (
+        <div style={fidelityLimitationStyle}>
+          <strong>Compare semantic overlap</strong>
+          <span>{report.redundancy_peers.join(", ")}</span>
+        </div>
+      ) : null}
+
+      {report.limitations.length ? (
+        <div style={fidelityLimitationStyle}>
+          <strong>Known fidelity boundary</strong>
+          <span>{report.limitations.join(" ")}</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+const DIRECTOR_AUDIT_STORAGE_KEY =
+  "myway_director_visual_audit_phase1b2_v1";
+const INITIAL_CATALOG_LIMIT = 36;
+
 export function DirectorCapabilityLibraryLab() {
-  const [selectedId, setSelectedId] = useState("establish");
+  const [selectedId, setSelectedId] = useState("over_shoulder");
   const [category, setCategory] = useState<CategoryFilter>("all");
   const [support, setSupport] = useState<SupportFilter>("all");
   const [query, setQuery] = useState("");
   const [assets, setAssets] = useState<DirectorLibraryAsset[]>([]);
   const [assetError, setAssetError] = useState<string | null>(null);
-  const [isLoadingAssets, setIsLoadingAssets] = useState(true);
-  const [progress, setProgress] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [showCameraPath, setShowCameraPath] = useState(false);
-  const [showRoleLabels, setShowRoleLabels] = useState(true);
+  const [isLoadingAssets, setIsLoadingAssets] = useState(false);
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [catalogLimit, setCatalogLimit] = useState(INITIAL_CATALOG_LIMIT);
+  const [auditState, setAuditState] = useState<DirectorVisualAuditState>(
+    () => emptyDirectorVisualAuditState(),
+  );
 
   const selected =
     DIRECTOR_CAPABILITIES.find((capability) => capability.id === selectedId) ??
@@ -348,14 +542,26 @@ export function DirectorCapabilityLibraryLab() {
     (role) => requiredRoleNames.includes(role.role) && !role.asset,
   );
 
-  const previewResetKey = `${selected.id}:${resolvedRoles
-    .map((role) => role.asset?.asset_id ?? "fallback")
-    .join(":")}`;
+  const auditDefinition = useMemo(
+    () => directorVisualAuditDefinition(selected),
+    [selected],
+  );
+  const selectedReview = reviewForCapability(auditState, selected.id);
+  const reviewedCount = reviewedCapabilityCount(auditState);
+
   const demoMoment = useMemo(() => directorCapabilityDemoMoment(selected), [selected]);
   const demoValidation = useMemo(() => {
     const actors = applyDirectorBlocking(demoMoment, validationActorsFromRoles(resolvedRoles));
     return validateDirectorShot(demoMoment, actors);
   }, [demoMoment, resolvedRoles]);
+  const cameraFidelity = useMemo(
+    () => buildDirectorCameraFidelityReport(selected),
+    [selected],
+  );
+  const objectMotionFidelity = useMemo(
+    () => buildDirectorObjectMotionFidelityReport(selected),
+    [selected],
+  );
 
   async function loadAssets() {
     setIsLoadingAssets(true);
@@ -369,8 +575,10 @@ export function DirectorCapabilityLibraryLab() {
         throw new Error(payload.error || "The Asset Library could not be loaded.");
       }
       setAssets(payload.assets);
+      setAssetsLoaded(true);
     } catch (error) {
       setAssets([]);
+      setAssetsLoaded(false);
       setAssetError(error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoadingAssets(false);
@@ -378,32 +586,86 @@ export function DirectorCapabilityLibraryLab() {
   }
 
   useEffect(() => {
-    void loadAssets();
+    try {
+      const raw = window.localStorage.getItem(DIRECTOR_AUDIT_STORAGE_KEY);
+      if (raw) {
+        setAuditState(normalizeDirectorVisualAuditState(JSON.parse(raw)));
+      }
+    } catch (error) {
+      console.warn("Director visual audit state could not be restored.", error);
+    }
   }, []);
 
   useEffect(() => {
-    if (!isPlaying) return;
-    const duration = Math.max(1000, selected.demo.duration_ms);
-    const stepMs = 100;
-    const timer = window.setInterval(() => {
-      setProgress((current) => {
-        const next = current + stepMs / duration;
-        return next >= 1 ? next - 1 : next;
-      });
-    }, stepMs);
-    return () => window.clearInterval(timer);
-  }, [isPlaying, selected.demo.duration_ms]);
-
-  useEffect(() => {
-    setProgress(0);
-    setIsPlaying(true);
-  }, [selected.id]);
+    setCatalogLimit(INITIAL_CATALOG_LIMIT);
+  }, [category, query, support]);
 
   useEffect(() => {
     if (!filtered.some((capability) => capability.id === selectedId)) {
       setSelectedId(filtered[0]?.id ?? DIRECTOR_CAPABILITIES[0].id);
     }
   }, [filtered, selectedId]);
+
+  function persistAuditState(next: DirectorVisualAuditState) {
+    setAuditState(next);
+    try {
+      window.localStorage.setItem(
+        DIRECTOR_AUDIT_STORAGE_KEY,
+        JSON.stringify(next),
+      );
+    } catch (error) {
+      console.warn("Director visual audit state could not be persisted.", error);
+    }
+  }
+
+  function updateSelectedReview(input: {
+    status?: DirectorVisualAuditStatus;
+    notes?: string;
+  }) {
+    const current = reviewForCapability(auditState, selected.id);
+    const next: DirectorVisualAuditState = {
+      schema_version: DIRECTOR_VISUAL_AUDIT_VERSION,
+      reviews: {
+        ...auditState.reviews,
+        [selected.id]: {
+          ...current,
+          ...input,
+          capability_id: selected.id,
+          updated_at: new Date().toISOString(),
+        },
+      },
+    };
+    persistAuditState(next);
+  }
+
+  function exportAudit() {
+    const payload = {
+      ...auditState,
+      exported_at: new Date().toISOString(),
+      capability_count: DIRECTOR_CAPABILITIES.length,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `myway-director-visual-audit-${new Date()
+      .toISOString()
+      .slice(0, 10)}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function selectRelativeCapability(delta: number) {
+    if (!filtered.length) return;
+    const index = filtered.findIndex((item) => item.id === selected.id);
+    const current = index >= 0 ? index : 0;
+    const next = (current + delta + filtered.length) % filtered.length;
+    setSelectedId(filtered[next].id);
+  }
 
   const compiledExecution = {
     capability_id: selected.id,
@@ -419,7 +681,7 @@ export function DirectorCapabilityLibraryLab() {
     composed_shot_v2: demoMoment.shot ?? null,
     semantic_events: demoMoment.events,
     runtime_inputs: {
-      progress_0_to_1: Number(progress.toFixed(3)),
+      playback_clock: "isolated audit viewer; catalogue does not rerender during playback",
       duration_ms: selected.demo.duration_ms,
       resolved_roles: resolvedRoles.map((role) => ({
         role: role.role,
@@ -449,7 +711,35 @@ export function DirectorCapabilityLibraryLab() {
       production_collision_solver_invoked: false,
       parameterized_composition_solver: true,
       sampled_preview_validation: demoValidation,
-      note: "This lab now runs an approximate camera/framing/occlusion proof. The Asset Scene Builder uses the same Director runtime against measured geometry and its production placement solver.",
+      controlled_fidelity_fixture: cameraFidelity,
+      visual_audit_fixture: auditDefinition,
+      note: "Phase 1B.2 separates deterministic controlled visual qualification from optional real-asset proof. The Asset Scene Builder still uses the same Director runtime against measured geometry and its production placement solver.",
+    },
+    object_motion: {
+      controlled_fidelity_fixture: objectMotionFidelity,
+      qualification_foundation:
+        objectMotionFidelity
+          ? "Phase 1B.4.1 specialized fixture + sampled actor-state evidence"
+          : null,
+      runtime_semantics_rewritten_in_this_phase: false,
+    },
+    performance: {
+      playback_clock_owner: "DirectorAuditViewer",
+      canvas_render_policy: "demand",
+      audit_dpr: 1,
+      shadows_default: false,
+      role_labels_default: false,
+      camera_path_default: false,
+      asset_library_loading: "deferred until real-asset proof is requested",
+      offscreen_sleep: true,
+      hidden_tab_sleep: true,
+      catalogue_mount_limit: INITIAL_CATALOG_LIMIT,
+    },
+    visual_review: {
+      schema_version: DIRECTOR_VISUAL_AUDIT_VERSION,
+      selected_review: selectedReview,
+      reviewed_capabilities: reviewedCount,
+      total_capabilities: DIRECTOR_CAPABILITIES.length,
     },
     visibility_contract: {
       required_visible_roles: selected.demo.required_visible_roles,
@@ -466,16 +756,21 @@ export function DirectorCapabilityLibraryLab() {
     ],
   };
 
+  const visibleFiltered = useMemo(
+    () => filtered.slice(0, catalogLimit),
+    [catalogLimit, filtered],
+  );
+
   const groupedFiltered = useMemo(() => {
     const groups = new Map<string, DirectorCapability[]>();
-    for (const capability of filtered) {
+    for (const capability of visibleFiltered) {
       const key = capability.group;
       const current = groups.get(key) ?? [];
       current.push(capability);
       groups.set(key, current);
     }
     return Array.from(groups.entries());
-  }, [filtered]);
+  }, [visibleFiltered]);
 
   return (
     <main style={pageStyle}>
@@ -503,9 +798,13 @@ export function DirectorCapabilityLibraryLab() {
 
         <section style={statsGridStyle}>
           <Stat label="Capabilities" value={DIRECTOR_CAPABILITIES.length} detail="one typed registry" />
-          <Stat label="Categories" value={DIRECTOR_CAPABILITY_CATEGORIES.length} detail="attention through continuity" />
-          <Stat label="Library assets" value={isLoadingAssets ? "…" : loadableAssetCount} detail="browser-loadable examples" />
-          <Stat label="WebGL canvases" value={1} detail="hard laptop-safety invariant" />
+          <Stat label="Reviewed" value={reviewedCount} detail="persisted locally in audit mode" />
+          <Stat
+            label="Library assets"
+            value={isLoadingAssets ? "…" : assetsLoaded ? loadableAssetCount : "deferred"}
+            detail="loaded only for optional real-asset proof"
+          />
+          <Stat label="WebGL canvases" value={1} detail="DPR 1 · demand-rendered · sleeps offscreen" />
         </section>
 
         <section style={workbenchGridStyle}>
@@ -524,60 +823,125 @@ export function DirectorCapabilityLibraryLab() {
               </div>
             </div>
 
-            <div style={viewerStyle}>
-              <PreviewErrorBoundary resetKey={previewResetKey}>
-                <Canvas
-                  camera={{ position: [5.8, 3.1, 6.8], fov: 42, near: 0.05, far: 80 }}
-                  dpr={[1, 1.5]}
-                  gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-                  shadows
-                >
-                  <DirectorCapabilityPreview
-                    capability={selected}
-                    roles={resolvedRoles}
-                    progress={progress}
-                    isPlaying={isPlaying}
-                    showCameraPath={showCameraPath}
-                    showRoleLabels={showRoleLabels}
-                  />
-                </Canvas>
-              </PreviewErrorBoundary>
-              <div style={viewerOverlayStyle}>
-                <span>one active Canvas</span>
-                <span>{resolvedRequiredCount}/{requiredRoleCount} required roles use real library assets</span>
-                <span>{usesFallback ? "fallback actor visible" : "all required actors resolved"}</span>
+            <DirectorAuditViewer
+              capability={selected}
+              realRoles={resolvedRoles}
+              realAssetCount={loadableAssetCount}
+              realAssetsLoaded={assetsLoaded}
+              realAssetsLoading={isLoadingAssets}
+              realAssetError={assetError}
+              onRequestRealAssets={() => void loadAssets()}
+            />
+
+            <div style={auditPanelStyle}>
+              <div style={auditHeaderStyle}>
+                <div style={{ display: "grid", gap: 5 }}>
+                  <span style={eyebrowStyle}>Visual audit</span>
+                  <strong style={{ fontSize: 18 }}>
+                    {reviewedCount}/{DIRECTOR_CAPABILITIES.length} capabilities reviewed
+                  </strong>
+                  <span style={mutedStyle}>
+                    The controlled fixture is the qualification proof. Use real assets only
+                    to check whether the capability generalizes.
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button type="button" onClick={() => selectRelativeCapability(-1)} style={buttonStyle}>
+                    Previous
+                  </button>
+                  <button type="button" onClick={() => selectRelativeCapability(1)} style={buttonStyle}>
+                    Next
+                  </button>
+                  <button type="button" onClick={exportAudit} style={buttonStyle}>
+                    Export audit JSON
+                  </button>
+                </div>
               </div>
-              <div style={safeFrameStyle} aria-hidden="true" />
+
+              <div style={auditExpectationsStyle}>
+                <div style={{ display: "grid", gap: 6 }}>
+                  <span style={statLabelStyle}>Controlled fixture</span>
+                  <strong>{auditDefinition.fixture.replace(/_/g, " ")}</strong>
+                </div>
+                <div style={{ display: "grid", gap: 6 }}>
+                  <span style={statLabelStyle}>Expected behavior</span>
+                  {auditDefinition.expected_behavior.map((item) => (
+                    <span key={item} style={auditExpectationItemStyle}>
+                      <span aria-hidden="true">•</span>
+                      <span>{item}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div style={auditStatusRowStyle}>
+                {([
+                  ["pass", "Pass"],
+                  ["needs_work", "Needs work"],
+                  ["blocked", "Blocked / needs metadata"],
+                  ["approximate_ok", "Approximation acceptable"],
+                ] as const).map(([statusValue, label]) => (
+                  <button
+                    key={statusValue}
+                    type="button"
+                    onClick={() => updateSelectedReview({ status: statusValue })}
+                    style={{
+                      ...auditStatusButtonStyle,
+                      ...(selectedReview.status === statusValue
+                        ? auditStatusButtonActiveStyle
+                        : null),
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateSelectedReview({
+                      status: "unreviewed",
+                      notes: "",
+                    })
+                  }
+                  style={auditStatusButtonStyle}
+                >
+                  Clear review
+                </button>
+              </div>
+
+              <textarea
+                value={selectedReview.notes}
+                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                  updateSelectedReview({ notes: event.target.value })
+                }
+                placeholder="Visual notes: what looks wrong, what should be different, or what metadata/runtime support is missing?"
+                style={auditNotesStyle}
+                rows={3}
+              />
+
+              {auditDefinition.compare_capability_ids.length ? (
+                <div style={compareRowStyle}>
+                  <span style={statLabelStyle}>Compare with</span>
+                  {auditDefinition.compare_capability_ids.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setSelectedId(id)}
+                      style={compareButtonStyle}
+                    >
+                      {id.replace(/_/g, " ")}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
-            <div style={transportStyle}>
-              <button type="button" onClick={() => setIsPlaying((value) => !value)} style={primaryButtonStyle}>
-                {isPlaying ? "Pause" : "Play"}
-              </button>
-              <button type="button" onClick={() => setProgress(0)} style={buttonStyle}>Restart</button>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.001}
-                value={progress}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                  setIsPlaying(false);
-                  setProgress(Number(event.target.value));
-                }}
-                style={{ flex: 1, minWidth: 180 }}
-                aria-label="Capability timeline"
-              />
-              <span style={timeStyle}>{Math.round(progress * selected.demo.duration_ms)} / {selected.demo.duration_ms} ms</span>
-              <label style={toggleLabelStyle}>
-                <input type="checkbox" checked={showCameraPath} onChange={(event: ChangeEvent<HTMLInputElement>) => setShowCameraPath(event.target.checked)} />
-                camera path
-              </label>
-              <label style={toggleLabelStyle}>
-                <input type="checkbox" checked={showRoleLabels} onChange={(event: ChangeEvent<HTMLInputElement>) => setShowRoleLabels(event.target.checked)} />
-                role labels
-              </label>
-            </div>
+            {cameraFidelity ? (
+              <CameraFidelityEvidence report={cameraFidelity} />
+            ) : null}
+            {objectMotionFidelity ? (
+              <ObjectMotionFidelityEvidence report={objectMotionFidelity} />
+            ) : null}
 
             <div style={narrationStyle}>
               <span style={eyebrowStyle}>Demo narration / visual claim</span>
@@ -605,7 +969,10 @@ export function DirectorCapabilityLibraryLab() {
               <div style={{ display: "grid", gap: 6 }}>
                 <span style={eyebrowStyle}>Visible capabilities</span>
                 <strong style={{ fontSize: 22 }}>{filtered.length} available</strong>
-                <span style={mutedStyle}>Select one without leaving the active WebGL viewer.</span>
+                <span style={mutedStyle}>
+                  Only {Math.min(catalogLimit, filtered.length)} cards are mounted at once.
+                  Search or filter before loading more.
+                </span>
               </div>
 
               <input
@@ -651,7 +1018,11 @@ export function DirectorCapabilityLibraryLab() {
                 style={buttonStyle}
                 disabled={isLoadingAssets}
               >
-                {isLoadingAssets ? "Loading assets…" : "Refresh Asset Library"}
+                {isLoadingAssets
+                  ? "Loading assets…"
+                  : assetsLoaded
+                    ? "Refresh optional Asset Library"
+                    : "Load optional Asset Library"}
               </button>
               {assetError ? <div style={errorStyle}>{assetError}</div> : null}
             </div>
@@ -676,6 +1047,15 @@ export function DirectorCapabilityLibraryLab() {
               ) : (
                 <div style={viewerMessageStyle}>No capabilities match the current filters.</div>
               )}
+              {catalogLimit < filtered.length ? (
+                <button
+                  type="button"
+                  onClick={() => setCatalogLimit((value) => value + INITIAL_CATALOG_LIMIT)}
+                  style={buttonStyle}
+                >
+                  Load {Math.min(INITIAL_CATALOG_LIMIT, filtered.length - catalogLimit)} more
+                </button>
+              ) : null}
             </div>
           </aside>
         </section>
@@ -690,8 +1070,8 @@ export function DirectorCapabilityLibraryLab() {
               </div>
               <p style={{ ...mutedStyle, margin: 0, lineHeight: 1.55, maxWidth: 1000 }}>
                 GLM receives the semantic contract and supported capability IDs,
-                not renderer code. MyWay compiles the chosen instruction into the
-                controller and bounded preview execution shown here.
+                not renderer code. Phase 1B.2 keeps the catalogue static while a
+                lightweight isolated audit viewer exercises the compiled direction.
               </p>
             </div>
 
@@ -706,7 +1086,23 @@ export function DirectorCapabilityLibraryLab() {
           <div style={inspectorGridStyle}>
             <JsonPanel title="1. Director instruction" value={selected.director_instruction} />
             <JsonPanel title="2. Compiled preview execution" value={compiledExecution} />
-            <JsonPanel title="3. Validation and promotion diagnostics" value={diagnostics} />
+            {cameraFidelity ? (
+              <JsonPanel title="3. Controlled camera fidelity evidence" value={cameraFidelity} />
+            ) : null}
+            {objectMotionFidelity ? (
+              <JsonPanel
+                title="3. Controlled object-motion fidelity evidence"
+                value={objectMotionFidelity}
+              />
+            ) : null}
+            <JsonPanel
+              title={
+                cameraFidelity || objectMotionFidelity
+                  ? "4. Validation and promotion diagnostics"
+                  : "3. Validation and promotion diagnostics"
+              }
+              value={diagnostics}
+            />
           </div>
 
           <div style={honestyStyle}>
@@ -959,6 +1355,73 @@ const toggleLabelStyle: CSSProperties = {
   fontSize: 11,
 };
 
+const fidelityPanelStyle: CSSProperties = {
+  display: "grid",
+  gap: 12,
+  padding: 14,
+  borderRadius: 18,
+  border: "1px solid rgba(56,189,248,0.2)",
+  background: "linear-gradient(145deg, rgba(8,47,73,0.28), rgba(2,6,23,0.78))",
+};
+
+const fidelityHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  flexWrap: "wrap",
+};
+
+const fidelitySamplesStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  gap: 10,
+};
+
+const fidelitySampleStyle: CSSProperties = {
+  display: "grid",
+  gap: 4,
+  padding: 10,
+  borderRadius: 14,
+  border: "1px solid rgba(148,163,184,0.16)",
+  background: "rgba(2,6,23,0.58)",
+};
+
+const fidelityVectorStyle: CSSProperties = {
+  color: "#7dd3fc",
+  fontSize: 10,
+  whiteSpace: "normal",
+  overflowWrap: "anywhere",
+};
+
+const fidelityChecksStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+  gap: 8,
+};
+
+const fidelityCheckStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "18px minmax(0, 1fr)",
+  gap: 7,
+  alignItems: "start",
+  padding: "8px 10px",
+  borderRadius: 12,
+  background: "rgba(15,23,42,0.58)",
+};
+
+const fidelityLimitationStyle: CSSProperties = {
+  display: "grid",
+  gap: 4,
+  padding: "9px 11px",
+  borderRadius: 12,
+  border: "1px solid rgba(251,191,36,0.2)",
+  background: "rgba(120,53,15,0.16)",
+  color: "rgba(254,243,199,0.88)",
+  fontSize: 12,
+  lineHeight: 1.5,
+};
+
 const narrationStyle: CSSProperties = {
   display: "grid",
   gap: 7,
@@ -1137,4 +1600,96 @@ const capabilityIdStyle: CSSProperties = {
   borderRadius: 7,
   padding: "4px 6px",
   background: "rgba(30,64,175,0.22)",
+};
+
+
+const auditPanelStyle: CSSProperties = {
+  display: "grid",
+  gap: 12,
+  padding: 14,
+  borderRadius: 18,
+  border: "1px solid rgba(167,139,250,0.22)",
+  background: "linear-gradient(145deg, rgba(76,29,149,0.18), rgba(2,6,23,0.8))",
+};
+
+const auditHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 12,
+  flexWrap: "wrap",
+};
+
+const auditExpectationsStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "minmax(180px, 0.35fr) minmax(0, 1fr)",
+  gap: 12,
+  padding: 12,
+  borderRadius: 14,
+  background: "rgba(15,23,42,0.56)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+
+const auditExpectationItemStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "12px minmax(0, 1fr)",
+  gap: 7,
+  color: "rgba(226,232,240,0.78)",
+  fontSize: 12,
+  lineHeight: 1.5,
+};
+
+const auditStatusRowStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 8,
+};
+
+const auditStatusButtonStyle: CSSProperties = {
+  borderRadius: 999,
+  border: "1px solid rgba(255,255,255,0.13)",
+  background: "rgba(255,255,255,0.05)",
+  color: "#cbd5e1",
+  padding: "8px 11px",
+  cursor: "pointer",
+  fontWeight: 800,
+  fontSize: 11,
+};
+
+const auditStatusButtonActiveStyle: CSSProperties = {
+  borderColor: "rgba(167,139,250,0.68)",
+  background: "rgba(124,58,237,0.2)",
+  color: "#f5f3ff",
+};
+
+const auditNotesStyle: CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  resize: "vertical",
+  borderRadius: 12,
+  border: "1px solid rgba(167,139,250,0.25)",
+  background: "#020617",
+  color: "white",
+  padding: 11,
+  lineHeight: 1.5,
+  font: "inherit",
+  fontSize: 12,
+};
+
+const compareRowStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 7,
+  flexWrap: "wrap",
+};
+
+const compareButtonStyle: CSSProperties = {
+  borderRadius: 999,
+  border: "1px solid rgba(56,189,248,0.2)",
+  background: "rgba(14,165,233,0.08)",
+  color: "#bae6fd",
+  padding: "6px 9px",
+  cursor: "pointer",
+  fontSize: 10,
+  fontWeight: 800,
 };

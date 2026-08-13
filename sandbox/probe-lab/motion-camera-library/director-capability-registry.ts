@@ -323,16 +323,34 @@ const cameraFraming = framingSeeds.map(([id, label, summary]) =>
     category: "camera_framing",
     group: "Shot size",
     summary,
+    threejs: id === "cutaway" ? "compound" : "direct",
+    fallback: id === "cutaway" ? "medium_close" : undefined,
     instruction: {
       camera: {
         framing: id,
         primary_subject_role: "primary_subject",
-        keep_visible_roles: id === "two_shot" ? ["primary_subject", "secondary_subject"] : ["primary_subject"],
+        keep_visible_roles:
+          id === "two_shot" || id === "over_shoulder"
+            ? ["primary_subject", "secondary_subject"]
+            : id === "point_of_view" || id === "cutaway"
+              ? ["secondary_subject"]
+              : ["primary_subject"],
+        viewpoint_source_role:
+          id === "over_shoulder" || id === "point_of_view"
+            ? "primary_subject"
+            : null,
       },
     },
     demo: {
       kind: `framing_${id}`,
-      required_visible_roles: id === "two_shot" || id === "extreme_wide" ? ["primary_subject", "secondary_subject"] : ["primary_subject"],
+      required_visible_roles:
+        id === "two_shot" || id === "extreme_wide" || id === "over_shoulder"
+          ? ["primary_subject", "secondary_subject"]
+          : id === "point_of_view" || id === "cutaway" || id === "macro"
+            ? ["secondary_subject"]
+            : id === "insert"
+              ? ["context_subject"]
+              : ["primary_subject"],
     },
   }),
 );
@@ -377,8 +395,18 @@ const cameraAngles = angleSeeds.map(([id, label, summary]) =>
     category: "camera_angle",
     group: "View orientation",
     summary,
-    threejs: id === "inside_object" ? "approximate" : id === "object_attached" ? "compound" : "direct",
-    fallback: id === "inside_object" ? "cutaway" : id === "object_attached" ? "follow" : undefined,
+    threejs: id === "inside_object" || id === "isometric"
+      ? "approximate"
+      : id === "object_attached"
+        ? "compound"
+        : "direct",
+    fallback: id === "inside_object"
+      ? "cutaway"
+      : id === "isometric"
+        ? "three_quarter_front"
+        : id === "object_attached"
+          ? "follow"
+          : undefined,
     instruction: {
       camera: {
         angle: id,
@@ -952,14 +980,47 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
   if (capability.category === "camera_framing") {
     const framingIds = ["extreme_wide", "wide", "full", "medium_wide", "medium", "medium_close", "close", "extreme_close", "macro", "insert", "two_shot", "group_shot", "over_shoulder", "point_of_view", "cutaway"];
     if (framingIds.includes(capability.id)) shot.composition.framing = capability.id as DirectorShotDirectionV2["composition"]["framing"];
+    if (capability.id === "macro" || capability.id === "insert") {
+      // Phase 1B.3.1 gives the two detail framings different semantic proof
+      // targets: Macro inspects the tiny fastener (secondary), while Insert
+      // isolates the larger lever/control (context). Real assets can use the
+      // same grammar once feature/sub-part anchors become directable.
+      const detailRole = capability.id === "macro"
+        ? "secondary_subject"
+        : "context_subject";
+      shot.composition.keep_visible_entity_ids = [detailRole];
+      shot.composition.preserve_relationship_entity_ids = ["primary_subject", detailRole];
+      shot.camera.focus_entity_ids = [detailRole];
+      shot.lens.focus_entity_id = detailRole;
+      shot.lens.preset = capability.id === "macro" ? "macro" : "portrait";
+      shot.lens.focal_length_mm = capability.id === "macro" ? 100 : 72;
+      shot.lens.field_of_view_degrees = capability.id === "macro" ? 24 : 34;
+    }
     if (capability.id === "left_third") shot.composition.screen_anchor = "left_third";
     if (capability.id === "right_third") shot.composition.screen_anchor = "right_third";
     if (capability.id === "negative_space_left") shot.composition.negative_space_side = "left";
     if (capability.id === "negative_space_right") shot.composition.negative_space_side = "right";
     if (capability.id === "two_subject_balance") { shot.composition.framing = "two_shot"; shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject"]; shot.composition.preserve_relative_scale = true; shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"]; }
-    if (["over_shoulder", "point_of_view"].includes(capability.id)) {
+    if (capability.id === "over_shoulder") {
+      shot.composition.foreground_entity_ids = ["primary_subject"];
       shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject"];
-      shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"];
+      shot.camera.focus_entity_ids = ["secondary_subject"];
+      shot.lens.focus_entity_id = "secondary_subject";
+    }
+    if (capability.id === "point_of_view") {
+      shot.composition.foreground_entity_ids = ["primary_subject"];
+      shot.composition.keep_visible_entity_ids = ["secondary_subject"];
+      shot.camera.focus_entity_ids = ["secondary_subject"];
+      shot.lens.focus_entity_id = "secondary_subject";
+    }
+    if (capability.id === "cutaway") {
+      shot.composition.keep_visible_entity_ids = ["secondary_subject"];
+      shot.composition.preserve_relationship_entity_ids = ["primary_subject", "secondary_subject"];
+      shot.camera.focus_entity_ids = ["secondary_subject"];
+      shot.lens.focus_entity_id = "secondary_subject";
+      shot.lens.preset = "portrait";
+      shot.lens.focal_length_mm = 70;
+      shot.lens.field_of_view_degrees = 36;
     }
     const lens = capability.id.replace(/^lens_/, "");
     if (["ultra_wide", "wide", "normal", "portrait", "telephoto", "macro"].includes(lens) && capability.id.startsWith("lens_")) {
@@ -977,6 +1038,21 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
 
   if (capability.category === "camera_angle") {
     shot.composition.angle = capability.id as DirectorShotDirectionV2["composition"]["angle"];
+    if (capability.id === "isometric") {
+      // A technical overview needs a multi-actor spatial envelope; focusing only
+      // the primary actor made the old proof aim at empty floor/context.
+      shot.composition.framing = "wide";
+      shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject", "context_subject"];
+      shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject", "context_subject"];
+      shot.lens.focus_entity_id = "primary_subject";
+      shot.lens.focal_length_mm = 70;
+      shot.lens.field_of_view_degrees = 28;
+    }
+    if (capability.id === "object_attached") {
+      shot.composition.foreground_entity_ids = ["primary_subject"];
+      shot.camera.focus_entity_ids = ["primary_subject"];
+      shot.lens.focus_entity_id = "primary_subject";
+    }
   }
 
   if (capability.category === "camera_movement") {
@@ -984,13 +1060,36 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
     const targetEntityId = movement === "pan" || movement === "reframe"
       ? "secondary_subject"
       : "primary_subject";
+    const movementParameters =
+      movement === "arc_left" || movement === "arc_right"
+        ? { degrees: 48 }
+        : movement === "track_parallel"
+          ? { direction_sign: 1, distance_m: 3.15 }
+          : movement === "object_attached"
+            ? { view_direction: [0, -0.16, 1], look_distance_m: 4.2 }
+            : {};
     shot.camera.movement_steps = movement === "settle"
       ? [
           { movement: "push_in", start_progress: 0.05, end_progress: 0.56, strength: 0.34, easing: "ease_out", coordinate_space: "target_relative", target_entity_id: "primary_subject", parameters: {} },
           { movement: "settle", start_progress: 0.5, end_progress: 0.94, strength: 0.75, easing: "ease_out", coordinate_space: "camera_relative", target_entity_id: "primary_subject", parameters: {} },
         ]
-      : [{ movement, start_progress: 0.05, end_progress: 0.9, strength: movement === "static" ? 0 : 0.75, easing: "ease_in_out", coordinate_space: movement === "dolly" ? "camera_relative" : "target_relative", target_entity_id: targetEntityId, parameters: movement === "arc_left" || movement === "arc_right" ? { degrees: 48 } : {} }];
-    if (["follow", "lead_subject", "lag_follow", "track_parallel", "object_attached"].includes(movement)) shot.composition.framing = "medium_wide";
+      : [{
+          movement,
+          // Track-parallel is a stable shot relationship, so the controlled
+          // proof starts on the side rail instead of zooming into it after 5%.
+          start_progress: movement === "track_parallel" ? 0 : 0.05,
+          end_progress: movement === "track_parallel" ? 1 : 0.9,
+          strength: movement === "static" ? 0 : 0.78,
+          easing: movement === "track_parallel" ? "linear" : "ease_in_out",
+          coordinate_space: movement === "dolly" ? "camera_relative" : "target_relative",
+          target_entity_id: targetEntityId,
+          parameters: movementParameters,
+        }];
+    if (["follow", "lead_subject", "lag_follow", "track_parallel", "object_attached"].includes(movement)) {
+      shot.composition.framing = "medium_wide";
+      shot.camera.focus_entity_ids = ["primary_subject"];
+      shot.lens.focus_entity_id = "primary_subject";
+    }
     if (["pan", "reframe", "reverse_reveal"].includes(movement)) {
       shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"];
       shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject"];
@@ -1142,25 +1241,41 @@ export function directorCapabilityDemoEvents(capability: DirectorCapability): Di
     return [];
   }
   if (capability.category === "camera_angle" && capability.id === "object_attached") {
-    return [{
-      id: "demo_object_attached_angle_subject_travel",
-      behaviour: "move_to",
-      actor_entity_id: "primary_subject",
-      target_entity_id: null,
-      supporting_entity_ids: ["secondary_subject"],
-      start_ms: 500,
-      duration_ms: 5000,
-      easing: "ease_in_out",
-      path_hint: "moving subject proves that the view remains actor-relative",
-      description: capability.summary,
-      parameters: { start_position: [-2.3, 0, 0.65], target_position: [2.35, 0, -0.65] },
-      fallback_behaviour: null,
-    }];
+    return [
+      {
+        id: "demo_object_attached_angle_subject_travel",
+        behaviour: "move_to",
+        actor_entity_id: "primary_subject",
+        target_entity_id: null,
+        supporting_entity_ids: ["secondary_subject"],
+        start_ms: 500,
+        duration_ms: 5000,
+        easing: "ease_in_out",
+        path_hint: "moving subject proves that the view remains actor-relative",
+        description: capability.summary,
+        parameters: { start_position: [-2.3, 0, 0.65], target_position: [2.35, 0, -0.65] },
+        fallback_behaviour: null,
+      },
+      {
+        id: "demo_object_attached_angle_subject_turn",
+        behaviour: "rotate",
+        actor_entity_id: "primary_subject",
+        target_entity_id: null,
+        supporting_entity_ids: [],
+        start_ms: 900,
+        duration_ms: 4200,
+        easing: "ease_in_out",
+        path_hint: "subject rotates while the camera keeps its actor-local offset",
+        description: "Rotate the source actor so actor-local camera orientation is visibly testable.",
+        parameters: { axis: "y", degrees: 105 },
+        fallback_behaviour: null,
+      },
+    ];
   }
   if (capability.category === "camera_movement") {
     const movement = movementAlias(capability.id);
     if (["static", "follow", "lead_subject", "lag_follow", "track_parallel", "object_attached"].includes(movement)) {
-      return [{
+      const travel: DirectorEvent = {
         id: `demo_camera_subject_travel_${capability.id}`,
         behaviour: "move_to",
         actor_entity_id: "primary_subject",
@@ -1173,7 +1288,27 @@ export function directorCapabilityDemoEvents(capability: DirectorCapability): Di
         description: `Move the primary subject so ${capability.label.toLowerCase()} can be judged against real subject travel.`,
         parameters: { start_position: [-2.3, 0, 0.65], target_position: [2.35, 0, -0.65] },
         fallback_behaviour: null,
-      }];
+      };
+      if (movement === "object_attached") {
+        return [
+          travel,
+          {
+            id: "demo_camera_object_attached_subject_turn",
+            behaviour: "rotate",
+            actor_entity_id: "primary_subject",
+            target_entity_id: null,
+            supporting_entity_ids: [],
+            start_ms: 900,
+            duration_ms: 4200,
+            easing: "ease_in_out",
+            path_hint: "subject turns while the camera maintains a rotated local mount",
+            description: "Rotate the travelling actor so the object-attached camera proves local-space execution.",
+            parameters: { axis: "y", degrees: 105 },
+            fallback_behaviour: null,
+          },
+        ];
+      }
+      return [travel];
     }
     return [];
   }

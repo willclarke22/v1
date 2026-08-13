@@ -18,6 +18,7 @@ import {
   type DirectorBlockingCue,
   type DirectorCapability,
 } from "../director-capability-registry";
+import type { DirectorAuditFixtureKind } from "../director-visual-audit";
 
 export type DirectorLibraryAsset = {
   asset_id: string;
@@ -55,6 +56,9 @@ type PreviewProps = {
   isPlaying: boolean;
   showCameraPath: boolean;
   showRoleLabels: boolean;
+  fixtureMode?: "controlled" | "real_assets";
+  fixtureKind?: DirectorAuditFixtureKind;
+  auditSnap?: boolean;
 };
 
 function clamp01(value: number) {
@@ -116,6 +120,297 @@ function FallbackActor({ role }: { role: string }) {
   );
 }
 
+function ControlledAuditActor({
+  capabilityId,
+  role,
+  fixtureKind,
+  targetExtent,
+}: {
+  capabilityId: string;
+  role: string;
+  fixtureKind: DirectorAuditFixtureKind;
+  targetExtent: number;
+}) {
+  const primary = role === "primary_subject";
+  const secondary = role === "secondary_subject";
+  const color = primary ? "#38bdf8" : secondary ? "#f97316" : "#a78bfa";
+  const scale =
+    fixtureKind === "detail_target"
+      ? primary
+        ? Math.max(0.72, targetExtent / 1.8)
+        : Math.max(0.08, targetExtent)
+      : Math.max(0.45, targetExtent / 1.8);
+
+  if (fixtureKind === "two_subject_viewpoint") {
+    return (
+      <group scale={scale}>
+        <mesh position={[0, 0.88, 0]}><sphereGeometry args={[0.22, 20, 20]} /><meshStandardMaterial color={color} roughness={0.48} /></mesh>
+        <mesh position={[0, 0.28, 0]}><boxGeometry args={[0.78, 1.02, 0.44]} /><meshStandardMaterial color={color} roughness={0.58} /></mesh>
+        <mesh position={[-0.34, 0.52, 0]}><sphereGeometry args={[0.085, 12, 12]} /><meshBasicMaterial color="#e2e8f0" /></mesh>
+        <mesh position={[0.34, 0.52, 0]}><sphereGeometry args={[0.085, 12, 12]} /><meshBasicMaterial color="#e2e8f0" /></mesh>
+        <mesh position={[0, 0.78, 0.31]} rotation={[Math.PI / 2, 0, 0]}><coneGeometry args={[0.09, 0.4, 14]} /><meshBasicMaterial color="#fef08a" /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "travelling_subject" && primary) {
+    return (
+      <group scale={scale}>
+        <mesh position={[0, 0.34, 0]}><boxGeometry args={[1.45, 0.68, 0.86]} /><meshStandardMaterial color={color} roughness={0.46} /></mesh>
+        <mesh position={[0, 0.34, 0.7]} rotation={[Math.PI / 2, 0, 0]}><coneGeometry args={[0.17, 0.62, 18]} /><meshBasicMaterial color="#fef08a" /></mesh>
+        <mesh position={[-0.52, 0.08, -0.18]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.16, 0.16, 0.14, 18]} /><meshStandardMaterial color="#0f172a" /></mesh>
+        <mesh position={[0.52, 0.08, -0.18]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.16, 0.16, 0.14, 18]} /><meshStandardMaterial color="#0f172a" /></mesh>
+        <mesh position={[0, 0.78, 0]}><boxGeometry args={[0.5, 0.08, 0.5]} /><meshBasicMaterial color="#e0f2fe" /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "detail_target" && primary) {
+    return (
+      <group scale={scale}>
+        {/* A deliberately recognizable QA object: a small machine/control panel. */}
+        <mesh position={[0, 0.68, 0]}><boxGeometry args={[1.75, 1.34, 0.34]} /><meshStandardMaterial color="#1e3a8a" roughness={0.62} metalness={0.12} /></mesh>
+        <mesh position={[0, 0.86, 0.19]}><boxGeometry args={[0.7, 0.36, 0.035]} /><meshBasicMaterial color="#0f172a" /></mesh>
+        <mesh position={[0, 0.86, 0.215]}><boxGeometry args={[0.56, 0.22, 0.012]} /><meshBasicMaterial color="#86efac" /></mesh>
+        <mesh position={[0.58, 0.42, 0.2]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.18, 0.18, 0.055, 28]} /><meshStandardMaterial color="#94a3b8" metalness={0.65} roughness={0.28} /></mesh>
+        <mesh position={[0.58, 0.42, 0.235]}><boxGeometry args={[0.24, 0.035, 0.018]} /><meshBasicMaterial color="#0f172a" /></mesh>
+        <mesh position={[-0.58, 1.08, 0.21]}><sphereGeometry args={[0.105, 20, 20]} /><meshBasicMaterial color="#ef4444" /></mesh>
+        <mesh position={[-0.58, 0.9, 0.205]}><sphereGeometry args={[0.075, 18, 18]} /><meshBasicMaterial color="#facc15" /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "detail_target" && secondary) {
+    return (
+      <group scale={scale}>
+        {/* Macro target: tiny metal fastener with a visible slot. */}
+        <mesh rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.48, 0.48, 0.24, 24]} /><meshStandardMaterial color="#f8fafc" metalness={0.82} roughness={0.22} /></mesh>
+        <mesh position={[0, 0, 0.13]}><boxGeometry args={[0.58, 0.11, 0.08]} /><meshBasicMaterial color="#334155" /></mesh>
+        <mesh position={[0, 0, 0.135]} rotation={[0, 0, Math.PI / 2]}><boxGeometry args={[0.58, 0.11, 0.08]} /><meshBasicMaterial color="#334155" /></mesh>
+        <mesh position={[0, 0, -0.08]}><cylinderGeometry args={[0.27, 0.2, 0.68, 12]} /><meshStandardMaterial color="#64748b" metalness={0.7} roughness={0.3} /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "detail_target" && !primary && !secondary) {
+    return (
+      <group scale={scale}>
+        {/* Insert target: a larger, semantically meaningful lever/control. */}
+        <mesh rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.46, 0.46, 0.16, 28]} /><meshStandardMaterial color="#f97316" roughness={0.38} /></mesh>
+        <mesh position={[0, 0.72, 0]} rotation={[0, 0, -0.28]}><boxGeometry args={[0.24, 1.25, 0.24]} /><meshStandardMaterial color="#e2e8f0" metalness={0.48} roughness={0.32} /></mesh>
+        <mesh position={[0.17, 1.36, 0]}><sphereGeometry args={[0.34, 24, 24]} /><meshStandardMaterial color="#fb7185" roughness={0.34} /></mesh>
+      </group>
+    );
+  }
+
+
+  if (fixtureKind === "object_motion_rigid") {
+    return (
+      <group scale={scale}>
+        <mesh position={[0, 0.42, 0]}><boxGeometry args={[1.25, 0.72, 0.72]} /><meshStandardMaterial color={color} roughness={0.48} /></mesh>
+        <mesh position={[0.7, 0.42, 0]} rotation={[0, 0, -Math.PI / 2]}><coneGeometry args={[0.18, 0.48, 16]} /><meshBasicMaterial color="#fef08a" /></mesh>
+        <mesh position={[-0.42, 0.84, 0.29]}><boxGeometry args={[0.24, 0.18, 0.18]} /><meshBasicMaterial color="#f472b6" /></mesh>
+        <mesh position={[0, 0.02, 0]}><cylinderGeometry args={[0.5, 0.58, 0.08, 24]} /><meshStandardMaterial color="#172554" roughness={0.82} /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "object_motion_path_surface" && primary) {
+    if (capabilityId === "roll") {
+      return (
+        <group scale={scale}>
+          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.5, 0]}>
+            <cylinderGeometry args={[0.54, 0.54, 0.34, 28]} />
+            <meshStandardMaterial color="#38bdf8" roughness={0.42} metalness={0.12} />
+          </mesh>
+          <Line points={[[0, 0.5, 0.19], [0, 1.02, 0.19]]} color="#fef08a" lineWidth={4} />
+          <mesh position={[0, 1.04, 0.19]}><sphereGeometry args={[0.09, 14, 14]} /><meshBasicMaterial color="#f472b6" /></mesh>
+        </group>
+      );
+    }
+    return (
+      <group scale={scale}>
+        <mesh position={[0, 0.32, 0]}><boxGeometry args={[1.18, 0.46, 0.82]} /><meshStandardMaterial color="#38bdf8" roughness={0.5} /></mesh>
+        <mesh position={[0.52, 0.32, 0]} rotation={[0, 0, -Math.PI / 2]}><coneGeometry args={[0.13, 0.4, 14]} /><meshBasicMaterial color="#fef08a" /></mesh>
+        <mesh position={[-0.34, 0.62, 0.3]}><boxGeometry args={[0.22, 0.16, 0.12]} /><meshBasicMaterial color="#f472b6" /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "object_motion_path_surface" && !primary) {
+    return (
+      <group scale={scale}>
+        <mesh position={[0, 0.35, 0]}><cylinderGeometry args={[0.28, 0.36, 0.7, 20]} /><meshStandardMaterial color={color} roughness={0.52} /></mesh>
+        <mesh position={[0, 0.76, 0]}><sphereGeometry args={[0.14, 16, 16]} /><meshBasicMaterial color="#fef08a" /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "object_motion_relationship") {
+    if (primary) {
+      return (
+        <group scale={scale}>
+          <mesh position={[0, 0.42, 0]}><boxGeometry args={[0.92, 0.64, 0.64]} /><meshStandardMaterial color="#38bdf8" roughness={0.48} /></mesh>
+          <mesh position={[0.58, 0.42, 0]} rotation={[0, 0, -Math.PI / 2]}><coneGeometry args={[0.16, 0.48, 16]} /><meshBasicMaterial color="#fef08a" /></mesh>
+          <mesh position={[-0.34, 0.78, 0.28]}><sphereGeometry args={[0.1, 14, 14]} /><meshBasicMaterial color="#f472b6" /></mesh>
+        </group>
+      );
+    }
+    if (secondary) {
+      return (
+        <group scale={scale}>
+          <mesh position={[0, 0.48, 0]}><cylinderGeometry args={[0.48, 0.58, 0.92, 24]} /><meshStandardMaterial color="#f97316" roughness={0.5} /></mesh>
+          <mesh position={[0, 0.48, 0]} rotation={[0, 0, Math.PI / 2]}><torusGeometry args={[0.32, 0.07, 10, 28]} /><meshBasicMaterial color="#fef08a" /></mesh>
+          <mesh position={[0, 1.02, 0]}><sphereGeometry args={[0.12, 16, 16]} /><meshBasicMaterial color="#fb7185" /></mesh>
+        </group>
+      );
+    }
+  }
+
+  if (fixtureKind === "object_motion_articulation") {
+    if (primary) {
+      return (
+        <group scale={scale}>
+          {/* Door-like articulated panel: hinge edge is the left edge. */}
+          <mesh position={[0, 0.78, 0]}><boxGeometry args={[1.0, 1.55, 0.16]} /><meshStandardMaterial color="#38bdf8" roughness={0.48} /></mesh>
+          <mesh position={[-0.48, 0.78, 0.12]}><boxGeometry args={[0.08, 1.48, 0.08]} /><meshBasicMaterial color="#facc15" /></mesh>
+          <mesh position={[0.34, 0.78, 0.13]}><sphereGeometry args={[0.09, 16, 16]} /><meshStandardMaterial color="#f97316" metalness={0.35} roughness={0.35} /></mesh>
+          <mesh position={[-0.48, 0.28, 0.16]}><cylinderGeometry args={[0.07, 0.07, 0.24, 14]} /><meshBasicMaterial color="#fef08a" /></mesh>
+          <mesh position={[-0.48, 1.28, 0.16]}><cylinderGeometry args={[0.07, 0.07, 0.24, 14]} /><meshBasicMaterial color="#fef08a" /></mesh>
+        </group>
+      );
+    }
+    return (
+      <group scale={scale}>
+        <mesh position={[0, 0.78, 0]}><boxGeometry args={[0.12, 1.7, 0.18]} /><meshStandardMaterial color="#475569" roughness={0.7} /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "object_motion_containment") {
+    if (primary) {
+      return (
+        <group scale={scale}>
+          <mesh position={[0, 0.42, 0]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.25, 0.25, 1.05, 20]} /><meshStandardMaterial color="#38bdf8" metalness={0.35} roughness={0.38} /></mesh>
+          <mesh position={[0.58, 0.42, 0]} rotation={[0, 0, -Math.PI / 2]}><coneGeometry args={[0.18, 0.36, 16]} /><meshBasicMaterial color="#fef08a" /></mesh>
+        </group>
+      );
+    }
+    if (secondary) {
+      return (
+        <group scale={scale}>
+          {/* Open socket/container with a readable mouth and interior. */}
+          <mesh position={[0, 0.45, 0]}><boxGeometry args={[1.25, 0.9, 1.1]} /><meshStandardMaterial color="#f97316" roughness={0.56} transparent opacity={0.28} depthWrite={false} /></mesh>
+          <mesh position={[-0.5, 0.45, 0]}><boxGeometry args={[0.16, 0.9, 1.1]} /><meshStandardMaterial color="#fb923c" roughness={0.5} /></mesh>
+          <mesh position={[0, 0.06, 0]}><boxGeometry args={[1.15, 0.12, 1.0]} /><meshStandardMaterial color="#7c2d12" roughness={0.7} /></mesh>
+          <Line points={[[0.56, 0.04, -0.5], [0.56, 0.86, -0.5], [0.56, 0.86, 0.5], [0.56, 0.04, 0.5]]} color="#fef08a" lineWidth={2} />
+        </group>
+      );
+    }
+  }
+
+  if (fixtureKind === "object_motion_multi_part") {
+    if (primary) {
+      return (
+        <group scale={scale}>
+          {/* Three visibly distinct parts move with the current primary transform.
+              This intentionally exposes when a supposedly multi-part capability
+              still collapses to one rigid actor. */}
+          <mesh position={[-0.36, 0.34, 0]}><boxGeometry args={[0.42, 0.58, 0.5]} /><meshStandardMaterial color="#38bdf8" roughness={0.48} /></mesh>
+          <mesh position={[0.12, 0.58, 0]}><sphereGeometry args={[0.26, 18, 18]} /><meshStandardMaterial color="#a78bfa" roughness={0.42} /></mesh>
+          <mesh position={[0.46, 0.28, 0]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.19, 0.19, 0.52, 18]} /><meshStandardMaterial color="#22d3ee" roughness={0.4} /></mesh>
+        </group>
+      );
+    }
+    if (secondary) {
+      return (
+        <group scale={scale}>
+          <mesh position={[0, 0.42, 0]}><boxGeometry args={[1.18, 0.84, 0.84]} /><meshStandardMaterial color="#f97316" roughness={0.58} transparent opacity={0.22} depthWrite={false} /></mesh>
+          <Line points={[[ -0.58, 0.03, 0.44 ], [ 0.58, 0.03, 0.44 ], [ 0.58, 0.81, 0.44 ], [ -0.58, 0.81, 0.44 ], [ -0.58, 0.03, 0.44 ]]} color="#fef08a" lineWidth={2} />
+        </group>
+      );
+    }
+  }
+
+  if (fixtureKind === "object_motion_process") {
+    if (primary) {
+      return (
+        <group scale={scale}>
+          {/* Process carrier/content actor. Horizontal bands make scale changes,
+              transport, and quantity proxies easy to see. */}
+          <mesh position={[0, 0.55, 0]}><cylinderGeometry args={[0.42, 0.42, 1.08, 24]} /><meshStandardMaterial color="#38bdf8" roughness={0.38} transparent opacity={0.72} /></mesh>
+          <Line points={[[ -0.38, 0.34, 0.35 ], [ 0.38, 0.34, 0.35 ]]} color="#e0f2fe" lineWidth={2} />
+          <Line points={[[ -0.38, 0.58, 0.35 ], [ 0.38, 0.58, 0.35 ]]} color="#e0f2fe" lineWidth={2} />
+          <Line points={[[ -0.38, 0.82, 0.35 ], [ 0.38, 0.82, 0.35 ]]} color="#e0f2fe" lineWidth={2} />
+        </group>
+      );
+    }
+    if (secondary) {
+      return (
+        <group scale={scale}>
+          <mesh position={[0, 0.72, 0]}><boxGeometry args={[1.3, 1.45, 1.05]} /><meshStandardMaterial color="#f97316" roughness={0.55} transparent opacity={0.16} depthWrite={false} /></mesh>
+          <Line points={[[ -0.64, 0.03, 0.52 ], [ 0.64, 0.03, 0.52 ], [ 0.64, 1.42, 0.52 ], [ -0.64, 1.42, 0.52 ], [ -0.64, 0.03, 0.52 ]]} color="#fb923c" lineWidth={2} />
+        </group>
+      );
+    }
+    return (
+      <group scale={scale}>
+        <mesh position={[0, 0.42, 0]}><sphereGeometry args={[0.32, 18, 18]} /><meshBasicMaterial color="#a78bfa" /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "mounted_camera" && primary) {
+    return (
+      <group scale={scale}>
+        {/* Deliberately vehicle-like host so the mounted viewpoint has a familiar body reference. */}
+        <mesh position={[0, 0.35, 0]}><boxGeometry args={[1.7, 0.7, 1.05]} /><meshStandardMaterial color={color} roughness={0.5} /></mesh>
+        <mesh position={[0, 0.48, 1.12]}><boxGeometry args={[1.42, 0.24, 1.55]} /><meshStandardMaterial color="#0ea5e9" roughness={0.42} metalness={0.08} /></mesh>
+        <mesh position={[0, 0.61, 1.56]}><boxGeometry args={[0.72, 0.035, 0.5]} /><meshBasicMaterial color="#e0f2fe" transparent opacity={0.86} /></mesh>
+        <mesh position={[-0.58, 0.08, 0.1]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.18, 0.18, 0.16, 18]} /><meshStandardMaterial color="#0f172a" /></mesh>
+        <mesh position={[0.58, 0.08, 0.1]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.18, 0.18, 0.16, 18]} /><meshStandardMaterial color="#0f172a" /></mesh>
+        <mesh position={[0, 0.35, 0.72]} rotation={[Math.PI / 2, 0, 0]}><coneGeometry args={[0.16, 0.55, 16]} /><meshBasicMaterial color="#fef08a" /></mesh>
+        {/* Mount marker + local XYZ axes. The blue axis mirrors the
+            higher/back body mount and slight downward-forward runtime default. */}
+        <mesh position={[0, 1.2, 0.2]}><boxGeometry args={[0.22, 0.18, 0.22]} /><meshBasicMaterial color="#fb7185" /></mesh>
+        <Line points={[[0, 1.2, 0.2], [0.55, 1.2, 0.2]]} color="#ef4444" lineWidth={2} />
+        <Line points={[[0, 1.2, 0.2], [0, 1.75, 0.2]]} color="#22c55e" lineWidth={2} />
+        <Line points={[[0, 1.2, 0.2], [0, 1.03, 1.28]]} color="#3b82f6" lineWidth={3} />
+        <mesh position={[0, 1.01, 1.4]} rotation={[Math.PI / 2 + 0.16, 0, 0]}><coneGeometry args={[0.11, 0.34, 14]} /><meshBasicMaterial color="#3b82f6" /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "mounted_camera" && secondary) {
+    return (
+      <group scale={scale}>
+        {/* Forward-world landmark so a mounted outward view has something readable to travel past. */}
+        <mesh position={[0, 0.8, 0]}><boxGeometry args={[0.22, 1.6, 0.22]} /><meshStandardMaterial color="#f97316" roughness={0.5} /></mesh>
+        <mesh position={[0, 1.65, 0]}><sphereGeometry args={[0.28, 18, 18]} /><meshBasicMaterial color="#fef08a" /></mesh>
+        <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[0.48, 0.62, 0.18, 20]} /><meshStandardMaterial color="#7c2d12" roughness={0.75} /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "technical_overview") {
+    return (
+      <group scale={scale}>
+        <mesh position={[0, 0.45, 0]}><boxGeometry args={[0.9, 0.9, 0.9]} /><meshStandardMaterial color={color} roughness={0.58} /></mesh>
+        <mesh position={[0, 0.94, 0]}><boxGeometry args={[0.38, 0.08, 0.38]} /><meshBasicMaterial color="#e2e8f0" /></mesh>
+        <mesh position={[0, 0.45, 0.58]} rotation={[Math.PI / 2, 0, 0]}><coneGeometry args={[0.1, 0.36, 14]} /><meshBasicMaterial color="#fef08a" /></mesh>
+      </group>
+    );
+  }
+
+  return (
+    <group scale={scale}>
+      <mesh position={[0, 0.5, 0]}><boxGeometry args={[1.15, 1, 0.75]} /><meshStandardMaterial color={color} roughness={0.52} metalness={0.05} /></mesh>
+      <mesh position={[0, 0.5, 0.58]} rotation={[Math.PI / 2, 0, 0]}><coneGeometry args={[0.11, 0.42, 14]} /><meshBasicMaterial color="#fef08a" /></mesh>
+      <mesh position={[0, -0.04, 0]}><cylinderGeometry args={[0.52, 0.62, 0.12, 24]} /><meshStandardMaterial color="#172554" roughness={0.85} /></mesh>
+    </group>
+  );
+}
+
 function AnimatedActor({
   capability,
   moment,
@@ -125,6 +420,9 @@ function AnimatedActor({
   progress,
   isPlaying,
   showRoleLabels,
+  fixtureMode,
+  fixtureKind,
+  auditSnap,
 }: {
   capability: DirectorCapability;
   moment: ReturnType<typeof directorCapabilityDemoMoment>;
@@ -134,6 +432,9 @@ function AnimatedActor({
   progress: number;
   isPlaying: boolean;
   showRoleLabels: boolean;
+  fixtureMode: "controlled" | "real_assets";
+  fixtureKind: DirectorAuditFixtureKind;
+  auditSnap: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const lastProgressRef = useRef(progress);
@@ -144,7 +445,7 @@ function AnimatedActor({
     const group = groupRef.current;
     if (!group) return;
     const rewound = progress + 0.02 < lastProgressRef.current;
-    const snap = !isPlaying || rewound;
+    const snap = auditSnap || !isPlaying || rewound;
     const alpha = 1 - Math.exp(-13 * Math.min(0.05, Math.max(0, delta)));
     if (snap) {
       group.position.copy(sample.position);
@@ -169,9 +470,22 @@ function AnimatedActor({
           <meshBasicMaterial color="#38bdf8" transparent opacity={0.5 + pulse(progress, 0.55, 0.5) * 0.35} side={THREE.DoubleSide} />
         </mesh>
       ) : null}
-      <Suspense fallback={loadingLabel(resolvedRole.role)}>
-        {resolvedRole.asset ? <LibraryAssetMesh asset={resolvedRole.asset} targetExtent={targetExtent} /> : <FallbackActor role={resolvedRole.role} />}
-      </Suspense>
+      {fixtureMode === "controlled" ? (
+        <ControlledAuditActor
+          capabilityId={capability.id}
+          role={resolvedRole.role}
+          fixtureKind={fixtureKind}
+          targetExtent={targetExtent}
+        />
+      ) : (
+        <Suspense fallback={loadingLabel(resolvedRole.role)}>
+          {resolvedRole.asset ? (
+            <LibraryAssetMesh asset={resolvedRole.asset} targetExtent={targetExtent} />
+          ) : (
+            <FallbackActor role={resolvedRole.role} />
+          )}
+        </Suspense>
+      )}
       {showRoleLabels ? (
         <Html position={[0, targetExtent * 0.72 + 0.35, 0]} center distanceFactor={7}>
           <div style={{ borderRadius: 999, padding: "5px 8px", color: "white", background: "rgba(2,6,23,0.86)", border: "1px solid rgba(255,255,255,0.18)", fontSize: 10, fontWeight: 800, whiteSpace: "nowrap" }}>
@@ -202,18 +516,151 @@ function TeachingRelationship({ capability, actors, progress }: { capability: Di
   return null;
 }
 
-function Stage() {
+function MountedCameraCourse() {
+  const gatePositions = [-3.2, -1.4, 0.4, 2.2, 4.0];
   return (
-    <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.04, 0]}><circleGeometry args={[8.5, 72]} /><meshStandardMaterial color="#07111f" roughness={0.94} metalness={0.04} /></mesh>
-      <gridHelper args={[14, 28, "#1d4ed8", "#172554"]} position={[0, 0, 0]} />
-      <mesh position={[0, 3.2, -5.2]} receiveShadow><planeGeometry args={[16, 8]} /><meshStandardMaterial color="#030712" roughness={1} /></mesh>
-      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[4.8, 4.84, 96]} /><meshBasicMaterial color="#1e3a8a" transparent opacity={0.5} side={THREE.DoubleSide} /></mesh>
+    <group rotation={[0, 0.273, 0]}>
+      <mesh position={[0.4, -0.015, 0]} receiveShadow>
+        <boxGeometry args={[10.2, 0.05, 2.7]} />
+        <meshStandardMaterial color="#111827" roughness={0.92} />
+      </mesh>
+      <Line points={[[ -4.7, 0.025, 0 ], [5.5, 0.025, 0]]} color="#f8fafc" lineWidth={2} dashed dashSize={0.32} gapSize={0.22} />
+      <Line points={[[ -4.7, 0.03, -1.12 ], [5.5, 0.03, -1.12]]} color="#facc15" lineWidth={2} />
+      <Line points={[[ -4.7, 0.03, 1.12 ], [5.5, 0.03, 1.12]]} color="#facc15" lineWidth={2} />
+      {gatePositions.map((x, index) => (
+        <group key={`mounted-gate-${index}`} position={[x, 0, 0]}>
+          <mesh position={[0, 0.72, -1.03]}><boxGeometry args={[0.12, 1.44, 0.12]} /><meshStandardMaterial color="#fb923c" roughness={0.46} /></mesh>
+          <mesh position={[0, 0.72, 1.03]}><boxGeometry args={[0.12, 1.44, 0.12]} /><meshStandardMaterial color="#fb923c" roughness={0.46} /></mesh>
+          <mesh position={[0, 1.42, 0]}><boxGeometry args={[0.12, 0.12, 2.18]} /><meshStandardMaterial color={index % 2 === 0 ? "#38bdf8" : "#a78bfa"} roughness={0.4} /></mesh>
+        </group>
+      ))}
     </group>
   );
 }
 
-export function DirectorCapabilityPreview({ capability, roles, progress, isPlaying, showCameraPath, showRoleLabels }: PreviewProps) {
+
+function ObjectMotionQualificationStage({
+  capabilityId,
+  fixtureKind,
+}: {
+  capabilityId: string;
+  fixtureKind: DirectorAuditFixtureKind;
+}) {
+  if (fixtureKind === "object_motion_path_surface") {
+    return (
+      <group>
+        <Line points={[[-3.7, 0.07, 0], [-2.2, 0.08, 0.55], [-0.6, 0.08, -0.35], [1.2, 0.08, 0.45], [3.6, 0.08, 0]]} color="#38bdf8" lineWidth={3} />
+        <Line points={[[-3.7, 0.05, -0.48], [3.7, 0.05, -0.48]]} color="#facc15" lineWidth={2} />
+        <Line points={[[-3.7, 0.05, 0.48], [3.7, 0.05, 0.48]]} color="#facc15" lineWidth={2} />
+        {capabilityId === "roll" ? (
+          <Line points={[[-3.7, 0.06, 0.72], [3.7, 0.06, 0.72]]} color="#f472b6" lineWidth={2} dashed dashSize={0.18} gapSize={0.12} />
+        ) : null}
+      </group>
+    );
+  }
+
+  if (fixtureKind === "object_motion_relationship") {
+    return (
+      <group>
+        <Line points={[[-1.45, 0.7, 0.15], [1.45, 0.7, -0.15]]} color="#64748b" lineWidth={2} dashed dashSize={0.16} gapSize={0.12} />
+        <mesh position={[1.45, 0.08, -0.15]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.58, 0.66, 36]} /><meshBasicMaterial color="#f97316" transparent opacity={0.55} side={THREE.DoubleSide} /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "object_motion_articulation") {
+    return (
+      <group position={[-1.22, 0, 0.15]}>
+        <mesh position={[0, 0.85, -0.15]}><boxGeometry args={[0.12, 1.7, 0.12]} /><meshStandardMaterial color="#475569" roughness={0.72} /></mesh>
+        <mesh position={[1.15, 1.66, -0.15]}><boxGeometry args={[2.4, 0.12, 0.12]} /><meshStandardMaterial color="#475569" roughness={0.72} /></mesh>
+        <Line points={[[0.08, 0.08, 0.1], [0.08, 1.58, 0.1]]} color="#facc15" lineWidth={3} dashed dashSize={0.12} gapSize={0.08} />
+      </group>
+    );
+  }
+
+  if (fixtureKind === "object_motion_containment") {
+    return (
+      <group>
+        <Line points={[[-2.6, 0.12, 0.9], [2.5, 0.12, 0.9]]} color="#334155" lineWidth={2} />
+        <mesh position={[1.05, 0.04, -0.05]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.72, 0.8, 40]} /><meshBasicMaterial color="#fef08a" transparent opacity={0.45} side={THREE.DoubleSide} /></mesh>
+      </group>
+    );
+  }
+
+  if (fixtureKind === "object_motion_multi_part") {
+    return (
+      <group>
+        <mesh position={[1.25, 0.03, -0.1]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.88, 0.98, 44]} /><meshBasicMaterial color="#fef08a" transparent opacity={0.42} side={THREE.DoubleSide} /></mesh>
+        <Line points={[[ -2.5, 0.07, -0.9 ], [ -1.55, 0.07, 0.2 ], [ -0.7, 0.07, 0.95 ]]} color="#a78bfa" lineWidth={2} dashed dashSize={0.14} gapSize={0.1} />
+      </group>
+    );
+  }
+
+  if (fixtureKind === "object_motion_process") {
+    return (
+      <group>
+        <Line points={[[-2.5, 0.14, 0.15], [-0.85, 0.14, 0.15], [0.2, 0.14, -0.45], [1.25, 0.14, -0.15]]} color="#38bdf8" lineWidth={3} dashed dashSize={0.18} gapSize={0.12} />
+        <mesh position={[1.25, 0.04, -0.15]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.82, 0.9, 44]} /><meshBasicMaterial color="#fb923c" transparent opacity={0.4} side={THREE.DoubleSide} /></mesh>
+      </group>
+    );
+  }
+
+  return null;
+}
+
+function Stage({
+  capabilityId,
+  fixtureKind,
+}: {
+  capabilityId: string;
+  fixtureKind: DirectorAuditFixtureKind;
+}) {
+  const mounted = fixtureKind === "mounted_camera";
+  const travelling =
+    fixtureKind === "travelling_subject" ||
+    mounted;
+  const technical = fixtureKind === "technical_overview";
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}><circleGeometry args={[8.5, 48]} /><meshStandardMaterial color="#07111f" roughness={0.94} metalness={0.04} /></mesh>
+      <gridHelper args={[14, 28, "#1d4ed8", "#172554"]} position={[0, 0, 0]} />
+      {travelling ? (
+        <>
+          <Line points={[[-3.2, 0.04, 0.65], [3.2, 0.04, -0.65]]} color="#f8fafc" lineWidth={2} dashed dashSize={0.18} gapSize={0.12} />
+          <Line points={[[-3.2, 0.04, 1.25], [3.2, 0.04, -0.05]]} color="#0ea5e9" lineWidth={1} />
+        </>
+      ) : null}
+      {mounted ? <MountedCameraCourse /> : null}
+      <ObjectMotionQualificationStage
+        capabilityId={capabilityId}
+        fixtureKind={fixtureKind}
+      />
+      {technical ? (
+        <group position={[-2.7, 0.06, 2.15]}>
+          <Line points={[[0, 0, 0], [1.35, 0, 0]]} color="#ef4444" lineWidth={2} />
+          <Line points={[[0, 0, 0], [0, 1.35, 0]]} color="#22c55e" lineWidth={2} />
+          <Line points={[[0, 0, 0], [0, 0, 1.35]]} color="#3b82f6" lineWidth={2} />
+          <mesh position={[1.45, 0, 0]} rotation={[0, 0, -Math.PI / 2]}><coneGeometry args={[0.09, 0.3, 12]} /><meshBasicMaterial color="#ef4444" /></mesh>
+          <mesh position={[0, 1.45, 0]}><coneGeometry args={[0.09, 0.3, 12]} /><meshBasicMaterial color="#22c55e" /></mesh>
+          <mesh position={[0, 0, 1.45]} rotation={[Math.PI / 2, 0, 0]}><coneGeometry args={[0.09, 0.3, 12]} /><meshBasicMaterial color="#3b82f6" /></mesh>
+        </group>
+      ) : null}
+      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[4.8, 4.84, 72]} /><meshBasicMaterial color="#1e3a8a" transparent opacity={0.35} side={THREE.DoubleSide} /></mesh>
+    </group>
+  );
+}
+
+export function DirectorCapabilityPreview({
+  capability,
+  roles,
+  progress,
+  isPlaying,
+  showCameraPath,
+  showRoleLabels,
+  fixtureMode = "real_assets",
+  fixtureKind = "single_subject_composition",
+  auditSnap = false,
+}: PreviewProps) {
   const moment = useMemo(() => directorCapabilityDemoMoment(capability), [capability]);
   const baseActors = useMemo(() => runtimeActorsFor(roles), [roles]);
   const actors = useMemo(() => applyDirectorBlocking(moment, baseActors), [baseActors, moment]);
@@ -224,15 +671,38 @@ export function DirectorCapabilityPreview({ capability, roles, progress, isPlayi
       <color attach="background" args={[lowKey ? "#01030a" : "#020617"]} />
       <fog attach="fog" args={["#020617", 10, 30]} />
       <DirectorShotLightingRig moment={moment} actors={actors} progress={progress} />
-      <Stage />
+      <Stage capabilityId={capability.id} fixtureKind={fixtureKind} />
       {roles.map((resolvedRole) => {
         const actor = actors.find((candidate) => candidate.id === resolvedRole.role) ?? baseActors.find((candidate) => candidate.id === resolvedRole.role);
-        return actor ? <AnimatedActor key={`${capability.id}:${resolvedRole.role}:${resolvedRole.asset?.asset_id ?? "fallback"}`} capability={capability} moment={moment} actor={actor} allActors={actors} resolvedRole={resolvedRole} progress={progress} isPlaying={isPlaying} showRoleLabels={showRoleLabels} /> : null;
+        return actor ? (
+          <AnimatedActor
+            key={`${capability.id}:${resolvedRole.role}:${fixtureMode}:${resolvedRole.asset?.asset_id ?? "fallback"}`}
+            capability={capability}
+            moment={moment}
+            actor={actor}
+            allActors={actors}
+            resolvedRole={resolvedRole}
+            progress={progress}
+            isPlaying={isPlaying}
+            showRoleLabels={showRoleLabels}
+            fixtureMode={fixtureMode}
+            fixtureKind={fixtureKind}
+            auditSnap={auditSnap}
+          />
+        ) : null;
       })}
       <TeachingRelationship capability={capability} actors={actors} progress={progress} />
       {showCameraPath ? <DirectorShotPathGuide moment={moment} actors={actors} /> : null}
-      <DirectorShotCameraController moment={moment} actors={actors} progress={progress} isPlaying={isPlaying} />
-      <OrbitControls makeDefault enabled={!isPlaying} enableDamping dampingFactor={0.08} minDistance={1.4} maxDistance={20} target={[0, 0.8, 0]} />
+      <DirectorShotCameraController
+        moment={moment}
+        actors={actors}
+        progress={progress}
+        isPlaying={auditSnap ? false : isPlaying}
+      />
+      {/* Controlled audit proofs are camera-authoritative. OrbitControls can
+          overwrite a paused Director pose and create a false pause-to-play snap.
+          Manual orbit remains available outside auditSnap. */}
+      <OrbitControls makeDefault enabled={!auditSnap && !isPlaying} enableDamping dampingFactor={0.08} minDistance={1.4} maxDistance={20} target={[0, 0.8, 0]} />
     </>
   );
 }

@@ -1,4 +1,3 @@
-
 # Director Capability Library
 
 The canonical page route is now:
@@ -109,3 +108,151 @@ move to settle from, and transition/continuity cards concrete benchmark action
 instead of static-only demonstrations. `inside_object` remains explicitly
 approximate because an arbitrary reviewed GLB is not guaranteed to contain a
 renderable interior.
+
+## Phase 1B camera fidelity bench
+
+Phase 1B separates **structural runtime parity** from **visual fidelity evidence**.
+
+Camera framing, angle, and movement capabilities now receive a deterministic
+controlled-fixture report in addition to the real Asset Library preview. The
+report samples the shared Director camera runtime at five timeline positions,
+records camera/target travel and lens state, and runs capability-specific checks
+where a useful analytic expectation exists. Automated checks are evidence, not a
+replacement for visual review.
+
+The first fidelity corrections are intentionally narrow:
+
+- over-shoulder uses a declared foreground actor as the shoulder source and a
+  focus actor as the viewed target;
+- point-of-view places the camera at the declared foreground actor's viewing
+  region and looks toward the focus actor;
+- object-attached camera offsets now rotate in actor-local space rather than
+  being added as world-space offsets;
+- `isometric` is explicitly `approximate` in Three.js because the current player
+  still uses a restrained perspective camera rather than an orthographic
+  projection;
+- `cutaway` is explicitly `compound` because a truthful cutaway requires
+  Director-selected detail/context, not only a camera-distance change;
+- `inside_object` and shallow focus remain explicitly approximate.
+
+Macro and insert framing remain useful at entity level, but semantic sub-part
+targeting is deferred to the later asset-directability phase rather than being
+faked with raw world coordinates.
+
+## Phase 1B.2 visual audit harness
+
+The Director Capability Library is now optimized for repeated visual qualification
+rather than continuous showcase playback.
+
+- The selected capability uses one isolated audit viewer. Playback progress lives
+  inside that viewer, so the 183-card catalogue does not rerender on every clock
+  tick.
+- The Canvas uses DPR 1, demand rendering, no shadows by default, no role labels
+  by default, and sleeps while offscreen or while the browser tab is hidden.
+- The Asset Library is not fetched on page load. Controlled procedural fixtures
+  are the default qualification proof; reviewed GLBs are loaded only when the
+  reviewer explicitly requests a real-asset generalization check.
+- Catalogue cards mount in bounded batches instead of mounting all 183 at once.
+- Inspector JSON bodies mount only when their disclosure panel is opened.
+- Human review is persisted in browser localStorage with `pass`, `needs_work`,
+  `blocked`, and `approximate_ok` states plus free-text notes.
+- The audit state can be exported as JSON so a review batch can be shared without
+  recording every capability individually.
+- Category-aware controlled fixtures make viewpoint, travelling-camera,
+  technical-overview, detail-target, object-motion, blocking, lighting,
+  continuity, and narrative capabilities easier to compare against a known scene.
+
+The audit harness does not claim that automated checks prove cinematographic
+quality. It exists to make human visual qualification faster, repeatable, and
+less dependent on external screen-capture tools.
+
+## Phase 1B.3 camera grammar strengthening
+
+Phase 1B.3 uses the controlled audit harness as the source of truth for improving
+camera behavior before real assets are promoted back into the default proof.
+
+- over-shoulder now uses larger clearance-aware back/shoulder offsets so the
+  foreground actor reads as an edge-of-frame shoulder rather than a camera
+  intersection;
+- point-of-view moves just beyond the source actor's face volume while remaining
+  tied to its viewpoint and looking toward the declared focus actor;
+- follow keeps the existing stable actor-relative composition;
+- lead changes the look point ahead of travel instead of translating camera and
+  target together;
+- lag uses a transient rearward look bias that peaks mid-move and catches back
+  toward follow by the end;
+- track-parallel solves a side-on rig perpendicular to the subject's actual
+  travel direction and then preserves that actor-relative relationship;
+- object-attached angle and movement use larger clearance-aware local mounts that
+  still rotate with the sampled actor orientation;
+- isometric frames the full three-actor technical envelope with a restrained
+  perspective overview while remaining honestly classified as approximate;
+- macro and insert use an explicit tiny controlled feature actor plus smaller
+  focus-radius/distance floors, so the proof genuinely isolates a detail;
+- cutaway uses the same explicit detail fixture as a supporting-detail
+  composition while remaining compound.
+
+The controlled fixture layouts are shared by the visual audit viewer and the
+numeric camera-fidelity bench so visual and analytic evidence test the same
+geometry. Real-asset semantic sub-part targeting still waits for asset
+directability/feature-anchor metadata.
+
+
+## Phase 1B.3.1 camera grammar visual refinement
+
+Phase 1B.3.1 is a focused human-review refinement on top of the broader Phase 1B.3 camera grammar pass.
+
+- `point_of_view` and `follow` are treated as regression canaries because they passed the controlled human review.
+- `over_shoulder` keeps the Phase 1B.3 relationship but lowers the optical centre slightly so the foreground subject reads more naturally as a shoulder.
+- `lead_subject` and `lag_follow` use stronger look-point separation from ordinary Follow so the three choices are immediately distinguishable.
+- `track_parallel` now behaves like a second rail beside the travelling actor: stable lateral distance, centered subject target, and rapid settling onto the side rig.
+- `object_attached` and `camera_object_attached` preserve an actor-local outward viewing direction in addition to actor-local mount position. The mounted camera no longer treats the host centre as its default thing to look back at.
+- The `detail_target` controlled fixture is now a recognizable machine/control panel. Macro focuses a tiny fastener; Insert focuses a larger lever/control. This keeps the fixture simple while making the two framing jobs visually judgeable.
+- The support distribution is intentionally unchanged while human review continues.
+
+## Phase 1B.3.2 remaining camera cleanup
+
+Phase 1B.3.2 freezes the camera capabilities that passed human review and narrows
+changes to the remaining uncertain/failing proof cases.
+
+- `track_parallel` starts on its second rail from the first frame and directly
+  preserves the side relationship for the full shot, eliminating the entry zoom
+  that escaped the previous late-shot verifier;
+- the Track Parallel fidelity check now covers 0/25/50/75/100% and checks
+  camera-subject distance, relation drift, target centering, and an apparent-size
+  proxy across the whole move;
+- `macro` keeps the tiny fastener as the target but backs the camera off enough
+  to preserve the complete screw head and surrounding panel surface, while using
+  exact geometric-centre targeting for the tiny feature;
+- the fastener uses a cross-shaped screw slot so the controlled target reads
+  immediately as a familiar screw rather than an abstract disc;
+- the mounted-camera fixture becomes a small recognizable test vehicle with a
+  visible hood/body reference, road surface, lane markings, and repeated course
+  gates. The shared mounted runtime remains actor-local; the stronger fixture
+  makes translation and rotation visually judgeable instead of showing mostly
+  empty floor/sky.
+
+No support-level classifications change in this refinement.
+
+## Phase 1B.3.3 final camera polish
+
+Phase 1B.3.3 addresses the last human-review issues without reopening camera
+capabilities that already passed visual qualification.
+
+- controlled audit proofs now keep the Director camera authoritative while
+  paused (`auditSnap` disables manual OrbitControls), preventing a false
+  pause-to-play camera handoff in Track Parallel and Macro;
+- the shared camera controller treats authored progress 0 as a snap point, so
+  the exact first frame cannot ease out of a stale/manual camera state;
+- Macro keeps its existing geometric-centre target and 0.44 m minimum distance,
+  but qualification now projects the complete cross-head fastener at
+  0/25/50/75/100% and requires it to stay within a safe screen-space margin;
+- the default object-attached mount moves higher and farther back on the host,
+  with a slight downward-forward local view. This keeps road/support context
+  and a restrained hood/body edge readable while preserving actor-local
+  position/orientation;
+- the controlled vehicle mount marker now mirrors that shared runtime default.
+
+Support classifications remain unchanged. Real-asset semantic feature anchors
+remain future asset-directability work.
+

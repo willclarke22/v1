@@ -2,7 +2,7 @@
 
 import { Line } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import type {
@@ -567,6 +567,100 @@ function angleDirection(angle: DirectorShotDirectionV2["composition"]["angle"]) 
   }
 }
 
+function actorEyePoint(
+  actor: DirectorRuntimeActor,
+  sample: DirectorActorSample,
+) {
+  return sample.position.clone().add(
+    new THREE.Vector3(0, Math.max(0.08, actor.size[1]) * 0.68, 0),
+  );
+}
+
+function stableViewBasis(
+  source: THREE.Vector3,
+  target: THREE.Vector3,
+) {
+  const forward = target.clone().sub(source);
+  if (forward.lengthSq() < 0.000001) forward.set(0, 0, -1);
+  forward.normalize();
+  let right = new THREE.Vector3().crossVectors(forward, UP);
+  if (right.lengthSq() < 0.000001) right = new THREE.Vector3(1, 0, 0);
+  else right.normalize();
+  return { forward, right };
+}
+
+function defaultActorLocalMountedPosition(
+  actor: DirectorRuntimeActor,
+  radius: number,
+) {
+  // Human visual review showed that a mathematically valid mount near the
+  // actor's front face can still read like a low floating camera. Keep the
+  // default higher and farther back so a restrained hood/body edge can remain
+  // visible while the camera looks outward.
+  return new THREE.Vector3(
+    0,
+    Math.max(0.32, actor.size[1] * 0.72),
+    Math.max(0.12, actor.size[2] * 0.08 + radius * 0.04),
+  );
+}
+
+function defaultActorLocalMountedViewDirection() {
+  // Slight downward pitch preserves road/support context without turning the
+  // mounted camera back toward the host centre.
+  return new THREE.Vector3(0, -0.16, 1).normalize();
+}
+
+function actorLocalMountedView(
+  actor: DirectorRuntimeActor,
+  sample: DirectorActorSample,
+  radius: number,
+  localMountOverride?: THREE.Vector3,
+  localViewDirectionOverride?: THREE.Vector3,
+  lookDistanceOverride?: number,
+) {
+  const localMount = (
+    localMountOverride ??
+    defaultActorLocalMountedPosition(actor, radius)
+  ).clone();
+  const localViewDirection = (
+    localViewDirectionOverride ??
+    defaultActorLocalMountedViewDirection()
+  ).clone();
+  if (localViewDirection.lengthSq() < 0.000001) localViewDirection.set(0, 0, 1);
+  localViewDirection.normalize();
+
+  const worldMount = localMount.clone().applyEuler(sample.rotation);
+  const worldViewDirection = localViewDirection.clone().applyEuler(sample.rotation).normalize();
+  const lookDistance = Math.max(
+    2.8,
+    radius * 3.4,
+    typeof lookDistanceOverride === "number" && Number.isFinite(lookDistanceOverride)
+      ? lookDistanceOverride
+      : 0,
+  );
+  const position = sample.position.clone().add(worldMount);
+  const target = position.clone().addScaledVector(worldViewDirection, lookDistance);
+
+  return {
+    position,
+    target,
+    localMount,
+    localViewDirection,
+  };
+}
+
+function cameraRelationshipActor(
+  moment: DirectorMoment,
+  shot: DirectorShotDirectionV2,
+  actors: DirectorRuntimeActor[],
+  kind: "foreground" | "focus",
+) {
+  const id = kind === "foreground"
+    ? shot.composition.foreground_entity_ids[0] ?? moment.active_entity_ids[0] ?? shot.camera.focus_entity_ids[0]
+    : shot.camera.focus_entity_ids[0] ?? moment.active_entity_ids[0];
+  return actorById(actors, id);
+}
+
 function targetActors(
   moment: DirectorMoment,
   shot: DirectorShotDirectionV2,
@@ -594,9 +688,12 @@ function averageTarget(
   return target;
 }
 
-function focusRadius(samples: ReturnType<typeof targetActors>) {
-  if (!samples.length) return 1.2;
-  let radius = 0.8;
+function focusRadius(
+  samples: ReturnType<typeof targetActors>,
+  minimumRadius = 0.8,
+) {
+  if (!samples.length) return Math.max(0.2, minimumRadius);
+  let radius = Math.max(0.05, minimumRadius);
   for (const entry of samples) radius = Math.max(radius, actorRadius(entry.actor));
   if (samples.length > 1) {
     const points = samples.map((entry) => entry.sample.position);
@@ -620,15 +717,26 @@ function movementDistance(
   return numberParam(step.parameters.distance_m, Math.max(0.35, radius * fallbackFactor)) * step.strength;
 }
 
-function actorTravelDelta(
+function actorTravelVector(
   moment: DirectorMoment,
   actor: DirectorRuntimeActor | null,
-  progress: number,
   actors: DirectorRuntimeActor[],
 ) {
   if (!actor) return new THREE.Vector3();
-  const current = sampleDirectorActorState(moment, actor, progress, actors).position;
-  return current.sub(new THREE.Vector3(...actor.position));
+  const start = sampleDirectorActorState(moment, actor, 0, actors).position;
+  const end = sampleDirectorActorState(moment, actor, 1, actors).position;
+  return end.sub(start);
+}
+
+function actorTravelDirection(
+  moment: DirectorMoment,
+  actor: DirectorRuntimeActor | null,
+  actors: DirectorRuntimeActor[],
+) {
+  const travel = actorTravelVector(moment, actor, actors);
+  travel.y = 0;
+  if (travel.lengthSq() < 0.000001) return null;
+  return travel.normalize();
 }
 
 function applyMovementStep(
@@ -641,14 +749,21 @@ function applyMovementStep(
   radius: number,
   progress: number,
 ) {
-  if (t <= 0 || step.movement === "static") return;
+  const runtimeMovement = directorCameraMovementRuntimeAlias(step.movement);
+  const parallelRailStartsWithShot =
+    runtimeMovement === "track_parallel" && step.start_progress <= 0.001;
+  if (
+    step.movement === "static" ||
+    (t <= 0 && !parallelRailStartsWithShot)
+  ) {
+    return;
+  }
 
   const targetActor = actorById(actors, step.target_entity_id ?? shot.camera.focus_entity_ids[0]);
   const offset = pose.position.clone().sub(pose.target);
   const distance = Math.max(0.1, offset.length());
   const forward = pose.target.clone().sub(pose.position).normalize();
   const right = new THREE.Vector3().crossVectors(forward, UP).normalize();
-  const runtimeMovement = directorCameraMovementRuntimeAlias(step.movement);
 
   switch (runtimeMovement) {
     case "static":
@@ -693,12 +808,53 @@ function applyMovementStep(
       }
       break;
     }
-    case "truck":
-    case "track_parallel": {
+    case "truck": {
       const amount = movementDistance(step, radius, 2.2);
       const sign = numberParam(step.parameters.direction_sign, 1) >= 0 ? 1 : -1;
       pose.position.addScaledVector(right, amount * t * sign);
       pose.target.addScaledVector(right, amount * t * sign);
+      break;
+    }
+    case "track_parallel": {
+      if (!targetActor) {
+        const amount = movementDistance(step, radius, 2.2);
+        pose.position.addScaledVector(right, amount * t);
+        pose.target.addScaledVector(right, amount * t);
+        break;
+      }
+
+      const travelDirection = actorTravelDirection(moment, targetActor, actors);
+      if (!travelDirection) break;
+
+      const sample = sampleDirectorActorState(moment, targetActor, progress, actors);
+      const subjectEye = actorEyePoint(targetActor, sample);
+      const sideSign = numberParam(step.parameters.direction_sign, 1) >= 0 ? 1 : -1;
+      const lateral = new THREE.Vector3()
+        .crossVectors(UP, travelDirection)
+        .normalize()
+        .multiplyScalar(sideSign);
+      const requestedDistance = numberParam(
+        step.parameters.distance_m,
+        Math.max(radius * 2.8, targetActor.size[0] * 2.5),
+      );
+      // A parallel track should feel like a second rail beside the actor:
+      // stable side distance, stable apparent size, and no forward look drift.
+      const sideDistance = Math.max(
+        radius * 2.65,
+        targetActor.size[0] * 2.35,
+        requestedDistance,
+      );
+      const desiredPosition = subjectEye
+        .clone()
+        .addScaledVector(lateral, sideDistance)
+        .addScaledVector(UP, Math.max(0.08, radius * 0.12));
+      const desiredTarget = subjectEye.clone();
+
+      // Parallel tracking is a relationship, not an entry zoom. Once the step
+      // is active, solve the second rail directly so the subject keeps nearly
+      // constant apparent size and screen position for the full shot.
+      pose.position.copy(desiredPosition);
+      pose.target.copy(desiredTarget);
       break;
     }
     case "pedestal": {
@@ -748,16 +904,27 @@ function applyMovementStep(
     case "follow":
     case "lead_subject":
     case "lag_follow": {
-      // The base composition is already solved from the actor's sampled current
-      // position, so ordinary follow needs no second copy of the actor travel.
-      // Lead/lag only bias the composed camera relative to travel direction.
-      const travel = actorTravelDelta(moment, targetActor, progress, actors);
-      if (runtimeMovement !== "follow" && travel.lengthSq() > 0.0001) {
-        const direction = travel.clone().normalize();
-        const sign = runtimeMovement === "lag_follow" ? -1 : 1;
-        const bias = direction.multiplyScalar(radius * step.strength * 0.7 * sign * t);
-        pose.position.add(bias);
-        pose.target.add(bias);
+      // The base composition is already actor-relative, which makes ordinary
+      // follow a stable travelling rig. Lead and lag deliberately change the
+      // *look relationship* instead of translating camera and target together.
+      const direction = actorTravelDirection(moment, targetActor, actors);
+      if (!direction || runtimeMovement === "follow") break;
+
+      if (runtimeMovement === "lead_subject") {
+        // Phase 1B.3.1 deliberately makes lead visually obvious in the
+        // controlled proof. Most of the separation comes from looking ahead,
+        // with only a small rig translation so the subject retains a readable
+        // relationship to ordinary Follow.
+        const leadDistance = Math.max(0.42, radius * 1.34 * step.strength) * t;
+        pose.target.addScaledVector(direction, leadDistance);
+        pose.position.addScaledVector(direction, leadDistance * 0.08);
+      } else {
+        // Lag is transient: the actor is allowed to pull clearly ahead through
+        // the middle of the move, then the camera catches back toward Follow.
+        const lagEnvelope = Math.sin(Math.PI * clamp01(t));
+        const lagDistance = Math.max(0.38, radius * 1.26 * step.strength) * lagEnvelope;
+        pose.target.addScaledVector(direction, -lagDistance);
+        pose.position.addScaledVector(direction, -lagDistance * 0.1);
       }
       break;
     }
@@ -803,9 +970,36 @@ function applyMovementStep(
     case "object_attached": {
       if (targetActor) {
         const sample = sampleDirectorActorState(moment, targetActor, progress, actors);
-        const localOffset = vecParam(step.parameters.offset, [0, targetActor.size[1] * 0.55, targetActor.size[2] * 0.9 + radius]);
-        pose.position.copy(sample.position).add(localOffset);
-        pose.target.copy(sample.position).add(new THREE.Vector3(0, targetActor.size[1] * 0.4, 0));
+        const defaultMount = defaultActorLocalMountedPosition(targetActor, radius);
+        const defaultViewDirection = defaultActorLocalMountedViewDirection();
+        const localMount = vecParam(step.parameters.offset, [
+          defaultMount.x,
+          defaultMount.y,
+          defaultMount.z,
+        ]);
+        const localViewDirection = vecParam(
+          step.parameters.view_direction,
+          [
+            defaultViewDirection.x,
+            defaultViewDirection.y,
+            defaultViewDirection.z,
+          ],
+        );
+        const mounted = actorLocalMountedView(
+          targetActor,
+          sample,
+          radius,
+          localMount,
+          localViewDirection,
+          numberParam(step.parameters.look_distance_m, Math.max(2.8, radius * 3.4)),
+        );
+
+        // Movement form = the camera rig becomes rigidly mounted to the actor.
+        // Blend only through a short attachment window, then preserve both
+        // actor-local mount position and actor-local viewing orientation.
+        const attachBlend = clamp01(t / 0.14);
+        pose.position.lerp(mounted.position, attachBlend);
+        pose.target.lerp(mounted.target, attachBlend);
       }
       break;
     }
@@ -861,15 +1055,23 @@ export function sampleDirectorCameraPose(
   const p = clamp01(progress);
   const actorRelativeCamera =
     shot.composition.angle === "object_attached" ||
+    shot.composition.framing === "point_of_view" ||
+    shot.composition.framing === "over_shoulder" ||
     shot.camera.movement_steps.some((step) =>
       ["follow", "track", "lead_subject", "lag_follow", "track_parallel", "object_attached"].includes(step.movement),
     );
   // Camera composition is world-fixed unless the Director explicitly selects an
-  // actor-relative tracking move. This keeps `static` truly static and prevents
-  // ordinary dollies/orbits from silently inheriting follow behavior.
+  // actor-relative framing or tracking move. This keeps `static` truly static
+  // while allowing POV, over-shoulder, and attached views to follow their source.
   const compositionProgress = actorRelativeCamera ? p : 0;
   const samples = targetActors(moment, shot, compositionProgress, actors);
-  const target = averageTarget(samples);
+  let target = averageTarget(samples);
+  if (shot.composition.framing === "macro" && samples.length === 1) {
+    // Tiny controlled/semantic features need geometric-centre targeting. Eye
+    // offsets are useful for actors, but they can push a fastener toward the
+    // frame edge when the feature itself is only a few centimetres across.
+    target.copy(samples[0]!.sample.position);
+  }
   const startsOnFirstFocus = shot.camera.movement_steps.some((step) =>
     step.movement === "reframe" ||
     step.movement === "reverse_reveal" ||
@@ -879,25 +1081,116 @@ export function sampleDirectorCameraPose(
     const first = actorById(actors, shot.camera.focus_entity_ids[0]);
     if (first) {
       const firstSample = sampleDirectorActorState(moment, first, compositionProgress, actors);
-      target.copy(firstSample.position).add(new THREE.Vector3(0, first.size[1] * 0.45, 0));
+      target.copy(actorEyePoint(first, firstSample));
     }
   }
-  const radius = focusRadius(samples);
+
+  const minimumFocusRadius =
+    shot.composition.framing === "macro"
+      ? 0.12
+      : shot.composition.framing === "insert"
+        ? 0.16
+        : shot.composition.framing === "cutaway"
+          ? 0.28
+          : 0.8;
+  const radius = focusRadius(samples, minimumFocusRadius);
   const fov = THREE.MathUtils.clamp(shot.lens.field_of_view_degrees || 44, 10, 100);
   const framing = framingFactor(shot.composition.framing);
   const perspectiveCompensation = 44 / fov;
-  const distance = Math.max(1.2, radius * framing * perspectiveCompensation);
-  const direction = angleDirection(shot.composition.angle).normalize();
-  const position = target.clone().add(direction.multiplyScalar(distance));
-  if (shot.composition.angle === "ground_level") {
-    position.y = Math.max(0.12, Math.min(position.y, 0.2));
-  } else if (shot.composition.angle === "low_angle") {
-    position.y = Math.max(0.18, Math.min(position.y, target.y * 0.55));
+  const minimumCameraDistance =
+    shot.composition.framing === "macro"
+      ? 0.44
+      : shot.composition.framing === "insert"
+        ? 0.42
+        : shot.composition.framing === "cutaway"
+          ? 0.7
+          : 1.2;
+  const distance = shot.composition.angle === "isometric"
+    ? Math.max(3.2, radius * 4.05)
+    : Math.max(
+        minimumCameraDistance,
+        radius * framing * perspectiveCompensation,
+      );
+  const resolvedFov = shot.composition.angle === "isometric"
+    ? Math.min(fov, 28)
+    : fov;
+
+  let position: THREE.Vector3;
+  const foregroundActor = cameraRelationshipActor(moment, shot, actors, "foreground");
+  const focusActor = cameraRelationshipActor(moment, shot, actors, "focus");
+
+  if (
+    shot.composition.framing === "over_shoulder" &&
+    foregroundActor &&
+    focusActor &&
+    foregroundActor.id !== focusActor.id
+  ) {
+    const foregroundSample = sampleDirectorActorState(moment, foregroundActor, compositionProgress, actors);
+    const focusSample = sampleDirectorActorState(moment, focusActor, compositionProgress, actors);
+    const foregroundEye = actorEyePoint(foregroundActor, foregroundSample);
+    const focusEye = actorEyePoint(focusActor, focusSample);
+    const { forward, right } = stableViewBasis(foregroundEye, focusEye);
+    const foregroundRadius = actorRadius(foregroundActor);
+    const backOffset = Math.max(
+      0.5,
+      foregroundRadius * 0.92,
+      Math.abs(foregroundActor.size[2]) * 0.72,
+    );
+    const shoulderOffset = Math.max(
+      0.32,
+      foregroundRadius * 0.52,
+      Math.abs(foregroundActor.size[0]) * 0.5,
+    );
+    position = foregroundEye
+      .clone()
+      .addScaledVector(forward, -backOffset)
+      .addScaledVector(right, shoulderOffset)
+      // Visual review showed the Phase 1B.3 proof sitting slightly above the
+      // shoulder line. Keep the same clearance but lower the optical centre so
+      // the foreground actor reads as a shoulder rather than a low aerial view.
+      .add(new THREE.Vector3(0, -Math.max(0.035, foregroundActor.size[1] * 0.045), 0));
+    target = focusEye.clone().add(new THREE.Vector3(0, -focusActor.size[1] * 0.035, 0));
+  } else if (shot.composition.framing === "point_of_view" && foregroundActor) {
+    const foregroundSample = sampleDirectorActorState(moment, foregroundActor, compositionProgress, actors);
+    const foregroundEye = actorEyePoint(foregroundActor, foregroundSample);
+    const focusSample = focusActor && focusActor.id !== foregroundActor.id
+      ? sampleDirectorActorState(moment, focusActor, compositionProgress, actors)
+      : null;
+    const desiredTarget = focusSample && focusActor
+      ? actorEyePoint(focusActor, focusSample)
+      : foregroundEye.clone().add(
+          new THREE.Vector3(0, 0, 3).applyEuler(foregroundSample.rotation),
+        );
+    const { forward } = stableViewBasis(foregroundEye, desiredTarget);
+    const faceClearance = Math.max(
+      0.16,
+      Math.abs(foregroundActor.size[2]) * 0.54,
+      actorRadius(foregroundActor) * 0.22,
+    );
+    position = foregroundEye.clone().addScaledVector(forward, faceClearance);
+    target = desiredTarget;
+  } else if (shot.composition.angle === "object_attached" && foregroundActor) {
+    const foregroundSample = sampleDirectorActorState(moment, foregroundActor, compositionProgress, actors);
+    const mounted = actorLocalMountedView(
+      foregroundActor,
+      foregroundSample,
+      radius,
+    );
+    // Object-attached *angle* is a body/vehicle-mounted viewpoint. It inherits
+    // the actor's local orientation and looks outward along local forward
+    // instead of behaving like an external camera staring back at the host.
+    position = mounted.position;
+    target = mounted.target;
+  } else {
+    const direction = angleDirection(shot.composition.angle).normalize();
+    position = target.clone().add(direction.multiplyScalar(distance));
+    if (shot.composition.angle === "ground_level") {
+      position.y = Math.max(0.12, Math.min(position.y, 0.2));
+    } else if (shot.composition.angle === "low_angle") {
+      position.y = Math.max(0.18, Math.min(position.y, target.y * 0.55));
+    }
   }
 
-  const resolvedFov = shot.composition.angle === "isometric"
-    ? Math.min(fov, 30)
-    : fov;
   const pose: DirectorCameraPose = {
     position,
     target: target.clone(),
@@ -1283,12 +1576,20 @@ export function DirectorShotCameraController({
   isPlaying?: boolean;
   autoLoop?: boolean;
 }) {
-  const { camera } = useThree();
+  const { camera, invalidate } = useThree();
   const lastPausedProgress = useRef<number | null>(null);
   const lastRuntimeProgress = useRef<number | null>(null);
   const lastMomentId = useRef<string | null>(null);
   const smoothedTarget = useRef(new THREE.Vector3());
   const targetReady = useRef(false);
+
+  // Demand-rendered viewers must explicitly schedule a frame when a paused
+  // Director input changes. React may keep the same progress value (usually 0)
+  // while switching to a different capability/moment, so progress alone cannot
+  // be the wake-up signal.
+  useEffect(() => {
+    invalidate();
+  }, [actors, invalidate, moment, progress]);
 
   useFrame(({ clock }, delta) => {
     const runtimeProgress = typeof progress === "number"
@@ -1296,12 +1597,29 @@ export function DirectorShotCameraController({
       : autoLoop
         ? ((clock.elapsedTime * 1000) % Math.max(1000, moment.duration_ms)) / Math.max(1000, moment.duration_ms)
         : 0;
-    if (!isPlaying && lastPausedProgress.current === runtimeProgress) return;
+    const changedMoment = lastMomentId.current !== moment.id;
+    // A paused frame may reuse the same numeric progress for a newly selected
+    // capability. Do not let the cached progress hide that moment change.
+    if (
+      !isPlaying &&
+      lastPausedProgress.current === runtimeProgress &&
+      !changedMoment
+    ) {
+      return;
+    }
 
     const pose = sampleDirectorCameraPose(moment, runtimeProgress, actors);
     const rewound = lastRuntimeProgress.current !== null && runtimeProgress + 0.02 < lastRuntimeProgress.current;
-    const changedMoment = lastMomentId.current !== moment.id;
-    const snap = !isPlaying && !autoLoop || rewound || changedMoment || !targetReady.current;
+    const authoredStart = runtimeProgress <= 0.001;
+    // The authored t=0 pose is authoritative. This prevents the first playback
+    // frame from easing out of a stale/manual camera before the Director rig
+    // takes control.
+    const snap =
+      !isPlaying && !autoLoop ||
+      authoredStart ||
+      rewound ||
+      changedMoment ||
+      !targetReady.current;
     const positionAlpha = 1 - Math.exp(-9.5 * Math.min(0.05, Math.max(0, delta)));
     const targetAlpha = 1 - Math.exp(-12 * Math.min(0.05, Math.max(0, delta)));
 
