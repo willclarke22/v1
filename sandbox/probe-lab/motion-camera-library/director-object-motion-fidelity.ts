@@ -2,10 +2,18 @@ import * as THREE from "three";
 
 import {
   applyDirectorBlocking,
+  sampleDirectorActorEventStateLegacyForVerification,
   sampleDirectorActorState,
   validateDirectorShot,
   type DirectorRuntimeActor,
 } from "../scenes/ui/director-shot-runtime";
+import {
+  compileDirectorActorMotionProgram,
+  sampleCompiledDirectorActorMotionProgram,
+} from "../motion-program/director-motion-program-compiler";
+import type {
+  MyWayMotionProgramV1,
+} from "../motion-program/motion-program-contract";
 import {
   directorCapabilityDemoMoment,
   type DirectorCapability,
@@ -144,12 +152,34 @@ export type DirectorObjectMotionQualificationState =
   | "fixture_ready_for_review"
   | "needs_semantic_strengthening";
 
+export type DirectorObjectMotionProgramEvidence = {
+  route: "motion_program" | "legacy_required" | "no_motion";
+  reason: string;
+  program: MyWayMotionProgramV1 | null;
+  compiled_event_ids: string[];
+  unsupported_event_ids: string[];
+  legacy_equivalence: null | {
+    sample_count: number;
+    samples: Array<{
+      progress: number;
+      position_error_m: number;
+      rotation_error_degrees: number;
+      scale_error: number;
+    }>;
+    maximum_position_error_m: number;
+    maximum_rotation_error_degrees: number;
+    maximum_scale_error: number;
+    passed: boolean;
+  };
+};
+
 export type DirectorObjectMotionFidelityReport = {
   schema_version: typeof DIRECTOR_OBJECT_MOTION_FIDELITY_VERSION;
   capability_id: string;
   support_level: DirectorCapability["compiler"]["threejs"];
   fixture: DirectorAuditFixtureKind;
   controlled_geometry: true;
+  motion_program: DirectorObjectMotionProgramEvidence;
   samples: DirectorObjectMotionFidelitySample[];
   motion_signature: {
     translation_m: number;
@@ -464,6 +494,118 @@ function limitationsFor(
   return limitations;
 }
 
+function motionProgramEvidence(
+  capability: DirectorCapability,
+  actors: DirectorRuntimeActor[],
+): DirectorObjectMotionProgramEvidence {
+  const moment = directorCapabilityDemoMoment(capability);
+  const primary = actorFor(actors, "primary_subject");
+  if (!primary) {
+    return {
+      route: "no_motion",
+      reason: "Controlled fixture is missing primary_subject.",
+      program: null,
+      compiled_event_ids: [],
+      unsupported_event_ids: [],
+      legacy_equivalence: null,
+    };
+  }
+
+  const compilation = compileDirectorActorMotionProgram(
+    moment,
+    primary,
+    actors,
+  );
+  const isCanary = (
+    DIRECTOR_OBJECT_MOTION_REGRESSION_CANARIES as readonly string[]
+  ).includes(capability.id);
+  if (!isCanary || !compilation.program) {
+    return {
+      route: compilation.route,
+      reason: compilation.reason,
+      program: compilation.program,
+      compiled_event_ids: compilation.compiled_event_ids,
+      unsupported_event_ids: compilation.unsupported_event_ids,
+      legacy_equivalence: null,
+    };
+  }
+
+  const progressValues =
+    capability.id === "oscillate"
+      ? Array.from({ length: 33 }, (_, index) => index / 32)
+      : [...DIRECTOR_OBJECT_MOTION_FIDELITY_PROGRESS];
+  const samples = progressValues.map((progress) => {
+    const legacy = sampleDirectorActorEventStateLegacyForVerification(
+      moment,
+      primary,
+      progress,
+      actors,
+    );
+    const program = sampleCompiledDirectorActorMotionProgram(
+      compilation,
+      progress,
+    );
+    if (!program) {
+      throw new Error(
+        `MotionProgram compilation for ${capability.id} disappeared during dual-run sampling.`,
+      );
+    }
+    const programPosition = new THREE.Vector3(...program.position);
+    const programRotation = new THREE.Vector3(...program.rotation);
+    const legacyRotation = new THREE.Vector3(
+      legacy.rotation.x,
+      legacy.rotation.y,
+      legacy.rotation.z,
+    );
+    const programScale = new THREE.Vector3(...program.scale);
+    return {
+      progress: rounded(progress, 5),
+      position_error_m: rounded(
+        legacy.position.distanceTo(programPosition),
+        8,
+      ),
+      rotation_error_degrees: rounded(
+        THREE.MathUtils.radToDeg(
+          legacyRotation.distanceTo(programRotation),
+        ),
+        8,
+      ),
+      scale_error: rounded(
+        legacy.scale.distanceTo(programScale),
+        8,
+      ),
+    };
+  });
+  const maximumPosition = Math.max(
+    ...samples.map((sample) => sample.position_error_m),
+  );
+  const maximumRotation = Math.max(
+    ...samples.map((sample) => sample.rotation_error_degrees),
+  );
+  const maximumScale = Math.max(
+    ...samples.map((sample) => sample.scale_error),
+  );
+
+  return {
+    route: compilation.route,
+    reason: compilation.reason,
+    program: compilation.program,
+    compiled_event_ids: compilation.compiled_event_ids,
+    unsupported_event_ids: compilation.unsupported_event_ids,
+    legacy_equivalence: {
+      sample_count: samples.length,
+      samples,
+      maximum_position_error_m: maximumPosition,
+      maximum_rotation_error_degrees: maximumRotation,
+      maximum_scale_error: maximumScale,
+      passed:
+        maximumPosition <= 1e-6 &&
+        maximumRotation <= 1e-5 &&
+        maximumScale <= 1e-6,
+    },
+  };
+}
+
 export function buildDirectorObjectMotionFidelityReport(
   capability: DirectorCapability,
 ): DirectorObjectMotionFidelityReport | null {
@@ -495,6 +637,7 @@ export function buildDirectorObjectMotionFidelityReport(
   ).includes(capability.id);
   const canaryPassed =
     !canary || canary.passed;
+  const motionProgram = motionProgramEvidence(capability, actors);
 
   return {
     schema_version: DIRECTOR_OBJECT_MOTION_FIDELITY_VERSION,
@@ -502,6 +645,7 @@ export function buildDirectorObjectMotionFidelityReport(
     support_level: capability.compiler.threejs,
     fixture,
     controlled_geometry: true,
+    motion_program: motionProgram,
     samples,
     motion_signature: {
       translation_m: rounded(sampleTravel(samples)),

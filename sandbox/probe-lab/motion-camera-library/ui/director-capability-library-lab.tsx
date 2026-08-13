@@ -36,6 +36,7 @@ import {
   type ResolvedDirectorRole,
 } from "./director-capability-preview";
 import { DirectorAuditViewer } from "./director-audit-viewer";
+import { buildUnnamedMotionGeneralityProof } from "../../motion-program/motion-program-diagnostics";
 import {
   applyDirectorBlocking,
   validateDirectorShot,
@@ -414,6 +415,19 @@ function ObjectMotionFidelityEvidence({
         </span>
       </div>
 
+      <div style={fidelityLimitationStyle}>
+        <strong>Universal Motion Program · Phase 1B.4.2</strong>
+        <span>
+          {report.motion_program.route === "motion_program"
+            ? `${report.motion_program.program?.tracks.length ?? 0} deterministic track(s) · ${
+                report.motion_program.legacy_equivalence?.passed
+                  ? "legacy-equivalent canary"
+                  : "program available"
+              }`
+            : `legacy compatibility path · ${report.motion_program.reason}`}
+        </span>
+      </div>
+
       <div style={fidelitySamplesStyle}>
         {keySamples.map((sample) => (
           <div key={sample.progress} style={fidelitySampleStyle}>
@@ -562,6 +576,10 @@ export function DirectorCapabilityLibraryLab() {
     () => buildDirectorObjectMotionFidelityReport(selected),
     [selected],
   );
+  const unnamedMotionGeneralityProof = useMemo(
+    () => buildUnnamedMotionGeneralityProof(),
+    [],
+  );
 
   async function loadAssets() {
     setIsLoadingAssets(true);
@@ -680,6 +698,8 @@ export function DirectorCapabilityLibraryLab() {
     coordinate_spaces: selected.coordinate_spaces ?? [],
     composed_shot_v2: demoMoment.shot ?? null,
     semantic_events: demoMoment.events,
+    universal_motion_program: objectMotionFidelity?.motion_program ?? null,
+    unnamed_motion_generality_proof: unnamedMotionGeneralityProof,
     runtime_inputs: {
       playback_clock: "isolated audit viewer; catalogue does not rerender during playback",
       duration_ms: selected.demo.duration_ms,
@@ -721,6 +741,11 @@ export function DirectorCapabilityLibraryLab() {
         objectMotionFidelity
           ? "Phase 1B.4.1 specialized fixture + sampled actor-state evidence"
           : null,
+      universal_motion_program_foundation:
+        "Phase 1B.4.2 deterministic renderer-neutral tracks + narrow frozen-canary adapter",
+      selected_execution_route: objectMotionFidelity?.motion_program.route ?? null,
+      unnamed_program_requires_capability_id:
+        unnamedMotionGeneralityProof.named_director_capability_required,
       runtime_semantics_rewritten_in_this_phase: false,
     },
     performance: {
@@ -1072,6 +1097,8 @@ export function DirectorCapabilityLibraryLab() {
                 GLM receives the semantic contract and supported capability IDs,
                 not renderer code. Phase 1B.2 keeps the catalogue static while a
                 lightweight isolated audit viewer exercises the compiled direction.
+                Phase 1B.4.2 now exposes the deterministic Universal Motion Program
+                underneath qualified actor-motion canaries without adding WebGL work.
               </p>
             </div>
 
@@ -1095,11 +1122,22 @@ export function DirectorCapabilityLibraryLab() {
                 value={objectMotionFidelity}
               />
             ) : null}
+            {objectMotionFidelity ? (
+              <JsonPanel
+                title="4. Universal Motion Program execution"
+                value={{
+                  selected_actor_program: objectMotionFidelity.motion_program,
+                  unnamed_generality_proof: unnamedMotionGeneralityProof,
+                }}
+              />
+            ) : null}
             <JsonPanel
               title={
-                cameraFidelity || objectMotionFidelity
-                  ? "4. Validation and promotion diagnostics"
-                  : "3. Validation and promotion diagnostics"
+                objectMotionFidelity
+                  ? "5. Validation and promotion diagnostics"
+                  : cameraFidelity
+                    ? "4. Validation and promotion diagnostics"
+                    : "3. Validation and promotion diagnostics"
               }
               value={diagnostics}
             />

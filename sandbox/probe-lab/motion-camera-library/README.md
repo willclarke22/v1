@@ -256,3 +256,28 @@ capabilities that already passed visual qualification.
 Support classifications remain unchanged. Real-asset semantic feature anchors
 remain future asset-directability work.
 
+## Phase 1B.4.2 — Universal Motion Program foundation
+
+The Director Capability Library remains the semantic/filmmaking vocabulary. The
+new `sandbox/probe-lab/motion-program/` layer is a smaller renderer-neutral,
+deterministic execution grammar underneath it; it does **not** replace the 183
+named capabilities and a valid MotionProgram does not require a capability id.
+
+This first runtime adapter is intentionally narrow. Only actors whose complete
+transform-event set stays inside `move_to`, `rotate`, `pivot`, and `oscillate`
+may execute through `myway_motion_program_v1`. If another transform semantic is
+present, the entire actor remains on the legacy compatibility path so event
+ordering cannot silently change. Translate/Rotate/Pivot/Oscillate are dual-run
+against the Phase 1B.4.1 authority at fixed samples, with dense samples for
+Oscillate. Existing semantic-overlap diagnostics remain unqualified.
+
+The foundation provides deterministic arbitrary-progress sampling, world and
+actor-local basic vector spaces, independent overlapping tracks, and sequence,
+parallel, hold, repeat, and reverse composition helpers. Future articulation,
+skeletal, deformation, process, physics, camera, lighting, and presentation
+channels are declared in the contract but are not falsely reported as executable.
+
+The Capability Library inspector exposes both the selected actor program and a
+synthetic unnamed parallel translation + rotation proof. This is data-only and
+does not add another WebGL context: the existing single demand-rendered
+`DirectorAuditViewer` remains the playback/canvas owner.

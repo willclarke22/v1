@@ -15,6 +15,10 @@ import {
   assertDirectorRuntimeNever,
   directorCameraMovementRuntimeAlias,
 } from "../director-runtime-coverage";
+import {
+  compileDirectorActorMotionProgram,
+  sampleCompiledDirectorActorMotionProgram,
+} from "../../motion-program/director-motion-program-compiler";
 
 export type DirectorRuntimeVec3 = [number, number, number];
 
@@ -210,7 +214,7 @@ function eventLocalProgress(
   );
 }
 
-function sampleDirectorActorEventState(
+function sampleDirectorActorEventStateLegacy(
   moment: DirectorMoment,
   actor: DirectorRuntimeActor,
   progress: number,
@@ -413,6 +417,63 @@ function sampleDirectorActorEventState(
   }
 
   return { position, rotation, scale };
+}
+
+/**
+ * Phase 1B.4.2 adapter seam. A MotionProgram is authoritative only when the
+ * complete actor transform-event set is inside the frozen foundation subset.
+ * Any unsupported semantic motion keeps the actor on the legacy path so this
+ * additive patch cannot reorder or partially reinterpret mixed event stacks.
+ */
+function sampleDirectorActorEventState(
+  moment: DirectorMoment,
+  actor: DirectorRuntimeActor,
+  progress: number,
+  actors: DirectorRuntimeActor[],
+): DirectorActorSample {
+  const compilation = compileDirectorActorMotionProgram(
+    moment,
+    actor,
+    actors,
+  );
+  if (compilation.route === "motion_program" && compilation.program) {
+    const motionSample = sampleCompiledDirectorActorMotionProgram(
+      compilation,
+      progress,
+    );
+    if (
+      motionSample &&
+      motionSample.diagnostics.finite &&
+      motionSample.diagnostics.unsupported_track_ids.length === 0
+    ) {
+      return {
+        position: new THREE.Vector3(...motionSample.position),
+        rotation: new THREE.Euler(...motionSample.rotation, "XYZ"),
+        scale: new THREE.Vector3(...motionSample.scale),
+      };
+    }
+  }
+  return sampleDirectorActorEventStateLegacy(
+    moment,
+    actor,
+    progress,
+    actors,
+  );
+}
+
+/** Verification-only Phase 1B.4.1 authority for MotionProgram dual-run tests. */
+export function sampleDirectorActorEventStateLegacyForVerification(
+  moment: DirectorMoment,
+  actor: DirectorRuntimeActor,
+  progress: number,
+  actors: DirectorRuntimeActor[],
+): DirectorActorSample {
+  return sampleDirectorActorEventStateLegacy(
+    moment,
+    actor,
+    progress,
+    actors,
+  );
 }
 
 function constraintAxisVector(axis: "x" | "y" | "z" | "auto") {
