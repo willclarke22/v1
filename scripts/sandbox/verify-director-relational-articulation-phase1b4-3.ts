@@ -216,15 +216,10 @@ for (const strengthened of [
     `${strengthened} still carries stale Phase 1B.4.1 shared-branch redundancy evidence.`,
   );
 }
+// Phase 1B.4.5 is allowed to remove the multi-actor overlaps after its own
+// choreography verifier proves them. Spin and process/quantity overlaps remain.
 for (const remaining of [
   "spin",
-  "scatter",
-  "insert_into",
-  "assemble",
-  "merge",
-  "remove_from",
-  "disassemble",
-  "split",
   "flow",
   "emit",
   "fill",
@@ -797,7 +792,7 @@ console.log(
   "Follow/Attach/Detach moving-target semantics, Aim-vs-Align axis separation, hinge/open/close recipes, Slide local rail, and Roll distance/radius coupling passed.",
 );
 console.log(
-  "Random-access determinism and the four Phase 1B.4.2 frozen canaries remain intact; unresolved multi-actor/process overlaps remain explicitly unqualified.",
+  "Random-access determinism and the four Phase 1B.4.2 frozen canaries remain intact; later phases may strengthen multi-actor choreography while Spin/process overlaps stay explicit.",
 );
 console.log(
   "Articulation stays declared-not-executed as a subpart channel, support classifications remain unchanged, and the Capability Library still owns zero direct Canvas elements.",

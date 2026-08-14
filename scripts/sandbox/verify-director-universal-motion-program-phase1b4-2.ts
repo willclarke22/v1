@@ -297,9 +297,9 @@ for (const id of DIRECTOR_OBJECT_MOTION_REGRESSION_CANARIES) {
   }
 }
 
+// Later phases may legitimately strengthen multi-actor choreography. Process
+// semantics remain the unresolved overlap owned by the post-1B.4.5 roadmap.
 for (const id of [
-  "assemble",
-  "merge",
   "flow",
   "emit",
   "fill",
