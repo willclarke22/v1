@@ -1438,7 +1438,7 @@ export function directorCapabilityDemoEvents(capability: DirectorCapability): Di
   if (["move_toward", "move_away", "slide", "lift", "lower", "detach", "remove_from", "split"].includes(capability.id)) parameters.distance_m = 1.8;
   if (capability.id === "slide") parameters.direction = [1, 0, 0];
   if (capability.id === "expand" || capability.id === "contract") parameters.amount = 0.45;
-  return [{
+  const primaryEvent: DirectorEvent = {
     id: `demo_${capability.id}`,
     behaviour,
     actor_entity_id: "primary_subject",
@@ -1451,7 +1451,32 @@ export function directorCapabilityDemoEvents(capability: DirectorCapability): Di
     description: capability.summary,
     parameters,
     fallback_behaviour: behaviour === "move_to" ? null : "move_to",
-  }];
+  };
+
+  if (capability.id === "follow_target" || capability.id === "attach") {
+    return [
+      {
+        id: `demo_${capability.id}_moving_target`,
+        behaviour: "move_to",
+        actor_entity_id: "secondary_subject",
+        target_entity_id: null,
+        supporting_entity_ids: ["primary_subject"],
+        start_ms: 450,
+        duration_ms: 4700,
+        easing: "ease_in_out",
+        path_hint: "moving relationship target",
+        description:
+          "Move the relationship target so Follow target and Attach must sample current target state rather than its original pose.",
+        parameters: {
+          target_position: [2.6, 0.35, -1.1],
+        },
+        fallback_behaviour: null,
+      },
+      primaryEvent,
+    ];
+  }
+
+  return [primaryEvent];
 }
 
 export function directorCapabilityDemoMoment(capability: DirectorCapability): DirectorMoment {

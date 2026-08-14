@@ -3,6 +3,7 @@ import {
   MOTION_PROGRAM_RUNTIME_COORDINATE_SPACES,
   type MotionProgramInitialState,
   type MotionProgramSample,
+  type MotionProgramSampleContext,
   type MotionProgramTrack,
   type MotionProgramVec3,
   type MyWayMotionProgramV1,
@@ -91,8 +92,11 @@ function addAxis(
 }
 
 function trackLocalProgress(track: MotionProgramTrack, progress: number) {
-  // Legacy Director event semantics skip ordinary motion exactly at t=0.
-  if (progress <= track.start_progress) return null;
+  if (progress <= track.start_progress) {
+    if (!track.apply_before_start) return null;
+    const directed = track.reverse_progress ? 1 : 0;
+    return sampleMotionEasing(directed, track.easing);
+  }
   const span = Math.max(1e-9, track.end_progress - track.start_progress);
   const raw = clampMotionProgress((progress - track.start_progress) / span);
   const directed = track.reverse_progress ? 1 - raw : raw;
@@ -103,10 +107,39 @@ function finiteVec(value: MotionProgramVec3) {
   return value.every(Number.isFinite);
 }
 
+function targetState(
+  context: MotionProgramSampleContext | undefined,
+  entityId: string,
+  progress: number,
+) {
+  return context?.sample_entity_state?.(entityId, progress) ?? null;
+}
+
+function shortestAngleDelta(from: number, to: number) {
+  let delta = to - from;
+  while (delta > Math.PI) delta -= Math.PI * 2;
+  while (delta < -Math.PI) delta += Math.PI * 2;
+  return delta;
+}
+
+function desiredYawForHorizontalAxis(
+  axis: "x" | "z",
+  fromPosition: MotionProgramVec3,
+  targetPosition: MotionProgramVec3,
+) {
+  const delta = subtract(targetPosition, fromPosition);
+  if (Math.hypot(delta[0], delta[2]) <= 1e-9) return null;
+  if (axis === "x") {
+    return Math.atan2(-delta[2], delta[0]);
+  }
+  return Math.atan2(delta[0], delta[2]);
+}
+
 export function sampleMotionProgram(
   program: MyWayMotionProgramV1,
   progress: number,
   initialState: MotionProgramInitialState,
+  context?: MotionProgramSampleContext,
 ): MotionProgramSample {
   let position: MotionProgramVec3 = [...initialState.position];
   let rotation: MotionProgramVec3 = [...initialState.rotation];
@@ -185,7 +218,7 @@ export function sampleMotionProgram(
         );
         if (track.parameters.rotate_orientation) {
           rotation = addAxis(
-            rotation,
+            initialState.rotation,
             track.parameters.axis,
             angle,
           );
@@ -210,6 +243,79 @@ export function sampleMotionProgram(
         position = add(
           track.parameters.origin,
           multiply(direction, displacement),
+        );
+        break;
+      }
+      case "sample_target_offset": {
+        const target = targetState(
+          context,
+          track.parameters.target_entity_id,
+          sampledProgress,
+        );
+        if (!target) {
+          unsupportedTrackIds.push(track.id);
+          continue;
+        }
+        const desired = add(
+          target.position,
+          track.parameters.offset,
+        );
+        position =
+          track.parameters.mode === "approach"
+            ? lerp(track.parameters.origin, desired, t)
+            : desired;
+        break;
+      }
+      case "orient_axis_toward_target": {
+        const target = targetState(
+          context,
+          track.parameters.target_entity_id,
+          sampledProgress,
+        );
+        if (!target) {
+          unsupportedTrackIds.push(track.id);
+          continue;
+        }
+        const desired = desiredYawForHorizontalAxis(
+          track.parameters.axis,
+          position,
+          target.position,
+        );
+        if (desired === null) break;
+        rotation = setAxis(
+          rotation,
+          "y",
+          track.parameters.from_yaw_radians +
+            shortestAngleDelta(
+              track.parameters.from_yaw_radians,
+              desired,
+            ) * t,
+        );
+        break;
+      }
+      case "detach_from_target": {
+        const targetAtDetach = targetState(
+          context,
+          track.parameters.target_entity_id,
+          track.start_progress,
+        );
+        const origin = targetAtDetach
+          ? add(
+              targetAtDetach.position,
+              track.parameters.attachment_offset,
+            )
+          : [...track.parameters.fallback_origin] as MotionProgramVec3;
+        let direction = track.parameters.explicit_direction
+          ? normalize(track.parameters.explicit_direction)
+          : targetAtDetach
+            ? normalize(subtract(origin, targetAtDetach.position))
+            : normalize([-1, 0.25, 0]);
+        if (length(direction) <= 1e-9) {
+          direction = normalize([-1, 0.25, 0]);
+        }
+        position = add(
+          origin,
+          multiply(direction, track.parameters.distance * t),
         );
         break;
       }

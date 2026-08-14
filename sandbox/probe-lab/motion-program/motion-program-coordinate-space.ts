@@ -25,9 +25,10 @@ function rotateZ(value: MotionProgramVec3, radians: number): MotionProgramVec3 {
 }
 
 /**
- * Basic Phase 1B.4.2 vector-space resolver. World and actor-local are executable.
- * Other semantic spaces stay explicit in the contract and are rejected by the
- * sampler until geometry/camera/path-aware resolvers are introduced.
+ * Basic vector-space resolver. World and actor-local vectors are executable.
+ * Phase 1B.4.3 adds target-relative sampling through dedicated relational
+ * operations; generic target-relative vectors still return null here so the
+ * sampler cannot silently guess a target basis.
  */
 export function resolveMotionVectorSpace(
   vector: MotionProgramVec3,

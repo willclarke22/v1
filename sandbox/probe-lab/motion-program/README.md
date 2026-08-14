@@ -14,7 +14,36 @@ Phase 1B.4.2 deliberately stays narrow:
 - the named Director Capability Library is not required to author a valid program;
 - unsupported future lanes remain declared rather than being faked as root motion.
 
-The public scene runtime API remains `sampleDirectorActorState(...)`. The adapter
-may execute a MotionProgram only when every transform event for that actor is in
-the frozen Phase 1B.4.2 subset; otherwise the complete actor uses the legacy path
-so event ordering cannot silently change.
+The public scene runtime API remains `sampleDirectorActorState(...)`. In the
+Phase 1B.4.2 foundation, the adapter executed a MotionProgram only when every
+transform event for that actor stayed in the frozen four-canary subset; later
+strengthening extends that qualified set without changing the public sampler.
+
+## Phase 1B.4.3 — relational + articulation recipes
+
+The program stays renderer-neutral while selected Director semantics now compile
+to distinct recipes instead of sharing legacy branches:
+
+- `follow_target` samples the moving target at arbitrary progress and preserves a
+  target-relative offset;
+- `attach` composes approach then bound target-relative sampling and declares an
+  attachment state effect for the current moment;
+- `detach` latches the release origin at the event start and no longer inherits
+  later target movement;
+- `aim_at` aims the visual-forward +Z axis, while `align` aligns a declared or
+  fallback horizontal actor axis;
+- `hinge`, `open`, and `close` share the generalized rotate-around-anchor
+  primitive but carry distinct recipe ids, hinge requirements, and Open/Close
+  state effects;
+- `slide` is constrained actor-local translation;
+- `roll` is parallel translation + orientation with angular distance derived
+  from travel distance divided by rolling radius.
+
+`target_relative` is now an executable coordinate-space only for the dedicated
+relational operations. Generic target-relative vectors remain unsupported rather
+than guessing a target basis.
+
+This phase does not claim arbitrary GLB subpart articulation or cross-moment
+state persistence. Hinge/Open/Close keep the whole-actor fallback and declare the
+anchor/axis/state semantics that later asset-directability and scene-state phases
+will resolve.

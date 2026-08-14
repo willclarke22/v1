@@ -388,9 +388,11 @@ function ObjectMotionFidelityEvidence({
   const statusLabel =
     report.qualification_state === "frozen_canary"
       ? "frozen regression canary"
-      : report.qualification_state === "needs_semantic_strengthening"
-        ? "known semantic overlap"
-        : "fixture ready for review";
+      : report.qualification_state === "recipe_strengthened"
+        ? "Phase 1B.4.3 recipe strengthened"
+        : report.qualification_state === "needs_semantic_strengthening"
+          ? "known semantic overlap"
+          : "fixture ready for review";
 
   return (
     <div style={fidelityPanelStyle}>
@@ -416,13 +418,20 @@ function ObjectMotionFidelityEvidence({
       </div>
 
       <div style={fidelityLimitationStyle}>
-        <strong>Universal Motion Program · Phase 1B.4.2</strong>
+        <strong>
+          Universal Motion Program ·{" "}
+          {report.strengthening_version
+            ? "Phase 1B.4.3 relational/articulation recipe"
+            : "Phase 1B.4.2 foundation"}
+        </strong>
         <span>
           {report.motion_program.route === "motion_program"
             ? `${report.motion_program.program?.tracks.length ?? 0} deterministic track(s) · ${
-                report.motion_program.legacy_equivalence?.passed
-                  ? "legacy-equivalent canary"
-                  : "program available"
+                report.motion_program.program?.diagnostics.recipe_ids?.length
+                  ? `recipe ${report.motion_program.program.diagnostics.recipe_ids.join(", ")}`
+                  : report.motion_program.legacy_equivalence?.passed
+                    ? "legacy-equivalent canary"
+                    : "program available"
               }`
             : `legacy compatibility path · ${report.motion_program.reason}`}
         </span>

@@ -4,10 +4,14 @@ export const MYWAY_MOTION_PROGRAM_SCHEMA_VERSION =
 export const MOTION_PROGRAM_FOUNDATION_VERSION =
   "director_universal_motion_program_phase1b4_2_v1" as const;
 
+export const MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION =
+  "director_relational_articulation_phase1b4_3_v1" as const;
+
 /**
- * Renderer-neutral execution channels. Phase 1B.4.2 only executes transform
- * and orientation, but the contract names later lanes now so unsupported
- * semantics never need to masquerade as root transforms.
+ * Renderer-neutral execution channels. Phase 1B.4.3 still executes transform
+ * and orientation only. Articulation semantics are carried as recipes,
+ * requirements, and declared state effects until asset-directability metadata
+ * can resolve real subparts/anchors without pretending root motion is a rig.
  */
 export const MOTION_PROGRAM_CHANNELS = [
   "transform",
@@ -40,6 +44,7 @@ export const MOTION_PROGRAM_COORDINATE_SPACES = [
 export const MOTION_PROGRAM_RUNTIME_COORDINATE_SPACES = [
   "world",
   "actor_local",
+  "target_relative",
 ] as const;
 
 export const MOTION_PROGRAM_EASINGS = [
@@ -56,6 +61,9 @@ export const MOTION_PROGRAM_OPERATIONS = [
   "lerp_angle",
   "rotate_around_anchor",
   "sample_periodic",
+  "sample_target_offset",
+  "orient_axis_toward_target",
+  "detach_from_target",
 ] as const;
 
 export type MotionProgramChannel =
@@ -70,6 +78,7 @@ export type MotionProgramOperation =
   (typeof MOTION_PROGRAM_OPERATIONS)[number];
 export type MotionProgramVec3 = [number, number, number];
 export type MotionProgramAxis = "x" | "y" | "z";
+export type MotionProgramHorizontalAxis = "x" | "z";
 export type MotionProgramBlendMode = "replace" | "additive";
 
 export type MotionProgramTrackBase = {
@@ -85,6 +94,8 @@ export type MotionProgramTrackBase = {
   order: number;
   /** Used by the generalized reverse composition operator. */
   reverse_progress?: boolean;
+  /** Allows semantic pre-state tracks such as Close to expose their from-pose before the event window begins. */
+  apply_before_start?: boolean;
 };
 
 export type MotionProgramVectorLerpTrack = MotionProgramTrackBase & {
@@ -135,11 +146,51 @@ export type MotionProgramPeriodicTrack = MotionProgramTrackBase & {
   };
 };
 
+export type MotionProgramTargetOffsetTrack = MotionProgramTrackBase & {
+  channel: "transform";
+  operation: "sample_target_offset";
+  coordinate_space: "target_relative";
+  parameters: {
+    target_entity_id: string;
+    origin: MotionProgramVec3;
+    offset: MotionProgramVec3;
+    mode: "approach" | "replace";
+  };
+};
+
+export type MotionProgramOrientAxisTowardTargetTrack =
+  MotionProgramTrackBase & {
+    channel: "orientation";
+    operation: "orient_axis_toward_target";
+    coordinate_space: "target_relative";
+    parameters: {
+      target_entity_id: string;
+      axis: MotionProgramHorizontalAxis;
+      from_yaw_radians: number;
+    };
+  };
+
+export type MotionProgramDetachFromTargetTrack = MotionProgramTrackBase & {
+  channel: "transform";
+  operation: "detach_from_target";
+  coordinate_space: "target_relative";
+  parameters: {
+    target_entity_id: string;
+    fallback_origin: MotionProgramVec3;
+    attachment_offset: MotionProgramVec3;
+    explicit_direction: MotionProgramVec3 | null;
+    distance: number;
+  };
+};
+
 export type MotionProgramTrack =
   | MotionProgramVectorLerpTrack
   | MotionProgramAngleLerpTrack
   | MotionProgramRotateAroundAnchorTrack
-  | MotionProgramPeriodicTrack;
+  | MotionProgramPeriodicTrack
+  | MotionProgramTargetOffsetTrack
+  | MotionProgramOrientAxisTowardTargetTrack
+  | MotionProgramDetachFromTargetTrack;
 
 export type MotionProgramConstraint = {
   id: string;
@@ -176,11 +227,15 @@ export type MotionProgramDirectabilityRequirement = {
 
 export type MotionProgramDiagnostics = {
   foundation_version: typeof MOTION_PROGRAM_FOUNDATION_VERSION;
+  strengthening_version?:
+    | typeof MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION
+    | null;
   source_kind: "director_events" | "synthetic";
   source_event_ids: string[];
   compiled_event_ids: string[];
   ignored_event_ids: string[];
   unsupported_event_ids: string[];
+  recipe_ids?: string[];
   supported_runtime_channels: MotionProgramRuntimeChannel[];
   supported_coordinate_spaces: Array<
     (typeof MOTION_PROGRAM_RUNTIME_COORDINATE_SPACES)[number]
@@ -205,6 +260,13 @@ export type MotionProgramInitialState = {
   position: MotionProgramVec3;
   rotation: MotionProgramVec3;
   scale: MotionProgramVec3;
+};
+
+export type MotionProgramSampleContext = {
+  sample_entity_state?: (
+    entityId: string,
+    progress: number,
+  ) => MotionProgramInitialState | null;
 };
 
 export type MotionProgramSample = MotionProgramInitialState & {

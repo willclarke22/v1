@@ -281,3 +281,30 @@ The Capability Library inspector exposes both the selected actor program and a
 synthetic unnamed parallel translation + rotation proof. This is data-only and
 does not add another WebGL context: the existing single demand-rendered
 `DirectorAuditViewer` remains the playback/canvas owner.
+
+## Phase 1B.4.3 — relational + articulation motion recipes
+
+Phase 1B.4.3 starts using `myway_motion_program_v1` to separate Director meanings
+that previously collapsed onto shared actor-runtime branches. The Director
+catalog, GLM-facing language, support classifications, camera runtime, lighting,
+and Asset Scene Builder authority remain unchanged.
+
+The strengthened recipe set is Follow target, Attach, Detach, Aim at, Align,
+Hinge, Open, Close, Slide, and Roll. Follow target samples a moving target at the
+requested progress. Attach uses approach then bound target-relative sampling;
+Detach latches its release origin and stops inheriting later target movement.
+Aim at uses the visual-forward axis while Align uses a declared/fallback actor
+axis. Hinge/Open/Close compile through generalized rotate-around-anchor tracks
+with distinct semantic recipe/state metadata. Roll composes independent
+translation and orientation tracks coupled by distance/radius.
+
+The controlled Follow target and Attach demos now move the secondary relationship
+target so current-target sampling is visually judgeable. The Capability Library
+inspector shows the Phase 1B.4.3 recipe id when one is present and still uses the
+single demand-rendered `DirectorAuditViewer`; no additional WebGL context is
+introduced.
+
+Articulation remains honest: the current Three.js proof may use a whole-actor
+hinge fallback, while hinge anchor/axis requirements and Open/Close state effects
+are carried in the MotionProgram for later asset-directability and scene-state
+work. Cross-moment persistence is intentionally deferred to Phase 1B.4.4.

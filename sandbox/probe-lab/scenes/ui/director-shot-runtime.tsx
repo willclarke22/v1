@@ -420,16 +420,16 @@ function sampleDirectorActorEventStateLegacy(
 }
 
 /**
- * Phase 1B.4.2 adapter seam. A MotionProgram is authoritative only when the
- * complete actor transform-event set is inside the frozen foundation subset.
- * Any unsupported semantic motion keeps the actor on the legacy path so this
- * additive patch cannot reorder or partially reinterpret mixed event stacks.
+ * Phase 1B.4.3 adapter seam. The public actor sampler remains stable while the
+ * Universal Motion Program may recursively sample moving relationship targets.
+ * Cycles or unsupported target recipes fail closed to the legacy actor path.
  */
-function sampleDirectorActorEventState(
+function sampleDirectorActorEventStateWithStack(
   moment: DirectorMoment,
   actor: DirectorRuntimeActor,
   progress: number,
   actors: DirectorRuntimeActor[],
+  stack: ReadonlySet<string>,
 ): DirectorActorSample {
   const compilation = compileDirectorActorMotionProgram(
     moment,
@@ -437,9 +437,41 @@ function sampleDirectorActorEventState(
     actors,
   );
   if (compilation.route === "motion_program" && compilation.program) {
+    const nextStack = new Set(stack);
+    nextStack.add(actor.id);
     const motionSample = sampleCompiledDirectorActorMotionProgram(
       compilation,
       progress,
+      {
+        sample_entity_state: (entityId, targetProgress) => {
+          const targetActor = actorById(actors, entityId);
+          if (!targetActor || nextStack.has(entityId)) return null;
+          const targetSample = sampleDirectorActorEventStateWithStack(
+            moment,
+            targetActor,
+            targetProgress,
+            actors,
+            nextStack,
+          );
+          return {
+            position: [
+              targetSample.position.x,
+              targetSample.position.y,
+              targetSample.position.z,
+            ],
+            rotation: [
+              targetSample.rotation.x,
+              targetSample.rotation.y,
+              targetSample.rotation.z,
+            ],
+            scale: [
+              targetSample.scale.x,
+              targetSample.scale.y,
+              targetSample.scale.z,
+            ],
+          };
+        },
+      },
     );
     if (
       motionSample &&
@@ -458,6 +490,21 @@ function sampleDirectorActorEventState(
     actor,
     progress,
     actors,
+  );
+}
+
+function sampleDirectorActorEventState(
+  moment: DirectorMoment,
+  actor: DirectorRuntimeActor,
+  progress: number,
+  actors: DirectorRuntimeActor[],
+): DirectorActorSample {
+  return sampleDirectorActorEventStateWithStack(
+    moment,
+    actor,
+    progress,
+    actors,
+    new Set<string>(),
   );
 }
 

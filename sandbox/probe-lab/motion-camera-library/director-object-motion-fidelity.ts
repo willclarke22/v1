@@ -11,8 +11,9 @@ import {
   compileDirectorActorMotionProgram,
   sampleCompiledDirectorActorMotionProgram,
 } from "../motion-program/director-motion-program-compiler";
-import type {
-  MyWayMotionProgramV1,
+import {
+  MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
+  type MyWayMotionProgramV1,
 } from "../motion-program/motion-program-contract";
 import {
   directorCapabilityDemoMoment,
@@ -42,6 +43,19 @@ export const DIRECTOR_OBJECT_MOTION_REGRESSION_CANARIES = [
   "oscillate",
 ] as const;
 
+export const DIRECTOR_OBJECT_MOTION_PHASE1B4_3_RECIPE_CAPABILITIES = [
+  "follow_target",
+  "attach",
+  "detach",
+  "align",
+  "aim_at",
+  "hinge",
+  "object_open",
+  "object_close",
+  "slide",
+  "roll",
+] as const;
+
 export const DIRECTOR_OBJECT_MOTION_KNOWN_REDUNDANCY: Record<
   string,
   {
@@ -49,26 +63,6 @@ export const DIRECTOR_OBJECT_MOTION_KNOWN_REDUNDANCY: Record<
     reason: string;
   }
 > = {
-  attach: {
-    peers: ["follow_target"],
-    reason:
-      "Attach and Follow target currently share the same target-offset interpolation branch.",
-  },
-  follow_target: {
-    peers: ["attach"],
-    reason:
-      "Follow target does not yet prove a persistent relationship to a moving target; it shares Attach's interpolation branch.",
-  },
-  align: {
-    peers: ["aim_at"],
-    reason:
-      "Align and Aim at currently share the same yaw-to-target implementation instead of distinct axis-alignment semantics.",
-  },
-  aim_at: {
-    peers: ["align"],
-    reason:
-      "Aim at currently shares Align's yaw-to-target implementation.",
-  },
   spin: {
     peers: ["rotate"],
     reason:
@@ -136,7 +130,11 @@ export type DirectorObjectMotionFidelityCheck = {
   description: string;
   passed: boolean;
   measured: string;
-  kind: "finite" | "regression_canary" | "redundancy_diagnostic";
+  kind:
+    | "finite"
+    | "regression_canary"
+    | "recipe_strengthening"
+    | "redundancy_diagnostic";
 };
 
 export type DirectorObjectMotionFidelitySample = {
@@ -149,6 +147,7 @@ export type DirectorObjectMotionFidelitySample = {
 
 export type DirectorObjectMotionQualificationState =
   | "frozen_canary"
+  | "recipe_strengthened"
   | "fixture_ready_for_review"
   | "needs_semantic_strengthening";
 
@@ -179,6 +178,9 @@ export type DirectorObjectMotionFidelityReport = {
   support_level: DirectorCapability["compiler"]["threejs"];
   fixture: DirectorAuditFixtureKind;
   controlled_geometry: true;
+  strengthening_version:
+    | typeof MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION
+    | null;
   motion_program: DirectorObjectMotionProgramEvidence;
   samples: DirectorObjectMotionFidelitySample[];
   motion_signature: {
@@ -442,6 +444,36 @@ function canaryCheck(
   return null;
 }
 
+function recipeStrengtheningCheck(
+  capability: DirectorCapability,
+  motionProgram: DirectorObjectMotionProgramEvidence,
+): DirectorObjectMotionFidelityCheck | null {
+  const isRecipeCapability = (
+    DIRECTOR_OBJECT_MOTION_PHASE1B4_3_RECIPE_CAPABILITIES as readonly string[]
+  ).includes(capability.id);
+  if (!isRecipeCapability) return null;
+
+  const recipeIds =
+    motionProgram.program?.diagnostics.recipe_ids ?? [];
+  const strengtheningVersion =
+    motionProgram.program?.diagnostics.strengthening_version ?? null;
+  return {
+    id: "phase1b4_3_recipe_strengthening",
+    description:
+      "The selected Director semantic compiles to a distinct Phase 1B.4.3 relational/articulation recipe without changing its declared support level.",
+    passed:
+      motionProgram.route === "motion_program" &&
+      strengtheningVersion ===
+        MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION &&
+      recipeIds.length > 0,
+    measured:
+      recipeIds.length > 0
+        ? `${recipeIds.join(", ")} · support remains ${capability.compiler.threejs}`
+        : `${motionProgram.route} · ${motionProgram.reason}`,
+    kind: "recipe_strengthening",
+  };
+}
+
 function redundancyCheck(
   capability: DirectorCapability,
 ): DirectorObjectMotionFidelityCheck | null {
@@ -624,9 +656,15 @@ export function buildDirectorObjectMotionFidelityReport(
   );
   const start = samples[0]!;
   const end = samples[samples.length - 1]!;
+  const motionProgram = motionProgramEvidence(capability, actors);
   const checks = [finiteCheck(samples)];
   const canary = canaryCheck(capability, actors, samples);
   if (canary) checks.push(canary);
+  const recipeStrengthening = recipeStrengtheningCheck(
+    capability,
+    motionProgram,
+  );
+  if (recipeStrengthening) checks.push(recipeStrengthening);
   const redundancy = redundancyCheck(capability);
   if (redundancy) checks.push(redundancy);
 
@@ -635,9 +673,11 @@ export function buildDirectorObjectMotionFidelityReport(
   const isCanary = (
     DIRECTOR_OBJECT_MOTION_REGRESSION_CANARIES as readonly string[]
   ).includes(capability.id);
+  const isRecipeStrengthened = (
+    DIRECTOR_OBJECT_MOTION_PHASE1B4_3_RECIPE_CAPABILITIES as readonly string[]
+  ).includes(capability.id);
   const canaryPassed =
     !canary || canary.passed;
-  const motionProgram = motionProgramEvidence(capability, actors);
 
   return {
     schema_version: DIRECTOR_OBJECT_MOTION_FIDELITY_VERSION,
@@ -645,6 +685,10 @@ export function buildDirectorObjectMotionFidelityReport(
     support_level: capability.compiler.threejs,
     fixture,
     controlled_geometry: true,
+    strengthening_version:
+      isRecipeStrengthened
+        ? MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION
+        : null,
     motion_program: motionProgram,
     samples,
     motion_signature: {
@@ -669,7 +713,9 @@ export function buildDirectorObjectMotionFidelityReport(
         ? "needs_semantic_strengthening"
         : isCanary && canaryPassed
           ? "frozen_canary"
-          : "fixture_ready_for_review",
+          : isRecipeStrengthened && recipeStrengthening?.passed
+            ? "recipe_strengthened"
+            : "fixture_ready_for_review",
     redundancy_peers: known?.peers ?? [],
     limitations: limitationsFor(capability, fixture),
     visual_review_required: true,

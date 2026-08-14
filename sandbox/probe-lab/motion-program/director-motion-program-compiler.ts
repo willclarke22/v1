@@ -4,24 +4,36 @@ import type {
   DirectorMoment,
 } from "../director/director-contract";
 import {
+  DIRECTOR_RELATIONAL_ARTICULATION_RECIPE_BEHAVIOURS,
+  compileDirectorRelationalArticulationRecipe,
+  type DirectorMotionRecipeActor,
+} from "./director-motion-recipes";
+import {
   MOTION_PROGRAM_FOUNDATION_VERSION,
+  MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
   MOTION_PROGRAM_RUNTIME_CHANNELS,
   MOTION_PROGRAM_RUNTIME_COORDINATE_SPACES,
   MYWAY_MOTION_PROGRAM_SCHEMA_VERSION,
   type MotionProgramAxis,
   type MotionProgramEasing,
   type MotionProgramInitialState,
+  type MotionProgramSampleContext,
   type MotionProgramTrack,
   type MotionProgramVec3,
   type MyWayMotionProgramV1,
 } from "./motion-program-contract";
 import { sampleMotionProgram } from "./motion-program-sampler";
 
-export const DIRECTOR_MOTION_PROGRAM_COMPILED_BEHAVIOURS = [
+export const DIRECTOR_MOTION_PROGRAM_FOUNDATION_BEHAVIOURS = [
   "move_to",
   "rotate",
   "pivot",
   "oscillate",
+] as const satisfies readonly DirectorBehaviour[];
+
+export const DIRECTOR_MOTION_PROGRAM_COMPILED_BEHAVIOURS = [
+  ...DIRECTOR_MOTION_PROGRAM_FOUNDATION_BEHAVIOURS,
+  ...DIRECTOR_RELATIONAL_ARTICULATION_RECIPE_BEHAVIOURS,
 ] as const satisfies readonly DirectorBehaviour[];
 
 const DIRECTOR_MOTION_PROGRAM_IGNORED_BEHAVIOURS = [
@@ -38,12 +50,7 @@ const DIRECTOR_MOTION_PROGRAM_IGNORED_BEHAVIOURS = [
   "custom_semantic",
 ] as const satisfies readonly DirectorBehaviour[];
 
-export type DirectorMotionProgramActor = {
-  id: string;
-  position: MotionProgramVec3;
-  rotation?: MotionProgramVec3;
-  size: MotionProgramVec3;
-};
+export type DirectorMotionProgramActor = DirectorMotionRecipeActor;
 
 export type DirectorActorMotionProgramCompilation = {
   route: "motion_program" | "legacy_required" | "no_motion";
@@ -52,6 +59,7 @@ export type DirectorActorMotionProgramCompilation = {
   compiled_event_ids: string[];
   ignored_event_ids: string[];
   unsupported_event_ids: string[];
+  recipe_ids: string[];
   reason: string;
 };
 
@@ -129,7 +137,7 @@ function trackBase(
   };
 }
 
-function compileEventTrack(
+function compileFoundationTrack(
   moment: DirectorMoment,
   event: DirectorEvent,
   actor: DirectorMotionProgramActor,
@@ -236,24 +244,69 @@ export function compileDirectorActorMotionProgram(
   const compiled: DirectorEvent[] = [];
   const ignored: DirectorEvent[] = [];
   const unsupported: DirectorEvent[] = [];
+  const tracks: MotionProgramTrack[] = [];
+  const requirements: MyWayMotionProgramV1["requirements"] = [];
+  const stateEffects: MyWayMotionProgramV1["state_effects"] = [];
+  const recipeIds: string[] = [];
+  const warnings: string[] = [];
 
-  for (const event of actorEvents) {
+  actorEvents.forEach((event, index) => {
+    const order = index * 100;
+
     if (
-      (DIRECTOR_MOTION_PROGRAM_COMPILED_BEHAVIOURS as readonly string[]).includes(
-        event.behaviour,
-      )
+      (
+        DIRECTOR_MOTION_PROGRAM_FOUNDATION_BEHAVIOURS as readonly string[]
+      ).includes(event.behaviour)
     ) {
       compiled.push(event);
-    } else if (
-      (DIRECTOR_MOTION_PROGRAM_IGNORED_BEHAVIOURS as readonly string[]).includes(
-        event.behaviour,
-      )
+      tracks.push(
+        compileFoundationTrack(
+          moment,
+          event,
+          actor,
+          actors,
+          order,
+        ),
+      );
+      return;
+    }
+
+    if (
+      (
+        DIRECTOR_RELATIONAL_ARTICULATION_RECIPE_BEHAVIOURS as readonly string[]
+      ).includes(event.behaviour)
+    ) {
+      const recipe = compileDirectorRelationalArticulationRecipe({
+        moment,
+        event,
+        actor,
+        actors,
+        order,
+      });
+      if (!recipe) {
+        unsupported.push(event);
+        return;
+      }
+      compiled.push(event);
+      tracks.push(...recipe.tracks);
+      requirements.push(...recipe.requirements);
+      stateEffects.push(...recipe.state_effects);
+      recipeIds.push(recipe.recipe_id);
+      warnings.push(...recipe.warnings);
+      return;
+    }
+
+    if (
+      (
+        DIRECTOR_MOTION_PROGRAM_IGNORED_BEHAVIOURS as readonly string[]
+      ).includes(event.behaviour)
     ) {
       ignored.push(event);
-    } else {
-      unsupported.push(event);
+      return;
     }
-  }
+
+    unsupported.push(event);
+  });
 
   if (unsupported.length) {
     return {
@@ -263,8 +316,9 @@ export function compileDirectorActorMotionProgram(
       compiled_event_ids: compiled.map((event) => event.id),
       ignored_event_ids: ignored.map((event) => event.id),
       unsupported_event_ids: unsupported.map((event) => event.id),
+      recipe_ids: recipeIds,
       reason:
-        "At least one transform-semantic event is outside the Phase 1B.4.2 qualified subset, so the complete actor stays on the legacy compatibility path to preserve event ordering.",
+        "At least one transform-semantic event is outside the Phase 1B.4.3 qualified recipe set, so the complete actor stays on the legacy compatibility path to preserve event ordering.",
     };
   }
 
@@ -276,35 +330,38 @@ export function compileDirectorActorMotionProgram(
       compiled_event_ids: [],
       ignored_event_ids: ignored.map((event) => event.id),
       unsupported_event_ids: [],
+      recipe_ids: [],
       reason:
-        "This actor has no Phase 1B.4.2 transform/orientation event to compile.",
+        "This actor has no qualified Universal Motion Program transform/orientation event to compile.",
     };
   }
 
-  const tracks = compiled.map((event, index) =>
-    compileEventTrack(moment, event, actor, actors, index),
-  );
   const program: MyWayMotionProgramV1 = {
     schema_version: MYWAY_MOTION_PROGRAM_SCHEMA_VERSION,
-    program_id: `director:${moment.id}:${actor.id}:phase1b4_2`,
+    program_id: `director:${moment.id}:${actor.id}:phase1b4_3`,
     duration_ms: Math.max(1, moment.duration_ms),
     target_entity_id: actor.id,
     tracks,
     constraints: [],
-    state_effects: [],
-    requirements: [],
+    state_effects: stateEffects,
+    requirements,
     diagnostics: {
       foundation_version: MOTION_PROGRAM_FOUNDATION_VERSION,
+      strengthening_version:
+        recipeIds.length
+          ? MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION
+          : null,
       source_kind: "director_events",
       source_event_ids: actorEvents.map((event) => event.id),
       compiled_event_ids: compiled.map((event) => event.id),
       ignored_event_ids: ignored.map((event) => event.id),
       unsupported_event_ids: [],
+      recipe_ids: recipeIds,
       supported_runtime_channels: [...MOTION_PROGRAM_RUNTIME_CHANNELS],
       supported_coordinate_spaces: [
         ...MOTION_PROGRAM_RUNTIME_COORDINATE_SPACES,
       ],
-      warnings: [],
+      warnings: [...new Set(warnings)],
       legacy_fallback_required: false,
     },
   };
@@ -316,19 +373,24 @@ export function compileDirectorActorMotionProgram(
     compiled_event_ids: compiled.map((event) => event.id),
     ignored_event_ids: ignored.map((event) => event.id),
     unsupported_event_ids: [],
+    recipe_ids: recipeIds,
     reason:
-      "All actor transform events are inside the frozen Phase 1B.4.2 subset and compile to deterministic MotionProgram tracks.",
+      recipeIds.length
+        ? "All actor transform events are inside the qualified MotionProgram set; Phase 1B.4.3 relational/articulation semantics compile to deterministic recipes."
+        : "All actor transform events are inside the frozen Phase 1B.4.2 subset and compile to deterministic MotionProgram tracks.",
   };
 }
 
 export function sampleCompiledDirectorActorMotionProgram(
   compilation: DirectorActorMotionProgramCompilation,
   progress: number,
+  context?: MotionProgramSampleContext,
 ) {
   if (!compilation.program) return null;
   return sampleMotionProgram(
     compilation.program,
     progress,
     compilation.initial_state,
+    context,
   );
 }

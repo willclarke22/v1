@@ -75,11 +75,27 @@ for (const futureChannel of [
     `Phase 1B.4.2 must not falsely execute future channel ${futureChannel}.`,
   );
 }
-assert(
-  JSON.stringify(MOTION_PROGRAM_RUNTIME_COORDINATE_SPACES) ===
-    JSON.stringify(["world", "actor_local"]),
-  "Phase 1B.4.2 coordinate-space runtime support must remain narrow and explicit.",
-);
+for (const requiredFoundationSpace of ["world", "actor_local"] as const) {
+  assert(
+    (MOTION_PROGRAM_RUNTIME_COORDINATE_SPACES as readonly string[]).includes(
+      requiredFoundationSpace,
+    ),
+    `Phase 1B.4.2 foundation coordinate space disappeared: ${requiredFoundationSpace}.`,
+  );
+}
+for (const stillUnsupportedSpace of [
+  "camera_relative",
+  "screen_relative",
+  "path_relative",
+  "surface_relative",
+] as const) {
+  assert(
+    !(MOTION_PROGRAM_RUNTIME_COORDINATE_SPACES as readonly string[]).includes(
+      stillUnsupportedSpace,
+    ),
+    `Later strengthening must not make unsupported foundation space executable by accident: ${stillUnsupportedSpace}.`,
+  );
+}
 
 const proof = buildUnnamedMotionGeneralityProof();
 assert(
@@ -282,10 +298,6 @@ for (const id of DIRECTOR_OBJECT_MOTION_REGRESSION_CANARIES) {
 }
 
 for (const id of [
-  "attach",
-  "follow_target",
-  "align",
-  "aim_at",
   "assemble",
   "merge",
   "flow",
@@ -326,8 +338,13 @@ for (const behaviour of ["move_to", "rotate", "pivot", "oscillate"] as const) {
 const runtime = source(
   "sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx",
 );
+// Phase 1B.4.2 established the public actor MotionProgram adapter seam. Later
+// strengthening phases may replace the internal adapter implementation, so this
+// verifier checks executable seam signatures rather than an obsolete phase-comment
+// string. The public wrapper, compiler route, sampler route, verification escape
+// hatch, and legacy fail-closed path must all remain present.
 for (const marker of [
-  "Phase 1B.4.2 adapter seam",
+  "function sampleDirectorActorEventState(",
   "compileDirectorActorMotionProgram",
   "sampleCompiledDirectorActorMotionProgram",
   "sampleDirectorActorEventStateLegacyForVerification",
@@ -347,7 +364,8 @@ const library = source(
   "sandbox/probe-lab/motion-camera-library/ui/director-capability-library-lab.tsx",
 );
 for (const marker of [
-  "Universal Motion Program · Phase 1B.4.2",
+  "Universal Motion Program ·",
+  "Phase 1B.4.2 foundation",
   "buildUnnamedMotionGeneralityProof",
   "unnamed_motion_generality_proof",
   "Universal Motion Program execution",

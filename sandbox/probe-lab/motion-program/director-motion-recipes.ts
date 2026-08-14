@@ -1,0 +1,622 @@
+import type {
+  DirectorBehaviour,
+  DirectorEvent,
+  DirectorMoment,
+} from "../director/director-contract";
+import {
+  MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
+  type MotionProgramDirectabilityRequirement,
+  type MotionProgramEasing,
+  type MotionProgramStateEffect,
+  type MotionProgramTrack,
+  type MotionProgramVec3,
+} from "./motion-program-contract";
+
+export const DIRECTOR_RELATIONAL_ARTICULATION_RECIPE_BEHAVIOURS = [
+  "follow_target",
+  "attach",
+  "detach",
+  "aim_at",
+  "align",
+  "hinge",
+  "open",
+  "close",
+  "slide",
+  "roll",
+] as const satisfies readonly DirectorBehaviour[];
+
+export const DIRECTOR_RELATIONAL_ARTICULATION_RECIPE_IDS = {
+  follow_target: "follow_dynamic_target_offset",
+  attach: "attach_approach_then_bind",
+  detach: "detach_latched_release",
+  aim_at: "aim_visual_forward_at_target",
+  align: "align_declared_axis_to_target",
+  hinge: "hinge_about_declared_anchor_axis",
+  open: "open_hinge_transition",
+  close: "close_hinge_transition",
+  slide: "slide_constrained_axis",
+  roll: "roll_translation_rotation_coupled",
+} as const satisfies Record<
+  (typeof DIRECTOR_RELATIONAL_ARTICULATION_RECIPE_BEHAVIOURS)[number],
+  string
+>;
+
+export type DirectorMotionRecipeActor = {
+  id: string;
+  position: MotionProgramVec3;
+  rotation?: MotionProgramVec3;
+  size: MotionProgramVec3;
+};
+
+export type DirectorRelationalArticulationRecipe = {
+  version: typeof MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION;
+  behaviour:
+    (typeof DIRECTOR_RELATIONAL_ARTICULATION_RECIPE_BEHAVIOURS)[number];
+  recipe_id: string;
+  tracks: MotionProgramTrack[];
+  requirements: MotionProgramDirectabilityRequirement[];
+  state_effects: MotionProgramStateEffect[];
+  warnings: string[];
+};
+
+function clamp01(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(1, value));
+}
+
+function numberParam(value: unknown, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function vecParam(
+  value: unknown,
+  fallback: MotionProgramVec3,
+): MotionProgramVec3 {
+  if (Array.isArray(value) && value.length >= 3) {
+    return [
+      numberParam(value[0], fallback[0]),
+      numberParam(value[1], fallback[1]),
+      numberParam(value[2], fallback[2]),
+    ];
+  }
+  return [...fallback];
+}
+
+function subtract(
+  left: MotionProgramVec3,
+  right: MotionProgramVec3,
+): MotionProgramVec3 {
+  return [
+    left[0] - right[0],
+    left[1] - right[1],
+    left[2] - right[2],
+  ];
+}
+
+function normalize(value: MotionProgramVec3): MotionProgramVec3 {
+  const magnitude = Math.hypot(value[0], value[1], value[2]);
+  if (magnitude <= 1e-9) return [0, 0, 0];
+  return [
+    value[0] / magnitude,
+    value[1] / magnitude,
+    value[2] / magnitude,
+  ];
+}
+
+function actorById(
+  actors: DirectorMotionRecipeActor[],
+  id: string | null | undefined,
+) {
+  return id
+    ? actors.find((actor) => actor.id === id) ?? null
+    : null;
+}
+
+function actorRadius(actor: DirectorMotionRecipeActor) {
+  const [x, y, z] = actor.size.map((value) =>
+    Math.max(0.02, Math.abs(value)),
+  ) as MotionProgramVec3;
+  return Math.max(
+    0.12,
+    Math.sqrt(x * x + y * y + z * z) * 0.34,
+  );
+}
+
+function axisParam(value: unknown): "x" | "y" | "z" {
+  return value === "x" || value === "z" ? value : "y";
+}
+
+function horizontalAxisParam(value: unknown): "x" | "z" {
+  return value === "z" ? "z" : "x";
+}
+
+function eventWindow(moment: DirectorMoment, event: DirectorEvent) {
+  const durationMs = Math.max(1, moment.duration_ms);
+  const start = clamp01(event.start_ms / durationMs);
+  const end = clamp01(
+    (event.start_ms + Math.max(1, event.duration_ms)) / durationMs,
+  );
+  return {
+    start,
+    end: Math.max(start + Number.EPSILON, end),
+  };
+}
+
+function baseTrack(
+  actor: DirectorMotionRecipeActor,
+  event: DirectorEvent,
+  order: number,
+  start: number,
+  end: number,
+  easing: MotionProgramEasing = event.easing as MotionProgramEasing,
+) {
+  return {
+    target_entity_id: actor.id,
+    start_progress: start,
+    end_progress: end,
+    easing,
+    order,
+  };
+}
+
+function hingeRequirement(
+  actor: DirectorMotionRecipeActor,
+  event: DirectorEvent,
+): MotionProgramDirectabilityRequirement[] {
+  return [
+    {
+      id: `director:${event.id}:hinge_anchor_requirement`,
+      target_entity_id: actor.id,
+      kind: "anchor",
+      semantic_name: "hinge_anchor",
+      required: true,
+      runtime_status: "declared",
+    },
+    {
+      id: `director:${event.id}:hinge_axis_requirement`,
+      target_entity_id: actor.id,
+      kind: "axis",
+      semantic_name: "hinge_axis",
+      required: true,
+      runtime_status: "declared",
+    },
+  ];
+}
+
+function articulationStateEffect(
+  actor: DirectorMotionRecipeActor,
+  event: DirectorEvent,
+  state: "open" | "closed",
+  effectiveProgress: number,
+): MotionProgramStateEffect {
+  return {
+    id: `director:${event.id}:articulation_state`,
+    target_entity_id: actor.id,
+    kind: "articulation_state",
+    parameters: {
+      state,
+      effective_progress: effectiveProgress,
+      persistence_scope: "current_moment_only_until_phase1b4_4",
+    },
+    runtime_status: "declared",
+  };
+}
+
+export function compileDirectorRelationalArticulationRecipe(input: {
+  moment: DirectorMoment;
+  event: DirectorEvent;
+  actor: DirectorMotionRecipeActor;
+  actors: DirectorMotionRecipeActor[];
+  order: number;
+}): DirectorRelationalArticulationRecipe | null {
+  const {
+    moment,
+    event,
+    actor,
+    actors,
+    order,
+  } = input;
+  if (
+    !(
+      DIRECTOR_RELATIONAL_ARTICULATION_RECIPE_BEHAVIOURS as readonly string[]
+    ).includes(event.behaviour)
+  ) {
+    return null;
+  }
+
+  const behaviour =
+    event.behaviour as DirectorRelationalArticulationRecipe["behaviour"];
+  const params = event.parameters ?? {};
+  const { start, end } = eventWindow(moment, event);
+  const target = actorById(actors, event.target_entity_id);
+  const recipeId =
+    DIRECTOR_RELATIONAL_ARTICULATION_RECIPE_IDS[behaviour];
+
+  if (behaviour === "follow_target") {
+    if (!target) return null;
+    const offset = Array.isArray(params.offset)
+      ? vecParam(params.offset, subtract(actor.position, target.position))
+      : subtract(actor.position, target.position);
+    return {
+      version: MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
+      behaviour,
+      recipe_id: recipeId,
+      tracks: [
+        {
+          ...baseTrack(actor, event, order, start, end),
+          id: `director:${event.id}:follow_target`,
+          channel: "transform",
+          operation: "sample_target_offset",
+          coordinate_space: "target_relative",
+          parameters: {
+            target_entity_id: target.id,
+            origin: [...actor.position],
+            offset,
+            mode: "replace",
+          },
+        },
+      ],
+      requirements: [],
+      state_effects: [],
+      warnings: [],
+    };
+  }
+
+  if (behaviour === "attach") {
+    if (!target) return null;
+    const offset = vecParam(
+      params.offset,
+      [0, actorRadius(target) * 0.9, 0],
+    );
+    const bindProgress =
+      start + (end - start) * clamp01(
+        numberParam(params.bind_fraction, 0.42),
+      );
+    return {
+      version: MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
+      behaviour,
+      recipe_id: recipeId,
+      tracks: [
+        {
+          ...baseTrack(actor, event, order, start, bindProgress),
+          id: `director:${event.id}:attach_approach`,
+          channel: "transform",
+          operation: "sample_target_offset",
+          coordinate_space: "target_relative",
+          parameters: {
+            target_entity_id: target.id,
+            origin: [...actor.position],
+            offset,
+            mode: "approach",
+          },
+        },
+        {
+          ...baseTrack(
+            actor,
+            event,
+            order + 1,
+            bindProgress,
+            end,
+            "linear",
+          ),
+          id: `director:${event.id}:attach_bound`,
+          channel: "transform",
+          operation: "sample_target_offset",
+          coordinate_space: "target_relative",
+          parameters: {
+            target_entity_id: target.id,
+            origin: [...actor.position],
+            offset,
+            mode: "replace",
+          },
+        },
+      ],
+      requirements: [
+        {
+          id: `director:${event.id}:attachment_anchor_requirement`,
+          target_entity_id: actor.id,
+          kind: "anchor",
+          semantic_name: "attachment_anchor",
+          required: false,
+          runtime_status: "declared",
+        },
+      ],
+      state_effects: [
+        {
+          id: `director:${event.id}:attachment_state`,
+          target_entity_id: actor.id,
+          kind: "attachment_state",
+          parameters: {
+            state: "attached",
+            target_entity_id: target.id,
+            offset,
+            effective_progress: bindProgress,
+            persistence_scope: "current_moment_only_until_phase1b4_4",
+          },
+          runtime_status: "declared",
+        },
+      ],
+      warnings: [
+        "Attachment binding is deterministic within the current moment; cross-moment persistence belongs to Phase 1B.4.4 scene state.",
+      ],
+    };
+  }
+
+  if (behaviour === "detach") {
+    if (!target) return null;
+    const attachmentOffset = Array.isArray(params.offset)
+      ? vecParam(params.offset, subtract(actor.position, target.position))
+      : subtract(actor.position, target.position);
+    const explicitDirection = Array.isArray(params.direction)
+      ? normalize(vecParam(params.direction, [-1, 0.25, 0]))
+      : null;
+    return {
+      version: MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
+      behaviour,
+      recipe_id: recipeId,
+      tracks: [
+        {
+          ...baseTrack(actor, event, order, start, end),
+          id: `director:${event.id}:detach_release`,
+          channel: "transform",
+          operation: "detach_from_target",
+          coordinate_space: "target_relative",
+          parameters: {
+            target_entity_id: target.id,
+            fallback_origin: [...actor.position],
+            attachment_offset: attachmentOffset,
+            explicit_direction: explicitDirection,
+            distance: numberParam(
+              params.distance_m,
+              Math.max(0.75, actorRadius(actor) * 1.5),
+            ),
+          },
+        },
+      ],
+      requirements: [],
+      state_effects: [
+        {
+          id: `director:${event.id}:attachment_state`,
+          target_entity_id: actor.id,
+          kind: "attachment_state",
+          parameters: {
+            state: "detached",
+            target_entity_id: target.id,
+            effective_progress: start,
+            persistence_scope: "current_moment_only_until_phase1b4_4",
+          },
+          runtime_status: "declared",
+        },
+      ],
+      warnings: [
+        "Detach latches the target-relative release origin at the event start so later target motion is not inherited.",
+      ],
+    };
+  }
+
+  if (behaviour === "aim_at" || behaviour === "align") {
+    if (!target) return null;
+    const axis =
+      behaviour === "aim_at"
+        ? "z"
+        : horizontalAxisParam(params.axis);
+    return {
+      version: MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
+      behaviour,
+      recipe_id: recipeId,
+      tracks: [
+        {
+          ...baseTrack(actor, event, order, start, end),
+          id: `director:${event.id}:${behaviour}`,
+          channel: "orientation",
+          operation: "orient_axis_toward_target",
+          coordinate_space: "target_relative",
+          parameters: {
+            target_entity_id: target.id,
+            axis,
+            from_yaw_radians: actor.rotation?.[1] ?? 0,
+          },
+        },
+      ],
+      requirements:
+        behaviour === "align"
+          ? [
+              {
+                id: `director:${event.id}:alignment_axis_requirement`,
+                target_entity_id: actor.id,
+                kind: "axis",
+                semantic_name: `alignment_axis_${axis}`,
+                required: false,
+                runtime_status: "declared",
+              },
+            ]
+          : [],
+      state_effects: [],
+      warnings:
+        behaviour === "align" && !("axis" in params)
+          ? [
+              "Align defaults to the actor-local +X axis when no horizontal semantic axis is declared; asset-directability metadata can replace this fallback later.",
+            ]
+          : [],
+    };
+  }
+
+  if (
+    behaviour === "hinge" ||
+    behaviour === "open" ||
+    behaviour === "close"
+  ) {
+    const localPivot = vecParam(
+      params.pivot_local,
+      [-Math.max(0.05, actor.size[0]) * 0.5, 0, 0],
+    );
+    const anchor: MotionProgramVec3 = [
+      actor.position[0] + localPivot[0],
+      actor.position[1] + localPivot[1],
+      actor.position[2] + localPivot[2],
+    ];
+    const axis = axisParam(params.axis);
+    const radians =
+      (numberParam(params.degrees, 90) * Math.PI) / 180;
+    const fromRadians = behaviour === "close" ? radians : 0;
+    const toRadians = behaviour === "close" ? 0 : radians;
+    return {
+      version: MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
+      behaviour,
+      recipe_id: recipeId,
+      tracks: [
+        {
+          ...baseTrack(actor, event, order, start, end),
+          id: `director:${event.id}:${behaviour}_hinge`,
+          channel: "transform",
+          operation: "rotate_around_anchor",
+          coordinate_space: "world",
+          apply_before_start: behaviour === "close",
+          parameters: {
+            origin: [...actor.position],
+            anchor,
+            axis,
+            from_radians: fromRadians,
+            to_radians: toRadians,
+            rotate_orientation: true,
+          },
+        },
+      ],
+      requirements: hingeRequirement(actor, event),
+      state_effects:
+        behaviour === "open"
+          ? [articulationStateEffect(actor, event, "open", end)]
+          : behaviour === "close"
+            ? [articulationStateEffect(actor, event, "closed", end)]
+            : [],
+      warnings: [
+        "The current Three.js proof uses a whole-actor hinge fallback. Real articulated GLBs still require semantic subpart/hinge metadata before this can drive a true articulated child.",
+      ],
+    };
+  }
+
+  if (behaviour === "slide") {
+    const direction = normalize(
+      vecParam(params.direction, [1, 0, 0]),
+    );
+    const distance = numberParam(
+      params.distance_m,
+      Math.max(0.75, actorRadius(actor) * 1.5),
+    );
+    return {
+      version: MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
+      behaviour,
+      recipe_id: recipeId,
+      tracks: [
+        {
+          ...baseTrack(actor, event, order, start, end),
+          id: `director:${event.id}:slide_axis`,
+          channel: "transform",
+          operation: "lerp_vector",
+          coordinate_space: "actor_local",
+          parameters: {
+            property: "position",
+            from: [0, 0, 0],
+            to: [
+              direction[0] * distance,
+              direction[1] * distance,
+              direction[2] * distance,
+            ],
+            blend: "additive",
+          },
+        },
+      ],
+      requirements: [
+        {
+          id: `director:${event.id}:slide_axis_requirement`,
+          target_entity_id: actor.id,
+          kind: "axis",
+          semantic_name: "slide_axis",
+          required: false,
+          runtime_status: "declared",
+        },
+      ],
+      state_effects: [],
+      warnings: [],
+    };
+  }
+
+  const direction = normalize(
+    vecParam(params.direction, [1, 0, 0]),
+  );
+  const distance = numberParam(
+    params.distance_m,
+    Math.max(0.75, actorRadius(actor) * 1.5),
+  );
+  const rollingRadius = Math.max(
+    0.05,
+    numberParam(
+      params.rolling_radius_m,
+      Math.min(actor.size[0], actor.size[1], actor.size[2]) * 0.5,
+    ),
+  );
+  const explicitTurns = Number(params.turns);
+  const radians = Number.isFinite(explicitTurns)
+    ? Math.PI * 2 * explicitTurns
+    : distance / rollingRadius;
+  return {
+    version: MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
+    behaviour,
+    recipe_id: recipeId,
+    tracks: [
+      {
+        ...baseTrack(actor, event, order, start, end),
+        id: `director:${event.id}:roll_translation`,
+        channel: "transform",
+        operation: "lerp_vector",
+        coordinate_space: "actor_local",
+        parameters: {
+          property: "position",
+          from: [0, 0, 0],
+          to: [
+            direction[0] * distance,
+            direction[1] * distance,
+            direction[2] * distance,
+          ],
+          blend: "additive",
+        },
+      },
+      {
+        ...baseTrack(actor, event, order + 1, start, end),
+        id: `director:${event.id}:roll_rotation`,
+        channel: "orientation",
+        operation: "lerp_angle",
+        coordinate_space: "actor_local",
+        parameters: {
+          axis: axisParam(params.axis),
+          from_radians: 0,
+          to_radians: radians,
+          blend: "additive",
+        },
+      },
+    ],
+    requirements: [
+      {
+        id: `director:${event.id}:rolling_radius_requirement`,
+        target_entity_id: actor.id,
+        kind: "geometry_region",
+        semantic_name: "rolling_radius",
+        required: false,
+        runtime_status: "declared",
+      },
+      {
+        id: `director:${event.id}:rolling_axis_requirement`,
+        target_entity_id: actor.id,
+        kind: "axis",
+        semantic_name: "rolling_axis",
+        required: false,
+        runtime_status: "declared",
+      },
+    ],
+    state_effects: [],
+    warnings: [
+      "Rolling radius falls back to half the smallest actor extent until measured contact metadata is available.",
+    ],
+  };
+}
