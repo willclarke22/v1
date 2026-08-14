@@ -673,6 +673,10 @@ export type ResolvedAssetRuntimeMotionSample = {
   position?: Vec3;
   rotation?: Vec3;
   scale_multiplier?: number | Vec3;
+  /** Incoming cross-moment visibility state. */
+  visible?: boolean;
+  /** Rotate visible geometry around its measured bounds centre while root translation remains ground-referenced. */
+  rotation_pivot?: "bounds_center";
 };
 
 export type ResolvedAssetRuntimeMotion = {
@@ -728,6 +732,8 @@ export function ResolvedAssetModel({
 }) {
   const gltf = useGLTF(binding.public_path);
   const groupRef = useRef<THREE.Group>(null);
+  const runtimePivotRef = useRef<THREE.Group>(null);
+  const runtimeContentRef = useRef<THREE.Group>(null);
 
   const prepared = useMemo(() => {
     const clone = gltf.scene.clone(true);
@@ -1109,7 +1115,9 @@ export function ResolvedAssetModel({
 
   useFrame(({ clock }) => {
     const group = groupRef.current;
-    if (!group) return;
+    const runtimePivot = runtimePivotRef.current;
+    const runtimeContent = runtimeContentRef.current;
+    if (!group || !runtimePivot || !runtimeContent) return;
 
     const motion = binding.motion;
     const type =
@@ -1134,6 +1142,10 @@ export function ResolvedAssetModel({
     );
     group.rotation.set(...baseRotation);
     group.scale.set(...baseScale);
+    group.visible = true;
+    runtimePivot.position.set(0, 0, 0);
+    runtimePivot.rotation.set(0, 0, 0);
+    runtimeContent.position.set(0, 0, 0);
 
     if (runtimeMotion) {
       const durationMs = Math.max(1, runtimeMotion.duration_ms);
@@ -1142,6 +1154,9 @@ export function ResolvedAssetModel({
         ? THREE.MathUtils.clamp(rawProgress, 0, 1)
         : rawProgress % 1;
       const sampled = runtimeMotion.sample(progress);
+      if (typeof sampled.visible === "boolean") {
+        group.visible = sampled.visible;
+      }
       if (sampled.position) {
         group.position.set(
           sampled.position[0],
@@ -1150,11 +1165,28 @@ export function ResolvedAssetModel({
         );
       }
       if (sampled.rotation) {
-        group.rotation.set(
-          sampled.rotation[0] + binding.default_rotation[0],
-          sampled.rotation[1] + binding.default_rotation[1],
-          sampled.rotation[2] + binding.default_rotation[2],
-        );
+        if (sampled.rotation_pivot === "bounds_center") {
+          // Resolved assets are normalized to a bottom-centred local origin for
+          // measured placement. Rolling that entire root makes circular assets
+          // orbit around the floor contact and dip through the floor. Keep the
+          // placement root stable and apply only the authored rotation delta
+          // around the measured bounds centre.
+          const authoredBaseRotation = rotationOverride ?? binding.rotation;
+          const pivotY = prepared.sourceSize[1] * 0.5;
+          runtimePivot.position.set(0, pivotY, 0);
+          runtimeContent.position.set(0, -pivotY, 0);
+          runtimePivot.rotation.set(
+            sampled.rotation[0] - authoredBaseRotation[0],
+            sampled.rotation[1] - authoredBaseRotation[1],
+            sampled.rotation[2] - authoredBaseRotation[2],
+          );
+        } else {
+          group.rotation.set(
+            sampled.rotation[0] + binding.default_rotation[0],
+            sampled.rotation[1] + binding.default_rotation[1],
+            sampled.rotation[2] + binding.default_rotation[2],
+          );
+        }
       }
       if (typeof sampled.scale_multiplier === "number") {
         group.scale.set(
@@ -1236,7 +1268,11 @@ export function ResolvedAssetModel({
           : undefined
       }
     >
-      <primitive object={prepared.object} />
+      <group ref={runtimePivotRef}>
+        <group ref={runtimeContentRef}>
+          <primitive object={prepared.object} />
+        </group>
+      </group>
     </group>
   );
 }

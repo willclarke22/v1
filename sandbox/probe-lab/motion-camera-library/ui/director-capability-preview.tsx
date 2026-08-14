@@ -219,12 +219,13 @@ function ControlledAuditActor({
     if (capabilityId === "roll") {
       return (
         <group scale={scale}>
-          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.5, 0]}>
+          <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.54, 0]}>
             <cylinderGeometry args={[0.54, 0.54, 0.34, 28]} />
             <meshStandardMaterial color="#38bdf8" roughness={0.42} metalness={0.12} />
           </mesh>
-          <Line points={[[0, 0.5, 0.19], [0, 1.02, 0.19]]} color="#fef08a" lineWidth={4} />
-          <mesh position={[0, 1.04, 0.19]}><sphereGeometry args={[0.09, 14, 14]} /><meshBasicMaterial color="#f472b6" /></mesh>
+          <mesh position={[0, 0.54, 0.2]}><cylinderGeometry args={[0.075, 0.075, 0.46, 16]} /><meshStandardMaterial color="#0f172a" roughness={0.42} metalness={0.55} /></mesh>
+          <Line points={[[0, 0.54, 0.19], [0, 1.06, 0.19]]} color="#fef08a" lineWidth={4} />
+          <mesh position={[0, 1.08, 0.19]}><sphereGeometry args={[0.09, 14, 14]} /><meshBasicMaterial color="#f472b6" /></mesh>
         </group>
       );
     }
@@ -333,23 +334,47 @@ function ControlledAuditActor({
   }
 
   if (fixtureKind === "object_motion_process") {
+    // Process carrier/content actor fixture family. Phase 1B.5A specializes the
+    // geometry below so quantity, transfer, and emission remain distinguishable.
     if (primary) {
+      if (capabilityId === "fill" || capabilityId === "drain") {
+        return (
+          <group scale={scale}>
+            {/* Open vessel: the cyan quantity overlay is visually separate from
+                the container shell, so Fill/Drain cannot read like root scaling. */}
+            <mesh position={[0, 0.58, 0]}><cylinderGeometry args={[0.5, 0.5, 1.16, 28, 1, true]} /><meshStandardMaterial color="#bae6fd" roughness={0.22} transparent opacity={0.18} depthWrite={false} side={THREE.DoubleSide} /></mesh>
+            <mesh position={[0, 0.045, 0]}><cylinderGeometry args={[0.5, 0.5, 0.09, 28]} /><meshStandardMaterial color="#0f172a" roughness={0.68} /></mesh>
+            <mesh position={[0, 1.16, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.5, 0.025, 10, 40]} /><meshBasicMaterial color="#e0f2fe" transparent opacity={0.9} /></mesh>
+          </group>
+        );
+      }
+      if (capabilityId === "accumulate") {
+        return (
+          <group scale={scale}>
+            {/* Shallow receiving tray keeps accumulation grounded and distinct
+                from Fill's enclosed quantity. */}
+            <mesh position={[0, 0.08, 0]}><boxGeometry args={[1.25, 0.16, 0.9]} /><meshStandardMaterial color="#334155" roughness={0.68} /></mesh>
+            <Line points={[[ -0.6, 0.18, -0.42 ], [ 0.6, 0.18, -0.42 ], [ 0.6, 0.18, 0.42 ], [ -0.6, 0.18, 0.42 ], [ -0.6, 0.18, -0.42 ]]} color="#c4b5fd" lineWidth={2} />
+          </group>
+        );
+      }
       return (
         <group scale={scale}>
-          {/* Process carrier/content actor. Horizontal bands make scale changes,
-              transport, and quantity proxies easy to see. */}
-          <mesh position={[0, 0.55, 0]}><cylinderGeometry args={[0.42, 0.42, 1.08, 24]} /><meshStandardMaterial color="#38bdf8" roughness={0.38} transparent opacity={0.72} /></mesh>
-          <Line points={[[ -0.38, 0.34, 0.35 ], [ 0.38, 0.34, 0.35 ]]} color="#e0f2fe" lineWidth={2} />
-          <Line points={[[ -0.38, 0.58, 0.35 ], [ 0.38, 0.58, 0.35 ]]} color="#e0f2fe" lineWidth={2} />
-          <Line points={[[ -0.38, 0.82, 0.35 ], [ 0.38, 0.82, 0.35 ]]} color="#e0f2fe" lineWidth={2} />
+          {/* Source/nozzle fixture for Flow and Emit. */}
+          <mesh position={[-0.18, 0.4, 0]}><boxGeometry args={[0.72, 0.7, 0.72]} /><meshStandardMaterial color="#0ea5e9" roughness={0.5} /></mesh>
+          <mesh position={[0.42, 0.4, 0]} rotation={[0, 0, -Math.PI / 2]}><cylinderGeometry args={[0.18, 0.24, 0.72, 20]} /><meshStandardMaterial color="#38bdf8" roughness={0.34} metalness={0.22} /></mesh>
+          <mesh position={[0.82, 0.4, 0]} rotation={[0, 0, -Math.PI / 2]}><torusGeometry args={[0.18, 0.035, 10, 28]} /><meshBasicMaterial color="#e0f2fe" /></mesh>
         </group>
       );
     }
     if (secondary) {
+      if (capabilityId !== "flow") return <group />;
       return (
         <group scale={scale}>
-          <mesh position={[0, 0.72, 0]}><boxGeometry args={[1.3, 1.45, 1.05]} /><meshStandardMaterial color="#f97316" roughness={0.55} transparent opacity={0.16} depthWrite={false} /></mesh>
-          <Line points={[[ -0.64, 0.03, 0.52 ], [ 0.64, 0.03, 0.52 ], [ 0.64, 1.42, 0.52 ], [ -0.64, 1.42, 0.52 ], [ -0.64, 0.03, 0.52 ]]} color="#fb923c" lineWidth={2} />
+          {/* Receiver stays visibly open so Flow has an unambiguous destination. */}
+          <mesh position={[0, 0.62, 0]}><cylinderGeometry args={[0.58, 0.58, 1.24, 28, 1, true]} /><meshStandardMaterial color="#f97316" roughness={0.5} transparent opacity={0.18} depthWrite={false} side={THREE.DoubleSide} /></mesh>
+          <mesh position={[0, 0.04, 0]}><cylinderGeometry args={[0.58, 0.58, 0.08, 28]} /><meshStandardMaterial color="#7c2d12" roughness={0.7} /></mesh>
+          <mesh position={[0, 1.24, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.58, 0.03, 10, 40]} /><meshBasicMaterial color="#fb923c" transparent opacity={0.9} /></mesh>
         </group>
       );
     }
@@ -521,26 +546,72 @@ function AnimatedActor({
   auditSnap: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
+  const rollPivotRef = useRef<THREE.Group>(null);
+  const rollContentRef = useRef<THREE.Group>(null);
   const lastProgressRef = useRef(progress);
   const targetExtent = resolvedRole.blocking.target_extent_m ?? 1.6;
   const sample = sampleDirectorActorState(moment, actor, progress, allActors);
+  const rollVisualPivotY = capability.id === "roll"
+    ? fixtureMode === "controlled"
+      ? 0.54 * Math.max(0.45, targetExtent / 1.8)
+      : Math.max(0.05, runtimeSize(resolvedRole)[1] * 0.5)
+    : 0;
 
   useFrame((_, delta) => {
     const group = groupRef.current;
-    if (!group) return;
+    const rollPivot = rollPivotRef.current;
+    const rollContent = rollContentRef.current;
+    if (!group || !rollPivot || !rollContent) return;
     const rewound = progress + 0.02 < lastProgressRef.current;
     const snap = auditSnap || !isPlaying || rewound;
     const alpha = 1 - Math.exp(-13 * Math.min(0.05, Math.max(0, delta)));
+    const baseRotation = actor.rotation ?? [0, 0, 0];
+    const rollDelta = new THREE.Euler(
+      sample.rotation.x - baseRotation[0],
+      sample.rotation.y - baseRotation[1],
+      sample.rotation.z - baseRotation[2],
+      "XYZ",
+    );
+
     if (snap) {
       group.position.copy(sample.position);
-      group.rotation.copy(sample.rotation);
       group.scale.copy(sample.scale);
+      if (capability.id === "roll") {
+        // Phase 1B.5A visual adapter: keep the actor root at the contact point
+        // but rotate the rendered body around its visual centre. This prevents
+        // the controlled wheel from orbiting around the floor-level root.
+        group.rotation.set(baseRotation[0], baseRotation[1], baseRotation[2]);
+        rollPivot.position.set(0, rollVisualPivotY, 0);
+        rollPivot.rotation.copy(rollDelta);
+        rollContent.position.set(0, -rollVisualPivotY, 0);
+      } else {
+        group.rotation.copy(sample.rotation);
+        rollPivot.position.set(0, 0, 0);
+        rollPivot.rotation.set(0, 0, 0);
+        rollContent.position.set(0, 0, 0);
+      }
     } else {
       group.position.lerp(sample.position, alpha);
-      group.rotation.x = THREE.MathUtils.lerp(group.rotation.x, sample.rotation.x, alpha);
-      group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, sample.rotation.y, alpha);
-      group.rotation.z = THREE.MathUtils.lerp(group.rotation.z, sample.rotation.z, alpha);
       group.scale.lerp(sample.scale, alpha);
+      if (capability.id === "roll") {
+        group.rotation.x = THREE.MathUtils.lerp(group.rotation.x, baseRotation[0], alpha);
+        group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, baseRotation[1], alpha);
+        group.rotation.z = THREE.MathUtils.lerp(group.rotation.z, baseRotation[2], alpha);
+        rollPivot.position.y = THREE.MathUtils.lerp(rollPivot.position.y, rollVisualPivotY, alpha);
+        rollContent.position.y = THREE.MathUtils.lerp(rollContent.position.y, -rollVisualPivotY, alpha);
+        rollPivot.rotation.x = THREE.MathUtils.lerp(rollPivot.rotation.x, rollDelta.x, alpha);
+        rollPivot.rotation.y = THREE.MathUtils.lerp(rollPivot.rotation.y, rollDelta.y, alpha);
+        rollPivot.rotation.z = THREE.MathUtils.lerp(rollPivot.rotation.z, rollDelta.z, alpha);
+      } else {
+        group.rotation.x = THREE.MathUtils.lerp(group.rotation.x, sample.rotation.x, alpha);
+        group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, sample.rotation.y, alpha);
+        group.rotation.z = THREE.MathUtils.lerp(group.rotation.z, sample.rotation.z, alpha);
+        rollPivot.position.lerp(new THREE.Vector3(), alpha);
+        rollPivot.rotation.x = THREE.MathUtils.lerp(rollPivot.rotation.x, 0, alpha);
+        rollPivot.rotation.y = THREE.MathUtils.lerp(rollPivot.rotation.y, 0, alpha);
+        rollPivot.rotation.z = THREE.MathUtils.lerp(rollPivot.rotation.z, 0, alpha);
+        rollContent.position.lerp(new THREE.Vector3(), alpha);
+      }
     }
     lastProgressRef.current = progress;
   });
@@ -554,27 +625,31 @@ function AnimatedActor({
           <meshBasicMaterial color="#38bdf8" transparent opacity={0.5 + pulse(progress, 0.55, 0.5) * 0.35} side={THREE.DoubleSide} />
         </mesh>
       ) : null}
-      {fixtureMode === "controlled" ? (
-        <>
-          <ControlledAuditActor
-            capabilityId={capability.id}
-            role={resolvedRole.role}
-            fixtureKind={fixtureKind}
-            targetExtent={targetExtent}
-          />
-          {fixtureKind === "object_motion_process" && resolvedRole.role === "primary_subject" ? (
-            <ControlledProcessQuantityOverlay process={sample.process} targetExtent={targetExtent} />
-          ) : null}
-        </>
-      ) : (
-        <Suspense fallback={loadingLabel(resolvedRole.role)}>
-          {resolvedRole.asset ? (
-            <LibraryAssetMesh asset={resolvedRole.asset} targetExtent={targetExtent} />
+      <group ref={rollPivotRef}>
+        <group ref={rollContentRef}>
+          {fixtureMode === "controlled" ? (
+            <>
+              <ControlledAuditActor
+                capabilityId={capability.id}
+                role={resolvedRole.role}
+                fixtureKind={fixtureKind}
+                targetExtent={targetExtent}
+              />
+              {fixtureKind === "object_motion_process" && resolvedRole.role === "primary_subject" ? (
+                <ControlledProcessQuantityOverlay process={sample.process} targetExtent={targetExtent} />
+              ) : null}
+            </>
           ) : (
-            <FallbackActor role={resolvedRole.role} />
+            <Suspense fallback={loadingLabel(resolvedRole.role)}>
+              {resolvedRole.asset ? (
+                <LibraryAssetMesh asset={resolvedRole.asset} targetExtent={targetExtent} />
+              ) : (
+                <FallbackActor role={resolvedRole.role} />
+              )}
+            </Suspense>
           )}
-        </Suspense>
-      )}
+        </group>
+      </group>
       {showRoleLabels ? (
         <Html position={[0, targetExtent * 0.72 + 0.35, 0]} center distanceFactor={7}>
           <div style={{ borderRadius: 999, padding: "5px 8px", color: "white", background: "rgba(2,6,23,0.86)", border: "1px solid rgba(255,255,255,0.18)", fontSize: 10, fontWeight: 800, whiteSpace: "nowrap" }}>
@@ -635,6 +710,21 @@ function ObjectMotionQualificationStage({
   capabilityId: string;
   fixtureKind: DirectorAuditFixtureKind;
 }) {
+  if (
+    fixtureKind === "object_motion_rigid" &&
+    (capabilityId === "lift" || capabilityId === "lower")
+  ) {
+    return (
+      <group position={[-1.35, 0.05, 0.2]}>
+        <Line points={[[0.78, 0, 0], [0.78, 1.95, 0]]} color="#facc15" lineWidth={2} dashed dashSize={0.14} gapSize={0.1} />
+        <mesh position={[0.78, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.22, 0.28, 28]} />
+          <meshBasicMaterial color="#facc15" transparent opacity={0.5} side={THREE.DoubleSide} />
+        </mesh>
+      </group>
+    );
+  }
+
   if (fixtureKind === "object_motion_path_surface") {
     return (
       <group>
@@ -686,10 +776,47 @@ function ObjectMotionQualificationStage({
   }
 
   if (fixtureKind === "object_motion_process") {
+    if (capabilityId === "flow") {
+      return (
+        <group>
+          <Line points={[[ -0.1, 0.42, 0.15], [0.15, 0.72, 0.15], [0.55, 0.35, -0.2], [1.25, 0.55, -0.15]]} color="#38bdf8" lineWidth={3} dashed dashSize={0.18} gapSize={0.12} />
+          <mesh position={[1.25, 0.04, -0.15]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.82, 0.9, 44]} /><meshBasicMaterial color="#fb923c" transparent opacity={0.4} side={THREE.DoubleSide} /></mesh>
+        </group>
+      );
+    }
+    if (capabilityId === "emit") {
+      return (
+        <group position={[-0.05, 0.45, 0.15]}>
+          <Line points={[[0, 0, 0], [1.3, 0.72, -0.36]]} color="#67e8f9" lineWidth={2} dashed dashSize={0.14} gapSize={0.1} />
+          <Line points={[[0, 0, 0], [1.45, 0.36, 0.08]]} color="#67e8f9" lineWidth={2} dashed dashSize={0.14} gapSize={0.1} />
+          <Line points={[[0, 0, 0], [1.1, 0.18, 0.48]]} color="#67e8f9" lineWidth={2} dashed dashSize={0.14} gapSize={0.1} />
+        </group>
+      );
+    }
+    if (capabilityId === "accumulate") {
+      return (
+        <group>
+          <mesh position={[-0.85, 0.025, 0.15]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.68, 0.74, 40]} />
+            <meshBasicMaterial color="#c4b5fd" transparent opacity={0.44} side={THREE.DoubleSide} />
+          </mesh>
+        </group>
+      );
+    }
+    // Fill/Drain: level ticks communicate quantity change without implying a
+    // source-to-destination transfer path.
     return (
-      <group>
-        <Line points={[[-2.5, 0.14, 0.15], [-0.85, 0.14, 0.15], [0.2, 0.14, -0.45], [1.25, 0.14, -0.15]]} color="#38bdf8" lineWidth={3} dashed dashSize={0.18} gapSize={0.12} />
-        <mesh position={[1.25, 0.04, -0.15]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.82, 0.9, 44]} /><meshBasicMaterial color="#fb923c" transparent opacity={0.4} side={THREE.DoubleSide} /></mesh>
+      <group position={[-0.18, 0.08, 0.15]}>
+        {[0, 0.25, 0.5, 0.75, 1].map((level) => (
+          <Line
+            key={`process-level-${level}`}
+            points={[[0, level, 0], [0.24, level, 0]]}
+            color="#7dd3fc"
+            lineWidth={1.5}
+            transparent
+            opacity={0.52}
+          />
+        ))}
       </group>
     );
   }

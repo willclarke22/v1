@@ -60,3 +60,13 @@ premium rendering rather than creating a second lesson-planning format.
 - `assemble-visual-learning-turn.ts` — semantic draft to canonical output.
 - `ui/scene-player/` — compatibility compilation and interactive playback.
 - `resolve-visual-learning-turn-assets.server.ts` — late-bound reviewed actors.
+
+## Phase 1B.5A shared Director shadow bridge
+
+Visual Experience still retains its existing renderer/camera for visual stability,
+but each active beat now shadow-samples the canonical Director/Universal Motion
+Program/scene-state stack through `shared-director-runtime-adapter.ts`. The small
+`Shared Director bridge` badge confirms the shadow path is active. This is the
+first convergence step: it makes divergence measurable before a later patch
+replaces the older Visual Experience motion/camera path after visual parity is
+qualified.

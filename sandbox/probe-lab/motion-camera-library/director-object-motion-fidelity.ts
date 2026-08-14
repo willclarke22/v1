@@ -209,7 +209,7 @@ export function directorObjectMotionFidelityFixtureActors(
   ];
 
   const actors = roleIds.map((id) => {
-    const layout = directorControlledAuditRoleLayout(fixture, id);
+    const layout = directorControlledAuditRoleLayout(fixture, id, capability.id);
     return {
       id,
       position: [...layout.position] as [number, number, number],
@@ -347,6 +347,30 @@ function finiteCheck(
     passed: values.every(Number.isFinite),
     measured: `${values.length} sampled scalar values`,
     kind: "finite",
+  };
+}
+
+function rollGroundContactCheck(
+  capability: DirectorCapability,
+  samples: DirectorObjectMotionFidelitySample[],
+): DirectorObjectMotionFidelityCheck | null {
+  if (capability.id !== "roll") return null;
+  const start = samples[0]!;
+  const end = samples[samples.length - 1]!;
+  const maximumRootYDrift = Math.max(
+    ...samples.map((entry) =>
+      Math.abs(entry.primary_position[1] - start.primary_position[1]),
+    ),
+  );
+  const zRotation = end.primary_rotation_degrees[2];
+  return {
+    id: "roll_ground_contact_and_polarity",
+    description:
+      "Roll preserves the authored floor-contact root while +X travel around +Z rotates clockwise rather than scrubbing backwards.",
+    passed: maximumRootYDrift < 0.01 && zRotation < -180,
+    measured:
+      `max root Y drift ${rounded(maximumRootYDrift, 4)} m; end Z rotation ${rounded(zRotation, 1)}°`,
+    kind: "recipe_strengthening",
   };
 }
 
@@ -695,6 +719,8 @@ export function buildDirectorObjectMotionFidelityReport(
   const checks = [finiteCheck(samples)];
   const canary = canaryCheck(capability, actors, samples);
   if (canary) checks.push(canary);
+  const rollGroundContact = rollGroundContactCheck(capability, samples);
+  if (rollGroundContact) checks.push(rollGroundContact);
   const recipeStrengthening = recipeStrengtheningCheck(
     capability,
     motionProgram,

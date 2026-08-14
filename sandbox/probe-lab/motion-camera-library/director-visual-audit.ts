@@ -167,16 +167,27 @@ export const DIRECTOR_CONTROLLED_AUDIT_LAYOUTS: Record<
 export function directorControlledAuditRoleLayout(
   fixture: DirectorAuditFixtureKind,
   role: string,
+  capabilityId?: string,
 ): DirectorControlledAuditRoleLayout {
-  return (
+  const layout =
     DIRECTOR_CONTROLLED_AUDIT_LAYOUTS[fixture][role] ??
     DEFAULT_CONTROLLED_ROLE_LAYOUTS[role] ??
     {
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
+      position: [0, 0, 0] as [number, number, number],
+      rotation: [0, 0, 0] as [number, number, number],
       target_extent_m: 1,
-    }
-  );
+    };
+
+  if (capabilityId === "lower" && role === "primary_subject") {
+    // The Lower proof starts elevated so a 1.8 m downward move remains visible
+    // above the qualification floor instead of disappearing underneath it.
+    return {
+      ...layout,
+      position: [layout.position[0], 1.05, layout.position[2]],
+    };
+  }
+
+  return layout;
 }
 
 export type DirectorVisualAuditDefinition = {
@@ -330,7 +341,7 @@ function objectMotionFixture(
 
   if ([
     "translate", "rotate", "pivot", "oscillate", "enter_frame", "exit_frame",
-    "move_toward", "move_away", "spin", "lift", "lower",
+    "move_toward", "move_away", "spin", "lift", "lower", "expand", "contract",
   ].includes(capability.id)) {
     return "object_motion_rigid";
   }

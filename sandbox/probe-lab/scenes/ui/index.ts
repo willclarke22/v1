@@ -1,4 +1,7 @@
 export {
+  DirectorProcessRuntimeOverlay,
+} from "./director-process-runtime-overlay";
+export {
   ResolvedAssetModel,
   fittedResolvedAssetScale,
   preloadResolvedAsset,

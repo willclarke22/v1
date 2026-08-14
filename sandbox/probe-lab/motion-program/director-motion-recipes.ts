@@ -174,6 +174,43 @@ function horizontalAxisParam(value: unknown): "x" | "z" {
   return value === "z" ? "z" : "x";
 }
 
+function axisVector(axis: "x" | "y" | "z"): MotionProgramVec3 {
+  if (axis === "x") return [1, 0, 0];
+  if (axis === "z") return [0, 0, 1];
+  return [0, 1, 0];
+}
+
+function inferredRollingAxis(
+  direction: MotionProgramVec3,
+): "x" | "z" {
+  const horizontal = normalize([direction[0], 0, direction[2]]);
+  // n × v = [vz, 0, -vx]. Choose the dominant horizontal angular axis.
+  return Math.abs(horizontal[2]) > Math.abs(horizontal[0]) ? "x" : "z";
+}
+
+function rollingRotationSign(
+  direction: MotionProgramVec3,
+  axis: "x" | "y" | "z",
+) {
+  const horizontal = normalize([direction[0], 0, direction[2]]);
+  if (Math.hypot(horizontal[0], horizontal[2]) <= 1e-9) return 1;
+
+  // For a ground-supported roll, angular velocity follows n × v where
+  // n is world up. This makes +X travel around +Z rotate clockwise rather
+  // than visually scrubbing backwards across the floor.
+  const expectedAngular: MotionProgramVec3 = [
+    horizontal[2],
+    0,
+    -horizontal[0],
+  ];
+  const axisDirection = axisVector(axis);
+  const projection =
+    expectedAngular[0] * axisDirection[0] +
+    expectedAngular[1] * axisDirection[1] +
+    expectedAngular[2] * axisDirection[2];
+  return Math.abs(projection) <= 1e-6 ? 1 : Math.sign(projection);
+}
+
 function eventWindow(moment: DirectorMoment, event: DirectorEvent) {
   const durationMs = Math.max(1, moment.duration_ms);
   const start = clamp01(event.start_ms / durationMs);
@@ -674,17 +711,21 @@ export function compileDirectorRelationalArticulationRecipe(input: {
     numberParam(
       params.rolling_radius_m,
       directabilityRadius ??
-        Math.min(actor.size[0], actor.size[1], actor.size[2]) * 0.5,
+        // For a ground-supported fallback, vertical half-height is the honest
+        // contact radius. Using the thinnest bound badly over-rotates wheels
+        // whose axle/thickness dimension is much smaller than their diameter.
+        actor.size[1] * 0.5,
     ),
   );
   const rollingAxis =
     params.axis != null
       ? axisParam(params.axis)
-      : directabilityRollingAxis(actor.directability) ?? "y";
+      : directabilityRollingAxis(actor.directability) ?? inferredRollingAxis(direction);
   const explicitTurns = Number(params.turns);
+  const rotationSign = rollingRotationSign(direction, rollingAxis);
   const radians = Number.isFinite(explicitTurns)
     ? Math.PI * 2 * explicitTurns
-    : distance / rollingRadius;
+    : (distance / rollingRadius) * rotationSign;
   return {
     version: MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
     behaviour,
@@ -740,12 +781,15 @@ export function compileDirectorRelationalArticulationRecipe(input: {
       },
     ],
     state_effects: [],
-    warnings: directabilityRadius != null
-      ? [
-          `Roll uses Phase 1B.5 directability rolling metadata (${rollingRadius.toFixed(3)} m world radius, ${rollingAxis.toUpperCase()} axis).`,
-        ]
-      : [
-          "Rolling radius falls back to half the smallest actor extent because no trustworthy rolling metadata is attached.",
-        ],
+    warnings: [
+      ...(directabilityRadius != null
+        ? [
+            `Roll uses Phase 1B.5 directability rolling metadata (${rollingRadius.toFixed(3)} m world radius, ${rollingAxis.toUpperCase()} axis).`,
+          ]
+        : [
+            "Rolling radius falls back to half the smallest actor extent because no trustworthy rolling metadata is attached.",
+          ]),
+      `Roll rotation sign is coupled to travel direction (${rotationSign < 0 ? "negative" : "positive"} ${rollingAxis.toUpperCase()}) so the ground-contact direction does not visually scrub backwards.`,
+    ],
   };
 }

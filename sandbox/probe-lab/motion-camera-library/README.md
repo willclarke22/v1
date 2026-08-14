@@ -381,3 +381,25 @@ This is intentionally not a node-name guessing system and not arbitrary GLB
 subpart animation. Missing pivots, sockets, bones, or semantic parts remain
 missing. Asset Scene Builder still owns fit/collision, and real subpart execution
 remains a later lane.
+
+## Phase 1B.5A — runtime convergence + visual qualification
+
+Phase 1B.5A moves the newest Director guarantees out of verifier-only proof and
+into the real Asset Scene Builder playback path. Incoming cross-moment scene
+state now reaches actor, camera, lighting, validation, and process visualization.
+The Capability Library remains the isolated one-Canvas qualification environment.
+
+The code-level visual audit also tightens the controlled object-motion proof.
+`roll` now uses physically consistent ground-roll polarity and rotates visible
+geometry around its centre instead of the bottom-root contact point, preventing
+the controlled wheel from dipping through the floor. Lift/Lower use bounded
+vertical travel (with Lower starting elevated), and Expand/Contract use the rigid
+scale-readable fixture instead of being grouped with material processes.
+Fill/Drain use an open vessel, Accumulate uses a shallow receiving tray, and
+Flow/Emit use source/path-specific guides so the semantic differences are
+visually judgeable.
+These are controlled proof fixtures, not claims of production fluid or particle
+physics. Human visual review remains required before support promotion.
+
+The focused code-level audit and browser checklist are recorded in
+`PHASE1B5A_VISUAL_QUALIFICATION.md`.

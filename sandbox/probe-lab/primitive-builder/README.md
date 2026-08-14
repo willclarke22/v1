@@ -101,3 +101,18 @@ The V2 runtime does not replace collision-safe placement or claim full physics.
 It is the renderer bridge that turns semantic direction into reproducible
 Three.js execution and prepares the same contract for later Blender compilation.
 
+## Phase 1B.5A — stateful Director playback
+
+The Builder now carries the full resolved actor set into the shared Director
+runtime even when only a subset is visible in the current beat. It reconstructs
+the incoming scene state for the selected Director moment, so prior attachment,
+choreography, visibility/articulation, and process quantity state can affect the
+current moment deterministically. Camera, motivated lighting, validation, and
+actor motion sample the same incoming state.
+
+A renderer-neutral process overlay shows deterministic carriers and compact
+quantity gauges in real resolved scenes. This is deliberately semantic evidence,
+not simulated fluid/smoke/granular physics or a substitute for measured
+containment. Per-asset MotionProgram directability resolution is surfaced beside
+existing geometry/placement diagnostics so missing pivots, anchors, subparts, or
+other required evidence stays visible rather than being guessed.

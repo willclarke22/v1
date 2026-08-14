@@ -15,3 +15,12 @@ The Motion Program consumes the profile in three ways:
 3. diagnostics report resolved and unresolved directability needs without silently promoting support classifications.
 
 Older scene manifests remain readable because `directability_profile` is optional on resolved bindings and actors.
+
+## Phase 1B.5A Builder diagnostics
+
+Asset directability is now inspectable in the live Asset Scene Builder. For the
+active Director moment, the Builder compiles each state-resolved actor and shows
+which MotionProgram directability requirements resolved, which required evidence
+is missing, and which optional evidence remains unavailable. This does not
+promote arbitrary child-node articulation; unresolved asset anatomy continues to
+fail honestly.

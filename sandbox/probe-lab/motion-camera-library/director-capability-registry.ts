@@ -1439,6 +1439,9 @@ export function directorCapabilityDemoEvents(capability: DirectorCapability): Di
     parameters.direction = [1, 0, 0];
   }
   if (["move_toward", "move_away", "slide", "lift", "lower", "detach", "remove_from", "split"].includes(capability.id)) parameters.distance_m = 1.8;
+  // Qualification fixtures for vertical travel use a bounded one-metre move so
+  // both endpoints remain inside the authored static teaching frame.
+  if (capability.id === "lift" || capability.id === "lower") parameters.distance_m = 1.0;
   if (capability.id === "slide") parameters.direction = [1, 0, 0];
   if (capability.id === "expand" || capability.id === "contract") parameters.amount = 0.45;
   if (capability.id === "flow") {

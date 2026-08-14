@@ -78,6 +78,10 @@ const expectedFixtures: Record<string, string[]> = {
     "spin",
     "lift",
     "lower",
+    // Phase 1B.5A visual qualification moves root-scale semantics out of the
+    // process fixture; their original support/runtime classification is unchanged.
+    "expand",
+    "contract",
   ],
   object_motion_path_surface: [
     "follow_path",
@@ -108,8 +112,6 @@ const expectedFixtures: Record<string, string[]> = {
     "merge",
   ],
   object_motion_process: [
-    "expand",
-    "contract",
     "flow",
     "fill",
     "drain",

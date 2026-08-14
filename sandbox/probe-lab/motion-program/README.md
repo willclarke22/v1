@@ -158,3 +158,18 @@ Process semantics also declare optional containment/surface/outlet/inlet
 requirements so Fill/Drain/Accumulate/Flow/Emit can report whether a real asset
 provides the required geometry/anchors. Asset Scene Builder remains the authority
 for measured fit, clearance, collision, and final physical placement.
+
+## Phase 1B.5A runtime convergence
+
+The Universal Motion Program remains unchanged as the semantic execution
+authority, but real playback now consumes more of its existing guarantees. The
+Asset Scene Builder reconstructs incoming `DirectorSceneState` before the current
+moment and supplies it to actor, camera, lighting, and validation sampling.
+Process carrier/quantity output is also exposed to a renderer-side semantic
+overlay without changing the source actor root or claiming physics simulation.
+
+Roll receives one visual/kinematic correction: absent an explicit/directability
+axis, the horizontal rolling axis is inferred from travel, and ground-supported
+angular polarity follows world-up cross travel (`n × v`). A renderer adapter can
+rotate bottom-centred asset geometry around its bounds centre while preserving
+the measured placement root.

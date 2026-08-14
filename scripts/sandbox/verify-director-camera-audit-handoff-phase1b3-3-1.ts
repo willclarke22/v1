@@ -28,10 +28,12 @@ for (const marker of [
   "useEffect(() => {",
   "invalidate();",
   "}, [actors, invalidate, moment, progress]);",
+  "}, [invalidate, sceneState]);",
   "const changedMoment = lastMomentId.current !== moment.id;",
   "lastPausedProgress.current === runtimeProgress",
   "!changedMoment",
   "const authoredStart = runtimeProgress <= 0.001;",
+  "sampleDirectorCameraPose(moment, runtimeProgress, actors, sceneState)",
 ]) {
   assert(
     runtime.includes(marker),
@@ -49,7 +51,7 @@ const pausedCacheIndex = runtime.indexOf(
   "lastPausedProgress.current === runtimeProgress",
 );
 const samplePoseIndex = runtime.indexOf(
-  "const pose = sampleDirectorCameraPose(moment, runtimeProgress, actors);",
+  "const pose = sampleDirectorCameraPose(moment, runtimeProgress, actors, sceneState);",
 );
 assert(changedMomentIndex >= 0, "Changed-moment check is missing.");
 assert(
@@ -102,5 +104,5 @@ assert(
 );
 
 console.log("Director camera audit handoff Phase 1B.3.3.1 verification passed.");
-console.log("Paused demand-rendered capability changes invalidate and bypass stale progress caching.");
+console.log("Paused demand-rendered capability changes invalidate and bypass stale progress caching; Phase 1B.5A scene-state wake-up is additive.");
 console.log("Object-attached angle retains mounted t=0 while camera-object-attached retains its intentional transition.");

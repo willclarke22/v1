@@ -35,7 +35,7 @@ function controlledRolesFor(
   fixtureKind: DirectorAuditFixtureKind,
 ): ResolvedDirectorRole[] {
   return capability.demo.asset_roles.map((role) => {
-    const layout = directorControlledAuditRoleLayout(fixtureKind, role.role);
+    const layout = directorControlledAuditRoleLayout(fixtureKind, role.role, capability.id);
     const blocking: DirectorBlockingCue = {
       role: role.role,
       position: [...layout.position],

@@ -333,12 +333,26 @@ function sampleDirectorActorEventStateLegacy(
       case "roll": {
         const direction = vecParam(params.direction, [1, 0, 0]).normalize();
         position.copy(basePosition).addScaledVector(direction, distance * t);
-        const rollingRadius = Math.max(0.05, Math.min(actor.size[0], actor.size[1], actor.size[2]) * 0.5);
+        const rollingRadius = Math.max(0.05, Math.abs(actor.size[1]) * 0.5);
         const explicitTurns = Number(params.turns);
+        const axisName = axis === "x" || axis === "y" || axis === "z"
+          ? axis
+          : Math.abs(direction.z) > Math.abs(direction.x)
+            ? "x"
+            : "z";
+        const expectedAngular = new THREE.Vector3().crossVectors(UP, direction);
+        const signedAxisProjection = axisName === "x"
+          ? expectedAngular.x
+          : axisName === "z"
+            ? expectedAngular.z
+            : 1;
+        const rotationSign = Math.abs(signedAxisProjection) <= 1e-6
+          ? 1
+          : Math.sign(signedAxisProjection);
         const rollingTurns = Number.isFinite(explicitTurns)
           ? explicitTurns
-          : distance / Math.max(0.05, Math.PI * 2 * rollingRadius);
-        setAxisRotation(rotation, axis ?? "z", Math.PI * 2 * rollingTurns * t);
+          : (distance / Math.max(0.05, Math.PI * 2 * rollingRadius)) * rotationSign;
+        setAxisRotation(rotation, axisName, Math.PI * 2 * rollingTurns * t);
         break;
       }
       case "pivot":
@@ -855,6 +869,7 @@ function targetActors(
   shot: DirectorShotDirectionV2,
   progress: number,
   actors: DirectorRuntimeActor[],
+  sceneState?: DirectorSceneState | null,
 ) {
   const ids = shot.camera.focus_entity_ids.length
     ? shot.camera.focus_entity_ids
@@ -862,7 +877,7 @@ function targetActors(
   return ids
     .map((id) => actorById(actors, id))
     .filter((actor): actor is DirectorRuntimeActor => Boolean(actor))
-    .map((actor) => ({ actor, sample: sampleDirectorActorState(moment, actor, progress, actors) }));
+    .map((actor) => ({ actor, sample: sampleDirectorActorState(moment, actor, progress, actors, sceneState) }));
 }
 
 function averageTarget(
@@ -910,10 +925,11 @@ function actorTravelVector(
   moment: DirectorMoment,
   actor: DirectorRuntimeActor | null,
   actors: DirectorRuntimeActor[],
+  sceneState?: DirectorSceneState | null,
 ) {
   if (!actor) return new THREE.Vector3();
-  const start = sampleDirectorActorState(moment, actor, 0, actors).position;
-  const end = sampleDirectorActorState(moment, actor, 1, actors).position;
+  const start = sampleDirectorActorState(moment, actor, 0, actors, sceneState).position;
+  const end = sampleDirectorActorState(moment, actor, 1, actors, sceneState).position;
   return end.sub(start);
 }
 
@@ -921,8 +937,9 @@ function actorTravelDirection(
   moment: DirectorMoment,
   actor: DirectorRuntimeActor | null,
   actors: DirectorRuntimeActor[],
+  sceneState?: DirectorSceneState | null,
 ) {
-  const travel = actorTravelVector(moment, actor, actors);
+  const travel = actorTravelVector(moment, actor, actors, sceneState);
   travel.y = 0;
   if (travel.lengthSq() < 0.000001) return null;
   return travel.normalize();
@@ -937,6 +954,7 @@ function applyMovementStep(
   actors: DirectorRuntimeActor[],
   radius: number,
   progress: number,
+  sceneState?: DirectorSceneState | null,
 ) {
   const runtimeMovement = directorCameraMovementRuntimeAlias(step.movement);
   const parallelRailStartsWithShot =
@@ -964,7 +982,7 @@ function applyMovementStep(
       const rotated = pose.position.clone().sub(pose.target).applyAxisAngle(UP, THREE.MathUtils.degToRad(degrees));
       pose.position.copy(pose.target).add(rotated);
       if (targetActor) {
-        const targetSample = sampleDirectorActorState(moment, targetActor, progress, actors);
+        const targetSample = sampleDirectorActorState(moment, targetActor, progress, actors, sceneState);
         pose.target.copy(targetSample.position).add(
           new THREE.Vector3(0, Math.max(0.1, targetActor.size[1]) * 0.45, 0),
         );
@@ -1012,10 +1030,10 @@ function applyMovementStep(
         break;
       }
 
-      const travelDirection = actorTravelDirection(moment, targetActor, actors);
+      const travelDirection = actorTravelDirection(moment, targetActor, actors, sceneState);
       if (!travelDirection) break;
 
-      const sample = sampleDirectorActorState(moment, targetActor, progress, actors);
+      const sample = sampleDirectorActorState(moment, targetActor, progress, actors, sceneState);
       const subjectEye = actorEyePoint(targetActor, sample);
       const sideSign = numberParam(step.parameters.direction_sign, 1) >= 0 ? 1 : -1;
       const lateral = new THREE.Vector3()
@@ -1054,7 +1072,7 @@ function applyMovementStep(
     }
     case "pan": {
       if (targetActor && shot.camera.focus_entity_ids.length > 1) {
-        const targetSample = sampleDirectorActorState(moment, targetActor, progress, actors);
+        const targetSample = sampleDirectorActorState(moment, targetActor, progress, actors, sceneState);
         const targetPoint = targetSample.position.clone().add(
           new THREE.Vector3(0, Math.max(0.1, targetActor.size[1]) * 0.45, 0),
         );
@@ -1083,8 +1101,8 @@ function applyMovementStep(
         const first = actorById(actors, shot.camera.focus_entity_ids[0]);
         const second = actorById(actors, shot.camera.focus_entity_ids[1]);
         if (first && second) {
-          const firstPos = sampleDirectorActorState(moment, first, progress, actors).position;
-          const secondPos = sampleDirectorActorState(moment, second, progress, actors).position;
+          const firstPos = sampleDirectorActorState(moment, first, progress, actors, sceneState).position;
+          const secondPos = sampleDirectorActorState(moment, second, progress, actors, sceneState).position;
           pose.target.lerpVectors(firstPos, firstPos.clone().lerp(secondPos, 0.5), t);
         }
       }
@@ -1096,7 +1114,7 @@ function applyMovementStep(
       // The base composition is already actor-relative, which makes ordinary
       // follow a stable travelling rig. Lead and lag deliberately change the
       // *look relationship* instead of translating camera and target together.
-      const direction = actorTravelDirection(moment, targetActor, actors);
+      const direction = actorTravelDirection(moment, targetActor, actors, sceneState);
       if (!direction || runtimeMovement === "follow") break;
 
       if (runtimeMovement === "lead_subject") {
@@ -1128,8 +1146,8 @@ function applyMovementStep(
         const first = actorById(actors, shot.camera.focus_entity_ids[0]);
         const second = actorById(actors, shot.camera.focus_entity_ids[1]);
         if (first && second) {
-          const a = sampleDirectorActorState(moment, first, progress, actors).position;
-          const b = sampleDirectorActorState(moment, second, progress, actors).position;
+          const a = sampleDirectorActorState(moment, first, progress, actors, sceneState).position;
+          const b = sampleDirectorActorState(moment, second, progress, actors, sceneState).position;
           pose.target.lerpVectors(a, b, t);
         }
       }
@@ -1158,7 +1176,7 @@ function applyMovementStep(
     }
     case "object_attached": {
       if (targetActor) {
-        const sample = sampleDirectorActorState(moment, targetActor, progress, actors);
+        const sample = sampleDirectorActorState(moment, targetActor, progress, actors, sceneState);
         const defaultMount = defaultActorLocalMountedPosition(targetActor, radius);
         const defaultViewDirection = defaultActorLocalMountedViewDirection();
         const localMount = vecParam(step.parameters.offset, [
@@ -1239,6 +1257,7 @@ export function sampleDirectorCameraPose(
   moment: DirectorMoment,
   progress: number,
   actors: DirectorRuntimeActor[],
+  sceneState?: DirectorSceneState | null,
 ): DirectorCameraPose {
   const shot = moment.shot ?? legacyShotForMoment(moment);
   const p = clamp01(progress);
@@ -1253,7 +1272,7 @@ export function sampleDirectorCameraPose(
   // actor-relative framing or tracking move. This keeps `static` truly static
   // while allowing POV, over-shoulder, and attached views to follow their source.
   const compositionProgress = actorRelativeCamera ? p : 0;
-  const samples = targetActors(moment, shot, compositionProgress, actors);
+  const samples = targetActors(moment, shot, compositionProgress, actors, sceneState);
   let target = averageTarget(samples);
   if (shot.composition.framing === "macro" && samples.length === 1) {
     // Tiny controlled/semantic features need geometric-centre targeting. Eye
@@ -1269,7 +1288,7 @@ export function sampleDirectorCameraPose(
   if (startsOnFirstFocus && shot.camera.focus_entity_ids.length > 1) {
     const first = actorById(actors, shot.camera.focus_entity_ids[0]);
     if (first) {
-      const firstSample = sampleDirectorActorState(moment, first, compositionProgress, actors);
+      const firstSample = sampleDirectorActorState(moment, first, compositionProgress, actors, sceneState);
       target.copy(actorEyePoint(first, firstSample));
     }
   }
@@ -1314,8 +1333,8 @@ export function sampleDirectorCameraPose(
     focusActor &&
     foregroundActor.id !== focusActor.id
   ) {
-    const foregroundSample = sampleDirectorActorState(moment, foregroundActor, compositionProgress, actors);
-    const focusSample = sampleDirectorActorState(moment, focusActor, compositionProgress, actors);
+    const foregroundSample = sampleDirectorActorState(moment, foregroundActor, compositionProgress, actors, sceneState);
+    const focusSample = sampleDirectorActorState(moment, focusActor, compositionProgress, actors, sceneState);
     const foregroundEye = actorEyePoint(foregroundActor, foregroundSample);
     const focusEye = actorEyePoint(focusActor, focusSample);
     const { forward, right } = stableViewBasis(foregroundEye, focusEye);
@@ -1340,10 +1359,10 @@ export function sampleDirectorCameraPose(
       .add(new THREE.Vector3(0, -Math.max(0.035, foregroundActor.size[1] * 0.045), 0));
     target = focusEye.clone().add(new THREE.Vector3(0, -focusActor.size[1] * 0.035, 0));
   } else if (shot.composition.framing === "point_of_view" && foregroundActor) {
-    const foregroundSample = sampleDirectorActorState(moment, foregroundActor, compositionProgress, actors);
+    const foregroundSample = sampleDirectorActorState(moment, foregroundActor, compositionProgress, actors, sceneState);
     const foregroundEye = actorEyePoint(foregroundActor, foregroundSample);
     const focusSample = focusActor && focusActor.id !== foregroundActor.id
-      ? sampleDirectorActorState(moment, focusActor, compositionProgress, actors)
+      ? sampleDirectorActorState(moment, focusActor, compositionProgress, actors, sceneState)
       : null;
     const desiredTarget = focusSample && focusActor
       ? actorEyePoint(focusActor, focusSample)
@@ -1359,7 +1378,7 @@ export function sampleDirectorCameraPose(
     position = foregroundEye.clone().addScaledVector(forward, faceClearance);
     target = desiredTarget;
   } else if (shot.composition.angle === "object_attached" && foregroundActor) {
-    const foregroundSample = sampleDirectorActorState(moment, foregroundActor, compositionProgress, actors);
+    const foregroundSample = sampleDirectorActorState(moment, foregroundActor, compositionProgress, actors, sceneState);
     const mounted = actorLocalMountedView(
       foregroundActor,
       foregroundSample,
@@ -1390,7 +1409,7 @@ export function sampleDirectorCameraPose(
   pose.target.add(screenAnchorOffset(shot, pose.position, pose.target, radius));
 
   for (const step of shot.camera.movement_steps) {
-    applyMovementStep(pose, step, stepProgress(step, p), moment, shot, actors, radius, p);
+    applyMovementStep(pose, step, stepProgress(step, p), moment, shot, actors, radius, p, sceneState);
   }
 
   return pose;
@@ -1488,6 +1507,7 @@ function isCenterOccluded(
   actors: DirectorRuntimeActor[],
   moment: DirectorMoment,
   progress: number,
+  sceneState?: DirectorSceneState | null,
 ) {
   const direction = targetPosition.clone().sub(cameraPosition);
   const targetDistance = direction.length();
@@ -1495,7 +1515,7 @@ function isCenterOccluded(
   const ray = new THREE.Ray(cameraPosition.clone(), direction.normalize());
   for (const actor of actors) {
     if (actor.id === targetActor.id) continue;
-    const sampled = sampleDirectorActorState(moment, actor, progress, actors);
+    const sampled = sampleDirectorActorState(moment, actor, progress, actors, sceneState);
     const sphere = new THREE.Sphere(
       sampled.position.clone().add(new THREE.Vector3(0, actor.size[1] * 0.45, 0)),
       actorRadius(actor) * 0.72,
@@ -1531,6 +1551,7 @@ export function validateDirectorShot(
   moment: DirectorMoment,
   actors: DirectorRuntimeActor[],
   sampleCount = 13,
+  sceneState?: DirectorSceneState | null,
 ): DirectorShotValidation {
   const shot = moment.shot ?? legacyShotForMoment(moment);
   const required = Array.from(new Set([
@@ -1550,11 +1571,11 @@ export function validateDirectorShot(
 
   for (let index = 0; index < sampleCount; index += 1) {
     const progress = sampleCount <= 1 ? 0 : index / (sampleCount - 1);
-    const pose = sampleDirectorCameraPose(moment, progress, actors);
+    const pose = sampleDirectorCameraPose(moment, progress, actors, sceneState);
     const camera = buildPerspectiveCamera(pose);
 
     for (const actor of actors) {
-      const sampled = sampleDirectorActorState(moment, actor, progress, actors);
+      const sampled = sampleDirectorActorState(moment, actor, progress, actors, sceneState);
       const center = sampled.position.clone().add(new THREE.Vector3(0, actor.size[1] * 0.45, 0));
       const clearance = pose.position.distanceTo(center) - actorRadius(actor);
       if (!shot.camera.focus_entity_ids.includes(actor.id)) {
@@ -1568,8 +1589,8 @@ export function validateDirectorShot(
         const left = actors[leftIndex]!;
         const rightActor = actors[rightIndex]!;
         if (allowedMotionContact(moment, left.id, rightActor.id)) continue;
-        const leftSample = sampleDirectorActorState(moment, left, progress, actors);
-        const rightSample = sampleDirectorActorState(moment, rightActor, progress, actors);
+        const leftSample = sampleDirectorActorState(moment, left, progress, actors, sceneState);
+        const rightSample = sampleDirectorActorState(moment, rightActor, progress, actors, sceneState);
         const threshold = (actorRadius(left) + actorRadius(rightActor)) * 0.58;
         actorCollisionChecks += 1;
         if (leftSample.position.distanceTo(rightSample.position) < threshold) actorCollisionHits += 1;
@@ -1579,13 +1600,13 @@ export function validateDirectorShot(
     for (const id of required) {
       const actor = actorById(actors, id);
       if (!actor) continue;
-      const sampled = sampleDirectorActorState(moment, actor, progress, actors);
+      const sampled = sampleDirectorActorState(moment, actor, progress, actors, sceneState);
       const center = sampled.position.clone().add(new THREE.Vector3(0, actor.size[1] * 0.45, 0));
       const ndc = center.clone().project(camera);
       visibleChecks += 1;
       if (ndc.z >= -1 && ndc.z <= 1 && Math.abs(ndc.x) <= 0.96 && Math.abs(ndc.y) <= 0.92) visibleHits += 1;
       occlusionChecks += 1;
-      if (isCenterOccluded(pose.position, actor, center, actors, moment, progress)) occlusionHits += 1;
+      if (isCenterOccluded(pose.position, actor, center, actors, moment, progress, sceneState)) occlusionHits += 1;
     }
   }
 
@@ -1630,12 +1651,14 @@ function DirectorMotivatedLight({
   actors,
   progress,
   autoLoop,
+  sceneState,
   mode,
 }: {
   moment: DirectorMoment;
   actors: DirectorRuntimeActor[];
   progress?: number;
   autoLoop: boolean;
+  sceneState?: DirectorSceneState | null;
   mode: "motivated" | "track" | "reveal" | "emissive";
 }) {
   const lightRef = useRef<THREE.PointLight>(null);
@@ -1650,9 +1673,9 @@ function DirectorMotivatedLight({
       : shot.lighting.emphasized_entity_ids[0] ?? shot.camera.focus_entity_ids[0];
     const actor = actorById(actors, sourceId);
     const sample = actor
-      ? sampleDirectorActorState(moment, actor, p, actors)
+      ? sampleDirectorActorState(moment, actor, p, actors, sceneState)
       : null;
-    const base = sample?.position ?? averageTarget(targetActors(moment, shot, p, actors));
+    const base = sample?.position ?? averageTarget(targetActors(moment, shot, p, actors, sceneState));
     light.position.copy(base).add(new THREE.Vector3(0, actor ? actor.size[1] * 0.65 : 1.6, 0.5));
     const revealStart = shot.reveal_at ?? 0.48;
     const revealAmount = mode === "reveal"
@@ -1690,11 +1713,13 @@ export function DirectorShotLightingRig({
   actors,
   progress,
   autoLoop = false,
+  sceneState,
 }: {
   moment: DirectorMoment;
   actors: DirectorRuntimeActor[];
   progress?: number;
   autoLoop?: boolean;
+  sceneState?: DirectorSceneState | null;
 }) {
   const shot = moment.shot ?? legacyShotForMoment(moment);
   const intents = new Set(shot.lighting.intents);
@@ -1737,16 +1762,16 @@ export function DirectorShotLightingRig({
         />
       ) : null}
       {intents.has("motivated_source") ? (
-        <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} mode="motivated" />
+        <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} sceneState={sceneState} mode="motivated" />
       ) : null}
       {intents.has("track_spotlight") ? (
-        <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} mode="track" />
+        <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} sceneState={sceneState} mode="track" />
       ) : null}
       {intents.has("light_reveal") ? (
-        <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} mode="reveal" />
+        <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} sceneState={sceneState} mode="reveal" />
       ) : null}
       {intents.has("emissive_subject") || intents.has("volumetric_beam") ? (
-        <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} mode="emissive" />
+        <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} sceneState={sceneState} mode="emissive" />
       ) : null}
     </>
   );
@@ -1758,12 +1783,14 @@ export function DirectorShotCameraController({
   progress,
   isPlaying = true,
   autoLoop = false,
+  sceneState,
 }: {
   moment: DirectorMoment;
   actors: DirectorRuntimeActor[];
   progress?: number;
   isPlaying?: boolean;
   autoLoop?: boolean;
+  sceneState?: DirectorSceneState | null;
 }) {
   const { camera, invalidate } = useThree();
   const lastPausedProgress = useRef<number | null>(null);
@@ -1779,6 +1806,13 @@ export function DirectorShotCameraController({
   useEffect(() => {
     invalidate();
   }, [actors, invalidate, moment, progress]);
+
+  // Phase 1B.5A additive wake-up: incoming cross-moment state may change while
+  // the selected moment/progress remain stable. Keep the qualified Phase 1B.3.3.1
+  // invalidation seam above unchanged and wake separately for state changes.
+  useEffect(() => {
+    invalidate();
+  }, [invalidate, sceneState]);
 
   useFrame(({ clock }, delta) => {
     const runtimeProgress = typeof progress === "number"
@@ -1797,7 +1831,7 @@ export function DirectorShotCameraController({
       return;
     }
 
-    const pose = sampleDirectorCameraPose(moment, runtimeProgress, actors);
+    const pose = sampleDirectorCameraPose(moment, runtimeProgress, actors, sceneState);
     const rewound = lastRuntimeProgress.current !== null && runtimeProgress + 0.02 < lastRuntimeProgress.current;
     const authoredStart = runtimeProgress <= 0.001;
     // The authored t=0 pose is authoritative. This prevents the first playback
@@ -1843,14 +1877,16 @@ export function DirectorShotPathGuide({
   moment,
   actors,
   color = "#38bdf8",
+  sceneState,
 }: {
   moment: DirectorMoment;
   actors: DirectorRuntimeActor[];
   color?: string;
+  sceneState?: DirectorSceneState | null;
 }) {
   const points = useMemo(
-    () => Array.from({ length: 48 }, (_, index) => sampleDirectorCameraPose(moment, index / 47, actors).position),
-    [actors, moment],
+    () => Array.from({ length: 48 }, (_, index) => sampleDirectorCameraPose(moment, index / 47, actors, sceneState).position),
+    [actors, moment, sceneState],
   );
   return (
     <group>

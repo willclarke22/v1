@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Html, Line, OrbitControls } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
@@ -8,6 +8,7 @@ import * as THREE from "three";
 import type { PreparedSemanticScene, PreparedSemanticSceneEntity } from "./semantic-scene-layout";
 import { ResolvedAssetModel } from "@/sandbox/probe-lab/scenes/ui";
 import type { ResolvedSceneAssetBinding } from "@/sandbox/probe-lab/scenes/resolved-scene";
+import { buildVisualExperienceSharedDirectorSnapshot } from "./shared-director-runtime-adapter";
 import type { Vec3 } from "./directed-scene-compiler";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -782,6 +783,14 @@ export function SemanticSceneCanvas({
 }) {
   const normalizedProgress = Math.max(0.08, Math.min(1, storyProgress ?? 1));
   const easedProgress = ease(normalizedProgress);
+  const sharedDirectorSnapshot = useMemo(
+    () =>
+      buildVisualExperienceSharedDirectorSnapshot(
+        scene,
+        normalizedProgress,
+      ),
+    [normalizedProgress, scene],
+  );
   const captionText = storyMode
     ? storyCaption || ""
     : scene.active_narration_text || scene.orientation_text || scene.target_takeaway;
@@ -798,6 +807,28 @@ export function SemanticSceneCanvas({
         background: "radial-gradient(circle at top, rgba(14,165,233,0.18), rgba(2,6,23,0.96) 62%)",
       }}
     >
+      {sharedDirectorSnapshot.status === "shared_runtime_shadow" ? (
+        <div
+          style={{
+            position: "absolute",
+            left: 12,
+            top: 12,
+            zIndex: 20,
+            pointerEvents: "none",
+            border: "1px solid rgba(103,232,249,0.18)",
+            borderRadius: 10,
+            background: "rgba(2,6,23,0.72)",
+            padding: "6px 9px",
+            color: "rgba(207,250,254,0.76)",
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+          }}
+          title="Phase 1B.5A shadow-samples this beat through the canonical Director/UMP runtime. Visual Experience rendering remains on its existing player until parity is visually qualified."
+        >
+          Shared Director bridge · {sharedDirectorSnapshot.sampled_actor_count} actors
+        </div>
+      ) : null}
       <Canvas
         camera={{ position: scene.camera.wide_position, fov: 44 }}
         dpr={[1, 1.5]}

@@ -33,6 +33,7 @@ import type {
 } from "../asset-requirement-plan";
 import {
   applyDirectorBlocking,
+  DirectorProcessRuntimeOverlay,
   DirectorShotCameraController,
   DirectorShotLightingRig,
   ResolvedAssetModel,
@@ -43,6 +44,11 @@ import {
   type ResolvedAssetRuntimeMetrics,
   type ResolvedPlacementDiagnostic,
 } from "@/sandbox/probe-lab/scenes/ui";
+import {
+  compileDirectorActorMotionProgram,
+  directorSceneStateBeforeMoment,
+  resolveDirectorActorWithSceneState,
+} from "@/sandbox/probe-lab/motion-program";
 import type {
   PrimitiveBuilderSceneAssetResolution,
   ResolvedSceneAssetBinding,
@@ -61,6 +67,13 @@ type RuntimeAssetDiagnostic = {
   containment_region_count: number;
   attachment_region_count: number;
   geometry_confidence: number;
+  directability: {
+    profile_present: boolean;
+    resolved_requirement_ids: string[];
+    unresolved_required_requirement_ids: string[];
+    unresolved_optional_requirement_ids: string[];
+    warnings: string[];
+  } | null;
   placement_status: ResolvedPlacementDiagnostic["status"];
   placement_reason: string | null;
   placement_messages: string[];
@@ -628,6 +641,7 @@ function AssetScene({
   plan,
   sceneGraph,
   activeStep,
+  directorPlan,
   directorMoment,
   showLabels,
   assetBindings,
@@ -636,6 +650,7 @@ function AssetScene({
   plan: PrimitiveBuildPlanV1;
   sceneGraph: unknown;
   activeStep: number;
+  directorPlan?: EducationalSceneDirectorPlanV1 | null;
   directorMoment?: DirectorMoment | null;
   showLabels: boolean;
   assetBindings: ResolvedSceneAssetBinding[];
@@ -841,33 +856,105 @@ function AssetScene({
 
   const directorActors = useMemo<DirectorRuntimeActor[]>(
     () =>
-      renderableAssetBindings.map((binding) => {
-        const position =
-          solvedLayout.positions.get(binding.instance_id) ??
-          binding.position;
-        const metrics = assetMetrics.get(binding.instance_id);
-        const extent = Math.max(0.1, binding.target_extent_m);
-        return {
-          id: binding.instance_id,
-          position: [...position] as Vec3,
-          rotation: [...binding.rotation] as Vec3,
-          size: metrics?.world_size ?? [extent, extent, extent],
-          directability: binding.directability_profile ?? null,
-        };
-      }),
+      assetBindings
+        .filter(
+          (binding) =>
+            !solvedLayout.all_metrics_ready ||
+            !solvedLayout.unresolved_ids.has(binding.instance_id),
+        )
+        .map((binding) => {
+          const position =
+            solvedLayout.positions.get(binding.instance_id) ??
+            binding.position;
+          const metrics = assetMetrics.get(binding.instance_id);
+          const extent = Math.max(0.1, binding.target_extent_m);
+          return {
+            id: binding.instance_id,
+            position: [...position] as Vec3,
+            rotation: [...binding.rotation] as Vec3,
+            size: metrics?.world_size ?? [extent, extent, extent],
+            directability: binding.directability_profile ?? null,
+          };
+        }),
     [
+      assetBindings,
       assetMetrics,
-      renderableAssetBindings,
+      solvedLayout.all_metrics_ready,
       solvedLayout.positions,
+      solvedLayout.unresolved_ids,
     ],
+  );
+  const directorMomentIndex = useMemo(() => {
+    if (!directorPlan || !directorMoment) return 0;
+    const byId = directorPlan.moments.findIndex(
+      (candidate) => candidate.id === directorMoment.id,
+    );
+    return byId >= 0
+      ? byId
+      : Math.max(0, Math.min(directorPlan.moments.length - 1, activeStep - 1));
+  }, [activeStep, directorMoment, directorPlan]);
+  const incomingDirectorSceneState = useMemo(
+    () =>
+      directorPlan && directorMoment && directorActors.length > 0
+        ? directorSceneStateBeforeMoment(
+            directorPlan.moments,
+            directorMomentIndex,
+            directorActors,
+          )
+        : null,
+    [directorActors, directorMoment, directorMomentIndex, directorPlan],
   );
   const directorShotValidation = useMemo(
     () =>
       directorMoment && directorActors.length > 0
-        ? validateDirectorShot(directorMoment, directorActors)
+        ? validateDirectorShot(
+            directorMoment,
+            directorActors,
+            13,
+            incomingDirectorSceneState,
+          )
         : null,
-    [directorActors, directorMoment],
+    [directorActors, directorMoment, incomingDirectorSceneState],
   );
+  const directabilityDiagnostics = useMemo(() => {
+    const output = new Map<
+      string,
+      RuntimeAssetDiagnostic["directability"]
+    >();
+    if (!directorMoment) return output;
+    const resolvedActors = directorActors.map((actor) =>
+      resolveDirectorActorWithSceneState(actor, incomingDirectorSceneState),
+    );
+    for (const actor of resolvedActors) {
+      const compilation = compileDirectorActorMotionProgram(
+        directorMoment,
+        actor,
+        resolvedActors,
+      );
+      const directability = compilation.program?.diagnostics.directability;
+      output.set(
+        actor.id,
+        directability
+          ? {
+              profile_present: directability.profile_present,
+              resolved_requirement_ids: [
+                ...directability.resolved_requirement_ids,
+              ],
+              unresolved_required_requirement_ids: [
+                ...directability.unresolved_required_requirement_ids,
+              ],
+              unresolved_optional_requirement_ids: [
+                ...directability.unresolved_optional_requirement_ids,
+              ],
+              warnings: [
+                ...(compilation.program?.diagnostics.warnings ?? []),
+              ],
+            }
+          : null,
+      );
+    }
+    return output;
+  }, [directorActors, directorMoment, incomingDirectorSceneState]);
 
   function recordMetrics(
     metrics: ResolvedAssetRuntimeMetrics,
@@ -926,6 +1013,8 @@ function AssetScene({
             metrics.attachment_regions.length,
           geometry_confidence:
             metrics.geometry_confidence,
+          directability:
+            directabilityDiagnostics.get(binding.instance_id) ?? null,
           placement_status:
             placementDiagnostic?.status ??
             "provisional",
@@ -969,6 +1058,7 @@ function AssetScene({
   }, [
     assetBindings,
     assetMetrics,
+    directabilityDiagnostics,
     onRuntimeDiagnostics,
     solvedLayout.surface_placements,
     solvedLayout.placement_diagnostics,
@@ -991,6 +1081,7 @@ function AssetScene({
           <DirectorShotLightingRig
             moment={directorMoment}
             actors={directorActors}
+            sceneState={incomingDirectorSceneState}
             autoLoop
           />
         ) : (
@@ -1081,7 +1172,13 @@ function AssetScene({
                                       directorActor,
                                       progress,
                                       directorActors,
+                                      incomingDirectorSceneState,
                                     );
+                                  const rolls = directorMoment.events.some(
+                                    (event) =>
+                                      event.actor_entity_id === directorActor.id &&
+                                      event.behaviour === "roll",
+                                  );
                                   return {
                                     position: [
                                       sampled.position.x,
@@ -1098,6 +1195,10 @@ function AssetScene({
                                       sampled.scale.y,
                                       sampled.scale.z,
                                     ],
+                                    visible: sampled.visible,
+                                    rotation_pivot: rolls
+                                      ? "bounds_center"
+                                      : undefined,
                                   };
                                 },
                               }
@@ -1135,9 +1236,19 @@ function AssetScene({
         </SceneBoundsGate>
 
         {directorMoment && directorActors.length > 0 ? (
+          <DirectorProcessRuntimeOverlay
+            moment={directorMoment}
+            actors={directorActors}
+            sceneState={incomingDirectorSceneState}
+            autoLoop
+          />
+        ) : null}
+
+        {directorMoment && directorActors.length > 0 ? (
           <DirectorShotCameraController
             moment={directorMoment}
             actors={directorActors}
+            sceneState={incomingDirectorSceneState}
             autoLoop
           />
         ) : null}
@@ -1161,7 +1272,8 @@ function AssetScene({
 
       {directorMoment && directorShotValidation ? (
         <div className="pointer-events-none absolute right-3 top-3 z-10 grid gap-1 rounded-2xl border border-cyan-200/20 bg-slate-950/82 px-3 py-2 text-[10px] font-semibold text-cyan-50/80 shadow-2xl backdrop-blur">
-          <span className="font-black uppercase tracking-[0.12em] text-cyan-200">Director V2 live</span>
+          <span className="font-black uppercase tracking-[0.12em] text-cyan-200">Director V2 · stateful runtime</span>
+          <span>Incoming state: moment {directorMomentIndex + 1}</span>
           <span>Camera path: {directorShotValidation.camera_path_clear ? "clear" : "review"}</span>
           <span>Required visible: {Math.round(directorShotValidation.required_visible_fraction * 100)}%</span>
           <span>Approx. occlusion: {Math.round(directorShotValidation.approximate_occlusion_ratio * 100)}%</span>
@@ -2189,6 +2301,7 @@ export function PrimitiveBuilderLab() {
                     result?.scene_graph
                   }
                   activeStep={activeStep}
+                  directorPlan={directorPlan}
                   directorMoment={
                     directorPlan?.moments[activeStep - 1] ??
                     directorPlan?.moments[0] ??
@@ -2494,6 +2607,25 @@ export function PrimitiveBuilderLab() {
                                         }`
                                       : `Spatial regions: ${runtimeDiagnostic.support_surface_count} support · ${runtimeDiagnostic.containment_region_count} containment · ${runtimeDiagnostic.attachment_region_count} attachment`}
                                   </p>
+                                  {runtimeDiagnostic.directability ? (
+                                    <p
+                                      className={`mt-1 text-[11px] leading-5 ${
+                                        runtimeDiagnostic.directability.unresolved_required_requirement_ids.length
+                                          ? "text-amber-200/85"
+                                          : "text-cyan-100/70"
+                                      }`}
+                                    >
+                                      Directability: {runtimeDiagnostic.directability.profile_present
+                                        ? `${runtimeDiagnostic.directability.resolved_requirement_ids.length} requirements resolved`
+                                        : "no asset profile"}
+                                      {runtimeDiagnostic.directability.unresolved_required_requirement_ids.length
+                                        ? ` · required evidence missing: ${runtimeDiagnostic.directability.unresolved_required_requirement_ids.join(", ")}`
+                                        : " · no required evidence missing"}
+                                      {runtimeDiagnostic.directability.unresolved_optional_requirement_ids.length
+                                        ? ` · optional: ${runtimeDiagnostic.directability.unresolved_optional_requirement_ids.join(", ")}`
+                                        : ""}
+                                    </p>
+                                  ) : null}
                                   <p
                                     className={`mt-1 text-[11px] leading-5 ${
                                       runtimeDiagnostic.placement_status === "unresolved"
