@@ -308,3 +308,21 @@ Articulation remains honest: the current Three.js proof may use a whole-actor
 hinge fallback, while hinge anchor/axis requirements and Open/Close state effects
 are carried in the MotionProgram for later asset-directability and scene-state
 work. Cross-moment persistence is intentionally deferred to Phase 1B.4.4.
+
+## Phase 1B.4.4 — scene state + cross-moment continuity
+
+Phase 1B.4.4 makes continuity explicit instead of relying on mutable playback history.
+The Director Capability Library inspector now shows an immutable incoming scene
+snapshot, the deterministic completed-moment reduction, and the outgoing snapshot.
+This is inspection-only and does not add another WebGL context.
+
+The state lane persists pose/scale/visibility, target-relative attachment relations,
+and normalized articulation openness. Attach survives into later moments and follows a
+moving target; Detach clears that relation while keeping the released pose; Open/Close
+carry a canonical closed pose so a later transition starts from the actual incoming
+openness; Hide remains hidden until Show. Existing one-moment callers remain valid
+because scene state is an optional additive input to the public actor sampler.
+
+Cross-moment state does not promote the remaining Assemble/Disassemble/Scatter/Split/
+Merge or Flow/Emit/Fill/Drain/Accumulate approximations. Those remain later
+multi-actor/process-lane work, and camera/lighting/Builder authority remains frozen.

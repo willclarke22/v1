@@ -11,6 +11,7 @@ import {
 import {
   MOTION_PROGRAM_FOUNDATION_VERSION,
   MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
+  MOTION_PROGRAM_SCENE_STATE_VERSION,
   MOTION_PROGRAM_RUNTIME_CHANNELS,
   MOTION_PROGRAM_RUNTIME_COORDINATE_SPACES,
   MYWAY_MOTION_PROGRAM_SCHEMA_VERSION,
@@ -36,9 +37,12 @@ export const DIRECTOR_MOTION_PROGRAM_COMPILED_BEHAVIOURS = [
   ...DIRECTOR_RELATIONAL_ARTICULATION_RECIPE_BEHAVIOURS,
 ] as const satisfies readonly DirectorBehaviour[];
 
-const DIRECTOR_MOTION_PROGRAM_IGNORED_BEHAVIOURS = [
+export const DIRECTOR_MOTION_PROGRAM_STATE_BEHAVIOURS = [
   "show",
   "hide",
+] as const satisfies readonly DirectorBehaviour[];
+
+const DIRECTOR_MOTION_PROGRAM_IGNORED_BEHAVIOURS = [
   "highlight",
   "dim_others",
   "trace",
@@ -236,7 +240,7 @@ export function compileDirectorActorMotionProgram(
   const initialState: MotionProgramInitialState = {
     position: [...actor.position],
     rotation: [...(actor.rotation ?? [0, 0, 0])],
-    scale: [1, 1, 1],
+    scale: [...(actor.scale ?? [1, 1, 1])],
   };
   const actorEvents = moment.events.filter(
     (event) => event.actor_entity_id === actor.id,
@@ -249,6 +253,29 @@ export function compileDirectorActorMotionProgram(
   const stateEffects: MyWayMotionProgramV1["state_effects"] = [];
   const recipeIds: string[] = [];
   const warnings: string[] = [];
+  let sceneStateSemanticsUsed = false;
+
+  if (actor.attachment_state?.target_entity_id) {
+    tracks.push({
+      id: `scene-state:${actor.id}:persistent_attachment`,
+      target_entity_id: actor.id,
+      channel: "transform",
+      operation: "sample_target_offset",
+      start_progress: 0,
+      end_progress: 1,
+      easing: "linear",
+      coordinate_space: "target_relative",
+      order: -10_000,
+      parameters: {
+        target_entity_id: actor.attachment_state.target_entity_id,
+        origin: [...actor.position],
+        offset: [...actor.attachment_state.offset_position],
+        mode: "replace",
+      },
+    });
+    recipeIds.push("persist_attachment_relation");
+    sceneStateSemanticsUsed = true;
+  }
 
   actorEvents.forEach((event, index) => {
     const order = index * 100;
@@ -291,8 +318,31 @@ export function compileDirectorActorMotionProgram(
       tracks.push(...recipe.tracks);
       requirements.push(...recipe.requirements);
       stateEffects.push(...recipe.state_effects);
+      if (recipe.state_effects.length) sceneStateSemanticsUsed = true;
       recipeIds.push(recipe.recipe_id);
       warnings.push(...recipe.warnings);
+      return;
+    }
+
+    if (
+      (DIRECTOR_MOTION_PROGRAM_STATE_BEHAVIOURS as readonly string[]).includes(
+        event.behaviour,
+      )
+    ) {
+      compiled.push(event);
+      stateEffects.push({
+        id: `director:${event.id}:visibility`,
+        target_entity_id: actor.id,
+        kind: "visibility",
+        parameters: {
+          visible: event.behaviour === "show",
+          effective_progress: eventWindow(moment, event).end_progress,
+          persistence_scope: "cross_moment_scene_state",
+        },
+        runtime_status: "supported",
+      });
+      recipeIds.push(`visibility_${event.behaviour}`);
+      sceneStateSemanticsUsed = true;
       return;
     }
 
@@ -322,7 +372,7 @@ export function compileDirectorActorMotionProgram(
     };
   }
 
-  if (!compiled.length) {
+  if (!compiled.length && !tracks.length && !stateEffects.length) {
     return {
       route: "no_motion",
       program: null,
@@ -338,7 +388,7 @@ export function compileDirectorActorMotionProgram(
 
   const program: MyWayMotionProgramV1 = {
     schema_version: MYWAY_MOTION_PROGRAM_SCHEMA_VERSION,
-    program_id: `director:${moment.id}:${actor.id}:phase1b4_3`,
+    program_id: `director:${moment.id}:${actor.id}:${sceneStateSemanticsUsed ? "phase1b4_4" : "phase1b4_3"}`,
     duration_ms: Math.max(1, moment.duration_ms),
     target_entity_id: actor.id,
     tracks,
@@ -348,8 +398,15 @@ export function compileDirectorActorMotionProgram(
     diagnostics: {
       foundation_version: MOTION_PROGRAM_FOUNDATION_VERSION,
       strengthening_version:
-        recipeIds.length
+        recipeIds.some((recipeId) =>
+          !recipeId.startsWith("visibility_") &&
+          recipeId !== "persist_attachment_relation",
+        )
           ? MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION
+          : null,
+      scene_state_version:
+        sceneStateSemanticsUsed
+          ? MOTION_PROGRAM_SCENE_STATE_VERSION
           : null,
       source_kind: "director_events",
       source_event_ids: actorEvents.map((event) => event.id),
@@ -375,9 +432,11 @@ export function compileDirectorActorMotionProgram(
     unsupported_event_ids: [],
     recipe_ids: recipeIds,
     reason:
-      recipeIds.length
-        ? "All actor transform events are inside the qualified MotionProgram set; Phase 1B.4.3 relational/articulation semantics compile to deterministic recipes."
-        : "All actor transform events are inside the frozen Phase 1B.4.2 subset and compile to deterministic MotionProgram tracks.",
+      sceneStateSemanticsUsed
+        ? "Qualified actor motion/state semantics compile to deterministic MotionProgram tracks plus supported Phase 1B.4.4 scene-state effects/relations."
+        : recipeIds.length
+          ? "All actor transform events are inside the qualified MotionProgram set; Phase 1B.4.3 relational/articulation semantics compile to deterministic recipes."
+          : "All actor transform events are inside the frozen Phase 1B.4.2 subset and compile to deterministic MotionProgram tracks.",
   };
 }
 

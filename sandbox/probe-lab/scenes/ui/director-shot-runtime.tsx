@@ -19,6 +19,14 @@ import {
   compileDirectorActorMotionProgram,
   sampleCompiledDirectorActorMotionProgram,
 } from "../../motion-program/director-motion-program-compiler";
+import {
+  directorSceneStateActorVisible,
+  resolveDirectorActorWithSceneState,
+  type DirectorSceneState,
+} from "../../motion-program/director-scene-state";
+import {
+  directorSceneStateBeforeMoment,
+} from "../../motion-program/director-scene-state-reducer";
 
 export type DirectorRuntimeVec3 = [number, number, number];
 
@@ -33,6 +41,8 @@ export type DirectorActorSample = {
   position: THREE.Vector3;
   rotation: THREE.Euler;
   scale: THREE.Vector3;
+  /** Incoming/cross-moment visibility state; current-shot presentation events remain presentation-owned. */
+  visible?: boolean;
 };
 
 export type DirectorCameraPose = {
@@ -423,6 +433,8 @@ function sampleDirectorActorEventStateLegacy(
  * Phase 1B.4.3 adapter seam. The public actor sampler remains stable while the
  * Universal Motion Program may recursively sample moving relationship targets.
  * Cycles or unsupported target recipes fail closed to the legacy actor path.
+ * Phase 1B.4.4 extends the same seam with an optional immutable incoming scene
+ * snapshot; existing callers that omit it retain the exact one-moment behavior.
  */
 function sampleDirectorActorEventStateWithStack(
   moment: DirectorMoment,
@@ -430,11 +442,19 @@ function sampleDirectorActorEventStateWithStack(
   progress: number,
   actors: DirectorRuntimeActor[],
   stack: ReadonlySet<string>,
+  sceneState?: DirectorSceneState | null,
 ): DirectorActorSample {
+  const resolvedActor = resolveDirectorActorWithSceneState(
+    actor,
+    sceneState,
+  );
+  const resolvedActors = actors.map((candidate) =>
+    resolveDirectorActorWithSceneState(candidate, sceneState),
+  );
   const compilation = compileDirectorActorMotionProgram(
     moment,
-    actor,
-    actors,
+    resolvedActor,
+    resolvedActors,
   );
   if (compilation.route === "motion_program" && compilation.program) {
     const nextStack = new Set(stack);
@@ -452,6 +472,7 @@ function sampleDirectorActorEventStateWithStack(
             targetProgress,
             actors,
             nextStack,
+            sceneState,
           );
           return {
             position: [
@@ -487,9 +508,9 @@ function sampleDirectorActorEventStateWithStack(
   }
   return sampleDirectorActorEventStateLegacy(
     moment,
-    actor,
+    resolvedActor,
     progress,
-    actors,
+    resolvedActors,
   );
 }
 
@@ -498,6 +519,7 @@ function sampleDirectorActorEventState(
   actor: DirectorRuntimeActor,
   progress: number,
   actors: DirectorRuntimeActor[],
+  sceneState?: DirectorSceneState | null,
 ): DirectorActorSample {
   return sampleDirectorActorEventStateWithStack(
     moment,
@@ -505,6 +527,7 @@ function sampleDirectorActorEventState(
     progress,
     actors,
     new Set<string>(),
+    sceneState,
   );
 }
 
@@ -540,8 +563,15 @@ export function sampleDirectorActorState(
   actor: DirectorRuntimeActor,
   progress: number,
   actors: DirectorRuntimeActor[],
+  sceneState?: DirectorSceneState | null,
 ): DirectorActorSample {
-  const sampled = sampleDirectorActorEventState(moment, actor, progress, actors);
+  const sampled = sampleDirectorActorEventState(
+    moment,
+    actor,
+    progress,
+    actors,
+    sceneState,
+  );
   const shot = moment.shot ?? legacyShotForMoment(moment);
 
   for (const constraint of shot.constraints) {
@@ -549,10 +579,22 @@ export function sampleDirectorActorState(
     const targetActor = actorById(actors, constraint.target_entity_id);
     const secondActor = actorById(actors, constraint.secondary_target_entity_id);
     const targetSample = targetActor
-      ? sampleDirectorActorEventState(moment, targetActor, progress, actors)
+      ? sampleDirectorActorEventState(
+          moment,
+          targetActor,
+          progress,
+          actors,
+          sceneState,
+        )
       : null;
     const secondSample = secondActor
-      ? sampleDirectorActorEventState(moment, secondActor, progress, actors)
+      ? sampleDirectorActorEventState(
+          moment,
+          secondActor,
+          progress,
+          actors,
+          sceneState,
+        )
       : null;
 
     switch (constraint.kind) {
@@ -631,7 +673,38 @@ export function sampleDirectorActorState(
     }
   }
 
+  sampled.visible = directorSceneStateActorVisible(sceneState, actor.id);
   return sampled;
+}
+
+/**
+ * Deterministic random-access reconstruction for an ordered Director moment
+ * sequence. Previous moments are reduced from scratch into a scene snapshot,
+ * then the requested moment samples against that immutable incoming state.
+ */
+export function sampleDirectorActorStateAcrossMoments(
+  moments: readonly DirectorMoment[],
+  momentIndex: number,
+  actor: DirectorRuntimeActor,
+  progress: number,
+  actors: DirectorRuntimeActor[],
+  initialState?: DirectorSceneState | null,
+): DirectorActorSample | null {
+  const moment = moments[momentIndex];
+  if (!moment) return null;
+  const incomingState = directorSceneStateBeforeMoment(
+    moments,
+    momentIndex,
+    actors,
+    initialState,
+  );
+  return sampleDirectorActorState(
+    moment,
+    actor,
+    progress,
+    actors,
+    incomingState,
+  );
 }
 
 function framingFactor(framing: DirectorShotDirectionV2["composition"]["framing"]) {

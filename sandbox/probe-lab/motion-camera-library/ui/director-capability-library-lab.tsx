@@ -38,6 +38,9 @@ import {
 import { DirectorAuditViewer } from "./director-audit-viewer";
 import { buildUnnamedMotionGeneralityProof } from "../../motion-program/motion-program-diagnostics";
 import {
+  buildDirectorSceneStateInspectorSnapshot,
+} from "../../motion-program/director-scene-state-reducer";
+import {
   applyDirectorBlocking,
   validateDirectorShot,
   type DirectorRuntimeActor,
@@ -573,10 +576,24 @@ export function DirectorCapabilityLibraryLab() {
   const reviewedCount = reviewedCapabilityCount(auditState);
 
   const demoMoment = useMemo(() => directorCapabilityDemoMoment(selected), [selected]);
-  const demoValidation = useMemo(() => {
-    const actors = applyDirectorBlocking(demoMoment, validationActorsFromRoles(resolvedRoles));
-    return validateDirectorShot(demoMoment, actors);
-  }, [demoMoment, resolvedRoles]);
+  const demoActors = useMemo(
+    () => applyDirectorBlocking(
+      demoMoment,
+      validationActorsFromRoles(resolvedRoles),
+    ),
+    [demoMoment, resolvedRoles],
+  );
+  const demoValidation = useMemo(
+    () => validateDirectorShot(demoMoment, demoActors),
+    [demoActors, demoMoment],
+  );
+  const sceneStateContinuity = useMemo(
+    () => buildDirectorSceneStateInspectorSnapshot(
+      demoMoment,
+      demoActors,
+    ),
+    [demoActors, demoMoment],
+  );
   const cameraFidelity = useMemo(
     () => buildDirectorCameraFidelityReport(selected),
     [selected],
@@ -709,6 +726,7 @@ export function DirectorCapabilityLibraryLab() {
     semantic_events: demoMoment.events,
     universal_motion_program: objectMotionFidelity?.motion_program ?? null,
     unnamed_motion_generality_proof: unnamedMotionGeneralityProof,
+    scene_state_continuity: sceneStateContinuity,
     runtime_inputs: {
       playback_clock: "isolated audit viewer; catalogue does not rerender during playback",
       duration_ms: selected.demo.duration_ms,
@@ -756,6 +774,8 @@ export function DirectorCapabilityLibraryLab() {
       unnamed_program_requires_capability_id:
         unnamedMotionGeneralityProof.named_director_capability_required,
       runtime_semantics_rewritten_in_this_phase: false,
+      scene_state_continuity:
+        "Phase 1B.4.4 immutable incoming/outgoing snapshots + deterministic moment reduction",
     },
     performance: {
       playback_clock_owner: "DirectorAuditViewer",
@@ -1106,8 +1126,10 @@ export function DirectorCapabilityLibraryLab() {
                 GLM receives the semantic contract and supported capability IDs,
                 not renderer code. Phase 1B.2 keeps the catalogue static while a
                 lightweight isolated audit viewer exercises the compiled direction.
-                Phase 1B.4.2 now exposes the deterministic Universal Motion Program
+                Phase 1B.4.2 exposes the deterministic Universal Motion Program
                 underneath qualified actor-motion canaries without adding WebGL work.
+                Phase 1B.4.4 now also exposes immutable incoming/outgoing scene state
+                so continuity can be inspected without mutable playback history.
               </p>
             </div>
 
@@ -1141,12 +1163,16 @@ export function DirectorCapabilityLibraryLab() {
               />
             ) : null}
             <JsonPanel
+              title={objectMotionFidelity ? "5. Scene state continuity" : "4. Scene state continuity"}
+              value={sceneStateContinuity}
+            />
+            <JsonPanel
               title={
                 objectMotionFidelity
-                  ? "5. Validation and promotion diagnostics"
+                  ? "6. Validation and promotion diagnostics"
                   : cameraFidelity
-                    ? "4. Validation and promotion diagnostics"
-                    : "3. Validation and promotion diagnostics"
+                    ? "5. Validation and promotion diagnostics"
+                    : "5. Validation and promotion diagnostics"
               }
               value={diagnostics}
             />

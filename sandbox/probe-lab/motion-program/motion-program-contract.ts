@@ -7,6 +7,9 @@ export const MOTION_PROGRAM_FOUNDATION_VERSION =
 export const MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION =
   "director_relational_articulation_phase1b4_3_v1" as const;
 
+export const MOTION_PROGRAM_SCENE_STATE_VERSION =
+  "director_scene_state_phase1b4_4_v1" as const;
+
 /**
  * Renderer-neutral execution channels. Phase 1B.4.3 still executes transform
  * and orientation only. Articulation semantics are carried as recipes,
@@ -130,6 +133,8 @@ export type MotionProgramRotateAroundAnchorTrack = MotionProgramTrackBase & {
     from_radians: number;
     to_radians: number;
     rotate_orientation: boolean;
+    /** Canonical zero-angle orientation for persistent articulation reconstruction. */
+    origin_rotation?: MotionProgramVec3;
   };
 };
 
@@ -229,6 +234,9 @@ export type MotionProgramDiagnostics = {
   foundation_version: typeof MOTION_PROGRAM_FOUNDATION_VERSION;
   strengthening_version?:
     | typeof MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION
+    | null;
+  scene_state_version?:
+    | typeof MOTION_PROGRAM_SCENE_STATE_VERSION
     | null;
   source_kind: "director_events" | "synthetic";
   source_event_ids: string[];

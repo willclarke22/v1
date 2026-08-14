@@ -6,3 +6,5 @@ export * from "./motion-program-sampler";
 export * from "./director-motion-recipes";
 export * from "./director-motion-program-compiler";
 export * from "./motion-program-diagnostics";
+export * from "./director-scene-state";
+export * from "./director-scene-state-reducer";

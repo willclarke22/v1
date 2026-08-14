@@ -45,7 +45,21 @@ export type DirectorMotionRecipeActor = {
   id: string;
   position: MotionProgramVec3;
   rotation?: MotionProgramVec3;
+  scale?: MotionProgramVec3;
   size: MotionProgramVec3;
+  attachment_state?: {
+    target_entity_id: string;
+    offset_position: MotionProgramVec3;
+    offset_rotation: MotionProgramVec3;
+  } | null;
+  articulation_state?: {
+    openness: number;
+    closed_position: MotionProgramVec3;
+    closed_rotation: MotionProgramVec3;
+    pivot_local: MotionProgramVec3;
+    axis: "x" | "y" | "z";
+    degrees: number;
+  } | null;
 };
 
 export type DirectorRelationalArticulationRecipe = {
@@ -189,6 +203,14 @@ function articulationStateEffect(
   event: DirectorEvent,
   state: "open" | "closed",
   effectiveProgress: number,
+  details: {
+    openness: number;
+    closed_position: MotionProgramVec3;
+    closed_rotation: MotionProgramVec3;
+    pivot_local: MotionProgramVec3;
+    axis: "x" | "y" | "z";
+    degrees: number;
+  },
 ): MotionProgramStateEffect {
   return {
     id: `director:${event.id}:articulation_state`,
@@ -196,10 +218,16 @@ function articulationStateEffect(
     kind: "articulation_state",
     parameters: {
       state,
+      openness: clamp01(details.openness),
+      closed_position: [...details.closed_position],
+      closed_rotation: [...details.closed_rotation],
+      pivot_local: [...details.pivot_local],
+      axis: details.axis,
+      degrees: details.degrees,
       effective_progress: effectiveProgress,
-      persistence_scope: "current_moment_only_until_phase1b4_4",
+      persistence_scope: "cross_moment_scene_state",
     },
-    runtime_status: "declared",
+    runtime_status: "supported",
   };
 }
 
@@ -331,14 +359,20 @@ export function compileDirectorRelationalArticulationRecipe(input: {
             state: "attached",
             target_entity_id: target.id,
             offset,
+            offset_position: offset,
+            offset_rotation: [
+              (actor.rotation?.[0] ?? 0) - (target.rotation?.[0] ?? 0),
+              (actor.rotation?.[1] ?? 0) - (target.rotation?.[1] ?? 0),
+              (actor.rotation?.[2] ?? 0) - (target.rotation?.[2] ?? 0),
+            ],
             effective_progress: bindProgress,
-            persistence_scope: "current_moment_only_until_phase1b4_4",
+            persistence_scope: "cross_moment_scene_state",
           },
-          runtime_status: "declared",
+          runtime_status: "supported",
         },
       ],
       warnings: [
-        "Attachment binding is deterministic within the current moment; cross-moment persistence belongs to Phase 1B.4.4 scene state.",
+        "Attachment binding is deterministic and emits a supported cross-moment scene-state relation; semantic sockets remain future asset-directability metadata.",
       ],
     };
   }
@@ -347,7 +381,9 @@ export function compileDirectorRelationalArticulationRecipe(input: {
     if (!target) return null;
     const attachmentOffset = Array.isArray(params.offset)
       ? vecParam(params.offset, subtract(actor.position, target.position))
-      : subtract(actor.position, target.position);
+      : actor.attachment_state?.target_entity_id === target.id
+        ? [...actor.attachment_state.offset_position] as MotionProgramVec3
+        : subtract(actor.position, target.position);
     const explicitDirection = Array.isArray(params.direction)
       ? normalize(vecParam(params.direction, [-1, 0.25, 0]))
       : null;
@@ -384,9 +420,9 @@ export function compileDirectorRelationalArticulationRecipe(input: {
             state: "detached",
             target_entity_id: target.id,
             effective_progress: start,
-            persistence_scope: "current_moment_only_until_phase1b4_4",
+            persistence_scope: "cross_moment_scene_state",
           },
-          runtime_status: "declared",
+          runtime_status: "supported",
         },
       ],
       warnings: [
@@ -447,20 +483,40 @@ export function compileDirectorRelationalArticulationRecipe(input: {
     behaviour === "open" ||
     behaviour === "close"
   ) {
+    const previousArticulation = actor.articulation_state ?? null;
+    const articulationBasis =
+      behaviour === "hinge" ? null : previousArticulation;
     const localPivot = vecParam(
       params.pivot_local,
-      [-Math.max(0.05, actor.size[0]) * 0.5, 0, 0],
+      articulationBasis?.pivot_local ??
+        [-Math.max(0.05, actor.size[0]) * 0.5, 0, 0],
     );
+    const closedPosition = articulationBasis
+      ? [...articulationBasis.closed_position] as MotionProgramVec3
+      : [...actor.position] as MotionProgramVec3;
+    const closedRotation = articulationBasis
+      ? [...articulationBasis.closed_rotation] as MotionProgramVec3
+      : [...(actor.rotation ?? [0, 0, 0])] as MotionProgramVec3;
     const anchor: MotionProgramVec3 = [
-      actor.position[0] + localPivot[0],
-      actor.position[1] + localPivot[1],
-      actor.position[2] + localPivot[2],
+      closedPosition[0] + localPivot[0],
+      closedPosition[1] + localPivot[1],
+      closedPosition[2] + localPivot[2],
     ];
-    const axis = axisParam(params.axis);
-    const radians =
-      (numberParam(params.degrees, 90) * Math.PI) / 180;
-    const fromRadians = behaviour === "close" ? radians : 0;
-    const toRadians = behaviour === "close" ? 0 : radians;
+    const axis = axisParam(params.axis ?? articulationBasis?.axis);
+    const degrees = numberParam(
+      params.degrees,
+      articulationBasis?.degrees ?? 90,
+    );
+    const radians = (degrees * Math.PI) / 180;
+    const defaultOpenness = behaviour === "close" ? 1 : 0;
+    const currentOpenness =
+      behaviour === "hinge"
+        ? 0
+        : clamp01(articulationBasis?.openness ?? defaultOpenness);
+    const targetOpenness =
+      behaviour === "open" ? 1 : behaviour === "close" ? 0 : 1;
+    const fromRadians = currentOpenness * radians;
+    const toRadians = targetOpenness * radians;
     return {
       version: MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
       behaviour,
@@ -472,26 +528,45 @@ export function compileDirectorRelationalArticulationRecipe(input: {
           channel: "transform",
           operation: "rotate_around_anchor",
           coordinate_space: "world",
-          apply_before_start: behaviour === "close",
+          apply_before_start: Math.abs(fromRadians) > 1e-9,
           parameters: {
-            origin: [...actor.position],
+            origin: closedPosition,
             anchor,
             axis,
             from_radians: fromRadians,
             to_radians: toRadians,
             rotate_orientation: true,
+            origin_rotation: closedRotation,
           },
         },
       ],
       requirements: hingeRequirement(actor, event),
       state_effects:
         behaviour === "open"
-          ? [articulationStateEffect(actor, event, "open", end)]
+          ? [
+              articulationStateEffect(actor, event, "open", end, {
+                openness: 1,
+                closed_position: closedPosition,
+                closed_rotation: closedRotation,
+                pivot_local: localPivot,
+                axis,
+                degrees,
+              }),
+            ]
           : behaviour === "close"
-            ? [articulationStateEffect(actor, event, "closed", end)]
+            ? [
+                articulationStateEffect(actor, event, "closed", end, {
+                  openness: 0,
+                  closed_position: closedPosition,
+                  closed_rotation: closedRotation,
+                  pivot_local: localPivot,
+                  axis,
+                  degrees,
+                }),
+              ]
             : [],
       warnings: [
-        "The current Three.js proof uses a whole-actor hinge fallback. Real articulated GLBs still require semantic subpart/hinge metadata before this can drive a true articulated child.",
+        "The current Three.js proof uses a whole-actor hinge fallback. Scene state now preserves normalized openness and a canonical closed pose, while real articulated GLBs still require semantic subpart/hinge metadata.",
       ],
     };
   }

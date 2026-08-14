@@ -47,3 +47,23 @@ This phase does not claim arbitrary GLB subpart articulation or cross-moment
 state persistence. Hinge/Open/Close keep the whole-actor fallback and declare the
 anchor/axis/state semantics that later asset-directability and scene-state phases
 will resolve.
+
+## Phase 1B.4.4 — scene state + cross-moment continuity
+
+`DirectorSceneState` is now the explicit immutable snapshot that separates **how an
+actor changes during a moment** from **what remains true after that moment**.
+`reduceDirectorMomentSceneState()` and `reduceDirectorMomentsToSceneState()`
+reconstruct continuity deterministically from ordered Director moments; sampling
+history is never used as hidden state.
+
+The snapshot persists position, rotation, scale, visibility, normalized articulation
+openness, the canonical closed articulation pose, and target-relative attachment
+relations. Attach emits a supported persistent relation, Detach clears that relation
+while preserving the released world pose, and Open/Close reduce to normalized
+articulation state so later Close/Open transitions begin from the state they actually
+receive. Show/Hide persist visibility without faking it as scale or geometry changes.
+
+Unsupported legacy transform semantics still fail closed: the reducer does not invent
+persistent transform results for multi-actor/process behaviours that have not yet
+migrated to the MotionProgram. Camera, lighting, Asset Scene Builder collision
+authority, and support classifications are unchanged.

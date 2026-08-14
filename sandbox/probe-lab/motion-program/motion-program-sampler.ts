@@ -218,7 +218,7 @@ export function sampleMotionProgram(
         );
         if (track.parameters.rotate_orientation) {
           rotation = addAxis(
-            initialState.rotation,
+            track.parameters.origin_rotation ?? initialState.rotation,
             track.parameters.axis,
             angle,
           );
