@@ -9,7 +9,13 @@ import {
   type DirectorMotionRecipeActor,
 } from "./director-motion-recipes";
 import {
+  DIRECTOR_MULTI_ACTOR_CHOREOGRAPHY_BEHAVIOURS,
+  compileDirectorMultiActorChoreographyRecipe,
+  directorMultiActorChoreographyEventsForActor,
+} from "./director-multi-actor-choreography";
+import {
   MOTION_PROGRAM_FOUNDATION_VERSION,
+  MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION,
   MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
   MOTION_PROGRAM_SCENE_STATE_VERSION,
   MOTION_PROGRAM_RUNTIME_CHANNELS,
@@ -35,6 +41,7 @@ export const DIRECTOR_MOTION_PROGRAM_FOUNDATION_BEHAVIOURS = [
 export const DIRECTOR_MOTION_PROGRAM_COMPILED_BEHAVIOURS = [
   ...DIRECTOR_MOTION_PROGRAM_FOUNDATION_BEHAVIOURS,
   ...DIRECTOR_RELATIONAL_ARTICULATION_RECIPE_BEHAVIOURS,
+  ...DIRECTOR_MULTI_ACTOR_CHOREOGRAPHY_BEHAVIOURS,
 ] as const satisfies readonly DirectorBehaviour[];
 
 export const DIRECTOR_MOTION_PROGRAM_STATE_BEHAVIOURS = [
@@ -245,6 +252,8 @@ export function compileDirectorActorMotionProgram(
   const actorEvents = moment.events.filter(
     (event) => event.actor_entity_id === actor.id,
   );
+  const choreographyEvents =
+    directorMultiActorChoreographyEventsForActor(moment, actor.id);
   const compiled: DirectorEvent[] = [];
   const ignored: DirectorEvent[] = [];
   const unsupported: DirectorEvent[] = [];
@@ -254,6 +263,7 @@ export function compileDirectorActorMotionProgram(
   const recipeIds: string[] = [];
   const warnings: string[] = [];
   let sceneStateSemanticsUsed = false;
+  let choreographySemanticsUsed = false;
 
   if (actor.attachment_state?.target_entity_id) {
     tracks.push({
@@ -277,7 +287,61 @@ export function compileDirectorActorMotionProgram(
     sceneStateSemanticsUsed = true;
   }
 
+  if (
+    !actor.attachment_state &&
+    actor.choreography_state?.follow_anchor &&
+    actor.choreography_state.anchor_entity_id
+  ) {
+    tracks.push({
+      id: `scene-state:${actor.id}:persistent_choreography`,
+      target_entity_id: actor.id,
+      channel: "transform",
+      operation: "sample_target_offset",
+      start_progress: 0,
+      end_progress: 1,
+      easing: "linear",
+      coordinate_space: "target_relative",
+      order: -9_000,
+      parameters: {
+        target_entity_id:
+          actor.choreography_state.anchor_entity_id,
+        origin: [...actor.position],
+        offset: [...actor.choreography_state.slot_offset],
+        mode: "replace",
+      },
+    });
+    recipeIds.push("persist_multi_actor_choreography_relation");
+    sceneStateSemanticsUsed = true;
+    choreographySemanticsUsed = true;
+  }
+
+  const choreographyHandledEventIds = new Set<string>();
+  choreographyEvents.forEach((event) => {
+    const eventIndex = moment.events.findIndex(
+      (candidate) => candidate.id === event.id,
+    );
+    const recipe = compileDirectorMultiActorChoreographyRecipe({
+      moment,
+      event,
+      actor,
+      actors,
+      order: Math.max(0, eventIndex) * 100,
+    });
+    if (!recipe) return;
+
+    choreographyHandledEventIds.add(event.id);
+    compiled.push(event);
+    tracks.push(...recipe.tracks);
+    requirements.push(...recipe.requirements);
+    stateEffects.push(...recipe.state_effects);
+    recipeIds.push(recipe.recipe_id);
+    warnings.push(...recipe.warnings);
+    sceneStateSemanticsUsed = true;
+    choreographySemanticsUsed = true;
+  });
+
   actorEvents.forEach((event, index) => {
+    if (choreographyHandledEventIds.has(event.id)) return;
     const order = index * 100;
 
     if (
@@ -368,7 +432,7 @@ export function compileDirectorActorMotionProgram(
       unsupported_event_ids: unsupported.map((event) => event.id),
       recipe_ids: recipeIds,
       reason:
-        "At least one transform-semantic event is outside the Phase 1B.4.3 qualified recipe set, so the complete actor stays on the legacy compatibility path to preserve event ordering.",
+        "At least one transform-semantic event is outside the qualified MotionProgram recipe/choreography set, so the complete actor stays on the legacy compatibility path to preserve event ordering.",
     };
   }
 
@@ -388,7 +452,7 @@ export function compileDirectorActorMotionProgram(
 
   const program: MyWayMotionProgramV1 = {
     schema_version: MYWAY_MOTION_PROGRAM_SCHEMA_VERSION,
-    program_id: `director:${moment.id}:${actor.id}:${sceneStateSemanticsUsed ? "phase1b4_4" : "phase1b4_3"}`,
+    program_id: `director:${moment.id}:${actor.id}:${choreographySemanticsUsed ? "phase1b4_5" : sceneStateSemanticsUsed ? "phase1b4_4" : "phase1b4_3"}`,
     duration_ms: Math.max(1, moment.duration_ms),
     target_entity_id: actor.id,
     tracks,
@@ -398,6 +462,7 @@ export function compileDirectorActorMotionProgram(
     diagnostics: {
       foundation_version: MOTION_PROGRAM_FOUNDATION_VERSION,
       strengthening_version:
+        !choreographySemanticsUsed &&
         recipeIds.some((recipeId) =>
           !recipeId.startsWith("visibility_") &&
           recipeId !== "persist_attachment_relation",
@@ -408,8 +473,17 @@ export function compileDirectorActorMotionProgram(
         sceneStateSemanticsUsed
           ? MOTION_PROGRAM_SCENE_STATE_VERSION
           : null,
+      choreography_version:
+        choreographySemanticsUsed
+          ? MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION
+          : null,
       source_kind: "director_events",
-      source_event_ids: actorEvents.map((event) => event.id),
+      source_event_ids: [
+        ...new Set([
+          ...actorEvents.map((event) => event.id),
+          ...choreographyEvents.map((event) => event.id),
+        ]),
+      ],
       compiled_event_ids: compiled.map((event) => event.id),
       ignored_event_ids: ignored.map((event) => event.id),
       unsupported_event_ids: [],
@@ -432,8 +506,10 @@ export function compileDirectorActorMotionProgram(
     unsupported_event_ids: [],
     recipe_ids: recipeIds,
     reason:
-      sceneStateSemanticsUsed
-        ? "Qualified actor motion/state semantics compile to deterministic MotionProgram tracks plus supported Phase 1B.4.4 scene-state effects/relations."
+      choreographySemanticsUsed
+        ? "Qualified multi-actor choreography compiles each declared participant to deterministic Phase 1B.4.5 tracks plus persistent choreography state."
+        : sceneStateSemanticsUsed
+          ? "Qualified actor motion/state semantics compile to deterministic MotionProgram tracks plus supported Phase 1B.4.4 scene-state effects/relations."
         : recipeIds.length
           ? "All actor transform events are inside the qualified MotionProgram set; Phase 1B.4.3 relational/articulation semantics compile to deterministic recipes."
           : "All actor transform events are inside the frozen Phase 1B.4.2 subset and compile to deterministic MotionProgram tracks.",

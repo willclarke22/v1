@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { CSSProperties, ChangeEvent } from "react";
@@ -391,11 +390,13 @@ function ObjectMotionFidelityEvidence({
   const statusLabel =
     report.qualification_state === "frozen_canary"
       ? "frozen regression canary"
-      : report.qualification_state === "recipe_strengthened"
-        ? "Phase 1B.4.3 recipe strengthened"
-        : report.qualification_state === "needs_semantic_strengthening"
-          ? "known semantic overlap"
-          : "fixture ready for review";
+      : report.qualification_state === "choreography_strengthened"
+        ? "Phase 1B.4.5 choreography strengthened"
+        : report.qualification_state === "recipe_strengthened"
+          ? "Phase 1B.4.3 recipe strengthened"
+          : report.qualification_state === "needs_semantic_strengthening"
+            ? "known semantic overlap"
+            : "fixture ready for review";
 
   return (
     <div style={fidelityPanelStyle}>
@@ -423,9 +424,11 @@ function ObjectMotionFidelityEvidence({
       <div style={fidelityLimitationStyle}>
         <strong>
           Universal Motion Program ·{" "}
-          {report.strengthening_version
-            ? "Phase 1B.4.3 relational/articulation recipe"
-            : "Phase 1B.4.2 foundation"}
+          {report.qualification_state === "choreography_strengthened"
+            ? "Phase 1B.4.5 multi-actor choreography"
+            : report.strengthening_version
+              ? "Phase 1B.4.3 relational/articulation recipe"
+              : "Phase 1B.4.2 foundation"}
         </strong>
         <span>
           {report.motion_program.route === "motion_program"
@@ -725,6 +728,20 @@ export function DirectorCapabilityLibraryLab() {
     composed_shot_v2: demoMoment.shot ?? null,
     semantic_events: demoMoment.events,
     universal_motion_program: objectMotionFidelity?.motion_program ?? null,
+    multi_actor_choreography:
+      objectMotionFidelity?.motion_program.program?.diagnostics
+        .choreography_version
+        ? {
+            version:
+              objectMotionFidelity.motion_program.program.diagnostics
+                .choreography_version,
+            recipe_ids:
+              objectMotionFidelity.motion_program.program.diagnostics
+                .recipe_ids ?? [],
+            participant_state:
+              sceneStateContinuity.outgoing_state,
+          }
+        : null,
     unnamed_motion_generality_proof: unnamedMotionGeneralityProof,
     scene_state_continuity: sceneStateContinuity,
     runtime_inputs: {
@@ -776,6 +793,8 @@ export function DirectorCapabilityLibraryLab() {
       runtime_semantics_rewritten_in_this_phase: false,
       scene_state_continuity:
         "Phase 1B.4.4 immutable incoming/outgoing snapshots + deterministic moment reduction",
+      multi_actor_choreography:
+        "Phase 1B.4.5 stable actor IDs + per-participant deterministic tracks + persistent choreography relations",
     },
     performance: {
       playback_clock_owner: "DirectorAuditViewer",
@@ -1128,8 +1147,10 @@ export function DirectorCapabilityLibraryLab() {
                 lightweight isolated audit viewer exercises the compiled direction.
                 Phase 1B.4.2 exposes the deterministic Universal Motion Program
                 underneath qualified actor-motion canaries without adding WebGL work.
-                Phase 1B.4.4 now also exposes immutable incoming/outgoing scene state
+                Phase 1B.4.4 exposes immutable incoming/outgoing scene state
                 so continuity can be inspected without mutable playback history.
+                Phase 1B.4.5 composes predeclared actors into coordinated assembly,
+                separation, containment, connection, merge, split, and scatter recipes.
               </p>
             </div>
 

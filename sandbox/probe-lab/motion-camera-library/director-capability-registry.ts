@@ -1419,6 +1419,9 @@ export function directorCapabilityDemoEvents(capability: DirectorCapability): Di
   const behaviour = motionBehaviourAlias(capability.id);
   const targetBased = ["move_toward", "move_away", "follow_target", "align", "aim_at", "attach", "detach", "insert_into", "remove_from", "assemble", "merge"].includes(behaviour);
   const parameters: Record<string, unknown> = {};
+  let targetEntityId: string | null =
+    targetBased ? "secondary_subject" : null;
+  let supportingEntityIds: string[] = [];
   if (capability.id === "translate") parameters.target_position = [2.1, 0, 0];
   if (capability.id === "enter_frame") { parameters.start_position = [-5.5, 0, 0]; parameters.target_position = [-1.45, 0, 0]; }
   if (capability.id === "exit_frame") parameters.target_position = [5.5, 0, 0];
@@ -1438,12 +1441,42 @@ export function directorCapabilityDemoEvents(capability: DirectorCapability): Di
   if (["move_toward", "move_away", "slide", "lift", "lower", "detach", "remove_from", "split"].includes(capability.id)) parameters.distance_m = 1.8;
   if (capability.id === "slide") parameters.direction = [1, 0, 0];
   if (capability.id === "expand" || capability.id === "contract") parameters.amount = 0.45;
+
+  if (capability.id === "scatter") {
+    targetEntityId = null;
+    supportingEntityIds = ["secondary_subject", "context_subject"];
+    parameters.choreography_kind = "scatter";
+    parameters.participant_entity_ids = [
+      "primary_subject",
+      "secondary_subject",
+      "context_subject",
+    ];
+    parameters.distance_m = 2.35;
+  }
+  if (capability.id === "assemble" || capability.id === "merge") {
+    supportingEntityIds = ["context_subject"];
+    parameters.participant_entity_ids = [
+      "primary_subject",
+      "context_subject",
+    ];
+    parameters.spacing_m = 1.15;
+  }
+  if (capability.id === "disassemble" || capability.id === "split") {
+    supportingEntityIds = ["secondary_subject", "context_subject"];
+    parameters.participant_entity_ids = [
+      "primary_subject",
+      "secondary_subject",
+      "context_subject",
+    ];
+    parameters.distance_m = capability.id === "split" ? 2.15 : 2.45;
+  }
+
   const primaryEvent: DirectorEvent = {
     id: `demo_${capability.id}`,
     behaviour,
     actor_entity_id: "primary_subject",
-    target_entity_id: targetBased ? "secondary_subject" : null,
-    supporting_entity_ids: [],
+    target_entity_id: targetEntityId,
+    supporting_entity_ids: supportingEntityIds,
     start_ms: 450,
     duration_ms: 4700,
     easing: "ease_in_out",

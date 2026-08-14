@@ -12,6 +12,7 @@ import {
   sampleCompiledDirectorActorMotionProgram,
 } from "../motion-program/director-motion-program-compiler";
 import {
+  MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION,
   MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
   type MyWayMotionProgramV1,
 } from "../motion-program/motion-program-contract";
@@ -56,6 +57,17 @@ export const DIRECTOR_OBJECT_MOTION_PHASE1B4_3_RECIPE_CAPABILITIES = [
   "roll",
 ] as const;
 
+
+export const DIRECTOR_OBJECT_MOTION_PHASE1B4_5_CHOREOGRAPHY_CAPABILITIES = [
+  "scatter",
+  "insert_into",
+  "remove_from",
+  "assemble",
+  "disassemble",
+  "split",
+  "merge",
+] as const;
+
 export const DIRECTOR_OBJECT_MOTION_KNOWN_REDUNDANCY: Record<
   string,
   {
@@ -66,62 +78,27 @@ export const DIRECTOR_OBJECT_MOTION_KNOWN_REDUNDANCY: Record<
   spin: {
     peers: ["rotate"],
     reason:
-      "Spin and Rotate share the same rotation branch and the current demo supplies the same one-turn parameter.",
-  },
-  scatter: {
-    peers: ["move_away"],
-    reason:
-      "Scatter currently aliases to one actor using move_away instead of diverging several actors.",
-  },
-  insert_into: {
-    peers: ["assemble", "merge"],
-    reason:
-      "Insert, Assemble, and Merge currently share one lerp-to-target transform branch.",
-  },
-  assemble: {
-    peers: ["insert_into", "merge"],
-    reason:
-      "Assemble currently moves one actor to one target instead of coordinating several parts.",
-  },
-  merge: {
-    peers: ["insert_into", "assemble"],
-    reason:
-      "Merge currently moves one actor to one target instead of converging represented actors or streams.",
-  },
-  remove_from: {
-    peers: ["disassemble", "split"],
-    reason:
-      "Remove, Disassemble, and Split share one move-away branch; their topology semantics are not yet distinct.",
-  },
-  disassemble: {
-    peers: ["remove_from", "split"],
-    reason:
-      "Disassemble currently separates one actor instead of preserving several component identities.",
-  },
-  split: {
-    peers: ["remove_from", "disassemble"],
-    reason:
-      "Split currently moves one represented actor away rather than producing multiple spatially distinct results.",
+      "Spin and Rotate still share one repeated-rotation approximation; dedicated continuous spin semantics remain a later strengthening.",
   },
   flow: {
     peers: ["emit"],
     reason:
-      "Flow and Emit currently share the same upward-translation plus scale transform.",
+      "Flow and Emit still share a rigid transform proxy; process/carrier semantics remain Phase 1B.4.6 work.",
   },
   emit: {
     peers: ["flow"],
     reason:
-      "Emit currently shares Flow's transform instead of originating multiple carriers/signals from a source.",
+      "Emit still shares Flow's rigid transform proxy instead of originating independent carriers/signals.",
   },
   fill: {
     peers: ["accumulate"],
     reason:
-      "Fill and Accumulate currently share the same scale-up proxy instead of distinct occupied-volume versus build-up semantics.",
+      "Fill and Accumulate still share a scale-up proxy instead of distinct occupied-volume versus build-up semantics.",
   },
   accumulate: {
     peers: ["fill"],
     reason:
-      "Accumulate currently shares Fill's scale-up proxy instead of visibly adding quantity at a region.",
+      "Accumulate still shares Fill's scale-up proxy instead of visibly adding quantity at a region.",
   },
 };
 
@@ -148,6 +125,7 @@ export type DirectorObjectMotionFidelitySample = {
 export type DirectorObjectMotionQualificationState =
   | "frozen_canary"
   | "recipe_strengthened"
+  | "choreography_strengthened"
   | "fixture_ready_for_review"
   | "needs_semantic_strengthening";
 
@@ -180,6 +158,7 @@ export type DirectorObjectMotionFidelityReport = {
   controlled_geometry: true;
   strengthening_version:
     | typeof MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION
+    | typeof MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION
     | null;
   motion_program: DirectorObjectMotionProgramEvidence;
   samples: DirectorObjectMotionFidelitySample[];
@@ -474,6 +453,36 @@ function recipeStrengtheningCheck(
   };
 }
 
+function choreographyStrengtheningCheck(
+  capability: DirectorCapability,
+  motionProgram: DirectorObjectMotionProgramEvidence,
+): DirectorObjectMotionFidelityCheck | null {
+  const isChoreographyCapability = (
+    DIRECTOR_OBJECT_MOTION_PHASE1B4_5_CHOREOGRAPHY_CAPABILITIES as readonly string[]
+  ).includes(capability.id);
+  if (!isChoreographyCapability) return null;
+
+  const recipeIds =
+    motionProgram.program?.diagnostics.recipe_ids ?? [];
+  const choreographyVersion =
+    motionProgram.program?.diagnostics.choreography_version ?? null;
+  return {
+    id: "phase1b4_5_multi_actor_choreography",
+    description:
+      "The selected semantic compiles through the Phase 1B.4.5 multi-actor choreography planner without changing its declared support level.",
+    passed:
+      motionProgram.route === "motion_program" &&
+      choreographyVersion ===
+        MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION &&
+      recipeIds.length > 0,
+    measured:
+      recipeIds.length > 0
+        ? `${recipeIds.join(", ")} · support remains ${capability.compiler.threejs}`
+        : `${motionProgram.route} · ${motionProgram.reason}`,
+    kind: "recipe_strengthening",
+  };
+}
+
 function redundancyCheck(
   capability: DirectorCapability,
 ): DirectorObjectMotionFidelityCheck | null {
@@ -514,7 +523,7 @@ function limitationsFor(
   }
   if (fixture === "object_motion_multi_part") {
     limitations.push(
-      "The fixture deliberately exposes when one rigid actor is being used where the capability promises several independently directed parts.",
+      "Phase 1B.4.5 coordinates predeclared stable actor IDs into deterministic slots/spreads; it does not invent missing parts, clone geometry, or replace Asset Scene Builder collision/fit authority.",
     );
   }
   if (fixture === "object_motion_process") {
@@ -665,6 +674,11 @@ export function buildDirectorObjectMotionFidelityReport(
     motionProgram,
   );
   if (recipeStrengthening) checks.push(recipeStrengthening);
+  const choreographyStrengthening = choreographyStrengtheningCheck(
+    capability,
+    motionProgram,
+  );
+  if (choreographyStrengthening) checks.push(choreographyStrengthening);
   const redundancy = redundancyCheck(capability);
   if (redundancy) checks.push(redundancy);
 
@@ -676,6 +690,9 @@ export function buildDirectorObjectMotionFidelityReport(
   const isRecipeStrengthened = (
     DIRECTOR_OBJECT_MOTION_PHASE1B4_3_RECIPE_CAPABILITIES as readonly string[]
   ).includes(capability.id);
+  const isChoreographyStrengthened = (
+    DIRECTOR_OBJECT_MOTION_PHASE1B4_5_CHOREOGRAPHY_CAPABILITIES as readonly string[]
+  ).includes(capability.id);
   const canaryPassed =
     !canary || canary.passed;
 
@@ -686,9 +703,11 @@ export function buildDirectorObjectMotionFidelityReport(
     fixture,
     controlled_geometry: true,
     strengthening_version:
-      isRecipeStrengthened
-        ? MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION
-        : null,
+      isChoreographyStrengthened
+        ? MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION
+        : isRecipeStrengthened
+          ? MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION
+          : null,
     motion_program: motionProgram,
     samples,
     motion_signature: {
@@ -713,9 +732,12 @@ export function buildDirectorObjectMotionFidelityReport(
         ? "needs_semantic_strengthening"
         : isCanary && canaryPassed
           ? "frozen_canary"
-          : isRecipeStrengthened && recipeStrengthening?.passed
-            ? "recipe_strengthened"
-            : "fixture_ready_for_review",
+          : isChoreographyStrengthened &&
+              choreographyStrengthening?.passed
+            ? "choreography_strengthened"
+            : isRecipeStrengthened && recipeStrengthening?.passed
+              ? "recipe_strengthened"
+              : "fixture_ready_for_review",
     redundancy_peers: known?.peers ?? [],
     limitations: limitationsFor(capability, fixture),
     visual_review_required: true,

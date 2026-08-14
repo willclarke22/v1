@@ -10,8 +10,11 @@ export const MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION =
 export const MOTION_PROGRAM_SCENE_STATE_VERSION =
   "director_scene_state_phase1b4_4_v1" as const;
 
+export const MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION =
+  "director_multi_actor_choreography_phase1b4_5_v1" as const;
+
 /**
- * Renderer-neutral execution channels. Phase 1B.4.3 still executes transform
+ * Renderer-neutral execution channels. Phase 1B.4.5 still executes transform
  * and orientation only. Articulation semantics are carried as recipes,
  * requirements, and declared state effects until asset-directability metadata
  * can resolve real subparts/anchors without pretending root motion is a rig.
@@ -237,6 +240,9 @@ export type MotionProgramDiagnostics = {
     | null;
   scene_state_version?:
     | typeof MOTION_PROGRAM_SCENE_STATE_VERSION
+    | null;
+  choreography_version?:
+    | typeof MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION
     | null;
   source_kind: "director_events" | "synthetic";
   source_event_ids: string[];

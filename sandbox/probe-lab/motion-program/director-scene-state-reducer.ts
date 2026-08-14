@@ -16,6 +16,7 @@ import {
   type DirectorActorSceneState,
   type DirectorSceneArticulationState,
   type DirectorSceneAttachmentState,
+  type DirectorSceneChoreographyState,
   type DirectorSceneState,
   type DirectorSceneStateActor,
 } from "./director-scene-state";
@@ -70,6 +71,12 @@ function vecParam(
     ];
   }
   return cloneVec3(fallback);
+}
+
+function stringArray(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
 }
 
 function actorById(
@@ -230,6 +237,49 @@ function attachmentStateFromEffect(
   };
 }
 
+function choreographyStateFromEffect(
+  moment: DirectorMoment,
+  actorState: DirectorActorSceneState,
+  effect: MotionProgramStateEffect,
+): DirectorSceneChoreographyState | null {
+  if (effect.parameters.active === false) return null;
+
+  const relationKind =
+    typeof effect.parameters.relation_kind === "string"
+      ? effect.parameters.relation_kind
+      : null;
+  const choreographyId =
+    typeof effect.parameters.choreography_id === "string"
+      ? effect.parameters.choreography_id
+      : effect.id;
+  const choreographyKind =
+    typeof effect.parameters.choreography_kind === "string"
+      ? effect.parameters.choreography_kind
+      : "multi_actor";
+  if (!relationKind) return actorState.choreography_state;
+
+  return {
+    choreography_id: choreographyId,
+    choreography_kind: choreographyKind,
+    relation_kind: relationKind,
+    anchor_entity_id:
+      typeof effect.parameters.anchor_entity_id === "string"
+        ? effect.parameters.anchor_entity_id
+        : null,
+    peer_entity_ids: stringArray(effect.parameters.peer_entity_ids),
+    participant_entity_ids: stringArray(
+      effect.parameters.participant_entity_ids,
+    ),
+    slot_index: Math.max(
+      0,
+      Math.trunc(numberParam(effect.parameters.slot_index, 0)),
+    ),
+    slot_offset: vecParam(effect.parameters.slot_offset, [0, 0, 0]),
+    follow_anchor: Boolean(effect.parameters.follow_anchor),
+    updated_at_moment_id: moment.id,
+  };
+}
+
 function applyStateEffect(
   moment: DirectorMoment,
   actorState: DirectorActorSceneState,
@@ -251,6 +301,14 @@ function applyStateEffect(
   }
   if (effect.kind === "articulation_state") {
     actorState.articulation_state = articulationStateFromEffect(
+      moment,
+      actorState,
+      effect,
+    );
+    return true;
+  }
+  if (effect.kind === "choreography_state") {
+    actorState.choreography_state = choreographyStateFromEffect(
       moment,
       actorState,
       effect,
@@ -423,7 +481,6 @@ export function buildDirectorSceneStateInspectorSnapshot(
     outgoing_state: reduction.outgoing_state,
     actor_results: reduction.actor_results,
     note:
-      "Phase 1B.4.4 separates deterministic motion sampling from the state that remains true afterward; unsupported legacy motion is not silently promoted into persistent state.",
+      "Phase 1B.4.4 separates deterministic motion sampling from persistent state; Phase 1B.4.5 adds explicit multi-actor choreography relations without promoting process semantics.",
   };
 }
-

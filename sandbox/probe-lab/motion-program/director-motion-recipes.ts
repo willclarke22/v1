@@ -60,6 +60,18 @@ export type DirectorMotionRecipeActor = {
     axis: "x" | "y" | "z";
     degrees: number;
   } | null;
+  choreography_state?: {
+    choreography_id: string;
+    choreography_kind: string;
+    relation_kind: string;
+    anchor_entity_id: string | null;
+    peer_entity_ids: string[];
+    participant_entity_ids: string[];
+    slot_index: number;
+    slot_offset: MotionProgramVec3;
+    follow_anchor: boolean;
+    updated_at_moment_id: string;
+  } | null;
 };
 
 export type DirectorRelationalArticulationRecipe = {

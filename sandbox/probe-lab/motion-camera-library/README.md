@@ -326,3 +326,23 @@ because scene state is an optional additive input to the public actor sampler.
 Cross-moment state does not promote the remaining Assemble/Disassemble/Scatter/Split/
 Merge or Flow/Emit/Fill/Drain/Accumulate approximations. Those remain later
 multi-actor/process-lane work, and camera/lighting/Builder authority remains frozen.
+
+## Phase 1B.4.5 — multi-actor choreography
+
+The Director Capability Library keeps the same 183 semantic capability IDs and
+the same Three.js support classifications while the execution layer strengthens
+multi-actor meaning underneath them.
+
+Phase 1B.4.5 qualifies controlled choreography for Assemble, Disassemble,
+Scatter, Split, Merge, Insert, and Remove, and also strengthens canonical
+`connect` / `disconnect` Director behaviours when they appear in plans. The
+planner coordinates only predeclared stable actor IDs; it does not create
+geometry or reassign Asset Scene Builder collision/fit authority.
+
+Scatter remains a compatibility bridge through the existing `move_away`
+behaviour plus an explicit `choreography_kind = "scatter"` parameter because
+Director V2 does not currently expose a standalone `scatter` behaviour.
+
+The Capability Library still owns zero direct Canvas elements. Playback remains
+isolated in the single demand-rendered audit viewer, and process/quantity
+semantics remain reserved for the next phase.

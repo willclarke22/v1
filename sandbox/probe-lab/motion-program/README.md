@@ -67,3 +67,32 @@ Unsupported legacy transform semantics still fail closed: the reducer does not i
 persistent transform results for multi-actor/process behaviours that have not yet
 migrated to the MotionProgram. Camera, lighting, Asset Scene Builder collision
 authority, and support classifications are unchanged.
+
+## Phase 1B.4.5 — multi-actor choreography
+
+Phase 1B.4.5 adds a deterministic choreography planner above the Universal Motion
+Program and the Phase 1B.4.4 scene-state reducer.
+
+Qualified choreography semantics:
+
+- `assemble`: predeclared part actors move into stable readable slots around an anchor;
+- `disassemble`: predeclared components spread into readable positions without losing identity;
+- `merge`: declared actors converge on a shared target region while remaining separately addressable;
+- `split`: predeclared result actors spread from a shared region; the runtime does not clone geometry;
+- `insert_into` / `remove_from`: containment staging becomes target-relative and persistent without taking fit/clearance authority away from the Asset Scene Builder;
+- `connect` / `disconnect`: semantic endpoint relationships are recorded separately from physical attachment;
+- `scatter`: because the current Director V2 behaviour enum has no dedicated `scatter` verb, the existing capability continues to emit `move_away` but now carries `parameters.choreography_kind = "scatter"` plus explicit participant IDs. This is an intentional compatibility bridge, not a hidden new canonical verb.
+
+The planner consumes stable actor IDs from `actor_entity_id`,
+`supporting_entity_ids`, and optional `parameters.participant_entity_ids`.
+Every participant gets its own deterministic MotionProgram track. No missing
+parts are invented, no geometry is cloned or deleted, and no collision or
+containment-fit decision is made here.
+
+Phase 1B.4.5 also adds persistent per-actor choreography state. Assembly,
+containment, and merge slots may follow their declared anchor in later moments;
+disassembly, split, scatter, remove, and disconnect update or release those
+relations through the immutable scene-state reducer.
+
+Process/quantity semantics (`flow`, `emit`, `fill`, `accumulate`, `drain`, and
+related material-front behaviour) remain outside this phase.

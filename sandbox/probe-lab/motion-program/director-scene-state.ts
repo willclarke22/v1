@@ -23,6 +23,19 @@ export type DirectorSceneArticulationState = {
   updated_at_moment_id: string;
 };
 
+export type DirectorSceneChoreographyState = {
+  choreography_id: string;
+  choreography_kind: string;
+  relation_kind: string;
+  anchor_entity_id: string | null;
+  peer_entity_ids: string[];
+  participant_entity_ids: string[];
+  slot_index: number;
+  slot_offset: MotionProgramVec3;
+  follow_anchor: boolean;
+  updated_at_moment_id: string;
+};
+
 export type DirectorActorSceneState = {
   actor_id: string;
   position: MotionProgramVec3;
@@ -31,6 +44,7 @@ export type DirectorActorSceneState = {
   visible: boolean;
   attachment_state: DirectorSceneAttachmentState | null;
   articulation_state: DirectorSceneArticulationState | null;
+  choreography_state: DirectorSceneChoreographyState | null;
   custom_semantic_state: Record<string, unknown>;
 };
 
@@ -47,6 +61,7 @@ export type DirectorSceneStateActor = {
   size: MotionProgramVec3;
   articulation_state?: DirectorSceneArticulationState | null;
   attachment_state?: DirectorSceneAttachmentState | null;
+  choreography_state?: DirectorSceneChoreographyState | null;
 };
 
 function cloneVec3(value: MotionProgramVec3): MotionProgramVec3 {
@@ -71,6 +86,18 @@ export function normalizeDirectorSceneArticulationState(
   };
 }
 
+export function cloneDirectorSceneChoreographyState(
+  state: DirectorSceneChoreographyState | null | undefined,
+): DirectorSceneChoreographyState | null {
+  if (!state) return null;
+  return {
+    ...state,
+    peer_entity_ids: [...state.peer_entity_ids],
+    participant_entity_ids: [...state.participant_entity_ids],
+    slot_offset: cloneVec3(state.slot_offset),
+  };
+}
+
 export function cloneDirectorActorSceneState(
   state: DirectorActorSceneState,
 ): DirectorActorSceneState {
@@ -89,6 +116,9 @@ export function cloneDirectorActorSceneState(
       : null,
     articulation_state: normalizeDirectorSceneArticulationState(
       state.articulation_state,
+    ),
+    choreography_state: cloneDirectorSceneChoreographyState(
+      state.choreography_state,
     ),
     custom_semantic_state: { ...state.custom_semantic_state },
   };
@@ -135,6 +165,9 @@ export function createDirectorSceneState(
             : null,
           articulation_state: normalizeDirectorSceneArticulationState(
             actor.articulation_state,
+          ),
+          choreography_state: cloneDirectorSceneChoreographyState(
+            actor.choreography_state,
           ),
           custom_semantic_state: {},
         } satisfies DirectorActorSceneState,
@@ -190,6 +223,9 @@ export function resolveDirectorActorWithSceneState<
       : null,
     articulation_state: normalizeDirectorSceneArticulationState(
       actorState?.articulation_state,
+    ),
+    choreography_state: cloneDirectorSceneChoreographyState(
+      actorState?.choreography_state,
     ),
   };
 }
