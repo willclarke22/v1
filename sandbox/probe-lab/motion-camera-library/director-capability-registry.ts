@@ -530,7 +530,7 @@ const objectMotions = motionSeeds.map(([id, label, summary, support]) =>
       event: {
         behaviour: motionBehaviourAlias(id as string),
         actor_role: "primary_subject",
-        target_role: ["attach", "detach", "move_toward", "move_away", "follow_target", "align", "aim_at", "insert_into", "remove_from", "assemble", "merge"].includes(id as string) ? "secondary_subject" : null,
+        target_role: ["attach", "detach", "move_toward", "move_away", "follow_target", "align", "aim_at", "insert_into", "remove_from", "assemble", "merge", "flow"].includes(id as string) ? "secondary_subject" : null,
         description: summary,
       },
     },
@@ -1417,7 +1417,7 @@ export function directorCapabilityDemoEvents(capability: DirectorCapability): Di
     }];
   }
   const behaviour = motionBehaviourAlias(capability.id);
-  const targetBased = ["move_toward", "move_away", "follow_target", "align", "aim_at", "attach", "detach", "insert_into", "remove_from", "assemble", "merge"].includes(behaviour);
+  const targetBased = ["move_toward", "move_away", "follow_target", "align", "aim_at", "attach", "detach", "insert_into", "remove_from", "assemble", "merge", "flow"].includes(behaviour);
   const parameters: Record<string, unknown> = {};
   let targetEntityId: string | null =
     targetBased ? "secondary_subject" : null;
@@ -1441,6 +1441,30 @@ export function directorCapabilityDemoEvents(capability: DirectorCapability): Di
   if (["move_toward", "move_away", "slide", "lift", "lower", "detach", "remove_from", "split"].includes(capability.id)) parameters.distance_m = 1.8;
   if (capability.id === "slide") parameters.direction = [1, 0, 0];
   if (capability.id === "expand" || capability.id === "contract") parameters.amount = 0.45;
+  if (capability.id === "flow") {
+    targetEntityId = "secondary_subject";
+    supportingEntityIds = ["context_subject"];
+    parameters.path_points = [[-0.15, 0.75, 0.35], [0.55, 0.35, -0.2]];
+    parameters.carrier_count = 7;
+  }
+  if (capability.id === "emit") {
+    parameters.direction = [0.45, 0.8, 0.15];
+    parameters.distance_m = 2.2;
+    parameters.carrier_count = 7;
+    parameters.spread_degrees = 38;
+  }
+  if (capability.id === "fill") {
+    parameters.start_level = 0.15;
+    parameters.target_level = 0.9;
+  }
+  if (capability.id === "drain") {
+    parameters.start_level = 0.9;
+    parameters.target_level = 0.1;
+  }
+  if (capability.id === "accumulate") {
+    parameters.start_amount = 0.15;
+    parameters.target_amount = 1.15;
+  }
 
   if (capability.id === "scatter") {
     targetEntityId = null;
@@ -1483,7 +1507,12 @@ export function directorCapabilityDemoEvents(capability: DirectorCapability): Di
     path_hint: null,
     description: capability.summary,
     parameters,
-    fallback_behaviour: behaviour === "move_to" ? null : "move_to",
+    fallback_behaviour:
+      ["flow", "emit", "fill", "drain", "accumulate"].includes(behaviour)
+        ? null
+        : behaviour === "move_to"
+          ? null
+          : "move_to",
   };
 
   if (capability.id === "follow_target" || capability.id === "attach") {

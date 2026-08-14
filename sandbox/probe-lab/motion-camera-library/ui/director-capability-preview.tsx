@@ -411,6 +411,90 @@ function ControlledAuditActor({
   );
 }
 
+function ControlledProcessQuantityOverlay({
+  process,
+  targetExtent,
+}: {
+  process: ReturnType<typeof sampleDirectorActorState>["process"];
+  targetExtent: number;
+}) {
+  if (!process) return null;
+  const fillLevel = process.quantities.fill_level;
+  const accumulatedAmount = process.quantities.accumulated_amount;
+  const fixtureScale = Math.max(0.45, targetExtent / 1.8);
+
+  if (Number.isFinite(fillLevel)) {
+    const level = clamp01(fillLevel ?? 0);
+    const height = Math.max(0.025, 0.94 * level);
+    return (
+      <group scale={fixtureScale}>
+        {/* Phase 1B.4.6 process overlay: quantity changes inside the actor
+            without changing its root transform. */}
+        <mesh position={[0, 0.08 + height / 2, 0]}>
+          <cylinderGeometry args={[0.34, 0.34, height, 22]} />
+          <meshBasicMaterial color="#67e8f9" transparent opacity={0.72} />
+        </mesh>
+        <mesh position={[0, 0.09 + height, 0]}>
+          <cylinderGeometry args={[0.345, 0.345, 0.025, 22]} />
+          <meshBasicMaterial color="#e0f2fe" transparent opacity={0.92} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (Number.isFinite(accumulatedAmount)) {
+    const normalized = clamp01((accumulatedAmount ?? 0) / 1.15);
+    const visibleCount = Math.max(0, Math.min(9, Math.ceil(normalized * 9)));
+    const positions: [number, number, number][] = [
+      [-0.28, 0.14, -0.16], [0, 0.14, -0.16], [0.28, 0.14, -0.16],
+      [-0.22, 0.31, 0.04], [0.08, 0.31, 0.04], [0.34, 0.31, 0.04],
+      [-0.12, 0.48, -0.08], [0.18, 0.48, -0.08], [0.03, 0.65, 0.08],
+    ];
+    return (
+      <group scale={fixtureScale}>
+        {positions.slice(0, visibleCount).map((position, index) => (
+          <mesh key={`accumulated:${index}`} position={position}>
+            <sphereGeometry args={[0.13, 14, 14]} />
+            <meshBasicMaterial color="#c4b5fd" transparent opacity={0.88} />
+          </mesh>
+        ))}
+      </group>
+    );
+  }
+
+  return null;
+}
+
+function ProcessCarrierOverlay({
+  moment,
+  actors,
+  progress,
+  fixtureKind,
+}: {
+  moment: ReturnType<typeof directorCapabilityDemoMoment>;
+  actors: DirectorRuntimeActor[];
+  progress: number;
+  fixtureKind: DirectorAuditFixtureKind;
+}) {
+  if (fixtureKind !== "object_motion_process") return null;
+  const carriers = actors.flatMap((actor) =>
+    sampleDirectorActorState(moment, actor, progress, actors).process?.carriers ?? [],
+  );
+  if (carriers.length === 0) return null;
+
+  return (
+    <group>
+      {/* Phase 1B.4.6 process overlay: carrier positions are already world-space. */}
+      {carriers.map((carrier) => (
+        <mesh key={carrier.id} position={carrier.position}>
+          <sphereGeometry args={[0.105, 12, 12]} />
+          <meshBasicMaterial color="#7dd3fc" transparent opacity={0.9} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 function AnimatedActor({
   capability,
   moment,
@@ -471,12 +555,17 @@ function AnimatedActor({
         </mesh>
       ) : null}
       {fixtureMode === "controlled" ? (
-        <ControlledAuditActor
-          capabilityId={capability.id}
-          role={resolvedRole.role}
-          fixtureKind={fixtureKind}
-          targetExtent={targetExtent}
-        />
+        <>
+          <ControlledAuditActor
+            capabilityId={capability.id}
+            role={resolvedRole.role}
+            fixtureKind={fixtureKind}
+            targetExtent={targetExtent}
+          />
+          {fixtureKind === "object_motion_process" && resolvedRole.role === "primary_subject" ? (
+            <ControlledProcessQuantityOverlay process={sample.process} targetExtent={targetExtent} />
+          ) : null}
+        </>
       ) : (
         <Suspense fallback={loadingLabel(resolvedRole.role)}>
           {resolvedRole.asset ? (
@@ -692,6 +781,7 @@ export function DirectorCapabilityPreview({
         ) : null;
       })}
       <TeachingRelationship capability={capability} actors={actors} progress={progress} />
+      <ProcessCarrierOverlay moment={moment} actors={actors} progress={progress} fixtureKind={fixtureKind} />
       {showCameraPath ? <DirectorShotPathGuide moment={moment} actors={actors} /> : null}
       <DirectorShotCameraController
         moment={moment}

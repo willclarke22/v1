@@ -13,6 +13,7 @@ import {
 } from "../motion-program/director-motion-program-compiler";
 import {
   MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION,
+  MOTION_PROGRAM_PROCESS_QUANTITY_VERSION,
   MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
   type MyWayMotionProgramV1,
 } from "../motion-program/motion-program-contract";
@@ -68,6 +69,14 @@ export const DIRECTOR_OBJECT_MOTION_PHASE1B4_5_CHOREOGRAPHY_CAPABILITIES = [
   "merge",
 ] as const;
 
+export const DIRECTOR_OBJECT_MOTION_PHASE1B4_6_PROCESS_CAPABILITIES = [
+  "flow",
+  "emit",
+  "fill",
+  "drain",
+  "accumulate",
+] as const;
+
 export const DIRECTOR_OBJECT_MOTION_KNOWN_REDUNDANCY: Record<
   string,
   {
@@ -80,26 +89,6 @@ export const DIRECTOR_OBJECT_MOTION_KNOWN_REDUNDANCY: Record<
     reason:
       "Spin and Rotate still share one repeated-rotation approximation; dedicated continuous spin semantics remain a later strengthening.",
   },
-  flow: {
-    peers: ["emit"],
-    reason:
-      "Flow and Emit still share a rigid transform proxy; process/carrier semantics remain Phase 1B.4.6 work.",
-  },
-  emit: {
-    peers: ["flow"],
-    reason:
-      "Emit still shares Flow's rigid transform proxy instead of originating independent carriers/signals.",
-  },
-  fill: {
-    peers: ["accumulate"],
-    reason:
-      "Fill and Accumulate still share a scale-up proxy instead of distinct occupied-volume versus build-up semantics.",
-  },
-  accumulate: {
-    peers: ["fill"],
-    reason:
-      "Accumulate still shares Fill's scale-up proxy instead of visibly adding quantity at a region.",
-  },
 };
 
 export type DirectorObjectMotionFidelityCheck = {
@@ -111,6 +100,7 @@ export type DirectorObjectMotionFidelityCheck = {
     | "finite"
     | "regression_canary"
     | "recipe_strengthening"
+    | "process_strengthening"
     | "redundancy_diagnostic";
 };
 
@@ -126,6 +116,7 @@ export type DirectorObjectMotionQualificationState =
   | "frozen_canary"
   | "recipe_strengthened"
   | "choreography_strengthened"
+  | "process_strengthened"
   | "fixture_ready_for_review"
   | "needs_semantic_strengthening";
 
@@ -159,6 +150,7 @@ export type DirectorObjectMotionFidelityReport = {
   strengthening_version:
     | typeof MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION
     | typeof MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION
+    | typeof MOTION_PROGRAM_PROCESS_QUANTITY_VERSION
     | null;
   motion_program: DirectorObjectMotionProgramEvidence;
   samples: DirectorObjectMotionFidelitySample[];
@@ -483,6 +475,40 @@ function choreographyStrengtheningCheck(
   };
 }
 
+function processStrengtheningCheck(
+  capability: DirectorCapability,
+  motionProgram: DirectorObjectMotionProgramEvidence,
+): DirectorObjectMotionFidelityCheck | null {
+  const isProcessCapability = (
+    DIRECTOR_OBJECT_MOTION_PHASE1B4_6_PROCESS_CAPABILITIES as readonly string[]
+  ).includes(capability.id);
+  if (!isProcessCapability) return null;
+
+  const recipeIds =
+    motionProgram.program?.diagnostics.recipe_ids ?? [];
+  const processVersion =
+    motionProgram.program?.diagnostics.process_version ?? null;
+  const processTrackCount =
+    motionProgram.program?.tracks.filter(
+      (track) => track.channel === "process",
+    ).length ?? 0;
+  return {
+    id: "phase1b4_6_process_quantity",
+    description:
+      "The selected semantic compiles through the Phase 1B.4.6 process/quantity lane without changing the actor root transform or declared support level.",
+    passed:
+      motionProgram.route === "motion_program" &&
+      processVersion === MOTION_PROGRAM_PROCESS_QUANTITY_VERSION &&
+      processTrackCount > 0 &&
+      recipeIds.length > 0,
+    measured:
+      recipeIds.length > 0
+        ? `${recipeIds.join(", ")} · ${processTrackCount} process track(s) · support remains ${capability.compiler.threejs}`
+        : `${motionProgram.route} · ${motionProgram.reason}`,
+    kind: "process_strengthening",
+  };
+}
+
 function redundancyCheck(
   capability: DirectorCapability,
 ): DirectorObjectMotionFidelityCheck | null {
@@ -528,7 +554,7 @@ function limitationsFor(
   }
   if (fixture === "object_motion_process") {
     limitations.push(
-      "The process fixture distinguishes container/source/route context, but Three.js quantity/particle semantics are still proxies until the next strengthening pass.",
+      "Phase 1B.4.6 supplies deterministic renderer-neutral quantity channels and carrier samples; it does not claim fluid, smoke, granular, collision, or production particle simulation.",
     );
   }
 
@@ -679,6 +705,11 @@ export function buildDirectorObjectMotionFidelityReport(
     motionProgram,
   );
   if (choreographyStrengthening) checks.push(choreographyStrengthening);
+  const processStrengthening = processStrengtheningCheck(
+    capability,
+    motionProgram,
+  );
+  if (processStrengthening) checks.push(processStrengthening);
   const redundancy = redundancyCheck(capability);
   if (redundancy) checks.push(redundancy);
 
@@ -693,6 +724,9 @@ export function buildDirectorObjectMotionFidelityReport(
   const isChoreographyStrengthened = (
     DIRECTOR_OBJECT_MOTION_PHASE1B4_5_CHOREOGRAPHY_CAPABILITIES as readonly string[]
   ).includes(capability.id);
+  const isProcessStrengthened = (
+    DIRECTOR_OBJECT_MOTION_PHASE1B4_6_PROCESS_CAPABILITIES as readonly string[]
+  ).includes(capability.id);
   const canaryPassed =
     !canary || canary.passed;
 
@@ -703,11 +737,13 @@ export function buildDirectorObjectMotionFidelityReport(
     fixture,
     controlled_geometry: true,
     strengthening_version:
-      isChoreographyStrengthened
-        ? MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION
-        : isRecipeStrengthened
-          ? MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION
-          : null,
+      isProcessStrengthened
+        ? MOTION_PROGRAM_PROCESS_QUANTITY_VERSION
+        : isChoreographyStrengthened
+          ? MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION
+          : isRecipeStrengthened
+            ? MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION
+            : null,
     motion_program: motionProgram,
     samples,
     motion_signature: {
@@ -732,12 +768,15 @@ export function buildDirectorObjectMotionFidelityReport(
         ? "needs_semantic_strengthening"
         : isCanary && canaryPassed
           ? "frozen_canary"
-          : isChoreographyStrengthened &&
-              choreographyStrengthening?.passed
-            ? "choreography_strengthened"
-            : isRecipeStrengthened && recipeStrengthening?.passed
-              ? "recipe_strengthened"
-              : "fixture_ready_for_review",
+          : isProcessStrengthened &&
+              processStrengthening?.passed
+            ? "process_strengthened"
+            : isChoreographyStrengthened &&
+                choreographyStrengthening?.passed
+              ? "choreography_strengthened"
+              : isRecipeStrengthened && recipeStrengthening?.passed
+                ? "recipe_strengthened"
+                : "fixture_ready_for_review",
     redundancy_peers: known?.peers ?? [],
     limitations: limitationsFor(capability, fixture),
     visual_review_required: true,

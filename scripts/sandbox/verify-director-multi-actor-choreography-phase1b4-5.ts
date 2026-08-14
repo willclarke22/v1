@@ -589,12 +589,10 @@ for (
   );
 }
 
-for (const id of ["spin", "flow", "emit", "fill", "accumulate"]) {
-  assert(
-    Boolean(DIRECTOR_OBJECT_MOTION_KNOWN_REDUNDANCY[id]),
-    `${id} was promoted beyond the Phase 1B.4.5 scope.`,
-  );
-}
+assert(
+  Boolean(DIRECTOR_OBJECT_MOTION_KNOWN_REDUNDANCY.spin),
+  "Spin was promoted beyond the Phase 1B.4.5 choreography scope.",
+);
 
 for (const id of DIRECTOR_OBJECT_MOTION_REGRESSION_CANARIES) {
   const capability = DIRECTOR_CAPABILITIES.find(
@@ -662,5 +660,5 @@ console.log(
   "Assemble/Disassemble/Scatter/Split/Merge, containment, and semantic connection choreography passed with stable actor IDs and deterministic random-access sampling.",
 );
 console.log(
-  "Phase 1B.4.2/1B.4.3/1B.4.4 guarantees remain protected; process semantics, support classifications, camera, lighting, GLM prompt, and Builder collision authority remain unpromoted.",
+  "Phase 1B.4.2/1B.4.3/1B.4.4 guarantees remain protected; support classifications, camera, lighting, GLM prompt, and Builder collision authority remain unchanged across later semantic strengthening.",
 );

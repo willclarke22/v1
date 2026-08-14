@@ -346,3 +346,21 @@ Director V2 does not currently expose a standalone `scatter` behaviour.
 The Capability Library still owns zero direct Canvas elements. Playback remains
 isolated in the single demand-rendered audit viewer, and process/quantity
 semantics remain reserved for the next phase.
+
+## Phase 1B.4.6 — process / quantity semantics
+
+The Director Capability Library still exposes the same semantic capability IDs
+and support classifications, but Flow, Emit, Fill, Drain, and Accumulate now use
+the Universal Motion Program's executable `process` lane rather than root
+translation/scale proxies.
+
+Fill and Drain operate on persistent normalized `fill_level`; Accumulate uses a
+separate `accumulated_amount` quantity. Flow samples carriers along explicit
+source/route/destination semantics, while Emit samples independent carriers from
+the source. The source/container actor root transform remains unchanged.
+
+The controlled process fixture and inspector expose process recipe IDs, process
+tracks, and outgoing scene-state quantity values. Carrier samples are
+renderer-neutral evidence, not fluid/particle simulation. Asset Scene Builder
+still owns measured containment/collision/fit, and the existing single
+demand-rendered audit Canvas remains the only WebGL owner.

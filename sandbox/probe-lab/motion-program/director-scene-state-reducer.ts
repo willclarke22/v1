@@ -17,6 +17,7 @@ import {
   type DirectorSceneArticulationState,
   type DirectorSceneAttachmentState,
   type DirectorSceneChoreographyState,
+  type DirectorSceneProcessState,
   type DirectorSceneState,
   type DirectorSceneStateActor,
 } from "./director-scene-state";
@@ -280,6 +281,43 @@ function choreographyStateFromEffect(
   };
 }
 
+
+function processStateFromEffect(
+  moment: DirectorMoment,
+  actorState: DirectorActorSceneState,
+  effect: MotionProgramStateEffect,
+): DirectorSceneProcessState {
+  const existing = actorState.process_state;
+  const quantities = {
+    ...(existing?.quantities ?? {}),
+  };
+  const quantityKey =
+    typeof effect.parameters.quantity_key === "string"
+      ? effect.parameters.quantity_key
+      : null;
+  const value = Number(effect.parameters.value);
+  if (quantityKey && Number.isFinite(value)) {
+    quantities[quantityKey] = value;
+  }
+
+  return {
+    quantities,
+    last_process_kind:
+      typeof effect.parameters.process_kind === "string"
+        ? effect.parameters.process_kind
+        : existing?.last_process_kind ?? null,
+    source_entity_id:
+      typeof effect.parameters.source_entity_id === "string"
+        ? effect.parameters.source_entity_id
+        : existing?.source_entity_id ?? actorState.actor_id,
+    target_entity_id:
+      typeof effect.parameters.target_entity_id === "string"
+        ? effect.parameters.target_entity_id
+        : null,
+    updated_at_moment_id: moment.id,
+  };
+}
+
 function applyStateEffect(
   moment: DirectorMoment,
   actorState: DirectorActorSceneState,
@@ -309,6 +347,14 @@ function applyStateEffect(
   }
   if (effect.kind === "choreography_state") {
     actorState.choreography_state = choreographyStateFromEffect(
+      moment,
+      actorState,
+      effect,
+    );
+    return true;
+  }
+  if (effect.kind === "process_state") {
+    actorState.process_state = processStateFromEffect(
       moment,
       actorState,
       effect,
@@ -481,6 +527,6 @@ export function buildDirectorSceneStateInspectorSnapshot(
     outgoing_state: reduction.outgoing_state,
     actor_results: reduction.actor_results,
     note:
-      "Phase 1B.4.4 separates deterministic motion sampling from persistent state; Phase 1B.4.5 adds explicit multi-actor choreography relations without promoting process semantics.",
+      "Phase 1B.4.4 separates deterministic motion sampling from persistent state; Phase 1B.4.5 adds explicit multi-actor choreography relations; Phase 1B.4.6 persists qualified quantity/process state without pretending transient carriers are physics simulation.",
   };
 }

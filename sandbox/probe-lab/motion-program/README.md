@@ -96,3 +96,32 @@ relations through the immutable scene-state reducer.
 
 Process/quantity semantics (`flow`, `emit`, `fill`, `accumulate`, `drain`, and
 related material-front behaviour) remain outside this phase.
+
+## Phase 1B.4.6 — process / quantity semantics
+
+Phase 1B.4.6 makes `process` an executable MotionProgram channel instead of
+representing process intent with rigid actor transforms.
+
+Qualified process semantics:
+
+- `fill` interpolates a normalized `fill_level` quantity and persists the
+  completed level into `DirectorSceneState`;
+- `drain` begins from the incoming persisted `fill_level` when available and
+  reduces that quantity without shrinking the container actor;
+- `accumulate` interpolates a distinct non-negative `accumulated_amount`
+  quantity instead of reusing Fill;
+- `flow` samples deterministic carrier positions from a source, through optional
+  route points, toward a declared destination actor/point;
+- `emit` samples deterministic independent carriers from the source along an
+  actor-local direction/spread without translating or scaling the source actor.
+
+The process sampler returns renderer-neutral `quantities`, `carriers`, and
+`active_process_track_ids` beside position/rotation/scale. Scene-state reduction
+persists completed quantity values and last-process metadata, while transient
+carrier samples are reconstructed deterministically at arbitrary progress rather
+than stored as mutable playback history.
+
+This is not fluid, smoke, granular, collision, or production particle physics.
+Carrier geometry/material choice remains a renderer/asset concern, measured
+containment remains Asset Scene Builder authority, and support classifications,
+camera, lighting, and the GLM-facing Director language are unchanged.

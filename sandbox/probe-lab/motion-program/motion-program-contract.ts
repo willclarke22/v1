@@ -13,9 +13,12 @@ export const MOTION_PROGRAM_SCENE_STATE_VERSION =
 export const MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION =
   "director_multi_actor_choreography_phase1b4_5_v1" as const;
 
+export const MOTION_PROGRAM_PROCESS_QUANTITY_VERSION =
+  "director_process_quantity_phase1b4_6_v1" as const;
+
 /**
- * Renderer-neutral execution channels. Phase 1B.4.5 still executes transform
- * and orientation only. Articulation semantics are carried as recipes,
+ * Renderer-neutral execution channels. Phase 1B.4.6 executes transform,
+ * orientation, and process channels. Articulation semantics are carried as recipes,
  * requirements, and declared state effects until asset-directability metadata
  * can resolve real subparts/anchors without pretending root motion is a rig.
  */
@@ -35,6 +38,7 @@ export const MOTION_PROGRAM_CHANNELS = [
 export const MOTION_PROGRAM_RUNTIME_CHANNELS = [
   "transform",
   "orientation",
+  "process",
 ] as const;
 
 export const MOTION_PROGRAM_COORDINATE_SPACES = [
@@ -70,6 +74,9 @@ export const MOTION_PROGRAM_OPERATIONS = [
   "sample_target_offset",
   "orient_axis_toward_target",
   "detach_from_target",
+  "interpolate_quantity",
+  "sample_flow_path",
+  "emit_carriers",
 ] as const;
 
 export type MotionProgramChannel =
@@ -191,6 +198,41 @@ export type MotionProgramDetachFromTargetTrack = MotionProgramTrackBase & {
   };
 };
 
+export type MotionProgramQuantityTrack = MotionProgramTrackBase & {
+  channel: "process";
+  operation: "interpolate_quantity";
+  parameters: {
+    quantity_key: string;
+    from: number;
+    to: number;
+  };
+};
+
+export type MotionProgramFlowPathTrack = MotionProgramTrackBase & {
+  channel: "process";
+  operation: "sample_flow_path";
+  parameters: {
+    source_entity_id: string;
+    destination_entity_id: string | null;
+    route_points: MotionProgramVec3[];
+    fallback_destination: MotionProgramVec3;
+    carrier_count: number;
+  };
+};
+
+export type MotionProgramEmitCarriersTrack = MotionProgramTrackBase & {
+  channel: "process";
+  operation: "emit_carriers";
+  parameters: {
+    source_entity_id: string;
+    origin: MotionProgramVec3;
+    direction: MotionProgramVec3;
+    distance: number;
+    carrier_count: number;
+    spread_radians: number;
+  };
+};
+
 export type MotionProgramTrack =
   | MotionProgramVectorLerpTrack
   | MotionProgramAngleLerpTrack
@@ -198,7 +240,10 @@ export type MotionProgramTrack =
   | MotionProgramPeriodicTrack
   | MotionProgramTargetOffsetTrack
   | MotionProgramOrientAxisTowardTargetTrack
-  | MotionProgramDetachFromTargetTrack;
+  | MotionProgramDetachFromTargetTrack
+  | MotionProgramQuantityTrack
+  | MotionProgramFlowPathTrack
+  | MotionProgramEmitCarriersTrack;
 
 export type MotionProgramConstraint = {
   id: string;
@@ -244,6 +289,9 @@ export type MotionProgramDiagnostics = {
   choreography_version?:
     | typeof MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION
     | null;
+  process_version?:
+    | typeof MOTION_PROGRAM_PROCESS_QUANTITY_VERSION
+    | null;
   source_kind: "director_events" | "synthetic";
   source_event_ids: string[];
   compiled_event_ids: string[];
@@ -283,9 +331,24 @@ export type MotionProgramSampleContext = {
   ) => MotionProgramInitialState | null;
 };
 
+export type MotionProgramProcessCarrierSample = {
+  id: string;
+  source_entity_id: string;
+  destination_entity_id: string | null;
+  position: MotionProgramVec3;
+  progress: number;
+};
+
+export type MotionProgramProcessSample = {
+  quantities: Record<string, number>;
+  carriers: MotionProgramProcessCarrierSample[];
+  active_process_track_ids: string[];
+};
+
 export type MotionProgramSample = MotionProgramInitialState & {
   progress: number;
   applied_track_ids: string[];
+  process: MotionProgramProcessSample;
   diagnostics: {
     finite: boolean;
     unsupported_track_ids: string[];

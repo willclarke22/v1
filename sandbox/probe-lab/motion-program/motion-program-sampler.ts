@@ -58,6 +58,39 @@ function lerp(
   ];
 }
 
+function lerpScalar(from: number, to: number, t: number) {
+  return from + (to - from) * t;
+}
+
+function samplePolyline(
+  points: readonly MotionProgramVec3[],
+  progress: number,
+): MotionProgramVec3 {
+  if (!points.length) return [0, 0, 0];
+  if (points.length === 1) return [...points[0]!] as MotionProgramVec3;
+
+  const segmentProgress = clampMotionProgress(progress) * (points.length - 1);
+  const segmentIndex = Math.min(
+    points.length - 2,
+    Math.floor(segmentProgress),
+  );
+  const local = segmentProgress - segmentIndex;
+  return lerp(points[segmentIndex]!, points[segmentIndex + 1]!, local);
+}
+
+function carrierProgress(
+  processProgress: number,
+  carrierIndex: number,
+  carrierCount: number,
+) {
+  const count = Math.max(1, carrierCount);
+  const offset = (carrierIndex / count) * 0.62;
+  if (processProgress <= offset) return 0;
+  return clampMotionProgress(
+    (processProgress - offset) / Math.max(1e-9, 1 - offset),
+  );
+}
+
 function length(value: MotionProgramVec3) {
   return Math.hypot(value[0], value[1], value[2]);
 }
@@ -144,6 +177,9 @@ export function sampleMotionProgram(
   let position: MotionProgramVec3 = [...initialState.position];
   let rotation: MotionProgramVec3 = [...initialState.rotation];
   let scale: MotionProgramVec3 = [...initialState.scale];
+  const quantities: Record<string, number> = {};
+  const carriers: MotionProgramSample["process"]["carriers"] = [];
+  const activeProcessTrackIds: string[] = [];
   const appliedTrackIds: string[] = [];
   const unsupportedTrackIds: string[] = [];
   const sampledProgress = clampMotionProgress(progress);
@@ -319,13 +355,105 @@ export function sampleMotionProgram(
         );
         break;
       }
+      case "interpolate_quantity": {
+        quantities[track.parameters.quantity_key] = lerpScalar(
+          track.parameters.from,
+          track.parameters.to,
+          t,
+        );
+        activeProcessTrackIds.push(track.id);
+        break;
+      }
+      case "sample_flow_path": {
+        const destinationState = track.parameters.destination_entity_id
+          ? targetState(
+              context,
+              track.parameters.destination_entity_id,
+              sampledProgress,
+            )
+          : null;
+        const destination = destinationState?.position ??
+          track.parameters.fallback_destination;
+        const route: MotionProgramVec3[] = [
+          [...position] as MotionProgramVec3,
+          ...track.parameters.route_points.map(
+            (point) => [...point] as MotionProgramVec3,
+          ),
+          [...destination] as MotionProgramVec3,
+        ];
+        const count = Math.max(
+          1,
+          Math.trunc(track.parameters.carrier_count),
+        );
+        for (let index = 0; index < count; index += 1) {
+          const carrierT = carrierProgress(t, index, count);
+          carriers.push({
+            id: `${track.id}:carrier:${index}`,
+            source_entity_id: track.parameters.source_entity_id,
+            destination_entity_id:
+              track.parameters.destination_entity_id,
+            position: samplePolyline(route, carrierT),
+            progress: carrierT,
+          });
+        }
+        activeProcessTrackIds.push(track.id);
+        break;
+      }
+      case "emit_carriers": {
+        const localDirection = normalize(track.parameters.direction);
+        const resolvedDirection = resolveMotionVectorSpace(
+          localDirection,
+          track.coordinate_space,
+          initialState.rotation,
+        );
+        if (!resolvedDirection) {
+          unsupportedTrackIds.push(track.id);
+          continue;
+        }
+        const count = Math.max(
+          1,
+          Math.trunc(track.parameters.carrier_count),
+        );
+        for (let index = 0; index < count; index += 1) {
+          const carrierT = carrierProgress(t, index, count);
+          const centered =
+            count <= 1 ? 0 : index / (count - 1) - 0.5;
+          const spreadDirection = rotateMotionVectorAroundAxis(
+            resolvedDirection,
+            "y",
+            centered * track.parameters.spread_radians,
+          );
+          carriers.push({
+            id: `${track.id}:carrier:${index}`,
+            source_entity_id: track.parameters.source_entity_id,
+            destination_entity_id: null,
+            position: add(
+              track.parameters.origin,
+              multiply(
+                normalize(spreadDirection),
+                track.parameters.distance * carrierT,
+              ),
+            ),
+            progress: carrierT,
+          });
+        }
+        activeProcessTrackIds.push(track.id);
+        break;
+      }
     }
 
     appliedTrackIds.push(track.id);
   }
 
   const finite =
-    finiteVec(position) && finiteVec(rotation) && finiteVec(scale);
+    finiteVec(position) &&
+    finiteVec(rotation) &&
+    finiteVec(scale) &&
+    Object.values(quantities).every(Number.isFinite) &&
+    carriers.every(
+      (carrier) =>
+        finiteVec(carrier.position) && Number.isFinite(carrier.progress),
+    );
 
   return {
     position,
@@ -333,6 +461,11 @@ export function sampleMotionProgram(
     scale,
     progress: sampledProgress,
     applied_track_ids: appliedTrackIds,
+    process: {
+      quantities,
+      carriers,
+      active_process_track_ids: [...new Set(activeProcessTrackIds)],
+    },
     diagnostics: {
       finite,
       unsupported_track_ids: [...new Set(unsupportedTrackIds)],

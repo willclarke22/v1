@@ -216,20 +216,13 @@ for (const strengthened of [
     `${strengthened} still carries stale Phase 1B.4.1 shared-branch redundancy evidence.`,
   );
 }
-// Phase 1B.4.5 is allowed to remove the multi-actor overlaps after its own
-// choreography verifier proves them. Spin and process/quantity overlaps remain.
-for (const remaining of [
-  "spin",
-  "flow",
-  "emit",
-  "fill",
-  "accumulate",
-]) {
-  assert(
-    Boolean(DIRECTOR_OBJECT_MOTION_KNOWN_REDUNDANCY[remaining]),
-    `${remaining} lost unresolved semantic-overlap evidence prematurely.`,
-  );
-}
+// Later strengthening phases may remove multi-actor and process/quantity
+// overlaps after their own executable verifiers prove them. Spin remains the
+// unresolved shared actor-rotation overlap after Phase 1B.4.6.
+assert(
+  Boolean(DIRECTOR_OBJECT_MOTION_KNOWN_REDUNDANCY.spin),
+  "Spin lost unresolved semantic-overlap evidence prematurely.",
+);
 
 for (const id of DIRECTOR_OBJECT_MOTION_REGRESSION_CANARIES) {
   const report = buildDirectorObjectMotionFidelityReport(capability(id));
@@ -638,8 +631,8 @@ const mixedMoment: DirectorMoment = {
   events: [
     ...attachMoment.events,
     {
-      id: "phase1b4_3_mixed_flow",
-      behaviour: "flow",
+      id: "phase1b4_3_mixed_spin",
+      behaviour: "spin",
       actor_entity_id: "primary_subject",
       target_entity_id: null,
       supporting_entity_ids: [],
@@ -647,7 +640,7 @@ const mixedMoment: DirectorMoment = {
       duration_ms: 1800,
       easing: "linear",
       path_hint: null,
-      description: "Intentional unsupported mixed-event safety proof.",
+      description: "Intentional still-unsupported mixed-event safety proof.",
       parameters: {},
       fallback_behaviour: "move_to",
     },
@@ -660,7 +653,7 @@ const mixedCompilation = compileDirectorActorMotionProgram(
 );
 assert(
   mixedCompilation.route === "legacy_required",
-  "Mixed unsupported actor motion must still fail closed to the complete legacy path.",
+  "Mixed still-unsupported actor motion must fail closed to the complete legacy path.",
 );
 
 for (const behaviour of [
@@ -792,7 +785,7 @@ console.log(
   "Follow/Attach/Detach moving-target semantics, Aim-vs-Align axis separation, hinge/open/close recipes, Slide local rail, and Roll distance/radius coupling passed.",
 );
 console.log(
-  "Random-access determinism and the four Phase 1B.4.2 frozen canaries remain intact; later phases may strengthen multi-actor choreography while Spin/process overlaps stay explicit.",
+  "Random-access determinism and the four Phase 1B.4.2 frozen canaries remain intact; later phases may strengthen other semantic lanes while Spin remains explicit.",
 );
 console.log(
   "Articulation stays declared-not-executed as a subpart channel, support classifications remain unchanged, and the Capability Library still owns zero direct Canvas elements.",

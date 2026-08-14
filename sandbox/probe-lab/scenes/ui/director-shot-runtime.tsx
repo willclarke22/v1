@@ -19,6 +19,9 @@ import {
   compileDirectorActorMotionProgram,
   sampleCompiledDirectorActorMotionProgram,
 } from "../../motion-program/director-motion-program-compiler";
+import type {
+  MotionProgramProcessSample,
+} from "../../motion-program/motion-program-contract";
 import {
   directorSceneStateActorVisible,
   resolveDirectorActorWithSceneState,
@@ -43,6 +46,8 @@ export type DirectorActorSample = {
   scale: THREE.Vector3;
   /** Incoming/cross-moment visibility state; current-shot presentation events remain presentation-owned. */
   visible?: boolean;
+  /** Renderer-neutral Phase 1B.4.6 process output; root transform remains independent. */
+  process?: MotionProgramProcessSample;
 };
 
 export type DirectorCameraPose = {
@@ -384,15 +389,13 @@ function sampleDirectorActorEventStateLegacy(
         break;
       case "flow":
       case "emit":
-        position.y += amplitude * t;
-        scale.setScalar(1 + 0.18 * t);
-        break;
       case "accumulate":
       case "fill":
-        scale.setScalar(0.55 + 0.45 * t);
-        break;
       case "drain":
-        scale.setScalar(Math.max(0.08, 1 - 0.75 * t));
+        // Phase 1B.4.6 process semantics never mutate the source/container root
+        // transform. Qualified execution lives in the MotionProgram process lane;
+        // mixed unsupported actors fail closed visually rather than reviving the
+        // former rigid-transform quantity proxy.
         break;
       case "pour":
         setAxisRotation(rotation, axis ?? "z", THREE.MathUtils.degToRad(numberParam(params.degrees, 70)) * t);
@@ -503,6 +506,7 @@ function sampleDirectorActorEventStateWithStack(
         position: new THREE.Vector3(...motionSample.position),
         rotation: new THREE.Euler(...motionSample.rotation, "XYZ"),
         scale: new THREE.Vector3(...motionSample.scale),
+        process: motionSample.process,
       };
     }
   }

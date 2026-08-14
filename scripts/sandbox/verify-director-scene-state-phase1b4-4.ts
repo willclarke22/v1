@@ -389,30 +389,30 @@ assert(
 );
 
 // Unsupported legacy motion remains honest: state reduction does not fabricate a
-// persistent transform for behaviours that still belong to later phases.
-const flowCapability = capability("flow");
-const flowMoment = directorCapabilityDemoMoment(flowCapability);
-const flowActors = directorObjectMotionFidelityFixtureActors(flowCapability);
-const flowInitial = createDirectorSceneState(flowActors);
-const flowReduction = reduceDirectorMomentSceneState(
-  flowMoment,
-  flowActors,
-  flowInitial,
+// persistent transform for a behaviour that still belongs to a later lane.
+const spinCapability = capability("spin");
+const spinMoment = directorCapabilityDemoMoment(spinCapability);
+const spinActors = directorObjectMotionFidelityFixtureActors(spinCapability);
+const spinInitial = createDirectorSceneState(spinActors);
+const spinReduction = reduceDirectorMomentSceneState(
+  spinMoment,
+  spinActors,
+  spinInitial,
 );
-const flowResult = flowReduction.actor_results.find(
+const spinResult = spinReduction.actor_results.find(
   (result) => result.actor_id === "primary_subject",
 );
-assert(flowResult, "Flow scene-state result missing.");
+assert(spinResult, "Spin scene-state result missing.");
 assert(
-  flowResult.route === "legacy_required",
-  `Flow must remain legacy_required, found ${flowResult.route}.`,
+  spinResult.route === "legacy_required",
+  `Spin must remain legacy_required, found ${spinResult.route}.`,
 );
 assert(
   distance(
-    actorState(flowReduction.outgoing_state).position,
-    actorState(flowInitial).position,
+    actorState(spinReduction.outgoing_state).position,
+    actorState(spinInitial).position,
   ) < 1e-9,
-  "Phase 1B.4.4 invented persistent Flow transform state.",
+  "Phase 1B.4.4 invented persistent Spin transform state.",
 );
 
 // Supported state effects are carried inside MotionProgram rather than being hidden
@@ -566,5 +566,5 @@ console.log(
   "Open→Hold→Close, Attach→later target motion→Detach, Hide→Hold→Show, input immutability, and random-access reconstruction passed.",
 );
 console.log(
-  "Phase 1B.4.2/1B.4.3 canaries remain intact; unsupported multi-actor/process motion and support classifications remain unpromoted.",
+  "Phase 1B.4.2/1B.4.3 canaries remain intact; unsupported legacy motion and support classifications remain honest across later strengthening phases.",
 );

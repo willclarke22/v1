@@ -72,6 +72,13 @@ export type DirectorMotionRecipeActor = {
     follow_anchor: boolean;
     updated_at_moment_id: string;
   } | null;
+  process_state?: {
+    quantities: Record<string, number>;
+    last_process_kind: string | null;
+    source_entity_id: string | null;
+    target_entity_id: string | null;
+    updated_at_moment_id: string | null;
+  } | null;
 };
 
 export type DirectorRelationalArticulationRecipe = {

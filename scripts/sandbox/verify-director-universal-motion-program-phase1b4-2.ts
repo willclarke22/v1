@@ -5,7 +5,6 @@ import {
   DIRECTOR_CAPABILITIES,
 } from "../../sandbox/probe-lab/motion-camera-library/director-capability-registry";
 import {
-  DIRECTOR_OBJECT_MOTION_KNOWN_REDUNDANCY,
   DIRECTOR_OBJECT_MOTION_REGRESSION_CANARIES,
   buildDirectorObjectMotionFidelityReport,
 } from "../../sandbox/probe-lab/motion-camera-library/director-object-motion-fidelity";
@@ -49,16 +48,18 @@ assert(
     "director_universal_motion_program_phase1b4_2_v1",
   "Universal Motion Program Phase 1B.4.2 foundation version drifted.",
 );
-assert(
-  JSON.stringify(MOTION_PROGRAM_RUNTIME_CHANNELS) ===
-    JSON.stringify(["transform", "orientation"]),
-  "Phase 1B.4.2 may execute only transform and orientation channels.",
-);
+for (const foundationChannel of ["transform", "orientation"] as const) {
+  assert(
+    (MOTION_PROGRAM_RUNTIME_CHANNELS as readonly string[]).includes(
+      foundationChannel,
+    ),
+    `Phase 1B.4.2 foundation runtime channel disappeared: ${foundationChannel}.`,
+  );
+}
 for (const futureChannel of [
   "articulation",
   "skeletal",
   "deformation",
-  "process",
   "physics",
   "camera",
   "lighting",
@@ -72,9 +73,13 @@ for (const futureChannel of [
     !(MOTION_PROGRAM_RUNTIME_CHANNELS as readonly string[]).includes(
       futureChannel,
     ),
-    `Phase 1B.4.2 must not falsely execute future channel ${futureChannel}.`,
+    `A later phase must not falsely execute still-unsupported channel ${futureChannel}.`,
   );
 }
+assert(
+  (MOTION_PROGRAM_CHANNELS as readonly string[]).includes("process"),
+  "Process disappeared from the renderer-neutral MotionProgram contract.",
+);
 for (const requiredFoundationSpace of ["world", "actor_local"] as const) {
   assert(
     (MOTION_PROGRAM_RUNTIME_COORDINATE_SPACES as readonly string[]).includes(
@@ -219,8 +224,8 @@ const unsupportedProgram: MyWayMotionProgramV1 = {
   tracks: [
     {
       ...baseTrack,
-      id: "unsupported_process_track",
-      channel: "process",
+      id: "unsupported_physics_track",
+      channel: "physics",
       coordinate_space: "world",
     } as unknown as MotionProgramTrack,
   ],
@@ -236,9 +241,9 @@ const unsupportedSample = sampleMotionProgram(
 );
 assert(
   unsupportedSample.diagnostics.unsupported_track_ids.includes(
-    "unsupported_process_track",
+    "unsupported_physics_track",
   ),
-  "Unsupported future channel was not surfaced explicitly by the sampler.",
+  "Still-unsupported future channel was not surfaced explicitly by the sampler.",
 );
 assert(
   JSON.stringify(unsupportedSample.position) === JSON.stringify([0, 0, 0]),
@@ -297,30 +302,20 @@ for (const id of DIRECTOR_OBJECT_MOTION_REGRESSION_CANARIES) {
   }
 }
 
-// Later phases may legitimately strengthen multi-actor choreography. Process
-// semantics remain the unresolved overlap owned by the post-1B.4.5 roadmap.
-for (const id of [
-  "flow",
-  "emit",
-  "fill",
-  "accumulate",
-]) {
+// Later phases may legitimately strengthen semantics that were unresolved in
+// the Phase 1B.4.2 foundation. If process capabilities are now compiled, they
+// must identify a later process version rather than masquerading as foundation work.
+for (const id of ["flow", "emit", "fill", "accumulate"]) {
   const capability = DIRECTOR_CAPABILITIES.find((item) => item.id === id);
-  assert(capability, `Missing semantic-overlap capability ${id}.`);
+  assert(capability, `Missing process capability ${id}.`);
   const report = buildDirectorObjectMotionFidelityReport(capability);
   assert(report, `${id} is missing object-motion fidelity evidence.`);
-  assert(
-    report.motion_program.route === "legacy_required",
-    `${id} must remain on the legacy compatibility path until semantic strengthening; found ${report.motion_program.route}.`,
-  );
-  assert(
-    report.qualification_state === "needs_semantic_strengthening",
-    `${id} was silently qualified by the MotionProgram foundation.`,
-  );
-  assert(
-    Boolean(DIRECTOR_OBJECT_MOTION_KNOWN_REDUNDANCY[id]),
-    `${id} lost its Phase 1B.4.1 known-redundancy evidence.`,
-  );
+  if (report.motion_program.route === "motion_program") {
+    assert(
+      Boolean(report.motion_program.program?.diagnostics.process_version),
+      `${id} executes without a later-phase process diagnostic version.`,
+    );
+  }
 }
 
 assert(
@@ -421,7 +416,7 @@ console.log(
   "Renderer-neutral deterministic tracks, composition operators, coordinate-space honesty, and unsupported-lane diagnostics passed.",
 );
 console.log(
-  "Translate/Rotate/Pivot/Oscillate remain frozen and dual-run equivalent; known semantic overlaps remain explicitly unqualified.",
+  "Translate/Rotate/Pivot/Oscillate remain frozen and dual-run equivalent; remaining semantic overlaps stay explicitly unqualified.",
 );
 console.log(
   "Unnamed multi-track motion executes without a DirectorCapability id; the 183-capability semantic catalog and support labels remain unchanged.",

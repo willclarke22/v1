@@ -390,13 +390,15 @@ function ObjectMotionFidelityEvidence({
   const statusLabel =
     report.qualification_state === "frozen_canary"
       ? "frozen regression canary"
-      : report.qualification_state === "choreography_strengthened"
-        ? "Phase 1B.4.5 choreography strengthened"
-        : report.qualification_state === "recipe_strengthened"
-          ? "Phase 1B.4.3 recipe strengthened"
-          : report.qualification_state === "needs_semantic_strengthening"
-            ? "known semantic overlap"
-            : "fixture ready for review";
+      : report.qualification_state === "process_strengthened"
+        ? "Phase 1B.4.6 process strengthened"
+        : report.qualification_state === "choreography_strengthened"
+          ? "Phase 1B.4.5 choreography strengthened"
+          : report.qualification_state === "recipe_strengthened"
+            ? "Phase 1B.4.3 recipe strengthened"
+            : report.qualification_state === "needs_semantic_strengthening"
+              ? "known semantic overlap"
+              : "fixture ready for review";
 
   return (
     <div style={fidelityPanelStyle}>
@@ -424,11 +426,13 @@ function ObjectMotionFidelityEvidence({
       <div style={fidelityLimitationStyle}>
         <strong>
           Universal Motion Program ·{" "}
-          {report.qualification_state === "choreography_strengthened"
-            ? "Phase 1B.4.5 multi-actor choreography"
-            : report.strengthening_version
-              ? "Phase 1B.4.3 relational/articulation recipe"
-              : "Phase 1B.4.2 foundation"}
+          {report.qualification_state === "process_strengthened"
+            ? "Phase 1B.4.6 process / quantity lane"
+            : report.qualification_state === "choreography_strengthened"
+              ? "Phase 1B.4.5 multi-actor choreography"
+              : report.strengthening_version
+                ? "Phase 1B.4.3 relational/articulation recipe"
+                : "Phase 1B.4.2 foundation"}
         </strong>
         <span>
           {report.motion_program.route === "motion_program"
@@ -742,6 +746,23 @@ export function DirectorCapabilityLibraryLab() {
               sceneStateContinuity.outgoing_state,
           }
         : null,
+    process_quantity:
+      objectMotionFidelity?.motion_program.program?.diagnostics
+        .process_version
+        ? {
+            version:
+              objectMotionFidelity.motion_program.program.diagnostics
+                .process_version,
+            recipe_ids:
+              objectMotionFidelity.motion_program.program.diagnostics
+                .recipe_ids ?? [],
+            process_tracks:
+              objectMotionFidelity.motion_program.program.tracks.filter(
+                (track) => track.channel === "process",
+              ),
+            persistent_state: sceneStateContinuity.outgoing_state,
+          }
+        : null,
     unnamed_motion_generality_proof: unnamedMotionGeneralityProof,
     scene_state_continuity: sceneStateContinuity,
     runtime_inputs: {
@@ -795,6 +816,8 @@ export function DirectorCapabilityLibraryLab() {
         "Phase 1B.4.4 immutable incoming/outgoing snapshots + deterministic moment reduction",
       multi_actor_choreography:
         "Phase 1B.4.5 stable actor IDs + per-participant deterministic tracks + persistent choreography relations",
+      process_quantity:
+        "Phase 1B.4.6 deterministic quantity channels + renderer-neutral carrier samples + persistent process state without root-transform proxies",
     },
     performance: {
       playback_clock_owner: "DirectorAuditViewer",
@@ -1151,6 +1174,8 @@ export function DirectorCapabilityLibraryLab() {
                 so continuity can be inspected without mutable playback history.
                 Phase 1B.4.5 composes predeclared actors into coordinated assembly,
                 separation, containment, connection, merge, split, and scatter recipes.
+                Phase 1B.4.6 separates Fill/Drain/Accumulate quantities and
+                Flow/Emit carrier transport from rigid actor transforms.
               </p>
             </div>
 
