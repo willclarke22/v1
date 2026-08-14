@@ -539,7 +539,7 @@ function limitationsFor(
 
   if (fixture === "object_motion_articulation") {
     limitations.push(
-      "The controlled door fixture makes the pivot/state transition judgeable, but arbitrary real GLBs still need semantic hinge/pivot metadata for faithful articulation.",
+      "The controlled door fixture makes the pivot/state transition judgeable. Phase 1B.5 can resolve semantic hinge/pivot/subpart evidence when a real asset declares it, but arbitrary GLB child execution is still not promoted.",
     );
   }
   if (fixture === "object_motion_containment") {

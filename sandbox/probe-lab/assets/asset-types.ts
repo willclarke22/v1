@@ -1,3 +1,5 @@
+import type { AssetDirectabilityOverridesV1 } from "../directability/asset-directability-contract";
+
 export type MyWayAssetSourceType =
   | "blenderkit"
   | "trellis"
@@ -328,6 +330,7 @@ export type MyWayAssetRecord = {
   affordances?: string[];
   support_surfaces?: MyWayAssetSupportSurface[];
   geometry_profile?: MyWayAssetGeometryProfileV1 | null;
+  directability_overrides?: AssetDirectabilityOverridesV1 | null;
   preferred_for_concepts?: string[];
   appearance_profile?: MyWayAssetAppearanceProfileV1;
   appearance_embedding?: MyWayAssetAppearanceEmbeddingV1;

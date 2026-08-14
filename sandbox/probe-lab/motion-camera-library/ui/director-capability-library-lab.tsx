@@ -746,6 +746,9 @@ export function DirectorCapabilityLibraryLab() {
               sceneStateContinuity.outgoing_state,
           }
         : null,
+    asset_directability:
+      objectMotionFidelity?.motion_program.program?.diagnostics
+        .directability ?? null,
     process_quantity:
       objectMotionFidelity?.motion_program.program?.diagnostics
         .process_version

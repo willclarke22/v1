@@ -125,3 +125,36 @@ This is not fluid, smoke, granular, collision, or production particle physics.
 Carrier geometry/material choice remains a renderer/asset concern, measured
 containment remains Asset Scene Builder authority, and support classifications,
 camera, lighting, and the GLM-facing Director language are unchanged.
+
+
+## Phase 1B.5 — asset directability foundation
+
+Phase 1B.5 adds a canonical asset-directability profile between resolved assets
+and the Universal Motion Program. It does not create a second motion engine.
+
+The profile is assembled from existing trustworthy evidence:
+
+- measured geometry orientation, bounds/contact, support surfaces, interior
+  volumes, and attachment regions;
+- asset-level rig/animation-clip metadata;
+- explicit `directability_overrides` for semantic information geometry cannot
+  safely infer: pivots/hinges, semantic subparts, socket meanings, rolling
+  radius/axis, semantic bone maps, and semantic clip maps.
+
+Resolved scene bindings carry the derived profile into Director runtime actors.
+MotionProgram directability requirements are then resolved per target actor
+against concrete evidence and reported in program diagnostics. Missing required
+evidence stays visible as an unresolved requirement; MyWay does not invent asset
+anatomy.
+
+Safe root-level recipe improvements are additive: Align/Slide may use the asset
+forward frame and Roll may use declared rolling radius/axis. Existing fallbacks
+remain byte-compatible when no profile is attached. Hinge/Open/Close can now
+prove whether hinge metadata exists, but arbitrary GLB child/subpart execution
+is **not** promoted in this phase; the qualified whole-actor compatibility proof
+remains until a later articulation lane can bind real nodes/joints.
+
+Process semantics also declare optional containment/surface/outlet/inlet
+requirements so Fill/Drain/Accumulate/Flow/Emit can report whether a real asset
+provides the required geometry/anchors. Asset Scene Builder remains the authority
+for measured fit, clearance, collision, and final physical placement.

@@ -17,6 +17,9 @@ import type {
 import {
   normalizeAssetAttribution,
 } from "./asset-attribution";
+import {
+  normalizeAssetDirectabilityOverrides,
+} from "../directability/asset-directability-contract";
 
 function stringList(value: unknown) {
   if (!Array.isArray(value)) return [];
@@ -1195,6 +1198,9 @@ export function normalizeMyWayAssetRecord(
       geometry?.support_surfaces ??
       supportSurfaces(item.support_surfaces),
     geometry_profile: geometry,
+    directability_overrides: normalizeAssetDirectabilityOverrides(
+      item.directability_overrides,
+    ),
     preferred_for_concepts: stringList(
       item.preferred_for_concepts,
     ).map(normalizePhrase),

@@ -6,6 +6,7 @@ import type {
 import type { DirectorMotionRecipeActor } from "./director-motion-recipes";
 import {
   MOTION_PROGRAM_PROCESS_QUANTITY_VERSION,
+  type MotionProgramDirectabilityRequirement,
   type MotionProgramEasing,
   type MotionProgramStateEffect,
   type MotionProgramTrack,
@@ -36,6 +37,7 @@ export type DirectorProcessQuantityRecipe = {
   behaviour: (typeof DIRECTOR_PROCESS_QUANTITY_BEHAVIOURS)[number];
   recipe_id: string;
   tracks: MotionProgramTrack[];
+  requirements: MotionProgramDirectabilityRequirement[];
   state_effects: MotionProgramStateEffect[];
   warnings: string[];
 };
@@ -163,6 +165,7 @@ export function compileDirectorProcessQuantityRecipe({
   const params = event.parameters ?? {};
   const warnings: string[] = [];
   const tracks: MotionProgramTrack[] = [];
+  const requirements: MotionProgramDirectabilityRequirement[] = [];
   const stateEffects: MotionProgramStateEffect[] = [];
   const base = trackBase(moment, event, order);
 
@@ -197,6 +200,14 @@ export function compileDirectorProcessQuantityRecipe({
     stateEffects.push(
       processStateEffect(event, behaviour, key, to),
     );
+    requirements.push({
+      id: `director:${event.id}:containment_region_requirement`,
+      target_entity_id: actor.id,
+      kind: "geometry_region",
+      semantic_name: "containment_region",
+      required: false,
+      runtime_status: "declared",
+    });
   } else if (behaviour === "accumulate") {
     const key = "accumulated_amount";
     const existing = Math.max(
@@ -229,6 +240,14 @@ export function compileDirectorProcessQuantityRecipe({
     stateEffects.push(
       processStateEffect(event, behaviour, key, to),
     );
+    requirements.push({
+      id: `director:${event.id}:accumulation_region_requirement`,
+      target_entity_id: actor.id,
+      kind: "surface",
+      semantic_name: "accumulation_region",
+      required: false,
+      runtime_status: "declared",
+    });
   } else if (behaviour === "flow") {
     const target = actorById(actors, event.target_entity_id);
     const routePoints = vecArray(params.path_points);
@@ -266,6 +285,24 @@ export function compileDirectorProcessQuantityRecipe({
     stateEffects.push(
       processStateEffect(event, behaviour, null, null),
     );
+    requirements.push({
+      id: `director:${event.id}:flow_outlet_requirement`,
+      target_entity_id: actor.id,
+      kind: "anchor",
+      semantic_name: "flow_outlet",
+      required: false,
+      runtime_status: "declared",
+    });
+    if (target) {
+      requirements.push({
+        id: `director:${event.id}:flow_inlet_requirement`,
+        target_entity_id: target.id,
+        kind: "anchor",
+        semantic_name: "flow_inlet",
+        required: false,
+        runtime_status: "declared",
+      });
+    }
   } else {
     const direction = vecParam(params.direction, [0, 1, 0]);
     tracks.push({
@@ -300,6 +337,14 @@ export function compileDirectorProcessQuantityRecipe({
     stateEffects.push(
       processStateEffect(event, behaviour, null, null),
     );
+    requirements.push({
+      id: `director:${event.id}:emission_origin_requirement`,
+      target_entity_id: actor.id,
+      kind: "anchor",
+      semantic_name: "emission_origin",
+      required: false,
+      runtime_status: "declared",
+    });
   }
 
   return {
@@ -307,6 +352,7 @@ export function compileDirectorProcessQuantityRecipe({
     behaviour,
     recipe_id: DIRECTOR_PROCESS_QUANTITY_RECIPE_IDS[behaviour],
     tracks,
+    requirements,
     state_effects: stateEffects,
     warnings: [
       ...warnings,

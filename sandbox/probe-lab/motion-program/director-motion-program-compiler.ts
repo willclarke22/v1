@@ -18,6 +18,12 @@ import {
   compileDirectorProcessQuantityRecipe,
 } from "./director-process-quantity";
 import {
+  DIRECTOR_ASSET_DIRECTABILITY_VERSION,
+} from "../directability/asset-directability-contract";
+import {
+  resolveMotionProgramDirectabilityRequirementsByEntity,
+} from "../directability/asset-directability-resolver";
+import {
   MOTION_PROGRAM_FOUNDATION_VERSION,
   MOTION_PROGRAM_MULTI_ACTOR_CHOREOGRAPHY_VERSION,
   MOTION_PROGRAM_PROCESS_QUANTITY_VERSION,
@@ -413,6 +419,7 @@ export function compileDirectorActorMotionProgram(
       }
       compiled.push(event);
       tracks.push(...recipe.tracks);
+      requirements.push(...recipe.requirements);
       stateEffects.push(...recipe.state_effects);
       recipeIds.push(recipe.recipe_id);
       warnings.push(...recipe.warnings);
@@ -469,6 +476,21 @@ export function compileDirectorActorMotionProgram(
     };
   }
 
+  const directabilityResolution =
+    resolveMotionProgramDirectabilityRequirementsByEntity(
+      requirements,
+      (entityId) =>
+        actorById(actors, entityId)?.directability ??
+        (entityId === actor.id ? actor.directability : null),
+    );
+  if (
+    directabilityResolution.unresolved_required_requirement_ids.length
+  ) {
+    warnings.push(
+      `Asset directability is missing required evidence for ${directabilityResolution.unresolved_required_requirement_ids.join(", ")}; qualified compatibility execution remains explicit rather than inventing asset anatomy.`,
+    );
+  }
+
   if (!compiled.length && !tracks.length && !stateEffects.length) {
     return {
       route: "no_motion",
@@ -491,7 +513,7 @@ export function compileDirectorActorMotionProgram(
     tracks,
     constraints: [],
     state_effects: stateEffects,
-    requirements,
+    requirements: directabilityResolution.requirements,
     diagnostics: {
       foundation_version: MOTION_PROGRAM_FOUNDATION_VERSION,
       strengthening_version:
@@ -514,6 +536,21 @@ export function compileDirectorActorMotionProgram(
         processSemanticsUsed
           ? MOTION_PROGRAM_PROCESS_QUANTITY_VERSION
           : null,
+      directability_version:
+        actor.directability
+          ? DIRECTOR_ASSET_DIRECTABILITY_VERSION
+          : null,
+      directability: {
+        profile_present: Boolean(actor.directability),
+        profile_asset_id: actor.directability?.asset_id ?? null,
+        resolved_requirement_ids:
+          directabilityResolution.resolved_requirement_ids,
+        unresolved_required_requirement_ids:
+          directabilityResolution.unresolved_required_requirement_ids,
+        unresolved_optional_requirement_ids:
+          directabilityResolution.unresolved_optional_requirement_ids,
+        resolutions: directabilityResolution.resolutions,
+      },
       source_kind: "director_events",
       source_event_ids: [
         ...new Set([

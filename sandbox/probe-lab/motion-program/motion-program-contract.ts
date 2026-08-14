@@ -1,3 +1,8 @@
+import {
+  DIRECTOR_ASSET_DIRECTABILITY_VERSION,
+  type AssetDirectabilityRequirementResolution,
+} from "../directability/asset-directability-contract";
+
 export const MYWAY_MOTION_PROGRAM_SCHEMA_VERSION =
   "myway_motion_program_v1" as const;
 
@@ -292,6 +297,17 @@ export type MotionProgramDiagnostics = {
   process_version?:
     | typeof MOTION_PROGRAM_PROCESS_QUANTITY_VERSION
     | null;
+  directability_version?:
+    | typeof DIRECTOR_ASSET_DIRECTABILITY_VERSION
+    | null;
+  directability?: {
+    profile_present: boolean;
+    profile_asset_id: string | null;
+    resolved_requirement_ids: string[];
+    unresolved_required_requirement_ids: string[];
+    unresolved_optional_requirement_ids: string[];
+    resolutions: AssetDirectabilityRequirementResolution[];
+  };
   source_kind: "director_events" | "synthetic";
   source_event_ids: string[];
   compiled_event_ids: string[];

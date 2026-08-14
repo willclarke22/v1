@@ -3,6 +3,15 @@ import type {
   DirectorEvent,
   DirectorMoment,
 } from "../director/director-contract";
+import type {
+  AssetDirectabilityProfileV1,
+} from "../directability";
+import {
+  directabilityForwardHorizontalAxis,
+  directabilityForwardVector,
+  directabilityRollingAxis,
+  directabilityRollingRadiusForActor,
+} from "../directability";
 import {
   MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
   type MotionProgramDirectabilityRequirement,
@@ -47,6 +56,7 @@ export type DirectorMotionRecipeActor = {
   rotation?: MotionProgramVec3;
   scale?: MotionProgramVec3;
   size: MotionProgramVec3;
+  directability?: AssetDirectabilityProfileV1 | null;
   attachment_state?: {
     target_entity_id: string;
     offset_position: MotionProgramVec3;
@@ -455,7 +465,9 @@ export function compileDirectorRelationalArticulationRecipe(input: {
     const axis =
       behaviour === "aim_at"
         ? "z"
-        : horizontalAxisParam(params.axis);
+        : params.axis != null
+          ? horizontalAxisParam(params.axis)
+          : directabilityForwardHorizontalAxis(actor.directability) ?? "x";
     return {
       version: MOTION_PROGRAM_RELATIONAL_ARTICULATION_VERSION,
       behaviour,
@@ -490,9 +502,13 @@ export function compileDirectorRelationalArticulationRecipe(input: {
       state_effects: [],
       warnings:
         behaviour === "align" && !("axis" in params)
-          ? [
-              "Align defaults to the actor-local +X axis when no horizontal semantic axis is declared; asset-directability metadata can replace this fallback later.",
-            ]
+          ? actor.directability
+            ? [
+                `Align selected actor-local +${axis.toUpperCase()} from the Phase 1B.5 asset orientation frame.`,
+              ]
+            : [
+                "Align defaults to the actor-local +X axis when no directability orientation frame is attached.",
+              ]
           : [],
     };
   }
@@ -592,7 +608,10 @@ export function compileDirectorRelationalArticulationRecipe(input: {
 
   if (behaviour === "slide") {
     const direction = normalize(
-      vecParam(params.direction, [1, 0, 0]),
+      vecParam(
+        params.direction,
+        directabilityForwardVector(actor.directability) ?? [1, 0, 0],
+      ),
     );
     const distance = numberParam(
       params.distance_m,
@@ -637,19 +656,31 @@ export function compileDirectorRelationalArticulationRecipe(input: {
   }
 
   const direction = normalize(
-    vecParam(params.direction, [1, 0, 0]),
+    vecParam(
+      params.direction,
+      directabilityForwardVector(actor.directability) ?? [1, 0, 0],
+    ),
   );
   const distance = numberParam(
     params.distance_m,
     Math.max(0.75, actorRadius(actor) * 1.5),
   );
+  const directabilityRadius = directabilityRollingRadiusForActor(
+    actor.directability,
+    actor.size,
+  );
   const rollingRadius = Math.max(
     0.05,
     numberParam(
       params.rolling_radius_m,
-      Math.min(actor.size[0], actor.size[1], actor.size[2]) * 0.5,
+      directabilityRadius ??
+        Math.min(actor.size[0], actor.size[1], actor.size[2]) * 0.5,
     ),
   );
+  const rollingAxis =
+    params.axis != null
+      ? axisParam(params.axis)
+      : directabilityRollingAxis(actor.directability) ?? "y";
   const explicitTurns = Number(params.turns);
   const radians = Number.isFinite(explicitTurns)
     ? Math.PI * 2 * explicitTurns
@@ -683,7 +714,7 @@ export function compileDirectorRelationalArticulationRecipe(input: {
         operation: "lerp_angle",
         coordinate_space: "actor_local",
         parameters: {
-          axis: axisParam(params.axis),
+          axis: rollingAxis,
           from_radians: 0,
           to_radians: radians,
           blend: "additive",
@@ -709,8 +740,12 @@ export function compileDirectorRelationalArticulationRecipe(input: {
       },
     ],
     state_effects: [],
-    warnings: [
-      "Rolling radius falls back to half the smallest actor extent until measured contact metadata is available.",
-    ],
+    warnings: directabilityRadius != null
+      ? [
+          `Roll uses Phase 1B.5 directability rolling metadata (${rollingRadius.toFixed(3)} m world radius, ${rollingAxis.toUpperCase()} axis).`,
+        ]
+      : [
+          "Rolling radius falls back to half the smallest actor extent because no trustworthy rolling metadata is attached.",
+        ],
   };
 }

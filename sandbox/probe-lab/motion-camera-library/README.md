@@ -364,3 +364,20 @@ tracks, and outgoing scene-state quantity values. Carrier samples are
 renderer-neutral evidence, not fluid/particle simulation. Asset Scene Builder
 still owns measured containment/collision/fit, and the existing single
 demand-rendered audit Canvas remains the only WebGL owner.
+
+
+## Phase 1B.5 — asset directability
+
+Phase 1B.5 keeps the 183-capability catalog, support labels, single demand-rendered
+audit Canvas, and protected camera behavior unchanged while adding an asset
+directability evidence layer beneath actor execution.
+
+Real resolved scene bindings can now carry orientation frames, anchors, support
+surfaces, containment regions, semantic pivots/subparts, rolling metadata, and
+rig/clip mappings into Director runtime actors. MotionProgram requirements record
+which of those needs were actually resolved and which remain declared.
+
+This is intentionally not a node-name guessing system and not arbitrary GLB
+subpart animation. Missing pivots, sockets, bones, or semantic parts remain
+missing. Asset Scene Builder still owns fit/collision, and real subpart execution
+remains a later lane.

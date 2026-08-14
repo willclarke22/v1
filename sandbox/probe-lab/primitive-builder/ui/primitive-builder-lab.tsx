@@ -804,6 +804,7 @@ function AssetScene({
         position: [...base] as Vec3,
         rotation: [...binding.rotation] as Vec3,
         size: metrics?.world_size ?? [extent, extent, extent],
+        directability: binding.directability_profile ?? null,
       };
     });
     const staged = applyDirectorBlocking(directorMoment, actors, { cinematic_only: true });
@@ -851,6 +852,7 @@ function AssetScene({
           position: [...position] as Vec3,
           rotation: [...binding.rotation] as Vec3,
           size: metrics?.world_size ?? [extent, extent, extent],
+          directability: binding.directability_profile ?? null,
         };
       }),
     [

@@ -30,6 +30,9 @@ import {
 import {
   directorSceneStateBeforeMoment,
 } from "../../motion-program/director-scene-state-reducer";
+import type {
+  AssetDirectabilityProfileV1,
+} from "../../directability";
 
 export type DirectorRuntimeVec3 = [number, number, number];
 
@@ -38,6 +41,7 @@ export type DirectorRuntimeActor = {
   position: DirectorRuntimeVec3;
   rotation?: DirectorRuntimeVec3;
   size: DirectorRuntimeVec3;
+  directability?: AssetDirectabilityProfileV1 | null;
 };
 
 export type DirectorActorSample = {

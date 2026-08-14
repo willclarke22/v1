@@ -10,6 +10,10 @@ import type {
 import type {
   LogicalAssetSizeDecision,
 } from "../assets/logical-asset-size";
+import {
+  buildAssetDirectabilityProfile,
+  type AssetDirectabilityProfileV1,
+} from "../directability";
 import type {
   PrimitiveBuilderAssetRequirement,
   PrimitiveBuilderPlacementRelation,
@@ -63,6 +67,7 @@ export type ResolvedSceneAssetBinding = {
   layout_priority: number;
   clearance_m: number;
   geometry_profile?: MyWayAssetGeometryProfileV1 | null;
+  directability_profile?: AssetDirectabilityProfileV1 | null;
   preview_only: boolean;
   match_score?: number | null;
   match_margin?: number | null;
@@ -158,6 +163,8 @@ export function makeResolvedSceneAssetBinding(input: {
     clearance_m: requirement.clearance_m,
     geometry_profile:
       asset.geometry_profile ?? null,
+    directability_profile:
+      buildAssetDirectabilityProfile(asset),
     preview_only: input.previewOnly === true,
     match_score: input.matchScore ?? null,
     match_margin: input.matchMargin ?? null,
