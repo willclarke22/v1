@@ -403,3 +403,61 @@ physics. Human visual review remains required before support promotion.
 
 The focused code-level audit and browser checklist are recorded in
 `PHASE1B5A_VISUAL_QUALIFICATION.md`.
+
+## Phase 1B.5D — capability vocabulary authority
+
+The Capability Library now exposes a read-only authority path for asset-relevant Director actions. This path is intentionally descriptive rather than a new execution engine:
+
+`Director action → asset qualification → pair interaction when needed → Builder placement validation`
+
+The four layers are not synonyms. Director actions are semantic scene directions. Directable Asset operators are internal evidence requirements. Pair interactions are two-asset compatibility lanes. Builder placement remains the final measured scene-fit/collision authority.
+
+Two visible labels are disambiguated without changing their stable IDs:
+- camera framing `insert` → **Insert shot**;
+- object motion `insert_into` → **Insert into target**.
+
+The inspector displays the Phase 1B.5D authority map beside existing compiled execution, camera/object-motion fidelity, MotionProgram, scene-state, and promotion diagnostics. No additional Canvas is introduced, and no support classification or runtime behaviour is promoted by this phase.
+
+## Phase 1B.5E — real-asset execution qualification bench
+
+Phase 1B.5E turns the canonical Director Capability Library into the real-asset
+execution qualification surface without creating a second runtime or another
+WebGL canvas.
+
+The isolated audit viewer still owns the single demand-rendered Canvas. The
+Asset Library remains deferred until the reviewer explicitly requests a
+real-asset proof. Once loaded, each Director demo role can be left on its
+deterministic auto-match or overridden with a specific reviewed browser-loadable
+Asset Library record.
+
+For capabilities mapped by the Phase 1B.5D authority contract, the bench now
+shows three distinct forms of evidence before the reviewer judges the animation:
+
+- **asset/operator qualification** compiles the selected real asset through the
+  hardened Affordance Graph and reports the exact internal operator
+  requirements used by the Director action;
+- **pair qualification** evaluates the mapped Phase 1B.5C interaction lanes for
+  source/target capabilities using the preview actors' final target extents as
+  `scene_instance` dimension authority;
+- **runtime readiness** distinguishes asset authoring gaps, declared runtime
+  gaps, contextual/pair dependencies, Builder validation handoff, and assets
+  ready for visual proof.
+
+Real-asset preview actors also pass their existing Phase 1B.5 directability
+profile into the same shared `DirectorRuntimeActor` contract already used by the
+Director runtime. This is an execution-qualification bridge, not a new motion
+engine.
+
+Important boundaries remain unchanged:
+
+- a pair `resolved_candidate` is still only a proposal and never activates
+  parenting, containment, support, or flow state in this phase;
+- Asset Scene Builder / Primitive Builder still owns final measured fit,
+  collision, stability, insertion clearance, and route obstruction;
+- Open/Close, skeletal posing, and animation-clip lanes remain honest about
+  runtime support when qualification is present but execution is still pending;
+- camera capabilities without a Phase 1B.5D asset gate can still use selectable
+  real GLBs for generalization review, but asset-aware camera targeting remains
+  later camera-convergence work;
+- the 183-capability semantic catalog and support classifications are unchanged.
+

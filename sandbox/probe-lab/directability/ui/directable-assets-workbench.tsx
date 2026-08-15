@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 
 import { DirectableAssetPairLab } from "./directable-asset-pair-lab";
 import { DirectableAssetQualificationLab } from "./directable-asset-qualification-lab";
+import { DIRECTOR_CAPABILITY_AUTHORITY_LAYERS } from "../capability-authority-contract";
 
 type DirectableAssetsTab = "qualification" | "interactions";
 
@@ -148,6 +149,53 @@ export function DirectableAssetsWorkbench() {
           </div>
         </div>
       </div>
+
+      <section
+        aria-label="Director capability authority layers"
+        style={{
+          maxWidth: 1500,
+          margin: "0 auto",
+          padding: "1rem clamp(1rem, 3vw, 2.4rem) 0",
+          color: "white",
+        }}
+      >
+        <div
+          style={{
+            padding: "0.9rem",
+            borderRadius: 16,
+            border: "1px solid rgba(125,211,252,0.16)",
+            background: "rgba(14,165,233,0.055)",
+          }}
+        >
+          <div style={{ fontSize: 11, color: "#7dd3fc", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            Phase 1B.5D · vocabulary authority
+          </div>
+          <div style={{ marginTop: 5, color: "rgba(255,255,255,0.68)", fontSize: 12, lineHeight: 1.55 }}>
+            These layers cooperate but are not synonyms. Director actions describe semantic motion; asset operators qualify evidence; pair interactions qualify two-asset compatibility; Builder placement remains final fit/collision authority.
+          </div>
+          <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 8 }}>
+            {DIRECTOR_CAPABILITY_AUTHORITY_LAYERS.map((layer, index) => (
+              <div
+                key={layer.id}
+                style={{
+                  padding: "0.72rem",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,255,255,0.075)",
+                  background: "rgba(255,255,255,0.025)",
+                }}
+              >
+                <div style={{ color: "rgba(255,255,255,0.42)", fontSize: 10 }}>
+                  {index + 1} · {layer.id}
+                </div>
+                <strong style={{ display: "block", marginTop: 3, fontSize: 12 }}>{layer.label}</strong>
+                <div style={{ marginTop: 5, color: "rgba(255,255,255,0.55)", fontSize: 11, lineHeight: 1.45 }}>
+                  {layer.question}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <div role="tabpanel" aria-label={activeTab === "interactions" ? "Asset Interactions" : "Asset Qualification"}>
         {activeTab === "interactions" ? (

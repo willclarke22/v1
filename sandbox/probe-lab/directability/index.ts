@@ -1,6 +1,7 @@
 export * from "./asset-directability-contract";
 export * from "./asset-directability-from-asset";
 export * from "./asset-directability-resolver";
+export * from "./capability-authority-contract";
 export * from "./affordance-graph-contract";
 export * from "./directable-asset-compiler";
 export * from "./directable-asset-library-audit";

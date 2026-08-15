@@ -279,13 +279,13 @@ export function DirectableAssetQualificationLab() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
           <div style={{ maxWidth: 900 }}>
             <div style={{ color: "#7dd3fc", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase" }}>
-              Phase 1B.5B.1 inference · Phase 1B.5B.2 hardening
+              Phase 1B.5B.1 inference · Phase 1B.5B.2 hardening · Phase 1B.5D vocabulary authority
             </div>
             <h1 style={{ margin: "0.45rem 0 0.6rem", fontSize: "clamp(2rem, 4vw, 3.5rem)" }}>
-              Directable Asset Qualification
+              Asset Qualification Operators
             </h1>
             <p style={{ margin: 0, color: "rgba(255,255,255,0.67)", lineHeight: 1.7 }}>
-              Compile each real Asset Library record once, derive trusted and geometry-inferred affordances, then separate intrinsic possibility from scene-context readiness and runtime execution. Names and tags still cannot grant executable capabilities, and arbitrary GLB child nodes remain unanimated.
+              Compile each real Asset Library record once and ask what this particular asset can legitimately support. These operator names are internal qualification requirements, not alternate Director commands. Names and tags still cannot grant executable capabilities, and arbitrary GLB child nodes remain unanimated.
             </p>
           </div>
           <div style={{ display: "flex", gap: 14, alignItems: "center", paddingTop: 8 }}>
@@ -530,9 +530,9 @@ export function DirectableAssetQualificationLab() {
               </Panel>
 
               <Panel style={{ padding: 18 }}>
-                <h3 style={{ margin: 0 }}>Derived operator qualification</h3>
+                <h3 style={{ margin: 0 }}>Derived asset-operator qualification</h3>
                 <p style={{ margin: "0.45rem 0 0", color: "rgba(255,255,255,0.58)", lineHeight: 1.6 }}>
-                  This is derived from the graph; it is not stored as an asset × capability matrix.
+                  These are evidence roles used beneath Director actions. They are derived from the graph, are not stored as an asset × capability matrix, and do not create a second Director vocabulary.
                 </p>
                 <div style={{ marginTop: 15, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 10 }}>
                   {qualifications.map((qualification) => {

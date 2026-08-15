@@ -80,3 +80,26 @@ Phase 1B.5C.2 tightens when pairwise evidence is allowed to become a strong inte
 Place On uses a measured source contact footprint when available and only consumes stronger support candidates before Builder performs exact stability/collision validation. Geometry-inferred open-top inlets preserve measured aperture size, and Insert requires one deterministic source orientation to fit both the receiver aperture and containment volume before authoritative scale can produce `resolved_candidate`.
 
 Pair relationship output is now `proposed_relationship` with `activation_state: "proposed"` and explicit activation requirements. The resolver never activates parenting, containment membership, or other persistent scene state on its own. The Directable Assets → Asset Interactions tab exposes optional scene-dimension overrides so baseline preview and authoritative `explicit_context` fit can be compared without creating another page or WebGL Canvas.
+
+## Phase 1B.5D — capability vocabulary + authority cleanup
+
+Phase 1B.5D names four adjacent vocabularies without merging their responsibilities:
+
+1. **Director action** — canonical semantic intent and temporal behaviour. This is the vocabulary GLM may request.
+2. **Asset qualification operator** — internal evidence/role requirements for one real asset. `attach_as_source`, `insert_into_target`, and similar IDs are not alternate Director commands.
+3. **Pair interaction** — internal compatibility and candidate-transform lanes for two real assets. `precise_attach`, `insert`, and `flow` do not become final physics verdicts.
+4. **Builder placement** — final measured scene-fit authority for support, containment, attachment, adjacency, clearance, stability, and collision.
+
+The typed cross-layer map lives in `capability-authority-contract.ts`. It deliberately preserves existing IDs and execution semantics while documenting which asset operators, pair lanes, and Builder relations may sit beneath a Director action.
+
+The camera framing capability `insert` is now displayed as **Insert shot**, while object motion `insert_into` is displayed as **Insert into target**. Their internal IDs do not change.
+
+Phase 1B.5D does **not**:
+- change the 183-capability support distribution;
+- add another motion runtime;
+- promote any Directable Asset qualification status;
+- activate pair relationships;
+- move final fit/collision/stability authority out of Asset Scene Builder / Primitive Builder;
+- add another WebGL Canvas.
+
+The next planned phase can use this authority map to build a real-asset execution bench inside the Director Capability Library without creating a second semantic language.

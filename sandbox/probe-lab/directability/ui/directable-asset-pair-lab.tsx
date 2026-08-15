@@ -502,7 +502,7 @@ export function DirectableAssetPairLab() {
               letterSpacing: "0.16em",
             }}
           >
-            Director · Phase 1B.5C.2
+            Director · Phase 1B.5D vocabulary over Phase 1B.5C.2 resolver
           </div>
           <h1
             style={{
@@ -510,7 +510,7 @@ export function DirectableAssetPairLab() {
               fontSize: "clamp(2rem, 4vw, 3.5rem)",
             }}
           >
-            Asset-to-Asset Interaction Resolver
+            Asset Pair Interaction Qualification
           </h1>
           <p
             style={{
@@ -522,11 +522,13 @@ export function DirectableAssetPairLab() {
           >
             Choose two real Asset Library records. MyWay deep-inspects only
             those GLBs, compiles each into its hardened Affordance Graph, then
-            resolves Place On, Surface Attach, Precise Attach, Insert, and Flow
-            without storing an asset-pair matrix. Asset Library dimensions are
-            baseline preview evidence only; use the optional scene-dimension
-            overrides below to exercise authoritative pair fit. Every relationship
-            remains proposed until Asset Scene Builder accepts validation.
+            qualifies the internal pair lanes Place On, Surface Attach, Precise
+            Attach, Insert, and Flow without storing an asset-pair matrix. These
+            pair-lane names are compatibility mechanisms beneath Director actions,
+            not alternate commands for GLM. Asset Library dimensions are baseline
+            preview evidence only; use the optional scene-dimension overrides below
+            to exercise authoritative pair fit. Every relationship remains proposed
+            until Asset Scene Builder accepts validation.
           </p>
         </div>
 
@@ -886,7 +888,7 @@ export function DirectableAssetPairLab() {
                       lineHeight: 1.5,
                     }}
                   >
-                    proposed relationship:{" "}
+                    proposed scene relationship:{" "}
                     <strong>{resolution.proposed_relationship.type}</strong>
                     {resolution.proposed_relationship.inverse_operation
                       ? ` · inverse ${resolution.proposed_relationship.inverse_operation}`

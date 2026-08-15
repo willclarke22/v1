@@ -5,6 +5,9 @@ import { useFrame } from "@react-three/fiber";
 import { Suspense, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import type { MyWayAssetRecord } from "../../assets/asset-types";
+import { buildAssetDirectabilityProfile } from "../../directability/asset-directability-from-asset";
+
 import {
   applyDirectorBlocking,
   DirectorShotCameraController,
@@ -20,26 +23,11 @@ import {
 } from "../director-capability-registry";
 import type { DirectorAuditFixtureKind } from "../director-visual-audit";
 
-export type DirectorLibraryAsset = {
-  asset_id: string;
-  canonical_label: string;
-  display_name: string;
-  aliases: string[];
-  semantic_tags: string[];
-  asset_type: "glb" | "gltf" | "primitive";
-  public_path: string;
-  dimensions_m: [number, number, number];
-  default_scale: number;
-  default_rotation: [number, number, number];
-  ground_offset_m: number;
-  quality_score: number;
-  status: "inbox" | "normalized" | "approved" | "rejected";
-  scene_review_status: "pending" | "approved" | "rejected";
-  semantic_review_status: "pending" | "verified" | "mismatch" | "rejected";
-  safe_to_use_in_sandbox: boolean;
-  license_kind: string;
-  attribution?: { required: boolean; text: string | null } | null;
-  file_stats: { exists: boolean; remote_url?: string | null };
+export type DirectorLibraryAsset = MyWayAssetRecord & {
+  file_stats: {
+    exists: boolean;
+    remote_url?: string | null;
+  };
 };
 
 export type ResolvedDirectorRole = {
@@ -84,6 +72,11 @@ function runtimeActorsFor(roles: ResolvedDirectorRole[]): DirectorRuntimeActor[]
     position: [...role.blocking.position],
     rotation: [...(role.blocking.rotation ?? [0, 0, 0])],
     size: runtimeSize(role),
+    // Phase 1B.5E: real-asset proof must sample the same existing
+    // directability profile that Builder-resolved actors already carry.
+    directability: role.asset
+      ? buildAssetDirectabilityProfile(role.asset)
+      : null,
   }));
 }
 

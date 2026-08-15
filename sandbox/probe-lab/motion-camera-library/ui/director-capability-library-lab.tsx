@@ -34,6 +34,11 @@ import {
   type DirectorLibraryAsset,
   type ResolvedDirectorRole,
 } from "./director-capability-preview";
+import {
+  DIRECTOR_CAPABILITY_AUTHORITY_SCHEMA_VERSION,
+  DIRECTOR_CAPABILITY_AUTHORITY_LAYERS,
+  directorCapabilityAssetAuthorityPath,
+} from "../../directability/capability-authority-contract";
 import { DirectorAuditViewer } from "./director-audit-viewer";
 import { buildUnnamedMotionGeneralityProof } from "../../motion-program/motion-program-diagnostics";
 import {
@@ -44,6 +49,11 @@ import {
   validateDirectorShot,
   type DirectorRuntimeActor,
 } from "../../scenes/ui";
+import {
+  buildDirectorRealAssetExecutionQualification,
+  type DirectorRealAssetExecutionQualificationReport,
+  type DirectorRealAssetExecutionStatus,
+} from "../director-real-asset-execution-qualification";
 
 type LibraryResponse = {
   ok: boolean;
@@ -125,6 +135,7 @@ function scoreAssetForConcepts(asset: DirectorLibraryAsset, concepts: string[]) 
 function resolveDemoRoles(
   capability: DirectorCapability,
   assets: DirectorLibraryAsset[],
+  roleAssetOverrides: Record<string, string>,
 ): ResolvedDirectorRole[] {
   const loadable = assets.filter(isLoadableLibraryAsset);
   const used = new Set<string>();
@@ -138,6 +149,12 @@ function resolveDemoRoles(
         target_extent_m: 1.5,
       };
 
+    const overrideAssetId = roleAssetOverrides[role.role] ?? "";
+    const reviewerSelected =
+      overrideAssetId
+        ? loadable.find((asset) => asset.asset_id === overrideAssetId) ?? null
+        : null;
+
     const ranked = loadable
       .filter((asset) => !used.has(asset.asset_id))
       .map((asset) => ({
@@ -148,17 +165,21 @@ function resolveDemoRoles(
       }))
       .sort((a, b) => b.score - a.score || a.asset.asset_id.localeCompare(b.asset.asset_id));
 
-    const chosen = ranked[0]?.asset ?? null;
-    if (chosen) used.add(chosen.asset_id);
+    const chosen = reviewerSelected ?? ranked[0]?.asset ?? null;
+    // Explicit reviewer choices may intentionally use the same library asset in
+    // more than one role. Auto-matching still avoids duplicates.
+    if (chosen && !reviewerSelected) used.add(chosen.asset_id);
 
     let matchedConcept: string | null = null;
     if (chosen) {
       const haystack = ` ${assetSearchText(chosen)} `;
-      matchedConcept = role.preferred_asset_ids?.includes(chosen.asset_id)
-        ? chosen.asset_id
-        : role.preferred_concepts.find((concept) =>
-            haystack.includes(` ${normalized(concept)} `),
-          ) ?? null;
+      matchedConcept = reviewerSelected
+        ? "reviewer-selected asset"
+        : role.preferred_asset_ids?.includes(chosen.asset_id)
+          ? chosen.asset_id
+          : role.preferred_concepts.find((concept) =>
+              haystack.includes(` ${normalized(concept)} `),
+            ) ?? null;
     }
 
     return {
@@ -518,6 +539,212 @@ const DIRECTOR_AUDIT_STORAGE_KEY =
   "myway_director_visual_audit_phase1b2_v1";
 const INITIAL_CATALOG_LIMIT = 36;
 
+
+const REAL_ASSET_STATUS_META: Record<
+  DirectorRealAssetExecutionStatus,
+  { label: string; color: string }
+> = {
+  not_asset_gated: { label: "visual proof only", color: "#93c5fd" },
+  missing_required_asset: { label: "select required asset", color: "#fbbf24" },
+  asset_authoring_required: { label: "asset authoring required", color: "#fca5a5" },
+  runtime_pending: { label: "runtime pending", color: "#c4b5fd" },
+  fallback_only: { label: "fallback only", color: "#fda4af" },
+  context_required: { label: "context required", color: "#fbbf24" },
+  builder_validation_required: { label: "Builder validation required", color: "#67e8f9" },
+  ready_for_visual_proof: { label: "ready for visual proof", color: "#86efac" },
+};
+
+function readableOperatorStatus(value: string) {
+  return value.replace(/_/g, " ");
+}
+
+function RealAssetExecutionQualificationPanel({
+  capability,
+  assets,
+  assetsLoaded,
+  assetsLoading,
+  assetError,
+  resolvedRoles,
+  roleAssetOverrides,
+  onRoleAssetOverride,
+  onRequestAssets,
+  report,
+}: {
+  capability: DirectorCapability;
+  assets: DirectorLibraryAsset[];
+  assetsLoaded: boolean;
+  assetsLoading: boolean;
+  assetError: string | null;
+  resolvedRoles: ResolvedDirectorRole[];
+  roleAssetOverrides: Record<string, string>;
+  onRoleAssetOverride: (role: string, assetId: string) => void;
+  onRequestAssets: () => void;
+  report: DirectorRealAssetExecutionQualificationReport;
+}) {
+  const loadable = useMemo(
+    () =>
+      assets
+        .filter(isLoadableLibraryAsset)
+        .slice()
+        .sort((left, right) =>
+          (left.display_name || left.canonical_label).localeCompare(
+            right.display_name || right.canonical_label,
+          ),
+        ),
+    [assets],
+  );
+  const statusMeta = REAL_ASSET_STATUS_META[report.execution_status];
+
+  return (
+    <div style={realAssetBenchStyle}>
+      <div style={realAssetBenchHeaderStyle}>
+        <div style={{ display: "grid", gap: 5 }}>
+          <span style={eyebrowStyle}>Phase 1B.5E · real-asset execution qualification</span>
+          <strong style={{ fontSize: 18 }}>Choose the real actors, then inspect why execution is or is not qualified.</strong>
+          <span style={mutedStyle}>
+            This bench reuses the existing single audit viewer. It does not create
+            another Canvas, and it does not promote pair candidates past Builder
+            fit/collision authority.
+          </span>
+        </div>
+        <span
+          style={{
+            ...badgeStyle,
+            color: statusMeta.color,
+            borderColor: `${statusMeta.color}55`,
+            background: `${statusMeta.color}14`,
+          }}
+        >
+          {statusMeta.label}
+        </span>
+      </div>
+
+      {!assetsLoaded ? (
+        <div style={realAssetLoadStyle}>
+          <span style={mutedStyle}>
+            The Asset Library remains deferred until you request a real-asset proof.
+          </span>
+          <button
+            type="button"
+            onClick={onRequestAssets}
+            disabled={assetsLoading}
+            style={buttonStyle}
+          >
+            {assetsLoading ? "Loading assets…" : "Load Asset Library for real-asset proof"}
+          </button>
+          {assetError ? <div style={errorStyle}>{assetError}</div> : null}
+        </div>
+      ) : (
+        <div style={realAssetSelectorGridStyle}>
+          {resolvedRoles.map((role) => (
+            <label key={role.role} style={realAssetSelectorStyle}>
+              <span style={statLabelStyle}>{role.role.replace(/_/g, " ")}</span>
+              <select
+                value={roleAssetOverrides[role.role] ?? ""}
+                onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                  onRoleAssetOverride(role.role, event.target.value)
+                }
+                style={selectStyle}
+              >
+                <option value="">
+                  Auto-match · {role.asset?.display_name || role.asset?.canonical_label || "fallback actor"}
+                </option>
+                {loadable.map((asset) => (
+                  <option key={asset.asset_id} value={asset.asset_id}>
+                    {asset.display_name || asset.canonical_label} · {asset.asset_id}
+                  </option>
+                ))}
+              </select>
+              <small style={mutedStyle}>
+                Effective:{" "}
+                {role.asset
+                  ? `${role.asset.display_name || role.asset.canonical_label} · ${role.asset.asset_id}`
+                  : "no loadable real asset"}
+              </small>
+            </label>
+          ))}
+        </div>
+      )}
+
+      <div style={realAssetSummaryStyle}>
+        <strong>{report.summary}</strong>
+        <span style={mutedStyle}>
+          Runtime support: {supportLabel(report.runtime_support)}
+          {report.authority_path
+            ? ` · Director action: ${report.authority_path.director_action_label}`
+            : " · no Phase 1B.5D asset gate for this capability"}
+        </span>
+      </div>
+
+      {report.operator_proofs.length ? (
+        <div style={realAssetProofGridStyle}>
+          {report.operator_proofs.map((proof, index) => (
+            <div
+              key={`${proof.side}:${proof.role}:${proof.qualification?.operator_id ?? index}`}
+              style={realAssetProofCardStyle}
+            >
+              <span style={statLabelStyle}>
+                {proof.side} · {proof.role.replace(/_/g, " ")}
+              </span>
+              <strong>
+                {proof.qualification?.label ?? "Asset not selected"}
+              </strong>
+              <span style={mutedStyle}>
+                {proof.qualification
+                  ? `${readableOperatorStatus(proof.qualification.status)} · ${proof.qualification.resolved_required_count}/${proof.qualification.required_count} required signals`
+                  : "Qualification waits for a real asset."}
+              </span>
+              {proof.qualification?.missing_required_labels.length ? (
+                <small style={{ ...mutedStyle, color: "#fca5a5" }}>
+                  Missing: {proof.qualification.missing_required_labels.join(", ")}
+                </small>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {report.pair_proofs.length ? (
+        <div style={realAssetProofGridStyle}>
+          {report.pair_proofs.map((proof, index) => (
+            <div
+              key={`${proof.source_role}:${proof.target_role}:${proof.resolution?.interaction_id ?? index}`}
+              style={realAssetProofCardStyle}
+            >
+              <span style={statLabelStyle}>
+                pair · {proof.source_role.replace(/_/g, " ")} → {proof.target_role.replace(/_/g, " ")}
+              </span>
+              <strong>
+                {proof.resolution?.label ?? "Pair qualification waits for both assets"}
+              </strong>
+              <span style={mutedStyle}>
+                {proof.resolution
+                  ? `${readableOperatorStatus(proof.resolution.status)}${proof.resolution.score == null ? "" : ` · score ${proof.resolution.score.toFixed(2)}`}`
+                  : "Select both source and target real assets."}
+              </span>
+              {proof.resolution?.missing_requirements.length ? (
+                <small style={{ ...mutedStyle, color: "#fca5a5" }}>
+                  Missing: {proof.resolution.missing_requirements.join(", ")}
+                </small>
+              ) : proof.resolution?.builder_validation_handoff.length ? (
+                <small style={mutedStyle}>
+                  Next authority: Builder validation ·{" "}
+                  {proof.resolution.builder_validation_handoff[0]}
+                </small>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <details style={detailsStyle}>
+        <summary style={summaryStyle}>Phase 1B.5E qualification report JSON</summary>
+        <pre style={preStyle}>{formatJson(report)}</pre>
+      </details>
+    </div>
+  );
+}
+
 export function DirectorCapabilityLibraryLab() {
   const [selectedId, setSelectedId] = useState("over_shoulder");
   const [category, setCategory] = useState<CategoryFilter>("all");
@@ -527,6 +754,7 @@ export function DirectorCapabilityLibraryLab() {
   const [assetError, setAssetError] = useState<string | null>(null);
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
   const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [roleAssetOverrides, setRoleAssetOverrides] = useState<Record<string, string>>({});
   const [catalogLimit, setCatalogLimit] = useState(INITIAL_CATALOG_LIMIT);
   const [auditState, setAuditState] = useState<DirectorVisualAuditState>(
     () => emptyDirectorVisualAuditState(),
@@ -535,6 +763,9 @@ export function DirectorCapabilityLibraryLab() {
   const selected =
     DIRECTOR_CAPABILITIES.find((capability) => capability.id === selectedId) ??
     DIRECTOR_CAPABILITIES[0];
+
+  const capabilityAuthorityPath =
+    directorCapabilityAssetAuthorityPath(selected.id);
 
   const filtered = useMemo(() => {
     const needle = normalized(query);
@@ -557,8 +788,21 @@ export function DirectorCapabilityLibraryLab() {
   }, [category, query, support]);
 
   const resolvedRoles = useMemo(
-    () => resolveDemoRoles(selected, assets),
-    [assets, selected],
+    () => resolveDemoRoles(selected, assets, roleAssetOverrides),
+    [assets, roleAssetOverrides, selected],
+  );
+
+  const realAssetExecutionQualification = useMemo(
+    () =>
+      buildDirectorRealAssetExecutionQualification(
+        selected,
+        resolvedRoles.map((role) => ({
+          role: role.role,
+          asset: role.asset,
+          target_extent_m: role.blocking.target_extent_m ?? 1.6,
+        })),
+      ),
+    [resolvedRoles, selected],
   );
 
   const loadableAssetCount = useMemo(
@@ -652,10 +896,23 @@ export function DirectorCapabilityLibraryLab() {
   }, [category, query, support]);
 
   useEffect(() => {
+    setRoleAssetOverrides({});
+  }, [selected.id]);
+
+  useEffect(() => {
     if (!filtered.some((capability) => capability.id === selectedId)) {
       setSelectedId(filtered[0]?.id ?? DIRECTOR_CAPABILITIES[0].id);
     }
   }, [filtered, selectedId]);
+
+  function setRoleAssetOverride(role: string, assetId: string) {
+    setRoleAssetOverrides((current) => {
+      const next = { ...current };
+      if (assetId) next[role] = assetId;
+      else delete next[role];
+      return next;
+    });
+  }
 
   function persistAuditState(next: DirectorVisualAuditState) {
     setAuditState(next);
@@ -768,6 +1025,7 @@ export function DirectorCapabilityLibraryLab() {
         : null,
     unnamed_motion_generality_proof: unnamedMotionGeneralityProof,
     scene_state_continuity: sceneStateContinuity,
+    real_asset_execution_qualification: realAssetExecutionQualification,
     runtime_inputs: {
       playback_clock: "isolated audit viewer; catalogue does not rerender during playback",
       duration_ms: selected.demo.duration_ms,
@@ -821,6 +1079,20 @@ export function DirectorCapabilityLibraryLab() {
         "Phase 1B.4.5 stable actor IDs + per-participant deterministic tracks + persistent choreography relations",
       process_quantity:
         "Phase 1B.4.6 deterministic quantity channels + renderer-neutral carrier samples + persistent process state without root-transform proxies",
+    },
+    authority_vocabulary: {
+      schema_version: DIRECTOR_CAPABILITY_AUTHORITY_SCHEMA_VERSION,
+      layers: DIRECTOR_CAPABILITY_AUTHORITY_LAYERS,
+      selected_capability_path: capabilityAuthorityPath,
+      note: "Phase 1B.5D labels the authority boundaries only; it does not add a second motion runtime or move Builder fit/collision authority.",
+    },
+    real_asset_execution_qualification: {
+      version: realAssetExecutionQualification.version,
+      report: realAssetExecutionQualification,
+      selected_role_overrides: roleAssetOverrides,
+      directability_profile_injected_into_shared_runtime: true,
+      pair_relationship_activation_in_this_phase: false,
+      note: "Phase 1B.5E exposes asset/operator/pair evidence and passes selected real-asset directability into the existing shared preview runtime. Phase 1B.5E pair relationships remain proposed until downstream Builder validation.",
     },
     performance: {
       playback_clock_owner: "DirectorAuditViewer",
@@ -879,10 +1151,11 @@ export function DirectorCapabilityLibraryLab() {
             <div style={eyebrowStyle}>MyWay Probe Lab · canonical director route</div>
             <h1 style={titleStyle}>Director Capability Library</h1>
             <p style={subtitleStyle}>
-              A visual proof environment for the words GLM 5.2 may use when it
-              directs a scene. Every capability connects semantic intent to a
-              named compiler, a Three.js support level, a future Blender status,
-              a fallback, real Asset Library casting, and an inspectable demo.
+              A visual proof environment for the Director actions GLM 5.2 may
+              use when it directs a scene. Phase 1B.5D keeps those actions distinct
+              from internal asset-qualification operators, pair-interaction lanes,
+              and Builder placement relations. Phase 1B.5E adds selectable real-asset
+              execution qualification while preserving the same shared runtime.
             </p>
           </div>
           <div style={principleStyle}>
@@ -901,7 +1174,7 @@ export function DirectorCapabilityLibraryLab() {
           <Stat
             label="Library assets"
             value={isLoadingAssets ? "…" : assetsLoaded ? loadableAssetCount : "deferred"}
-            detail="loaded only for optional real-asset proof"
+            detail="deferred until real-asset execution proof"
           />
           <Stat label="WebGL canvases" value={1} detail="DPR 1 · demand-rendered · sleeps offscreen" />
         </section>
@@ -921,6 +1194,19 @@ export function DirectorCapabilityLibraryLab() {
                 <span style={badgeStyle}>Blender: {supportLabel(selected.compiler.blender)}</span>
               </div>
             </div>
+
+            <RealAssetExecutionQualificationPanel
+              capability={selected}
+              assets={assets}
+              assetsLoaded={assetsLoaded}
+              assetsLoading={isLoadingAssets}
+              assetError={assetError}
+              resolvedRoles={resolvedRoles}
+              roleAssetOverrides={roleAssetOverrides}
+              onRoleAssetOverride={setRoleAssetOverride}
+              onRequestAssets={() => void loadAssets()}
+              report={realAssetExecutionQualification}
+            />
 
             <DirectorAuditViewer
               capability={selected}
@@ -1178,7 +1464,10 @@ export function DirectorCapabilityLibraryLab() {
                 Phase 1B.4.5 composes predeclared actors into coordinated assembly,
                 separation, containment, connection, merge, split, and scatter recipes.
                 Phase 1B.4.6 separates Fill/Drain/Accumulate quantities and
-                Flow/Emit carrier transport from rigid actor transforms.
+                Flow/Emit carrier transport from rigid actor transforms. Phase
+                1B.5D then names the authority boundary: Director actions describe
+                intent, asset operators qualify real-asset evidence, pair lanes
+                qualify compatibility, and Builder placement owns final measured fit.
               </p>
             </div>
 
@@ -1192,6 +1481,17 @@ export function DirectorCapabilityLibraryLab() {
 
           <div style={inspectorGridStyle}>
             <JsonPanel title="1. Director instruction" value={selected.director_instruction} />
+            <JsonPanel
+              title="1B. Phase 1B.5D capability authority path"
+              value={{
+                schema_version: DIRECTOR_CAPABILITY_AUTHORITY_SCHEMA_VERSION,
+                layers: DIRECTOR_CAPABILITY_AUTHORITY_LAYERS,
+                selected_capability_path: capabilityAuthorityPath,
+                interpretation: capabilityAuthorityPath
+                  ? "Mapped Director action. Internal operator/pair/placement names are implementation roles, not alternate Director commands."
+                  : "No asset-authority mapping is required for this capability in Phase 1B.5D.",
+              }}
+            />
             <JsonPanel title="2. Compiled preview execution" value={compiledExecution} />
             {cameraFidelity ? (
               <JsonPanel title="3. Controlled camera fidelity evidence" value={cameraFidelity} />
@@ -1230,10 +1530,11 @@ export function DirectorCapabilityLibraryLab() {
           <div style={honestyStyle}>
             <strong>Important boundary</strong>
             <span>
-              This library visually proves composable V2 shot direction with real
-              library assets and approximate sampled camera validation. Final
-              placement and physical collision authority remains in the Asset Scene
-              Builder, which now consumes the same Director shot language.
+              This library visually proves composable V2 direction. Director
+              action labels are the semantic language; Directable Asset operators
+              and pair interactions are internal qualification mechanisms. Final
+              placement, stability, and physical collision authority remains in the
+              Asset Scene Builder, which consumes the same Director language.
             </span>
           </div>
         </section>
@@ -1241,6 +1542,75 @@ export function DirectorCapabilityLibraryLab() {
     </main>
   );
 }
+
+
+const realAssetBenchStyle: CSSProperties = {
+  display: "grid",
+  gap: 12,
+  padding: 14,
+  borderRadius: 18,
+  border: "1px solid rgba(167,139,250,0.24)",
+  background: "linear-gradient(145deg, rgba(76,29,149,0.14), rgba(2,6,23,0.84))",
+};
+
+const realAssetBenchHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 12,
+  flexWrap: "wrap",
+};
+
+const realAssetLoadStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  flexWrap: "wrap",
+  padding: 12,
+  borderRadius: 14,
+  border: "1px dashed rgba(255,255,255,0.12)",
+  background: "rgba(15,23,42,0.48)",
+};
+
+const realAssetSelectorGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+  gap: 10,
+};
+
+const realAssetSelectorStyle: CSSProperties = {
+  display: "grid",
+  gap: 6,
+  padding: 10,
+  borderRadius: 13,
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(2,6,23,0.62)",
+};
+
+const realAssetSummaryStyle: CSSProperties = {
+  display: "grid",
+  gap: 4,
+  padding: 11,
+  borderRadius: 13,
+  border: "1px solid rgba(125,211,252,0.14)",
+  background: "rgba(14,116,144,0.08)",
+};
+
+const realAssetProofGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 9,
+};
+
+const realAssetProofCardStyle: CSSProperties = {
+  display: "grid",
+  gap: 5,
+  padding: 10,
+  borderRadius: 13,
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(2,6,23,0.66)",
+};
 
 const pageStyle: CSSProperties = {
   minHeight: "100vh",
