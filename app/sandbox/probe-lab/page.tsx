@@ -36,6 +36,13 @@ const activeLabs = [
       "The current MyWay sandbox lane for model-directed, interactive visual learning scenes.",
   },
   {
+    href: "/sandbox/probe-lab/directable-assets",
+    title: "Directable Assets",
+    status: "Phase 1B.5C qualification + interactions",
+    description:
+      "Use one canonical workbench with Asset Qualification and Asset Interactions tabs: inspect hardened per-asset affordances, then resolve Place On, Surface Attach, Precise Attach, Insert, and Flow across two Affordance Graphs.",
+  },
+  {
     href: "/sandbox/probe-lab/asset-library",
     title: "Asset Library",
     status: "shared library",
