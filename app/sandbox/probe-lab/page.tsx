@@ -2,6 +2,13 @@
 
 const activeLabs = [
   {
+    href: "/sandbox/probe-lab/cinematic-production",
+    title: "Cinematic Production",
+    status: "CP.1 benchmark workbench",
+    description:
+      "Build one visual golden short first, inspect shot-level camera/action/execution gaps, and work backward into reusable MyWay production architecture.",
+  },
+  {
     href: "/sandbox/probe-lab/blender-python-builder",
     title: "Blender Asset Foundry",
     status: "focused asset-quality foundation",
