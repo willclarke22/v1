@@ -87,7 +87,7 @@ export const BURGER_ASSEMBLY_BENCHMARK: CinematicProductionBenchmark = {
       concept: "caucasian left hand",
       search_terms: ["left hand", "hand", "caucasian hand", "forearm"],
       required: true,
-      notes: "Used as a symbolic/graphic interaction actor rather than a production-ready grasp solution.",
+      notes: "CP.1F supports geometry-aware rigid contact/nudge with this hand; production finger-wrapped grasp still requires a rig/IK layer.",
     },
   ],
   shots: [
@@ -131,7 +131,7 @@ export const BURGER_ASSEMBLY_BENCHMARK: CinematicProductionBenchmark = {
         { id: "hand", concept: "caucasian left hand", role: "supporting", required_capabilities: ["point", "nudge"] },
         { id: "burger", concept: "cheeseburger", role: "hero", required_capabilities: ["move"] },
       ],
-      visible_gaps: ["Hand remains a staged visible actor rather than a production-quality grasp solution."],
+      visible_gaps: ["Rigid contact is geometry-aware in CP.1F; articulated finger wrapping / grasp remains a later rig/IK capability."],
     },
     {
       id: "shot_03_hero_shift",

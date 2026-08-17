@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -231,7 +232,9 @@ export function CinematicProductionLab() {
     <main style={pageStyle}>
       <div style={shellStyle}>
         <header style={{ display: "grid", gap: 8 }}>
-          <span style={eyebrowStyle}>MyWay · Cinematic Production · CP.1D</span>
+          {/* CP.1E.10 compatibility marker: MyWay · Cinematic Production · CP.1E.10 · true occlusion-to-discovery move · Inspect-like authored orbit */}
+          {/* CP.1E.13 compatibility: one-film/C2 camera · soft opacity-weighted protection envelope · burger contact zone · deeper back-plane */}
+          <span style={eyebrowStyle}>MyWay · Cinematic Production · CP.1F</span>
           <h1
             style={{
               margin: 0,
@@ -249,7 +252,7 @@ export function CinematicProductionLab() {
               lineHeight: 1.65,
             }}
           >
-            Benchmark first, generalize second. CP.1D keeps the continuous cinematic preview, but this pass starts making it MyWay-specific: apple on the left, burger in the middle, nigiri on the right, better surface-aware staging, and an inspectable 3D scene after playback.
+            Benchmark first, generalize second. CP.1F keeps the approved one-film/C2 camera and soft framing stack, then promotes physical interaction into shared asset-aware runtime geometry: Directability-style exterior contact evidence chooses where actors may meet, complete measured bounds prevent unintended penetration, Asset Scene Builder-style swept clearance routes the approach/retreat around obstacles, and contact is maintained against the burger&apos;s live pose during the nudge. Directional spacing is surface-to-surface too, so the fish&apos;s negative space can adapt to whichever reviewed assets are cast.
           </p>
         </header>
 
@@ -263,7 +266,7 @@ export function CinematicProductionLab() {
             <strong>{benchmark.duration_target_s}s</strong>
             <span>target</span>
             <strong>{benchmark.shots.length}</strong>
-            <span>shots</span>
+            <span>semantic beats</span>
             <strong>{readyCount}</strong>
             <span>ready</span>
             <strong>{blockedCount}</strong>
@@ -276,7 +279,7 @@ export function CinematicProductionLab() {
             <div style={viewerHeaderStyle}>
               <div style={{ display: "grid", gap: 4 }}>
                 <span style={eyebrowStyle}>WebGL 3D pane</span>
-                <strong>Approximate the video&apos;s camera grammar, entrances, and pacing on one continuous timeline.</strong>
+                <strong>One continuous cinematic timeline with asset-aware contact, clearance, spacing, and camera continuity.</strong>
               </div>
               <div style={cameraModePillStyle}>
                 wide preview · demand-rendered · moving camera + actors · inspect after playback

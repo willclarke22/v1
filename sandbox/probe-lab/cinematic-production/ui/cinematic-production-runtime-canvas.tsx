@@ -16,13 +16,33 @@ import { Clone, Html, OrbitControls, PerspectiveCamera, useGLTF } from "@react-t
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
-import type { MyWayAssetGeometryProfileV1, MyWayAssetSupportSurface } from "../../assets/asset-types";
+import type {
+  MyWayAssetAttachmentRegion,
+  MyWayAssetCollisionBox,
+  MyWayAssetGeometryProfileV1,
+  MyWayAssetSupportSurface,
+} from "../../assets/asset-types";
+import {
+  enforceDirectionalSurfaceClearance,
+  resolveAssetAwareInteractionMotion,
+  sampleAssetInteractionBezier,
+  type AssetInteractionGeometry,
+  type AssetInteractionObstacle,
+  type AssetInteractionPose,
+} from "../../scenes/asset-aware-interaction-motion";
+
+import {
+  advanceSoftCameraSafetyCorrection,
+  softFramingParticipation,
+  softProtectedCameraDistance,
+} from "./cinematic-production-camera-safety";
 
 import {
   CINEMATIC_BURGER_TIMELINE_DURATION_S,
   sampleCinematicBurgerRuntime,
   type CinematicShotRuntimeLayout,
   type RuntimeActorPose,
+  type RuntimeActorRole,
   type RuntimeVec3,
 } from "./cinematic-production-runtime-layout";
 
@@ -47,15 +67,7 @@ export type CinematicSeekRequest = {
   revision: number;
 };
 
-type AssetRole =
-  | "tray"
-  | "apple"
-  | "burger"
-  | "nigiri"
-  | "cow"
-  | "chicken"
-  | "goldfish"
-  | "hand";
+type AssetRole = RuntimeActorRole;
 
 type RuntimeCanvasProps = {
   selectedAssets: Record<string, CinematicLibraryAssetRecord | null>;
@@ -146,6 +158,25 @@ type PreparedSupportSurface = {
   edgeMarginM: number;
 };
 
+type PreparedSurfaceContactRegion = {
+  id: string;
+  label: string;
+  center: RuntimeVec3;
+  normal: RuntimeVec3;
+  size: [number, number];
+  confidence: number;
+  side: MyWayAssetAttachmentRegion["side"];
+  source: MyWayAssetAttachmentRegion["source"];
+};
+
+type PreparedCollisionBox = {
+  id: string;
+  center: RuntimeVec3;
+  size: RuntimeVec3;
+  rotation: RuntimeVec3;
+  confidence: number;
+};
+
 type PreparedAssetGeometry = {
   sourceSize: RuntimeVec3;
   centerOffset: RuntimeVec3;
@@ -158,6 +189,8 @@ type PreparedAssetGeometry = {
   bottomContactCenter: RuntimeVec3;
   bottomContactSize: [number, number];
   supportSurfaces: PreparedSupportSurface[];
+  surfaceContactRegions: PreparedSurfaceContactRegion[];
+  collisionBoxes: PreparedCollisionBox[];
 };
 
 type PreparedGeometryByRole = Partial<Record<AssetRole, PreparedAssetGeometry>>;
@@ -201,6 +234,48 @@ function preparedSupportSurface(
     confidence: clamp01(surface.confidence),
     isPrimary: surface.id === primarySurfaceId,
     edgeMarginM: Math.max(0, surface.edge_margin_m ?? 0.01),
+  };
+}
+
+function preparedSurfaceContactRegion(
+  region: MyWayAssetAttachmentRegion,
+  centerOffset: THREE.Vector3,
+): PreparedSurfaceContactRegion {
+  const center = new THREE.Vector3(...region.center).add(centerOffset);
+  const normal = new THREE.Vector3(...region.normal);
+  if (normal.lengthSq() < 1e-10) normal.set(0, 0, 1);
+  normal.normalize();
+  return {
+    id: region.id,
+    label: region.label,
+    center: asRuntimeVec3(center),
+    normal: asRuntimeVec3(normal),
+    size: [
+      finitePositive(region.size[0], 0.001),
+      finitePositive(region.size[1], 0.001),
+    ],
+    confidence: clamp01(region.confidence),
+    side: region.side,
+    source: region.source,
+  };
+}
+
+function preparedCollisionBox(
+  box: MyWayAssetCollisionBox,
+  centerOffset: THREE.Vector3,
+  index: number,
+): PreparedCollisionBox {
+  const center = new THREE.Vector3(...box.center).add(centerOffset);
+  return {
+    id: box.id ?? `collision_box_${index + 1}`,
+    center: asRuntimeVec3(center),
+    size: [
+      finitePositive(Math.abs(box.size[0]), 0.001),
+      finitePositive(Math.abs(box.size[1]), 0.001),
+      finitePositive(Math.abs(box.size[2]), 0.001),
+    ],
+    rotation: [...box.rotation],
+    confidence: clamp01(box.confidence ?? 0.65),
   };
 }
 
@@ -252,6 +327,16 @@ function prepareAssetGeometry(
         .map((surface) =>
           preparedSupportSurface(surface, centerOffset, profile.primary_support_surface_id),
         ) ?? [],
+    // Directability treats geometry-profile exterior attachment regions as
+    // generic surface_contact_region evidence unless semantic connector truth
+    // exists. Cinematic interaction motion consumes that same measured evidence.
+    surfaceContactRegions:
+      profile?.attachment_regions
+        ?.filter((region) => region.exposure !== "interior")
+        .map((region) => preparedSurfaceContactRegion(region, centerOffset)) ?? [],
+    collisionBoxes:
+      profile?.collision_boxes
+        ?.map((box, index) => preparedCollisionBox(box, centerOffset, index)) ?? [],
   };
 }
 
@@ -525,6 +610,8 @@ function preparedGeometryFallback(
     bottomContactCenter: [0, 0, 0],
     bottomContactSize: [sourceSize[0] * 0.5, sourceSize[2] * 0.5],
     supportSurfaces: [],
+    surfaceContactRegions: [],
+    collisionBoxes: [],
   };
 }
 
@@ -857,6 +944,96 @@ function applyGroupEmphasis(group: THREE.Group, emphasis: number, actorOpacity: 
   });
 }
 
+function resolveActorPose(
+  asset: CinematicLibraryAssetRecord | null,
+  role: AssetRole,
+  pose: RuntimeActorPose,
+  surface: SurfaceInfo | null,
+  prepared: PreparedGeometryByRole,
+): RuntimeActorPose {
+  return role !== "tray" && role !== "hand" && surface
+    ? constrainToSurface(
+        asset,
+        role as Exclude<AssetRole, "tray" | "hand">,
+        pose,
+        surface,
+        prepared,
+      )
+    : pose;
+}
+
+function assetInteractionGeometryForRole(
+  prepared: PreparedGeometryByRole,
+  asset: CinematicLibraryAssetRecord | null,
+  role: AssetRole,
+): AssetInteractionGeometry {
+  const geometry = geometryForRole(prepared, asset, role);
+  return {
+    local_bounds: {
+      min: [...geometry.localBounds.min],
+      max: [...geometry.localBounds.max],
+      center: [...geometry.localBounds.center],
+      size: [...geometry.localBounds.size],
+    },
+    contact_regions: geometry.surfaceContactRegions.map((region) => ({
+      id: region.id,
+      label: region.label,
+      local_position: [...region.center],
+      local_normal: [...region.normal],
+      size: [...region.size],
+      confidence: region.confidence,
+      source: region.source === "manual" ? "manual" : "geometry_profile",
+      side: region.side,
+    })),
+    collision_boxes: geometry.collisionBoxes.map((box) => ({
+      id: box.id,
+      center: [...box.center],
+      size: [...box.size],
+      rotation: [...box.rotation],
+      confidence: box.confidence,
+    })),
+  };
+}
+
+function assetInteractionPoseForRole(
+  asset: CinematicLibraryAssetRecord | null,
+  role: AssetRole,
+  pose: RuntimeActorPose,
+  prepared: PreparedGeometryByRole,
+): AssetInteractionPose {
+  const geometry = geometryForRole(prepared, asset, role);
+  const scale = effectiveScale(asset, role, pose.scale, geometry);
+  const rotation = combinedRotation(asset, pose.rotation);
+  const groundOffset =
+    typeof asset?.ground_offset_m === "number" ? asset.ground_offset_m * scale : 0;
+  return {
+    position: [pose.position[0], pose.position[1] + groundOffset, pose.position[2]],
+    rotation,
+    scale,
+  };
+}
+
+function runtimePoseFromInteractionPosition(
+  asset: CinematicLibraryAssetRecord | null,
+  role: AssetRole,
+  basePose: RuntimeActorPose,
+  worldRootPosition: RuntimeVec3,
+  prepared: PreparedGeometryByRole,
+): RuntimeActorPose {
+  const geometry = geometryForRole(prepared, asset, role);
+  const scale = effectiveScale(asset, role, basePose.scale, geometry);
+  const groundOffset =
+    typeof asset?.ground_offset_m === "number" ? asset.ground_offset_m * scale : 0;
+  return {
+    ...basePose,
+    position: [
+      worldRootPosition[0],
+      worldRootPosition[1] - groundOffset,
+      worldRootPosition[2],
+    ],
+  };
+}
+
 function applyActorPose(
   group: THREE.Group | null,
   asset: CinematicLibraryAssetRecord | null,
@@ -865,24 +1042,15 @@ function applyActorPose(
   surface: SurfaceInfo | null,
   prepared: PreparedGeometryByRole,
 ) {
-  if (!group) return;
-  const opacity = clamp01(pose.opacity ?? 1);
-  const emphasis = clamp01(pose.emphasis ?? 0);
-  group.visible = pose.visible && opacity > 0.001;
+  const finalPose = resolveActorPose(asset, role, pose, surface, prepared);
+  if (!group) return finalPose;
+
+  const opacity = clamp01(finalPose.opacity ?? 1);
+  const emphasis = clamp01(finalPose.emphasis ?? 0);
+  group.visible = finalPose.visible && opacity > 0.001;
   applyGroupOpacity(group, opacity);
   applyGroupEmphasis(group, emphasis, opacity);
-  if (!group.visible) return;
-
-  const finalPose =
-    role !== "tray" && role !== "hand" && surface
-      ? constrainToSurface(
-          asset,
-          role as Exclude<AssetRole, "tray" | "hand">,
-          pose,
-          surface,
-          prepared,
-        )
-      : pose;
+  if (!group.visible) return finalPose;
 
   const rotation = combinedRotation(asset, finalPose.rotation);
   const geometry = geometryForRole(prepared, asset, role);
@@ -898,6 +1066,7 @@ function applyActorPose(
   group.rotation.set(rotation[0], rotation[1], rotation[2]);
   group.scale.setScalar(scale);
   group.updateMatrixWorld(true);
+  return finalPose;
 }
 
 type RuntimeActorRefs = {
@@ -975,6 +1144,7 @@ function applyShadowPose(
   pose: RuntimeActorPose,
   surface: SurfaceInfo,
   prepared: PreparedGeometryByRole,
+  poseAlreadyResolved = false,
 ) {
   if (!mesh) return;
   const actorOpacity = clamp01(pose.opacity ?? 1);
@@ -982,8 +1152,10 @@ function applyShadowPose(
     mesh.visible = false;
     return;
   }
-  const finalPose = constrainToSurface(asset, role, pose, surface, prepared);
-  const heightLift = clamp01(pose.position[1] / 0.6);
+  const finalPose = poseAlreadyResolved
+    ? pose
+    : constrainToSurface(asset, role, pose, surface, prepared);
+  const heightLift = poseAlreadyResolved ? 0 : clamp01(pose.position[1] / 0.6);
   const geometry = geometryForRole(prepared, asset, role);
   const worldScale = effectiveScale(asset, role, finalPose.scale, geometry);
   const [sx, sz] = shadowScaleForRole(role, worldScale, pose);
@@ -1007,6 +1179,11 @@ type FramingEntry = {
   group: THREE.Group | null;
   asset: CinematicLibraryAssetRecord | null;
   role: Exclude<AssetRole, "tray" | "hand">;
+};
+
+type FramingSafetyState = {
+  correctionDistance: number | null;
+  lastTimelineS: number | null;
 };
 
 function framingEntries(
@@ -1045,6 +1222,9 @@ function protectCameraFraming(
   target: RuntimeVec3,
   entries: FramingEntry[],
   prepared: PreparedGeometryByRole,
+  safetyState: FramingSafetyState,
+  timelineTimeS: number,
+  isPlaying: boolean,
 ) {
   if (!(camera instanceof THREE.PerspectiveCamera)) return;
 
@@ -1071,36 +1251,95 @@ function protectCameraFraming(
   const tanVertical = Math.max(0.05, Math.tan(safeVerticalHalfAngle));
   const tanHorizontal = Math.max(0.05, Math.tan(safeHorizontalHalfAngle));
 
+  // CP.1E.12 soft post-rail camera safety. The former implementation ignored an
+  // actor below opacity 0.06, then admitted its full measured bounds at once. A
+  // second hard 1.12x distance threshold could then jump the camera backwards.
+  // Each actor now participates continuously with opacity, and the final safety
+  // distance is itself blended by a C2-soft envelope. The authored C2 master rail
+  // remains primary; this constraint can no longer behave like a second cut.
   let requiredDistance = authoredDistance;
   for (const entry of entries) {
     if (!entry.group?.visible) continue;
     const actorOpacity = Number(entry.group.userData.cinematicOpacity ?? 1);
-    if (actorOpacity <= 0.06) continue;
+    const participation = softFramingParticipation(actorOpacity);
+    if (participation <= 0) continue;
     const geometry = geometryForRole(prepared, entry.asset, entry.role);
     entry.group.updateMatrixWorld(true);
 
+    let actorRequiredDistance = authoredDistance;
     for (const corner of localBoundsCorners(geometry)) {
       const world = corner.applyMatrix4(entry.group.matrixWorld);
       const relative = world.sub(targetVector);
       const horizontal = Math.abs(relative.dot(right));
       const vertical = Math.abs(relative.dot(up));
       const longitudinal = relative.dot(backward);
-      requiredDistance = Math.max(
-        requiredDistance,
+      actorRequiredDistance = Math.max(
+        actorRequiredDistance,
         horizontal / tanHorizontal + longitudinal,
         vertical / tanVertical + longitudinal,
       );
     }
+
+    const weightedActorDistance = authoredDistance +
+      Math.max(0, actorRequiredDistance - authoredDistance) * participation;
+    requiredDistance = Math.max(requiredDistance, weightedActorDistance);
   }
 
-  if (requiredDistance > authoredDistance + 0.005) {
-    camera.position.copy(targetVector).addScaledVector(
-      backward,
-      requiredDistance * 1.025,
-    );
-  }
+  const desiredProtectedDistance = softProtectedCameraDistance(
+    authoredDistance,
+    requiredDistance,
+  );
+  const desiredCorrection = Math.max(
+    0,
+    desiredProtectedDistance - authoredDistance,
+  );
+  const previousTimelineS = safetyState.lastTimelineS;
+  const deltaS = previousTimelineS === null
+    ? 0
+    : timelineTimeS - previousTimelineS;
+  const timelineJump = deltaS <= 0 || deltaS > 0.25;
+  const previousCorrection = safetyState.correctionDistance;
+  const appliedCorrection =
+    !isPlaying || timelineJump || previousCorrection === null
+      ? desiredCorrection
+      : advanceSoftCameraSafetyCorrection(
+          previousCorrection,
+          desiredCorrection,
+          deltaS,
+        );
+
+  safetyState.correctionDistance = appliedCorrection;
+  safetyState.lastTimelineS = timelineTimeS;
+
+  camera.position
+    .copy(targetVector)
+    .addScaledVector(backward, authoredDistance + appliedCorrection);
   camera.lookAt(targetVector);
   camera.updateMatrixWorld(true);
+}
+
+function actorGroupForRole(
+  actors: RuntimeActorRefs,
+  role: AssetRole,
+): THREE.Group | null {
+  switch (role) {
+    case "tray":
+      return actors.tray.current;
+    case "apple":
+      return actors.foods[0].current;
+    case "burger":
+      return actors.foods[1].current;
+    case "nigiri":
+      return actors.foods[2].current;
+    case "cow":
+      return actors.cow.current;
+    case "chicken":
+      return actors.chicken.current;
+    case "goldfish":
+      return actors.goldfish.current;
+    case "hand":
+      return actors.hand.current;
+  }
 }
 
 function applyRuntimeLayout(
@@ -1111,6 +1350,9 @@ function applyRuntimeLayout(
   prepared: PreparedGeometryByRole,
   camera: THREE.Camera,
   includeCamera: boolean,
+  framingSafetyState: FramingSafetyState,
+  timelineTimeS: number,
+  isPlaying: boolean,
 ) {
   if (includeCamera) {
     camera.position.set(...layout.camera.position);
@@ -1121,30 +1363,409 @@ function applyRuntimeLayout(
     }
   }
 
-  applyActorPose(
-    actors.tray.current,
+  // CP.1F asset-aware interaction runtime:
+  // 1) resolve ordinary support/contact staging first;
+  // 2) apply measured pair-spacing constraints;
+  // 3) solve semantic interactions from actual source/target geometry;
+  // 4) render only the resolved physical poses.
+  //
+  // This ordering mirrors Asset Scene Builder authority: cinematic intent can
+  // request a relationship, but measured geometry owns literal placement.
+  const trayPose = resolveActorPose(
     selectedAssets.tray,
     "tray",
     layout.tray,
     null,
     prepared,
   );
-  const surface = traySurfaceInfo(selectedAssets.tray, layout.tray, prepared);
+  const surface = traySurfaceInfo(selectedAssets.tray, trayPose, prepared);
 
-  applyActorPose(actors.foods[0].current, selectedAssets.apple, "apple", layout.foods[0] ?? HIDDEN_POSE, surface, prepared);
-  applyActorPose(actors.foods[1].current, selectedAssets.burger, "burger", layout.foods[1] ?? HIDDEN_POSE, surface, prepared);
-  applyActorPose(actors.foods[2].current, selectedAssets.nigiri, "nigiri", layout.foods[2] ?? HIDDEN_POSE, surface, prepared);
-  applyActorPose(actors.cow.current, selectedAssets.cow, "cow", layout.cow, surface, prepared);
-  applyActorPose(actors.chicken.current, selectedAssets.chicken, "chicken", layout.chicken, surface, prepared);
-  applyActorPose(actors.goldfish.current, selectedAssets.goldfish, "goldfish", layout.goldfish, surface, prepared);
-  applyActorPose(actors.hand.current, selectedAssets.hand, "hand", layout.hand, null, prepared);
+  const resolvedPoses: Record<AssetRole, RuntimeActorPose> = {
+    tray: trayPose,
+    apple: resolveActorPose(
+      selectedAssets.apple,
+      "apple",
+      layout.foods[0] ?? HIDDEN_POSE,
+      surface,
+      prepared,
+    ),
+    burger: resolveActorPose(
+      selectedAssets.burger,
+      "burger",
+      layout.foods[1] ?? HIDDEN_POSE,
+      surface,
+      prepared,
+    ),
+    nigiri: resolveActorPose(
+      selectedAssets.nigiri,
+      "nigiri",
+      layout.foods[2] ?? HIDDEN_POSE,
+      surface,
+      prepared,
+    ),
+    cow: resolveActorPose(
+      selectedAssets.cow,
+      "cow",
+      layout.cow,
+      surface,
+      prepared,
+    ),
+    chicken: resolveActorPose(
+      selectedAssets.chicken,
+      "chicken",
+      layout.chicken,
+      surface,
+      prepared,
+    ),
+    goldfish: resolveActorPose(
+      selectedAssets.goldfish,
+      "goldfish",
+      layout.goldfish,
+      surface,
+      prepared,
+    ),
+    hand: resolveActorPose(
+      selectedAssets.hand,
+      "hand",
+      layout.hand,
+      null,
+      prepared,
+    ),
+  };
 
-  applyShadowPose(shadows.foods[0].current, selectedAssets.apple, "apple", layout.foods[0] ?? HIDDEN_POSE, surface, prepared);
-  applyShadowPose(shadows.foods[1].current, selectedAssets.burger, "burger", layout.foods[1] ?? HIDDEN_POSE, surface, prepared);
-  applyShadowPose(shadows.foods[2].current, selectedAssets.nigiri, "nigiri", layout.foods[2] ?? HIDDEN_POSE, surface, prepared);
-  applyShadowPose(shadows.cow.current, selectedAssets.cow, "cow", layout.cow, surface, prepared);
-  applyShadowPose(shadows.chicken.current, selectedAssets.chicken, "chicken", layout.chicken, surface, prepared);
-  applyShadowPose(shadows.goldfish.current, selectedAssets.goldfish, "goldfish", layout.goldfish, surface, prepared);
+  // Generalized "behind/beside with physical negative space" constraint.
+  // The film provides a semantic direction + minimum visible surface gap; actual
+  // asset dimensions decide whether the authored center point needs correction.
+  for (const constraint of layout.directionalClearanceConstraints ?? []) {
+    const movingPose = resolvedPoses[constraint.movingRole];
+    const anchorPose = resolvedPoses[constraint.anchorRole];
+    if (
+      !movingPose?.visible ||
+      !anchorPose?.visible ||
+      (movingPose.opacity ?? 1) <= 0.001 ||
+      (anchorPose.opacity ?? 1) <= 0.001
+    ) {
+      continue;
+    }
+    const movingAsset = selectedAssets[constraint.movingRole] ?? null;
+    const anchorAsset = selectedAssets[constraint.anchorRole] ?? null;
+    const solved = enforceDirectionalSurfaceClearance({
+      movingPose: assetInteractionPoseForRole(
+        movingAsset,
+        constraint.movingRole,
+        movingPose,
+        prepared,
+      ),
+      movingGeometry: assetInteractionGeometryForRole(
+        prepared,
+        movingAsset,
+        constraint.movingRole,
+      ),
+      anchorPose: assetInteractionPoseForRole(
+        anchorAsset,
+        constraint.anchorRole,
+        anchorPose,
+        prepared,
+      ),
+      anchorGeometry: assetInteractionGeometryForRole(
+        prepared,
+        anchorAsset,
+        constraint.anchorRole,
+      ),
+      direction: constraint.direction,
+      minimumSurfaceGapM: constraint.minimumSurfaceGapM,
+    });
+    resolvedPoses[constraint.movingRole] = runtimePoseFromInteractionPosition(
+      movingAsset,
+      constraint.movingRole,
+      movingPose,
+      solved.pose.position,
+      prepared,
+    );
+  }
+
+  for (const interaction of layout.interactions ?? []) {
+    const sourcePose = resolvedPoses[interaction.sourceRole];
+    const targetPose = resolvedPoses[interaction.targetRole];
+    if (
+      !sourcePose?.visible ||
+      !targetPose?.visible ||
+      (sourcePose.opacity ?? 1) <= 0.001 ||
+      (targetPose.opacity ?? 1) <= 0.001
+    ) {
+      continue;
+    }
+
+    const sourceAsset = selectedAssets[interaction.sourceRole] ?? null;
+    const targetAsset = selectedAssets[interaction.targetRole] ?? null;
+    const sourceInteractionPose = assetInteractionPoseForRole(
+      sourceAsset,
+      interaction.sourceRole,
+      sourcePose,
+      prepared,
+    );
+    const targetInteractionPose = assetInteractionPoseForRole(
+      targetAsset,
+      interaction.targetRole,
+      targetPose,
+      prepared,
+    );
+
+    const obstacles: AssetInteractionObstacle[] = interaction.obstacleRoles
+      .filter(
+        (role) =>
+          role !== interaction.sourceRole &&
+          role !== interaction.targetRole,
+      )
+      .flatMap((role) => {
+        const obstaclePose = resolvedPoses[role];
+        if (
+          !obstaclePose?.visible ||
+          (obstaclePose.opacity ?? 1) <= 0.01
+        ) {
+          return [];
+        }
+        const obstacleAsset = selectedAssets[role] ?? null;
+        return [
+          {
+            id: role,
+            pose: assetInteractionPoseForRole(
+              obstacleAsset,
+              role,
+              obstaclePose,
+              prepared,
+            ),
+            geometry: assetInteractionGeometryForRole(
+              prepared,
+              obstacleAsset,
+              role,
+            ),
+            clearance_m: interaction.obstacleClearanceM,
+          },
+        ];
+      });
+
+    try {
+      const solution = resolveAssetAwareInteractionMotion({
+        intent: {
+          id: interaction.id,
+          kind: interaction.kind,
+          approach_direction: interaction.approachDirection,
+          preferred_target_side: interaction.preferredTargetSide,
+          contact_clearance_m: interaction.contactClearanceM,
+          obstacle_clearance_m: interaction.obstacleClearanceM,
+        },
+        sourcePose: sourceInteractionPose,
+        sourceGeometry: assetInteractionGeometryForRole(
+          prepared,
+          sourceAsset,
+          interaction.sourceRole,
+        ),
+        targetPose: targetInteractionPose,
+        targetGeometry: assetInteractionGeometryForRole(
+          prepared,
+          targetAsset,
+          interaction.targetRole,
+        ),
+        obstacles,
+        retreatEnd: sourceInteractionPose.position,
+      });
+
+      let solvedWorldRoot: RuntimeVec3;
+      if (solution.contact.status === "blocked") {
+        // Builder-style fail-closed behavior: if a third actor blocks the literal
+        // contact candidate, stop just before contact rather than intersecting it.
+        const safeTail = 0.92;
+        if (interaction.phase === "retreat") {
+          solvedWorldRoot = sampleAssetInteractionBezier(
+            solution.approach,
+            safeTail * (1 - interaction.phaseProgress),
+          );
+        } else {
+          solvedWorldRoot = sampleAssetInteractionBezier(
+            solution.approach,
+            safeTail * interaction.phaseProgress,
+          );
+        }
+      } else if (interaction.phase === "approach") {
+        solvedWorldRoot = sampleAssetInteractionBezier(
+          solution.approach,
+          interaction.phaseProgress,
+        );
+      } else if (interaction.phase === "contact" && interaction.maintainContact) {
+        // Recomputed from the target's current world pose every frame. The
+        // hand therefore follows the burger's nudge while contact is active.
+        solvedWorldRoot = solution.contact.source_pose.position;
+      } else {
+        solvedWorldRoot = sampleAssetInteractionBezier(
+          solution.retreat,
+          interaction.phaseProgress,
+        );
+      }
+
+      resolvedPoses[interaction.sourceRole] =
+        runtimePoseFromInteractionPosition(
+          sourceAsset,
+          interaction.sourceRole,
+          sourcePose,
+          solvedWorldRoot,
+          prepared,
+        );
+
+      const sourceGroup = actorGroupForRole(actors, interaction.sourceRole);
+      if (sourceGroup) {
+        sourceGroup.userData.cinematicInteraction = {
+          schema_version: solution.schema_version,
+          id: interaction.id,
+          phase: interaction.phase,
+          contact_status: solution.contact.status,
+          source_region: solution.contact.source_region_id,
+          target_region: solution.contact.target_region_id,
+          source_evidence: solution.diagnostics.source_contact_evidence,
+          target_evidence: solution.diagnostics.target_contact_evidence,
+          contact_gap_m: solution.contact.surface_gap_m,
+          contact_collision_free: solution.diagnostics.contact_collision_free,
+          approach_collision_free: solution.diagnostics.approach_collision_free,
+          retreat_collision_free: solution.diagnostics.retreat_collision_free,
+          contact_obstacle_ids: solution.diagnostics.contact_obstacle_ids,
+        };
+      }
+    } catch (caught) {
+      // A malformed/unmeasurable asset must degrade to the authored staging pose
+      // rather than crash the entire cinematic player.
+      const sourceGroup = actorGroupForRole(actors, interaction.sourceRole);
+      if (sourceGroup) {
+        sourceGroup.userData.cinematicInteraction = {
+          schema_version: "myway_asset_interaction_motion_solution_v1",
+          id: interaction.id,
+          phase: interaction.phase,
+          contact_status: "unresolved",
+          error: caught instanceof Error ? caught.message : String(caught),
+        };
+      }
+    }
+  }
+
+  // All final transforms below are already support/contact/spacing resolved.
+  applyActorPose(
+    actors.tray.current,
+    selectedAssets.tray,
+    "tray",
+    resolvedPoses.tray,
+    null,
+    prepared,
+  );
+  applyActorPose(
+    actors.foods[0].current,
+    selectedAssets.apple,
+    "apple",
+    resolvedPoses.apple,
+    null,
+    prepared,
+  );
+  applyActorPose(
+    actors.foods[1].current,
+    selectedAssets.burger,
+    "burger",
+    resolvedPoses.burger,
+    null,
+    prepared,
+  );
+  applyActorPose(
+    actors.foods[2].current,
+    selectedAssets.nigiri,
+    "nigiri",
+    resolvedPoses.nigiri,
+    null,
+    prepared,
+  );
+  applyActorPose(
+    actors.cow.current,
+    selectedAssets.cow,
+    "cow",
+    resolvedPoses.cow,
+    null,
+    prepared,
+  );
+  applyActorPose(
+    actors.chicken.current,
+    selectedAssets.chicken,
+    "chicken",
+    resolvedPoses.chicken,
+    null,
+    prepared,
+  );
+  applyActorPose(
+    actors.goldfish.current,
+    selectedAssets.goldfish,
+    "goldfish",
+    resolvedPoses.goldfish,
+    null,
+    prepared,
+  );
+  applyActorPose(
+    actors.hand.current,
+    selectedAssets.hand,
+    "hand",
+    resolvedPoses.hand,
+    null,
+    prepared,
+  );
+
+  applyShadowPose(
+    shadows.foods[0].current,
+    selectedAssets.apple,
+    "apple",
+    resolvedPoses.apple,
+    surface,
+    prepared,
+    true,
+  );
+  applyShadowPose(
+    shadows.foods[1].current,
+    selectedAssets.burger,
+    "burger",
+    resolvedPoses.burger,
+    surface,
+    prepared,
+    true,
+  );
+  applyShadowPose(
+    shadows.foods[2].current,
+    selectedAssets.nigiri,
+    "nigiri",
+    resolvedPoses.nigiri,
+    surface,
+    prepared,
+    true,
+  );
+  applyShadowPose(
+    shadows.cow.current,
+    selectedAssets.cow,
+    "cow",
+    resolvedPoses.cow,
+    surface,
+    prepared,
+    true,
+  );
+  applyShadowPose(
+    shadows.chicken.current,
+    selectedAssets.chicken,
+    "chicken",
+    resolvedPoses.chicken,
+    surface,
+    prepared,
+    true,
+  );
+  applyShadowPose(
+    shadows.goldfish.current,
+    selectedAssets.goldfish,
+    "goldfish",
+    resolvedPoses.goldfish,
+    surface,
+    prepared,
+    true,
+  );
 
   if (includeCamera) {
     protectCameraFraming(
@@ -1152,6 +1773,9 @@ function applyRuntimeLayout(
       layout.camera.target,
       framingEntries(actors, selectedAssets),
       prepared,
+      framingSafetyState,
+      timelineTimeS,
+      isPlaying,
     );
   }
 }
@@ -1205,12 +1829,20 @@ function AnimatedCameraAndActors({
   const playAnchorTimelineSRef = useRef(seekRequest.timeS);
   const lastUiNotifyMsRef = useRef(0);
   const endedNotifiedRef = useRef(false);
+  const framingSafetyStateRef = useRef<FramingSafetyState>({
+    correctionDistance: null,
+    lastTimelineS: null,
+  });
 
   useEffect(() => {
     timelineTimeRef.current = seekRequest.timeS;
     playAnchorTimelineSRef.current = seekRequest.timeS;
     playAnchorWallMsRef.current = null;
     endedNotifiedRef.current = false;
+    framingSafetyStateRef.current = {
+      correctionDistance: null,
+      lastTimelineS: null,
+    };
     invalidate();
   }, [invalidate, seekRequest.revision, seekRequest.timeS]);
 
@@ -1267,6 +1899,9 @@ function AnimatedCameraAndActors({
       preparedGeometryRef.current,
       camera,
       !(inspectMode && !isPlaying),
+      framingSafetyStateRef.current,
+      timelineTimeS,
+      isPlaying,
     );
 
     if (now - lastUiNotifyMsRef.current >= 220 || reachedEnd || !isPlaying) {
@@ -1283,6 +1918,61 @@ function AnimatedCameraAndActors({
   return null;
 }
 
+function CameraAwareStudioRig() {
+  const { camera } = useThree();
+  const keyRef = useRef<THREE.DirectionalLight | null>(null);
+  const fillRef = useRef<THREE.DirectionalLight | null>(null);
+  const rimRef = useRef<THREE.DirectionalLight | null>(null);
+  const keyTargetRef = useRef<THREE.Object3D | null>(null);
+  const fillTargetRef = useRef<THREE.Object3D | null>(null);
+  const rimTargetRef = useRef<THREE.Object3D | null>(null);
+
+  useFrame(() => {
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).normalize();
+    const up = new THREE.Vector3(0, 1, 0);
+    const focus = camera.position.clone().addScaledVector(forward, 4.2);
+    focus.y = 0.38;
+
+    const place = (
+      light: THREE.DirectionalLight | null,
+      target: THREE.Object3D | null,
+      rightOffset: number,
+      upOffset: number,
+      backOffset: number,
+    ) => {
+      if (!light || !target) return;
+      light.position.copy(focus)
+        .addScaledVector(right, rightOffset)
+        .addScaledVector(up, upOffset)
+        .addScaledVector(forward, -backOffset);
+      target.position.copy(focus);
+      target.updateMatrixWorld(true);
+      light.target = target;
+      light.updateMatrixWorld(true);
+    };
+
+    // Screen-space studio lighting follows the master camera gently, preserving
+    // key/fill/rim direction and exposure as the rail moves around the tabletop.
+    place(keyRef.current, keyTargetRef.current, 2.8, 3.6, 2.4);
+    place(fillRef.current, fillTargetRef.current, -3.2, 2.2, 1.8);
+    place(rimRef.current, rimTargetRef.current, -1.2, 3.0, -2.8);
+  });
+
+  return (
+    <>
+      <ambientLight intensity={0.5} />
+      <hemisphereLight args={["#eef8ff", "#1a2130", 0.28]} />
+      <directionalLight ref={keyRef} intensity={1.34} color="#fff4e8" />
+      <directionalLight ref={fillRef} intensity={0.48} color="#f2f7ff" />
+      <directionalLight ref={rimRef} intensity={0.42} color="#d7f2ff" />
+      <object3D ref={keyTargetRef} />
+      <object3D ref={fillTargetRef} />
+      <object3D ref={rimTargetRef} />
+    </>
+  );
+}
+
 function StageBackdrop() {
   return (
     <group>
@@ -1292,11 +1982,11 @@ function StageBackdrop() {
       </mesh>
       <mesh position={[0, 2.35, -2.6]}>
         <planeGeometry args={[10, 5]} />
-        <meshStandardMaterial color="#1d8097" roughness={0.9} />
+        <meshStandardMaterial color="#276174" roughness={0.94} />
       </mesh>
       <mesh position={[0, 1.95, -2.56]}>
         <circleGeometry args={[2.05, 48]} />
-        <meshBasicMaterial color="#d9f6ff" transparent opacity={0.07} depthWrite={false} />
+        <meshBasicMaterial color="#e5f6fb" transparent opacity={0.045} depthWrite={false} />
       </mesh>
       <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[2.95, 48]} />
@@ -1355,13 +2045,9 @@ function StageScene(props: RuntimeCanvasProps & { isViewportActive: boolean }) {
       <PerspectiveCamera makeDefault position={[0, 3.25, 5.35]} fov={42} />
       <InspectControls enabled={props.inspectMode && !props.isPlaying} />
 
-      {/* Stable cinematic key/fill/rim rig: camera movement should not change the
-          perceived exposure or color balance of the tabletop set. */}
-      <ambientLight intensity={0.44} />
-      <directionalLight position={[3.8, 5.6, 4.6]} intensity={1.58} color="#fff2df" />
-      <directionalLight position={[-4.2, 3.2, 3.4]} intensity={0.42} color="#eef8ff" />
-      <directionalLight position={[-2.5, 4.1, -3.8]} intensity={0.58} color="#bdeeff" />
-      <hemisphereLight args={["#e7f8ff", "#121827", 0.24]} />
+      {/* CP.1E.7 camera-aware studio rig keeps screen-space lighting stable while
+          the master camera rail redirects attention. */}
+      <CameraAwareStudioRig />
 
       <StageBackdrop />
 

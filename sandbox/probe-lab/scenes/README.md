@@ -58,3 +58,28 @@ repository-local `sandbox/probe-lab/scenes/manifests` directory.
 The local manifest directory remains a compatibility path only when R2 metadata
 storage is genuinely disabled, and as an explicit one-time migration source for
 pre-Step-3 saved scenes.
+
+## Asset-aware motion interactions
+
+`asset-aware-interaction-motion.ts` extends the same spatial invariant into moving
+rigid interactions without replacing `ui/constraint-layout.ts`.
+
+The layout solver still owns initial support/containment/attachment/adjacency
+placement. The interaction solver consumes already-resolved actor poses plus the
+same geometry-profile evidence when a Director/cinematic motion intentionally
+brings two actors together.
+
+It provides:
+
+- generic exterior contact candidates from measured attachment regions;
+- conservative normalized-bounds contact faces when measured regions are absent;
+- full-visible-hull separation at the intended contact normal;
+- collision-box-aware swept approach/retreat checks against third actors;
+- deterministic candidate ranking where physical validity outranks a preferred
+  but blocked contact face;
+- target-relative contact maintenance for rigid touch/push/nudge motion;
+- directional surface-to-surface clearance for behind/beside negative space.
+
+The output is a candidate motion transform/path. It does not activate parenting,
+containment membership, adhesive attachment, skeletal grasping, or physics.
+Blocked contact fails closed rather than intersecting a third actor.

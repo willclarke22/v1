@@ -1,0 +1,23 @@
+import fs from "node:fs";
+import path from "node:path";
+function assert(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message); }
+const root = process.cwd();
+const layout = fs.readFileSync(path.join(root, "sandbox/probe-lab/cinematic-production/ui/cinematic-production-runtime-layout.ts"), "utf8");
+const runtime = fs.readFileSync(path.join(root, "sandbox/probe-lab/cinematic-production/ui/cinematic-production-runtime-canvas.tsx"), "utf8");
+const cp1e7Rail = ["MASTER_CAMERA_KEYS", "masterCameraAtTime", "catmullRomScalar", "catmullRomVec3", "one restrained physical camera path"].every((marker) => layout.includes(marker));
+const cp1e9Rail = ["MASTER_CAMERA_KEYS", "masterCameraAtTime", "masterCameraVec3TangentAt", "hermiteVec3", "through-motion master camera rail"].every((marker) => layout.includes(marker));
+assert(cp1e7Rail || cp1e9Rail, "CP.1E.7-family master-camera authority is missing.");
+assert(!layout.includes("cameraVelocityAtRawTime") && !layout.includes("blendWindowS = 0.34"), "CP.1E.7-family runtime must not fall back to per-boundary camera handoffs.");
+const stagingFirstSupport = layout.includes("staging-first de-emphasis") && layout.includes("(focus - 0.9) / 0.1") && layout.includes("xOffset: side * 0.34 * movement");
+const persistentJourneySupport = layout.includes("sampleContinuousInsertJourney") && layout.includes("galleryFoods");
+assert(stagingFirstSupport || persistentJourneySupport, "CP.1E.7-family runtime must retain physical support-food staging.");
+const cp1e7Fish = layout.includes("lerp(0.98, 0.82, burgerDeemphasis)") && layout.includes("lerp(1, 0.72");
+const cp1e9Fish = layout.includes("Foreground anchor: keep the burger physical, opaque, and nearly stationary.") && layout.includes("real back-plane position") && layout.includes("parallax");
+assert(cp1e7Fish || cp1e9Fish, "CP.1E.7-family fish beat must retain solid burger/tray context.");
+for (const marker of ["CameraAwareStudioRig", "Screen-space studio lighting follows the master camera", "intensity={1.34}", "intensity={0.48}", "intensity={0.42}"]) assert(runtime.includes(marker), `CP.1E.7 camera-aware lighting marker missing: ${marker}`);
+const legacyFramingGuard = runtime.includes("master-rail policy") && runtime.includes("severeThreshold = authoredDistance * 1.12") && runtime.includes("authoredDistance * 1.22");
+const softFramingGuard = runtime.includes("CP.1E.12 soft post-rail camera safety") && runtime.includes("softFramingParticipation") && runtime.includes("softProtectedCameraDistance") && runtime.includes("advanceSoftCameraSafetyCorrection");
+assert(legacyFramingGuard || softFramingGuard, "CP.1E.7-family crop protection must remain an emergency envelope without becoming an independent shot/camera animator.");
+assert(runtime.includes('color="#276174"') && runtime.includes('opacity={0.045}'), "CP.1E.7 should use the calmer backdrop treatment.");
+assert(runtime.includes('frameloop="demand"') && runtime.includes('powerPreference: "low-power"') && (runtime.match(/<Canvas\b/g) ?? []).length === 1, "CP.1E.7 must preserve the single low-overhead runtime.");
+console.log("Cinematic Production CP.1E.7-family master-camera/lighting verification passed.");
