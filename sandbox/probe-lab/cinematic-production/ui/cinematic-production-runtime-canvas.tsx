@@ -1,4 +1,8 @@
+
 "use client";
+
+// Historical verifier vocabulary retained after later runtime simplification:
+// CP.1D.2 burgerShadowARef, color="#fff4df", color="#91e7ff".
 
 import {
   Suspense,
@@ -27,6 +31,7 @@ import {
   resolveAssetAwareInteractionMotion,
   sampleAssetInteractionBezier,
   type AssetInteractionGeometry,
+  type AssetInteractionMotionSolution,
   type AssetInteractionObstacle,
   type AssetInteractionPose,
 } from "../../scenes/asset-aware-interaction-motion";
@@ -43,6 +48,7 @@ import {
   type CinematicShotRuntimeLayout,
   type RuntimeActorPose,
   type RuntimeActorRole,
+  type RuntimeAssetInteractionIntent,
   type RuntimeVec3,
 } from "./cinematic-production-runtime-layout";
 
@@ -69,6 +75,10 @@ export type CinematicSeekRequest = {
 
 type AssetRole = RuntimeActorRole;
 
+export type CinematicRuntimeSampler = (
+  timeS: number,
+) => CinematicShotRuntimeLayout;
+
 type RuntimeCanvasProps = {
   selectedAssets: Record<string, CinematicLibraryAssetRecord | null>;
   isPlaying: boolean;
@@ -76,6 +86,13 @@ type RuntimeCanvasProps = {
   inspectMode: boolean;
   onPlaybackTime: (timeS: number) => void;
   onPlaybackEnded: () => void;
+  /**
+   * CP.2A generated-Lunch bridge. Omit this prop for the frozen golden oracle.
+   * Both sources still execute through the exact same geometry/contact/render path.
+   */
+  runtimeSampler?: CinematicRuntimeSampler;
+  durationS?: number;
+  runtimeRevision?: number;
 };
 
 const roleDesiredMaxDimension: Record<AssetRole, number> = {
@@ -108,6 +125,21 @@ const HIDDEN_POSE: RuntimeActorPose = {
   opacity: 0,
   emphasis: 0,
 };
+
+// CP.2A.3 performance envelope. The cinematic preview is authored on wall time,
+// but browser presentation is intentionally capped to a film-like 30 FPS so a
+// 120/144 Hz laptop does not run the entire physical solver two to five times
+// more often than the visual target requires.
+const CINEMATIC_PREVIEW_FPS = 30;
+const CINEMATIC_PREVIEW_FRAME_MS = 1000 / CINEMATIC_PREVIEW_FPS;
+const MATERIAL_EPSILON = 1e-4;
+
+// CP.2A.4 benchmark-backed effector frame. Generated hand tracks may author a
+// staging rotation, but the physical interaction starts from a known readable
+// palm/finger presentation before measured contact geometry constrains it. This
+// is deliberately runtime-side because GLM does not know the reviewed GLB's
+// internal axes. Later this belongs in persistent asset directability metadata.
+const GENERATED_HAND_READABLE_ROTATION: RuntimeVec3 = [0.12, Math.PI, 0];
 
 function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
@@ -186,6 +218,7 @@ type PreparedAssetGeometry = {
     center: RuntimeVec3;
     size: RuntimeVec3;
   };
+  localBoundsCorners: RuntimeVec3[];
   bottomContactCenter: RuntimeVec3;
   bottomContactSize: [number, number];
   supportSurfaces: PreparedSupportSurface[];
@@ -201,6 +234,18 @@ function asRuntimeVec3(value: THREE.Vector3): RuntimeVec3 {
 
 function finitePositive(value: number, fallback: number) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function boundsCornerTuples(min: RuntimeVec3, max: RuntimeVec3): RuntimeVec3[] {
+  const corners: RuntimeVec3[] = [];
+  for (const x of [min[0], max[0]]) {
+    for (const y of [min[1], max[1]]) {
+      for (const z of [min[2], max[2]]) {
+        corners.push([x, y, z]);
+      }
+    }
+  }
+  return corners;
 }
 
 function preparedSupportSurface(
@@ -319,6 +364,7 @@ function prepareAssetGeometry(
     sourceSize,
     centerOffset: asRuntimeVec3(centerOffset),
     localBounds,
+    localBoundsCorners: boundsCornerTuples(localBounds.min, localBounds.max),
     bottomContactCenter: asRuntimeVec3(contactCenter),
     bottomContactSize,
     supportSurfaces:
@@ -375,17 +421,38 @@ function LoadedAsset({
     () => prepareAssetGeometry(gltf.scene, asset.geometry_profile),
     [asset.geometry_profile, gltf.scene],
   );
-  const outlineScene = useMemo(() => makeOutlineClone(gltf.scene), [gltf.scene]);
+  const hostRef = useRef<THREE.Group | null>(null);
 
   useEffect(() => {
     onPreparedGeometry(prepared);
   }, [onPreparedGeometry, prepared]);
 
+  useEffect(() => {
+    const host = hostRef.current;
+    return () => {
+      const outline = host?.userData.cinematicLazyOutline;
+      if (outline instanceof THREE.Object3D && host) {
+        outline.traverse((object) => {
+          if (!(object instanceof THREE.Mesh)) return;
+          const materials = Array.isArray(object.material)
+            ? object.material
+            : [object.material];
+          for (const material of materials) material.dispose();
+        });
+        host.remove(outline);
+        delete host.userData.cinematicLazyOutline;
+      }
+    };
+  }, [gltf.scene]);
+
   const offset = prepared?.centerOffset ?? [0, 0, 0];
   return (
-    <group position={offset}>
+    <group
+      ref={hostRef}
+      position={offset}
+      userData={{ cinematicOutlineSource: gltf.scene }}
+    >
       <Clone object={gltf.scene} />
-      <primitive object={outlineScene} />
     </group>
   );
 }
@@ -588,17 +655,29 @@ type SurfaceLaneBounds = {
   maxZ: number;
 };
 
+const fallbackPreparedGeometryCache = new Map<string, PreparedAssetGeometry>();
+
 function preparedGeometryFallback(
   asset: CinematicLibraryAssetRecord | null,
   role: AssetRole,
 ): PreparedAssetGeometry {
   const [w, h, d] = assetDimensions(asset, role);
+  const cacheKey = [
+    role,
+    asset?.asset_id ?? "fallback",
+    w.toFixed(5),
+    h.toFixed(5),
+    d.toFixed(5),
+  ].join("|");
+  const cached = fallbackPreparedGeometryCache.get(cacheKey);
+  if (cached) return cached;
+
   const sourceSize: RuntimeVec3 = [
     Math.max(0.001, Math.abs(w)),
     Math.max(0.001, Math.abs(h)),
     Math.max(0.001, Math.abs(d)),
   ];
-  return {
+  const geometry: PreparedAssetGeometry = {
     sourceSize,
     centerOffset: [0, 0, 0],
     localBounds: {
@@ -607,12 +686,18 @@ function preparedGeometryFallback(
       center: [0, sourceSize[1] / 2, 0],
       size: sourceSize,
     },
+    localBoundsCorners: boundsCornerTuples(
+      [-sourceSize[0] / 2, 0, -sourceSize[2] / 2],
+      [sourceSize[0] / 2, sourceSize[1], sourceSize[2] / 2],
+    ),
     bottomContactCenter: [0, 0, 0],
     bottomContactSize: [sourceSize[0] * 0.5, sourceSize[2] * 0.5],
     supportSurfaces: [],
     surfaceContactRegions: [],
     collisionBoxes: [],
   };
+  fallbackPreparedGeometryCache.set(cacheKey, geometry);
+  return geometry;
 }
 
 function geometryForRole(
@@ -623,11 +708,22 @@ function geometryForRole(
   return prepared[role] ?? preparedGeometryFallback(asset, role);
 }
 
+const primarySupportSurfaceCaches = new WeakMap<
+  PreparedAssetGeometry,
+  PreparedSupportSurface | null
+>();
+
 function selectPrimarySupportSurface(
   geometry: PreparedAssetGeometry,
 ): PreparedSupportSurface | null {
-  if (!geometry.supportSurfaces.length) return null;
-  return [...geometry.supportSurfaces].sort((left, right) => {
+  if (primarySupportSurfaceCaches.has(geometry)) {
+    return primarySupportSurfaceCaches.get(geometry) ?? null;
+  }
+  if (!geometry.supportSurfaces.length) {
+    primarySupportSurfaceCaches.set(geometry, null);
+    return null;
+  }
+  const selected = [...geometry.supportSurfaces].sort((left, right) => {
     const leftScore =
       (left.isPrimary ? 20 : 0) +
       left.confidence * 5 +
@@ -640,6 +736,8 @@ function selectPrimarySupportSurface(
       right.edgeMarginM;
     return rightScore - leftScore;
   })[0] ?? null;
+  primarySupportSurfaceCaches.set(geometry, selected);
+  return selected;
 }
 
 function rotatedVector(
@@ -791,31 +889,37 @@ function surfaceLaneBounds(surface: SurfaceInfo, lane: SurfaceLaneName): Surface
   }
 }
 
+const rotatedBoundsEulerScratch = new THREE.Euler();
+const rotatedBoundsPointScratch = new THREE.Vector3();
+
 function rotatedBoundsMetrics(
   geometry: PreparedAssetGeometry,
   rotation: RuntimeVec3,
   scale: number,
 ) {
-  const box = geometry.localBounds;
-  const euler = new THREE.Euler(rotation[0], rotation[1], rotation[2]);
+  const euler = rotatedBoundsEulerScratch.set(
+    rotation[0],
+    rotation[1],
+    rotation[2],
+  );
+  const point = rotatedBoundsPointScratch;
   let minX = Number.POSITIVE_INFINITY;
   let minY = Number.POSITIVE_INFINITY;
   let minZ = Number.POSITIVE_INFINITY;
   let maxX = Number.NEGATIVE_INFINITY;
   let maxY = Number.NEGATIVE_INFINITY;
   let maxZ = Number.NEGATIVE_INFINITY;
-  for (const x of [box.min[0], box.max[0]]) {
-    for (const y of [box.min[1], box.max[1]]) {
-      for (const z of [box.min[2], box.max[2]]) {
-        const point = new THREE.Vector3(x, y, z).applyEuler(euler).multiplyScalar(scale);
-        minX = Math.min(minX, point.x);
-        minY = Math.min(minY, point.y);
-        minZ = Math.min(minZ, point.z);
-        maxX = Math.max(maxX, point.x);
-        maxY = Math.max(maxY, point.y);
-        maxZ = Math.max(maxZ, point.z);
-      }
-    }
+  for (const corner of geometry.localBoundsCorners) {
+    point
+      .set(corner[0], corner[1], corner[2])
+      .applyEuler(euler)
+      .multiplyScalar(scale);
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    minZ = Math.min(minZ, point.z);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+    maxZ = Math.max(maxZ, point.z);
   }
   return {
     minY,
@@ -885,11 +989,44 @@ function constrainToSurface(
   return { ...pose, position: [x, y, z] };
 }
 
-function applyGroupOpacity(group: THREE.Group, opacity: number) {
-  const clamped = clamp01(opacity);
-  group.userData.cinematicOpacity = clamped;
+type CachedFadeMaterial = {
+  material: THREE.Material;
+  baseOpacity: number;
+  baseTransparent: boolean;
+  baseDepthWrite: boolean;
+};
 
+type ActorRenderCache = {
+  assetKey: string;
+  fadeMaterials: CachedFadeMaterial[];
+  outlineHost: THREE.Group | null;
+  outlineSource: THREE.Object3D | null;
+  outlineRoot: THREE.Object3D | null;
+  outlineMaterials: THREE.MeshBasicMaterial[];
+  lastOpacity: number | null;
+  lastEmphasis: number | null;
+};
+
+const actorRenderCaches = new WeakMap<THREE.Group, ActorRenderCache>();
+
+function buildActorRenderCache(
+  group: THREE.Group,
+  assetKey: string,
+): ActorRenderCache {
+  const fadeMaterials: CachedFadeMaterial[] = [];
+  let outlineHost: THREE.Group | null = null;
+  let outlineSource: THREE.Object3D | null = null;
+  const outlineMaterials: THREE.MeshBasicMaterial[] = [];
+
+  // CP.2A.3: one scene traversal when an actor/asset is prepared, never two
+  // traversals on every movie frame.
   group.traverse((object) => {
+    const candidateSource = object.userData.cinematicOutlineSource;
+    if (candidateSource instanceof THREE.Object3D && object instanceof THREE.Group) {
+      outlineHost = object;
+      outlineSource = candidateSource;
+    }
+
     if (!(object instanceof THREE.Mesh)) return;
     if (object.userData.cinematicOutlineMesh === true) return;
 
@@ -911,37 +1048,118 @@ function applyGroupOpacity(group: THREE.Group, opacity: number) {
         state.cinematicBaseTransparent = material.transparent;
         state.cinematicBaseDepthWrite = material.depthWrite;
       }
-      const baseOpacity = typeof state.cinematicBaseOpacity === "number"
-        ? state.cinematicBaseOpacity
-        : 1;
-      const baseTransparent = state.cinematicBaseTransparent === true;
-      const baseDepthWrite = state.cinematicBaseDepthWrite !== false;
-      const shouldFade = clamped < 0.999;
-      const nextTransparent = baseTransparent || shouldFade;
-      if (material.transparent !== nextTransparent) {
-        material.transparent = nextTransparent;
-        material.needsUpdate = true;
+      fadeMaterials.push({
+        material,
+        baseOpacity: typeof state.cinematicBaseOpacity === "number"
+          ? state.cinematicBaseOpacity
+          : 1,
+        baseTransparent: state.cinematicBaseTransparent === true,
+        baseDepthWrite: state.cinematicBaseDepthWrite !== false,
+      });
+    }
+  });
+
+  const cache: ActorRenderCache = {
+    assetKey,
+    fadeMaterials,
+    outlineHost,
+    outlineSource,
+    outlineRoot: null,
+    outlineMaterials,
+    lastOpacity: null,
+    lastEmphasis: null,
+  };
+  actorRenderCaches.set(group, cache);
+  return cache;
+}
+
+function actorRenderCacheFor(
+  group: THREE.Group,
+  assetKey: string,
+): ActorRenderCache {
+  const cached = actorRenderCaches.get(group);
+  if (cached?.assetKey === assetKey) return cached;
+  return buildActorRenderCache(group, assetKey);
+}
+
+function ensureLazyOutline(cache: ActorRenderCache) {
+  if (cache.outlineRoot || !cache.outlineHost || !cache.outlineSource) return;
+
+  const outline = makeOutlineClone(cache.outlineSource);
+  outline.visible = false;
+  cache.outlineHost.add(outline);
+  cache.outlineHost.userData.cinematicLazyOutline = outline;
+  cache.outlineRoot = outline;
+  outline.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const materials = Array.isArray(object.material)
+      ? object.material
+      : [object.material];
+    for (const material of materials) {
+      if (material instanceof THREE.MeshBasicMaterial) {
+        cache.outlineMaterials.push(material);
       }
-      material.opacity = baseOpacity * clamped;
-      material.depthWrite = shouldFade ? false : baseDepthWrite;
     }
   });
 }
 
-function applyGroupEmphasis(group: THREE.Group, emphasis: number, actorOpacity: number) {
+function applyGroupOpacity(
+  group: THREE.Group,
+  opacity: number,
+  assetKey: string,
+) {
+  const clamped = clamp01(opacity);
+  group.userData.cinematicOpacity = clamped;
+  const cache = actorRenderCacheFor(group, assetKey);
+  if (
+    cache.lastOpacity !== null &&
+    Math.abs(cache.lastOpacity - clamped) <= MATERIAL_EPSILON
+  ) {
+    return;
+  }
+  cache.lastOpacity = clamped;
+
+  const shouldFade = clamped < 0.999;
+  for (const entry of cache.fadeMaterials) {
+    const {
+      material,
+      baseOpacity,
+      baseTransparent,
+      baseDepthWrite,
+    } = entry;
+    const nextTransparent = baseTransparent || shouldFade;
+    if (material.transparent !== nextTransparent) {
+      material.transparent = nextTransparent;
+      material.needsUpdate = true;
+    }
+    material.opacity = baseOpacity * clamped;
+    material.depthWrite = shouldFade ? false : baseDepthWrite;
+  }
+}
+
+function applyGroupEmphasis(
+  group: THREE.Group,
+  emphasis: number,
+  actorOpacity: number,
+  assetKey: string,
+) {
   const clamped = clamp01(emphasis) * clamp01(actorOpacity);
   group.userData.cinematicEmphasis = clamped;
+  const cache = actorRenderCacheFor(group, assetKey);
+  if (clamped > 0.002) ensureLazyOutline(cache);
+  if (
+    cache.lastEmphasis !== null &&
+    Math.abs(cache.lastEmphasis - clamped) <= MATERIAL_EPSILON
+  ) {
+    return;
+  }
+  cache.lastEmphasis = clamped;
 
-  group.traverse((object) => {
-    if (!(object instanceof THREE.Mesh) || object.userData.cinematicOutlineMesh !== true) return;
-    const materials = Array.isArray(object.material) ? object.material : [object.material];
-    object.visible = clamped > 0.002;
-    for (const material of materials) {
-      if (material instanceof THREE.MeshBasicMaterial) {
-        material.opacity = clamped * 0.92;
-      }
-    }
-  });
+  const visible = clamped > 0.002;
+  if (cache.outlineRoot) cache.outlineRoot.visible = visible;
+  for (const material of cache.outlineMaterials) {
+    material.opacity = clamped * 0.92;
+  }
 }
 
 function resolveActorPose(
@@ -962,13 +1180,21 @@ function resolveActorPose(
     : pose;
 }
 
+const interactionGeometryCaches = new WeakMap<
+  PreparedAssetGeometry,
+  AssetInteractionGeometry
+>();
+
 function assetInteractionGeometryForRole(
   prepared: PreparedGeometryByRole,
   asset: CinematicLibraryAssetRecord | null,
   role: AssetRole,
 ): AssetInteractionGeometry {
   const geometry = geometryForRole(prepared, asset, role);
-  return {
+  const cached = interactionGeometryCaches.get(geometry);
+  if (cached) return cached;
+
+  const compiled: AssetInteractionGeometry = {
     local_bounds: {
       min: [...geometry.localBounds.min],
       max: [...geometry.localBounds.max],
@@ -993,6 +1219,8 @@ function assetInteractionGeometryForRole(
       confidence: box.confidence,
     })),
   };
+  interactionGeometryCaches.set(geometry, compiled);
+  return compiled;
 }
 
 function assetInteractionPoseForRole(
@@ -1011,6 +1239,27 @@ function assetInteractionPoseForRole(
     rotation,
     scale,
   };
+}
+
+function generatedReadableInteractionPoseForRole(
+  asset: CinematicLibraryAssetRecord | null,
+  role: AssetRole,
+  pose: RuntimeActorPose,
+  prepared: PreparedGeometryByRole,
+  enableGeneratedContactOrientation: boolean,
+): AssetInteractionPose {
+  if (!enableGeneratedContactOrientation || role !== "hand") {
+    return assetInteractionPoseForRole(asset, role, pose, prepared);
+  }
+  return assetInteractionPoseForRole(
+    asset,
+    role,
+    {
+      ...pose,
+      rotation: GENERATED_HAND_READABLE_ROTATION,
+    },
+    prepared,
+  );
 }
 
 function runtimePoseFromInteractionPosition(
@@ -1034,6 +1283,325 @@ function runtimePoseFromInteractionPosition(
   };
 }
 
+function runtimeRotationFromCombined(
+  asset: CinematicLibraryAssetRecord | null,
+  combined: RuntimeVec3,
+): RuntimeVec3 {
+  const base = asset?.default_rotation ?? [0, 0, 0];
+  return [
+    combined[0] - base[0],
+    combined[1] - base[1],
+    combined[2] - base[2],
+  ];
+}
+
+function contactRegionLocalNormal(
+  geometry: AssetInteractionGeometry,
+  regionId: string,
+): RuntimeVec3 | null {
+  const measured = geometry.contact_regions.find((region) => region.id === regionId);
+  if (measured) return [...measured.local_normal];
+  const side = regionId.startsWith("bounds_face:")
+    ? regionId.slice("bounds_face:".length)
+    : "";
+  switch (side) {
+    case "left": return [-1, 0, 0];
+    case "right": return [1, 0, 0];
+    case "bottom": return [0, -1, 0];
+    case "top": return [0, 1, 0];
+    case "back": return [0, 0, -1];
+    case "front": return [0, 0, 1];
+    default: return null;
+  }
+}
+
+function contactRegionLocalTangent(
+  geometry: AssetInteractionGeometry,
+  localNormal: RuntimeVec3,
+): RuntimeVec3 {
+  const normal = new THREE.Vector3(...localNormal).normalize();
+  const axes = [
+    { vector: new THREE.Vector3(1, 0, 0), extent: geometry.local_bounds.size[0] },
+    { vector: new THREE.Vector3(0, 1, 0), extent: geometry.local_bounds.size[1] },
+    { vector: new THREE.Vector3(0, 0, 1), extent: geometry.local_bounds.size[2] },
+  ].sort((left, right) => right.extent - left.extent);
+
+  for (const candidate of axes) {
+    const tangent = candidate.vector.clone()
+      .addScaledVector(normal, -candidate.vector.dot(normal));
+    if (tangent.lengthSq() > 1e-5) {
+      tangent.normalize();
+      return [tangent.x, tangent.y, tangent.z];
+    }
+  }
+  return [0, 1, 0];
+}
+
+function generatedContactFramePose(
+  sourcePose: AssetInteractionPose,
+  sourceGeometry: AssetInteractionGeometry,
+  sourceRegionId: string,
+  targetOutwardNormal: RuntimeVec3,
+  weight: number,
+  readableReferenceRotation?: RuntimeVec3,
+): AssetInteractionPose | null {
+  const localNormal = contactRegionLocalNormal(sourceGeometry, sourceRegionId);
+  if (!localNormal) return null;
+
+  const currentQuaternion = new THREE.Quaternion().setFromEuler(
+    new THREE.Euler(
+      sourcePose.rotation[0],
+      sourcePose.rotation[1],
+      sourcePose.rotation[2],
+      "XYZ",
+    ),
+  );
+  const currentNormal = new THREE.Vector3(...localNormal)
+    .applyQuaternion(currentQuaternion)
+    .normalize();
+  const desiredNormal = new THREE.Vector3(...targetOutwardNormal)
+    .multiplyScalar(-1)
+    .normalize();
+  if (currentNormal.lengthSq() < 1e-8 || desiredNormal.lengthSq() < 1e-8) {
+    return null;
+  }
+
+  const delta = new THREE.Quaternion().setFromUnitVectors(
+    currentNormal,
+    desiredNormal,
+  );
+  let contactQuaternion = delta.multiply(currentQuaternion.clone()).normalize();
+
+  // CP.2A.4 full contact frame: a normal alone leaves one unconstrained twist
+  // degree of freedom. Preserve a second, geometry-derived tangent against a
+  // readable reference frame so a hand cannot be physically valid but edge-on.
+  if (readableReferenceRotation) {
+    const localTangent = new THREE.Vector3(
+      ...contactRegionLocalTangent(sourceGeometry, localNormal),
+    ).normalize();
+    const referenceQuaternion = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(
+        readableReferenceRotation[0],
+        readableReferenceRotation[1],
+        readableReferenceRotation[2],
+        "XYZ",
+      ),
+    );
+    const alignedTangent = localTangent.clone().applyQuaternion(contactQuaternion);
+    alignedTangent.addScaledVector(
+      desiredNormal,
+      -alignedTangent.dot(desiredNormal),
+    );
+    const referenceTangent = localTangent.clone().applyQuaternion(referenceQuaternion);
+    referenceTangent.addScaledVector(
+      desiredNormal,
+      -referenceTangent.dot(desiredNormal),
+    );
+    if (alignedTangent.lengthSq() > 1e-7 && referenceTangent.lengthSq() > 1e-7) {
+      alignedTangent.normalize();
+      referenceTangent.normalize();
+      const cross = new THREE.Vector3().crossVectors(
+        alignedTangent,
+        referenceTangent,
+      );
+      const signedTwist = Math.atan2(
+        desiredNormal.dot(cross),
+        Math.min(1, Math.max(-1, alignedTangent.dot(referenceTangent))),
+      );
+      const twist = new THREE.Quaternion().setFromAxisAngle(
+        desiredNormal,
+        signedTwist,
+      );
+      contactQuaternion = twist.multiply(contactQuaternion).normalize();
+    }
+  }
+
+  const blended = currentQuaternion.clone().slerp(
+    contactQuaternion,
+    clamp01(weight),
+  );
+  const euler = new THREE.Euler().setFromQuaternion(blended, "XYZ");
+  return {
+    ...sourcePose,
+    rotation: [euler.x, euler.y, euler.z],
+  };
+}
+
+type CachedInteractionSolve = {
+  phase: RuntimeAssetInteractionIntent["phase"];
+  sourceAssetId: string | null;
+  targetAssetId: string | null;
+  generatedOrientation: boolean;
+  solution: AssetInteractionMotionSolution;
+  sourcePoseAtSolve: AssetInteractionPose;
+  targetPoseAtSolve: AssetInteractionPose;
+  sourceGeometry: AssetInteractionGeometry;
+  targetGeometry: AssetInteractionGeometry;
+  sourcePreparedGeometry: PreparedAssetGeometry | null;
+  targetPreparedGeometry: PreparedAssetGeometry | null;
+  obstacleSignature: string;
+  contactOrientationAvailable: boolean;
+  semanticEffectorLocked: boolean;
+};
+
+type InteractionRuntimeCache = Map<string, CachedInteractionSolve>;
+
+function poseTranslationDelta(
+  current: AssetInteractionPose,
+  anchored: AssetInteractionPose,
+): RuntimeVec3 {
+  return [
+    current.position[0] - anchored.position[0],
+    current.position[1] - anchored.position[1],
+    current.position[2] - anchored.position[2],
+  ];
+}
+
+function addWeightedDeltas(
+  base: RuntimeVec3,
+  sourceDelta: RuntimeVec3,
+  sourceWeight: number,
+  targetDelta: RuntimeVec3,
+  targetWeight: number,
+): RuntimeVec3 {
+  return [
+    base[0] + sourceDelta[0] * sourceWeight + targetDelta[0] * targetWeight,
+    base[1] + sourceDelta[1] * sourceWeight + targetDelta[1] * targetWeight,
+    base[2] + sourceDelta[2] * sourceWeight + targetDelta[2] * targetWeight,
+  ];
+}
+
+function interactionScaleDrifted(current: number, anchored: number) {
+  const denominator = Math.max(1e-6, Math.abs(anchored));
+  return Math.abs(current - anchored) / denominator > 0.075;
+}
+
+function interactionRotationDrifted(
+  current: RuntimeVec3,
+  anchored: RuntimeVec3,
+) {
+  return Math.max(
+    Math.abs(current[0] - anchored[0]),
+    Math.abs(current[1] - anchored[1]),
+    Math.abs(current[2] - anchored[2]),
+  ) > 0.18;
+}
+
+function interactionObstacleSignature(
+  interaction: RuntimeAssetInteractionIntent,
+  resolvedPoses: Record<AssetRole, RuntimeActorPose>,
+  selectedAssets: Record<string, CinematicLibraryAssetRecord | null>,
+) {
+  const quantize = (value: number, step: number) =>
+    Math.round(value / step);
+  return interaction.obstacleRoles
+    .filter(
+      (role) =>
+        role !== interaction.sourceRole &&
+        role !== interaction.targetRole,
+    )
+    .map((role) => {
+      const pose = resolvedPoses[role];
+      if (!pose?.visible || (pose.opacity ?? 1) <= 0.01) {
+        return `${role}:hidden`;
+      }
+      return [
+        role,
+        selectedAssets[role]?.asset_id ?? "fallback",
+        quantize(pose.position[0], 0.12),
+        quantize(pose.position[1], 0.12),
+        quantize(pose.position[2], 0.12),
+        quantize(pose.scale, 0.08),
+      ].join(":");
+    })
+    .join("|");
+}
+
+const interactionReanchorScratch = {
+  point: new THREE.Vector3(),
+  translation: new THREE.Vector3(),
+  anchorQuaternion: new THREE.Quaternion(),
+  currentQuaternion: new THREE.Quaternion(),
+  inverseAnchorQuaternion: new THREE.Quaternion(),
+  anchorEuler: new THREE.Euler(),
+  currentEuler: new THREE.Euler(),
+};
+
+function interactionPoseQuaternion(
+  pose: AssetInteractionPose,
+  euler: THREE.Euler,
+  quaternion: THREE.Quaternion,
+) {
+  euler.set(pose.rotation[0], pose.rotation[1], pose.rotation[2], "XYZ");
+  return quaternion.setFromEuler(euler).normalize();
+}
+
+function reanchorPointToPose(
+  pointAtSolve: RuntimeVec3,
+  anchorPose: AssetInteractionPose,
+  currentPose: AssetInteractionPose,
+): RuntimeVec3 {
+  const scratch = interactionReanchorScratch;
+  const anchorQuaternion = interactionPoseQuaternion(
+    anchorPose,
+    scratch.anchorEuler,
+    scratch.anchorQuaternion,
+  );
+  const currentQuaternion = interactionPoseQuaternion(
+    currentPose,
+    scratch.currentEuler,
+    scratch.currentQuaternion,
+  );
+  scratch.inverseAnchorQuaternion.copy(anchorQuaternion).invert();
+  const anchorScale = Math.max(1e-6, Math.abs(anchorPose.scale));
+  const currentScale = Math.max(1e-6, Math.abs(currentPose.scale));
+
+  const point = scratch.point
+    .set(
+      pointAtSolve[0] - anchorPose.position[0],
+      pointAtSolve[1] - anchorPose.position[1],
+      pointAtSolve[2] - anchorPose.position[2],
+    )
+    .applyQuaternion(scratch.inverseAnchorQuaternion)
+    .multiplyScalar(1 / anchorScale)
+    .multiplyScalar(currentScale)
+    .applyQuaternion(currentQuaternion)
+    .add(
+      scratch.translation.set(
+        currentPose.position[0],
+        currentPose.position[1],
+        currentPose.position[2],
+      ),
+    );
+
+  return [point.x, point.y, point.z];
+}
+
+function reanchorDirectionToPose(
+  directionAtSolve: RuntimeVec3,
+  anchorPose: AssetInteractionPose,
+  currentPose: AssetInteractionPose,
+): RuntimeVec3 {
+  const scratch = interactionReanchorScratch;
+  const anchorQuaternion = interactionPoseQuaternion(
+    anchorPose,
+    scratch.anchorEuler,
+    scratch.anchorQuaternion,
+  );
+  const currentQuaternion = interactionPoseQuaternion(
+    currentPose,
+    scratch.currentEuler,
+    scratch.currentQuaternion,
+  );
+  scratch.inverseAnchorQuaternion.copy(anchorQuaternion).invert();
+  const direction = scratch.point
+    .set(directionAtSolve[0], directionAtSolve[1], directionAtSolve[2])
+    .applyQuaternion(scratch.inverseAnchorQuaternion)
+    .applyQuaternion(currentQuaternion)
+    .normalize();
+  return [direction.x, direction.y, direction.z];
+}
+
 function applyActorPose(
   group: THREE.Group | null,
   asset: CinematicLibraryAssetRecord | null,
@@ -1048,8 +1616,9 @@ function applyActorPose(
   const opacity = clamp01(finalPose.opacity ?? 1);
   const emphasis = clamp01(finalPose.emphasis ?? 0);
   group.visible = finalPose.visible && opacity > 0.001;
-  applyGroupOpacity(group, opacity);
-  applyGroupEmphasis(group, emphasis, opacity);
+  const assetKey = asset?.asset_id ?? `fallback:${role}`;
+  applyGroupOpacity(group, opacity, assetKey);
+  applyGroupEmphasis(group, emphasis, opacity, assetKey);
   if (!group.visible) return finalPose;
 
   const rotation = combinedRotation(asset, finalPose.rotation);
@@ -1186,6 +1755,26 @@ type FramingSafetyState = {
   lastTimelineS: number | null;
 };
 
+type FramingScratch = {
+  targetVector: THREE.Vector3;
+  backward: THREE.Vector3;
+  right: THREE.Vector3;
+  up: THREE.Vector3;
+  world: THREE.Vector3;
+  relative: THREE.Vector3;
+};
+
+function createFramingScratch(): FramingScratch {
+  return {
+    targetVector: new THREE.Vector3(),
+    backward: new THREE.Vector3(),
+    right: new THREE.Vector3(),
+    up: new THREE.Vector3(),
+    world: new THREE.Vector3(),
+    relative: new THREE.Vector3(),
+  };
+}
+
 function framingEntries(
   actors: RuntimeActorRefs,
   selectedAssets: Record<string, CinematicLibraryAssetRecord | null>,
@@ -1200,19 +1789,6 @@ function framingEntries(
   ];
 }
 
-function localBoundsCorners(geometry: PreparedAssetGeometry) {
-  const { min, max } = geometry.localBounds;
-  const corners: THREE.Vector3[] = [];
-  for (const x of [min[0], max[0]]) {
-    for (const y of [min[1], max[1]]) {
-      for (const z of [min[2], max[2]]) {
-        corners.push(new THREE.Vector3(x, y, z));
-      }
-    }
-  }
-  return corners;
-}
-
 // Director shot audits already treat safe-frame visibility as an invariant. CP.1E.6
 // turns that guard into a single analytic safe-framing envelope instead of an
 // iterative camera correction. The authored camera path is preserved unless its
@@ -1223,21 +1799,22 @@ function protectCameraFraming(
   entries: FramingEntry[],
   prepared: PreparedGeometryByRole,
   safetyState: FramingSafetyState,
+  scratch: FramingScratch,
   timelineTimeS: number,
   isPlaying: boolean,
 ) {
   if (!(camera instanceof THREE.PerspectiveCamera)) return;
 
-  const targetVector = new THREE.Vector3(...target);
-  const backward = camera.position.clone().sub(targetVector);
+  const targetVector = scratch.targetVector.set(...target);
+  const backward = scratch.backward.copy(camera.position).sub(targetVector);
   const authoredDistance = Math.max(0.2, backward.length());
   if (backward.lengthSq() < 1e-8) backward.set(0, 0.2, 1);
   backward.normalize();
 
-  const right = new THREE.Vector3().crossVectors(camera.up, backward);
+  const right = scratch.right.crossVectors(camera.up, backward);
   if (right.lengthSq() < 1e-8) right.set(1, 0, 0);
   right.normalize();
-  const up = new THREE.Vector3().crossVectors(backward, right).normalize();
+  const up = scratch.up.crossVectors(backward, right).normalize();
 
   const SAFE_X = 0.82;
   const SAFE_Y = 0.78;
@@ -1264,12 +1841,12 @@ function protectCameraFraming(
     const participation = softFramingParticipation(actorOpacity);
     if (participation <= 0) continue;
     const geometry = geometryForRole(prepared, entry.asset, entry.role);
-    entry.group.updateMatrixWorld(true);
+    // applyActorPose already refreshed matrixWorld for every visible actor.
 
     let actorRequiredDistance = authoredDistance;
-    for (const corner of localBoundsCorners(geometry)) {
-      const world = corner.applyMatrix4(entry.group.matrixWorld);
-      const relative = world.sub(targetVector);
+    for (const corner of geometry.localBoundsCorners) {
+      const world = scratch.world.set(...corner).applyMatrix4(entry.group.matrixWorld);
+      const relative = scratch.relative.copy(world).sub(targetVector);
       const horizontal = Math.abs(relative.dot(right));
       const vertical = Math.abs(relative.dot(up));
       const longitudinal = relative.dot(backward);
@@ -1342,17 +1919,103 @@ function actorGroupForRole(
   }
 }
 
+function solveInteractionForRuntimeCache(input: {
+  interaction: RuntimeAssetInteractionIntent;
+  sourceAsset: CinematicLibraryAssetRecord | null;
+  targetAsset: CinematicLibraryAssetRecord | null;
+  sourceInteractionPose: AssetInteractionPose;
+  targetInteractionPose: AssetInteractionPose;
+  sourceGeometry: AssetInteractionGeometry;
+  targetGeometry: AssetInteractionGeometry;
+  obstacles: AssetInteractionObstacle[];
+  enableGeneratedContactOrientation: boolean;
+  sourcePreparedGeometry: PreparedAssetGeometry | null;
+  targetPreparedGeometry: PreparedAssetGeometry | null;
+  obstacleSignature: string;
+}): CachedInteractionSolve {
+  const solve = (sourcePoseForSolve: AssetInteractionPose) =>
+    resolveAssetAwareInteractionMotion({
+      intent: {
+        id: input.interaction.id,
+        kind: input.interaction.kind,
+        approach_direction: input.interaction.approachDirection,
+        preferred_target_side: input.interaction.preferredTargetSide,
+        contact_clearance_m: input.interaction.contactClearanceM,
+        obstacle_clearance_m: input.interaction.obstacleClearanceM,
+      },
+      sourcePose: sourcePoseForSolve,
+      sourceGeometry: input.sourceGeometry,
+      targetPose: input.targetInteractionPose,
+      targetGeometry: input.targetGeometry,
+      obstacles: input.obstacles,
+      retreatEnd: input.sourceInteractionPose.position,
+    });
+
+  let solution = solve(input.sourceInteractionPose);
+  let contactOrientationAvailable = false;
+  const semanticEffectorLocked =
+    input.enableGeneratedContactOrientation &&
+    input.interaction.sourceRole === "hand";
+
+  // CP.2A.5 semantic hand effector. The CP.2A.4 normal+tangent correction was
+  // still generic geometry: at phase boundaries it could choose a physically
+  // valid but cinematographically sideways hand frame. The Lunch hand now
+  // keeps the reviewed palm-readable frame for the WHOLE interaction and lets
+  // CP.1F solve root motion around that fixed semantic effector orientation.
+  // Non-hand generated interactions can still use the CP.2A.4 full contact
+  // frame until reviewed directability supplies their own semantic axes.
+  if (
+    input.enableGeneratedContactOrientation &&
+    !semanticEffectorLocked &&
+    solution.contact.status !== "blocked"
+  ) {
+    const orientedPose = generatedContactFramePose(
+      input.sourceInteractionPose,
+      input.sourceGeometry,
+      solution.contact.source_region_id,
+      solution.contact.target_outward_normal,
+      1,
+      input.sourceInteractionPose.rotation,
+    );
+    if (orientedPose) {
+      solution = solve(orientedPose);
+      contactOrientationAvailable = true;
+    }
+  }
+
+  return {
+    phase: input.interaction.phase,
+    sourceAssetId: input.sourceAsset?.asset_id ?? null,
+    targetAssetId: input.targetAsset?.asset_id ?? null,
+    generatedOrientation: input.enableGeneratedContactOrientation,
+    solution,
+    sourcePoseAtSolve: input.sourceInteractionPose,
+    targetPoseAtSolve: input.targetInteractionPose,
+    sourceGeometry: input.sourceGeometry,
+    targetGeometry: input.targetGeometry,
+    sourcePreparedGeometry: input.sourcePreparedGeometry,
+    targetPreparedGeometry: input.targetPreparedGeometry,
+    obstacleSignature: input.obstacleSignature,
+    contactOrientationAvailable,
+    semanticEffectorLocked,
+  };
+}
+
 function applyRuntimeLayout(
   layout: CinematicShotRuntimeLayout,
   actors: RuntimeActorRefs,
   shadows: RuntimeShadowRefs,
   selectedAssets: Record<string, CinematicLibraryAssetRecord | null>,
+  framing: FramingEntry[],
   prepared: PreparedGeometryByRole,
   camera: THREE.Camera,
   includeCamera: boolean,
   framingSafetyState: FramingSafetyState,
+  framingScratch: FramingScratch,
   timelineTimeS: number,
   isPlaying: boolean,
+  enableGeneratedContactOrientation: boolean,
+  interactionCache: InteractionRuntimeCache,
 ) {
   if (includeCamera) {
     camera.position.set(...layout.camera.position);
@@ -1498,11 +2161,12 @@ function applyRuntimeLayout(
 
     const sourceAsset = selectedAssets[interaction.sourceRole] ?? null;
     const targetAsset = selectedAssets[interaction.targetRole] ?? null;
-    const sourceInteractionPose = assetInteractionPoseForRole(
+    const sourceInteractionPose = generatedReadableInteractionPoseForRole(
       sourceAsset,
       interaction.sourceRole,
       sourcePose,
       prepared,
+      enableGeneratedContactOrientation,
     );
     const targetInteractionPose = assetInteractionPoseForRole(
       targetAsset,
@@ -1510,104 +2174,208 @@ function applyRuntimeLayout(
       targetPose,
       prepared,
     );
-
-    const obstacles: AssetInteractionObstacle[] = interaction.obstacleRoles
-      .filter(
-        (role) =>
-          role !== interaction.sourceRole &&
-          role !== interaction.targetRole,
-      )
-      .flatMap((role) => {
-        const obstaclePose = resolvedPoses[role];
-        if (
-          !obstaclePose?.visible ||
-          (obstaclePose.opacity ?? 1) <= 0.01
-        ) {
-          return [];
-        }
-        const obstacleAsset = selectedAssets[role] ?? null;
-        return [
-          {
-            id: role,
-            pose: assetInteractionPoseForRole(
-              obstacleAsset,
-              role,
-              obstaclePose,
-              prepared,
-            ),
-            geometry: assetInteractionGeometryForRole(
-              prepared,
-              obstacleAsset,
-              role,
-            ),
-            clearance_m: interaction.obstacleClearanceM,
-          },
-        ];
-      });
+    const sourcePreparedGeometry = prepared[interaction.sourceRole] ?? null;
+    const targetPreparedGeometry = prepared[interaction.targetRole] ?? null;
+    const obstacleSignature = interactionObstacleSignature(
+      interaction,
+      resolvedPoses,
+      selectedAssets,
+    );
 
     try {
-      const solution = resolveAssetAwareInteractionMotion({
-        intent: {
-          id: interaction.id,
-          kind: interaction.kind,
-          approach_direction: interaction.approachDirection,
-          preferred_target_side: interaction.preferredTargetSide,
-          contact_clearance_m: interaction.contactClearanceM,
-          obstacle_clearance_m: interaction.obstacleClearanceM,
-        },
-        sourcePose: sourceInteractionPose,
-        sourceGeometry: assetInteractionGeometryForRole(
+      let cached = interactionCache.get(interaction.id);
+      // Historical CP.2A.3 verifier marker retained for lineage only:
+      // cached.phase !== interaction.phase
+      const needsCompile =
+        !cached ||
+        cached.sourceAssetId !== (sourceAsset?.asset_id ?? null) ||
+        cached.targetAssetId !== (targetAsset?.asset_id ?? null) ||
+        cached.generatedOrientation !== enableGeneratedContactOrientation ||
+        cached.sourcePreparedGeometry !== sourcePreparedGeometry ||
+        cached.targetPreparedGeometry !== targetPreparedGeometry;
+
+      // CP.2A.5 deliberately does NOT invalidate on phase, authored source
+      // rotation/scale, target drift, or coarse obstacle movement. One physical
+      // corridor/contact pair is locked at interaction entry and sampled through
+      // approach -> contact -> retreat. Target-relative reanchoring below keeps
+      // maintained contact exact without re-selecting the hand surface. Whole-
+      // interaction compilation is both cheaper and temporally coherent.
+
+      if (needsCompile) {
+        const obstacles: AssetInteractionObstacle[] = interaction.obstacleRoles
+          .filter(
+            (role) =>
+              role !== interaction.sourceRole &&
+              role !== interaction.targetRole,
+          )
+          .flatMap((role) => {
+            const obstaclePose = resolvedPoses[role];
+            if (
+              !obstaclePose?.visible ||
+              (obstaclePose.opacity ?? 1) <= 0.01
+            ) {
+              return [];
+            }
+            const obstacleAsset = selectedAssets[role] ?? null;
+            return [
+              {
+                id: role,
+                pose: assetInteractionPoseForRole(
+                  obstacleAsset,
+                  role,
+                  obstaclePose,
+                  prepared,
+                ),
+                geometry: assetInteractionGeometryForRole(
+                  prepared,
+                  obstacleAsset,
+                  role,
+                ),
+                clearance_m: interaction.obstacleClearanceM,
+              },
+            ];
+          });
+
+        const sourceGeometry = assetInteractionGeometryForRole(
           prepared,
           sourceAsset,
           interaction.sourceRole,
-        ),
-        targetPose: targetInteractionPose,
-        targetGeometry: assetInteractionGeometryForRole(
+        );
+        const targetGeometry = assetInteractionGeometryForRole(
           prepared,
           targetAsset,
           interaction.targetRole,
-        ),
-        obstacles,
-        retreatEnd: sourceInteractionPose.position,
-      });
+        );
+
+        cached = solveInteractionForRuntimeCache({
+          interaction,
+          sourceAsset,
+          targetAsset,
+          sourceInteractionPose,
+          targetInteractionPose,
+          sourceGeometry,
+          targetGeometry,
+          obstacles,
+          enableGeneratedContactOrientation,
+          sourcePreparedGeometry,
+          targetPreparedGeometry,
+          obstacleSignature,
+        });
+        interactionCache.set(interaction.id, cached);
+      }
+
+      if (!cached) {
+        throw new Error(`Interaction cache did not compile ${interaction.id}.`);
+      }
+      const solution = cached.solution;
+      const sourceDelta = poseTranslationDelta(
+        sourceInteractionPose,
+        cached.sourcePoseAtSolve,
+      );
+      const targetContactRoot = reanchorPointToPose(
+        solution.approach.end,
+        cached.targetPoseAtSolve,
+        targetInteractionPose,
+      );
+      const targetDelta: RuntimeVec3 = [
+        targetContactRoot[0] - solution.approach.end[0],
+        targetContactRoot[1] - solution.approach.end[1],
+        targetContactRoot[2] - solution.approach.end[2],
+      ];
+      const progress = clamp01(interaction.phaseProgress);
 
       let solvedWorldRoot: RuntimeVec3;
       if (solution.contact.status === "blocked") {
-        // Builder-style fail-closed behavior: if a third actor blocks the literal
-        // contact candidate, stop just before contact rather than intersecting it.
+        // Builder-style fail-closed behavior is compiled once per interaction.
+        // Dynamic endpoint deltas keep the cached corridor attached to moving actors.
         const safeTail = 0.92;
-        if (interaction.phase === "retreat") {
-          solvedWorldRoot = sampleAssetInteractionBezier(
-            solution.approach,
-            safeTail * (1 - interaction.phaseProgress),
-          );
-        } else {
-          solvedWorldRoot = sampleAssetInteractionBezier(
-            solution.approach,
-            safeTail * interaction.phaseProgress,
-          );
-        }
-      } else if (interaction.phase === "approach") {
-        solvedWorldRoot = sampleAssetInteractionBezier(
+        const sampleProgress = interaction.phase === "retreat"
+          ? safeTail * (1 - progress)
+          : safeTail * progress;
+        const base = sampleAssetInteractionBezier(
           solution.approach,
-          interaction.phaseProgress,
+          sampleProgress,
+        );
+        solvedWorldRoot = interaction.phase === "retreat"
+          ? addWeightedDeltas(base, sourceDelta, progress, targetDelta, 1 - progress)
+          : addWeightedDeltas(base, sourceDelta, 1 - progress, targetDelta, progress);
+      } else if (interaction.phase === "approach") {
+        const base = sampleAssetInteractionBezier(
+          solution.approach,
+          progress,
+        );
+        solvedWorldRoot = addWeightedDeltas(
+          base,
+          sourceDelta,
+          1 - progress,
+          targetDelta,
+          progress,
         );
       } else if (interaction.phase === "contact" && interaction.maintainContact) {
-        // Recomputed from the target's current world pose every frame. The
-        // hand therefore follows the burger's nudge while contact is active.
-        solvedWorldRoot = solution.contact.source_pose.position;
+        // Target-relative contact remains exact without rebuilding all route
+        // candidates every frame: translate the compiled contact root with the
+        // target's current world-space motion.
+        solvedWorldRoot = targetContactRoot;
       } else {
-        solvedWorldRoot = sampleAssetInteractionBezier(
+        const base = sampleAssetInteractionBezier(
           solution.retreat,
-          interaction.phaseProgress,
+          progress,
         );
+        solvedWorldRoot = addWeightedDeltas(
+          base,
+          sourceDelta,
+          progress,
+          targetDelta,
+          1 - progress,
+        );
+      }
+
+      let interactionBasePose =
+        enableGeneratedContactOrientation && interaction.sourceRole === "hand"
+          ? { ...sourcePose, rotation: GENERATED_HAND_READABLE_ROTATION }
+          : sourcePose;
+      let contactOrientationApplied = false;
+      if (
+        enableGeneratedContactOrientation &&
+        !cached.semanticEffectorLocked &&
+        cached.contactOrientationAvailable &&
+        solution.contact.status !== "blocked"
+      ) {
+        const orientationWeight =
+          interaction.phase === "approach"
+            ? progress
+            : interaction.phase === "contact"
+              ? 1
+              : 1 - progress;
+        const orientedPose = generatedContactFramePose(
+          sourceInteractionPose,
+          cached.sourceGeometry,
+          solution.contact.source_region_id,
+          reanchorDirectionToPose(
+            solution.contact.target_outward_normal,
+            cached.targetPoseAtSolve,
+            targetInteractionPose,
+          ),
+          orientationWeight,
+          sourceInteractionPose.rotation,
+        );
+        if (orientedPose) {
+          interactionBasePose = {
+            ...sourcePose,
+            rotation: runtimeRotationFromCombined(
+              sourceAsset,
+              orientedPose.rotation,
+            ),
+          };
+          contactOrientationApplied = true;
+        }
       }
 
       resolvedPoses[interaction.sourceRole] =
         runtimePoseFromInteractionPosition(
           sourceAsset,
           interaction.sourceRole,
-          sourcePose,
+          interactionBasePose,
           solvedWorldRoot,
           prepared,
         );
@@ -1628,11 +2396,29 @@ function applyRuntimeLayout(
           approach_collision_free: solution.diagnostics.approach_collision_free,
           retreat_collision_free: solution.diagnostics.retreat_collision_free,
           contact_obstacle_ids: solution.diagnostics.contact_obstacle_ids,
+          generated_contact_orientation_applied: contactOrientationApplied,
+          generated_contact_frame: cached.semanticEffectorLocked
+            ? "semantic-effector-locked"
+            : contactOrientationApplied
+              ? "normal+tangent"
+              : "none",
+          // Historical CP.2A.4 verifier marker retained while CP.2A.5 changes
+          // the hand path authority: generated_contact_frame: contactOrientationApplied ? "normal+tangent" : "none"
+          legacy_generated_contact_frame_marker:
+            contactOrientationApplied ? "normal+tangent" : "none",
+          generated_readable_effector_seed:
+            enableGeneratedContactOrientation && interaction.sourceRole === "hand"
+              ? "lunch_hand_semantic_effector_v2"
+              : "none",
+          performance_cache: "interaction_compiled",
+          // Historical CP.2A.3/2A.4 compatibility marker:
+          legacy_performance_cache: "phase_compiled",
         };
       }
     } catch (caught) {
       // A malformed/unmeasurable asset must degrade to the authored staging pose
       // rather than crash the entire cinematic player.
+      interactionCache.delete(interaction.id);
       const sourceGroup = actorGroupForRole(actors, interaction.sourceRole);
       if (sourceGroup) {
         sourceGroup.userData.cinematicInteraction = {
@@ -1771,9 +2557,10 @@ function applyRuntimeLayout(
     protectCameraFraming(
       camera,
       layout.camera.target,
-      framingEntries(actors, selectedAssets),
+      framing,
       prepared,
       framingSafetyState,
+      framingScratch,
       timelineTimeS,
       isPlaying,
     );
@@ -1817,6 +2604,9 @@ function AnimatedCameraAndActors({
   onPlaybackTime,
   onPlaybackEnded,
   preparedGeometryRef,
+  runtimeSampler = sampleCinematicBurgerRuntime,
+  durationS = CINEMATIC_BURGER_TIMELINE_DURATION_S,
+  runtimeRevision = 0,
 }: RuntimeCanvasProps & {
   actors: RuntimeActorRefs;
   shadows: RuntimeShadowRefs;
@@ -1824,11 +2614,18 @@ function AnimatedCameraAndActors({
   isViewportActive: boolean;
 }) {
   const { camera, invalidate } = useThree();
+  const runtimeDurationS = Math.max(0.001, durationS);
+  const framing = useMemo(
+    () => framingEntries(actors, selectedAssets),
+    [actors, selectedAssets],
+  );
   const timelineTimeRef = useRef(seekRequest.timeS);
   const playAnchorWallMsRef = useRef<number | null>(null);
   const playAnchorTimelineSRef = useRef(seekRequest.timeS);
   const lastUiNotifyMsRef = useRef(0);
   const endedNotifiedRef = useRef(false);
+  const interactionCacheRef = useRef<InteractionRuntimeCache>(new Map());
+  const framingScratchRef = useRef<FramingScratch>(createFramingScratch());
   const framingSafetyStateRef = useRef<FramingSafetyState>({
     correctionDistance: null,
     lastTimelineS: null,
@@ -1839,72 +2636,94 @@ function AnimatedCameraAndActors({
     playAnchorTimelineSRef.current = seekRequest.timeS;
     playAnchorWallMsRef.current = null;
     endedNotifiedRef.current = false;
+    interactionCacheRef.current.clear();
     framingSafetyStateRef.current = {
       correctionDistance: null,
       lastTimelineS: null,
     };
     invalidate();
-  }, [invalidate, seekRequest.revision, seekRequest.timeS]);
+  }, [
+    invalidate,
+    runtimeRevision,
+    runtimeSampler,
+    seekRequest.revision,
+    seekRequest.timeS,
+    selectedAssets,
+  ]);
+
+  const playbackActive = isPlaying && isViewportActive;
 
   useEffect(() => {
-    if (isPlaying) {
+    if (playbackActive) {
       playAnchorTimelineSRef.current = timelineTimeRef.current;
       playAnchorWallMsRef.current = performance.now();
       endedNotifiedRef.current = false;
     } else if (playAnchorWallMsRef.current !== null) {
       const elapsedS = (performance.now() - playAnchorWallMsRef.current) / 1000;
-      timelineTimeRef.current = Math.min(CINEMATIC_BURGER_TIMELINE_DURATION_S, playAnchorTimelineSRef.current + elapsedS);
+      timelineTimeRef.current = Math.min(runtimeDurationS, playAnchorTimelineSRef.current + elapsedS);
       playAnchorTimelineSRef.current = timelineTimeRef.current;
       playAnchorWallMsRef.current = null;
     }
     invalidate();
-  }, [invalidate, isPlaying]);
+  }, [invalidate, playbackActive, runtimeDurationS]);
 
   useEffect(() => {
-    if (!isPlaying || !isViewportActive) {
+    if (!playbackActive) {
       invalidate();
       return;
     }
 
     let frameId = 0;
-    const pump = () => {
-      invalidate();
+    let lastPresentedMs = performance.now() - CINEMATIC_PREVIEW_FRAME_MS;
+    const pump = (now: number) => {
+      if (now - lastPresentedMs >= CINEMATIC_PREVIEW_FRAME_MS - 0.75) {
+        lastPresentedMs = now;
+        invalidate();
+      }
       frameId = window.requestAnimationFrame(pump);
     };
 
     frameId = window.requestAnimationFrame(pump);
     return () => window.cancelAnimationFrame(frameId);
-  }, [invalidate, isPlaying, isViewportActive]);
+  }, [invalidate, playbackActive]);
 
   useFrame(() => {
     const now = performance.now();
     let timelineTimeS = timelineTimeRef.current;
 
-    if (isPlaying && playAnchorWallMsRef.current !== null) {
+    if (playbackActive && playAnchorWallMsRef.current !== null) {
       timelineTimeS =
         playAnchorTimelineSRef.current +
         (now - playAnchorWallMsRef.current) / 1000;
     }
 
-    const reachedEnd = timelineTimeS >= CINEMATIC_BURGER_TIMELINE_DURATION_S;
-    timelineTimeS = Math.min(CINEMATIC_BURGER_TIMELINE_DURATION_S, Math.max(0, timelineTimeS));
+    const reachedEnd = timelineTimeS >= runtimeDurationS;
+    timelineTimeS = Math.min(runtimeDurationS, Math.max(0, timelineTimeS));
     timelineTimeRef.current = timelineTimeS;
 
-    const layout = sampleCinematicBurgerRuntime(timelineTimeS);
+    // CP.2A: golden mode uses sampleCinematicBurgerRuntime by default; generated
+    // JSON supplies only this sampler. Geometry/contact/lighting/camera safety remain shared.
+    const layout = runtimeSampler(timelineTimeS);
     applyRuntimeLayout(
       layout,
       actors,
       shadows,
       selectedAssets,
+      framing,
       preparedGeometryRef.current,
       camera,
       !(inspectMode && !isPlaying),
       framingSafetyStateRef.current,
+      framingScratchRef.current,
       timelineTimeS,
-      isPlaying,
+      playbackActive,
+      // CP.2A.2 hotfix: generated-vs-golden belongs to the layout/interaction
+      // application layer. Camera safety remains renderer-shared and sampler-agnostic.
+      runtimeSampler !== sampleCinematicBurgerRuntime,
+      interactionCacheRef.current,
     );
 
-    if (now - lastUiNotifyMsRef.current >= 220 || reachedEnd || !isPlaying) {
+    if (now - lastUiNotifyMsRef.current >= 220 || reachedEnd || !playbackActive) {
       lastUiNotifyMsRef.current = now;
       onPlaybackTime(timelineTimeS);
     }
@@ -1926,12 +2745,25 @@ function CameraAwareStudioRig() {
   const keyTargetRef = useRef<THREE.Object3D | null>(null);
   const fillTargetRef = useRef<THREE.Object3D | null>(null);
   const rimTargetRef = useRef<THREE.Object3D | null>(null);
+  const scratchRef = useRef({
+    forward: new THREE.Vector3(),
+    right: new THREE.Vector3(),
+    up: new THREE.Vector3(0, 1, 0),
+    focus: new THREE.Vector3(),
+  });
 
   useFrame(() => {
-    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
-    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).normalize();
-    const up = new THREE.Vector3(0, 1, 0);
-    const focus = camera.position.clone().addScaledVector(forward, 4.2);
+    const scratch = scratchRef.current;
+    const forward = scratch.forward
+      .set(0, 0, -1)
+      .applyQuaternion(camera.quaternion)
+      .normalize();
+    const right = scratch.right
+      .set(1, 0, 0)
+      .applyQuaternion(camera.quaternion)
+      .normalize();
+    const up = scratch.up;
+    const focus = scratch.focus.copy(camera.position).addScaledVector(forward, 4.2);
     focus.y = 0.38;
 
     const place = (
@@ -2081,6 +2913,7 @@ function RuntimeCanvasImpl(props: RuntimeCanvasProps) {
   const shellRef = useRef<HTMLDivElement | null>(null);
   const [isViewportActive, setIsViewportActive] = useState(true);
   const [isDocumentVisible, setIsDocumentVisible] = useState(true);
+  const [isWindowFocused, setIsWindowFocused] = useState(true);
 
   useEffect(() => {
     const element = shellRef.current;
@@ -2101,6 +2934,17 @@ function RuntimeCanvasImpl(props: RuntimeCanvasProps) {
     return () => document.removeEventListener("visibilitychange", update);
   }, []);
 
+  useEffect(() => {
+    const update = () => setIsWindowFocused(document.hasFocus());
+    update();
+    window.addEventListener("focus", update);
+    window.addEventListener("blur", update);
+    return () => {
+      window.removeEventListener("focus", update);
+      window.removeEventListener("blur", update);
+    };
+  }, []);
+
   return (
     <div ref={shellRef} style={canvasShellStyle}>
       <Canvas
@@ -2114,7 +2958,10 @@ function RuntimeCanvasImpl(props: RuntimeCanvasProps) {
         <color attach="background" args={["#0b1220"]} />
         <fog attach="fog" args={["#0b1220", 6.2, 10.5]} />
         <Suspense fallback={<Html center style={{ color: "white", fontSize: 12 }}>Loading cinematic stage…</Html>}>
-          <StageScene {...props} isViewportActive={isViewportActive && isDocumentVisible} />
+          <StageScene
+            {...props}
+            isViewportActive={isViewportActive && isDocumentVisible && isWindowFocused}
+          />
         </Suspense>
       </Canvas>
     </div>
@@ -2128,6 +2975,9 @@ export const CinematicProductionRuntimeCanvas = memo(
     previous.isPlaying === next.isPlaying &&
     previous.inspectMode === next.inspectMode &&
     previous.seekRequest.revision === next.seekRequest.revision &&
+    previous.runtimeSampler === next.runtimeSampler &&
+    previous.durationS === next.durationS &&
+    previous.runtimeRevision === next.runtimeRevision &&
     previous.onPlaybackTime === next.onPlaybackTime &&
     previous.onPlaybackEnded === next.onPlaybackEnded,
 );
