@@ -44,7 +44,7 @@ import {
 export type AssetEnrichmentQueueEntry = {
   asset_id: string;
   status: "queued" | "running" | "completed" | "failed";
-  mode: "full" | "embedding_only";
+  mode: "full" | "vision_only" | "embedding_only";
   force: boolean;
   queued_at: string;
   started_at: string | null;
@@ -492,7 +492,9 @@ async function refreshAssetEmbeddingOnly(assetId: string) {
     throw new Error("Rejected assets are not enriched.");
   }
   if (asset.appearance_profile?.status !== "ready") {
-    return enrichAsset(assetId, true);
+    throw new Error(
+      "Appearance analysis is not ready. Run Omni vision first; embedding-only mode never starts the vision provider.",
+    );
   }
 
   return writeAppearanceEmbedding(
@@ -501,7 +503,7 @@ async function refreshAssetEmbeddingOnly(assetId: string) {
   );
 }
 
-async function enrichAsset(assetId: string, force: boolean) {
+async function enrichAsset(assetId: string, force: boolean, includeEmbedding = true) {
   await ensureAssetDirectories();
   let asset = await getMyWayAsset(assetId);
   if (!asset) throw new Error(`Asset was not found: ${assetId}`);
@@ -521,7 +523,7 @@ async function enrichAsset(assetId: string, force: boolean) {
     !force &&
     asset.appearance_profile?.status === "ready" &&
     asset.appearance_profile.content_hash === asset.content_hash &&
-    asset.appearance_embedding?.status === "ready"
+    (!includeEmbedding || asset.appearance_embedding?.status === "ready")
   ) {
     return asset;
   }
@@ -644,10 +646,12 @@ async function enrichAsset(assetId: string, force: boolean) {
       });
       appearanceReady = true;
 
-      asset = await writeAppearanceEmbedding(
-        asset,
-        readyAppearance,
-      );
+      if (includeEmbedding) {
+        asset = await writeAppearanceEmbedding(
+          asset,
+          readyAppearance,
+        );
+      }
 
       return asset;
     } catch (caught) {
@@ -695,7 +699,10 @@ async function enrichAsset(assetId: string, force: boolean) {
 
 export function queueAssetEnrichment(
   assetId: string,
-  options: { force?: boolean } = {},
+  options: {
+    force?: boolean;
+    runEmbedding?: boolean;
+  } = {},
 ) {
   const existing = queueEntries.get(assetId);
   if (
@@ -708,7 +715,10 @@ export function queueAssetEnrichment(
   const entry: AssetEnrichmentQueueEntry = {
     asset_id: assetId,
     status: "queued",
-    mode: "full",
+    mode:
+      options.runEmbedding === false
+        ? "vision_only"
+        : "full",
     force: options.force === true,
     queued_at: now(),
     started_at: null,
@@ -721,7 +731,7 @@ export function queueAssetEnrichment(
     entry.status = "running";
     entry.started_at = now();
     try {
-      await enrichAsset(assetId, entry.force);
+      await enrichAsset(assetId, entry.force, entry.mode !== "vision_only");
       entry.status = "completed";
       entry.completed_at = now();
       if (embeddingRefreshAfterFull.delete(assetId)) {
@@ -745,7 +755,10 @@ export function queueAssetEmbeddingRefresh(
     existing &&
     (existing.status === "queued" || existing.status === "running")
   ) {
-    if (existing.mode === "full") {
+    if (
+      existing.mode === "full" ||
+      existing.mode === "vision_only"
+    ) {
       embeddingRefreshAfterFull.add(assetId);
     }
     return existing;

@@ -1,4 +1,4 @@
-import { rm } from "node:fs/promises";
+import { rename, rm } from "node:fs/promises";
 import path from "node:path";
 
 import type { MyWayAssetRecord } from "../asset-types";
@@ -13,6 +13,7 @@ import {
   buildBlenderKitCc0LicenseReview,
 } from "../licensing/asset-license-review";
 import { safeAssetId } from "../normalize-asset-record";
+import { buildProviderAwareAssetId } from "../asset-identity";
 import {
   ensureAssetDirectories,
   projectPath,
@@ -97,15 +98,16 @@ export async function acquireFromBlenderKit(input: {
   const requiredLicenseKind = input.requiredLicenseKind ?? "cc0";
   const baseId =
     safeAssetId(input.concept) || `blenderkit_${Date.now()}`;
-  const assetId = `${baseId}_bk_${Date.now().toString(36)}`;
+  const provisionalAssetId =
+    `${baseId}_bk_pending_${Date.now().toString(36)}`;
 
-  const outputPath = projectPath(
+  let outputPath = projectPath(
     "public/sandbox-assets/myway/models/blenderkit",
-    `${assetId}.glb`,
+    `${provisionalAssetId}.glb`,
   );
-  const thumbnailPath = projectPath(
+  let thumbnailPath = projectPath(
     "public/sandbox-assets/myway/thumbnails",
-    `${assetId}.png`,
+    `${provisionalAssetId}.png`,
   );
 
   // Keep the requested concept separate from the concrete BlendKit query.
@@ -160,6 +162,32 @@ export async function acquireFromBlenderKit(input: {
   }
 
   const contentHash = await hashFile(outputPath);
+  const assetId =
+    buildProviderAwareAssetId({
+      concept: input.concept,
+      sourceProvider: "BlenderKit",
+      sourceType: "blenderkit",
+      sourceAssetId: result.source_asset_id ?? input.selectedSourceAssetId ?? null,
+      sourceUrl: result.source_url ?? null,
+      contentHash,
+      originalFileName: path.basename(outputPath),
+    });
+
+  if (assetId !== provisionalAssetId) {
+    const finalOutputPath = projectPath(
+      "public/sandbox-assets/myway/models/blenderkit",
+      `${assetId}.glb`,
+    );
+    const finalThumbnailPath = projectPath(
+      "public/sandbox-assets/myway/thumbnails",
+      `${assetId}.png`,
+    );
+    await rename(outputPath, finalOutputPath);
+    await rename(thumbnailPath, finalThumbnailPath).catch(() => undefined);
+    outputPath = finalOutputPath;
+    thumbnailPath = finalThumbnailPath;
+  }
+
   const sourceRecordRelativePath =
     `sandbox/probe-lab/assets/library/source-records/${assetId}.json`;
   const licenseRelativePath =

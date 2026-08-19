@@ -147,6 +147,8 @@ export async function PATCH(request: NextRequest) {
         await renameMyWayAssetId({
           assetId,
           nextAssetId,
+          queueEmbeddingRefresh:
+            body.queue_embedding_refresh !== false,
         });
 
       return NextResponse.json({
@@ -161,6 +163,8 @@ export async function PATCH(request: NextRequest) {
           result.updated_reference_files,
         moved_identity_files:
           result.moved_identity_files,
+        embedding_refresh_needed:
+          result.embedding_refresh_needed,
         embedding_refresh_queued:
           result.embedding_refresh_queued,
       });
@@ -182,6 +186,8 @@ export async function PATCH(request: NextRequest) {
         await updateMyWayAssetCanonicalLabel({
           assetId,
           canonicalLabel,
+          queueEmbeddingRefresh:
+            body.queue_embedding_refresh !== false,
         });
 
       return NextResponse.json({
@@ -192,6 +198,8 @@ export async function PATCH(request: NextRequest) {
           ),
         canonical_label_updated_from:
           result.updated_from,
+        embedding_refresh_needed:
+          result.embedding_refresh_needed,
         embedding_refresh_queued:
           result.embedding_refresh_queued,
       });

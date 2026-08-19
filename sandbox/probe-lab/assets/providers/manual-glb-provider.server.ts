@@ -1,3 +1,4 @@
+
 import { mkdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -16,7 +17,6 @@ import {
   inspectGlbAppearanceFile,
 } from "../glb-appearance-inspection.server";
 import { queueAssetEnrichment } from "../enrichment/asset-enrichment-worker.server";
-import { safeAssetId } from "../normalize-asset-record";
 import {
   attributionCompletenessIssues,
   buildAssetAttribution,
@@ -24,8 +24,10 @@ import {
 } from "../asset-attribution";
 import {
   buildPolyPizzaAttributionText,
-  polyPizzaAssetId,
 } from "../poly-pizza-manual-intake";
+import {
+  buildProviderAwareAssetId,
+} from "../asset-identity";
 import {
   ensureAssetDirectories,
   projectPath,
@@ -73,6 +75,8 @@ export type ManualGlbImportInput = {
   modificationNotice?: string | null;
   downloadedAt?: string | null;
   provenanceNotes?: string | null;
+  runVision?: boolean;
+  runEmbedding?: boolean;
 };
 
 function cleanText(value: string | null | undefined, maxLength: number) {
@@ -206,36 +210,6 @@ export async function importManualGlb(input: ManualGlbImportInput) {
         input.licenseVersion,
     });
 
-  const baseId =
-    safeAssetId(concept) ||
-    `manual_${Date.now()}`;
-  const deterministicPolyPizzaId =
-    isPolyPizza
-      ? polyPizzaAssetId(
-          concept,
-          sourceAssetId,
-        )
-      : "";
-  const assetId =
-    deterministicPolyPizzaId ||
-    `${baseId}_man_${Date.now().toString(36)}`;
-  const sourcePath = projectPath(
-    "sandbox/probe-lab/assets/inbox/manual",
-    `${assetId}-source.glb`,
-  );
-  const outputPath = projectPath(
-    "public/sandbox-assets/myway/models/manual",
-    `${assetId}.glb`,
-  );
-  const thumbnailPath = projectPath(
-    "public/sandbox-assets/myway/thumbnails",
-    `${assetId}.png`,
-  );
-  const sourceRecordRelativePath =
-    `sandbox/probe-lab/assets/library/source-records/${assetId}.json`;
-  const licenseRelativePath =
-    `sandbox/probe-lab/assets/library/licenses/${assetId}.manual.review.json`;
-
   const attributionIssues =
     attributionCompletenessIssues(
       attribution,
@@ -258,20 +232,58 @@ export async function importManualGlb(input: ManualGlbImportInput) {
         candidate.source_asset_id ===
           sourceAssetId,
     );
+  let repairMissingDuplicate: MyWayAssetRecord | null = null;
   if (duplicateSource) {
-    return {
-      created: false,
-      duplicate_of:
-        duplicateSource.asset_id,
-      asset: await assetWithFileStats(
-        duplicateSource,
-      ),
-      enrichment_entry: null,
-      source_record_path:
-        duplicateSource.license_record_path ??
-        null,
-    };
+    const duplicateWithStats =
+      await assetWithFileStats(duplicateSource);
+    if (duplicateWithStats.file_stats.exists) {
+      return {
+        created: false,
+        repaired_existing: false,
+        duplicate_of:
+          duplicateSource.asset_id,
+        asset: duplicateWithStats,
+        enrichment_entry: null,
+        source_record_path:
+          duplicateSource.license_record_path ??
+          null,
+      };
+    }
+    if (duplicateSource.scene_review_status === "approved") {
+      throw new Error(
+        `An approved asset already uses this source identity (${duplicateSource.asset_id}), but its runtime model is missing. MyWay will not silently replace an approved binary; repair or re-review that asset explicitly.`,
+      );
+    }
+    repairMissingDuplicate = duplicateSource;
   }
+
+  const assetId =
+    repairMissingDuplicate?.asset_id ??
+    buildProviderAwareAssetId({
+      concept,
+      sourceProvider,
+      sourceType: "manual",
+      sourceAssetId,
+      sourceUrl,
+      sourceDisplayName: `${sourceProvider}: ${assetTitle}`,
+      originalFileName,
+    });
+  const sourcePath = projectPath(
+    "sandbox/probe-lab/assets/inbox/manual",
+    `${assetId}-source.glb`,
+  );
+  const outputPath = projectPath(
+    "public/sandbox-assets/myway/models/manual",
+    `${assetId}.glb`,
+  );
+  const thumbnailPath = projectPath(
+    "public/sandbox-assets/myway/thumbnails",
+    `${assetId}.png`,
+  );
+  const sourceRecordRelativePath =
+    `sandbox/probe-lab/assets/library/source-records/${assetId}.json`;
+  const licenseRelativePath =
+    `sandbox/probe-lab/assets/library/licenses/${assetId}.manual.review.json`;
 
   await mkdir(path.dirname(sourcePath), { recursive: true });
   await writeFile(sourcePath, buffer);
@@ -420,10 +432,7 @@ export async function importManualGlb(input: ManualGlbImportInput) {
   const record: MyWayAssetRecord = {
     asset_id: assetId,
     canonical_label: concept.toLowerCase(),
-    display_name:
-      isPolyPizza
-        ? assetId
-        : concept,
+    display_name: assetTitle || concept,
     aliases: input.aliases ?? [],
     semantic_tags: [concept, ...(input.semanticTags ?? [])],
     asset_type: "glb",
@@ -522,9 +531,13 @@ export async function importManualGlb(input: ManualGlbImportInput) {
     updated_at: now,
   };
 
-  const registered = await registerMyWayAsset(record);
+  const registered = await registerMyWayAsset(record, {
+    autoEnrich: false,
+    replaceMissingAssetId:
+      repairMissingDuplicate?.asset_id ?? null,
+  });
 
-  if (!registered.created) {
+  if (!registered.created && !repairMissingDuplicate) {
     await Promise.all([
       ...[sourcePath, outputPath, thumbnailPath].map(
         (candidatePath) =>
@@ -547,6 +560,7 @@ export async function importManualGlb(input: ManualGlbImportInput) {
 
     return {
       created: false,
+      repaired_existing: false,
       duplicate_of: registered.duplicate_of,
       asset: await assetWithFileStats(registered.asset),
       enrichment_entry: null,
@@ -554,9 +568,13 @@ export async function importManualGlb(input: ManualGlbImportInput) {
     };
   }
 
-  const enrichmentEntry = queueAssetEnrichment(registered.asset.asset_id, {
-    force: true,
-  });
+  const enrichmentEntry =
+    input.runVision === false
+      ? null
+      : queueAssetEnrichment(registered.asset.asset_id, {
+          force: true,
+          runEmbedding: input.runEmbedding !== false,
+        });
 
   await writeDebug({
     status: "completed",
@@ -579,6 +597,7 @@ export async function importManualGlb(input: ManualGlbImportInput) {
 
   return {
     created: true,
+    repaired_existing: Boolean(repairMissingDuplicate),
     duplicate_of: null,
     asset: await assetWithFileStats(registered.asset),
     enrichment_entry: enrichmentEntry,

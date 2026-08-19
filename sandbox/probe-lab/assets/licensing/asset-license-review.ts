@@ -1,3 +1,4 @@
+
 import type { MyWayAssetRecord } from "../asset-types";
 import {
   attributionCompletenessIssues,
@@ -317,6 +318,19 @@ export function buildManualCc0LicenseReview(
   };
 }
 
+const POLY_PIZZA_OFFICE_PACK_URL =
+  "https://poly.pizza/bundle/The-Office-Pack-UGIy7YcQP9";
+
+function isKnownPolyPizzaBundleMemberSource(
+  sourceUrl: string,
+  sourceAssetId: string,
+) {
+  return (
+    sourceUrl === POLY_PIZZA_OFFICE_PACK_URL &&
+    /^UGIy7YcQP9:.+\.glb$/i.test(sourceAssetId)
+  );
+}
+
 export function buildPolyPizzaManualLicenseReview(
   asset: MyWayAssetRecord,
   reviewedAt = new Date().toISOString(),
@@ -336,9 +350,16 @@ export function buildPolyPizzaManualLicenseReview(
 
   const sourceUrl = asset.source_url?.trim() ?? "";
   const sourceAssetId = asset.source_asset_id?.trim() ?? "";
-  if (!/^https:\/\/poly\.pizza\/m\/[A-Za-z0-9_-]+$/i.test(sourceUrl)) {
+  const isCanonicalModelPage =
+    /^https:\/\/poly\.pizza\/m\/[A-Za-z0-9_-]+$/i.test(sourceUrl);
+  const isKnownBundleMember =
+    isKnownPolyPizzaBundleMemberSource(
+      sourceUrl,
+      sourceAssetId,
+    );
+  if (!isCanonicalModelPage && !isKnownBundleMember) {
     throw new Error(
-      "The Poly Pizza asset must preserve its canonical https://poly.pizza/m/<id> source page before public-scene approval.",
+      "The Poly Pizza asset must preserve either its canonical https://poly.pizza/m/<id> model page or a MyWay-known Poly Pizza bundle member source before public-scene approval.",
     );
   }
   if (!sourceAssetId) {
@@ -411,10 +432,13 @@ export function buildPolyPizzaManualLicenseReview(
     reviewed_at: reviewedAt,
     basis: [
       {
-        label: "Poly Pizza model page",
+        label: isKnownBundleMember
+          ? "Poly Pizza bundle page"
+          : "Poly Pizza model page",
         url: sourceUrl,
-        finding:
-          `The reviewer confirmed the stored Poly Pizza page, model ID ${sourceAssetId}, creator, and ${expectedLicenseName} licence record.`,
+        finding: isKnownBundleMember
+          ? `The reviewer confirmed the stored Office Pack bundle page, bundle member ${sourceAssetId}, creator, and ${expectedLicenseName} licence record.`
+          : `The reviewer confirmed the stored Poly Pizza page, model ID ${sourceAssetId}, creator, and ${expectedLicenseName} licence record.`,
       },
       {
         label: "MyWay manual acquisition record",

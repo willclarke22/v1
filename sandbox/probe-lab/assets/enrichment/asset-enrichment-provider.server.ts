@@ -1,6 +1,10 @@
+
 import { readFile } from "node:fs/promises";
 
 import type { MyWayAssetRecord } from "../asset-types";
+
+const DEFAULT_ASSET_OMNI_MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning";
+const LEGACY_ASSET_VISION_MODEL = "nvidia/nemotron-nano-12b-v2-vl";
 
 export const ASSET_APPEARANCE_PROMPT_VERSION =
   "myway_asset_appearance_prompt_v3_style_personalization";
@@ -224,9 +228,13 @@ export async function analyzeAssetAppearance(input: {
     process.env.MYWAY_ASSET_VISION_BASE_URL ??
       process.env.NVIDIA_BASE_URL,
   )}/chat/completions`;
+  const configuredVisionModel =
+    process.env.MYWAY_ASSET_VISION_MODEL?.trim();
   const model =
-    process.env.MYWAY_ASSET_VISION_MODEL?.trim() ||
-    "nvidia/nemotron-nano-12b-v2-vl";
+    !configuredVisionModel ||
+    configuredVisionModel === LEGACY_ASSET_VISION_MODEL
+      ? DEFAULT_ASSET_OMNI_MODEL
+      : configuredVisionModel;
   const images = await Promise.all(
     input.viewFilePaths.map(async (filePath) => {
       const bytes = await readFile(filePath);
@@ -258,7 +266,7 @@ export async function analyzeAssetAppearance(input: {
         {
           role: "system",
           content:
-            "/no_think\nReturn only valid JSON. Do not include Markdown or commentary.",
+            "Return only valid JSON. Do not include Markdown or commentary.",
         },
         {
           role: "user",
@@ -273,10 +281,11 @@ export async function analyzeAssetAppearance(input: {
       ],
       frequency_penalty: 0,
       presence_penalty: 0,
-      temperature: 0.1,
+      temperature: 0.2,
       top_p: 0.9,
-      max_tokens: 1900,
+      max_tokens: 4096,
       stream: false,
+      chat_template_kwargs: { enable_thinking: false },
     },
     180_000,
   );

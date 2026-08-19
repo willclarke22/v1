@@ -1,4 +1,4 @@
-import { rm } from "node:fs/promises";
+import { rename, rm } from "node:fs/promises";
 import path from "node:path";
 
 import type { MyWayAssetRecord } from "../asset-types";
@@ -7,6 +7,7 @@ import { createNormalizeJob } from "../blender/blender-job-store.server";
 import { runBlenderJob } from "../blender/blender-bridge.server";
 import { hashFile } from "../content-hash.server";
 import { safeAssetId } from "../normalize-asset-record";
+import { buildProviderAwareAssetId } from "../asset-identity";
 import {
   ensureAssetDirectories,
   projectPath,
@@ -76,18 +77,19 @@ export async function acquireFromTrellis(input: {
 
   const baseId =
     safeAssetId(input.concept) || `trellis_${Date.now()}`;
-  const assetId = `${baseId}_tr_${Date.now().toString(36)}`;
-  const inboxPath = projectPath(
+  const provisionalAssetId =
+    `${baseId}_trl_pending_${Date.now().toString(36)}`;
+  let inboxPath = projectPath(
     "sandbox/probe-lab/assets/inbox/trellis",
-    `${assetId}-raw.glb`,
+    `${provisionalAssetId}-raw.glb`,
   );
-  const outputPath = projectPath(
+  let outputPath = projectPath(
     "public/sandbox-assets/myway/models/trellis",
-    `${assetId}.glb`,
+    `${provisionalAssetId}.glb`,
   );
-  const thumbnailPath = projectPath(
+  let thumbnailPath = projectPath(
     "public/sandbox-assets/myway/thumbnails",
-    `${assetId}.png`,
+    `${provisionalAssetId}.png`,
   );
 
   const prompt = compactTrellisPrompt(input);
@@ -120,6 +122,39 @@ export async function acquireFromTrellis(input: {
   }
 
   const result = completed.result;
+  const contentHash = await hashFile(outputPath);
+  const assetId =
+    buildProviderAwareAssetId({
+      concept: input.concept,
+      sourceProvider: "TRELLIS",
+      sourceType: "trellis",
+      sourceAssetId: generated.prompt,
+      sourceUrl: "https://build.nvidia.com/microsoft/trellis",
+      contentHash,
+      originalFileName: path.basename(outputPath),
+    });
+
+  if (assetId !== provisionalAssetId) {
+    const nextInboxPath = projectPath(
+      "sandbox/probe-lab/assets/inbox/trellis",
+      `${assetId}-raw.glb`,
+    );
+    const nextOutputPath = projectPath(
+      "public/sandbox-assets/myway/models/trellis",
+      `${assetId}.glb`,
+    );
+    const nextThumbnailPath = projectPath(
+      "public/sandbox-assets/myway/thumbnails",
+      `${assetId}.png`,
+    );
+    await rename(inboxPath, nextInboxPath);
+    await rename(outputPath, nextOutputPath);
+    await rename(thumbnailPath, nextThumbnailPath).catch(() => undefined);
+    inboxPath = nextInboxPath;
+    outputPath = nextOutputPath;
+    thumbnailPath = nextThumbnailPath;
+  }
+
   const sourceArchive =
     await archivePrivateAssetSource({
       assetId,
@@ -211,7 +246,7 @@ export async function acquireFromTrellis(input: {
     polygon_count: result.polygon_count,
     rigged: result.rigged,
     animation_clips: result.animation_clips,
-    content_hash: await hashFile(outputPath),
+    content_hash: contentHash,
     quality_score: 0.68,
     reuse_count: 0,
     license_kind: "unknown",

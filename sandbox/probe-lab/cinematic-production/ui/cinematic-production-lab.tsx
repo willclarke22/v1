@@ -2,7 +2,7 @@
 
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { BURGER_ASSEMBLY_BENCHMARK } from "../benchmark-burger-assembly";
 import type { CinematicCastSlot } from "../cinematic-production-contract";
@@ -63,6 +63,35 @@ type GenerateResponse = {
   validation?: CinematicReproductionValidation;
 };
 
+type CinematicVideoDifference = {
+  time_range_s: string;
+  category: string;
+  importance: "high" | "medium" | "low";
+  golden: string;
+  generated: string;
+  fix_hint: string;
+};
+
+type CinematicVideoComparison = {
+  summary: string;
+  similarity_score: number;
+  verdict: string;
+  differences: CinematicVideoDifference[];
+  generated_strengths: string[];
+  highest_priority_fix: string;
+  confidence: number;
+};
+
+type VideoCompareResponse = {
+  ok?: boolean;
+  error?: string;
+  model?: string;
+  observation_mode?: "two_independent_video_descriptions";
+  golden_description?: string;
+  generated_description?: string;
+  video_diagnostics?: Record<string, unknown>;
+};
+
 type CastSelectionMap = Record<string, string>;
 type PreviewSource = "golden" | "generated";
 
@@ -70,6 +99,34 @@ type CastMatch = {
   slot: CinematicCastSlot;
   autoAssetId: string | null;
 };
+
+const CINEMATIC_CAPTURE_FPS = 12;
+const CINEMATIC_CAPTURE_BITS_PER_SECOND = 900_000;
+
+function supportedMp4RecorderMimeType() {
+  if (typeof MediaRecorder === "undefined") return null;
+  const candidates = [
+    'video/mp4;codecs="avc1.42E01E"',
+    "video/mp4;codecs=avc1.42E01E",
+    'video/mp4;codecs="avc1.4D401E"',
+    "video/mp4;codecs=avc1.4D401E",
+    "video/mp4;codecs=avc1",
+    "video/mp4",
+  ];
+  return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate)) ?? null;
+}
+
+function afterBrowserPaint(frames = 2) {
+  return new Promise<void>((resolve) => {
+    let remaining = Math.max(1, frames);
+    const step = () => {
+      remaining -= 1;
+      if (remaining <= 0) resolve();
+      else window.requestAnimationFrame(step);
+    };
+    window.requestAnimationFrame(step);
+  });
+}
 
 const bridgeLinks = [
   ["Director", "/sandbox/probe-lab/director-capability-library", "camera + motion grammar"],
@@ -221,6 +278,18 @@ export function CinematicProductionLab() {
   const [glmModel, setGlmModel] = useState<string | null>(null);
   const [glmError, setGlmError] = useState<string | null>(null);
 
+  const [isVisionComparing, setIsVisionComparing] = useState(false);
+  const [visionStatus, setVisionStatus] = useState(
+    "Runs automatically after a valid GLM generation is rendered.",
+  );
+  const [visionError, setVisionError] = useState<string | null>(null);
+  const [visionGoldenDescription, setVisionGoldenDescription] = useState<string>("");
+  const [visionGeneratedDescription, setVisionGeneratedDescription] = useState<string>("");
+  const [visionModel, setVisionModel] = useState<string | null>(null);
+  const captureEndResolverRef = useRef<(() => void) | null>(null);
+  const goldenVideoCacheRef = useRef<{ assetSignature: string; blob: Blob } | null>(null);
+  const visionRunIdRef = useRef(0);
+
   useEffect(() => {
     let cancelled = false;
     async function loadAssets() {
@@ -274,6 +343,19 @@ export function CinematicProductionLab() {
   ) as Record<string, CinematicLibraryAssetRecord | null>, [assets, benchmark.cast_slots, castSelections]);
 
   const resolvedAssetCount = benchmark.cast_slots.filter((slot) => selectedAssets[slot.id]).length;
+  const selectedAssetSignature = useMemo(
+    () => benchmark.cast_slots.map((slot) => `${slot.id}:${selectedAssets[slot.id]?.asset_id ?? "missing"}`).join("|"),
+    [benchmark.cast_slots, selectedAssets],
+  );
+
+  useEffect(() => {
+    goldenVideoCacheRef.current = null;
+    setVisionGoldenDescription("");
+    setVisionGeneratedDescription("");
+    setVisionError(null);
+    setVisionStatus("Asset cast changed. Generate with GLM or re-run Omni descriptions.");
+  }, [selectedAssetSignature]);
+
   const activeDurationS = previewSource === "generated"
     ? renderedPlan.duration_s
     : CINEMATIC_BURGER_TIMELINE_DURATION_S;
@@ -293,6 +375,13 @@ export function CinematicProductionLab() {
   const handleRuntimeEnded = useCallback(() => {
     setPlaybackTimeS(activeDurationS);
     setIsPlaying(false);
+    const captureResolver = captureEndResolverRef.current;
+    captureEndResolverRef.current = null;
+    if (captureResolver) {
+      setInspectMode(false);
+      captureResolver();
+      return;
+    }
     setInspectMode(true);
   }, [activeDurationS]);
 
@@ -307,6 +396,145 @@ export function CinematicProductionLab() {
     Math.min(playbackTimeS, CINEMATIC_BURGER_TIMELINE_DURATION_S),
   );
   const selectedShot = benchmark.shots.find((shot) => shot.id === selectedShotId) ?? benchmark.shots[0];
+
+  async function captureCurrentPreviewAsMp4(source: PreviewSource) {
+    const mimeType = supportedMp4RecorderMimeType();
+    if (!mimeType) {
+      throw new Error(
+        "This browser does not expose H.264/MP4 MediaRecorder capture. Omni video descriptions require MP4 in this experiment.",
+      );
+    }
+
+    setIsPlaying(false);
+    setInspectMode(false);
+    setPreviewSource(source);
+    setPlaybackTimeS(0);
+    setSeekRequest((current) => ({ timeS: 0, revision: current.revision + 1 }));
+    await afterBrowserPaint(3);
+
+    const captureRoot = document.querySelector<HTMLElement>(
+      '[data-cinematic-capture-root="true"]',
+    );
+    const canvas = captureRoot?.querySelector<HTMLCanvasElement>("canvas");
+    if (!canvas || typeof canvas.captureStream !== "function") {
+      throw new Error("The cinematic WebGL canvas could not be found for video capture.");
+    }
+
+    const stream = canvas.captureStream(CINEMATIC_CAPTURE_FPS);
+    const recorder = new MediaRecorder(stream, {
+      mimeType,
+      videoBitsPerSecond: CINEMATIC_CAPTURE_BITS_PER_SECOND,
+    });
+    const chunks: BlobPart[] = [];
+    recorder.addEventListener("dataavailable", (event) => {
+      if (event.data.size > 0) chunks.push(event.data);
+    });
+
+    const stopped = new Promise<void>((resolve, reject) => {
+      recorder.addEventListener("stop", () => resolve(), { once: true });
+      recorder.addEventListener("error", () => reject(new Error("Browser video recording failed.")), { once: true });
+    });
+    const playbackEnded = new Promise<void>((resolve) => {
+      captureEndResolverRef.current = resolve;
+    });
+
+    try {
+      recorder.start();
+      setIsPlaying(true);
+      await Promise.race([
+        playbackEnded,
+        new Promise<void>((_, reject) => {
+          window.setTimeout(
+            () => reject(new Error(`Timed out while recording ${source} Lunch. Keep this browser tab visible during capture; the canvas may remain scrolled off-screen.`)),
+            90_000,
+          );
+        }),
+      ]);
+    } finally {
+      setIsPlaying(false);
+      captureEndResolverRef.current = null;
+      if (recorder.state !== "inactive") recorder.stop();
+      await stopped.catch(() => undefined);
+      stream.getTracks().forEach((track) => track.stop());
+    }
+
+    if (!chunks.length) {
+      throw new Error(`The browser recorded no MP4 data for ${source} Lunch.`);
+    }
+    return new Blob(chunks, { type: mimeType });
+  }
+
+  async function runNemotronVideoDescriptions() {
+    if (isVisionComparing) return;
+    const runId = ++visionRunIdRef.current;
+    setIsVisionComparing(true);
+    setVisionError(null);
+    setVisionGoldenDescription("");
+    setVisionGeneratedDescription("");
+    setVisionStatus("Preparing Golden + Generated Omni descriptions…");
+
+    try {
+      let goldenBlob: Blob;
+      const cachedGolden = goldenVideoCacheRef.current;
+      if (cachedGolden?.assetSignature === selectedAssetSignature) {
+        goldenBlob = cachedGolden.blob;
+        setVisionStatus("Golden MP4 cached · recording Generated Lunch…");
+      } else {
+        setVisionStatus("Recording Golden Lunch from the shared WebGL runtime…");
+        goldenBlob = await captureCurrentPreviewAsMp4("golden");
+        goldenVideoCacheRef.current = {
+          assetSignature: selectedAssetSignature,
+          blob: goldenBlob,
+        };
+        setVisionStatus("Golden MP4 captured · recording Generated Lunch…");
+      }
+
+      const generatedBlob = await captureCurrentPreviewAsMp4("generated");
+      if (runId !== visionRunIdRef.current) return;
+
+      setPreviewSource("generated");
+      setPlaybackTimeS(0);
+      setSeekRequest((current) => ({ timeS: 0, revision: current.revision + 1 }));
+      setVisionStatus("Both movies captured · Nemotron Omni is describing Golden and Generated independently…");
+
+      const body = new FormData();
+      body.append("golden", goldenBlob, "lunch-golden.mp4");
+      body.append("generated", generatedBlob, "lunch-generated.mp4");
+      body.append("duration_s", String(renderedPlan.duration_s));
+
+      const response = await fetch(
+        "/api/sandbox/probe-lab/cinematic-production/video-compare",
+        { method: "POST", body },
+      );
+      const payload = (await response.json()) as VideoCompareResponse;
+      if (
+        !response.ok ||
+        !payload.ok ||
+        !payload.golden_description?.trim() ||
+        !payload.generated_description?.trim()
+      ) {
+        throw new Error(payload.error || "Nemotron did not return both video descriptions.");
+      }
+      if (runId !== visionRunIdRef.current) return;
+
+      setVisionGoldenDescription(payload.golden_description);
+      setVisionGeneratedDescription(payload.generated_description);
+      setVisionModel(payload.model ?? null);
+      setVisionStatus("Golden and Generated Omni descriptions ready.");
+    } catch (caught) {
+      if (runId === visionRunIdRef.current) {
+        setVisionError(caught instanceof Error ? caught.message : String(caught));
+        setVisionStatus("Omni description pass did not complete.");
+      }
+    } finally {
+      if (runId === visionRunIdRef.current) {
+        setIsVisionComparing(false);
+        setIsPlaying(false);
+        setInspectMode(false);
+        setPreviewSource("generated");
+      }
+    }
+  }
 
   function validateWorkingJson() {
     try {
@@ -344,6 +572,10 @@ export function CinematicProductionLab() {
       setComparison(compareReproductionPlanToGolden(result.plan));
       setRuntimeRevision((value) => value + 1);
       setPreviewSource("generated");
+      setVisionGoldenDescription("");
+      setVisionGeneratedDescription("");
+      setVisionError(null);
+      setVisionStatus("Generated plan changed. Re-run Omni descriptions when ready.");
       setJsonMessage(`Rendered working JSON · ${result.validation.warnings.length} warning(s).`);
     } catch (caught) {
       setValidation({ ok: false, errors: [caught instanceof Error ? caught.message : String(caught)], warnings: [] });
@@ -363,6 +595,13 @@ export function CinematicProductionLab() {
     setGlmRepairAccepted(null);
     setGlmRepairRejectionReason(null);
     setGlmError(null);
+    setVisionGoldenDescription("");
+    setVisionGeneratedDescription("");
+    setVisionError(null);
+    setVisionModel(null);
+    setVisionStatus("Runs automatically after a valid GLM generation is rendered.");
+    visionRunIdRef.current += 1;
+    goldenVideoCacheRef.current = null;
     setRuntimeRevision((value) => value + 1);
     setJsonMessage("Reset to the known-valid golden-derived starter JSON.");
   }
@@ -408,9 +647,23 @@ export function CinematicProductionLab() {
           ? " · repair response was retained as evidence but rejected because it did not improve deterministic quality"
           : " · deterministic quality repair accepted"
         : "";
-      setJsonMessage(nextValidation.ok
-        ? `GLM JSON loaded${repairSuffix}. Press Render JSON to execute it through the CP.2A.5 choreography compiler.`
-        : "GLM returned JSON, but validation found errors. Edit it before rendering.");
+      if (nextValidation.ok) {
+        const parsed = payload.normalized_plan
+          ? { plan: payload.normalized_plan, validation: nextValidation }
+          : parseCinematicReproductionJson(payload.json_text);
+        setRenderedPlan(parsed.plan);
+        setComparison(compareReproductionPlanToGolden(parsed.plan));
+        setRuntimeRevision((value) => value + 1);
+        setPreviewSource("generated");
+        setJsonMessage(
+          `GLM JSON loaded and rendered through the CP.2A.5 choreography compiler${repairSuffix}. Golden + Generated Omni descriptions are starting automatically.`,
+        );
+        window.setTimeout(() => {
+          void runNemotronVideoDescriptions();
+        }, 0);
+      } else {
+        setJsonMessage("GLM returned JSON, but validation found errors. Edit it before rendering.");
+      }
     } catch (caught) {
       setGlmError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -443,8 +696,8 @@ export function CinematicProductionLab() {
             <strong>{previewSource === "golden" ? "Golden Lunch" : "Generated Lunch"}</strong>
           </div>
           <div style={segmentedStyle}>
-            <button type="button" onClick={() => setPreviewSource("golden")} style={segmentButtonStyle(previewSource === "golden")}>Golden</button>
-            <button type="button" onClick={() => setPreviewSource("generated")} style={segmentButtonStyle(previewSource === "generated")}>Generated</button>
+            <button type="button" disabled={isVisionComparing} onClick={() => setPreviewSource("golden")} style={segmentButtonStyle(previewSource === "golden")}>Golden</button>
+            <button type="button" disabled={isVisionComparing} onClick={() => setPreviewSource("generated")} style={segmentButtonStyle(previewSource === "generated")}>Generated</button>
           </div>
           <div style={compactStatsStyle}>
             <span>{resolvedAssetCount}/{benchmark.cast_slots.length} assets</span>
@@ -454,10 +707,11 @@ export function CinematicProductionLab() {
           </div>
         </section>
 
-        <section style={viewerCardStyle}>
+        <section style={viewerCardStyle} data-cinematic-capture-root="true">
           <CinematicProductionRuntimeCanvas
             selectedAssets={selectedAssets}
             isPlaying={isPlaying}
+            captureMode={isVisionComparing}
             seekRequest={seekRequest}
             inspectMode={inspectMode}
             onPlaybackTime={handleRuntimeTime}
@@ -533,8 +787,8 @@ export function CinematicProductionLab() {
               rows={2}
               style={instructionStyle}
             />
-            <button type="button" disabled={isGenerating} onClick={() => void generateWithGlm()} style={generateButtonStyle}>
-              {isGenerating ? "Generating…" : "Generate with GLM"}
+            <button type="button" disabled={isGenerating || isVisionComparing} onClick={() => void generateWithGlm()} style={generateButtonStyle}>
+              {isGenerating ? "Generating…" : isVisionComparing ? "Omni describing…" : "Generate with GLM"}
             </button>
           </div>
           {glmModel ? (
@@ -582,6 +836,73 @@ export function CinematicProductionLab() {
             validation={validation}
             comparison={comparison}
           />
+        </section>
+
+        <section style={visionCardStyle}>
+          <div style={workspaceHeaderStyle}>
+            <div style={{ display: "grid", gap: 4 }}>
+              <span style={eyebrowStyle}>Omni raw video descriptions · CP.2A.6G</span>
+              <strong>What does Omni actually see?</strong>
+              <span style={mutedStyle}>
+                Golden and Generated are sent to Omni independently. This view shows the full final assistant text from each video-perception call with no comparison score or critique layered on top.
+              </span>
+            </div>
+            <div style={visionHeaderActionsStyle}>
+              {visionModel ? <span style={mutedStyle}>{visionModel}</span> : null}
+              <button
+                type="button"
+                disabled={isVisionComparing || isGenerating || !validation?.ok}
+                onClick={() => void runNemotronVideoDescriptions()}
+                style={secondaryButtonStyle}
+              >
+                {isVisionComparing ? "Describing…" : "Re-run Omni descriptions"}
+              </button>
+            </div>
+          </div>
+
+          <div style={visionStatusStyle(isVisionComparing, Boolean(visionError))}>
+            <strong>
+              {isVisionComparing
+                ? "Automatic capture in progress"
+                : visionError
+                  ? "Description pass failed"
+                  : visionGoldenDescription && visionGeneratedDescription
+                    ? "Descriptions ready"
+                    : "Ready"}
+            </strong>
+            <span>{visionStatus}</span>
+            {isVisionComparing ? (
+              <span style={mutedStyle}>
+                Keep this tab visible while the existing 26-second runtime records. The Golden capture is cached for later description passes in this page session.
+              </span>
+            ) : null}
+          </div>
+
+          {visionError ? <div style={errorBoxStyle}>{visionError}</div> : null}
+
+          {visionGoldenDescription || visionGeneratedDescription ? (
+            <div style={visionDescriptionGridStyle}>
+              <article style={visionDescriptionCardStyle}>
+                <div style={visionDescriptionHeaderStyle}>
+                  <span style={eyebrowStyle}>Golden Lunch</span>
+                  <strong>Omni description</strong>
+                </div>
+                <pre style={visionDescriptionTextStyle}>
+                  {visionGoldenDescription || "No Golden description returned."}
+                </pre>
+              </article>
+
+              <article style={visionDescriptionCardStyle}>
+                <div style={visionDescriptionHeaderStyle}>
+                  <span style={eyebrowStyle}>Generated Lunch</span>
+                  <strong>Omni description</strong>
+                </div>
+                <pre style={visionDescriptionTextStyle}>
+                  {visionGeneratedDescription || "No Generated description returned."}
+                </pre>
+              </article>
+            </div>
+          ) : null}
         </section>
 
         <button type="button" onClick={() => setShowWorkbenchDetails((value) => !value)} style={advancedToggleStyle}>
@@ -671,6 +992,21 @@ const detailsGridStyle = { display: "grid", gridTemplateColumns: "repeat(3,minma
 const detailsStyle = { border: "1px solid rgba(255,255,255,.09)", borderRadius: 11, overflow: "hidden", background: "rgba(2,6,23,.45)" } as const;
 const summaryStyle = { cursor: "pointer", padding: 10, fontWeight: 800, fontSize: 12 } as const;
 const preStyle = { margin: 0, padding: 10, maxHeight: 300, overflow: "auto", whiteSpace: "pre-wrap", color: "#bfdbfe", fontSize: 11, lineHeight: 1.45 } as const;
+const visionCardStyle = { display: "grid", gap: 12, padding: 16, borderRadius: 18, background: "rgba(6,78,59,.12)", border: "1px solid rgba(52,211,153,.22)" } as const;
+const visionHeaderActionsStyle = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" } as const;
+function visionStatusStyle(active: boolean, failed: boolean) { return { display: "grid", gap: 4, padding: 12, borderRadius: 12, border: `1px solid ${failed ? "rgba(248,113,113,.35)" : active ? "rgba(34,211,238,.32)" : "rgba(74,222,128,.2)"}`, background: "rgba(2,6,23,.45)", color: failed ? "#fecaca" : "#f8fafc" } as const; }
+const visionDescriptionGridStyle = { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 } as const;
+const visionDescriptionCardStyle = { display: "grid", gap: 10, minWidth: 0, padding: 14, borderRadius: 14, background: "rgba(2,6,23,.54)", border: "1px solid rgba(255,255,255,.09)" } as const;
+const visionDescriptionHeaderStyle = { display: "grid", gap: 4 } as const;
+const visionDescriptionTextStyle = { ...preStyle, margin: 0, minHeight: 320, maxHeight: 680, overflow: "auto", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.55 } as const;
+const visionScoreGridStyle = { display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 8 } as const;
+const visionMetricStyle = { display: "grid", gap: 5, padding: 12, borderRadius: 12, background: "rgba(2,6,23,.52)", border: "1px solid rgba(255,255,255,.08)" } as const;
+const visionSummaryStyle = { display: "grid", gap: 5, padding: 12, borderRadius: 12, background: "rgba(15,23,42,.58)", border: "1px solid rgba(255,255,255,.08)", lineHeight: 1.55 } as const;
+const visionDifferenceGridStyle = { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 9 } as const;
+function visionDifferenceStyle(importance: "high" | "medium" | "low") { const border = importance === "high" ? "rgba(248,113,113,.3)" : importance === "medium" ? "rgba(250,204,21,.25)" : "rgba(74,222,128,.18)"; return { display: "grid", gap: 8, padding: 12, borderRadius: 12, border: `1px solid ${border}`, background: "rgba(2,6,23,.48)", lineHeight: 1.45 } as const; }
+const visionDifferenceHeaderStyle = { display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", color: "#dbeafe", fontSize: 12 } as const;
+const visionLabelStyle = { display: "inline-block", minWidth: 70, marginRight: 7, color: "#67e8f9", fontSize: 10, fontWeight: 900, letterSpacing: ".08em", textTransform: "uppercase" } as const;
+const visionStrengthStyle = { display: "grid", gap: 5, padding: 12, borderRadius: 12, border: "1px solid rgba(74,222,128,.18)", background: "rgba(20,83,45,.12)" } as const;
 const advancedToggleStyle = { justifySelf: "center", ...quietButtonStyle } as const;
 const advancedGridStyle = { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 12 } as const;
 const panelStyle = { display: "grid", alignContent: "start", gap: 9, padding: 14, borderRadius: 14, background: "rgba(15,23,42,.68)", border: "1px solid rgba(255,255,255,.09)", minWidth: 0 } as const;

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Bounds, Clone, Html, OrbitControls, useGLTF } from "@react-three/drei";
@@ -14,8 +15,8 @@ import type { ErrorInfo, ReactNode } from "react";
 import * as THREE from "three";
 
 import { AmbientCgLibraryLab } from "./ambientcg-library-lab";
-import { Cc0BatchImportLab } from "./cc0-batch-import-lab";
-import { CcByBatchImportLab } from "./cc-by-batch-import-lab";
+import { SmartAssetImportLab } from "./smart-asset-import-lab";
+import { AssetIdentityAuditLab } from "./asset-identity-audit-lab";
 
 type Vec3 = [number, number, number];
 
@@ -239,6 +240,7 @@ type LibraryResponse = {
   aliases_updated_from?: string[];
   updated_reference_files?: string[];
   moved_identity_files?: string[];
+  embedding_refresh_needed?: boolean;
   embedding_refresh_queued?: boolean;
   warnings?: string[];
   error?: string;
@@ -348,7 +350,7 @@ type EnrichmentQueueEntry = {
     | "running"
     | "completed"
     | "failed";
-  mode?: "full" | "embedding_only";
+  mode?: "full" | "vision_only" | "embedding_only";
   force: boolean;
   queued_at: string;
   started_at: string | null;
@@ -458,8 +460,8 @@ type ManualAcquisitionMode =
   | "blenderkit"
   | "trellis"
   | "glm"
-  | "cc0"
-  | "cc_by";
+  | "import"
+  | "identity";
 
 type ReviewView =
   | "all"
@@ -921,8 +923,7 @@ export function AssetLibraryLab({
   const [glmStyle, setGlmStyle] = useState("clean stylized");
   const [glmTargetExtentM, setGlmTargetExtentM] = useState("2");
   const [glmCreating, setGlmCreating] = useState(false);
-  const [cc0Importing, setCc0Importing] = useState(false);
-  const [ccByImporting, setCcByImporting] = useState(false);
+  const [assetImporting, setAssetImporting] = useState(false);
   const [licenseFilter, setLicenseFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
   const [refreshToken, setRefreshToken] = useState(0);
@@ -950,6 +951,7 @@ export function AssetLibraryLab({
     string | null
   >(null);
   const [identityDraft, setIdentityDraft] = useState<IdentityDraft | null>(null);
+  const [refreshIdentityEmbedding, setRefreshIdentityEmbedding] = useState(false);
   const [enrichmentAssetId, setEnrichmentAssetId] = useState<string | null>(null);
   const [geometryAssetId, setGeometryAssetId] =
     useState<string | null>(null);
@@ -1543,7 +1545,7 @@ export function AssetLibraryLab({
     const confirmationDetails =
       polyPizzaPublicSceneApproval
         ? [
-            "Continue only after verifying the stored Poly Pizza model page and creator.",
+            "Continue only after verifying the stored Poly Pizza model or known-bundle source page and creator.",
             "Confirm that the recorded CC0 or CC BY licence permits commercial use and redistribution.",
             "For CC BY, confirm that the generated creator credit is complete.",
             "Confirm that the model is generic or otherwise authorized and has no known third-party restrictions.",
@@ -1732,7 +1734,7 @@ export function AssetLibraryLab({
     }
 
     const confirmed = window.confirm(
-      `Rename asset ID "${asset.asset_id}" to "${nextAssetId}"?\n\nMyWay will update the registry, local embedding metadata, acquisition references, and saved scene references. Existing GLB, thumbnail, analysis-image, and R2 storage paths will remain unchanged because storage location is separate from asset identity.`,
+      `Rename asset ID "${asset.asset_id}" to "${nextAssetId}"?\n\nMyWay will migrate identity-bound model, thumbnail, source, analysis, and embedding artifacts when necessary, update saved references, verify new Cloudflare/R2 copies before switching authority, and preserve rollback copies until the registry update succeeds.`,
     );
 
     if (!confirmed) return;
@@ -1757,6 +1759,7 @@ export function AssetLibraryLab({
             action: "rename_asset_id",
             asset_id: asset.asset_id,
             next_asset_id: nextAssetId,
+            queue_embedding_refresh: refreshIdentityEmbedding,
           }),
         },
       );
@@ -1790,7 +1793,7 @@ export function AssetLibraryLab({
           : current,
       );
       setPromotionMessage(
-        `Asset ID renamed from ${asset.asset_id} to ${payload.asset.asset_id}. Embedding filename, metadata, and saved references were synchronized; model and thumbnail storage paths were preserved.`,
+        `Asset ID renamed from ${asset.asset_id} to ${payload.asset.asset_id}. Identity-bound storage, Cloudflare/R2 references, embedding metadata, and saved references were synchronized${payload.moved_identity_files?.length ? ` across ${payload.moved_identity_files.length} moved artifact(s)` : ""}.${payload.embedding_refresh_queued ? " A replacement embedding was queued." : payload.embedding_refresh_needed ? " The embedding is pending and can be refreshed later." : ""}`,
       );
       setRefreshToken(
         (value) => value + 1,
@@ -1879,6 +1882,7 @@ export function AssetLibraryLab({
               asset.asset_id,
             canonical_label:
               canonicalLabel,
+            queue_embedding_refresh: refreshIdentityEmbedding,
           }),
         },
       );
@@ -1910,7 +1914,7 @@ export function AssetLibraryLab({
           : current,
       );
       setPromotionMessage(
-        `Canonical label updated from ${payload.canonical_label_updated_from ?? currentCanonicalLabel} to ${payload.asset.verified_canonical_label ?? canonicalLabel}. The source name and technical asset ID were preserved.${payload.embedding_refresh_queued ? " A refreshed identity-aware embedding was queued automatically." : ""}`,
+        `Canonical label updated from ${payload.canonical_label_updated_from ?? currentCanonicalLabel} to ${payload.asset.verified_canonical_label ?? canonicalLabel}. The source name and technical asset ID were preserved.${payload.embedding_refresh_queued ? " A refreshed identity-aware embedding was queued." : payload.embedding_refresh_needed ? " The old embedding was marked pending and can be regenerated later." : ""}`,
       );
       setRefreshToken(
         (value) => value + 1,
@@ -2158,10 +2162,15 @@ export function AssetLibraryLab({
   }
 
   async function runEnrichmentAction(
-    action: "enrich_asset" | "backfill_next",
+    action:
+      | "enrich_asset"
+      | "analyze_vision"
+      | "refresh_embedding"
+      | "backfill_next",
   ) {
     const assetId = selectedAssetId;
-    if (action === "enrich_asset" && !assetId) return;
+    const needsAsset = action !== "backfill_next";
+    if (needsAsset && !assetId) return;
 
     setEnrichmentAssetId(assetId ?? "backfill");
     setPromotionMessage(null);
@@ -2174,8 +2183,14 @@ export function AssetLibraryLab({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
-            action === "enrich_asset"
-              ? { action, asset_id: assetId, force: true }
+            needsAsset
+              ? {
+                  action,
+                  asset_id: assetId,
+                  force:
+                    action === "enrich_asset" ||
+                    action === "analyze_vision",
+                }
               : { action },
           ),
         },
@@ -2211,7 +2226,11 @@ export function AssetLibraryLab({
 
       setPromotionMessage(
         payload.entry
-          ? "Asset enrichment was queued. Lightweight queue polling will refresh the library when it finishes."
+          ? action === "analyze_vision"
+            ? "Omni vision was queued without an embedding call. The embedding will remain pending until you request it separately."
+            : action === "refresh_embedding"
+              ? "Embedding-only refresh was queued. This action will not start Omni vision."
+              : "Asset enrichment was queued. Lightweight queue polling will refresh the library when it finishes."
           : "No pending asset currently needs backfill.",
       );
     } catch (caught) {
@@ -4441,7 +4460,7 @@ export function AssetLibraryLab({
           >
             <button
               data-active={manualAcquisitionMode === "blenderkit"}
-              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || cc0Importing || ccByImporting}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || assetImporting}
               onClick={() => setManualAcquisitionMode("blenderkit")}
               type="button"
             >
@@ -4449,7 +4468,7 @@ export function AssetLibraryLab({
             </button>
             <button
               data-active={manualAcquisitionMode === "trellis"}
-              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || cc0Importing || ccByImporting}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || assetImporting}
               onClick={() => setManualAcquisitionMode("trellis")}
               type="button"
             >
@@ -4457,27 +4476,27 @@ export function AssetLibraryLab({
             </button>
             <button
               data-active={manualAcquisitionMode === "glm"}
-              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || cc0Importing || ccByImporting}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || assetImporting}
               onClick={() => setManualAcquisitionMode("glm")}
               type="button"
             >
               Build with GLM 5.2
             </button>
             <button
-              data-active={manualAcquisitionMode === "cc0"}
-              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || cc0Importing || ccByImporting}
-              onClick={() => setManualAcquisitionMode("cc0")}
+              data-active={manualAcquisitionMode === "import"}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || assetImporting}
+              onClick={() => setManualAcquisitionMode("import")}
               type="button"
             >
-              Import CC0 GLB / bundle
+              Import Asset
             </button>
             <button
-              data-active={manualAcquisitionMode === "cc_by"}
-              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || cc0Importing || ccByImporting}
-              onClick={() => setManualAcquisitionMode("cc_by")}
+              data-active={manualAcquisitionMode === "identity"}
+              disabled={blendKitSearching || blendKitImporting || trellisCreating || glmCreating || assetImporting}
+              onClick={() => setManualAcquisitionMode("identity")}
               type="button"
             >
-              Import CC BY GLB
+              Identity Audit
             </button>
           </div>
 
@@ -4836,29 +4855,25 @@ export function AssetLibraryLab({
               </div>
               <p className="asset-library-trellis-warning">Best for geometric, mechanical, furniture, toy-like, symbolic, and educational objects. Organic or photorealistic requests may produce stylized approximations and remain pending review.</p>
             </form>
-          ) : manualAcquisitionMode === "cc_by" ? (
-            <CcByBatchImportLab
-              onImportComplete={(assetId) => {
-                setSelectedAssetId(assetId);
-                setReviewView("needs_review");
+          ) : manualAcquisitionMode === "identity" ? (
+            <AssetIdentityAuditLab
+              onChanged={() => {
                 setPromotionMessage(
-                  `${assetId} was imported from a manually downloaded CC BY GLB and placed in Needs review.`,
+                  "Asset identity changes were applied and authoritative storage was re-verified.",
                 );
                 setRefreshToken((value) => value + 1);
               }}
-              onRunningChange={setCcByImporting}
             />
           ) : (
-            <Cc0BatchImportLab
-              onImportComplete={(assetId) => {
-                setSelectedAssetId(assetId);
+            <SmartAssetImportLab
+              onBatchComplete={(result) => {
                 setReviewView("needs_review");
                 setPromotionMessage(
-                  `${assetId} was imported from a manually downloaded CC0 GLB and placed in Needs review.`,
+                  `Import pass complete: ${result.imported} newly imported, ${result.duplicate} already present, ${result.failed} failed. The library refreshed once after the batch.`,
                 );
                 setRefreshToken((value) => value + 1);
               }}
-              onRunningChange={setCc0Importing}
+              onRunningChange={setAssetImporting}
             />
           )}
         </section>
@@ -5216,6 +5231,46 @@ export function AssetLibraryLab({
                           >
                             scene: {asset.scene_review_status}
                           </span>
+                          <span
+                            className="asset-library-badge"
+                            data-positive={asset.appearance_profile?.status === "ready"}
+                            data-warning={asset.appearance_profile?.status !== "ready"}
+                            title={
+                              asset.appearance_profile?.status === "ready"
+                                ? "Omni vision analysis is ready."
+                                : asset.appearance_profile?.status === "failed"
+                                  ? "Omni vision analysis failed. Re-run Analyze asset before approval."
+                                  : "Omni vision analysis is pending. Run Analyze asset before approval."
+                            }
+                          >
+                            {asset.appearance_profile?.status === "ready"
+                              ? "◉ vision ready"
+                              : asset.appearance_profile?.status === "failed"
+                                ? "⚠ vision failed"
+                                : "◌ vision pending"}
+                          </span>
+                          <span
+                            className="asset-library-badge"
+                            data-positive={asset.appearance_embedding?.status === "ready"}
+                            data-warning={asset.appearance_embedding?.status !== "ready"}
+                            title={
+                              asset.appearance_embedding?.status === "ready"
+                                ? "Semantic appearance embedding is ready."
+                                : asset.appearance_embedding?.status === "failed"
+                                  ? "Embedding generation failed and can be retried without re-running vision."
+                                  : asset.appearance_profile?.status === "ready"
+                                    ? "Embedding is pending. Generate it separately when the embedding provider is available."
+                                    : "Embedding is waiting for vision because its source text includes the visual appearance profile."
+                            }
+                          >
+                            {asset.appearance_embedding?.status === "ready"
+                              ? "◉ embedding ready"
+                              : asset.appearance_embedding?.status === "failed"
+                                ? "⚠ embedding failed"
+                                : asset.appearance_profile?.status === "ready"
+                                  ? "◌ embedding pending"
+                                  : "◌ embedding waiting"}
+                          </span>
                         </div>
                       </div>
                     </button>
@@ -5429,6 +5484,23 @@ export function AssetLibraryLab({
                             : "Update canonical label"}
                         </button>
                       </div>
+                      <label className="asset-library-editor-wide asset-library-trellis-checkbox">
+                        <input
+                          checked={refreshIdentityEmbedding}
+                          onChange={(event) =>
+                            setRefreshIdentityEmbedding(event.target.checked)
+                          }
+                          type="checkbox"
+                        />
+                        <span>
+                          <strong>Refresh embedding after identity edits</strong>
+                          <small>
+                            Leave this off while the embedding provider is rate-limited.
+                            Technical and semantic edits still save; any stale embedding is
+                            marked pending and can be regenerated later.
+                          </small>
+                        </span>
+                      </label>
                       <label>
                         Aliases <small>comma separated</small>
                         <input
@@ -5624,7 +5696,7 @@ export function AssetLibraryLab({
                     <div className="asset-library-section-heading">
                       <div>
                         <strong>Appearance &amp; style analysis</strong>
-                        <small>Nemotron Nano 12B v2 VL · four standardized views</small>
+                        <small>Nemotron 3 Nano Omni 30B A3B · four standardized views</small>
                       </div>
                       <span
                         className="asset-library-badge"
@@ -5747,14 +5819,30 @@ export function AssetLibraryLab({
                         className="asset-library-button"
                         data-primary="true"
                         disabled={enrichmentAssetId === selectedAsset.asset_id}
-                        onClick={() => void runEnrichmentAction("enrich_asset")}
+                        onClick={() => void runEnrichmentAction("analyze_vision")}
                         type="button"
                       >
                         {enrichmentAssetId === selectedAsset.asset_id
                           ? "Queueing analysis…"
                           : selectedAsset.appearance_profile?.status === "ready"
-                            ? "Re-analyze asset"
-                            : "Analyze asset"}
+                            ? "Re-analyze vision"
+                            : "Analyze vision"}
+                      </button>
+                      <button
+                        className="asset-library-button"
+                        data-secondary="true"
+                        disabled={
+                          enrichmentAssetId === selectedAsset.asset_id ||
+                          selectedAsset.appearance_profile?.status !== "ready"
+                        }
+                        onClick={() => void runEnrichmentAction("refresh_embedding")}
+                        type="button"
+                      >
+                        {enrichmentAssetId === selectedAsset.asset_id
+                          ? "Queueing provider work…"
+                          : selectedAsset.appearance_embedding?.status === "ready"
+                            ? "Refresh embedding"
+                            : "Generate embedding"}
                       </button>
                       <button
                         className="asset-library-button"
@@ -5778,6 +5866,15 @@ export function AssetLibraryLab({
                         : ""}
                     </small>
                   </section>
+
+                  {selectedAsset.appearance_profile?.status !== "ready" ? (
+                    <div className="asset-library-trellis-warning">
+                      <strong>◌ Vision pending</strong>
+                      <span>
+                        Run Analyze vision and wait for Omni appearance analysis to finish before approving this asset for scene use.
+                      </span>
+                    </div>
+                  ) : null}
 
                   <div className="asset-library-maintenance-actions">
                     <button
@@ -5806,7 +5903,9 @@ export function AssetLibraryLab({
                         selectedAsset.status ===
                           "rejected" ||
                         selectedAsset.semantic_review_status !==
-                          "verified"
+                          "verified" ||
+                        selectedAsset.appearance_profile?.status !==
+                          "ready"
                       }
                       onClick={() => {
                         void approveSelectedAsset();

@@ -1,4 +1,5 @@
-export const MAX_MANUAL_GLB_BATCH_FILES = 50;
+
+export const MAX_MANUAL_GLB_BATCH_FILES = 200;
 
 export type ManualCcByLicenseKind =
   | "cc_by"

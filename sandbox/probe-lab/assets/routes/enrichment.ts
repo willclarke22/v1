@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   assetEnrichmentQueueSnapshot,
   queueAllAssetEnrichment,
+  queueAssetEmbeddingRefresh,
   queueAssetEnrichment,
   queueNextAssetEnrichment,
 } from "../enrichment/asset-enrichment-worker.server";
@@ -18,6 +19,35 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const action = typeof body.action === "string" ? body.action : "";
+
+    if (action === "analyze_vision") {
+      const assetId =
+        typeof body.asset_id === "string" ? body.asset_id.trim() : "";
+      if (!assetId) {
+        return NextResponse.json(
+          { ok: false, error: "asset_id is required." },
+          { status: 400 },
+        );
+      }
+      const entry = queueAssetEnrichment(assetId, {
+        force: body.force === true,
+        runEmbedding: false,
+      });
+      return NextResponse.json({ ok: true, entry });
+    }
+
+    if (action === "refresh_embedding") {
+      const assetId =
+        typeof body.asset_id === "string" ? body.asset_id.trim() : "";
+      if (!assetId) {
+        return NextResponse.json(
+          { ok: false, error: "asset_id is required." },
+          { status: 400 },
+        );
+      }
+      const entry = queueAssetEmbeddingRefresh(assetId);
+      return NextResponse.json({ ok: true, entry });
+    }
 
     if (action === "enrich_asset") {
       const assetId =

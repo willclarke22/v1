@@ -245,7 +245,7 @@ async function requestGlmContent(input: {
   messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
 }) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 135_000);
+  const timeout = setTimeout(() => controller.abort(), 300_000);
   try {
     const response = await fetch(`${input.endpoint}/chat/completions`, {
       method: "POST",
@@ -433,7 +433,7 @@ Especially verify:
       {
         ok: false,
         error: aborted
-          ? "GLM Lunch generation timed out during a 135-second generation/repair attempt."
+          ? "GLM Lunch generation timed out during a 300-second generation/repair attempt."
           : message,
       },
       { status: aborted ? 504 : 500 },

@@ -93,6 +93,8 @@ type RuntimeCanvasProps = {
   runtimeSampler?: CinematicRuntimeSampler;
   durationS?: number;
   runtimeRevision?: number;
+  /** CP.2A.6A: intentional movie capture may continue while the canvas is below the fold. */
+  captureMode?: boolean;
 };
 
 const roleDesiredMaxDimension: Record<AssetRole, number> = {
@@ -2945,6 +2947,13 @@ function RuntimeCanvasImpl(props: RuntimeCanvasProps) {
     };
   }, []);
 
+  // CP.2A.6A: ordinary preview playback still pauses off-screen and out of focus.
+  // During an intentional full-video capture, only document visibility remains a hard gate;
+  // otherwise scrolling down to the Generate/vision workspace would freeze the movie forever.
+  const capturePlaybackActive = props.captureMode
+    ? isDocumentVisible
+    : isViewportActive && isDocumentVisible && isWindowFocused;
+
   return (
     <div ref={shellRef} style={canvasShellStyle}>
       <Canvas
@@ -2960,7 +2969,7 @@ function RuntimeCanvasImpl(props: RuntimeCanvasProps) {
         <Suspense fallback={<Html center style={{ color: "white", fontSize: 12 }}>Loading cinematic stage…</Html>}>
           <StageScene
             {...props}
-            isViewportActive={isViewportActive && isDocumentVisible && isWindowFocused}
+            isViewportActive={capturePlaybackActive}
           />
         </Suspense>
       </Canvas>
@@ -2978,6 +2987,7 @@ export const CinematicProductionRuntimeCanvas = memo(
     previous.runtimeSampler === next.runtimeSampler &&
     previous.durationS === next.durationS &&
     previous.runtimeRevision === next.runtimeRevision &&
+    previous.captureMode === next.captureMode &&
     previous.onPlaybackTime === next.onPlaybackTime &&
     previous.onPlaybackEnded === next.onPlaybackEnded,
 );

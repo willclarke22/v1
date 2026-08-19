@@ -22,6 +22,9 @@ import {
   safeAssetId,
 } from "./normalize-asset-record";
 import {
+  prepareAssetIdentityStorageMigration,
+} from "./asset-identity-cloud-migration.server";
+import {
   ensureAssetDirectories,
   MYWAY_ASSET_LIBRARY_PROJECT_PATH,
   MYWAY_ASSET_REGISTRY_PROJECT_PATH,
@@ -478,6 +481,10 @@ export async function listMyWayAssets() {
 
 export async function registerMyWayAsset(
   raw: unknown,
+  options: {
+    autoEnrich?: boolean;
+    replaceMissingAssetId?: string | null;
+  } = {},
 ) {
   let asset =
     normalizeMyWayAssetRecord(raw);
@@ -501,10 +508,15 @@ export async function registerMyWayAsset(
     await loadMyWayAssetRegistry();
 
   // Dedupe BEFORE private-R2 staging.
+  const replaceMissingAssetId =
+    options.replaceMissingAssetId
+      ? safeAssetId(options.replaceMissingAssetId)
+      : null;
   const duplicateHash =
     asset.content_hash
       ? registry.assets.find(
           (candidate) =>
+            candidate.asset_id !== replaceMissingAssetId &&
             candidate.content_hash &&
             candidate.content_hash ===
               asset!.content_hash,
@@ -595,6 +607,7 @@ export async function registerMyWayAsset(
     existingIndex < 0;
 
   if (
+    options.autoEnrich !== false &&
     created &&
     asset.asset_type !== "primitive" &&
     asset.status !== "rejected"
@@ -932,6 +945,7 @@ export async function updateMyWayAssetProvenance(
 export async function renameMyWayAssetId(input: {
   assetId: string;
   nextAssetId: string;
+  queueEmbeddingRefresh?: boolean;
 }) {
   await ensureAssetDirectories();
 
@@ -993,6 +1007,11 @@ export async function renameMyWayAssetId(input: {
   }
 
   const current = registry.assets[index]!;
+  const storageMigration =
+    await prepareAssetIdentityStorageMigration({
+      asset: current,
+      nextAssetId,
+    });
   const previousVectorKey =
     current.appearance_embedding?.vector_key ??
     null;
@@ -1021,7 +1040,7 @@ export async function renameMyWayAssetId(input: {
           Record<string, unknown>
         >(previousVectorKey)
       : null;
-  const embeddingRefreshQueued =
+  const embeddingRefreshNeeded =
     Boolean(
       current.appearance_embedding &&
       (
@@ -1031,25 +1050,29 @@ export async function renameMyWayAssetId(input: {
             !previousDurableVector
       ),
     );
+  const embeddingRefreshQueued =
+    embeddingRefreshNeeded &&
+    input.queueEmbeddingRefresh !== false;
 
   const renamed: MyWayAssetRecord = {
     ...current,
+    ...storageMigration.assetPatch,
     asset_id: nextAssetId,
     appearance_embedding:
       current.appearance_embedding
         ? {
             ...current.appearance_embedding,
-            status: embeddingRefreshQueued
+            status: embeddingRefreshNeeded
               ? "pending"
               : current.appearance_embedding.status,
             vector_key: nextVectorKey,
-            source_text_hash: embeddingRefreshQueued
+            source_text_hash: embeddingRefreshNeeded
               ? null
               : current.appearance_embedding.source_text_hash,
-            embedded_at: embeddingRefreshQueued
+            embedded_at: embeddingRefreshNeeded
               ? null
               : current.appearance_embedding.embedded_at,
-            error: embeddingRefreshQueued
+            error: embeddingRefreshNeeded
               ? null
               : current.appearance_embedding.error,
           }
@@ -1061,12 +1084,20 @@ export async function renameMyWayAssetId(input: {
     validateMyWayAssetRecord(renamed);
 
   if (!validation.ok) {
+    await storageMigration.rollback().catch(
+      () => undefined,
+    );
     throw new Error(
       validation.errors.join("; "),
     );
   }
 
-  const referenceFiles = new Set<string>([
+  let mutations: JsonReferenceMutation[];
+  let workflowCloudMutations:
+    WorkflowCloudReferenceMutation[];
+
+  try {
+    const referenceFiles = new Set<string>([
     projectPath(
       MYWAY_MISSING_ASSET_QUEUE_PROJECT_PATH,
     ),
@@ -1100,6 +1131,9 @@ export async function renameMyWayAssetId(input: {
   const replacements = new Map<string, string>([
     [previousAssetId, nextAssetId],
   ]);
+  for (const [from, to] of storageMigration.replacements) {
+    replacements.set(from, to);
+  }
   if (
     previousVectorKey &&
     nextVectorKey &&
@@ -1111,8 +1145,8 @@ export async function renameMyWayAssetId(input: {
     );
   }
 
-  const mutations = (
-    await Promise.all(
+    mutations = (
+      await Promise.all(
       [...referenceFiles].map((filePath) =>
         collectJsonReferenceMutation(
           filePath,
@@ -1127,10 +1161,16 @@ export async function renameMyWayAssetId(input: {
       Boolean(mutation),
   );
 
-  const workflowCloudMutations =
-    await collectWorkflowCloudReferenceMutations(
-      replacements,
+    workflowCloudMutations =
+      await collectWorkflowCloudReferenceMutations(
+        replacements,
+      );
+  } catch (caught) {
+    await storageMigration.rollback().catch(
+      () => undefined,
     );
+    throw caught;
+  }
 
   const applied: JsonReferenceMutation[] =
     [];
@@ -1214,9 +1254,14 @@ export async function renameMyWayAssetId(input: {
     ) {
       await deleteDurableAssetJson(
         previousVectorKey,
-      );
+      ).catch(() => undefined);
     }
+
+    await storageMigration.commit();
   } catch (caught) {
+    await storageMigration.rollback().catch(
+      () => undefined,
+    );
     if (
       durableVectorCopied &&
       nextVectorKey
@@ -1283,11 +1328,17 @@ export async function renameMyWayAssetId(input: {
           `r2-source:${mutation.object_key}`,
       ),
     ],
-    moved_identity_files:
-      (vectorMoved || durableVectorCopied) &&
-      nextVectorKey
-        ? [nextVectorKey]
-        : [],
+    moved_identity_files: [
+      ...(
+        (vectorMoved || durableVectorCopied) &&
+        nextVectorKey
+          ? [nextVectorKey]
+          : []
+      ),
+      ...storageMigration.movedArtifacts,
+    ],
+    embedding_refresh_needed:
+      embeddingRefreshNeeded,
     embedding_refresh_queued:
       embeddingRefreshQueued,
   };
@@ -1296,6 +1347,7 @@ export async function renameMyWayAssetId(input: {
 export async function updateMyWayAssetCanonicalLabel(input: {
   assetId: string;
   canonicalLabel: string;
+  queueEmbeddingRefresh?: boolean;
 }) {
   const current = await getMyWayAsset(input.assetId);
 
@@ -1343,7 +1395,11 @@ export async function updateMyWayAssetCanonicalLabel(input: {
     },
   );
 
-  if (existingEmbedding) {
+  const embeddingRefreshQueued =
+    Boolean(existingEmbedding) &&
+    input.queueEmbeddingRefresh !== false;
+
+  if (embeddingRefreshQueued) {
     queueIdentityEmbeddingRefresh(
       asset.asset_id,
     );
@@ -1353,8 +1409,10 @@ export async function updateMyWayAssetCanonicalLabel(input: {
     asset,
     updated_from:
       previousCanonicalLabel,
-    embedding_refresh_queued:
+    embedding_refresh_needed:
       Boolean(existingEmbedding),
+    embedding_refresh_queued:
+      embeddingRefreshQueued,
   };
 }
 
