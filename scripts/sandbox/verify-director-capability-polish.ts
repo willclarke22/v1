@@ -19,7 +19,7 @@ function moment(id: string) {
 }
 
 const ids = DIRECTOR_CAPABILITIES.map((item) => item.id);
-assert(ids.length === 183, `Expected 183 capabilities, found ${ids.length}`);
+assert(ids.length === 184, `Expected 183 capabilities, found ${ids.length}`);
 assert(new Set(ids).size === ids.length, "Capability ids are not unique");
 
 for (const item of DIRECTOR_CAPABILITIES) {

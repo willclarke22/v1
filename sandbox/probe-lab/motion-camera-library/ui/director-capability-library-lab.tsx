@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import type { CSSProperties, ChangeEvent } from "react";
@@ -12,6 +14,15 @@ import {
   type DirectorCapabilityCategory,
   type DirectorCapabilitySupportLevel,
 } from "../director-capability-registry";
+import {
+  DIRECTOR_FILM_POLICIES,
+  DIRECTOR_PERCEPTUAL_CAPABILITIES,
+  DIRECTOR_PERCEPTUAL_CATEGORY_LABELS,
+  type DirectorFilmPolicy,
+  type DirectorPerceptualCapability,
+  type DirectorPerceptualCapabilityCategory,
+} from "../director-perceptual-capabilities";
+import { DirectorLevel1CapabilityVisualization } from "./director-level1-capability-visualization";
 import {
   buildDirectorCameraFidelityReport,
   type DirectorCameraFidelityReport,
@@ -62,8 +73,46 @@ type LibraryResponse = {
   error?: string;
 };
 
-type CategoryFilter = "all" | DirectorCapabilityCategory;
+type LibraryCategoryFilter =
+  | "all_levels"
+  | "level1_all"
+  | "level2_all"
+  | "level3_all"
+  | `level1:${DirectorPerceptualCapabilityCategory}`
+  | `level2:${DirectorCapabilityCategory}`;
 type SupportFilter = "all" | DirectorCapabilitySupportLevel;
+
+type DirectorLibraryEntry =
+  | {
+      key: string;
+      kind: "atomic";
+      id: string;
+      label: string;
+      group: string;
+      summary: string;
+      accent: string;
+      capability: DirectorCapability;
+    }
+  | {
+      key: string;
+      kind: "perceptual";
+      id: string;
+      label: string;
+      group: string;
+      summary: string;
+      accent: string;
+      capability: DirectorPerceptualCapability;
+    }
+  | {
+      key: string;
+      kind: "policy";
+      id: string;
+      label: string;
+      group: string;
+      summary: string;
+      accent: string;
+      policy: DirectorFilmPolicy;
+    };
 
 const STATUS_COLORS: Record<DirectorCapabilitySupportLevel, string> = {
   direct: "#22c55e",
@@ -285,6 +334,61 @@ function CapabilityCard({
   );
 }
 
+function HierarchyCapabilityCard({
+  entry,
+  selected,
+  onSelect,
+}: {
+  entry: DirectorLibraryEntry;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const dotColor =
+    entry.kind === "atomic"
+      ? STATUS_COLORS[entry.capability.compiler.threejs]
+      : entry.kind === "perceptual"
+        ? "#38bdf8"
+        : "#facc15";
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      style={{
+        ...capabilityCardStyle,
+        border: selected
+          ? `1px solid ${entry.accent}cc`
+          : "1px solid rgba(255,255,255,0.1)",
+        background: selected
+          ? `linear-gradient(145deg, ${entry.accent}20, rgba(2,6,23,0.92))`
+          : "rgba(2,6,23,0.68)",
+        boxShadow: selected ? `0 18px 60px ${entry.accent}18` : "none",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+        <div style={{ display: "grid", gap: 5, textAlign: "left" }}>
+          <span style={{ color: entry.accent, fontSize: 10, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            {entry.group}
+          </span>
+          <strong style={{ color: "white", fontSize: 15 }}>{entry.label}</strong>
+        </div>
+        <span
+          style={{
+            width: 9,
+            height: 9,
+            borderRadius: 999,
+            marginTop: 5,
+            background: dotColor,
+            boxShadow: `0 0 16px ${dotColor}`,
+          }}
+        />
+      </div>
+      <span style={{ ...mutedStyle, textAlign: "left", lineHeight: 1.5 }}>{entry.summary}</span>
+      <code style={capabilityIdStyle}>{entry.id}</code>
+    </button>
+  );
+}
+
 function JsonPanel({ title, value }: { title: string; value: unknown }) {
   const [open, setOpen] = useState(false);
   return (
@@ -312,7 +416,7 @@ function CameraFidelityEvidence({
     <div style={fidelityPanelStyle}>
       <div style={fidelityHeaderStyle}>
         <div style={{ display: "grid", gap: 5 }}>
-          <span style={eyebrowStyle}>Phase 1B controlled camera proof</span>
+          <span style={eyebrowStyle}>Phase 1B camera fidelity evidence</span>
           <strong style={{ fontSize: 16 }}>
             {report.fixture.replace(/_/g, " ")}
           </strong>
@@ -426,7 +530,7 @@ function ObjectMotionFidelityEvidence({
       <div style={fidelityHeaderStyle}>
         <div style={{ display: "grid", gap: 5 }}>
           <span style={eyebrowStyle}>
-            Phase 1B.4.1 controlled object-motion proof
+            Phase 1B.4.1 object-motion fidelity evidence
           </span>
           <strong style={{ fontSize: 16 }}>
             {report.fixture.replace(/_/g, " ")}
@@ -593,7 +697,12 @@ function RealAssetExecutionQualificationPanel({
         ),
     [assets],
   );
+  const [assetSearchQueries, setAssetSearchQueries] = useState<Record<string, string>>({});
   const statusMeta = REAL_ASSET_STATUS_META[report.execution_status];
+
+  useEffect(() => {
+    setAssetSearchQueries({});
+  }, [capability.id]);
 
   return (
     <div style={realAssetBenchStyle}>
@@ -636,33 +745,68 @@ function RealAssetExecutionQualificationPanel({
         </div>
       ) : (
         <div style={realAssetSelectorGridStyle}>
-          {resolvedRoles.map((role) => (
-            <label key={role.role} style={realAssetSelectorStyle}>
-              <span style={statLabelStyle}>{role.role.replace(/_/g, " ")}</span>
-              <select
-                value={roleAssetOverrides[role.role] ?? ""}
-                onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                  onRoleAssetOverride(role.role, event.target.value)
-                }
-                style={selectStyle}
-              >
-                <option value="">
-                  Auto-match · {role.asset?.display_name || role.asset?.canonical_label || "fallback actor"}
-                </option>
-                {loadable.map((asset) => (
-                  <option key={asset.asset_id} value={asset.asset_id}>
-                    {asset.display_name || asset.canonical_label} · {asset.asset_id}
+          {resolvedRoles.map((role) => {
+            const assetQuery = assetSearchQueries[role.role] ?? "";
+            const normalizedAssetQuery = normalized(assetQuery);
+            const selectedAssetId = roleAssetOverrides[role.role] ?? "";
+            const selectedAsset = selectedAssetId
+              ? loadable.find((asset) => asset.asset_id === selectedAssetId) ?? null
+              : null;
+            const matchingAssets = normalizedAssetQuery
+              ? loadable.filter((asset) =>
+                  assetSearchText(asset).includes(normalizedAssetQuery),
+                )
+              : loadable;
+            const visibleAssets =
+              selectedAsset &&
+              !matchingAssets.some((asset) => asset.asset_id === selectedAsset.asset_id)
+                ? [selectedAsset, ...matchingAssets]
+                : matchingAssets;
+
+            return (
+              <label key={role.role} style={realAssetSelectorStyle}>
+                <span style={statLabelStyle}>{role.role.replace(/_/g, " ")}</span>
+                <input
+                  type="search"
+                  value={assetQuery}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setAssetSearchQueries((current) => ({
+                      ...current,
+                      [role.role]: event.target.value,
+                    }))
+                  }
+                  placeholder={`Search ${loadable.length} Asset Library models…`}
+                  aria-label={`Search assets for ${role.role.replace(/_/g, " ")}`}
+                  style={inputStyle}
+                />
+                <select
+                  value={selectedAssetId}
+                  onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                    onRoleAssetOverride(role.role, event.target.value)
+                  }
+                  style={selectStyle}
+                >
+                  <option value="">
+                    Auto-match · {role.asset?.display_name || role.asset?.canonical_label || "fallback actor"}
                   </option>
-                ))}
-              </select>
-              <small style={mutedStyle}>
-                Effective:{" "}
-                {role.asset
-                  ? `${role.asset.display_name || role.asset.canonical_label} · ${role.asset.asset_id}`
-                  : "no loadable real asset"}
-              </small>
-            </label>
-          ))}
+                  {visibleAssets.map((asset) => (
+                    <option key={asset.asset_id} value={asset.asset_id}>
+                      {asset.display_name || asset.canonical_label} · {asset.asset_id}
+                    </option>
+                  ))}
+                </select>
+                <small style={mutedStyle}>
+                  {normalizedAssetQuery
+                    ? `${matchingAssets.length} of ${loadable.length} assets match · `
+                    : ""}
+                  Effective:{" "}
+                  {role.asset
+                    ? `${role.asset.display_name || role.asset.canonical_label} · ${role.asset.asset_id}`
+                    : "no loadable real asset"}
+                </small>
+              </label>
+            );
+          })}
         </div>
       )}
 
@@ -745,9 +889,10 @@ function RealAssetExecutionQualificationPanel({
   );
 }
 
-export function DirectorCapabilityLibraryLab() {
+function AtomicDirectorCapabilityLibraryLab() {
   const [selectedId, setSelectedId] = useState("over_shoulder");
-  const [category, setCategory] = useState<CategoryFilter>("all");
+  const [selectedEntryKey, setSelectedEntryKey] = useState("atomic:over_shoulder");
+  const [category, setCategory] = useState<LibraryCategoryFilter>("level2_all");
   const [support, setSupport] = useState<SupportFilter>("all");
   const [query, setQuery] = useState("");
   const [assets, setAssets] = useState<DirectorLibraryAsset[]>([]);
@@ -769,8 +914,19 @@ export function DirectorCapabilityLibraryLab() {
 
   const filtered = useMemo(() => {
     const needle = normalized(query);
+    const atomicCategory =
+      category.startsWith("level2:")
+        ? (category.slice("level2:".length) as DirectorCapabilityCategory)
+        : null;
+    const atomicLayerVisible =
+      category === "all_levels" ||
+      category === "level2_all" ||
+      category.startsWith("level2:");
+
+    if (!atomicLayerVisible) return [];
+
     return DIRECTOR_CAPABILITIES.filter((capability) => {
-      if (category !== "all" && capability.category !== category) return false;
+      if (atomicCategory && capability.category !== atomicCategory) return false;
       if (support !== "all" && capability.compiler.threejs !== support) return false;
       if (!needle) return true;
       const haystack = normalized(
@@ -786,6 +942,122 @@ export function DirectorCapabilityLibraryLab() {
       return haystack.includes(needle);
     });
   }, [category, query, support]);
+
+  const libraryEntries = useMemo<DirectorLibraryEntry[]>(
+    () => [
+      ...DIRECTOR_PERCEPTUAL_CAPABILITIES.map(
+        (capability): DirectorLibraryEntry => ({
+          key: `perceptual:${capability.id}`,
+          kind: "perceptual",
+          id: capability.id,
+          label: capability.short_label || capability.label,
+          group: `Level 1 · ${DIRECTOR_PERCEPTUAL_CATEGORY_LABELS[capability.category]}`,
+          summary: capability.visual_job,
+          accent: "#38bdf8",
+          capability,
+        }),
+      ),
+      ...DIRECTOR_CAPABILITIES.map(
+        (capability): DirectorLibraryEntry => ({
+          key: `atomic:${capability.id}`,
+          kind: "atomic",
+          id: capability.id,
+          label: capability.label,
+          group: `Level 2 · ${capability.group}`,
+          summary: capability.summary,
+          accent: CATEGORY_ACCENTS[capability.category],
+          capability,
+        }),
+      ),
+      ...DIRECTOR_FILM_POLICIES.map(
+        (policy): DirectorLibraryEntry => ({
+          key: `policy:${policy.id}`,
+          kind: "policy",
+          id: policy.id,
+          label: policy.label,
+          group: "Level 3 · Film-wide policies",
+          summary: policy.summary,
+          accent: "#facc15",
+          policy,
+        }),
+      ),
+    ],
+    [],
+  );
+
+  // Phase 1B.6.1.1: the displayed library total follows the live combined
+  // catalogue. Adding/removing a Level 1, Level 2, or Level 3 entry updates
+  // this count automatically; no UI total is hardcoded.
+  const totalCapabilityCount = libraryEntries.length;
+
+  const filteredLibraryEntries = useMemo(() => {
+    const needle = normalized(query);
+
+    return libraryEntries.filter((entry) => {
+      let categoryMatches = false;
+
+      if (category === "all_levels") categoryMatches = true;
+      else if (category === "level1_all") categoryMatches = entry.kind === "perceptual";
+      else if (category === "level2_all") categoryMatches = entry.kind === "atomic";
+      else if (category === "level3_all") categoryMatches = entry.kind === "policy";
+      else if (category.startsWith("level1:")) {
+        categoryMatches =
+          entry.kind === "perceptual" &&
+          entry.capability.category === category.slice("level1:".length);
+      } else if (category.startsWith("level2:")) {
+        categoryMatches =
+          entry.kind === "atomic" &&
+          entry.capability.category === category.slice("level2:".length);
+      }
+
+      if (!categoryMatches) return false;
+
+      if (
+        support !== "all" &&
+        (entry.kind !== "atomic" || entry.capability.compiler.threejs !== support)
+      ) {
+        return false;
+      }
+
+      if (!needle) return true;
+
+      const searchText =
+        entry.kind === "atomic"
+          ? [
+              entry.id,
+              entry.label,
+              entry.group,
+              entry.summary,
+              entry.capability.semantic_intent,
+              DIRECTOR_CATEGORY_LABELS[entry.capability.category],
+            ].join(" ")
+          : entry.kind === "perceptual"
+            ? [
+                entry.id,
+                entry.label,
+                entry.group,
+                entry.summary,
+                entry.capability.proof_strategy,
+                entry.capability.source.beat,
+                ...entry.capability.generalizes_to,
+              ].join(" ")
+            : [
+                entry.id,
+                entry.label,
+                entry.group,
+                entry.summary,
+                entry.policy.compiler_rule,
+                entry.policy.quality_signal,
+              ].join(" ");
+
+      return normalized(searchText).includes(needle);
+    });
+  }, [category, libraryEntries, query, support]);
+
+  const selectedLibraryEntry =
+    libraryEntries.find((entry) => entry.key === selectedEntryKey) ??
+    libraryEntries.find((entry) => entry.key === `atomic:${selected.id}`) ??
+    libraryEntries[0];
 
   const resolvedRoles = useMemo(
     () => resolveDemoRoles(selected, assets, roleAssetOverrides),
@@ -881,6 +1153,11 @@ export function DirectorCapabilityLibraryLab() {
   }
 
   useEffect(() => {
+    if (assetsLoaded || isLoadingAssets || assetError) return;
+    void loadAssets();
+  }, [assetError, assetsLoaded, isLoadingAssets]);
+
+  useEffect(() => {
     try {
       const raw = window.localStorage.getItem(DIRECTOR_AUDIT_STORAGE_KEY);
       if (raw) {
@@ -904,6 +1181,16 @@ export function DirectorCapabilityLibraryLab() {
       setSelectedId(filtered[0]?.id ?? DIRECTOR_CAPABILITIES[0].id);
     }
   }, [filtered, selectedId]);
+
+  useEffect(() => {
+    if (filteredLibraryEntries.some((entry) => entry.key === selectedEntryKey)) {
+      return;
+    }
+    const nextEntry = filteredLibraryEntries[0];
+    if (!nextEntry) return;
+    setSelectedEntryKey(nextEntry.key);
+    if (nextEntry.kind === "atomic") setSelectedId(nextEntry.capability.id);
+  }, [filteredLibraryEntries, selectedEntryKey]);
 
   function setRoleAssetOverride(role: string, assetId: string) {
     setRoleAssetOverrides((current) => {
@@ -950,7 +1237,7 @@ export function DirectorCapabilityLibraryLab() {
     const payload = {
       ...auditState,
       exported_at: new Date().toISOString(),
-      capability_count: DIRECTOR_CAPABILITIES.length,
+      capability_count: totalCapabilityCount,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: "application/json",
@@ -972,7 +1259,14 @@ export function DirectorCapabilityLibraryLab() {
     const index = filtered.findIndex((item) => item.id === selected.id);
     const current = index >= 0 ? index : 0;
     const next = (current + delta + filtered.length) % filtered.length;
-    setSelectedId(filtered[next].id);
+    const nextId = filtered[next].id;
+    setSelectedId(nextId);
+    setSelectedEntryKey(`atomic:${nextId}`);
+  }
+
+  function selectLibraryEntry(entry: DirectorLibraryEntry) {
+    setSelectedEntryKey(entry.key);
+    if (entry.kind === "atomic") setSelectedId(entry.capability.id);
   }
 
   const compiledExecution = {
@@ -1057,12 +1351,12 @@ export function DirectorCapabilityLibraryLab() {
       production_collision_solver_invoked: false,
       parameterized_composition_solver: true,
       sampled_preview_validation: demoValidation,
-      controlled_fidelity_fixture: cameraFidelity,
+      fidelity_fixture: cameraFidelity,
       visual_audit_fixture: auditDefinition,
-      note: "Phase 1B.2 separates deterministic controlled visual qualification from optional real-asset proof. The Asset Scene Builder still uses the same Director runtime against measured geometry and its production placement solver.",
+      note: "Deterministic fidelity metrics remain internal regression evidence. The Director page presents real-asset execution, while Asset Scene Builder retains measured geometry and production placement authority.",
     },
     object_motion: {
-      controlled_fidelity_fixture: objectMotionFidelity,
+      fidelity_fixture: objectMotionFidelity,
       qualification_foundation:
         objectMotionFidelity
           ? "Phase 1B.4.1 specialized fixture + sampled actor-state evidence"
@@ -1110,7 +1404,7 @@ export function DirectorCapabilityLibraryLab() {
       schema_version: DIRECTOR_VISUAL_AUDIT_VERSION,
       selected_review: selectedReview,
       reviewed_capabilities: reviewedCount,
-      total_capabilities: DIRECTOR_CAPABILITIES.length,
+      total_capabilities: totalCapabilityCount,
     },
     visibility_contract: {
       required_visible_roles: selected.demo.required_visible_roles,
@@ -1127,420 +1421,574 @@ export function DirectorCapabilityLibraryLab() {
     ],
   };
 
-  const visibleFiltered = useMemo(
-    () => filtered.slice(0, catalogLimit),
-    [catalogLimit, filtered],
+  const visibleFilteredEntries = useMemo(
+    () => filteredLibraryEntries.slice(0, catalogLimit),
+    [catalogLimit, filteredLibraryEntries],
   );
 
-  const groupedFiltered = useMemo(() => {
-    const groups = new Map<string, DirectorCapability[]>();
-    for (const capability of visibleFiltered) {
-      const key = capability.group;
-      const current = groups.get(key) ?? [];
-      current.push(capability);
-      groups.set(key, current);
+  const groupedFilteredEntries = useMemo(() => {
+    const groups = new Map<string, DirectorLibraryEntry[]>();
+    for (const entry of visibleFilteredEntries) {
+      const current = groups.get(entry.group) ?? [];
+      current.push(entry);
+      groups.set(entry.group, current);
     }
     return Array.from(groups.entries());
-  }, [visibleFiltered]);
+  }, [visibleFilteredEntries]);
+
+  const categoryShowsAtomicSupport =
+    category === "all_levels" ||
+    category === "level2_all" ||
+    category.startsWith("level2:");
 
   return (
     <main style={pageStyle}>
       <div style={shellStyle}>
-        <header style={headerStyle}>
-          <div>
-            <div style={eyebrowStyle}>MyWay Probe Lab · canonical director route</div>
-            <h1 style={titleStyle}>Director Capability Library</h1>
-            <p style={subtitleStyle}>
-              A visual proof environment for the Director actions GLM 5.2 may
-              use when it directs a scene. Phase 1B.5D keeps those actions distinct
-              from internal asset-qualification operators, pair-interaction lanes,
-              and Builder placement relations. Phase 1B.5E adds selectable real-asset
-              execution qualification while preserving the same shared runtime.
+        <header style={compactHeaderStyle}>
+          <div style={{ minWidth: 0 }}>
+            <div style={eyebrowStyle}>MyWay Probe Lab · Director Capability Library</div>
+            <h1 style={compactTitleStyle}>Director Capability Library</h1>
+            <p style={compactSubtitleStyle}>
+              One workbench for perceptual/composite direction, atomic execution,
+              and film-wide policies. The hierarchy lives in the catalogue instead
+              of splitting the library into separate pages.
             </p>
           </div>
-          <div style={principleStyle}>
-            <strong style={{ color: "#f8fafc" }}>Christopher Nolan Principle</strong>
-            <span>
-              Direct the visual argument first. MyWay then performs exact,
-              bounded, renderer-specific execution without silently changing what
-              the learner must notice.
-            </span>
-          </div>
-        </header>
 
-        <section style={statsGridStyle}>
-          <Stat label="Capabilities" value={DIRECTOR_CAPABILITIES.length} detail="one typed registry" />
-          <Stat label="Reviewed" value={reviewedCount} detail="persisted locally in audit mode" />
-          <Stat
-            label="Library assets"
-            value={isLoadingAssets ? "…" : assetsLoaded ? loadableAssetCount : "deferred"}
-            detail="deferred until real-asset execution proof"
-          />
-          <Stat label="WebGL canvases" value={1} detail="DPR 1 · demand-rendered · sleeps offscreen" />
-        </section>
+        </header>
 
         <section style={workbenchGridStyle}>
           <div style={viewerColumnStyle}>
-            <div style={viewerHeaderStyle}>
-              <div style={{ display: "grid", gap: 5 }}>
-                <span style={{ color: CATEGORY_ACCENTS[selected.category], fontSize: 11, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase" }}>
-                  {DIRECTOR_CATEGORY_LABELS[selected.category]} · {selected.group}
-                </span>
-                <h2 style={{ margin: 0, fontSize: "clamp(1.45rem, 2.5vw, 2.3rem)" }}>{selected.label}</h2>
-                <p style={{ ...mutedStyle, margin: 0, lineHeight: 1.55 }}>{selected.summary}</p>
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 8 }}>
-                <SupportBadge status={selected.compiler.threejs} />
-                <span style={badgeStyle}>Blender: {supportLabel(selected.compiler.blender)}</span>
-              </div>
-            </div>
-
-            <RealAssetExecutionQualificationPanel
-              capability={selected}
-              assets={assets}
-              assetsLoaded={assetsLoaded}
-              assetsLoading={isLoadingAssets}
-              assetError={assetError}
-              resolvedRoles={resolvedRoles}
-              roleAssetOverrides={roleAssetOverrides}
-              onRoleAssetOverride={setRoleAssetOverride}
-              onRequestAssets={() => void loadAssets()}
-              report={realAssetExecutionQualification}
-            />
-
-            <DirectorAuditViewer
-              capability={selected}
-              realRoles={resolvedRoles}
-              realAssetCount={loadableAssetCount}
-              realAssetsLoaded={assetsLoaded}
-              realAssetsLoading={isLoadingAssets}
-              realAssetError={assetError}
-              onRequestRealAssets={() => void loadAssets()}
-            />
-
-            <div style={auditPanelStyle}>
-              <div style={auditHeaderStyle}>
-                <div style={{ display: "grid", gap: 5 }}>
-                  <span style={eyebrowStyle}>Visual audit</span>
-                  <strong style={{ fontSize: 18 }}>
-                    {reviewedCount}/{DIRECTOR_CAPABILITIES.length} capabilities reviewed
-                  </strong>
-                  <span style={mutedStyle}>
-                    The controlled fixture is the qualification proof. Use real assets only
-                    to check whether the capability generalizes.
-                  </span>
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button type="button" onClick={() => selectRelativeCapability(-1)} style={buttonStyle}>
-                    Previous
-                  </button>
-                  <button type="button" onClick={() => selectRelativeCapability(1)} style={buttonStyle}>
-                    Next
-                  </button>
-                  <button type="button" onClick={exportAudit} style={buttonStyle}>
-                    Export audit JSON
-                  </button>
-                </div>
-              </div>
-
-              <div style={auditExpectationsStyle}>
-                <div style={{ display: "grid", gap: 6 }}>
-                  <span style={statLabelStyle}>Controlled fixture</span>
-                  <strong>{auditDefinition.fixture.replace(/_/g, " ")}</strong>
-                </div>
-                <div style={{ display: "grid", gap: 6 }}>
-                  <span style={statLabelStyle}>Expected behavior</span>
-                  {auditDefinition.expected_behavior.map((item) => (
-                    <span key={item} style={auditExpectationItemStyle}>
-                      <span aria-hidden="true">•</span>
-                      <span>{item}</span>
+            {selectedLibraryEntry.kind === "atomic" ? (
+              <>
+                <div style={viewerHeaderStyle}>
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <span
+                      style={{
+                        color: CATEGORY_ACCENTS[selected.category],
+                        fontSize: 11,
+                        fontWeight: 900,
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Level 2 · {DIRECTOR_CATEGORY_LABELS[selected.category]} · {selected.group}
                     </span>
-                  ))}
-                </div>
-              </div>
-
-              <div style={auditStatusRowStyle}>
-                {([
-                  ["pass", "Pass"],
-                  ["needs_work", "Needs work"],
-                  ["blocked", "Blocked / needs metadata"],
-                  ["approximate_ok", "Approximation acceptable"],
-                ] as const).map(([statusValue, label]) => (
-                  <button
-                    key={statusValue}
-                    type="button"
-                    onClick={() => updateSelectedReview({ status: statusValue })}
+                    <h2 style={{ margin: 0, fontSize: "clamp(1.45rem, 2.5vw, 2.3rem)" }}>
+                      {selected.label}
+                    </h2>
+                    <p style={{ ...mutedStyle, margin: 0, lineHeight: 1.55 }}>
+                      {selected.summary}
+                    </p>
+                  </div>
+                  <div
                     style={{
-                      ...auditStatusButtonStyle,
-                      ...(selectedReview.status === statusValue
-                        ? auditStatusButtonActiveStyle
-                        : null),
+                      display: "flex",
+                      flexWrap: "wrap",
+                      justifyContent: "flex-end",
+                      gap: 8,
                     }}
                   >
-                    {label}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateSelectedReview({
-                      status: "unreviewed",
-                      notes: "",
-                    })
-                  }
-                  style={auditStatusButtonStyle}
-                >
-                  Clear review
-                </button>
-              </div>
+                    <SupportBadge status={selected.compiler.threejs} />
+                    <span style={badgeStyle}>
+                      Blender: {supportLabel(selected.compiler.blender)}
+                    </span>
+                  </div>
+                </div>
 
-              <textarea
-                value={selectedReview.notes}
-                onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                  updateSelectedReview({ notes: event.target.value })
-                }
-                placeholder="Visual notes: what looks wrong, what should be different, or what metadata/runtime support is missing?"
-                style={auditNotesStyle}
-                rows={3}
-              />
+                <DirectorAuditViewer
+                  capability={selected}
+                  realRoles={resolvedRoles}
+                  realAssetCount={loadableAssetCount}
+                  realAssetsLoaded={assetsLoaded}
+                  realAssetsLoading={isLoadingAssets}
+                  realAssetError={assetError}
+                  onRequestRealAssets={() => void loadAssets()}
+                />
 
-              {auditDefinition.compare_capability_ids.length ? (
-                <div style={compareRowStyle}>
-                  <span style={statLabelStyle}>Compare with</span>
-                  {auditDefinition.compare_capability_ids.map((id) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setSelectedId(id)}
-                      style={compareButtonStyle}
+                <div style={visualClaimStyle}>
+                  <span style={statLabelStyle}>Visual claim</span>
+                  <strong>{selected.demo.narration}</strong>
+                  <span style={mutedStyle}>{selected.semantic_intent}</span>
+                </div>
+
+                <details style={compactDetailsStyle}>
+                  <summary style={compactSummaryStyle}>Real-asset proof & qualification</summary>
+                  <div style={compactDetailsBodyStyle}>
+                    <RealAssetExecutionQualificationPanel
+                      capability={selected}
+                      assets={assets}
+                      assetsLoaded={assetsLoaded}
+                      assetsLoading={isLoadingAssets}
+                      assetError={assetError}
+                      resolvedRoles={resolvedRoles}
+                      roleAssetOverrides={roleAssetOverrides}
+                      onRoleAssetOverride={setRoleAssetOverride}
+                      onRequestAssets={() => void loadAssets()}
+                      report={realAssetExecutionQualification}
+                    />
+                  </div>
+                </details>
+
+                <details style={compactDetailsStyle}>
+                  <summary style={compactSummaryStyle}>Review & visual audit</summary>
+                  <div style={compactDetailsBodyStyle}>
+                    <div style={auditPanelStyle}>
+                      <div style={auditHeaderStyle}>
+                        <div style={{ display: "grid", gap: 5 }}>
+                          <strong style={{ fontSize: 16 }}>
+                            {reviewedCount}/{DIRECTOR_CAPABILITIES.length} atomic capabilities reviewed
+                          </strong>
+                          <span style={mutedStyle}>
+                            Review the selected capability directly with real Asset Library actors.
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            onClick={() => selectRelativeCapability(-1)}
+                            style={buttonStyle}
+                          >
+                            Previous
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => selectRelativeCapability(1)}
+                            style={buttonStyle}
+                          >
+                            Next
+                          </button>
+                          <button type="button" onClick={exportAudit} style={buttonStyle}>
+                            Export audit JSON
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={auditExpectationsStyle}>
+                        <div style={{ display: "grid", gap: 6 }}>
+                          <span style={statLabelStyle}>Evaluation fixture</span>
+                          <strong>{auditDefinition.fixture.replace(/_/g, " ")}</strong>
+                        </div>
+                        <div style={{ display: "grid", gap: 6 }}>
+                          <span style={statLabelStyle}>Expected behavior</span>
+                          {auditDefinition.expected_behavior.map((item) => (
+                            <span key={item} style={auditExpectationItemStyle}>
+                              <span aria-hidden="true">•</span>
+                              <span>{item}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={auditStatusRowStyle}>
+                        {([
+                          ["pass", "Pass"],
+                          ["needs_work", "Needs work"],
+                          ["blocked", "Blocked / needs metadata"],
+                          ["approximate_ok", "Approximation acceptable"],
+                        ] as const).map(([statusValue, label]) => (
+                          <button
+                            key={statusValue}
+                            type="button"
+                            onClick={() => updateSelectedReview({ status: statusValue })}
+                            style={{
+                              ...auditStatusButtonStyle,
+                              ...(selectedReview.status === statusValue
+                                ? auditStatusButtonActiveStyle
+                                : null),
+                            }}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateSelectedReview({
+                              status: "unreviewed",
+                              notes: "",
+                            })
+                          }
+                          style={auditStatusButtonStyle}
+                        >
+                          Clear review
+                        </button>
+                      </div>
+
+                      <textarea
+                        value={selectedReview.notes}
+                        onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                          updateSelectedReview({ notes: event.target.value })
+                        }
+                        placeholder="Visual notes…"
+                        style={auditNotesStyle}
+                        rows={3}
+                      />
+
+                      {auditDefinition.compare_capability_ids.length ? (
+                        <div style={compareRowStyle}>
+                          <span style={statLabelStyle}>Compare with</span>
+                          {auditDefinition.compare_capability_ids.map((id) => (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedId(id);
+                                setSelectedEntryKey(`atomic:${id}`);
+                              }}
+                              style={compareButtonStyle}
+                            >
+                              {id.replace(/_/g, " ")}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </details>
+
+                <details style={compactDetailsStyle}>
+                  <summary style={compactSummaryStyle}>Advanced inspector & diagnostics</summary>
+                  <div style={advancedDetailsBodyStyle}>
+                    <div style={compactInspectorHeaderStyle}>
+                      <div style={{ display: "grid", gap: 6 }}>
+                        <span style={eyebrowStyle}>Capability inspector</span>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <strong style={{ fontSize: 20 }}>{selected.label}</strong>
+                          <code style={selectedIdStyle}>{selected.id}</code>
+                        </div>
+                      </div>
+                      <div style={supportMatrixStyle}>
+                        <div>
+                          <span>Three.js</span>
+                          <SupportBadge status={selected.compiler.threejs} />
+                        </div>
+                        <div>
+                          <span>Blender</span>
+                          <SupportBadge status={selected.compiler.blender} />
+                        </div>
+                        <div>
+                          <span>Compiler</span>
+                          <code>{selected.compiler.compiler_id}</code>
+                        </div>
+                      </div>
+                    </div>
+
+                    {cameraFidelity ? <CameraFidelityEvidence report={cameraFidelity} /> : null}
+                    {objectMotionFidelity ? (
+                      <ObjectMotionFidelityEvidence report={objectMotionFidelity} />
+                    ) : null}
+
+                    <div style={inspectorGridStyle}>
+                      <JsonPanel title="Director instruction" value={selected.director_instruction} />
+                      <JsonPanel
+                        title="Capability authority path"
+                        value={{
+                          schema_version: DIRECTOR_CAPABILITY_AUTHORITY_SCHEMA_VERSION,
+                          layers: DIRECTOR_CAPABILITY_AUTHORITY_LAYERS,
+                          selected_capability_path: capabilityAuthorityPath,
+                        }}
+                      />
+                      <JsonPanel title="Compiled preview execution" value={compiledExecution} />
+                      <JsonPanel title="Scene state continuity" value={sceneStateContinuity} />
+                      <JsonPanel title="Validation diagnostics" value={diagnostics} />
+                    </div>
+
+                    <div style={honestyStyle}>
+                      <strong>Authority boundary</strong>
+                      <span>
+                        Director labels are semantic language. Asset operators and pair
+                        interactions qualify execution; final measured placement and
+                        physical collision remain Builder authority.
+                      </span>
+                    </div>
+                  </div>
+                </details>
+              </>
+            ) : selectedLibraryEntry.kind === "perceptual" ? (
+              <>
+                <div style={viewerHeaderStyle}>
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <span
+                      style={{
+                        color: "#38bdf8",
+                        fontSize: 11,
+                        fontWeight: 900,
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                      }}
                     >
-                      {id.replace(/_/g, " ")}
-                    </button>
-                  ))}
+                      Level 1 · Perceptual / Composite ·{" "}
+                      {DIRECTOR_PERCEPTUAL_CATEGORY_LABELS[
+                        selectedLibraryEntry.capability.category
+                      ]}
+                    </span>
+                    <h2 style={{ margin: 0, fontSize: "clamp(1.45rem, 2.5vw, 2.3rem)" }}>
+                      {selectedLibraryEntry.capability.label}
+                    </h2>
+                    <p style={{ ...mutedStyle, margin: 0, lineHeight: 1.55 }}>
+                      {selectedLibraryEntry.capability.visual_job}
+                    </p>
+                  </div>
+                  <span style={badgeStyle}>
+                    {selectedLibraryEntry.capability.status.replace(/_/g, " ")}
+                  </span>
                 </div>
-              ) : null}
-            </div>
 
-            {cameraFidelity ? (
-              <CameraFidelityEvidence report={cameraFidelity} />
-            ) : null}
-            {objectMotionFidelity ? (
-              <ObjectMotionFidelityEvidence report={objectMotionFidelity} />
-            ) : null}
+                <DirectorLevel1CapabilityVisualization capability={selectedLibraryEntry.capability} />
 
-            <div style={narrationStyle}>
-              <span style={eyebrowStyle}>Demo narration / visual claim</span>
-              <strong>{selected.demo.narration}</strong>
-              <span style={mutedStyle}>{selected.semantic_intent}</span>
-            </div>
-
-            <div style={roleGridStyle}>
-              {resolvedRoles.map((role) => (
-                <div key={role.role} style={roleCardStyle}>
-                  <span style={statLabelStyle}>{role.role.replace(/_/g, " ")}</span>
-                  <strong>{role.asset?.display_name || role.asset?.canonical_label || "Declared fallback actor"}</strong>
-                  <small style={mutedStyle}>
-                    {role.asset
-                      ? `${role.asset.asset_id} · ${role.asset.license_kind}${role.matched_concept ? ` · matched ${role.matched_concept}` : ""}`
-                      : "No browser-loadable reviewed asset was available for this role."}
-                  </small>
+                <div style={perceptualOverviewStyle}>
+                  <div style={compactInfoCardStyle}>
+                    <span style={statLabelStyle}>Visual proof strategy</span>
+                    <strong>{selectedLibraryEntry.capability.proof_strategy}</strong>
+                    <span style={mutedStyle}>{selectedLibraryEntry.capability.summary}</span>
+                  </div>
+                  <div style={compactInfoCardStyle}>
+                    <span style={statLabelStyle}>Composition</span>
+                    <strong>{selectedLibraryEntry.capability.phases.join(" → ")}</strong>
+                    <span style={mutedStyle}>
+                      Atomic Director capabilities:{" "}
+                      {selectedLibraryEntry.capability.atomic_capability_ids.join(", ")}
+                    </span>
+                  </div>
+                  <div style={compactInfoCardStyle}>
+                    <span style={statLabelStyle}>Reference evidence</span>
+                    <strong>{selectedLibraryEntry.capability.source.beat}</strong>
+                    <span style={mutedStyle}>
+                      {selectedLibraryEntry.capability.source.film} ·{" "}
+                      {selectedLibraryEntry.capability.source.time_range}
+                    </span>
+                  </div>
                 </div>
-              ))}
-            </div>
+
+                <div style={visualClaimStyle}>
+                  <span style={statLabelStyle}>Non-hardcoding rule</span>
+                  <strong>Semantic roles and perceptual constraints are authoritative.</strong>
+                  <span style={mutedStyle}>
+                    Exact production coordinates remain geometry/directability-derived;
+                    Golden Lunch coordinates are reference evidence, not runtime inputs.
+                  </span>
+                </div>
+
+                <details style={compactDetailsStyle}>
+                  <summary style={compactSummaryStyle}>Capability rules & qualification</summary>
+                  <div style={advancedDetailsBodyStyle}>
+                    <div style={compactInfoCardStyle}>
+                      <span style={statLabelStyle}>Hard rules</span>
+                      {selectedLibraryEntry.capability.hard_rules.map((item) => (
+                        <span key={item} style={mutedStyle}>• {item}</span>
+                      ))}
+                    </div>
+                    <div style={compactInfoCardStyle}>
+                      <span style={statLabelStyle}>Qualification</span>
+                      {selectedLibraryEntry.capability.qualification.map((item) => (
+                        <span key={item.id} style={mutedStyle}>
+                          • {item.kind}: {item.requirement}
+                        </span>
+                      ))}
+                    </div>
+                    <div style={compactInfoCardStyle}>
+                      <span style={statLabelStyle}>Generalizes to</span>
+                      <span style={mutedStyle}>
+                        {selectedLibraryEntry.capability.generalizes_to.join(" · ")}
+                      </span>
+                    </div>
+                  </div>
+                </details>
+              </>
+            ) : (
+              <>
+                <div style={viewerHeaderStyle}>
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <span
+                      style={{
+                        color: "#facc15",
+                        fontSize: 11,
+                        fontWeight: 900,
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Level 3 · Film-wide policy
+                    </span>
+                    <h2 style={{ margin: 0, fontSize: "clamp(1.45rem, 2.5vw, 2.3rem)" }}>
+                      {selectedLibraryEntry.policy.label}
+                    </h2>
+                    <p style={{ ...mutedStyle, margin: 0, lineHeight: 1.55 }}>
+                      {selectedLibraryEntry.policy.summary}
+                    </p>
+                  </div>
+                  <code style={selectedIdStyle}>{selectedLibraryEntry.policy.id}</code>
+                </div>
+
+                <div style={perceptualOverviewStyle}>
+                  <div style={compactInfoCardStyle}>
+                    <span style={statLabelStyle}>Compiler rule</span>
+                    <strong>{selectedLibraryEntry.policy.compiler_rule}</strong>
+                  </div>
+                  <div style={compactInfoCardStyle}>
+                    <span style={statLabelStyle}>Quality signal</span>
+                    <strong>{selectedLibraryEntry.policy.quality_signal}</strong>
+                  </div>
+                </div>
+
+                <div style={visualClaimStyle}>
+                  <span style={statLabelStyle}>Hierarchy role</span>
+                  <strong>Applied across compatible capability compositions.</strong>
+                  <span style={mutedStyle}>
+                    Policies shape continuity and readability without becoming a
+                    separate page or a hardcoded shot timeline.
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
           <aside style={capabilitySidebarStyle}>
             <div style={sidebarControlsStyle}>
-              <div style={{ display: "grid", gap: 6 }}>
+              <div style={{ display: "grid", gap: 4 }}>
                 <span style={eyebrowStyle}>Visible capabilities</span>
-                <strong style={{ fontSize: 22 }}>{filtered.length} available</strong>
+                <strong style={{ fontSize: 22 }}>
+                  {totalCapabilityCount} capabilities
+                </strong>
                 <span style={mutedStyle}>
-                  Only {Math.min(catalogLimit, filtered.length)} cards are mounted at once.
-                  Search or filter before loading more.
+                  {filteredLibraryEntries.length} match the current filters · showing{" "}
+                  {Math.min(catalogLimit, filteredLibraryEntries.length)} at once
                 </span>
               </div>
 
               <input
                 value={query}
-                onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
-                placeholder="Search reveal, orbit, facing, shadow…"
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setQuery(event.target.value)
+                }
+                placeholder="Search capabilities…"
                 style={inputStyle}
               />
 
-              <div style={sidebarFilterGridStyle}>
+              <div
+                style={
+                  categoryShowsAtomicSupport
+                    ? sidebarFilterGridStyle
+                    : { display: "grid", gap: 8 }
+                }
+              >
                 <select
                   value={category}
-                  onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                    setCategory(event.target.value as CategoryFilter)
-                  }
+                  onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                    const nextCategory = event.target.value as LibraryCategoryFilter;
+                    setCategory(nextCategory);
+                    if (
+                      nextCategory === "level1_all" ||
+                      nextCategory === "level3_all" ||
+                      nextCategory.startsWith("level1:")
+                    ) {
+                      setSupport("all");
+                    }
+                  }}
                   style={selectStyle}
                 >
-                  <option value="all">All categories</option>
-                  {DIRECTOR_CAPABILITY_CATEGORIES.map((item) => (
-                    <option key={item} value={item}>
-                      {DIRECTOR_CATEGORY_LABELS[item]}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={support}
-                  onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                    setSupport(event.target.value as SupportFilter)
-                  }
-                  style={selectStyle}
-                >
-                  <option value="all">All Three.js support</option>
-                  <option value="direct">Direct</option>
-                  <option value="compound">Compound</option>
-                  <option value="approximate">Approximate</option>
-                  <option value="declared">Declared</option>
-                </select>
-              </div>
+                  <option value="all_levels">All levels · {totalCapabilityCount}</option>
 
-              <button
-                type="button"
-                onClick={() => void loadAssets()}
-                style={buttonStyle}
-                disabled={isLoadingAssets}
-              >
-                {isLoadingAssets
-                  ? "Loading assets…"
-                  : assetsLoaded
-                    ? "Refresh optional Asset Library"
-                    : "Load optional Asset Library"}
-              </button>
-              {assetError ? <div style={errorStyle}>{assetError}</div> : null}
+                  <optgroup label={`Level 1 · Perceptual / Composite · ${DIRECTOR_PERCEPTUAL_CAPABILITIES.length}`}>
+                    <option value="level1_all">All Level 1 capabilities</option>
+                    {Object.keys(DIRECTOR_PERCEPTUAL_CATEGORY_LABELS).map((item) => {
+                      const perceptualCategory = item as DirectorPerceptualCapabilityCategory;
+                      return (
+                        <option key={item} value={`level1:${item}`}>
+                          {DIRECTOR_PERCEPTUAL_CATEGORY_LABELS[perceptualCategory]}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+
+                  <optgroup label={`Level 2 · Atomic Execution · ${DIRECTOR_CAPABILITIES.length}`}>
+                    <option value="level2_all">All Level 2 capabilities</option>
+                    {DIRECTOR_CAPABILITY_CATEGORIES.map((item) => (
+                      <option key={item} value={`level2:${item}`}>
+                        {DIRECTOR_CATEGORY_LABELS[item]}
+                      </option>
+                    ))}
+                  </optgroup>
+
+                  <optgroup label={`Level 3 · Film-wide Policies · ${DIRECTOR_FILM_POLICIES.length}`}>
+                    <option value="level3_all">All Level 3 policies</option>
+                  </optgroup>
+                </select>
+
+                {categoryShowsAtomicSupport ? (
+                  <select
+                    value={support}
+                    onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                      setSupport(event.target.value as SupportFilter)
+                    }
+                    style={selectStyle}
+                  >
+                    <option value="all">All Three.js support</option>
+                    <option value="direct">Direct</option>
+                    <option value="compound">Compound</option>
+                    <option value="approximate">Approximate</option>
+                    <option value="declared">Declared</option>
+                  </select>
+                ) : null}
+              </div>
             </div>
 
             <div style={sidebarCatalogueStyle}>
-              {groupedFiltered.length ? (
-                groupedFiltered.map(([group, capabilities]) => (
+              {groupedFilteredEntries.length ? (
+                groupedFilteredEntries.map(([group, entries]) => (
                   <div key={group} style={sidebarGroupStyle}>
-                    <h3 style={{ margin: 0, fontSize: 13, color: "#cbd5e1" }}>{group}</h3>
+                    <h3 style={{ margin: 0, fontSize: 12, color: "#cbd5e1" }}>
+                      {group}
+                    </h3>
                     <div style={sidebarCapabilityListStyle}>
-                      {capabilities.map((capability) => (
-                        <CapabilityCard
-                          key={capability.id}
-                          capability={capability}
-                          selected={capability.id === selected.id}
-                          onSelect={() => setSelectedId(capability.id)}
+                      {entries.map((entry) => (
+                        <HierarchyCapabilityCard
+                          key={entry.key}
+                          entry={entry}
+                          selected={entry.key === selectedLibraryEntry.key}
+                          onSelect={() => selectLibraryEntry(entry)}
                         />
                       ))}
                     </div>
                   </div>
                 ))
               ) : (
-                <div style={viewerMessageStyle}>No capabilities match the current filters.</div>
+                <div style={viewerMessageStyle}>
+                  No capabilities match the current filters.
+                </div>
               )}
-              {catalogLimit < filtered.length ? (
+
+              {catalogLimit < filteredLibraryEntries.length ? (
                 <button
                   type="button"
-                  onClick={() => setCatalogLimit((value) => value + INITIAL_CATALOG_LIMIT)}
+                  onClick={() =>
+                    setCatalogLimit((value) => value + INITIAL_CATALOG_LIMIT)
+                  }
                   style={buttonStyle}
                 >
-                  Load {Math.min(INITIAL_CATALOG_LIMIT, filtered.length - catalogLimit)} more
+                  Load{" "}
+                  {Math.min(
+                    INITIAL_CATALOG_LIMIT,
+                    filteredLibraryEntries.length - catalogLimit,
+                  )}{" "}
+                  more
                 </button>
               ) : null}
             </div>
           </aside>
         </section>
-
-        <section style={inspectorSectionStyle}>
-          <div style={inspectorHeaderStyle}>
-            <div style={{ display: "grid", gap: 8 }}>
-              <span style={eyebrowStyle}>Capability inspector</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <h2 style={{ margin: 0, fontSize: 28 }}>{selected.label}</h2>
-                <code style={selectedIdStyle}>{selected.id}</code>
-              </div>
-              <p style={{ ...mutedStyle, margin: 0, lineHeight: 1.55, maxWidth: 1000 }}>
-                GLM receives the semantic contract and supported capability IDs,
-                not renderer code. Phase 1B.2 keeps the catalogue static while a
-                lightweight isolated audit viewer exercises the compiled direction.
-                Phase 1B.4.2 exposes the deterministic Universal Motion Program
-                underneath qualified actor-motion canaries without adding WebGL work.
-                Phase 1B.4.4 exposes immutable incoming/outgoing scene state
-                so continuity can be inspected without mutable playback history.
-                Phase 1B.4.5 composes predeclared actors into coordinated assembly,
-                separation, containment, connection, merge, split, and scatter recipes.
-                Phase 1B.4.6 separates Fill/Drain/Accumulate quantities and
-                Flow/Emit carrier transport from rigid actor transforms. Phase
-                1B.5D then names the authority boundary: Director actions describe
-                intent, asset operators qualify real-asset evidence, pair lanes
-                qualify compatibility, and Builder placement owns final measured fit.
-              </p>
-            </div>
-
-            <div style={supportMatrixStyle}>
-              <div><span>Three.js</span><SupportBadge status={selected.compiler.threejs} /></div>
-              <div><span>Blender</span><SupportBadge status={selected.compiler.blender} /></div>
-              <div><span>Fallback</span><code>{selected.compiler.fallback_capability_id ?? "none"}</code></div>
-              <div><span>Compiler</span><code>{selected.compiler.compiler_id}</code></div>
-            </div>
-          </div>
-
-          <div style={inspectorGridStyle}>
-            <JsonPanel title="1. Director instruction" value={selected.director_instruction} />
-            <JsonPanel
-              title="1B. Phase 1B.5D capability authority path"
-              value={{
-                schema_version: DIRECTOR_CAPABILITY_AUTHORITY_SCHEMA_VERSION,
-                layers: DIRECTOR_CAPABILITY_AUTHORITY_LAYERS,
-                selected_capability_path: capabilityAuthorityPath,
-                interpretation: capabilityAuthorityPath
-                  ? "Mapped Director action. Internal operator/pair/placement names are implementation roles, not alternate Director commands."
-                  : "No asset-authority mapping is required for this capability in Phase 1B.5D.",
-              }}
-            />
-            <JsonPanel title="2. Compiled preview execution" value={compiledExecution} />
-            {cameraFidelity ? (
-              <JsonPanel title="3. Controlled camera fidelity evidence" value={cameraFidelity} />
-            ) : null}
-            {objectMotionFidelity ? (
-              <JsonPanel
-                title="3. Controlled object-motion fidelity evidence"
-                value={objectMotionFidelity}
-              />
-            ) : null}
-            {objectMotionFidelity ? (
-              <JsonPanel
-                title="4. Universal Motion Program execution"
-                value={{
-                  selected_actor_program: objectMotionFidelity.motion_program,
-                  unnamed_generality_proof: unnamedMotionGeneralityProof,
-                }}
-              />
-            ) : null}
-            <JsonPanel
-              title={objectMotionFidelity ? "5. Scene state continuity" : "4. Scene state continuity"}
-              value={sceneStateContinuity}
-            />
-            <JsonPanel
-              title={
-                objectMotionFidelity
-                  ? "6. Validation and promotion diagnostics"
-                  : cameraFidelity
-                    ? "5. Validation and promotion diagnostics"
-                    : "5. Validation and promotion diagnostics"
-              }
-              value={diagnostics}
-            />
-          </div>
-
-          <div style={honestyStyle}>
-            <strong>Important boundary</strong>
-            <span>
-              This library visually proves composable V2 direction. Director
-              action labels are the semantic language; Directable Asset operators
-              and pair interactions are internal qualification mechanisms. Final
-              placement, stability, and physical collision authority remains in the
-              Asset Scene Builder, which consumes the same Director language.
-            </span>
-          </div>
-        </section>
       </div>
     </main>
   );
+
 }
 
 
@@ -1612,10 +2060,97 @@ const realAssetProofCardStyle: CSSProperties = {
   background: "rgba(2,6,23,0.66)",
 };
 
+
+export function DirectorCapabilityLibraryLab() {
+  return <AtomicDirectorCapabilityLibraryLab />;
+}
+
+
+const compactHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 18,
+  padding: "4px 2px 2px",
+};
+
+const compactTitleStyle: CSSProperties = {
+  margin: "5px 0 5px",
+  fontSize: "clamp(2rem, 3.4vw, 3.6rem)",
+  lineHeight: 1,
+  letterSpacing: "-0.04em",
+};
+
+const compactSubtitleStyle: CSSProperties = {
+  margin: 0,
+  maxWidth: 900,
+  color: "rgba(226,232,240,0.66)",
+  lineHeight: 1.55,
+  fontSize: 14,
+};
+
+const visualClaimStyle: CSSProperties = {
+  display: "grid",
+  gap: 5,
+  padding: "11px 13px",
+  borderRadius: 14,
+  border: "1px solid rgba(125,211,252,0.12)",
+  background: "rgba(14,116,144,0.07)",
+  lineHeight: 1.5,
+};
+
+const compactDetailsStyle: CSSProperties = {
+  borderRadius: 14,
+  border: "1px solid rgba(255,255,255,0.09)",
+  background: "rgba(2,6,23,0.62)",
+  overflow: "hidden",
+};
+
+const compactSummaryStyle: CSSProperties = {
+  cursor: "pointer",
+  padding: "11px 13px",
+  fontWeight: 850,
+  color: "#dbeafe",
+};
+
+const compactDetailsBodyStyle: CSSProperties = {
+  padding: "0 11px 11px",
+};
+
+const advancedDetailsBodyStyle: CSSProperties = {
+  display: "grid",
+  gap: 12,
+  padding: "0 11px 11px",
+};
+
+const compactInspectorHeaderStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) minmax(260px, 0.42fr)",
+  gap: 12,
+  alignItems: "start",
+};
+
+const perceptualOverviewStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+  gap: 10,
+};
+
+const compactInfoCardStyle: CSSProperties = {
+  display: "grid",
+  alignContent: "start",
+  gap: 7,
+  padding: 13,
+  borderRadius: 14,
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(15,23,42,0.52)",
+  lineHeight: 1.5,
+};
+
 const pageStyle: CSSProperties = {
   minHeight: "100vh",
   color: "white",
-  padding: "min(3vw, 30px)",
+  padding: "min(2.2vw, 24px)",
   background:
     "radial-gradient(circle at 12% 0%, rgba(14,165,233,0.2), transparent 28%), radial-gradient(circle at 88% 8%, rgba(249,115,22,0.14), transparent 25%), linear-gradient(180deg, #020617, #030712 42%, #020617)",
 };
@@ -1624,7 +2159,7 @@ const shellStyle: CSSProperties = {
   width: "min(1760px, 100%)",
   margin: "0 auto",
   display: "grid",
-  gap: 22,
+  gap: 14,
 };
 
 const headerStyle: CSSProperties = {
@@ -2149,7 +2684,7 @@ const auditStatusButtonStyle: CSSProperties = {
 };
 
 const auditStatusButtonActiveStyle: CSSProperties = {
-  borderColor: "rgba(167,139,250,0.68)",
+  border: "1px solid rgba(167,139,250,0.68)",
   background: "rgba(124,58,237,0.2)",
   color: "#f5f3ff",
 };
@@ -2185,3 +2720,4 @@ const compareButtonStyle: CSSProperties = {
   fontSize: 10,
   fontWeight: 800,
 };
+

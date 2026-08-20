@@ -643,11 +643,11 @@ const supportCounts = DIRECTOR_CAPABILITIES.reduce(
   },
 );
 assert(
-  DIRECTOR_CAPABILITIES.length === 183,
+  DIRECTOR_CAPABILITIES.length === 184,
   "Phase 1B.5 changed the semantic capability catalog size.",
 );
 assert(
-  supportCounts.direct === 101 &&
+  supportCounts.direct === 102 &&
     supportCounts.compound === 65 &&
     supportCounts.approximate === 15 &&
     supportCounts.declared === 2,

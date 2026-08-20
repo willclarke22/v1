@@ -474,7 +474,7 @@ const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
 assert(
   JSON.stringify(supportCounts) ===
     JSON.stringify({
-      direct: 101,
+      direct: 102,
       compound: 65,
       approximate: 15,
       declared: 2,

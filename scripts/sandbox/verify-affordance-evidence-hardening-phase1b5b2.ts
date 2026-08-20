@@ -536,8 +536,8 @@ const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
   {},
 );
 assert(
-  DIRECTOR_CAPABILITIES.length === 183 &&
-    supportCounts.direct === 101 &&
+  DIRECTOR_CAPABILITIES.length === 184 &&
+    supportCounts.direct === 102 &&
     supportCounts.compound === 65 &&
     supportCounts.approximate === 15 &&
     supportCounts.declared === 2,

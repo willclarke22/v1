@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Line } from "@react-three/drei";
@@ -1730,6 +1731,8 @@ export function DirectorShotLightingRig({
   const spotlight = intents.has("spotlight_subject");
   const warmCool = intents.has("warm_cool_contrast");
   const exposureShift = intents.has("exposure_shift");
+  // highlight_subject is a renderer-owned silhouette treatment, not a light.
+  // Do not synthesize a spotlight here; actor renderers own the tight outline.
 
   return (
     <>
@@ -1896,3 +1899,4 @@ export function DirectorShotPathGuide({
     </group>
   );
 }
+

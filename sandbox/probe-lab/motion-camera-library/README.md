@@ -1,4 +1,68 @@
+
+
+
 # Director Capability Library
+
+
+## Phase 1B.6 — Hierarchical Director capabilities
+
+The Director Capability Library is now the single authority for both low-level execution vocabulary and higher-level perceptual cinematography.
+
+The hierarchy is:
+
+```text
+perceptual / composite Director capability
+→ stable atomic Director capabilities
+→ geometry + directability authority
+→ Motion Program / camera runtime
+→ Three.js
+```
+
+Five film-wide policies sit across compatible compositions rather than behaving like one more camera/motion primitive.
+
+The seven Golden Lunch extractions previously explored in the temporary Cinematic Motif Library have moved here as **perceptual/composite Director capabilities**:
+
+- `agent_approach_contact_response_retreat`
+- `arrive_settle_present_depart`
+- `overlapping_attention_handoff`
+- `occlusion_to_parallax_discovery`
+- `context_to_hero_resolution`
+- `recap_sweep`
+- `action_consequence_reframe`
+
+The first five remain the initial cross-asset qualification set.
+
+### Extraction rule: visual intent, not Golden coordinates
+
+Reference footage is evidence for reusable visual grammar, not a source of production coordinates. Perceptual/composite capabilities preserve:
+
+- semantic actor roles;
+- perceptual job / proof strategy;
+- phase grammar;
+- normalized parameters;
+- hard visual rules;
+- measurable qualification targets;
+- fallbacks;
+- links to existing atomic Director capability IDs;
+- shared film-policy requirements.
+
+They do **not** preserve Golden Lunch asset IDs, world-space staging coordinates, or copied camera keyframes as production authority. The controlled WebGL proof may use normalized role-space fixtures, but real production execution must derive exact contact, clearance, staging, framing, occlusion, and camera rails from the selected Asset Library geometry/directability and fail closed when a role cannot qualify.
+
+### Reference-video growth loop
+
+```text
+excellent reference footage
+→ identify the perceptual job
+→ extract an asset-independent capability
+→ controlled proof
+→ unrelated real-asset proof
+→ measurable qualification
+→ human visual review
+→ promote into Director authority
+```
+
+This preserves the useful Motif experiment without maintaining a second Motif Library route or a second directing architecture.
+
 
 The canonical page route is now:
 
@@ -145,14 +209,14 @@ The Director Capability Library is now optimized for repeated visual qualificati
 rather than continuous showcase playback.
 
 - The selected capability uses one isolated audit viewer. Playback progress lives
-  inside that viewer, so the 183-card catalogue does not rerender on every clock
+  inside that viewer, so the capability catalogue does not rerender on every clock
   tick.
 - The Canvas uses DPR 1, demand rendering, no shadows by default, no role labels
   by default, and sleeps while offscreen or while the browser tab is hidden.
-- The Asset Library is not fetched on page load. Controlled procedural fixtures
-  are the default qualification proof; reviewed GLBs are loaded only when the
-  reviewer explicitly requests a real-asset generalization check.
-- Catalogue cards mount in bounded batches instead of mounting all 183 at once.
+- On the canonical real-asset-only workbench, reviewed Asset Library data is now requested automatically
+  when a capability viewer needs it. Internal deterministic fixtures remain
+  regression-only evidence and are not exposed as a page mode.
+- Catalogue cards mount in bounded batches instead of mounting the full library at once.
 - Inspector JSON bodies mount only when their disclosure panel is opened.
 - Human review is persisted in browser localStorage with `pass`, `needs_work`,
   `blocked`, and `approximate_ok` states plus free-text notes.
@@ -461,3 +525,34 @@ Important boundaries remain unchanged:
   later camera-convergence work;
 - the 183-capability semantic catalog and support classifications are unchanged.
 
+## Phase 1B.6.3 — orientation-general Level 1 proof + Golden highlight
+
+- Added `highlight_subject` as the 184th Level 2 atomic Director capability, derived from the Golden Lunch subject emphasis/highlight behavior.
+- The seven Level 1 visualizations can rotate their normalized semantic relationship frame around Y, proving they are not tied to a single authored world axis.
+- Real-asset proof may auto-fill reviewed defaults, but each semantic role remains searchable and switchable after the default is chosen.
+- Level 1 actor emphasis now produces a visible browser-proof halo/outline treatment while the shared scene lighting runtime uses subject-tracked light; production renderers remain free to compile the same semantic intent into a higher-quality outline/rim treatment.
+
+
+## Phase 1B.6.4 — Directional variants + asset facing + Golden outline
+
+Level 1 visual proofs now separate three concerns that were previously conflated:
+
+1. **Directional capability variants** — the semantic action/camera path can be instantiated from different sides and angles without rotating the whole scene. Approach, arrival, handoff, hero resolution, and consequence reframing expose side/angle controls; parallax and recap expose reversible path/order controls.
+2. **Asset-facing correction** — each real Asset Library role can receive an independent yaw correction after binding so a soldier, animal, chair, or other model can present the correct side without changing the semantic movement path.
+3. **Golden-style subject highlight** — the temporary Level 1 halo/floor-ring proof is retired. `highlight_subject` is represented as a tight high-contrast silhouette outline around the emphasized actor, matching the visual grammar observed in Golden Lunch rather than approximating emphasis as a volume or tracking spotlight.
+
+These remain audit controls, not authored production coordinates. Production chooses direction, camera side, and asset-facing corrections from geometry/directability and composition constraints.
+
+
+
+## Phase 1B.6.4.2 — Real-asset-only canonical workbench
+
+The canonical Director Capability Library no longer exposes a Controlled proof mode.
+Level 1 and Level 2 visualizations load reviewed Asset Library actors and execute the
+selected capability directly against those bindings. Searchable role rebinding,
+directional variants, asset-facing correction, Inspect playback, visual audit state,
+and internal deterministic regression fixtures remain available without presenting a
+proxy-geometry mode on the page.
+
+Internal audit fixtures are retained as regression evidence and compiler canaries; they
+are not a user-selectable visualization mode on the canonical Director page.

@@ -1,3 +1,4 @@
+
 import type {
   DirectorBehaviour,
   DirectorBlockingRelation,
@@ -236,6 +237,7 @@ export const DIRECTOR_LIGHTING_RUNTIME_COVERAGE = {
   backlit: coverage("lighting_rig", "shared", "Uses shared backlight/key placement."),
   rim_lit: coverage("lighting_rig", "explicit", "Raises rim/back directional light."),
   spotlight_subject: coverage("lighting_rig", "explicit", "Adds a spotlight rig."),
+  highlight_subject: coverage("geometry_or_renderer_layer", "presentation_contract", "Requests a tight renderer-owned silhouette outline on the emphasized actor; it must not be approximated as a halo volume or spotlight."),
   warm_cool_contrast: coverage("lighting_rig", "explicit", "Uses warm/cool key and fill colors."),
   preserve_shadow: coverage("lighting_rig", "shared", "Uses the shared backlit/shadow-preserving setup."),
   motivated_source: coverage("lighting_rig", "explicit", "Tracks a point light to the motivated source actor."),
@@ -313,3 +315,4 @@ export function directorCameraMovementRuntimeAlias(
   }
   return alias;
 }
+

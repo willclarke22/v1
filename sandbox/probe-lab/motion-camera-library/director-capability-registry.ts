@@ -1,3 +1,5 @@
+
+
 import type {
   DirectorCameraMovement,
   DirectorEvent,
@@ -652,6 +654,7 @@ const lightingSeeds = [
   ["backlit", "Backlit", "Place the main source behind the subject to reveal outline and depth."],
   ["rim_lit", "Rim lit", "Add a narrow edge light to separate the subject from the background."],
   ["spotlight_subject", "Spotlight subject", "Concentrate illumination on the active subject while dimming competitors."],
+  ["highlight_subject", "Highlight subject", "Temporarily add a tight high-contrast silhouette outline to the active subject, matching the Golden Lunch emphasis grammar without adding a halo volume or moving the actor."],
   ["warm_cool_contrast", "Warm / cool contrast", "Separate roles using contrasting light temperatures."],
   ["preserve_shadow", "Preserve shadow", "Keep a cast shadow readable because it carries part of the explanation."],
   ["motivated_source", "Motivated source", "Tie the visible light to a scene actor such as a lamp, fire, screen, or glowing process."],
@@ -1570,3 +1573,19 @@ export function directorCapabilityDemoMoment(capability: DirectorCapability): Di
     success_observation: shot.success_observation ?? capability.demo.narration,
   };
 }
+
+// Phase 1B.6.3 extends the historical 183 atomic entries with the Golden-derived highlight_subject capability while exposing
+// higher-level perceptual/composite Director capability authority from the same
+// motion-camera-library module family.
+export {
+  DIRECTOR_FILM_POLICIES,
+  DIRECTOR_PERCEPTUAL_CAPABILITIES,
+  DIRECTOR_PERCEPTUAL_CAPABILITY_VERSION,
+  DIRECTOR_PERCEPTUAL_CATEGORY_LABELS,
+  FIRST_BUILD_PERCEPTUAL_CAPABILITY_IDS,
+  type DirectorFilmPolicy,
+  type DirectorPerceptualCapability,
+  type DirectorPerceptualCapabilityCategory,
+  type DirectorPerceptualCapabilityStatus,
+} from "./director-perceptual-capabilities";
+

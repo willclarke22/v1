@@ -586,7 +586,7 @@ for (const phrase of [
 }
 
 assert(
-  DIRECTOR_CAPABILITIES.length === 183,
+  DIRECTOR_CAPABILITIES.length === 184,
   "Phase 1B.5C.2 must not change the 183-capability Director catalog.",
 );
 

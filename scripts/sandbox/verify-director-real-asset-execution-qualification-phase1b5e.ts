@@ -120,7 +120,7 @@ assert(
 );
 
 assert(
-  DIRECTOR_CAPABILITIES.length === 183,
+  DIRECTOR_CAPABILITIES.length === 184,
   `Phase 1B.5E changed the 183-capability registry: ${DIRECTOR_CAPABILITIES.length}.`,
 );
 const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
@@ -132,7 +132,7 @@ const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
   {},
 );
 assert(
-  supportCounts.direct === 101 &&
+  supportCounts.direct === 102 &&
     supportCounts.compound === 65 &&
     supportCounts.approximate === 15 &&
     supportCounts.declared === 2,
@@ -142,18 +142,22 @@ assert(
 const library = source(
   "sandbox/probe-lab/motion-camera-library/ui/director-capability-library-lab.tsx",
 );
+// Phase 1B.6.1 deliberately simplified the visible Director page. Protect the
+// Phase 1B.5E execution contract by checking structural wiring instead of
+// requiring historical headings/debug labels to remain visible.
 for (const marker of [
-  "Phase 1B.5D capability authority path",
-  "Phase 1B.5E · real-asset execution qualification",
   "roleAssetOverrides",
   "buildDirectorRealAssetExecutionQualification",
+  "RealAssetExecutionQualificationPanel",
   "Load Asset Library for real-asset proof",
-  "Phase 1B.5E qualification report JSON",
+  "Real-asset proof & qualification",
+  "real_asset_execution_qualification",
+  "pair_relationship_activation_in_this_phase: false",
   "pair relationships remain proposed",
 ]) {
   assert(
     library.includes(marker),
-    `Director Capability Library is missing Phase 1B.5E marker: ${marker}.`,
+    `Director Capability Library is missing Phase 1B.5E execution wiring: ${marker}.`,
   );
 }
 assert(
@@ -243,5 +247,5 @@ console.log(
   "Real-asset directability is propagated into the shared Director runtime; pair relationships remain proposed and Builder validation authority is unchanged.",
 );
 console.log(
-  "183-capability support distribution and historical Phase 1B.5B.1/B.2 + Phase 1B.5D regression markers remain protected.",
+  "183 atomic-capability support distribution and the Phase 1B.5B.1/B.2 + Phase 1B.5D architectural contracts remain protected without freezing historical page copy.",
 );

@@ -251,7 +251,7 @@ assert(
 );
 
 assert(
-  DIRECTOR_CAPABILITIES.length === 183,
+  DIRECTOR_CAPABILITIES.length === 184,
   `Phase 1B.4.2 must preserve the 183-capability Director catalog; found ${DIRECTOR_CAPABILITIES.length}.`,
 );
 const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
@@ -263,7 +263,7 @@ const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
   {},
 );
 assert(
-  supportCounts.direct === 101 &&
+  supportCounts.direct === 102 &&
     supportCounts.compound === 65 &&
     supportCounts.approximate === 15 &&
     supportCounts.declared === 2,

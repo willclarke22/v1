@@ -1,3 +1,4 @@
+
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -19,7 +20,7 @@ function source(relativePath: string) {
 }
 
 const ids = new Set(DIRECTOR_CAPABILITIES.map((capability) => capability.id));
-assert(DIRECTOR_CAPABILITIES.length === 183, "Phase 1B.2 expects the current 183-capability registry.");
+assert(DIRECTOR_CAPABILITIES.length === 184, "Phase 1B.2 expects the current 184-capability atomic registry.");
 
 for (const capability of DIRECTOR_CAPABILITIES) {
   const definition = directorVisualAuditDefinition(capability);
@@ -74,10 +75,11 @@ for (const marker of [
   "myway_director_visual_audit_phase1b2_v1",
   "Export audit JSON",
   "INITIAL_CATALOG_LIMIT = 36",
-  "filtered.slice(0, catalogLimit)",
+  "visibleFilteredEntries",
+  "filteredLibraryEntries.slice(0, catalogLimit)",
   "localStorage",
-  "Only {Math.min(catalogLimit, filtered.length)} cards are mounted at once",
-  "Controlled fixture",
+  "Math.min(catalogLimit, filteredLibraryEntries.length)",
+  "Evaluation fixture",
   "Expected behavior",
   "Approximation acceptable",
 ]) {
@@ -99,7 +101,8 @@ const viewer = source(
   "sandbox/probe-lab/motion-camera-library/ui/director-audit-viewer.tsx",
 );
 for (const marker of [
-  'type PreviewMode = "controlled" | "real_assets"',
+  'fixtureMode="real_assets"',
+  "Real-asset proof",
   'frameloop="demand"',
   "dpr={1}",
   'powerPreference: "low-power"',
@@ -109,13 +112,18 @@ for (const marker of [
   "window.setInterval",
   "showRoleLabels",
   "showCameraPath",
-  "no GLB required",
+  "browser-loadable assets",
 ]) {
   assert(
     viewer.includes(marker),
     `Isolated Director audit viewer is missing performance marker: ${marker}.`,
   );
 }
+assert(
+  !viewer.includes("Controlled proof") &&
+    !viewer.includes('type PreviewMode = "controlled" | "real_assets"'),
+  "Canonical atomic audit viewer must expose real-asset execution only.",
+);
 
 const preview = source(
   "sandbox/probe-lab/motion-camera-library/ui/director-capability-preview.tsx",
@@ -142,7 +150,7 @@ const readme = source(
 for (const marker of [
   "Phase 1B.2 visual audit harness",
   "DPR 1",
-  "Asset Library is not fetched on page load",
+  "reviewed Asset Library data is now requested automatically",
   "persisted in browser localStorage",
   "exported as JSON",
 ]) {
@@ -154,7 +162,8 @@ for (const marker of [
 
 console.log("Director visual audit harness Phase 1B.2 verification passed.");
 console.log(`Audit version: ${DIRECTOR_VISUAL_AUDIT_VERSION}.`);
-console.log(`Capabilities with controlled audit definitions: ${DIRECTOR_CAPABILITIES.length}.`);
+console.log(`Capabilities with internal audit definitions: ${DIRECTOR_CAPABILITIES.length}.`);
 console.log(`Fixture families: ${DIRECTOR_AUDIT_FIXTURE_KINDS.length}.`);
 console.log("Playback is isolated from the catalogue; Canvas is demand-rendered at DPR 1 and sleeps offscreen/hidden.");
-console.log("Audit review state is locally persisted and exportable; real GLBs are opt-in only.");
+console.log("Audit review state is locally persisted and exportable; the canonical page executes reviewed real GLBs.");
+

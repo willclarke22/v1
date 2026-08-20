@@ -542,7 +542,7 @@ assert(
 // Capability evidence: IDs/support labels remain unchanged while the seven
 // object-motion capabilities leave the old redundancy bucket.
 assert(
-  DIRECTOR_CAPABILITIES.length === 183,
+  DIRECTOR_CAPABILITIES.length === 184,
   `Director capability count drifted: ${DIRECTOR_CAPABILITIES.length}.`,
 );
 const distribution = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
@@ -556,7 +556,7 @@ const distribution = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
 assert(
   JSON.stringify(distribution) ===
     JSON.stringify({
-      direct: 101,
+      direct: 102,
       compound: 65,
       approximate: 15,
       declared: 2,

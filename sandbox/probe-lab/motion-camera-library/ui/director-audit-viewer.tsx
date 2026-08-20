@@ -1,18 +1,12 @@
+
 "use client";
 
 import { Canvas } from "@react-three/fiber";
 import type { ChangeEvent, CSSProperties } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type {
-  DirectorBlockingCue,
-  DirectorCapability,
-} from "../director-capability-registry";
-import {
-  directorControlledAuditRoleLayout,
-  directorVisualAuditDefinition,
-  type DirectorAuditFixtureKind,
-} from "../director-visual-audit";
+import type { DirectorCapability } from "../director-capability-registry";
+import { directorVisualAuditDefinition } from "../director-visual-audit";
 import {
   DirectorCapabilityPreview,
   type ResolvedDirectorRole,
@@ -28,30 +22,6 @@ type DirectorAuditViewerProps = {
   onRequestRealAssets: () => void;
 };
 
-type PreviewMode = "controlled" | "real_assets";
-
-function controlledRolesFor(
-  capability: DirectorCapability,
-  fixtureKind: DirectorAuditFixtureKind,
-): ResolvedDirectorRole[] {
-  return capability.demo.asset_roles.map((role) => {
-    const layout = directorControlledAuditRoleLayout(fixtureKind, role.role, capability.id);
-    const blocking: DirectorBlockingCue = {
-      role: role.role,
-      position: [...layout.position],
-      rotation: [...layout.rotation],
-      target_extent_m: layout.target_extent_m,
-    };
-
-    return {
-      role: role.role,
-      asset: null,
-      blocking,
-      matched_concept: "controlled audit fixture",
-    };
-  });
-}
-
 export function DirectorAuditViewer({
   capability,
   realRoles,
@@ -65,12 +35,6 @@ export function DirectorAuditViewer({
     () => directorVisualAuditDefinition(capability),
     [capability],
   );
-  const controlledRoles = useMemo(
-    () => controlledRolesFor(capability, definition.fixture),
-    [capability, definition.fixture],
-  );
-
-  const [mode, setMode] = useState<PreviewMode>("controlled");
   const [progress, setProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showCameraPath, setShowCameraPath] = useState(false);
@@ -122,57 +86,26 @@ export function DirectorAuditViewer({
     return () => window.clearInterval(timer);
   }, [capability.demo.duration_ms, effectivePlaying]);
 
-  const roles = mode === "controlled" ? controlledRoles : realRoles;
   const realModeUnavailable =
-    mode === "real_assets" && !realAssetsLoaded && !realAssetsLoading;
+    !realAssetsLoaded && !realAssetsLoading && !realAssetError;
 
-  function chooseMode(next: PreviewMode) {
-    setMode(next);
-    setProgress(0);
-    setIsPlaying(false);
-    if (next === "real_assets" && !realAssetsLoaded && !realAssetsLoading) {
-      onRequestRealAssets();
-    }
-  }
 
   return (
     <div ref={hostRef} style={shellStyle}>
       <div style={modeBarStyle}>
         <div style={{ display: "grid", gap: 4 }}>
-          <strong>Audit viewer</strong>
+          <strong>Real-asset proof</strong>
           <small style={mutedStyle}>
-            Controlled proof is the qualification fixture. Real assets are an
-            optional generalization check.
+            The Director capability executes directly against reviewed Asset Library
+            GLBs. Asset roles remain searchable and switchable below.
           </small>
-        </div>
-        <div style={segmentedStyle}>
-          <button
-            type="button"
-            onClick={() => chooseMode("controlled")}
-            style={{
-              ...segmentButtonStyle,
-              ...(mode === "controlled" ? activeSegmentStyle : null),
-            }}
-          >
-            Controlled proof
-          </button>
-          <button
-            type="button"
-            onClick={() => chooseMode("real_assets")}
-            style={{
-              ...segmentButtonStyle,
-              ...(mode === "real_assets" ? activeSegmentStyle : null),
-            }}
-          >
-            Real-asset proof
-          </button>
         </div>
       </div>
 
       <div style={viewerStyle}>
         {realModeUnavailable ? (
           <div style={viewerMessageStyle}>
-            <strong>Real assets have not been loaded.</strong>
+            <strong>Preparing the reviewed Asset Library…</strong>
             <button
               type="button"
               onClick={onRequestRealAssets}
@@ -181,11 +114,11 @@ export function DirectorAuditViewer({
               Load Asset Library
             </button>
           </div>
-        ) : realAssetsLoading && mode === "real_assets" ? (
+        ) : realAssetsLoading ? (
           <div style={viewerMessageStyle}>
             <strong>Loading reviewed Asset Library snapshot…</strong>
           </div>
-        ) : realAssetError && mode === "real_assets" ? (
+        ) : realAssetError ? (
           <div style={viewerMessageStyle}>
             <strong>Real-asset proof unavailable.</strong>
             <span>{realAssetError}</span>
@@ -216,12 +149,12 @@ export function DirectorAuditViewer({
           >
             <DirectorCapabilityPreview
               capability={capability}
-              roles={roles}
+              roles={realRoles}
               progress={progress}
               isPlaying={effectivePlaying}
               showCameraPath={showCameraPath}
               showRoleLabels={showRoleLabels}
-              fixtureMode={mode}
+              fixtureMode="real_assets"
               fixtureKind={definition.fixture}
               auditSnap
             />
@@ -240,11 +173,7 @@ export function DirectorAuditViewer({
                   ? "sleeping: offscreen"
                   : "paused"}
           </span>
-          {mode === "real_assets" ? (
-            <span>{realAssetCount} browser-loadable assets</span>
-          ) : (
-            <span>no GLB required</span>
-          )}
+          <span>{realAssetCount} browser-loadable assets</span>
         </div>
         <div style={safeFrameStyle} aria-hidden="true" />
       </div>
@@ -326,30 +255,6 @@ const modeBarStyle: CSSProperties = {
   background: "rgba(2,6,23,0.78)",
 };
 
-const segmentedStyle: CSSProperties = {
-  display: "inline-flex",
-  gap: 4,
-  padding: 4,
-  borderRadius: 12,
-  background: "rgba(15,23,42,0.82)",
-  border: "1px solid rgba(255,255,255,0.08)",
-};
-
-const segmentButtonStyle: CSSProperties = {
-  border: 0,
-  borderRadius: 9,
-  padding: "8px 10px",
-  background: "transparent",
-  color: "#94a3b8",
-  cursor: "pointer",
-  fontWeight: 800,
-  fontSize: 11,
-};
-
-const activeSegmentStyle: CSSProperties = {
-  background: "rgba(14,165,233,0.18)",
-  color: "#e0f2fe",
-};
 
 const viewerStyle: CSSProperties = {
   position: "relative",
@@ -440,3 +345,4 @@ const toggleLabelStyle: CSSProperties = {
 const mutedStyle: CSSProperties = {
   color: "rgba(226,232,240,0.62)",
 };
+

@@ -619,3 +619,116 @@ The benchmark is allowed to contain authored choreography while the visual langu
 - CP.1E.10 does not yet formalize the final GLM choreography contract;
 - this phase does not yet route complex shots through Blender;
 - semantic shot ids remain for authoring/navigation even though they must not advertise themselves as visible cuts.
+
+## CP.2B — Freeform Closed-Loop Production Test
+
+Route:
+
+```text
+/sandbox/probe-lab/cinematic-production/freeform
+```
+
+CP.2B deliberately separates the Golden-reproduction benchmark from the production loop MyWay would actually use.
+
+### Creative boundary
+
+The freeform GLM route receives:
+
+- the user's creative request;
+- a compact role → selected-asset-label list;
+- a compact sparse cinematic JSON contract.
+
+Detailed dimensions, support/contact/collision evidence, and mesh-level math remain on the MyWay side rather than being serialized into the GLM prompt.
+
+It does **not** receive:
+
+- `BURGER_ASSEMBLY_BENCHMARK`;
+- Golden shot timing;
+- Golden camera coordinates;
+- Golden actor choreography;
+- `MASTER_CAMERA_KEYS`;
+- `buildLunchGoldenDerivedStarterPlan`;
+- any hidden Lunch repair oracle.
+
+The fixed runtime role names are only asset bindings for this experiment.
+
+### Deterministic MyWay boundary
+
+CP.2B keeps the reusable machinery that should exist in production:
+
+- reviewed asset dimensions and normalization;
+- measured support placement / grounding;
+- geometry and directability evidence;
+- directional surface clearance;
+- swept asset-aware collision/contact solving;
+- contact maintenance;
+- obstacle clearance;
+- soft camera framing safety;
+- deterministic interpolation and runtime execution.
+
+`sampleFreeformCinematicReproductionPlan()` intentionally bypasses the Lunch-specific choreography compiler. It preserves GLM-authored actor/camera tracks, performs only generic pre-contact target causality and semantic camera focus, and forwards interaction/clearance intents to the existing shared runtime.
+
+### Closed loop
+
+The lab can run:
+
+```text
+creative request
+  → GLM 5.2 V1 plan
+  → MyWay deterministic validation/runtime
+  → V1 render
+  → real-time MP4 evaluation capture
+  → Omni perceptual critique
+  → GLM 5.2 repair of the existing plan
+  → V2 render
+```
+
+The V1 Omni critique has no Golden reference. It is asked to preserve visible strengths and return only the highest-impact camera, staging, motion, timing, depth/occlusion, interaction, composition, emphasis, continuity, or educational-clarity problems.
+
+GLM V2 is a repair task, not a restart: the original request, the complete V1 plan, and the Omni critique are supplied together with instructions to preserve successful structure and modify only what is necessary.
+
+### Latency is part of the test
+
+The lab records:
+
+- GLM V1 request time;
+- optional executable-contract repair time;
+- time to V1 ready;
+- V1 real-time capture time;
+- Omni V1 time;
+- GLM V2 repair time;
+- time from V1 to V2;
+- total V1 → Omni → V2 wall-clock time.
+
+The current MP4 capture intentionally remains real-time. CP.2B does not hide that cost with an offline renderer because the purpose of this experiment is to determine whether the final feedback loop is good and fast enough before optimizing it.
+
+The optional final Omni V2 check is separate so the normal improvement loop pays for one vision pass, not two, unless a second perceptual check is useful.
+
+### CP.2B.1 — Sparse prompt + latency diagnostics
+
+CP.2B.1 keeps the same renderer and deterministic execution path while reducing model-side serialization work:
+
+- the system prompt is intentionally short and director-oriented;
+- the user prompt carries only the creative request plus compact asset labels;
+- GLM is asked for sparse semantic keyframes rather than repeated full states;
+- actor-key inheritance remains unchanged;
+- camera keys now inherit unchanged position/target/FOV/focus fields;
+- NVIDIA chat completion output streams into the server with a 6,000-token ceiling;
+- first provider event, first content token, completion time, and response character count are recorded.
+
+This keeps the final normalized `myway_cinematic_reproduction_plan_v1` contract unchanged for the renderer. MyWay expands sparse direction before deterministic support/contact/collision/clearance/camera-safety execution.
+
+### CP.2B.2 — Compact Omni witness packet
+
+CP.2B.2 keeps the same generated MP4, non-thinking Omni model, V2 GLM repair path, and deterministic MyWay runtime, but reduces the vision-model job to the perceptual evidence V2 actually needs.
+
+Omni now receives the original creative request plus the rendered video and returns only:
+
+- a concise summary of what the viewer understands;
+- up to four visible strengths to preserve;
+- up to five highest-impact visible problems, with timestamps when useful and a desired visible change;
+- up to three top repairs.
+
+The route no longer asks Omni for six categorical assessment paragraphs, per-problem impact/confidence bookkeeping, a global confidence score, or a 0–100 quality score. The output ceiling is reduced from 5,000 to 2,500 tokens while `enable_thinking` remains false.
+
+The workbench renders this compact packet directly, and GLM V2 receives the same compact critique object when repairing the existing V1 plan.

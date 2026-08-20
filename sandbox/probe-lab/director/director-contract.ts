@@ -254,6 +254,7 @@ export const DIRECTOR_LIGHTING_INTENTS = [
   "backlit",
   "rim_lit",
   "spotlight_subject",
+  "highlight_subject",
   "warm_cool_contrast",
   "preserve_shadow",
   "motivated_source",

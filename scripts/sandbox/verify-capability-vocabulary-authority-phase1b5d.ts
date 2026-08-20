@@ -148,7 +148,7 @@ assert(
 );
 
 assert(
-  DIRECTOR_CAPABILITIES.length === 183,
+  DIRECTOR_CAPABILITIES.length === 184,
   `Phase 1B.5D changed the 183-capability registry: ${DIRECTOR_CAPABILITIES.length}.`,
 );
 const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
@@ -160,7 +160,7 @@ const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
   {},
 );
 assert(
-  supportCounts.direct === 101 &&
+  supportCounts.direct === 102 &&
     supportCounts.compound === 65 &&
     supportCounts.approximate === 15 &&
     supportCounts.declared === 2,
@@ -226,16 +226,20 @@ assert(
 const capabilityLibrary = source(
   "sandbox/probe-lab/motion-camera-library/ui/director-capability-library-lab.tsx",
 );
+// Phase 1B.6.1 simplified the Director page layout. The authority contract is
+// protected by typed helpers and inspector wiring, not by preserving old
+// visible headings or explanatory prose forever.
 for (const marker of [
   "DIRECTOR_CAPABILITY_AUTHORITY_SCHEMA_VERSION",
+  "DIRECTOR_CAPABILITY_AUTHORITY_LAYERS",
   "directorCapabilityAssetAuthorityPath",
-  "Phase 1B.5D capability authority path",
-  "asset operators qualify real-asset evidence",
-  "pair interactions are internal qualification mechanisms",
+  "capabilityAuthorityPath",
+  "selected_capability_path",
+  "Capability authority path",
 ]) {
   assert(
     capabilityLibrary.includes(marker),
-    `Director Capability Library is missing Phase 1B.5D marker: ${marker}.`,
+    `Director Capability Library is missing Phase 1B.5D authority wiring: ${marker}.`,
   );
 }
 assert(
@@ -271,5 +275,5 @@ console.log(
   "Camera Insert shot and object Insert into target are visually disambiguated without changing stable IDs.",
 );
 console.log(
-  "183-capability support distribution, proposed pair relationships, Builder validation authority, and one-Canvas boundaries remain protected.",
+  "183 atomic-capability support distribution, proposed pair relationships, Builder validation authority, and one-Canvas boundaries remain protected without freezing historical page copy.",
 );

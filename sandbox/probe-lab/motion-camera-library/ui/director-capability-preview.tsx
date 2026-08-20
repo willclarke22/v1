@@ -1,8 +1,9 @@
+
 "use client";
 
 import { Clone, Html, Line, OrbitControls, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import type { MyWayAssetRecord } from "../../assets/asset-types";
@@ -22,6 +23,10 @@ import {
   type DirectorCapability,
 } from "../director-capability-registry";
 import type { DirectorAuditFixtureKind } from "../director-visual-audit";
+import {
+  DirectorRealAssetLoadBoundary,
+  directorRealAssetBrowserUrl,
+} from "./director-real-asset-browser";
 
 export type DirectorLibraryAsset = MyWayAssetRecord & {
   file_stats: {
@@ -90,15 +95,70 @@ function loadingLabel(label: string) {
   );
 }
 
-function LibraryAssetMesh({ asset, targetExtent }: { asset: DirectorLibraryAsset; targetExtent: number }) {
-  const gltf = useGLTF(asset.public_path);
+function LibraryAssetMesh({
+  asset,
+  targetExtent,
+  goldenHighlight = false,
+}: {
+  asset: DirectorLibraryAsset;
+  targetExtent: number;
+  goldenHighlight?: boolean;
+}) {
+  const gltf = useGLTF(directorRealAssetBrowserUrl(asset));
   const largestDimension = Math.max(0.001, ...(asset.dimensions_m ?? [1, 1, 1]).map((value) => Math.abs(Number(value) || 0)));
   const scale = THREE.MathUtils.clamp(targetExtent / largestDimension, 0.08, 6);
   const rotation = asset.default_rotation ?? [0, 0, 0];
   const groundOffset = Number(asset.ground_offset_m) || 0;
+  const outlineScene = useMemo(() => {
+    const clone = gltf.scene.clone(true);
+    clone.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      object.castShadow = false;
+      object.receiveShadow = false;
+      object.renderOrder = 1;
+      object.material = new THREE.MeshBasicMaterial({
+        color: "#e8e44d",
+        side: THREE.BackSide,
+        depthWrite: false,
+        toneMapped: false,
+      });
+    });
+    return clone;
+  }, [gltf.scene]);
+
+  useEffect(() => () => {
+    outlineScene.traverse((object) => {
+      if (object instanceof THREE.Mesh) {
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        materials.forEach((material) => material.dispose());
+      }
+    });
+  }, [outlineScene]);
+
   return (
     <group scale={scale} rotation={[rotation[0], rotation[1], rotation[2]]} position={[0, -groundOffset, 0]}>
+      {goldenHighlight ? <primitive object={outlineScene} scale={1.028} /> : null}
       <Clone object={gltf.scene} castShadow receiveShadow />
+    </group>
+  );
+}
+
+function AtomicGoldenControlledOutline({ targetExtent }: { targetExtent: number }) {
+  const scale = Math.max(0.45, targetExtent / 1.8) * 1.035;
+  return (
+    <group scale={scale}>
+      <mesh position={[0, 0.5, 0]}>
+        <boxGeometry args={[1.15, 1, 0.75]} />
+        <meshBasicMaterial color="#e8e44d" side={THREE.BackSide} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 0.5, 0.58]} rotation={[Math.PI / 2, 0, 0]}>
+        <coneGeometry args={[0.11, 0.42, 14]} />
+        <meshBasicMaterial color="#e8e44d" side={THREE.BackSide} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, -0.04, 0]}>
+        <cylinderGeometry args={[0.52, 0.62, 0.12, 24]} />
+        <meshBasicMaterial color="#e8e44d" side={THREE.BackSide} depthWrite={false} toneMapped={false} />
+      </mesh>
     </group>
   );
 }
@@ -609,7 +669,11 @@ function AnimatedActor({
     lastProgressRef.current = progress;
   });
 
-  const emphasized = resolvedRole.role === "primary_subject" && (capability.category === "narrative_attention" || capability.category === "lighting_emphasis");
+  const goldenHighlight = capability.id === "highlight_subject" && resolvedRole.role === "primary_subject";
+  const emphasized =
+    !goldenHighlight &&
+    resolvedRole.role === "primary_subject" &&
+    (capability.category === "narrative_attention" || capability.category === "lighting_emphasis");
   return (
     <group ref={groupRef} position={sample.position} rotation={[sample.rotation.x, sample.rotation.y, sample.rotation.z]} scale={sample.scale}>
       {emphasized ? (
@@ -622,6 +686,7 @@ function AnimatedActor({
         <group ref={rollContentRef}>
           {fixtureMode === "controlled" ? (
             <>
+              {goldenHighlight ? <AtomicGoldenControlledOutline targetExtent={targetExtent} /> : null}
               <ControlledAuditActor
                 capabilityId={capability.id}
                 role={resolvedRole.role}
@@ -633,13 +698,23 @@ function AnimatedActor({
               ) : null}
             </>
           ) : (
-            <Suspense fallback={loadingLabel(resolvedRole.role)}>
-              {resolvedRole.asset ? (
-                <LibraryAssetMesh asset={resolvedRole.asset} targetExtent={targetExtent} />
-              ) : (
-                <FallbackActor role={resolvedRole.role} />
-              )}
-            </Suspense>
+            resolvedRole.asset ? (
+              <DirectorRealAssetLoadBoundary
+                resetKey={`${resolvedRole.asset.asset_id}:${resolvedRole.asset.public_path}`}
+                assetLabel={resolvedRole.asset.display_name || resolvedRole.asset.canonical_label || resolvedRole.asset.asset_id}
+                fallback={<FallbackActor role={resolvedRole.role} />}
+              >
+                <Suspense fallback={loadingLabel(resolvedRole.role)}>
+                  <LibraryAssetMesh
+                    asset={resolvedRole.asset}
+                    targetExtent={targetExtent}
+                    goldenHighlight={goldenHighlight}
+                  />
+                </Suspense>
+              </DirectorRealAssetLoadBoundary>
+            ) : (
+              <FallbackActor role={resolvedRole.role} />
+            )
           )}
         </group>
       </group>
@@ -916,3 +991,4 @@ export function DirectorCapabilityPreview({
     </>
   );
 }
+

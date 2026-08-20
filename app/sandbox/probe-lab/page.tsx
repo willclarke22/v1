@@ -1,12 +1,20 @@
 
 
+
 const activeLabs = [
   {
     href: "/sandbox/probe-lab/cinematic-production",
     title: "Cinematic Production",
-    status: "CP.1 benchmark workbench",
+    status: "CP.2A Golden benchmark",
     description:
-      "Build one visual golden short first, inspect shot-level camera/action/execution gaps, and work backward into reusable MyWay production architecture.",
+      "Keep the Lunch Golden as the controlled reproduction benchmark for fidelity, camera, timing, choreography, and visual-observation experiments.",
+  },
+  {
+    href: "/sandbox/probe-lab/cinematic-production/freeform",
+    title: "Freeform Closed-Loop Production",
+    status: "CP.2B GLM → MyWay → Omni → GLM",
+    description:
+      "Give GLM a creative request with no Golden choreography, preserve generic MyWay geometry/contact/clearance/camera-safety math, let Omni review the actual V1 render, and patch the same plan into V2 while measuring wall-clock latency.",
   },
   {
     href: "/sandbox/probe-lab/blender-python-builder",
@@ -18,10 +26,11 @@ const activeLabs = [
   {
     href: "/sandbox/probe-lab/director-capability-library",
     title: "Director Capability Library",
-    status: "directing language proof",
+    status: "hierarchical directing + real-asset proof",
     description:
-      "Visually prove the narrative, camera, motion, blocking, lighting, transition, and continuity vocabulary GLM may direct, using one WebGL viewer and real reviewed Asset Library examples.",
-  },{
+      "Use one canonical directing library: Golden-derived perceptual/composite capabilities compile into the stable atomic camera, motion, blocking, lighting, transition, and continuity vocabulary, with film-wide policies and real reviewed Asset Library proofs.",
+  },
+  {
     href: "/sandbox/probe-lab/manual-turn",
     title: "Manual Turn Lab",
     status: "manual model lane",

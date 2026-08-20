@@ -286,18 +286,45 @@ function completeActorKey(
 
 function normalizeCameraKeys(raw: unknown, durationS: number) {
   const items = (Array.isArray(raw) ? raw : []).slice(0, 200);
-  const keys = items.map((item) => {
-    const value = item && typeof item === "object" ? item as Record<string, unknown> : {};
-    return {
-      t: clamp(finite(value.t, 0), 0, durationS),
-      position: vec3(value.position, [0, 3.18, 5.74]),
-      target: vec3(value.target, [0, 0.3, 0]),
-      fov: clamp(finite(value.fov, 36), 12, 90),
-      focus_role: isRole(value.focus_role) ? value.focus_role : null,
-      focus_weight: clamp(finite(value.focus_weight, 0), 0, 1),
-    } satisfies CinematicReproductionCameraKey;
-  }).sort((a, b) => a.t - b.t);
-  return dedupeTimes(keys);
+  const keys: CinematicReproductionCameraKey[] = [];
+  let previous: CinematicReproductionCameraKey = {
+    t: 0,
+    position: [0, 3.18, 5.74],
+    target: [0, 0.3, 0],
+    fov: 36,
+    focus_role: null,
+    focus_weight: 0,
+  };
+
+  // CP.2B.1 sparse-authoring contract: camera keys inherit unchanged fields
+  // just like actor keys. GLM can author only meaningful camera changes while
+  // MyWay expands the sparse direction into the complete executable plan.
+  for (const item of items) {
+    const value = item && typeof item === "object"
+      ? item as Record<string, unknown>
+      : {};
+    const key: CinematicReproductionCameraKey = {
+      t: clamp(finite(value.t, previous.t), 0, durationS),
+      position: vec3(value.position, previous.position),
+      target: vec3(value.target, previous.target),
+      fov: clamp(finite(value.fov, previous.fov), 12, 90),
+      focus_role:
+        "focus_role" in value
+          ? isRole(value.focus_role)
+            ? value.focus_role
+            : null
+          : previous.focus_role,
+      focus_weight: clamp(
+        finite(value.focus_weight, previous.focus_weight),
+        0,
+        1,
+      ),
+    };
+    keys.push(key);
+    previous = key;
+  }
+
+  return dedupeTimes(keys.sort((a, b) => a.t - b.t));
 }
 
 function dedupeTimes<T extends { t: number }>(keys: T[]) {
@@ -845,6 +872,153 @@ export function parseCinematicReproductionJson(text: string) {
   }
   return { plan, validation };
 }
+
+export function validateFreeformCinematicReproductionPlan(
+  plan: CinematicReproductionPlanV1,
+): CinematicReproductionValidation {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (plan.schema_version !== CINEMATIC_REPRODUCTION_SCHEMA_VERSION) {
+    errors.push(`schema_version must be ${CINEMATIC_REPRODUCTION_SCHEMA_VERSION}.`);
+  }
+  if (plan.duration_s < 8 || plan.duration_s > 45) {
+    warnings.push(
+      `Freeform duration is ${plan.duration_s.toFixed(1)}s. This production test is most useful around 20–30 seconds.`,
+    );
+  }
+  if (plan.camera.keys.length < 2) {
+    errors.push("camera.keys needs at least 2 keyframes.");
+  } else if (plan.camera.keys.length < 6) {
+    warnings.push(
+      `Camera has only ${plan.camera.keys.length} keys. A 20–30 second directed cinematic usually needs more authored evidence than a start/end move.`,
+    );
+  }
+
+  const cameraTimes = plan.camera.keys.map((key) => key.t);
+  if (
+    cameraTimes.length > 0 &&
+    (cameraTimes[0] > 0.05 ||
+      cameraTimes[cameraTimes.length - 1] < plan.duration_s - 0.05)
+  ) {
+    warnings.push(
+      "Camera keys do not span the full duration; endpoint poses will be held outside the authored range.",
+    );
+  }
+
+  const cameraTravelM = plan.camera.keys
+    .slice(1)
+    .reduce(
+      (sum, key, index) =>
+        sum + distance(plan.camera.keys[index].position, key.position),
+      0,
+    );
+  if (plan.duration_s >= 16 && cameraTravelM < 0.45) {
+    warnings.push(
+      `Camera path travels only ${cameraTravelM.toFixed(2)}m. The freeform brief asks for purposeful cinematic camera movement.`,
+    );
+  }
+
+  let activeActorCount = 0;
+  for (const role of LUNCH_RUNTIME_ROLES) {
+    const track = plan.actors[role];
+    if (!track || track.keys.length < 1) {
+      errors.push(`actors.${role}.keys needs at least 1 keyframe.`);
+      continue;
+    }
+    if (track.keys.some((key) => key.visible && key.opacity > 0.01)) {
+      activeActorCount += 1;
+    }
+  }
+  if (activeActorCount < 6) {
+    warnings.push(
+      `Only ${activeActorCount}/${LUNCH_RUNTIME_ROLES.length} available roles become visibly active. The test request asks GLM to use the supplied cast purposefully.`,
+    );
+  }
+
+  for (const [index, interaction] of plan.interactions.entries()) {
+    if (interaction.source_role === interaction.target_role) {
+      errors.push(
+        `interactions[${index}] cannot use the same source_role and target_role.`,
+      );
+    }
+    if (interaction.contact_end_s - interaction.contact_start_s < 0.08) {
+      warnings.push(
+        `interactions[${index}] has a very short contact window; the contact may not read perceptually even if the geometry solver succeeds.`,
+      );
+    }
+    if (interaction.retreat_end_s <= interaction.approach_start_s) {
+      errors.push(
+        `interactions[${index}] must have a positive approach/contact/retreat interval.`,
+      );
+    }
+  }
+
+  for (const [index, clearance] of plan.directional_clearance.entries()) {
+    if (clearance.moving_role === clearance.anchor_role) {
+      errors.push(
+        `directional_clearance[${index}] cannot use the same moving_role and anchor_role.`,
+      );
+    }
+    if (clearance.end_s < clearance.start_s) {
+      errors.push(
+        `directional_clearance[${index}] end_s must be >= start_s.`,
+      );
+    }
+  }
+
+  return { ok: errors.length === 0, errors, warnings };
+}
+
+export function parseFreeformCinematicReproductionJson(text: string) {
+  const raw = JSON.parse(text) as unknown;
+  const plan = normalizeCinematicReproductionPlan(raw);
+  const rawRecord =
+    raw && typeof raw === "object"
+      ? (raw as Record<string, unknown>)
+      : null;
+
+  if (
+    !rawRecord?.title ||
+    typeof rawRecord.title !== "string" ||
+    !rawRecord.title.trim()
+  ) {
+    plan.title = "Freeform cinematic";
+  }
+  if (
+    !rawRecord?.intent_summary ||
+    typeof rawRecord.intent_summary !== "string" ||
+    !rawRecord.intent_summary.trim()
+  ) {
+    plan.intent_summary =
+      "Create a directed cinematic from the supplied request without Golden-specific choreography.";
+  }
+
+  const validation =
+    validateFreeformCinematicReproductionPlan(plan);
+  const authoringDiagnostics =
+    rawAuthoringContractDiagnostics(raw);
+  validation.errors.push(
+    ...authoringDiagnostics.errors,
+  );
+  validation.warnings.unshift(
+    ...authoringDiagnostics.warnings,
+  );
+
+  if (
+    rawRecord?.schema_version !==
+    CINEMATIC_REPRODUCTION_SCHEMA_VERSION
+  ) {
+    validation.errors.unshift(
+      `schema_version must be ${CINEMATIC_REPRODUCTION_SCHEMA_VERSION}.`,
+    );
+  }
+  validation.ok =
+    validation.errors.length === 0;
+
+  return { plan, validation };
+}
+
 
 function smoothStep(value: number) {
   const t = clamp01(value);
@@ -1535,6 +1709,192 @@ export function sampleCinematicReproductionPlan(
     camera,
     tray: poses.tray,
     foods: [poses.apple, poses.burger, poses.nigiri],
+    cow: poses.cow,
+    chicken: poses.chicken,
+    goldfish: poses.goldfish,
+    hand: poses.hand,
+    interactions,
+    directionalClearanceConstraints,
+  };
+}
+
+function sampledFreeformCameraFocusTarget(
+  poses: Record<RuntimeActorRole, RuntimeActorPose>,
+  authoredTarget: RuntimeVec3,
+  attentionWeights: Partial<Record<RuntimeActorRole, number>>,
+): RuntimeVec3 {
+  let totalWeight = 0;
+  const focusPoint: RuntimeVec3 = [0, 0, 0];
+
+  for (const role of LUNCH_RUNTIME_ROLES) {
+    const pose = poses[role];
+    const weight = clamp01(attentionWeights[role] ?? 0);
+    if (
+      !pose?.visible ||
+      pose.opacity <= 0.01 ||
+      weight <= 0.001
+    ) {
+      continue;
+    }
+
+    focusPoint[0] += pose.position[0] * weight;
+    focusPoint[1] +=
+      (role === "hand"
+        ? Math.max(0.35, pose.position[1])
+        : Math.max(0.28, pose.position[1] + 0.28)) *
+      weight;
+    focusPoint[2] += pose.position[2] * weight;
+    totalWeight += weight;
+  }
+
+  if (totalWeight <= 0.001) {
+    return authoredTarget;
+  }
+
+  focusPoint[0] /= totalWeight;
+  focusPoint[1] /= totalWeight;
+  focusPoint[2] /= totalWeight;
+
+  return lerpVec3(
+    authoredTarget,
+    focusPoint,
+    clamp01(totalWeight),
+  );
+}
+
+/**
+ * CP.2B freeform production sampler.
+ *
+ * This deliberately does NOT call compileLunchActorChoreography,
+ * compiledLunchAttentionEmphasis, the frozen Golden sampler, or any
+ * Lunch timing/camera oracle. GLM-authored camera/actor tracks remain the
+ * creative authority. The sampler only preserves generic interpolation,
+ * pre-contact target causality, semantic camera focus, physical interaction
+ * intents, and directional-clearance intents. The shared WebGL runtime then
+ * applies measured support placement, collision/contact solving, directional
+ * surface clearance, and soft camera safety exactly as it does elsewhere.
+ */
+export function sampleFreeformCinematicReproductionPlan(
+  plan: CinematicReproductionPlanV1,
+  timeS: number,
+): CinematicShotRuntimeLayout {
+  const t = clamp(timeS, 0, plan.duration_s);
+  const cameraKeys = plan.camera.keys;
+
+  const poses = Object.fromEntries(
+    LUNCH_RUNTIME_ROLES.map((role) => [
+      role,
+      sampleActorTrack(
+        plan.actors[role],
+        t,
+      ),
+    ]),
+  ) as Record<
+    RuntimeActorRole,
+    RuntimeActorPose
+  >;
+
+  // Generic physical causality: a push/nudge target should not start drifting
+  // toward a later authored pose before contact has actually begun.
+  for (const interaction of plan.interactions) {
+    if (
+      (interaction.kind === "nudge" ||
+        interaction.kind === "push") &&
+      t >= interaction.approach_start_s &&
+      t < interaction.contact_start_s
+    ) {
+      poses[interaction.target_role] =
+        sampleActorTrack(
+          plan.actors[
+            interaction.target_role
+          ],
+          interaction.approach_start_s,
+        );
+    }
+  }
+
+  const attentionWeights =
+    sampledCameraAttentionWeights(
+      cameraKeys,
+      t,
+    );
+
+  const camera = cameraKeys.length
+    ? (() => {
+        const authoredTarget =
+          sampleVec3(
+            cameraKeys,
+            t,
+            plan.camera.interpolation,
+            (key) => key.target,
+          );
+        return {
+          position: sampleVec3(
+            cameraKeys,
+            t,
+            plan.camera.interpolation,
+            (key) => key.position,
+          ),
+          target:
+            sampledFreeformCameraFocusTarget(
+              poses,
+              authoredTarget,
+              attentionWeights,
+            ),
+          fov: clamp(
+            sampleScalar(
+              cameraKeys,
+              t,
+              plan.camera.interpolation,
+              (key) => key.fov,
+            ),
+            12,
+            90,
+          ),
+        };
+      })()
+    : {
+        position: [0, 3.2, 5.8] as RuntimeVec3,
+        target: [0, 0.3, 0] as RuntimeVec3,
+        fov: 36,
+      };
+
+  const interactions = plan.interactions
+    .map((item) =>
+      sampleInteraction(item, t),
+    )
+    .filter(
+      (
+        item,
+      ): item is RuntimeAssetInteractionIntent =>
+        Boolean(item),
+    );
+
+  const directionalClearanceConstraints:
+    RuntimeDirectionalClearanceConstraint[] =
+    plan.directional_clearance
+      .filter(
+        (item) =>
+          t >= item.start_s &&
+          t <= item.end_s,
+      )
+      .map((item) => ({
+        id: item.id,
+        movingRole: item.moving_role,
+        anchorRole: item.anchor_role,
+        direction: item.direction,
+        minimumSurfaceGapM:
+          item.minimum_surface_gap_m,
+      }));
+
+  return {
+    camera,
+    tray: poses.tray,
+    foods: [
+      poses.apple,
+      poses.burger,
+      poses.nigiri,
+    ],
     cow: poses.cow,
     chicken: poses.chicken,
     goldfish: poses.goldfish,
