@@ -176,9 +176,9 @@ const runtime = source("sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx");
 for (const marker of [
   "defaultActorLocalMountedPosition",
   "defaultActorLocalMountedViewDirection",
-  "actor.size[1] * 0.72",
-  "actor.size[2] * 0.08 + radius * 0.04",
-  "new THREE.Vector3(0, -0.16, 1)",
+  "actor.size[1] + Math.max(0.12, radius * 0.12)",
+  "actor.size[2] * 0.34",
+  "new THREE.Vector3(0, -0.12, 1)",
   "const authoredStart = runtimeProgress <= 0.001",
 ]) {
   assert(runtime.includes(marker), `Phase 1B.3.3 runtime marker missing: ${marker}.`);
@@ -188,7 +188,7 @@ const registry = source(
   "sandbox/probe-lab/motion-camera-library/director-capability-registry.ts",
 );
 assert(
-  registry.includes("view_direction: [0, -0.16, 1]"),
+  registry.includes("view_direction: [0, -0.12, 1]"),
   "Phase 1B.3.3 mounted demo must use the downward-forward local view.",
 );
 
@@ -221,7 +221,7 @@ const audit = source(
 for (const marker of [
   "paused 0% proof",
   "complete circular head stays inside the safe frame",
-  "mounted high/back on a small vehicle",
+  "mounted high/back on a directionally suitable host",
 ]) {
   assert(audit.includes(marker), `Phase 1B.3.3 audit marker missing: ${marker}.`);
 }

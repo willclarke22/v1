@@ -1069,7 +1069,7 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
         : movement === "track_parallel"
           ? { direction_sign: 1, distance_m: 3.15 }
           : movement === "object_attached"
-            ? { view_direction: [0, -0.16, 1], look_distance_m: 4.2 }
+            ? { view_direction: [0, -0.12, 1], look_distance_m: 5.0 }
             : {};
     shot.camera.movement_steps = movement === "settle"
       ? [
@@ -1132,7 +1132,13 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
         { relation: "midground", actor_entity_id: "secondary_subject", target_entity_id: null, screen_region: "center_right", preserve_clearance: true, parameters: {} },
         { relation: "background", actor_entity_id: "context_subject", target_entity_id: null, screen_region: "center", preserve_clearance: true, parameters: {} },
       ];
+      // Three-layer staging cannot be judged if the camera solves only around the
+      // foreground actor. Keep all three layers in the optical solve and use a
+      // group framing so the near layer never erases mid/background evidence.
+      shot.composition.framing = "group_shot";
       shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject", "context_subject"];
+      shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject", "context_subject"];
+      shot.lens.focus_entity_id = "secondary_subject";
     } else {
       const relation = capability.id as DirectorShotDirectionV2["blocking"][number]["relation"];
       shot.blocking = [{ relation, actor_entity_id: "primary_subject", target_entity_id: ["on_ground", "foreground", "midground", "background", "screen_left", "screen_right"].includes(capability.id) ? null : "secondary_subject", screen_region: capability.id === "screen_left" ? "left_third" : capability.id === "screen_right" ? "right_third" : null, preserve_clearance: true, parameters: {} }];
@@ -1293,23 +1299,12 @@ export function directorCapabilityDemoEvents(capability: DirectorCapability): Di
         fallback_behaviour: null,
       };
       if (movement === "object_attached") {
-        return [
-          travel,
-          {
-            id: "demo_camera_object_attached_subject_turn",
-            behaviour: "rotate",
-            actor_entity_id: "primary_subject",
-            target_entity_id: null,
-            supporting_entity_ids: [],
-            start_ms: 900,
-            duration_ms: 4200,
-            easing: "ease_in_out",
-            path_hint: "subject turns while the camera maintains a rotated local mount",
-            description: "Rotate the travelling actor so the object-attached camera proves local-space execution.",
-            parameters: { axis: "y", degrees: 105 },
-            fallback_behaviour: null,
-          },
-        ];
+        // Phase 1B.7A.6: the movement-form audition proves the blend into the
+        // canonical mounted-camera relationship while the host continues along
+        // the travel corridor. Actor-local rotation is already exercised by the
+        // immediate object_attached angle proof; adding a 105-degree turn here
+        // made a vehicle point away from its own path and contaminated the shot.
+        return [travel];
       }
       return [travel];
     }
@@ -1588,4 +1583,3 @@ export {
   type DirectorPerceptualCapabilityCategory,
   type DirectorPerceptualCapabilityStatus,
 } from "./director-perceptual-capabilities";
-

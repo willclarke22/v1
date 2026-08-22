@@ -76,7 +76,7 @@ for (const marker of [
   'shot.composition.angle === "object_attached"',
   ".applyEuler(sample.rotation)",
   "actorLocalMountedView",
-  "attachBlend",
+  "solveDirectorMountedCameraRelationship",
   "cameraRelationshipActor",
   "actorEyePoint",
 ]) {
@@ -107,7 +107,7 @@ for (const marker of [
   'id === "inside_object" || id === "isometric"',
   'viewpoint_source_role:',
   'demo_object_attached_angle_subject_turn',
-  'demo_camera_object_attached_subject_turn',
+  'movement === "object_attached"',
 ]) {
   assert(
     registry.includes(marker),
@@ -139,11 +139,14 @@ for (const marker of [
 const library = source(
   "sandbox/probe-lab/motion-camera-library/ui/director-capability-library-lab.tsx",
 );
+// Phase 1B.6.1 simplified the visible Capability Library and retired the
+// historical "controlled proof" labels. Protect the camera-fidelity wiring
+// structurally instead of requiring those old page-facing strings.
 for (const marker of [
   "buildDirectorCameraFidelityReport",
-  "Phase 1B controlled camera proof",
-  "Controlled camera fidelity evidence",
-  "controlled_fidelity_fixture",
+  "CameraFidelityEvidence",
+  "Phase 1B camera fidelity evidence",
+  "report={cameraFidelity}",
   "Known fidelity boundary",
 ]) {
   assert(

@@ -304,8 +304,8 @@ const audit = source(
 for (const marker of [
   "first frame",
   "complete circular head",
-  "small vehicle",
-  "road gates",
+  "directionally suitable host",
+  "roadside markers",
 ]) {
   assert(audit.includes(marker), `Phase 1B.3.2 audit marker missing: ${marker}.`);
 }
@@ -314,8 +314,9 @@ const preview = source(
   "sandbox/probe-lab/motion-camera-library/ui/director-capability-preview.tsx",
 );
 for (const marker of [
-  "function MountedCameraCourse",
-  "gatePositions",
+  "function TravellingCameraCorridor",
+  "markerPositions",
+  "roadside orientation markers",
   "vehicle-like host",
   "Mount marker + local XYZ axes",
   "Math.PI / 2",

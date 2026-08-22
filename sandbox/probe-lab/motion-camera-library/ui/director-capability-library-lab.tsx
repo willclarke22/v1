@@ -1,9 +1,7 @@
-
-
 "use client";
 
 import type { CSSProperties, ChangeEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   DIRECTOR_CAPABILITIES,
@@ -51,6 +49,8 @@ import {
   directorCapabilityAssetAuthorityPath,
 } from "../../directability/capability-authority-contract";
 import { DirectorAuditViewer } from "./director-audit-viewer";
+import { DirectorQualificationRoom } from "./director-qualification-room";
+import { DirectorLibraryTabs } from "./director-library-tabs";
 import { buildUnnamedMotionGeneralityProof } from "../../motion-program/motion-program-diagnostics";
 import {
   buildDirectorSceneStateInspectorSnapshot,
@@ -71,6 +71,14 @@ type LibraryResponse = {
   count?: number;
   assets?: DirectorLibraryAsset[];
   error?: string;
+};
+
+type SharedDirectorAssetLibraryProps = {
+  assets: DirectorLibraryAsset[];
+  assetError: string | null;
+  isLoadingAssets: boolean;
+  assetsLoaded: boolean;
+  onRequestAssets: () => void;
 };
 
 type LibraryCategoryFilter =
@@ -889,16 +897,21 @@ function RealAssetExecutionQualificationPanel({
   );
 }
 
-function AtomicDirectorCapabilityLibraryLab() {
+function AtomicDirectorCapabilityLibraryLab({
+  onOpenQualificationRoom,
+  assets,
+  assetError,
+  isLoadingAssets,
+  assetsLoaded,
+  onRequestAssets,
+}: {
+  onOpenQualificationRoom: () => void;
+} & SharedDirectorAssetLibraryProps) {
   const [selectedId, setSelectedId] = useState("over_shoulder");
   const [selectedEntryKey, setSelectedEntryKey] = useState("atomic:over_shoulder");
   const [category, setCategory] = useState<LibraryCategoryFilter>("level2_all");
   const [support, setSupport] = useState<SupportFilter>("all");
   const [query, setQuery] = useState("");
-  const [assets, setAssets] = useState<DirectorLibraryAsset[]>([]);
-  const [assetError, setAssetError] = useState<string | null>(null);
-  const [isLoadingAssets, setIsLoadingAssets] = useState(false);
-  const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [roleAssetOverrides, setRoleAssetOverrides] = useState<Record<string, string>>({});
   const [catalogLimit, setCatalogLimit] = useState(INITIAL_CATALOG_LIMIT);
   const [auditState, setAuditState] = useState<DirectorVisualAuditState>(
@@ -1129,33 +1142,6 @@ function AtomicDirectorCapabilityLibraryLab() {
     () => buildUnnamedMotionGeneralityProof(),
     [],
   );
-
-  async function loadAssets() {
-    setIsLoadingAssets(true);
-    setAssetError(null);
-    try {
-      const response = await fetch("/api/sandbox/probe-lab/assets/library", {
-        cache: "no-store",
-      });
-      const payload = (await response.json()) as LibraryResponse;
-      if (!response.ok || !payload.ok || !Array.isArray(payload.assets)) {
-        throw new Error(payload.error || "The Asset Library could not be loaded.");
-      }
-      setAssets(payload.assets);
-      setAssetsLoaded(true);
-    } catch (error) {
-      setAssets([]);
-      setAssetsLoaded(false);
-      setAssetError(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsLoadingAssets(false);
-    }
-  }
-
-  useEffect(() => {
-    if (assetsLoaded || isLoadingAssets || assetError) return;
-    void loadAssets();
-  }, [assetError, assetsLoaded, isLoadingAssets]);
 
   useEffect(() => {
     try {
@@ -1455,6 +1441,12 @@ function AtomicDirectorCapabilityLibraryLab() {
             </p>
           </div>
 
+          <DirectorLibraryTabs
+            activeTab="capabilities"
+            onTabChange={(tab) => {
+              if (tab === "qualification") onOpenQualificationRoom();
+            }}
+          />
         </header>
 
         <section style={workbenchGridStyle}>
@@ -1503,7 +1495,7 @@ function AtomicDirectorCapabilityLibraryLab() {
                   realAssetsLoaded={assetsLoaded}
                   realAssetsLoading={isLoadingAssets}
                   realAssetError={assetError}
-                  onRequestRealAssets={() => void loadAssets()}
+                  onRequestRealAssets={onRequestAssets}
                 />
 
                 <div style={visualClaimStyle}>
@@ -1524,7 +1516,7 @@ function AtomicDirectorCapabilityLibraryLab() {
                       resolvedRoles={resolvedRoles}
                       roleAssetOverrides={roleAssetOverrides}
                       onRoleAssetOverride={setRoleAssetOverride}
-                      onRequestAssets={() => void loadAssets()}
+                      onRequestAssets={onRequestAssets}
                       report={realAssetExecutionQualification}
                     />
                   </div>
@@ -2062,7 +2054,69 @@ const realAssetProofCardStyle: CSSProperties = {
 
 
 export function DirectorCapabilityLibraryLab() {
-  return <AtomicDirectorCapabilityLibraryLab />;
+  const [activeTab, setActiveTab] = useState<"capabilities" | "qualification">(
+    "capabilities",
+  );
+  const [assets, setAssets] = useState<DirectorLibraryAsset[]>([]);
+  const [assetError, setAssetError] = useState<string | null>(null);
+  const [isLoadingAssets, setIsLoadingAssets] = useState(false);
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+
+  const loadAssets = useCallback(async () => {
+    if (isLoadingAssets) return;
+    setIsLoadingAssets(true);
+    setAssetError(null);
+    try {
+      const response = await fetch("/api/sandbox/probe-lab/assets/library", {
+        cache: "no-store",
+      });
+      const payload = (await response.json()) as LibraryResponse;
+      if (!response.ok || !payload.ok || !Array.isArray(payload.assets)) {
+        throw new Error(payload.error || "The Asset Library could not be loaded.");
+      }
+      setAssets(payload.assets);
+      setAssetsLoaded(true);
+    } catch (error) {
+      setAssets([]);
+      setAssetsLoaded(false);
+      setAssetError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsLoadingAssets(false);
+    }
+  }, [isLoadingAssets]);
+
+  useEffect(() => {
+    if (assetsLoaded || isLoadingAssets || assetError) return;
+    void loadAssets();
+  }, [assetError, assetsLoaded, isLoadingAssets, loadAssets]);
+
+  const sharedAssetLibrary: SharedDirectorAssetLibraryProps = {
+    assets,
+    assetError,
+    isLoadingAssets,
+    assetsLoaded,
+    onRequestAssets: () => void loadAssets(),
+  };
+
+  if (activeTab === "qualification") {
+    return (
+      <DirectorQualificationRoom
+        onOpenCapabilities={() => setActiveTab("capabilities")}
+        assets={assets}
+        assetsLoaded={assetsLoaded}
+        assetsLoading={isLoadingAssets}
+        assetError={assetError}
+        onRequestAssets={() => void loadAssets()}
+      />
+    );
+  }
+
+  return (
+    <AtomicDirectorCapabilityLibraryLab
+      onOpenQualificationRoom={() => setActiveTab("qualification")}
+      {...sharedAssetLibrary}
+    />
+  );
 }
 
 
@@ -2720,4 +2774,3 @@ const compareButtonStyle: CSSProperties = {
   fontSize: 10,
   fontWeight: 800,
 };
-

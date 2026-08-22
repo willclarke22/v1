@@ -29,12 +29,17 @@ export {
   legacyShotForMoment,
   sampleDirectorActorState,
   sampleDirectorCameraPose,
+  projectDirectorActorCenter,
+  projectDirectorActorEnvelope,
   validateDirectorShot,
 } from "./director-shot-runtime";
 export type {
   DirectorActorSample,
   DirectorCameraPose,
+  DirectorProjectedActorCenter,
+  DirectorProjectedActorEnvelope,
   DirectorRuntimeActor,
   DirectorRuntimeVec3,
   DirectorShotValidation,
 } from "./director-shot-runtime";
+

@@ -493,33 +493,34 @@ function specialExpectations(capability: DirectorCapability): string[] {
       ];
     case "object_attached":
       return [
-        "The view should read like a camera mounted high/back on a small vehicle: a restrained hood/body edge stays visible along the lower frame while road gates provide external orientation.",
+        "The view should read like a camera mounted high/back on a directionally suitable host: only a restrained hood/body edge should remain along the lower frame while roadside markers and the travel surface provide external orientation.",
         "The camera should inherit the actor's local orientation and look outward with a slight downward pitch so road/support context survives without looking back at the host centre.",
       ];
     case "camera_object_attached":
       return [
-        "The entire camera rig should transition onto the higher/back vehicle mount, then travel and rotate rigidly with it while the road/gates move through view.",
-        "Both actor-local mount position and local viewing direction should remain stable, with a small host-body reference staying attached at the bottom of frame and a slight downward-forward view.",
+        "The entire camera rig should visibly ease from the external travelling view onto the same canonical high/back mounted-camera relationship used by Object-attached view, then stay outside the vehicle body while the safe travel corridor moves through view.",
+        "The legacy movement ID should differ from Object-attached view only by blend-in timing; the transition must be readable before the same restrained host-body reference, horizon/travel surface, and stable slightly downward-forward local view are restored.",
       ];
     case "follow":
       return [
         "The moving subject should stay compositionally stable while the world moves around it.",
         "Camera-to-subject offset should remain nearly constant through the travel.",
+        "Qualification visibility fill may normalize readability for camera-family evidence, but it must not become part of the authored Director lighting contract.",
       ];
     case "lead_subject":
       return [
-        "The controlled proof should be unmistakably more forward-looking than Follow, with obvious visual space reserved ahead of travel.",
-        "The stronger separation should come mainly from the look point rather than simply translating the entire camera rig.",
+        "The actor should sit visibly behind centre in the direction opposite its screen travel, leaving unmistakable look room ahead while apparent size stays Follow-like on both character and wide-vehicle geometry.",
+        "After a brief near-Follow opening, Lead should establish its safe rear-third composition within roughly the first third of the audition and then hold it; the preferred placement must still yield before the actor's projected silhouette crowds the rear safe-frame edge.",
       ];
     case "lag_follow":
       return [
-        "The actor should unmistakably pull ahead of the Follow relationship through the middle of the move.",
-        "The lag should be visibly stronger than Follow, then catch back toward the normal Follow relationship by the end.",
+        "Lag should read as a temporal event: begin near the normal Follow relation, let the actor visibly pull ahead after a short response delay, hold that asymmetry briefly, then deliberately recover without a dramatic looming/zoom-like size change on either character or vehicle geometry.",
+        "The lag should come primarily from delayed look relationship rather than a large physical camera retreat, returning close to ordinary Follow by the end while projected silhouette area stays restrained.",
       ];
     case "track_parallel":
       return [
         "The paused 0% proof should already sit on its second rail at the first frame, and the first playback frame should be the exact same second-rail composition, with nearly constant apparent subject size and screen position through 100%.",
-        "The camera-to-subject vector should stay predominantly perpendicular to travel without an entry zoom, control handoff snap, forward look drift, or diagonal collapse.",
+        "The camera-to-subject vector should stay predominantly perpendicular to travel without an entry zoom, control handoff snap, forward look drift, or diagonal collapse; the same low-profile ground-edge markers used by the other Tracking siblings should provide optic flow without crossing the side-rail lens.",
       ];
     case "isometric":
       return [

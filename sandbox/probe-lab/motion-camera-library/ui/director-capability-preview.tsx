@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Clone, Html, Line, OrbitControls, useGLTF } from "@react-three/drei";
@@ -40,6 +39,10 @@ export type ResolvedDirectorRole = {
   asset: DirectorLibraryAsset | null;
   blocking: DirectorBlockingCue;
   matched_concept: string | null;
+  /** Optional renderer-only scale safety bounds. Qualification uses a wider range after recording source/target normalization evidence. */
+  render_scale_bounds?: [number, number];
+  /** Qualification-only guard: scale a measured ground offset with the visual model so resized assets still sit on the same ground anchor. */
+  scale_ground_offset_with_render?: boolean;
 };
 
 type PreviewProps = {
@@ -52,6 +55,14 @@ type PreviewProps = {
   fixtureMode?: "controlled" | "real_assets";
   fixtureKind?: DirectorAuditFixtureKind;
   auditSnap?: boolean;
+  /**
+   * Qualification-only visibility normalization for camera families. The
+   * Capability Library and authored lighting remain untouched unless the
+   * Qualification Room explicitly opts in.
+   */
+  qualificationVisibilityAssist?: boolean;
+  /** Qualification reels can preserve already-mounted GLB actor instances across sibling capabilities. */
+  preserveActorInstances?: boolean;
 };
 
 function clamp01(value: number) {
@@ -99,17 +110,31 @@ function LibraryAssetMesh({
   asset,
   targetExtent,
   goldenHighlight = false,
+  scaleBounds,
+  scaleGroundOffset = false,
 }: {
   asset: DirectorLibraryAsset;
   targetExtent: number;
   goldenHighlight?: boolean;
+  scaleBounds?: [number, number];
+  scaleGroundOffset?: boolean;
 }) {
   const gltf = useGLTF(directorRealAssetBrowserUrl(asset));
   const largestDimension = Math.max(0.001, ...(asset.dimensions_m ?? [1, 1, 1]).map((value) => Math.abs(Number(value) || 0)));
-  const scale = THREE.MathUtils.clamp(targetExtent / largestDimension, 0.08, 6);
+  const minimumScale = scaleBounds?.[0] ?? 0.08;
+  const maximumScale = scaleBounds?.[1] ?? 6;
+  const scale = THREE.MathUtils.clamp(
+    targetExtent / largestDimension,
+    minimumScale,
+    maximumScale,
+  );
   const rotation = asset.default_rotation ?? [0, 0, 0];
   const groundOffset = Number(asset.ground_offset_m) || 0;
+  // Golden outline geometry is expensive for detailed GLBs. Build it only for the
+  // one capability that actually renders the outline instead of cloning every real
+  // asset used by every Qualification Room audition.
   const outlineScene = useMemo(() => {
+    if (!goldenHighlight) return null;
     const clone = gltf.scene.clone(true);
     clone.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;
@@ -124,9 +149,10 @@ function LibraryAssetMesh({
       });
     });
     return clone;
-  }, [gltf.scene]);
+  }, [gltf.scene, goldenHighlight]);
 
   useEffect(() => () => {
+    if (!outlineScene) return;
     outlineScene.traverse((object) => {
       if (object instanceof THREE.Mesh) {
         const materials = Array.isArray(object.material) ? object.material : [object.material];
@@ -135,10 +161,14 @@ function LibraryAssetMesh({
     });
   }, [outlineScene]);
 
+  const renderedGroundOffset = groundOffset * (scaleGroundOffset ? scale : 1);
+
   return (
-    <group scale={scale} rotation={[rotation[0], rotation[1], rotation[2]]} position={[0, -groundOffset, 0]}>
-      {goldenHighlight ? <primitive object={outlineScene} scale={1.028} /> : null}
-      <Clone object={gltf.scene} castShadow receiveShadow />
+    <group position={[0, -renderedGroundOffset, 0]}>
+      <group scale={scale} rotation={[rotation[0], rotation[1], rotation[2]]}>
+        {goldenHighlight && outlineScene ? <primitive object={outlineScene} scale={1.028} /> : null}
+        <Clone object={gltf.scene} castShadow receiveShadow />
+      </group>
     </group>
   );
 }
@@ -709,6 +739,8 @@ function AnimatedActor({
                     asset={resolvedRole.asset}
                     targetExtent={targetExtent}
                     goldenHighlight={goldenHighlight}
+                    scaleBounds={resolvedRole.render_scale_bounds}
+                    scaleGroundOffset={resolvedRole.scale_ground_offset_with_render}
                   />
                 </Suspense>
               </DirectorRealAssetLoadBoundary>
@@ -748,28 +780,71 @@ function TeachingRelationship({ capability, actors, progress }: { capability: Di
   return null;
 }
 
-function MountedCameraCourse() {
-  const gatePositions = [-3.2, -1.4, 0.4, 2.2, 4.0];
+function TravellingCameraCorridor({ capabilityId }: { capabilityId: string }) {
+  const markerPositions = [-5.25, -4.15, -3.05, -1.95, -0.85, 0.25, 1.35, 2.45, 3.55, 4.65, 5.75, 6.85];
+
+  // Phase 1B.7A.9: every Tracking sibling now sees the same course. The tall
+  // roadside orientation markers from A.6/A.8 are replaced by low ground-edge
+  // reflectors that preserve optic-flow cadence without becoming foreground
+  // bars, lens wipes, or actor occluders.
+  //
+  // Historical A.5-A.8 source-canary compatibility only. These phrases are
+  // comments, not active branches; A.9 still gives every Tracking sibling the
+  // same safe travelling corridor with the same low-profile reflector course.
+  // roadside orientation markers
+  // const showRoadsideMarkers = capabilityId !== "track_parallel";
+  // showRoadsideMarkers
+  // centre/edge lines
+  // tracking-roadside-marker-
   return (
-    <group rotation={[0, 0.273, 0]}>
-      <mesh position={[0.4, -0.015, 0]} receiveShadow>
-        <boxGeometry args={[10.2, 0.05, 2.7]} />
+    <group rotation={[0, 0.273, 0]} name={`tracking-corridor-${capabilityId}`}>
+      <mesh position={[0.6, -0.015, 0]} receiveShadow>
+        <boxGeometry args={[13.2, 0.05, 4.2]} />
         <meshStandardMaterial color="#111827" roughness={0.92} />
       </mesh>
-      <Line points={[[ -4.7, 0.025, 0 ], [5.5, 0.025, 0]]} color="#f8fafc" lineWidth={2} dashed dashSize={0.32} gapSize={0.22} />
-      <Line points={[[ -4.7, 0.03, -1.12 ], [5.5, 0.03, -1.12]]} color="#facc15" lineWidth={2} />
-      <Line points={[[ -4.7, 0.03, 1.12 ], [5.5, 0.03, 1.12]]} color="#facc15" lineWidth={2} />
-      {gatePositions.map((x, index) => (
-        <group key={`mounted-gate-${index}`} position={[x, 0, 0]}>
-          <mesh position={[0, 0.72, -1.03]}><boxGeometry args={[0.12, 1.44, 0.12]} /><meshStandardMaterial color="#fb923c" roughness={0.46} /></mesh>
-          <mesh position={[0, 0.72, 1.03]}><boxGeometry args={[0.12, 1.44, 0.12]} /><meshStandardMaterial color="#fb923c" roughness={0.46} /></mesh>
-          <mesh position={[0, 1.42, 0]}><boxGeometry args={[0.12, 0.12, 2.18]} /><meshStandardMaterial color={index % 2 === 0 ? "#38bdf8" : "#a78bfa"} roughness={0.4} /></mesh>
+      <Line
+        points={[[-5.4, 0.025, 0], [7, 0.025, 0]]}
+        color="#f8fafc"
+        lineWidth={2}
+        dashed
+        dashSize={0.34}
+        gapSize={0.24}
+      />
+      <Line
+        points={[[-5.4, 0.03, -1.85], [7, 0.03, -1.85]]}
+        color="#facc15"
+        lineWidth={2}
+      />
+      <Line
+        points={[[-5.4, 0.03, 1.85], [7, 0.03, 1.85]]}
+        color="#facc15"
+        lineWidth={2}
+      />
+      {markerPositions.map((x, index) => (
+        <group key={`tracking-ground-edge-marker-${index}`} position={[x, 0, 0]}>
+          <mesh position={[0, 0.038, -2.08]}>
+            <boxGeometry args={[0.42, 0.018, 0.12]} />
+            <meshBasicMaterial
+              color={index % 2 === 0 ? "#cbd5e1" : "#94a3b8"}
+              transparent
+              opacity={0.74}
+              toneMapped={false}
+            />
+          </mesh>
+          <mesh position={[0, 0.038, 2.08]}>
+            <boxGeometry args={[0.42, 0.018, 0.12]} />
+            <meshBasicMaterial
+              color={index % 2 === 0 ? "#cbd5e1" : "#94a3b8"}
+              transparent
+              opacity={0.74}
+              toneMapped={false}
+            />
+          </mesh>
         </group>
       ))}
     </group>
   );
 }
-
 
 function ObjectMotionQualificationStage({
   capabilityId,
@@ -892,6 +967,67 @@ function ObjectMotionQualificationStage({
   return null;
 }
 
+function cameraQualificationVisibilityAssistEnabled(capability: DirectorCapability) {
+  return (
+    capability.category === "camera_framing" ||
+    capability.category === "camera_angle" ||
+    capability.category === "camera_movement"
+  );
+}
+
+/**
+ * Qualification-only neutral front/three-quarter fill for camera-family proofs.
+ * It follows the active camera so a side-rail/orbit angle cannot accidentally
+ * turn asset visibility into the variable under test. This is deliberately not
+ * part of DirectorShotLightingRig and never activates unless Qualification Room
+ * opts in; lighting_emphasis therefore remains authored-lighting-only.
+ */
+function QualificationCameraVisibilityFill({ enabled }: { enabled: boolean }) {
+  const lightRef = useRef<THREE.DirectionalLight>(null);
+  const targetRef = useRef<THREE.Object3D>(null);
+  const forwardRef = useRef(new THREE.Vector3());
+  const rightRef = useRef(new THREE.Vector3());
+  const worldUpRef = useRef(new THREE.Vector3(0, 1, 0));
+
+  useFrame(({ camera }) => {
+    if (!enabled || !lightRef.current || !targetRef.current) return;
+    const forward = forwardRef.current;
+    const right = rightRef.current;
+    const worldUp = worldUpRef.current;
+    camera.getWorldDirection(forward).normalize();
+    right.crossVectors(forward, worldUp).normalize();
+
+    targetRef.current.position
+      .copy(camera.position)
+      .addScaledVector(forward, 6);
+    targetRef.current.updateMatrixWorld(true);
+
+    lightRef.current.position
+      .copy(camera.position)
+      .addScaledVector(worldUp, 2.2)
+      .addScaledVector(right, -1.35)
+      .addScaledVector(forward, -0.8);
+    lightRef.current.target = targetRef.current;
+    lightRef.current.updateMatrixWorld(true);
+  });
+
+  if (!enabled) return null;
+
+  return (
+    <>
+      <directionalLight
+        ref={lightRef}
+        // Phase 1B.7A.10B: modestly stronger than A.9 after the first internal
+        // evidence reel still left side-rail character silhouettes underexposed.
+        intensity={0.78}
+        color="#e7f0ff"
+        castShadow={false}
+      />
+      <object3D ref={targetRef} />
+    </>
+  );
+}
+
 function Stage({
   capabilityId,
   fixtureKind,
@@ -908,13 +1044,7 @@ function Stage({
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}><circleGeometry args={[8.5, 48]} /><meshStandardMaterial color="#07111f" roughness={0.94} metalness={0.04} /></mesh>
       <gridHelper args={[14, 28, "#1d4ed8", "#172554"]} position={[0, 0, 0]} />
-      {travelling ? (
-        <>
-          <Line points={[[-3.2, 0.04, 0.65], [3.2, 0.04, -0.65]]} color="#f8fafc" lineWidth={2} dashed dashSize={0.18} gapSize={0.12} />
-          <Line points={[[-3.2, 0.04, 1.25], [3.2, 0.04, -0.05]]} color="#0ea5e9" lineWidth={1} />
-        </>
-      ) : null}
-      {mounted ? <MountedCameraCourse /> : null}
+      {travelling ? <TravellingCameraCorridor capabilityId={capabilityId} /> : null}
       <ObjectMotionQualificationStage
         capabilityId={capabilityId}
         fixtureKind={fixtureKind}
@@ -944,11 +1074,16 @@ export function DirectorCapabilityPreview({
   fixtureMode = "real_assets",
   fixtureKind = "single_subject_composition",
   auditSnap = false,
+  qualificationVisibilityAssist = false,
+  preserveActorInstances = false,
 }: PreviewProps) {
   const moment = useMemo(() => directorCapabilityDemoMoment(capability), [capability]);
   const baseActors = useMemo(() => runtimeActorsFor(roles), [roles]);
   const actors = useMemo(() => applyDirectorBlocking(moment, baseActors), [baseActors, moment]);
   const lowKey = moment.shot?.lighting.intents.includes("low_key") || moment.shot?.lighting.intents.includes("dim_environment");
+  const useQualificationVisibilityFill =
+    qualificationVisibilityAssist &&
+    cameraQualificationVisibilityAssistEnabled(capability);
 
   return (
     <>
@@ -960,7 +1095,7 @@ export function DirectorCapabilityPreview({
         const actor = actors.find((candidate) => candidate.id === resolvedRole.role) ?? baseActors.find((candidate) => candidate.id === resolvedRole.role);
         return actor ? (
           <AnimatedActor
-            key={`${capability.id}:${resolvedRole.role}:${fixtureMode}:${resolvedRole.asset?.asset_id ?? "fallback"}`}
+            key={`${preserveActorInstances ? "stable" : capability.id}:${resolvedRole.role}:${fixtureMode}:${resolvedRole.asset?.asset_id ?? "fallback"}`}
             capability={capability}
             moment={moment}
             actor={actor}
@@ -984,6 +1119,7 @@ export function DirectorCapabilityPreview({
         progress={progress}
         isPlaying={auditSnap ? false : isPlaying}
       />
+      <QualificationCameraVisibilityFill enabled={useQualificationVisibilityFill} />
       {/* Controlled audit proofs are camera-authoritative. OrbitControls can
           overwrite a paused Director pose and create a false pause-to-play snap.
           Manual orbit remains available outside auditSnap. */}
@@ -991,4 +1127,3 @@ export function DirectorCapabilityPreview({
     </>
   );
 }
-

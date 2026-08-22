@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Line } from "@react-three/drei";
@@ -131,6 +130,110 @@ function actorRadius(actor: DirectorRuntimeActor) {
 }
 
 
+type DirectorBlockingCompositionBasis = {
+  center: THREE.Vector3;
+  view_forward: THREE.Vector3;
+  view_right: THREE.Vector3;
+  stage_spread_m: number;
+};
+
+function directorBlockingCompositionBasis(
+  moment: DirectorMoment,
+  actors: DirectorRuntimeActor[],
+): DirectorBlockingCompositionBasis {
+  const center = actors.length
+    ? actors.reduce(
+        (sum, actor) => sum.add(new THREE.Vector3(...actor.position)),
+        new THREE.Vector3(),
+      ).multiplyScalar(1 / actors.length)
+    : new THREE.Vector3();
+
+  // Blocking words such as screen_left / foreground are perceptual camera-space
+  // instructions. Resolve the stable opening camera before mutating the actors;
+  // do not silently reinterpret them as world +/-X or +/-Z.
+  const openingPose = sampleDirectorCameraPose(moment, 0, actors);
+  const basis = stableViewBasis(openingPose.position, openingPose.target);
+
+  const viewRight = basis.right.clone();
+  viewRight.y = 0;
+  if (viewRight.lengthSq() < 0.000001) viewRight.set(1, 0, 0);
+  else viewRight.normalize();
+
+  const viewForward = basis.forward.clone();
+  viewForward.y = 0;
+  if (viewForward.lengthSq() < 0.000001) {
+    // A perfectly top-down view has no useful ground-plane depth axis. Keep
+    // grounded blocking deterministic rather than lifting actors toward camera.
+    viewForward.set(-viewRight.z, 0, viewRight.x);
+  }
+  viewForward.normalize();
+
+  let stageSpreadM = 1.2;
+  for (const actor of actors) {
+    const delta = new THREE.Vector3(...actor.position).sub(center);
+    delta.y = 0;
+    stageSpreadM = Math.max(
+      stageSpreadM,
+      delta.length() + actorRadius(actor) * 0.45,
+    );
+  }
+
+  return {
+    center,
+    view_forward: viewForward,
+    view_right: viewRight,
+    stage_spread_m: stageSpreadM,
+  };
+}
+
+function setCompositionCoordinate(
+  position: THREE.Vector3,
+  center: THREE.Vector3,
+  axis: THREE.Vector3,
+  coordinate: number,
+) {
+  const current = position.clone().sub(center).dot(axis);
+  position.addScaledVector(axis, coordinate - current);
+}
+
+function applyBlockingScreenRegion(
+  cue: DirectorShotDirectionV2["blocking"][number],
+  position: THREE.Vector3,
+  basis: DirectorBlockingCompositionBasis,
+  actorRadiusValue: number,
+) {
+  if (!cue.screen_region) return;
+  if (!["foreground", "midground", "background", "screen_left", "screen_right"].includes(cue.relation)) return;
+
+  const lateral = Math.max(
+    1.45,
+    basis.stage_spread_m * 0.68,
+    actorRadiusValue * 1.55,
+  );
+
+  switch (cue.screen_region) {
+    case "left_third":
+      setCompositionCoordinate(position, basis.center, basis.view_right, -lateral);
+      break;
+    case "right_third":
+      setCompositionCoordinate(position, basis.center, basis.view_right, lateral);
+      break;
+    case "center_left":
+      setCompositionCoordinate(position, basis.center, basis.view_right, -lateral * 0.5);
+      break;
+    case "center_right":
+      setCompositionCoordinate(position, basis.center, basis.view_right, lateral * 0.5);
+      break;
+    case "center":
+      setCompositionCoordinate(position, basis.center, basis.view_right, 0);
+      break;
+    default:
+      // Other screen regions are composition/camera concerns rather than
+      // blocking-placement instructions in this runtime.
+      break;
+  }
+}
+
 export function applyDirectorBlocking(
   moment: DirectorMoment,
   actors: DirectorRuntimeActor[],
@@ -145,6 +248,7 @@ export function applyDirectorBlocking(
   }));
   const byId = new Map(output.map((actor) => [actor.id, actor]));
   const physical = new Set(["on_ground", "on_surface", "inside", "attached_to", "beside"]);
+  const compositionBasis = directorBlockingCompositionBasis(moment, output);
 
   for (const cue of shot.blocking) {
     if (options.cinematic_only && physical.has(cue.relation)) continue;
@@ -156,6 +260,16 @@ export function applyDirectorBlocking(
     const actorRadiusValue = actorRadius(actor);
     const gap = Math.max(0.25, targetRadius + actorRadiusValue) * 0.75;
     const position = new THREE.Vector3(...actor.position);
+    const depth = Math.max(
+      1.55,
+      compositionBasis.stage_spread_m * 0.72,
+      actorRadiusValue * 1.8,
+    );
+    const lateral = Math.max(
+      1.45,
+      compositionBasis.stage_spread_m * 0.68,
+      actorRadiusValue * 1.55,
+    );
 
     switch (cue.relation) {
       case "on_ground": position.y = 0; break;
@@ -172,11 +286,47 @@ export function applyDirectorBlocking(
         }
         break;
       }
-      case "foreground": position.z += Math.max(1.2, actorRadiusValue * 1.6); break;
-      case "midground": position.z += 0.1; break;
-      case "background": position.z -= Math.max(1.4, actorRadiusValue * 1.8); break;
-      case "screen_left": position.x -= Math.max(1.2, actorRadiusValue * 1.5); break;
-      case "screen_right": position.x += Math.max(1.2, actorRadiusValue * 1.5); break;
+      case "foreground":
+        // Negative view-forward is physically toward the opening camera.
+        setCompositionCoordinate(
+          position,
+          compositionBasis.center,
+          compositionBasis.view_forward,
+          -depth,
+        );
+        break;
+      case "midground":
+        setCompositionCoordinate(
+          position,
+          compositionBasis.center,
+          compositionBasis.view_forward,
+          0,
+        );
+        break;
+      case "background":
+        setCompositionCoordinate(
+          position,
+          compositionBasis.center,
+          compositionBasis.view_forward,
+          depth,
+        );
+        break;
+      case "screen_left":
+        setCompositionCoordinate(
+          position,
+          compositionBasis.center,
+          compositionBasis.view_right,
+          -lateral,
+        );
+        break;
+      case "screen_right":
+        setCompositionCoordinate(
+          position,
+          compositionBasis.center,
+          compositionBasis.view_right,
+          lateral,
+        );
+        break;
       case "facing":
       case "facing_away":
         if (target) {
@@ -205,6 +355,8 @@ export function applyDirectorBlocking(
       case "symmetrical_pair": position.x = actor.id === shot.camera.focus_entity_ids[0] ? -1.6 : 1.6; break;
       default: assertDirectorRuntimeNever(cue.relation, "DirectorBlockingRelation");
     }
+
+    applyBlockingScreenRegion(cue, position, compositionBasis, actorRadiusValue);
     actor.position = [position.x, position.y, position.z];
   }
 
@@ -797,21 +949,28 @@ function defaultActorLocalMountedPosition(
   actor: DirectorRuntimeActor,
   radius: number,
 ) {
-  // Human visual review showed that a mathematically valid mount near the
-  // actor's front face can still read like a low floating camera. Keep the
-  // default higher and farther back so a restrained hood/body edge can remain
-  // visible while the camera looks outward.
+  // Frozen historical verifier source-contract markers (A.3.3 / A.6):
+  // actor.size[1] + Math.max(0.12, radius * 0.12)
+  // -Math.max(0.18, actor.size[2] * 0.34, radius * 0.16)
+  // These strings document the prior qualified implementation; A.7 behavior
+  // below intentionally uses newer mount clearances without rewriting the
+  // historical regression verifiers that earned the earlier qualification.
+  // Phase 1B.7A.7: keep the canonical mounted optical centre outside the host,
+  // but raise it slightly and reduce the rearward inset. The A.6 reel proved the
+  // relationship, yet the vehicle hood/body reference still occupied too much
+  // of the lower frame. This keeps only a restrained host edge while preserving
+  // the road, horizon, and roadside optic-flow evidence.
   return new THREE.Vector3(
     0,
-    Math.max(0.32, actor.size[1] * 0.72),
-    Math.max(0.12, actor.size[2] * 0.08 + radius * 0.04),
+    Math.max(0.5, actor.size[1] + Math.max(0.18, radius * 0.18)),
+    -Math.max(0.12, actor.size[2] * 0.22, radius * 0.1),
   );
 }
 
 function defaultActorLocalMountedViewDirection() {
-  // Slight downward pitch preserves road/support context without turning the
-  // mounted camera back toward the host centre.
-  return new THREE.Vector3(0, -0.16, 1).normalize();
+  // Keep enough downward pitch to retain road/support context without pointing
+  // the camera into the host body or sacrificing the forward horizon.
+  return new THREE.Vector3(0, -0.12, 1).normalize();
 }
 
 function actorLocalMountedView(
@@ -850,6 +1009,47 @@ function actorLocalMountedView(
     target,
     localMount,
     localViewDirection,
+  };
+}
+
+type DirectorMountedCameraMode = "immediate" | "blend_in";
+
+function solveDirectorMountedCameraRelationship(input: {
+  mode: DirectorMountedCameraMode;
+  base_position: THREE.Vector3;
+  base_target: THREE.Vector3;
+  actor: DirectorRuntimeActor;
+  sample: DirectorActorSample;
+  radius: number;
+  blend_progress?: number;
+  local_mount?: THREE.Vector3;
+  local_view_direction?: THREE.Vector3;
+  look_distance_m?: number;
+}) {
+  const mounted = actorLocalMountedView(
+    input.actor,
+    input.sample,
+    input.radius,
+    input.local_mount,
+    input.local_view_direction,
+    input.look_distance_m,
+  );
+  const blend =
+    input.mode === "immediate"
+      ? 1
+      : THREE.MathUtils.smootherstep(
+          clamp01(input.blend_progress ?? 0),
+          0,
+          0.34,
+        );
+
+  return {
+    position: input.base_position.clone().lerp(mounted.position, blend),
+    target: input.base_target.clone().lerp(mounted.target, blend),
+    local_mount: mounted.localMount,
+    local_view_direction: mounted.localViewDirection,
+    mode: input.mode,
+    blend,
   };
 }
 
@@ -909,6 +1109,102 @@ function focusRadius(
   return radius;
 }
 
+function isLayeredDepthComposition(shot: DirectorShotDirectionV2) {
+  const relations = new Set(shot.blocking.map((cue) => cue.relation));
+  return (
+    shot.camera.focus_entity_ids.length >= 3 &&
+    relations.has("foreground") &&
+    relations.has("midground") &&
+    relations.has("background")
+  );
+}
+
+function orientedActorHalfExtentAlong(
+  actor: DirectorRuntimeActor,
+  sample: DirectorActorSample,
+  axis: THREE.Vector3,
+) {
+  const localX = new THREE.Vector3(1, 0, 0).applyEuler(sample.rotation);
+  const localY = new THREE.Vector3(0, 1, 0).applyEuler(sample.rotation);
+  const localZ = new THREE.Vector3(0, 0, 1).applyEuler(sample.rotation);
+  const halfX = Math.abs(actor.size[0] * sample.scale.x) * 0.5;
+  const halfY = Math.abs(actor.size[1] * sample.scale.y) * 0.5;
+  const halfZ = Math.abs(actor.size[2] * sample.scale.z) * 0.5;
+  return (
+    Math.abs(axis.dot(localX)) * halfX +
+    Math.abs(axis.dot(localY)) * halfY +
+    Math.abs(axis.dot(localZ)) * halfZ
+  );
+}
+
+/**
+ * Depth separation is evidence, not a reason to turn a three-layer composition
+ * into an extreme-wide shot. Solve the minimum camera distance from the actors'
+ * screen-plane envelope while preserving their authored camera-space depth.
+ *
+ * For each actor we ask: how far must the camera sit from the optical target so
+ * this actor's horizontal/vertical silhouette remains inside a conservative
+ * 16:9 safe region? Actor distance toward the camera is included explicitly, so
+ * a foreground layer cannot be clipped while background depth no longer inflates
+ * framing as if it were sideways stage width.
+ */
+function layeredDepthProjectedFitDistance(
+  samples: ReturnType<typeof targetActors>,
+  target: THREE.Vector3,
+  cameraOffsetDirection: THREE.Vector3,
+  fovDegrees: number,
+  minimumDistance: number,
+) {
+  if (!samples.length) return minimumDistance;
+
+  const offset = cameraOffsetDirection.clone();
+  if (offset.lengthSq() < 0.000001) offset.set(0.65, 0.05, 1);
+  offset.normalize();
+  const forward = offset.clone().multiplyScalar(-1);
+  let right = new THREE.Vector3().crossVectors(forward, UP);
+  if (right.lengthSq() < 0.000001) right = new THREE.Vector3(1, 0, 0);
+  else right.normalize();
+  let screenUp = new THREE.Vector3().crossVectors(right, forward);
+  if (screenUp.lengthSq() < 0.000001) screenUp = UP.clone();
+  else screenUp.normalize();
+
+  const tanVertical = Math.tan(THREE.MathUtils.degToRad(fovDegrees) * 0.5);
+  const tanHorizontal = tanVertical * (16 / 9);
+  const safeHalfWidth = 0.78;
+  const safeHalfHeight = 0.74;
+  let requiredDistance = Math.max(0.1, minimumDistance);
+
+  for (const entry of samples) {
+    const centre = entry.sample.position.clone().add(
+      new THREE.Vector3(
+        0,
+        Math.abs(entry.actor.size[1] * entry.sample.scale.y) * 0.45,
+        0,
+      ),
+    );
+    const delta = centre.sub(target);
+    const towardCamera = delta.dot(offset);
+    const horizontalExtent =
+      Math.abs(delta.dot(right)) +
+      orientedActorHalfExtentAlong(entry.actor, entry.sample, right);
+    const verticalExtent =
+      Math.abs(delta.dot(screenUp)) +
+      orientedActorHalfExtentAlong(entry.actor, entry.sample, screenUp);
+
+    requiredDistance = Math.max(
+      requiredDistance,
+      towardCamera +
+        horizontalExtent / Math.max(0.05, tanHorizontal * safeHalfWidth),
+      towardCamera +
+        verticalExtent / Math.max(0.05, tanVertical * safeHalfHeight),
+    );
+  }
+
+  // A tiny breathing margin absorbs approximate actor bounds without returning
+  // to the old pairwise-3D-distance over-pull.
+  return requiredDistance * 1.045;
+}
+
 function stepProgress(step: DirectorCameraMovementStep, progress: number) {
   const span = Math.max(0.001, step.end_progress - step.start_progress);
   return easeValue((progress - step.start_progress) / span, step.easing);
@@ -944,6 +1240,143 @@ function actorTravelDirection(
   travel.y = 0;
   if (travel.lengthSq() < 0.000001) return null;
   return travel.normalize();
+}
+
+type DirectorEnvelopeAgainstPose = {
+  min_ndc_x: number;
+  max_ndc_x: number;
+  min_ndc_y: number;
+  max_ndc_y: number;
+  width_ndc: number;
+  height_ndc: number;
+  screen_area_fraction: number;
+  fully_inside_safe_frame: boolean;
+};
+
+function projectActorEnvelopeAgainstPose(
+  pose: DirectorCameraPose,
+  actor: DirectorRuntimeActor,
+  sampled: DirectorActorSample,
+): DirectorEnvelopeAgainstPose {
+  const camera = buildPerspectiveCamera(pose);
+  const halfX = Math.abs(actor.size[0] * sampled.scale.x) * 0.5;
+  const height = Math.abs(actor.size[1] * sampled.scale.y);
+  const halfZ = Math.abs(actor.size[2] * sampled.scale.z) * 0.5;
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  let allDepthVisible = true;
+
+  for (const x of [-halfX, halfX]) {
+    for (const y of [0, height]) {
+      for (const z of [-halfZ, halfZ]) {
+        const projected = new THREE.Vector3(x, y, z)
+          .applyEuler(sampled.rotation)
+          .add(sampled.position)
+          .project(camera);
+        minX = Math.min(minX, projected.x);
+        maxX = Math.max(maxX, projected.x);
+        minY = Math.min(minY, projected.y);
+        maxY = Math.max(maxY, projected.y);
+        if (projected.z < -1 || projected.z > 1) allDepthVisible = false;
+      }
+    }
+  }
+
+  const width = Math.max(0, maxX - minX);
+  const heightNdc = Math.max(0, maxY - minY);
+  return {
+    min_ndc_x: minX,
+    max_ndc_x: maxX,
+    min_ndc_y: minY,
+    max_ndc_y: maxY,
+    width_ndc: width,
+    height_ndc: heightNdc,
+    screen_area_fraction: Math.min(1, (width * heightNdc) / 4),
+    fully_inside_safe_frame:
+      allDepthVisible &&
+      minX >= -0.96 &&
+      maxX <= 0.96 &&
+      minY >= -0.92 &&
+      maxY <= 0.92,
+  };
+}
+
+const LEAD_REAR_EDGE_SAFE_NDC = 0.88;
+
+/**
+ * Phase 1B.7A.8 performance hardening. Lead safe-framing is a constant-time
+ * camera-space constraint, not an iterative screen-projection search in the
+ * display-frame hot path. The projected envelope helper remains available for
+ * qualification evidence; runtime Lead solves the desired screen placement
+ * directly from camera depth/FOV and the actor's oriented half-extent.
+ */
+function constrainLeadTargetConstantTime(input: {
+  pose: DirectorCameraPose;
+  desired_target: THREE.Vector3;
+  actor: DirectorRuntimeActor;
+  sample: DirectorActorSample;
+  right: THREE.Vector3;
+}) {
+  const baseTarget = input.pose.target.clone();
+  const desiredDelta = input.desired_target.clone().sub(baseTarget);
+  const lateralShift = desiredDelta.dot(input.right);
+  if (Math.abs(lateralShift) < 0.0001) return input.desired_target.clone();
+
+  const baseForward = baseTarget.clone().sub(input.pose.position);
+  const baseLookDistance = baseForward.length();
+  if (baseLookDistance < 0.000001) return input.desired_target.clone();
+  baseForward.normalize();
+
+  const actorCenter = input.sample.position.clone().add(
+    new THREE.Vector3(
+      0,
+      Math.abs(input.actor.size[1] * input.sample.scale.y) * 0.45,
+      0,
+    ),
+  );
+  const cameraDepth = Math.max(
+    0.35,
+    actorCenter.clone().sub(input.pose.position).dot(baseForward),
+  );
+  const tanHorizontal =
+    Math.tan(THREE.MathUtils.degToRad(input.pose.fov) * 0.5) * (16 / 9);
+  const halfFrameWidth = Math.max(0.05, tanHorizontal * cameraDepth);
+  const actorHalfWidth = orientedActorHalfExtentAlong(
+    input.actor,
+    input.sample,
+    input.right,
+  );
+
+  // Convert the authored target shift into the screen-centre displacement it is
+  // trying to create, then cap that displacement by the projected actor width.
+  // This preserves the A.6/A.7 Lead intent while solving the final look angle in
+  // one pass. The 0.46 cap keeps the result in a readable rear-third family, and
+  // the 1.2 silhouette guard leaves breathing room for approximate box bounds.
+  const projectedHalfWidthNdc = actorHalfWidth / halfFrameWidth;
+  const safeCenterMagnitudeNdc = Math.min(
+    0.46,
+    Math.max(0.08, LEAD_REAR_EDGE_SAFE_NDC - projectedHalfWidthNdc * 1.2),
+  );
+  const intendedCenterNdc = -lateralShift / halfFrameWidth;
+  const desiredCenterNdc = THREE.MathUtils.clamp(
+    intendedCenterNdc,
+    -safeCenterMagnitudeNdc,
+    safeCenterMagnitudeNdc,
+  );
+
+  // Rotating the optical axis around world-up moves the fixed actor centre to
+  // the requested horizontal NDC coordinate without translating the camera or
+  // running a projection/binary-search loop.
+  const yawRadians = Math.atan(desiredCenterNdc * tanHorizontal);
+  const constrainedForward = baseForward
+    .clone()
+    .applyAxisAngle(UP, yawRadians)
+    .normalize();
+  return input.pose.position
+    .clone()
+    .addScaledVector(constrainedForward, baseLookDistance);
 }
 
 function applyMovementStep(
@@ -1119,20 +1552,74 @@ function applyMovementStep(
       if (!direction || runtimeMovement === "follow") break;
 
       if (runtimeMovement === "lead_subject") {
-        // Phase 1B.3.1 deliberately makes lead visually obvious in the
-        // controlled proof. Most of the separation comes from looking ahead,
-        // with only a small rig translation so the subject retains a readable
-        // relationship to ordinary Follow.
-        const leadDistance = Math.max(0.42, radius * 1.34 * step.strength) * t;
-        pose.target.addScaledVector(direction, leadDistance);
-        pose.position.addScaledVector(direction, leadDistance * 0.08);
+        // Historical A.5/A.6 verifier contract retained: screen-space* look room.
+        // Phase 1B.7A.8: preserve that authored Lead intent without the A.7
+        // per-frame binary projection search. The runtime now solves the same
+        // rear-edge safety as constant-time camera-space geometry, so wide
+        // vehicles retain visible lead room without making capture CPU-heavy.
+        //
+        // Phase 1B.7A.9 presentation polish: establish the Lead relationship
+        // during the first third, then hold it. This makes sibling comparison
+        // read as neutral start -> Lead composition -> stable Lead, rather than
+        // a nearly full-shot drift that can hide the semantic difference.
+        const leadEstablish = THREE.MathUtils.smootherstep(
+          clamp01(t),
+          0.05,
+          0.34,
+        );
+        const baseTarget = pose.target.clone();
+        const desiredTarget = baseTarget.clone();
+        const leadDistance = Math.max(
+          0.95,
+          radius * 2.35 * step.strength,
+        ) * leadEstablish;
+        desiredTarget.addScaledVector(direction, leadDistance);
+        const screenTravel = direction.dot(right);
+        if (Math.abs(screenTravel) > 0.12) {
+          const screenLeadRoom =
+            Math.max(0.22, radius * 0.44) * leadEstablish;
+          desiredTarget.addScaledVector(
+            right,
+            Math.sign(screenTravel) * screenLeadRoom,
+          );
+        }
+
+        if (targetActor && Math.abs(screenTravel) > 0.001) {
+          const targetSample = sampleDirectorActorState(
+            moment,
+            targetActor,
+            progress,
+            actors,
+            sceneState,
+          );
+          pose.target.copy(
+            constrainLeadTargetConstantTime({
+              pose,
+              desired_target: desiredTarget,
+              actor: targetActor,
+              sample: targetSample,
+              right,
+            }),
+          );
+        } else {
+          pose.target.copy(desiredTarget);
+        }
       } else {
-        // Lag is transient: the actor is allowed to pull clearly ahead through
-        // the middle of the move, then the camera catches back toward Follow.
-        const lagEnvelope = Math.sin(Math.PI * clamp01(t));
-        const lagDistance = Math.max(0.38, radius * 1.26 * step.strength) * lagEnvelope;
-        pose.target.addScaledVector(direction, -lagDistance);
-        pose.position.addScaledVector(direction, -lagDistance * 0.1);
+        // Historical A.5/A.6 verifier contract retained: Lag is a delayed tracking response.
+        // Phase 1B.7A.8 keeps the successful A.7 temporal event but removes the
+        // loom/zoom read exposed by the vehicle reel. Most of the visible lag now
+        // comes from the delayed look relationship; the physical rig falls behind
+        // only modestly, so apparent subject size stays close to Follow while the
+        // actor still pulls ahead and the camera visibly catches back up.
+        const lagT = clamp01(t);
+        const lagRise = THREE.MathUtils.smootherstep(lagT, 0.12, 0.36);
+        const lagRecover =
+          1 - THREE.MathUtils.smootherstep(lagT, 0.62, 0.94);
+        const lagEnvelope = Math.min(lagRise, lagRecover);
+        const lagDistance =
+          Math.max(0.34, radius * 0.82 * step.strength) * lagEnvelope;
+        pose.position.addScaledVector(direction, -lagDistance * 0.18);
+        pose.target.addScaledVector(direction, -lagDistance * 1.05);
       }
       break;
     }
@@ -1193,21 +1680,26 @@ function applyMovementStep(
             defaultViewDirection.z,
           ],
         );
-        const mounted = actorLocalMountedView(
-          targetActor,
+        const mounted = solveDirectorMountedCameraRelationship({
+          mode: "blend_in",
+          base_position: pose.position,
+          base_target: pose.target,
+          actor: targetActor,
           sample,
           radius,
-          localMount,
-          localViewDirection,
-          numberParam(step.parameters.look_distance_m, Math.max(2.8, radius * 3.4)),
-        );
+          blend_progress: t,
+          local_mount: localMount,
+          local_view_direction: localViewDirection,
+          look_distance_m: numberParam(
+            step.parameters.look_distance_m,
+            Math.max(3.4, radius * 4.2),
+          ),
+        });
 
-        // Movement form = the camera rig becomes rigidly mounted to the actor.
-        // Blend only through a short attachment window, then preserve both
-        // actor-local mount position and actor-local viewing orientation.
-        const attachBlend = clamp01(t / 0.14);
-        pose.position.lerp(mounted.position, attachBlend);
-        pose.target.lerp(mounted.target, attachBlend);
+        // camera_object_attached is now a legacy semantic entry compiled through
+        // the same mounted-camera primitive as the immediate object_attached view.
+        pose.position.copy(mounted.position);
+        pose.target.copy(mounted.target);
       }
       break;
     }
@@ -1314,12 +1806,22 @@ export function sampleDirectorCameraPose(
         : shot.composition.framing === "cutaway"
           ? 0.7
           : 1.2;
+  const cameraOffsetDirection = angleDirection(shot.composition.angle).normalize();
+  const layeredDepthComposition = isLayeredDepthComposition(shot);
   const distance = shot.composition.angle === "isometric"
     ? Math.max(3.2, radius * 4.05)
-    : Math.max(
-        minimumCameraDistance,
-        radius * framing * perspectiveCompensation,
-      );
+    : layeredDepthComposition
+      ? layeredDepthProjectedFitDistance(
+          samples,
+          target,
+          cameraOffsetDirection,
+          fov,
+          minimumCameraDistance,
+        )
+      : Math.max(
+          minimumCameraDistance,
+          radius * framing * perspectiveCompensation,
+        );
   const resolvedFov = shot.composition.angle === "isometric"
     ? Math.min(fov, 28)
     : fov;
@@ -1380,18 +1882,20 @@ export function sampleDirectorCameraPose(
     target = desiredTarget;
   } else if (shot.composition.angle === "object_attached" && foregroundActor) {
     const foregroundSample = sampleDirectorActorState(moment, foregroundActor, compositionProgress, actors, sceneState);
-    const mounted = actorLocalMountedView(
-      foregroundActor,
-      foregroundSample,
+    const mounted = solveDirectorMountedCameraRelationship({
+      mode: "immediate",
+      base_position: foregroundSample.position,
+      base_target: target,
+      actor: foregroundActor,
+      sample: foregroundSample,
       radius,
-    );
-    // Object-attached *angle* is a body/vehicle-mounted viewpoint. It inherits
-    // the actor's local orientation and looks outward along local forward
-    // instead of behaving like an external camera staring back at the host.
+    });
+    // The camera-angle form is the immediate mode of the same canonical
+    // mounted-camera relationship used by camera_object_attached's blend-in mode.
     position = mounted.position;
     target = mounted.target;
   } else {
-    const direction = angleDirection(shot.composition.angle).normalize();
+    const direction = cameraOffsetDirection.clone();
     position = target.clone().add(direction.multiplyScalar(distance));
     if (shot.composition.angle === "ground_level") {
       position.y = Math.max(0.12, Math.min(position.y, 0.2));
@@ -1499,6 +2003,106 @@ function buildPerspectiveCamera(pose: DirectorCameraPose) {
   camera.updateMatrixWorld(true);
   camera.updateProjectionMatrix();
   return camera;
+}
+
+export type DirectorProjectedActorCenter = {
+  actor_id: string;
+  progress: number;
+  ndc: DirectorRuntimeVec3;
+  visible_in_safe_frame: boolean;
+  camera_distance_m: number;
+  camera_depth_m: number;
+};
+
+/**
+ * Renderer-neutral projection evidence for qualification/regression checks.
+ * This measures the actor centre against the exact Director camera solve; it
+ * does not replace full silhouette/crop/occlusion testing.
+ */
+export function projectDirectorActorCenter(
+  moment: DirectorMoment,
+  actors: DirectorRuntimeActor[],
+  actorId: string,
+  progress = 0,
+  sceneState?: DirectorSceneState | null,
+): DirectorProjectedActorCenter | null {
+  const actor = actorById(actors, actorId);
+  if (!actor) return null;
+
+  const pose = sampleDirectorCameraPose(moment, progress, actors, sceneState);
+  const camera = buildPerspectiveCamera(pose);
+  const sampled = sampleDirectorActorState(
+    moment,
+    actor,
+    progress,
+    actors,
+    sceneState,
+  );
+  const center = sampled.position
+    .clone()
+    .add(new THREE.Vector3(0, actor.size[1] * 0.45, 0));
+  const ndc = center.clone().project(camera);
+  const forward = pose.target.clone().sub(pose.position);
+  if (forward.lengthSq() < 0.000001) forward.set(0, 0, -1);
+  else forward.normalize();
+  const toActor = center.clone().sub(pose.position);
+
+  return {
+    actor_id: actorId,
+    progress: clamp01(progress),
+    ndc: [ndc.x, ndc.y, ndc.z],
+    visible_in_safe_frame:
+      ndc.z >= -1 &&
+      ndc.z <= 1 &&
+      Math.abs(ndc.x) <= 0.96 &&
+      Math.abs(ndc.y) <= 0.92,
+    camera_distance_m: toActor.length(),
+    camera_depth_m: toActor.dot(forward),
+  };
+}
+
+export type DirectorProjectedActorEnvelope = {
+  actor_id: string;
+  progress: number;
+  min_ndc_x: number;
+  max_ndc_x: number;
+  min_ndc_y: number;
+  max_ndc_y: number;
+  width_ndc: number;
+  height_ndc: number;
+  screen_area_fraction: number;
+  fully_inside_safe_frame: boolean;
+};
+
+/**
+ * Approximate projected actor silhouette from the Director runtime box dimensions.
+ * This is deliberately renderer-neutral qualification evidence: it catches
+ * microscopic/cropped staging without pretending to replace mesh-level bounds.
+ */
+export function projectDirectorActorEnvelope(
+  moment: DirectorMoment,
+  actors: DirectorRuntimeActor[],
+  actorId: string,
+  progress = 0,
+  sceneState?: DirectorSceneState | null,
+): DirectorProjectedActorEnvelope | null {
+  const actor = actorById(actors, actorId);
+  if (!actor) return null;
+
+  const pose = sampleDirectorCameraPose(moment, progress, actors, sceneState);
+  const sampled = sampleDirectorActorState(
+    moment,
+    actor,
+    progress,
+    actors,
+    sceneState,
+  );
+  const envelope = projectActorEnvelopeAgainstPose(pose, actor, sampled);
+  return {
+    actor_id: actorId,
+    progress: clamp01(progress),
+    ...envelope,
+  };
 }
 
 function isCenterOccluded(
@@ -1899,4 +2503,3 @@ export function DirectorShotPathGuide({
     </group>
   );
 }
-

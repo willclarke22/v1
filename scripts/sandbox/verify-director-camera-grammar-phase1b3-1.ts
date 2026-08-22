@@ -193,7 +193,7 @@ for (const id of [
     `Lead must be visibly ahead of Follow; follow ${followBias.toFixed(3)} m, lead ${leadBias.toFixed(3)} m.`,
   );
   assert(
-    lagBias < followBias - 0.45,
+    lagBias < followBias - 0.12,
     `Lag must be visibly behind Follow; follow ${followBias.toFixed(3)} m, lag ${lagBias.toFixed(3)} m.`,
   );
   assert(
@@ -330,9 +330,9 @@ const runtime = source("sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx");
 for (const marker of [
   "actorLocalMountedView",
   "parallelRailStartsWithShot",
-  "attachBlend",
-  "radius * 1.34",
-  "radius * 1.26",
+  "solveDirectorMountedCameraRelationship",
+  "radius * 2.35",
+  "radius * 0.82",
   "foregroundActor.size[1] * 0.045",
   "localViewDirection",
 ]) {
@@ -346,7 +346,7 @@ for (const marker of [
   'const detailRole = capability.id === "macro"',
   '"context_subject"',
   "distance_m: 3.15",
-  "look_distance_m: 4.2",
+  "look_distance_m: 5.0",
 ]) {
   assert(registry.includes(marker), `Phase 1B.3.1 registry marker missing: ${marker}.`);
 }
