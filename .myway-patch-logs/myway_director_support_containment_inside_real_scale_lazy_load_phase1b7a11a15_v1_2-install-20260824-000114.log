@@ -1,0 +1,133 @@
+**********************
+PowerShell transcript start
+Start time: 20260824000115
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 33132
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_director_support_containment_inside_real_scale_lazy_load_phase1b7a11a15_v1_2-install-20260824-000114.log
+
+=== MyWay A.11A.15 v1.2 — Inside real-scale fixtures + Qualification lazy-loading ===
+
+Current git status (diagnostic only):
+
+
+Invoking transactional installer...
+
+=== myway_director_support_containment_inside_real_scale_lazy_load_phase1b7a11a15_v1_2 ===
+Project root: C:\Users\willc\projects\MyWay\v1
+Package root: C:\Users\willc\Downloads\myway_director_support_containment_inside_real_scale_lazy_load_phase1b7a11a15_v1_2
+Running exact baseline/applied preflight...
+PATCH_ID=myway_director_support_containment_inside_real_scale_lazy_load_phase1b7a11a15_v1_2
+PREFLIGHT_STATE=baseline
+Baseline fingerprints match exactly; apply is permitted.
+Verifying packaged payload hashes...
+Creating transactional backup: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_director_support_containment_inside_real_scale_lazy_load_phase1b7a11a15_v1_2-20260824-000115
+Applying payload...
+Verifying exact post-copy payload hashes...
+
+Running A.11A.15 current acceptance + successor-safe earned-boundaries + Director architectural regression chain...
+A.11A.15 v1_2 preserves the live Phase 1B.7A.1 default [0.02,40] render-scale boundary and widens it only for explicit Inside fixtures.
+Historical A.11A.7-A.11A.14 Support/Containment phase-acceptance scripts remain repository lineage records and are intentionally not permanent successor gates.
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-support-containment-inside-real-scale-load-phase1b7a11a15.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-support-containment-earned-boundaries-phase1b7a11a11.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-qualification-room-phase1b7a.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-affordance-evidence-hardening-phase1b5b2.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-asset-directability-phase1b5.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-directable-asset-compiler-phase1b5b.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-asset-pair-interaction-resolver-phase1b5c.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-scene-scale-pair-fit-hardening-phase1b5c2.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-real-asset-execution-qualification-phase1b5e.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-relative-actor-between-framing-phase1b7a11a6.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-relative-actor-placement-phase1b7a11a5.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-group-formations-perceptual-phase1b7a11a4.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-group-formations-phase1b7a11a3.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-runtime-convergence-phase1b5a.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-camera-fidelity-phase1b.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-qualification-coverage-normalization-phase1b7a1.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-depth-screen-placement-phase1b7a2.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-layered-depth-readability-phase1b7a4.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-tracking-performance-phase1b7a8.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-qualification-deterministic-export-phase1b7a10f.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-qualification-campaign-phase1b7a11a.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-tracking-merge-comparison-phase1b7a11a1.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-depth-screen-fixture-repair-phase1b7a11a2.ts
+
+
+>>> pnpm exec tsc --noEmit --pretty false
+
+
+>>> pnpm build
+
+
+Running exact applied-state postflight...
+PATCH_ID=myway_director_support_containment_inside_real_scale_lazy_load_phase1b7a11a15_v1_2
+PREFLIGHT_STATE=applied
+Applied fingerprints match exactly; patch is already installed.
+
+SUCCESS: myway_director_support_containment_inside_real_scale_lazy_load_phase1b7a11a15_v1_2 applied and verified.
+Backup retained at: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_director_support_containment_inside_real_scale_lazy_load_phase1b7a11a15_v1_2-20260824-000115
+Next: open Qualification Room, load real assets when requested, then rerender Support & containment at Cross-asset. Inside baseline should use Pineapple -> Bathtub at real logical scale and Diversity should use Apple -> coffee_mug_bk_mritny8x.
+
+Outer wrapper completed successfully.
+**********************
+PowerShell transcript end
+End time: 20260824000339
+**********************

@@ -8,6 +8,7 @@ import { flushSync } from "react-dom";
 import {
   DIRECTOR_CAPABILITIES,
   directorCapabilityDemoEvents,
+  directorCapabilityDemoShot,
   type DirectorCapability,
 } from "../director-capability-registry";
 import {
@@ -26,12 +27,31 @@ import {
   qualificationReviewForCapability,
   type DirectorQualificationCoverageMode,
   type DirectorQualificationDecision,
+  type DirectorQualificationCoverageGap,
   type DirectorQualificationPassKind,
+  type DirectorQualificationPhysicalRegionOverride,
+  type DirectorQualificationPhysicalResolutionEvidence,
   type DirectorQualificationRecordingManifest,
   type DirectorQualificationRunAsset,
   type DirectorQualificationRunClip,
   type DirectorQualificationState,
 } from "../director-qualification-contract";
+import {
+  DIRECTOR_QUALIFICATION_CAMPAIGN_FAMILY_STATUS_LABELS,
+  DIRECTOR_QUALIFICATION_CAMPAIGN_STORAGE_KEY,
+  directorQualificationCampaignCounts,
+  directorQualificationCampaignFamilyRecord,
+  emptyDirectorQualificationCampaignState,
+  markDirectorQualificationCampaignFamilyReviewed,
+  markDirectorQualificationCampaignNeedsReEvidence,
+  markDirectorQualificationCampaignReviewInProgress,
+  nextDirectorQualificationCampaignFamilyKey,
+  normalizeDirectorQualificationCampaignState,
+  recordDirectorQualificationCampaignEvidence,
+  setDirectorQualificationCampaignCurrentFamily,
+  updateDirectorQualificationCampaignFamilyNotes,
+  type DirectorQualificationCampaignState,
+} from "../director-qualification-campaign";
 import {
   DIRECTOR_QUALIFICATION_CAPTURE_FPS,
   DIRECTOR_QUALIFICATION_CAPTURE_HEIGHT_PX,
@@ -59,6 +79,38 @@ import {
   type DirectorQualificationFamily,
 } from "../director-qualification-families";
 import {
+  directorQualificationAdjustDepthScreenFixturePositions,
+  directorQualificationAdjustRelativeActorFixturePositions,
+  directorQualificationAssetRoles,
+  isSupportContainmentQualificationFamily,
+} from "../director-qualification-fixture-policy";
+import {
+  directorQualificationEffectiveRenderScale,
+  directorQualificationRenderedWorldSize,
+} from "../director-qualification-render-geometry";
+import {
+  inspectDirectorQualificationPhysicalAsset,
+  type DirectorQualificationPhysicalInspection,
+} from "../director-qualification-physical-inspection";
+import {
+  DIRECTOR_QUALIFICATION_INSIDE_FIXTURE_RENDER_SCALE_BOUNDS,
+  DIRECTOR_QUALIFICATION_INSIDE_SOURCE_SCAN_LIMIT,
+  DIRECTOR_QUALIFICATION_INSIDE_VALIDATION_FIXTURES,
+  DIRECTOR_QUALIFICATION_ON_SURFACE_SOURCE_SCAN_LIMIT,
+  DIRECTOR_QUALIFICATION_SUPPORT_CONTAINMENT_INSPECTION_LIMIT,
+  directorQualificationAdaptiveContainmentClearance,
+  directorQualificationContainedSourceFitFloor,
+  directorQualificationFindInsideValidationAsset,
+  directorQualificationInsidePairIndex,
+  directorQualificationInsidePairKey,
+  directorQualificationInsideValidationFixtureForPass,
+  directorQualificationOnSurfacePairIndex,
+  directorQualificationSelectDistinctInsidePairs,
+  directorQualificationSelectDistinctOnSurfacePairs,
+  directorQualificationSupportReceiverLooksGroundLike,
+  directorQualificationSupportSurfaceIsPerceptuallyEligible,
+} from "../director-qualification-support-containment-policy";
+import {
   normalizeAssetForDirectorQualification,
   type DirectorQualificationAssetNormalization,
   type DirectorQualificationNormalizationPolicy,
@@ -71,8 +123,14 @@ import {
   type DirectorQualificationSceneId,
 } from "../director-qualification-scenes";
 import { directorVisualAuditDefinition } from "../director-visual-audit";
+import { logicalAssetSizeDecision } from "../../assets/logical-asset-size";
+import { buildAssetDirectabilityProfile } from "../../directability/asset-directability-from-asset";
+import {
+  resolveDirectorPhysicalBlockingPlacement,
+} from "../../scenes/ui/director-shot-runtime";
 import {
   DirectorCapabilityPreview,
+  directorQualificationRuntimeActors,
   type DirectorLibraryAsset,
   type ResolvedDirectorRole,
 } from "./director-capability-preview";
@@ -102,6 +160,7 @@ type PlannedRole = {
   blocking_position: [number, number, number];
   rotation: [number, number, number];
   facing_correction_degrees: number;
+  physical_region_override: DirectorQualificationPhysicalRegionOverride | null;
 };
 
 type PlannedClip = {
@@ -234,6 +293,43 @@ const QUALIFICATION_PREVIEW_FPS = 30;
 const QUALIFICATION_PREVIEW_FRAME_MS = 1000 / QUALIFICATION_PREVIEW_FPS;
 // Module-lived so tab remounts do not forget which Qualification GLTF URLs are resident.
 const QUALIFICATION_RESIDENT_GLTF_URLS = new Map<string, string>();
+// A.11A.14: browser physical inspection is substantially heavier than simple
+// metadata planning. Cache each exact GLB+rotation inspection across Room
+// remounts so revisiting Support & containment does not repeatedly parse and
+// raycast the same receiver.
+const QUALIFICATION_PHYSICAL_INSPECTION_CACHE = new Map<
+  string,
+  Promise<DirectorQualificationPhysicalInspection | null>
+>();
+
+function directorQualificationPhysicalInspectionCacheKey(
+  asset: DirectorLibraryAsset,
+) {
+  return [
+    directorRealAssetBrowserUrl(asset),
+    ...(asset.default_rotation ?? [0, 0, 0]),
+  ].join("|");
+}
+
+function inspectDirectorQualificationPhysicalAssetCached(
+  asset: DirectorLibraryAsset,
+) {
+  const key = directorQualificationPhysicalInspectionCacheKey(asset);
+  const cached = QUALIFICATION_PHYSICAL_INSPECTION_CACHE.get(key);
+  if (cached) return cached;
+
+  const pending = inspectDirectorQualificationPhysicalAsset({
+    public_url: directorRealAssetBrowserUrl(asset),
+    default_rotation: asset.default_rotation,
+  }).catch((error) => {
+    // A transient failure should be retryable rather than permanently poisoning
+    // the module-lived cache.
+    QUALIFICATION_PHYSICAL_INSPECTION_CACHE.delete(key);
+    throw error;
+  });
+  QUALIFICATION_PHYSICAL_INSPECTION_CACHE.set(key, pending);
+  return pending;
+}
 
 function stoppedPhaseClock(
   elapsedBeforeStartMs = 0,
@@ -297,6 +393,228 @@ function assetSearchText(asset: DirectorLibraryAsset) {
 
 function assetLabel(asset: DirectorLibraryAsset) {
   return asset.display_name || asset.canonical_label || asset.asset_id;
+}
+
+const DIRECTOR_QUALIFICATION_CONTAINER_SEMANTIC_HINTS = new Set([
+  "container",
+  "fillable",
+  "vessel",
+  "cup",
+  "bowl",
+  "pot",
+  "bucket",
+  "basket",
+  "bin",
+  "jar",
+  "vase",
+  "box",
+  "bathtub",
+  "tub",
+]);
+
+function directorQualificationHasContainerSemantics(asset: DirectorLibraryAsset) {
+  const words = new Set(assetSearchText(asset).split(/\s+/).filter(Boolean));
+  return [...DIRECTOR_QUALIFICATION_CONTAINER_SEMANTIC_HINTS].some((hint) =>
+    words.has(hint),
+  );
+}
+
+function directorQualificationContainmentOverrideFromInspection(
+  asset: DirectorLibraryAsset,
+  inspection: DirectorQualificationPhysicalInspection | null | undefined,
+): DirectorQualificationPhysicalRegionOverride | null {
+  if (
+    !inspection?.top_opening ||
+    !inspection.containment_topology ||
+    !directorQualificationHasContainerSemantics(asset)
+  ) {
+    return null;
+  }
+  const cavity = inspection.containment_topology;
+  if (
+    cavity.method !== "raycast_open_cavity" ||
+    !cavity.center_access_clear ||
+    cavity.access_clear_ratio < 0.52 ||
+    cavity.opening_occupancy_ratio < 0.72 ||
+    cavity.cavity_depth_m <= 0
+  ) {
+    return null;
+  }
+
+  // A.11A.9 predecessor evidence label retained for lineage/static verification:
+  // semantic_plus_browser_geometry. A.11A.10 requires semantic truth PLUS
+  // ray-confirmed access and cavity depth before positive containment can exist.
+  return {
+    kind: "containment_region",
+    id: "qualification_semantic_raycast_open_cavity",
+    label: "Semantic container + ray-confirmed open cavity",
+    local_center: [...cavity.local_center],
+    size: [...cavity.size],
+    access_direction: [...cavity.access_direction],
+    confidence: cavity.confidence,
+    openness: "open",
+    evidence_source: "semantic_plus_browser_raycast_topology",
+    topology: {
+      method: "raycast_open_cavity",
+      sampled_ray_count: cavity.sampled_ray_count,
+      accessible_ray_count: cavity.accessible_ray_count,
+      access_clear_ratio: cavity.access_clear_ratio,
+      center_access_clear: cavity.center_access_clear,
+      cavity_depth_m: cavity.cavity_depth_m,
+      opening_size: [...cavity.opening_size],
+      opening_occupancy_ratio: cavity.opening_occupancy_ratio,
+    },
+  } satisfies DirectorQualificationPhysicalRegionOverride;
+}
+
+function directorQualificationContactOverridesFromInspection(
+  inspection: DirectorQualificationPhysicalInspection | null | undefined,
+): DirectorQualificationPhysicalRegionOverride[] {
+  const output: DirectorQualificationPhysicalRegionOverride[] = [];
+  for (const candidate of inspection?.surface_contact_candidates ?? []) {
+    const topology = candidate.topology;
+    if (
+      candidate.evidence_method !== "raycast_contiguous_patch" ||
+      topology.method !== "raycast_contiguous_patch" ||
+      !topology.center_hit ||
+      topology.occupancy_ratio < 0.68
+    ) {
+      continue;
+    }
+
+    // A.11A.9 predecessor evidence label retained for lineage/static verification:
+    // browser_gltf_surface_sample. A.11A.10 positive Attached-To proof is stricter.
+    const override = {
+      kind: "surface_contact_region",
+      id: candidate.id,
+      label: candidate.label,
+      local_position: [...candidate.local_position],
+      local_normal: [...candidate.local_normal],
+      size: [...candidate.contact_size],
+      confidence: candidate.confidence,
+      evidence_source: "browser_gltf_raycast_surface",
+      topology: {
+        method: "raycast_contiguous_patch",
+        side: candidate.side,
+        occupancy_ratio: topology.occupancy_ratio,
+        contiguous_cell_count: topology.contiguous_cell_count,
+        tested_cell_count: topology.tested_cell_count,
+        center_hit: topology.center_hit,
+        depth_variation_m: topology.depth_variation_m,
+        normal_alignment: topology.normal_alignment,
+        center_height_ratio: topology.center_height_ratio,
+      },
+    } satisfies DirectorQualificationPhysicalRegionOverride;
+    output.push(override);
+  }
+  return output;
+}
+
+function directorQualificationAttachedProofReadabilityScore(
+  regionOverride: DirectorQualificationPhysicalRegionOverride,
+) {
+  if (
+    regionOverride.kind !== "surface_contact_region" ||
+    regionOverride.topology?.method !== "raycast_contiguous_patch"
+  ) {
+    return 0;
+  }
+  const topology = regionOverride.topology;
+  // The demo camera is three-quarter-front. Prefer a real front/right patch when
+  // available so contact is seen obliquely rather than hidden on the far face.
+  const cameraFacingBonus =
+    topology.side === "front" || topology.side === "right" ? 26 : 0;
+  // Do not ban lower-body contact; merely stop a pedestal/leg patch from
+  // outranking a comparably strong broad body/backrest patch in visual proof.
+  const heightReadability =
+    topology.center_height_ratio < 0.22
+      ? -34
+      : topology.center_height_ratio >= 0.36
+        ? 12
+        : 0;
+  return (
+    cameraFacingBonus +
+    heightReadability +
+    topology.occupancy_ratio * 24 +
+    topology.normal_alignment * 10
+  );
+}
+
+function directorQualificationDirectabilityOverride(
+  asset: DirectorLibraryAsset,
+  regionOverride: DirectorQualificationPhysicalRegionOverride | null,
+) {
+  if (!regionOverride) return undefined;
+  const base = buildAssetDirectabilityProfile(asset);
+  if (regionOverride.kind === "support_surface") {
+    return {
+      ...base,
+      surfaces: [
+        {
+          id: regionOverride.id,
+          semantic_names: [
+            "support_surface",
+            "top_surface",
+            regionOverride.label,
+          ],
+          local_center: [...regionOverride.local_center] as [number, number, number],
+          normal: [...regionOverride.normal] as [number, number, number],
+          size: [...regionOverride.size] as [number, number],
+          usable_size: [...regionOverride.usable_size] as [number, number],
+          clearance_above_m: regionOverride.clearance_above_m ?? null,
+          blocked_fraction: regionOverride.blocked_fraction ?? 0,
+          exposure: regionOverride.exposure ?? "exterior",
+          orientation: regionOverride.orientation ?? "upward",
+          openness: regionOverride.openness ?? "open",
+          vertical_rank: regionOverride.vertical_rank ?? 0,
+          height_ratio: regionOverride.height_ratio ?? null,
+          is_primary: true,
+          source: "geometry_profile" as const,
+          confidence: regionOverride.confidence,
+        },
+      ],
+    };
+  }
+  if (regionOverride.kind === "surface_contact_region") {
+    return {
+      ...base,
+      anchors: [
+        ...base.anchors.filter((anchor) => anchor.kind !== "attachment"),
+        {
+          id: regionOverride.id,
+          semantic_names: ["surface_contact", "exterior_contact", regionOverride.label],
+          kind: "attachment" as const,
+          local_position: [...regionOverride.local_position] as [number, number, number],
+          local_normal: [...regionOverride.local_normal] as [number, number, number],
+          target_scope: "root" as const,
+          subpart_id: null,
+          source: "geometry_profile" as const,
+          confidence: regionOverride.confidence,
+          contact_size: [...regionOverride.size] as [number, number],
+        },
+      ],
+    };
+  }
+  return {
+    ...base,
+    containment_regions: [
+      {
+        id: regionOverride.id,
+        semantic_names: [
+          "containment_region",
+          "fillable_region",
+          "semantic_container_with_measured_opening",
+        ],
+        local_center: [...regionOverride.local_center] as [number, number, number],
+        size: [...regionOverride.size] as [number, number, number],
+        access_direction: [...regionOverride.access_direction] as [number, number, number],
+        source: "geometry_profile" as const,
+        confidence: regionOverride.confidence,
+        openness: "open" as const,
+        exposure: "interior" as const,
+      },
+    ],
+  };
 }
 
 
@@ -896,7 +1214,12 @@ function trackingComparisonSlotForPass(
   ) {
     return passKind === "baseline" ? "character" : "vehicle";
   }
-  if (capability.id === "camera_object_attached") return "vehicle";
+  if (
+    capability.id === "camera_object_attached" ||
+    capability.id === "object_attached"
+  ) {
+    return "vehicle";
+  }
   return null;
 }
 
@@ -940,7 +1263,63 @@ function trackingEvidenceBlockLabel(
   if (capability.id === "camera_object_attached") {
     return `Mounted primitive merge/deprecation check · ${slot}`;
   }
+  if (capability.id === "object_attached") {
+    return `Mounted primitive immediate-start comparison · ${slot}`;
+  }
   return `Sibling comparison · ${slot}`;
+}
+
+function buildTrackingMountedComparisonClip(input: {
+  family: DirectorQualificationFamily;
+  scene: DirectorQualificationScene;
+  pools: CastPoolResolution[];
+  all_assets: DirectorLibraryAsset[];
+  passKind: DirectorQualificationPassKind;
+  capabilityIndex: number;
+  primary: { slot_id: DirectorQualificationCastSlotId; asset: DirectorLibraryAsset };
+  normalization_policy: DirectorQualificationNormalizationPolicy;
+}) {
+  const comparisonCapability = DIRECTOR_CAPABILITIES.find(
+    (candidate) => candidate.id === "object_attached",
+  );
+  if (!comparisonCapability) return null;
+
+  const roles = buildPlannedRoles({
+    capability: comparisonCapability,
+    family: input.family,
+    scene: input.scene,
+    pools: input.pools,
+    all_assets: input.all_assets,
+    pass_kind: input.passKind,
+    capability_index: input.capabilityIndex,
+    primary: input.primary,
+  });
+  if (!roles) return null;
+
+  const profile = directorQualificationCapabilityProfile(
+    input.family,
+    comparisonCapability.id,
+  );
+  const travelHeading = profile.requires_directional_facing
+    ? primaryTravelHeadingRadians(comparisonCapability)
+    : null;
+
+  return {
+    capability: comparisonCapability,
+    primary_cast_slot_id: input.primary.slot_id,
+    pass_kind: input.passKind,
+    normalization_policy: input.normalization_policy,
+    evidence_block_label: trackingEvidenceBlockLabel(
+      comparisonCapability,
+      input.passKind,
+    ),
+    qualification_note: profile.qualification_note,
+    merge_compare_with_capability_id: null,
+    relationship_direction_degrees:
+      travelHeading === null ? null : (travelHeading * 180) / Math.PI,
+    travel_direction: travelHeading === null ? null : "forward",
+    roles,
+  } satisfies PlannedClip;
 }
 
 function choosePrimary(
@@ -1016,6 +1395,917 @@ function chooseSupportingAsset(
     if (!excludedAssetIds.has(candidate.asset_id)) return candidate;
   }
   return candidates[(capabilityIndex + offset) % candidates.length] ?? candidates[0];
+}
+
+const DIRECTOR_SUPPORT_PHYSICAL_RELATIONS = [
+  "on_surface",
+  "attached_to",
+  "inside",
+] as const;
+
+type DirectorSupportPhysicalRelation =
+  (typeof DIRECTOR_SUPPORT_PHYSICAL_RELATIONS)[number];
+
+type DirectorPhysicalQualificationTarget = {
+  slot_id: DirectorQualificationCastSlotId;
+  asset: DirectorLibraryAsset;
+  normalization: DirectorQualificationAssetNormalization;
+  region_id: string;
+  region_label: string;
+  region_override: DirectorQualificationPhysicalRegionOverride | null;
+  score: number;
+};
+
+type DirectorPhysicalQualificationPair = {
+  source_slot_id: DirectorQualificationCastSlotId;
+  source_asset: DirectorLibraryAsset;
+  source_normalization: DirectorQualificationAssetNormalization;
+  target: DirectorPhysicalQualificationTarget;
+  score: number;
+};
+
+function directorSupportPhysicalRelation(
+  family: DirectorQualificationFamily,
+  capability: DirectorCapability,
+): DirectorSupportPhysicalRelation | null {
+  if (family.category !== "blocking_placement") return null;
+  return (DIRECTOR_SUPPORT_PHYSICAL_RELATIONS as readonly string[]).includes(
+    capability.id,
+  )
+    ? (capability.id as DirectorSupportPhysicalRelation)
+    : null;
+}
+
+function qualificationScaleBounds(
+  normalization: DirectorQualificationAssetNormalization,
+): [number, number] {
+  return normalization.logical_extent_source.startsWith(
+    "inside_fixture_asset_authoritative:",
+  )
+    ? [
+        DIRECTOR_QUALIFICATION_INSIDE_FIXTURE_RENDER_SCALE_BOUNDS[0],
+        DIRECTOR_QUALIFICATION_INSIDE_FIXTURE_RENDER_SCALE_BOUNDS[1],
+      ]
+    : [0.02, 40];
+}
+
+function qualificationWorldDimensions(
+  asset: DirectorLibraryAsset,
+  normalization: DirectorQualificationAssetNormalization,
+): [number, number, number] {
+  return directorQualificationRenderedWorldSize({
+    dimensions_m: asset.dimensions_m,
+    target_extent_m: normalization.target_extent_m,
+    scale_bounds: qualificationScaleBounds(normalization),
+  });
+}
+
+function qualificationCastSlotForAsset(
+  asset: DirectorLibraryAsset,
+  pools: CastPoolResolution[],
+): DirectorQualificationCastSlotId | null {
+  for (const pool of pools) {
+    if (pool.candidates.some((candidate) => candidate.asset_id === asset.asset_id)) {
+      return pool.slot.id;
+    }
+  }
+
+  let best: { slot: DirectorQualificationCastSlot; score: number } | null = null;
+  for (const slot of DIRECTOR_QUALIFICATION_CAST) {
+    const scored = scoreAssetForCastSlot(asset, slot);
+    if (scored.semantic <= 0) continue;
+    if (!best || scored.total > best.score) {
+      best = { slot, score: scored.total };
+    }
+  }
+  return best?.slot.id ?? null;
+}
+
+function directorPhysicalPairSuitability(input: {
+  relation: DirectorSupportPhysicalRelation;
+  source_asset: DirectorLibraryAsset;
+  source_normalization: DirectorQualificationAssetNormalization;
+  target_asset: DirectorLibraryAsset;
+  target_normalization: DirectorQualificationAssetNormalization;
+  target_inspection?: DirectorQualificationPhysicalInspection | null;
+}) {
+  const geometry = input.target_asset.geometry_profile;
+  const sourceSize = qualificationWorldDimensions(
+    input.source_asset,
+    input.source_normalization,
+  );
+  const targetScale = directorQualificationEffectiveRenderScale({
+    dimensions_m: input.target_asset.dimensions_m,
+    target_extent_m: input.target_normalization.target_extent_m,
+    scale_bounds: qualificationScaleBounds(input.target_normalization),
+  });
+  const margin = 0.012;
+
+  if (input.relation === "on_surface") {
+    if (!geometry || geometry.audit?.status === "review_required") return null;
+    const targetWorldSize = qualificationWorldDimensions(
+      input.target_asset,
+      input.target_normalization,
+    );
+    // Qualification should visibly distinguish On Surface from On Ground. Very
+    // thin floor/rug-like receivers remain valid production assets, but they are
+    // poor standalone proof receivers when staged directly on the ground plane.
+    if (directorQualificationSupportReceiverLooksGroundLike(targetWorldSize)) {
+      return null;
+    }
+    const candidates = geometry.support_surfaces
+      .filter(
+        (surface) =>
+          surface.source !== "legacy_ratio" &&
+          surface.confidence >= 0.35 &&
+          directorQualificationSupportSurfaceIsPerceptuallyEligible({
+            normal_y: surface.normal[1],
+            exposure: surface.exposure,
+            openness: surface.openness,
+            blocked_fraction: surface.blocked_fraction,
+            height_ratio: surface.height_ratio,
+          }),
+      )
+      .map((surface) => {
+        const usable = surface.usable_size ?? surface.size;
+        const surfaceSize: [number, number] = [
+          Math.max(0.001, usable[0] * targetScale),
+          Math.max(0.001, usable[1] * targetScale),
+        ];
+        const sourceFootprint: [number, number] = [sourceSize[0], sourceSize[2]];
+        const fits =
+          (sourceFootprint[0] + margin * 2 <= surfaceSize[0] &&
+            sourceFootprint[1] + margin * 2 <= surfaceSize[1]) ||
+          (sourceFootprint[0] + margin * 2 <= surfaceSize[1] &&
+            sourceFootprint[1] + margin * 2 <= surfaceSize[0]);
+        const blocked = Math.max(0, Math.min(1, surface.blocked_fraction ?? 0));
+        const clearanceAbove =
+          surface.clearance_above_m == null
+            ? null
+            : Math.max(0, surface.clearance_above_m * targetScale);
+        const fitsClearance =
+          clearanceAbove === null || sourceSize[1] + margin <= clearanceAbove;
+        const area = surfaceSize[0] * surfaceSize[1];
+        const primaryBonus =
+          geometry.primary_support_surface_id === surface.id ? 32 : 0;
+        const heightRatio = Math.max(
+          0,
+          Math.min(1, Number(surface.height_ratio) || 0),
+        );
+        return {
+          region_id: surface.id,
+          region_label: surface.label || surface.id,
+          region_override: {
+            kind: "support_surface",
+            id: surface.id,
+            label: surface.label || surface.id,
+            local_center: [...surface.center] as [number, number, number],
+            normal: [...surface.normal] as [number, number, number],
+            size: [...surface.size] as [number, number],
+            usable_size: [...usable] as [number, number],
+            confidence: surface.confidence,
+            clearance_above_m: surface.clearance_above_m,
+            orientation: surface.orientation,
+            exposure: surface.exposure,
+            openness: surface.openness,
+            blocked_fraction: surface.blocked_fraction,
+            vertical_rank: surface.vertical_rank,
+            height_ratio: surface.height_ratio,
+            evidence_source: "asset_geometry_profile",
+          } satisfies DirectorQualificationPhysicalRegionOverride,
+          fits: fits && fitsClearance,
+          score:
+            surface.confidence * 130 +
+            Math.sqrt(Math.max(0, area)) * 18 +
+            primaryBonus +
+            heightRatio * 54 -
+            blocked * 90 -
+            Math.max(0, surface.vertical_rank ?? 0) * 10,
+        };
+      })
+      .filter((candidate) => candidate.fits)
+      .sort(
+        (left, right) =>
+          right.score - left.score ||
+          left.region_id.localeCompare(right.region_id),
+      );
+    return candidates[0] ?? null;
+  }
+
+  if (input.relation === "inside") {
+    const measuredCandidates = geometry && geometry.audit?.status !== "review_required"
+      ? geometry.interior_volumes
+          .filter(
+            (volume) =>
+              volume.confidence >= 0.45 &&
+              volume.openness === "open" &&
+              Array.isArray(volume.access_direction),
+          )
+          .map((volume) => {
+            const size: [number, number, number] = [
+              Math.max(0.001, Math.abs(volume.size[0]) * targetScale),
+              Math.max(0.001, Math.abs(volume.size[1]) * targetScale),
+              Math.max(0.001, Math.abs(volume.size[2]) * targetScale),
+            ];
+            const containmentClearance =
+              directorQualificationAdaptiveContainmentClearance(size, 0.008);
+            const fits = sourceSize.every(
+              (value, index) =>
+                value + containmentClearance * 2 <= size[index]!,
+            );
+            const volumeM3 = size[0] * size[1] * size[2];
+            return {
+              region_id: volume.id,
+              region_label: volume.label || volume.id,
+              region_override: null as DirectorQualificationPhysicalRegionOverride | null,
+              fits,
+              score:
+                volume.confidence * 140 +
+                Math.cbrt(Math.max(0.000001, volumeM3)) * 14,
+            };
+          })
+      : [];
+
+    const inferredOverride = directorQualificationContainmentOverrideFromInspection(
+      input.target_asset,
+      input.target_inspection,
+    );
+    const inferredCandidates = inferredOverride
+      ? (() => {
+          const size = inferredOverride.size.map((value) =>
+            Math.max(0.001, Math.abs(value) * targetScale),
+          ) as [number, number, number];
+          const containmentClearance =
+            directorQualificationAdaptiveContainmentClearance(size, 0.008);
+          const fits = sourceSize.every(
+            (value, index) =>
+              value + containmentClearance * 2 <= size[index]!,
+          );
+          const volumeM3 = size[0] * size[1] * size[2];
+          return [
+            {
+              region_id: inferredOverride.id,
+              region_label: inferredOverride.label,
+              region_override: inferredOverride,
+              fits,
+              score:
+                inferredOverride.confidence * 150 +
+                Math.cbrt(Math.max(0.000001, volumeM3)) * 14 +
+                18,
+            },
+          ];
+        })()
+      : [];
+
+    return [...measuredCandidates, ...inferredCandidates]
+      .filter((candidate) => candidate.fits)
+      .sort(
+        (left, right) =>
+          right.score - left.score ||
+          left.region_id.localeCompare(right.region_id),
+      )[0] ?? null;
+  }
+
+  const sourceContact = [...sourceSize]
+    .sort((left, right) => left - right)
+    .slice(0, 2);
+  const renderedContactCandidates = directorQualificationContactOverridesFromInspection(
+    input.target_inspection,
+  ).map((regionOverride) => {
+    const size = regionOverride.kind === "surface_contact_region"
+      ? [...regionOverride.size]
+          .map((value) => Math.max(0.001, value * targetScale))
+          .sort((left, right) => left - right)
+      : [0, 0];
+    const fits =
+      sourceContact[0]! * 0.42 + margin <= size[0]! &&
+      sourceContact[1]! * 0.42 + margin <= size[1]!;
+    return {
+      region_id: regionOverride.id,
+      region_label: regionOverride.label,
+      region_override: regionOverride,
+      fits,
+      score:
+        regionOverride.confidence * 150 +
+        Math.sqrt(Math.max(0.000001, size[0]! * size[1]!)) * 18 +
+        directorQualificationAttachedProofReadabilityScore(regionOverride) +
+        30,
+    };
+  });
+
+  // Historical Blender profiles exposed four whole-bounds pseudo-faces named
+  // attachment_left/right/front/back. A.11A.9 refuses those as positive
+  // Attached-To evidence: if the exact rendered GLB can be inspected, we use
+  // real sampled exterior patches; explicit/manual or future non-bounds measured
+  // regions remain valid fallback evidence.
+  const retiredWholeBoundsIds = new Set([
+    "attachment_left",
+    "attachment_right",
+    "attachment_front",
+    "attachment_back",
+  ]);
+  const profileCandidates = geometry && geometry.audit?.status !== "review_required"
+    ? geometry.attachment_regions
+        .filter(
+          (region) =>
+            region.source !== "legacy_ratio" &&
+            region.confidence >= 0.35 &&
+            region.exposure !== "interior" &&
+            !(
+              region.source === "blender_geometry" &&
+              retiredWholeBoundsIds.has(region.id)
+            ),
+        )
+        .map((region) => {
+          const size = [
+            Math.max(0.001, region.size[0] * targetScale),
+            Math.max(0.001, region.size[1] * targetScale),
+          ].sort((left, right) => left - right);
+          const fits =
+            sourceContact[0]! * 0.42 + margin <= size[0]! &&
+            sourceContact[1]! * 0.42 + margin <= size[1]!;
+          return {
+            region_id: region.id,
+            region_label: region.label || region.id,
+            region_override: null as DirectorQualificationPhysicalRegionOverride | null,
+            fits,
+            score:
+              region.confidence * 130 +
+              Math.sqrt(Math.max(0.000001, size[0]! * size[1]!)) * 16 +
+              (region.orientation === "vertical" ? 18 : 0),
+          };
+        })
+    : [];
+
+  return [...renderedContactCandidates, ...profileCandidates]
+    .filter((candidate) => candidate.fits)
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        left.region_id.localeCompare(right.region_id),
+    )[0] ?? null;
+}
+
+function directorPhysicalTargetCandidates(input: {
+  relation: DirectorSupportPhysicalRelation;
+  source_asset: DirectorLibraryAsset;
+  source_normalization: DirectorQualificationAssetNormalization;
+  scene: DirectorQualificationScene;
+  pools: CastPoolResolution[];
+  all_assets: DirectorLibraryAsset[];
+  policy: DirectorQualificationNormalizationPolicy;
+  physical_inspections: Record<string, DirectorQualificationPhysicalInspection | null>;
+  excluded_asset_ids: Set<string>;
+}) {
+  const preferred = poolFor(input.pools, input.scene.secondary_cast_slot)?.candidates ?? [];
+  const ordered: DirectorLibraryAsset[] = [];
+  const seen = new Set<string>();
+  for (const asset of [...preferred, ...input.all_assets]) {
+    if (seen.has(asset.asset_id) || input.excluded_asset_ids.has(asset.asset_id)) continue;
+    if (!isLoadableLibraryAsset(asset)) continue;
+    seen.add(asset.asset_id);
+    ordered.push(asset);
+  }
+
+  const candidates: DirectorPhysicalQualificationTarget[] = [];
+  for (let orderIndex = 0; orderIndex < ordered.length; orderIndex += 1) {
+    const asset = ordered[orderIndex]!;
+    const slotId = qualificationCastSlotForAsset(asset, input.pools);
+    const slot = slotId ? directorQualificationCastSlot(slotId) : null;
+    if (!slot) continue;
+    const normalization = normalizeAssetForDirectorQualification({
+      asset,
+      slot,
+      scene: input.scene,
+      role_kind: "secondary",
+      policy: input.policy,
+    });
+    const suitability = directorPhysicalPairSuitability({
+      relation: input.relation,
+      source_asset: input.source_asset,
+      source_normalization: input.source_normalization,
+      target_asset: asset,
+      target_normalization: normalization,
+      target_inspection: input.physical_inspections[asset.asset_id] ?? null,
+    });
+    if (!suitability) continue;
+    const preferredPoolBonus = preferred.some(
+      (candidate) => candidate.asset_id === asset.asset_id,
+    )
+      ? 1000
+      : 0;
+    candidates.push({
+      slot_id: slot.id,
+      asset,
+      normalization,
+      region_id: suitability.region_id,
+      region_label: suitability.region_label,
+      region_override: suitability.region_override,
+      score:
+        preferredPoolBonus +
+        suitability.score -
+        orderIndex * 0.001,
+    });
+  }
+  return candidates.sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.asset.asset_id.localeCompare(right.asset.asset_id),
+  );
+}
+
+function chooseDirectorPhysicalSupportingAsset(input: {
+  relation: DirectorSupportPhysicalRelation;
+  source_asset: DirectorLibraryAsset;
+  source_normalization: DirectorQualificationAssetNormalization;
+  scene: DirectorQualificationScene;
+  pools: CastPoolResolution[];
+  all_assets: DirectorLibraryAsset[];
+  policy: DirectorQualificationNormalizationPolicy;
+  physical_inspections: Record<string, DirectorQualificationPhysicalInspection | null>;
+  pass_kind: DirectorQualificationPassKind;
+  variant_index: number;
+  excluded_asset_ids: Set<string>;
+}) {
+  const candidates = directorPhysicalTargetCandidates({
+    relation: input.relation,
+    source_asset: input.source_asset,
+    source_normalization: input.source_normalization,
+    scene: input.scene,
+    pools: input.pools,
+    all_assets: input.all_assets,
+    policy: input.policy,
+    physical_inspections: input.physical_inspections,
+    excluded_asset_ids: input.excluded_asset_ids,
+  });
+  if (!candidates.length) return null;
+  // Keep the three On Surface receiver canaries disjoint across evidence passes
+  // whenever the library has enough compatible targets: baseline 0-2,
+  // diversity 3-5, physical-stress 6-8. Smaller compatible pools wrap
+  // deterministically instead of inventing an unsuitable receiver.
+  const passOffset =
+    input.relation === "on_surface"
+      ? input.pass_kind === "baseline"
+        ? 0
+        : input.pass_kind === "diversity"
+          ? 3
+          : 6
+      : input.pass_kind === "baseline"
+        ? 0
+        : input.pass_kind === "diversity"
+          ? 1
+          : 2;
+  return candidates[(passOffset + input.variant_index) % candidates.length] ?? candidates[0];
+}
+
+function directorOnSurfacePhysicalPairCandidates(input: {
+  preferred_primary: {
+    slot_id: DirectorQualificationCastSlotId;
+    asset: DirectorLibraryAsset;
+  };
+  family: DirectorQualificationFamily;
+  scene: DirectorQualificationScene;
+  pools: CastPoolResolution[];
+  all_assets: DirectorLibraryAsset[];
+  policy: DirectorQualificationNormalizationPolicy;
+  physical_inspections: Record<string, DirectorQualificationPhysicalInspection | null>;
+}) {
+  const profile = directorQualificationCapabilityProfile(input.family, "on_surface");
+  const ordered: DirectorLibraryAsset[] = [];
+  const seen = new Set<string>();
+  const tryAddSource = (asset: DirectorLibraryAsset | null | undefined) => {
+    if (
+      !asset ||
+      ordered.length >= DIRECTOR_QUALIFICATION_ON_SURFACE_SOURCE_SCAN_LIMIT ||
+      seen.has(asset.asset_id) ||
+      !isLoadableLibraryAsset(asset)
+    ) {
+      return false;
+    }
+    const slotId = qualificationCastSlotForAsset(asset, input.pools);
+    if (!slotId || !profile.suitable_primary_cast_slots.includes(slotId)) {
+      return false;
+    }
+    seen.add(asset.asset_id);
+    ordered.push(asset);
+    return true;
+  };
+
+  tryAddSource(input.preferred_primary.asset);
+  const sourcePools = profile.suitable_primary_cast_slots.map(
+    (slotId) => poolFor(input.pools, slotId)?.candidates ?? [],
+  );
+  // Round-robin cast classes instead of walking the entire Asset Library for
+  // every source. This keeps Cross-asset evidence broad while bounding the
+  // in-memory pair search that used to grow quadratically with library size.
+  for (let depth = 0; ordered.length < DIRECTOR_QUALIFICATION_ON_SURFACE_SOURCE_SCAN_LIMIT; depth += 1) {
+    let foundAtDepth = false;
+    for (const pool of sourcePools) {
+      const asset = pool[depth];
+      if (asset) foundAtDepth = true;
+      tryAddSource(asset);
+      if (ordered.length >= DIRECTOR_QUALIFICATION_ON_SURFACE_SOURCE_SCAN_LIMIT) break;
+    }
+    if (!foundAtDepth) break;
+  }
+  for (const asset of input.all_assets) {
+    if (ordered.length >= DIRECTOR_QUALIFICATION_ON_SURFACE_SOURCE_SCAN_LIMIT) break;
+    tryAddSource(asset);
+  }
+
+  const pairs: DirectorPhysicalQualificationPair[] = [];
+  for (let sourceIndex = 0; sourceIndex < ordered.length; sourceIndex += 1) {
+    const sourceAsset = ordered[sourceIndex]!;
+    const sourceSlotId = qualificationCastSlotForAsset(sourceAsset, input.pools);
+    const sourceSlot = sourceSlotId ? directorQualificationCastSlot(sourceSlotId) : null;
+    if (!sourceSlot) continue;
+    const sourceNormalization = normalizeAssetForDirectorQualification({
+      asset: sourceAsset,
+      slot: sourceSlot,
+      scene: input.scene,
+      role_kind: "primary",
+      policy: input.policy,
+    });
+    const targets = directorPhysicalTargetCandidates({
+      relation: "on_surface",
+      source_asset: sourceAsset,
+      source_normalization: sourceNormalization,
+      scene: input.scene,
+      pools: input.pools,
+      all_assets: input.all_assets,
+      policy: input.policy,
+      physical_inspections: input.physical_inspections,
+      excluded_asset_ids: new Set([sourceAsset.asset_id]),
+    });
+    for (let targetIndex = 0; targetIndex < targets.length; targetIndex += 1) {
+      const target = targets[targetIndex]!;
+      pairs.push({
+        source_slot_id: sourceSlot.id,
+        source_asset: sourceAsset,
+        source_normalization: sourceNormalization,
+        target,
+        score: target.score - sourceIndex * 0.01 - targetIndex * 0.001,
+      });
+    }
+  }
+
+  const ranked = pairs.sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.source_asset.asset_id.localeCompare(right.source_asset.asset_id) ||
+      left.target.asset.asset_id.localeCompare(right.target.asset.asset_id),
+  );
+
+  // A.11A.17: one On Surface canary per distinct source identity. Source
+  // semantics are unrestricted; measured fit/readability decides eligibility.
+  // Prefer distinct receivers too so Cross-asset evidence cannot succeed on one
+  // lucky support geometry repeated under several source labels.
+  return directorQualificationSelectDistinctOnSurfacePairs(ranked);
+}
+
+function chooseDirectorOnSurfacePhysicalPair(input: {
+  preferred_primary: {
+    slot_id: DirectorQualificationCastSlotId;
+    asset: DirectorLibraryAsset;
+  };
+  family: DirectorQualificationFamily;
+  scene: DirectorQualificationScene;
+  pools: CastPoolResolution[];
+  all_assets: DirectorLibraryAsset[];
+  policy: DirectorQualificationNormalizationPolicy;
+  physical_inspections: Record<string, DirectorQualificationPhysicalInspection | null>;
+  pass_kind: DirectorQualificationPassKind;
+  variant_index: number;
+}) {
+  const pairs = directorOnSurfacePhysicalPairCandidates(input);
+  const pairIndex = directorQualificationOnSurfacePairIndex({
+    pass_kind: input.pass_kind,
+    variant_index: input.variant_index,
+    pair_count: pairs.length,
+    canaries_per_pass: 3,
+  });
+  return pairIndex === null ? null : pairs[pairIndex] ?? null;
+}
+
+function directorInsidePhysicalPairCandidates(input: {
+  preferred_primary: {
+    slot_id: DirectorQualificationCastSlotId;
+    asset: DirectorLibraryAsset;
+  };
+  family: DirectorQualificationFamily;
+  scene: DirectorQualificationScene;
+  pools: CastPoolResolution[];
+  all_assets: DirectorLibraryAsset[];
+  policy: DirectorQualificationNormalizationPolicy;
+  physical_inspections: Record<string, DirectorQualificationPhysicalInspection | null>;
+}) {
+  const profile = directorQualificationCapabilityProfile(input.family, "inside");
+  const ordered: DirectorLibraryAsset[] = [];
+  const seen = new Set<string>();
+  const tryAddSource = (asset: DirectorLibraryAsset | null | undefined) => {
+    if (
+      !asset ||
+      ordered.length >= DIRECTOR_QUALIFICATION_INSIDE_SOURCE_SCAN_LIMIT ||
+      seen.has(asset.asset_id) ||
+      !isLoadableLibraryAsset(asset)
+    ) {
+      return false;
+    }
+    const slotId = qualificationCastSlotForAsset(asset, input.pools);
+    if (!slotId || !profile.suitable_primary_cast_slots.includes(slotId)) {
+      return false;
+    }
+    seen.add(asset.asset_id);
+    ordered.push(asset);
+    return true;
+  };
+  tryAddSource(input.preferred_primary.asset);
+  const sourcePools = profile.suitable_primary_cast_slots.map(
+    (slotId) => poolFor(input.pools, slotId)?.candidates ?? [],
+  );
+  for (let depth = 0; ordered.length < DIRECTOR_QUALIFICATION_INSIDE_SOURCE_SCAN_LIMIT; depth += 1) {
+    let foundAtDepth = false;
+    for (const pool of sourcePools) {
+      const asset = pool[depth];
+      if (asset) foundAtDepth = true;
+      tryAddSource(asset);
+      if (ordered.length >= DIRECTOR_QUALIFICATION_INSIDE_SOURCE_SCAN_LIMIT) break;
+    }
+    if (!foundAtDepth) break;
+  }
+  for (const asset of input.all_assets) {
+    if (ordered.length >= DIRECTOR_QUALIFICATION_INSIDE_SOURCE_SCAN_LIMIT) break;
+    tryAddSource(asset);
+  }
+
+  const pairs: DirectorPhysicalQualificationPair[] = [];
+  for (let sourceIndex = 0; sourceIndex < ordered.length; sourceIndex += 1) {
+    const sourceAsset = ordered[sourceIndex]!;
+    const sourceSlotId = qualificationCastSlotForAsset(sourceAsset, input.pools);
+    const sourceSlot = sourceSlotId ? directorQualificationCastSlot(sourceSlotId) : null;
+    if (!sourceSlot) continue;
+    const sourceNormalization = normalizeAssetForDirectorQualification({
+      asset: sourceAsset,
+      slot: sourceSlot,
+      scene: input.scene,
+      role_kind: "primary",
+      policy: input.policy,
+    });
+    const targets = directorPhysicalTargetCandidates({
+      relation: "inside",
+      source_asset: sourceAsset,
+      source_normalization: sourceNormalization,
+      scene: input.scene,
+      pools: input.pools,
+      all_assets: input.all_assets,
+      policy: input.policy,
+      physical_inspections: input.physical_inspections,
+      excluded_asset_ids: new Set([sourceAsset.asset_id]),
+    });
+    for (let targetIndex = 0; targetIndex < targets.length; targetIndex += 1) {
+      const target = targets[targetIndex]!;
+      pairs.push({
+        source_slot_id: sourceSlot.id,
+        source_asset: sourceAsset,
+        source_normalization: sourceNormalization,
+        target,
+        score:
+          target.score +
+          (sourceAsset.asset_id === input.preferred_primary.asset.asset_id
+            ? 2000
+            : 0) -
+          sourceIndex * 0.01 -
+          targetIndex * 0.001,
+      });
+    }
+  }
+  const ranked = pairs.sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.source_asset.asset_id.localeCompare(right.source_asset.asset_id) ||
+      left.target.asset.asset_id.localeCompare(right.target.asset.asset_id),
+  );
+
+  // A.11A.12: a scan may produce multiple usable regions on one receiver.
+  // Collapse those to one strongest candidate per real source/receiver identity
+  // before baseline/diversity indexing so a second region cannot masquerade as
+  // a second pair.
+  return directorQualificationSelectDistinctInsidePairs(ranked);
+}
+
+function directorInsideValidationFixtureNormalization(input: {
+  asset: DirectorLibraryAsset;
+  slot: DirectorQualificationCastSlot;
+  scene: DirectorQualificationScene;
+  role_kind: DirectorQualificationRoleKind;
+  policy: DirectorQualificationNormalizationPolicy;
+  concept: string;
+  target_extent_m?: number;
+}) {
+  const baseline = normalizeAssetForDirectorQualification({
+    asset: input.asset,
+    slot: input.slot,
+    scene: input.scene,
+    role_kind: input.role_kind,
+    policy: input.policy,
+  });
+  const logical = logicalAssetSizeDecision({
+    concept: input.concept,
+  });
+  const preferredTargetExtent = logical.target_extent_m;
+  const targetExtent = Math.max(
+    0.02,
+    Math.min(
+      logical.max_extent_m,
+      input.target_extent_m ?? preferredTargetExtent,
+    ),
+  );
+  const fitAdjusted = Math.abs(targetExtent - preferredTargetExtent) > 0.0005;
+  const renderScale = directorQualificationEffectiveRenderScale({
+    dimensions_m: input.asset.dimensions_m,
+    target_extent_m: targetExtent,
+    scale_bounds: [
+      DIRECTOR_QUALIFICATION_INSIDE_FIXTURE_RENDER_SCALE_BOUNDS[0],
+      DIRECTOR_QUALIFICATION_INSIDE_FIXTURE_RENDER_SCALE_BOUNDS[1],
+    ],
+  });
+
+  return {
+    ...baseline,
+    logical_extent_m: preferredTargetExtent,
+    logical_extent_source:
+      `inside_fixture_asset_authoritative:${fitAdjusted ? "relationship_fit:" : ""}${logical.source}`,
+    requested_target_extent_m: preferredTargetExtent,
+    target_extent_m: targetExtent,
+    render_scale_multiplier: Math.round(renderScale * 1000) / 1000,
+    metadata_warning:
+      renderScale > 24 || renderScale < 1 / 24
+        ? `Inside validation fixture requires a ${renderScale.toFixed(3)}× source-unit correction to preserve physical ${input.concept} scale.`
+        : null,
+    reason: fitAdjusted
+      ? `Inside validation fixture starts from the "${logical.profile_key ?? input.concept}" real-world size (${preferredTargetExtent.toFixed(2)} m) and fit-adjusts only the contained source to ${targetExtent.toFixed(3)} m within a plausible small-specimen range proven against the measured cavity.`
+      : `Inside validation fixture uses the "${logical.profile_key ?? input.concept}" asset-authoritative real-world size (${targetExtent.toFixed(2)} m) and deliberately ignores generic cast-slot presentation sizing.`,
+  } satisfies DirectorQualificationAssetNormalization;
+}
+
+function directorInsideValidationFixturePair(input: {
+  scene: DirectorQualificationScene;
+  pools: CastPoolResolution[];
+  all_assets: DirectorLibraryAsset[];
+  policy: DirectorQualificationNormalizationPolicy;
+  physical_inspections: Record<string, DirectorQualificationPhysicalInspection | null>;
+  pass_kind: DirectorQualificationPassKind;
+}): DirectorPhysicalQualificationPair | null {
+  const fixture = directorQualificationInsideValidationFixtureForPass(
+    input.pass_kind,
+  );
+  if (!fixture) return null;
+
+  const sourceAsset = directorQualificationFindInsideValidationAsset(
+    input.all_assets,
+    {
+      preferred_asset_ids: fixture.preferred_source_asset_ids,
+      phrases: fixture.source_phrases,
+    },
+  );
+  const receiverAsset = directorQualificationFindInsideValidationAsset(
+    input.all_assets,
+    {
+      preferred_asset_ids: fixture.preferred_receiver_asset_ids,
+      phrases: fixture.receiver_phrases,
+    },
+  );
+  if (
+    !sourceAsset ||
+    !receiverAsset ||
+    sourceAsset.asset_id === receiverAsset.asset_id
+  ) {
+    return null;
+  }
+
+  // Explicit validation fixtures already define the semantic roles we intend
+  // to judge. Do not ask the generic cast taxonomy to rediscover that identity:
+  // e.g. a valid Bathtub asset is not required to contain the word "furniture".
+  const sourceSlot = directorQualificationCastSlot(fixture.source_cast_slot_id);
+  const receiverSlot = directorQualificationCastSlot(
+    fixture.receiver_cast_slot_id,
+  );
+  if (!sourceSlot || !receiverSlot) return null;
+
+  const receiverNormalization = directorInsideValidationFixtureNormalization({
+    asset: receiverAsset,
+    slot: receiverSlot,
+    scene: input.scene,
+    role_kind: "secondary",
+    policy: input.policy,
+    concept: fixture.receiver_phrases[0],
+  });
+  const sourceLogical = logicalAssetSizeDecision({
+    concept: fixture.source_phrases[0],
+  });
+  const sourceFitFloor = directorQualificationContainedSourceFitFloor(
+    sourceLogical.min_extent_m,
+  );
+
+  const pairAtExtent = (targetExtentM: number) => {
+    const normalization = directorInsideValidationFixtureNormalization({
+      asset: sourceAsset,
+      slot: sourceSlot,
+      scene: input.scene,
+      role_kind: "primary",
+      policy: input.policy,
+      concept: fixture.source_phrases[0],
+      target_extent_m: targetExtentM,
+    });
+    const suitability = directorPhysicalPairSuitability({
+      relation: "inside",
+      source_asset: sourceAsset,
+      source_normalization: normalization,
+      target_asset: receiverAsset,
+      target_normalization: receiverNormalization,
+      target_inspection:
+        input.physical_inspections[receiverAsset.asset_id] ?? null,
+    });
+    return { normalization, suitability };
+  };
+
+  let fitted = pairAtExtent(sourceLogical.target_extent_m);
+  if (!fitted.suitability) {
+    const floor = pairAtExtent(sourceFitFloor);
+    if (!floor.suitability) return null;
+
+    // Find the largest plausible contained specimen that fits the measured
+    // cavity. This is a bounded pure fit search; it does not reload the GLB or
+    // enlarge the receiver to manufacture a pass.
+    let low = sourceFitFloor;
+    let high = sourceLogical.target_extent_m;
+    fitted = floor;
+    for (let step = 0; step < 10; step += 1) {
+      const midpoint = (low + high) * 0.5;
+      const candidate = pairAtExtent(midpoint);
+      if (candidate.suitability) {
+        low = midpoint;
+        fitted = candidate;
+      } else {
+        high = midpoint;
+      }
+    }
+  }
+
+  const sourceNormalization = fitted.normalization;
+  const suitability = fitted.suitability;
+  if (!suitability) return null;
+
+  return {
+    source_slot_id: sourceSlot.id,
+    source_asset: sourceAsset,
+    source_normalization: sourceNormalization,
+    target: {
+      slot_id: receiverSlot.id,
+      asset: receiverAsset,
+      normalization: receiverNormalization,
+      region_id: suitability.region_id,
+      region_label: suitability.region_label,
+      region_override: suitability.region_override,
+      score: suitability.score,
+    },
+    // Explicit qualification fixtures outrank generic Inside pair discovery.
+    score: 100_000 + suitability.score,
+  };
+}
+
+function chooseDirectorInsidePhysicalPair(input: {
+  preferred_primary: {
+    slot_id: DirectorQualificationCastSlotId;
+    asset: DirectorLibraryAsset;
+  };
+  family: DirectorQualificationFamily;
+  scene: DirectorQualificationScene;
+  pools: CastPoolResolution[];
+  all_assets: DirectorLibraryAsset[];
+  policy: DirectorQualificationNormalizationPolicy;
+  physical_inspections: Record<string, DirectorQualificationPhysicalInspection | null>;
+  pass_kind: DirectorQualificationPassKind;
+}) {
+  const validationFixture = directorQualificationInsideValidationFixtureForPass(
+    input.pass_kind,
+  );
+  if (validationFixture) {
+    // A.11A.14: Cross-asset Inside uses two intentionally legible fixtures:
+    // pineapple -> bathtub at baseline and apple -> the established coffee mug
+    // at diversity. If either requested real pair is missing or physically
+    // invalid, fail closed instead of silently substituting an ambiguous pair.
+    return directorInsideValidationFixturePair(input);
+  }
+
+  const pairs = directorInsidePhysicalPairCandidates(input);
+  // A.11A.11: later passes must be genuinely distinct source/receiver pairs.
+  // Do not wrap a single proven pair and relabel the same evidence as diversity.
+  const pairIndex = directorQualificationInsidePairIndex({
+    pass_kind: input.pass_kind,
+    pair_count: pairs.length,
+  });
+  return pairIndex === null ? null : pairs[pairIndex] ?? null;
 }
 
 function basePosition(
@@ -1117,8 +2407,11 @@ function buildPlannedRoles(input: {
   family: DirectorQualificationFamily;
   scene: DirectorQualificationScene;
   pools: CastPoolResolution[];
+  all_assets: DirectorLibraryAsset[];
+  physical_inspections?: Record<string, DirectorQualificationPhysicalInspection | null>;
   pass_kind: DirectorQualificationPassKind;
   capability_index: number;
+  physical_pair_variant_index?: number;
   primary: { slot_id: DirectorQualificationCastSlotId; asset: DirectorLibraryAsset };
 }) {
   const policy: DirectorQualificationNormalizationPolicy =
@@ -1133,7 +2426,47 @@ function buildPlannedRoles(input: {
     ? primaryTravelHeadingRadians(input.capability)
     : null;
 
-  const excluded = new Set<string>([input.primary.asset.asset_id]);
+  const physicalRelation = directorSupportPhysicalRelation(
+    input.family,
+    input.capability,
+  );
+  const insidePair =
+    physicalRelation === "inside"
+      ? chooseDirectorInsidePhysicalPair({
+          preferred_primary: input.primary,
+          family: input.family,
+          scene: input.scene,
+          pools: input.pools,
+          all_assets: input.all_assets,
+          policy,
+          physical_inspections: input.physical_inspections ?? {},
+          pass_kind: input.pass_kind,
+        })
+      : null;
+  const onSurfacePair =
+    physicalRelation === "on_surface"
+      ? chooseDirectorOnSurfacePhysicalPair({
+          preferred_primary: input.primary,
+          family: input.family,
+          scene: input.scene,
+          pools: input.pools,
+          all_assets: input.all_assets,
+          policy,
+          physical_inspections: input.physical_inspections ?? {},
+          pass_kind: input.pass_kind,
+          variant_index: input.physical_pair_variant_index ?? 0,
+        })
+      : null;
+  if (physicalRelation === "inside" && !insidePair) return null;
+  if (physicalRelation === "on_surface" && !onSurfacePair) return null;
+  const selectedPhysicalPair = insidePair ?? onSurfacePair;
+  const effectivePrimary = selectedPhysicalPair
+    ? {
+        slot_id: selectedPhysicalPair.source_slot_id,
+        asset: selectedPhysicalPair.source_asset,
+      }
+    : input.primary;
+  const excluded = new Set<string>([effectivePrimary.asset.asset_id]);
   const roleBindings: Array<{
     role: string;
     cast_slot_id: DirectorQualificationCastSlotId;
@@ -1141,34 +2474,73 @@ function buildPlannedRoles(input: {
     normalization: DirectorQualificationAssetNormalization;
     rotation: [number, number, number];
     facing_correction_degrees: number;
+    physical_region_override: DirectorQualificationPhysicalRegionOverride | null;
   }> = [];
 
   const qualificationAssetRoles = isTrackingQualificationFamily(input.family)
     ? input.capability.demo.asset_roles.slice(0, 1)
-    : input.capability.demo.asset_roles;
+    : directorQualificationAssetRoles(
+        input.family,
+        input.capability,
+      );
 
   // Phase 1B.7A.8: Tracking camera grammar is judged against one real primary
   // actor plus the lightweight procedural road/corridor. A.8 primary-only
-  // tracking evidence excludes arbitrary supporting GLBs. They were adding
-  // visual contamination and preload/render cost without
-  // improving the camera evidence. Other families retain their authored roles.
+  // tracking evidence excludes arbitrary supporting GLBs. A.11A.2 applies the
+  // same neutral-evidence principle to Depth & screen placement. A.11A.3/A.11A.4
+  // make Group formations participant-aware. A.11A.5 extends that discipline to
+  // Relative actor placement: five binary relations render exactly two actors;
+  // Between alone renders its primary plus both references. A.11A.7 makes
+  // Support & containment relation-aware: On Ground renders only its source,
+  // while On Surface / Attached To / Inside select an actually compatible
+  // measured receiver before the clip is admitted to the gauntlet.
   for (let index = 0; index < qualificationAssetRoles.length; index += 1) {
     const role = qualificationAssetRoles[index];
     let slotId: DirectorQualificationCastSlotId;
     let asset: DirectorLibraryAsset | null;
+    let normalizationOverride: DirectorQualificationAssetNormalization | null = null;
+    let physicalRegionOverride: DirectorQualificationPhysicalRegionOverride | null = null;
 
     if (index === 0) {
-      slotId = input.primary.slot_id;
-      asset = input.primary.asset;
+      slotId = effectivePrimary.slot_id;
+      asset = effectivePrimary.asset;
+      normalizationOverride = selectedPhysicalPair?.source_normalization ?? null;
     } else if (index === 1) {
-      slotId = input.scene.secondary_cast_slot;
-      asset = chooseSupportingAsset(
-        input.pools,
-        slotId,
-        input.pass_kind,
-        input.capability_index,
-        excluded,
-      );
+      const sourceBinding = roleBindings[0];
+      if (physicalRelation && sourceBinding) {
+        const target =
+          physicalRelation === "inside" && insidePair
+            ? insidePair.target
+            : physicalRelation === "on_surface" && onSurfacePair
+              ? onSurfacePair.target
+              : chooseDirectorPhysicalSupportingAsset({
+                relation: physicalRelation,
+                source_asset: sourceBinding.asset,
+                source_normalization: sourceBinding.normalization,
+                scene: input.scene,
+                pools: input.pools,
+                all_assets: input.all_assets,
+                policy,
+                physical_inspections: input.physical_inspections ?? {},
+                pass_kind: input.pass_kind,
+                variant_index: input.physical_pair_variant_index ?? 0,
+                excluded_asset_ids: excluded,
+              });
+        if (!target) return null;
+        slotId = target.slot_id;
+        asset = target.asset;
+        normalizationOverride = target.normalization;
+        physicalRegionOverride = target.region_override;
+      } else {
+        slotId = input.scene.secondary_cast_slot;
+        asset = chooseSupportingAsset(
+          input.pools,
+          slotId,
+          input.pass_kind,
+          input.capability_index,
+          excluded,
+        );
+      }
     } else {
       slotId = input.scene.context_cast_slot;
       asset = chooseSupportingAsset(
@@ -1202,15 +2574,18 @@ function buildPlannedRoles(input: {
       role: role.role,
       cast_slot_id: slotId,
       asset,
-      normalization: normalizeAssetForDirectorQualification({
-        asset,
-        slot,
-        scene: input.scene,
-        role_kind: roleKind(index),
-        policy,
-      }),
+      normalization:
+        normalizationOverride ??
+        normalizeAssetForDirectorQualification({
+          asset,
+          slot,
+          scene: input.scene,
+          role_kind: roleKind(index),
+          policy,
+        }),
       rotation,
       facing_correction_degrees: facingCorrectionDegrees,
+      physical_region_override: physicalRegionOverride,
     });
   }
 
@@ -1218,9 +2593,26 @@ function buildPlannedRoles(input: {
     input.scene,
     roleBindings.map((entry) => entry.normalization),
   );
+  const depthScreenFixturePositions =
+    directorQualificationAdjustDepthScreenFixturePositions({
+      family: input.family,
+      capability: input.capability,
+      scene: input.scene,
+      positions,
+    });
+  const fixturePositions = directorQualificationAdjustRelativeActorFixturePositions({
+    family: input.family,
+    capability: input.capability,
+    scene: input.scene,
+    positions: depthScreenFixturePositions,
+    target_extents_m: roleBindings.map(
+      (entry) => entry.normalization.target_extent_m,
+    ),
+  });
   return roleBindings.map<PlannedRole>((entry, index) => ({
     ...entry,
-    blocking_position: positions[index] ?? basePosition(input.scene, index),
+    blocking_position:
+      fixturePositions[index] ?? basePosition(input.scene, index),
   }));
 }
 
@@ -1230,9 +2622,16 @@ function buildPlannedClips(input: {
   scene: DirectorQualificationScene;
   coverage: DirectorQualificationCoverageMode;
   pools: CastPoolResolution[];
+  all_assets: DirectorLibraryAsset[];
+  physical_inspections?: Record<string, DirectorQualificationPhysicalInspection | null>;
 }) {
   const output: PlannedClip[] = [];
+  const usedInsidePairKeys = new Set<string>();
 
+  // A.11A.13: candidate selection is not the final evidence authority. Guard the
+  // planned reel itself so a later Inside pass cannot admit a source/receiver
+  // identity that has already appeared, even if an upstream selector, fallback,
+  // cache, or future refactor returns it again.
   // Baseline clips intentionally run as one contiguous sibling-comparison block.
   // Diversity and physical-stress blocks follow afterward instead of interleaving,
   // making the Snipping Tool reel much easier to compare visually.
@@ -1246,16 +2645,6 @@ function buildPlannedClips(input: {
         capability,
       );
       if (!primary) return;
-      const roles = buildPlannedRoles({
-        capability,
-        family: input.family,
-        scene: input.scene,
-        pools: input.pools,
-        pass_kind: passKind,
-        capability_index: capabilityIndex,
-        primary,
-      });
-      if (!roles) return;
       const profile = directorQualificationCapabilityProfile(
         input.family,
         capability.id,
@@ -1263,36 +2652,139 @@ function buildPlannedClips(input: {
       const travelHeading = profile.requires_directional_facing
         ? primaryTravelHeadingRadians(capability)
         : null;
-      output.push({
-        capability,
-        primary_cast_slot_id: primary.slot_id,
-        pass_kind: passKind,
-        normalization_policy:
-          passKind === "physical_stress"
-            ? "physical_context"
-            : input.family.normalization_policy,
-        evidence_block_label:
-          input.family.group === "Tracking & attached camera"
-            ? trackingEvidenceBlockLabel(capability, passKind)
-            : null,
-        qualification_note: profile.qualification_note,
-        merge_compare_with_capability_id:
-          profile.merge_compare_with_capability_id,
-        relationship_direction_degrees:
-          travelHeading === null ? null : (travelHeading * 180) / Math.PI,
-        travel_direction: travelHeading === null ? null : "forward",
-        roles,
-      });
+      const normalizationPolicy: DirectorQualificationNormalizationPolicy =
+        passKind === "physical_stress"
+          ? "physical_context"
+          : input.family.normalization_policy;
+      const onSurfaceCanaryCount =
+        isSupportContainmentQualificationFamily(input.family) &&
+        capability.id === "on_surface"
+          ? 3
+          : 1;
+
+      for (let variantIndex = 0; variantIndex < onSurfaceCanaryCount; variantIndex += 1) {
+        const roles = buildPlannedRoles({
+          capability,
+          family: input.family,
+          scene: input.scene,
+          pools: input.pools,
+          all_assets: input.all_assets,
+          physical_inspections: input.physical_inspections,
+          pass_kind: passKind,
+          capability_index: capabilityIndex,
+          physical_pair_variant_index: variantIndex,
+          primary,
+        });
+        if (!roles) continue;
+
+        if (
+          isSupportContainmentQualificationFamily(input.family) &&
+          capability.id === "inside"
+        ) {
+          const insidePairKey = directorQualificationInsidePairKey(
+            roles[0]?.asset.asset_id,
+            roles[1]?.asset.asset_id,
+          );
+          if (!insidePairKey || usedInsidePairKeys.has(insidePairKey)) {
+            // plannedCoverageGaps(...) will turn this omitted later-pass proof
+            // into an explicit no-distinct-pair gap instead of false Diversity.
+            return;
+          }
+          usedInsidePairKeys.add(insidePairKey);
+        }
+
+        output.push({
+          capability,
+          primary_cast_slot_id: roles[0]?.cast_slot_id ?? primary.slot_id,
+          pass_kind: passKind,
+          normalization_policy: normalizationPolicy,
+          evidence_block_label:
+            input.family.group === "Tracking & attached camera"
+              ? trackingEvidenceBlockLabel(capability, passKind)
+              : onSurfaceCanaryCount > 1
+                ? `On Surface Cross-asset source canary ${variantIndex + 1}/${onSurfaceCanaryCount} · ${assetLabel(roles[0]!.asset)} · ${passKind}`
+                : isSupportContainmentQualificationFamily(input.family) &&
+                    capability.id === "inside"
+                  ? `Inside validation · ${
+                      directorQualificationInsideValidationFixtureForPass(passKind)?.label ??
+                      "physical-stress pair"
+                    } · ${passKind}`
+                  : capability.id === "attached_to"
+                    ? `Measured physical-region proof · ${passKind}`
+                    : null,
+          qualification_note: profile.qualification_note,
+          merge_compare_with_capability_id:
+            profile.merge_compare_with_capability_id,
+          relationship_direction_degrees:
+            travelHeading === null ? null : (travelHeading * 180) / Math.PI,
+          travel_direction: travelHeading === null ? null : "forward",
+          roles,
+        });
+      }
+
+      if (
+        input.family.group === "Tracking & attached camera" &&
+        capability.id === "camera_object_attached"
+      ) {
+        const mountedComparison = buildTrackingMountedComparisonClip({
+          family: input.family,
+          scene: input.scene,
+          pools: input.pools,
+          all_assets: input.all_assets,
+          passKind,
+          capabilityIndex,
+          primary,
+          normalization_policy: normalizationPolicy,
+        });
+        if (mountedComparison) {
+          output.push(mountedComparison);
+        }
+      }
     });
   }
   return output;
 }
 
 function capabilityForPlannedClip(clip: PlannedClip) {
+  const groupFormation = [
+    "surround",
+    "form_line",
+    "form_circle",
+    "cluster",
+    "symmetrical_pair",
+  ].includes(clip.capability.id);
+  const relativeActorPlacement = [
+    "beside",
+    "in_front_of",
+    "behind",
+    "between",
+    "facing",
+    "facing_away",
+    "attached_to",
+  ].includes(clip.capability.id);
+  const supportContainment = [
+    "on_ground",
+    "on_surface",
+    "inside",
+  ].includes(clip.capability.id);
+  const plannedRoleIds = clip.roles.map((role) => role.role);
+
   return {
     ...clip.capability,
     demo: {
       ...clip.capability.demo,
+      // A.11A.4 formation evidence and A.11A.5 relative-actor evidence can
+      // deliberately change the generic role count. Promote the planned roles
+      // into the demo visibility contract so directorCapabilityDemoShot frames
+      // exactly the evidence relationship: extra Surround/Circle supports, three
+      // actors for Between, and no optional context for binary relationships.
+      required_visible_roles: groupFormation
+        ? plannedRoleIds
+        : relativeActorPlacement
+          ? plannedRoleIds
+          : supportContainment
+            ? plannedRoleIds
+            : clip.capability.demo.required_visible_roles,
       blocking: clip.roles.map((role) => ({
         role: role.role,
         position: [...role.blocking_position] as [number, number, number],
@@ -1304,19 +2796,35 @@ function capabilityForPlannedClip(clip: PlannedClip) {
 }
 
 function resolvedRolesForPlannedClip(clip: PlannedClip): ResolvedDirectorRole[] {
-  return clip.roles.map((role) => ({
+  const resolved = clip.roles.map((role) => ({
     role: role.role,
     asset: role.asset,
     blocking: {
       role: role.role,
-      position: [...role.blocking_position],
-      rotation: [...role.rotation],
+      position: [...role.blocking_position] as [number, number, number],
+      rotation: [...role.rotation] as [number, number, number],
       target_extent_m: role.normalization.target_extent_m,
     },
     matched_concept: role.cast_slot_id,
-    render_scale_bounds: [0.02, 40],
+    // Phase 1B.7A.1 default remains the live qualification renderer boundary.
+    // Explicit Inside validation fixtures may widen it below only when their
+    // asset-authoritative logical size requires correcting unusual source units.
+    render_scale_bounds: [0.02, 40] as [number, number],
     scale_ground_offset_with_render: true,
+    directability_override: directorQualificationDirectabilityOverride(
+      role.asset,
+      role.physical_region_override,
+    ),
   }));
+
+  for (let index = 0; index < resolved.length; index += 1) {
+    const role = clip.roles[index];
+    const current = resolved[index];
+    if (!role || !current) continue;
+    current.render_scale_bounds = qualificationScaleBounds(role.normalization);
+  }
+
+  return resolved;
 }
 
 function plannedClipFromManifest(
@@ -1367,6 +2875,7 @@ function plannedClipFromManifest(
       })(),
       facing_correction_degrees:
         Number(manifestAsset.facing_correction_degrees) || 0,
+      physical_region_override: manifestAsset.physical_region_override ?? null,
     });
   }
   return {
@@ -1426,6 +2935,276 @@ function decisionCounts(state: DirectorQualificationState) {
   return counts;
 }
 
+function plannedClipPhysicalResolutionEvidence(
+  clip: PlannedClip,
+): DirectorQualificationPhysicalResolutionEvidence | null {
+  const relation = (DIRECTOR_SUPPORT_PHYSICAL_RELATIONS as readonly string[]).includes(
+    clip.capability.id,
+  )
+    ? (clip.capability.id as DirectorSupportPhysicalRelation)
+    : null;
+  if (!relation) return null;
+
+  const capability = capabilityForPlannedClip(clip);
+  const resolvedRoles = resolvedRolesForPlannedClip(clip);
+  const runtimeActors = directorQualificationRuntimeActors(resolvedRoles);
+  const cue = directorCapabilityDemoShot(capability).blocking.find(
+    (candidate) => candidate.relation === relation,
+  );
+  if (!cue) return null;
+  const resolution = resolveDirectorPhysicalBlockingPlacement(cue, runtimeActors);
+  if (!resolution) return null;
+
+  const sourceActor = runtimeActors.find(
+    (actor) => actor.id === resolution.actor_entity_id,
+  );
+  const targetActor = runtimeActors.find(
+    (actor) => actor.id === resolution.target_entity_id,
+  );
+  const targetRole = resolvedRoles.find(
+    (role) => role.role === resolution.target_entity_id,
+  );
+  const targetPlannedRole = clip.roles.find(
+    (role) => role.role === resolution.target_entity_id,
+  );
+  const targetScale = targetRole
+    ? directorQualificationEffectiveRenderScale({
+        dimensions_m: targetRole.asset?.dimensions_m,
+        target_extent_m: targetRole.blocking.target_extent_m ?? 1.6,
+        scale_bounds: targetRole.render_scale_bounds,
+      })
+    : 1;
+
+  let selectedRegionLabel: string | null = null;
+  let targetRegionWorldSize: number[] | null = null;
+  let fitMargin: number | null = null;
+  const clearance = cue.preserve_clearance === false ? 0.002 : 0.008;
+
+  if (resolution.status === "resolved" && targetActor?.directability && sourceActor) {
+    if (resolution.region_kind === "support_surface") {
+      const surface = targetActor.directability.surfaces.find(
+        (candidate) => candidate.id === resolution.region_id,
+      );
+      if (surface) {
+        selectedRegionLabel = surface.semantic_names[0] ?? surface.id;
+        const usable = surface.usable_size ?? surface.size;
+        targetRegionWorldSize = usable.map((value) =>
+          Math.max(0.001, Math.abs(value) * targetScale),
+        );
+        const sourceFootprint = [
+          Math.abs(sourceActor.size[0]),
+          Math.abs(sourceActor.size[2]),
+        ];
+        const [width, depth] = targetRegionWorldSize;
+        const marginA = Math.min(
+          (width ?? 0) - sourceFootprint[0]! - clearance * 2,
+          (depth ?? 0) - sourceFootprint[1]! - clearance * 2,
+        );
+        const marginB = Math.min(
+          (width ?? 0) - sourceFootprint[1]! - clearance * 2,
+          (depth ?? 0) - sourceFootprint[0]! - clearance * 2,
+        );
+        fitMargin = Math.max(marginA, marginB) * 0.5;
+      }
+    } else if (resolution.region_kind === "containment_region") {
+      const region = targetActor.directability.containment_regions.find(
+        (candidate) => candidate.id === resolution.region_id,
+      );
+      if (region) {
+        selectedRegionLabel = region.semantic_names[0] ?? region.id;
+        targetRegionWorldSize = region.size.map((value) =>
+          Math.max(0.001, Math.abs(value) * targetScale),
+        );
+        const containmentClearance =
+          directorQualificationAdaptiveContainmentClearance(
+            targetRegionWorldSize,
+            clearance,
+          );
+        fitMargin = Math.min(
+          ...targetRegionWorldSize.map(
+            (value, index) =>
+              (
+                value -
+                Math.abs(sourceActor.size[index] ?? 0) -
+                containmentClearance * 2
+              ) * 0.5,
+          ),
+        );
+      }
+    } else if (resolution.region_kind === "surface_contact_region") {
+      const anchor = targetActor.directability.anchors.find(
+        (candidate) => candidate.id === resolution.region_id,
+      );
+      if (anchor) {
+        selectedRegionLabel = anchor.semantic_names[0] ?? anchor.id;
+        targetRegionWorldSize = anchor.contact_size
+          ? anchor.contact_size.map((value) =>
+              Math.max(0.001, Math.abs(value) * targetScale),
+            )
+          : null;
+        if (targetRegionWorldSize) {
+          const sourceContact = [...sourceActor.size]
+            .map((value) => Math.max(0.001, Math.abs(value)))
+            .sort((left, right) => left - right)
+            .slice(0, 2);
+          const contact = [...targetRegionWorldSize].sort(
+            (left, right) => left - right,
+          );
+          fitMargin = Math.min(
+            contact[0]! - sourceContact[0]! * 0.42 - clearance,
+            contact[1]! - sourceContact[1]! * 0.42 - clearance,
+          );
+        }
+      }
+    }
+  }
+
+  return {
+    status: resolution.status,
+    relation,
+    actor_entity_id: resolution.actor_entity_id,
+    target_entity_id: resolution.target_entity_id,
+    selected_region_kind: resolution.region_kind,
+    selected_region_id: resolution.region_id,
+    selected_region_label: selectedRegionLabel,
+    resolved_position: resolution.position,
+    source_world_size_m: sourceActor ? [...sourceActor.size] : null,
+    target_region_world_size_m: targetRegionWorldSize,
+    fit_margin_m:
+      fitMargin == null || !Number.isFinite(fitMargin) ? null : fitMargin,
+    unresolved_reason: resolution.reason,
+    selected_region_evidence_source:
+      targetPlannedRole?.physical_region_override?.evidence_source ??
+      (resolution.region_id ? "asset_directability_profile" : null),
+  };
+}
+
+function directorInsideValidationFixtureCoverageGapReason(input: {
+  pass_kind: DirectorQualificationPassKind;
+  all_assets: DirectorLibraryAsset[];
+  physical_inspections: Record<string, DirectorQualificationPhysicalInspection | null>;
+}) {
+  const fixture = directorQualificationInsideValidationFixtureForPass(
+    input.pass_kind,
+  );
+  if (!fixture) {
+    return "open_container_evidence_found_but_no_distinct_real_source_receiver_pair_fits_pass";
+  }
+  const source = directorQualificationFindInsideValidationAsset(
+    input.all_assets,
+    {
+      preferred_asset_ids: fixture.preferred_source_asset_ids,
+      phrases: fixture.source_phrases,
+    },
+  );
+  if (!source) {
+    return `inside_fixture_${fixture.id}_source_not_found_or_not_loadable`;
+  }
+  const receiver = directorQualificationFindInsideValidationAsset(
+    input.all_assets,
+    {
+      preferred_asset_ids: fixture.preferred_receiver_asset_ids,
+      phrases: fixture.receiver_phrases,
+    },
+  );
+  if (!receiver) {
+    return `inside_fixture_${fixture.id}_receiver_not_found_or_not_loadable`;
+  }
+  if (!(receiver.asset_id in input.physical_inspections)) {
+    return `inside_fixture_${fixture.id}_receiver_not_physically_inspected`;
+  }
+  const inspection = input.physical_inspections[receiver.asset_id] ?? null;
+  if (!directorQualificationContainmentOverrideFromInspection(receiver, inspection)) {
+    return `inside_fixture_${fixture.id}_receiver_has_no_verified_open_cavity`;
+  }
+  return `inside_fixture_${fixture.id}_pair_failed_plausible_contained_source_fit`;
+}
+
+function plannedCoverageGaps(input: {
+  family: DirectorQualificationFamily;
+  capabilities: DirectorCapability[];
+  coverage: DirectorQualificationCoverageMode;
+  clips: PlannedClip[];
+  all_assets?: DirectorLibraryAsset[];
+  physical_inspections?: Record<string, DirectorQualificationPhysicalInspection | null>;
+}): DirectorQualificationCoverageGap[] {
+  if (
+    !input.capabilities.some((capability) =>
+      (DIRECTOR_SUPPORT_PHYSICAL_RELATIONS as readonly string[]).includes(
+        capability.id,
+      ),
+    )
+  ) {
+    return [];
+  }
+  const gaps: DirectorQualificationCoverageGap[] = [];
+  for (const passKind of passKinds(input.coverage)) {
+    for (const capability of input.capabilities) {
+      if (
+        !(DIRECTOR_SUPPORT_PHYSICAL_RELATIONS as readonly string[]).includes(
+          capability.id,
+        )
+      ) {
+        continue;
+      }
+      const expectedClipCount = capability.id === "on_surface" ? 3 : 1;
+      const actualClipCount = input.clips.filter(
+        (clip) =>
+          clip.capability.id === capability.id && clip.pass_kind === passKind,
+      ).length;
+      if (actualClipCount >= expectedClipCount) continue;
+      gaps.push({
+        capability_id: capability.id,
+        pass_kind: passKind,
+        relation: capability.id as DirectorSupportPhysicalRelation,
+        expected_clip_count: expectedClipCount,
+        actual_clip_count: actualClipCount,
+        missing_clip_count: expectedClipCount - actualClipCount,
+        reason: (() => {
+          if (capability.id === "on_surface") {
+            return "fewer_than_three_distinct_on_surface_sources_fit_readable_support_regions";
+          }
+          if (capability.id === "inside") {
+            const fixture = directorQualificationInsideValidationFixtureForPass(
+              passKind,
+            );
+            if (fixture) {
+              return directorInsideValidationFixtureCoverageGapReason({
+                pass_kind: passKind,
+                all_assets: input.all_assets ?? [],
+                physical_inspections: input.physical_inspections ?? {},
+              });
+            }
+            const containerEvidenceCount = (input.all_assets ?? []).filter((asset) =>
+              Boolean(
+                directorQualificationContainmentOverrideFromInspection(
+                  asset,
+                  input.physical_inspections?.[asset.asset_id] ?? null,
+                ),
+              ),
+            ).length;
+            return containerEvidenceCount > 0
+              ? "open_container_evidence_found_but_no_distinct_real_source_receiver_pair_fits_pass"
+              : "no_semantic_open_container_evidence_available";
+          }
+          if (capability.id === "attached_to") {
+            const contactEvidenceCount = Object.values(input.physical_inspections ?? {}).reduce(
+              (count, inspection) =>
+                count + directorQualificationContactOverridesFromInspection(inspection).length,
+              0,
+            );
+            return contactEvidenceCount > 0
+              ? "mesh_contact_patches_found_but_no_real_pair_fits"
+              : "no_real_mesh_contact_patch_available";
+          }
+          return "no_compatible_measured_real_asset_pair_available";
+        })(),
+      });
+    }
+  }
+  return gaps;
+}
+
 function manifestAsset(role: PlannedRole): DirectorQualificationRunAsset {
   return {
     cast_slot_id: role.cast_slot_id,
@@ -1443,6 +3222,7 @@ function manifestAsset(role: PlannedRole): DirectorQualificationRunAsset {
     normalization_reason: role.normalization.reason,
     normalization_warning: role.normalization.metadata_warning,
     blocking_position: [...role.blocking_position],
+    physical_region_override: role.physical_region_override,
   };
 }
 
@@ -1696,6 +3476,10 @@ export function DirectorQualificationRoom({
   const [castOverrides, setCastOverrides] = useState<Record<string, string>>({});
   const [qualificationState, setQualificationState] =
     useState<DirectorQualificationState>(() => emptyDirectorQualificationState());
+  const [campaignState, setCampaignState] =
+    useState<DirectorQualificationCampaignState>(() =>
+      emptyDirectorQualificationCampaignState(families),
+    );
   const [manifest, setManifest] =
     useState<DirectorQualificationRecordingManifest | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -1708,6 +3492,14 @@ export function DirectorQualificationRoom({
   const [preparedAssetIds, setPreparedAssetIds] = useState<string[]>([]);
   const [preloadErrors, setPreloadErrors] = useState<Record<string, string>>({});
   const [preloadGeneration, setPreloadGeneration] = useState(0);
+  const [physicalInspections, setPhysicalInspections] = useState<
+    Record<string, DirectorQualificationPhysicalInspection | null>
+  >({});
+  const [physicalInspectionErrors, setPhysicalInspectionErrors] = useState<
+    Record<string, string>
+  >({});
+  const [physicalInspectionCompletedKey, setPhysicalInspectionCompletedKey] =
+    useState("");
   const [evidenceCapturePhase, setEvidenceCapturePhase] =
     useState<EvidenceCapturePhase>("idle");
   const [evidenceCaptureMessage, setEvidenceCaptureMessage] =
@@ -1720,6 +3512,7 @@ export function DirectorQualificationRoom({
   const deterministicRenderRequestRef = useRef<DeterministicRenderRequest | null>(null);
   const deterministicExportCancelledRef = useRef(false);
   const qualificationStateRef = useRef(qualificationState);
+  const campaignStateRef = useRef(campaignState);
 
   const evidenceCaptureBusy =
     evidenceCapturePhase === "arming" ||
@@ -1739,15 +3532,17 @@ export function DirectorQualificationRoom({
 
   const loadableAssets = useMemo(
     () =>
-      assets
-        .filter(isLoadableLibraryAsset)
-        .slice()
-        .sort((left, right) => assetLabel(left).localeCompare(assetLabel(right))),
-    [assets],
+      assetsLoaded
+        ? assets
+            .filter(isLoadableLibraryAsset)
+            .slice()
+            .sort((left, right) => assetLabel(left).localeCompare(assetLabel(right)))
+        : [],
+    [assets, assetsLoaded],
   );
   const resolvedPools = useMemo(
-    () => resolveQualificationPools(assets, castOverrides),
-    [assets, castOverrides],
+    () => (assetsLoaded ? resolveQualificationPools(loadableAssets, castOverrides) : []),
+    [assetsLoaded, castOverrides, loadableAssets],
   );
   const familyCapabilities = useMemo(
     () =>
@@ -1758,6 +3553,124 @@ export function DirectorQualificationRoom({
         : [],
     [selectedFamily],
   );
+
+  const physicalInspectionRequired = Boolean(
+    selectedFamily &&
+      (isSupportContainmentQualificationFamily(selectedFamily) ||
+        (selectedFamily.category === "blocking_placement" &&
+          selectedFamily.capability_ids.includes("attached_to"))),
+  );
+  const physicalInspectionCandidates = useMemo(() => {
+    if (!selectedFamily || !physicalInspectionRequired) return [];
+
+    // A.11A.17 keeps heavy exact-GLB inspection scoped to the relation that can
+    // consume it. Support & containment now needs only the two Inside receivers
+    // (Bathtub + established mug). Attached To moved to Relative actor placement
+    // and inspects only its two contact-readable receiver canaries when that
+    // family is selected. No unrelated receiver GLBs are parsed speculatively.
+    const insideFixtureReceivers = isSupportContainmentQualificationFamily(
+      selectedFamily,
+    )
+      ? DIRECTOR_QUALIFICATION_INSIDE_VALIDATION_FIXTURES
+          .map((fixture) =>
+            directorQualificationFindInsideValidationAsset(loadableAssets, {
+              preferred_asset_ids: fixture.preferred_receiver_asset_ids,
+              phrases: fixture.receiver_phrases,
+            }),
+          )
+          .filter((asset): asset is DirectorLibraryAsset => Boolean(asset))
+      : [];
+    const contactReadabilityReceivers = selectedFamily.capability_ids.includes(
+      "attached_to",
+    )
+      ? ["chair", "stool"]
+          .map((word) =>
+            loadableAssets.find((asset) =>
+              assetSearchText(asset).split(/\s+/).includes(word),
+            ),
+          )
+          .filter((asset): asset is DirectorLibraryAsset => Boolean(asset))
+      : [];
+
+    const seen = new Set<string>();
+    return [...insideFixtureReceivers, ...contactReadabilityReceivers]
+      .filter((asset) => {
+        if (seen.has(asset.asset_id)) return false;
+        seen.add(asset.asset_id);
+        return true;
+      })
+      .slice(0, DIRECTOR_QUALIFICATION_SUPPORT_CONTAINMENT_INSPECTION_LIMIT);
+  }, [loadableAssets, physicalInspectionRequired, selectedFamily]);
+  const physicalInspectionKey = useMemo(
+    () =>
+      physicalInspectionCandidates
+        .map(
+          (asset) =>
+            `${asset.asset_id}:${asset.public_path}:${(asset.default_rotation ?? [0, 0, 0]).join(",")}`,
+        )
+        .join("|"),
+    [physicalInspectionCandidates],
+  );
+
+  useEffect(() => {
+    if (!physicalInspectionRequired || !assetsLoaded || assetsLoading) {
+      setPhysicalInspections({});
+      setPhysicalInspectionErrors({});
+      setPhysicalInspectionCompletedKey("");
+      return;
+    }
+    let cancelled = false;
+    setPhysicalInspectionCompletedKey("");
+    setPhysicalInspectionErrors({});
+    const candidates = [...physicalInspectionCandidates];
+
+    void (async () => {
+      const next: Record<string, DirectorQualificationPhysicalInspection | null> = {};
+      const errors: Record<string, string> = {};
+      let cursor = 0;
+      const worker = async () => {
+        while (!cancelled) {
+          const index = cursor;
+          cursor += 1;
+          const asset = candidates[index];
+          if (!asset) return;
+          try {
+            next[asset.asset_id] =
+              await inspectDirectorQualificationPhysicalAssetCached(asset);
+          } catch (error) {
+            next[asset.asset_id] = null;
+            errors[asset.asset_id] =
+              error instanceof Error ? error.message : "Physical mesh inspection failed.";
+          }
+        }
+      };
+      await Promise.all(
+        Array.from(
+          { length: Math.min(2, Math.max(1, candidates.length)) },
+          worker,
+        ),
+      );
+      if (cancelled) return;
+      setPhysicalInspections(next);
+      setPhysicalInspectionErrors(errors);
+      setPhysicalInspectionCompletedKey(physicalInspectionKey);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    assetsLoaded,
+    assetsLoading,
+    physicalInspectionCandidates,
+    physicalInspectionKey,
+    physicalInspectionRequired,
+    selectedFamily,
+  ]);
+
+  const physicalInspectionReady =
+    !physicalInspectionRequired ||
+    physicalInspectionCompletedKey === physicalInspectionKey;
   const plannedClips = useMemo(
     () =>
       selectedFamily
@@ -1767,9 +3680,19 @@ export function DirectorQualificationRoom({
             scene,
             coverage,
             pools: resolvedPools,
+            all_assets: loadableAssets,
+            physical_inspections: physicalInspections,
           })
         : [],
-    [coverage, familyCapabilities, resolvedPools, scene, selectedFamily],
+    [
+      coverage,
+      familyCapabilities,
+      loadableAssets,
+      physicalInspections,
+      resolvedPools,
+      scene,
+      selectedFamily,
+    ],
   );
 
   const familyPoolEntries = useMemo(
@@ -1885,7 +3808,8 @@ export function DirectorQualificationRoom({
     !noPrimaryCoverage &&
     !mountedHostCoverageMissing &&
     plannedClips.length > 0;
-  const canRun = canPrepare && preparationComplete;
+  const canRun = canPrepare && physicalInspectionReady && preparationComplete;
+  const physicalInspectionErrorCount = Object.keys(physicalInspectionErrors).length;
 
   const currentClip = manifest?.clips[currentIndex] ?? null;
   const currentPlannedClip = useMemo(() => {
@@ -1920,6 +3844,49 @@ export function DirectorQualificationRoom({
     currentCapability.id,
   );
   const counts = decisionCounts(qualificationState);
+
+  const campaignCounts = directorQualificationCampaignCounts(campaignState);
+  const selectedCampaignFamily = selectedFamily
+    ? directorQualificationCampaignFamilyRecord(campaignState, selectedFamily)
+    : null;
+  const selectedFamilyReviews = selectedFamily
+    ? selectedFamily.capability_ids.map((capabilityId) =>
+        qualificationReviewForCapability(qualificationState, capabilityId),
+      )
+    : [];
+  const selectedFamilyLatestEvidenceAtMs = selectedCampaignFamily?.latest_evidence_at
+    ? Date.parse(selectedCampaignFamily.latest_evidence_at)
+    : Number.NaN;
+  const selectedFamilyCurrentReviewCount = selectedFamilyReviews.filter((review) => {
+    if (
+      review.decision === "qualified" &&
+      selectedCampaignFamily?.frozen_capability_ids.includes(review.capability_id)
+    ) {
+      return true;
+    }
+    if (review.decision === "unreviewed" || !review.updated_at) return false;
+    if (!Number.isFinite(selectedFamilyLatestEvidenceAtMs)) return false;
+    return Date.parse(review.updated_at) >= selectedFamilyLatestEvidenceAtMs;
+  }).length;
+  const selectedFamilyReviewComplete =
+    selectedFamilyReviews.length > 0 &&
+    selectedFamilyCurrentReviewCount === selectedFamilyReviews.length;
+  const selectedFamilyQualifiedCapabilityIds = selectedFamilyReviews
+    .filter((review) => review.decision === "qualified")
+    .map((review) => review.capability_id);
+  const selectedFamilyActionCount = selectedFamilyReviews.filter(
+    (review) =>
+      review.decision !== "qualified" && review.decision !== "unreviewed",
+  ).length;
+  const selectedFamilyCanCloseReview =
+    Boolean(selectedCampaignFamily) &&
+    selectedCampaignFamily?.latest_evidence_integrity === "pass" &&
+    selectedCampaignFamily?.status !== "needs_re_evidence" &&
+    selectedFamilyReviewComplete;
+  const nextCampaignFamilyKey = nextDirectorQualificationCampaignFamilyKey(
+    campaignState,
+    selectedFamily?.key ?? null,
+  );
 
   const markPreparedAsset = useCallback((assetId: string) => {
     setPreparedAssetIds((current) =>
@@ -1961,6 +3928,10 @@ export function DirectorQualificationRoom({
   }, [qualificationState]);
 
   useEffect(() => {
+    campaignStateRef.current = campaignState;
+  }, [campaignState]);
+
+  useEffect(() => {
     return () => {
       deterministicExportCancelledRef.current = true;
       const active = activeEvidenceCaptureRef.current;
@@ -1984,6 +3955,20 @@ export function DirectorQualificationRoom({
         const parsed = JSON.parse(rawCast);
         if (parsed && typeof parsed === "object") {
           setCastOverrides(parsed as Record<string, string>);
+        }
+      }
+      const rawCampaign = window.localStorage.getItem(
+        DIRECTOR_QUALIFICATION_CAMPAIGN_STORAGE_KEY,
+      );
+      if (rawCampaign) {
+        const normalizedCampaign = normalizeDirectorQualificationCampaignState(
+          JSON.parse(rawCampaign),
+          families,
+        );
+        setCampaignState(normalizedCampaign);
+        campaignStateRef.current = normalizedCampaign;
+        if (normalizedCampaign.current_family_key) {
+          setFamilyKey(normalizedCampaign.current_family_key);
         }
       }
     } catch (error) {
@@ -2115,6 +4100,77 @@ export function DirectorQualificationRoom({
     return () => window.clearTimeout(timer);
   }, [evidenceCapturePhase, phase]);
 
+  function persistCampaignState(next: DirectorQualificationCampaignState) {
+    campaignStateRef.current = next;
+    setCampaignState(next);
+    try {
+      window.localStorage.setItem(
+        DIRECTOR_QUALIFICATION_CAMPAIGN_STORAGE_KEY,
+        JSON.stringify(next),
+      );
+    } catch (error) {
+      console.warn("Director qualification campaign state could not be persisted.", error);
+    }
+  }
+
+  function selectCampaignFamily(nextFamilyKey: string) {
+    const nextFamily = families.find((family) => family.key === nextFamilyKey);
+    if (!nextFamily) return;
+    setFamilyKey(nextFamily.key);
+    persistCampaignState(
+      setDirectorQualificationCampaignCurrentFamily(
+        campaignStateRef.current,
+        nextFamily.key,
+      ),
+    );
+  }
+
+  function updateSelectedCampaignFamilyNotes(notes: string) {
+    if (!selectedFamily) return;
+    persistCampaignState(
+      updateDirectorQualificationCampaignFamilyNotes(
+        campaignStateRef.current,
+        selectedFamily,
+        notes,
+      ),
+    );
+  }
+
+  function markSelectedFamilyNeedsReEvidence() {
+    if (!selectedFamily) return;
+    persistCampaignState(
+      markDirectorQualificationCampaignNeedsReEvidence(
+        campaignStateRef.current,
+        selectedFamily,
+        "A reviewed capability changed or needs another visual proof. Render a new deterministic reel and send the ZIP for perceptual review.",
+      ),
+    );
+  }
+
+  function closeSelectedFamilyReview(goToNext: boolean) {
+    if (!selectedFamily || !selectedFamilyCanCloseReview) return;
+    const currentCampaignFamily = directorQualificationCampaignFamilyRecord(
+      campaignStateRef.current,
+      selectedFamily,
+    );
+    const reviewed = markDirectorQualificationCampaignFamilyReviewed(
+      campaignStateRef.current,
+      selectedFamily,
+      {
+        frozen_capability_ids: selectedFamilyQualifiedCapabilityIds,
+        family_notes: currentCampaignFamily.family_notes,
+      },
+    );
+    persistCampaignState(reviewed);
+
+    if (!goToNext) return;
+    const nextFamilyKey = nextDirectorQualificationCampaignFamilyKey(
+      reviewed,
+      selectedFamily.key,
+    );
+    if (nextFamilyKey) selectCampaignFamily(nextFamilyKey);
+  }
+
   function persistQualificationState(next: DirectorQualificationState) {
     setQualificationState(next);
     try {
@@ -2142,6 +4198,20 @@ export function DirectorQualificationRoom({
       },
     };
     persistQualificationState(next);
+    if (
+      selectedFamily &&
+      directorQualificationCampaignFamilyRecord(
+        campaignStateRef.current,
+        selectedFamily,
+      ).latest_evidence_integrity === "pass"
+    ) {
+      persistCampaignState(
+        markDirectorQualificationCampaignReviewInProgress(
+          campaignStateRef.current,
+          selectedFamily,
+        ),
+      );
+    }
   }
 
   function setCastOverride(slotId: string, assetId: string) {
@@ -2193,6 +4263,7 @@ export function DirectorQualificationRoom({
         qualification_note: planned.qualification_note,
         merge_compare_with_capability_id:
           planned.merge_compare_with_capability_id,
+        physical_resolution: plannedClipPhysicalResolutionEvidence(planned),
         assets: planned.roles.map(manifestAsset),
       });
       offset += SLATE_MS + duration + GAP_MS;
@@ -2221,6 +4292,14 @@ export function DirectorQualificationRoom({
       distinct_asset_count: distinctAssets.size,
       represented_cast_slots: Array.from(representedSlots),
       estimated_recording_duration_ms: offset,
+      coverage_gaps: plannedCoverageGaps({
+        family: selectedFamily,
+        capabilities: familyCapabilities,
+        coverage,
+        clips: plannedClips,
+        all_assets: loadableAssets,
+        physical_inspections: physicalInspections,
+      }),
       clips,
     };
   }
@@ -2601,6 +4680,7 @@ export function DirectorQualificationRoom({
 
   async function renderGauntletAndExportEvidenceDeterministically() {
     if (!selectedFamily || !canRun || evidenceCaptureBusy) return;
+    const exportFamily = selectedFamily;
 
     deterministicExportCancelledRef.current = false;
     setEvidenceCapturePhase("arming");
@@ -2961,6 +5041,18 @@ export function DirectorQualificationRoom({
       );
       const packageFilename = `director-gauntlet-${familySlug}-${nextManifest.reel_id.toLowerCase()}.zip`;
       downloadDirectorQualificationEvidence(packageFilename, evidenceZip);
+      persistCampaignState(
+        recordDirectorQualificationCampaignEvidence(
+          campaignStateRef.current,
+          exportFamily,
+          {
+            reel_id: nextManifest.reel_id,
+            integrity: integrity.evidence_integrity,
+            coverage_mode: nextManifest.coverage_mode,
+            evidence_at: exportCompletedAt.toISOString(),
+          },
+        ),
+      );
 
       flushSync(() => {
         setCurrentIndex(Math.max(0, nextManifest.clips.length - 1));
@@ -3090,6 +5182,199 @@ export function DirectorQualificationRoom({
           <Stat label="Unreviewed" value={counts.unreviewed} />
         </section>
 
+        <section style={campaignCardStyle}>
+          <div style={campaignHeaderStyle}>
+            <div style={{ display: "grid", gap: 4 }}>
+              <span style={eyebrowStyle}>Qualification campaign · A.11A</span>
+              <strong style={{ fontSize: 20 }}>
+                One family → deterministic evidence ZIP → ChatGPT + human review
+              </strong>
+              <span style={mutedStyle}>
+                A.11A is the campaign notebook, not an automated judge. Render one family
+                with A.10F, send that ZIP to ChatGPT for perceptual review, record the
+                capability decisions here, freeze the siblings that passed, then continue
+                or re-evidence only what changed.
+              </span>
+            </div>
+            <code style={runCodeStyle}>{campaignState.campaign_id}</code>
+          </div>
+
+          <div style={campaignStatsStyle}>
+            <Stat label="Families" value={campaignCounts.family_count} />
+            <Stat label="Reviewed" value={campaignCounts.reviewed} />
+            <Stat
+              label="Awaiting review"
+              value={
+                campaignCounts.awaiting_perceptual_review +
+                campaignCounts.review_in_progress
+              }
+            />
+            <Stat label="Needs re-evidence" value={campaignCounts.needs_re_evidence} />
+            <Stat label="Frozen capabilities" value={campaignCounts.frozen_capability_count} />
+          </div>
+
+          {selectedCampaignFamily && selectedFamily ? (
+            <div style={campaignFocusStyle}>
+              <div style={{ minWidth: 0, display: "grid", gap: 5 }}>
+                <span style={campaignStatusStyle}>
+                  {
+                    DIRECTOR_QUALIFICATION_CAMPAIGN_FAMILY_STATUS_LABELS[
+                      selectedCampaignFamily.status
+                    ]
+                  }
+                </span>
+                <strong style={{ fontSize: 17 }}>{selectedFamily.label}</strong>
+                <span style={mutedStyle}>
+                  {selectedFamily.capability_ids.length} capabilities ·{" "}
+                  {selectedFamilyCurrentReviewCount}/{selectedFamily.capability_ids.length} current decisions ·{" "}
+                  {selectedFamilyQualifiedCapabilityIds.length} qualified ·{" "}
+                  {selectedFamilyActionCount} need action
+                </span>
+                <span style={mutedStyle}>
+                  Evidence:{" "}
+                  {selectedCampaignFamily.latest_evidence_reel_id
+                    ? `${selectedCampaignFamily.latest_evidence_reel_id} · ${selectedCampaignFamily.latest_evidence_integrity?.toUpperCase() ?? "UNKNOWN"} · ${selectedCampaignFamily.latest_evidence_coverage_mode ?? "unknown coverage"}`
+                    : "none attached yet — the next successful A.10F export will attach automatically"}
+                </span>
+                {selectedCampaignFamily.re_evidence_reason ? (
+                  <span style={campaignNeedsEvidenceStyle}>
+                    {selectedCampaignFamily.re_evidence_reason}
+                  </span>
+                ) : null}
+              </div>
+
+              <div style={campaignActionsStyle}>
+                <button
+                  type="button"
+                  onClick={() => closeSelectedFamilyReview(false)}
+                  disabled={!selectedFamilyCanCloseReview || evidenceCaptureBusy}
+                  style={primaryButtonStyle}
+                >
+                  Save family review
+                </button>
+                <button
+                  type="button"
+                  onClick={() => closeSelectedFamilyReview(true)}
+                  disabled={!selectedFamilyCanCloseReview || evidenceCaptureBusy}
+                  style={buttonStyle}
+                >
+                  Save review & go to next family
+                </button>
+                <button
+                  type="button"
+                  onClick={markSelectedFamilyNeedsReEvidence}
+                  disabled={evidenceCaptureBusy}
+                  style={buttonStyle}
+                >
+                  Needs re-evidence
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (nextCampaignFamilyKey) selectCampaignFamily(nextCampaignFamilyKey);
+                  }}
+                  disabled={!nextCampaignFamilyKey || evidenceCaptureBusy}
+                  style={buttonStyle}
+                >
+                  Go to next unresolved family
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          <label style={campaignNotesStyle}>
+            <span>Family review notes</span>
+            <textarea
+              value={selectedCampaignFamily?.family_notes ?? ""}
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                updateSelectedCampaignFamilyNotes(event.target.value)
+              }
+              rows={3}
+              placeholder="Summarize the ChatGPT/human review at family level: what is frozen, what needs repair, and what comparison should be rerun."
+              style={notesStyle}
+            />
+          </label>
+
+          {selectedCampaignFamily &&
+          selectedCampaignFamily.latest_evidence_integrity !== "pass" ? (
+            <div style={campaignInstructionStyle}>
+              <strong>Evidence gate.</strong>
+              <span>
+                A family cannot be closed until a deterministic A.10F reel is attached with
+                evidence_integrity: PASS. Render the family below, send the ZIP to ChatGPT,
+                then record the visual decisions in Human qualification.
+              </span>
+            </div>
+          ) : !selectedFamilyReviewComplete ? (
+            <div style={campaignInstructionStyle}>
+              <strong>Perceptual review gate.</strong>
+              <span>
+                Evidence is technically valid. Send the ZIP to ChatGPT, judge every
+                capability, and assign Qualified / Fix / Merge / Redefine / Restrict /
+                Retire / Blocked before closing this family.
+              </span>
+            </div>
+          ) : (
+            <div style={campaignInstructionStyle}>
+              <strong>Ready to close.</strong>
+              <span>
+                All capability decisions are recorded against PASS evidence. Saving the
+                family review freezes only the capabilities marked Qualified; action items
+                remain visible for targeted repair.
+              </span>
+            </div>
+          )}
+
+          <details style={detailsStyle}>
+            <summary style={summaryStyle}>
+              Campaign family board · {campaignCounts.reviewed}/{campaignCounts.family_count} reviewed
+            </summary>
+            <div style={campaignFamilyListStyle}>
+              {families.map((family, index) => {
+                const campaignFamily = directorQualificationCampaignFamilyRecord(
+                  campaignState,
+                  family,
+                );
+                return (
+                  <button
+                    key={family.key}
+                    type="button"
+                    onClick={() => selectCampaignFamily(family.key)}
+                    disabled={evidenceCaptureBusy}
+                    style={{
+                      ...campaignFamilyRowStyle,
+                      ...(family.key === selectedFamily?.key
+                        ? activeCampaignFamilyRowStyle
+                        : null),
+                    }}
+                  >
+                    <span style={queueIndexStyle}>
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span style={{ minWidth: 0, display: "grid", gap: 2 }}>
+                      <strong>{family.label}</strong>
+                      <small style={mutedStyle}>
+                        {family.capability_ids.length} capabilities ·{" "}
+                        {campaignFamily.latest_evidence_reel_id
+                          ? `evidence ${campaignFamily.latest_evidence_integrity?.toUpperCase() ?? "unknown"}`
+                          : "no campaign evidence"}{" "}
+                        · {campaignFamily.frozen_capability_ids.length} frozen
+                      </small>
+                    </span>
+                    <span style={campaignFamilyStatusPillStyle}>
+                      {
+                        DIRECTOR_QUALIFICATION_CAMPAIGN_FAMILY_STATUS_LABELS[
+                          campaignFamily.status
+                        ]
+                      }
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </details>
+        </section>
+
         <section style={controlCardStyle}>
           <div style={threeColumnControlsStyle}>
             <label style={fieldStyle}>
@@ -3098,7 +5383,7 @@ export function DirectorQualificationRoom({
                 value={selectedFamily?.key ?? ""}
                 disabled={evidenceCaptureBusy}
                 onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                  setFamilyKey(event.target.value)
+                  selectCampaignFamily(event.target.value)
                 }
                 style={selectStyle}
               >
@@ -3274,8 +5559,8 @@ export function DirectorQualificationRoom({
               <div style={viewerMessageStyle}>
                 <strong>
                   {assetsLoading
-                    ? "Loading reviewed Asset Library…"
-                    : "Preparing qualification pools…"}
+                    ? "Loading qualification asset index…"
+                    : "Starting qualification asset request…"}
                 </strong>
               </div>
             ) : !currentPlannedClip || !canPrepare ? (
@@ -3408,9 +5693,11 @@ export function DirectorQualificationRoom({
               disabled={!canRun || evidenceCaptureBusy}
               style={primaryButtonStyle}
             >
-              {canPrepare && !preparationComplete
-                ? `Preparing ${preparedScheduledCount}/${scheduledAssets.length} assets…`
-                : "Run family gauntlet"}
+              {!physicalInspectionReady && isSupportContainmentQualificationFamily(selectedFamily)
+                ? "Inspecting real physical surfaces…"
+                : canPrepare && !preparationComplete
+                  ? `Preparing ${preparedScheduledCount}/${scheduledAssets.length} assets…`
+                  : "Run family gauntlet"}
             </button>
             <button
               type="button"
@@ -3428,6 +5715,12 @@ export function DirectorQualificationRoom({
                       ? "Packaging evidence…"
                       : "Render gauntlet + export evidence"}
             </button>
+            {isSupportContainmentQualificationFamily(selectedFamily) && physicalInspectionReady ? (
+              <span style={transportMetaStyle}>
+                Physical mesh inspection: {physicalInspectionCandidates.length - physicalInspectionErrorCount}/{physicalInspectionCandidates.length} ready
+                {physicalInspectionErrorCount ? ` · ${physicalInspectionErrorCount} unavailable` : ""}
+              </span>
+            ) : null}
             {scheduledPreloadFailures.length ? (
               <button
                 type="button"
@@ -3511,7 +5804,15 @@ export function DirectorQualificationRoom({
                 exact asset, source bounds, audition extent, scale multiplier, and pass type.
               </span>
             </div>
-            <code style={runCodeStyle}>{currentClip?.run_id ?? currentCapability.id}</code>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              {currentReview.decision === "qualified" &&
+              selectedCampaignFamily?.frozen_capability_ids.includes(
+                currentCapability.id,
+              ) ? (
+                <span style={frozenBadgeStyle}>FROZEN</span>
+              ) : null}
+              <code style={runCodeStyle}>{currentClip?.run_id ?? currentCapability.id}</code>
+            </div>
           </div>
 
           <div style={decisionRowStyle}>
@@ -3564,6 +5865,9 @@ export function DirectorQualificationRoom({
               <div style={{ display: "grid", gap: 3 }}>
                 <span style={eyebrowStyle}>Audition queue</span>
                 <strong>{manifest?.clip_count ?? plannedClips.length} clips</strong>
+                {manifest?.coverage_gaps?.length ? (
+                  <span> · {manifest.coverage_gaps.length} explicit physical coverage gap(s)</span>
+                ) : null}
               </div>
               <span style={mutedStyle}>
                 Stable sibling baseline first · rotating diversity next · physical stress last
@@ -3598,6 +5902,12 @@ export function DirectorQualificationRoom({
                       </span>
                       <span style={queueDecisionStyle}>
                         {DIRECTOR_QUALIFICATION_DECISION_LABELS[review.decision]}
+                        {review.decision === "qualified" &&
+                        selectedCampaignFamily?.frozen_capability_ids.includes(
+                          clip.capability_id,
+                        )
+                          ? " · FROZEN"
+                          : ""}
                       </span>
                     </button>
                   );
@@ -3988,6 +6298,11 @@ const transportStyle: CSSProperties = {
   border: "1px solid rgba(255,255,255,0.09)",
   background: "rgba(2,6,23,0.78)",
 };
+const transportMetaStyle: CSSProperties = {
+  color: "rgba(186,230,253,0.82)",
+  fontSize: 10,
+  lineHeight: 1.35,
+};
 const buttonStyle: CSSProperties = {
   borderRadius: 10,
   border: "1px solid rgba(255,255,255,0.14)",
@@ -4009,6 +6324,122 @@ const toggleStyle: CSSProperties = {
   color: "rgba(226,232,240,0.68)",
   fontSize: 11,
 };
+const campaignCardStyle: CSSProperties = {
+  display: "grid",
+  gap: 12,
+  padding: 14,
+  borderRadius: 18,
+  border: "1px solid rgba(56,189,248,0.18)",
+  background: "linear-gradient(180deg, rgba(8,47,73,0.14), rgba(2,6,23,0.7))",
+};
+const campaignHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 14,
+  flexWrap: "wrap",
+};
+const campaignStatsStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+  gap: 8,
+};
+const campaignFocusStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+  gap: 14,
+  alignItems: "start",
+  padding: 12,
+  borderRadius: 14,
+  border: "1px solid rgba(125,211,252,0.16)",
+  background: "rgba(15,23,42,0.54)",
+};
+const campaignActionsStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  justifyContent: "flex-end",
+  gap: 7,
+  maxWidth: 420,
+};
+const campaignStatusStyle: CSSProperties = {
+  width: "fit-content",
+  borderRadius: 999,
+  border: "1px solid rgba(125,211,252,0.28)",
+  background: "rgba(2,132,199,0.14)",
+  color: "#bae6fd",
+  padding: "4px 8px",
+  fontSize: 10,
+  fontWeight: 850,
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+};
+const campaignNeedsEvidenceStyle: CSSProperties = {
+  color: "#fde68a",
+  fontSize: 11,
+  lineHeight: 1.45,
+};
+const campaignNotesStyle: CSSProperties = {
+  display: "grid",
+  gap: 6,
+  color: "rgba(226,232,240,0.78)",
+  fontSize: 11,
+  fontWeight: 800,
+};
+const campaignInstructionStyle: CSSProperties = {
+  display: "grid",
+  gap: 4,
+  padding: "9px 11px",
+  borderRadius: 12,
+  border: "1px solid rgba(148,163,184,0.12)",
+  background: "rgba(15,23,42,0.42)",
+  color: "rgba(203,213,225,0.76)",
+  fontSize: 11,
+  lineHeight: 1.45,
+};
+const campaignFamilyListStyle: CSSProperties = {
+  display: "grid",
+  gap: 5,
+  maxHeight: 420,
+  overflowY: "auto",
+  padding: "0 10px 10px",
+};
+const campaignFamilyRowStyle: CSSProperties = {
+  width: "100%",
+  display: "grid",
+  gridTemplateColumns: "36px minmax(0,1fr) auto",
+  gap: 9,
+  alignItems: "center",
+  textAlign: "left",
+  borderRadius: 10,
+  border: "1px solid rgba(255,255,255,0.07)",
+  background: "rgba(15,23,42,0.5)",
+  color: "white",
+  padding: "8px 9px",
+  cursor: "pointer",
+};
+const activeCampaignFamilyRowStyle: CSSProperties = {
+  border: "1px solid rgba(125,211,252,0.44)",
+  background: "rgba(8,145,178,0.14)",
+};
+const campaignFamilyStatusPillStyle: CSSProperties = {
+  color: "rgba(226,232,240,0.7)",
+  fontSize: 9,
+  fontWeight: 800,
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+  whiteSpace: "nowrap",
+};
+const frozenBadgeStyle: CSSProperties = {
+  borderRadius: 999,
+  border: "1px solid rgba(134,239,172,0.4)",
+  background: "rgba(22,163,74,0.14)",
+  color: "#bbf7d0",
+  padding: "4px 8px",
+  fontSize: 9,
+  fontWeight: 900,
+  letterSpacing: "0.06em",
+};
+
 const reviewCardStyle: CSSProperties = {
   display: "grid",
   gap: 10,

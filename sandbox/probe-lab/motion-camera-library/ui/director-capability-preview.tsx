@@ -7,6 +7,7 @@ import * as THREE from "three";
 
 import type { MyWayAssetRecord } from "../../assets/asset-types";
 import { buildAssetDirectabilityProfile } from "../../directability/asset-directability-from-asset";
+import type { AssetDirectabilityProfileV1 } from "../../directability/asset-directability-contract";
 
 import {
   applyDirectorBlocking,
@@ -22,6 +23,13 @@ import {
   type DirectorCapability,
 } from "../director-capability-registry";
 import type { DirectorAuditFixtureKind } from "../director-visual-audit";
+import {
+  directorQualificationEffectiveRenderScale,
+  directorQualificationRenderedWorldSize,
+} from "../director-qualification-render-geometry";
+import {
+  directorQualificationInsideDetailCameraProfile,
+} from "../director-qualification-support-containment-policy";
 import {
   DirectorRealAssetLoadBoundary,
   directorRealAssetBrowserUrl,
@@ -43,6 +51,8 @@ export type ResolvedDirectorRole = {
   render_scale_bounds?: [number, number];
   /** Qualification-only guard: scale a measured ground offset with the visual model so resized assets still sit on the same ground anchor. */
   scale_ground_offset_with_render?: boolean;
+  /** Qualification-only measured-region refinement captured from the exact rendered GLB. */
+  directability_override?: AssetDirectabilityProfileV1 | null;
 };
 
 type PreviewProps = {
@@ -69,30 +79,91 @@ function clamp01(value: number) {
   return THREE.MathUtils.clamp(value, 0, 1);
 }
 
+function directorQualificationPreviewMoment(
+  capability: DirectorCapability,
+  roles: ResolvedDirectorRole[],
+  qualificationVisibilityAssist: boolean,
+): ReturnType<typeof directorCapabilityDemoMoment> {
+  const baseMoment = directorCapabilityDemoMoment(capability);
+  if (
+    !qualificationVisibilityAssist ||
+    capability.id !== "inside" ||
+    !baseMoment.shot
+  ) {
+    return baseMoment;
+  }
+
+  const receiverExtent = roles.find(
+    (role) => role.role === "secondary_subject",
+  )?.blocking.target_extent_m;
+  const cameraProfile =
+    directorQualificationInsideDetailCameraProfile(receiverExtent);
+  if (!cameraProfile) return baseMoment;
+
+  const shot = {
+    ...baseMoment.shot,
+    composition: {
+      ...baseMoment.shot.composition,
+      framing: cameraProfile.framing,
+      angle: cameraProfile.angle,
+    },
+    lens: {
+      ...baseMoment.shot.lens,
+      focal_length_mm: cameraProfile.focal_length_mm,
+      field_of_view_degrees: cameraProfile.field_of_view_degrees,
+      focus_entity_id: cameraProfile.focus_entity_id,
+      depth_of_field: "deep" as const,
+    },
+    camera: {
+      ...baseMoment.shot.camera,
+      focus_entity_ids: [cameraProfile.focus_entity_id],
+    },
+  };
+
+  return {
+    ...baseMoment,
+    keeps_visible_entity_ids: shot.composition.keep_visible_entity_ids,
+    camera: {
+      ...baseMoment.camera,
+      shot_type: "medium" as const,
+      focus_entity_ids: [cameraProfile.focus_entity_id],
+      keep_visible_entity_ids: shot.composition.keep_visible_entity_ids,
+    },
+    shot,
+  };
+}
+
 function pulse(progress: number, center: number, width = 0.2) {
   const distance = Math.abs(progress - center);
   return clamp01(1 - distance / width);
 }
 
-function runtimeSize(role: ResolvedDirectorRole): [number, number, number] {
-  const target = Math.max(0.25, role.blocking.target_extent_m ?? 1.6);
-  const source = role.asset?.dimensions_m ?? [1, 1, 1];
-  const largest = Math.max(0.001, ...source.map((value) => Math.abs(Number(value) || 0)));
-  const scale = target / largest;
-  return source.map((value) => Math.max(0.05, Math.abs(Number(value) || 1) * scale)) as [number, number, number];
+export function directorQualificationRuntimeSize(
+  role: ResolvedDirectorRole,
+): [number, number, number] {
+  return directorQualificationRenderedWorldSize({
+    dimensions_m: role.asset?.dimensions_m,
+    target_extent_m: role.blocking.target_extent_m ?? 1.6,
+    scale_bounds: role.render_scale_bounds,
+  });
 }
 
-function runtimeActorsFor(roles: ResolvedDirectorRole[]): DirectorRuntimeActor[] {
+export function directorQualificationRuntimeActors(
+  roles: ResolvedDirectorRole[],
+): DirectorRuntimeActor[] {
   return roles.map((role) => ({
     id: role.role,
     position: [...role.blocking.position],
     rotation: [...(role.blocking.rotation ?? [0, 0, 0])],
-    size: runtimeSize(role),
+    size: directorQualificationRuntimeSize(role),
     // Phase 1B.5E: real-asset proof must sample the same existing
     // directability profile that Builder-resolved actors already carry.
-    directability: role.asset
-      ? buildAssetDirectabilityProfile(role.asset)
-      : null,
+    directability:
+      role.directability_override !== undefined
+        ? role.directability_override
+        : role.asset
+          ? buildAssetDirectabilityProfile(role.asset)
+          : null,
   }));
 }
 
@@ -120,14 +191,15 @@ function LibraryAssetMesh({
   scaleGroundOffset?: boolean;
 }) {
   const gltf = useGLTF(directorRealAssetBrowserUrl(asset));
-  const largestDimension = Math.max(0.001, ...(asset.dimensions_m ?? [1, 1, 1]).map((value) => Math.abs(Number(value) || 0)));
+  // Preserve the historical qualification scale-guard markers while routing the
+  // actual calculation through the A.11A.8 canonical render/runtime helper.
   const minimumScale = scaleBounds?.[0] ?? 0.08;
   const maximumScale = scaleBounds?.[1] ?? 6;
-  const scale = THREE.MathUtils.clamp(
-    targetExtent / largestDimension,
-    minimumScale,
-    maximumScale,
-  );
+  const scale = directorQualificationEffectiveRenderScale({
+    dimensions_m: asset.dimensions_m,
+    target_extent_m: targetExtent,
+    scale_bounds: [minimumScale, maximumScale],
+  });
   const rotation = asset.default_rotation ?? [0, 0, 0];
   const groundOffset = Number(asset.ground_offset_m) || 0;
   // Golden outline geometry is expensive for detailed GLBs. Build it only for the
@@ -637,7 +709,7 @@ function AnimatedActor({
   const rollVisualPivotY = capability.id === "roll"
     ? fixtureMode === "controlled"
       ? 0.54 * Math.max(0.45, targetExtent / 1.8)
-      : Math.max(0.05, runtimeSize(resolvedRole)[1] * 0.5)
+      : Math.max(0.05, directorQualificationRuntimeSize(resolvedRole)[1] * 0.5)
     : 0;
 
   useFrame((_, delta) => {
@@ -1077,8 +1149,16 @@ export function DirectorCapabilityPreview({
   qualificationVisibilityAssist = false,
   preserveActorInstances = false,
 }: PreviewProps) {
-  const moment = useMemo(() => directorCapabilityDemoMoment(capability), [capability]);
-  const baseActors = useMemo(() => runtimeActorsFor(roles), [roles]);
+  const moment = useMemo(
+    () =>
+      directorQualificationPreviewMoment(
+        capability,
+        roles,
+        qualificationVisibilityAssist,
+      ),
+    [capability, qualificationVisibilityAssist, roles],
+  );
+  const baseActors = useMemo(() => directorQualificationRuntimeActors(roles), [roles]);
   const actors = useMemo(() => applyDirectorBlocking(moment, baseActors), [baseActors, moment]);
   const lowKey = moment.shot?.lighting.intents.includes("low_key") || moment.shot?.lighting.intents.includes("dim_environment");
   const useQualificationVisibilityFill =

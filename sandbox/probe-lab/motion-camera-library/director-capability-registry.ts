@@ -1,5 +1,3 @@
-
-
 import type {
   DirectorCameraMovement,
   DirectorEvent,
@@ -622,8 +620,20 @@ const blockingSeeds = [
   ["layered_depth", "Foreground / midground / background", "Stage three actors across depth to create readable visual hierarchy."],
 ] as const;
 
-const blockingPlacement = blockingSeeds.map(([id, label, summary]) =>
-  simpleCapability({
+const blockingPlacement = blockingSeeds.map(([id, label, summary]) => {
+  const groupFormation = [
+    "surround",
+    "form_line",
+    "form_circle",
+    "cluster",
+    "symmetrical_pair",
+  ].includes(id);
+  const groupParticipants =
+    id === "symmetrical_pair"
+      ? ["primary_subject", "secondary_subject"]
+      : ["primary_subject", "secondary_subject", "context_subject"];
+
+  return simpleCapability({
     id,
     label,
     category: "blocking_placement",
@@ -632,20 +642,47 @@ const blockingPlacement = blockingSeeds.map(([id, label, summary]) =>
     threejs: id === "on_surface" || id === "inside" || id === "attached_to" ? "approximate" : "direct",
     fallback: id === "inside" ? "beside" : undefined,
     instruction: {
-      blocking: {
-        relation: id,
-        actor_role: "primary_subject",
-        target_role: "secondary_subject",
-        preserve_clearance: true,
-        allow_intersection: false,
-      },
+      blocking: groupFormation
+        ? {
+            relation: id,
+            actor_role: "primary_subject",
+            target_role:
+              id === "symmetrical_pair" ? "secondary_subject" : null,
+            participant_roles: groupParticipants,
+            center_role: id === "surround" ? "primary_subject" : null,
+            semantic_scope: "participant_set",
+            preserve_clearance: true,
+            allow_intersection: false,
+          }
+        : id === "between"
+          ? {
+              relation: id,
+              actor_role: "primary_subject",
+              target_role: "secondary_subject",
+              reference_roles: ["secondary_subject", "context_subject"],
+              semantic_scope: "three_actor_relationship",
+              preserve_clearance: true,
+              allow_intersection: false,
+            }
+          : {
+              relation: id,
+              actor_role: "primary_subject",
+              target_role: "secondary_subject",
+              preserve_clearance: true,
+              allow_intersection: false,
+            },
     },
     demo: {
       kind: `blocking_${id}`,
-      required_visible_roles: id === "layered_depth" ? ["primary_subject", "secondary_subject", "context_subject"] : ["primary_subject", "secondary_subject"],
+      required_visible_roles:
+        id === "layered_depth" ||
+        id === "between" ||
+        ["surround", "form_line", "form_circle", "cluster"].includes(id)
+          ? ["primary_subject", "secondary_subject", "context_subject"]
+          : ["primary_subject", "secondary_subject"],
     },
-  }),
-);
+  });
+});
 
 const lightingSeeds = [
   ["neutral_studio", "Neutral studio", "Use balanced light so shape, material, and motion remain easy to inspect."],
@@ -1126,6 +1163,21 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
   }
 
   if (capability.category === "blocking_placement") {
+    const groupFormationIds = [
+      "surround",
+      "form_line",
+      "form_circle",
+      "cluster",
+      "symmetrical_pair",
+    ];
+    const relativeActorIds = [
+      "beside",
+      "in_front_of",
+      "behind",
+      "between",
+      "facing",
+      "facing_away",
+    ];
     if (capability.id === "layered_depth") {
       shot.blocking = [
         { relation: "foreground", actor_entity_id: "primary_subject", target_entity_id: null, screen_region: "center_left", preserve_clearance: true, parameters: {} },
@@ -1139,6 +1191,125 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
       shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject", "context_subject"];
       shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject", "context_subject"];
       shot.lens.focus_entity_id = "secondary_subject";
+    } else if (groupFormationIds.includes(capability.id)) {
+      const relation =
+        capability.id as DirectorShotDirectionV2["blocking"][number]["relation"];
+      const participants = [...capability.demo.required_visible_roles];
+
+      // Group formation vocabulary is one semantic instruction over a participant
+      // set, not a request for GLM to author N repeated per-actor cues. The shared
+      // runtime expands this cue across the declared focus/visibility set. A.11A.4
+      // also lets qualification promote additional planned support roles into the
+      // demo visibility contract, so Surround and Form Circle can prove perceptual
+      // enclosure/ring structure without hard-coding a maximum of three actors.
+      shot.blocking = [{
+        relation,
+        actor_entity_id: "primary_subject",
+        target_entity_id: "secondary_subject",
+        screen_region: null,
+        preserve_clearance: true,
+        parameters: {
+          participant_entity_ids: participants,
+          center_entity_id:
+            capability.id === "surround" ? "primary_subject" : null,
+        },
+      }];
+      shot.composition.framing = "group_shot";
+      shot.composition.keep_visible_entity_ids = participants;
+      shot.composition.preserve_relationship_entity_ids = participants;
+      shot.camera.focus_entity_ids = participants;
+      shot.lens.focus_entity_id = "primary_subject";
+      shot.lens.depth_of_field = "deep";
+      shot.composition.angle =
+        capability.id === "symmetrical_pair"
+          ? "three_quarter_front"
+          : "high_angle";
+    } else if (relativeActorIds.includes(capability.id)) {
+      const relation =
+        capability.id as DirectorShotDirectionV2["blocking"][number]["relation"];
+      const participants = [...capability.demo.required_visible_roles];
+      const between = capability.id === "between";
+      const orientation =
+        capability.id === "facing" || capability.id === "facing_away";
+
+      shot.blocking = [{
+        relation,
+        actor_entity_id: "primary_subject",
+        target_entity_id: "secondary_subject",
+        screen_region: null,
+        preserve_clearance: true,
+        parameters: between
+          ? {
+              reference_entity_ids: ["secondary_subject", "context_subject"],
+            }
+          : {},
+      }];
+      shot.composition.keep_visible_entity_ids = participants;
+      shot.composition.preserve_relationship_entity_ids = participants;
+      shot.camera.focus_entity_ids = participants;
+      shot.lens.focus_entity_id = "primary_subject";
+      shot.lens.depth_of_field = "deep";
+      shot.composition.framing = between
+        ? "group_shot"
+        : orientation
+          ? "two_shot"
+          : "two_shot";
+      shot.composition.angle = orientation
+        ? "front_profile"
+        : between
+          ? "front_profile"
+          : capability.id === "beside"
+            ? "eye_level"
+            : "three_quarter_front";
+      if (orientation) {
+        shot.lens.focal_length_mm = 58;
+        shot.lens.field_of_view_degrees = 38;
+      }
+      if (capability.id === "in_front_of" || capability.id === "behind") {
+        shot.continuity.maximum_occlusion_ratio = 0.6;
+      }
+    } else if (["on_surface", "attached_to", "inside"].includes(capability.id)) {
+      const relation =
+        capability.id as DirectorShotDirectionV2["blocking"][number]["relation"];
+      shot.blocking = [{
+        relation,
+        actor_entity_id: "primary_subject",
+        target_entity_id: "secondary_subject",
+        screen_region: null,
+        preserve_clearance: true,
+        parameters: {
+          physical_region_required: true,
+          // A.11A.10 qualification readability: Attached-To should be judged
+          // from an oblique view of the contact plane rather than straight down
+          // its normal. The selected patch itself still comes from mesh truth.
+          physical_contact_readability_oblique: capability.id === "attached_to",
+          // A.11A.11 qualification-only presentation: once Inside has already
+          // passed measured containment truth, move the source toward the verified
+          // opening while keeping its full bounds inside the cavity. Production
+          // authored Inside cues do not receive this flag automatically.
+          physical_containment_readability_near_opening: capability.id === "inside",
+        },
+      }];
+      shot.composition.framing = "two_shot";
+      shot.composition.keep_visible_entity_ids = [
+        "primary_subject",
+        "secondary_subject",
+      ];
+      shot.composition.preserve_relationship_entity_ids = [
+        "primary_subject",
+        "secondary_subject",
+      ];
+      shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"];
+      shot.lens.focus_entity_id = "primary_subject";
+      shot.lens.depth_of_field = "deep";
+      shot.lens.focal_length_mm = capability.id === "inside" ? 52 : 58;
+      shot.lens.field_of_view_degrees = capability.id === "inside" ? 42 : 38;
+      shot.composition.angle =
+        capability.id === "inside"
+          ? "high_angle"
+          : "three_quarter_front";
+      shot.continuity.maximum_occlusion_ratio =
+        capability.id === "inside" ? 0.72 : 0.48;
     } else {
       const relation = capability.id as DirectorShotDirectionV2["blocking"][number]["relation"];
       shot.blocking = [{ relation, actor_entity_id: "primary_subject", target_entity_id: ["on_ground", "foreground", "midground", "background", "screen_left", "screen_right"].includes(capability.id) ? null : "secondary_subject", screen_region: capability.id === "screen_left" ? "left_third" : capability.id === "screen_right" ? "right_third" : null, preserve_clearance: true, parameters: {} }];

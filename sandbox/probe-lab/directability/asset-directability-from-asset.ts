@@ -64,6 +64,7 @@ function geometryConfidence(asset: MyWayAssetRecord) {
 
 function supportSurface(
   surface: MyWayAssetSupportSurface,
+  primarySurfaceId?: string | null,
 ): AssetDirectabilitySurface {
   return {
     id: surface.id,
@@ -76,6 +77,15 @@ function supportSurface(
     local_center: [...surface.center],
     normal: normalize(surface.normal, [0, 1, 0]),
     size: [...surface.size],
+    usable_size: [...(surface.usable_size ?? surface.size)],
+    clearance_above_m: surface.clearance_above_m,
+    blocked_fraction: surface.blocked_fraction,
+    exposure: surface.exposure,
+    orientation: surface.orientation,
+    openness: surface.openness,
+    vertical_rank: surface.vertical_rank,
+    height_ratio: surface.height_ratio,
+    is_primary: primarySurfaceId === surface.id,
     source:
       surface.source === "manual"
         ? "manual_override"
@@ -101,6 +111,8 @@ function containmentRegion(
     access_direction: volume.access_direction
       ? normalize(volume.access_direction, [0, 1, 0])
       : null,
+    openness: volume.openness,
+    exposure: volume.exposure,
     source:
       volume.source === "manual"
         ? "manual_override"
@@ -130,6 +142,7 @@ function attachmentAnchor(
         ? "manual_override"
         : "geometry_profile",
     confidence: clamp01(region.confidence, 0.5),
+    contact_size: [...region.size],
   };
 }
 
@@ -301,7 +314,9 @@ export function buildAssetDirectabilityProfile(
   const geometryAnchors = [
     focusAnchor,
     ...(bottomContactAnchor ? [bottomContactAnchor] : []),
-    ...(geometry?.attachment_regions.map(attachmentAnchor) ?? []),
+    ...(geometry?.attachment_regions
+      .filter((region) => region.source !== "legacy_ratio")
+      .map(attachmentAnchor) ?? []),
   ];
   const anchors = mergeById(
     geometryAnchors,
@@ -310,9 +325,15 @@ export function buildAssetDirectabilityProfile(
   const pivots = overridePivots(overrides);
   const subparts = overrideSubparts(overrides);
   const surfaces =
-    geometry?.support_surfaces.map(supportSurface) ?? [];
+    geometry?.support_surfaces
+      .filter((surface) => surface.source !== "legacy_ratio")
+      .map((surface) =>
+        supportSurface(surface, geometry.primary_support_surface_id),
+      ) ?? [];
   const containmentRegions =
-    geometry?.interior_volumes.map(containmentRegion) ?? [];
+    geometry?.interior_volumes
+      .filter((region) => region.source !== "legacy_ratio")
+      .map(containmentRegion) ?? [];
 
   const rolling = overrides?.rolling
     ? {

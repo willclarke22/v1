@@ -156,7 +156,7 @@ function profileNeedsRefresh(
 ) {
   return !(
     asset.geometry_profile?.generator ===
-      "myway_blender_geometry_profile_v3_spatial_regions" &&
+      "myway_blender_geometry_profile_v4_mesh_contact_regions" &&
     asset.geometry_profile
       .content_hash === contentHash
   );

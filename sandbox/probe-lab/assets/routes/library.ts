@@ -48,12 +48,26 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const assets = await Promise.all(
-      (await listMyWayAssets()).map(assetWithFileStats),
-    );
+    const listedAssets = await listMyWayAssets();
+    const view = request.nextUrl.searchParams.get("view");
+    const selectedAssets =
+      view === "qualification"
+        ? listedAssets.filter(
+            (asset) =>
+              Boolean(asset.public_path) &&
+              (asset.asset_type === "glb" || asset.asset_type === "gltf") &&
+              asset.status !== "rejected" &&
+              asset.scene_review_status !== "rejected" &&
+              asset.semantic_review_status !== "rejected" &&
+              asset.semantic_review_status !== "mismatch" &&
+              asset.safe_to_use_in_sandbox !== false,
+          )
+        : listedAssets;
+    const assets = await Promise.all(selectedAssets.map(assetWithFileStats));
 
     return NextResponse.json({
       ok: true,
+      view: view === "qualification" ? "qualification" : "full",
       count: assets.length,
       assets,
     });

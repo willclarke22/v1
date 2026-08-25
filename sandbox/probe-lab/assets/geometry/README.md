@@ -10,9 +10,11 @@ asset identities:
 - upward-facing support regions with usable footprint, exposure, openness,
   vertical rank, and clearance above
 - conservative containment regions derived from measured enclosed free space
-- exterior attachment regions on the measured bounds
+- occupied exterior mesh-contact patches with measured local centre, normal, and usable size
 - one or more solid collision regions
 - audit confidence and review warnings
+
+The v4 Blender generator no longer manufactures whole-bounds left/right/front/back attachment faces; irregular assets expose only contact patches supported by occupied mesh geometry.
 
 The profile deliberately avoids making the placement engine depend on labels such
 as tabletop, shelf, roof, seat, or ledge. Those labels may still be shown to a

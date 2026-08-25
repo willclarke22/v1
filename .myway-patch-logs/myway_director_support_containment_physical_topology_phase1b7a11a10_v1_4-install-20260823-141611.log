@@ -1,0 +1,52 @@
+**********************
+PowerShell transcript start
+Start time: 20260823141612
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 36276
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_director_support_containment_physical_topology_phase1b7a11a10_v1_4-install-20260823-141611.log
+
+=== MyWay A.11A.10 v1.4 Support & Containment physical topology hardening ===
+
+Current git status (diagnostic only):
+
+
+Invoking transactional installer...
+
+=== myway_director_support_containment_physical_topology_phase1b7a11a10_v1_4 ===
+Project root: C:\Users\willc\projects\MyWay\v1
+Package root: C:\Users\willc\Downloads\myway_director_support_containment_physical_topology_phase1b7a11a10_v1_4
+Running exact baseline/applied preflight...
+PATCH_ID=myway_director_support_containment_physical_topology_phase1b7a11a10_v1_4
+Project does not match the exact baseline or exact applied state.
+PREFLIGHT_STATE=mismatch
+Baseline mismatches:
+- sandbox/probe-lab/motion-camera-library/director-capability-registry.ts:c21e3cf83c06394c0df20f5b7ba42536741850e8eaaa8499edb0573fb0c6a00b
+- sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts:afc291f4568823a78e0a3f7ee9cf1f3c7ba3cb42fe045987a4e74d14ff2663e4
+Applied mismatches:
+- sandbox/probe-lab/motion-camera-library/director-qualification-physical-inspection.ts:6fabfa3859bc3e4b02702a988520b7fbdffdff6f6714193b553dc4830a7ea130
+- sandbox/probe-lab/motion-camera-library/director-qualification-contract.ts:85a107e8c87ac5470e24f17f090900ef656e1aaaed2359e2804e2ca6e6c83124
+- sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx:78d3ec6f3b2ce028189a8aa2a59c2d6c3c33f8895624c1a0c8c0062ec5799d48
+- sandbox/probe-lab/motion-camera-library/director-capability-registry.ts:c21e3cf83c06394c0df20f5b7ba42536741850e8eaaa8499edb0573fb0c6a00b
+- sandbox/probe-lab/motion-camera-library/README.md:e3ec07c9e68ec1e72c6967371b758569beaf2d3f4bc2d5012db8af1d14051584
+- sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts:afc291f4568823a78e0a3f7ee9cf1f3c7ba3cb42fe045987a4e74d14ff2663e4
+- scripts/sandbox/verify-director-support-containment-topology-phase1b7a11a10.ts:missing
+PS>TerminatingError(): "Exact preflight failed with exit code 2."
+>> TerminatingError(): "Exact preflight failed with exit code 2."
+**********************
+PowerShell transcript end
+End time: 20260823141613
+**********************

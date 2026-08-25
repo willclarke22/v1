@@ -57,6 +57,107 @@ export type DirectorQualificationState = {
   reviews: Record<string, DirectorQualificationCapabilityReview>;
 };
 
+
+export type DirectorQualificationSurfaceTopologyEvidence = {
+  method: "raycast_contiguous_patch";
+  side: "left" | "right" | "front" | "back";
+  occupancy_ratio: number;
+  contiguous_cell_count: number;
+  tested_cell_count: number;
+  center_hit: boolean;
+  depth_variation_m: number;
+  normal_alignment: number;
+  center_height_ratio: number;
+};
+
+export type DirectorQualificationContainmentTopologyEvidence = {
+  method: "raycast_open_cavity";
+  sampled_ray_count: number;
+  accessible_ray_count: number;
+  access_clear_ratio: number;
+  center_access_clear: boolean;
+  cavity_depth_m: number;
+  opening_size: [number, number];
+  opening_occupancy_ratio: number;
+};
+
+export type DirectorQualificationPhysicalRegionOverride =
+  | {
+      kind: "support_surface";
+      id: string;
+      label: string;
+      local_center: [number, number, number];
+      normal: [number, number, number];
+      size: [number, number];
+      usable_size: [number, number];
+      confidence: number;
+      clearance_above_m?: number | null;
+      orientation?: "upward" | "vertical" | "downward" | "sloped" | "unknown";
+      exposure?: "exterior" | "interior" | "unknown";
+      openness?: "open" | "enclosed" | "unknown";
+      blocked_fraction?: number | null;
+      vertical_rank?: number | null;
+      height_ratio?: number | null;
+      evidence_source: "asset_geometry_profile";
+    }
+  | {
+      kind: "surface_contact_region";
+      id: string;
+      label: string;
+      local_position: [number, number, number];
+      local_normal: [number, number, number];
+      size: [number, number];
+      confidence: number;
+      evidence_source:
+        | "browser_gltf_surface_sample"
+        | "browser_gltf_raycast_surface";
+      topology?: DirectorQualificationSurfaceTopologyEvidence;
+    }
+  | {
+      kind: "containment_region";
+      id: string;
+      label: string;
+      local_center: [number, number, number];
+      size: [number, number, number];
+      access_direction: [number, number, number];
+      confidence: number;
+      openness: "open";
+      evidence_source:
+        | "semantic_plus_browser_geometry"
+        | "semantic_plus_browser_raycast_topology";
+      topology?: DirectorQualificationContainmentTopologyEvidence;
+    };
+
+export type DirectorQualificationPhysicalResolutionEvidence = {
+  status: "resolved" | "unresolved";
+  relation: "on_surface" | "inside" | "attached_to";
+  actor_entity_id: string;
+  target_entity_id: string | null;
+  selected_region_kind:
+    | "support_surface"
+    | "containment_region"
+    | "surface_contact_region"
+    | null;
+  selected_region_id: string | null;
+  selected_region_label: string | null;
+  resolved_position: [number, number, number] | null;
+  source_world_size_m: [number, number, number] | null;
+  target_region_world_size_m: number[] | null;
+  fit_margin_m: number | null;
+  unresolved_reason: string | null;
+  selected_region_evidence_source?: string | null;
+};
+
+export type DirectorQualificationCoverageGap = {
+  capability_id: string;
+  pass_kind: DirectorQualificationPassKind;
+  relation: "on_surface" | "inside" | "attached_to" | null;
+  expected_clip_count: number;
+  actual_clip_count: number;
+  missing_clip_count: number;
+  reason: string;
+};
+
 export type DirectorQualificationRunAsset = {
   cast_slot_id: string;
   role: string;
@@ -73,6 +174,7 @@ export type DirectorQualificationRunAsset = {
   normalization_reason: string;
   normalization_warning: string | null;
   blocking_position: [number, number, number];
+  physical_region_override?: DirectorQualificationPhysicalRegionOverride | null;
 };
 
 export type DirectorQualificationRunClip = {
@@ -97,6 +199,7 @@ export type DirectorQualificationRunClip = {
   evidence_block_label: string | null;
   qualification_note: string | null;
   merge_compare_with_capability_id: string | null;
+  physical_resolution: DirectorQualificationPhysicalResolutionEvidence | null;
   assets: DirectorQualificationRunAsset[];
 };
 
@@ -114,6 +217,7 @@ export type DirectorQualificationRecordingManifest = {
   distinct_asset_count: number;
   represented_cast_slots: string[];
   estimated_recording_duration_ms: number;
+  coverage_gaps: DirectorQualificationCoverageGap[];
   clips: DirectorQualificationRunClip[];
 };
 

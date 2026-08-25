@@ -234,6 +234,1237 @@ function applyBlockingScreenRegion(
   }
 }
 
+
+const DIRECTOR_RELATIVE_ACTOR_RELATIONS = [
+  "beside",
+  "in_front_of",
+  "behind",
+  "between",
+  "facing",
+  "facing_away",
+] as const;
+
+type DirectorRelativeActorRelation =
+  (typeof DIRECTOR_RELATIVE_ACTOR_RELATIONS)[number];
+
+function isDirectorRelativeActorRelation(
+  relation: DirectorShotDirectionV2["blocking"][number]["relation"],
+): relation is DirectorRelativeActorRelation {
+  return (DIRECTOR_RELATIVE_ACTOR_RELATIONS as readonly string[]).includes(
+    relation,
+  );
+}
+
+function directorRelativeGroundRadius(actor: DirectorRuntimeActor) {
+  const width = Math.max(0.04, Math.abs(actor.size[0]));
+  const depth = Math.max(0.04, Math.abs(actor.size[2]));
+  return Math.max(0.16, Math.hypot(width, depth) * 0.5);
+}
+
+function directorRelativeStaticSample(actor: DirectorRuntimeActor): DirectorActorSample {
+  return {
+    position: new THREE.Vector3(...actor.position),
+    rotation: new THREE.Euler(...(actor.rotation ?? [0, 0, 0]), "XYZ"),
+    scale: new THREE.Vector3(1, 1, 1),
+    visible: true,
+  };
+}
+
+function directorRelativeProjectedPairReadability(
+  moment: DirectorMoment,
+  actors: DirectorRuntimeActor[],
+  left: DirectorRuntimeActor,
+  right: DirectorRuntimeActor,
+) {
+  const pose = sampleDirectorCameraPose(moment, 0, actors);
+  const leftEnvelope = projectActorEnvelopeAgainstPose(
+    pose,
+    left,
+    directorRelativeStaticSample(left),
+  );
+  const rightEnvelope = projectActorEnvelopeAgainstPose(
+    pose,
+    right,
+    directorRelativeStaticSample(right),
+  );
+  const overlapWidth = Math.max(
+    0,
+    Math.min(leftEnvelope.max_ndc_x, rightEnvelope.max_ndc_x) -
+      Math.max(leftEnvelope.min_ndc_x, rightEnvelope.min_ndc_x),
+  );
+  const overlapHeight = Math.max(
+    0,
+    Math.min(leftEnvelope.max_ndc_y, rightEnvelope.max_ndc_y) -
+      Math.max(leftEnvelope.min_ndc_y, rightEnvelope.min_ndc_y),
+  );
+  const overlapArea = overlapWidth * overlapHeight;
+  const leftArea = Math.max(
+    0.000001,
+    leftEnvelope.width_ndc * leftEnvelope.height_ndc,
+  );
+  const rightArea = Math.max(
+    0.000001,
+    rightEnvelope.width_ndc * rightEnvelope.height_ndc,
+  );
+  const horizontalGap = Math.max(
+    0,
+    rightEnvelope.min_ndc_x - leftEnvelope.max_ndc_x,
+    leftEnvelope.min_ndc_x - rightEnvelope.max_ndc_x,
+  );
+  return {
+    overlap_ratio: overlapArea / Math.min(leftArea, rightArea),
+    horizontal_gap_ndc: horizontalGap,
+  };
+}
+
+function directorRelativeReferenceActors(
+  cue: DirectorShotDirectionV2["blocking"][number],
+  actors: DirectorRuntimeActor[],
+) {
+  const requested = cue.parameters?.reference_entity_ids;
+  const ids = Array.isArray(requested)
+    ? requested.filter((value): value is string => typeof value === "string")
+    : [];
+  const fallback = [
+    cue.target_entity_id,
+    ...actors
+      .filter((actor) => actor.id !== cue.actor_entity_id)
+      .map((actor) => actor.id),
+  ].filter((value): value is string => typeof value === "string");
+
+  return [...new Set([...ids, ...fallback])]
+    .map((id) => actors.find((actor) => actor.id === id) ?? null)
+    .filter((actor): actor is DirectorRuntimeActor => Boolean(actor))
+    .slice(0, 2);
+}
+
+function setDirectorRelativeCoordinates(
+  position: THREE.Vector3,
+  targetPosition: THREE.Vector3,
+  basis: DirectorBlockingCompositionBasis,
+  rightOffset: number,
+  forwardOffset: number,
+) {
+  const targetDelta = targetPosition.clone().sub(basis.center);
+  const targetRight = targetDelta.dot(basis.view_right);
+  const targetForward = targetDelta.dot(basis.view_forward);
+  setCompositionCoordinate(
+    position,
+    basis.center,
+    basis.view_right,
+    targetRight + rightOffset,
+  );
+  setCompositionCoordinate(
+    position,
+    basis.center,
+    basis.view_forward,
+    targetForward + forwardOffset,
+  );
+}
+
+function applyDirectorRelativeActorPlacement(
+  moment: DirectorMoment,
+  cue: DirectorShotDirectionV2["blocking"][number],
+  actors: DirectorRuntimeActor[],
+  basis: DirectorBlockingCompositionBasis,
+) {
+  if (!isDirectorRelativeActorRelation(cue.relation)) return;
+  const actor = actors.find((candidate) => candidate.id === cue.actor_entity_id);
+  if (!actor) return;
+  const target = cue.target_entity_id
+    ? actors.find((candidate) => candidate.id === cue.target_entity_id) ?? null
+    : null;
+  const position = new THREE.Vector3(...actor.position);
+
+  if (cue.relation === "between") {
+    const references = directorRelativeReferenceActors(cue, actors);
+    if (references.length < 2) return;
+    position.lerpVectors(
+      new THREE.Vector3(...references[0]!.position),
+      new THREE.Vector3(...references[1]!.position),
+      0.5,
+    );
+    actor.position = [position.x, position.y, position.z];
+    return;
+  }
+
+  if (!target) return;
+  const targetPosition = new THREE.Vector3(...target.position);
+
+  if (cue.relation === "facing" || cue.relation === "facing_away") {
+    const delta = targetPosition.clone().sub(position);
+    delta.y = 0;
+    if (delta.lengthSq() < 0.000001) return;
+    const facingYaw = Math.atan2(delta.x, delta.z);
+    actor.rotation = [
+      actor.rotation?.[0] ?? 0,
+      facingYaw + (cue.relation === "facing_away" ? Math.PI : 0),
+      actor.rotation?.[2] ?? 0,
+    ];
+    return;
+  }
+
+  const actorGroundRadius = directorRelativeGroundRadius(actor);
+  const targetGroundRadius = directorRelativeGroundRadius(target);
+  const clearance = cue.preserve_clearance ? 0.55 : 0.24;
+  const separation = actorGroundRadius + targetGroundRadius + clearance;
+
+  if (cue.relation === "beside") {
+    setDirectorRelativeCoordinates(
+      position,
+      targetPosition,
+      basis,
+      separation,
+      0,
+    );
+    actor.position = [position.x, position.y, position.z];
+
+    // World-space non-intersection is not enough for an adjacent visual proof.
+    // Widen only along opening-camera view-right until the projected box
+    // envelopes have visible air between them. The solved camera is recomputed
+    // at each bounded step, so the check follows the actual two-shot framing.
+    for (let iteration = 0; iteration < 6; iteration += 1) {
+      const readability = directorRelativeProjectedPairReadability(
+        moment,
+        actors,
+        actor,
+        target,
+      );
+      if (
+        readability.overlap_ratio <= 0.03 &&
+        readability.horizontal_gap_ndc >= 0.035
+      ) {
+        break;
+      }
+      position.addScaledVector(
+        basis.view_right,
+        Math.max(0.12, actorGroundRadius * 0.16) + iteration * 0.025,
+      );
+      actor.position = [position.x, position.y, position.z];
+    }
+    return;
+  }
+
+  const depthSign = cue.relation === "in_front_of" ? -1 : 1;
+  const lateralSign = cue.relation === "in_front_of" ? 1 : -1;
+  const peek = Math.max(
+    0.28,
+    Math.min(actorGroundRadius, targetGroundRadius) * 0.58,
+  );
+  setDirectorRelativeCoordinates(
+    position,
+    targetPosition,
+    basis,
+    lateralSign * peek,
+    depthSign * separation,
+  );
+  actor.position = [position.x, position.y, position.z];
+
+  // Front/behind should communicate depth without turning the rear actor into an
+  // accidental full eclipse. If approximate projected envelopes are still too
+  // coincident, increase only the lateral peek; signed camera-relative depth is
+  // preserved exactly.
+  for (let iteration = 0; iteration < 5; iteration += 1) {
+    const readability = directorRelativeProjectedPairReadability(
+      moment,
+      actors,
+      actor,
+      target,
+    );
+    if (readability.overlap_ratio <= 0.58) break;
+    position.addScaledVector(
+      basis.view_right,
+      lateralSign * (0.14 + iteration * 0.035),
+    );
+    actor.position = [position.x, position.y, position.z];
+  }
+}
+
+
+const DIRECTOR_GROUP_FORMATION_RELATIONS = [
+  "surround",
+  "form_line",
+  "form_circle",
+  "cluster",
+  "symmetrical_pair",
+] as const;
+
+type DirectorGroupFormationRelation =
+  (typeof DIRECTOR_GROUP_FORMATION_RELATIONS)[number];
+
+function isDirectorGroupFormationRelation(
+  relation: DirectorShotDirectionV2["blocking"][number]["relation"],
+): relation is DirectorGroupFormationRelation {
+  return (DIRECTOR_GROUP_FORMATION_RELATIONS as readonly string[]).includes(
+    relation,
+  );
+}
+
+function directorGroupFormationParticipantIds(
+  shot: DirectorShotDirectionV2,
+  cue: DirectorShotDirectionV2["blocking"][number],
+  actors: DirectorRuntimeActor[],
+) {
+  const rawParticipantIds = cue.parameters?.participant_entity_ids;
+  const explicit = Array.isArray(rawParticipantIds)
+    ? rawParticipantIds.filter(
+        (value): value is string => typeof value === "string",
+      )
+    : [];
+  const candidates = [
+    ...explicit,
+    cue.actor_entity_id,
+    cue.target_entity_id,
+    ...shot.composition.keep_visible_entity_ids,
+    ...shot.camera.focus_entity_ids,
+  ];
+  const available = new Set(actors.map((actor) => actor.id));
+  const selected: string[] = [];
+
+  for (const id of candidates) {
+    if (!id || !available.has(id) || selected.includes(id)) continue;
+    selected.push(id);
+  }
+
+  const minimum = cue.relation === "symmetrical_pair" ? 2 : 3;
+  if (selected.length < minimum) {
+    for (const actor of actors) {
+      if (selected.includes(actor.id)) continue;
+      selected.push(actor.id);
+      if (selected.length >= minimum) break;
+    }
+  }
+
+  return cue.relation === "symmetrical_pair"
+    ? selected.slice(0, 2)
+    : selected;
+}
+
+function directorFormationGroundRadius(actor: DirectorRuntimeActor) {
+  const width = Math.max(0.04, Math.abs(actor.size[0]));
+  const depth = Math.max(0.04, Math.abs(actor.size[2]));
+  return Math.max(0.16, Math.hypot(width, depth) * 0.5);
+}
+
+function directorFormationCenter(actors: DirectorRuntimeActor[]) {
+  if (!actors.length) return new THREE.Vector3();
+  const center = actors.reduce(
+    (sum, actor) => sum.add(new THREE.Vector3(...actor.position)),
+    new THREE.Vector3(),
+  ).multiplyScalar(1 / actors.length);
+  center.y = 0;
+  return center;
+}
+
+function setDirectorFormationPlanePosition(
+  actor: DirectorRuntimeActor,
+  center: THREE.Vector3,
+  basis: DirectorBlockingCompositionBasis,
+  rightCoordinate: number,
+  forwardCoordinate: number,
+) {
+  const position = new THREE.Vector3(...actor.position);
+  setCompositionCoordinate(
+    position,
+    center,
+    basis.view_right,
+    rightCoordinate,
+  );
+  setCompositionCoordinate(
+    position,
+    center,
+    basis.view_forward,
+    forwardCoordinate,
+  );
+  actor.position = [position.x, actor.position[1], position.z];
+}
+
+function directorFormationPairGap(
+  left: DirectorRuntimeActor,
+  right: DirectorRuntimeActor,
+  extraGapM: number,
+) {
+  return (
+    directorFormationGroundRadius(left) +
+    directorFormationGroundRadius(right) +
+    extraGapM
+  );
+}
+
+function directorFormationScreenLateralHalfWidth(actor: DirectorRuntimeActor) {
+  // A conservative camera-relative silhouette proxy for formation packing. The
+  // actor's ground-plane diagonal survives arbitrary yaw better than raw world-X
+  // width and prevents a broad object placed deeper in the cluster from hiding
+  // behind another actor that shares nearly the same screen column.
+  return Math.max(0.18, directorFormationGroundRadius(actor) * 0.72);
+}
+
+function directorFormationScreenLateralOverlapRatio(
+  actor: DirectorRuntimeActor,
+  actorRight: number,
+  placedActor: DirectorRuntimeActor,
+  placedRight: number,
+) {
+  const actorHalf = directorFormationScreenLateralHalfWidth(actor);
+  const placedHalf = directorFormationScreenLateralHalfWidth(placedActor);
+  const overlap = Math.max(
+    0,
+    Math.min(actorRight + actorHalf, placedRight + placedHalf) -
+      Math.max(actorRight - actorHalf, placedRight - placedHalf),
+  );
+  return overlap / Math.max(0.001, Math.min(actorHalf * 2, placedHalf * 2));
+}
+
+
+function directorFormationMaximumProjectedEnvelopeOverlap(
+  moment: DirectorMoment,
+  actors: DirectorRuntimeActor[],
+  participants: DirectorRuntimeActor[],
+) {
+  if (participants.length < 2) return 0;
+  const pose = sampleDirectorCameraPose(moment, 0, actors);
+  const envelopes = participants.map((actor) =>
+    projectActorEnvelopeAgainstPose(
+      pose,
+      actor,
+      sampleDirectorActorState(moment, actor, 0, actors),
+    ),
+  );
+  let maximum = 0;
+
+  for (let leftIndex = 0; leftIndex < envelopes.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < envelopes.length; rightIndex += 1) {
+      const left = envelopes[leftIndex]!;
+      const right = envelopes[rightIndex]!;
+      const overlapWidth = Math.max(
+        0,
+        Math.min(left.max_ndc_x, right.max_ndc_x) -
+          Math.max(left.min_ndc_x, right.min_ndc_x),
+      );
+      const overlapHeight = Math.max(
+        0,
+        Math.min(left.max_ndc_y, right.max_ndc_y) -
+          Math.max(left.min_ndc_y, right.min_ndc_y),
+      );
+      const overlapArea = overlapWidth * overlapHeight;
+      const leftArea = Math.max(0.000001, left.width_ndc * left.height_ndc);
+      const rightArea = Math.max(0.000001, right.width_ndc * right.height_ndc);
+      maximum = Math.max(
+        maximum,
+        overlapArea / Math.min(leftArea, rightArea),
+      );
+    }
+  }
+
+  return maximum;
+}
+
+function directorClusterPreferredAngle(index: number, searchStep: number) {
+  // The first two supports form a compact camera-readable wedge around the
+  // centre actor instead of stacking directly in front/behind it. Additional
+  // participants continue around alternating sectors, while the local search
+  // can rotate around each preferred sector to preserve physical clearance.
+  const preferred = [
+    Math.PI / 3,
+    (Math.PI * 2) / 3,
+    (Math.PI * 3) / 2,
+    (Math.PI * 11) / 6,
+    (Math.PI * 7) / 6,
+    Math.PI / 2,
+  ];
+  const base = preferred[(index - 1) % preferred.length]!;
+  if (searchStep === 0) return base;
+  const distance = Math.ceil(searchStep / 2);
+  const direction = searchStep % 2 === 1 ? 1 : -1;
+  return base + direction * distance * (Math.PI / 18);
+}
+
+function applyDirectorGroupFormation(
+  moment: DirectorMoment,
+  shot: DirectorShotDirectionV2,
+  cue: DirectorShotDirectionV2["blocking"][number],
+  actors: DirectorRuntimeActor[],
+  basis: DirectorBlockingCompositionBasis,
+) {
+  if (!isDirectorGroupFormationRelation(cue.relation)) return;
+
+  const participantIds = directorGroupFormationParticipantIds(
+    shot,
+    cue,
+    actors,
+  );
+  const participants = participantIds
+    .map((id) => actors.find((actor) => actor.id === id) ?? null)
+    .filter((actor): actor is DirectorRuntimeActor => Boolean(actor));
+  if (participants.length < 2) return;
+
+  const center = directorFormationCenter(participants);
+
+  if (cue.relation === "surround") {
+    const requestedCenterId =
+      typeof cue.parameters?.center_entity_id === "string"
+        ? cue.parameters.center_entity_id
+        : cue.actor_entity_id;
+    const centerActor =
+      participants.find((actor) => actor.id === requestedCenterId) ??
+      participants[0]!;
+    const supporters = participants.filter(
+      (actor) => actor.id !== centerActor.id,
+    );
+
+    setDirectorFormationPlanePosition(centerActor, center, basis, 0, 0);
+    if (!supporters.length) return;
+
+    const centerRadius = directorFormationGroundRadius(centerActor);
+    const widestSupport = Math.max(
+      ...supporters.map((actor) => directorFormationGroundRadius(actor)),
+    );
+    const supportChordNeed = supporters.length > 1
+      ? Math.max(
+          ...supporters.flatMap((left, leftIndex) =>
+            supporters
+              .slice(leftIndex + 1)
+              .map((right) => directorFormationPairGap(left, right, 0.5)),
+          ),
+          0,
+        )
+      : 0;
+    const supportAngularGap =
+      supporters.length === 2
+        ? (Math.PI * 2) / 3
+        : (Math.PI * 2) / supporters.length;
+    const chordDenominator =
+      2 * Math.max(0.2, Math.sin(supportAngularGap / 2));
+    const ringRadius = Math.max(
+      1.65,
+      centerRadius + widestSupport + 0.62,
+      supportChordNeed / chordDenominator,
+    );
+
+    supporters.forEach((actor, index) => {
+      const angle =
+        supporters.length === 2
+          ? Math.PI / 6 + index * supportAngularGap
+          : (index / supporters.length) * Math.PI * 2;
+      setDirectorFormationPlanePosition(
+        actor,
+        center,
+        basis,
+        Math.cos(angle) * ringRadius,
+        Math.sin(angle) * ringRadius,
+      );
+    });
+    return;
+  }
+
+  if (cue.relation === "form_line") {
+    const ordered = [...participants].sort((left, right) => {
+      const leftProjection = new THREE.Vector3(...left.position)
+        .sub(center)
+        .dot(basis.view_right);
+      const rightProjection = new THREE.Vector3(...right.position)
+        .sub(center)
+        .dot(basis.view_right);
+      return leftProjection - rightProjection;
+    });
+    const coordinates = [0];
+    for (let index = 1; index < ordered.length; index += 1) {
+      coordinates.push(
+        coordinates[index - 1]! +
+          directorFormationPairGap(
+            ordered[index - 1]!,
+            ordered[index]!,
+            0.52,
+          ),
+      );
+    }
+    const offset =
+      ((coordinates[0] ?? 0) +
+        (coordinates[coordinates.length - 1] ?? 0)) /
+      2;
+
+    ordered.forEach((actor, index) => {
+      setDirectorFormationPlanePosition(
+        actor,
+        center,
+        basis,
+        coordinates[index]! - offset,
+        0,
+      );
+    });
+    return;
+  }
+
+  if (cue.relation === "form_circle") {
+    if (participants.length < 3) return;
+    const pairNeed = Math.max(
+      ...participants.flatMap((left, leftIndex) =>
+        participants
+          .slice(leftIndex + 1)
+          .map((right) => directorFormationPairGap(left, right, 0.48)),
+      ),
+      0,
+    );
+    const chordDenominator =
+      2 * Math.max(0.2, Math.sin(Math.PI / participants.length));
+    const radius = Math.max(
+      1.75,
+      pairNeed / chordDenominator,
+      Math.max(...participants.map(directorFormationGroundRadius)) * 1.8,
+    );
+    const startAngle = Math.PI / 2;
+
+    participants.forEach((actor, index) => {
+      const angle =
+        startAngle + (index / participants.length) * Math.PI * 2;
+      setDirectorFormationPlanePosition(
+        actor,
+        center,
+        basis,
+        Math.cos(angle) * radius,
+        Math.sin(angle) * radius,
+      );
+    });
+    return;
+  }
+
+  if (cue.relation === "cluster") {
+    const placements: Array<{ actor: DirectorRuntimeActor; x: number; z: number }> = [];
+    const angularSteps = 18;
+    const maximumLateralOverlapRatio = 0.24;
+
+    participants.forEach((actor, index) => {
+      if (index === 0) {
+        placements.push({ actor, x: 0, z: 0 });
+        return;
+      }
+
+      const actorRadiusValue = directorFormationGroundRadius(actor);
+      let chosen: { x: number; z: number } | null = null;
+      const minimumRing = Math.max(
+        0.35,
+        ...placements.map(
+          (placed) =>
+            actorRadiusValue +
+            directorFormationGroundRadius(placed.actor) +
+            0.34,
+        ),
+      );
+
+      for (let ring = 0; ring < 18 && !chosen; ring += 1) {
+        const radius = minimumRing + ring * 0.22;
+        for (let step = 0; step < angularSteps; step += 1) {
+          const angle = directorClusterPreferredAngle(index, step);
+          const candidate = {
+            x: Math.cos(angle) * radius,
+            z: Math.sin(angle) * radius,
+          };
+          const clear = placements.every((placed) => {
+            const required = directorFormationPairGap(
+              actor,
+              placed.actor,
+              0.28,
+            );
+            return (
+              Math.hypot(
+                candidate.x - placed.x,
+                candidate.z - placed.z,
+              ) >= required
+            );
+          });
+          if (!clear) continue;
+
+          const screenReadable = placements.every(
+            (placed) =>
+              directorFormationScreenLateralOverlapRatio(
+                actor,
+                candidate.x,
+                placed.actor,
+                placed.x,
+              ) <= maximumLateralOverlapRatio,
+          );
+          if (screenReadable) {
+            chosen = candidate;
+            break;
+          }
+        }
+      }
+
+      placements.push({
+        actor,
+        x: chosen?.x ?? minimumRing * index,
+        z: chosen?.z ?? 0,
+      });
+    });
+
+    const meanX =
+      placements.reduce((sum, item) => sum + item.x, 0) /
+      placements.length;
+    const meanZ =
+      placements.reduce((sum, item) => sum + item.z, 0) /
+      placements.length;
+
+    placements.forEach((item) => {
+      setDirectorFormationPlanePosition(
+        item.actor,
+        center,
+        basis,
+        item.x - meanX,
+        item.z - meanZ,
+      );
+    });
+
+    // Ground-plane clearance is necessary but not sufficient: a broad object can
+    // still sit almost completely behind another actor from the solved camera.
+    // Use the real Director projected box envelopes as a final readability gate.
+    // If overlap is excessive, widen only the camera-relative lateral component
+    // in bounded steps; this preserves the compact wedge/depth relationship while
+    // making individual members visually recoverable.
+    const maximumProjectedOverlapRatio = 0.42;
+    for (let iteration = 0; iteration < 4; iteration += 1) {
+      const projectedOverlap = directorFormationMaximumProjectedEnvelopeOverlap(
+        moment,
+        actors,
+        participants,
+      );
+      if (projectedOverlap <= maximumProjectedOverlapRatio) break;
+
+      for (const actor of participants) {
+        const position = new THREE.Vector3(...actor.position);
+        const delta = position.clone().sub(center);
+        const rightCoordinate = delta.dot(basis.view_right);
+        const forwardCoordinate = delta.dot(basis.view_forward);
+        setDirectorFormationPlanePosition(
+          actor,
+          center,
+          basis,
+          rightCoordinate * 1.12,
+          forwardCoordinate,
+        );
+      }
+    }
+    return;
+  }
+
+  const pair = participants.slice(0, 2);
+  if (pair.length < 2) return;
+  const separation = directorFormationPairGap(pair[0]!, pair[1]!, 0.68);
+  setDirectorFormationPlanePosition(
+    pair[0]!,
+    center,
+    basis,
+    -separation / 2,
+    0,
+  );
+  setDirectorFormationPlanePosition(
+    pair[1]!,
+    center,
+    basis,
+    separation / 2,
+    0,
+  );
+}
+
+
+const DIRECTOR_PHYSICAL_REGION_RELATIONS = [
+  "on_surface",
+  "inside",
+  "attached_to",
+] as const;
+
+type DirectorPhysicalRegionRelation =
+  (typeof DIRECTOR_PHYSICAL_REGION_RELATIONS)[number];
+
+function isDirectorPhysicalRegionRelation(
+  relation: DirectorShotDirectionV2["blocking"][number]["relation"],
+): relation is DirectorPhysicalRegionRelation {
+  return (DIRECTOR_PHYSICAL_REGION_RELATIONS as readonly string[]).includes(
+    relation,
+  );
+}
+
+export type DirectorPhysicalBlockingResolution = {
+  status: "resolved" | "unresolved";
+  relation: DirectorPhysicalRegionRelation;
+  actor_entity_id: string;
+  target_entity_id: string | null;
+  region_kind: "support_surface" | "containment_region" | "surface_contact_region" | null;
+  region_id: string | null;
+  position: DirectorRuntimeVec3 | null;
+  reason: string | null;
+};
+
+function directorPhysicalUniformScale(actor: DirectorRuntimeActor) {
+  const bounds = actor.directability?.local_bounds_size;
+  if (!bounds) return 1;
+  const ratios = actor.size
+    .map((value, index) => {
+      const denominator = Math.max(0.0001, Math.abs(bounds[index] ?? 0));
+      return Math.abs(value) / denominator;
+    })
+    .filter((value) => Number.isFinite(value) && value > 0.0001)
+    .sort((left, right) => left - right);
+  if (!ratios.length) return 1;
+  return ratios[Math.floor(ratios.length / 2)] ?? ratios[0] ?? 1;
+}
+
+function directorPhysicalAdaptiveContainmentClearance(
+  regionSize: readonly number[],
+  preferredClearance: number,
+) {
+  const positive = regionSize
+    .map((value) => Math.abs(Number(value) || 0))
+    .filter((value) => value > 1e-6);
+  const narrowest = positive.length ? Math.min(...positive) : 0;
+  if (narrowest <= 0) return Math.max(0.0015, preferredClearance);
+  return Math.min(
+    Math.max(0.0015, preferredClearance),
+    Math.max(0.0015, narrowest * 0.04),
+  );
+}
+
+function directorPhysicalGroundLocalY(actor: DirectorRuntimeActor) {
+  const contact = actor.directability?.anchors.find(
+    (anchor) =>
+      anchor.kind === "contact" &&
+      anchor.semantic_names.some((name) =>
+        ["bottom_contact", "ground_contact", "contact_anchor"].includes(
+          name.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+        ),
+      ),
+  );
+  return contact?.local_position[1] ?? 0;
+}
+
+function directorPhysicalLocalOffset(
+  actor: DirectorRuntimeActor,
+  localPosition: readonly number[],
+) {
+  const scaleValue = directorPhysicalUniformScale(actor);
+  const groundY = directorPhysicalGroundLocalY(actor);
+  const offset = new THREE.Vector3(
+    numberParam(localPosition[0], 0) * scaleValue,
+    (numberParam(localPosition[1], 0) - groundY) * scaleValue,
+    numberParam(localPosition[2], 0) * scaleValue,
+  );
+  offset.applyEuler(
+    new THREE.Euler(...(actor.rotation ?? [0, 0, 0]), "XYZ"),
+  );
+  return offset;
+}
+
+function directorPhysicalWorldPoint(
+  actor: DirectorRuntimeActor,
+  localPosition: readonly number[],
+) {
+  return new THREE.Vector3(...actor.position).add(
+    directorPhysicalLocalOffset(actor, localPosition),
+  );
+}
+
+function directorPhysicalWorldDirection(
+  actor: DirectorRuntimeActor,
+  localDirection: readonly number[] | null | undefined,
+  fallback: THREE.Vector3,
+) {
+  const direction = localDirection
+    ? new THREE.Vector3(
+        numberParam(localDirection[0], fallback.x),
+        numberParam(localDirection[1], fallback.y),
+        numberParam(localDirection[2], fallback.z),
+      )
+    : fallback.clone();
+  if (direction.lengthSq() < 0.000001) direction.copy(fallback);
+  direction.normalize().applyEuler(
+    new THREE.Euler(...(actor.rotation ?? [0, 0, 0]), "XYZ"),
+  );
+  if (direction.lengthSq() < 0.000001) return fallback.clone();
+  return direction.normalize();
+}
+
+function directorPhysicalActorHalfExtentAlong(
+  actor: DirectorRuntimeActor,
+  worldAxis: THREE.Vector3,
+) {
+  const axis = worldAxis.clone().normalize();
+  const rotation = new THREE.Euler(...(actor.rotation ?? [0, 0, 0]), "XYZ");
+  const localAxes = [
+    new THREE.Vector3(1, 0, 0).applyEuler(rotation),
+    new THREE.Vector3(0, 1, 0).applyEuler(rotation),
+    new THREE.Vector3(0, 0, 1).applyEuler(rotation),
+  ];
+  return localAxes.reduce(
+    (sum, localAxis, index) =>
+      sum +
+      Math.abs(axis.dot(localAxis)) *
+        Math.max(0.01, Math.abs(actor.size[index] ?? 0.01)) *
+        0.5,
+    0,
+  );
+}
+
+function directorPhysicalSourceCenterOffset(actor: DirectorRuntimeActor) {
+  return new THREE.Vector3(0, Math.max(0.01, Math.abs(actor.size[1])) * 0.5, 0)
+    .applyEuler(new THREE.Euler(...(actor.rotation ?? [0, 0, 0]), "XYZ"));
+}
+
+export function directorPhysicalInsideAccessTravel(input: {
+  available_span_m: number;
+  actor_height_m: number;
+  qualification_readability_near_opening: boolean;
+}) {
+  const availableSpan = Math.max(0, Number(input.available_span_m) || 0);
+  const actorHeight = Math.max(0.01, Math.abs(Number(input.actor_height_m) || 0));
+  if (availableSpan <= 0) return 0;
+
+  if (input.qualification_readability_near_opening) {
+    // availableSpan is the free centre-travel span after both source bounds and
+    // clearance have been removed. Half of it is therefore the maximum safe
+    // one-direction centre shift. Qualification uses 80% of that safe travel so
+    // the contained actor reads through the opening without protruding outside.
+    return availableSpan * 0.5 * 0.8;
+  }
+
+  // Preserve the established production placement when no qualification-only
+  // readability flag is present.
+  return Math.min(availableSpan * 0.18, actorHeight * 0.12);
+}
+
+function directorPhysicalUnresolved(
+  relation: DirectorPhysicalRegionRelation,
+  actorId: string,
+  targetId: string | null,
+  reason: string,
+): DirectorPhysicalBlockingResolution {
+  return {
+    status: "unresolved",
+    relation,
+    actor_entity_id: actorId,
+    target_entity_id: targetId,
+    region_kind: null,
+    region_id: null,
+    position: null,
+    reason,
+  };
+}
+
+/**
+ * Physical blocking requires measured object regions, not whole-object bounds.
+ * This qualification/runtime bridge intentionally fails closed when the target
+ * does not expose a usable support, containment, or exterior contact region.
+ * For blocking-level Attached To, geometry-derived attachment anchors are treated
+ * as generic surface-contact evidence only; this path does not claim semantic
+ * connector mating. The production scene builder remains the final collision /
+ * stability authority; the Director path only stops manufacturing obviously
+ * false physical relations.
+ */
+export function resolveDirectorPhysicalBlockingPlacement(
+  cue: DirectorShotDirectionV2["blocking"][number],
+  actors: DirectorRuntimeActor[],
+): DirectorPhysicalBlockingResolution | null {
+  if (!isDirectorPhysicalRegionRelation(cue.relation)) return null;
+  const relation = cue.relation;
+  const actor = actorById(actors, cue.actor_entity_id);
+  const target = actorById(actors, cue.target_entity_id);
+  if (!actor) {
+    return directorPhysicalUnresolved(
+      relation,
+      cue.actor_entity_id,
+      cue.target_entity_id ?? null,
+      "source_actor_missing",
+    );
+  }
+  if (!target) {
+    return directorPhysicalUnresolved(
+      relation,
+      actor.id,
+      cue.target_entity_id ?? null,
+      "target_actor_missing",
+    );
+  }
+  const profile = target.directability;
+  if (!profile) {
+    return directorPhysicalUnresolved(
+      relation,
+      actor.id,
+      target.id,
+      "target_directability_missing",
+    );
+  }
+
+  const clearance = cue.preserve_clearance === false ? 0.002 : 0.008;
+  const targetScale = directorPhysicalUniformScale(target);
+
+  if (relation === "on_surface") {
+    const sourceWidth = Math.max(0.02, Math.abs(actor.size[0]));
+    const sourceDepth = Math.max(0.02, Math.abs(actor.size[2]));
+    const candidates = profile.surfaces
+      .map((surface) => {
+        const normal = directorPhysicalWorldDirection(
+          target,
+          surface.normal,
+          UP,
+        );
+        const usable = surface.usable_size ?? surface.size;
+        const surfaceWidth = Math.max(0.001, usable[0] * targetScale);
+        const surfaceDepth = Math.max(0.001, usable[1] * targetScale);
+        const fitsFootprint =
+          (sourceWidth + clearance * 2 <= surfaceWidth &&
+            sourceDepth + clearance * 2 <= surfaceDepth) ||
+          (sourceWidth + clearance * 2 <= surfaceDepth &&
+            sourceDepth + clearance * 2 <= surfaceWidth);
+        const clearanceAbove =
+          surface.clearance_above_m == null
+            ? null
+            : Math.max(0, surface.clearance_above_m * targetScale);
+        const fitsClearance =
+          clearanceAbove === null ||
+          Math.max(0.02, Math.abs(actor.size[1])) + clearance <= clearanceAbove;
+        const blocked = Math.max(0, Math.min(1, surface.blocked_fraction ?? 0));
+        const upward = normal.dot(UP);
+        const orientationEligible =
+          surface.orientation == null ||
+          surface.orientation === "upward" ||
+          upward >= 0.45;
+        const exposureEligible = surface.exposure !== "interior";
+        const heightRatio =
+          surface.height_ratio == null
+            ? null
+            : Math.max(0, Math.min(1, surface.height_ratio));
+        const area = surfaceWidth * surfaceDepth;
+        return {
+          surface,
+          normal,
+          fits: fitsFootprint && fitsClearance,
+          eligible: orientationEligible && exposureEligible && blocked <= 0.72,
+          score:
+            (fitsFootprint && fitsClearance ? 1000 : 0) +
+            Math.max(0, upward) * 120 +
+            Math.max(0, surface.confidence) * 130 +
+            Math.sqrt(Math.max(0, area)) * 18 +
+            (surface.is_primary ? 24 : 0) +
+            (heightRatio ?? 0.5) * 12 -
+            blocked * 70 -
+            Math.max(0, surface.vertical_rank ?? 0) * 2,
+        };
+      })
+      .filter((candidate) => candidate.fits && candidate.eligible && candidate.normal.dot(UP) >= 0.35)
+      .sort(
+        (left, right) =>
+          right.score - left.score ||
+          left.surface.id.localeCompare(right.surface.id),
+      );
+    const selected = candidates[0];
+    if (!selected) {
+      return directorPhysicalUnresolved(
+        relation,
+        actor.id,
+        target.id,
+        "no_measured_support_surface_fits_source",
+      );
+    }
+    const supportPoint = directorPhysicalWorldPoint(
+      target,
+      selected.surface.local_center,
+    ).addScaledVector(selected.normal, clearance);
+    return {
+      status: "resolved",
+      relation,
+      actor_entity_id: actor.id,
+      target_entity_id: target.id,
+      region_kind: "support_surface",
+      region_id: selected.surface.id,
+      position: [supportPoint.x, supportPoint.y, supportPoint.z],
+      reason: null,
+    };
+  }
+
+  if (relation === "inside") {
+    const sourceSize = actor.size.map((value) => Math.max(0.02, Math.abs(value)));
+    const candidates = profile.containment_regions
+      .map((region) => {
+        const size = region.size.map((value) =>
+          Math.max(0.001, Math.abs(value) * targetScale),
+        );
+        const containmentClearance =
+          directorPhysicalAdaptiveContainmentClearance(size, clearance);
+        const fits = sourceSize.every(
+          (value, index) =>
+            value + containmentClearance * 2 <= (size[index] ?? 0),
+        );
+        const explicitlyOpen =
+          region.openness === "open" ||
+          (region.openness == null &&
+            region.semantic_names.some((name) =>
+              name.toLowerCase().replace(/[^a-z0-9]+/g, "_") ===
+              "fillable_region",
+            ));
+        const visiblyAccessible =
+          explicitlyOpen &&
+          Boolean(region.access_direction) &&
+          region.confidence >= 0.45 &&
+          region.exposure !== "exterior";
+        return {
+          region,
+          size,
+          containmentClearance,
+          fits,
+          visiblyAccessible,
+          score:
+            (fits ? 1000 : 0) +
+            (visiblyAccessible ? 100 : 0) +
+            Math.max(0, region.confidence) * 140 +
+            Math.cbrt(Math.max(0.000001, size[0]! * size[1]! * size[2]!)) * 14,
+        };
+      })
+      .filter((candidate) => candidate.fits && candidate.visiblyAccessible)
+      .sort(
+        (left, right) =>
+          right.score - left.score ||
+          left.region.id.localeCompare(right.region.id),
+      );
+    const selected = candidates[0];
+    if (!selected) {
+      return directorPhysicalUnresolved(
+        relation,
+        actor.id,
+        target.id,
+        "no_measured_containment_region_fits_source",
+      );
+    }
+    const center = directorPhysicalWorldPoint(target, selected.region.local_center);
+    const access = directorPhysicalWorldDirection(
+      target,
+      selected.region.access_direction,
+      UP,
+    );
+    const availableVertical = Math.max(
+      0,
+      selected.size[1]! -
+        Math.abs(actor.size[1]) -
+        selected.containmentClearance * 2,
+    );
+    if (access.dot(UP) > 0.35 && availableVertical > 0) {
+      const qualificationReadabilityNearOpening =
+        cue.parameters?.physical_containment_readability_near_opening === true;
+      center.addScaledVector(
+        access,
+        directorPhysicalInsideAccessTravel({
+          available_span_m: availableVertical,
+          actor_height_m: actor.size[1],
+          qualification_readability_near_opening:
+            qualificationReadabilityNearOpening,
+        }),
+      );
+    }
+    const root = center.sub(directorPhysicalSourceCenterOffset(actor));
+    return {
+      status: "resolved",
+      relation,
+      actor_entity_id: actor.id,
+      target_entity_id: target.id,
+      region_kind: "containment_region",
+      region_id: selected.region.id,
+      position: [root.x, root.y, root.z],
+      reason: null,
+    };
+  }
+
+  const sourceContact = actor.size
+    .map((value) => Math.max(0.02, Math.abs(value)))
+    .sort((left, right) => left - right)
+    .slice(0, 2);
+  const attachmentCandidates = profile.anchors
+    .filter(
+      (anchor) =>
+        anchor.kind === "attachment" &&
+        Boolean(anchor.local_normal) &&
+        anchor.confidence >= 0.35,
+    )
+    .map((anchor) => {
+      const normal = directorPhysicalWorldDirection(
+        target,
+        anchor.local_normal,
+        new THREE.Vector3(1, 0, 0),
+      );
+      const contactSize = anchor.contact_size
+        ? [
+            Math.max(0.001, anchor.contact_size[0] * targetScale),
+            Math.max(0.001, anchor.contact_size[1] * targetScale),
+          ].sort((left, right) => left - right)
+        : null;
+      const genericMeasuredContactFits =
+        anchor.source !== "geometry_profile" ||
+        Boolean(
+          contactSize &&
+            sourceContact[0]! * 0.42 + clearance <= contactSize[0]! &&
+            sourceContact[1]! * 0.42 + clearance <= contactSize[1]!,
+        );
+      return {
+        anchor,
+        normal,
+        genericMeasuredContactFits,
+        score:
+          anchor.confidence * 130 +
+          (Math.abs(normal.y) < 0.8 ? 18 : 0) +
+          (contactSize
+            ? Math.sqrt(Math.max(0.000001, contactSize[0]! * contactSize[1]!)) * 16
+            : 0),
+      };
+    })
+    .filter((candidate) => candidate.genericMeasuredContactFits)
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        left.anchor.id.localeCompare(right.anchor.id),
+    );
+  const selectedAttachment = attachmentCandidates[0];
+  if (!selectedAttachment) {
+    return directorPhysicalUnresolved(
+      relation,
+      actor.id,
+      target.id,
+      "no_measured_attachment_region",
+    );
+  }
+  const anchorPoint = directorPhysicalWorldPoint(
+    target,
+    selectedAttachment.anchor.local_position,
+  );
+  const halfExtent = directorPhysicalActorHalfExtentAlong(
+    actor,
+    selectedAttachment.normal,
+  );
+  const desiredCenter = anchorPoint.addScaledVector(
+    selectedAttachment.normal,
+    halfExtent + clearance,
+  );
+  const root = desiredCenter.sub(directorPhysicalSourceCenterOffset(actor));
+  return {
+    status: "resolved",
+    relation,
+    actor_entity_id: actor.id,
+    target_entity_id: target.id,
+    region_kind: "surface_contact_region",
+    region_id: selectedAttachment.anchor.id,
+    position: [root.x, root.y, root.z],
+    reason: null,
+  };
+}
+
+function applyDirectorPhysicalRegionPlacement(
+  cue: DirectorShotDirectionV2["blocking"][number],
+  actors: DirectorRuntimeActor[],
+) {
+  const resolution = resolveDirectorPhysicalBlockingPlacement(cue, actors);
+  if (!resolution || resolution.status !== "resolved" || !resolution.position) {
+    return resolution;
+  }
+  const actor = actorById(actors, resolution.actor_entity_id);
+  if (actor) actor.position = [...resolution.position];
+  return resolution;
+}
+
 export function applyDirectorBlocking(
   moment: DirectorMoment,
   actors: DirectorRuntimeActor[],
@@ -249,16 +1480,45 @@ export function applyDirectorBlocking(
   const byId = new Map(output.map((actor) => [actor.id, actor]));
   const physical = new Set(["on_ground", "on_surface", "inside", "attached_to", "beside"]);
   const compositionBasis = directorBlockingCompositionBasis(moment, output);
+  const handledGroupFormationKeys = new Set<string>();
 
   for (const cue of shot.blocking) {
     if (options.cinematic_only && physical.has(cue.relation)) continue;
+    if (isDirectorGroupFormationRelation(cue.relation)) {
+      const participantIds = directorGroupFormationParticipantIds(
+        shot,
+        cue,
+        output,
+      );
+      const key = `${cue.relation}:${participantIds.join("|")}`;
+      if (!handledGroupFormationKeys.has(key)) {
+        applyDirectorGroupFormation(
+          moment,
+          shot,
+          cue,
+          output,
+          compositionBasis,
+        );
+        handledGroupFormationKeys.add(key);
+      }
+      continue;
+    }
+    if (isDirectorRelativeActorRelation(cue.relation)) {
+      applyDirectorRelativeActorPlacement(
+        moment,
+        cue,
+        output,
+        compositionBasis,
+      );
+      continue;
+    }
+    if (isDirectorPhysicalRegionRelation(cue.relation)) {
+      applyDirectorPhysicalRegionPlacement(cue, output);
+      continue;
+    }
     const actor = byId.get(cue.actor_entity_id);
     if (!actor) continue;
-    const target = cue.target_entity_id ? byId.get(cue.target_entity_id) ?? null : null;
-    const targetPosition = target ? new THREE.Vector3(...target.position) : new THREE.Vector3();
-    const targetRadius = target ? actorRadius(target) : 1;
     const actorRadiusValue = actorRadius(actor);
-    const gap = Math.max(0.25, targetRadius + actorRadiusValue) * 0.75;
     const position = new THREE.Vector3(...actor.position);
     const depth = Math.max(
       1.55,
@@ -273,19 +1533,6 @@ export function applyDirectorBlocking(
 
     switch (cue.relation) {
       case "on_ground": position.y = 0; break;
-      case "on_surface": if (target) position.set(targetPosition.x, targetPosition.y + Math.max(0.1, target.size[1]), targetPosition.z); break;
-      case "inside": if (target) position.copy(targetPosition).add(new THREE.Vector3(0, Math.max(0.1, target.size[1] * 0.25), 0)); break;
-      case "attached_to": if (target) position.copy(targetPosition).add(new THREE.Vector3(target.size[0] * 0.55, target.size[1] * 0.45, 0)); break;
-      case "beside": if (target) position.copy(targetPosition).add(new THREE.Vector3(gap, 0, 0)); break;
-      case "in_front_of": if (target) position.copy(targetPosition).add(new THREE.Vector3(0, 0, gap)); break;
-      case "behind": if (target) position.copy(targetPosition).add(new THREE.Vector3(0.35 * gap, 0, -gap)); break;
-      case "between": {
-        const alternatives = output.filter((candidate) => candidate.id !== actor.id);
-        if (alternatives.length >= 2) {
-          position.lerpVectors(new THREE.Vector3(...alternatives[0].position), new THREE.Vector3(...alternatives[1].position), 0.5);
-        }
-        break;
-      }
       case "foreground":
         // Negative view-forward is physically toward the opening camera.
         setCompositionCoordinate(
@@ -327,32 +1574,6 @@ export function applyDirectorBlocking(
           lateral,
         );
         break;
-      case "facing":
-      case "facing_away":
-        if (target) {
-          const delta = targetPosition.clone().sub(position);
-          actor.rotation = [actor.rotation?.[0] ?? 0, Math.atan2(delta.x, delta.z) + (cue.relation === "facing_away" ? Math.PI : 0), actor.rotation?.[2] ?? 0];
-        }
-        break;
-      case "surround": {
-        const index = output.findIndex((candidate) => candidate.id === actor.id);
-        const angle = (index / Math.max(1, output.length)) * Math.PI * 2;
-        position.set(Math.cos(angle) * 2.2, position.y, Math.sin(angle) * 2.2);
-        break;
-      }
-      case "form_line": {
-        const index = output.findIndex((candidate) => candidate.id === actor.id);
-        position.x = (index - (output.length - 1) / 2) * 1.7;
-        break;
-      }
-      case "form_circle": {
-        const index = output.findIndex((candidate) => candidate.id === actor.id);
-        const angle = (index / Math.max(1, output.length)) * Math.PI * 2;
-        position.set(Math.cos(angle) * 2.3, position.y, Math.sin(angle) * 2.3);
-        break;
-      }
-      case "cluster": position.multiplyScalar(0.68); break;
-      case "symmetrical_pair": position.x = actor.id === shot.camera.focus_entity_ids[0] ? -1.6 : 1.6; break;
       default: assertDirectorRuntimeNever(cue.relation, "DirectorBlockingRelation");
     }
 

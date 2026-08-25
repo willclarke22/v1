@@ -151,7 +151,7 @@ function auditionGroup(capability: DirectorCapability) {
   }
 
   if (category === "blocking_placement") {
-    if (inSet(id, ["on_ground", "on_surface", "attached_to", "inside"])) {
+    if (inSet(id, ["on_ground", "on_surface", "inside"])) {
       return "Support & containment";
     }
     if (
@@ -378,6 +378,16 @@ function capabilityProfile(
           "Compare Follow / Lead / Lag / Track Parallel on the same character, then the same vehicle. Asset facing is aligned to the authored travel heading before the camera relationship is judged.",
       };
     }
+    if (capabilityId === "object_attached") {
+      return {
+        suitable_primary_cast_slots: ["vehicle"],
+        comparison_group: "mounted_camera",
+        requires_directional_facing: true,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Immediate mounted-camera comparison reference for legacy movement `camera_object_attached`. Use the same host, safe travel corridor, and canonical mounted primitive so the only intended difference is immediate mounted start versus blend-in timing.",
+      };
+    }
     if (capabilityId === "camera_object_attached") {
       return {
         suitable_primary_cast_slots: ["vehicle"],
@@ -385,9 +395,80 @@ function capabilityProfile(
         requires_directional_facing: true,
         merge_compare_with_capability_id: "object_attached",
         qualification_note:
-          "Mounted-camera evidence is vehicle-gated. This legacy movement ID now compiles through the same canonical mounted-camera primitive as camera-angle `object_attached`; compare blend-in versus immediate modes before deprecating or retaining the extra vocabulary entry.",
+          "Mounted-camera evidence is vehicle-gated. This legacy movement ID now compiles through the same canonical mounted-camera primitive as camera-angle `object_attached`; compare blend-in versus immediate modes on the same host before deprecating or retaining the extra vocabulary entry.",
       };
     }
+  }
+
+  if (
+    familyCategory === "blocking_placement" &&
+    familyGroup === "Support & containment" &&
+    inSet(capabilityId, ["on_surface", "inside"])
+  ) {
+    return {
+      // Support and containment are geometric relations. Do not ban source
+      // semantics here: any qualification cast class may participate when the
+      // measured source/receiver geometry actually fits.
+      suitable_primary_cast_slots: [
+        "character",
+        "vehicle",
+        "furniture",
+        "irregular_hero",
+        "compact_rigid",
+        "simple_rigid",
+        "small_asymmetric",
+        "organic_elongated",
+        "small_detail",
+      ],
+      comparison_group: null,
+      requires_directional_facing: false,
+      merge_compare_with_capability_id: null,
+      qualification_note:
+        capabilityId === "on_surface"
+          ? "Physical support generalization proof: source semantics are unrestricted; each admitted pair must fit a measured exposed upward support region, reject floor-like/accidental ledges in qualification, and keep source identities distinct across the Cross-asset evidence pass."
+          : "Physical containment proof: source semantics are unrestricted; the receiver must expose ray-confirmed open containment that fits the source at a plausible physical size. Bounding-box occupancy is never accepted as Inside, and later passes must use a distinct real source/receiver pair.",
+    };
+  }
+
+  if (
+    familyCategory === "blocking_placement" &&
+    familyGroup === "Relative actor placement" &&
+    capabilityId === "attached_to"
+  ) {
+    return {
+      suitable_primary_cast_slots: [
+        "small_detail",
+        "simple_rigid",
+        "compact_rigid",
+        "small_asymmetric",
+        "irregular_hero",
+      ],
+      comparison_group: null,
+      requires_directional_facing: false,
+      merge_compare_with_capability_id: null,
+      qualification_note:
+        "Physical surface-attachment proof: the receiver must expose a measured exterior contact region with a usable normal. Attached To remains a measured physical relation, but it is reviewed with relative placement rather than consuming Support & containment evidence slots.",
+    };
+  }
+
+  if (
+    familyCategory === "blocking_placement" &&
+    familyGroup === "Relative actor placement" &&
+    inSet(capabilityId, ["facing", "facing_away"])
+  ) {
+    return {
+      suitable_primary_cast_slots: [
+        "character",
+        "small_asymmetric",
+        "organic_elongated",
+        "vehicle",
+      ],
+      comparison_group: null,
+      requires_directional_facing: true,
+      merge_compare_with_capability_id: null,
+      qualification_note:
+        "Orientation proof requires a primary with a readable forward axis. Use directional character / asymmetric / organic / vehicle silhouettes and judge the target-facing vector rather than an ambiguous symmetric prop.",
+    };
   }
 
   return {

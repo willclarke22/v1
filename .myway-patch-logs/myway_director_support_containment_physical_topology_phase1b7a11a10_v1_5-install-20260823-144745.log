@@ -1,0 +1,86 @@
+**********************
+PowerShell transcript start
+Start time: 20260823144746
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 36276
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_director_support_containment_physical_topology_phase1b7a11a10_v1_5-install-20260823-144745.log
+
+=== MyWay A.11A.10 v1.5 Support & Containment physical topology hardening ===
+
+Current git status (diagnostic only):
+
+
+Invoking transactional installer...
+
+=== myway_director_support_containment_physical_topology_phase1b7a11a10_v1_5 ===
+Project root: C:\Users\willc\projects\MyWay\v1
+Package root: C:\Users\willc\Downloads\myway_director_support_containment_physical_topology_phase1b7a11a10_v1_5
+Running exact baseline/applied preflight...
+PATCH_ID=myway_director_support_containment_physical_topology_phase1b7a11a10_v1_5
+PREFLIGHT_STATE=baseline
+Baseline fingerprints match exactly; apply is permitted.
+Verifying packaged payload hashes...
+Creating transactional backup: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_director_support_containment_physical_topology_phase1b7a11a10_v1_5-20260823-144747
+Applying payload...
+Verifying exact post-copy payload hashes...
+
+Running A.11A.10 successor + A.11A.9/A.11A.8/A.11A.7 + Directability + historical semantic verifier chain...
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-support-containment-topology-phase1b7a11a10.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-support-containment-physical-surface-truth-phase1b7a11a9.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-support-containment-scale-parity-phase1b7a11a8.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-support-containment-phase1b7a11a7.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-affordance-evidence-hardening-phase1b5b2.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-asset-directability-phase1b5.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-directable-asset-compiler-phase1b5b.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-asset-pair-interaction-resolver-phase1b5c.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-scene-scale-pair-fit-hardening-phase1b5c2.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-real-asset-execution-qualification-phase1b5e.ts
+
+PS>TerminatingError(): "pnpm exec tsx scripts/sandbox/verify-director-real-asset-execution-qualification-phase1b5e.ts failed with exit code 1."
+
+ERROR: patch application failed: pnpm exec tsx scripts/sandbox/verify-director-real-asset-execution-qualification-phase1b5e.ts failed with exit code 1.
+Rolling back project files...
+Verifying restored baseline...
+PATCH_ID=myway_director_support_containment_physical_topology_phase1b7a11a10_v1_5
+PREFLIGHT_STATE=baseline
+Baseline fingerprints match exactly; apply is permitted.
+ROLLBACK VERIFIED: project restored to the exact pre-patch baseline.
+Backup retained at: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_director_support_containment_physical_topology_phase1b7a11a10_v1_5-20260823-144747
+PS>TerminatingError(): "pnpm exec tsx scripts/sandbox/verify-director-real-asset-execution-qualification-phase1b5e.ts failed with exit code 1."
+**********************
+PowerShell transcript end
+End time: 20260823144821
+**********************

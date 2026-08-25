@@ -168,9 +168,14 @@ assert(
 const preview = source(
   "sandbox/probe-lab/motion-camera-library/ui/director-capability-preview.tsx",
 );
+// Phase 1B.7A.11A.10 compatibility: the shared runtime bridge is now
+// override-aware. Protect the semantic bridge without freezing the retired
+// contiguous `directability: role.asset` source spelling.
 for (const marker of [
   "buildAssetDirectabilityProfile",
-  "directability: role.asset",
+  "directability:",
+  "role.directability_override !== undefined",
+  "buildAssetDirectabilityProfile(role.asset)",
   "Phase 1B.5E",
 ]) {
   assert(

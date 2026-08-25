@@ -102,7 +102,9 @@ const library = source(
   "sandbox/probe-lab/motion-camera-library/ui/director-capability-library-lab.tsx",
 );
 for (const marker of [
-  'import { DirectorQualificationRoom } from "./director-qualification-room";',
+  'import dynamic from "next/dynamic";',
+  'import("./director-qualification-room")',
+  'const DirectorQualificationRoom = dynamic(',
   'import { DirectorLibraryTabs } from "./director-library-tabs";',
   'activeTab === "qualification"',
   'activeTab="capabilities"',
@@ -116,6 +118,10 @@ for (const marker of [
 assert(
   !library.includes("<Canvas"),
   "Canonical Director shell must continue delegating Canvas ownership to the active viewer.",
+);
+assert(
+  !library.includes('import { DirectorQualificationRoom } from "./director-qualification-room";'),
+  "Qualification Room should remain code-split instead of inflating the initial Capabilities bundle.",
 );
 
 const room = source(

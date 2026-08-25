@@ -1258,6 +1258,651 @@ loosening the integrity gate.
 
 The prior MediaRecorder implementation remains in the file temporarily as a compatibility
 and diagnostic fallback, but **Render gauntlet + export evidence** now uses the deterministic
-A.10F path. Phase 1B.7A.11 remains deferred until one real A.10F ZIP proves the browser can
-decode the muxed WebM and the strict integrity contract reports `pass`.
+A.10F path. The first real A.10F Tracking ZIP subsequently proved the browser can decode the
+muxed WebM with every logical frame present and the strict integrity contract reporting
+`pass`, so evidence capture is frozen unless another family exposes a real defect.
 
+## Phase 1B.7A.11A — qualification campaign state
+
+A.11 is deliberately **not** an unattended all-family renderer and is **not** an automated
+cinematography judge. The working review loop remains one family at a time:
+
+`MyWay controlled audition → A.10F deterministic evidence ZIP → ChatGPT + human perceptual review → qualification decisions → MyWay campaign state`.
+
+A.11A adds the lab notebook around that loop.
+
+- The Qualification Room now owns a persistent campaign covering the same dynamic 33-family /
+  184-capability suite. The campaign records the current family, family status, latest
+  evidence reel ID/integrity/coverage, family-level review notes, reviewed timestamp,
+  qualified/frozen capability IDs, and an explicit re-evidence reason.
+- A successful or failed **A.10F deterministic export automatically attaches itself to the
+  selected family**. `evidence_integrity: pass` moves the family to
+  `Awaiting ChatGPT review`; failed evidence moves it to `Needs re-evidence`. No browser
+  Download interception or separate batch renderer is added.
+- The existing per-capability decisions remain the perceptual authority:
+  Qualified / Fix / Merge candidate / Redefine / Restrict / Retire / Blocked. Changing a
+  decision after PASS evidence marks the family `Review in progress`.
+- A family cannot be closed until it has PASS deterministic evidence and every capability has
+  a non-Unreviewed decision. **Save family review** freezes only capabilities marked
+  `Qualified`; action items stay visible instead of being silently treated as complete.
+- **Needs re-evidence** reopens the family after a targeted repair without unfreezing good
+  siblings. **Save review & go to next family** and **Go to next unresolved family** advance
+  the campaign without rendering anything automatically.
+- The campaign board exposes all 33 families, review progress, evidence state, and frozen
+  capability count while keeping the existing one-family `Render gauntlet + export evidence`
+  button unchanged. The resulting ZIP is still intended to be sent to ChatGPT for deep
+  visual judgment before decisions are recorded.
+
+This keeps the three responsibilities separate: A.10F guarantees technically trustworthy
+evidence, ChatGPT + the human reviewer judge cinematography, and A.11A remembers what has
+been reviewed, frozen, repaired, or queued next.
+
+
+## Phase 1B.7A.11A.1 — tracking merge-comparison evidence
+
+The Tracking & attached camera family now renders **explicit same-host comparison
+reference clips** for mounted-camera vocabulary decisions. Previously the reel
+showed `camera_object_attached` with a merge/deprecation note pointing at
+`object_attached`, but the evidence package did not actually include an
+`object_attached` proof on the same vehicle host. That made the cinematography
+look good while leaving the merge decision under-proven.
+
+This patch keeps the qualified Tracking siblings untouched (`follow`,
+`lead_subject`, `lag_follow`, `track_parallel`) and changes only the mounted
+comparison harness:
+
+- each `camera_object_attached` mounted proof is followed immediately by an
+  `object_attached` comparison reference on the **same host** and in the **same
+  pass kind**;
+- both clips use the same safe travel corridor and canonical mounted primitive;
+- the intended difference is now isolated to **blend-in timing vs immediate
+  mounted start**, rather than to host choice or scene conditions.
+
+The purpose is not to re-open the already-qualified tracking siblings. It is to
+let the Qualification Room and ChatGPT make a real evidence-based decision about
+whether `camera_object_attached` should remain distinct or merge into the
+canonical mounted-camera primitive represented by `object_attached`.
+
+## Phase 1B.7A.11A.2 — Depth / screen qualification fixture repair
+
+The first A.11A **Depth & screen placement** Cross-asset review qualified
+`foreground`, `midground`, `background`, `screen_left`, and `layered_depth`, but
+`screen_right` was under-proven by the qualification fixture rather than by the
+canonical blocking primitive. Scene B places its support actor on the right by
+default, so the Screen Right primary moved toward that support while Screen Left
+moved away from it. The result was asymmetric evidence with avoidable overlap.
+
+This repair stays inside qualification choreography:
+
+- the shared camera-relative `screen_left` / `screen_right` Director runtime is
+  unchanged;
+- the five two-actor Depth / screen siblings render only their required primary
+  and secondary roles, while `layered_depth` still keeps its required context
+  actor and existing projected-fit path;
+- Screen Right mirrors the Scene-B primary/support pair around the neutral pair
+  centre before the canonical blocking solver runs, giving left/right siblings
+  complementary support placement instead of a right-biased fixture;
+- the successor verifier checks the role policy plus projected left/right
+  separation, safe-frame containment, and primary/support overlap using the real
+  Director blocking and camera projection runtime.
+
+The next evidence pass for this family should use **Full cast** so the repaired
+Screen Right proof and the existing `physical_stress` / `physical_context` pass
+are reviewed together. Previously Qualified siblings remain frozen unless the
+new evidence reveals an actual regression.
+
+## Phase 1B.7A.11A.3 — Group formation foundation repair
+
+The first A.11A **Group formations** Cross-asset reel exposed a shared semantic
+runtime failure rather than five unrelated cosmetic defects. `surround`,
+`form_line`, `form_circle`, `cluster`, and `symmetrical_pair` were each authored
+as one blocking cue for the primary actor, while the old runtime formulas moved
+only that one actor. Scene B therefore carried most of the visible arrangement,
+`form_line` and `symmetrical_pair` were nearly no-ops against the fixture, and
+`surround` / `form_circle` differed mostly by a 0.1 m radius constant.
+
+A.11A.3 makes group formation a first-class multi-actor primitive:
+
+- one semantic formation cue expands deterministically across the participating
+  actor set derived from explicit participants plus the shot's keep-visible /
+  camera-focus contract; GLM does not need to repeat the cue once per actor;
+- all five formations are solved in the opening camera's flattened
+  `view_right` / `view_forward` basis rather than hard-coded world X/Z;
+- **Surround** keeps a privileged centre actor and places supporting actors on a
+  clearance-aware ring around it;
+- **Form line** places all participants collinearly across camera-relative
+  screen width with size-aware spacing;
+- **Form circle** places every participant on an empty-centre circumference with
+  equal angular spacing, making it structurally different from Surround;
+- **Cluster** uses deterministic compact packing with pairwise clearance instead
+  of scaling one actor toward the origin;
+- **Symmetrical pair** uses exactly two actors, mirrors them around the
+  composition centre, and equalizes their camera-relative depth;
+- group formation demo shots use group framing and focus every participating
+  actor so the camera proves the whole relation rather than one object;
+- A.11A.3 qualification initially used three required actors for Surround /
+  Line / Circle / Cluster, exactly two for Symmetrical Pair,
+  `presentation_normalized` sizing for Baseline / Diversity, and the existing
+  `physical_context` override for Full-cast physical stress. A.11A.4 below
+  intentionally strengthens only the Surround / Circle participant counts.
+
+The successor verifier mathematically checks centre occupancy, collinearity,
+circle radius/angular separation, compactness plus clearance, pair symmetry,
+safe-frame readability, and sibling distinctness. Cross-asset evidence should be
+rerun first; Full cast is useful only after the five semantic formations are
+visually distinct.
+
+Package revision **v1.1** also removes unreachable group-relation `case` labels
+from the scalar blocking switch after the group-formation type guard. TypeScript
+correctly narrows those relations away at that point; the semantic solver is
+unchanged, and the successor verifier now protects this compile-time boundary.
+
+
+## Phase 1B.7A.11A.4 — Group formation perceptual refinement
+
+The A.11A.3 Cross-asset re-evidence proved that the shared multi-actor formation
+architecture is now real: **Form line** and **Symmetrical pair** were qualified
+and are frozen. Three remaining siblings need perceptual—not foundational—work.
+
+A.11A.4 narrows the repair to those unresolved siblings:
+
+- **Surround** qualification now uses one privileged centre actor plus three
+  supports. Three support sectors make enclosure immediately legible instead of
+  reading as a two-sided `between` / flanking relationship.
+- **Form circle** qualification now uses five circumference actors around an
+  empty centre. The solver itself already accepted arbitrary participant sets;
+  the stronger proof prevents a mathematically valid three-point ring from
+  reading only as a triangle.
+- **Cluster** keeps the A.11A.3 compact, clearance-aware packing foundation but
+  adds a camera-relative lateral silhouette-overlap constraint, preferred compact
+  wedge sectors, and a final real projected-envelope overlap gate from the solved
+  Director camera. Broad assets therefore cannot satisfy physical clearance while
+  hiding almost completely behind another cluster member.
+- **Form line** remains a three-actor camera-relative line and **Symmetrical
+  pair** remains an exact two-actor mirror. The successor verifier treats both as
+  frozen sibling invariants and fails if this refinement changes them.
+- Qualification-only extra support roles reuse the controlled context cast pool;
+  production/runtime group formation remains asset-independent and still accepts
+  arbitrary participant entity ids from authored scenes.
+- The Qualification Room promotes the actual planned role set into the demo
+  visibility/focus contract before rendering, so the camera frames all four
+  Surround actors or all five Form Circle actors rather than silently solving
+  around the older three-role generic demo.
+
+The A.11A.4 verifier checks exact qualification participant counts, Surround
+sector coverage, five-point Circle radius/angular consistency, Cluster physical
+clearance plus projected-envelope overlap, and frozen Line/Pair invariants. The
+next evidence pass should target **Surround**, **Form circle**, and **Cluster** in
+Cross-asset mode while preserving the Qualified decisions for Form line and
+Symmetrical pair. Full cast remains the final physical-scale stress pass after
+those three unresolved siblings qualify.
+
+## Phase 1B.7A.11A.5 — Relative actor placement foundation repair
+
+The first A.11A **Relative actor placement** Cross-asset reel showed a second
+shared blocking-foundation problem. Scene B made `in_front_of` / `behind` look
+plausible even though those primitives still used hard-coded world Z, `beside`
+used world X plus a radius heuristic that could leave projected overlap,
+`between` was authored as a binary camera contract despite requiring two
+references, and `facing` / `facing_away` were tested on ambiguous props in an
+over-wide three-actor fixture.
+
+A.11A.5 makes the six relationships perceptually explicit without reopening the
+qualified Depth/screen or Group-formation families:
+
+- **Beside** now stages the actor on opening-camera `view_right` at extent-aware
+  clearance and performs a bounded projected-envelope widening pass until visible
+  screen-space air separates the pair.
+- **In front of / Behind** now use signed opening-camera `view_forward` depth
+  rather than world +/-Z. A small opposite lateral peek plus a projected-overlap
+  ceiling keeps the rear actor identifiable instead of allowing a full eclipse.
+- **Between** is now intrinsically ternary in the capability contract. The demo
+  cue declares both reference entity ids, focuses all three actors, and the
+  runtime places the primary at the midpoint of those two references rather than
+  treating an arbitrary second actor as optional context.
+- **Facing / Facing away** retain the correct target-vector yaw solver, but
+  qualification gates the primary cast to directional silhouettes, removes the
+  irrelevant context actor, uses a compact extent-aware pair fixture, and presents
+  the relationship in a front-profile two-shot so forward orientation is large
+  enough to judge.
+- Relative actor Baseline / Diversity evidence uses `presentation_normalized`
+  sizing for a fair semantic/orientation proof. Full-cast retains the existing
+  `physical_context` override as the separate real-scale stress test.
+- All binary relationships render exactly primary + target; only Between renders
+  primary + reference A + reference B. Qualification promotes that planned role
+  set into the demo visibility/focus contract before rendering.
+
+The successor verifier checks camera-relative signed axes under more than one
+camera angle, physical and projected Beside clearance, readable front/behind
+overlap, true geometric and projected Between-ness, Facing/Facing-away vector
+dot products, minimum projected actor size, directional cast gating, and the
+post-type-guard scalar-switch boundary. Rerun **Cross-asset** before Full cast; no
+Relative actor sibling is frozen until the repaired evidence is reviewed.
+
+## Phase 1B.7A.11A.6 — Between qualification framing refinement
+
+The repaired **Between** primitive from A.11A.5 passed its semantic checks: the
+primary is the midpoint of two explicit references, all three actors are in the
+visibility/focus contract, and the projected primary sits inside the reference
+interval. Cross-asset reel `QR-20260822-174028` nevertheless showed a narrower
+qualification defect: the Scene-B reference interval was over-conservative, so
+the normal three-actor camera fit backed away until the relationship became a
+small island in a mostly empty frame.
+
+A.11A.6 is deliberately qualification-only. It does **not** change the canonical
+Between runtime, camera solver, capability contract, or the five now-qualified
+Relative actor siblings. The fixture keeps the primary outside the reference
+interval before blocking, but compacts reference A / reference B with an
+extent-aware half-span that preserves breathing room without treating every
+actor's largest 3D extent as literal screen-horizontal width. Full-cast remains
+the separate physical-scale stress pass.
+
+The successor verifier requires the A.11A.5 policy/version to remain intact,
+checks the new Between-framing policy marker, proves the primary still moves to
+the exact reference midpoint, verifies all three projected envelopes remain
+inside the safe frame, requires a visible projected left/centre/right ordering,
+and enforces a minimum useful projected actor size. Previously qualified Beside,
+In front of, Behind, Facing, and Facing away are protected by the unchanged
+A.11A.5 historical verifier.
+
+## Phase 1B.7A.11A.7 — Support & containment physical-region convergence
+
+The first **Support & containment** Cross-asset reel exposed a different class
+of blocking error from ordinary camera-relative placement. `on_surface`,
+`inside`, and `attached_to` were still treating whole-object bounds as though
+they were usable physical regions. A round stool could therefore look correct by
+accident while an office chair sent the source to the top of its backrest, and a
+chair/table bounding box could be mistaken for a real interior or attachment
+site.
+
+A.11A.7 makes these three relationships consume measured asset-region evidence
+instead of manufacturing whole-bounds approximations:
+
+- **On Ground** remains unchanged and frozen. Qualification renders only the
+  grounded source actor.
+- **On Surface** now resolves a measured upward support surface from the target's
+  Directability profile, rejects surfaces that cannot fit the source footprint,
+  and prefers the largest/high-confidence viable support region. Missing measured
+  support fails closed; target height is no longer a substitute for a surface.
+- **Inside** now requires a measured containment region that fits the source. The
+  qualification caster admits only open/access-visible target volumes for the
+  positive proof, so ordinary furniture cannot qualify merely because the source
+  lies somewhere inside its broad bounding box.
+- **Attached To** now resolves measured **exterior surface-contact** evidence
+  and its normal, placing the source outside that face rather than at a fixed
+  fraction of target width/height. Geometry-derived exterior regions remain
+  generic contact evidence — they are **not** promoted to semantic connector
+  ports. Qualification requires a plausible measured contact patch before a clip
+  is scheduled; precise connector mating remains the separate Directability/pair
+  interaction lane.
+- The Support & containment gauntlet becomes relation-aware. Binary physical
+  proofs render exactly source + receiver, and **On Surface runs three receiver
+  canaries per pass** so chair/stool/table-like surface geometry is tested rather
+  than a single lucky top plane. Cross-asset therefore expands from eight clips
+  to twelve when enough compatible receivers are available.
+- Receiver casting scans the reviewed/loadable Asset Library for measured region
+  compatibility at the same `physical_context` sizes recorded in the evidence
+  manifest. Positive evidence is never created by silently shrinking a source to
+  fit a receiver.
+- The v1 Directability profile remains schema-compatible but now carries the
+  measured support details the physical resolver needs (`usable_size`, overhead
+  clearance, blocked fraction, orientation/exposure), containment openness, and
+  geometry-derived exterior contact-patch size. Those fields are additive; they
+  do not promote generic contact faces to connector semantics.
+- Physical capability demo framing now uses an oblique two-actor proof, with a
+  higher view for containment so the support/contact/interior relationship is
+  visually inspectable instead of hidden by the receiver.
+
+The successor verifier includes both positive and negative canaries: a chair seat
+must beat a narrow backrest-top surface, a simple stool top must still work, a
+receiver with no measured support must fail closed, an open containment volume
+must resolve while a chair with no containment must not, and blocking-level
+attachment must use measured exterior contact evidence without pretending that a
+generic face is a typed connector. It also protects the frozen Group Formation and
+Relative actor source boundaries and leaves the shared Asset Scene Builder as the
+final collision/stability authority. Re-run **Cross-asset** before Full cast; only
+On Ground remains frozen until the three repaired physical relationships are
+reviewed.
+
+
+## Phase 1B.7A.11A.8 — physical qualification scale parity + containment coverage
+
+The first A.11A.7 Cross-asset reel proved that measured regions can find an office-chair seat instead of the backrest top, but the longer On Surface gauntlet exposed a qualification-only size split: cast suitability used the requested 0.17 m mug extent while the preview runtime silently floored that same actor to 0.25 m. Tight surfaces could therefore be admitted by casting and then rejected by runtime, and surface attachment could show a visible air gap even when the runtime believed contact was correct.
+
+A.11A.8 gives visible rendering, runtime geometry, and physical-pair casting one canonical effective render-scale calculation. `directorQualificationRenderedWorldSize(...)` applies the same requested extent and render-scale bounds used by `LibraryAssetMesh`; the 0.25 m runtime floor and 0.05 m per-axis floor are retired. Physical-region fit therefore reasons about the actor size the reviewer actually sees.
+
+Inside qualification also becomes source+receiver aware. The preferred compact source is retained when it has a compatible measured open containment receiver; otherwise the Room scans other eligible compact real assets and chooses a deterministic compatible source/receiver pair instead of silently dropping Inside because one preselected source was too large. The semantic boundary remains strict: no measured accessible containment still means no positive Inside clip.
+
+Evidence is now diagnostic rather than inferential. Every On Surface / Inside / Attached To clip records `physical_resolution` with status, selected region kind/id/label, resolved position, exact source world size, selected target-region world size, fit margin, and unresolved reason. The recording manifest also records explicit `coverage_gaps`; if the current reviewed Asset Library genuinely contains no compatible measured pair, that absence is visible instead of masquerading as a shorter successful reel.
+
+The successor verifier uses the 0.17 m small-detail actor as a parity canary, proves visible/runtime size identity under the Qualification Room scale bounds, protects A.11A.7 measured-region/fail-closed semantics, and requires the Inside pair-search plus manifest diagnostics. **On Ground remains frozen.** Rerun Support & containment in Cross-asset before any Full-cast stress.
+
+## Phase 1B.7A.11A.9 — mesh-surface attachment truth + open-container discovery
+
+The A.11A.8 Cross-asset reel qualified **On Surface** across six materially different real receiver geometries, including office-chair seats that previously failed when whole-object top bounds were mistaken for support. On Ground and On Surface are therefore frozen for this repair. The remaining reel defects are narrower: Attached To still used whole-bounds left/right/front/back pseudo-faces from historical geometry profiles, so an 8 mm solver clearance could look like a large visible air gap whenever the actual mesh sat inward from that global plane; Inside correctly failed closed but the current persisted profiles could not supply a positive open-container pair.
+
+A.11A.9 adds a read-only browser GLB physical inspection used only while the Support & containment family is selected. The inspector samples the exact rendered mesh and derives local exterior surface patches from the occupied envelope at each projected region instead of treating one global bounding-box face as a contact surface. Qualification rejects the historical `attachment_left/right/front/back` whole-bounds pseudo-faces as positive Attached-To evidence when they came from Blender geometry. The selected sampled patch is serialized into the reel manifest and replayed as a qualification-only Directability override, so planning, deterministic capture, runtime placement, and physical-resolution diagnostics all use the same measured contact point/normal/size.
+The canonical Blender geometry profiler is upgraded in the same patch: newly measured/refreshed Spatial Geometry Profiles emit `mesh_contact_*` regions clustered from occupied exterior triangles, and the geometry worker treats older v3-generator output as refreshable. The browser inspection is therefore a backward-compatible qualification bridge for assets whose persisted profile predates the new mesh-contact evidence, not a separate definition of attachment truth.
+
+Inside discovery uses the existing Phase 1B.5B.2 evidence-hardening rule rather than weakening containment semantics. A real target must have independent container semantics (`container`, `vessel`, `cup`, `bowl`, `pot`, and closely related literal container terms) **and** a qualified browser-measured open-top geometry pattern. Only when those two signals agree does qualification derive the same semantic-plus-geometry open containment volume shape already used by the Directable Asset Compiler. Source and receiver are then tested at their physical-context world sizes; no source is silently shrunk to create a pass. If the library has open-container evidence but no real source fits, the manifest reports `open_container_evidence_found_but_no_real_source_pair_fits`; if no qualified opening exists it reports `no_semantic_open_container_evidence_available`.
+
+The new inspector is bounded to a small candidate set and runs before the Support & containment reel unlocks; it does not add a second Canvas or bulk-load the entire Asset Library. Inspection failures remain explicit and fail closed. Every derived region records provenance (`browser_gltf_surface_sample` or `semantic_plus_browser_geometry`) in the manifest. Re-run **Cross-asset** after A.11A.9. Attached To and Inside remain unresolved until that evidence is visually reviewed; Full Cast still waits for all four siblings to qualify at Cross-asset.
+
+## Phase 1B.7A.11A.10 — Support & containment physical topology hardening
+
+The A.11A.9 Cross-asset reel proved that whole-object bounds had been retired, but
+also exposed two remaining false-positive classes: disconnected chair/pedestal
+samples could still be summarized as one broad Attached-To patch, and a closed
+barrel/bin lid could still look like an open rim to point-density heuristics.
+A.11A.10 hardens only those unresolved siblings while keeping **On Ground** and
+**On Surface** frozen.
+
+- **Attached To** positive qualification now requires first-hit ray evidence from
+  the exact rendered GLB. Side rays are grouped with strict four-neighbour
+  connectivity, depth continuity, and surface-normal continuity. A candidate is
+  rejected when its rectangle is sparsely occupied or its actual centre ray does
+  not hit the same contiguous surface island. Point-cluster patches remain
+  diagnostic/A.11A.9 lineage evidence but cannot qualify A.11A.10 Attached To.
+- Qualification scoring prefers an equally valid front/right, mid/body-height
+  patch for human-readable proof, and the demo camera uses a three-quarter
+  oblique view so contact versus penetration can be judged instead of looking
+  straight down the contact normal.
+- **Inside** still requires independent semantic container truth, but the old
+  apparent-rim heuristic can no longer promote containment by itself. Downward
+  rays through the central aperture must pass below the rim, form one connected
+  accessible opening, and reach measurable cavity depth. Closed lids therefore
+  fail closed even when vertex/triangle samples resemble a rim.
+- The inferred qualification containment volume uses the measured ray-confirmed
+  aperture and conservative cavity depth rather than a fixed fraction of the
+  receiver's outer bounding height.
+- Physical-region overrides now serialize topology evidence (occupancy,
+  connectivity, centre-hit/access, normal alignment, cavity depth, and aperture
+  size) into the deterministic evidence manifest.
+
+Re-run **Support & containment → Cross-asset** after this patch. The expected
+positive target remains 12 clips when the real Asset Library contains compatible
+pairs: 2 On Ground + 6 On Surface + 2 Attached To + 2 Inside. If ray-confirmed
+open containment is unavailable, Inside must be omitted with an explicit coverage
+gap rather than fabricated. Full-cast remains deferred until all four siblings
+are visually qualified at Cross-asset.
+
+## Phase 1B.7A.11A.11 — Inside readability + On Surface source generalization
+
+The A.11A.10 Cross-asset reel closed the physical-topology false-positive classes,
+but human review found two remaining qualification-evidence problems rather than
+new geometry-truth failures. Inside was physically valid yet visually unreadable
+because the source remained near the centre/deep portion of the measured cavity,
+and On Surface varied receivers while proving almost entirely mug/cup sources.
+
+A.11A.11 keeps the A.11A.10 ray/topology gates intact and changes only how
+qualification evidence is selected/presented:
+
+- **Inside readability is qualification-only.** The canonical Inside demo sets
+  `physical_containment_readability_near_opening`; once the same measured open
+  containment region has already passed fit/access checks, the runtime may move
+  the source 80% of the maximum safe one-direction centre travel toward the
+  verified access direction. The complete source bounds plus clearance remain
+  inside the measured cavity. Ordinary authored/production Inside cues keep the
+  established conservative centring path because they do not receive this flag.
+- The high-angle Inside proof camera remains in place. The patch does not make a
+  hidden object visible by letting it protrude through the receiver; it makes the
+  already-valid contained object readable from the verified opening.
+- **Inside diversity no longer wraps.** Baseline uses the best compatible real
+  source/receiver pair, Diversity requires the next distinct pair, and the
+  physical-stress pass requires a third distinct pair. When one does not exist,
+  the clip is omitted and the evidence manifest reports a coverage gap instead
+  of relabelling the baseline pair as independent evidence.
+- **On Surface now tests source generalization.** Each admitted three-canary pass
+  requires three distinct compatible source asset IDs that are not classified as
+  mug/cup/teacup/tumbler drinkware. Source search prioritizes simple rigid, small
+  asymmetric, irregular hero, compact rigid, then non-drinkware small-detail
+  assets. Distinct receiver assets are preferred too, but source diversity is
+  mandatory because the preceding reel had already exercised receiver geometry.
+- If fewer than three compatible non-drinkware sources can be placed on measured
+  upward support regions, qualification fails closed with an explicit coverage
+  gap rather than padding the reel with recycled drinkware. Evidence block labels
+  include the actual source asset name so human review can see what generalized.
+
+Re-run **Support & containment → Cross-asset** after this patch. On Ground and
+Attached To remain frozen from the prior review; re-check the new On Surface
+source set for support/contact quality and the new Inside clips for visible but
+fully-contained placement. Do not mark the family qualified until Inside is
+perceptually legible and the On Surface source set demonstrates real non-drinkware
+generalization (or an honest coverage gap explains why the library cannot yet do
+so).
+
+
+### Successor verifier policy
+
+A.11A.11 also changes how Support & containment patches are verified going
+forward. Historical phase verifiers such as A.11A.7, A.11A.8, A.11A.9, and
+A.11A.10 remain valuable acceptance/lineage records for the exact implementation
+that shipped in those phases, but they are **not** permanent successor gates when
+they assert local source spelling, UI copy, variable names, or other historical
+implementation snapshots.
+
+Successor patches must instead run:
+
+1. the current phase acceptance verifier;
+2. `verify-director-support-containment-earned-boundaries-phase1b7a11a11.ts` for
+   durable Support & containment semantics;
+3. unrelated Director/Qualification architectural regression verifiers;
+4. the project TypeScript check and production build.
+
+The earned-boundaries verifier protects behavior through functional canaries:
+physical-context render/runtime scale parity, measured support with fail-closed
+fallbacks, non-drinkware On Surface source generalization, distinct Inside pair
+evidence, contiguous centre-hit attachment topology, open-cavity versus closed-lid
+ray truth, measured attachment fit, and the qualification-only readability
+contracts. It intentionally does not require the Qualification Room to retain a
+particular local variable name or evidence-label string.
+
+When a later phase deliberately evolves one of those behaviors, that successor
+must update the current earned-boundaries suite to express the new semantic
+contract. It must not make every historical acceptance script accept every later
+implementation spelling. This keeps the regression chain strict without turning
+past source snapshots into permanent vetoes over legitimate successor work.
+
+## Phase 1B.7A.11A.12 — Inside evidence identity hardening
+
+The visually improved A.11A.11 Cross-asset reel exposed one remaining
+qualification-harness bug rather than a physical-placement failure. The baseline
+and Diversity Inside clips could still carry the same source and receiver asset
+IDs because browser inspection may produce more than one valid physical-region
+candidate on a single receiver. The A.11A.11 pass index correctly asked for
+candidate 0 and candidate 1, but candidate 1 was not guaranteed to represent a
+second real asset pair.
+
+A.11A.12 hardens the candidate boundary before pass indexing:
+
+- Inside physical candidates are first ranked by the existing fit/evidence score.
+- The ranked list is then collapsed by the composite
+  `source_asset_id + receiver_asset_id` identity, retaining only the strongest
+  physical-region candidate for each real pair.
+- An alternate cavity/region candidate on the **same source/receiver asset
+  identity** cannot count as Diversity.
+- Baseline still uses unique pair 0, Diversity requires unique pair 1, and a
+  physical-stress pass requires unique pair 2.
+- If the current reviewed Asset Library contains only one unique ray-qualified
+  Inside pair, the later clip is omitted and the existing
+  `open_container_evidence_found_but_no_distinct_real_source_receiver_pair_fits_pass`
+  coverage gap is emitted. An 11-clip Cross-asset reel with that explicit gap is
+  more truthful than a 12th clip that repeats baseline evidence.
+
+This phase does **not** change Inside topology inference, source fit, the
+qualification-only 80% near-opening readability travel, the high-angle camera,
+On Surface generalization, Attached To contact, or On Ground. Re-run
+**Support & containment → Cross-asset** and verify that any rendered Inside
+Diversity clip uses different source/receiver asset IDs from baseline; otherwise
+the reel must contain the explicit coverage gap instead of a duplicate clip.
+
+The A.11A.11 successor-verifier policy remains in force. A.11A.12 updates the
+earned-boundaries suite with a functional duplicate-region canary, while the
+historical A.11A.7-A.11A.11 acceptance scripts remain lineage records rather
+than permanent source-snapshot gates.
+
+## Phase 1B.7A.11A.13 — Inside final-admission evidence guard
+
+The A.11A.12 candidate de-duplication was correct in isolation, but the exported
+Cross-asset reel proved that candidate policy alone was not a sufficient evidence
+boundary: the final planner could still admit an Inside Diversity clip whose
+source and receiver asset IDs exactly matched the already-admitted baseline clip.
+
+A.11A.13 makes the **planned reel** the final identity authority:
+
+- Candidate de-duplication and final admission now share one canonical
+  `directorQualificationInsidePairKey(source_asset_id, receiver_asset_id)`
+  definition.
+- `buildPlannedClips(...)` keeps a reel-scoped set of already-admitted Inside
+  pair keys across baseline, Diversity, and physical-stress passes.
+- Immediately before an Inside clip is appended to the planned reel, its source
+  and receiver IDs are keyed and checked against that set.
+- A repeated pair is rejected even if an upstream selector, alternate physical
+  region, fallback, cache, or later refactor returns it again.
+- The existing coverage-gap pass then records
+  `open_container_evidence_found_but_no_distinct_real_source_receiver_pair_fits_pass`
+  for the omitted pass when no genuinely new pair is available.
+- A genuinely different source with the same receiver, or the same source with
+  a genuinely different receiver, remains independent evidence because the
+  composite pair identity changes.
+
+This is deliberately a qualification-harness guard only. On Ground, the
+non-drinkware On Surface generalization set, Attached To topology/framing, Inside
+ray-open topology, source fit, 80% near-opening readability placement, and the
+high-angle containment camera are unchanged.
+
+Re-run **Support & containment → Cross-asset**. A 12-clip reel is valid only if
+the Inside baseline and Diversity source/receiver pair keys differ. If the
+reviewed Asset Library still exposes only one qualified Inside pair, the correct
+result is an 11-clip reel plus the explicit distinct-pair coverage gap.
+
+
+
+## Phase 1B.7A.11A.14 — Inside validation fixtures + Qualification load efficiency
+
+The A.11A.13 reel made the evidence package honest, but it also made the remaining
+visual question clearer: a small coffee cup inside a coffee mug is physically
+valid yet perceptually ambiguous because the visible dark top can read as liquid
+rather than as a second object. A.11A.14 therefore validates Inside with two
+deliberately legible real-asset fixtures at Cross-asset:
+
+- **Baseline:** pineapple inside bathtub.
+- **Diversity:** apple inside the established `coffee_mug_bk_mritny8x` mug.
+
+These are qualification fixtures, not production special cases. Both pairs still
+go through the canonical physical-context normalization, measured/raycast-open
+containment requirement, fit test, near-opening readability placement, and
+final reel pair-identity guard. The apple is not arbitrarily shrunk to force a
+pass; the existing logical-size authority supplies its physical-context target
+size. If either requested pair is absent or does not expose a valid measured
+open cavity that fits the source, that pass fails closed rather than silently
+substituting another pair.
+
+Bathtub/tub joins the qualification-only container semantic vocabulary so a real
+bathtub can qualify only when the independent browser raycast also proves open
+access and cavity depth.
+
+A.11A.14 also reduces Qualification Room load work. Support & containment no
+longer browser-inspects a broad sample of up to eighteen receivers whenever the
+family is selected. The bounded inspection set now prioritizes the two exact
+Inside receivers, one chair and one stool for Attached-To readability, plus only
+small preferred/container fallbacks, with an absolute cap of eight. Exact
+GLB+rotation physical inspections are cached at module scope, so revisiting the
+room or rebuilding the same plan reuses completed mesh/raycast work instead of
+re-parsing the same GLBs. The existing R3F preloader remains scheduled-clip-only:
+only assets that actually occur in `plannedClips` are mounted for reel
+preparation.
+
+Re-run **Support & containment → Cross-asset** after this phase. The intended
+Inside evidence labels are `Pineapple inside bathtub` for baseline and
+`Apple inside coffee mug` for Diversity. Judge both the physical truth and the
+perceptual readability; the generic production Inside solver remains unchanged.
+
+
+## Phase 1B.7A.11A.15 — Inside real-scale fixtures + Qualification lazy-loading
+
+A.11A.15 closes the two remaining validation-fixture problems without changing
+the generic production Inside solver.
+
+- Cross-asset Inside keeps the requested **Pineapple → Bathtub** baseline and
+  **Apple → `coffee_mug_bk_mritny8x`** Diversity proof.
+- Fixture asset discovery is case-insensitive and now prefers an exact semantic
+  field match before broader word matching, so canonical labels such as
+  `Bathtub` and `Pineapple` resolve deterministically.
+- Explicit validation fixtures carry their intended qualification cast roles
+  directly. A real Bathtub is no longer rejected merely because the generic
+  Qualification Cast vocabulary does not independently classify the word
+  `bathtub` as Furniture.
+- Fixture physical scale comes from the known MyWay logical-size concepts, not
+  from the generic cast slot: Pineapple ≈ 0.30 m, Bathtub ≈ 1.70 m, Apple ≈
+  0.09 m, and Coffee Mug ≈ 0.13 m.
+- Only these explicit fixture roles may use the fixture's wider source-unit
+  correction range. Other Support & containment evidence keeps the previously
+  earned qualification scale bounds, so On Surface remains frozen.
+- Missing Inside proofs now report fixture-specific reasons: source/receiver
+  missing, receiver not inspected, no verified open cavity, or real-scale fit
+  failure.
+
+Qualification load work is also narrowed:
+
+- the Director shell no longer fetches/stats the Asset Library merely because
+  the page mounted;
+- Qualification requests the filtered `?view=qualification` library view only
+  when the reviewer asks for real assets;
+- module-lived cache and in-flight request de-duplication reuse the same Asset
+  Library snapshot across tab switches/remounts;
+- the qualification API filters non-GLB/non-GLTF and rejected/mismatched assets
+  **before** file-stat work;
+- Support & containment browser mesh inspection is capped at four exact
+  receivers (Bathtub, established mug, one chair, one stool), with at most two
+  concurrent inspections and the A.11A.14 GLB+rotation inspection cache.
+
+The reel preloader is still scheduled-clip-only. No new Canvas, background
+vision/enrichment pass, bulk Blender work, or provider-backed asset acquisition
+is introduced by Qualification.
+
+
+## Phase 1B.7A.11A.16 — Qualification auto-load + page de-bloat
+
+A.11A.16 repairs the lazy-loading lifecycle introduced by A.11A.15 without
+restoring eager whole-library work. Entering **Qualification Room** now
+automatically requests the shared filtered `?view=qualification` Asset Library
+snapshot. The request still flows through the module-lived cache/in-flight
+deduplication layer, so tab switches do not create duplicate network work; an
+actual request failure remains visible and can be retried manually.
+
+The Director shell also code-splits `director-qualification-room.tsx`, keeping
+the 200 KB+ qualification implementation out of the initial Capabilities client
+chunk. Even when a full Asset Library snapshot is already cached, the Room is
+passed only browser-loadable qualification GLB/GLTF records. Qualification pool
+resolution is gated until that filtered snapshot is loaded, while A.11A.15's
+server-side pre-stat filter, four-receiver Support/Containment inspection cap,
+two-worker browser inspection limit, inspection cache, and scheduled-reel-only
+GLB preloading remain unchanged.
+
+The former **Preparing qualification pools…** placeholder represented a no-work
+state when the lazy request had never been triggered. It is retired in favor of
+**Starting qualification asset request…** and **Loading qualification asset
+index…**, so a visible wait now corresponds to a real lifecycle stage.
+
+## Phase 1B.7A.11A.17 — three-relation Support & containment generalization
+
+Support & containment now qualifies exactly **On Ground**, **On Surface**, and **Inside**. Generalization is not a separate reel section: each relation must prove its own Cross-asset behavior. `attached_to` remains an independently covered blocking capability, but moves to the Relative actor placement qualification family so attachment evidence no longer consumes Support/containment slots. The campaign still assigns all 184 Level-2 capabilities exactly once across the same 33 families.
+
+**On Ground** remains frozen. **On Surface** removes the historical drinkware source ban and admits any Qualification Cast source whose real footprint fits. Qualification rejects ground/rug-like receivers and low, enclosed, blocked, or accidental ledges; it replays the exact selected elevated support region into the shared runtime and uses bounded source scans with no Baseline→Diversity pair wrapping. These are generic geometry/readability rules, not asset-ID allowlists.
+
+**Inside** retains the two requested Cross-asset validation fixtures: Pineapple → Bathtub and Apple → the established mug. Receiver scale remains authoritative. A contained source starts from its normal logical size and may shrink only down to a plausible logical specimen floor when the measured opening/cavity demands it; the receiver is never enlarged to manufacture a pass. Small cavities use proportional clearance. Physical inspection also supports broad basin-style top-access proposals when mug-rim heuristics do not apply, but a proposal becomes containment only when the existing connected downward-ray topology proves real open depth. Container semantics are still required, so ordinary furniture/closed shells cannot qualify from bounds alone.
+
+The performance boundary from A.11A.16 remains intact: Qualification auto-loads the filtered asset index, the Room stays code-split from the initial Director bundle, heavy browser inspection remains cached and narrowly targeted, source-pair scans are bounded, and only scheduled reel GLBs are preloaded.
+
+
+## Phase 1B.7A.11A.18 — Small Inside perceptual framing
+
+A.11A.18 is a qualification-camera-only refinement after A.11A.17 closed the
+Support & containment physical rules. Small `inside` receivers (up to 0.35 m
+normalized extent) use a high-angle Insert-style detail composition focused on
+the receiver so a contained source remains identifiable at evidence scale. Large
+containers, including the qualified pineapple-in-bathtub proof, keep the existing
+high-angle two-shot camera. No placement, fit, topology, asset-selection,
+normalization, production-runtime, On Ground, or On Surface rule changes in this
+phase. The trigger is receiver scale, not an Apple/Mug asset ID.

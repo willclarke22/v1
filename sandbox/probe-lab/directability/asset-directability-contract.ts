@@ -52,6 +52,8 @@ export type AssetDirectabilityAnchor = {
   subpart_id: string | null;
   source: AssetDirectabilityEvidenceSource;
   confidence: number;
+  /** Measured generic exterior contact patch carried by geometry-derived attachment anchors. */
+  contact_size?: [number, number] | null;
 };
 
 export type AssetDirectabilityPivot = {
@@ -75,6 +77,16 @@ export type AssetDirectabilitySurface = {
   size: [number, number];
   source: AssetDirectabilityEvidenceSource;
   confidence: number;
+  usable_size?: [number, number] | null;
+  clearance_above_m?: number | null;
+  blocked_fraction?: number | null;
+  exposure?: "exterior" | "interior" | "unknown";
+  orientation?: "upward" | "vertical" | "downward" | "sloped" | "unknown";
+  openness?: "open" | "enclosed" | "unknown";
+  vertical_rank?: number | null;
+  /** Measured support-centre height within the asset bounds, 0=bottom and 1=top. */
+  height_ratio?: number | null;
+  is_primary?: boolean;
 };
 
 export type AssetDirectabilityContainmentRegion = {
@@ -85,6 +97,8 @@ export type AssetDirectabilityContainmentRegion = {
   access_direction: AssetDirectabilityVec3 | null;
   source: AssetDirectabilityEvidenceSource;
   confidence: number;
+  openness?: "open" | "enclosed" | "unknown";
+  exposure?: "exterior" | "interior" | "unknown";
 };
 
 export type AssetDirectabilitySubpart = {

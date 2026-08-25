@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import type { CSSProperties, ChangeEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -49,8 +50,30 @@ import {
   directorCapabilityAssetAuthorityPath,
 } from "../../directability/capability-authority-contract";
 import { DirectorAuditViewer } from "./director-audit-viewer";
-import { DirectorQualificationRoom } from "./director-qualification-room";
 import { DirectorLibraryTabs } from "./director-library-tabs";
+
+const DirectorQualificationRoom = dynamic(
+  () =>
+    import("./director-qualification-room").then(
+      (module) => module.DirectorQualificationRoom,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          color: "white",
+          background: "#020617",
+        }}
+      >
+        Loading Qualification Room module…
+      </div>
+    ),
+  },
+);
 import { buildUnnamedMotionGeneralityProof } from "../../motion-program/motion-program-diagnostics";
 import {
   buildDirectorSceneStateInspectorSnapshot,
@@ -80,6 +103,51 @@ type SharedDirectorAssetLibraryProps = {
   assetsLoaded: boolean;
   onRequestAssets: () => void;
 };
+
+type DirectorAssetLibraryView = "full" | "qualification";
+
+const DIRECTOR_ASSET_LIBRARY_CACHE = new Map<
+  DirectorAssetLibraryView,
+  DirectorLibraryAsset[]
+>();
+const DIRECTOR_ASSET_LIBRARY_INFLIGHT = new Map<
+  DirectorAssetLibraryView,
+  Promise<DirectorLibraryAsset[]>
+>();
+
+async function loadDirectorAssetLibraryView(
+  view: DirectorAssetLibraryView,
+) {
+  const cached = DIRECTOR_ASSET_LIBRARY_CACHE.get(view);
+  if (cached) return cached;
+
+  const fullCached = DIRECTOR_ASSET_LIBRARY_CACHE.get("full");
+  if (view === "qualification" && fullCached) return fullCached;
+
+  const existing = DIRECTOR_ASSET_LIBRARY_INFLIGHT.get(view);
+  if (existing) return existing;
+
+  const pending = (async () => {
+    const suffix = view === "qualification" ? "?view=qualification" : "";
+    const response = await fetch("/api/sandbox/probe-lab/assets/library" + suffix, {
+      cache: "no-store",
+    });
+    const payload = (await response.json()) as LibraryResponse;
+    if (!response.ok || !payload.ok || !Array.isArray(payload.assets)) {
+      throw new Error(payload.error || "The Asset Library could not be loaded.");
+    }
+    DIRECTOR_ASSET_LIBRARY_CACHE.set(view, payload.assets);
+    if (view === "full") {
+      DIRECTOR_ASSET_LIBRARY_CACHE.set("qualification", payload.assets);
+    }
+    return payload.assets;
+  })().finally(() => {
+    DIRECTOR_ASSET_LIBRARY_INFLIGHT.delete(view);
+  });
+
+  DIRECTOR_ASSET_LIBRARY_INFLIGHT.set(view, pending);
+  return pending;
+}
 
 type LibraryCategoryFilter =
   | "all_levels"
@@ -2061,59 +2129,90 @@ export function DirectorCapabilityLibraryLab() {
   const [assetError, setAssetError] = useState<string | null>(null);
   const [isLoadingAssets, setIsLoadingAssets] = useState(false);
   const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [loadedAssetView, setLoadedAssetView] =
+    useState<DirectorAssetLibraryView | null>(null);
 
-  const loadAssets = useCallback(async () => {
-    if (isLoadingAssets) return;
-    setIsLoadingAssets(true);
-    setAssetError(null);
-    try {
-      const response = await fetch("/api/sandbox/probe-lab/assets/library", {
-        cache: "no-store",
-      });
-      const payload = (await response.json()) as LibraryResponse;
-      if (!response.ok || !payload.ok || !Array.isArray(payload.assets)) {
-        throw new Error(payload.error || "The Asset Library could not be loaded.");
+  const loadAssets = useCallback(
+    async (view: DirectorAssetLibraryView) => {
+      if (isLoadingAssets) return;
+      setIsLoadingAssets(true);
+      setAssetError(null);
+      try {
+        const nextAssets = await loadDirectorAssetLibraryView(view);
+        setAssets(nextAssets);
+        setAssetsLoaded(true);
+        setLoadedAssetView(view);
+      } catch (error) {
+        setAssetError(error instanceof Error ? error.message : String(error));
+      } finally {
+        setIsLoadingAssets(false);
       }
-      setAssets(payload.assets);
-      setAssetsLoaded(true);
-    } catch (error) {
-      setAssets([]);
-      setAssetsLoaded(false);
-      setAssetError(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsLoadingAssets(false);
-    }
-  }, [isLoadingAssets]);
+    },
+    [isLoadingAssets],
+  );
 
+  // A.11A.15: do not fetch/stat the whole Asset Library merely because the
+  // Director page mounted. Each tab asks for the smallest view it needs, and
+  // module-lived cache/in-flight maps prevent duplicate fetches across tab
+  // switches and Room remounts.
+  const fullAssetsLoaded = assetsLoaded && loadedAssetView === "full";
+  const qualificationAssetsLoaded =
+    assetsLoaded &&
+    (loadedAssetView === "qualification" || loadedAssetView === "full");
+  const qualificationAssets = useMemo(
+    () => assets.filter(isLoadableLibraryAsset),
+    [assets],
+  );
+
+  // A.11A.16: entering Qualification owns the lightweight request lifecycle.
+  // The first render may occur before this effect runs, but there is no manual
+  // dead-end: the filtered qualification snapshot is requested exactly once via
+  // the shared cache/in-flight loader and failures stay visible for manual retry.
   useEffect(() => {
-    if (assetsLoaded || isLoadingAssets || assetError) return;
-    void loadAssets();
-  }, [assetError, assetsLoaded, isLoadingAssets, loadAssets]);
+    if (
+      activeTab !== "qualification" ||
+      qualificationAssetsLoaded ||
+      isLoadingAssets ||
+      assetError
+    ) {
+      return;
+    }
+    void loadAssets("qualification");
+  }, [
+    activeTab,
+    assetError,
+    isLoadingAssets,
+    loadAssets,
+    qualificationAssetsLoaded,
+  ]);
 
   const sharedAssetLibrary: SharedDirectorAssetLibraryProps = {
     assets,
     assetError,
     isLoadingAssets,
-    assetsLoaded,
-    onRequestAssets: () => void loadAssets(),
+    assetsLoaded: fullAssetsLoaded,
+    onRequestAssets: () => void loadAssets("full"),
   };
 
   if (activeTab === "qualification") {
     return (
       <DirectorQualificationRoom
         onOpenCapabilities={() => setActiveTab("capabilities")}
-        assets={assets}
-        assetsLoaded={assetsLoaded}
+        assets={qualificationAssets}
+        assetsLoaded={qualificationAssetsLoaded}
         assetsLoading={isLoadingAssets}
         assetError={assetError}
-        onRequestAssets={() => void loadAssets()}
+        onRequestAssets={() => void loadAssets("qualification")}
       />
     );
   }
 
   return (
     <AtomicDirectorCapabilityLibraryLab
-      onOpenQualificationRoom={() => setActiveTab("qualification")}
+      onOpenQualificationRoom={() => {
+        setAssetError(null);
+        setActiveTab("qualification");
+      }}
       {...sharedAssetLibrary}
     />
   );

@@ -136,14 +136,17 @@ export function defaultQualificationNormalizationPolicy(input: {
   category: string;
   group: string;
 }): DirectorQualificationNormalizationPolicy {
-  // Screen/depth placement is primarily a perceptual-composition test. Baseline
-  // and cross-asset passes therefore normalize actors to comparable display
-  // extents so a tiny physical prop cannot create a false capability failure.
-  // Full-cast qualification still appends a physical_stress pass, and the Room
-  // forces that pass back to physical_context before rendering.
+  // Screen/depth placement, Group formations, and Relative actor placement are
+  // primarily perceptual composition tests. Baseline and cross-asset passes
+  // therefore normalize actors to comparable display extents so a tiny physical
+  // prop cannot create a false semantic/orientation failure. Full-cast
+  // qualification still appends a physical_stress pass, and the Room forces that
+  // pass back to physical_context before rendering.
   if (
     input.category === "blocking_placement" &&
-    input.group === "Depth & screen placement"
+    (input.group === "Depth & screen placement" ||
+      input.group === "Group formations" ||
+      input.group === "Relative actor placement")
   ) {
     return "presentation_normalized";
   }
@@ -153,4 +156,3 @@ export function defaultQualificationNormalizationPolicy(input: {
   }
   return "presentation_normalized";
 }
-

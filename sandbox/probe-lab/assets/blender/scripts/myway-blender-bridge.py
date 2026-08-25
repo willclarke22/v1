@@ -1238,6 +1238,211 @@ def _interval_gap(a_min, a_max, b_min, b_max):
     return 0.0
 
 
+def _mesh_surface_contact_regions(geometry_meshes, depsgraph, gltf_size, gltf_center):
+    """Measure occupied exterior mesh patches instead of whole-bounds pseudo-faces."""
+    side_specs = {
+        "left": {"axis": 0, "sign": -1.0, "u": 1, "v": 2},
+        "right": {"axis": 0, "sign": 1.0, "u": 1, "v": 2},
+        "front": {"axis": 2, "sign": 1.0, "u": 0, "v": 1},
+        "back": {"axis": 2, "sign": -1.0, "u": 0, "v": 1},
+    }
+    longest = max(float(gltf_size.x), float(gltf_size.y), float(gltf_size.z), 1e-6)
+    depth_tolerance = max(0.003, longest * 0.018)
+    spatial_gap_tolerance = max(0.006, longest * 0.028)
+    min_triangle_area = max(1e-8, longest * longest * 1e-7)
+    side_triangles = {side: [] for side in side_specs}
+
+    for source_obj in geometry_meshes:
+        evaluated = source_obj.evaluated_get(depsgraph)
+        mesh = evaluated.to_mesh()
+        try:
+            mesh.calc_loop_triangles()
+            matrix = evaluated.matrix_world
+            for triangle in mesh.loop_triangles:
+                vertices_world = [matrix @ mesh.vertices[index].co for index in triangle.vertices]
+                ab = vertices_world[1] - vertices_world[0]
+                ac = vertices_world[2] - vertices_world[0]
+                cross = ab.cross(ac)
+                doubled_area = cross.length
+                if doubled_area <= min_triangle_area * 2:
+                    continue
+                normal_world = cross.normalized()
+                normal_gltf = Vector((normal_world.x, normal_world.z, -normal_world.y))
+                if normal_gltf.length <= 1e-9:
+                    continue
+                normal_gltf.normalize()
+                triangle_center_gltf = sum(
+                    [Vector((vertex.x, vertex.z, -vertex.y)) for vertex in vertices_world],
+                    Vector((0.0, 0.0, 0.0)),
+                ) / 3.0
+                outward_hint = triangle_center_gltf - gltf_center
+                if outward_hint.length > 1e-9 and normal_gltf.dot(outward_hint) < 0:
+                    normal_gltf.negate()
+                horizontal = max(abs(normal_gltf.x), abs(normal_gltf.z))
+                if horizontal < 0.58:
+                    continue
+                if abs(normal_gltf.x) >= abs(normal_gltf.z):
+                    side = "right" if normal_gltf.x >= 0 else "left"
+                else:
+                    side = "front" if normal_gltf.z >= 0 else "back"
+                spec = side_specs[side]
+                alignment = max(0.0, normal_gltf[spec["axis"]] * spec["sign"])
+                if alignment < 0.58:
+                    continue
+                vertices = [
+                    Vector((vertex.x, vertex.z, -vertex.y))
+                    for vertex in vertices_world
+                ]
+                center = sum(vertices, Vector((0.0, 0.0, 0.0))) / 3.0
+                u_values = [vertex[spec["u"]] for vertex in vertices]
+                v_values = [vertex[spec["v"]] for vertex in vertices]
+                side_triangles[side].append({
+                    "plane": center[spec["axis"]],
+                    "area": doubled_area * 0.5,
+                    "center": center,
+                    "normal": normal_gltf,
+                    "alignment": alignment,
+                    "min_u": min(u_values),
+                    "max_u": max(u_values),
+                    "min_v": min(v_values),
+                    "max_v": max(v_values),
+                })
+        finally:
+            evaluated.to_mesh_clear()
+
+    regions = []
+    for side, triangles in side_triangles.items():
+        if not triangles:
+            continue
+        spec = side_specs[side]
+        clusters = []
+        triangles.sort(key=lambda item: (item["plane"], item["min_u"], item["min_v"]))
+        for triangle in triangles:
+            best = None
+            best_score = None
+            for candidate in clusters:
+                plane_delta = abs(candidate["plane"] - triangle["plane"])
+                if plane_delta > depth_tolerance:
+                    continue
+                gap_u = _interval_gap(
+                    candidate["min_u"], candidate["max_u"],
+                    triangle["min_u"], triangle["max_u"],
+                )
+                gap_v = _interval_gap(
+                    candidate["min_v"], candidate["max_v"],
+                    triangle["min_v"], triangle["max_v"],
+                )
+                spatial_gap = math.hypot(gap_u, gap_v)
+                if spatial_gap > spatial_gap_tolerance:
+                    continue
+                score = plane_delta + spatial_gap * 0.35
+                if best_score is None or score < best_score:
+                    best = candidate
+                    best_score = score
+            if best is None:
+                best = {
+                    "plane": triangle["plane"],
+                    "area": 0.0,
+                    "weighted_center": Vector(),
+                    "weighted_normal": Vector(),
+                    "weighted_alignment": 0.0,
+                    "min_u": triangle["min_u"],
+                    "max_u": triangle["max_u"],
+                    "min_v": triangle["min_v"],
+                    "max_v": triangle["max_v"],
+                    "triangle_count": 0,
+                }
+                clusters.append(best)
+            area = triangle["area"]
+            previous_area = best["area"]
+            total_area = previous_area + area
+            best["plane"] = (
+                best["plane"] * previous_area + triangle["plane"] * area
+            ) / max(total_area, 1e-9)
+            best["area"] = total_area
+            best["weighted_center"] += triangle["center"] * area
+            best["weighted_normal"] += triangle["normal"] * area
+            best["weighted_alignment"] += triangle["alignment"] * area
+            best["min_u"] = min(best["min_u"], triangle["min_u"])
+            best["max_u"] = max(best["max_u"], triangle["max_u"])
+            best["min_v"] = min(best["min_v"], triangle["min_v"])
+            best["max_v"] = max(best["max_v"], triangle["max_v"])
+            best["triangle_count"] += 1
+
+        projected_area = max(
+            1e-9,
+            float(gltf_size[spec["u"]]) * float(gltf_size[spec["v"]]),
+        )
+        candidates = []
+        for cluster in clusters:
+            width = cluster["max_u"] - cluster["min_u"]
+            height = cluster["max_v"] - cluster["min_v"]
+            if width < longest * 0.018 or height < longest * 0.018:
+                continue
+            if cluster["area"] < projected_area * 0.0012:
+                continue
+            rectangle_area = max(width * height, 1e-9)
+            coverage = max(0.0, min(1.0, cluster["area"] / rectangle_area))
+            area_ratio = max(0.0, min(1.0, cluster["area"] / projected_area))
+            alignment = cluster["weighted_alignment"] / max(cluster["area"], 1e-9)
+            confidence = max(
+                0.05,
+                min(
+                    1.0,
+                    alignment * 0.48
+                    + coverage * 0.27
+                    + min(1.0, area_ratio * 8.0) * 0.25,
+                ),
+            )
+            if confidence < 0.48:
+                continue
+            center = cluster["weighted_center"] / max(cluster["area"], 1e-9)
+            normal = cluster["weighted_normal"]
+            if normal.length <= 1e-9:
+                normal = Vector((0.0, 0.0, 0.0))
+                normal[spec["axis"]] = spec["sign"]
+            else:
+                normal.normalize()
+            edge_margin = min(0.04, max(0.003, min(width, height) * 0.05))
+            usable_width = max(0.001, width - edge_margin * 2)
+            usable_height = max(0.001, height - edge_margin * 2)
+            candidates.append({
+                "center": center,
+                "normal": normal,
+                "size": [usable_width, usable_height],
+                "area": cluster["area"],
+                "confidence": confidence,
+                "triangle_count": cluster["triangle_count"],
+                "score": confidence * 1.7 + math.sqrt(max(0.0, area_ratio)),
+            })
+
+        candidates.sort(key=lambda item: (-item["score"], -item["area"]))
+        for index, candidate in enumerate(candidates[:4]):
+            regions.append({
+                "id": f"mesh_contact_{side}_{index + 1}",
+                "label": f"Measured {side} exterior mesh patch",
+                "center": [round(float(value), 6) for value in candidate["center"]],
+                "normal": [round(float(value), 6) for value in candidate["normal"]],
+                "u_axis": (
+                    [0.0, 1.0, 0.0]
+                    if side in ("left", "right")
+                    else [1.0, 0.0, 0.0]
+                ),
+                "v_axis": (
+                    [0.0, 0.0, 1.0]
+                    if side in ("left", "right")
+                    else [0.0, 1.0, 0.0]
+                ),
+                "size": [round(float(max(value, 1e-6)), 6) for value in candidate["size"]],
+                "side": side,
+                "confidence": round(float(candidate["confidence"]), 6),
+                "source": "blender_geometry",
+                "exposure": "exterior",
+                "orientation": "vertical",
+            })
+    return regions
+
+
 def geometry_profile():
     """Measure one GLB into generic spatial regions for collision-safe placement."""
     all_meshes = mesh_objects()
@@ -1586,55 +1791,16 @@ def geometry_profile():
         if len(interior_volumes) >= 16:
             break
 
-    attachment_regions = [
-        {
-            "id": "attachment_left",
-            "label": "Left exterior attachment region",
-            "center": [gltf_min.x, gltf_center.y, gltf_center.z],
-            "normal": [-1.0, 0.0, 0.0],
-            "u_axis": [0.0, 1.0, 0.0],
-            "v_axis": [0.0, 0.0, 1.0],
-            "size": [gltf_size.y, gltf_size.z],
-            "side": "left",
-        },
-        {
-            "id": "attachment_right",
-            "label": "Right exterior attachment region",
-            "center": [gltf_max.x, gltf_center.y, gltf_center.z],
-            "normal": [1.0, 0.0, 0.0],
-            "u_axis": [0.0, 1.0, 0.0],
-            "v_axis": [0.0, 0.0, 1.0],
-            "size": [gltf_size.y, gltf_size.z],
-            "side": "right",
-        },
-        {
-            "id": "attachment_front",
-            "label": "Front exterior attachment region",
-            "center": [gltf_center.x, gltf_center.y, gltf_max.z],
-            "normal": [0.0, 0.0, 1.0],
-            "u_axis": [1.0, 0.0, 0.0],
-            "v_axis": [0.0, 1.0, 0.0],
-            "size": [gltf_size.x, gltf_size.y],
-            "side": "front",
-        },
-        {
-            "id": "attachment_back",
-            "label": "Back exterior attachment region",
-            "center": [gltf_center.x, gltf_center.y, gltf_min.z],
-            "normal": [0.0, 0.0, -1.0],
-            "u_axis": [1.0, 0.0, 0.0],
-            "v_axis": [0.0, 1.0, 0.0],
-            "size": [gltf_size.x, gltf_size.y],
-            "side": "back",
-        },
-    ]
-    for region in attachment_regions:
-        region["center"] = [round(float(value), 6) for value in region["center"]]
-        region["size"] = [round(float(max(value, 1e-6)), 6) for value in region["size"]]
-        region["confidence"] = 0.52
-        region["source"] = "blender_geometry"
-        region["exposure"] = "exterior"
-        region["orientation"] = "vertical"
+    # v4 generator refinement: generic exterior attachment evidence must be an
+    # actually occupied mesh patch. Whole-object left/right/front/back bounds are
+    # not physical surfaces for irregular assets such as chairs with protruding
+    # casters or armrests.
+    attachment_regions = _mesh_surface_contact_regions(
+        geometry_meshes,
+        depsgraph,
+        gltf_size,
+        gltf_center,
+    )
 
     mesh_collision_boxes = []
     for index, obj in enumerate(geometry_meshes):
@@ -1731,7 +1897,7 @@ def geometry_profile():
             "support_surface_count": len(surfaces),
         },
         "generated_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
-        "generator": "myway_blender_geometry_profile_v3_spatial_regions",
+        "generator": "myway_blender_geometry_profile_v4_mesh_contact_regions",
     }
 
 def execute(job):
