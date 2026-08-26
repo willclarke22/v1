@@ -5,6 +5,7 @@ import {
   queueAllAssetEnrichment,
   queueAssetEmbeddingRefresh,
   queueAssetEnrichment,
+  queueNeedsReviewMissingEnrichment,
   queueNextAssetEnrichment,
 } from "../enrichment/asset-enrichment-worker.server";
 
@@ -79,6 +80,16 @@ export async function POST(request: Request) {
           result.skipped.length,
         entries: result.entries,
         skipped: result.skipped,
+      });
+    }
+
+    if (action === "backfill_needs_review_missing") {
+      const result =
+        await queueNeedsReviewMissingEnrichment();
+      return NextResponse.json({
+        ok: true,
+        ...result,
+        skipped_count: result.skipped.length,
       });
     }
 

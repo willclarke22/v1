@@ -1,0 +1,71 @@
+**********************
+PowerShell transcript start
+Start time: 20260825204939
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 12244
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_asset_needs_review_bulk_publish_scene_approval_v1_1-install-20260825-204938.log
+
+=== MyWay Asset Library — ready-enrichment bulk approval + publication ===
+
+Current git status (diagnostic only):
+
+
+Invoking transactional installer...
+
+=== myway_asset_needs_review_bulk_publish_scene_approval_v1_1 ===
+Project root: C:\Users\willc\projects\MyWay\v1
+Package root: C:\Users\willc\Downloads\myway_asset_needs_review_bulk_publish_scene_approval_v1_1
+Running exact baseline/applied preflight...
+PATCH_ID=myway_asset_needs_review_bulk_publish_scene_approval_v1_1
+PREFLIGHT_STATE=baseline_raw
+Exact pre-button Asset Library baseline matches; install is permitted.
+Verifying packaged payload hashes...
+Creating transactional backup: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_asset_needs_review_bulk_publish_scene_approval_v1_1-20260825-204940
+Applying payload...
+Verifying exact post-copy payload hashes...
+
+Running Asset Library ready-enrichment bulk approval/publish verification chain...
+
+>>> pnpm exec tsx scripts/sandbox/verify-asset-needs-review-bulk-scene-approval-v1.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-smart-asset-integrity-v2.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-smart-asset-intake-v1.ts
+
+
+>>> pnpm exec tsx sandbox/probe-lab/assets/tests/verify-manual-cc0-scene-use-approval.ts
+
+
+>>> pnpm exec tsx sandbox/probe-lab/assets/tests/verify-poly-pizza-cc-by-pipeline.ts
+
+PS>TerminatingError(): "pnpm exec tsx sandbox/probe-lab/assets/tests/verify-poly-pizza-cc-by-pipeline.ts failed with exit code 1."
+
+ERROR: patch application failed: pnpm exec tsx sandbox/probe-lab/assets/tests/verify-poly-pizza-cc-by-pipeline.ts failed with exit code 1.
+Rolling back project files...
+Verifying restored starting state...
+PATCH_ID=myway_asset_needs_review_bulk_publish_scene_approval_v1_1
+PREFLIGHT_STATE=baseline_raw
+Exact pre-button Asset Library baseline matches; install is permitted.
+ROLLBACK VERIFIED: project restored to the exact pre-patch state (baseline_raw).
+Backup retained at: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_asset_needs_review_bulk_publish_scene_approval_v1_1-20260825-204940
+PS>TerminatingError(): "pnpm exec tsx sandbox/probe-lab/assets/tests/verify-poly-pizza-cc-by-pipeline.ts failed with exit code 1."
+**********************
+PowerShell transcript end
+End time: 20260825204959
+**********************

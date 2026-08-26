@@ -1,0 +1,78 @@
+**********************
+PowerShell transcript start
+Start time: 20260825210909
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 38192
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_asset_needs_review_bulk_publish_scene_approval_v1_3-install-20260825-210908.log
+
+=== MyWay Asset Library — ready-enrichment bulk approval + publication v1.3 ===
+
+Current git status (diagnostic only):
+
+
+Invoking transactional installer...
+
+=== myway_asset_needs_review_bulk_publish_scene_approval_v1_3 ===
+Project root: C:\Users\willc\projects\MyWay\v1
+Package root: C:\Users\willc\Downloads\myway_asset_needs_review_bulk_publish_scene_approval_v1_3
+Running exact product-state / regression-contract preflight...
+PATCH_ID=myway_asset_needs_review_bulk_publish_scene_approval_v1_3
+POLY_PIZZA_REGRESSION_STATE=legacy_50_old_tabs
+PREFLIGHT_STATE=baseline_raw_legacy_50_old_tabs
+Exact pre-button Asset Library product baseline matches; ready-enrichment publication install plus current regression fixture is permitted.
+Verifying packaged payload hashes...
+Creating transactional backup: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_asset_needs_review_bulk_publish_scene_approval_v1_3-20260825-210910
+Applying payload...
+Verifying exact post-copy payload hashes...
+
+Running Asset Library ready-enrichment bulk approval/publish verification chain...
+
+>>> pnpm exec tsx scripts/sandbox/verify-asset-needs-review-bulk-scene-approval-v1.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-smart-asset-integrity-v2.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-smart-asset-intake-v1.ts
+
+
+>>> pnpm exec tsx sandbox/probe-lab/assets/tests/verify-manual-cc0-scene-use-approval.ts
+
+
+>>> pnpm exec tsx sandbox/probe-lab/assets/tests/verify-poly-pizza-cc-by-pipeline.ts
+
+
+>>> pnpm exec tsc --noEmit --pretty false
+
+
+>>> pnpm build
+
+
+Verifying exact final product + current regression contract...
+PATCH_ID=myway_asset_needs_review_bulk_publish_scene_approval_v1_3
+POLY_PIZZA_REGRESSION_STATE=current_200_unified_import
+PREFLIGHT_STATE=applied
+Exact ready-enrichment bulk publication product and current unified-import Poly Pizza regression contract already match.
+
+PATCH APPLIED SUCCESSFULLY.
+Backup retained at: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_asset_needs_review_bulk_publish_scene_approval_v1_3-20260825-210910
+
+Outer wrapper completed successfully.
+**********************
+PowerShell transcript end
+End time: 20260825211038
+**********************

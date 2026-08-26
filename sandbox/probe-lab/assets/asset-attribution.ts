@@ -11,6 +11,9 @@ export const ATTRIBUTION_REQUIRED_LICENSE_KINDS = [
   "cc_by_4_0",
 ] as const;
 
+export const MYWAY_STANDARD_RUNTIME_MODIFICATION_NOTICE =
+  "Normalized and processed for real-time use by MyWay.";
+
 function cleanText(
   value: unknown,
   maxLength = 1200,

@@ -40,6 +40,10 @@ import {
   ASSET_APPEARANCE_PROMPT_VERSION,
   embedAssetAppearance,
 } from "./asset-enrichment-provider.server";
+import {
+  needsReviewMissingEnrichmentMode,
+  type NeedsReviewMissingEnrichmentMode,
+} from "./needs-review-enrichment-policy";
 
 export type AssetEnrichmentQueueEntry = {
   asset_id: string;
@@ -898,6 +902,106 @@ export async function queueAllAssetEnrichment(
     entries,
     skipped,
   };
+}
+
+
+export type NeedsReviewMissingEnrichmentBackfillResult = {
+  needs_review_count: number;
+  incomplete_count: number;
+  already_complete_count: number;
+  not_applicable_count: number;
+  queued_count: number;
+  full_count: number;
+  embedding_only_count: number;
+  entries: AssetEnrichmentQueueEntry[];
+  skipped: Array<{
+    asset_id: string;
+    mode: Exclude<NeedsReviewMissingEnrichmentMode, null>;
+    reason: string;
+  }>;
+};
+
+export async function queueNeedsReviewMissingEnrichment() {
+  const assets = await listMyWayAssets();
+  const needsReviewAssets = assets
+    .filter((asset) => asset.scene_review_status === "pending")
+    .sort(
+      (left, right) =>
+        left.created_at.localeCompare(right.created_at) ||
+        left.asset_id.localeCompare(right.asset_id),
+    );
+
+  const providerEligible = needsReviewAssets.filter(
+    (asset) =>
+      asset.asset_type !== "primitive" &&
+      asset.status !== "rejected",
+  );
+  const incomplete = providerEligible
+    .map((asset) => ({
+      asset,
+      mode: needsReviewMissingEnrichmentMode(asset),
+    }))
+    .filter(
+      (
+        row,
+      ): row is {
+        asset: MyWayAssetRecord;
+        mode: Exclude<NeedsReviewMissingEnrichmentMode, null>;
+      } => row.mode !== null,
+    );
+
+  const entries: AssetEnrichmentQueueEntry[] = [];
+  const skipped: NeedsReviewMissingEnrichmentBackfillResult["skipped"] = [];
+  let fullCount = 0;
+  let embeddingOnlyCount = 0;
+
+  for (const { asset, mode } of incomplete) {
+    const file = await assetWithFileStats(asset);
+    if (!file.file_stats.exists) {
+      skipped.push({
+        asset_id: asset.asset_id,
+        mode,
+        reason: "The asset file is missing.",
+      });
+      continue;
+    }
+
+    if (mode === "embedding_only") {
+      entries.push(
+        queueAssetEmbeddingRefresh(asset.asset_id),
+      );
+      embeddingOnlyCount += 1;
+      continue;
+    }
+
+    const entry = queueAssetEnrichment(asset.asset_id, {
+      force: false,
+      runEmbedding: true,
+    });
+
+    // If a vision-only job was already active, ensure its completion is
+    // followed by the missing embedding rather than treating it as sufficient.
+    if (entry.mode === "vision_only") {
+      queueAssetEmbeddingRefresh(asset.asset_id);
+    }
+
+    entries.push(entry);
+    fullCount += 1;
+  }
+
+  return {
+    needs_review_count: needsReviewAssets.length,
+    incomplete_count: incomplete.length,
+    already_complete_count:
+      providerEligible.length - incomplete.length,
+    not_applicable_count:
+      needsReviewAssets.length - providerEligible.length,
+    queued_count: entries.length,
+    full_count: fullCount,
+    embedding_only_count: embeddingOnlyCount,
+    entries,
+    skipped,
+  } satisfies NeedsReviewMissingEnrichmentBackfillResult;
 }
 
 export function assetEnrichmentQueueSnapshot() {

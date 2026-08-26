@@ -1,7 +1,9 @@
 import {
   assetWithFileStats,
   getMyWayAsset,
+  listMyWayAssets,
   reviewMyWayAssetForScenes,
+  updateMyWayAssetProvenance,
 } from "../asset-library.server";
 import {
   removeMyWayAssetCompletely,
@@ -18,6 +20,12 @@ import {
 import {
   MYWAY_ASSET_LIBRARY_PROJECT_PATH,
 } from "../paths.server";
+import {
+  MYWAY_STANDARD_RUNTIME_MODIFICATION_NOTICE,
+} from "../asset-attribution";
+import {
+  needsReviewSceneApprovalMetadataBlocker,
+} from "../needs-review-scene-approval-policy";
 import {
   writeDurableAssetJson,
 } from "../storage/asset-durable-artifacts.server";
@@ -130,13 +138,242 @@ async function writeApprovedManualCc0LicenseReview(
   return relativePath;
 }
 
+
+async function ensureStandardPolyPizzaModificationNotice(
+  asset: NonNullable<
+    Awaited<ReturnType<typeof getMyWayAsset>>
+  >,
+) {
+  if (
+    !isPolyPizzaManualLicenseCandidate(asset) ||
+    asset.storage_provider === "r2" ||
+    asset.attribution?.modification_notice?.trim()
+  ) {
+    return {
+      asset,
+      backfilled: false,
+    };
+  }
+
+  const attribution = asset.attribution;
+  const sourceProvider =
+    attribution?.source_provider?.trim() ?? "";
+  const sourceAssetId =
+    asset.source_asset_id?.trim() ?? "";
+  const sourceUrl =
+    asset.source_url?.trim() ?? "";
+  const assetTitle =
+    attribution?.asset_title?.trim() ?? "";
+  const creatorName =
+    attribution?.creator_name?.trim() ?? "";
+  const expectedLicenseName =
+    asset.license_kind === "cc0"
+      ? "CC0"
+      : asset.license_kind === "cc_by_4_0"
+        ? "CC BY 4.0"
+        : "CC BY";
+  const attributionRequired =
+    asset.license_kind === "cc_by" ||
+    asset.license_kind === "cc_by_4_0";
+
+  // Only repair the deterministic MyWay processing notice. If any real
+  // provenance field is missing, leave the record untouched so the existing
+  // public-approval authority reports the precise human-review blocker.
+  if (
+    !attribution ||
+    !sourceProvider ||
+    !sourceAssetId ||
+    !sourceUrl ||
+    !assetTitle ||
+    !creatorName ||
+    attribution.source_asset_id?.trim() !==
+      sourceAssetId ||
+    attribution.source_url?.trim() !==
+      sourceUrl ||
+    attribution.license_name !==
+      expectedLicenseName ||
+    (attributionRequired &&
+      !attribution.text?.trim()) ||
+    !asset.commercial_use_allowed ||
+    !asset.raw_redistribution_allowed
+  ) {
+    return {
+      asset,
+      backfilled: false,
+    };
+  }
+
+  const updated =
+    await updateMyWayAssetProvenance({
+      assetId: asset.asset_id,
+      sourceProvider,
+      sourceAssetId,
+      sourceUrl,
+      assetTitle,
+      creatorName,
+      licenseKind: asset.license_kind,
+      licenseVersion:
+        attribution.license_version,
+      attributionText:
+        attribution.text,
+      modificationNotice:
+        MYWAY_STANDARD_RUNTIME_MODIFICATION_NOTICE,
+      downloadedAt:
+        attribution.downloaded_at,
+      // Undefined intentionally preserves any existing durable provenance
+      // notes while updateMyWayAssetProvenance rewrites the attribution.
+      provenanceNotes: undefined,
+    });
+
+  return {
+    asset: updated.asset,
+    backfilled: true,
+  };
+}
+
+
+export type NeedsReviewBulkSceneApprovalSkip = {
+  asset_id: string;
+  reason:
+    | "not_safe_for_scene_use"
+    | "semantic_identity_not_verified"
+    | "vision_not_ready"
+    | "embedding_not_ready"
+    | "runtime_file_missing"
+    | "approval_failed";
+  detail: string;
+};
+
+export async function approveAllNeedsReviewAssetsForSceneUse() {
+  const needsReviewAssets =
+    (await listMyWayAssets()).filter(
+      (asset) =>
+        asset.scene_review_status ===
+        "pending",
+    );
+
+  const approvedAssetIds: string[] = [];
+  const publishedAssetIds: string[] = [];
+  const localSceneOnlyAssetIds: string[] =
+    [];
+  const modificationNoticeBackfilledAssetIds:
+    string[] = [];
+  const skipped: NeedsReviewBulkSceneApprovalSkip[] =
+    [];
+
+  for (const candidate of needsReviewAssets) {
+    const metadataBlocker =
+      needsReviewSceneApprovalMetadataBlocker(
+        candidate,
+      );
+
+    if (metadataBlocker) {
+      skipped.push({
+        asset_id: candidate.asset_id,
+        reason: metadataBlocker,
+        detail:
+          metadataBlocker ===
+          "not_safe_for_scene_use"
+            ? "The asset is rejected or is not marked safe for sandbox scene use."
+            : metadataBlocker ===
+                "semantic_identity_not_verified"
+              ? "The asset semantic identity is not verified."
+              : metadataBlocker ===
+                  "vision_not_ready"
+                ? "Omni vision analysis is not ready."
+                : "The durable appearance embedding is not ready.",
+      });
+      continue;
+    }
+
+    try {
+      const file =
+        await assetWithFileStats(candidate);
+      if (!file.file_stats.exists) {
+        skipped.push({
+          asset_id: candidate.asset_id,
+          reason: "runtime_file_missing",
+          detail:
+            "The registered runtime model file is missing.",
+        });
+        continue;
+      }
+
+      // Reuse the exact individual approval/publication authority instead of
+      // duplicating licence, R2, identity-match, and acquisition bookkeeping.
+      // The one bulk confirmation in the UI stands in for the individual
+      // manual-licence confirmations for eligible CC0 / Poly Pizza candidates.
+      const result =
+        await approveAndPublishAsset(
+          candidate.asset_id,
+          {
+            confirmManualLicenseReview:
+              true,
+          },
+        );
+
+      approvedAssetIds.push(
+        result.asset.asset_id,
+      );
+      if (
+        result.modification_notice_backfilled
+      ) {
+        modificationNoticeBackfilledAssetIds.push(
+          result.asset.asset_id,
+        );
+      }
+      if (result.published) {
+        publishedAssetIds.push(
+          result.asset.asset_id,
+        );
+      } else {
+        localSceneOnlyAssetIds.push(
+          result.asset.asset_id,
+        );
+      }
+    } catch (caught) {
+      skipped.push({
+        asset_id: candidate.asset_id,
+        reason: "approval_failed",
+        detail:
+          caught instanceof Error
+            ? caught.message
+            : String(caught),
+      });
+    }
+  }
+
+  return {
+    needs_review_count:
+      needsReviewAssets.length,
+    approved_count:
+      approvedAssetIds.length,
+    published_count:
+      publishedAssetIds.length,
+    local_scene_only_count:
+      localSceneOnlyAssetIds.length,
+    modification_notice_backfilled_count:
+      modificationNoticeBackfilledAssetIds.length,
+    modification_notice_backfilled_asset_ids:
+      modificationNoticeBackfilledAssetIds,
+    skipped_count: skipped.length,
+    approved_asset_ids:
+      approvedAssetIds,
+    published_asset_ids:
+      publishedAssetIds,
+    local_scene_only_asset_ids:
+      localSceneOnlyAssetIds,
+    skipped,
+  };
+}
+
 export async function approveAndPublishAsset(
   assetId: string,
   options: {
     confirmManualLicenseReview?: boolean;
   } = {},
 ) {
-  const current =
+  let current =
     await getMyWayAsset(assetId);
 
   if (!current) {
@@ -162,6 +399,13 @@ export async function approveAndPublishAsset(
       "This asset is not safe for scene use.",
     );
   }
+
+  const modificationNoticeRepair =
+    await ensureStandardPolyPizzaModificationNotice(
+      current,
+    );
+  current =
+    modificationNoticeRepair.asset;
 
   const linkedJob =
     await findMissingAssetJobForAsset(
@@ -279,6 +523,8 @@ export async function approveAndPublishAsset(
     published,
     license_review_created:
       Boolean(reviewFile),
+    modification_notice_backfilled:
+      modificationNoticeRepair.backfilled,
     jobs,
   };
 }

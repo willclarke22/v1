@@ -811,6 +811,14 @@ export async function updateMyWayAssetProvenance(
       licenseRelativePath,
     );
   const now = new Date().toISOString();
+  const preservedProvenanceNotes =
+    input.provenanceNotes === undefined
+      ? typeof previousSource?.provenance_notes === "string"
+        ? previousSource.provenance_notes
+        : typeof previousLicense?.provenance_notes === "string"
+          ? previousLicense.provenance_notes
+          : null
+      : input.provenanceNotes?.trim() || null;
   const sourceRecord = {
     ...(previousSource ?? {}),
     schema_version:
@@ -829,8 +837,7 @@ export async function updateMyWayAssetProvenance(
       attribution.license_version,
     attribution,
     provenance_notes:
-      input.provenanceNotes?.trim() ||
-      null,
+      preservedProvenanceNotes,
     updated_at: now,
   };
   const policy = licensePolicyForKind(
@@ -859,8 +866,7 @@ export async function updateMyWayAssetProvenance(
       policy.rawRedistributionAllowed,
     attribution,
     provenance_notes:
-      input.provenanceNotes?.trim() ||
-      null,
+      preservedProvenanceNotes,
     warning:
       "MyWay records the uploader's assertion but does not independently verify third-party terms. Verify the source terms before app promotion.",
     updated_at: now,

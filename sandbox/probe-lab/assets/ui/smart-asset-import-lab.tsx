@@ -15,6 +15,9 @@ import {
   metadataForKnownBundleMember,
   type KnownBundleLicenseKind,
 } from "../known-asset-bundles";
+import {
+  MYWAY_STANDARD_RUNTIME_MODIFICATION_NOTICE,
+} from "../asset-attribution";
 
 type LicenseKind =
   | "unknown"
@@ -95,8 +98,19 @@ type SmartAssetImportLabProps = {
   onRunningChange?: (running: boolean) => void;
 };
 
-const DEFAULT_MODIFICATION_NOTICE =
-  "Normalized and processed for real-time use by MyWay.";
+function defaultModificationNoticeFor(
+  license: LicenseKind,
+  sourceProvider: string,
+) {
+  return (
+    sourceProvider.trim().toLowerCase() ===
+      "poly pizza" ||
+    license === "cc_by" ||
+    license === "cc_by_4_0"
+  )
+    ? MYWAY_STANDARD_RUNTIME_MODIFICATION_NOTICE
+    : "";
+}
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -351,10 +365,12 @@ export function SmartAssetImportLab({
                 (knownMetadata?.license_kind as KnownBundleLicenseKind | undefined) ??
                 defaultLicense,
               modification_notice:
-                knownMetadata?.license_kind === "cc_by" ||
-                knownMetadata?.license_kind === "cc_by_4_0"
-                  ? DEFAULT_MODIFICATION_NOTICE
-                  : "",
+                defaultModificationNoticeFor(
+                  (knownMetadata?.license_kind as LicenseKind | undefined) ??
+                    defaultLicense,
+                  knownMetadata?.source_provider ??
+                    defaultProvider,
+                ),
               provenance_notes: knownMetadata
                 ? `Known Poly Pizza bundle "${knownMetadata.bundle_title}" member "${entry.path}". Bundle source: ${knownMetadata.bundle_source_url}.`
                 : `Imported from ZIP "${file.name}" entry "${entry.path}".`,
@@ -402,9 +418,10 @@ export function SmartAssetImportLab({
         source_asset_id: filenameMetadata?.sourceId ?? basename(file.name),
         license_kind: defaultLicense,
         modification_notice:
-          defaultLicense === "cc_by" || defaultLicense === "cc_by_4_0"
-            ? DEFAULT_MODIFICATION_NOTICE
-            : "",
+          defaultModificationNoticeFor(
+            defaultLicense,
+            defaultProvider,
+          ),
         provenance_notes: `Added through universal Asset Intake as ${file.name}.`,
         attribution_confidence: filenameMetadata ? "filename" : "manual_required",
         status: "draft",
@@ -441,9 +458,11 @@ export function SmartAssetImportLab({
           creator_name: row.creator_name || defaultCreator,
           modification_notice:
             row.modification_notice ||
-            (license === "cc_by" || license === "cc_by_4_0"
-              ? DEFAULT_MODIFICATION_NOTICE
-              : ""),
+            defaultModificationNoticeFor(
+              license,
+              row.source_provider ||
+                defaultProvider,
+            ),
         };
       }),
     );

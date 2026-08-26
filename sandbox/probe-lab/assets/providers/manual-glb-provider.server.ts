@@ -18,6 +18,7 @@ import {
 } from "../glb-appearance-inspection.server";
 import { queueAssetEnrichment } from "../enrichment/asset-enrichment-worker.server";
 import {
+  MYWAY_STANDARD_RUNTIME_MODIFICATION_NOTICE,
   attributionCompletenessIssues,
   buildAssetAttribution,
   licensePolicyForKind,
@@ -159,9 +160,14 @@ export async function importManualGlb(input: ManualGlbImportInput) {
   const creatorName =
     cleanText(input.creatorName, 240) ||
     null;
+  const isPolyPizza =
+    sourceProvider.toLowerCase() ===
+    "poly pizza";
   const modificationNotice =
     cleanText(input.modificationNotice, 1000) ||
-    null;
+    (isPolyPizza
+      ? MYWAY_STANDARD_RUNTIME_MODIFICATION_NOTICE
+      : null);
   const downloadedAt =
     cleanText(input.downloadedAt, 80) ||
     null;
@@ -170,9 +176,6 @@ export async function importManualGlb(input: ManualGlbImportInput) {
     null;
   const licenseKind =
     input.licenseKind ?? "unknown";
-  const isPolyPizza =
-    sourceProvider.toLowerCase() ===
-    "poly pizza";
   const polyPizzaLicenseKind =
     licenseKind === "cc0" ||
     licenseKind === "cc_by" ||

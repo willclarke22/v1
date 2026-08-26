@@ -1,0 +1,71 @@
+**********************
+PowerShell transcript start
+Start time: 20260825001249
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 34344
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_asset_needs_review_enrichment_backfill_v1-install-20260825-001248.log
+
+=== MyWay Asset Library — Needs Review enrichment backfill ===
+
+Current git status (diagnostic only):
+
+
+Invoking transactional installer...
+
+=== myway_asset_needs_review_enrichment_backfill_v1 ===
+Project root: C:\Users\willc\projects\MyWay\v1
+Package root: C:\Users\willc\Downloads\myway_asset_needs_review_enrichment_backfill_v1
+Running exact baseline/applied preflight...
+PATCH_ID=myway_asset_needs_review_enrichment_backfill_v1
+PREFLIGHT_STATE=baseline
+Exact Asset Library enrichment baseline matches; apply is permitted.
+Verifying packaged payload hashes...
+Creating transactional backup: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_asset_needs_review_enrichment_backfill_v1-20260825-001250
+Applying payload...
+Verifying exact post-copy payload hashes...
+
+Running targeted Asset Library enrichment verification chain...
+
+>>> pnpm exec tsx scripts/sandbox/verify-asset-needs-review-enrichment-backfill-v1.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-smart-asset-integrity-v2.ts
+
+
+>>> pnpm exec tsx scripts/sandbox/verify-smart-asset-intake-v1.ts
+
+
+>>> node scripts/sandbox/verify-turbopack-asset-enrichment-boundary-v7.mjs
+
+
+>>> pnpm exec tsc --noEmit --pretty false
+
+PS>TerminatingError(): "pnpm exec tsc --noEmit --pretty false failed with exit code 2."
+
+ERROR: patch application failed: pnpm exec tsc --noEmit --pretty false failed with exit code 2.
+Rolling back project files...
+Verifying restored baseline...
+PATCH_ID=myway_asset_needs_review_enrichment_backfill_v1
+PREFLIGHT_STATE=baseline
+Exact Asset Library enrichment baseline matches; apply is permitted.
+ROLLBACK VERIFIED: project restored to the exact pre-patch baseline.
+Backup retained at: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_asset_needs_review_enrichment_backfill_v1-20260825-001250
+PS>TerminatingError(): "pnpm exec tsc --noEmit --pretty false failed with exit code 2."
+**********************
+PowerShell transcript end
+End time: 20260825001314
+**********************

@@ -101,3 +101,29 @@ MYWAY_ASSET_TEMP_MAX_AGE_HOURS=24
 ```
 
 `MYWAY_ASSET_TEMP_ROOT` must be outside the MyWay project.
+
+## Backfill only incomplete Needs Review enrichment
+
+Use this targeted maintenance script when the Asset Library's **Needs Review**
+section contains assets that are missing Omni vision analysis and/or a durable
+appearance embedding:
+
+```powershell
+& ".\sandbox\probe-lab\assets\scripts\analyze-needs-review-missing-enrichment.ps1"
+```
+
+The selector mirrors the visible Needs Review tab (`scene_review_status ===
+"pending"`) and is intentionally narrower than **Analyze all assets**:
+
+- vision not ready → queue the existing full vision → embedding pipeline;
+- vision ready but embedding not ready, failed, or missing its durable
+  `vector_key` → queue embedding-only refresh;
+- vision + embedding already ready → do nothing;
+- primitive, rejected, approved, and missing-file rows are never silently
+  reprocessed.
+
+The script polls the existing serialized in-memory enrichment queue until every
+queued asset finishes. Keep the local Next.js server running for the whole
+batch; if it restarts, rerun the script and the selector will naturally skip
+assets that are already complete.
+

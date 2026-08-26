@@ -439,7 +439,7 @@ assert.ok(
 
 assert.equal(
   MAX_MANUAL_GLB_BATCH_FILES,
-  50,
+  200,
 );
 assert.deepEqual(
   parseManualGlbFileName(
@@ -583,27 +583,27 @@ const libraryUiSource = readFileSync(
 );
 assert.match(
   libraryUiSource,
-  /manualAcquisitionMode === "cc0"/,
+  /manualAcquisitionMode === "import"/,
 );
 assert.match(
+  libraryUiSource,
+  /<SmartAssetImportLab/,
+);
+assert.match(
+  libraryUiSource,
+  /Import Asset/,
+);
+assert.doesNotMatch(
+  libraryUiSource,
+  /manualAcquisitionMode === "cc0"/,
+);
+assert.doesNotMatch(
   libraryUiSource,
   /manualAcquisitionMode === "cc_by"/,
 );
-assert.match(
+assert.doesNotMatch(
   libraryUiSource,
-  /<Cc0BatchImportLab/,
-);
-assert.match(
-  libraryUiSource,
-  /<CcByBatchImportLab/,
-);
-assert.match(
-  libraryUiSource,
-  /Import CC0 GLB/,
-);
-assert.match(
-  libraryUiSource,
-  /Import CC BY GLB/,
+  /<Cc0BatchImportLab|<CcByBatchImportLab|Import CC0 GLB|Import CC BY GLB/,
 );
 assert.equal(
   existsSync(
@@ -680,5 +680,6 @@ assert.match(
 );
 
 console.log(
-  "Manual CC0 and CC BY batch tabs, Poly Pizza deterministic IDs, generated credits, confirmed public-scene approval, R2 promotion gating, and attribution export fixture passed.",
+  "Unified Import Asset wiring, manual CC0/CC BY intake helpers, Poly Pizza deterministic IDs, generated credits, confirmed public-scene approval, R2 promotion gating, and attribution export fixture passed.",
 );
+

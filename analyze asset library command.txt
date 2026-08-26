@@ -1,0 +1,3 @@
+cd C:\Users\willc\projects\MyWay\v1
+
+& ".\sandbox\probe-lab\assets\scripts\analyze-needs-review-missing-enrichment.ps1"

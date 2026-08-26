@@ -304,6 +304,21 @@ type AcquisitionResponse = {
   removed_job_id?: string;
   removed_local_files?: string[];
   removed_remote_objects?: string[];
+  needs_review_count?: number;
+  approved_count?: number;
+  published_count?: number;
+  local_scene_only_count?: number;
+  modification_notice_backfilled_count?: number;
+  modification_notice_backfilled_asset_ids?: string[];
+  skipped_count?: number;
+  approved_asset_ids?: string[];
+  published_asset_ids?: string[];
+  local_scene_only_asset_ids?: string[];
+  skipped?: Array<{
+    asset_id: string;
+    reason: string;
+    detail: string;
+  }>;
   error?: string;
 };
 
@@ -933,6 +948,8 @@ export function AssetLibraryLab({
   >(null);
   const [acquisitionActionId, setAcquisitionActionId] =
     useState<string | null>(null);
+  const [bulkSceneApprovalRunning, setBulkSceneApprovalRunning] =
+    useState(false);
   const [promotionMessage, setPromotionMessage] = useState<string | null>(null);
   const [maintenanceAction, setMaintenanceAction] = useState<
     | "remove"
@@ -1497,6 +1514,92 @@ export function AssetLibraryLab({
     } finally {
       setAcquisitionAction(null);
       setAcquisitionActionId(null);
+    }
+  }
+
+  async function approveAllNeedsReviewAssetsForSceneUse() {
+    const pendingAssets = assets.filter(
+      (asset) =>
+        asset.scene_review_status ===
+        "pending",
+    );
+    if (pendingAssets.length <= 0) return;
+
+    const providerReadyCount =
+      pendingAssets.filter(
+        (asset) =>
+          asset.appearance_profile?.status ===
+            "ready" &&
+          asset.appearance_embedding?.status ===
+            "ready" &&
+          Boolean(
+            asset.appearance_embedding
+              .vector_key?.trim(),
+          ),
+      ).length;
+
+    const confirmed = window.confirm(
+      `Approve all ready Needs Review assets for scene use and run the same publish path as the individual approval button?\n\n${pendingAssets.length} asset(s) are currently pending scene review; ${providerReadyCount} have ready Omni vision plus a durable ready embedding.\n\nEligible assets will use MyWay's existing approve/publish authority, including Cloudflare R2 publication when the recorded licence/provenance path permits it. This one bulk confirmation also stands in for the individual manual CC0 / Poly Pizza licence confirmation on eligible candidates. Assets that are missing vision, embedding, a runtime file, verified identity, sandbox safety, or publication/licence clearance will remain in Needs review and be reported as skipped.`,
+    );
+    if (!confirmed) return;
+
+    setBulkSceneApprovalRunning(true);
+    setPromotionMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        "/api/sandbox/probe-lab/assets/acquisition",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            action:
+              "approve_all_scene_use",
+          }),
+        },
+      );
+      const payload =
+        (await response.json()) as
+          AcquisitionResponse;
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(
+          payload.error ||
+            "Needs Review assets could not be bulk-approved and published.",
+        );
+      }
+
+      const approved =
+        payload.approved_count ?? 0;
+      const published =
+        payload.published_count ?? 0;
+      const localOnly =
+        payload.local_scene_only_count ?? 0;
+      const modificationNoticesBackfilled =
+        payload.modification_notice_backfilled_count ??
+        0;
+      const skipped =
+        payload.skipped_count ?? 0;
+      setPromotionMessage(
+        `Bulk approval complete: ${approved} approved; ${published} published to Cloudflare R2; ${localOnly} approved for local scene use only; ${modificationNoticesBackfilled} legacy Poly Pizza modification notice${modificationNoticesBackfilled === 1 ? "" : "s"} backfilled; ${skipped} skipped.${skipped > 0 ? " Skipped assets remain in Needs review so their blockers can be resolved." : ""}`,
+      );
+      setRefreshToken(
+        (value) => value + 1,
+      );
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : String(caught),
+      );
+    } finally {
+      setBulkSceneApprovalRunning(
+        false,
+      );
     }
   }
 
@@ -4938,6 +5041,33 @@ export function AssetLibraryLab({
             </button>
           ))}
         </section>
+
+        {reviewView === "needs_review" ? (
+          <section className="asset-library-maintenance-actions">
+            <button
+              className="asset-library-button"
+              data-primary="true"
+              disabled={
+                bulkSceneApprovalRunning ||
+                acquisitionCounts.needs_review === 0
+              }
+              onClick={() => {
+                void approveAllNeedsReviewAssetsForSceneUse();
+              }}
+              type="button"
+            >
+              {bulkSceneApprovalRunning
+                ? "Approving assets for scene use…"
+                : "Approve all assets for scene use"}
+            </button>
+            <small>
+              Runs the same approval/publication path as the individual scene-use button for
+              Needs Review assets whose Omni vision and durable embedding are both ready.
+              Assets that still fail file, identity, safety, or licence/publication checks stay
+              in Needs review.
+            </small>
+          </section>
+        ) : null}
 
         {reviewView === "acquiring" &&
         activeAcquisitionJobs.length ? (

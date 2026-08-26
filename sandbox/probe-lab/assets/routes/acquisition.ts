@@ -8,6 +8,7 @@ import {
   getMyWayAsset,
 } from "../asset-library.server";
 import {
+  approveAllNeedsReviewAssetsForSceneUse,
   approveAndPublishAsset,
   rejectAndRemoveMissingAsset,
   rejectAndRetryMissingAsset,
@@ -125,6 +126,16 @@ export async function POST(
     const confirmManualLicenseReview =
       body.confirm_manual_license_review ===
       true;
+
+    if (
+      action ===
+      "approve_all_scene_use"
+    ) {
+      return NextResponse.json({
+        ok: true,
+        ...(await approveAllNeedsReviewAssetsForSceneUse()),
+      });
+    }
 
     if (action === "approve_publish") {
       if (!assetId) {
@@ -248,7 +259,7 @@ export async function POST(
     }
 
     throw new Error(
-      "action must be approve_publish, reject_remove, cancel_job, retry_blenderkit, or generate_trellis.",
+      "action must be approve_all_scene_use, approve_publish, reject_remove, cancel_job, retry_blenderkit, or generate_trellis.",
     );
   } catch (caught) {
     return errorResponse(caught);
