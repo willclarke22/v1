@@ -1,0 +1,31 @@
+**********************
+PowerShell transcript start
+Start time: 20260827223552
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 18836
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_director_detail_relationship_framing_phase1b7a11a21_v1-install-20260827-223551.log
+
+=== MyWay A.11A.21 — Detail & relationship framing qualification truth ===
+
+Invoking transactional installer...
+Patch payload SHA-256 verification passed.
+
+PS>TerminatingError(): "Preflight failed with exit code 1."
+**********************
+PowerShell transcript end
+End time: 20260827223553
+**********************

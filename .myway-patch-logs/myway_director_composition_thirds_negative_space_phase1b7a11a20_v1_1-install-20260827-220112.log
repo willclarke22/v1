@@ -1,0 +1,81 @@
+**********************
+PowerShell transcript start
+Start time: 20260827220113
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 27360
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_director_composition_thirds_negative_space_phase1b7a11a20_v1_1-install-20260827-220112.log
+
+=== MyWay A.11A.20 v1.1 — Composition thirds + negative-space truth ===
+
+Invoking transactional installer...
+Patch payload SHA-256 verification passed.
+{"patch":"myway_director_composition_thirds_negative_space_phase1b7a11a20_v1_1","state":"baseline"}
+Transactional backups created: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_director_composition_thirds_negative_space_phase1b7a11a20_v1_1-20260827-220113
+Patch payload copied.
+{"patch":"myway_director_composition_thirds_negative_space_phase1b7a11a20_v1_1","state":"applied","postflight":"pass"}
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-composition-thirds-negative-space-phase1b7a11a20.ts
+
+PASS: pnpm exec tsx scripts/sandbox/verify-director-composition-thirds-negative-space-phase1b7a11a20.ts
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-special-viewpoints-object-attached-phase1b7a11a19.ts
+
+PASS: pnpm exec tsx scripts/sandbox/verify-director-special-viewpoints-object-attached-phase1b7a11a19.ts
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-camera-fidelity-phase1b.ts
+
+PASS: pnpm exec tsx scripts/sandbox/verify-director-camera-fidelity-phase1b.ts
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-qualification-campaign-phase1b7a11a.ts
+
+PASS: pnpm exec tsx scripts/sandbox/verify-director-qualification-campaign-phase1b7a11a.ts
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-qualification-room-phase1b7a.ts
+
+PASS: pnpm exec tsx scripts/sandbox/verify-director-qualification-room-phase1b7a.ts
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-depth-screen-fixture-repair-phase1b7a11a2.ts
+
+PASS: pnpm exec tsx scripts/sandbox/verify-director-depth-screen-fixture-repair-phase1b7a11a2.ts
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-group-formations-phase1b7a11a3.ts
+
+PASS: pnpm exec tsx scripts/sandbox/verify-director-group-formations-phase1b7a11a3.ts
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-relative-actor-placement-phase1b7a11a5.ts
+
+PASS: pnpm exec tsx scripts/sandbox/verify-director-relative-actor-placement-phase1b7a11a5.ts
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-support-containment-small-inside-framing-phase1b7a11a18.ts
+
+PASS: pnpm exec tsx scripts/sandbox/verify-director-support-containment-small-inside-framing-phase1b7a11a18.ts
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-support-containment-earned-boundaries-phase1b7a11a11.ts
+
+PASS: pnpm exec tsx scripts/sandbox/verify-director-support-containment-earned-boundaries-phase1b7a11a11.ts
+
+=== A.11A.20 Composition thirds + negative-space truth applied ===
+Left/Right Third now target the semantic 1/3 and 2/3 screen positions from camera distance + FOV.
+Negative-space qualification now renders only the primary actor so the reserved side stays empty.
+Center anchor, Two-subject balance, A.11A.19 deferral state, and evidence capture were not changed.
+Backup: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_director_composition_thirds_negative_space_phase1b7a11a20_v1_1-20260827-220113
+
+Outer wrapper completed successfully.
+**********************
+PowerShell transcript end
+End time: 20260827220148
+**********************

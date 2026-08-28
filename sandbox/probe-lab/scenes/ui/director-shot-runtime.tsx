@@ -2375,6 +2375,11 @@ function layeredDepthProjectedFitDistance(
   cameraOffsetDirection: THREE.Vector3,
   fovDegrees: number,
   minimumDistance: number,
+  options?: {
+    safe_half_width?: number;
+    safe_half_height?: number;
+    breathing_multiplier?: number;
+  },
 ) {
   if (!samples.length) return minimumDistance;
 
@@ -2391,8 +2396,16 @@ function layeredDepthProjectedFitDistance(
 
   const tanVertical = Math.tan(THREE.MathUtils.degToRad(fovDegrees) * 0.5);
   const tanHorizontal = tanVertical * (16 / 9);
-  const safeHalfWidth = 0.78;
-  const safeHalfHeight = 0.74;
+  const safeHalfWidth = THREE.MathUtils.clamp(
+    options?.safe_half_width ?? 0.78,
+    0.5,
+    0.95,
+  );
+  const safeHalfHeight = THREE.MathUtils.clamp(
+    options?.safe_half_height ?? 0.74,
+    0.5,
+    0.95,
+  );
   let requiredDistance = Math.max(0.1, minimumDistance);
 
   for (const entry of samples) {
@@ -2422,8 +2435,13 @@ function layeredDepthProjectedFitDistance(
   }
 
   // A tiny breathing margin absorbs approximate actor bounds without returning
-  // to the old pairwise-3D-distance over-pull.
-  return requiredDistance * 1.045;
+  // to the old pairwise-3D-distance over-pull. Callers can tighten this only when
+  // the named framing explicitly needs stronger screen occupancy.
+  return requiredDistance * THREE.MathUtils.clamp(
+    options?.breathing_multiplier ?? 1.045,
+    1,
+    1.12,
+  );
 }
 
 function stepProgress(step: DirectorCameraMovementStep, progress: number) {
@@ -2941,20 +2959,37 @@ function applyMovementStep(
   }
 }
 
+const DIRECTOR_COMPOSITION_REFERENCE_ASPECT_RATIO = 16 / 9;
+const DIRECTOR_THIRD_SCREEN_NDC_OFFSET = 1 / 3;
+
 function screenAnchorOffset(
   shot: DirectorShotDirectionV2,
   position: THREE.Vector3,
   target: THREE.Vector3,
   radius: number,
+  fovDegrees: number,
 ) {
   const forward = target.clone().sub(position).normalize();
   const right = new THREE.Vector3().crossVectors(forward, UP).normalize();
   const offset = new THREE.Vector3();
   const horizontal = radius * 0.48;
   const vertical = radius * 0.34;
+
+  // A.11A.20: left/right thirds are screen-space promises, not small generic
+  // target nudges. Solve the aim offset from camera distance + FOV so a 16:9
+  // cinematic frame places the focused target near the actual 1/3 or 2/3 line.
+  // Keep center-left/right and negative-space strengths on their previously
+  // qualified radius-relative behavior.
+  const safeFovDegrees = THREE.MathUtils.clamp(fovDegrees || 44, 10, 100);
+  const thirdsHorizontal =
+    Math.max(0.1, position.distanceTo(target)) *
+    Math.tan(THREE.MathUtils.degToRad(safeFovDegrees * 0.5)) *
+    DIRECTOR_COMPOSITION_REFERENCE_ASPECT_RATIO *
+    DIRECTOR_THIRD_SCREEN_NDC_OFFSET;
+
   switch (shot.composition.screen_anchor) {
-    case "left_third": offset.addScaledVector(right, horizontal); break;
-    case "right_third": offset.addScaledVector(right, -horizontal); break;
+    case "left_third": offset.addScaledVector(right, thirdsHorizontal); break;
+    case "right_third": offset.addScaledVector(right, -thirdsHorizontal); break;
     case "center_left": offset.addScaledVector(right, horizontal * 0.6); break;
     case "center_right": offset.addScaledVector(right, -horizontal * 0.6); break;
     case "upper_third": offset.y -= vertical; break;
@@ -3029,6 +3064,11 @@ export function sampleDirectorCameraPose(
           : 1.2;
   const cameraOffsetDirection = angleDirection(shot.composition.angle).normalize();
   const layeredDepthComposition = isLayeredDepthComposition(shot);
+  const insertEnvelopeFitComposition =
+    samples.length === 1 && shot.composition.framing === "insert";
+  const relationshipEnvelopeFitComposition =
+    samples.length >= 2 &&
+    ["two_shot", "group_shot", "cutaway"].includes(shot.composition.framing);
   const distance = shot.composition.angle === "isometric"
     ? Math.max(3.2, radius * 4.05)
     : layeredDepthComposition
@@ -3037,12 +3077,41 @@ export function sampleDirectorCameraPose(
           target,
           cameraOffsetDirection,
           fov,
-          minimumCameraDistance,
+          Math.max(
+            minimumCameraDistance,
+            radius * framing * perspectiveCompensation * 0.72,
+          ),
         )
-      : Math.max(
-          minimumCameraDistance,
-          radius * framing * perspectiveCompensation,
-        );
+      : insertEnvelopeFitComposition
+        ? layeredDepthProjectedFitDistance(
+            samples,
+            target,
+            cameraOffsetDirection,
+            fov,
+            minimumCameraDistance,
+            {
+              safe_half_width: 0.72,
+              safe_half_height: 0.72,
+              breathing_multiplier: 1.03,
+            },
+          )
+        : relationshipEnvelopeFitComposition
+          ? layeredDepthProjectedFitDistance(
+              samples,
+              target,
+              cameraOffsetDirection,
+              fov,
+              minimumCameraDistance,
+              {
+                safe_half_width: 0.82,
+                safe_half_height: 0.78,
+                breathing_multiplier: 1.025,
+              },
+            )
+          : Math.max(
+              minimumCameraDistance,
+              radius * framing * perspectiveCompensation,
+            );
   const resolvedFov = shot.composition.angle === "isometric"
     ? Math.min(fov, 28)
     : fov;
@@ -3132,7 +3201,7 @@ export function sampleDirectorCameraPose(
     roll: shot.composition.angle === "dutch_angle" ? THREE.MathUtils.degToRad(12) : 0,
   };
 
-  pose.target.add(screenAnchorOffset(shot, pose.position, pose.target, radius));
+  pose.target.add(screenAnchorOffset(shot, pose.position, pose.target, radius, resolvedFov));
 
   for (const step of shot.camera.movement_steps) {
     applyMovementStep(pose, step, stepProgress(step, p), moment, shot, actors, radius, p, sceneState);

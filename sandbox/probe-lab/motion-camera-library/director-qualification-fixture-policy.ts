@@ -21,6 +21,42 @@ export const DIRECTOR_RELATIVE_ACTOR_BETWEEN_FRAMING_POLICY_VERSION =
 export const DIRECTOR_SUPPORT_CONTAINMENT_FIXTURE_POLICY_VERSION =
   "director_support_containment_fixture_policy_phase1b7a11a7_v1" as const;
 
+export const DIRECTOR_COMPOSITION_NEGATIVE_SPACE_FIXTURE_POLICY_VERSION =
+  "director_composition_negative_space_fixture_policy_phase1b7a11a20_v1" as const;
+
+export const DIRECTOR_DETAIL_RELATIONSHIP_FIXTURE_POLICY_VERSION =
+  "director_detail_relationship_fixture_policy_phase1b7a11a21_v1" as const;
+
+export const DIRECTOR_DETAIL_RELATIONSHIP_CLEANUP_FIXTURE_POLICY_VERSION =
+  "director_detail_relationship_cleanup_fixture_policy_phase1b7a11a22_v1" as const;
+
+export const DIRECTOR_DETAIL_RELATIONSHIP_GROUP_PROJECTION_FIXTURE_POLICY_VERSION =
+  "director_detail_relationship_group_projection_fixture_policy_phase1b7a11a23_v1" as const;
+
+export const DIRECTOR_DETAIL_RELATIONSHIP_GROUP_VIEW_RIGHT_BASIS = [
+  Math.SQRT1_2,
+  0,
+  -Math.SQRT1_2,
+] as const;
+
+export function isDetailRelationshipFramingQualificationFamily(
+  family: DirectorQualificationFamily | undefined,
+) {
+  return Boolean(
+    family?.category === "camera_framing" &&
+      family.group === "Detail & relationship framing",
+  );
+}
+
+export function isCompositionQualificationFamily(
+  family: DirectorQualificationFamily | undefined,
+) {
+  return Boolean(
+    family?.category === "camera_framing" &&
+      family.group === "Composition",
+  );
+}
+
 export function isDepthScreenPlacementQualificationFamily(
   family: DirectorQualificationFamily | undefined,
 ) {
@@ -199,15 +235,95 @@ export function directorQualificationSupportContainmentAssetRoles(
     .filter((role): role is DirectorDemoRole => Boolean(role));
 }
 
+const DIRECTOR_DETAIL_RELATIONSHIP_TWO_ROLE_IDS = [
+  "primary_subject",
+  "secondary_subject",
+] as const;
+
+const DIRECTOR_DETAIL_RELATIONSHIP_GROUP_ROLE_IDS = [
+  "primary_subject",
+  "secondary_subject",
+  "context_subject",
+] as const;
+
+/**
+ * Detail/relationship qualification proves only the actors intrinsic to the
+ * named framing. Insert deliberately binds its explicit context-detail role as
+ * the selected qualification target so Baseline/Diversity change that target
+ * asset. Two-shot/OTS use two actors; Group-shot uses three. The frozen POV
+ * compatibility path still maps three roles, but A.11A.23 defers POV from active
+ * evidence until semantic viewpoint anchors exist. Macro and Cutaway are also
+ * deferred and therefore should never reach this selector in active evidence.
+ */
+export function directorQualificationDetailRelationshipAssetRoles(
+  family: DirectorQualificationFamily,
+  capability: DirectorCapability,
+): DirectorDemoRole[] {
+  if (!isDetailRelationshipFramingQualificationFamily(family)) {
+    return [...capability.demo.asset_roles];
+  }
+
+  const roleIds =
+    capability.id === "insert"
+      ? ["context_subject"]
+      : capability.id === "group_shot" || capability.id === "point_of_view"
+        ? DIRECTOR_DETAIL_RELATIONSHIP_GROUP_ROLE_IDS
+        : capability.id === "two_shot" ||
+            capability.id === "over_shoulder" ||
+            capability.id === "cutaway"
+          ? DIRECTOR_DETAIL_RELATIONSHIP_TWO_ROLE_IDS
+          : capability.demo.asset_roles.map((role) => role.role);
+
+  return roleIds
+    .map((roleId) =>
+      capability.demo.asset_roles.find((role) => role.role === roleId) ?? null,
+    )
+    .filter((role): role is DirectorDemoRole => Boolean(role));
+}
+
+/**
+ * Composition negative-space evidence is a one-subject proof. The semantic
+ * promise is the deliberately empty side of frame, so unrelated default
+ * secondary/context GLBs are excluded from Qualification only. The production
+ * Director remains free to place other actors when a real shot explicitly
+ * requires them.
+ */
+export function directorQualificationCompositionAssetRoles(
+  family: DirectorQualificationFamily,
+  capability: DirectorCapability,
+): DirectorDemoRole[] {
+  if (
+    !isCompositionQualificationFamily(family) ||
+    (capability.id !== "negative_space_left" &&
+      capability.id !== "negative_space_right")
+  ) {
+    return [...capability.demo.asset_roles];
+  }
+
+  const primaryRole =
+    capability.demo.asset_roles.find((role) => role.role === "primary_subject") ??
+    capability.demo.asset_roles[0] ??
+    null;
+
+  return primaryRole ? [primaryRole] : [];
+}
+
 /**
  * Shared role selection for the Qualification Room. Keep the previously frozen
- * Depth/screen, Group-formation, and Relative-actor policies intact while
- * Support & containment proves only the actors required by the physical relation.
+ * Depth/screen, Group-formation, Relative-actor, and Support/containment policies
+ * intact while Composition negative-space proofs remove nonessential support
+ * actors from the side that is explicitly supposed to remain empty.
  */
 export function directorQualificationAssetRoles(
   family: DirectorQualificationFamily,
   capability: DirectorCapability,
 ): DirectorDemoRole[] {
+  if (isDetailRelationshipFramingQualificationFamily(family)) {
+    return directorQualificationDetailRelationshipAssetRoles(family, capability);
+  }
+  if (isCompositionQualificationFamily(family)) {
+    return directorQualificationCompositionAssetRoles(family, capability);
+  }
   if (isDepthScreenPlacementQualificationFamily(family)) {
     return directorQualificationDepthScreenAssetRoles(family, capability);
   }
@@ -242,6 +358,105 @@ export function directorQualificationDepthScreenAssetRoles(
 }
 
 export type DirectorQualificationFixturePosition = [number, number, number];
+
+
+/**
+ * A.11A.22 gives Detail & relationship framing an honest qualification stage.
+ * A.11A.23 refines Group-shot after perceptual review showed that a compact
+ * world-space triangle could still collapse into two visible actors from the
+ * three-quarter-front demo camera. Group-shot is now staged on that camera's
+ * horizontal view-right basis as a left / centre / right cluster with
+ * extent-aware centre gaps. The existing projected-envelope camera fit then
+ * solves only the closest safe distance; it no longer has to rescue occlusion
+ * created by fixture geometry. Production blocking/runtime is untouched.
+ *
+ * The frozen POV compatibility branch remains below for old plans/verifiers, but
+ * POV is no longer part of active Qualification until semantic viewpoint anchors
+ * exist.
+ */
+export function directorQualificationAdjustDetailRelationshipFixturePositions(input: {
+  family: DirectorQualificationFamily;
+  capability: DirectorCapability;
+  scene: DirectorQualificationScene;
+  positions: DirectorQualificationFixturePosition[];
+  target_extents_m?: number[];
+}): DirectorQualificationFixturePosition[] {
+  const output = input.positions.map(
+    (position) => [...position] as DirectorQualificationFixturePosition,
+  );
+
+  if (!isDetailRelationshipFramingQualificationFamily(input.family)) {
+    return output;
+  }
+
+  const extents = input.target_extents_m ?? [];
+  const primaryExtent = Math.max(0.2, Number(extents[0]) || 1);
+  const secondaryExtent = Math.max(0.2, Number(extents[1]) || 0.8);
+  const contextExtent = Math.max(0.2, Number(extents[2]) || 0.7);
+  const centerX = input.scene.blocking.primary[0];
+  const centerZ = input.scene.blocking.primary[2];
+
+  if (input.capability.id === "two_shot" && output.length >= 2) {
+    const halfSpan = Math.max(
+      0.78,
+      (primaryExtent + secondaryExtent) * 0.225 + 0.2,
+    );
+    output[0] = [centerX - halfSpan, output[0]![1], centerZ + 0.12];
+    output[1] = [centerX + halfSpan, output[1]![1], centerZ - 0.12];
+    return output;
+  }
+
+  if (input.capability.id === "group_shot" && output.length >= 3) {
+    const [viewRightX, , viewRightZ] =
+      DIRECTOR_DETAIL_RELATIONSHIP_GROUP_VIEW_RIGHT_BASIS;
+    const primaryToContextGap = Math.max(
+      1.18,
+      (primaryExtent + contextExtent) * 0.34 + 0.28,
+    );
+    const contextToSecondaryGap = Math.max(
+      1.18,
+      (contextExtent + secondaryExtent) * 0.34 + 0.28,
+    );
+    const groupPosition = (
+      lateralOffset: number,
+      y: number,
+    ): DirectorQualificationFixturePosition => [
+      centerX + viewRightX * lateralOffset,
+      y,
+      centerZ + viewRightZ * lateralOffset,
+    ];
+
+    // The default Group-shot demo uses three_quarter_front. Its horizontal
+    // camera view-right axis is [+X, 0, -Z] / sqrt(2). Stage the three actors
+    // directly along that screen-horizontal basis so world-space depth cannot
+    // project the context actor behind a neighbour.
+    output[0] = groupPosition(-primaryToContextGap, output[0]![1]);
+    output[2] = groupPosition(0, output[2]![1]);
+    output[1] = groupPosition(contextToSecondaryGap, output[1]![1]);
+    return output;
+  }
+
+  if (input.capability.id === "point_of_view" && output.length >= 3) {
+    const sourceDistance = Math.max(
+      1.85,
+      (primaryExtent + secondaryExtent) * 0.32 + 1.05,
+    );
+    const referenceOffset = Math.max(
+      0.82,
+      (secondaryExtent + contextExtent) * 0.22 + 0.28,
+    );
+    output[0] = [centerX, output[0]![1], centerZ + sourceDistance];
+    output[1] = [centerX + 0.12, output[1]![1], centerZ - 0.2];
+    output[2] = [
+      centerX - referenceOffset,
+      output[2]![1],
+      centerZ - 0.72,
+    ];
+    return output;
+  }
+
+  return output;
+}
 
 /**
  * Scene B was authored with its supporting actor on the right side. That makes
@@ -351,4 +566,3 @@ export function directorQualificationAdjustRelativeActorFixturePositions(input: 
 
   return output;
 }
-

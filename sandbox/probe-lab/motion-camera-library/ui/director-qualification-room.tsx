@@ -74,12 +74,13 @@ import {
   type DirectorQualificationVp8Chunk,
 } from "../director-qualification-deterministic-webm";
 import {
-  buildDirectorQualificationFamilies,
+  buildActiveDirectorQualificationFamilies,
   directorQualificationCapabilityProfile,
   type DirectorQualificationFamily,
 } from "../director-qualification-families";
 import {
   directorQualificationAdjustDepthScreenFixturePositions,
+  directorQualificationAdjustDetailRelationshipFixturePositions,
   directorQualificationAdjustRelativeActorFixturePositions,
   directorQualificationAssetRoles,
   isSupportContainmentQualificationFamily,
@@ -1333,6 +1334,29 @@ function choosePrimary(
     family,
     capability.id,
   );
+
+  if (
+    family.category === "camera_framing" &&
+    family.group === "Detail & relationship framing" &&
+    (capability.id === "over_shoulder" || capability.id === "point_of_view")
+  ) {
+    // A.11A.22: OTS needs an actual shoulder/body foreground reference, and POV
+    // needs a stable viewpoint source so Baseline/Diversity can prove perspective
+    // by changing the viewed target/reference rather than swapping in a mug as the
+    // camera host. Production POV remains actor-relative; this is evidence policy.
+    return candidateForSlot(pools, "character", 0);
+  }
+
+  if (
+    family.category === "camera_angle" &&
+    family.group === "Special viewpoints" &&
+    capability.id === "object_attached"
+  ) {
+    // A.11A.19: the angle proof must use the same mount-suitable solid-bodied
+    // vehicle gate as the already-qualified mounted movement comparison. Do not
+    // manufacture "diversity" with a character or open-frame bicycle.
+    return mountedCameraHostCandidateForPass(pools, passKind);
+  }
 
   if (
     family.category === "camera_movement" &&
@@ -2600,11 +2624,20 @@ function buildPlannedRoles(input: {
       scene: input.scene,
       positions,
     });
-  const fixturePositions = directorQualificationAdjustRelativeActorFixturePositions({
+  const relativeFixturePositions = directorQualificationAdjustRelativeActorFixturePositions({
     family: input.family,
     capability: input.capability,
     scene: input.scene,
     positions: depthScreenFixturePositions,
+    target_extents_m: roleBindings.map(
+      (entry) => entry.normalization.target_extent_m,
+    ),
+  });
+  const fixturePositions = directorQualificationAdjustDetailRelationshipFixturePositions({
+    family: input.family,
+    capability: input.capability,
+    scene: input.scene,
+    positions: relativeFixturePositions,
     target_extents_m: roleBindings.map(
       (entry) => entry.normalization.target_extent_m,
     ),
@@ -2767,6 +2800,11 @@ function capabilityForPlannedClip(clip: PlannedClip) {
     "on_surface",
     "inside",
   ].includes(clip.capability.id);
+  const detailRelationshipEvidence =
+    clip.capability.category === "camera_framing" &&
+    ["two_shot", "group_shot", "point_of_view", "cutaway"].includes(
+      clip.capability.id,
+    );
   const plannedRoleIds = clip.roles.map((role) => role.role);
 
   return {
@@ -2784,7 +2822,9 @@ function capabilityForPlannedClip(clip: PlannedClip) {
           ? plannedRoleIds
           : supportContainment
             ? plannedRoleIds
-            : clip.capability.demo.required_visible_roles,
+            : detailRelationshipEvidence
+              ? plannedRoleIds
+              : clip.capability.demo.required_visible_roles,
       blocking: clip.roles.map((role) => ({
         role: role.role,
         position: [...role.blocking_position] as [number, number, number],
@@ -2917,7 +2957,10 @@ function downloadJson(filename: string, value: unknown) {
   URL.revokeObjectURL(url);
 }
 
-function decisionCounts(state: DirectorQualificationState) {
+function decisionCounts(
+  state: DirectorQualificationState,
+  capabilityIds: readonly string[],
+) {
   const counts: Record<DirectorQualificationDecision, number> = {
     unreviewed: 0,
     qualified: 0,
@@ -2929,8 +2972,8 @@ function decisionCounts(state: DirectorQualificationState) {
     blocked: 0,
   };
 
-  for (const capability of DIRECTOR_CAPABILITIES) {
-    counts[qualificationReviewForCapability(state, capability.id).decision] += 1;
+  for (const capabilityId of capabilityIds) {
+    counts[qualificationReviewForCapability(state, capabilityId).decision] += 1;
   }
   return counts;
 }
@@ -3460,8 +3503,12 @@ export function DirectorQualificationRoom({
   onRequestAssets,
 }: Props) {
   const families = useMemo(
-    () => buildDirectorQualificationFamilies(DIRECTOR_CAPABILITIES),
+    () => buildActiveDirectorQualificationFamilies(DIRECTOR_CAPABILITIES),
     [],
+  );
+  const activeCapabilityIds = useMemo(
+    () => families.flatMap((family) => family.capability_ids),
+    [families],
   );
   const [familyKey, setFamilyKey] = useState(families[0]?.key ?? "");
   const selectedFamily =
@@ -3726,8 +3773,9 @@ export function DirectorQualificationRoom({
     [resolvedPools],
   );
   const mountedHostCoverageMissing =
-    familyCapabilities.some((capability) => capability.id === "camera_object_attached") &&
-    mountedCameraHostCandidates.length === 0;
+    familyCapabilities.some((capability) =>
+      ["camera_object_attached", "object_attached"].includes(capability.id),
+    ) && mountedCameraHostCandidates.length === 0;
 
   const scheduledAssetIds = useMemo(
     () =>
@@ -3843,7 +3891,7 @@ export function DirectorQualificationRoom({
     qualificationState,
     currentCapability.id,
   );
-  const counts = decisionCounts(qualificationState);
+  const counts = decisionCounts(qualificationState, activeCapabilityIds);
 
   const campaignCounts = directorQualificationCampaignCounts(campaignState);
   const selectedCampaignFamily = selectedFamily
@@ -5510,11 +5558,36 @@ export function DirectorQualificationRoom({
           </div>
         ) : null}
 
+        {selectedFamily?.category === "camera_angle" &&
+        selectedFamily.group === "Special viewpoints" ? (
+          <div style={softWarningStyle}>
+            Inside-object is deferred from active Qualification Room coverage until
+            MyWay has interior-safe asset/directability metadata. The capability remains
+            in the frozen Director vocabulary; this reel qualifies only Isometric and
+            Object-attached.
+          </div>
+        ) : null}
+
+        {selectedFamily?.category === "camera_framing" &&
+        selectedFamily.group === "Detail & relationship framing" ? (
+          <div style={softWarningStyle}>
+            Macro remains deferred until reviewed assets expose semantic feature/sub-part
+            anchors. Cutaway remains deferred to narrative/editing grammar. Point of view
+            is now deferred until directable assets expose a semantic viewpoint anchor plus
+            a trustworthy forward axis; a bounds-derived camera origin is not enough visual
+            proof. This reel qualifies Insert, Two shot, Group shot, and Over shoulder. OTS
+            keeps a Character foreground source while diversity varies the viewed target.
+            Group shot uses a camera-view-right left/centre/right qualification cluster so
+            all three actors must remain distinct in projected screen space.
+          </div>
+        ) : null}
+
         {mountedHostCoverageMissing ? (
           <div style={softWarningStyle}>
             Mounted-camera evidence is blocked: the Vehicle pool has no reviewed asset
             with a canonical body/hood/bodywork mount reference. Add or override a
-            mount-suitable vehicle rather than substituting an open-frame bicycle.
+            solid-bodied mount-suitable vehicle rather than substituting a character or
+            open-frame bicycle.
           </div>
         ) : null}
 

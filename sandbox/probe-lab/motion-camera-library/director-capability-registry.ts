@@ -1020,6 +1020,18 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
   if (capability.category === "camera_framing") {
     const framingIds = ["extreme_wide", "wide", "full", "medium_wide", "medium", "medium_close", "close", "extreme_close", "macro", "insert", "two_shot", "group_shot", "over_shoulder", "point_of_view", "cutaway"];
     if (framingIds.includes(capability.id)) shot.composition.framing = capability.id as DirectorShotDirectionV2["composition"]["framing"];
+    if (capability.id === "two_shot") {
+      shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject"];
+      shot.composition.preserve_relationship_entity_ids = ["primary_subject", "secondary_subject"];
+      shot.composition.preserve_relative_scale = true;
+      shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"];
+    }
+    if (capability.id === "group_shot") {
+      shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject", "context_subject"];
+      shot.composition.preserve_relationship_entity_ids = ["primary_subject", "secondary_subject", "context_subject"];
+      shot.composition.preserve_relative_scale = true;
+      shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject", "context_subject"];
+    }
     if (capability.id === "macro" || capability.id === "insert") {
       // Phase 1B.3.1 gives the two detail framings different semantic proof
       // targets: Macro inspects the tiny fastener (secondary), while Insert
@@ -1049,14 +1061,26 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
     }
     if (capability.id === "point_of_view") {
       shot.composition.foreground_entity_ids = ["primary_subject"];
-      shot.composition.keep_visible_entity_ids = ["secondary_subject"];
+      const qualificationHasContextReference =
+        capability.demo.required_visible_roles.includes("context_subject");
+      shot.composition.keep_visible_entity_ids = qualificationHasContextReference
+        ? ["secondary_subject", "context_subject"]
+        : ["secondary_subject"];
+      shot.composition.preserve_relationship_entity_ids =
+        qualificationHasContextReference
+          ? ["secondary_subject", "context_subject"]
+          : [];
       shot.camera.focus_entity_ids = ["secondary_subject"];
       shot.lens.focus_entity_id = "secondary_subject";
     }
     if (capability.id === "cutaway") {
-      shot.composition.keep_visible_entity_ids = ["secondary_subject"];
+      // A.11A.21 compatibility path. A.11A.22 defers Cutaway from active atomic
+      // framing qualification because its cinematic meaning depends on before/after
+      // shot context, but the frozen legacy id remains executable for old plans.
+      shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject"];
       shot.composition.preserve_relationship_entity_ids = ["primary_subject", "secondary_subject"];
-      shot.camera.focus_entity_ids = ["secondary_subject"];
+      shot.composition.preserve_relative_scale = true;
+      shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"];
       shot.lens.focus_entity_id = "secondary_subject";
       shot.lens.preset = "portrait";
       shot.lens.focal_length_mm = 70;

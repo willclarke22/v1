@@ -1,0 +1,44 @@
+**********************
+PowerShell transcript start
+Start time: 20260827211930
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 1680
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_director_special_viewpoints_object_attached_phase1b7a11a19_v1-install-20260827-211929.log
+
+=== MyWay A.11A.19 — Special Viewpoints qualification truth ===
+
+Current git status (diagnostic only):
+
+
+Invoking transactional installer...
+Patch payload SHA-256 verification passed.
+{"patch":"myway_director_special_viewpoints_object_attached_phase1b7a11a19_v1","state":"baseline"}
+Transactional backups created: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_director_special_viewpoints_object_attached_phase1b7a11a19_v1-20260827-211931
+Patch payload copied.
+{"patch":"myway_director_special_viewpoints_object_attached_phase1b7a11a19_v1","state":"applied","postflight":"pass"}
+
+>>> pnpm exec tsx scripts/sandbox/verify-director-special-viewpoints-object-attached-phase1b7a11a19.ts
+
+PS>TerminatingError(): "pnpm exec tsx scripts/sandbox/verify-director-special-viewpoints-object-attached-phase1b7a11a19.ts failed with exit code 1."
+PS>TerminatingError(): "pnpm exec tsx scripts/sandbox/verify-director-special-viewpoints-object-attached-phase1b7a11a19.ts failed with exit code 1."
+WARNING: Patch failed. Restoring the exact pre-patch targets...
+WARNING: Rollback completed. No partial A.11A.19 target state was intentionally left behind.
+PS>TerminatingError(): "pnpm exec tsx scripts/sandbox/verify-director-special-viewpoints-object-attached-phase1b7a11a19.ts failed with exit code 1."
+**********************
+PowerShell transcript end
+End time: 20260827211935
+**********************

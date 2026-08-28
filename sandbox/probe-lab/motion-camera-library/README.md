@@ -1906,3 +1906,131 @@ containers, including the qualified pineapple-in-bathtub proof, keep the existin
 high-angle two-shot camera. No placement, fit, topology, asset-selection,
 normalization, production-runtime, On Ground, or On Surface rule changes in this
 phase. The trigger is receiver scale, not an Apple/Mug asset ID.
+
+## Phase 1B.7A.11A.19 — Special Viewpoints qualification truth
+
+The first human-reviewed **Special viewpoints** A.10F reel separated three
+different outcomes instead of treating the family as one pass/fail block.
+**Isometric** is visually frozen: its restrained-perspective technical overview
+already communicates the intended relationship across the reviewed real-asset
+passes. **Object-attached** remains active and must be re-evidenced on a
+directionally suitable solid-bodied vehicle. **Inside-object** is deferred from
+the active Qualification Room campaign until MyWay has interior-safe
+asset/directability metadata.
+
+Deferral does not delete or silently redefine `inside_object`. The frozen
+184-entry Director vocabulary and historical family builder still contain the
+capability, preserving compatibility and earlier regression evidence. The live
+Qualification Room uses an active-family view that omits deferred capabilities,
+so the current campaign has 183 actively qualifiable capabilities across the
+same 33 families. Existing persisted campaign state is normalized against that
+active view when the Room opens; if a stored family's capability membership no
+longer matches the active family and it already has evidence, that family becomes
+**Needs re-evidence** while still retaining frozen active siblings such as
+Isometric.
+
+`object_attached` now receives a capability-specific Special Viewpoints profile:
+its primary evidence host is Vehicle-only, directional facing is required, and
+the same `directorQualificationMountedCameraHostSuitability(...)` gate already
+used by mounted tracking evidence selects the host. Open-frame bicycles,
+characters, and other hosts without a broad hood/body/bodywork reference are not
+valid diversity evidence for the canonical primitive. Baseline/diversity passes
+choose among suitable hosts when available and reuse the proven host rather than
+manufacturing a false failure when the vehicle pool has only one suitable body.
+
+This phase deliberately does **not** change the shared mounted-camera solver,
+camera coordinates, Isometric execution, or the Director registry/support
+distribution. The next Special Viewpoints ZIP should therefore answer one narrow
+question: with a truthful solid-bodied vehicle fixture, does Object-attached
+visually retain the intended restrained lower-frame host reference while the
+road/travel context moves through view?
+
+## Phase 1B.7A.11A.20 — Composition thirds + negative-space truth
+
+The human-reviewed **Composition** reel qualified Center anchor, Negative space
+left, and Two-subject balance, while exposing two narrow composition defects.
+Left third / Right third were directionally correct but too close to centre, and
+Negative space right allowed an unrelated support GLB to occupy the side that
+the capability explicitly promises to reserve.
+
+A.11A.20 strengthens the shared Left/Right Third primitive without introducing
+asset-specific coordinates. The camera target offset is derived from camera
+distance, field of view, a 16:9 cinematic reference aspect, and the semantic
+one-third screen location. Center, center-left/right, vertical anchors, and the
+existing negative-space offset strength remain unchanged. The result is a
+screen-space thirds solve rather than a fixed world-space nudge.
+
+Negative-space qualification is also made truthful and symmetric. For
+`negative_space_left` and `negative_space_right`, the Qualification Room renders
+only the required primary actor; unrelated default secondary/context GLBs are
+excluded from those two evidence clips so they cannot occupy the intentionally
+reserved side. This is qualification-fixture policy only: it does not prevent a
+production shot from containing other actors when the Director explicitly stages
+them.
+
+Center anchor and Two-subject balance execution are unchanged. Negative space
+left's production camera behavior is unchanged; its evidence fixture becomes
+cleaner under the same symmetric one-subject rule applied to Negative space
+right. No Director capability IDs, A.11A.19 deferrals, mounted-camera behavior,
+asset normalization, or evidence-capture machinery change in this phase.
+
+## Phase 1B.7A.11A.21 — Detail & relationship framing qualification truth
+
+The first human-reviewed **Detail & relationship framing** A.10F reel separated
+camera grammar from fixture/directability truth. **Over shoulder** and **Point of
+view** are visually frozen. **Macro** remains in the frozen 184-capability
+Director vocabulary but is deferred from active Qualification Room coverage
+until reviewed assets expose semantic feature/sub-part anchors; arbitrary
+whole-GLB cropping is not accepted as evidence of a tiny mechanism or
+surface-level change.
+
+**Insert** stays active and keeps its existing camera grammar, but Qualification
+now binds the explicit detail role to a suitable small/compact selected target so
+Baseline and Diversity change the framed asset instead of replaying one context
+GLB. **Two shot** and **Group shot** use a projected-envelope safe-fit solve;
+Two shot proves two complete actors and Group shot proves three planned actors.
+**Cutaway** remains compound but now keeps recognizable primary-system context
+while emphasizing the secondary supporting detail. The projected-fit refinement
+is limited to Two shot, Group shot, and Cutaway; Over shoulder, Point of view,
+A.11A.20 composition thirds, mounted-camera behavior, and unrelated framing
+remain unchanged.
+
+Active Qualification coverage is now 182 capabilities across the same 33
+families: 184 frozen vocabulary entries minus deferred `inside_object` and
+`macro`. Stored evidence whose family membership predates the Macro deferral is
+invalidated by the existing campaign membership guard and must be rerendered.
+
+## Phase 1B.7A.11A.22 — Detail & relationship framing cleanup + honest proof
+
+A.11A.22 follows the perceptual review of the first post-A.11A.21 Detail & relationship reel. The deterministic evidence was healthy, but it showed that the remaining failures were not one problem: Insert was over-cropped, Two shot and Group shot were being over-pulled by safe framing around arbitrary Scene-C spacing, Over shoulder was being asked to manufacture a shoulder from non-humanoid GLBs, Point of view was mechanically actor-relative without enough visible perspective reference, and Cutaway was being treated as a static camera coordinate even though its meaning depends on editing context.
+
+The frozen Director registry remains **184 Level 2 capabilities across 33 families**. Active Qualification coverage is now **181 capabilities** because `inside_object`, `macro`, and `cutaway` are deferred. `cutaway` is not deleted: the legacy framing id remains executable for compatibility, but active qualification marks it for merge into higher-order narrative/editing grammar (`show_inside_outside`, `reveal_cutaway`, and `return_to_context`) rather than pretending a single static pose can prove a cutaway.
+
+Detail & relationship evidence is tightened as follows:
+
+- **Insert** uses a single-object projected-envelope fit with a 16:9 safe occupancy target. The entire selected small/compact object must remain identifiable instead of filling the frame with an arbitrary cropped surface.
+- **Two shot** keeps the projected safe-frame ceiling but removes the redundant pair-radius × framing minimum-distance floor that was pulling the camera farther back after the envelope solver had already found the closest safe distance. Qualification also places the pair in a compact extent-aware relationship stage instead of inheriting the wide Scene-C hero/detail separation.
+- **Group shot** uses a compact, extent-aware three-actor triangle. Primary, secondary, and context must all contribute to one readable cluster; the camera no longer has to zoom to an extreme wide merely to encompass arbitrary fixture spread.
+- **Over shoulder** qualification requires a stable `character` foreground source. Baseline and Diversity vary the viewed target, not the shoulder/body source. This is an evidence restriction, not a claim that arbitrary non-humanoid geometry can truthfully provide a shoulder silhouette.
+- **Point of view** qualification also keeps a stable Character viewpoint source, but now includes a third context/reference actor near the viewed target. The context reference makes perspective/parallax visible to perceptual review while the runtime remains actor-relative rather than Character-only in production.
+- **Macro** remains deferred pending semantic feature/sub-part anchors.
+
+This phase does **not** alter the already-qualified Composition thirds/negative-space semantics, Special Viewpoints mounted-camera semantics, tracking grammar, Support & containment boundaries, or deterministic A.10F evidence capture. Successor verification uses the current A.11A.22 acceptance suite plus durable architectural canaries, TypeScript, and a full production build; historical 182/183-active snapshots are not permanent vetoes over deliberate deferrals.
+
+## Phase 1B.7A.11A.23 — Detail & relationship closeout: projected Group shot + honest POV deferral
+
+Post-A.11A.22 deterministic reel `QR-20260827-232517` closed three of the five active Detail & relationship framings perceptually: **Insert**, **Two shot**, and Character-restricted **Over shoulder** are now stable enough to freeze. The remaining failures are deliberately separated instead of forcing one more broad camera rewrite.
+
+The frozen Director registry remains **184 Level 2 capabilities across 33 families**. Active Qualification coverage is now **180 capabilities** because `inside_object`, `macro`, `cutaway`, and `point_of_view` are deferred. POV is not deleted and its legacy actor-relative runtime remains executable. Active Qualification simply stops claiming that an arbitrary GLB can prove a true first-person viewpoint before directability exposes a semantic viewpoint anchor (for example eye/head, cockpit, tool tip, or another authored viewpoint) plus a trustworthy forward axis.
+
+**Group shot** receives the only visual repair in this phase. A.11A.22 used a compact world-space triangle, but the three-quarter-front demo camera could project the rear/context actor directly behind a neighbour. A.11A.23 stages primary, context, and secondary on the demo camera's horizontal **view-right** basis as an extent-aware left / centre / right cluster. The existing projected-envelope camera solver remains authoritative for closest-safe camera distance. This makes the fixture projection-aware without modifying the production Group-shot camera primitive or inventing asset-specific camera coordinates.
+
+A.11A.23 therefore has narrow boundaries:
+
+- **Insert**, **Two shot**, and **Over shoulder** are preserved unchanged from the visually accepted A.11A.22 reel.
+- **Group shot** must keep all three projected actor envelopes inside the safe frame, give each actor a distinct screen-space centre, and prevent material horizontal envelope overlap in a controlled regression fixture.
+- **Point of view** joins the deferred set until semantic viewpoint metadata exists; the frozen id and compatibility runtime remain intact.
+- **Macro**, **Cutaway**, and **Inside object** retain their existing deferral reasons.
+- A.10F deterministic evidence capture, Composition, mounted-camera semantics, tracking, blocking/placement, Support & containment, and the production camera runtime are unchanged.
+
+Successor verification is intentionally current-state based: the A.11A.23 verifier carries forward the durable A.11A.22 boundaries without running historical active-count snapshots as vetoes. The installer then runs TypeScript and finishes with a full **`pnpm build` as its final validation gate**.

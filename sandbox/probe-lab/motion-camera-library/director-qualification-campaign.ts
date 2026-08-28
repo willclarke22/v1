@@ -163,9 +163,20 @@ export function normalizeDirectorQualificationCampaignState(
 
     const record = candidate as Partial<DirectorQualificationCampaignFamilyRecord>;
     const capabilitySet = new Set(family.capability_ids);
+    const recordedCapabilityIds = uniqueStrings(record.capability_ids ?? []);
+    const capabilityMembershipChanged =
+      recordedCapabilityIds.length > 0 &&
+      (recordedCapabilityIds.length !== family.capability_ids.length ||
+        recordedCapabilityIds.some((capabilityId) => !capabilitySet.has(capabilityId)));
+    const hasPriorEvidence =
+      typeof record.latest_evidence_reel_id === "string" &&
+      record.latest_evidence_reel_id.length > 0;
     normalizedFamilies[family.key] = {
       ...fallbackFamily,
-      status: normalizedStatus(record.status),
+      status:
+        capabilityMembershipChanged && hasPriorEvidence
+          ? "needs_re_evidence"
+          : normalizedStatus(record.status),
       latest_evidence_reel_id:
         typeof record.latest_evidence_reel_id === "string"
           ? record.latest_evidence_reel_id
@@ -192,9 +203,11 @@ export function normalizeDirectorQualificationCampaignState(
         (capabilityId) => capabilitySet.has(capabilityId),
       ),
       re_evidence_reason:
-        typeof record.re_evidence_reason === "string"
-          ? record.re_evidence_reason
-          : "",
+        capabilityMembershipChanged && hasPriorEvidence
+          ? "Active qualification capability membership changed; render fresh deterministic evidence for the current family."
+          : typeof record.re_evidence_reason === "string"
+            ? record.re_evidence_reason
+            : "",
     };
   }
 

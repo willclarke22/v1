@@ -358,6 +358,87 @@ function capabilityProfile(
   fallbackSlots: DirectorQualificationCastSlotId[],
 ): DirectorQualificationCapabilityProfile {
   if (
+    familyCategory === "camera_framing" &&
+    familyGroup === "Detail & relationship framing"
+  ) {
+    if (capabilityId === "insert") {
+      return {
+        suitable_primary_cast_slots: ["small_detail", "compact_rigid", "irregular_hero"],
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Insert qualification uses a whole small/compact object as the explicit detail target. Baseline and Diversity must change the framed target asset rather than replaying one context GLB.",
+      };
+    }
+    if (capabilityId === "two_shot") {
+      return {
+        suitable_primary_cast_slots: ["character", "furniture", "compact_rigid", "irregular_hero"],
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Two-shot qualification must keep both planned actors fully inside the projected safe frame.",
+      };
+    }
+    if (capabilityId === "group_shot") {
+      return {
+        suitable_primary_cast_slots: ["character", "furniture", "compact_rigid", "irregular_hero"],
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Group-shot qualification is a compact three-actor cluster: primary, secondary, and context must all read as one functional group instead of forcing an extreme-wide fit around arbitrary Scene-C spacing.",
+      };
+    }
+    if (capabilityId === "over_shoulder") {
+      return {
+        suitable_primary_cast_slots: ["character"],
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Over-shoulder qualification requires a Character foreground source so the near silhouette can truthfully read as a shoulder/body reference. Baseline and Diversity keep that source stable and vary the viewed target instead.",
+      };
+    }
+    if (capabilityId === "point_of_view") {
+      return {
+        suitable_primary_cast_slots: ["character"],
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Point-of-view is deferred from active Qualification until reviewed/directable assets expose a semantic viewpoint anchor (eye/head/cockpit/tool-tip as appropriate) plus a trustworthy forward axis. A generic bounds-derived camera origin is not strong enough perceptual evidence; the frozen legacy POV id remains executable for compatibility.",
+      };
+    }
+    if (capabilityId === "cutaway") {
+      return {
+        suitable_primary_cast_slots: ["character", "furniture", "irregular_hero", "compact_rigid"],
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "show_inside_outside",
+        qualification_note:
+          "Cutaway is deferred from atomic camera-framing qualification. Its cinematic meaning depends on before/after shot context and belongs in higher-order narrative/editing grammar such as Inside / outside, reveal_cutaway, and Return to context; the legacy framing id remains frozen for compatibility.",
+      };
+    }
+  }
+
+  if (
+    familyCategory === "camera_angle" &&
+    familyGroup === "Special viewpoints" &&
+    capabilityId === "object_attached"
+  ) {
+    return {
+      suitable_primary_cast_slots: ["vehicle"],
+      comparison_group: "mounted_camera",
+      requires_directional_facing: true,
+      merge_compare_with_capability_id: null,
+      qualification_note:
+        "Object-attached qualification requires a directionally suitable solid-bodied vehicle with a visible hood/bodywork mount reference. Open-frame bicycles and non-vehicle hosts are not valid evidence for the canonical mounted-camera primitive.",
+    };
+  }
+
+  if (
     familyCategory === "camera_movement" &&
     familyGroup === "Tracking & attached camera"
   ) {
@@ -555,4 +636,50 @@ export function buildDirectorQualificationFamilies(
       } satisfies DirectorQualificationFamily;
     })
     .sort((left, right) => left.label.localeCompare(right.label));
+}
+
+export const DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS = [
+  "inside_object",
+  "macro",
+  "cutaway",
+  "point_of_view",
+] as const;
+
+export function isDirectorQualificationCapabilityDeferred(capabilityId: string) {
+  return (DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS as readonly string[]).includes(
+    capabilityId,
+  );
+}
+
+/**
+ * Active Qualification Room view of the frozen Director family taxonomy.
+ *
+ * Deferred capabilities remain in the 184-entry Director registry and in
+ * buildDirectorQualificationFamilies(...) so historical coverage/regression
+ * evidence stays stable. The live campaign removes only capabilities that
+ * cannot currently be proven truthfully with the available qualification
+ * assets/runtime metadata.
+ */
+export function buildActiveDirectorQualificationFamilies(
+  capabilities: DirectorCapability[],
+): DirectorQualificationFamily[] {
+  return buildDirectorQualificationFamilies(capabilities)
+    .map((family) => {
+      const capabilityIds = family.capability_ids.filter(
+        (capabilityId) => !isDirectorQualificationCapabilityDeferred(capabilityId),
+      );
+      if (capabilityIds.length === family.capability_ids.length) return family;
+
+      const activeCapabilitySet = new Set(capabilityIds);
+      return {
+        ...family,
+        capability_ids: capabilityIds,
+        capability_profiles: Object.fromEntries(
+          Object.entries(family.capability_profiles).filter(([capabilityId]) =>
+            activeCapabilitySet.has(capabilityId),
+          ),
+        ),
+      };
+    })
+    .filter((family) => family.capability_ids.length > 0);
 }
