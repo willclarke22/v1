@@ -2124,6 +2124,45 @@ function framingFactor(framing: DirectorShotDirectionV2["composition"]["framing"
   }
 }
 
+function isTallUprightShotScaleSubject(
+  samples: ReturnType<typeof targetActors>,
+) {
+  if (samples.length !== 1) return false;
+  const entry = samples[0]!;
+  const width = Math.abs(entry.actor.size[0] * entry.sample.scale.x);
+  const height = Math.abs(entry.actor.size[1] * entry.sample.scale.y);
+  const depth = Math.abs(entry.actor.size[2] * entry.sample.scale.z);
+  return height >= 0.75 && height >= Math.max(width, depth) * 1.35;
+}
+
+function shotScaleUpperSubjectTargetHeightRatio(
+  framing: DirectorShotDirectionV2["composition"]["framing"],
+  samples: ReturnType<typeof targetActors>,
+) {
+  if (!isTallUprightShotScaleSubject(samples)) return null;
+  switch (framing) {
+    case "medium_wide": return 0.54;
+    case "medium": return 0.62;
+    case "medium_close": return 0.69;
+    case "close": return 0.75;
+    default: return null;
+  }
+}
+
+function shotScaleFramingFactor(
+  framing: DirectorShotDirectionV2["composition"]["framing"],
+  samples: ReturnType<typeof targetActors>,
+) {
+  if (!isTallUprightShotScaleSubject(samples)) return framingFactor(framing);
+  switch (framing) {
+    case "medium_wide": return 3.65;
+    case "medium": return 2.9;
+    case "medium_close": return 2.25;
+    case "close": return 1.75;
+    default: return framingFactor(framing);
+  }
+}
+
 function angleDirection(angle: DirectorShotDirectionV2["composition"]["angle"]) {
   switch (angle) {
     case "low_angle": return new THREE.Vector3(0.8, -0.28, 1);
@@ -2887,15 +2926,39 @@ function applyMovementStep(
       break;
     }
     case "spline": {
-      const points = Array.isArray(step.parameters.points)
+      const absolutePoints = Array.isArray(step.parameters.points)
         ? step.parameters.points
             .map((point) => Array.isArray(point) && point.length >= 3 ? vecParam(point, [0, 0, 0]) : null)
             .filter((point): point is THREE.Vector3 => Boolean(point))
         : [];
+      const targetRelativePoints =
+        step.coordinate_space === "target_relative" &&
+        Array.isArray(step.parameters.target_relative_points)
+          ? step.parameters.target_relative_points
+              .map((point) =>
+                Array.isArray(point) && point.length >= 3
+                  ? vecParam(point, [0, 0, 0])
+                  : null,
+              )
+              .filter((point): point is THREE.Vector3 => Boolean(point))
+              .map((point) => pose.target.clone().add(point))
+          : [];
+      const points =
+        absolutePoints.length >= 2
+          ? absolutePoints
+          : targetRelativePoints.length >= 2
+            ? [
+                ...(step.parameters.prepend_current_pose === true
+                  ? [pose.position.clone()]
+                  : []),
+                ...targetRelativePoints,
+              ]
+            : [];
       if (points.length >= 2) {
         const curve = new THREE.CatmullRomCurve3(points, false, "catmullrom", 0.4);
         pose.position.copy(curve.getPoint(clamp01(t)));
       } else {
+        // Compatibility fallback for legacy spline cues that carry no waypoints.
         pose.position.addScaledVector(right, Math.sin(t * Math.PI) * radius * step.strength);
         pose.position.y += Math.sin(t * Math.PI) * radius * 0.35 * step.strength;
       }
@@ -3023,6 +3086,21 @@ export function sampleDirectorCameraPose(
   const compositionProgress = actorRelativeCamera ? p : 0;
   const samples = targetActors(moment, shot, compositionProgress, actors, sceneState);
   let target = averageTarget(samples);
+  const shotScaleTargetHeightRatio = shotScaleUpperSubjectTargetHeightRatio(
+    shot.composition.framing,
+    samples,
+  );
+  if (shotScaleTargetHeightRatio !== null && samples.length === 1) {
+    const entry = samples[0]!;
+    target.copy(entry.sample.position).add(
+      new THREE.Vector3(
+        0,
+        Math.abs(entry.actor.size[1] * entry.sample.scale.y) *
+          shotScaleTargetHeightRatio,
+        0,
+      ),
+    );
+  }
   if (shot.composition.framing === "macro" && samples.length === 1) {
     // Tiny controlled/semantic features need geometric-centre targeting. Eye
     // offsets are useful for actors, but they can push a fastener toward the
@@ -3052,7 +3130,10 @@ export function sampleDirectorCameraPose(
           : 0.8;
   const radius = focusRadius(samples, minimumFocusRadius);
   const fov = THREE.MathUtils.clamp(shot.lens.field_of_view_degrees || 44, 10, 100);
-  const framing = framingFactor(shot.composition.framing);
+  const framing = shotScaleFramingFactor(
+    shot.composition.framing,
+    samples,
+  );
   const perspectiveCompensation = 44 / fov;
   const minimumCameraDistance =
     shot.composition.framing === "macro"

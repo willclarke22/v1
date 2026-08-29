@@ -1,0 +1,72 @@
+**********************
+PowerShell transcript start
+Start time: 20260828195726
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 24908
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_director_lens_perspective_qualification_phase1b7a11a24_v1_1-install-20260828-195725.log
+
+=== MyWay A.11A.24 v1.1 — Lens perspective qualification truth ===
+
+Invoking transactional installer...
+Patch payload SHA-256 verification passed.
+
+Transactional backups created: C:\Users\willc\projects\MyWay\v1\.myway-patch-backups\myway_director_lens_perspective_qualification_phase1b7a11a24_v1_1-20260828-195727
+Patch payload copied.
+
+
+>>> pnpm exec tsx scripts\sandbox\verify-director-lens-perspective-qualification-phase1b7a11a24.ts
+
+PASS: pnpm exec tsx scripts\sandbox\verify-director-lens-perspective-qualification-phase1b7a11a24.ts
+
+>>> pnpm exec tsx scripts\sandbox\verify-director-camera-fidelity-phase1b.ts
+
+PASS: pnpm exec tsx scripts\sandbox\verify-director-camera-fidelity-phase1b.ts
+
+>>> pnpm exec tsx scripts\sandbox\verify-director-qualification-campaign-phase1b7a11a.ts
+
+PASS: pnpm exec tsx scripts\sandbox\verify-director-qualification-campaign-phase1b7a11a.ts
+
+>>> pnpm exec tsx scripts\sandbox\verify-director-qualification-room-phase1b7a.ts
+
+PASS: pnpm exec tsx scripts\sandbox\verify-director-qualification-room-phase1b7a.ts
+
+>>> pnpm exec tsx scripts\sandbox\verify-director-support-containment-earned-boundaries-phase1b7a11a11.ts
+
+PASS: pnpm exec tsx scripts\sandbox\verify-director-support-containment-earned-boundaries-phase1b7a11a11.ts
+
+>>> pnpm exec tsx scripts\sandbox\verify-director-support-containment-small-inside-framing-phase1b7a11a18.ts
+
+PASS: pnpm exec tsx scripts\sandbox\verify-director-support-containment-small-inside-framing-phase1b7a11a18.ts
+
+>>> pnpm exec tsc --noEmit
+
+PASS: pnpm exec tsc --noEmit
+
+>>> pnpm build
+
+PASS: pnpm build
+
+A.11A.24 Lens perspective qualification installed successfully.
+Frozen taxonomy: 184 capabilities. Active qualification: 177.
+Deferred: inside_object, macro, cutaway, point_of_view, lens_macro, focus_shallow, focus_deep.
+Active Lens reel: Ultra-wide, Wide, Normal, Portrait, Telephoto.
+
+Outer wrapper completed successfully.
+**********************
+PowerShell transcript end
+End time: 20260828195849
+**********************

@@ -2034,3 +2034,137 @@ A.11A.23 therefore has narrow boundaries:
 - A.10F deterministic evidence capture, Composition, mounted-camera semantics, tracking, blocking/placement, Support & containment, and the production camera runtime are unchanged.
 
 Successor verification is intentionally current-state based: the A.11A.23 verifier carries forward the durable A.11A.22 boundaries without running historical active-count snapshots as vetoes. The installer then runs TypeScript and finishes with a full **`pnpm build` as its final validation gate**.
+
+## Phase 1B.7A.11A.24 — Lens perspective qualification truth
+
+Visual review of Lens reel `QR-20260828-191502` showed that the five conventional
+focal-length presets were mechanically distinct but poorly isolated by the old
+qualification fixture: asset identity changed between siblings while the camera
+solver correctly compensated distance for FOV, leaving the actual perspective
+progression difficult to judge. The same reel also confirmed that **Macro lens**
+and the **Shallow / Deep focus** pair cannot currently be qualified honestly in
+the browser preview. The preview renders perspective from FOV but does not model
+macro magnification / close-focus behaviour or production depth-of-field blur.
+
+A.11A.24 therefore keeps the frozen Director registry at **184 Level 2
+capabilities across 33 families** while active Qualification coverage becomes
+**177 capabilities**. `lens_macro`, `focus_shallow`, and `focus_deep` join the
+existing deferred set (`inside_object`, `macro`, `cutaway`, `point_of_view`).
+`lens_macro` remains frozen as a future merge candidate with Macro framing once
+semantic feature anchors and close-focus semantics exist. Shallow and Deep focus
+remain frozen as a pair until the selected renderer can visibly prove focus
+distance / aperture blur.
+
+The active Lens reel now contains exactly **Ultra-wide, Wide, Normal, Portrait,
+and Telephoto**. Within Baseline all five siblings use the same primary, secondary,
+and context assets; Diversity uses a second stable three-asset set. Qualification
+stages each set on an extent-aware near / mid / far diagonal aligned to the
+unchanged three-quarter-front camera depth basis, with a restrained view-right
+offset so silhouettes stay separate. The production camera solver is unchanged.
+Its existing FOV-dependent distance compensation is now the intended experimental
+mechanism: near/far apparent-size ratio should decrease monotonically from
+Ultra-wide toward Telephoto as perspective becomes more compressed.
+
+The A.11A.24 successor verifier preserves the 184-entry frozen taxonomy and the
+previously qualified Detail & relationship subset, asserts the 177-entry active
+view and seven intentional deferrals, checks the fixed three-role Lens proof and
+near/mid/far camera-basis staging, and numerically verifies monotonic perspective
+compression across the five active lens presets. The transactional installer runs
+current durable Director regressions, `pnpm exec tsc --noEmit`, and **`pnpm build`
+as its final validation gate** before reporting success.
+
+## Phase 1B.7A.11A.25 — Shot-scale semantic framing repair
+
+Human review of Shot-scale Cross-asset reel `QR-20260828-200451` froze the
+environmental end of the ladder (**Extreme wide**, **Wide**, **Full**) but exposed
+that the middle ladder was still mostly a sequence of camera-distance multipliers.
+On a tall Character baseline, Medium-close and Close could preserve feet while
+cropping the head, which is the opposite of useful upper-subject cinematic grammar.
+
+A.11A.25 keeps the frozen 184-capability vocabulary intact and defers only
+**Extreme close** from this family. The active Qualification campaign is therefore
+**176 capabilities**. Extreme close remains executable/frozen, but active evidence
+waits for a semantic region / feature anchor so "small" also means *meaningful*
+instead of an arbitrary bounds-centre crop.
+
+The runtime repair is deliberately conditional rather than humanoid-hardcoded.
+For a single subject whose rendered dimensions are strongly tall/upright, the
+Medium-wide → Medium → Medium-close → Close ladder now:
+
+- raises the optical target from 54% → 62% → 69% → 75% of rendered subject height;
+- tightens the framing multiplier from 3.65 → 2.90 → 2.25 → 1.75;
+- leaves Extreme wide / Wide / Full unchanged;
+- leaves non-tall arbitrary geometry on the established geometric-centre framing
+  path, preserving Diversity stress coverage without pretending furniture or
+  mechanisms have a human chest/head anatomy.
+
+The successor verifier checks the frozen 184 taxonomy, exact eight-capability
+deferred set, 176 active coverage, the unchanged wide/full factors, monotonic
+upper-subject target/distance progression, preserved non-tall fallback behavior,
+and the A.11A.24 Lens lineage. The transactional installer runs TypeScript
+validation and uses **`pnpm build` as its final native validation gate** before
+reporting success.
+## Phase 1B.7A.11A.26 — Complex camera paths qualification truth
+
+The first **Complex camera paths** Cross-asset reel showed two different capability
+classes hiding under one family. **Spline path** is a legitimate asset-independent
+camera primitive, but the demo had supplied no waypoint payload, so the runtime
+correctly fell back to its legacy sinusoidal side/up motion instead of exercising the
+real Catmull-Rom branch. **Pass through** was more fundamental: advancing through the
+target direction on an arbitrary solid GLB produced mesh intersection rather than a
+meaningful traversal through an opening or representation boundary.
+
+A.11A.26 therefore keeps the frozen Director vocabulary at **184 capabilities** while
+active Qualification becomes **175 capabilities**. `pass_through` remains frozen but
+is deferred until scene/asset directability can expose a traversable boundary contract
+such as an entry plane, forward normal, safe aperture, and destination clearance.
+
+Spline remains active. Its demo/evidence cue now supplies four explicit
+`target_relative_points` plus `prepend_current_pose: true`. The runtime preserves
+historical absolute `points`, adds a target-relative waypoint path for reusable
+actor-relative authoring, and still retains the no-waypoint sinusoidal behavior only
+as a compatibility fallback. The resulting open Catmull-Rom rail begins from the
+already-solved camera pose and then traverses distinct lateral, vertical, and depth
+phases without a start teleport.
+
+The successor verifier proves that:
+
+- the active **Complex camera paths** family contains only `spline`;
+- `pass_through` remains in the frozen 184-entry taxonomy but not active Qualification;
+- Spline carries four target-relative waypoints and a prepended solved start pose;
+- the sampled camera hits each authored waypoint phase under linear path timing;
+- the path is materially curved and multi-axis rather than a straight line;
+- segment-to-segment motion stays continuous and the camera never approaches the
+  teaching subject closely enough to become a mesh-intersection proof;
+- the legacy absolute-point Catmull-Rom branch and no-waypoint compatibility fallback
+  remain available.
+
+The transactional installer runs historical successor-safe checks, TypeScript
+validation, and `pnpm build` as its final native validation gate.
+
+## Phase 1B.7A.11A.27 — Qualification Room single-flight GLTF preparation
+
+A long Qualification session exposed a preparation-performance failure mode rather
+than a Director cinematography failure. The Room already bounded residency to the
+currently scheduled reel, but the preparation Canvas still mounted every scheduled
+`useGLTF` request at once. Several large reviewed GLBs could therefore fetch, parse,
+and upload to WebGL concurrently, producing a main-thread/GPU spike that made
+**PREPARING AUDITION REEL** appear frozen. A suspended loader also had no watchdog,
+so a genuinely stalled model could leave preparation unresolved indefinitely.
+
+A.11A.27 keeps the existing one-Canvas, demand-frameloop, scheduled-clip-only
+architecture and changes only preparation backpressure:
+
+- exactly **one scheduled GLTF preloader** is mounted at a time;
+- the next asset begins only after the current asset resolves or becomes an explicit
+  preload error;
+- a 25-second watchdog clears the unresolved loader entry and exposes the existing
+  retry UI instead of allowing an infinite Suspense wait;
+- **Retry preparation** reloads only failed/stalled assets when failures exist,
+  preserving already-warmed good assets and avoiding another batch parse/upload spike;
+- retired-family URLs continue to be cleared from the bounded resident GLTF set;
+- the A.11A.26 Spline waypoint rail and `pass_through` deferral are unchanged.
+
+This phase is a Qualification Room execution cleanup only. Frozen taxonomy remains
+184 capabilities and active Qualification remains 175. The installer runs TypeScript
+validation and keeps `pnpm build` as its final native validation gate.

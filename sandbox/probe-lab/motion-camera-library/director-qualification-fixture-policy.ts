@@ -33,6 +33,33 @@ export const DIRECTOR_DETAIL_RELATIONSHIP_CLEANUP_FIXTURE_POLICY_VERSION =
 export const DIRECTOR_DETAIL_RELATIONSHIP_GROUP_PROJECTION_FIXTURE_POLICY_VERSION =
   "director_detail_relationship_group_projection_fixture_policy_phase1b7a11a23_v1" as const;
 
+export const DIRECTOR_LENS_PERSPECTIVE_FIXTURE_POLICY_VERSION =
+  "director_lens_perspective_fixture_policy_phase1b7a11a24_v1" as const;
+
+export const DIRECTOR_LENS_PERSPECTIVE_CAPABILITY_IDS = [
+  "lens_ultra_wide",
+  "lens_wide",
+  "lens_normal",
+  "lens_portrait",
+  "lens_telephoto",
+] as const;
+
+// The default lens demo is three-quarter-front. Horizontal camera-to-target
+// direction is +X/+Z; view-right is +X/-Z. Qualification stages actors on
+// both axes so focal length changes depth perspective without collapsing
+// silhouettes on top of one another.
+export const DIRECTOR_LENS_PERSPECTIVE_CAMERA_DEPTH_BASIS = [
+  Math.SQRT1_2,
+  0,
+  Math.SQRT1_2,
+] as const;
+
+export const DIRECTOR_LENS_PERSPECTIVE_VIEW_RIGHT_BASIS = [
+  Math.SQRT1_2,
+  0,
+  -Math.SQRT1_2,
+] as const;
+
 export const DIRECTOR_DETAIL_RELATIONSHIP_GROUP_VIEW_RIGHT_BASIS = [
   Math.SQRT1_2,
   0,
@@ -45,6 +72,27 @@ export function isDetailRelationshipFramingQualificationFamily(
   return Boolean(
     family?.category === "camera_framing" &&
       family.group === "Detail & relationship framing",
+  );
+}
+
+export function isLensQualificationFamily(
+  family: DirectorQualificationFamily | undefined,
+) {
+  return Boolean(
+    family?.category === "camera_framing" && family.group === "Lens",
+  );
+}
+
+export function isLensPerspectiveQualificationCapability(
+  family: DirectorQualificationFamily | undefined,
+  capability: DirectorCapability | undefined,
+) {
+  return Boolean(
+    isLensQualificationFamily(family) &&
+      capability &&
+      (DIRECTOR_LENS_PERSPECTIVE_CAPABILITY_IDS as readonly string[]).includes(
+        capability.id,
+      ),
   );
 }
 
@@ -281,6 +329,32 @@ export function directorQualificationDetailRelationshipAssetRoles(
     .filter((role): role is DirectorDemoRole => Boolean(role));
 }
 
+const DIRECTOR_LENS_PERSPECTIVE_ROLE_IDS = [
+  "primary_subject",
+  "secondary_subject",
+  "context_subject",
+] as const;
+
+/**
+ * Conventional focal-length qualification uses exactly the same three roles
+ * for every sibling. Near/mid/far perspective is the variable under test, so
+ * optional role disappearance would make the lens comparison meaningless.
+ */
+export function directorQualificationLensPerspectiveAssetRoles(
+  family: DirectorQualificationFamily,
+  capability: DirectorCapability,
+): DirectorDemoRole[] {
+  if (!isLensPerspectiveQualificationCapability(family, capability)) {
+    return [...capability.demo.asset_roles];
+  }
+
+  return DIRECTOR_LENS_PERSPECTIVE_ROLE_IDS
+    .map((roleId) =>
+      capability.demo.asset_roles.find((role) => role.role === roleId) ?? null,
+    )
+    .filter((role): role is DirectorDemoRole => Boolean(role));
+}
+
 /**
  * Composition negative-space evidence is a one-subject proof. The semantic
  * promise is the deliberately empty side of frame, so unrelated default
@@ -318,6 +392,9 @@ export function directorQualificationAssetRoles(
   family: DirectorQualificationFamily,
   capability: DirectorCapability,
 ): DirectorDemoRole[] {
+  if (isLensPerspectiveQualificationCapability(family, capability)) {
+    return directorQualificationLensPerspectiveAssetRoles(family, capability);
+  }
   if (isDetailRelationshipFramingQualificationFamily(family)) {
     return directorQualificationDetailRelationshipAssetRoles(family, capability);
   }
@@ -359,6 +436,65 @@ export function directorQualificationDepthScreenAssetRoles(
 
 export type DirectorQualificationFixturePosition = [number, number, number];
 
+
+/**
+ * A.11A.24 isolates lens perspective from asset identity. The same three actors
+ * are staged on a stable near / mid / far diagonal for every focal-length sibling
+ * in a pass. Near and far are separated along the default three-quarter-front
+ * camera depth axis, with a restrained view-right offset preventing silhouette
+ * collapse. The unchanged camera solver is then free to compensate distance for
+ * FOV; that distance change is precisely what should make wide lenses expand
+ * perspective and telephoto lenses compress it.
+ */
+export function directorQualificationAdjustLensPerspectiveFixturePositions(input: {
+  family: DirectorQualificationFamily;
+  capability: DirectorCapability;
+  scene: DirectorQualificationScene;
+  positions: DirectorQualificationFixturePosition[];
+  target_extents_m?: number[];
+}): DirectorQualificationFixturePosition[] {
+  const output = input.positions.map(
+    (position) => [...position] as DirectorQualificationFixturePosition,
+  );
+
+  if (
+    !isLensPerspectiveQualificationCapability(input.family, input.capability) ||
+    output.length < 3
+  ) {
+    return output;
+  }
+
+  const extents = input.target_extents_m ?? [];
+  const primaryExtent = Math.max(0.25, Number(extents[0]) || 1.2);
+  const secondaryExtent = Math.max(0.25, Number(extents[1]) || 0.9);
+  const contextExtent = Math.max(0.25, Number(extents[2]) || 0.8);
+  const largestExtent = Math.max(primaryExtent, secondaryExtent, contextExtent);
+  const depthSpan = Math.max(1.55, largestExtent * 0.68 + 0.72);
+  const lateralSpan = Math.max(0.72, largestExtent * 0.24 + 0.32);
+  const centerX = input.scene.blocking.primary[0];
+  const centerZ = input.scene.blocking.primary[2];
+  const [depthX, , depthZ] = DIRECTOR_LENS_PERSPECTIVE_CAMERA_DEPTH_BASIS;
+  const [rightX, , rightZ] = DIRECTOR_LENS_PERSPECTIVE_VIEW_RIGHT_BASIS;
+
+  const positionAt = (
+    depthOffset: number,
+    lateralOffset: number,
+    y: number,
+  ): DirectorQualificationFixturePosition => [
+    centerX + depthX * depthOffset + rightX * lateralOffset,
+    y,
+    centerZ + depthZ * depthOffset + rightZ * lateralOffset,
+  ];
+
+  // Camera is on the +depth side of the target for three_quarter_front.
+  // Primary is therefore the near reference, secondary the mid reference, and
+  // context the far reference. Mild lateral staggering keeps all silhouettes
+  // readable without weakening the depth cue.
+  output[0] = positionAt(depthSpan, -lateralSpan, output[0]![1]);
+  output[1] = positionAt(0, 0, output[1]![1]);
+  output[2] = positionAt(-depthSpan, lateralSpan, output[2]![1]);
+  return output;
+}
 
 /**
  * A.11A.22 gives Detail & relationship framing an honest qualification stage.

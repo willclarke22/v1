@@ -876,6 +876,21 @@ function motionBehaviourAlias(id: string): DirectorEvent["behaviour"] {
   return "move_to";
 }
 
+export const DIRECTOR_SPLINE_DEMO_POLICY_VERSION =
+  "director_spline_demo_waypoints_phase1b7a11a26_v1" as const;
+
+/**
+ * Demo/evidence spline rail expressed relative to the current optical target.
+ * The runtime prepends the already-solved camera pose, so the capability enters
+ * the Catmull-Rom rail continuously instead of jumping to an absolute world point.
+ */
+export const DIRECTOR_SPLINE_DEMO_TARGET_RELATIVE_WAYPOINTS = [
+  [1.15, 1.05, 2.85],
+  [-0.75, 1.35, 2.6],
+  [-2.25, 0.85, 1.45],
+  [-2.4, 1.2, -0.35],
+] as const;
+
 function baseShot(capability: DirectorCapability): DirectorShotDirectionV2 {
   return {
     narrative_job: "orient",
@@ -1091,10 +1106,22 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
       shot.lens.preset = lens as DirectorShotDirectionV2["lens"]["preset"];
       const settings: Record<string, [number, number]> = { ultra_wide: [18, 72], wide: [28, 58], normal: [50, 44], portrait: [85, 34], telephoto: [135, 24], macro: [100, 28] };
       [shot.lens.focal_length_mm, shot.lens.field_of_view_degrees] = settings[lens];
-      // Lens character is easiest to judge when foreground/background relation is visible.
+      // Ordinary demos retain the historical two-actor lens comparison. A.11A.24
+      // Qualification promotes context_subject into required_visible_roles; when
+      // that controlled depth reference is present, frame the exact same near /
+      // mid / far trio for every focal-length sibling so only lens perspective
+      // changes across the comparison block.
+      const qualificationHasDepthReference =
+        capability.demo.required_visible_roles.includes("context_subject");
+      const lensEvidenceRoles = qualificationHasDepthReference
+        ? ["primary_subject", "secondary_subject", "context_subject"]
+        : ["primary_subject", "secondary_subject"];
       shot.composition.framing = "two_shot";
-      shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject"];
-      shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"];
+      shot.composition.keep_visible_entity_ids = lensEvidenceRoles;
+      shot.composition.preserve_relationship_entity_ids = lensEvidenceRoles;
+      shot.composition.preserve_relative_scale = true;
+      shot.camera.focus_entity_ids = lensEvidenceRoles;
+      shot.lens.focus_entity_id = "secondary_subject";
     }
     if (capability.id === "focus_shallow") { shot.lens.depth_of_field = "shallow"; shot.lens.aperture_f = 2.4; }
     if (capability.id === "focus_deep") { shot.lens.depth_of_field = "deep"; shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject"]; shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"]; }
@@ -1131,7 +1158,15 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
           ? { direction_sign: 1, distance_m: 3.15 }
           : movement === "object_attached"
             ? { view_direction: [0, -0.12, 1], look_distance_m: 5.0 }
-            : {};
+            : movement === "spline"
+              ? {
+                  target_relative_points:
+                    DIRECTOR_SPLINE_DEMO_TARGET_RELATIVE_WAYPOINTS.map(
+                      (point) => [...point],
+                    ),
+                  prepend_current_pose: true,
+                }
+              : {};
     shot.camera.movement_steps = movement === "settle"
       ? [
           { movement: "push_in", start_progress: 0.05, end_progress: 0.56, strength: 0.34, easing: "ease_out", coordinate_space: "target_relative", target_entity_id: "primary_subject", parameters: {} },
@@ -1144,7 +1179,10 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
           start_progress: movement === "track_parallel" ? 0 : 0.05,
           end_progress: movement === "track_parallel" ? 1 : 0.9,
           strength: movement === "static" ? 0 : 0.78,
-          easing: movement === "track_parallel" ? "linear" : "ease_in_out",
+          easing:
+            movement === "track_parallel" || movement === "spline"
+              ? "linear"
+              : "ease_in_out",
           coordinate_space: movement === "dolly" ? "camera_relative" : "target_relative",
           target_entity_id: targetEntityId,
           parameters: movementParameters,

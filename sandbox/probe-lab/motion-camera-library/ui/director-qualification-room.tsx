@@ -81,8 +81,10 @@ import {
 import {
   directorQualificationAdjustDepthScreenFixturePositions,
   directorQualificationAdjustDetailRelationshipFixturePositions,
+  directorQualificationAdjustLensPerspectiveFixturePositions,
   directorQualificationAdjustRelativeActorFixturePositions,
   directorQualificationAssetRoles,
+  isLensPerspectiveQualificationCapability,
   isSupportContainmentQualificationFamily,
 } from "../director-qualification-fixture-policy";
 import {
@@ -292,6 +294,10 @@ const SLATE_MS = 900;
 const GAP_MS = 500;
 const QUALIFICATION_PREVIEW_FPS = 30;
 const QUALIFICATION_PREVIEW_FRAME_MS = 1000 / QUALIFICATION_PREVIEW_FPS;
+// A.11A.27: prepare large real-asset reels with backpressure. One GLTF is allowed
+// to fetch/parse/upload at a time, and a stalled Suspense load must become an
+// explicit retryable preparation error instead of freezing the Room indefinitely.
+const QUALIFICATION_SINGLE_FLIGHT_PRELOAD_TIMEOUT_MS = 25_000;
 // Module-lived so tab remounts do not forget which Qualification GLTF URLs are resident.
 const QUALIFICATION_RESIDENT_GLTF_URLS = new Map<string, string>();
 // A.11A.14: browser physical inspection is substantially heavier than simple
@@ -1323,6 +1329,39 @@ function buildTrackingMountedComparisonClip(input: {
   } satisfies PlannedClip;
 }
 
+function lensPerspectiveCandidateIndexForPass(
+  passKind: DirectorQualificationPassKind,
+) {
+  return passKind === "baseline" ? 0 : passKind === "diversity" ? 1 : 2;
+}
+
+function chooseLensPerspectivePrimaryAsset(
+  pools: CastPoolResolution[],
+  passKind: DirectorQualificationPassKind,
+) {
+  const slotId = "character" as const;
+  const pool = poolFor(pools, slotId);
+  const desiredIndex = lensPerspectiveCandidateIndexForPass(passKind);
+  const asset = pool?.candidates[desiredIndex] ?? null;
+  return asset ? { slot_id: slotId, asset } : null;
+}
+
+function chooseLensPerspectiveSupportingAsset(
+  pools: CastPoolResolution[],
+  slotId: DirectorQualificationCastSlotId,
+  passKind: DirectorQualificationPassKind,
+  excludedAssetIds: Set<string>,
+) {
+  const candidates = poolFor(pools, slotId)?.candidates ?? [];
+  const desiredIndex = lensPerspectiveCandidateIndexForPass(passKind);
+  if (!candidates[desiredIndex]) return null;
+  for (let index = desiredIndex; index < candidates.length; index += 1) {
+    const candidate = candidates[index];
+    if (candidate && !excludedAssetIds.has(candidate.asset_id)) return candidate;
+  }
+  return null;
+}
+
 function choosePrimary(
   family: DirectorQualificationFamily,
   pools: CastPoolResolution[],
@@ -1334,6 +1373,13 @@ function choosePrimary(
     family,
     capability.id,
   );
+
+  if (isLensPerspectiveQualificationCapability(family, capability)) {
+    // A.11A.24: each focal-length sibling must see the same primary within a
+    // pass. Baseline uses Character candidate 0, Diversity candidate 1, and the
+    // optional physical-stress pass candidate 2. Do not rotate by capability.
+    return chooseLensPerspectivePrimaryAsset(pools, passKind);
+  }
 
   if (
     family.category === "camera_framing" &&
@@ -2557,23 +2603,43 @@ function buildPlannedRoles(input: {
         physicalRegionOverride = target.region_override;
       } else {
         slotId = input.scene.secondary_cast_slot;
-        asset = chooseSupportingAsset(
-          input.pools,
-          slotId,
-          input.pass_kind,
-          input.capability_index,
-          excluded,
-        );
+        asset = isLensPerspectiveQualificationCapability(
+          input.family,
+          input.capability,
+        )
+          ? chooseLensPerspectiveSupportingAsset(
+              input.pools,
+              slotId,
+              input.pass_kind,
+              excluded,
+            )
+          : chooseSupportingAsset(
+              input.pools,
+              slotId,
+              input.pass_kind,
+              input.capability_index,
+              excluded,
+            );
       }
     } else {
       slotId = input.scene.context_cast_slot;
-      asset = chooseSupportingAsset(
-        input.pools,
-        slotId,
-        input.pass_kind,
-        input.capability_index + index,
-        excluded,
-      );
+      asset = isLensPerspectiveQualificationCapability(
+        input.family,
+        input.capability,
+      )
+        ? chooseLensPerspectiveSupportingAsset(
+            input.pools,
+            slotId,
+            input.pass_kind,
+            excluded,
+          )
+        : chooseSupportingAsset(
+            input.pools,
+            slotId,
+            input.pass_kind,
+            input.capability_index + index,
+            excluded,
+          );
     }
 
     if (!asset) return null;
@@ -2633,11 +2699,21 @@ function buildPlannedRoles(input: {
       (entry) => entry.normalization.target_extent_m,
     ),
   });
-  const fixturePositions = directorQualificationAdjustDetailRelationshipFixturePositions({
+  const detailRelationshipFixturePositions =
+    directorQualificationAdjustDetailRelationshipFixturePositions({
+      family: input.family,
+      capability: input.capability,
+      scene: input.scene,
+      positions: relativeFixturePositions,
+      target_extents_m: roleBindings.map(
+        (entry) => entry.normalization.target_extent_m,
+      ),
+    });
+  const fixturePositions = directorQualificationAdjustLensPerspectiveFixturePositions({
     family: input.family,
     capability: input.capability,
     scene: input.scene,
-    positions: relativeFixturePositions,
+    positions: detailRelationshipFixturePositions,
     target_extents_m: roleBindings.map(
       (entry) => entry.normalization.target_extent_m,
     ),
@@ -2732,9 +2808,11 @@ function buildPlannedClips(input: {
           pass_kind: passKind,
           normalization_policy: normalizationPolicy,
           evidence_block_label:
-            input.family.group === "Tracking & attached camera"
-              ? trackingEvidenceBlockLabel(capability, passKind)
-              : onSurfaceCanaryCount > 1
+            isLensPerspectiveQualificationCapability(input.family, capability)
+              ? `Controlled lens perspective block · fixed cast + blocking · ${passKind}`
+              : input.family.group === "Tracking & attached camera"
+                ? trackingEvidenceBlockLabel(capability, passKind)
+                : onSurfaceCanaryCount > 1
                 ? `On Surface Cross-asset source canary ${variantIndex + 1}/${onSurfaceCanaryCount} · ${assetLabel(roles[0]!.asset)} · ${passKind}`
                 : isSupportContainmentQualificationFamily(input.family) &&
                     capability.id === "inside"
@@ -2805,6 +2883,15 @@ function capabilityForPlannedClip(clip: PlannedClip) {
     ["two_shot", "group_shot", "point_of_view", "cutaway"].includes(
       clip.capability.id,
     );
+  const lensPerspectiveEvidence =
+    clip.capability.category === "camera_framing" &&
+    [
+      "lens_ultra_wide",
+      "lens_wide",
+      "lens_normal",
+      "lens_portrait",
+      "lens_telephoto",
+    ].includes(clip.capability.id);
   const plannedRoleIds = clip.roles.map((role) => role.role);
 
   return {
@@ -2822,7 +2909,7 @@ function capabilityForPlannedClip(clip: PlannedClip) {
           ? plannedRoleIds
           : supportContainment
             ? plannedRoleIds
-            : detailRelationshipEvidence
+            : detailRelationshipEvidence || lensPerspectiveEvidence
               ? plannedRoleIds
               : clip.capability.demo.required_visible_roles,
       blocking: clip.roles.map((role) => ({
@@ -3789,6 +3876,18 @@ export function DirectorQualificationRoom({
       loadableAssets.filter((asset) => scheduledAssetIds.has(asset.asset_id)),
     [loadableAssets, scheduledAssetIds],
   );
+  const pendingScheduledAssets = useMemo(
+    () =>
+      scheduledAssets.filter(
+        (asset) =>
+          !preparedAssetIds.includes(asset.asset_id) &&
+          !preloadErrors[asset.asset_id],
+      ),
+    [preparedAssetIds, preloadErrors, scheduledAssets],
+  );
+  // Single-flight preloading keeps GLTF parse/GPU-upload spikes bounded. The next
+  // asset mounts only after the current asset resolves or becomes a visible error.
+  const activePreloadAsset = pendingScheduledAssets[0] ?? null;
   useEffect(() => {
     const nextAssets = new Map(
       scheduledAssets.map((asset) => [
@@ -3955,17 +4054,49 @@ export function DirectorQualificationRoom({
     }));
   }, []);
 
+  useEffect(() => {
+    if (!canPrepare || preparationComplete || !activePreloadAsset) return;
+    const assetId = activePreloadAsset.asset_id;
+    const assetUrl = directorRealAssetBrowserUrl(activePreloadAsset);
+    const timeoutId = window.setTimeout(() => {
+      // Remove the unresolved loader entry before exposing Retry preparation so
+      // a retry starts from a clean request rather than inheriting a stuck promise.
+      useGLTF.clear(assetUrl);
+      setPreloadErrors((current) =>
+        current[assetId]
+          ? current
+          : {
+              ...current,
+              [assetId]: `Asset preload timed out after ${Math.round(
+                QUALIFICATION_SINGLE_FLIGHT_PRELOAD_TIMEOUT_MS / 1000,
+              )}s. Retry preparation to request it again.`,
+            },
+      );
+    }, QUALIFICATION_SINGLE_FLIGHT_PRELOAD_TIMEOUT_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    activePreloadAsset,
+    canPrepare,
+    preparationComplete,
+    preloadGeneration,
+  ]);
+
   function retryPreparation() {
-    for (const asset of scheduledAssets) {
+    // Preserve already-prepared good assets when only one model failed or timed
+    // out. This prevents Retry from creating another large parse/upload burst.
+    const retryAssets = scheduledPreloadFailures.length
+      ? scheduledPreloadFailures
+      : scheduledAssets;
+    for (const asset of retryAssets) {
       useGLTF.clear(directorRealAssetBrowserUrl(asset));
     }
-    const scheduledIds = new Set(scheduledAssets.map((asset) => asset.asset_id));
+    const retryIds = new Set(retryAssets.map((asset) => asset.asset_id));
     setPreparedAssetIds((current) =>
-      current.filter((assetId) => !scheduledIds.has(assetId)),
+      current.filter((assetId) => !retryIds.has(assetId)),
     );
     setPreloadErrors((current) => {
       const next = { ...current };
-      for (const assetId of scheduledIds) delete next[assetId];
+      for (const assetId of retryIds) delete next[assetId];
       return next;
     });
     setPreloadGeneration((value) => value + 1);
@@ -5582,6 +5713,40 @@ export function DirectorQualificationRoom({
           </div>
         ) : null}
 
+        {selectedFamily?.category === "camera_movement" &&
+        selectedFamily.group === "Complex camera paths" ? (
+          <div style={softWarningStyle}>
+            Pass through is deferred until asset/scene directability can identify a
+            genuine traversable opening or representation boundary. The active reel
+            now qualifies Spline only, using an explicit target-relative multi-waypoint
+            Catmull-Rom rail instead of the legacy no-waypoint sinusoidal fallback.
+          </div>
+        ) : null}
+
+        {selectedFamily?.category === "camera_framing" &&
+        selectedFamily.group === "Shot scale" ? (
+          <div style={softWarningStyle}>
+            Extreme close is deferred until a semantic region / feature anchor can
+            identify the meaningful tiny region instead of magnifying an arbitrary
+            bounds centre. Extreme wide, Wide, and Full keep their established framing.
+            Medium wide through Close now use an ordered upper-subject crop ladder for
+            tall/upright single subjects while arbitrary non-tall Diversity assets retain
+            geometric-centre framing.
+          </div>
+        ) : null}
+
+        {selectedFamily?.category === "camera_framing" &&
+        selectedFamily.group === "Lens" ? (
+          <div style={softWarningStyle}>
+            Macro lens, Shallow focus, and Deep focus are deferred from active
+            Qualification. Macro lens waits for semantic feature anchors plus a real
+            close-focus / magnification model; Shallow/Deep focus wait for rendered
+            depth-of-field. This reel compares only Ultra-wide, Wide, Normal, Portrait,
+            and Telephoto using the same three assets and identical near/mid/far blocking
+            within each pass so focal length / FOV is the only intended visual variable.
+          </div>
+        ) : null}
+
         {mountedHostCoverageMissing ? (
           <div style={softWarningStyle}>
             Mounted-camera evidence is blocked: the Vehicle pool has no reviewed asset
@@ -5662,23 +5827,21 @@ export function DirectorQualificationRoom({
                   onRenderRequest={registerDeterministicRenderRequest}
                 />
 
-                {!preparationComplete
-                  ? scheduledAssets.map((asset) => (
-                      <QualificationPreloadBoundary
-                        key={`${asset.asset_id}:${asset.public_path}:${preloadGeneration}`}
-                        resetKey={`${asset.asset_id}:${asset.public_path}:${preloadGeneration}`}
-                        assetId={asset.asset_id}
-                        onError={markPreloadError}
-                      >
-                        <Suspense fallback={null}>
-                          <QualificationAssetPreloader
-                            asset={asset}
-                            onReady={markPreparedAsset}
-                          />
-                        </Suspense>
-                      </QualificationPreloadBoundary>
-                    ))
-                  : null}
+                {!preparationComplete && activePreloadAsset ? (
+                  <QualificationPreloadBoundary
+                    key={`${activePreloadAsset.asset_id}:${activePreloadAsset.public_path}:${preloadGeneration}`}
+                    resetKey={`${activePreloadAsset.asset_id}:${activePreloadAsset.public_path}:${preloadGeneration}`}
+                    assetId={activePreloadAsset.asset_id}
+                    onError={markPreloadError}
+                  >
+                    <Suspense fallback={null}>
+                      <QualificationAssetPreloader
+                        asset={activePreloadAsset}
+                        onReady={markPreparedAsset}
+                      />
+                    </Suspense>
+                  </QualificationPreloadBoundary>
+                ) : null}
 
                 {preparationComplete ? (
                   <QualificationPlaybackPreview
@@ -5703,7 +5866,9 @@ export function DirectorQualificationRoom({
                 <strong>
                   {scheduledPreloadFailures.length
                     ? `${scheduledPreloadFailures.length} asset preload failed`
-                    : `${preparedScheduledCount}/${scheduledAssets.length} assets ready`}
+                    : activePreloadAsset
+                      ? `${preparedScheduledCount}/${scheduledAssets.length} assets ready · loading ${assetLabel(activePreloadAsset)}`
+                      : `${preparedScheduledCount}/${scheduledAssets.length} assets ready`}
                 </strong>
                 <span>
                   {scheduledPreloadFailures.length

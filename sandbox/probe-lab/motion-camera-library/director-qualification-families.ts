@@ -423,6 +423,77 @@ function capabilityProfile(
     }
   }
 
+  if (familyCategory === "camera_framing" && familyGroup === "Shot scale") {
+    if (
+      inSet(capabilityId, [
+        "medium_wide",
+        "medium",
+        "medium_close",
+        "close",
+      ])
+    ) {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Shot-scale qualification uses the Character baseline to prove an ordered upper-subject crop ladder while Diversity remains free to stress arbitrary geometry. Tall/upright single subjects progressively raise the optical target and tighten occupancy from Medium-wide through Close; non-tall subjects retain the established geometric-centre behavior.",
+      };
+    }
+    if (capabilityId === "extreme_close") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Extreme-close is deferred until a semantic region / feature anchor identifies what tiny region is meaningful. Magnifying an arbitrary bounds centre is not honest extreme-close evidence; retain the frozen capability for future anchored execution.",
+      };
+    }
+  }
+
+  if (familyCategory === "camera_framing" && familyGroup === "Lens") {
+    if (
+      inSet(capabilityId, [
+        "lens_ultra_wide",
+        "lens_wide",
+        "lens_normal",
+        "lens_portrait",
+        "lens_telephoto",
+      ])
+    ) {
+      return {
+        suitable_primary_cast_slots: ["character"],
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Lens qualification is a controlled perspective-compression experiment. Every active focal-length sibling uses the same three assets and the same near/mid/far blocking within a pass; only focal length / FOV may change. Baseline and Diversity use separate stable cast sets.",
+      };
+    }
+    if (capabilityId === "lens_macro") {
+      return {
+        suitable_primary_cast_slots: ["small_detail"],
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "macro",
+        qualification_note:
+          "Macro lens is deferred until semantic feature anchors and a real close-focus / magnification model exist. The current Three.js proof reduces Macro lens to a narrow FOV and cannot honestly distinguish it from ordinary telephoto framing; retain the frozen id as a future merge candidate with Macro framing.",
+      };
+    }
+    if (capabilityId === "focus_shallow" || capabilityId === "focus_deep") {
+      return {
+        suitable_primary_cast_slots: ["character"],
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Depth-of-field qualification is deferred as a pair until the active preview path renders focus distance / aperture blur. Deep focus cannot be qualified honestly while every Three.js preview is effectively sharp, and Shallow focus is already declared approximate.",
+      };
+    }
+  }
+
   if (
     familyCategory === "camera_angle" &&
     familyGroup === "Special viewpoints" &&
@@ -477,6 +548,32 @@ function capabilityProfile(
         merge_compare_with_capability_id: "object_attached",
         qualification_note:
           "Mounted-camera evidence is vehicle-gated. This legacy movement ID now compiles through the same canonical mounted-camera primitive as camera-angle `object_attached`; compare blend-in versus immediate modes on the same host before deprecating or retaining the extra vocabulary entry.",
+      };
+    }
+  }
+
+  if (
+    familyCategory === "camera_movement" &&
+    familyGroup === "Complex camera paths"
+  ) {
+    if (capabilityId === "spline") {
+      return {
+        suitable_primary_cast_slots: ["character", "vehicle", "furniture", "irregular_hero"],
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Spline qualification must exercise the real Catmull-Rom waypoint branch rather than the no-waypoint sinusoidal fallback. The demo authors a continuous target-relative multi-waypoint rail with distinct lateral, vertical, and depth phases while the teaching subject remains the optical target.",
+      };
+    }
+    if (capabilityId === "pass_through") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Pass through is deferred until scene/asset directability can identify a traversable opening or representation boundary with entry plane, forward normal, safe aperture, and destination clearance. Driving through an arbitrary solid GLB is not valid pass-through evidence.",
       };
     }
   }
@@ -643,6 +740,11 @@ export const DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS = [
   "macro",
   "cutaway",
   "point_of_view",
+  "lens_macro",
+  "focus_shallow",
+  "focus_deep",
+  "extreme_close",
+  "pass_through",
 ] as const;
 
 export function isDirectorQualificationCapabilityDeferred(capabilityId: string) {
