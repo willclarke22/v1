@@ -537,6 +537,42 @@ function capabilityProfile(
 
   if (
     familyCategory === "camera_movement" &&
+    familyGroup === "Rotational reframing"
+  ) {
+    if (capabilityId === "pan") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Pan qualification proves bounded horizontal rotation from a fixed camera position around one focus subject. It should move the subject laterally through frame without treating a second actor as the semantic destination; compare against Reframe's explicit A-to-B attention handoff.",
+      };
+    }
+    if (capabilityId === "tilt") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Tilt qualification proves bounded vertical rotation from a fixed camera position while keeping the teaching subject meaningfully readable through the end. Empty-sky framing or losing most of the subject is a failure even when the numeric tilt is mechanically correct.",
+      };
+    }
+    if (capabilityId === "reframe") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Reframe qualification is a two-actor compositional handoff: begin with the primary near optical centre, transfer attention, and finish with the secondary near optical centre while both remain readable. This is intentionally distinct from Pan's generic directional yaw.",
+      };
+    }
+  }
+
+  if (
+    familyCategory === "camera_movement" &&
     familyGroup === "Orbit, arc & reveal paths"
   ) {
     if (capabilityId === "reverse_reveal") {

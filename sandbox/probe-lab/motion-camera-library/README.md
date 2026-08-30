@@ -2270,3 +2270,32 @@ three things at once: substantial opening overlap/depth occlusion, materially lo
 final overlap, and a newly positive top-edge clearance where the hidden target visibly
 emerges above the foreground occluder. This is a qualification-authoring correction;
 `director-shot-runtime.tsx` remains unchanged.
+
+## Phase 1B.7A.11A.30 — Rotational reframing perceptual disambiguation
+
+Deterministic evidence reel `QR-20260829-224112` completed cleanly with all six
+scheduled clips and no capture-integrity drift. Visual review accepted Pan as a
+clear horizontal rotation, but Tilt over-rotated until the teaching subject was
+mostly lost below frame, while Reframe looked too much like Pan instead of
+proving an explicit attention handoff.
+
+A.11A.30 keeps production camera-movement semantics intact and repairs
+qualification authoring/fixture evidence:
+
+- Pan's qualification demo selects the existing one-focus generic-yaw branch so
+  it no longer uses the same two-focus actor destination pattern as Reframe.
+- Tilt keeps a fixed camera but uses a bounded demo strength and wider framing so
+  vertical rotation remains obvious without ending on mostly empty sky.
+- Reframe uses exactly two actors staged on the opening camera's horizontal
+  view-right axis. The opening privileges the primary; the ending privileges the
+  secondary; both remain readable enough to perceive an intentional A-to-B
+  compositional handoff.
+- The A.11A.30 verifier measures fixed camera position, screen-space travel,
+  safe final Tilt readability, and the Reframe centre swap. It does not use
+  README or Qualification Room prose as an executable regression gate.
+
+Patch installation continues the hardened transaction policy: exact
+baseline/applied preflight, TypeScript before authoritative regression
+verifiers, immediate native exit-code capture, exact rollback after writes, and
+`pnpm build` as the final native success-path command.
+

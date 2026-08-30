@@ -872,6 +872,12 @@ export const DIRECTOR_DOLLY_DEMO_DISTANCE_M = 0.8 as const;
 export const DIRECTOR_REVERSE_REVEAL_DEMO_DEGREES = 72 as const;
 export const DIRECTOR_RISE_REVEAL_DEMO_DISTANCE_M = 1.6 as const;
 
+export const DIRECTOR_ROTATIONAL_REFRAMING_DEMO_POLICY_VERSION =
+  "director_rotational_reframing_demo_phase1b7a11a30_v1" as const;
+
+export const DIRECTOR_PAN_DEMO_DISTANCE_M = 0.95 as const;
+export const DIRECTOR_TILT_DEMO_STRENGTH = 0.38 as const;
+
 function movementAlias(id: string): DirectorCameraMovement {
   if (id === "pull_out") return "pull_back";
   if (id === "truck_right") return "truck";
@@ -1172,13 +1178,15 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
 
   if (capability.category === "camera_movement") {
     const movement = movementAlias(capability.id);
-    const targetEntityId = movement === "pan" || movement === "reframe"
+    const targetEntityId = movement === "reframe"
       ? "secondary_subject"
       : "primary_subject";
     const movementParameters =
       movement === "arc_left" || movement === "arc_right"
         ? { degrees: 48 }
-        : movement === "track_parallel"
+        : movement === "pan"
+          ? { direction_sign: 1, distance_m: DIRECTOR_PAN_DEMO_DISTANCE_M }
+          : movement === "track_parallel"
           ? { direction_sign: 1, distance_m: 3.15 }
           : movement === "dolly"
             ? {
@@ -1211,7 +1219,12 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
           // proof starts on the side rail instead of zooming into it after 5%.
           start_progress: movement === "track_parallel" ? 0 : 0.05,
           end_progress: movement === "track_parallel" ? 1 : 0.9,
-          strength: movement === "static" ? 0 : 0.78,
+          strength:
+            movement === "static"
+              ? 0
+              : movement === "tilt"
+                ? DIRECTOR_TILT_DEMO_STRENGTH
+                : 0.78,
           easing:
             movement === "track_parallel" || movement === "spline"
               ? "linear"
@@ -1225,12 +1238,48 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
       shot.camera.focus_entity_ids = ["primary_subject"];
       shot.lens.focus_entity_id = "primary_subject";
     }
-    if (["pan", "reframe", "reverse_reveal"].includes(movement)) {
+    if (movement === "pan") {
+      // Qualification proves Pan as generic bounded horizontal rotation, not as
+      // a semantic actor-to-actor handoff. The production runtime already owns
+      // both branches; the demo intentionally selects the one-focus branch so it
+      // cannot collapse perceptually into Reframe.
+      shot.composition.framing = "medium_wide";
+      shot.camera.focus_entity_ids = ["primary_subject"];
+      shot.composition.keep_visible_entity_ids = ["primary_subject"];
+      shot.lens.focus_entity_id = "primary_subject";
+      shot.success_observation =
+        "The fixed camera yaws horizontally by a bounded amount while the teaching subject stays readable; no second actor is treated as the destination of the move.";
+    }
+    if (movement === "tilt") {
+      // The old 0.78-strength medium shot tilted far enough upward that the
+      // subject fell almost completely out of frame. Widen the qualification
+      // framing and bound only the demo strength; production Tilt semantics are
+      // unchanged.
+      shot.composition.framing = "medium_wide";
+      shot.camera.focus_entity_ids = ["primary_subject"];
+      shot.composition.keep_visible_entity_ids = ["primary_subject"];
+      shot.lens.focus_entity_id = "primary_subject";
+      shot.success_observation =
+        "The fixed camera tilts vertically enough to read clearly while the teaching subject remains useful and visible through the end of the move.";
+    }
+    if (movement === "reframe" || movement === "reverse_reveal") {
       shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"];
       shot.composition.keep_visible_entity_ids =
         movement === "reverse_reveal"
           ? ["primary_subject"]
           : ["primary_subject", "secondary_subject"];
+    }
+    if (movement === "reframe") {
+      shot.composition.preserve_relationship_entity_ids = [
+        "primary_subject",
+        "secondary_subject",
+      ];
+      shot.lens.depth_of_field = "deep";
+      shot.lens.focus_entity_id = "secondary_subject";
+      shot.continuity.rules = ["keep_visible", "preserve_action_continuity"];
+      shot.hold_after_ms = 1100;
+      shot.success_observation =
+        "Attention should hand off from a centred primary subject to a centred secondary subject while both remain readable; compare against Pan so this reads as compositional transfer rather than generic yaw.";
     }
     if (movement === "reverse_reveal") {
       shot.composition.preserve_relationship_entity_ids = [

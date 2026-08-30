@@ -49,6 +49,15 @@ export const DIRECTOR_LENS_PERSPECTIVE_CAPABILITY_IDS = [
 export const DIRECTOR_ORBIT_REVEAL_FIXTURE_POLICY_VERSION =
   "director_orbit_reveal_fixture_policy_phase1b7a11a29_v1" as const;
 
+export const DIRECTOR_ROTATIONAL_REFRAMING_FIXTURE_POLICY_VERSION =
+  "director_rotational_reframing_fixture_policy_phase1b7a11a30_v1" as const;
+
+export const DIRECTOR_ROTATIONAL_REFRAMING_VIEW_RIGHT_BASIS = [
+  Math.SQRT1_2,
+  0,
+  -Math.SQRT1_2,
+] as const;
+
 export const DIRECTOR_ORBIT_REVEAL_CAMERA_DEPTH_BASIS = [
   Math.SQRT1_2,
   0,
@@ -111,6 +120,15 @@ export function isOrbitArcRevealQualificationFamily(
   return Boolean(
     family?.category === "camera_movement" &&
       family.group === "Orbit, arc & reveal paths",
+  );
+}
+
+export function isRotationalReframingQualificationFamily(
+  family: DirectorQualificationFamily | undefined,
+) {
+  return Boolean(
+    family?.category === "camera_movement" &&
+      family.group === "Rotational reframing",
   );
 }
 
@@ -360,6 +378,44 @@ export function directorQualificationDetailRelationshipAssetRoles(
     .filter((role): role is DirectorDemoRole => Boolean(role));
 }
 
+const DIRECTOR_ROTATIONAL_REFRAMING_BINARY_ROLE_IDS = [
+  "primary_subject",
+  "secondary_subject",
+] as const;
+
+/**
+ * A.11A.30 keeps Pan's existing spatial-reference cast, makes Tilt a clean
+ * one-subject readability proof, and makes Reframe an intrinsic two-actor
+ * attention handoff. This prevents unrelated context from obscuring whether
+ * Reframe actually transfers composition from A to B.
+ */
+export function directorQualificationRotationalReframingAssetRoles(
+  family: DirectorQualificationFamily,
+  capability: DirectorCapability,
+): DirectorDemoRole[] {
+  if (!isRotationalReframingQualificationFamily(family)) {
+    return [...capability.demo.asset_roles];
+  }
+
+  if (capability.id === "tilt") {
+    const primary =
+      capability.demo.asset_roles.find(
+        (role) => role.role === "primary_subject",
+      ) ?? null;
+    return primary ? [primary] : [];
+  }
+
+  if (capability.id === "reframe") {
+    return DIRECTOR_ROTATIONAL_REFRAMING_BINARY_ROLE_IDS
+      .map((roleId) =>
+        capability.demo.asset_roles.find((role) => role.role === roleId) ?? null,
+      )
+      .filter((role): role is DirectorDemoRole => Boolean(role));
+  }
+
+  return [...capability.demo.asset_roles];
+}
+
 /**
  * Orbit/Arc keeps the existing three-role spatial stage because the surrounding
  * actors provide useful parallax reference. Reveal proofs are intrinsically
@@ -503,6 +559,12 @@ export function directorQualificationAssetRoles(
   family: DirectorQualificationFamily,
   capability: DirectorCapability,
 ): DirectorDemoRole[] {
+  if (isRotationalReframingQualificationFamily(family)) {
+    return directorQualificationRotationalReframingAssetRoles(
+      family,
+      capability,
+    );
+  }
   if (isOrbitArcRevealQualificationFamily(family)) {
     return directorQualificationOrbitRevealAssetRoles(family, capability);
   }
@@ -709,6 +771,57 @@ export function directorQualificationAdjustDetailRelationshipFixturePositions(in
 }
 
 /**
+ * A.11A.30 stages Reframe directly on the opening camera's horizontal view-right
+ * axis. The primary and secondary therefore begin as a readable left/right pair
+ * with enough separation to make the semantic centre handoff obvious while both
+ * remain available as context. Pan and Tilt retain their existing scene blocking.
+ */
+export function directorQualificationAdjustRotationalReframingFixturePositions(input: {
+  family: DirectorQualificationFamily;
+  capability: DirectorCapability;
+  scene: DirectorQualificationScene;
+  positions: DirectorQualificationFixturePosition[];
+  target_extents_m?: number[];
+}): DirectorQualificationFixturePosition[] {
+  const output = input.positions.map(
+    (position) => [...position] as DirectorQualificationFixturePosition,
+  );
+
+  if (
+    !isRotationalReframingQualificationFamily(input.family) ||
+    input.capability.id !== "reframe" ||
+    output.length < 2
+  ) {
+    return output;
+  }
+
+  const extents = input.target_extents_m ?? [];
+  const primaryExtent = Math.max(0.3, Number(extents[0]) || 1.25);
+  const secondaryExtent = Math.max(0.3, Number(extents[1]) || 1.15);
+  const halfSpan = Math.max(
+    0.95,
+    (primaryExtent + secondaryExtent) * 0.28 + 0.3,
+  );
+  const centerX =
+    (input.scene.blocking.primary[0] + input.scene.blocking.secondary[0]) / 2;
+  const centerZ =
+    (input.scene.blocking.primary[2] + input.scene.blocking.secondary[2]) / 2;
+  const [rightX, , rightZ] = DIRECTOR_ROTATIONAL_REFRAMING_VIEW_RIGHT_BASIS;
+
+  output[0] = [
+    centerX - rightX * halfSpan,
+    output[0]![1],
+    centerZ - rightZ * halfSpan,
+  ];
+  output[1] = [
+    centerX + rightX * halfSpan,
+    output[1]![1],
+    centerZ + rightZ * halfSpan,
+  ];
+  return output;
+}
+
+/**
  * A.11A.29 makes reveal semantics visible in Qualification without changing the
  * production camera solver. Both fixtures are authored against the default
  * three-quarter-front opening camera:
@@ -725,7 +838,12 @@ export function directorQualificationAdjustOrbitRevealFixturePositions(input: {
   positions: DirectorQualificationFixturePosition[];
   target_extents_m?: number[];
 }): DirectorQualificationFixturePosition[] {
-  const output = input.positions.map(
+  // The Qualification Room already routes every family through this stage.
+  // Preserve that call site and let A.11A.30's Reframe-only staging run first;
+  // Orbit/Reveal families then continue through their established A.11A.29 path.
+  const rotationalOutput =
+    directorQualificationAdjustRotationalReframingFixturePositions(input);
+  const output = rotationalOutput.map(
     (position) => [...position] as DirectorQualificationFixturePosition,
   );
 

@@ -491,6 +491,21 @@ function specialExpectations(capability: DirectorCapability): string[] {
         "The whole camera rig should translate on the authored diagonal rail: camera position and aim point move together while their mutual distance stays stable.",
         "The stationary subject should drift/parallax across the frame with only moderate scale change, making Dolly visibly different from centered Push in and pure-lateral Truck.",
       ];
+    case "pan":
+      return [
+        "The camera position should remain fixed while the view yaws horizontally by a bounded amount around one teaching subject.",
+        "The subject should travel laterally through frame without a second actor becoming the authored destination; compare against Reframe's explicit A-to-B centre handoff.",
+      ];
+    case "tilt":
+      return [
+        "The camera position should remain fixed while the viewing direction changes vertically enough to read as a Tilt.",
+        "The teaching subject must remain meaningfully visible through the final composition; a frame dominated by empty sky or a subject dropped almost entirely below frame is a qualification failure.",
+      ];
+    case "reframe":
+      return [
+        "The opening should privilege the primary subject near optical centre and the ending should privilege the secondary subject near optical centre while both remain readable.",
+        "The camera should stay in place as attention transfers from A to B; compare against Pan so this reads as semantic compositional handoff rather than generic horizontal rotation.",
+      ];
     case "reverse_reveal":
       return [
         "The source should begin substantially concealed behind the apparent result rather than already reading as a separate second actor.",
