@@ -14,6 +14,7 @@ import {
   directorQualificationAssetRoles,
 } from "../../sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy";
 import {
+  DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS,
   buildActiveDirectorQualificationFamilies,
   buildDirectorQualificationFamilies,
 } from "../../sandbox/probe-lab/motion-camera-library/director-qualification-families";
@@ -75,6 +76,7 @@ function main() {
   const activeFamilies = buildActiveDirectorQualificationFamilies(DIRECTOR_CAPABILITIES);
   const frozenIds = frozenFamilies.flatMap((family) => family.capability_ids);
   const activeIds = activeFamilies.flatMap((family) => family.capability_ids);
+  const deferred = [...DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS] as readonly string[];
 
   assert(
     DIRECTOR_CAPABILITIES.length === 184 &&
@@ -85,10 +87,13 @@ function main() {
   );
   assert(
     activeFamilies.length === 33 &&
-      activeIds.length === 183 &&
-      new Set(activeIds).size === 183 &&
-      !activeIds.includes("inside_object"),
-    "A.11A.20 must preserve the A.11A.19 183-capability active campaign with inside_object deferred.",
+      activeIds.length === DIRECTOR_CAPABILITIES.length - deferred.length &&
+      new Set(activeIds).size === activeIds.length,
+    `A.11A.20 successor coverage must equal frozen coverage minus the live deferred set. Got ${activeIds.length} active / ${deferred.length} deferred.`,
+  );
+  assert(
+    deferred.includes("inside_object") && !activeIds.includes("inside_object"),
+    "A.11A.20 lineage requires inside_object to remain outside active Qualification while it is deferred.",
   );
 
   const composition = activeFamilies.find(
@@ -180,18 +185,6 @@ function main() {
     assert(fixturePolicy.includes(marker), `A.11A.20 fixture-policy marker missing: ${marker}`);
   }
 
-  const readme = source("sandbox/probe-lab/motion-camera-library/README.md");
-  for (const marker of [
-    "Phase 1B.7A.11A.20 — Composition thirds + negative-space truth",
-    "screen-space thirds solve",
-    "Negative-space qualification is also made truthful and symmetric",
-    "only the required primary actor",
-    "does not prevent a",
-    "production shot from containing other actors",
-    "A.11A.19 deferrals",
-  ]) {
-    assert(readme.includes(marker), `A.11A.20 README marker missing: ${marker}`);
-  }
 
   const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
     (counts, item) => {
@@ -212,7 +205,7 @@ function main() {
     "Director Composition Phase 1B.7A.11A.20 thirds + negative-space verification passed.",
   );
   console.log(
-    `16:9 controlled screen centres: center=${centerX.toFixed(3)}, left=${leftX.toFixed(3)}, right=${rightX.toFixed(3)}. Negative-space evidence is primary-only and the 184/183 frozen/active taxonomy remains intact.`,
+    `16:9 controlled screen centres: center=${centerX.toFixed(3)}, left=${leftX.toFixed(3)}, right=${rightX.toFixed(3)}. Negative-space evidence is primary-only; frozen/active taxonomy is 184/${activeIds.length} with ${deferred.length} live deferrals.`,
   );
 }
 

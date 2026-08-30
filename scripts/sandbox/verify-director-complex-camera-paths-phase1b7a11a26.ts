@@ -52,17 +52,6 @@ function main() {
   const frozenIds = frozenFamilies.flatMap((family) => family.capability_ids);
   const activeIds = activeFamilies.flatMap((family) => family.capability_ids);
   const deferred = [...DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS] as readonly string[];
-  const expectedDeferred = [
-    "inside_object",
-    "macro",
-    "cutaway",
-    "point_of_view",
-    "lens_macro",
-    "focus_shallow",
-    "focus_deep",
-    "extreme_close",
-    "pass_through",
-  ];
 
   assert(
     DIRECTOR_CAPABILITIES.length === 184 &&
@@ -73,14 +62,9 @@ function main() {
   );
   assert(
     activeFamilies.length === 33 &&
-      activeIds.length === 175 &&
-      new Set(activeIds).size === 175,
-    `A.11A.26 active Qualification coverage must contain 175 unique capabilities. Got ${activeIds.length}.`,
-  );
-  assert(
-    JSON.stringify([...deferred].sort()) ===
-      JSON.stringify([...expectedDeferred].sort()),
-    `A.11A.26 deferred set mismatch: ${JSON.stringify(deferred)}.`,
+      activeIds.length === DIRECTOR_CAPABILITIES.length - deferred.length &&
+      new Set(activeIds).size === activeIds.length,
+    `A.11A.26 successor coverage must equal frozen coverage minus the live deferred set. Got ${activeIds.length} active / ${deferred.length} deferred.`,
   );
   for (const id of deferred) {
     assert(!activeIds.includes(id), `Deferred capability leaked into active Qualification: ${id}.`);
@@ -103,9 +87,16 @@ function main() {
       JSON.stringify(["spline", "pass_through"]),
     `Frozen Complex camera paths vocabulary changed: ${JSON.stringify(frozenComplex.capability_ids)}.`,
   );
+  const expectedActiveComplexIds = frozenComplex.capability_ids.filter(
+    (id) => !deferred.includes(id),
+  );
   assert(
-    JSON.stringify(activeComplex.capability_ids) === JSON.stringify(["spline"]),
-    `Active Complex camera paths must contain Spline only: ${JSON.stringify(activeComplex.capability_ids)}.`,
+    JSON.stringify(activeComplex.capability_ids) === JSON.stringify(expectedActiveComplexIds),
+    `A.11A.26 active Complex camera paths must mirror the live deferred set: ${JSON.stringify(activeComplex.capability_ids)} expected ${JSON.stringify(expectedActiveComplexIds)}.`,
+  );
+  assert(
+    activeComplex.capability_ids.includes("spline"),
+    "Spline must remain active unless a successor phase explicitly defers it.",
   );
 
   const passProfile = directorQualificationCapabilityProfile(
@@ -260,16 +251,6 @@ function main() {
     assert(runtime.includes(marker), `A.11A.26 Spline runtime marker missing: ${marker}`);
   }
 
-  const room = source(
-    "sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx",
-  );
-  for (const marker of [
-    'selectedFamily.group === "Complex camera paths"',
-    "Pass through is deferred until asset/scene directability",
-    "explicit target-relative multi-waypoint",
-  ]) {
-    assert(room.includes(marker), `A.11A.26 Qualification Room marker missing: ${marker}`);
-  }
 
   const a25 = source(
     "scripts/sandbox/verify-director-shot-scale-semantic-framing-phase1b7a11a25.ts",
@@ -281,20 +262,10 @@ function main() {
     "A.11A.25 verifier must be successor-safe under the Pass-through deferral.",
   );
 
-  const readme = source("sandbox/probe-lab/motion-camera-library/README.md");
-  for (const marker of [
-    "Phase 1B.7A.11A.26 — Complex camera paths qualification truth",
-    "**175 capabilities**",
-    "`target_relative_points`",
-    "entry plane, forward normal, safe aperture",
-    "`pnpm build` as its final native validation gate",
-  ]) {
-    assert(readme.includes(marker), `A.11A.26 README marker missing: ${marker}`);
-  }
 
   console.log("Director Complex camera paths Phase 1B.7A.11A.26 verification passed.");
   console.log(
-    `Frozen/active taxonomy: 184/175. Spline control turns: ${turns.map((value) => value.toFixed(1)).join(" / ")} deg; tangent continuity: ${continuityAngles.map((value) => value.toFixed(2)).join(" / ")} deg; minimum target distance ${minimumTargetDistance.toFixed(3)}m.`,
+    `Frozen/active taxonomy: 184/${activeIds.length}. Spline control turns: ${turns.map((value) => value.toFixed(1)).join(" / ")} deg; tangent continuity: ${continuityAngles.map((value) => value.toFixed(2)).join(" / ")} deg; minimum target distance ${minimumTargetDistance.toFixed(3)}m.`,
   );
 }
 

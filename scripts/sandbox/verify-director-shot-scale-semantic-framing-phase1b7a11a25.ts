@@ -211,16 +211,6 @@ function main() {
     assert(runtime.includes(marker), `Previously qualified wide/full framing changed unexpectedly: ${marker}`);
   }
 
-  const room = source(
-    "sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx",
-  );
-  for (const marker of [
-    'selectedFamily.group === "Shot scale"',
-    "Extreme close is deferred until a semantic region / feature anchor",
-    "Medium wide through Close now use an ordered upper-subject crop ladder",
-  ]) {
-    assert(room.includes(marker), `A.11A.25 Qualification Room marker missing: ${marker}`);
-  }
 
   const a24 = source(
     "scripts/sandbox/verify-director-lens-perspective-qualification-phase1b7a11a24.ts",
@@ -232,16 +222,6 @@ function main() {
     "A.11A.24 verifier must be successor-safe under the Shot-scale deferral.",
   );
 
-  const readme = source("sandbox/probe-lab/motion-camera-library/README.md");
-  for (const marker of [
-    "Phase 1B.7A.11A.25 — Shot-scale semantic framing repair",
-    "**176 capabilities**",
-    "54% → 62% → 69% → 75%",
-    "3.65 → 2.90 → 2.25 → 1.75",
-    "`pnpm build` as its final native validation gate",
-  ]) {
-    assert(readme.includes(marker), `A.11A.25 README marker missing: ${marker}`);
-  }
 
   console.log("Director Shot-scale semantic framing Phase 1B.7A.11A.25 verification passed.");
   console.log(

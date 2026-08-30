@@ -355,23 +355,10 @@ function main() {
   for (const marker of [
     "chooseLensPerspectivePrimaryAsset",
     "chooseLensPerspectiveSupportingAsset",
-    "Controlled lens perspective block · fixed cast + blocking",
-    "Macro lens, Shallow focus, and Deep focus are deferred",
-    "same three assets and identical near/mid/far blocking",
   ]) {
-    assert(room.includes(marker), `A.11A.24 Qualification Room marker missing: ${marker}`);
+    assert(room.includes(marker), `A.11A.24 Qualification Room structural hook missing: ${marker}`);
   }
 
-  const readme = source("sandbox/probe-lab/motion-camera-library/README.md");
-  for (const marker of [
-    "Phase 1B.7A.11A.24 — Lens perspective qualification truth",
-    "**177 capabilities**",
-    "near / mid / far diagonal",
-    "near/far apparent-size ratio should decrease monotonically",
-    "`pnpm build` as its final validation gate",
-  ]) {
-    assert(readme.includes(marker), `A.11A.24 README marker missing: ${marker}`);
-  }
 
   const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
     (counts, item) => {

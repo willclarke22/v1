@@ -362,9 +362,9 @@ function cameraSpecificChecks(
       checks.push(
         measuredBoolean(
           "push_in_closes_distance",
-          "Push in reduces camera-to-target distance.",
-          distanceDelta < -0.08,
-          `distance delta ${rounded(distanceDelta)} m`,
+          "Push in advances toward a fixed optical target instead of translating the whole rig.",
+          distanceDelta < -0.08 && targetTravel < 0.06,
+          `distance delta ${rounded(distanceDelta)} m; target travel ${rounded(targetTravel)} m`,
         ),
       );
     } else if (capability.id === "pull_out") {
@@ -374,6 +374,29 @@ function cameraSpecificChecks(
           "Pull out increases camera-to-target distance.",
           distanceDelta > 0.08,
           `distance delta +${rounded(distanceDelta)} m`,
+        ),
+      );
+    } else if (capability.id === "dolly") {
+      const cameraDelta = endPosition.clone().sub(startPosition);
+      const targetDelta = endTarget.clone().sub(startTarget);
+      const rigDeltaError = cameraDelta.distanceTo(targetDelta);
+      const openingForward = startTarget.clone().sub(startPosition).normalize();
+      const signedForwardTravel = cameraDelta.dot(openingForward);
+      const lateralTravel = cameraDelta
+        .clone()
+        .addScaledVector(openingForward, -signedForwardTravel)
+        .length();
+      checks.push(
+        measuredBoolean(
+          "dolly_translates_whole_rig",
+          "Dolly translates camera and aim point together on a non-axis-aligned rail while preserving camera-to-target distance.",
+          cameraTravel > 0.35 &&
+            targetTravel > 0.35 &&
+            rigDeltaError < 0.06 &&
+            Math.abs(distanceDelta) < 0.06 &&
+            Math.abs(signedForwardTravel) > 0.18 &&
+            lateralTravel > 0.18,
+          `camera travel ${rounded(cameraTravel)} m; target travel ${rounded(targetTravel)} m; rig delta error ${rounded(rigDeltaError)} m; distance delta ${rounded(distanceDelta)} m; forward ${rounded(signedForwardTravel)} m; lateral ${rounded(lateralTravel)} m`,
         ),
       );
     } else if (capability.id === "pan" || capability.id === "tilt") {

@@ -481,6 +481,16 @@ function specialExpectations(capability: DirectorCapability): string[] {
   }
 
   switch (capability.id) {
+    case "push_in":
+      return [
+        "The stationary teaching subject should remain on the optical axis while the camera advances toward a fixed aim point.",
+        "Camera-to-target distance should visibly close; compare against Dolly to ensure this is not whole-rig translation with a moving aim point.",
+      ];
+    case "dolly":
+      return [
+        "The whole camera rig should translate on the authored diagonal rail: camera position and aim point move together while their mutual distance stays stable.",
+        "The stationary subject should drift/parallax across the frame with only moderate scale change, making Dolly visibly different from centered Push in and pure-lateral Truck.",
+      ];
     case "over_shoulder":
       return [
         "A controlled foreground shoulder/head should occupy only a modest edge of frame.",

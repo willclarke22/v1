@@ -848,6 +848,27 @@ export function directorCapabilityById(id: string) {
   return DIRECTOR_CAPABILITIES.find((capability) => capability.id === id) ?? null;
 }
 
+export const DIRECTOR_LINEAR_CAMERA_TRAVEL_DEMO_POLICY_VERSION =
+  "director_linear_camera_travel_demo_phase1b7a11a28_v1" as const;
+
+/**
+ * Qualification-only Dolly cue.
+ *
+ * The production `dolly` runtime is already a generic whole-rig translation:
+ * camera position and aim point move together. The old empty-parameter demo
+ * inherited the runtime's [0, 0, 1] camera-forward default, which made a
+ * stationary subject read almost exactly like Push in. A bounded diagonal rail
+ * exposes the actual rig-translation contract without changing production
+ * camera behavior.
+ */
+export const DIRECTOR_DOLLY_DEMO_CAMERA_RELATIVE_DIRECTION = [
+  0.7,
+  0,
+  0.7,
+] as const;
+
+export const DIRECTOR_DOLLY_DEMO_DISTANCE_M = 0.8 as const;
+
 function movementAlias(id: string): DirectorCameraMovement {
   if (id === "pull_out") return "pull_back";
   if (id === "truck_right") return "truck";
@@ -1156,17 +1177,22 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
         ? { degrees: 48 }
         : movement === "track_parallel"
           ? { direction_sign: 1, distance_m: 3.15 }
-          : movement === "object_attached"
-            ? { view_direction: [0, -0.12, 1], look_distance_m: 5.0 }
-            : movement === "spline"
-              ? {
-                  target_relative_points:
-                    DIRECTOR_SPLINE_DEMO_TARGET_RELATIVE_WAYPOINTS.map(
-                      (point) => [...point],
-                    ),
-                  prepend_current_pose: true,
-                }
-              : {};
+          : movement === "dolly"
+            ? {
+                direction: [...DIRECTOR_DOLLY_DEMO_CAMERA_RELATIVE_DIRECTION],
+                distance_m: DIRECTOR_DOLLY_DEMO_DISTANCE_M,
+              }
+            : movement === "object_attached"
+              ? { view_direction: [0, -0.12, 1], look_distance_m: 5.0 }
+              : movement === "spline"
+                ? {
+                    target_relative_points:
+                      DIRECTOR_SPLINE_DEMO_TARGET_RELATIVE_WAYPOINTS.map(
+                        (point) => [...point],
+                      ),
+                    prepend_current_pose: true,
+                  }
+                : {};
     shot.camera.movement_steps = movement === "settle"
       ? [
           { movement: "push_in", start_progress: 0.05, end_progress: 0.56, strength: 0.34, easing: "ease_out", coordinate_space: "target_relative", target_entity_id: "primary_subject", parameters: {} },

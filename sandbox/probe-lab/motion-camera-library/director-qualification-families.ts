@@ -511,6 +511,32 @@ function capabilityProfile(
 
   if (
     familyCategory === "camera_movement" &&
+    familyGroup === "Linear camera travel"
+  ) {
+    if (capabilityId === "push_in") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Push-in qualification keeps the optical target fixed while the camera advances toward it. Camera-to-target distance must close and the centered stationary subject should grow in frame; this is intentionally different from Dolly's whole-rig translation.",
+      };
+    }
+    if (capabilityId === "dolly") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Dolly remains the generic parameterized whole-rig translation primitive. Qualification uses a bounded diagonal camera-relative rail so camera position and aim point translate together, camera-to-target distance stays effectively constant, and the stationary subject drifts/parallaxes in frame instead of reading as a second centered Push in.",
+      };
+    }
+  }
+
+  if (
+    familyCategory === "camera_movement" &&
     familyGroup === "Tracking & attached camera"
   ) {
     if (

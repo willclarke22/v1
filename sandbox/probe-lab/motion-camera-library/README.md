@@ -2168,3 +2168,57 @@ architecture and changes only preparation backpressure:
 This phase is a Qualification Room execution cleanup only. Frozen taxonomy remains
 184 capabilities and active Qualification remains 175. The installer runs TypeScript
 validation and keeps `pnpm build` as its final native validation gate.
+
+## Phase 1B.7A.11A.28 — Linear camera travel Dolly disambiguation
+
+Deterministic evidence reel `QR-20260829-124529` completed cleanly with **16/16
+clips**, **4,059/4,059 rendered and encoded frames**, zero missed frames, and zero
+timeline drift. Visual review accepted Static, Push in, Pull out, Truck, Pedestal,
+Crane, and Settle. Dolly was mechanically smooth but its old controlled demo read
+too much like Push in, so the family remains open for one re-evidence pass rather
+than freezing a visually ambiguous proof.
+
+Under-the-hood inspection showed that this was **not** a production-runtime
+duplication and therefore should not be repaired by merging or rewriting the camera
+solver:
+
+- `push_in` advances camera position toward a fixed optical target, so
+  camera-to-target distance closes;
+- `dolly` is the generic parameterized whole-rig translation primitive: camera
+  position and aim point translate together, preserving their mutual distance;
+- the old Dolly demo supplied no direction, so the runtime inherited its
+  camera-forward `[0, 0, 1]` default. With a stationary centered subject that
+  produced a perceptual result very close to Push in even though the underlying
+  rig contract was different.
+
+A.11A.28 repairs **qualification authoring and diagnostics only**. Dolly's demo now
+uses a bounded `0.8 m` camera-relative diagonal direction `[0.7, 0, 0.7]`. The
+stationary subject should therefore drift/parallax across frame with only moderate
+scale change while camera and aim point travel together. Push in remains centered
+on a fixed target and closes distance. The camera-fidelity audit now asserts both
+contracts explicitly, and the Qualification guidance describes the intended visual
+comparison against Push in and Truck.
+
+No production `director-shot-runtime.tsx` behavior is changed. The frozen Director
+taxonomy remains 184 capabilities, the live deferred set remains unchanged, and
+active Qualification coverage remains derived from that live set (175 at this
+phase). Render a fresh **Linear camera travel** gauntlet after this patch; if Dolly
+now reads as whole-rig diagonal translation while the seven previously accepted
+siblings remain stable, the family can be closed.
+
+### A.11A.28 v1.2 — historical Qualification verifier successor safety
+
+The first two A.11A.28 installer attempts exposed a regression-suite problem rather
+than a camera/runtime problem. Older Qualification verifiers still pinned the active
+campaign to the exact historical counts from their own phase (for example 183, 181,
+180, or 175). Later, legitimate semantic deferrals reduced live active coverage, so
+re-running an old snapshot verifier could veto a correct successor state.
+
+Historical Qualification verifiers now treat the frozen 184-capability taxonomy as
+the stable authority and derive active coverage from
+`DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS`. They verify the cinematic/fixture
+invariant owned by their phase and require their historical deferrals only as lineage
+subsets where appropriate; they do not require the live deferred set to equal an old
+snapshot. A dedicated A.11A.28 successor-safety verifier guards this rule so future
+patch installers cannot silently reintroduce hard-coded active-count gates into the
+A.11A.20–A.11A.27 regression chain.

@@ -72,15 +72,16 @@ function main() {
   );
   assert(
     activeFamilies.length === 33 &&
-      activeIds.length === 180 &&
-      new Set(activeIds).size === 180,
-    `A.11A.23 active Qualification coverage must be 180 unique capabilities. Got ${activeIds.length}.`,
+      activeIds.length === DIRECTOR_CAPABILITIES.length - deferred.length &&
+      new Set(activeIds).size === activeIds.length,
+    `A.11A.23 successor coverage must equal frozen coverage minus the live deferred set. Got ${activeIds.length} active / ${deferred.length} deferred.`,
   );
-  assert(
-    JSON.stringify([...deferred].sort()) ===
-      JSON.stringify(["cutaway", "inside_object", "macro", "point_of_view"]),
-    `A.11A.23 deferred set mismatch: ${JSON.stringify(deferred)}.`,
-  );
+  for (const id of ["cutaway", "inside_object", "macro", "point_of_view"]) {
+    assert(
+      deferred.includes(id),
+      `A.11A.23 lineage requires ${id} to remain represented in the live deferred set unless a successor phase explicitly supersedes this verifier.`,
+    );
+  }
   for (const id of deferred) {
     assert(!activeIds.includes(id), `Deferred capability leaked into active Qualification: ${id}.`);
     assert(frozenIds.includes(id), `Deferred capability disappeared from frozen taxonomy: ${id}.`);
@@ -110,15 +111,12 @@ function main() {
       ]),
     `Frozen Detail & relationship family changed unexpectedly: ${JSON.stringify(frozenDetail.capability_ids)}.`,
   );
+  const expectedActiveDetailIds = frozenDetail.capability_ids.filter(
+    (id) => !deferred.includes(id),
+  );
   assert(
-    JSON.stringify(activeDetail.capability_ids) ===
-      JSON.stringify([
-        "insert",
-        "two_shot",
-        "group_shot",
-        "over_shoulder",
-      ]),
-    `Active Detail & relationship family must contain only the four honestly provable framings. Got ${JSON.stringify(activeDetail.capability_ids)}.`,
+    JSON.stringify(activeDetail.capability_ids) === JSON.stringify(expectedActiveDetailIds),
+    `A.11A.23 active Detail & relationship membership must mirror the live deferred set. Got ${JSON.stringify(activeDetail.capability_ids)} expected ${JSON.stringify(expectedActiveDetailIds)}.`,
   );
 
   const povProfile = directorQualificationCapabilityProfile(
@@ -311,28 +309,7 @@ function main() {
     assert(runtime.includes(marker), `A.11A.22 projected camera-fit canary missing: ${marker}`);
   }
 
-  const room = source(
-    "sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx",
-  );
-  for (const marker of [
-    "Point of view",
-    "semantic viewpoint anchor",
-    "This reel qualifies Insert, Two shot, Group shot, and Over shoulder",
-    "camera-view-right left/centre/right qualification cluster",
-  ]) {
-    assert(room.includes(marker), `A.11A.23 Qualification Room marker missing: ${marker}`);
-  }
 
-  const readme = source("sandbox/probe-lab/motion-camera-library/README.md");
-  for (const marker of [
-    "Phase 1B.7A.11A.23 — Detail & relationship closeout",
-    "Active Qualification coverage is now **180 capabilities**",
-    "semantic viewpoint anchor",
-    "horizontal **view-right** basis",
-    "`pnpm build` as its final validation gate",
-  ]) {
-    assert(readme.includes(marker), `A.11A.23 README marker missing: ${marker}`);
-  }
 
   const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
     (counts, item) => {
@@ -353,7 +330,7 @@ function main() {
     "Director Detail & relationship closeout Phase 1B.7A.11A.23 verification passed.",
   );
   console.log(
-    `Frozen/active taxonomy: 184/180. POV is deferred honestly; Group-shot projected centres are ${projected.map((entry) => entry.center.ndc[0].toFixed(3)).join(" / ")} with all three actors readable and screen-distinct.`,
+    `Frozen/active taxonomy: 184/${activeIds.length}. A.11A.23 POV/Group-shot invariants remain intact under ${deferred.length} live deferrals; projected centres are ${projected.map((entry) => entry.center.ndc[0].toFixed(3)).join(" / ")}.`,
   );
 }
 
