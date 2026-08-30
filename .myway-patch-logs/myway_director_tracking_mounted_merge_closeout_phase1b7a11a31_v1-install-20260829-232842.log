@@ -1,0 +1,99 @@
+**********************
+PowerShell transcript start
+Start time: 20260829232843
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 21432
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_director_tracking_mounted_merge_closeout_phase1b7a11a31_v1-install-20260829-232842.log
+
+=== MyWay patch install: myway_director_tracking_mounted_merge_closeout_phase1b7a11a31_v1 ===
+
+Invoking transactional installer...
+
+=== myway_director_tracking_mounted_merge_closeout_phase1b7a11a31_v1 ===
+Project root: C:\Users\willc\projects\MyWay\v1
+
+Verifying package payload SHA-256 values...
+PASS: package payload hashes
+PASS: preflight state=baseline
+Creating exact rollback copies...
+PASS: rollback copies created
+Installing patch payload...
+PASS: payload copied
+PASS: exact applied-state postflight
+
+Running TypeScript validation first...
+
+PASS: pnpm exec tsc --noEmit
+
+Running verifier: scripts/sandbox/verify-director-tracking-mounted-merge-closeout-phase1b7a11a31.ts
+
+PASS: scripts/sandbox/verify-director-tracking-mounted-merge-closeout-phase1b7a11a31.ts
+
+Running verifier: scripts/sandbox/verify-director-rotational-reframing-phase1b7a11a30.ts
+
+PASS: scripts/sandbox/verify-director-rotational-reframing-phase1b7a11a30.ts
+
+Running verifier: scripts/sandbox/verify-director-orbit-arc-reveal-paths-phase1b7a11a29.ts
+
+PASS: scripts/sandbox/verify-director-orbit-arc-reveal-paths-phase1b7a11a29.ts
+
+Running verifier: scripts/sandbox/verify-director-qualification-historical-successor-safety-phase1b7a11a28.ts
+
+PASS: scripts/sandbox/verify-director-qualification-historical-successor-safety-phase1b7a11a28.ts
+
+Running verifier: scripts/sandbox/verify-director-linear-camera-travel-phase1b7a11a28.ts
+
+PASS: scripts/sandbox/verify-director-linear-camera-travel-phase1b7a11a28.ts
+
+Running verifier: scripts/sandbox/verify-director-qualification-preload-backpressure-phase1b7a11a27.ts
+
+PASS: scripts/sandbox/verify-director-qualification-preload-backpressure-phase1b7a11a27.ts
+
+Running verifier: scripts/sandbox/verify-director-complex-camera-paths-phase1b7a11a26.ts
+
+PASS: scripts/sandbox/verify-director-complex-camera-paths-phase1b7a11a26.ts
+
+Running verifier: scripts/sandbox/verify-director-shot-scale-semantic-framing-phase1b7a11a25.ts
+
+PASS: scripts/sandbox/verify-director-shot-scale-semantic-framing-phase1b7a11a25.ts
+
+Running verifier: scripts/sandbox/verify-director-lens-perspective-qualification-phase1b7a11a24.ts
+
+PASS: scripts/sandbox/verify-director-lens-perspective-qualification-phase1b7a11a24.ts
+
+Running verifier: scripts/sandbox/verify-director-detail-relationship-closeout-phase1b7a11a23.ts
+
+PASS: scripts/sandbox/verify-director-detail-relationship-closeout-phase1b7a11a23.ts
+
+Running verifier: scripts/sandbox/verify-director-composition-thirds-negative-space-phase1b7a11a20.ts
+
+PASS: scripts/sandbox/verify-director-composition-thirds-negative-space-phase1b7a11a20.ts
+
+Running final production build...
+
+PASS: pnpm build
+
+SUCCESS: myway_director_tracking_mounted_merge_closeout_phase1b7a11a31_v1
+camera_object_attached is now a frozen legacy alias of canonical object_attached with blend-in entry timing.
+Tracking active Qualification now contains Follow / Lead / Lag / Track Parallel only; canonical Object-attached remains qualified under Special viewpoints.
+No new evidence pass is required for this merge closeout.
+
+Outer wrapper completed successfully.
+**********************
+PowerShell transcript end
+End time: 20260829233029
+**********************

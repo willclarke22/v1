@@ -274,7 +274,7 @@ const CAMERA_COMPARISONS: Record<string, string[]> = {
   three_quarter_rear: ["rear_profile", "side_profile"],
   isometric: ["three_quarter_front", "top_down"],
   dutch_angle: ["eye_level", "high_angle"],
-  object_attached: ["point_of_view", "camera_object_attached", "follow"],
+  object_attached: ["point_of_view", "follow"],
   inside_object: ["point_of_view", "cutaway"],
   static: ["push_in", "follow"],
   push_in: ["pull_out", "dolly"],
@@ -296,7 +296,7 @@ const CAMERA_COMPARISONS: Record<string, string[]> = {
   reframe: ["pan", "reverse_reveal"],
   rise_reveal: ["crane", "pedestal_up"],
   spline: ["orbit", "dolly"],
-  camera_object_attached: ["object_attached", "follow"],
+  camera_object_attached: ["object_attached"],
   pass_through: ["push_in", "cutaway"],
   settle: ["static", "push_in"],
 };
@@ -533,8 +533,8 @@ function specialExpectations(capability: DirectorCapability): string[] {
       ];
     case "camera_object_attached":
       return [
-        "The entire camera rig should visibly ease from the external travelling view onto the same canonical high/back mounted-camera relationship used by Object-attached view, then stay outside the vehicle body while the safe travel corridor moves through view.",
-        "The legacy movement ID should differ from Object-attached view only by blend-in timing; the transition must be readable before the same restrained host-body reference, horizon/travel surface, and stable slightly downward-forward local view are restored.",
+        "Legacy compatibility only: this id should ease from the external travelling view onto the canonical high/back Object-attached mounted relationship, with no independent settled-camera semantics.",
+        "Do not qualify this as a separate creative primitive. Its only preserved distinction is blend-in entry timing before the same restrained host-body reference, horizon/travel surface, and stable slightly downward-forward local view are restored.",
       ];
     case "follow":
       return [

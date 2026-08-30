@@ -9,6 +9,7 @@ import {
 } from "../../sandbox/probe-lab/motion-camera-library/director-capability-registry";
 import {
   DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS,
+  directorQualificationExpectedActiveCapabilityCount,
   buildActiveDirectorQualificationFamilies,
   buildDirectorQualificationFamilies,
   directorQualificationCapabilityProfile,
@@ -94,9 +95,9 @@ function main() {
   );
   assert(
     activeFamilies.length === 33 &&
-      activeIds.length === DIRECTOR_CAPABILITIES.length - deferred.length &&
+      activeIds.length === directorQualificationExpectedActiveCapabilityCount(DIRECTOR_CAPABILITIES) &&
       new Set(activeIds).size === activeIds.length,
-    `A.11A.24 successor compatibility requires active coverage to derive from the live deferred set. Active=${activeIds.length}, deferred=${deferred.length}.`,
+    `A.11A.24 successor compatibility requires active coverage to derive from the centralized live Qualification-active count. Active=${activeIds.length}, deferred=${deferred.length}.`,
   );
   for (const id of [
     "cutaway",

@@ -643,9 +643,9 @@ function capabilityProfile(
         suitable_primary_cast_slots: ["vehicle"],
         comparison_group: "mounted_camera",
         requires_directional_facing: true,
-        merge_compare_with_capability_id: "object_attached",
+        merge_compare_with_capability_id: null,
         qualification_note:
-          "Mounted-camera evidence is vehicle-gated. This legacy movement ID now compiles through the same canonical mounted-camera primitive as camera-angle `object_attached`; compare blend-in versus immediate modes on the same host before deprecating or retaining the extra vocabulary entry.",
+          "Merged legacy alias: same-host vehicle evidence closed `camera_object_attached` into canonical `object_attached`. The old id remains readable for backwards compatibility and maps to the canonical mounted primitive with blend-in entry timing, but it is no longer an independent active Qualification or authoring choice.",
       };
     }
   }
@@ -845,20 +845,69 @@ export const DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS = [
   "pass_through",
 ] as const;
 
+/**
+ * Successfully merged legacy aliases are not deferrals: their cinematic
+ * behavior has been resolved into a canonical primitive, while the old id
+ * remains in the frozen compatibility vocabulary.
+ */
+export const DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_IDS = [
+  "camera_object_attached",
+] as const;
+
+/**
+ * Qualification-family lineage for successful merges. This survives removal
+ * from the active family so campaign normalization can distinguish an
+ * intentional merge closeout from an evidence-invalidating membership change.
+ */
+export const DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_FAMILY_KEY_BY_ID = {
+  camera_object_attached: "camera_movement:Tracking & attached camera",
+} as const;
+
+export function directorQualificationMergedCapabilityIdsForFamily(
+  familyKey: string,
+) {
+  return Object.entries(
+    DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_FAMILY_KEY_BY_ID,
+  )
+    .filter(([, mergedFamilyKey]) => mergedFamilyKey === familyKey)
+    .map(([capabilityId]) => capabilityId);
+}
+
 export function isDirectorQualificationCapabilityDeferred(capabilityId: string) {
   return (DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS as readonly string[]).includes(
     capabilityId,
   );
 }
 
+export function isDirectorQualificationCapabilityMerged(capabilityId: string) {
+  return (DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_IDS as readonly string[]).includes(
+    capabilityId,
+  );
+}
+
+export function isDirectorQualificationCapabilityActive(capabilityId: string) {
+  return (
+    !isDirectorQualificationCapabilityDeferred(capabilityId) &&
+    !isDirectorQualificationCapabilityMerged(capabilityId)
+  );
+}
+
+export function directorQualificationExpectedActiveCapabilityCount(
+  capabilities: DirectorCapability[],
+) {
+  return capabilities.filter((capability) =>
+    isDirectorQualificationCapabilityActive(capability.id),
+  ).length;
+}
+
 /**
  * Active Qualification Room view of the frozen Director family taxonomy.
  *
- * Deferred capabilities remain in the 184-entry Director registry and in
- * buildDirectorQualificationFamilies(...) so historical coverage/regression
- * evidence stays stable. The live campaign removes only capabilities that
- * cannot currently be proven truthfully with the available qualification
- * assets/runtime metadata.
+ * Deferred and successfully merged legacy capabilities remain in the 184-entry
+ * Director registry and in buildDirectorQualificationFamilies(...) so historical
+ * compatibility evidence stays stable. The live campaign excludes capabilities
+ * that either cannot yet be proven truthfully or have already been consolidated
+ * into a canonical primitive.
  */
 export function buildActiveDirectorQualificationFamilies(
   capabilities: DirectorCapability[],
@@ -866,7 +915,7 @@ export function buildActiveDirectorQualificationFamilies(
   return buildDirectorQualificationFamilies(capabilities)
     .map((family) => {
       const capabilityIds = family.capability_ids.filter(
-        (capabilityId) => !isDirectorQualificationCapabilityDeferred(capabilityId),
+        (capabilityId) => isDirectorQualificationCapabilityActive(capabilityId),
       );
       if (capabilityIds.length === family.capability_ids.length) return family;
 

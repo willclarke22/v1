@@ -12,6 +12,7 @@ import {
 import { buildDirectorCameraFidelityReport } from "../../sandbox/probe-lab/motion-camera-library/director-camera-fidelity";
 import {
   DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS,
+  directorQualificationExpectedActiveCapabilityCount,
   buildActiveDirectorQualificationFamilies,
   buildDirectorQualificationFamilies,
   directorQualificationCapabilityProfile,
@@ -77,9 +78,9 @@ function main() {
     "A.11A.28 must preserve the frozen 184-capability / 33-family Director taxonomy.",
   );
   assert(
-    new Set(activeIds).size === DIRECTOR_CAPABILITIES.length - deferred.length &&
-      activeIds.length === DIRECTOR_CAPABILITIES.length - deferred.length,
-    `A.11A.28 active coverage must derive from the live deferred set. Got ${activeIds.length} active / ${deferred.length} deferred.`,
+    new Set(activeIds).size === directorQualificationExpectedActiveCapabilityCount(DIRECTOR_CAPABILITIES) &&
+      activeIds.length === directorQualificationExpectedActiveCapabilityCount(DIRECTOR_CAPABILITIES),
+    `A.11A.28 active coverage must derive from the live Qualification exclusion policy. Got ${activeIds.length} active / ${deferred.length} deferred.`,
   );
   for (const id of deferred) {
     assert(!activeIds.includes(id), `Deferred capability leaked into active Qualification: ${id}.`);

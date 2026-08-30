@@ -9,6 +9,7 @@ import {
 } from "../../sandbox/probe-lab/motion-camera-library/director-capability-registry";
 import {
   DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS,
+  directorQualificationExpectedActiveCapabilityCount,
   buildActiveDirectorQualificationFamilies,
   buildDirectorQualificationFamilies,
   directorQualificationCapabilityProfile,
@@ -72,9 +73,9 @@ function main() {
   );
   assert(
     activeFamilies.length === 33 &&
-      activeIds.length === DIRECTOR_CAPABILITIES.length - deferred.length &&
+      activeIds.length === directorQualificationExpectedActiveCapabilityCount(DIRECTOR_CAPABILITIES) &&
       new Set(activeIds).size === activeIds.length,
-    `A.11A.23 successor coverage must equal frozen coverage minus the live deferred set. Got ${activeIds.length} active / ${deferred.length} deferred.`,
+    `A.11A.23 successor coverage must equal the centralized live Qualification-active count. Got ${activeIds.length} active / ${deferred.length} deferred.`,
   );
   for (const id of ["cutaway", "inside_object", "macro", "point_of_view"]) {
     assert(

@@ -7,6 +7,7 @@ import {
 } from "../../sandbox/probe-lab/motion-camera-library/director-capability-registry";
 import {
   DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS,
+  directorQualificationExpectedActiveCapabilityCount,
   buildActiveDirectorQualificationFamilies,
   buildDirectorQualificationFamilies,
   directorQualificationCapabilityProfile,
@@ -129,9 +130,9 @@ function main() {
     "A.11A.29 must preserve the frozen 184-capability / 33-family Director taxonomy.",
   );
   assert(
-    activeIds.length === DIRECTOR_CAPABILITIES.length - deferred.length &&
+    activeIds.length === directorQualificationExpectedActiveCapabilityCount(DIRECTOR_CAPABILITIES) &&
       new Set(activeIds).size === activeIds.length,
-    `A.11A.29 active coverage must derive from the live deferred set. Got ${activeIds.length} active / ${deferred.length} deferred.`,
+    `A.11A.29 active coverage must derive from the live Qualification exclusion policy. Got ${activeIds.length} active / ${deferred.length} deferred.`,
   );
 
   const frozenFamily = frozenFamilies.find(

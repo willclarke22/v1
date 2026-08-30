@@ -2299,3 +2299,31 @@ baseline/applied preflight, TypeScript before authoritative regression
 verifiers, immediate native exit-code capture, exact rollback after writes, and
 `pnpm build` as the final native success-path command.
 
+## Phase 1B.7A.11A.31 — Tracking mounted-camera merge closeout
+
+Deterministic same-host evidence reel `QR-20260829-231020` reconfirmed the earlier
+merge conclusion on both the Lamborghini and police-car passes. Follow, Lead, Lag,
+and Track Parallel remain qualified. Canonical camera-angle `object_attached` remains
+the mounted-camera primitive. Legacy camera-movement `camera_object_attached` differs
+only by the transition into that same settled actor-local relationship.
+
+A.11A.31 therefore closes the duplicate vocabulary structurally rather than asking for
+another visual repair:
+
+- the frozen 184-entry registry retains `camera_object_attached` for backwards
+  compatibility;
+- canonical authoring excludes that legacy id and resolves it to `object_attached` with
+  `blend_in` entry timing;
+- active Qualification excludes the merged legacy id without misclassifying it as a
+  deferral;
+- Tracking & attached camera now actively contains only Follow, Lead subject, Lag
+  follow, and Track parallel;
+- Object-attached remains qualified in Camera angle -> Special viewpoints;
+- the production mounted-camera solver is unchanged: movement-form `object_attached`
+  uses blend-in mode and camera-angle `object_attached` uses immediate mode;
+- historical active-count verifiers now call one centralized expected-active helper so
+  future deferrals or successful merges do not create stale count assumptions.
+
+No new evidence pass is required for this merge closeout: `QR-20260829-231020` is the
+same-host evidence establishing that the settled mounted relationship is redundant.
+

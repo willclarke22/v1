@@ -11,6 +11,7 @@ import {
 } from "../../sandbox/probe-lab/motion-camera-library/director-capability-registry";
 import {
   DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS,
+  directorQualificationExpectedActiveCapabilityCount,
   buildActiveDirectorQualificationFamilies,
   buildDirectorQualificationFamilies,
   directorQualificationCapabilityProfile,
@@ -62,9 +63,9 @@ function main() {
   );
   assert(
     activeFamilies.length === 33 &&
-      activeIds.length === DIRECTOR_CAPABILITIES.length - deferred.length &&
+      activeIds.length === directorQualificationExpectedActiveCapabilityCount(DIRECTOR_CAPABILITIES) &&
       new Set(activeIds).size === activeIds.length,
-    `A.11A.26 successor coverage must equal frozen coverage minus the live deferred set. Got ${activeIds.length} active / ${deferred.length} deferred.`,
+    `A.11A.26 successor coverage must equal the centralized live Qualification-active count. Got ${activeIds.length} active / ${deferred.length} deferred.`,
   );
   for (const id of deferred) {
     assert(!activeIds.includes(id), `Deferred capability leaked into active Qualification: ${id}.`);
@@ -256,7 +257,7 @@ function main() {
     "scripts/sandbox/verify-director-shot-scale-semantic-framing-phase1b7a11a25.ts",
   );
   assert(
-    a25.includes("DIRECTOR_CAPABILITIES.length - deferred.length") &&
+    a25.includes("directorQualificationExpectedActiveCapabilityCount(DIRECTOR_CAPABILITIES)") &&
       a25.includes("A.11A.25 lineage requires") &&
       !a25.includes("activeIds.length === 176"),
     "A.11A.25 verifier must be successor-safe under the Pass-through deferral.",

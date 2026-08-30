@@ -833,6 +833,47 @@ export const DIRECTOR_CAPABILITIES: DirectorCapability[] = [
   ...transitionContinuity,
 ];
 
+/**
+ * Frozen-vocabulary entries that remain readable for backwards compatibility
+ * but are no longer canonical authoring choices. The legacy mounted-camera
+ * movement proved to be the same actor-local mounted relationship as
+ * `object_attached`; only the entry transition differs.
+ */
+export const DIRECTOR_LEGACY_MERGED_CAPABILITY_ALIASES = {
+  camera_object_attached: {
+    canonical_capability_id: "object_attached",
+    transition_mode: "blend_in",
+  },
+} as const;
+
+export type DirectorLegacyMergedCapabilityId =
+  keyof typeof DIRECTOR_LEGACY_MERGED_CAPABILITY_ALIASES;
+
+export function isDirectorLegacyMergedCapabilityId(
+  capabilityId: string,
+): capabilityId is DirectorLegacyMergedCapabilityId {
+  return Object.prototype.hasOwnProperty.call(
+    DIRECTOR_LEGACY_MERGED_CAPABILITY_ALIASES,
+    capabilityId,
+  );
+}
+
+export function directorCanonicalCapabilityIdForAuthoring(capabilityId: string) {
+  if (!isDirectorLegacyMergedCapabilityId(capabilityId)) return capabilityId;
+  return DIRECTOR_LEGACY_MERGED_CAPABILITY_ALIASES[capabilityId]
+    .canonical_capability_id;
+}
+
+/**
+ * Canonical authoring surface. DIRECTOR_CAPABILITIES remains the frozen
+ * 184-entry compatibility vocabulary; new Director authoring should use this
+ * list so merged legacy aliases are not selected as independent primitives.
+ */
+export const DIRECTOR_AUTHORABLE_CAPABILITIES: DirectorCapability[] =
+  DIRECTOR_CAPABILITIES.filter(
+    (capability) => !isDirectorLegacyMergedCapabilityId(capability.id),
+  );
+
 export const DIRECTOR_CATEGORY_LABELS: Record<DirectorCapabilityCategory, string> = {
   narrative_attention: "Narrative & attention",
   camera_framing: "Camera framing",
@@ -882,7 +923,9 @@ function movementAlias(id: string): DirectorCameraMovement {
   if (id === "pull_out") return "pull_back";
   if (id === "truck_right") return "truck";
   if (id === "pedestal_up") return "pedestal";
-  if (id === "camera_object_attached") return "object_attached";
+  if (isDirectorLegacyMergedCapabilityId(id)) {
+    return DIRECTOR_LEGACY_MERGED_CAPABILITY_ALIASES[id].canonical_capability_id;
+  }
   if ([
     "static", "push_in", "dolly", "pan", "tilt", "orbit", "arc_left", "arc_right",
     "follow", "lead_subject", "lag_follow", "track_parallel", "crane", "reverse_reveal",

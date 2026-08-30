@@ -1,11 +1,27 @@
 import type { DirectorQualificationCoverageMode } from "./director-qualification-contract";
-import type { DirectorQualificationFamily } from "./director-qualification-families";
+import {
+  directorQualificationMergedCapabilityIdsForFamily,
+  type DirectorQualificationFamily,
+} from "./director-qualification-families";
 
 export const DIRECTOR_QUALIFICATION_CAMPAIGN_SCHEMA_VERSION =
   "director_qualification_campaign_phase1b7a11a_v1" as const;
 
 export const DIRECTOR_QUALIFICATION_CAMPAIGN_STORAGE_KEY =
   "myway_director_qualification_campaign_phase1b7a11a_v1";
+
+/**
+ * Normalization/migration epoch for persisted campaign state.
+ *
+ * Keep the storage key stable so existing browser state is upgraded in place.
+ * A.11A.31 v1.1 uses this epoch to repair the one-time merge migration without
+ * weakening the ordinary "membership changed => re-evidence" safety rule.
+ */
+export const DIRECTOR_QUALIFICATION_CAMPAIGN_NORMALIZATION_VERSION =
+  "director_qualification_campaign_normalization_phase1b7a11a31_v1_1" as const;
+
+const DIRECTOR_QUALIFICATION_MEMBERSHIP_RE_EVIDENCE_REASON =
+  "Active qualification capability membership changed; render fresh deterministic evidence for the current family.";
 
 export const DIRECTOR_QUALIFICATION_CAMPAIGN_FAMILY_STATUSES = [
   "not_started",
@@ -51,6 +67,7 @@ export type DirectorQualificationCampaignFamilyRecord = {
 
 export type DirectorQualificationCampaignState = {
   schema_version: typeof DIRECTOR_QUALIFICATION_CAMPAIGN_SCHEMA_VERSION;
+  normalization_version: typeof DIRECTOR_QUALIFICATION_CAMPAIGN_NORMALIZATION_VERSION;
   campaign_id: string;
   created_at: string;
   updated_at: string;
@@ -106,6 +123,7 @@ export function emptyDirectorQualificationCampaignState(
 ): DirectorQualificationCampaignState {
   return {
     schema_version: DIRECTOR_QUALIFICATION_CAMPAIGN_SCHEMA_VERSION,
+    normalization_version: DIRECTOR_QUALIFICATION_CAMPAIGN_NORMALIZATION_VERSION,
     campaign_id: campaignIdForIso(nowIso),
     created_at: nowIso,
     updated_at: nowIso,
@@ -144,6 +162,13 @@ export function normalizeDirectorQualificationCampaignState(
   if (!value || typeof value !== "object") return fallback;
 
   const input = value as Partial<DirectorQualificationCampaignState>;
+  const sourceNormalizationVersion =
+    typeof input.normalization_version === "string"
+      ? input.normalization_version
+      : null;
+  const isPreMergeAwareCampaignState =
+    sourceNormalizationVersion !==
+    DIRECTOR_QUALIFICATION_CAMPAIGN_NORMALIZATION_VERSION;
   const knownFamilyKeys = new Set(families.map((family) => family.key));
   const sourceFamilies =
     input.families && typeof input.families === "object" ? input.families : {};
@@ -164,19 +189,61 @@ export function normalizeDirectorQualificationCampaignState(
     const record = candidate as Partial<DirectorQualificationCampaignFamilyRecord>;
     const capabilitySet = new Set(family.capability_ids);
     const recordedCapabilityIds = uniqueStrings(record.capability_ids ?? []);
+    const recordedCapabilitySet = new Set(recordedCapabilityIds);
+    const addedCapabilityIds = family.capability_ids.filter(
+      (capabilityId) => !recordedCapabilitySet.has(capabilityId),
+    );
+    const removedCapabilityIds = recordedCapabilityIds.filter(
+      (capabilityId) => !capabilitySet.has(capabilityId),
+    );
     const capabilityMembershipChanged =
       recordedCapabilityIds.length > 0 &&
-      (recordedCapabilityIds.length !== family.capability_ids.length ||
-        recordedCapabilityIds.some((capabilityId) => !capabilitySet.has(capabilityId)));
+      (addedCapabilityIds.length > 0 || removedCapabilityIds.length > 0);
+
+    const mergedCapabilityIdsForFamily =
+      directorQualificationMergedCapabilityIdsForFamily(family.key);
+    const mergedCapabilitySet = new Set(mergedCapabilityIdsForFamily);
+    const membershipChangeIsCompletedMerge =
+      capabilityMembershipChanged &&
+      addedCapabilityIds.length === 0 &&
+      removedCapabilityIds.length > 0 &&
+      removedCapabilityIds.every((capabilityId) =>
+        mergedCapabilitySet.has(capabilityId),
+      );
+    const membershipChangeInvalidatesEvidence =
+      capabilityMembershipChanged && !membershipChangeIsCompletedMerge;
+
     const hasPriorEvidence =
       typeof record.latest_evidence_reel_id === "string" &&
       record.latest_evidence_reel_id.length > 0;
+    const hasPassingPriorEvidence =
+      hasPriorEvidence && record.latest_evidence_integrity === "pass";
+    const recordedStatus = normalizedStatus(record.status);
+    const recordedReEvidenceReason =
+      typeof record.re_evidence_reason === "string" ? record.re_evidence_reason : "";
+
+    // A.11A.31 v1 could already have normalized the old five-member Tracking
+    // family into four active members and written Needs re-evidence before this
+    // merge-aware migration existed. Recover that exact legacy auto-state once.
+    // The normalization epoch prevents this exception from weakening future
+    // genuine membership-change safety.
+    const staleCompletedMergeReEvidence =
+      isPreMergeAwareCampaignState &&
+      mergedCapabilityIdsForFamily.length > 0 &&
+      hasPassingPriorEvidence &&
+      recordedStatus === "needs_re_evidence" &&
+      recordedReEvidenceReason ===
+        DIRECTOR_QUALIFICATION_MEMBERSHIP_RE_EVIDENCE_REASON &&
+      (!capabilityMembershipChanged || membershipChangeIsCompletedMerge);
+
     normalizedFamilies[family.key] = {
       ...fallbackFamily,
       status:
-        capabilityMembershipChanged && hasPriorEvidence
+        membershipChangeInvalidatesEvidence && hasPriorEvidence
           ? "needs_re_evidence"
-          : normalizedStatus(record.status),
+          : staleCompletedMergeReEvidence
+            ? "awaiting_perceptual_review"
+            : recordedStatus,
       latest_evidence_reel_id:
         typeof record.latest_evidence_reel_id === "string"
           ? record.latest_evidence_reel_id
@@ -203,11 +270,11 @@ export function normalizeDirectorQualificationCampaignState(
         (capabilityId) => capabilitySet.has(capabilityId),
       ),
       re_evidence_reason:
-        capabilityMembershipChanged && hasPriorEvidence
-          ? "Active qualification capability membership changed; render fresh deterministic evidence for the current family."
-          : typeof record.re_evidence_reason === "string"
-            ? record.re_evidence_reason
-            : "",
+        membershipChangeInvalidatesEvidence && hasPriorEvidence
+          ? DIRECTOR_QUALIFICATION_MEMBERSHIP_RE_EVIDENCE_REASON
+          : staleCompletedMergeReEvidence
+            ? ""
+            : recordedReEvidenceReason,
     };
   }
 
@@ -226,6 +293,7 @@ export function normalizeDirectorQualificationCampaignState(
 
   return {
     schema_version: DIRECTOR_QUALIFICATION_CAMPAIGN_SCHEMA_VERSION,
+    normalization_version: DIRECTOR_QUALIFICATION_CAMPAIGN_NORMALIZATION_VERSION,
     campaign_id:
       typeof input.campaign_id === "string" && input.campaign_id
         ? input.campaign_id
@@ -256,6 +324,7 @@ function withFamilyRecord(
   return {
     ...state,
     schema_version: DIRECTOR_QUALIFICATION_CAMPAIGN_SCHEMA_VERSION,
+    normalization_version: DIRECTOR_QUALIFICATION_CAMPAIGN_NORMALIZATION_VERSION,
     updated_at: nowIso,
     current_family_key: family.key,
     families: {

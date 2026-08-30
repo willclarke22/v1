@@ -8,6 +8,7 @@ import {
 } from "../../sandbox/probe-lab/motion-camera-library/director-capability-registry";
 import {
   DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS,
+  directorQualificationExpectedActiveCapabilityCount,
   buildActiveDirectorQualificationFamilies,
   buildDirectorQualificationFamilies,
   directorQualificationCapabilityProfile,
@@ -58,7 +59,7 @@ function main() {
   );
   assert(
     activeFamilies.length === 33 &&
-      activeIds.length === DIRECTOR_CAPABILITIES.length - deferred.length &&
+      activeIds.length === directorQualificationExpectedActiveCapabilityCount(DIRECTOR_CAPABILITIES) &&
       new Set(activeIds).size === activeIds.length,
     `A.11A.25 successor coverage must derive from the live deferred set. Got ${activeIds.length} active / ${deferred.length} deferred.`,
   );
@@ -216,7 +217,7 @@ function main() {
     "scripts/sandbox/verify-director-lens-perspective-qualification-phase1b7a11a24.ts",
   );
   assert(
-    a24.includes("DIRECTOR_CAPABILITIES.length - deferred.length") &&
+    a24.includes("directorQualificationExpectedActiveCapabilityCount(DIRECTOR_CAPABILITIES)") &&
       a24.includes("A.11A.24 lineage requires") &&
       !a24.includes("activeIds.length === 177"),
     "A.11A.24 verifier must be successor-safe under the Shot-scale deferral.",
