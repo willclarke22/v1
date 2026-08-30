@@ -17,6 +17,7 @@ function main() {
     "scripts/sandbox/verify-director-shot-scale-semantic-framing-phase1b7a11a25.ts",
     "scripts/sandbox/verify-director-complex-camera-paths-phase1b7a11a26.ts",
     "scripts/sandbox/verify-director-qualification-preload-backpressure-phase1b7a11a27.ts",
+    "scripts/sandbox/verify-director-linear-camera-travel-phase1b7a11a28.ts",
   ] as const;
 
   for (const path of authoritative) {
@@ -86,6 +87,14 @@ function main() {
     "A.11A.27 must preserve live coverage plus single-flight preparation semantics.",
   );
 
+  const a28 = source(authoritative[6]);
+  assert(
+    a28.includes("DIRECTOR_CAPABILITIES.length - deferred.length") &&
+      a28.includes("DIRECTOR_DOLLY_DEMO_CAMERA_RELATIVE_DIRECTION") &&
+      a28.includes("dolly_translates_whole_rig"),
+    "A.11A.28 must preserve live coverage plus the qualified Dolly disambiguation contract.",
+  );
+
 
   const a11a27 = source(
     "scripts/sandbox/verify-director-qualification-preload-backpressure-phase1b7a11a27.ts",
@@ -98,7 +107,7 @@ function main() {
   );
 
   console.log("Director Qualification authoritative regression-chain verification passed.");
-  console.log("A.11A.21/A.11A.22 are superseded Detail/relationship stages; A.11A.23 carries their durable invariants. Authoritative verifiers no longer use README/UI prose as install gates.");
+  console.log("A.11A.21/A.11A.22 are superseded Detail/relationship stages; A.11A.23 carries their durable invariants. Authoritative A.11A.20/A.11A.23-A.11A.28 verifiers do not use README prose as install gates.");
 }
 
 main();

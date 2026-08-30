@@ -869,6 +869,9 @@ export const DIRECTOR_DOLLY_DEMO_CAMERA_RELATIVE_DIRECTION = [
 
 export const DIRECTOR_DOLLY_DEMO_DISTANCE_M = 0.8 as const;
 
+export const DIRECTOR_REVERSE_REVEAL_DEMO_DEGREES = 72 as const;
+export const DIRECTOR_RISE_REVEAL_DEMO_DISTANCE_M = 1.6 as const;
+
 function movementAlias(id: string): DirectorCameraMovement {
   if (id === "pull_out") return "pull_back";
   if (id === "truck_right") return "truck";
@@ -1182,7 +1185,11 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
                 direction: [...DIRECTOR_DOLLY_DEMO_CAMERA_RELATIVE_DIRECTION],
                 distance_m: DIRECTOR_DOLLY_DEMO_DISTANCE_M,
               }
-            : movement === "object_attached"
+            : movement === "reverse_reveal"
+              ? { degrees: DIRECTOR_REVERSE_REVEAL_DEMO_DEGREES }
+              : movement === "rise_reveal"
+                ? { distance_m: DIRECTOR_RISE_REVEAL_DEMO_DISTANCE_M }
+                : movement === "object_attached"
               ? { view_direction: [0, -0.12, 1], look_distance_m: 5.0 }
               : movement === "spline"
                 ? {
@@ -1220,7 +1227,34 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
     }
     if (["pan", "reframe", "reverse_reveal"].includes(movement)) {
       shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"];
-      shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject"];
+      shot.composition.keep_visible_entity_ids =
+        movement === "reverse_reveal"
+          ? ["primary_subject"]
+          : ["primary_subject", "secondary_subject"];
+    }
+    if (movement === "reverse_reveal") {
+      shot.composition.preserve_relationship_entity_ids = [
+        "primary_subject",
+        "secondary_subject",
+      ];
+      shot.lens.focus_entity_id = "secondary_subject";
+      shot.continuity.rules = ["preserve_action_continuity"];
+      shot.reveal_at = 0.5;
+      shot.hold_after_ms = 1100;
+      shot.success_observation =
+        "The source begins substantially concealed behind the apparent result, then becomes separately readable through camera parallax.";
+    }
+    if (movement === "rise_reveal") {
+      shot.composition.keep_visible_entity_ids = [];
+      shot.composition.foreground_entity_ids = ["secondary_subject"];
+      shot.composition.background_entity_ids = ["primary_subject"];
+      shot.camera.focus_entity_ids = ["primary_subject"];
+      shot.lens.focus_entity_id = "primary_subject";
+      shot.continuity.rules = ["preserve_action_continuity"];
+      shot.reveal_at = 0.48;
+      shot.hold_after_ms = 1100;
+      shot.success_observation =
+        "The foreground occluder substantially covers the subject at the opening, then the rising camera exposes the subject above it.";
     }
   }
 

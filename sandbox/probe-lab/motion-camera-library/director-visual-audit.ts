@@ -491,6 +491,16 @@ function specialExpectations(capability: DirectorCapability): string[] {
         "The whole camera rig should translate on the authored diagonal rail: camera position and aim point move together while their mutual distance stays stable.",
         "The stationary subject should drift/parallax across the frame with only moderate scale change, making Dolly visibly different from centered Push in and pure-lateral Truck.",
       ];
+    case "reverse_reveal":
+      return [
+        "The source should begin substantially concealed behind the apparent result rather than already reading as a separate second actor.",
+        "The arc must create visible parallax until the source separates from the result and becomes independently readable; compare against Reframe so this does not collapse into a simple attention handoff.",
+      ];
+    case "rise_reveal":
+      return [
+        "A solid foreground occluder should substantially cover the teaching subject in the opening composition.",
+        "As the camera rises, the occluder should fall away in screen space and expose the subject; compare against Crane and Pedestal so the move proves a reveal rather than generic vertical travel.",
+      ];
     case "over_shoulder":
       return [
         "A controlled foreground shoulder/head should occupy only a modest edge of frame.",

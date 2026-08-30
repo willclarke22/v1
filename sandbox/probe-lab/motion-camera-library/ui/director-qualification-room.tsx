@@ -82,8 +82,11 @@ import {
   directorQualificationAdjustDepthScreenFixturePositions,
   directorQualificationAdjustDetailRelationshipFixturePositions,
   directorQualificationAdjustLensPerspectiveFixturePositions,
+  directorQualificationAdjustOrbitRevealFixturePositions,
+  directorQualificationAdjustOrbitRevealNormalization,
   directorQualificationAdjustRelativeActorFixturePositions,
   directorQualificationAssetRoles,
+  directorQualificationOrbitRevealSupportingCastSlot,
   isLensPerspectiveQualificationCapability,
   isSupportContainmentQualificationFamily,
 } from "../director-qualification-fixture-policy";
@@ -2602,7 +2605,11 @@ function buildPlannedRoles(input: {
         normalizationOverride = target.normalization;
         physicalRegionOverride = target.region_override;
       } else {
-        slotId = input.scene.secondary_cast_slot;
+        slotId = directorQualificationOrbitRevealSupportingCastSlot(
+          input.family,
+          input.capability,
+          input.scene.secondary_cast_slot,
+        );
         asset = isLensPerspectiveQualificationCapability(
           input.family,
           input.capability,
@@ -2660,19 +2667,28 @@ function buildPlannedRoles(input: {
       rotation[1] += travelHeading;
     }
 
+    const normalized =
+      normalizationOverride ??
+      normalizeAssetForDirectorQualification({
+        asset,
+        slot,
+        scene: input.scene,
+        role_kind: roleKind(index),
+        policy,
+      });
+    const qualificationNormalization =
+      directorQualificationAdjustOrbitRevealNormalization({
+        family: input.family,
+        capability: input.capability,
+        role: role.role,
+        normalization: normalized,
+      });
+
     roleBindings.push({
       role: role.role,
       cast_slot_id: slotId,
       asset,
-      normalization:
-        normalizationOverride ??
-        normalizeAssetForDirectorQualification({
-          asset,
-          slot,
-          scene: input.scene,
-          role_kind: roleKind(index),
-          policy,
-        }),
+      normalization: qualificationNormalization,
       rotation,
       facing_correction_degrees: facingCorrectionDegrees,
       physical_region_override: physicalRegionOverride,
@@ -2699,12 +2715,22 @@ function buildPlannedRoles(input: {
       (entry) => entry.normalization.target_extent_m,
     ),
   });
+  const orbitRevealFixturePositions =
+    directorQualificationAdjustOrbitRevealFixturePositions({
+      family: input.family,
+      capability: input.capability,
+      scene: input.scene,
+      positions: relativeFixturePositions,
+      target_extents_m: roleBindings.map(
+        (entry) => entry.normalization.target_extent_m,
+      ),
+    });
   const detailRelationshipFixturePositions =
     directorQualificationAdjustDetailRelationshipFixturePositions({
       family: input.family,
       capability: input.capability,
       scene: input.scene,
-      positions: relativeFixturePositions,
+      positions: orbitRevealFixturePositions,
       target_extents_m: roleBindings.map(
         (entry) => entry.normalization.target_extent_m,
       ),

@@ -537,6 +537,42 @@ function capabilityProfile(
 
   if (
     familyCategory === "camera_movement" &&
+    familyGroup === "Orbit, arc & reveal paths"
+  ) {
+    if (capabilityId === "reverse_reveal") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Reverse-reveal qualification is an occlusion transition, not merely an arc plus reframe. The apparent result starts in front of a concealed source; camera parallax must separate the pair until the source is independently readable.",
+      };
+    }
+    if (capabilityId === "rise_reveal") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Rise-and-reveal qualification requires a solid foreground occluder to substantially cover the teaching subject at the opening. The camera must rise over that occluder until the subject becomes independently readable, keeping the move perceptually distinct from Crane and Pedestal.",
+      };
+    }
+    if (capabilityId === "orbit" || capabilityId === "arc_left" || capabilityId === "arc_right") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Orbit/Arc siblings retain the accepted three-actor spatial-reference stage. Judge direction, angular extent, and parallax without changing their already accepted camera semantics.",
+      };
+    }
+  }
+
+  if (
+    familyCategory === "camera_movement" &&
     familyGroup === "Tracking & attached camera"
   ) {
     if (

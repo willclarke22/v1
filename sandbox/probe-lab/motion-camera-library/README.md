@@ -2222,3 +2222,51 @@ subsets where appropriate; they do not require the live deferred set to equal an
 snapshot. A dedicated A.11A.28 successor-safety verifier guards this rule so future
 patch installers cannot silently reintroduce hard-coded active-count gates into the
 A.11A.20–A.11A.27 regression chain.
+
+
+## Phase 1B.7A.11A.29 — Orbit, arc & reveal-path perceptual disambiguation
+
+Deterministic evidence reel `QR-20260829-215533` completed cleanly with all ten
+scheduled clips and no capture-integrity drift. Visual review accepted **Orbit**,
+**Arc left**, and **Arc right**. Their target-centred angular travel and surrounding
+parallax are already distinct enough to freeze. **Reverse reveal** and **Rise and
+reveal** remained mechanically smooth but failed the stronger perceptual contract:
+the supposedly hidden information was already readable in the opening composition.
+
+A.11A.29 therefore changes qualification authoring and fixture staging only. The
+production `director-shot-runtime.tsx` camera branches remain untouched.
+
+- Reverse reveal now uses exactly two intrinsic actors. A compact source is staged
+  directly behind the apparent result on the opening camera-depth axis, then the
+  authored reveal arc creates screen-space parallax until the source separates.
+- Rise and reveal also uses exactly two intrinsic actors. A solid simple-rigid
+  foreground occluder is placed between the camera and teaching subject; the demo
+  authors a stronger bounded rise so the occluder falls away and exposes the
+  subject instead of reading like an ordinary Crane/Pedestal move.
+- Orbit and both Arc siblings keep their existing three-actor spatial-reference
+  stage and camera semantics unchanged.
+- Reveal qualification guidance now treats hidden-to-readable occlusion change as
+  the perceptual invariant rather than accepting camera motion alone.
+
+The regression process is also hardened from the A.11A.28 installer lessons:
+TypeScript validation runs before the authoritative regression chain; superseded
+historical verifiers are not reintroduced as vetoes; authoritative verifiers do not
+gate on README prose; and `pnpm build` remains the final native validation command.
+Render a fresh **Orbit, arc & reveal paths** gauntlet after this patch and review the
+two reveal siblings against the already accepted Orbit/Arc trio.
+
+### A.11A.29 v1.1 — Rise-reveal calibration after projection proof
+
+The first A.11A.29 install correctly failed its new projection verifier before build:
+with the authored 3.0 m distance and the existing 0.78 demo strength, Rise-and-reveal
+travelled about 2.34 m. Because the production primitive intentionally includes a
+restrained pull-back component, that oversized demo move reduced silhouette overlap
+but cancelled the vertical parallax needed to make the foreground element visibly
+give way. The project rolled back exactly.
+
+The qualification demo is therefore calibrated to **1.6 m** rather than weakening the
+perceptual contract or rewriting production runtime. The controlled proof now requires
+three things at once: substantial opening overlap/depth occlusion, materially lower
+final overlap, and a newly positive top-edge clearance where the hidden target visibly
+emerges above the foreground occluder. This is a qualification-authoring correction;
+`director-shot-runtime.tsx` remains unchanged.

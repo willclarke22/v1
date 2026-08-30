@@ -2,7 +2,9 @@ import type {
   DirectorCapability,
   DirectorDemoRole,
 } from "./director-capability-registry";
+import type { DirectorQualificationCastSlotId } from "./director-qualification-cast";
 import type { DirectorQualificationFamily } from "./director-qualification-families";
+import type { DirectorQualificationAssetNormalization } from "./director-qualification-normalization";
 import type { DirectorQualificationScene } from "./director-qualification-scenes";
 
 export const DIRECTOR_QUALIFICATION_FIXTURE_POLICY_VERSION =
@@ -44,6 +46,26 @@ export const DIRECTOR_LENS_PERSPECTIVE_CAPABILITY_IDS = [
   "lens_telephoto",
 ] as const;
 
+export const DIRECTOR_ORBIT_REVEAL_FIXTURE_POLICY_VERSION =
+  "director_orbit_reveal_fixture_policy_phase1b7a11a29_v1" as const;
+
+export const DIRECTOR_ORBIT_REVEAL_CAMERA_DEPTH_BASIS = [
+  Math.SQRT1_2,
+  0,
+  Math.SQRT1_2,
+] as const;
+
+export const DIRECTOR_ORBIT_REVEAL_VIEW_RIGHT_BASIS = [
+  Math.SQRT1_2,
+  0,
+  -Math.SQRT1_2,
+] as const;
+
+const DIRECTOR_ORBIT_REVEAL_BINARY_ROLE_IDS = [
+  "primary_subject",
+  "secondary_subject",
+] as const;
+
 // The default lens demo is three-quarter-front. Horizontal camera-to-target
 // direction is +X/+Z; view-right is +X/-Z. Qualification stages actors on
 // both axes so focal length changes depth perspective without collapsing
@@ -80,6 +102,15 @@ export function isLensQualificationFamily(
 ) {
   return Boolean(
     family?.category === "camera_framing" && family.group === "Lens",
+  );
+}
+
+export function isOrbitArcRevealQualificationFamily(
+  family: DirectorQualificationFamily | undefined,
+) {
+  return Boolean(
+    family?.category === "camera_movement" &&
+      family.group === "Orbit, arc & reveal paths",
   );
 }
 
@@ -329,6 +360,86 @@ export function directorQualificationDetailRelationshipAssetRoles(
     .filter((role): role is DirectorDemoRole => Boolean(role));
 }
 
+/**
+ * Orbit/Arc keeps the existing three-role spatial stage because the surrounding
+ * actors provide useful parallax reference. Reveal proofs are intrinsically
+ * binary: Reverse reveal needs an apparent result plus a concealed source, while
+ * Rise and reveal needs a hidden subject plus one foreground occluder.
+ */
+export function directorQualificationOrbitRevealAssetRoles(
+  family: DirectorQualificationFamily,
+  capability: DirectorCapability,
+): DirectorDemoRole[] {
+  if (
+    !isOrbitArcRevealQualificationFamily(family) ||
+    (capability.id !== "reverse_reveal" && capability.id !== "rise_reveal")
+  ) {
+    return [...capability.demo.asset_roles];
+  }
+
+  return DIRECTOR_ORBIT_REVEAL_BINARY_ROLE_IDS
+    .map((roleId) =>
+      capability.demo.asset_roles.find((role) => role.role === roleId) ?? null,
+    )
+    .filter((role): role is DirectorDemoRole => Boolean(role));
+}
+
+/**
+ * Reveal evidence should not depend on an open chair/table accidentally behaving
+ * like a solid occluder. Reverse reveal uses a compact rigid source behind the
+ * apparent result; Rise and reveal uses a simple rigid box/crate as the
+ * foreground occluder.
+ */
+export function directorQualificationOrbitRevealSupportingCastSlot(
+  family: DirectorQualificationFamily,
+  capability: DirectorCapability,
+  fallback: DirectorQualificationCastSlotId,
+): DirectorQualificationCastSlotId {
+  if (!isOrbitArcRevealQualificationFamily(family)) return fallback;
+  if (capability.id === "reverse_reveal") return "compact_rigid";
+  if (capability.id === "rise_reveal") return "simple_rigid";
+  return fallback;
+}
+
+/**
+ * Presentation-normalized Rise-and-reveal evidence gives the solid foreground
+ * occluder enough screen height to create a real start-state concealment. Full
+ * physical-stress evidence remains physically scaled.
+ */
+export function directorQualificationAdjustOrbitRevealNormalization(input: {
+  family: DirectorQualificationFamily;
+  capability: DirectorCapability;
+  role: string;
+  normalization: DirectorQualificationAssetNormalization;
+}): DirectorQualificationAssetNormalization {
+  if (
+    !isOrbitArcRevealQualificationFamily(input.family) ||
+    input.capability.id !== "rise_reveal" ||
+    input.role !== "secondary_subject" ||
+    input.normalization.policy !== "presentation_normalized"
+  ) {
+    return input.normalization;
+  }
+
+  const targetExtent = Math.max(1.25, input.normalization.target_extent_m);
+  if (targetExtent === input.normalization.target_extent_m) {
+    return input.normalization;
+  }
+
+  const renderScale =
+    targetExtent / Math.max(0.0001, input.normalization.source_largest_extent_m);
+
+  return {
+    ...input.normalization,
+    requested_target_extent_m: Math.round(targetExtent * 1000) / 1000,
+    target_extent_m: Math.round(targetExtent * 1000) / 1000,
+    render_scale_multiplier: Math.round(renderScale * 1000) / 1000,
+    reason:
+      `${input.normalization.reason} ` +
+      "Reveal qualification enlarges the solid foreground occluder only enough to prove an initial hidden state before the camera rises.",
+  };
+}
+
 const DIRECTOR_LENS_PERSPECTIVE_ROLE_IDS = [
   "primary_subject",
   "secondary_subject",
@@ -392,6 +503,9 @@ export function directorQualificationAssetRoles(
   family: DirectorQualificationFamily,
   capability: DirectorCapability,
 ): DirectorDemoRole[] {
+  if (isOrbitArcRevealQualificationFamily(family)) {
+    return directorQualificationOrbitRevealAssetRoles(family, capability);
+  }
   if (isLensPerspectiveQualificationCapability(family, capability)) {
     return directorQualificationLensPerspectiveAssetRoles(family, capability);
   }
@@ -591,6 +705,77 @@ export function directorQualificationAdjustDetailRelationshipFixturePositions(in
     return output;
   }
 
+  return output;
+}
+
+/**
+ * A.11A.29 makes reveal semantics visible in Qualification without changing the
+ * production camera solver. Both fixtures are authored against the default
+ * three-quarter-front opening camera:
+ *
+ * - Reverse reveal places the source directly behind the apparent result along
+ *   camera depth. The authored arc then creates parallax and exposes the source.
+ * - Rise and reveal places a solid foreground occluder between camera and hidden
+ *   subject. Vertical camera travel must lift the line of sight over it.
+ */
+export function directorQualificationAdjustOrbitRevealFixturePositions(input: {
+  family: DirectorQualificationFamily;
+  capability: DirectorCapability;
+  scene: DirectorQualificationScene;
+  positions: DirectorQualificationFixturePosition[];
+  target_extents_m?: number[];
+}): DirectorQualificationFixturePosition[] {
+  const output = input.positions.map(
+    (position) => [...position] as DirectorQualificationFixturePosition,
+  );
+
+  if (
+    !isOrbitArcRevealQualificationFamily(input.family) ||
+    output.length < 2
+  ) {
+    return output;
+  }
+
+  if (
+    input.capability.id !== "reverse_reveal" &&
+    input.capability.id !== "rise_reveal"
+  ) {
+    return output;
+  }
+
+  const extents = input.target_extents_m ?? [];
+  const primaryExtent = Math.max(0.3, Number(extents[0]) || 1.25);
+  const secondaryExtent = Math.max(0.3, Number(extents[1]) || 1.2);
+  const [depthX, , depthZ] = DIRECTOR_ORBIT_REVEAL_CAMERA_DEPTH_BASIS;
+  const [rightX, , rightZ] = DIRECTOR_ORBIT_REVEAL_VIEW_RIGHT_BASIS;
+  const primary = output[0]!;
+
+  if (input.capability.id === "reverse_reveal") {
+    const depthSeparation = Math.max(
+      0.92,
+      (primaryExtent + secondaryExtent) * 0.38 + 0.22,
+    );
+    const tinyLateralBias = Math.min(
+      0.08,
+      Math.max(0.025, Math.abs(primaryExtent - secondaryExtent) * 0.035),
+    );
+    output[1] = [
+      primary[0] - depthX * depthSeparation + rightX * tinyLateralBias,
+      output[1]![1],
+      primary[2] - depthZ * depthSeparation + rightZ * tinyLateralBias,
+    ];
+    return output;
+  }
+
+  const foregroundDepth = Math.max(
+    1.35,
+    (primaryExtent + secondaryExtent) * 0.34 + 0.42,
+  );
+  output[1] = [
+    primary[0] + depthX * foregroundDepth,
+    output[1]![1],
+    primary[2] + depthZ * foregroundDepth,
+  ];
   return output;
 }
 

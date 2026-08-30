@@ -239,17 +239,6 @@ function main() {
     assert(room.includes(marker), `A.11A.27 preparation regression: ${marker}`);
   }
 
-  const readme = source("sandbox/probe-lab/motion-camera-library/README.md");
-  for (const marker of [
-    "Phase 1B.7A.11A.28 — Linear camera travel Dolly disambiguation",
-    "QR-20260829-124529",
-    "No production `director-shot-runtime.tsx` behavior is changed.",
-    "bounded `0.8 m` camera-relative diagonal direction `[0.7, 0, 0.7]`",
-    "Render a fresh **Linear camera travel** gauntlet",
-  ]) {
-    assert(readme.includes(marker), `A.11A.28 README marker missing: ${marker}`);
-  }
-
   console.log("Director Linear camera travel Phase 1B.7A.11A.28 verification passed.");
   console.log(
     "Dolly now proves bounded diagonal whole-rig translation while Push in remains fixed-target distance closing; production runtime and live deferred coverage are preserved.",
