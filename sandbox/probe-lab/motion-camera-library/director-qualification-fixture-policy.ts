@@ -52,6 +52,9 @@ export const DIRECTOR_ORBIT_REVEAL_FIXTURE_POLICY_VERSION =
 export const DIRECTOR_ROTATIONAL_REFRAMING_FIXTURE_POLICY_VERSION =
   "director_rotational_reframing_fixture_policy_phase1b7a11a30_v1" as const;
 
+export const DIRECTOR_LIGHTING_STYLE_MOTIVATION_FIXTURE_POLICY_VERSION =
+  "director_lighting_style_motivation_fixture_policy_phase1b7a11a38_v1" as const;
+
 export const DIRECTOR_ROTATIONAL_REFRAMING_VIEW_RIGHT_BASIS = [
   Math.SQRT1_2,
   0,
@@ -188,6 +191,15 @@ export function isSupportContainmentQualificationFamily(
   return Boolean(
     family?.category === "blocking_placement" &&
       family.group === "Support & containment",
+  );
+}
+
+export function isLightingStyleMotivationQualificationFamily(
+  family: DirectorQualificationFamily | undefined,
+) {
+  return Boolean(
+    family?.category === "lighting_emphasis" &&
+      family.group === "Lighting style & motivation",
   );
 }
 
@@ -549,6 +561,31 @@ export function directorQualificationCompositionAssetRoles(
   return primaryRole ? [primaryRole] : [];
 }
 
+export function directorQualificationLightingStyleMotivationAssetRoles(
+  family: DirectorQualificationFamily,
+  capability: DirectorCapability,
+): DirectorDemoRole[] {
+  if (
+    !isLightingStyleMotivationQualificationFamily(family) ||
+    capability.id !== "motivated_source"
+  ) {
+    return [...capability.demo.asset_roles];
+  }
+
+  const primary =
+    capability.demo.asset_roles.find((role) => role.role === "primary_subject") ??
+    capability.demo.asset_roles[0] ??
+    null;
+  const source =
+    capability.demo.asset_roles.find((role) => role.role === "context_subject") ??
+    null;
+
+  return [primary, source].filter(
+    (role): role is DirectorDemoRole => Boolean(role),
+  );
+}
+
+
 /**
  * Shared role selection for the Qualification Room. Keep the previously frozen
  * Depth/screen, Group-formation, Relative-actor, and Support/containment policies
@@ -588,6 +625,12 @@ export function directorQualificationAssetRoles(
   }
   if (isSupportContainmentQualificationFamily(family)) {
     return directorQualificationSupportContainmentAssetRoles(family, capability);
+  }
+  if (isLightingStyleMotivationQualificationFamily(family)) {
+    return directorQualificationLightingStyleMotivationAssetRoles(
+      family,
+      capability,
+    );
   }
   return [...capability.demo.asset_roles];
 }

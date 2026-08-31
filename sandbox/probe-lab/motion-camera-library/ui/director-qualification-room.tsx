@@ -88,6 +88,7 @@ import {
   directorQualificationAssetRoles,
   directorQualificationOrbitRevealSupportingCastSlot,
   isLensPerspectiveQualificationCapability,
+  isLightingStyleMotivationQualificationFamily,
   isSupportContainmentQualificationFamily,
 } from "../director-qualification-fixture-policy";
 import {
@@ -1470,6 +1471,65 @@ function chooseSupportingAsset(
   return candidates[(capabilityIndex + offset) % candidates.length] ?? candidates[0];
 }
 
+const DIRECTOR_MOTIVATED_SOURCE_CAST_SLOT: DirectorQualificationCastSlotId =
+  "small_asymmetric";
+
+const DIRECTOR_MOTIVATED_SOURCE_HINTS = [
+  "lantern",
+  "lamp",
+  "light source",
+  "light",
+  "torch",
+  "candle",
+  "fire",
+  "glow",
+  "screen",
+  "monitor",
+] as const;
+
+function motivatedSourceAssetScore(asset: DirectorLibraryAsset) {
+  const text = assetSearchText(asset);
+  let score =
+    asset.asset_id === "lantern_bk_mrqk238f" ? 100 : 0;
+  for (const hint of DIRECTOR_MOTIVATED_SOURCE_HINTS) {
+    if (text.includes(normalized(hint))) score += hint === "light" ? 2 : 8;
+  }
+  return score;
+}
+
+function chooseMotivatedSourceAsset(
+  pools: CastPoolResolution[],
+  passKind: DirectorQualificationPassKind,
+  capabilityIndex: number,
+  excludedAssetIds: Set<string>,
+) {
+  const candidates =
+    poolFor(pools, DIRECTOR_MOTIVATED_SOURCE_CAST_SLOT)?.candidates ?? [];
+  if (!candidates.length) return null;
+
+  const ranked = [...candidates]
+    .filter((asset) => !excludedAssetIds.has(asset.asset_id))
+    .sort((a, b) => {
+      const scoreDelta =
+        motivatedSourceAssetScore(b) - motivatedSourceAssetScore(a);
+      if (scoreDelta !== 0) return scoreDelta;
+      return assetLabel(a).localeCompare(assetLabel(b));
+    });
+  if (!ranked.length) return null;
+
+  const sourceLike = ranked.filter((asset) => motivatedSourceAssetScore(asset) > 0);
+  const usable = sourceLike.length ? sourceLike : ranked;
+  const baseline = usable[0];
+  if (passKind === "baseline" || usable.length === 1) return baseline;
+
+  const alternatives = usable.filter(
+    (asset) => asset.asset_id !== baseline.asset_id,
+  );
+  if (!alternatives.length) return baseline;
+  const offset = passKind === "physical_stress" ? 1 : 0;
+  return alternatives[(capabilityIndex + offset) % alternatives.length] ?? alternatives[0];
+}
+
 const DIRECTOR_SUPPORT_PHYSICAL_RELATIONS = [
   "on_surface",
   "attached_to",
@@ -2578,6 +2638,18 @@ function buildPlannedRoles(input: {
       slotId = effectivePrimary.slot_id;
       asset = effectivePrimary.asset;
       normalizationOverride = selectedPhysicalPair?.source_normalization ?? null;
+    } else if (
+      isLightingStyleMotivationQualificationFamily(input.family) &&
+      input.capability.id === "motivated_source" &&
+      role.role === "context_subject"
+    ) {
+      slotId = DIRECTOR_MOTIVATED_SOURCE_CAST_SLOT;
+      asset = chooseMotivatedSourceAsset(
+        input.pools,
+        input.pass_kind,
+        input.capability_index,
+        excluded,
+      );
     } else if (index === 1) {
       const sourceBinding = roleBindings[0];
       if (physicalRelation && sourceBinding) {
@@ -5721,6 +5793,21 @@ export function DirectorQualificationRoom({
           </div>
         ) : null}
 
+        {selectedFamily?.category === "lighting_emphasis" &&
+        selectedFamily.group === "Lighting style & motivation" ? (
+          <div style={softWarningStyle}>
+            Rim lit, Warm / cool contrast, and Backlit are deferred from active
+            Qualification Room coverage after cross-asset review: the current
+            renderer/material combination does not separate those ideas consistently
+            enough across arbitrary GLBs to freeze as dependable cinematography
+            primitives. The active reel now contains Neutral studio, High key, Low
+            key, Preserve shadow, and Motivated source. Lighting proofs intentionally
+            suppress the generic cyan subject ring so the light itself must carry the
+            visual idea; Motivated source also suppresses the generic stage-boundary
+            guide so the practical source-to-subject relationship stands on its own.
+          </div>
+        ) : null}
+
         {selectedFamily?.category === "camera_angle" &&
         selectedFamily.group === "Special viewpoints" ? (
           <div style={softWarningStyle}>
@@ -6915,3 +7002,4 @@ const softWarningStyle: CSSProperties = {
   fontSize: 10,
   lineHeight: 1.4,
 };
+

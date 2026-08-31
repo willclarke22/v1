@@ -276,8 +276,11 @@ function main() {
   assert(
     activeIds.length === expectedActive &&
       new Set(activeIds).size === activeIds.length &&
-      expectedActive === 174,
-    `A.11A.31 expected 174 canonical/provable active capabilities after 9 deferrals + 1 successful merge; got ${activeIds.length}.`,
+      expectedActive ===
+        DIRECTOR_CAPABILITIES.length -
+          DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS.length -
+          DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_IDS.length,
+    `A.11A.31 successor-safe active coverage must equal frozen vocabulary minus the live deferred and merged sets; got ${activeIds.length}.`,
   );
   assert(
     !activeIds.includes(legacyId) && activeIds.includes(canonicalId),

@@ -1,0 +1,104 @@
+**********************
+PowerShell transcript start
+Start time: 20260830200359
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 23656
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+A.11A.38 preflight diagnostics
+Project root: C:\Users\willc\projects\MyWay\v1
+A.11A.37 guard verifiers: verify-director-volumetric-beam-core-profile-phase1b7a11a37.ts
+SOURCE sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx
+  canonical SHA-256: d5b6c306b539858ae8d83fc057b08c6b16f09505fef2835eec2b802ddd651b56
+SOURCE sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts
+  canonical SHA-256: 9d040aaf9f69639bf072b2d39ebdfcedc8acedd81586576dbbaf7696cb2b4546
+SOURCE sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx
+  canonical SHA-256: 12570979025aec2672d408c8e5e88c6f8f4ea99e7ad38a1983e0ee428497be64
+SOURCE sandbox/probe-lab/scenes/director-runtime-coverage.ts
+  canonical SHA-256: 875c676658459daf5a3c5a1336a55b50f323a2f8ccee4e147cf95ce9f7069397
+RULE runtime-style-accent-components: baseline (sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx)
+RULE runtime-lighting-rig: baseline (sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx)
+RULE fixture-version: baseline (sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts)
+RULE fixture-family-predicate: baseline (sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts)
+RULE fixture-motivated-roles: baseline (sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts)
+RULE fixture-router: baseline (sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts)
+RULE room-fixture-import: baseline (sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx)
+RULE room-motivated-source-chooser: baseline (sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx)
+RULE room-motivated-source-binding: baseline (sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx)
+RULE coverage-high_key: baseline (sandbox/probe-lab/scenes/director-runtime-coverage.ts)
+RULE coverage-backlit: baseline (sandbox/probe-lab/scenes/director-runtime-coverage.ts)
+RULE coverage-rim_lit: baseline (sandbox/probe-lab/scenes/director-runtime-coverage.ts)
+RULE coverage-warm_cool_contrast: baseline (sandbox/probe-lab/scenes/director-runtime-coverage.ts)
+RULE coverage-preserve_shadow: baseline (sandbox/probe-lab/scenes/director-runtime-coverage.ts)
+RULE coverage-motivated_source: baseline (sandbox/probe-lab/scenes/director-runtime-coverage.ts)
+VERIFIER scripts/sandbox/verify-director-lighting-style-motivation-phase1b7a11a38.ts: absent
+  expected canonical SHA-256: c0091e63f63001fd0c5ac358a798556845347a84a788d91327d1de8d0bf6ea3f
+PREFLIGHT_STATE=EXACT_BASELINE
+
+A.11A.38 preflight diagnostics
+Project root: C:\Users\willc\projects\MyWay\v1
+A.11A.37 guard verifiers: verify-director-volumetric-beam-core-profile-phase1b7a11a37.ts
+SOURCE sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx
+  canonical SHA-256: 8ebbfd4e6384179c1670eb6ea3057ccd61dacccb9718f3ceb5ed621b6f4427b5
+SOURCE sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts
+  canonical SHA-256: f9f5095c1a1bcf5fac98c50e3be6dfdcc22e07572f0b1fcac14f2d47cc2448d5
+SOURCE sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx
+  canonical SHA-256: 0c52c86d66b2abe6ea7973e4e8e47bea5db15d73aa863e64c41770eb9e902909
+SOURCE sandbox/probe-lab/scenes/director-runtime-coverage.ts
+  canonical SHA-256: bb7cd27e8d42bfd8818b0d5adaecb6e45b75f7814a6048f0eb86db0005071c6a
+RULE runtime-style-accent-components: applied (sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx)
+RULE runtime-lighting-rig: applied (sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx)
+RULE fixture-version: applied (sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts)
+RULE fixture-family-predicate: applied (sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts)
+RULE fixture-motivated-roles: applied (sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts)
+RULE fixture-router: applied (sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts)
+RULE room-fixture-import: applied (sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx)
+RULE room-motivated-source-chooser: applied (sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx)
+RULE room-motivated-source-binding: applied (sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx)
+RULE coverage-high_key: applied (sandbox/probe-lab/scenes/director-runtime-coverage.ts)
+RULE coverage-backlit: applied (sandbox/probe-lab/scenes/director-runtime-coverage.ts)
+RULE coverage-rim_lit: applied (sandbox/probe-lab/scenes/director-runtime-coverage.ts)
+RULE coverage-warm_cool_contrast: applied (sandbox/probe-lab/scenes/director-runtime-coverage.ts)
+RULE coverage-preserve_shadow: applied (sandbox/probe-lab/scenes/director-runtime-coverage.ts)
+RULE coverage-motivated_source: applied (sandbox/probe-lab/scenes/director-runtime-coverage.ts)
+VERIFIER scripts/sandbox/verify-director-lighting-style-motivation-phase1b7a11a38.ts: exact
+  expected canonical SHA-256: c0091e63f63001fd0c5ac358a798556845347a84a788d91327d1de8d0bf6ea3f
+  actual canonical SHA-256:   c0091e63f63001fd0c5ac358a798556845347a84a788d91327d1de8d0bf6ea3f
+PREFLIGHT_STATE=EXACT_APPLIED
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SUCCESS A.11A.38 LIGHTING STYLE + MOTIVATION: transactional patch, TypeScript, current verifier, successor-safe historical chain, and build all passed.
+**********************
+PowerShell transcript end
+End time: 20260830200557
+**********************

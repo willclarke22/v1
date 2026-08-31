@@ -1,0 +1,35 @@
+**********************
+PowerShell transcript start
+Start time: 20260830202316
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 11596
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+A.11A.39 preflight diagnostics
+Project root: C:\Users\willc\projects\MyWay\v1
+GUARD scripts/sandbox/verify-director-lighting-style-motivation-phase1b7a11a38.ts: mismatch; canonical SHA-256 c0091e63f63001fd0c5ac358a798556845347a84a788d91327d1de8d0bf6ea3f; expected 46ce75ca846dd2f7dca7ca78b4335563b85d87d048b6c328712fae17a44a9165
+GUARD scripts/sandbox/verify-director-volumetric-beam-core-profile-phase1b7a11a37.ts: mismatch; canonical SHA-256 c14f573ac94ff98b3513e550424a60994ff327c7f3e19efa3b86c785b0f718a2; expected e299a41049a30a6dfa09a3cf6f63812ab8abf1ba2621609c15a384946de1a8a8
+TARGET sandbox/probe-lab/motion-camera-library/director-qualification-families.ts: canonical SHA-256 09cbeebd0574ba4327eef6eb8248a7225298546e4b182c27da36ce3434c1c95a; baseline=false expected=412755f5bd25def58c4fcdbb5a6cffe163d1c3aa090a9eea072baee7ec41a2f2; applied=false expected=92795cb929eef6c059ed8ba1a41fc56be32b58cd3b41b82e239d50f16c36124a
+TARGET sandbox/probe-lab/motion-camera-library/ui/director-capability-preview.tsx: canonical SHA-256 b3d45c01f92475e29c3e3ba11c7e465d9c2b79d80217a011ba444c93f05f2d63; baseline=false expected=a3e8fb0cfc880a7a688109fd547ab667ff02607b4964613ddee522fd40627a8b; applied=false expected=f7bc33ffd5c9de133eeb1bfe96a341e043d783dcc4069df4c2af6f57862486c4
+TARGET sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx: canonical SHA-256 0c52c86d66b2abe6ea7973e4e8e47bea5db15d73aa863e64c41770eb9e902909; baseline=false expected=16f4bb038ba3639c8a3e6f5f8e6b1438e40a10840a53a6b9fe4b847894b43cca; applied=false expected=9f851f3a27d8153154921ada6375c78dd90eb86cc76ca69b5646edbfe6c015dd
+TARGET sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx: canonical SHA-256 8ebbfd4e6384179c1670eb6ea3057ccd61dacccb9718f3ceb5ed621b6f4427b5; baseline=false expected=6c54714186259f18aca6f66f4f4de0d91db12a90e236ba6ec08be6da670bb3f2; applied=false expected=f728370f431f344fe814f8eeaae010eff29a2ddd44138472b1d09df72b00ef57
+TARGET scripts/sandbox/verify-director-tracking-mounted-merge-closeout-phase1b7a11a31.ts: canonical SHA-256 cc0c0ee8bf85a09651025ae863d5d387438d3cb35f41c27bb67d3fdfc8d56769; baseline=false expected=0bd7e792bb40a480c3d845a4d2bbe5a6cd8209e7e5678c92ac914fe8ce398a3c; applied=false expected=7453ba6d537688a2eef6da874ef82955d1a71d9b25b6c0fd9766995e5f1f41ef
+TARGET scripts/sandbox/verify-director-lighting-style-closeout-phase1b7a11a39.ts: absent; baseline=true applied=false
+PREFLIGHT_STATE=MIXED_OR_UNKNOWN
+PS>TerminatingError(): "A.11A.39 preflight rejected the project with exit code 20. No writes were made."
+**********************
+PowerShell transcript end
+End time: 20260830202317
+**********************

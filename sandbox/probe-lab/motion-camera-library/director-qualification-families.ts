@@ -843,6 +843,15 @@ export const DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS = [
   "focus_deep",
   "extreme_close",
   "pass_through",
+  // A.11A.39: cross-asset review found these two lighting styles too
+  // renderer/asset-sensitive to freeze honestly. Keep the vocabulary/runtime
+  // compatibility surface, but remove them from active Qualification coverage.
+  "rim_lit",
+  "warm_cool_contrast",
+  // A.11A.40: final cross-asset review found Backlit still too
+  // renderer/material-sensitive to freeze honestly across arbitrary GLBs.
+  // Retain vocabulary/runtime compatibility, but defer active qualification.
+  "backlit",
 ] as const;
 
 /**
@@ -932,3 +941,4 @@ export function buildActiveDirectorQualificationFamilies(
     })
     .filter((family) => family.capability_ids.length > 0);
 }
+

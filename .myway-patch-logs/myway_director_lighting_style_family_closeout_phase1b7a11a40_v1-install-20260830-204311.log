@@ -1,0 +1,72 @@
+**********************
+PowerShell transcript start
+Start time: 20260830204311
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 31508
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+A.11A.40 preflight diagnostics
+Project root: C:\Users\willc\projects\MyWay\v1
+GUARD sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx: ok; canonical SHA-256 629e6358f50d7dffd7e905f9b1b40a5671c25a9c0ee6a191c21a94e3fa2425b9; expected 629e6358f50d7dffd7e905f9b1b40a5671c25a9c0ee6a191c21a94e3fa2425b9
+GUARD sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts: ok; canonical SHA-256 f9f5095c1a1bcf5fac98c50e3be6dfdcc22e07572f0b1fcac14f2d47cc2448d5; expected f9f5095c1a1bcf5fac98c50e3be6dfdcc22e07572f0b1fcac14f2d47cc2448d5
+GUARD scripts/sandbox/verify-director-lighting-style-motivation-phase1b7a11a38.ts: ok; canonical SHA-256 c0091e63f63001fd0c5ac358a798556845347a84a788d91327d1de8d0bf6ea3f; expected c0091e63f63001fd0c5ac358a798556845347a84a788d91327d1de8d0bf6ea3f
+GUARD scripts/sandbox/verify-director-volumetric-beam-core-profile-phase1b7a11a37.ts: ok; canonical SHA-256 c14f573ac94ff98b3513e550424a60994ff327c7f3e19efa3b86c785b0f718a2; expected c14f573ac94ff98b3513e550424a60994ff327c7f3e19efa3b86c785b0f718a2
+GUARD scripts/sandbox/verify-director-tracking-mounted-merge-closeout-phase1b7a11a31.ts: ok; canonical SHA-256 4dabe107942d16093c39a013aa630b3659275255e9063db430c6c613bdee2c83; expected 4dabe107942d16093c39a013aa630b3659275255e9063db430c6c613bdee2c83
+TARGET sandbox/probe-lab/motion-camera-library/director-qualification-families.ts: canonical SHA-256 a88138d1f3ddf24f7ceff0526335eca13f35e21810a7c9a30646158e216f59e0; baseline=true expected=a88138d1f3ddf24f7ceff0526335eca13f35e21810a7c9a30646158e216f59e0; applied=false expected=8bcf17477934cc126d22d351060aeceb142dc64e0ba33ae709404851be6db76b
+TARGET sandbox/probe-lab/motion-camera-library/ui/director-capability-preview.tsx: canonical SHA-256 66a1ccb5007b5504e2efe4d9128cac2b2874f1f1c9d8eb3746724299cda32912; baseline=true expected=66a1ccb5007b5504e2efe4d9128cac2b2874f1f1c9d8eb3746724299cda32912; applied=false expected=83311f2fac89e822dd020fa96a6153537fc6369dbe4a0f10279c2ddc0ea26262
+TARGET sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx: canonical SHA-256 24e4fe75ecbcaae58114015321ed15a4a2ff809b357b8146e2a80c709e9257f6; baseline=true expected=24e4fe75ecbcaae58114015321ed15a4a2ff809b357b8146e2a80c709e9257f6; applied=false expected=e74abc32868b7cf7a465eb089aac153e6830f45bf767d190ea7156431408dab9
+TARGET scripts/sandbox/verify-director-lighting-style-closeout-phase1b7a11a39.ts: canonical SHA-256 33187eb3b45f54587b0969eb0e02f40a8a4be71d3b5dce993a651cc0ef4f3060; baseline=true expected=33187eb3b45f54587b0969eb0e02f40a8a4be71d3b5dce993a651cc0ef4f3060; applied=false expected=20742deeea601ff4a18fdeb6ee41cd4c55f03b1d741653be5833d80b20ae0ebf
+TARGET scripts/sandbox/verify-director-lighting-style-family-closeout-phase1b7a11a40.ts: absent; baseline=true applied=false
+PREFLIGHT_STATE=EXACT_BASELINE
+A.11A.40 preflight diagnostics
+Project root: C:\Users\willc\projects\MyWay\v1
+GUARD sandbox/probe-lab/scenes/ui/director-shot-runtime.tsx: ok; canonical SHA-256 629e6358f50d7dffd7e905f9b1b40a5671c25a9c0ee6a191c21a94e3fa2425b9; expected 629e6358f50d7dffd7e905f9b1b40a5671c25a9c0ee6a191c21a94e3fa2425b9
+GUARD sandbox/probe-lab/motion-camera-library/director-qualification-fixture-policy.ts: ok; canonical SHA-256 f9f5095c1a1bcf5fac98c50e3be6dfdcc22e07572f0b1fcac14f2d47cc2448d5; expected f9f5095c1a1bcf5fac98c50e3be6dfdcc22e07572f0b1fcac14f2d47cc2448d5
+GUARD scripts/sandbox/verify-director-lighting-style-motivation-phase1b7a11a38.ts: ok; canonical SHA-256 c0091e63f63001fd0c5ac358a798556845347a84a788d91327d1de8d0bf6ea3f; expected c0091e63f63001fd0c5ac358a798556845347a84a788d91327d1de8d0bf6ea3f
+GUARD scripts/sandbox/verify-director-volumetric-beam-core-profile-phase1b7a11a37.ts: ok; canonical SHA-256 c14f573ac94ff98b3513e550424a60994ff327c7f3e19efa3b86c785b0f718a2; expected c14f573ac94ff98b3513e550424a60994ff327c7f3e19efa3b86c785b0f718a2
+GUARD scripts/sandbox/verify-director-tracking-mounted-merge-closeout-phase1b7a11a31.ts: ok; canonical SHA-256 4dabe107942d16093c39a013aa630b3659275255e9063db430c6c613bdee2c83; expected 4dabe107942d16093c39a013aa630b3659275255e9063db430c6c613bdee2c83
+TARGET sandbox/probe-lab/motion-camera-library/director-qualification-families.ts: canonical SHA-256 8bcf17477934cc126d22d351060aeceb142dc64e0ba33ae709404851be6db76b; baseline=false expected=a88138d1f3ddf24f7ceff0526335eca13f35e21810a7c9a30646158e216f59e0; applied=true expected=8bcf17477934cc126d22d351060aeceb142dc64e0ba33ae709404851be6db76b
+TARGET sandbox/probe-lab/motion-camera-library/ui/director-capability-preview.tsx: canonical SHA-256 83311f2fac89e822dd020fa96a6153537fc6369dbe4a0f10279c2ddc0ea26262; baseline=false expected=66a1ccb5007b5504e2efe4d9128cac2b2874f1f1c9d8eb3746724299cda32912; applied=true expected=83311f2fac89e822dd020fa96a6153537fc6369dbe4a0f10279c2ddc0ea26262
+TARGET sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx: canonical SHA-256 e74abc32868b7cf7a465eb089aac153e6830f45bf767d190ea7156431408dab9; baseline=false expected=24e4fe75ecbcaae58114015321ed15a4a2ff809b357b8146e2a80c709e9257f6; applied=true expected=e74abc32868b7cf7a465eb089aac153e6830f45bf767d190ea7156431408dab9
+TARGET scripts/sandbox/verify-director-lighting-style-closeout-phase1b7a11a39.ts: canonical SHA-256 20742deeea601ff4a18fdeb6ee41cd4c55f03b1d741653be5833d80b20ae0ebf; baseline=false expected=33187eb3b45f54587b0969eb0e02f40a8a4be71d3b5dce993a651cc0ef4f3060; applied=true expected=20742deeea601ff4a18fdeb6ee41cd4c55f03b1d741653be5833d80b20ae0ebf
+TARGET scripts/sandbox/verify-director-lighting-style-family-closeout-phase1b7a11a40.ts: canonical SHA-256 d81f10b3fb882922adad9830df6aeb0a78849f87150b9a12d27c7f58c6f60387; baseline=false; applied=true expected=d81f10b3fb882922adad9830df6aeb0a78849f87150b9a12d27c7f58c6f60387
+PREFLIGHT_STATE=EXACT_APPLIED
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SUCCESS A.11A.40 LIGHTING STYLE FAMILY CLOSEOUT: Backlit deferral, Motivated Source guide retirement, frozen five-capability core, TypeScript, successor-safe verifier chain, and build all passed.
+**********************
+PowerShell transcript end
+End time: 20260830204511
+**********************

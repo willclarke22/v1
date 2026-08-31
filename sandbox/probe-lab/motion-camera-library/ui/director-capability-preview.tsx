@@ -772,8 +772,24 @@ function AnimatedActor({
   });
 
   const goldenHighlight = capability.id === "highlight_subject" && resolvedRole.role === "primary_subject";
+  // Lighting qualification must be self-proving. The generic cyan subject ring
+  // is useful for narrative-attention demos, but it contaminates lighting evidence
+  // by making unrelated light styles share the same non-lighting emphasis cue.
   const lightingEffectOwnsAttention = [
+    "neutral_studio",
+    "high_key",
+    "low_key",
+    "backlit",
+    "rim_lit",
+    "spotlight_subject",
+    "highlight_subject",
+    "warm_cool_contrast",
+    "preserve_shadow",
+    "motivated_source",
     "light_reveal",
+    "dim_environment",
+    "emissive_subject",
+    "track_spotlight",
     "shadow_projection",
     "volumetric_beam",
     "exposure_shift",
@@ -1120,6 +1136,9 @@ function Stage({
     mounted;
   const technical = fixtureKind === "technical_overview";
   const shadowProjection = capabilityId === "shadow_projection";
+  // A.11A.40: Motivated Source must be proved by the visible practical light,
+  // not by the generic qualification-stage boundary ring that reads as a blue arc.
+  const hideStageBoundaryGuide = capabilityId === "motivated_source";
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow><circleGeometry args={[8.5, 48]} /><meshStandardMaterial color="#07111f" roughness={0.94} metalness={0.04} /></mesh>
@@ -1145,7 +1164,9 @@ function Stage({
           <mesh position={[0, 0, 1.45]} rotation={[Math.PI / 2, 0, 0]}><coneGeometry args={[0.09, 0.3, 12]} /><meshBasicMaterial color="#3b82f6" /></mesh>
         </group>
       ) : null}
-      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[4.8, 4.84, 72]} /><meshBasicMaterial color="#1e3a8a" transparent opacity={0.35} side={THREE.DoubleSide} /></mesh>
+      {!hideStageBoundaryGuide ? (
+        <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[4.8, 4.84, 72]} /><meshBasicMaterial color="#1e3a8a" transparent opacity={0.35} side={THREE.DoubleSide} /></mesh>
+      ) : null}
     </group>
   );
 }
@@ -1225,3 +1246,4 @@ export function DirectorCapabilityPreview({
     </>
   );
 }
+

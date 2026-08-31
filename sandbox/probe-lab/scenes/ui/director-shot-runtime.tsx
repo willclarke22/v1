@@ -3647,6 +3647,277 @@ export function directorExposureShiftForProgress(
   return THREE.MathUtils.lerp(0.42, 1.58, shiftAmount);
 }
 
+type DirectorStyleAccentMode =
+  | "high_key"
+  | "backlit"
+  | "rim_lit"
+  | "warm_cool_contrast";
+
+function DirectorStyleAccentLights({
+  moment,
+  actors,
+  progress,
+  autoLoop,
+  sceneState,
+  mode,
+}: {
+  moment: DirectorMoment;
+  actors: DirectorRuntimeActor[];
+  progress?: number;
+  autoLoop: boolean;
+  sceneState?: DirectorSceneState | null;
+  mode: DirectorStyleAccentMode;
+}) {
+  const lightARef = useRef<THREE.PointLight>(null);
+  const lightBRef = useRef<THREE.PointLight>(null);
+  const targetPointRef = useRef(new THREE.Vector3());
+  const toCameraRef = useRef(new THREE.Vector3());
+  const rightRef = useRef(new THREE.Vector3());
+  const upRef = useRef(new THREE.Vector3(0, 1, 0));
+  const lightAPositionRef = useRef(new THREE.Vector3());
+  const lightBPositionRef = useRef(new THREE.Vector3());
+  const shot = moment.shot ?? legacyShotForMoment(moment);
+
+  useFrame(({ clock, camera }) => {
+    const lightA = lightARef.current;
+    const lightB = lightBRef.current;
+    if (!lightA || !lightB) return;
+
+    const p = runtimeProgressFor(clock.elapsedTime, moment, progress, autoLoop);
+    const targetId =
+      shot.lighting.emphasized_entity_ids[0] ??
+      shot.camera.focus_entity_ids[0];
+    const actor = actorById(actors, targetId);
+    const sample = actor
+      ? sampleDirectorActorState(moment, actor, p, actors, sceneState)
+      : null;
+    const targetPoint = targetPointRef.current;
+    targetPoint.copy(
+      sample?.position ??
+        averageTarget(targetActors(moment, shot, p, actors, sceneState)),
+    );
+    targetPoint.y += actor ? Math.max(0.16, actor.size[1] * 0.48) : 0.72;
+
+    const toCamera = toCameraRef.current.copy(camera.position).sub(targetPoint);
+    toCamera.y = 0;
+    if (toCamera.lengthSq() < 1e-6) toCamera.set(0, 0, 1);
+    toCamera.normalize();
+
+    const up = upRef.current;
+    const right = rightRef.current.crossVectors(up, toCamera);
+    if (right.lengthSq() < 1e-6) right.set(1, 0, 0);
+    right.normalize();
+
+    const lightAPosition = lightAPositionRef.current.copy(targetPoint);
+    const lightBPosition = lightBPositionRef.current.copy(targetPoint);
+
+    if (mode === "high_key") {
+      lightAPosition
+        .addScaledVector(toCamera, 2.8)
+        .addScaledVector(right, 2.2)
+        .addScaledVector(up, 1.9);
+      lightBPosition
+        .addScaledVector(toCamera, 2.45)
+        .addScaledVector(right, -2.15)
+        .addScaledVector(up, 1.25);
+      lightA.intensity = 5.2;
+      lightB.intensity = 4.4;
+    } else if (mode === "backlit") {
+      lightAPosition
+        .addScaledVector(toCamera, -2.7)
+        .addScaledVector(right, -0.55)
+        .addScaledVector(up, 1.35);
+      lightBPosition
+        .addScaledVector(toCamera, -2.25)
+        .addScaledVector(right, 1.55)
+        .addScaledVector(up, 0.65);
+      lightA.intensity = 13;
+      lightB.intensity = 5;
+    } else if (mode === "rim_lit") {
+      lightAPosition
+        .addScaledVector(toCamera, -2.25)
+        .addScaledVector(right, 2.1)
+        .addScaledVector(up, 1.15);
+      lightBPosition
+        .addScaledVector(toCamera, -2.2)
+        .addScaledVector(right, -2.05)
+        .addScaledVector(up, 0.95);
+      lightA.intensity = 9.4;
+      lightB.intensity = 7.8;
+    } else {
+      lightAPosition
+        .addScaledVector(toCamera, 1.7)
+        .addScaledVector(right, -2.35)
+        .addScaledVector(up, 1.55);
+      lightBPosition
+        .addScaledVector(toCamera, -0.9)
+        .addScaledVector(right, 2.75)
+        .addScaledVector(up, 1.15);
+      lightA.intensity = 7.4;
+      lightB.intensity = 7.1;
+    }
+
+    lightA.position.copy(lightAPosition);
+    lightB.position.copy(lightBPosition);
+  });
+
+  return (
+    <>
+      <pointLight
+        ref={lightARef}
+        intensity={mode === "backlit" ? 13 : mode === "rim_lit" ? 9.4 : mode === "warm_cool_contrast" ? 7.4 : 5.2}
+        color={
+          mode === "warm_cool_contrast"
+            ? "#ff9f43"
+            : mode === "rim_lit"
+              ? "#dbeafe"
+              : "#fff7ed"
+        }
+        distance={12}
+        decay={2}
+      />
+      <pointLight
+        ref={lightBRef}
+        intensity={mode === "backlit" ? 5 : mode === "rim_lit" ? 7.8 : mode === "warm_cool_contrast" ? 7.1 : 4.4}
+        color={
+          mode === "warm_cool_contrast"
+            ? "#38bdf8"
+            : mode === "rim_lit"
+              ? "#7dd3fc"
+              : "#f8fafc"
+        }
+        distance={12}
+        decay={2}
+      />
+    </>
+  );
+}
+
+function DirectorMotivatedSourceLight({
+  moment,
+  actors,
+  progress,
+  autoLoop,
+  sceneState,
+}: {
+  moment: DirectorMoment;
+  actors: DirectorRuntimeActor[];
+  progress?: number;
+  autoLoop: boolean;
+  sceneState?: DirectorSceneState | null;
+}) {
+  const spotRef = useRef<THREE.SpotLight>(null);
+  const spillRef = useRef<THREE.PointLight>(null);
+  const glowRef = useRef<THREE.Group>(null);
+  const targetRef = useRef<THREE.Object3D>(null);
+  const sourcePointRef = useRef(new THREE.Vector3());
+  const targetPointRef = useRef(new THREE.Vector3());
+  const shot = moment.shot ?? legacyShotForMoment(moment);
+
+  useFrame(({ clock }) => {
+    const spot = spotRef.current;
+    const spill = spillRef.current;
+    const glow = glowRef.current;
+    const targetObject = targetRef.current;
+    if (!spot || !spill || !glow || !targetObject) return;
+
+    const p = runtimeProgressFor(clock.elapsedTime, moment, progress, autoLoop);
+    const sourceId = shot.lighting.motivated_source_entity_id;
+    const sourceActor = actorById(actors, sourceId);
+    const sourceSample = sourceActor
+      ? sampleDirectorActorState(moment, sourceActor, p, actors, sceneState)
+      : null;
+    const targetId =
+      shot.lighting.emphasized_entity_ids[0] ??
+      shot.camera.focus_entity_ids[0];
+    const targetActor = actorById(actors, targetId);
+    const targetSample = targetActor
+      ? sampleDirectorActorState(moment, targetActor, p, actors, sceneState)
+      : null;
+
+    const sourcePoint = sourcePointRef.current.copy(
+      sourceSample?.position ??
+        averageTarget(targetActors(moment, shot, p, actors, sceneState)),
+    );
+    sourcePoint.y += sourceActor
+      ? Math.max(0.12, sourceActor.size[1] * 0.64)
+      : 0.72;
+
+    const targetPoint = targetPointRef.current.copy(
+      targetSample?.position ??
+        averageTarget(targetActors(moment, shot, p, actors, sceneState)),
+    );
+    targetPoint.y += targetActor
+      ? Math.max(0.14, targetActor.size[1] * 0.45)
+      : 0.68;
+
+    spot.position.copy(sourcePoint);
+    spill.position.copy(sourcePoint);
+    glow.position.copy(sourcePoint);
+    const sourceExtent = sourceActor
+      ? Math.max(sourceActor.size[0], sourceActor.size[1], sourceActor.size[2])
+      : 1;
+    glow.scale.setScalar(THREE.MathUtils.clamp(sourceExtent * 0.2, 0.12, 0.28));
+
+    targetObject.position.copy(targetPoint);
+    targetObject.updateMatrixWorld(true);
+    spot.target = targetObject;
+    spot.distance = Math.max(4.5, sourcePoint.distanceTo(targetPoint) + 3.5);
+    spot.updateMatrixWorld(true);
+  });
+
+  return (
+    <>
+      <spotLight
+        ref={spotRef}
+        castShadow
+        intensity={9.2}
+        angle={0.62}
+        penumbra={0.76}
+        color="#ffb45e"
+        distance={10}
+        decay={1.65}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-bias={-0.0002}
+        shadow-normalBias={0.02}
+      />
+      <pointLight
+        ref={spillRef}
+        intensity={2.4}
+        color="#fb923c"
+        distance={5.8}
+        decay={2}
+      />
+      <group ref={glowRef}>
+        <mesh frustumCulled={false}>
+          <sphereGeometry args={[0.62, 18, 12]} />
+          <meshBasicMaterial
+            color="#fb923c"
+            transparent
+            opacity={0.16}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            toneMapped={false}
+          />
+        </mesh>
+        <mesh frustumCulled={false}>
+          <sphereGeometry args={[0.24, 16, 10]} />
+          <meshBasicMaterial
+            color="#fff7ed"
+            transparent
+            opacity={0.72}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+      <object3D ref={targetRef} />
+    </>
+  );
+}
+
 function DirectorMotivatedLight({
   moment,
   actors,
@@ -4087,11 +4358,20 @@ export function DirectorShotLightingRig({
     lightReveal ||
     volumetricBeam;
   const highKey = intents.has("high_key");
-  const backlit =
-    intents.has("backlit") || intents.has("preserve_shadow") || shadowProjection;
+  const preserveShadow = intents.has("preserve_shadow");
+  const backlit = intents.has("backlit") || shadowProjection;
   const rim = intents.has("rim_lit");
   const spotlight = intents.has("spotlight_subject");
   const warmCool = intents.has("warm_cool_contrast");
+  const styleAccentMode: DirectorStyleAccentMode | null = highKey
+    ? "high_key"
+    : backlit && !shadowProjection
+      ? "backlit"
+      : rim
+        ? "rim_lit"
+        : warmCool
+          ? "warm_cool_contrast"
+          : null;
   // highlight_subject is a renderer-owned silhouette treatment, not a light.
   // Do not synthesize a spotlight here; actor renderers own the tight outline.
 
@@ -4099,7 +4379,22 @@ export function DirectorShotLightingRig({
     <>
       <ambientLight
         intensity={
-          lightReveal ? 0.025 : shadowProjection ? 0.14 : lowKey ? 0.1 : highKey ? 0.95 : 0.42
+          lightReveal ? 0.025
+            : shadowProjection
+              ? 0.14
+              : lowKey
+                ? 0.1
+                : highKey
+                  ? 1.15
+                  : preserveShadow
+                    ? 0.16
+                    : backlit
+                      ? 0.16
+                      : rim
+                        ? 0.14
+                        : warmCool
+                          ? 0.16
+                          : 0.42
         }
       />
       <hemisphereLight
@@ -4107,14 +4402,22 @@ export function DirectorShotLightingRig({
           highKey ? "#ffffff" : "#dbeafe",
           "#0f172a",
           highKey
-            ? 1.35
+            ? 1.55
             : lightReveal
               ? 0.08
               : shadowProjection
                 ? 0.16
                 : lowKey
                   ? 0.35
-                  : 0.68,
+                  : preserveShadow
+                    ? 0.24
+                    : backlit
+                      ? 0.2
+                      : rim
+                        ? 0.18
+                        : warmCool
+                          ? 0.2
+                          : 0.68,
         ]}
         position={[0, 6, 0]}
       />
@@ -4129,9 +4432,21 @@ export function DirectorShotLightingRig({
       ) : (
         <directionalLight
           castShadow
-          position={backlit ? [-4, 6, -6] : [5, 7, 5]}
-          intensity={lightReveal ? 0.12 : lowKey ? 0.9 : highKey ? 2.7 : 1.9}
-          color={warmCool ? "#f59e0b" : backlit ? "#fef3c7" : "#ffffff"}
+          position={preserveShadow ? [5.5, 7, 4.5] : [5, 7, 5]}
+          intensity={
+            lightReveal
+              ? 0.12
+              : lowKey
+                ? 0.9
+                : preserveShadow
+                  ? 3.4
+                  : highKey
+                    ? 1.35
+                    : backlit || rim || warmCool
+                      ? 0.12
+                      : 1.9
+          }
+          color={preserveShadow ? "#fff4e6" : "#ffffff"}
           shadow-mapSize-width={1024}
           shadow-mapSize-height={1024}
           shadow-camera-left={-5}
@@ -4145,12 +4460,36 @@ export function DirectorShotLightingRig({
         />
       )}
       <directionalLight
-        position={rim ? [-4, 4, -4] : [-4, 2, 2]}
+        position={[-4, 2, 2]}
         intensity={
-          lightReveal ? 0.04 : shadowProjection ? 0.08 : rim ? 3.1 : lowKey ? 0.28 : 0.72
+          lightReveal
+            ? 0.04
+            : shadowProjection
+              ? 0.08
+              : lowKey
+                ? 0.28
+                : preserveShadow
+                  ? 0.12
+                  : highKey
+                    ? 0.35
+                    : backlit || rim || warmCool
+                      ? backlit
+                        ? 0.07
+                        : 0.05
+                      : 0.72
         }
-        color={warmCool ? "#38bdf8" : rim ? "#7dd3fc" : "#93c5fd"}
+        color="#93c5fd"
       />
+      {styleAccentMode ? (
+        <DirectorStyleAccentLights
+          moment={moment}
+          actors={actors}
+          progress={progress}
+          autoLoop={autoLoop}
+          sceneState={sceneState}
+          mode={styleAccentMode}
+        />
+      ) : null}
       {spotlight ? (
         <spotLight
           castShadow
@@ -4162,7 +4501,13 @@ export function DirectorShotLightingRig({
         />
       ) : null}
       {intents.has("motivated_source") ? (
-        <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} sceneState={sceneState} mode="motivated" />
+        <DirectorMotivatedSourceLight
+          moment={moment}
+          actors={actors}
+          progress={progress}
+          autoLoop={autoLoop}
+          sceneState={sceneState}
+        />
       ) : null}
       {intents.has("track_spotlight") ? (
         <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} sceneState={sceneState} mode="track" />
