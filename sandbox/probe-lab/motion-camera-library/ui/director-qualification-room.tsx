@@ -4011,6 +4011,12 @@ export function DirectorQualificationRoom({
     () => directorVisualAuditDefinition(currentCapability).fixture,
     [currentCapability],
   );
+  // A.11A.32: shadow-dependent lighting proofs need real renderer shadow maps,
+  // but keep them disabled for every other clip so A.11A.27 preload/render
+  // performance remains the default.
+  const qualificationShadowsEnabled =
+    previewCapability.id === "shadow_projection" ||
+    previewCapability.id === "preserve_shadow";
   const currentPrimaryRole = currentPlannedClip?.roles[0] ?? null;
   const currentReview = qualificationReviewForCapability(
     qualificationState,
@@ -5845,7 +5851,7 @@ export function DirectorQualificationRoom({
                   // enough for that readback without adding a second WebGL renderer.
                   preserveDrawingBuffer: true,
                 }}
-                shadows={false}
+                shadows={qualificationShadowsEnabled}
               >
                 <QualificationCaptureCanvasBridge
                   active={evidenceCapturePhase === "recording"}

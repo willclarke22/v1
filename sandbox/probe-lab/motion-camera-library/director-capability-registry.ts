@@ -1535,10 +1535,25 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
   if (capability.category === "lighting_emphasis") {
     const intent = capability.id as DirectorShotDirectionV2["lighting"]["intents"][number];
     shot.lighting.intents = [intent];
+    shot.lighting.emphasized_entity_ids = ["primary_subject"];
     if (capability.id === "motivated_source") {
       shot.lighting.motivated_source_entity_id = "context_subject";
       shot.composition.keep_visible_entity_ids = ["primary_subject", "context_subject"];
       shot.camera.focus_entity_ids = ["primary_subject", "context_subject"];
+    }
+    if (capability.id === "light_reveal") {
+      shot.reveal_at = 0.34;
+      shot.composition.keep_visible_entity_ids = ["primary_subject"];
+      shot.camera.focus_entity_ids = ["primary_subject"];
+    }
+    if (capability.id === "exposure_shift") {
+      shot.reveal_at = 0.16;
+      shot.composition.keep_visible_entity_ids = ["primary_subject"];
+      shot.camera.focus_entity_ids = ["primary_subject"];
+    }
+    if (capability.id === "shadow_projection" || capability.id === "volumetric_beam") {
+      shot.composition.keep_visible_entity_ids = ["primary_subject"];
+      shot.camera.focus_entity_ids = ["primary_subject"];
     }
     if (capability.id === "preserve_shadow" || capability.id === "shadow_projection") shot.lighting.preserve_shadow_entity_ids = ["primary_subject"];
   }

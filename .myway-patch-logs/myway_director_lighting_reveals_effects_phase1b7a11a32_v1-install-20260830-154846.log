@@ -1,0 +1,47 @@
+**********************
+PowerShell transcript start
+Start time: 20260830154847
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\110a328ea5\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 12380
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\willc\projects\MyWay\v1\.myway-patch-logs\myway_director_lighting_reveals_effects_phase1b7a11a32_v1-install-20260830-154846.log
+
+=== MyWay patch install: myway_director_lighting_reveals_effects_phase1b7a11a32_v1 ===
+
+Invoking transactional installer...
+
+=== myway_director_lighting_reveals_effects_phase1b7a11a32_v1 ===
+Project root: C:\Users\willc\projects\MyWay\v1
+
+Verifying package payload SHA-256 values...
+PASS: package payload hashes
+PASS: preflight state=baseline
+Creating exact rollback copies...
+PASS: rollback copies created
+Installing patch payload...
+PASS: payload copied
+PASS: exact applied-state postflight
+
+Running TypeScript validation first...
+
+
+Patch failed after writes began. Restoring exact pre-patch targets...
+ROLLBACK PASS: exact pre-patch state restored.
+PS>TerminatingError(): "TypeScript validation failed with exit code 2."
+**********************
+PowerShell transcript end
+End time: 20260830154904
+**********************

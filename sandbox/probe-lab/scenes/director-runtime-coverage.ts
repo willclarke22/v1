@@ -245,9 +245,9 @@ export const DIRECTOR_LIGHTING_RUNTIME_COVERAGE = {
   dim_environment: coverage("lighting_rig", "shared", "Uses the low-key environment path."),
   emissive_subject: coverage("lighting_rig", "shared", "Adds subject-tracked point-light emphasis."),
   track_spotlight: coverage("lighting_rig", "explicit", "Tracks a point light to the emphasized actor."),
-  shadow_projection: coverage("lighting_rig", "shared", "Uses shadow-casting backlight setup."),
-  volumetric_beam: coverage("lighting_rig", "shared", "Currently uses subject-tracked emissive light; volumetric rendering fidelity is Phase 1B."),
-  exposure_shift: coverage("lighting_rig", "explicit", "Changes key-light intensity to imply an exposure shift."),
+  shadow_projection: coverage("lighting_rig", "explicit", "Uses an off-axis shadow-casting key; renderer shadow maps and a receiving surface are required for the projected silhouette to read."),
+  volumetric_beam: coverage("lighting_rig", "explicit", "Renders one brighter, fuller camera-facing tapered soft-alpha beam surface along the source-to-subject axis, with continuous radial/taper/end falloff, slight through-subject extension, additive source glow, and stronger directional spotlight reinforcement so the illuminated path reads as a visible light volume."),
+  exposure_shift: coverage("lighting_rig", "explicit", "Animates renderer tone-mapping exposure across the whole frame instead of changing only one light source."),
 } satisfies Record<DirectorLightingIntent, DirectorRuntimeCoverageEntry>;
 
 export const DIRECTOR_KINEMATIC_CONSTRAINT_RUNTIME_COVERAGE = {
@@ -315,4 +315,3 @@ export function directorCameraMovementRuntimeAlias(
   }
   return alias;
 }
-

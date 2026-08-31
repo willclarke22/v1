@@ -772,8 +772,15 @@ function AnimatedActor({
   });
 
   const goldenHighlight = capability.id === "highlight_subject" && resolvedRole.role === "primary_subject";
+  const lightingEffectOwnsAttention = [
+    "light_reveal",
+    "shadow_projection",
+    "volumetric_beam",
+    "exposure_shift",
+  ].includes(capability.id);
   const emphasized =
     !goldenHighlight &&
+    !lightingEffectOwnsAttention &&
     resolvedRole.role === "primary_subject" &&
     (capability.category === "narrative_attention" || capability.category === "lighting_emphasis");
   return (
@@ -1112,9 +1119,16 @@ function Stage({
     fixtureKind === "travelling_subject" ||
     mounted;
   const technical = fixtureKind === "technical_overview";
+  const shadowProjection = capabilityId === "shadow_projection";
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}><circleGeometry args={[8.5, 48]} /><meshStandardMaterial color="#07111f" roughness={0.94} metalness={0.04} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow><circleGeometry args={[8.5, 48]} /><meshStandardMaterial color="#07111f" roughness={0.94} metalness={0.04} /></mesh>
+      {shadowProjection ? (
+        <mesh position={[0.8, 1.9, -2.4]} receiveShadow>
+          <boxGeometry args={[9.2, 4.8, 0.12]} />
+          <meshStandardMaterial color="#334155" roughness={0.96} metalness={0} />
+        </mesh>
+      ) : null}
       <gridHelper args={[14, 28, "#1d4ed8", "#172554"]} position={[0, 0, 0]} />
       {travelling ? <TravellingCameraCorridor capabilityId={capabilityId} /> : null}
       <ObjectMotionQualificationStage
@@ -1160,7 +1174,11 @@ export function DirectorCapabilityPreview({
   );
   const baseActors = useMemo(() => directorQualificationRuntimeActors(roles), [roles]);
   const actors = useMemo(() => applyDirectorBlocking(moment, baseActors), [baseActors, moment]);
-  const lowKey = moment.shot?.lighting.intents.includes("low_key") || moment.shot?.lighting.intents.includes("dim_environment");
+  const lowKey =
+    moment.shot?.lighting.intents.includes("low_key") ||
+    moment.shot?.lighting.intents.includes("dim_environment") ||
+    moment.shot?.lighting.intents.includes("light_reveal") ||
+    moment.shot?.lighting.intents.includes("volumetric_beam");
   const useQualificationVisibilityFill =
     qualificationVisibilityAssist &&
     cameraQualificationVisibilityAssistEnabled(capability);

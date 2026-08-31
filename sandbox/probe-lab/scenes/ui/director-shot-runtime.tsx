@@ -3622,6 +3622,31 @@ function runtimeProgressFor(
   return ((clockElapsedSeconds * 1000) % duration) / duration;
 }
 
+export function directorLightingRevealAmount(
+  progress: number,
+  revealAt = 0.42,
+) {
+  const revealStart = clamp01(revealAt);
+  const revealEnd = Math.min(1, revealStart + 0.28);
+  return easeValue(
+    (clamp01(progress) - revealStart) / Math.max(0.08, revealEnd - revealStart),
+    "ease_out",
+  );
+}
+
+export function directorExposureShiftForProgress(
+  progress: number,
+  revealAt = 0.16,
+) {
+  const shiftStart = clamp01(revealAt);
+  const shiftEnd = Math.min(1, shiftStart + 0.5);
+  const shiftAmount = easeValue(
+    (clamp01(progress) - shiftStart) / Math.max(0.08, shiftEnd - shiftStart),
+    "ease_in_out",
+  );
+  return THREE.MathUtils.lerp(0.42, 1.58, shiftAmount);
+}
+
 function DirectorMotivatedLight({
   moment,
   actors,
@@ -3653,9 +3678,8 @@ function DirectorMotivatedLight({
       : null;
     const base = sample?.position ?? averageTarget(targetActors(moment, shot, p, actors, sceneState));
     light.position.copy(base).add(new THREE.Vector3(0, actor ? actor.size[1] * 0.65 : 1.6, 0.5));
-    const revealStart = shot.reveal_at ?? 0.48;
     const revealAmount = mode === "reveal"
-      ? easeValue((p - revealStart) / Math.max(0.08, 1 - revealStart), "ease_out")
+      ? directorLightingRevealAmount(p, shot.reveal_at ?? 0.42)
       : 1;
     const intensity = mode === "track"
       ? 4.4
@@ -3663,7 +3687,7 @@ function DirectorMotivatedLight({
         ? 3.2
         : mode === "motivated"
           ? 3.6
-          : 4.8 * revealAmount;
+          : 7.2 * revealAmount;
     light.intensity = intensity;
   });
 
@@ -3672,11 +3696,365 @@ function DirectorMotivatedLight({
       ref={lightRef}
       castShadow={mode !== "emissive"}
       intensity={mode === "reveal" ? 0 : 3.4}
-      color={mode === "track" ? "#f8fafc" : mode === "emissive" ? "#67e8f9" : "#fb923c"}
-      distance={mode === "track" ? 8 : 10}
+      color={
+        mode === "track"
+          ? "#f8fafc"
+          : mode === "emissive"
+            ? "#67e8f9"
+            : mode === "reveal"
+              ? "#fff1d6"
+              : "#fb923c"
+      }
+      distance={mode === "track" ? 8 : mode === "reveal" ? 7.5 : 10}
       decay={2}
     />
   );
+}
+
+function DirectorShadowProjectionKey({
+  moment,
+  actors,
+  progress,
+  autoLoop,
+  sceneState,
+}: {
+  moment: DirectorMoment;
+  actors: DirectorRuntimeActor[];
+  progress?: number;
+  autoLoop: boolean;
+  sceneState?: DirectorSceneState | null;
+}) {
+  const lightRef = useRef<THREE.DirectionalLight>(null);
+  const targetRef = useRef<THREE.Object3D>(null);
+  const targetPointRef = useRef(new THREE.Vector3());
+  const sourceOffsetRef = useRef(new THREE.Vector3(-2.7, 1.05, 5.2));
+  const shot = moment.shot ?? legacyShotForMoment(moment);
+
+  useFrame(({ clock }) => {
+    const light = lightRef.current;
+    const targetObject = targetRef.current;
+    if (!light || !targetObject) return;
+
+    const p = runtimeProgressFor(clock.elapsedTime, moment, progress, autoLoop);
+    const targetId =
+      shot.lighting.emphasized_entity_ids[0] ?? shot.camera.focus_entity_ids[0];
+    const actor = actorById(actors, targetId);
+    const sample = actor
+      ? sampleDirectorActorState(moment, actor, p, actors, sceneState)
+      : null;
+    const targetPoint = targetPointRef.current;
+    targetPoint.copy(
+      sample?.position ?? averageTarget(targetActors(moment, shot, p, actors, sceneState)),
+    );
+    targetPoint.y += actor ? Math.max(0.18, actor.size[1] * 0.48) : 0.75;
+
+    targetObject.position.copy(targetPoint);
+    targetObject.updateMatrixWorld(true);
+    light.position.copy(targetPoint).add(sourceOffsetRef.current);
+    light.target = targetObject;
+    light.updateMatrixWorld(true);
+  });
+
+  return (
+    <>
+      <directionalLight
+        ref={lightRef}
+        castShadow
+        position={[-2.7, 2.1, 5.2]}
+        intensity={4.8}
+        color="#fff7ed"
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-camera-left={-5}
+        shadow-camera-right={5}
+        shadow-camera-top={5}
+        shadow-camera-bottom={-5}
+        shadow-camera-near={0.5}
+        shadow-camera-far={24}
+        shadow-bias={-0.00025}
+        shadow-normalBias={0.025}
+      />
+      <object3D ref={targetRef} />
+    </>
+  );
+}
+
+const DIRECTOR_VOLUMETRIC_BEAM_TARGET_RADIUS_SCALE = 0.34;
+const DIRECTOR_VOLUMETRIC_BEAM_TARGET_RADIUS_MIN = 0.34;
+const DIRECTOR_VOLUMETRIC_BEAM_TARGET_RADIUS_MAX = 0.72;
+const DIRECTOR_VOLUMETRIC_BEAM_BILLBOARD_WIDTH = 3.7;
+const DIRECTOR_VOLUMETRIC_BEAM_BILLBOARD_OPACITY = 0.42;
+const DIRECTOR_VOLUMETRIC_BEAM_SOURCE_GLOW_OUTER_OPACITY = 0.28;
+const DIRECTOR_VOLUMETRIC_BEAM_SOURCE_GLOW_CORE_OPACITY = 1;
+const DIRECTOR_VOLUMETRIC_BEAM_SPOT_ANGLE = 0.29;
+const DIRECTOR_VOLUMETRIC_BEAM_SPOT_INTENSITY = 8.4;
+const DIRECTOR_VOLUMETRIC_BEAM_FALLOFF_TEXTURE_SIZE = 96;
+
+function createDirectorVolumetricBeamFalloffTexture() {
+  const size = DIRECTOR_VOLUMETRIC_BEAM_FALLOFF_TEXTURE_SIZE;
+  const data = new Uint8Array(size * size * 4);
+
+  for (let y = 0; y < size; y += 1) {
+    const v = (y + 0.5) / size;
+    const sourceFade = THREE.MathUtils.smoothstep(v, 0, 0.08);
+    const targetFade = 1 - THREE.MathUtils.smoothstep(v, 0.92, 1);
+    const longitudinalFade = sourceFade * targetFade;
+    const taper = THREE.MathUtils.lerp(
+      0.24,
+      1.06,
+      THREE.MathUtils.smoothstep(v, 0.02, 0.88),
+    );
+    const targetCoreBoost = THREE.MathUtils.lerp(
+      0.94,
+      1.14,
+      THREE.MathUtils.smoothstep(v, 0.2, 0.9),
+    );
+
+    for (let x = 0; x < size; x += 1) {
+      const u = (x + 0.5) / size;
+      const radial = Math.abs(u - 0.5) * 2;
+      const normalizedRadius = taper > 1e-6 ? radial / taper : 2;
+      const edgeFade =
+        1 - THREE.MathUtils.smoothstep(normalizedRadius, 0.06, 1);
+      const outerHaze = Math.pow(Math.max(0, edgeFade), 1.55);
+      const innerCore = Math.pow(
+        Math.max(0, 1 - normalizedRadius),
+        2.15,
+      );
+      const alpha = THREE.MathUtils.clamp(
+        (outerHaze * 0.36 + innerCore * 0.78 * targetCoreBoost) *
+          longitudinalFade *
+          1.03,
+        0,
+        1,
+      );
+      const value = Math.round(alpha * 255);
+      const offset = (y * size + x) * 4;
+      data[offset] = value;
+      data[offset + 1] = value;
+      data[offset + 2] = value;
+      data[offset + 3] = 255;
+    }
+  }
+
+  const texture = new THREE.DataTexture(
+    data,
+    size,
+    size,
+    THREE.RGBAFormat,
+    THREE.UnsignedByteType,
+  );
+  texture.name = "director-volumetric-beam-camera-facing-falloff";
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function DirectorVolumetricBeam({
+  moment,
+  actors,
+  progress,
+  autoLoop,
+  sceneState,
+}: {
+  moment: DirectorMoment;
+  actors: DirectorRuntimeActor[];
+  progress?: number;
+  autoLoop: boolean;
+  sceneState?: DirectorSceneState | null;
+}) {
+  const beamMeshRef = useRef<THREE.Mesh>(null);
+  const sourceGlowRef = useRef<THREE.Group>(null);
+  const spotRef = useRef<THREE.SpotLight>(null);
+  const targetRef = useRef<THREE.Object3D>(null);
+  const directionRef = useRef(new THREE.Vector3());
+  const beamEndRef = useRef(new THREE.Vector3());
+  const midpointRef = useRef(new THREE.Vector3());
+  const cameraFacingRef = useRef(new THREE.Vector3());
+  const rightRef = useRef(new THREE.Vector3());
+  const billboardMatrixRef = useRef(new THREE.Matrix4());
+  const sourceRef = useRef(new THREE.Vector3());
+  const targetPointRef = useRef(new THREE.Vector3());
+  const beamFalloffTexture = useMemo(
+    () => createDirectorVolumetricBeamFalloffTexture(),
+    [],
+  );
+  const shot = moment.shot ?? legacyShotForMoment(moment);
+
+  useEffect(
+    () => () => {
+      beamFalloffTexture.dispose();
+    },
+    [beamFalloffTexture],
+  );
+
+  useFrame(({ clock, camera }) => {
+    const beamMesh = beamMeshRef.current;
+    const sourceGlow = sourceGlowRef.current;
+    const spot = spotRef.current;
+    const targetObject = targetRef.current;
+    if (!beamMesh || !sourceGlow || !spot || !targetObject) return;
+
+    const p = runtimeProgressFor(clock.elapsedTime, moment, progress, autoLoop);
+    const targetId =
+      shot.lighting.emphasized_entity_ids[0] ?? shot.camera.focus_entity_ids[0];
+    const actor = actorById(actors, targetId);
+    const sample = actor
+      ? sampleDirectorActorState(moment, actor, p, actors, sceneState)
+      : null;
+    const targetPoint = targetPointRef.current;
+    targetPoint.copy(
+      sample?.position ?? averageTarget(targetActors(moment, shot, p, actors, sceneState)),
+    );
+    targetPoint.y += actor ? Math.max(0.12, actor.size[1] * 0.48) : 0.75;
+
+    const source = sourceRef.current
+      .copy(targetPoint)
+      .add(new THREE.Vector3(-3.6, 4.4, 2.2));
+    const direction = directionRef.current.copy(targetPoint).sub(source);
+    const targetDistance = Math.max(0.01, direction.length());
+    direction.normalize();
+
+    const targetRadius = THREE.MathUtils.clamp(
+      actor
+        ? Math.max(actor.size[0], actor.size[1], actor.size[2]) *
+            DIRECTOR_VOLUMETRIC_BEAM_TARGET_RADIUS_SCALE
+        : 0.5,
+      DIRECTOR_VOLUMETRIC_BEAM_TARGET_RADIUS_MIN,
+      DIRECTOR_VOLUMETRIC_BEAM_TARGET_RADIUS_MAX,
+    );
+    const beamEnd = beamEndRef.current
+      .copy(targetPoint)
+      .addScaledVector(direction, targetRadius * 0.85);
+    const beamLength = Math.max(0.01, source.distanceTo(beamEnd));
+    const midpoint = midpointRef.current
+      .copy(source)
+      .add(beamEnd)
+      .multiplyScalar(0.5);
+
+    const cameraFacing = cameraFacingRef.current
+      .copy(camera.position)
+      .sub(midpoint);
+    cameraFacing.addScaledVector(direction, -cameraFacing.dot(direction));
+    if (cameraFacing.lengthSq() < 1e-6) {
+      cameraFacing.set(0, 1, 0);
+      if (Math.abs(cameraFacing.dot(direction)) > 0.95) {
+        cameraFacing.set(1, 0, 0);
+      }
+      cameraFacing.addScaledVector(direction, -cameraFacing.dot(direction));
+    }
+    cameraFacing.normalize();
+
+    const right = rightRef.current
+      .crossVectors(direction, cameraFacing)
+      .normalize();
+    billboardMatrixRef.current.makeBasis(right, direction, cameraFacing);
+
+    beamMesh.position.copy(midpoint);
+    beamMesh.quaternion.setFromRotationMatrix(billboardMatrixRef.current);
+    beamMesh.scale.set(
+      targetRadius * DIRECTOR_VOLUMETRIC_BEAM_BILLBOARD_WIDTH,
+      beamLength,
+      1,
+    );
+
+    sourceGlow.position.copy(source);
+    spot.position.copy(source);
+    targetObject.position.copy(targetPoint);
+    targetObject.updateMatrixWorld(true);
+    spot.target = targetObject;
+    spot.distance = targetDistance + 2.5;
+    spot.updateMatrixWorld(true);
+  });
+
+  return (
+    <>
+      <mesh ref={beamMeshRef} frustumCulled={false}>
+        <planeGeometry args={[1, 1, 1, 1]} />
+        <meshBasicMaterial
+          color="#fff7d6"
+          transparent
+          opacity={DIRECTOR_VOLUMETRIC_BEAM_BILLBOARD_OPACITY}
+          alphaMap={beamFalloffTexture}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
+        />
+      </mesh>
+      <group ref={sourceGlowRef}>
+        <mesh frustumCulled={false}>
+          <sphereGeometry args={[0.28, 20, 14]} />
+          <meshBasicMaterial
+            color="#fde68a"
+            transparent
+            opacity={DIRECTOR_VOLUMETRIC_BEAM_SOURCE_GLOW_OUTER_OPACITY}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            toneMapped={false}
+          />
+        </mesh>
+        <mesh frustumCulled={false}>
+          <sphereGeometry args={[0.08, 16, 10]} />
+          <meshBasicMaterial
+            color="#fffdf5"
+            transparent
+            opacity={DIRECTOR_VOLUMETRIC_BEAM_SOURCE_GLOW_CORE_OPACITY}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+      <spotLight
+        ref={spotRef}
+        castShadow
+        angle={DIRECTOR_VOLUMETRIC_BEAM_SPOT_ANGLE}
+        penumbra={0.92}
+        intensity={DIRECTOR_VOLUMETRIC_BEAM_SPOT_INTENSITY}
+        color="#fff7d6"
+        decay={1.6}
+      />
+      <object3D ref={targetRef} />
+    </>
+  );
+}
+
+function DirectorExposureShift({
+  moment,
+  progress,
+  autoLoop,
+}: {
+  moment: DirectorMoment;
+  progress?: number;
+  autoLoop: boolean;
+}) {
+  const { gl, invalidate } = useThree();
+  const restoreExposureRef = useRef<number | null>(null);
+  const shot = moment.shot ?? legacyShotForMoment(moment);
+
+  useEffect(() => {
+    restoreExposureRef.current = gl.toneMappingExposure;
+    return () => {
+      if (restoreExposureRef.current !== null) {
+        gl.toneMappingExposure = restoreExposureRef.current;
+        invalidate();
+      }
+    };
+  }, [gl, invalidate]);
+
+  useFrame(({ clock }) => {
+    const p = runtimeProgressFor(clock.elapsedTime, moment, progress, autoLoop);
+    gl.toneMappingExposure = directorExposureShiftForProgress(
+      p,
+      shot.reveal_at ?? 0.16,
+    );
+  });
+
+  return null;
 }
 
 /**
@@ -3699,34 +4077,78 @@ export function DirectorShotLightingRig({
 }) {
   const shot = moment.shot ?? legacyShotForMoment(moment);
   const intents = new Set(shot.lighting.intents);
-  const lowKey = intents.has("low_key") || intents.has("dim_environment");
+  const lightReveal = intents.has("light_reveal");
+  const shadowProjection = intents.has("shadow_projection");
+  const volumetricBeam = intents.has("volumetric_beam");
+  const exposureShift = intents.has("exposure_shift");
+  const lowKey =
+    intents.has("low_key") ||
+    intents.has("dim_environment") ||
+    lightReveal ||
+    volumetricBeam;
   const highKey = intents.has("high_key");
-  const backlit = intents.has("backlit") || intents.has("preserve_shadow") || intents.has("shadow_projection");
+  const backlit =
+    intents.has("backlit") || intents.has("preserve_shadow") || shadowProjection;
   const rim = intents.has("rim_lit");
   const spotlight = intents.has("spotlight_subject");
   const warmCool = intents.has("warm_cool_contrast");
-  const exposureShift = intents.has("exposure_shift");
   // highlight_subject is a renderer-owned silhouette treatment, not a light.
   // Do not synthesize a spotlight here; actor renderers own the tight outline.
 
   return (
     <>
-      <ambientLight intensity={lowKey ? 0.1 : highKey ? 0.95 : 0.42} />
+      <ambientLight
+        intensity={
+          lightReveal ? 0.025 : shadowProjection ? 0.14 : lowKey ? 0.1 : highKey ? 0.95 : 0.42
+        }
+      />
       <hemisphereLight
-        args={[highKey ? "#ffffff" : "#dbeafe", "#0f172a", highKey ? 1.35 : lowKey ? 0.35 : 0.68]}
+        args={[
+          highKey ? "#ffffff" : "#dbeafe",
+          "#0f172a",
+          highKey
+            ? 1.35
+            : lightReveal
+              ? 0.08
+              : shadowProjection
+                ? 0.16
+                : lowKey
+                  ? 0.35
+                  : 0.68,
+        ]}
         position={[0, 6, 0]}
       />
-      <directionalLight
-        castShadow
-        position={backlit ? [-4, 6, -6] : [5, 7, 5]}
-        intensity={exposureShift ? 1.3 : lowKey ? 0.9 : highKey ? 2.7 : 1.9}
-        color={warmCool ? "#f59e0b" : backlit ? "#fef3c7" : "#ffffff"}
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-      />
+      {shadowProjection ? (
+        <DirectorShadowProjectionKey
+          moment={moment}
+          actors={actors}
+          progress={progress}
+          autoLoop={autoLoop}
+          sceneState={sceneState}
+        />
+      ) : (
+        <directionalLight
+          castShadow
+          position={backlit ? [-4, 6, -6] : [5, 7, 5]}
+          intensity={lightReveal ? 0.12 : lowKey ? 0.9 : highKey ? 2.7 : 1.9}
+          color={warmCool ? "#f59e0b" : backlit ? "#fef3c7" : "#ffffff"}
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-camera-left={-5}
+          shadow-camera-right={5}
+          shadow-camera-top={5}
+          shadow-camera-bottom={-5}
+          shadow-camera-near={0.5}
+          shadow-camera-far={24}
+          shadow-bias={-0.00025}
+          shadow-normalBias={0.025}
+        />
+      )}
       <directionalLight
         position={rim ? [-4, 4, -4] : [-4, 2, 2]}
-        intensity={rim ? 3.1 : lowKey ? 0.28 : 0.72}
+        intensity={
+          lightReveal ? 0.04 : shadowProjection ? 0.08 : rim ? 3.1 : lowKey ? 0.28 : 0.72
+        }
         color={warmCool ? "#38bdf8" : rim ? "#7dd3fc" : "#93c5fd"}
       />
       {spotlight ? (
@@ -3748,8 +4170,24 @@ export function DirectorShotLightingRig({
       {intents.has("light_reveal") ? (
         <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} sceneState={sceneState} mode="reveal" />
       ) : null}
-      {intents.has("emissive_subject") || intents.has("volumetric_beam") ? (
+      {intents.has("emissive_subject") ? (
         <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} sceneState={sceneState} mode="emissive" />
+      ) : null}
+      {volumetricBeam ? (
+        <DirectorVolumetricBeam
+          moment={moment}
+          actors={actors}
+          progress={progress}
+          autoLoop={autoLoop}
+          sceneState={sceneState}
+        />
+      ) : null}
+      {exposureShift ? (
+        <DirectorExposureShift
+          moment={moment}
+          progress={progress}
+          autoLoop={autoLoop}
+        />
       ) : null}
     </>
   );

@@ -2327,3 +2327,42 @@ another visual repair:
 No new evidence pass is required for this merge closeout: `QR-20260829-231020` is the
 same-host evidence establishing that the settled mounted relationship is redundant.
 
+## Phase 1B.7A.11A.32 — Lighting reveals & effects perceptual truth
+
+Deterministic evidence reel `QR-20260830-000120` completed cleanly with all eight
+scheduled clips, 2,043/2,043 rendered and encoded frames, zero missed frames, and
+zero timeline drift. Human visual review did **not** freeze any of the four
+capabilities yet because the browser proof was weaker than the semantic names:
+Light reveal behaved mainly like a brightness increase on an already-readable
+subject, Shadow projection did not expose a distinct projected silhouette,
+Volumetric beam rendered as ordinary emissive illumination, and Exposure shift
+changed a key light rather than the whole image exposure state.
+
+A.11A.32 repairs the actual shared lighting execution where the missing behavior
+belongs, and changes Qualification-only staging only where a truthful proof needs a
+receiver:
+
+- **Light reveal** now suppresses the ordinary environment rig before the cue, uses
+  a bounded local reveal-light ramp, and holds the revealed state. The teaching
+  subject should therefore move from materially subdued/withheld detail to clearly
+  readable while the broader scene stays comparatively dark.
+- **Shadow projection** keeps the shared shadow-casting light path but gives the
+  Qualification lighting fixture a neutral vertical receiving plane and enables
+  shadow maps only for shadow-dependent qualification clips. The projected cast
+  silhouette itself, not merely dark object shading, is the evidence target.
+- **Volumetric beam** no longer aliases the emissive-subject fallback. The shared
+  Three.js lighting rig now renders a transparent additive tapered shaft from an
+  off-axis source into the emphasized actor, reinforced by a spotlight and small
+  source marker so direction and light path are visually explicit.
+- **Exposure shift** now animates WebGL renderer tone-mapping exposure across the
+  entire rendered scene. It is deliberately distinct from Light reveal: Exposure
+  shift changes the global image response, while Light reveal remains selective
+  local illumination.
+- The generic cyan qualification emphasis ring is suppressed for these four effects
+  so the lighting behavior itself has to carry attention.
+
+The production Director lighting vocabulary remains unchanged. The frozen 184-entry
+compatibility registry, merged mounted-camera alias, deferred capability set, and
+all previously qualified camera families remain untouched. Render a fresh
+**Lighting & emphasis -> Lighting reveals & effects** gauntlet after this patch and
+judge each baseline/diversity pair against the four stronger perceptual contracts.

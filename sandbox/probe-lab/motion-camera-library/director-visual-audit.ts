@@ -557,6 +557,26 @@ function specialExpectations(capability: DirectorCapability): string[] {
         "The paused 0% proof should already sit on its second rail at the first frame, and the first playback frame should be the exact same second-rail composition, with nearly constant apparent subject size and screen position through 100%.",
         "The camera-to-subject vector should stay predominantly perpendicular to travel without an entry zoom, control handoff snap, forward look drift, or diagonal collapse; the same low-profile ground-edge markers used by the other Tracking siblings should provide optic flow without crossing the side-rail lens.",
       ];
+    case "light_reveal":
+      return [
+        "The opening should withhold meaningful subject detail under a deliberately subdued environment rather than showing an already-readable hero with a later brightness bump.",
+        "A bounded local reveal light should make the teaching subject become clearly readable, then hold the revealed state while the broader environment stays comparatively subdued.",
+      ];
+    case "shadow_projection":
+      return [
+        "A cast silhouette must be visibly projected onto a distinct receiving surface with enough lateral separation from the source actor to read as its own explanatory shape.",
+        "The proof fails if the viewer can only see dark object shading; the projected shadow itself must remain readable and attributable to the source actor.",
+      ];
+    case "volumetric_beam":
+      return [
+        "A visible shaft of light must occupy space between an identifiable source direction and the emphasized subject; ordinary emissive or point-light brightening is not sufficient.",
+        "The beam path should remain readable as a directional volume without becoming an opaque solid prop or obscuring the subject it is meant to explain.",
+      ];
+    case "exposure_shift":
+      return [
+        "The whole rendered scene should undergo an obvious exposure change, affecting the subject and surrounding surfaces together rather than only changing one key light.",
+        "Compare against Light reveal: Exposure shift is a global image-state transition, while Light reveal remains selective/local illumination of the teaching subject.",
+      ];
     case "isometric":
       return [
         "The controlled technical fixture should remain fully in frame from a stable three-axis overview.",
