@@ -42,15 +42,28 @@ assert(
   "Asset searches should reset when the selected Director capability changes.",
 );
 
+const stableIdentitySource = readFileSync(
+  join(
+    process.cwd(),
+    "sandbox/probe-lab/assets/asset-stable-identity.ts",
+  ),
+  "utf8",
+);
 assert(
-  source.includes("asset.display_name") &&
-    source.includes("asset.canonical_label") &&
-    source.includes("asset.aliases") &&
-    source.includes("asset.semantic_tags"),
-  "Asset search must continue to use the existing searchable Asset Library identity text.",
+  source.includes("assetSemanticSearchText(asset)") &&
+    stableIdentitySource.includes("asset.canonical_label") &&
+    stableIdentitySource.includes("asset.verified_canonical_label") &&
+    stableIdentitySource.includes("asset.display_name") &&
+    stableIdentitySource.includes("asset.aliases") &&
+    stableIdentitySource.includes("asset.verified_aliases") &&
+    stableIdentitySource.includes("asset.semantic_tags") &&
+    stableIdentitySource.includes("asset.requested_concept") &&
+    stableIdentitySource.includes("asset.source_display_name"),
+  "Asset search must use the shared successor-safe Asset Library semantic identity text.",
 );
 
 console.log("Director real-asset searchable dropdown Phase 1B.6.1.3 verification passed.");
 console.log(
   "Each real-asset role can now filter reviewed GLBs by identity metadata without changing the selected asset or Director execution authority.",
 );
+

@@ -143,6 +143,11 @@ import {
 } from "./director-capability-preview";
 import { DirectorLibraryTabs } from "./director-library-tabs";
 import { directorRealAssetBrowserUrl } from "./director-real-asset-browser";
+import {
+  assetMatchesAnyReference,
+  assetSemanticSearchText,
+  resolveAssetByReference,
+} from "../../assets/asset-stable-identity";
 
 type Props = {
   onOpenCapabilities: () => void;
@@ -384,22 +389,7 @@ function normalized(value: string) {
 }
 
 function assetSearchText(asset: DirectorLibraryAsset) {
-  return normalized(
-    [
-      asset.asset_id,
-      asset.canonical_label,
-      asset.verified_canonical_label,
-      asset.display_name,
-      asset.requested_concept,
-      asset.source_display_name,
-      ...(asset.aliases ?? []),
-      ...(asset.verified_aliases ?? []),
-      ...(asset.semantic_tags ?? []),
-      ...(asset.preferred_for_concepts ?? []),
-    ]
-      .filter(Boolean)
-      .join(" "),
-  );
+  return assetSemanticSearchText(asset);
 }
 
 function assetLabel(asset: DirectorLibraryAsset) {
@@ -1096,7 +1086,7 @@ function scoreAssetForCastSlot(
   slot: DirectorQualificationCastSlot,
 ) {
   const haystack = ` ${assetSearchText(asset)} `;
-  let semantic = slot.preferred_asset_ids?.includes(asset.asset_id) ? 10_000 : 0;
+  let semantic = assetMatchesAnyReference(asset, slot.preferred_asset_ids) ? 10_000 : 0;
 
   for (const concept of slot.concepts) {
     const phrase = normalized(concept);
@@ -1129,7 +1119,7 @@ function resolveQualificationPools(
   return DIRECTOR_QUALIFICATION_CAST.map((slot) => {
     const override = overrides[slot.id];
     const overriddenAsset = override
-      ? loadable.find((asset) => asset.asset_id === override) ?? null
+      ? resolveAssetByReference(loadable, override)?.asset ?? null
       : null;
 
     const ranked = loadable
@@ -5793,6 +5783,26 @@ export function DirectorQualificationRoom({
           </div>
         ) : null}
 
+        {selectedFamily?.category === "narrative_attention" &&
+        selectedFamily.group === "Attention sequence" ? (
+          <div style={softWarningStyle}>
+            A.11A.44 closes the reviewed Attention sequence without inventing
+            cosmetic differences between duplicate ideas. Orient is a completed
+            merge into Establish after Baseline/Cross-asset evidence showed the
+            same establishing composition and spatial-information primitive; the
+            frozen <code>orient</code> intent remains readable for compatibility,
+            while canonical capability authoring resolves to Establish. Establish,
+            Isolate, Compare, and Reveal retain their accepted visual behavior.
+            Introduce remains active but is classified honestly as a compound
+            narrative motif: preserve established context, bring the new actor in,
+            reframe attention, then settle after the reveal. Compare&apos;s dashed
+            relationship guide is Qualification-only proof instrumentation, not a
+            production requirement. The active reel is now Establish, Isolate,
+            Compare, Reveal, and Introduce: 5 capabilities × Baseline/Diversity =
+            10 clips.
+          </div>
+        ) : null}
+
         {selectedFamily?.category === "lighting_emphasis" &&
         selectedFamily.group === "Lighting style & motivation" ? (
           <div style={softWarningStyle}>
@@ -5805,6 +5815,28 @@ export function DirectorQualificationRoom({
             suppress the generic cyan subject ring so the light itself must carry the
             visual idea; Motivated source also suppresses the generic stage-boundary
             guide so the practical source-to-subject relationship stands on its own.
+          </div>
+        ) : null}
+
+        {selectedFamily?.category === "lighting_emphasis" &&
+        selectedFamily.group === "Subject emphasis" ? (
+          <div style={softWarningStyle}>
+            Emissive subject remains deferred: the current Three.js behavior is only
+            a subject-tracked point-light approximation, not honest surface/material
+            emission across arbitrary GLBs. Dim environment is now a non-active merge
+            candidate rather than a separate perceptual primitive: preserve it as a
+            composable environment-dim modifier / compatibility intent that can support
+            Spotlight subject and other recipes. Highlight subject remains the accepted
+            Golden Lunch silhouette treatment and is intentionally unchanged. The active
+            reel now proves Spotlight subject, Highlight subject, and Tracking spotlight.
+            A.11A.43 is the final shared-spotlight repair pass: Spotlight subject and
+            Tracking spotlight now use a camera-aware real SpotLight key plus a narrow
+            actor-targeted support SpotLight so arbitrary GLBs remain readable without
+            lifting the competitor. The qualification stage uses a neutral matte receiver
+            so the real cone must visibly produce a localized pool/falloff; Tracking keeps
+            the A.11A.42 large left-to-right hero travel frozen. If either spotlight proof
+            still fails cross-asset review, defer Spotlight subject and Tracking spotlight
+            rather than entering another renderer-specific tuning loop.
           </div>
         ) : null}
 

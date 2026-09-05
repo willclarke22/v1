@@ -20,6 +20,11 @@ import {
 import {
   normalizeAssetDirectabilityOverrides,
 } from "../directability/asset-directability-contract";
+import {
+  normalizeAssetIdLike,
+  normalizeAssetUid,
+  normalizeLegacyAssetIds,
+} from "./asset-stable-identity";
 
 function stringList(value: unknown) {
   if (!Array.isArray(value)) return [];
@@ -973,13 +978,7 @@ function geometryProfile(
 }
 
 export function safeAssetId(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 96);
+  return normalizeAssetIdLike(value);
 }
 
 export function normalizeMyWayAssetRecord(
@@ -1163,6 +1162,14 @@ export function normalizeMyWayAssetRecord(
 
   return {
     asset_id: assetId,
+    asset_uid: normalizeAssetUid(
+      nullableString(item.asset_uid),
+      assetId,
+    ),
+    legacy_asset_ids: normalizeLegacyAssetIds(
+      item.legacy_asset_ids,
+      assetId,
+    ),
     canonical_label: label.toLowerCase(),
     display_name: displayName,
     aliases: stringList(item.aliases),
@@ -1359,3 +1366,4 @@ export function normalizeMyWayAssetRecord(
       nullableString(item.updated_at) ?? now,
   };
 }
+

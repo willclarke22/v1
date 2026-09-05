@@ -25,6 +25,10 @@ import {
   isAttributionRequiredLicense,
 } from "./asset-attribution";
 import { projectPath } from "./paths.server";
+import {
+  assetReferenceMatchKind,
+  resolveAssetByReference,
+} from "./asset-stable-identity";
 
 export const REVIEWED_ASSET_RESOLVER_VERSION =
   "myway_reviewed_asset_resolver_v1" as const;
@@ -440,7 +444,7 @@ function scoreAsset(
 
   const normalizedConcept = normalizePhrase(request.concept);
   const preferredBonus =
-    (request.preferred_asset_id === asset.asset_id ? 160 : 0) +
+    (assetReferenceMatchKind(asset, request.preferred_asset_id) ? 160 : 0) +
     ((asset.preferred_for_concepts ?? [])
       .map(normalizePhrase)
       .includes(normalizedConcept)
@@ -929,8 +933,10 @@ export async function resolveReviewedAsset(
     normalizePhrase(request.concept);
   const explicitlyPreferred =
     Boolean(best) &&
-    (request.preferred_asset_id ===
-      best?.asset.asset_id ||
+    (Boolean(
+      best &&
+      assetReferenceMatchKind(best.asset, request.preferred_asset_id),
+    ) ||
       (
         best?.asset
           .preferred_for_concepts ?? []
@@ -972,8 +978,13 @@ export async function resolveReviewedAsset(
           !entry.reasons.includes(
             "identity_mismatch",
           ) ||
-          entry.asset_id ===
-            request.preferred_asset_id,
+          Boolean(
+            request.preferred_asset_id &&
+            resolveAssetByReference(
+              snapshot.registry.assets,
+              request.preferred_asset_id,
+            )?.asset.asset_id === entry.asset_id,
+          ),
       )
       .sort(
         (a, b) =>
@@ -1062,3 +1073,4 @@ export async function resolveReviewedAsset(
   await writeDebug(request, result);
   return result;
 }
+

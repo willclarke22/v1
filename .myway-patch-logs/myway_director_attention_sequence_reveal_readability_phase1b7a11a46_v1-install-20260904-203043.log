@@ -1,0 +1,54 @@
+**********************
+PowerShell transcript start
+Start time: 20260904203043
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\520fb30b2d\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 27156
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Running installer preflight against C:\Users\willc\projects\MyWay\v1
+
+
+==> TypeScript noEmit
+
+
+==> A.11A.46 Reveal-readability verifier
+
+
+==> A.11A.44 Attention-sequence merge closeout verifier
+
+
+==> A.11A.43 Subject-emphasis frozen spotlight verifier
+
+
+==> A.11A.45 Asset-identity / Director-fixture verifier
+
+
+==> A.11A.39 Lighting-style frozen closeout verifier
+
+
+==> A.11A.31 Tracking/mounted-merge historical verifier
+
+
+==> Production build
+
+
+A.11A.46 applied successfully.
+Reveal now gets a Reveal-only camera-side soft fill that ramps with the existing reveal envelope.
+Establish / Isolate / Compare are untouched; Introduce remains compound and unchanged; Orient remains merged into Establish.
+Next: restart pnpm dev, render Narrative & attention / Attention sequence, and export the 10-clip evidence ZIP.
+**********************
+PowerShell transcript end
+End time: 20260904203144
+**********************

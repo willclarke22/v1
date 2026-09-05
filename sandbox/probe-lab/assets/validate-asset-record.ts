@@ -20,6 +20,14 @@ export function validateMyWayAssetRecord(
     errors.push("asset_id is required");
   }
 
+  if (!asset.asset_uid?.trim()) {
+    errors.push("asset_uid is required after normalization");
+  }
+
+  if ((asset.legacy_asset_ids ?? []).includes(asset.asset_id)) {
+    errors.push("legacy_asset_ids must not contain the current asset_id");
+  }
+
   if (!asset.display_name) {
     errors.push("display_name is required");
   }
@@ -202,3 +210,4 @@ export function validateMyWayAssetRecord(
     errors,
   };
 }
+

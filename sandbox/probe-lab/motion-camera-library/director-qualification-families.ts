@@ -358,6 +358,76 @@ function capabilityProfile(
   fallbackSlots: DirectorQualificationCastSlotId[],
 ): DirectorQualificationCapabilityProfile {
   if (
+    familyCategory === "narrative_attention" &&
+    familyGroup === "Attention sequence"
+  ) {
+    if (capabilityId === "orient") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "establish",
+        qualification_note:
+          "A.11A.44 closes Orient into Establish after cross-asset evidence showed the same establishing composition and spatial-information primitive. Keep `orient` as frozen compatibility / higher-level narrative intent, but canonical capability authoring resolves to Establish.",
+      };
+    }
+    if (capabilityId === "introduce") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Introduce remains active as an explicitly compound narrative motif: preserve established context, bring the new actor into the argument, reframe attention, and settle after the reveal. Do not mislabel it as a new atomic renderer primitive.",
+      };
+    }
+    if (capabilityId === "compare") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Compare is qualified by balanced simultaneous readability of the two actors. Any dashed relationship guide in Qualification is proof instrumentation only, not part of the production Compare primitive.",
+      };
+    }
+  }
+  if (
+    familyCategory === "lighting_emphasis" &&
+    familyGroup === "Subject emphasis"
+  ) {
+    if (capabilityId === "dim_environment") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: "spotlight_subject",
+        qualification_note:
+          "A.11A.42 removes Dim environment from standalone active Qualification. Preserve it as a composable environment-dim lighting modifier / compatibility intent that can support Spotlight subject and other recipes instead of freezing a duplicate perceptual primitive.",
+      };
+    }
+    if (capabilityId === "spotlight_subject") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Spotlight-subject qualification must prove a localized pool on the hero while a visible competitor remains materially subordinate outside the cone.",
+      };
+    }
+    if (capabilityId === "track_spotlight") {
+      return {
+        suitable_primary_cast_slots: fallbackSlots,
+        comparison_group: null,
+        requires_directional_facing: false,
+        merge_compare_with_capability_id: null,
+        qualification_note:
+          "Tracking-spotlight qualification must show large primary-subject travel while the stationary competitor remains comparatively dark and the real SpotLight stays attached to the moving hero.",
+      };
+    }
+  }
+  if (
     familyCategory === "camera_framing" &&
     familyGroup === "Detail & relationship framing"
   ) {
@@ -852,6 +922,11 @@ export const DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS = [
   // renderer/material-sensitive to freeze honestly across arbitrary GLBs.
   // Retain vocabulary/runtime compatibility, but defer active qualification.
   "backlit",
+  // A.11A.41: Subject emphasis review found the current Emissive Subject
+  // point-light approximation is not true surface/material emission and does
+  // not generalize across arbitrary GLBs. Keep the Director vocabulary/runtime
+  // compatibility surface, but defer active Qualification until emission is honest.
+  "emissive_subject",
 ] as const;
 
 /**
@@ -859,8 +934,32 @@ export const DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS = [
  * behavior has been resolved into a canonical primitive, while the old id
  * remains in the frozen compatibility vocabulary.
  */
+/**
+ * Capabilities that remain useful Director vocabulary but should not be
+ * qualified as independent perceptual primitives because human review found
+ * that their behavior belongs inside another reusable primitive/modifier.
+ *
+ * Unlike DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_IDS these are not completed
+ * compatibility aliases yet; they remain explicit merge candidates.
+ */
+export const DIRECTOR_QUALIFICATION_MERGE_CANDIDATE_CAPABILITY_IDS = [
+  // A.11A.42: Dim environment and Spotlight subject converge on the same
+  // selective-lighting architecture. Keep environment dimming as a composable
+  // modifier / compatibility intent, but stop claiming a separate visual primitive.
+  "dim_environment",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_MERGE_CANDIDATE_TARGET_BY_ID = {
+  dim_environment: "spotlight_subject",
+} as const;
+
 export const DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_IDS = [
   "camera_object_attached",
+  // A.11A.44: cross-asset Attention-sequence evidence showed Orient and
+  // Establish are the same establishing/spatial-orientation visual primitive.
+  // Keep the frozen id as compatibility narrative vocabulary but remove it from
+  // active independent Qualification and canonical capability authoring.
+  "orient",
 ] as const;
 
 /**
@@ -870,6 +969,7 @@ export const DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_IDS = [
  */
 export const DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_FAMILY_KEY_BY_ID = {
   camera_object_attached: "camera_movement:Tracking & attached camera",
+  orient: "narrative_attention:Attention sequence",
 } as const;
 
 export function directorQualificationMergedCapabilityIdsForFamily(
@@ -888,6 +988,14 @@ export function isDirectorQualificationCapabilityDeferred(capabilityId: string) 
   );
 }
 
+export function isDirectorQualificationCapabilityMergeCandidate(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_MERGE_CANDIDATE_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
 export function isDirectorQualificationCapabilityMerged(capabilityId: string) {
   return (DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_IDS as readonly string[]).includes(
     capabilityId,
@@ -897,6 +1005,7 @@ export function isDirectorQualificationCapabilityMerged(capabilityId: string) {
 export function isDirectorQualificationCapabilityActive(capabilityId: string) {
   return (
     !isDirectorQualificationCapabilityDeferred(capabilityId) &&
+    !isDirectorQualificationCapabilityMergeCandidate(capabilityId) &&
     !isDirectorQualificationCapabilityMerged(capabilityId)
   );
 }
@@ -912,11 +1021,11 @@ export function directorQualificationExpectedActiveCapabilityCount(
 /**
  * Active Qualification Room view of the frozen Director family taxonomy.
  *
- * Deferred and successfully merged legacy capabilities remain in the 184-entry
- * Director registry and in buildDirectorQualificationFamilies(...) so historical
- * compatibility evidence stays stable. The live campaign excludes capabilities
- * that either cannot yet be proven truthfully or have already been consolidated
- * into a canonical primitive.
+ * Deferred, merge-candidate, and successfully merged legacy capabilities remain
+ * in the 184-entry Director registry and in buildDirectorQualificationFamilies(...)
+ * so historical compatibility evidence stays stable. The live campaign excludes
+ * capabilities that either cannot yet be proven truthfully, are awaiting/undergoing
+ * semantic consolidation, or have already been consolidated into a canonical primitive.
  */
 export function buildActiveDirectorQualificationFamilies(
   capabilities: DirectorCapability[],
@@ -941,4 +1050,3 @@ export function buildActiveDirectorQualificationFamilies(
     })
     .filter((family) => family.capability_ids.length > 0);
 }
-

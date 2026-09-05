@@ -1,0 +1,118 @@
+**********************
+PowerShell transcript start
+Start time: 20260904163006
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\520fb30b2d\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 21400
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+A.11A.45 v1.1 preflight diagnostics
+Project root: C:\Users\willc\projects\MyWay\v1
+GUARD sandbox/probe-lab/motion-camera-library/director-capability-registry.ts: ok; canonical SHA-256 a517605ccdbfc4d2abe1bb7403edbdf0552708fe6e11679db38e04a807a0426d; expected a517605ccdbfc4d2abe1bb7403edbdf0552708fe6e11679db38e04a807a0426d
+GUARD sandbox/probe-lab/motion-camera-library/director-qualification-families.ts: ok; canonical SHA-256 674433e8ec223abc5a90cbb7b3d015a0b641a7b99e0db1f171398ceb14af8e42; expected 674433e8ec223abc5a90cbb7b3d015a0b641a7b99e0db1f171398ceb14af8e42
+GUARD sandbox/probe-lab/motion-camera-library/director-qualification-cast.ts: ok; canonical SHA-256 011d52ff4b38a66a99b8a7063715b6e22946122678122e223cddd7f0a0a44cd8; expected 011d52ff4b38a66a99b8a7063715b6e22946122678122e223cddd7f0a0a44cd8
+GUARD sandbox/probe-lab/assets/asset-identity-cloud-migration.server.ts: ok; canonical SHA-256 0a654bb060248268669583588478ef5a4dc64c563aa7617dff5d8dad0e3f9195; expected 0a654bb060248268669583588478ef5a4dc64c563aa7617dff5d8dad0e3f9195
+GUARD sandbox/probe-lab/resource-runtime/routes/model-file.ts: ok; canonical SHA-256 a79e32eaacc2ad09bb258a2a8fdac33f28582b364745b1108b208020616f2a91; expected a79e32eaacc2ad09bb258a2a8fdac33f28582b364745b1108b208020616f2a91
+GUARD app/api/sandbox/probe-lab/resource-runtime/models/file/route.ts: ok; canonical SHA-256 b5d97c61b826be2ec45465efabd7e933e5d2b8f3f01597666fe5ca5f5ab4b3c6; expected b5d97c61b826be2ec45465efabd7e933e5d2b8f3f01597666fe5ca5f5ab4b3c6
+GUARD scripts/sandbox/verify-director-attention-sequence-merge-closeout-phase1b7a11a44.ts: ok; canonical SHA-256 3bbb17374649b413d9999a7cd3b24c5cd577f8372dfa14fda81a85adccba01bd; expected 3bbb17374649b413d9999a7cd3b24c5cd577f8372dfa14fda81a85adccba01bd
+GUARD scripts/sandbox/verify-director-subject-emphasis-final-spotlight-proof-phase1b7a11a43.ts: ok; canonical SHA-256 86965dc00e9cf9337fc0e337ee1e3d3ab4d62007506e1f8a1444c584e214cc31; expected 86965dc00e9cf9337fc0e337ee1e3d3ab4d62007506e1f8a1444c584e214cc31
+GUARD scripts/sandbox/verify-director-lighting-style-closeout-phase1b7a11a39.ts: ok; canonical SHA-256 369c6be09da86bbadcc94ba94bd9092019bab6e1185cc7af24d50c08b23944d1; expected 369c6be09da86bbadcc94ba94bd9092019bab6e1185cc7af24d50c08b23944d1
+GUARD scripts/sandbox/verify-director-tracking-mounted-merge-closeout-phase1b7a11a31.ts: ok; canonical SHA-256 ccb422a9058ca163866b72b590e211ee34f27809478798788513f3af4063bd02; expected ccb422a9058ca163866b72b590e211ee34f27809478798788513f3af4063bd02
+TARGET sandbox/probe-lab/assets/asset-library.server.ts: canonical SHA-256 083f43e2c7154bf5fe4b0d37647789fdebdd3f5ac5bdd018ec88ffa07dd3e3de; baseline=true expected=083f43e2c7154bf5fe4b0d37647789fdebdd3f5ac5bdd018ec88ffa07dd3e3de; applied=false expected=259cc160fb44df57041620292ecc19e60e1af3ca6e54df5b3e3b04fe0672d43f
+TARGET sandbox/probe-lab/assets/asset-stable-identity.ts: absent; baseline=true applied=false
+TARGET sandbox/probe-lab/assets/asset-types.ts: canonical SHA-256 a9616a8eb2f9d51cdfc8e9e449010f5ab7f4b291ced8f494359fb3a5eb6078e5; baseline=true expected=a9616a8eb2f9d51cdfc8e9e449010f5ab7f4b291ced8f494359fb3a5eb6078e5; applied=false expected=5c6ab47d87458b9988fde6d8d3b98258d2ad50401123d3f0684b6ad74694294e
+TARGET sandbox/probe-lab/assets/normalize-asset-record.ts: canonical SHA-256 2b6fd84a7faad6f2690525358836eda3ad2cb606f05cc38b8d2fc20aa97ce776; baseline=true expected=2b6fd84a7faad6f2690525358836eda3ad2cb606f05cc38b8d2fc20aa97ce776; applied=false expected=fd0ac4a53d75346a32655f213684098129fdca4fca1873949558bc2013bb3e7b
+TARGET sandbox/probe-lab/assets/reviewed-asset-resolver.server.ts: canonical SHA-256 84272220556f0f985fa685391b34a040c64a6b7b614bb315b34ace5d86932eda; baseline=true expected=84272220556f0f985fa685391b34a040c64a6b7b614bb315b34ace5d86932eda; applied=false expected=c6a3ac7c3a3710b6ea559840d43b8e4176437c8c2a6ae2a9e70adac947063db2
+TARGET sandbox/probe-lab/assets/routes/library.ts: canonical SHA-256 e709a334212e8eb14b8f13d6f4c1680f9682f94589a069a660a0d2f6ae13d1b2; baseline=true expected=e709a334212e8eb14b8f13d6f4c1680f9682f94589a069a660a0d2f6ae13d1b2; applied=false expected=395635f304d0faef0fbdc69bb197fd1661be87e6cad23034e15c456beea98992
+TARGET sandbox/probe-lab/assets/ui/asset-library-lab.tsx: canonical SHA-256 2bd9c8abe168ef5d426d37aa5205e06ff3b6ba7c2d14bf15de9329745584c051; baseline=true expected=2bd9c8abe168ef5d426d37aa5205e06ff3b6ba7c2d14bf15de9329745584c051; applied=false expected=fb513209043bfa6bc9fc114531a51d4cf093be2ad546dc4e7d038d0e7bb04638
+TARGET sandbox/probe-lab/assets/validate-asset-record.ts: canonical SHA-256 1c285c011485bb605c5d1defb2f4a6a60779e7d5f3d3838331f49bf8551995f2; baseline=true expected=1c285c011485bb605c5d1defb2f4a6a60779e7d5f3d3838331f49bf8551995f2; applied=false expected=e659763d251dd0aa18d1734a08b19c3e3332f8c97127bf142a35712f99e690fa
+TARGET sandbox/probe-lab/motion-camera-library/director-qualification-support-containment-policy.ts: canonical SHA-256 761bf1ac0919015c61343c4103e5e991b7695487b1e5cbd2fdba6fcde14d89ad; baseline=true expected=761bf1ac0919015c61343c4103e5e991b7695487b1e5cbd2fdba6fcde14d89ad; applied=false expected=984ffb00b554712a0ec187b8c4c617ca0a9604e821e206d8a8e02232ab55bd16
+TARGET sandbox/probe-lab/motion-camera-library/ui/director-capability-library-lab.tsx: canonical SHA-256 ae9c343e7eda1b6dadb42b09eb6628a4146334b8ac03f6a5f81b70fff04bb801; baseline=true expected=ae9c343e7eda1b6dadb42b09eb6628a4146334b8ac03f6a5f81b70fff04bb801; applied=false expected=2d5586137093b95f69b44dbf1d56442a2060969fe0b530e324c1940fc8ba26f5
+TARGET sandbox/probe-lab/motion-camera-library/ui/director-level1-capability-visualization.tsx: canonical SHA-256 9b34a9831a1213e86ce8e12785c21e49e4f2081128a2dd1d54d89cc83fa8f143; baseline=true expected=9b34a9831a1213e86ce8e12785c21e49e4f2081128a2dd1d54d89cc83fa8f143; applied=false expected=f9b99fafaad6bb4687778aafdc990aac3ff067b0e616b8acc05983be6706645e
+TARGET sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx: canonical SHA-256 3f3f5ce3b118ae1219d49e6c178636c6cfc2bb23c3c2ece9fb371287e2d6bd0a; baseline=true expected=3f3f5ce3b118ae1219d49e6c178636c6cfc2bb23c3c2ece9fb371287e2d6bd0a; applied=false expected=178366df07520e7b111ad07588291f2db84329cba9ef140061a4440fc1bac538
+TARGET scripts/sandbox/audit-director-asset-fixture-stability-phase1b7a11a45.ts: absent; baseline=true applied=false
+TARGET scripts/sandbox/verify-asset-identity-director-fixture-stability-phase1b7a11a45.ts: absent; baseline=true applied=false
+TARGET scripts/sandbox/verify-director-real-asset-search-phase1b6-1-3.ts: canonical SHA-256 25074da89973afc985f081cf275bd0b4bb25aa7c6acf80266f6176f7c6ac80fb; baseline=true expected=25074da89973afc985f081cf275bd0b4bb25aa7c6acf80266f6176f7c6ac80fb; applied=false expected=c235dde24c1e0c4e806d8585de6b0f32848e3f0bfd54b677972fc836bfcd471b
+TARGET scripts/sandbox/verify-smart-asset-integrity-v2.ts: canonical SHA-256 074ad74d62e8b74cb9a838590905fcda7413f922b1cb49cb74fe3810f5ddf66f; baseline=true expected=074ad74d62e8b74cb9a838590905fcda7413f922b1cb49cb74fe3810f5ddf66f; applied=false expected=67849d1f3b1e75ebbb879c0ce591cbc18502591279fe9bb45d2b4b2c41887ca2
+PREFLIGHT_STATE=EXACT_BASELINE
+A.11A.45 v1.1 preflight diagnostics
+Project root: C:\Users\willc\projects\MyWay\v1
+GUARD sandbox/probe-lab/motion-camera-library/director-capability-registry.ts: ok; canonical SHA-256 a517605ccdbfc4d2abe1bb7403edbdf0552708fe6e11679db38e04a807a0426d; expected a517605ccdbfc4d2abe1bb7403edbdf0552708fe6e11679db38e04a807a0426d
+GUARD sandbox/probe-lab/motion-camera-library/director-qualification-families.ts: ok; canonical SHA-256 674433e8ec223abc5a90cbb7b3d015a0b641a7b99e0db1f171398ceb14af8e42; expected 674433e8ec223abc5a90cbb7b3d015a0b641a7b99e0db1f171398ceb14af8e42
+GUARD sandbox/probe-lab/motion-camera-library/director-qualification-cast.ts: ok; canonical SHA-256 011d52ff4b38a66a99b8a7063715b6e22946122678122e223cddd7f0a0a44cd8; expected 011d52ff4b38a66a99b8a7063715b6e22946122678122e223cddd7f0a0a44cd8
+GUARD sandbox/probe-lab/assets/asset-identity-cloud-migration.server.ts: ok; canonical SHA-256 0a654bb060248268669583588478ef5a4dc64c563aa7617dff5d8dad0e3f9195; expected 0a654bb060248268669583588478ef5a4dc64c563aa7617dff5d8dad0e3f9195
+GUARD sandbox/probe-lab/resource-runtime/routes/model-file.ts: ok; canonical SHA-256 a79e32eaacc2ad09bb258a2a8fdac33f28582b364745b1108b208020616f2a91; expected a79e32eaacc2ad09bb258a2a8fdac33f28582b364745b1108b208020616f2a91
+GUARD app/api/sandbox/probe-lab/resource-runtime/models/file/route.ts: ok; canonical SHA-256 b5d97c61b826be2ec45465efabd7e933e5d2b8f3f01597666fe5ca5f5ab4b3c6; expected b5d97c61b826be2ec45465efabd7e933e5d2b8f3f01597666fe5ca5f5ab4b3c6
+GUARD scripts/sandbox/verify-director-attention-sequence-merge-closeout-phase1b7a11a44.ts: ok; canonical SHA-256 3bbb17374649b413d9999a7cd3b24c5cd577f8372dfa14fda81a85adccba01bd; expected 3bbb17374649b413d9999a7cd3b24c5cd577f8372dfa14fda81a85adccba01bd
+GUARD scripts/sandbox/verify-director-subject-emphasis-final-spotlight-proof-phase1b7a11a43.ts: ok; canonical SHA-256 86965dc00e9cf9337fc0e337ee1e3d3ab4d62007506e1f8a1444c584e214cc31; expected 86965dc00e9cf9337fc0e337ee1e3d3ab4d62007506e1f8a1444c584e214cc31
+GUARD scripts/sandbox/verify-director-lighting-style-closeout-phase1b7a11a39.ts: ok; canonical SHA-256 369c6be09da86bbadcc94ba94bd9092019bab6e1185cc7af24d50c08b23944d1; expected 369c6be09da86bbadcc94ba94bd9092019bab6e1185cc7af24d50c08b23944d1
+GUARD scripts/sandbox/verify-director-tracking-mounted-merge-closeout-phase1b7a11a31.ts: ok; canonical SHA-256 ccb422a9058ca163866b72b590e211ee34f27809478798788513f3af4063bd02; expected ccb422a9058ca163866b72b590e211ee34f27809478798788513f3af4063bd02
+TARGET sandbox/probe-lab/assets/asset-library.server.ts: canonical SHA-256 259cc160fb44df57041620292ecc19e60e1af3ca6e54df5b3e3b04fe0672d43f; baseline=false expected=083f43e2c7154bf5fe4b0d37647789fdebdd3f5ac5bdd018ec88ffa07dd3e3de; applied=true expected=259cc160fb44df57041620292ecc19e60e1af3ca6e54df5b3e3b04fe0672d43f
+TARGET sandbox/probe-lab/assets/asset-stable-identity.ts: canonical SHA-256 c40559b25681b88b82acf475ae75b3bab2258fc335ff58bf2039077aa808e866; baseline=false expected=ABSENT; applied=true expected=c40559b25681b88b82acf475ae75b3bab2258fc335ff58bf2039077aa808e866
+TARGET sandbox/probe-lab/assets/asset-types.ts: canonical SHA-256 5c6ab47d87458b9988fde6d8d3b98258d2ad50401123d3f0684b6ad74694294e; baseline=false expected=a9616a8eb2f9d51cdfc8e9e449010f5ab7f4b291ced8f494359fb3a5eb6078e5; applied=true expected=5c6ab47d87458b9988fde6d8d3b98258d2ad50401123d3f0684b6ad74694294e
+TARGET sandbox/probe-lab/assets/normalize-asset-record.ts: canonical SHA-256 fd0ac4a53d75346a32655f213684098129fdca4fca1873949558bc2013bb3e7b; baseline=false expected=2b6fd84a7faad6f2690525358836eda3ad2cb606f05cc38b8d2fc20aa97ce776; applied=true expected=fd0ac4a53d75346a32655f213684098129fdca4fca1873949558bc2013bb3e7b
+TARGET sandbox/probe-lab/assets/reviewed-asset-resolver.server.ts: canonical SHA-256 c6a3ac7c3a3710b6ea559840d43b8e4176437c8c2a6ae2a9e70adac947063db2; baseline=false expected=84272220556f0f985fa685391b34a040c64a6b7b614bb315b34ace5d86932eda; applied=true expected=c6a3ac7c3a3710b6ea559840d43b8e4176437c8c2a6ae2a9e70adac947063db2
+TARGET sandbox/probe-lab/assets/routes/library.ts: canonical SHA-256 395635f304d0faef0fbdc69bb197fd1661be87e6cad23034e15c456beea98992; baseline=false expected=e709a334212e8eb14b8f13d6f4c1680f9682f94589a069a660a0d2f6ae13d1b2; applied=true expected=395635f304d0faef0fbdc69bb197fd1661be87e6cad23034e15c456beea98992
+TARGET sandbox/probe-lab/assets/ui/asset-library-lab.tsx: canonical SHA-256 fb513209043bfa6bc9fc114531a51d4cf093be2ad546dc4e7d038d0e7bb04638; baseline=false expected=2bd9c8abe168ef5d426d37aa5205e06ff3b6ba7c2d14bf15de9329745584c051; applied=true expected=fb513209043bfa6bc9fc114531a51d4cf093be2ad546dc4e7d038d0e7bb04638
+TARGET sandbox/probe-lab/assets/validate-asset-record.ts: canonical SHA-256 e659763d251dd0aa18d1734a08b19c3e3332f8c97127bf142a35712f99e690fa; baseline=false expected=1c285c011485bb605c5d1defb2f4a6a60779e7d5f3d3838331f49bf8551995f2; applied=true expected=e659763d251dd0aa18d1734a08b19c3e3332f8c97127bf142a35712f99e690fa
+TARGET sandbox/probe-lab/motion-camera-library/director-qualification-support-containment-policy.ts: canonical SHA-256 984ffb00b554712a0ec187b8c4c617ca0a9604e821e206d8a8e02232ab55bd16; baseline=false expected=761bf1ac0919015c61343c4103e5e991b7695487b1e5cbd2fdba6fcde14d89ad; applied=true expected=984ffb00b554712a0ec187b8c4c617ca0a9604e821e206d8a8e02232ab55bd16
+TARGET sandbox/probe-lab/motion-camera-library/ui/director-capability-library-lab.tsx: canonical SHA-256 2d5586137093b95f69b44dbf1d56442a2060969fe0b530e324c1940fc8ba26f5; baseline=false expected=ae9c343e7eda1b6dadb42b09eb6628a4146334b8ac03f6a5f81b70fff04bb801; applied=true expected=2d5586137093b95f69b44dbf1d56442a2060969fe0b530e324c1940fc8ba26f5
+TARGET sandbox/probe-lab/motion-camera-library/ui/director-level1-capability-visualization.tsx: canonical SHA-256 f9b99fafaad6bb4687778aafdc990aac3ff067b0e616b8acc05983be6706645e; baseline=false expected=9b34a9831a1213e86ce8e12785c21e49e4f2081128a2dd1d54d89cc83fa8f143; applied=true expected=f9b99fafaad6bb4687778aafdc990aac3ff067b0e616b8acc05983be6706645e
+TARGET sandbox/probe-lab/motion-camera-library/ui/director-qualification-room.tsx: canonical SHA-256 178366df07520e7b111ad07588291f2db84329cba9ef140061a4440fc1bac538; baseline=false expected=3f3f5ce3b118ae1219d49e6c178636c6cfc2bb23c3c2ece9fb371287e2d6bd0a; applied=true expected=178366df07520e7b111ad07588291f2db84329cba9ef140061a4440fc1bac538
+TARGET scripts/sandbox/audit-director-asset-fixture-stability-phase1b7a11a45.ts: canonical SHA-256 f7c36f649ff6c7e65689a0526240dde5bccf57c442675b0b9085130392208c29; baseline=false expected=ABSENT; applied=true expected=f7c36f649ff6c7e65689a0526240dde5bccf57c442675b0b9085130392208c29
+TARGET scripts/sandbox/verify-asset-identity-director-fixture-stability-phase1b7a11a45.ts: canonical SHA-256 851d0a31a9441872e2b0718555c5ea8f8f41c0c5e8736c5bbe7b7418e2a0bc60; baseline=false expected=ABSENT; applied=true expected=851d0a31a9441872e2b0718555c5ea8f8f41c0c5e8736c5bbe7b7418e2a0bc60
+TARGET scripts/sandbox/verify-director-real-asset-search-phase1b6-1-3.ts: canonical SHA-256 c235dde24c1e0c4e806d8585de6b0f32848e3f0bfd54b677972fc836bfcd471b; baseline=false expected=25074da89973afc985f081cf275bd0b4bb25aa7c6acf80266f6176f7c6ac80fb; applied=true expected=c235dde24c1e0c4e806d8585de6b0f32848e3f0bfd54b677972fc836bfcd471b
+TARGET scripts/sandbox/verify-smart-asset-integrity-v2.ts: canonical SHA-256 67849d1f3b1e75ebbb879c0ce591cbc18502591279fe9bb45d2b4b2c41887ca2; baseline=false expected=074ad74d62e8b74cb9a838590905fcda7413f922b1cb49cb74fe3810f5ddf66f; applied=true expected=67849d1f3b1e75ebbb879c0ce591cbc18502591279fe9bb45d2b4b2c41887ca2
+PREFLIGHT_STATE=EXACT_APPLIED
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SUCCESS A.11A.45 ASSET IDENTITY / DIRECTOR FIXTURE STABILITY: immutable Asset UID + migratable Asset ID + legacy redirects + semantic alias preservation + shared Director identity matching + cache invalidation + fixture audit, TypeScript, verifier chain, and build all passed.
+**********************
+PowerShell transcript end
+End time: 20260904163153
+**********************

@@ -34,6 +34,8 @@ type AssetFileStats = {
 
 type LibraryAsset = {
   asset_id: string;
+  asset_uid?: string;
+  legacy_asset_ids?: string[];
   canonical_label: string;
   display_name: string;
   aliases: string[];
@@ -236,7 +238,10 @@ type LibraryResponse = {
   assets?: LibraryAsset[];
   asset?: LibraryAsset;
   renamed_from?: string;
+  asset_uid?: string;
+  legacy_asset_ids?: string[];
   canonical_label_updated_from?: string;
+  preserved_aliases?: string[];
   aliases_updated_from?: string[];
   updated_reference_files?: string[];
   moved_identity_files?: string[];
@@ -554,6 +559,22 @@ function csvValues(value: string) {
     .split(",")
     .map((entry) => entry.trim())
     .filter(Boolean);
+}
+
+const ASSET_LIBRARY_IDENTITY_REVISION_KEY =
+  "myway_asset_library_identity_revision_v1";
+
+function publishAssetIdentityRevision() {
+  const revision = `${Date.now()}`;
+  window.localStorage.setItem(
+    ASSET_LIBRARY_IDENTITY_REVISION_KEY,
+    revision,
+  );
+  window.dispatchEvent(
+    new CustomEvent("myway:asset-library-identity-changed", {
+      detail: { revision },
+    }),
+  );
 }
 
 function LoadedAsset({ src }: { src: string }) {
@@ -1795,7 +1816,7 @@ export function AssetLibraryLab({
     });
   }
 
-  async function renameSelectedAssetId() {
+  async function migrateSelectedAssetId() {
     if (
       !selectedAssetId ||
       !identityDraft
@@ -1837,7 +1858,7 @@ export function AssetLibraryLab({
     }
 
     const confirmed = window.confirm(
-      `Rename asset ID "${asset.asset_id}" to "${nextAssetId}"?\n\nMyWay will migrate identity-bound model, thumbnail, source, analysis, and embedding artifacts when necessary, update saved references, verify new Cloudflare/R2 copies before switching authority, and preserve rollback copies until the registry update succeeds.`,
+      `Migrate technical Asset ID "${asset.asset_id}" to "${nextAssetId}"?\n\nThe immutable Asset UID will not change. MyWay will preserve the old ID as a legacy redirect, migrate identity-bound model/thumbnail/source/analysis/embedding artifacts when necessary, update saved references, verify new Cloudflare/R2 copies before switching authority, and preserve rollback copies until the registry update succeeds.`,
     );
 
     if (!confirmed) return;
@@ -1859,7 +1880,7 @@ export function AssetLibraryLab({
               "application/json",
           },
           body: JSON.stringify({
-            action: "rename_asset_id",
+            action: "migrate_asset_id",
             asset_id: asset.asset_id,
             next_asset_id: nextAssetId,
             queue_embedding_refresh: refreshIdentityEmbedding,
@@ -1896,8 +1917,9 @@ export function AssetLibraryLab({
           : current,
       );
       setPromotionMessage(
-        `Asset ID renamed from ${asset.asset_id} to ${payload.asset.asset_id}. Identity-bound storage, Cloudflare/R2 references, embedding metadata, and saved references were synchronized${payload.moved_identity_files?.length ? ` across ${payload.moved_identity_files.length} moved artifact(s)` : ""}.${payload.embedding_refresh_queued ? " A replacement embedding was queued." : payload.embedding_refresh_needed ? " The embedding is pending and can be refreshed later." : ""}`,
+        `Asset ID migrated from ${asset.asset_id} to ${payload.asset.asset_id}. Stable UID ${payload.asset.asset_uid ?? payload.asset_uid ?? "preserved"}; the old ID is retained as a legacy redirect. Identity-bound storage, Cloudflare/R2 references, embedding metadata, and saved references were synchronized${payload.moved_identity_files?.length ? ` across ${payload.moved_identity_files.length} moved artifact(s)` : ""}.${payload.embedding_refresh_queued ? " A missing embedding artifact repair was queued." : payload.embedding_refresh_needed ? " The embedding artifact is pending and can be repaired later." : " No semantic re-embedding was required by the ID change."}`,
       );
+      publishAssetIdentityRevision();
       setRefreshToken(
         (value) => value + 1,
       );
@@ -2017,8 +2039,9 @@ export function AssetLibraryLab({
           : current,
       );
       setPromotionMessage(
-        `Canonical label updated from ${payload.canonical_label_updated_from ?? currentCanonicalLabel} to ${payload.asset.verified_canonical_label ?? canonicalLabel}. The source name and technical asset ID were preserved.${payload.embedding_refresh_queued ? " A refreshed identity-aware embedding was queued." : payload.embedding_refresh_needed ? " The old embedding was marked pending and can be regenerated later." : ""}`,
+        `Canonical label updated from ${payload.canonical_label_updated_from ?? currentCanonicalLabel} to ${payload.asset.verified_canonical_label ?? canonicalLabel}. The source name, stable UID, and technical asset ID were preserved, and the previous canonical label was retained as an alias.${payload.embedding_refresh_queued ? " A refreshed identity-aware embedding was queued." : payload.embedding_refresh_needed ? " The old embedding was marked pending and can be regenerated later." : ""}`,
       );
+      publishAssetIdentityRevision();
       setRefreshToken(
         (value) => value + 1,
       );
@@ -2144,6 +2167,7 @@ export function AssetLibraryLab({
           ? `Aliases updated: ${savedAliases.join(", ")}.`
           : "All verified aliases were removed.",
       );
+      publishAssetIdentityRevision();
       setRefreshToken(
         (value) => value + 1,
       );
@@ -5536,6 +5560,22 @@ export function AssetLibraryLab({
                         </span>
                       </div>
 
+                      <div className="asset-library-editor-wide">
+                        <strong>Advanced identity maintenance</strong>
+                        <small className="asset-library-field-help">
+                          The Asset UID is permanent. The Asset ID is a migratable
+                          technical slug. Ordinary naming changes belong in Canonical
+                          label/Aliases below.
+                        </small>
+                      </div>
+                      <MetadataRow label="Stable Asset UID">
+                        <code>{selectedAsset.asset_uid ?? "legacy UID pending normalization"}</code>
+                      </MetadataRow>
+                      <MetadataRow label="Legacy Asset IDs">
+                        {(selectedAsset.legacy_asset_ids ?? []).length
+                          ? (selectedAsset.legacy_asset_ids ?? []).join(", ")
+                          : "None"}
+                      </MetadataRow>
                       <label className="asset-library-editor-wide">
                         Asset ID
                         <input
@@ -5549,9 +5589,9 @@ export function AssetLibraryLab({
                           }
                         />
                         <small className="asset-library-field-help">
-                          Stable technical reference used by the registry and saved scenes.
-                          It is not used to decide what the object is. Spaces are converted
-                          to underscores when renamed.
+                          Migratable technical slug used by storage and current saved
+                          references. Migration preserves the immutable UID and keeps the
+                          previous ID as a backward-compatible redirect.
                         </small>
                       </label>
                       <div className="asset-library-maintenance-actions asset-library-editor-wide">
@@ -5563,13 +5603,13 @@ export function AssetLibraryLab({
                             enrichmentAssetId === selectedAsset.asset_id ||
                             identityDraft.assetId.trim() === selectedAsset.asset_id
                           }
-                          onClick={() => void renameSelectedAssetId()}
+                          onClick={() => void migrateSelectedAssetId()}
                           type="button"
                         >
                           {maintenanceAction === "rename" &&
                           maintenanceAssetId === selectedAsset.asset_id
-                            ? "Renaming asset ID…"
-                            : "Rename asset ID"}
+                            ? "Migrating asset ID…"
+                            : "Migrate asset ID"}
                         </button>
                       </div>
 
@@ -6485,3 +6525,4 @@ export function AssetLibraryLab({
 }
 
 export default AssetLibraryLab;
+

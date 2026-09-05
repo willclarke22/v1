@@ -160,8 +160,11 @@ for (const marker of [
 }
 
 for (const marker of [
-  "renameSelectedAssetId",
-  "Rename asset ID",
+  "migrateSelectedAssetId",
+  "Migrate asset ID",
+  "Advanced identity maintenance",
+  "Stable Asset UID",
+  "Legacy Asset IDs",
   "Canonical label",
   "Refresh embedding after identity edits",
   "queue_embedding_refresh: refreshIdentityEmbedding",
@@ -174,6 +177,11 @@ for (const marker of [
   check(libraryUi.includes(marker), `Main Asset Library lost identity/provider control marker: ${marker}`);
 }
 check(libraryRoute.includes("queueEmbeddingRefresh:"), "Manual identity route cannot suppress embedding refresh.");
+check(
+  libraryRoute.includes('body.action === "migrate_asset_id"') &&
+    libraryRoute.includes('body.action === "rename_asset_id"'),
+  "Asset ID migration must use the explicit action while retaining legacy API compatibility.",
+);
 
 // The known Office Pack manifest should still be present and large enough to cover the downloaded pack.
 const officeMemberCount = (knownBundles.match(/"bundle_title": "The Office Pack"/g) ?? []).length;
@@ -188,3 +196,4 @@ for (const wrapper of [
 }
 
 console.log("Smart Asset Integrity v2 verification passed.");
+

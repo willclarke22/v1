@@ -284,8 +284,24 @@ const narrativeAttention: DirectorCapability[] = [
     fallback: "static",
     demo: { kind: "narrative_show_consequence", required_visible_roles: ["primary_subject", "secondary_subject"] },
   }),
-  simpleCapability({ id: "orient", label: "Orient", category: "narrative_attention", group: "Attention sequence", summary: "Establish the viewer's location, direction, and the spatial rule they need before the action begins.", demo: { kind: "narrative_orient" } }),
-  simpleCapability({ id: "introduce", label: "Introduce", category: "narrative_attention", group: "Attention sequence", summary: "Bring a new actor into the visual argument without stealing attention from the existing relationship.", demo: { kind: "narrative_introduce" } }),
+  simpleCapability({
+    id: "orient",
+    label: "Orient",
+    category: "narrative_attention",
+    group: "Attention sequence",
+    summary: "Establish the viewer's location, direction, and the spatial rule they need before the action begins.",
+    demo: { kind: "narrative_orient" },
+  }),
+  simpleCapability({
+    id: "introduce",
+    label: "Introduce",
+    category: "narrative_attention",
+    group: "Attention sequence",
+    summary: "Bring a new actor into the visual argument without stealing attention from the existing relationship.",
+    threejs: "compound",
+    fallback: "establish",
+    demo: { kind: "narrative_introduce" },
+  }),
   simpleCapability({ id: "conceal", label: "Conceal", category: "narrative_attention", group: "Reveal grammar", summary: "Keep a source, mechanism, or answer deliberately hidden while preserving enough context to create a useful question.", threejs: "compound", fallback: "isolate", demo: { kind: "narrative_conceal" } }),
   simpleCapability({ id: "foreshadow", label: "Foreshadow", category: "narrative_attention", group: "Reveal grammar", summary: "Give a small visual clue about a later relationship without fully revealing it.", threejs: "compound", fallback: "isolate", demo: { kind: "narrative_foreshadow" } }),
   simpleCapability({ id: "reverse_assumption", label: "Reverse assumption", category: "narrative_attention", group: "Reveal grammar", summary: "Begin from the viewer's likely interpretation, then redirect attention to evidence that overturns it.", threejs: "compound", fallback: "reveal", demo: { kind: "narrative_reverse_assumption" } }),
@@ -711,7 +727,12 @@ const lightingEmphasis = lightingSeeds.map(([id, label, summary]) =>
     category: "lighting_emphasis",
     group: "Light intent",
     summary,
-    threejs: ["preserve_shadow", "motivated_source", "light_reveal", "track_spotlight", "shadow_projection", "volumetric_beam", "exposure_shift"].includes(id as string) ? "compound" : "direct",
+    threejs:
+      id === "emissive_subject"
+        ? "approximate"
+        : ["preserve_shadow", "motivated_source", "light_reveal", "track_spotlight", "shadow_projection", "volumetric_beam", "exposure_shift"].includes(id as string)
+          ? "compound"
+          : "direct",
     fallback: id === "preserve_shadow" || id === "shadow_projection" ? "backlit" : undefined,
     instruction: {
       lighting: {
@@ -835,14 +856,22 @@ export const DIRECTOR_CAPABILITIES: DirectorCapability[] = [
 
 /**
  * Frozen-vocabulary entries that remain readable for backwards compatibility
- * but are no longer canonical authoring choices. The legacy mounted-camera
- * movement proved to be the same actor-local mounted relationship as
- * `object_attached`; only the entry transition differs.
+ * but are no longer canonical authoring choices.
+ *
+ * `camera_object_attached` resolves to the canonical actor-local mounted-camera
+ * primitive with legacy blend-in entry timing. A.11A.44 closes `orient` as a
+ * semantic alias of `establish`: higher-level plans may still express the
+ * orienting narrative job, while capability authoring resolves to the already
+ * qualified establishing visual primitive instead of claiming a duplicate shot.
  */
 export const DIRECTOR_LEGACY_MERGED_CAPABILITY_ALIASES = {
   camera_object_attached: {
     canonical_capability_id: "object_attached",
     transition_mode: "blend_in",
+  },
+  orient: {
+    canonical_capability_id: "establish",
+    semantic_job: "orient",
   },
 } as const;
 
@@ -867,7 +896,7 @@ export function directorCanonicalCapabilityIdForAuthoring(capabilityId: string) 
 /**
  * Canonical authoring surface. DIRECTOR_CAPABILITIES remains the frozen
  * 184-entry compatibility vocabulary; new Director authoring should use this
- * list so merged legacy aliases are not selected as independent primitives.
+ * list so completed merge aliases are not selected as independent primitives.
  */
 export const DIRECTOR_AUTHORABLE_CAPABILITIES: DirectorCapability[] =
   DIRECTOR_CAPABILITIES.filter(
@@ -923,8 +952,9 @@ function movementAlias(id: string): DirectorCameraMovement {
   if (id === "pull_out") return "pull_back";
   if (id === "truck_right") return "truck";
   if (id === "pedestal_up") return "pedestal";
-  if (isDirectorLegacyMergedCapabilityId(id)) {
-    return DIRECTOR_LEGACY_MERGED_CAPABILITY_ALIASES[id].canonical_capability_id;
+  if (id === "camera_object_attached") {
+    return DIRECTOR_LEGACY_MERGED_CAPABILITY_ALIASES.camera_object_attached
+      .canonical_capability_id;
   }
   if ([
     "static", "push_in", "dolly", "pan", "tilt", "orbit", "arc_left", "arc_right",
@@ -1536,6 +1566,31 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
     const intent = capability.id as DirectorShotDirectionV2["lighting"]["intents"][number];
     shot.lighting.intents = [intent];
     shot.lighting.emphasized_entity_ids = ["primary_subject"];
+
+    // A.11A.41: subject-emphasis proofs need an actual competitor in frame.
+    // Without one, Spotlight Subject / Dim Environment can only prove that the
+    // hero is bright, not that visual priority is selective. Tracking Spotlight
+    // keeps a wider two-actor composition so the moving light must stay on the
+    // travelling hero without washing the competitor.
+    if (
+      ["spotlight_subject", "dim_environment", "track_spotlight"].includes(
+        capability.id,
+      )
+    ) {
+      // A.11A.42 gives active Spotlight / Tracking Spotlight enough receiver
+      // area to prove a localized pool rather than a generic brighter hero.
+      // Dim environment keeps its compatibility demo but is no longer active
+      // standalone Qualification (it is a merge candidate / modifier).
+      shot.composition.framing =
+        capability.id === "dim_environment" ? "two_shot" : "medium_wide";
+      shot.composition.keep_visible_entity_ids = [
+        "primary_subject",
+        "secondary_subject",
+      ];
+      shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"];
+      shot.lens.depth_of_field = "deep";
+    }
+
     if (capability.id === "motivated_source") {
       shot.lighting.motivated_source_entity_id = "context_subject";
       shot.composition.keep_visible_entity_ids = ["primary_subject", "context_subject"];
@@ -1710,6 +1765,31 @@ export function directorCapabilityDemoEvents(capability: DirectorCapability): Di
     }
     return [];
   }
+  if (capability.category === "lighting_emphasis") {
+    if (capability.id === "track_spotlight") {
+      return [{
+        id: "demo_tracking_spotlight_subject_travel",
+        behaviour: "move_to",
+        actor_entity_id: "primary_subject",
+        target_entity_id: null,
+        supporting_entity_ids: ["secondary_subject"],
+        start_ms: 450,
+        duration_ms: 5400,
+        easing: "ease_in_out",
+        path_hint:
+          "large left-to-right stage travel proves that the selective spotlight follows the hero",
+        description:
+          "Move the primary subject across a large visible distance while the competitor stays fixed so the tracked SpotLight relationship is unmistakable.",
+        parameters: {
+          start_position: [-3.4, 0, 0.85],
+          target_position: [3.4, 0, -0.85],
+        },
+        fallback_behaviour: null,
+      }];
+    }
+    return [];
+  }
+
   if (capability.category === "transition_continuity") {
     if (["maintain_screen_direction", "preserve_visual_anchor", "preserve_screen_position", "preserve_action_continuity", "match_motion_direction", "cut_on_action"].includes(capability.id)) {
       return [{

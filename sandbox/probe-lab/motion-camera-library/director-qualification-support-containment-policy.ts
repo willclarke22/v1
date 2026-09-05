@@ -1,3 +1,7 @@
+import {
+  assetReferenceMatchKind,
+} from "../assets/asset-stable-identity";
+
 export const DIRECTOR_QUALIFICATION_DRINKWARE_SOURCE_HINTS = [
   "mug",
   "cup",
@@ -7,6 +11,8 @@ export const DIRECTOR_QUALIFICATION_DRINKWARE_SOURCE_HINTS = [
 
 export type DirectorQualificationSemanticAsset = {
   asset_id: string;
+  asset_uid?: string | null;
+  legacy_asset_ids?: readonly string[] | null;
   canonical_label?: string | null;
   verified_canonical_label?: string | null;
   display_name?: string | null;
@@ -255,7 +261,9 @@ export function directorQualificationFindInsideValidationAsset<
   },
 ) {
   for (const assetId of input.preferred_asset_ids) {
-    const exact = assets.find((asset) => asset.asset_id === assetId);
+    const exact = assets.find((asset) =>
+      assetReferenceMatchKind(asset, assetId),
+    );
     if (exact) return exact;
   }
   return (
@@ -393,3 +401,4 @@ export function directorQualificationInsidePairIndex(input: {
         : 2;
   return index < pairCount ? index : null;
 }
+

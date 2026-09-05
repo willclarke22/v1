@@ -3918,6 +3918,157 @@ function DirectorMotivatedSourceLight({
   );
 }
 
+const DIRECTOR_SUBJECT_SPOTLIGHT_KEY_INTENSITY = 72;
+const DIRECTOR_TRACKING_SPOTLIGHT_KEY_INTENSITY = 64;
+const DIRECTOR_SUBJECT_SPOTLIGHT_FILL_INTENSITY = 18;
+
+type DirectorSubjectSpotlightMode =
+  | "spotlight"
+  | "dim_environment"
+  | "track";
+
+function DirectorSubjectSpotlight({
+  moment,
+  actors,
+  progress,
+  autoLoop,
+  sceneState,
+  mode,
+}: {
+  moment: DirectorMoment;
+  actors: DirectorRuntimeActor[];
+  progress?: number;
+  autoLoop: boolean;
+  sceneState?: DirectorSceneState | null;
+  mode: DirectorSubjectSpotlightMode;
+}) {
+  const spotRef = useRef<THREE.SpotLight>(null);
+  const fillSpotRef = useRef<THREE.SpotLight>(null);
+  const targetRef = useRef<THREE.Object3D>(null);
+  const targetPointRef = useRef(new THREE.Vector3());
+  const sourcePointRef = useRef(new THREE.Vector3());
+  const fillSourcePointRef = useRef(new THREE.Vector3());
+  const cameraPlanarRef = useRef(new THREE.Vector3());
+  const shot = moment.shot ?? legacyShotForMoment(moment);
+
+  useFrame(({ clock, camera }) => {
+    const spot = spotRef.current;
+    const fillSpot = fillSpotRef.current;
+    const targetObject = targetRef.current;
+    if (!spot || !targetObject) return;
+
+    const p = runtimeProgressFor(clock.elapsedTime, moment, progress, autoLoop);
+    const targetId =
+      shot.lighting.emphasized_entity_ids[0] ??
+      shot.camera.focus_entity_ids[0];
+    const actor = actorById(actors, targetId);
+    const sample = actor
+      ? sampleDirectorActorState(moment, actor, p, actors, sceneState)
+      : null;
+    const targetPoint = targetPointRef.current;
+    targetPoint.copy(
+      sample?.position ??
+        averageTarget(targetActors(moment, shot, p, actors, sceneState)),
+    );
+    targetPoint.y += actor
+      ? Math.max(0.2, actor.size[1] * 0.42)
+      : 0.75;
+
+    targetObject.position.copy(targetPoint);
+    targetObject.updateMatrixWorld(true);
+
+    const actorHeight = actor ? Math.max(0.8, actor.size[1]) : 1.6;
+    const sourcePoint = sourcePointRef.current;
+    sourcePoint.copy(targetPoint);
+
+    if (mode === "dim_environment") {
+      sourcePoint.y += Math.max(3.4, actorHeight * 2.5);
+      sourcePoint.z += 2.55;
+    } else {
+      // A.11A.43: aim the selective key from the camera side of the subject.
+      // Arbitrary GLBs otherwise expose their unlit/back-facing materials even
+      // when the SpotLight is technically tracking the correct world target.
+      const cameraPlanar = cameraPlanarRef.current
+        .copy(camera.position)
+        .sub(targetPoint);
+      cameraPlanar.y = 0;
+      if (cameraPlanar.lengthSq() < 1e-6) cameraPlanar.set(0, 0, 1);
+      else cameraPlanar.normalize();
+
+      sourcePoint.y +=
+        mode === "spotlight"
+          ? Math.max(3.7, actorHeight * 2.55)
+          : Math.max(3.8, actorHeight * 2.65);
+      sourcePoint.addScaledVector(
+        cameraPlanar,
+        mode === "spotlight" ? 2.15 : 1.95,
+      );
+      sourcePoint.x += 0.18;
+
+      if (fillSpot) {
+        const fillSourcePoint = fillSourcePointRef.current;
+        fillSourcePoint.copy(targetPoint);
+        fillSourcePoint.y += Math.max(1.65, actorHeight * 1.2);
+        fillSourcePoint.addScaledVector(cameraPlanar, 1.35);
+        fillSpot.position.copy(fillSourcePoint);
+        fillSpot.target = targetObject;
+        fillSpot.updateMatrixWorld(true);
+      }
+    }
+
+    spot.position.copy(sourcePoint);
+    spot.target = targetObject;
+    spot.updateMatrixWorld(true);
+  });
+
+  const activeSpotlightProof = mode !== "dim_environment";
+  const angle =
+    mode === "dim_environment" ? 0.56 : mode === "track" ? 0.36 : 0.38;
+  const penumbra =
+    mode === "dim_environment" ? 0.9 : mode === "track" ? 0.72 : 0.66;
+  const intensity =
+    mode === "dim_environment"
+      ? 4.6
+      : mode === "track"
+        ? DIRECTOR_TRACKING_SPOTLIGHT_KEY_INTENSITY
+        : DIRECTOR_SUBJECT_SPOTLIGHT_KEY_INTENSITY;
+
+  return (
+    <>
+      <spotLight
+        ref={spotRef}
+        castShadow
+        position={[0, 4.2, 2.2]}
+        angle={angle}
+        penumbra={penumbra}
+        intensity={intensity}
+        color={mode === "dim_environment" ? "#fff7ed" : "#fff4dc"}
+        distance={mode === "dim_environment" ? 9.5 : 12}
+        decay={mode === "dim_environment" ? 2 : 1.45}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-bias={-0.0002}
+        shadow-normalBias={0.025}
+      />
+      {activeSpotlightProof ? (
+        <spotLight
+          ref={fillSpotRef}
+          position={[0, 2.2, 1.4]}
+          angle={0.36}
+          penumbra={0.86}
+          intensity={DIRECTOR_SUBJECT_SPOTLIGHT_FILL_INTENSITY}
+          color="#f8fafc"
+          distance={7.5}
+          decay={1.35}
+        />
+      ) : null}
+      <object3D ref={targetRef} />
+    </>
+  );
+}
+
+const DIRECTOR_ATTENTION_REVEAL_READABILITY_FILL_INTENSITY = 18;
+
 function DirectorMotivatedLight({
   moment,
   actors,
@@ -3931,12 +4082,19 @@ function DirectorMotivatedLight({
   progress?: number;
   autoLoop: boolean;
   sceneState?: DirectorSceneState | null;
-  mode: "motivated" | "track" | "reveal" | "emissive";
+  mode: "motivated" | "reveal" | "emissive";
 }) {
   const lightRef = useRef<THREE.PointLight>(null);
+  const revealReadabilityFillRef = useRef<THREE.SpotLight>(null);
+  const revealReadabilityTargetRef = useRef<THREE.Object3D>(null);
+  const revealReadabilityTargetPointRef = useRef(new THREE.Vector3());
+  const revealReadabilitySourcePointRef = useRef(new THREE.Vector3());
+  const revealReadabilityCameraPlanarRef = useRef(new THREE.Vector3());
   const shot = moment.shot ?? legacyShotForMoment(moment);
+  const dedicatedRevealReadabilityFill =
+    mode === "reveal" && shot.narrative_job === "reveal";
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }) => {
     const light = lightRef.current;
     if (!light) return;
     const p = runtimeProgressFor(clock.elapsedTime, moment, progress, autoLoop);
@@ -3948,37 +4106,85 @@ function DirectorMotivatedLight({
       ? sampleDirectorActorState(moment, actor, p, actors, sceneState)
       : null;
     const base = sample?.position ?? averageTarget(targetActors(moment, shot, p, actors, sceneState));
+    const actorHeight = actor ? Math.max(0.8, actor.size[1]) : 1.6;
     light.position.copy(base).add(new THREE.Vector3(0, actor ? actor.size[1] * 0.65 : 1.6, 0.5));
     const revealAmount = mode === "reveal"
       ? directorLightingRevealAmount(p, shot.reveal_at ?? 0.42)
       : 1;
-    const intensity = mode === "track"
-      ? 4.4
-      : mode === "emissive"
-        ? 3.2
-        : mode === "motivated"
-          ? 3.6
-          : 7.2 * revealAmount;
+    const intensity = mode === "emissive"
+      ? 3.2
+      : mode === "motivated"
+        ? 3.6
+        : 7.2 * revealAmount;
     light.intensity = intensity;
+
+    const readabilityFill = revealReadabilityFillRef.current;
+    const readabilityTarget = revealReadabilityTargetRef.current;
+    if (dedicatedRevealReadabilityFill && readabilityFill && readabilityTarget) {
+      // A.11A.46: Reveal keeps the environment low-key but adds a soft
+      // camera-side fill that rises on the same reveal envelope. This makes
+      // materially dark subjects readable without turning the floor/background
+      // into the proof. Introduce/Foreshadow/Reverse assumption remain untouched.
+      const targetPoint = revealReadabilityTargetPointRef.current.copy(base);
+      targetPoint.y += actorHeight * 0.36;
+      readabilityTarget.position.copy(targetPoint);
+      readabilityTarget.updateMatrixWorld(true);
+
+      const cameraPlanar = revealReadabilityCameraPlanarRef.current
+        .copy(camera.position)
+        .sub(targetPoint);
+      cameraPlanar.y = 0;
+      if (cameraPlanar.lengthSq() < 1e-6) cameraPlanar.set(0, 0, 1);
+      else cameraPlanar.normalize();
+
+      const sourcePoint = revealReadabilitySourcePointRef.current.copy(targetPoint);
+      sourcePoint.y += Math.max(0.95, actorHeight * 0.55);
+      sourcePoint.addScaledVector(
+        cameraPlanar,
+        Math.max(1.1, actorHeight * 0.85),
+      );
+      readabilityFill.position.copy(sourcePoint);
+      readabilityFill.target = readabilityTarget;
+      readabilityFill.intensity =
+        DIRECTOR_ATTENTION_REVEAL_READABILITY_FILL_INTENSITY * revealAmount;
+      readabilityFill.updateMatrixWorld(true);
+    } else if (readabilityFill) {
+      readabilityFill.intensity = 0;
+    }
   });
 
   return (
-    <pointLight
-      ref={lightRef}
-      castShadow={mode !== "emissive"}
-      intensity={mode === "reveal" ? 0 : 3.4}
-      color={
-        mode === "track"
-          ? "#f8fafc"
-          : mode === "emissive"
+    <>
+      <pointLight
+        ref={lightRef}
+        castShadow={mode !== "emissive"}
+        intensity={mode === "reveal" ? 0 : 3.4}
+        color={
+          mode === "emissive"
             ? "#67e8f9"
             : mode === "reveal"
               ? "#fff1d6"
               : "#fb923c"
-      }
-      distance={mode === "track" ? 8 : mode === "reveal" ? 7.5 : 10}
-      decay={2}
-    />
+        }
+        distance={mode === "reveal" ? 7.5 : 10}
+        decay={2}
+      />
+      {dedicatedRevealReadabilityFill ? (
+        <>
+          <spotLight
+            ref={revealReadabilityFillRef}
+            castShadow={false}
+            intensity={0}
+            color="#fff8ee"
+            angle={0.62}
+            penumbra={0.9}
+            distance={7.5}
+            decay={1.35}
+          />
+          <object3D ref={revealReadabilityTargetRef} />
+        </>
+      ) : null}
+    </>
   );
 }
 
@@ -4354,14 +4560,16 @@ export function DirectorShotLightingRig({
   const exposureShift = intents.has("exposure_shift");
   const lowKey =
     intents.has("low_key") ||
-    intents.has("dim_environment") ||
     lightReveal ||
     volumetricBeam;
+  const dimEnvironment = intents.has("dim_environment");
+  const trackSpotlight = intents.has("track_spotlight");
   const highKey = intents.has("high_key");
   const preserveShadow = intents.has("preserve_shadow");
   const backlit = intents.has("backlit") || shadowProjection;
   const rim = intents.has("rim_lit");
   const spotlight = intents.has("spotlight_subject");
+  const strongSubjectIsolation = spotlight || trackSpotlight;
   const warmCool = intents.has("warm_cool_contrast");
   const styleAccentMode: DirectorStyleAccentMode | null = highKey
     ? "high_key"
@@ -4384,7 +4592,11 @@ export function DirectorShotLightingRig({
               ? 0.14
               : lowKey
                 ? 0.1
-                : highKey
+                : strongSubjectIsolation
+                  ? 0.025
+                  : dimEnvironment
+                    ? 0.07
+                    : highKey
                   ? 1.15
                   : preserveShadow
                     ? 0.16
@@ -4409,7 +4621,11 @@ export function DirectorShotLightingRig({
                 ? 0.16
                 : lowKey
                   ? 0.35
-                  : preserveShadow
+                  : strongSubjectIsolation
+                    ? 0.08
+                    : dimEnvironment
+                      ? 0.18
+                      : preserveShadow
                     ? 0.24
                     : backlit
                       ? 0.2
@@ -4438,7 +4654,11 @@ export function DirectorShotLightingRig({
               ? 0.12
               : lowKey
                 ? 0.9
-                : preserveShadow
+                : strongSubjectIsolation
+                  ? 0.08
+                  : dimEnvironment
+                    ? 0.22
+                    : preserveShadow
                   ? 3.4
                   : highKey
                     ? 1.35
@@ -4468,7 +4688,11 @@ export function DirectorShotLightingRig({
               ? 0.08
               : lowKey
                 ? 0.28
-                : preserveShadow
+                : strongSubjectIsolation
+                  ? 0.02
+                  : dimEnvironment
+                    ? 0.06
+                    : preserveShadow
                   ? 0.12
                   : highKey
                     ? 0.35
@@ -4491,13 +4715,33 @@ export function DirectorShotLightingRig({
         />
       ) : null}
       {spotlight ? (
-        <spotLight
-          castShadow
-          position={[0, 7.5, 3.4]}
-          angle={0.38}
-          penumbra={0.62}
-          intensity={6.2}
-          color="#f8fafc"
+        <DirectorSubjectSpotlight
+          moment={moment}
+          actors={actors}
+          progress={progress}
+          autoLoop={autoLoop}
+          sceneState={sceneState}
+          mode="spotlight"
+        />
+      ) : null}
+      {dimEnvironment ? (
+        <DirectorSubjectSpotlight
+          moment={moment}
+          actors={actors}
+          progress={progress}
+          autoLoop={autoLoop}
+          sceneState={sceneState}
+          mode="dim_environment"
+        />
+      ) : null}
+      {trackSpotlight ? (
+        <DirectorSubjectSpotlight
+          moment={moment}
+          actors={actors}
+          progress={progress}
+          autoLoop={autoLoop}
+          sceneState={sceneState}
+          mode="track"
         />
       ) : null}
       {intents.has("motivated_source") ? (
@@ -4508,9 +4752,6 @@ export function DirectorShotLightingRig({
           autoLoop={autoLoop}
           sceneState={sceneState}
         />
-      ) : null}
-      {intents.has("track_spotlight") ? (
-        <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} sceneState={sceneState} mode="track" />
       ) : null}
       {intents.has("light_reveal") ? (
         <DirectorMotivatedLight moment={moment} actors={actors} progress={progress} autoLoop={autoLoop} sceneState={sceneState} mode="reveal" />

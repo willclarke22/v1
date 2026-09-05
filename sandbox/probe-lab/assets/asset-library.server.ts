@@ -22,6 +22,12 @@ import {
   safeAssetId,
 } from "./normalize-asset-record";
 import {
+  assetReferenceMatchKind,
+  legacyAssetUidForAssetId,
+  normalizeLegacyAssetIds,
+  resolveAssetByReference,
+} from "./asset-stable-identity";
+import {
   prepareAssetIdentityStorageMigration,
 } from "./asset-identity-cloud-migration.server";
 import {
@@ -452,16 +458,22 @@ export function saveMyWayAssetRegistry(
   return task;
 }
 
+export async function resolveMyWayAssetReference(
+  reference: string,
+) {
+  const registry = await loadMyWayAssetRegistry();
+  return resolveAssetByReference(
+    registry.assets,
+    reference,
+  );
+}
+
 export async function getMyWayAsset(
   assetId: string,
 ) {
-  const registry = await loadMyWayAssetRegistry();
-  const normalized = safeAssetId(assetId);
-
   return (
-    registry.assets.find(
-      (asset) => asset.asset_id === normalized,
-    ) ?? null
+    (await resolveMyWayAssetReference(assetId))?.asset ??
+    null
   );
 }
 
@@ -534,6 +546,20 @@ export async function registerMyWayAsset(
     };
   }
 
+  const identityCollision = registry.assets.find(
+    (candidate) =>
+      candidate.asset_id !== replaceMissingAssetId &&
+      candidate.asset_uid &&
+      asset!.asset_uid &&
+      candidate.asset_uid === asset!.asset_uid &&
+      candidate.asset_id !== asset!.asset_id,
+  );
+  if (identityCollision) {
+    throw new Error(
+      `The immutable asset UID is already owned by ${identityCollision.asset_id}.`,
+    );
+  }
+
   const pendingStage =
     await stageLocalAssetAsPrivatePending(
       asset,
@@ -568,6 +594,18 @@ export async function registerMyWayAsset(
       registry.assets[existingIndex]!;
     asset.created_at =
       existing.created_at;
+    // Re-registering the same current slug must never manufacture a new
+    // immutable identity or forget redirects earned by earlier migrations.
+    asset.asset_uid =
+      existing.asset_uid ??
+      asset.asset_uid;
+    asset.legacy_asset_ids = normalizeLegacyAssetIds(
+      [
+        ...(existing.legacy_asset_ids ?? []),
+        ...(asset.legacy_asset_ids ?? []),
+      ],
+      asset.asset_id,
+    );
     registry.assets[existingIndex] =
       asset;
   }
@@ -644,14 +682,20 @@ export async function updateMyWayAsset(
       ) => MyWayAssetRecord),
 ) {
   const registry = await loadMyWayAssetRegistry();
-  const normalizedId = safeAssetId(assetId);
-  const index = registry.assets.findIndex(
-    (asset) => asset.asset_id === normalizedId,
+  const requestedReference = assetId.trim();
+  const resolved = resolveAssetByReference(
+    registry.assets,
+    requestedReference,
   );
+  const index = resolved
+    ? registry.assets.findIndex(
+        (asset) => asset.asset_uid === resolved.asset.asset_uid,
+      )
+    : -1;
 
   if (index < 0) {
     throw new Error(
-      `Asset was not found in the registry: ${normalizedId}`,
+      `Asset was not found in the registry: ${requestedReference}`,
     );
   }
 
@@ -672,7 +716,7 @@ export async function updateMyWayAsset(
 
   if (!normalized) {
     throw new Error(
-      `Updated asset record was invalid: ${normalizedId}`,
+      `Updated asset record was invalid: ${requestedReference}`,
     );
   }
 
@@ -955,14 +999,14 @@ export async function renameMyWayAssetId(input: {
 }) {
   await ensureAssetDirectories();
 
-  const previousAssetId =
-    safeAssetId(input.assetId);
+  const requestedAssetReference =
+    input.assetId.trim();
   const nextAssetId =
     safeAssetId(input.nextAssetId);
 
-  if (!previousAssetId) {
+  if (!requestedAssetReference) {
     throw new Error(
-      "The current asset ID is required.",
+      "The current asset reference is required.",
     );
   }
 
@@ -974,16 +1018,24 @@ export async function renameMyWayAssetId(input: {
 
   const registry =
     await loadMyWayAssetRegistry();
-  const index = registry.assets.findIndex(
-    (asset) =>
-      asset.asset_id === previousAssetId,
+  const resolvedCurrent = resolveAssetByReference(
+    registry.assets,
+    requestedAssetReference,
   );
+  const index = resolvedCurrent
+    ? registry.assets.findIndex(
+        (asset) => asset.asset_uid === resolvedCurrent.asset.asset_uid,
+      )
+    : -1;
 
   if (index < 0) {
     throw new Error(
-      `Asset was not found in the registry: ${previousAssetId}`,
+      `Asset was not found in the registry: ${requestedAssetReference}`,
     );
   }
+
+  const current = registry.assets[index]!;
+  const previousAssetId = current.asset_id;
 
   if (previousAssetId === nextAssetId) {
     const repaired =
@@ -994,25 +1046,33 @@ export async function renameMyWayAssetId(input: {
     return {
       asset: repaired.asset,
       renamed_from: previousAssetId,
+      asset_uid: repaired.asset.asset_uid,
+      legacy_asset_ids: repaired.asset.legacy_asset_ids ?? [],
       updated_reference_files:
         repaired.updated_reference_files,
       moved_identity_files:
         repaired.moved_identity_files,
+      embedding_refresh_needed: false,
+      embedding_refresh_queued: false,
     };
   }
 
-  if (
-    registry.assets.some(
-      (asset) =>
-        asset.asset_id === nextAssetId,
-    )
-  ) {
+  const conflictingIdentity = registry.assets.find(
+    (asset, candidateIndex) =>
+      candidateIndex !== index &&
+      Boolean(
+        assetReferenceMatchKind(
+          asset,
+          nextAssetId,
+        ),
+      ),
+  );
+  if (conflictingIdentity) {
     throw new Error(
-      `Another asset already uses the ID "${nextAssetId}".`,
+      `The ID "${nextAssetId}" is already the current or legacy identity of ${conflictingIdentity.asset_id}.`,
     );
   }
 
-  const current = registry.assets[index]!;
   const storageMigration =
     await prepareAssetIdentityStorageMigration({
       asset: current,
@@ -1064,6 +1124,16 @@ export async function renameMyWayAssetId(input: {
     ...current,
     ...storageMigration.assetPatch,
     asset_id: nextAssetId,
+    asset_uid:
+      current.asset_uid ??
+      legacyAssetUidForAssetId(previousAssetId),
+    legacy_asset_ids: normalizeLegacyAssetIds(
+      [
+        ...(current.legacy_asset_ids ?? []),
+        previousAssetId,
+      ],
+      nextAssetId,
+    ),
     appearance_embedding:
       current.appearance_embedding
         ? {
@@ -1321,6 +1391,8 @@ export async function renameMyWayAssetId(input: {
   return {
     asset: renamed,
     renamed_from: previousAssetId,
+    asset_uid: renamed.asset_uid,
+    legacy_asset_ids: renamed.legacy_asset_ids ?? [],
     updated_reference_files: [
       ...mutations.map(
         (mutation) =>
@@ -1378,6 +1450,18 @@ export async function updateMyWayAssetCanonicalLabel(input: {
     current.verified_canonical_label ??
     current.canonical_label;
 
+  const preservedAliases = Array.from(
+    new Set(
+      [
+        ...(current.aliases ?? []),
+        ...(current.verified_aliases ?? []),
+        previousCanonicalLabel,
+      ]
+        .map((value) => value.trim().toLowerCase().replace(/\s+/g, " "))
+        .filter((value) => Boolean(value) && value !== canonicalLabel),
+    ),
+  );
+
   const existingEmbedding =
     current.appearance_embedding;
   const asset = await updateMyWayAsset(
@@ -1385,6 +1469,8 @@ export async function updateMyWayAssetCanonicalLabel(input: {
     {
       verified_canonical_label:
         canonicalLabel,
+      aliases: preservedAliases,
+      verified_aliases: preservedAliases,
       semantic_review_status:
         "verified",
       semantic_reviewed_at:
@@ -1415,6 +1501,8 @@ export async function updateMyWayAssetCanonicalLabel(input: {
     asset,
     updated_from:
       previousCanonicalLabel,
+    preserved_aliases:
+      preservedAliases,
     embedding_refresh_needed:
       Boolean(existingEmbedding),
     embedding_refresh_queued:
@@ -1429,15 +1517,21 @@ export async function repairMyWayAssetIdentityArtifacts(input: {
 }) {
   await ensureAssetDirectories();
 
-  const assetId = safeAssetId(input.assetId);
+  const requestedReference = input.assetId.trim();
   const registry = await loadMyWayAssetRegistry();
-  const index = registry.assets.findIndex(
-    (asset) => asset.asset_id === assetId,
+  const resolved = resolveAssetByReference(
+    registry.assets,
+    requestedReference,
   );
+  const index = resolved
+    ? registry.assets.findIndex(
+        (asset) => asset.asset_uid === resolved.asset.asset_uid,
+      )
+    : -1;
 
   if (index < 0) {
     throw new Error(
-      `Asset was not found in the registry: ${assetId}`,
+      `Asset was not found in the registry: ${requestedReference}`,
     );
   }
 
@@ -2100,11 +2194,10 @@ export async function touchAssetReuse(
   assetId: string,
 ) {
   const registry = await loadMyWayAssetRegistry();
-  const asset = registry.assets.find(
-    (candidate) =>
-      candidate.asset_id ===
-      safeAssetId(assetId),
-  );
+  const asset = resolveAssetByReference(
+    registry.assets,
+    assetId,
+  )?.asset ?? null;
 
   if (!asset) return null;
 
@@ -2215,3 +2308,4 @@ export async function assetWithFileStats(
     };
   }
 }
+

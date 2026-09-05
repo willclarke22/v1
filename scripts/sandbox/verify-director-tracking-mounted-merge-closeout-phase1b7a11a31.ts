@@ -47,11 +47,15 @@ function main() {
     DIRECTOR_CAPABILITIES.length === 184,
     "A.11A.31 must preserve the frozen 184-capability compatibility vocabulary.",
   );
+  const mergedAliasIds = Object.keys(
+    DIRECTOR_LEGACY_MERGED_CAPABILITY_ALIASES,
+  );
   assert(
-    DIRECTOR_AUTHORABLE_CAPABILITIES.length === 183 &&
+    DIRECTOR_AUTHORABLE_CAPABILITIES.length + mergedAliasIds.length ===
+      DIRECTOR_CAPABILITIES.length &&
       !DIRECTOR_AUTHORABLE_CAPABILITIES.some((item) => item.id === legacyId) &&
       DIRECTOR_AUTHORABLE_CAPABILITIES.some((item) => item.id === canonicalId),
-    "Canonical authoring must retain object_attached while excluding the merged legacy camera_object_attached alias.",
+    "Canonical authoring must exclude completed merge aliases while retaining canonical object_attached.",
   );
 
   const alias = DIRECTOR_LEGACY_MERGED_CAPABILITY_ALIASES.camera_object_attached;
@@ -273,14 +277,13 @@ function main() {
   const expectedActive = directorQualificationExpectedActiveCapabilityCount(
     DIRECTOR_CAPABILITIES,
   );
+  // Successor-safe active coverage is owned by the centralized policy helper.
+  // Later qualification phases may add truthful non-active states beyond the
+  // A.11A.31-era deferred/completed-merge pair (for example merge candidates).
   assert(
     activeIds.length === expectedActive &&
-      new Set(activeIds).size === activeIds.length &&
-      expectedActive ===
-        DIRECTOR_CAPABILITIES.length -
-          DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS.length -
-          DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_IDS.length,
-    `A.11A.31 successor-safe active coverage must equal frozen vocabulary minus the live deferred and merged sets; got ${activeIds.length}.`,
+      new Set(activeIds).size === activeIds.length,
+    `A.11A.31 successor-safe active coverage must equal the centralized live Qualification-active policy; got ${activeIds.length}.`,
   );
   assert(
     !activeIds.includes(legacyId) && activeIds.includes(canonicalId),
@@ -289,12 +292,14 @@ function main() {
 
   const deferred = [...DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS] as readonly string[];
   const merged = [...DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_IDS] as readonly string[];
+  // Successor-safe: A.11A.31 owns the mounted-camera merge, not the global
+  // cardinality of every later completed merge. Future families may add honest
+  // aliases without rewriting the mounted-camera proof.
   assert(
     !deferred.includes(legacyId) &&
-      merged.length === 1 &&
       merged.includes(legacyId) &&
       isDirectorQualificationCapabilityMerged(legacyId),
-    "Successful mounted-camera consolidation must be represented as merged, not deferred.",
+    "Successful mounted-camera consolidation must remain represented as merged, not deferred.",
   );
 
   const legacyProfile = directorQualificationCapabilityProfile(
@@ -353,7 +358,7 @@ function main() {
     "Director Tracking mounted-camera merge closeout Phase 1B.7A.11A.31 verification passed.",
   );
   console.log(
-    `Frozen/authorable/active=${DIRECTOR_CAPABILITIES.length}/${DIRECTOR_AUTHORABLE_CAPABILITIES.length}/${activeIds.length}; camera_object_attached is a merged legacy alias -> object_attached + blend_in entry.`,
+    `Frozen/authorable/active=${DIRECTOR_CAPABILITIES.length}/${DIRECTOR_AUTHORABLE_CAPABILITIES.length}/${activeIds.length}; camera_object_attached remains a merged legacy alias -> object_attached + blend_in entry while later completed aliases are allowed.`,
   );
   console.log(
     "A.11A.31 v1.1 campaign normalization preserves the merge-proof PASS reel, repairs the one-time stale Needs re-evidence state, and keeps genuine deferral/removal changes fail-closed.",

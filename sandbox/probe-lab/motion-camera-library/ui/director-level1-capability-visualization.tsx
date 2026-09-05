@@ -22,6 +22,10 @@ import {
   type DirectorPerceptualLibraryAsset,
   type ResolvedPerceptualPreviewSlot,
 } from "./director-perceptual-capability-audit-viewer";
+import {
+  assetSemanticSearchText,
+  resolveAssetByReference,
+} from "../../assets/asset-stable-identity";
 
 type LibraryResponse = {
   ok: boolean;
@@ -43,15 +47,7 @@ function assetLabel(asset: DirectorPerceptualLibraryAsset) {
 }
 
 function assetSearchText(asset: DirectorPerceptualLibraryAsset) {
-  return normalized(
-    [
-      asset.asset_id,
-      asset.canonical_label,
-      asset.display_name,
-      ...(asset.aliases ?? []),
-      ...(asset.semantic_tags ?? []),
-    ].join(" "),
-  );
+  return assetSemanticSearchText(asset);
 }
 
 function isLoadableLibraryAsset(asset: DirectorPerceptualLibraryAsset) {
@@ -106,9 +102,10 @@ export function DirectorLevel1CapabilityVisualization({ capability }: Props) {
       slots.map((slot) => ({
         slot,
         asset:
-          loadableAssets.find(
-            (asset) => asset.asset_id === roleAssetOverrides[slot.slot_id],
-          ) ?? null,
+          resolveAssetByReference(
+            loadableAssets,
+            roleAssetOverrides[slot.slot_id],
+          )?.asset ?? null,
       })),
     [loadableAssets, roleAssetOverrides, slots],
   );
@@ -363,9 +360,10 @@ export function DirectorLevel1CapabilityVisualization({ capability }: Props) {
                 {slots.map((slot) => {
                   const selectedAssetId = roleAssetOverrides[slot.slot_id] ?? "";
                   const selectedAsset =
-                    loadableAssets.find(
-                      (asset) => asset.asset_id === selectedAssetId,
-                    ) ?? null;
+                    resolveAssetByReference(
+                      loadableAssets,
+                      selectedAssetId,
+                    )?.asset ?? null;
                   const query = normalized(roleSearchQueries[slot.slot_id] ?? "");
                   const matching = query
                     ? loadableAssets.filter((asset) =>
@@ -679,5 +677,6 @@ const boundaryStyle: CSSProperties = {
   fontSize: 10,
   lineHeight: 1.45,
 };
+
 
 

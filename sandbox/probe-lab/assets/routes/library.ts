@@ -145,7 +145,10 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
-    if (body.action === "rename_asset_id") {
+    if (
+      body.action === "rename_asset_id" ||
+      body.action === "migrate_asset_id"
+    ) {
       const nextAssetId =
         typeof body.next_asset_id === "string"
           ? body.next_asset_id
@@ -173,6 +176,10 @@ export async function PATCH(request: NextRequest) {
           ),
         renamed_from:
           result.renamed_from,
+        asset_uid:
+          result.asset_uid,
+        legacy_asset_ids:
+          result.legacy_asset_ids,
         updated_reference_files:
           result.updated_reference_files,
         moved_identity_files:
@@ -212,6 +219,8 @@ export async function PATCH(request: NextRequest) {
           ),
         canonical_label_updated_from:
           result.updated_from,
+        preserved_aliases:
+          result.preserved_aliases,
         embedding_refresh_needed:
           result.embedding_refresh_needed,
         embedding_refresh_queued:
@@ -392,3 +401,4 @@ export async function PATCH(request: NextRequest) {
     return errorResponse(caught);
   }
 }
+

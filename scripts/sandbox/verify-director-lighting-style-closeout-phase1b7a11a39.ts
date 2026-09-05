@@ -116,13 +116,20 @@ function main() {
     assert(runtime.includes(marker), `A.11A.39 runtime/frozen-sibling marker missing: ${marker}`);
   }
 
+  // Successor-safe lineage: A.11A.31 must delegate the global active count to
+  // the centralized live policy. Later phases may add truthful non-active
+  // categories (for example merge candidates) without rewriting mounted-camera
+  // semantics. Keep the original completed-merge canary, but do not freeze an
+  // A.11A.31-era arithmetic decomposition of every future exclusion category.
   assert(
     !a31.includes("expectedActive === 174") &&
-      a31.includes("DIRECTOR_CAPABILITIES.length -") &&
-      a31.includes("DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS.length -") &&
-      a31.includes("DIRECTOR_QUALIFICATION_MERGED_CAPABILITY_IDS.length") &&
-      a31.includes("successor-safe active coverage"),
-    "A.11A.31 must be successor-safe for later honest deferrals instead of hard-coding 174 active capabilities.",
+      !a31.includes("DIRECTOR_CAPABILITIES.length -") &&
+      a31.includes("directorQualificationExpectedActiveCapabilityCount(") &&
+      a31.includes("centralized live Qualification-active policy") &&
+      !a31.includes("merged.length === 1") &&
+      a31.includes("merged.includes(legacyId)") &&
+      a31.includes("camera_object_attached"),
+    "A.11A.31 must derive global active coverage from the centralized live policy while retaining its mounted-camera completed-merge invariant without freezing future merged-alias cardinality.",
   );
 
   for (const marker of [
@@ -142,4 +149,3 @@ function main() {
 }
 
 main();
-

@@ -1,3 +1,304 @@
-cd C:\Users\willc\projects\MyWay\v1
+$ErrorActionPreference = "Stop"
 
-& ".\sandbox\probe-lab\assets\scripts\analyze-needs-review-missing-enrichment.ps1"
+$BaseUrl = "http://localhost:3000"
+$LibraryEndpoint = "$BaseUrl/api/sandbox/probe-lab/assets/library"
+$EnrichmentEndpoint = "$BaseUrl/api/sandbox/probe-lab/assets/enrichment"
+
+Write-Host ""
+Write-Host "Scanning Approved + Needs Review assets for embedding problems..." -ForegroundColor Cyan
+
+$Library = Invoke-RestMethod `
+    -Method GET `
+    -Uri $LibraryEndpoint `
+    -Headers @{ "Cache-Control" = "no-store" } `
+    -TimeoutSec 300
+
+if (-not $Library.ok) {
+    throw "Asset Library did not return ok=true."
+}
+
+$ScopedAssets = @(
+    $Library.assets |
+        Where-Object {
+            @("approved", "pending") -contains [string]$_.scene_review_status -and
+            [string]$_.asset_type -ne "primitive" -and
+            [string]$_.status -ne "rejected"
+        }
+)
+
+$EmbeddingIssues = @(
+    $ScopedAssets |
+        Where-Object {
+            $VisionReady =
+                [string]$_.appearance_profile.status -eq "ready"
+
+            $EmbeddingReady =
+                [string]$_.appearance_embedding.status -eq "ready"
+
+            $HasVectorKey =
+                -not [string]::IsNullOrWhiteSpace(
+                    [string]$_.appearance_embedding.vector_key
+                )
+
+            $VisionReady -and (
+                -not $EmbeddingReady -or
+                -not $HasVectorKey
+            )
+        }
+)
+
+$BlockedByVision = @(
+    $ScopedAssets |
+        Where-Object {
+            $VisionReady =
+                [string]$_.appearance_profile.status -eq "ready"
+
+            $EmbeddingReady =
+                [string]$_.appearance_embedding.status -eq "ready"
+
+            $HasVectorKey =
+                -not [string]::IsNullOrWhiteSpace(
+                    [string]$_.appearance_embedding.vector_key
+                )
+
+            -not $VisionReady -and (
+                -not $EmbeddingReady -or
+                -not $HasVectorKey
+            )
+        }
+)
+
+Write-Host ""
+Write-Host (
+    "Scanned {0} Approved/Needs Review asset(s)." -f
+    $ScopedAssets.Count
+) -ForegroundColor DarkCyan
+
+if ($EmbeddingIssues.Count -eq 0) {
+    Write-Host ""
+    Write-Host "No embedding-only repairs are currently needed." -ForegroundColor Green
+}
+else {
+    Write-Host ""
+    Write-Host (
+        "Found {0} asset(s) that need an embedding refresh:" -f
+        $EmbeddingIssues.Count
+    ) -ForegroundColor Yellow
+
+    $EmbeddingIssues |
+        ForEach-Object {
+            [PSCustomObject]@{
+                Tab = if (
+                    [string]$_.scene_review_status -eq "approved"
+                ) {
+                    "Approved"
+                }
+                else {
+                    "Needs Review"
+                }
+
+                AssetId = [string]$_.asset_id
+                Name = [string]$_.display_name
+                Vision = [string]$_.appearance_profile.status
+                Embedding = [string]$_.appearance_embedding.status
+                VectorKey = if (
+                    [string]::IsNullOrWhiteSpace(
+                        [string]$_.appearance_embedding.vector_key
+                    )
+                ) {
+                    "MISSING"
+                }
+                else {
+                    "present"
+                }
+
+                Error = [string]$_.appearance_embedding.error
+            }
+        } |
+        Format-Table -AutoSize
+
+    $Confirmation = Read-Host `
+        "Type REEMBED to queue embedding-only refresh for these $($EmbeddingIssues.Count) asset(s), or press Enter to only inspect"
+
+    if ($Confirmation -ceq "REEMBED") {
+        Write-Host ""
+        Write-Host "Queueing embedding-only refreshes..." -ForegroundColor Cyan
+
+        $QueuedAssetIds = @()
+
+        foreach ($Asset in $EmbeddingIssues) {
+            $AssetId = [string]$Asset.asset_id
+
+            $Response = Invoke-RestMethod `
+                -Method POST `
+                -Uri $EnrichmentEndpoint `
+                -ContentType "application/json" `
+                -Headers @{ "Cache-Control" = "no-store" } `
+                -Body (
+                    @{
+                        action = "refresh_embedding"
+                        asset_id = $AssetId
+                    } |
+                    ConvertTo-Json -Depth 6
+                ) `
+                -TimeoutSec 300
+
+            if (-not $Response.ok) {
+                throw "Could not queue embedding refresh for $AssetId"
+            }
+
+            $QueuedAssetIds += $AssetId
+
+            Write-Host (
+                "- {0}: queued ({1})" -f
+                $AssetId,
+                [string]$Response.entry.mode
+            ) -ForegroundColor Green
+        }
+
+        Write-Host ""
+        Write-Host "Waiting for embedding jobs to finish..." -ForegroundColor Cyan
+
+        while ($true) {
+            Start-Sleep -Seconds 5
+
+            $Queue = Invoke-RestMethod `
+                -Method GET `
+                -Uri $EnrichmentEndpoint `
+                -Headers @{ "Cache-Control" = "no-store" } `
+                -TimeoutSec 300
+
+            if (-not $Queue.ok) {
+                throw "Could not read the enrichment queue."
+            }
+
+            $Entries = @(
+                $Queue.queue |
+                    Where-Object {
+                        $QueuedAssetIds -contains [string]$_.asset_id
+                    }
+            )
+
+            $Queued = @(
+                $Entries |
+                    Where-Object status -eq "queued"
+            ).Count
+
+            $Running = @(
+                $Entries |
+                    Where-Object status -eq "running"
+            ).Count
+
+            $Completed = @(
+                $Entries |
+                    Where-Object status -eq "completed"
+            ).Count
+
+            $Failed = @(
+                $Entries |
+                    Where-Object status -eq "failed"
+            ).Count
+
+            Write-Host (
+                "[{0}] queued={1} running={2} completed={3} failed={4}" -f
+                (Get-Date -Format "HH:mm:ss"),
+                $Queued,
+                $Running,
+                $Completed,
+                $Failed
+            )
+
+            if (
+                $Entries.Count -eq $QueuedAssetIds.Count -and
+                $Queued -eq 0 -and
+                $Running -eq 0
+            ) {
+                if ($Failed -gt 0) {
+                    Write-Host ""
+                    Write-Host "Embedding refresh failures:" -ForegroundColor Red
+
+                    $Entries |
+                        Where-Object status -eq "failed" |
+                        ForEach-Object {
+                            Write-Host (
+                                "- {0}: {1}" -f
+                                $_.asset_id,
+                                $_.error
+                            ) -ForegroundColor Red
+                        }
+                }
+                else {
+                    Write-Host ""
+                    Write-Host "All embedding refreshes completed successfully." -ForegroundColor Green
+                }
+
+                break
+            }
+        }
+
+        Write-Host ""
+        Write-Host "Refreshing Asset Library state..." -ForegroundColor Cyan
+
+        $FinalLibrary = Invoke-RestMethod `
+            -Method GET `
+            -Uri $LibraryEndpoint `
+            -Headers @{ "Cache-Control" = "no-store" } `
+            -TimeoutSec 300
+
+        @(
+            $FinalLibrary.assets |
+                Where-Object {
+                    $QueuedAssetIds -contains [string]$_.asset_id
+                }
+        ) |
+            ForEach-Object {
+                [PSCustomObject]@{
+                    AssetId = [string]$_.asset_id
+                    Embedding = [string]$_.appearance_embedding.status
+                    VectorKey = if (
+                        [string]::IsNullOrWhiteSpace(
+                            [string]$_.appearance_embedding.vector_key
+                        )
+                    ) {
+                        "MISSING"
+                    }
+                    else {
+                        "present"
+                    }
+                    Error = [string]$_.appearance_embedding.error
+                }
+            } |
+            Format-Table -AutoSize
+    }
+    else {
+        Write-Host ""
+        Write-Host "Scan only — nothing was re-embedded." -ForegroundColor Cyan
+    }
+}
+
+if ($BlockedByVision.Count -gt 0) {
+    Write-Host ""
+    Write-Host (
+        "{0} additional asset(s) have incomplete embeddings but cannot use embedding-only refresh because vision is not ready:" -f
+        $BlockedByVision.Count
+    ) -ForegroundColor DarkYellow
+
+    $BlockedByVision |
+        ForEach-Object {
+            [PSCustomObject]@{
+                Tab = if (
+                    [string]$_.scene_review_status -eq "approved"
+                ) {
+                    "Approved"
+                }
+                else {
+                    "Needs Review"
+                }
+
+                AssetId = [string]$_.asset_id
+                Vision = [string]$_.appearance_profile.status
+                Embedding = [string]$_.appearance_embedding.status
+            }
+        } |
+        Format-Table -AutoSize
+}

@@ -1136,12 +1136,17 @@ function Stage({
     mounted;
   const technical = fixtureKind === "technical_overview";
   const shadowProjection = capabilityId === "shadow_projection";
+  // A.11A.43: a neutral matte receiver lets the real subject SpotLight prove
+  // its localized footprint/falloff instead of asking arbitrary GLB materials
+  // to carry the entire perceptual test. This changes evidence staging only.
+  const subjectSpotlightProof =
+    capabilityId === "spotlight_subject" || capabilityId === "track_spotlight";
   // A.11A.40: Motivated Source must be proved by the visible practical light,
   // not by the generic qualification-stage boundary ring that reads as a blue arc.
   const hideStageBoundaryGuide = capabilityId === "motivated_source";
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow><circleGeometry args={[8.5, 48]} /><meshStandardMaterial color="#07111f" roughness={0.94} metalness={0.04} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]} receiveShadow><circleGeometry args={[8.5, 48]} /><meshStandardMaterial color={subjectSpotlightProof ? "#273244" : "#07111f"} roughness={subjectSpotlightProof ? 0.98 : 0.94} metalness={subjectSpotlightProof ? 0 : 0.04} /></mesh>
       {shadowProjection ? (
         <mesh position={[0.8, 1.9, -2.4]} receiveShadow>
           <boxGeometry args={[9.2, 4.8, 0.12]} />
@@ -1246,4 +1251,3 @@ export function DirectorCapabilityPreview({
     </>
   );
 }
-

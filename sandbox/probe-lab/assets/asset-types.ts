@@ -307,9 +307,14 @@ export type MyWayAssetGeometryProfileV1 = {
 
 export type MyWayAssetRecord = {
   asset_id: string;
+  /** Immutable internal identity. Legacy registries are deterministically backfilled. */
+  asset_uid?: string;
+  /** Previous technical slugs retained as backward-compatible references after ID migration. */
+  legacy_asset_ids?: string[];
 
-  // Stable technical identity. asset_id and storage paths never need to be
-  // renamed when the human-readable identity is corrected.
+  // asset_id is a migratable technical slug; semantic identity lives below.
+  // Human-readable corrections should normally edit labels/aliases, while the
+  // explicit Asset ID migration path preserves asset_uid and legacy redirects.
   canonical_label: string;
   display_name: string;
   aliases: string[];
@@ -546,3 +551,4 @@ export type AssetResolveResult = {
   failure_reason?: string | null;
   requires_scene_review?: boolean;
 };
+

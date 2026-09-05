@@ -51,6 +51,12 @@ import {
 } from "../../directability/capability-authority-contract";
 import { DirectorAuditViewer } from "./director-audit-viewer";
 import { DirectorLibraryTabs } from "./director-library-tabs";
+import {
+  assetMatchesAnyReference,
+  assetReferenceMatchKind,
+  assetSemanticSearchText,
+  resolveAssetByReference,
+} from "../../assets/asset-stable-identity";
 
 const DirectorQualificationRoom = dynamic(
   () =>
@@ -108,8 +114,18 @@ type DirectorAssetLibraryView = "full" | "qualification";
 
 const DIRECTOR_ASSET_LIBRARY_CACHE = new Map<
   DirectorAssetLibraryView,
-  DirectorLibraryAsset[]
+  { revision: string; assets: DirectorLibraryAsset[] }
 >();
+const DIRECTOR_ASSET_LIBRARY_REVISION_KEY =
+  "myway_asset_library_identity_revision_v1";
+
+function currentDirectorAssetLibraryRevision() {
+  return typeof window === "undefined"
+    ? "server"
+    : window.localStorage.getItem(
+        DIRECTOR_ASSET_LIBRARY_REVISION_KEY,
+      ) ?? "0";
+}
 const DIRECTOR_ASSET_LIBRARY_INFLIGHT = new Map<
   DirectorAssetLibraryView,
   Promise<DirectorLibraryAsset[]>
@@ -118,11 +134,17 @@ const DIRECTOR_ASSET_LIBRARY_INFLIGHT = new Map<
 async function loadDirectorAssetLibraryView(
   view: DirectorAssetLibraryView,
 ) {
+  const revision = currentDirectorAssetLibraryRevision();
   const cached = DIRECTOR_ASSET_LIBRARY_CACHE.get(view);
-  if (cached) return cached;
+  if (cached?.revision === revision) return cached.assets;
 
   const fullCached = DIRECTOR_ASSET_LIBRARY_CACHE.get("full");
-  if (view === "qualification" && fullCached) return fullCached;
+  if (
+    view === "qualification" &&
+    fullCached?.revision === revision
+  ) {
+    return fullCached.assets;
+  }
 
   const existing = DIRECTOR_ASSET_LIBRARY_INFLIGHT.get(view);
   if (existing) return existing;
@@ -136,9 +158,13 @@ async function loadDirectorAssetLibraryView(
     if (!response.ok || !payload.ok || !Array.isArray(payload.assets)) {
       throw new Error(payload.error || "The Asset Library could not be loaded.");
     }
-    DIRECTOR_ASSET_LIBRARY_CACHE.set(view, payload.assets);
+    const cacheEntry = {
+      revision,
+      assets: payload.assets,
+    };
+    DIRECTOR_ASSET_LIBRARY_CACHE.set(view, cacheEntry);
     if (view === "full") {
-      DIRECTOR_ASSET_LIBRARY_CACHE.set("qualification", payload.assets);
+      DIRECTOR_ASSET_LIBRARY_CACHE.set("qualification", cacheEntry);
     }
     return payload.assets;
   })().finally(() => {
@@ -216,15 +242,7 @@ function normalized(value: string) {
 }
 
 function assetSearchText(asset: DirectorLibraryAsset) {
-  return normalized(
-    [
-      asset.asset_id,
-      asset.canonical_label,
-      asset.display_name,
-      ...(asset.aliases ?? []),
-      ...(asset.semantic_tags ?? []),
-    ].join(" "),
-  );
+  return assetSemanticSearchText(asset);
 }
 
 function isLoadableLibraryAsset(asset: DirectorLibraryAsset) {
@@ -277,7 +295,7 @@ function resolveDemoRoles(
     const overrideAssetId = roleAssetOverrides[role.role] ?? "";
     const reviewerSelected =
       overrideAssetId
-        ? loadable.find((asset) => asset.asset_id === overrideAssetId) ?? null
+        ? resolveAssetByReference(loadable, overrideAssetId)?.asset ?? null
         : null;
 
     const ranked = loadable
@@ -285,7 +303,7 @@ function resolveDemoRoles(
       .map((asset) => ({
         asset,
         score:
-          (role.preferred_asset_ids?.includes(asset.asset_id) ? 100_000 : 0) +
+          (assetMatchesAnyReference(asset, role.preferred_asset_ids) ? 100_000 : 0) +
           scoreAssetForConcepts(asset, role.preferred_concepts),
       }))
       .sort((a, b) => b.score - a.score || a.asset.asset_id.localeCompare(b.asset.asset_id));
@@ -300,8 +318,12 @@ function resolveDemoRoles(
       const haystack = ` ${assetSearchText(chosen)} `;
       matchedConcept = reviewerSelected
         ? "reviewer-selected asset"
-        : role.preferred_asset_ids?.includes(chosen.asset_id)
-          ? chosen.asset_id
+        : assetMatchesAnyReference(chosen, role.preferred_asset_ids)
+          ? `preferred asset reference (${
+              role.preferred_asset_ids
+                ?.map((reference) => assetReferenceMatchKind(chosen, reference))
+                .find(Boolean) ?? "asset_id"
+            })`
           : role.preferred_concepts.find((concept) =>
               haystack.includes(` ${normalized(concept)} `),
             ) ?? null;
@@ -826,7 +848,7 @@ function RealAssetExecutionQualificationPanel({
             const normalizedAssetQuery = normalized(assetQuery);
             const selectedAssetId = roleAssetOverrides[role.role] ?? "";
             const selectedAsset = selectedAssetId
-              ? loadable.find((asset) => asset.asset_id === selectedAssetId) ?? null
+              ? resolveAssetByReference(loadable, selectedAssetId)?.asset ?? null
               : null;
             const matchingAssets = normalizedAssetQuery
               ? loadable.filter((asset) =>
@@ -2873,3 +2895,4 @@ const compareButtonStyle: CSSProperties = {
   fontSize: 10,
   fontWeight: 800,
 };
+
