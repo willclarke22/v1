@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { DIRECTOR_CAPABILITIES } from "../../sandbox/probe-lab/motion-camera-library/director-capability-registry";
+import {
+  DIRECTOR_CAPABILITIES,
+  DIRECTOR_CAPABILITY_SUPPORT_LEVELS,
+} from "../../sandbox/probe-lab/motion-camera-library/director-capability-registry";
 import {
   directorQualificationMountedCameraHostSuitability,
 } from "../../sandbox/probe-lab/motion-camera-library/director-qualification-cast";
@@ -242,6 +245,11 @@ async function main() {
     "A.10B must preserve the three-file evidence package contract.",
   );
 
+  // Successor-safe historical invariant: A.10B owns evidence capture/integrity, not the
+  // later semantic reclassification of Director support levels. Qualification closeout phases
+  // legitimately move capabilities between direct/compound/approximate while preserving the
+  // 184-capability vocabulary. Keep this verifier focused on vocabulary cardinality and valid
+  // support classifications instead of freezing a one-time distribution from A.10B.
   const supportCounts = DIRECTOR_CAPABILITIES.reduce<Record<string, number>>(
     (counts, item) => {
       counts[item.compiler.threejs] = (counts[item.compiler.threejs] ?? 0) + 1;
@@ -249,13 +257,21 @@ async function main() {
     },
     {},
   );
+  const recognizedSupportKinds = new Set<string>(
+    DIRECTOR_CAPABILITY_SUPPORT_LEVELS,
+  );
+  const unknownSupportKinds = Object.keys(supportCounts).filter(
+    (kind) => !recognizedSupportKinds.has(kind),
+  );
+  const classifiedCapabilityCount = Object.values(supportCounts).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
   assert(
     DIRECTOR_CAPABILITIES.length === 184 &&
-      supportCounts.direct === 102 &&
-      supportCounts.compound === 65 &&
-      supportCounts.approximate === 15 &&
-      supportCounts.declared === 2,
-    `A.10B must not mutate the Level 2 vocabulary/support distribution: ${DIRECTOR_CAPABILITIES.length} ${JSON.stringify(supportCounts)}.`,
+      classifiedCapabilityCount === DIRECTOR_CAPABILITIES.length &&
+      unknownSupportKinds.length === 0,
+    `A.10B must preserve the 184-capability vocabulary and recognized support classifications: ${DIRECTOR_CAPABILITIES.length} ${JSON.stringify(supportCounts)} unknown=${JSON.stringify(unknownSupportKinds)}.`,
   );
 
   console.log("Director Qualification Room Phase 1B.7A.10B evidence-integrity verification passed.");

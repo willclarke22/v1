@@ -138,6 +138,93 @@ function pulse(progress: number, center: number, width = 0.2) {
   return clamp01(1 - distance / width);
 }
 
+const DIRECTOR_CAUSAL_CONSEQUENCE_CHANGE_START = 0.34;
+const DIRECTOR_CAUSAL_CONSEQUENCE_CHANGE_END = 0.58;
+const DIRECTOR_CAUSAL_CONSEQUENCE_ATTENTION_START = 0.42;
+const DIRECTOR_CAUSAL_CONSEQUENCE_ATTENTION_END = 0.72;
+
+function smoothstepProgress(progress: number, start: number, end: number) {
+  const t = clamp01((progress - start) / Math.max(0.0001, end - start));
+  return t * t * (3 - 2 * t);
+}
+
+function qualificationConsequenceChangeAmount(progress: number) {
+  return smoothstepProgress(
+    progress,
+    DIRECTOR_CAUSAL_CONSEQUENCE_CHANGE_START,
+    DIRECTOR_CAUSAL_CONSEQUENCE_CHANGE_END,
+  );
+}
+
+function qualificationConsequenceAttentionAmount(progress: number) {
+  return smoothstepProgress(
+    progress,
+    DIRECTOR_CAUSAL_CONSEQUENCE_ATTENTION_START,
+    DIRECTOR_CAUSAL_CONSEQUENCE_ATTENTION_END,
+  );
+}
+
+function qualificationConsequenceProofActors({
+  capability,
+  actors,
+  progress,
+  enabled,
+}: {
+  capability: DirectorCapability;
+  actors: DirectorRuntimeActor[];
+  progress: number;
+  enabled: boolean;
+}): DirectorRuntimeActor[] {
+  if (!enabled || capability.id !== "show_consequence") return actors;
+
+  const primary = actors.find((actor) => actor.id === "primary_subject");
+  const secondary = actors.find((actor) => actor.id === "secondary_subject");
+  if (!primary || !secondary) return actors;
+
+  const changeAmount = qualificationConsequenceChangeAmount(progress);
+  if (changeAmount <= 0) return actors;
+
+  // A.11A.47: Qualification supplies a small, asset-independent changed end
+  // state so Show consequence is tested on a real before -> after result. The
+  // production capability still owns only the directing job: reframe, transfer
+  // attention, and hold on whatever changed state the authored scene produced.
+  const causePosition = new THREE.Vector3(...primary.position);
+  const changedPosition = new THREE.Vector3(...secondary.position);
+  const direction = changedPosition.clone().sub(causePosition);
+  direction.y = 0;
+  if (direction.lengthSq() < 0.0001) direction.set(1, 0, 0);
+  direction.normalize();
+
+  const footprint = Math.max(
+    0.8,
+    Math.abs(secondary.size[0]),
+    Math.abs(secondary.size[2]),
+  );
+  const displacement = THREE.MathUtils.clamp(footprint * 0.26, 0.34, 0.78);
+  changedPosition.addScaledVector(direction, displacement * changeAmount);
+
+  const changedActorPosition: [number, number, number] = [
+    changedPosition.x,
+    changedPosition.y,
+    changedPosition.z,
+  ];
+  const changedRotation: [number, number, number] = [
+    secondary.rotation?.[0] ?? 0,
+    (secondary.rotation?.[1] ?? 0) + THREE.MathUtils.degToRad(16) * changeAmount,
+    secondary.rotation?.[2] ?? 0,
+  ];
+
+  return actors.map((actor) =>
+    actor.id === "secondary_subject"
+      ? {
+          ...actor,
+          position: changedActorPosition,
+          rotation: changedRotation,
+        }
+      : actor,
+  );
+}
+
 export function directorQualificationRuntimeSize(
   role: ResolvedDirectorRole,
 ): [number, number, number] {
@@ -687,6 +774,7 @@ function AnimatedActor({
   fixtureMode,
   fixtureKind,
   auditSnap,
+  qualificationVisibilityAssist,
 }: {
   capability: DirectorCapability;
   moment: ReturnType<typeof directorCapabilityDemoMoment>;
@@ -699,6 +787,7 @@ function AnimatedActor({
   fixtureMode: "controlled" | "real_assets";
   fixtureKind: DirectorAuditFixtureKind;
   auditSnap: boolean;
+  qualificationVisibilityAssist: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const rollPivotRef = useRef<THREE.Group>(null);
@@ -799,12 +888,37 @@ function AnimatedActor({
     !lightingEffectOwnsAttention &&
     resolvedRole.role === "primary_subject" &&
     (capability.category === "narrative_attention" || capability.category === "lighting_emphasis");
+  const consequenceProof =
+    qualificationVisibilityAssist && capability.id === "show_consequence";
+  const consequenceAttention = consequenceProof
+    ? qualificationConsequenceAttentionAmount(progress)
+    : 0;
+  const emphasisOpacity =
+    (0.5 + pulse(progress, 0.55, 0.5) * 0.35) *
+    (consequenceProof && resolvedRole.role === "primary_subject"
+      ? 1 - consequenceAttention
+      : 1);
+  const consequenceEndpointEmphasis =
+    consequenceProof && resolvedRole.role === "secondary_subject";
+  const endpointRingRadius = THREE.MathUtils.clamp(targetExtent * 0.46, 0.62, 1.18);
   return (
     <group ref={groupRef} position={sample.position} rotation={[sample.rotation.x, sample.rotation.y, sample.rotation.z]} scale={sample.scale}>
-      {emphasized ? (
+      {emphasized && emphasisOpacity > 0.01 ? (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
           <ringGeometry args={[0.82, 1.02, 48]} />
-          <meshBasicMaterial color="#38bdf8" transparent opacity={0.5 + pulse(progress, 0.55, 0.5) * 0.35} side={THREE.DoubleSide} />
+          <meshBasicMaterial color="#38bdf8" transparent opacity={emphasisOpacity} side={THREE.DoubleSide} />
+        </mesh>
+      ) : null}
+      {consequenceEndpointEmphasis && consequenceAttention > 0.01 ? (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.025, 0]}>
+          <ringGeometry args={[endpointRingRadius, endpointRingRadius + 0.1, 48]} />
+          <meshBasicMaterial
+            color="#facc15"
+            transparent
+            opacity={0.16 + consequenceAttention * 0.5}
+            side={THREE.DoubleSide}
+            toneMapped={false}
+          />
         </mesh>
       ) : null}
       <group ref={rollPivotRef}>
@@ -861,7 +975,17 @@ function rolePosition(actors: DirectorRuntimeActor[], id: string) {
   return actor ? new THREE.Vector3(...actor.position).add(new THREE.Vector3(0, actor.size[1] * 0.45, 0)) : new THREE.Vector3();
 }
 
-function TeachingRelationship({ capability, actors, progress }: { capability: DirectorCapability; actors: DirectorRuntimeActor[]; progress: number }) {
+function TeachingRelationship({
+  capability,
+  actors,
+  progress,
+  qualificationVisibilityAssist,
+}: {
+  capability: DirectorCapability;
+  actors: DirectorRuntimeActor[];
+  progress: number;
+  qualificationVisibilityAssist: boolean;
+}) {
   const primary = rolePosition(actors, "primary_subject");
   const secondary = rolePosition(actors, "secondary_subject");
   const context = rolePosition(actors, "context_subject");
@@ -871,7 +995,24 @@ function TeachingRelationship({ capability, actors, progress }: { capability: Di
     return <group><Line points={[primary, firstEnd]} color="#38bdf8" lineWidth={4} />{progress > 0.48 ? <Line points={[context, secondEnd]} color="#f97316" lineWidth={4} /> : null}</group>;
   }
   if (capability.id === "compare" || capability.id === "two_subject_balance") return <Line points={[primary, secondary]} color="#a78bfa" lineWidth={2} dashed dashSize={0.18} gapSize={0.12} />;
-  if (capability.id === "show_consequence") return <Line points={[primary, primary.clone().lerp(secondary, progress)]} color="#facc15" lineWidth={3} />;
+  if (capability.id === "show_consequence") {
+    const qualificationProof = qualificationVisibilityAssist;
+    const relationProgress = qualificationProof
+      ? clamp01(progress / DIRECTOR_CAUSAL_CONSEQUENCE_ATTENTION_START)
+      : progress;
+    const attentionTransfer = qualificationProof
+      ? qualificationConsequenceAttentionAmount(progress)
+      : 0;
+    return (
+      <Line
+        points={[primary, primary.clone().lerp(secondary, relationProgress)]}
+        color="#facc15"
+        lineWidth={3}
+        transparent
+        opacity={qualificationProof ? 1 - attentionTransfer * 0.55 : 1}
+      />
+    );
+  }
   return null;
 }
 
@@ -1200,6 +1341,16 @@ export function DirectorCapabilityPreview({
   );
   const baseActors = useMemo(() => directorQualificationRuntimeActors(roles), [roles]);
   const actors = useMemo(() => applyDirectorBlocking(moment, baseActors), [baseActors, moment]);
+  const qualificationActors = useMemo(
+    () =>
+      qualificationConsequenceProofActors({
+        capability,
+        actors,
+        progress,
+        enabled: qualificationVisibilityAssist,
+      }),
+    [actors, capability, progress, qualificationVisibilityAssist],
+  );
   const lowKey =
     moment.shot?.lighting.intents.includes("low_key") ||
     moment.shot?.lighting.intents.includes("dim_environment") ||
@@ -1213,17 +1364,17 @@ export function DirectorCapabilityPreview({
     <>
       <color attach="background" args={[lowKey ? "#01030a" : "#020617"]} />
       <fog attach="fog" args={["#020617", 10, 30]} />
-      <DirectorShotLightingRig moment={moment} actors={actors} progress={progress} />
+      <DirectorShotLightingRig moment={moment} actors={qualificationActors} progress={progress} />
       <Stage capabilityId={capability.id} fixtureKind={fixtureKind} />
       {roles.map((resolvedRole) => {
-        const actor = actors.find((candidate) => candidate.id === resolvedRole.role) ?? baseActors.find((candidate) => candidate.id === resolvedRole.role);
+        const actor = qualificationActors.find((candidate) => candidate.id === resolvedRole.role) ?? baseActors.find((candidate) => candidate.id === resolvedRole.role);
         return actor ? (
           <AnimatedActor
             key={`${preserveActorInstances ? "stable" : capability.id}:${resolvedRole.role}:${fixtureMode}:${resolvedRole.asset?.asset_id ?? "fallback"}`}
             capability={capability}
             moment={moment}
             actor={actor}
-            allActors={actors}
+            allActors={qualificationActors}
             resolvedRole={resolvedRole}
             progress={progress}
             isPlaying={isPlaying}
@@ -1231,15 +1382,21 @@ export function DirectorCapabilityPreview({
             fixtureMode={fixtureMode}
             fixtureKind={fixtureKind}
             auditSnap={auditSnap}
+            qualificationVisibilityAssist={qualificationVisibilityAssist}
           />
         ) : null;
       })}
-      <TeachingRelationship capability={capability} actors={actors} progress={progress} />
-      <ProcessCarrierOverlay moment={moment} actors={actors} progress={progress} fixtureKind={fixtureKind} />
-      {showCameraPath ? <DirectorShotPathGuide moment={moment} actors={actors} /> : null}
+      <TeachingRelationship
+        capability={capability}
+        actors={qualificationActors}
+        progress={progress}
+        qualificationVisibilityAssist={qualificationVisibilityAssist}
+      />
+      <ProcessCarrierOverlay moment={moment} actors={qualificationActors} progress={progress} fixtureKind={fixtureKind} />
+      {showCameraPath ? <DirectorShotPathGuide moment={moment} actors={qualificationActors} /> : null}
       <DirectorShotCameraController
         moment={moment}
-        actors={actors}
+        actors={qualificationActors}
         progress={progress}
         isPlaying={auditSnap ? false : isPlaying}
       />
