@@ -85,11 +85,52 @@ function directorQualificationPreviewMoment(
   qualificationVisibilityAssist: boolean,
 ): ReturnType<typeof directorCapabilityDemoMoment> {
   const baseMoment = directorCapabilityDemoMoment(capability);
-  if (
-    !qualificationVisibilityAssist ||
-    capability.id !== "inside" ||
-    !baseMoment.shot
-  ) {
+  if (!qualificationVisibilityAssist || !baseMoment.shot) {
+    return baseMoment;
+  }
+
+  if (capability.id === "build_from_parts") {
+    const events = baseMoment.events.map((event) => {
+      if (event.id === "demo_build_part_secondary") {
+        return {
+          ...event,
+          start_ms: 650,
+          duration_ms: 2300,
+          parameters: {
+            ...event.parameters,
+            start_position: [3.8, 0, 1.2],
+            target_position: [1.15, 0, 0],
+          },
+        };
+      }
+      if (event.id === "demo_build_part_context") {
+        return {
+          ...event,
+          start_ms: 3150,
+          duration_ms: 2100,
+          parameters: {
+            ...event.parameters,
+            start_position: [-3.6, 0, -1.6],
+            // A.11A.49: move the final context component into a distinct
+            // three-quarter-front screen-space slot so it cannot disappear
+            // behind the larger secondary actor during the shared-system hold.
+            target_position: [-0.45, 0, -0.35],
+          },
+        };
+      }
+      return event;
+    });
+
+    // A.11A.48: Qualification keeps the authored Build-from-parts grammar but
+    // separates the two arrivals so the viewer can read part 1, then part 2,
+    // before the final shared-system resolution cue appears.
+    return {
+      ...baseMoment,
+      events,
+    };
+  }
+
+  if (capability.id !== "inside") {
     return baseMoment;
   }
 
@@ -146,6 +187,57 @@ const DIRECTOR_CAUSAL_CONSEQUENCE_ATTENTION_END = 0.72;
 function smoothstepProgress(progress: number, start: number, end: number) {
   const t = clamp01((progress - start) / Math.max(0.0001, end - start));
   return t * t * (3 - 2 * t);
+}
+
+
+const DIRECTOR_BUILD_PARTS_SECONDARY_ATTENTION_START = 0.06;
+const DIRECTOR_BUILD_PARTS_SECONDARY_ATTENTION_END = 0.5;
+const DIRECTOR_BUILD_PARTS_CONTEXT_ATTENTION_START = 0.42;
+const DIRECTOR_BUILD_PARTS_CONTEXT_ATTENTION_END = 0.78;
+const DIRECTOR_BUILD_PARTS_RESOLUTION_START = 0.74;
+const DIRECTOR_BUILD_PARTS_RESOLUTION_END = 0.86;
+
+function qualificationBuildFromPartsWindow(
+  progress: number,
+  start: number,
+  end: number,
+) {
+  const fadeIn = smoothstepProgress(progress, start, Math.min(end, start + 0.08));
+  const fadeOut =
+    1 - smoothstepProgress(progress, Math.max(start, end - 0.08), end);
+  return fadeIn * fadeOut;
+}
+
+function qualificationBuildFromPartsPartAttentionAmount(
+  progress: number,
+  role: string,
+) {
+  if (role === "primary_subject") {
+    return 1 - smoothstepProgress(progress, 0.14, 0.3);
+  }
+  if (role === "secondary_subject") {
+    return qualificationBuildFromPartsWindow(
+      progress,
+      DIRECTOR_BUILD_PARTS_SECONDARY_ATTENTION_START,
+      DIRECTOR_BUILD_PARTS_SECONDARY_ATTENTION_END,
+    );
+  }
+  if (role === "context_subject") {
+    return qualificationBuildFromPartsWindow(
+      progress,
+      DIRECTOR_BUILD_PARTS_CONTEXT_ATTENTION_START,
+      DIRECTOR_BUILD_PARTS_CONTEXT_ATTENTION_END,
+    );
+  }
+  return 0;
+}
+
+function qualificationBuildFromPartsResolutionAmount(progress: number) {
+  return smoothstepProgress(
+    progress,
+    DIRECTOR_BUILD_PARTS_RESOLUTION_START,
+    DIRECTOR_BUILD_PARTS_RESOLUTION_END,
+  );
 }
 
 function qualificationConsequenceChangeAmount(progress: number) {
@@ -883,9 +975,12 @@ function AnimatedActor({
     "volumetric_beam",
     "exposure_shift",
   ].includes(capability.id);
+  const buildFromPartsProof =
+    qualificationVisibilityAssist && capability.id === "build_from_parts";
   const emphasized =
     !goldenHighlight &&
     !lightingEffectOwnsAttention &&
+    !buildFromPartsProof &&
     resolvedRole.role === "primary_subject" &&
     (capability.category === "narrative_attention" || capability.category === "lighting_emphasis");
   const consequenceProof =
@@ -901,12 +996,38 @@ function AnimatedActor({
   const consequenceEndpointEmphasis =
     consequenceProof && resolvedRole.role === "secondary_subject";
   const endpointRingRadius = THREE.MathUtils.clamp(targetExtent * 0.46, 0.62, 1.18);
+  const buildPartAttention = buildFromPartsProof
+    ? qualificationBuildFromPartsPartAttentionAmount(progress, resolvedRole.role)
+    : 0;
+  const buildPartRingRadius = THREE.MathUtils.clamp(
+    targetExtent * 0.48,
+    0.62,
+    1.22,
+  );
+  const buildPartAttentionColor =
+    resolvedRole.role === "secondary_subject"
+      ? "#a78bfa"
+      : resolvedRole.role === "context_subject"
+        ? "#f59e0b"
+        : "#38bdf8";
   return (
     <group ref={groupRef} position={sample.position} rotation={[sample.rotation.x, sample.rotation.y, sample.rotation.z]} scale={sample.scale}>
       {emphasized && emphasisOpacity > 0.01 ? (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
           <ringGeometry args={[0.82, 1.02, 48]} />
           <meshBasicMaterial color="#38bdf8" transparent opacity={emphasisOpacity} side={THREE.DoubleSide} />
+        </mesh>
+      ) : null}
+      {buildFromPartsProof && buildPartAttention > 0.01 ? (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.024, 0]}>
+          <ringGeometry args={[buildPartRingRadius, buildPartRingRadius + 0.09, 48]} />
+          <meshBasicMaterial
+            color={buildPartAttentionColor}
+            transparent
+            opacity={0.18 + buildPartAttention * 0.5}
+            side={THREE.DoubleSide}
+            toneMapped={false}
+          />
         </mesh>
       ) : null}
       {consequenceEndpointEmphasis && consequenceAttention > 0.01 ? (
@@ -975,13 +1096,29 @@ function rolePosition(actors: DirectorRuntimeActor[], id: string) {
   return actor ? new THREE.Vector3(...actor.position).add(new THREE.Vector3(0, actor.size[1] * 0.45, 0)) : new THREE.Vector3();
 }
 
+function sampledRolePosition(
+  moment: ReturnType<typeof directorCapabilityDemoMoment>,
+  actors: DirectorRuntimeActor[],
+  id: string,
+  progress: number,
+) {
+  const actor = actors.find((candidate) => candidate.id === id);
+  if (!actor) return new THREE.Vector3();
+  const sample = sampleDirectorActorState(moment, actor, progress, actors);
+  return new THREE.Vector3(...sample.position).add(
+    new THREE.Vector3(0, actor.size[1] * 0.45, 0),
+  );
+}
+
 function TeachingRelationship({
   capability,
+  moment,
   actors,
   progress,
   qualificationVisibilityAssist,
 }: {
   capability: DirectorCapability;
+  moment: ReturnType<typeof directorCapabilityDemoMoment>;
   actors: DirectorRuntimeActor[];
   progress: number;
   qualificationVisibilityAssist: boolean;
@@ -989,6 +1126,82 @@ function TeachingRelationship({
   const primary = rolePosition(actors, "primary_subject");
   const secondary = rolePosition(actors, "secondary_subject");
   const context = rolePosition(actors, "context_subject");
+  if (capability.id === "build_from_parts" && qualificationVisibilityAssist) {
+    const resolution = qualificationBuildFromPartsResolutionAmount(progress);
+    if (resolution <= 0.01) return null;
+
+    const sampledPrimary = sampledRolePosition(
+      moment,
+      actors,
+      "primary_subject",
+      progress,
+    );
+    const sampledSecondary = sampledRolePosition(
+      moment,
+      actors,
+      "secondary_subject",
+      progress,
+    );
+    const sampledContext = sampledRolePosition(
+      moment,
+      actors,
+      "context_subject",
+      progress,
+    );
+    const sampledGround = [sampledPrimary, sampledSecondary, sampledContext].map(
+      (position) => new THREE.Vector3(position.x, 0.026, position.z),
+    );
+    const systemCenter = sampledGround
+      .reduce((sum, position) => sum.add(position), new THREE.Vector3())
+      .multiplyScalar(1 / sampledGround.length);
+    const systemRadius = THREE.MathUtils.clamp(
+      Math.max(
+        ...sampledGround.map((position) =>
+          Math.hypot(
+            position.x - systemCenter.x,
+            position.z - systemCenter.z,
+          ),
+        ),
+      ) + 0.78,
+      1.75,
+      4.4,
+    );
+    const connectorOpacity = 0.12 + resolution * 0.58;
+    const ringOpacity =
+      0.12 +
+      resolution * 0.28 +
+      pulse(progress, 0.88, 0.12) * 0.08;
+
+    return (
+      <group>
+        <Line
+          points={[
+            sampledPrimary,
+            sampledSecondary,
+            sampledContext,
+            sampledPrimary,
+          ]}
+          color="#22d3ee"
+          lineWidth={2}
+          transparent
+          opacity={connectorOpacity}
+        />
+        <mesh
+          position={[systemCenter.x, systemCenter.y, systemCenter.z]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <ringGeometry args={[systemRadius, systemRadius + 0.08, 72]} />
+          <meshBasicMaterial
+            color="#22d3ee"
+            transparent
+            opacity={ringOpacity}
+            side={THREE.DoubleSide}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+    );
+  }
   if (capability.id === "connect_cause") {
     const firstEnd = primary.clone().lerp(context, clamp01(progress * 2));
     const secondEnd = context.clone().lerp(secondary, clamp01((progress - 0.48) * 2));
@@ -1388,6 +1601,7 @@ export function DirectorCapabilityPreview({
       })}
       <TeachingRelationship
         capability={capability}
+        moment={moment}
         actors={qualificationActors}
         progress={progress}
         qualificationVisibilityAssist={qualificationVisibilityAssist}
