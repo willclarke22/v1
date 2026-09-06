@@ -935,6 +935,44 @@ export const DIRECTOR_QUALIFICATION_DEFERRED_CAPABILITY_IDS = [
  * remains in the frozen compatibility vocabulary.
  */
 /**
+ * A.11A.50 Pacing closeout: these remain valid Director narrative vocabulary,
+ * but human review showed they are not independent visual primitives.
+ *
+ * Hold for understanding is a composable temporal modifier that preserves the
+ * already-resolved composition. Summarize is a higher-order narrative verb that
+ * composes existing visual operations and finishes with the understanding hold.
+ * Both remain in the frozen 184-capability registry, but neither consumes an
+ * independent Qualification reel slot.
+ */
+export const DIRECTOR_QUALIFICATION_COMPOSABLE_MODIFIER_CAPABILITY_IDS = [
+  "hold_for_understanding",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_COMPOUND_NARRATIVE_CAPABILITY_IDS = [
+  "summarize",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_COMPOUND_NARRATIVE_COMPONENTS_BY_ID = {
+  summarize: ["return_to_context", "hold_for_understanding"],
+} as const;
+
+export function isDirectorQualificationCapabilityComposableModifier(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_COMPOSABLE_MODIFIER_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityCompoundNarrative(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_COMPOUND_NARRATIVE_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+/**
  * Capabilities that remain useful Director vocabulary but should not be
  * qualified as independent perceptual primitives because human review found
  * that their behavior belongs inside another reusable primitive/modifier.
@@ -1006,7 +1044,9 @@ export function isDirectorQualificationCapabilityActive(capabilityId: string) {
   return (
     !isDirectorQualificationCapabilityDeferred(capabilityId) &&
     !isDirectorQualificationCapabilityMergeCandidate(capabilityId) &&
-    !isDirectorQualificationCapabilityMerged(capabilityId)
+    !isDirectorQualificationCapabilityMerged(capabilityId) &&
+    !isDirectorQualificationCapabilityComposableModifier(capabilityId) &&
+    !isDirectorQualificationCapabilityCompoundNarrative(capabilityId)
   );
 }
 
@@ -1021,11 +1061,12 @@ export function directorQualificationExpectedActiveCapabilityCount(
 /**
  * Active Qualification Room view of the frozen Director family taxonomy.
  *
- * Deferred, merge-candidate, and successfully merged legacy capabilities remain
- * in the 184-entry Director registry and in buildDirectorQualificationFamilies(...)
- * so historical compatibility evidence stays stable. The live campaign excludes
- * capabilities that either cannot yet be proven truthfully, are awaiting/undergoing
- * semantic consolidation, or have already been consolidated into a canonical primitive.
+ * Deferred, merge-candidate, successfully merged legacy capabilities, composable
+ * modifiers, and compound-only narrative verbs remain in the 184-entry Director
+ * registry and in buildDirectorQualificationFamilies(...) so historical compatibility
+ * evidence stays stable. The live campaign excludes capabilities that either cannot
+ * yet be proven truthfully, are awaiting/undergoing semantic consolidation, have
+ * already been consolidated, or do not claim an independent visual primitive.
  */
 export function buildActiveDirectorQualificationFamilies(
   capabilities: DirectorCapability[],

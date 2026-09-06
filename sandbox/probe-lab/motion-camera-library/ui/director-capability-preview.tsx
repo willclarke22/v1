@@ -130,6 +130,83 @@ function directorQualificationPreviewMoment(
     };
   }
 
+  if (capability.id === "return_to_context") {
+    // A.11A.50: Qualification proves an actual detail -> context transition.
+    // Start from a close, primary-only optical target so the surrounding
+    // relationship is genuinely discovered by the pull-back rather than being
+    // visible from frame one. The explicit distance is normalized-role-space
+    // proof scaffolding only; production Return to context keeps its authored
+    // semantic camera recipe and resolves exact framing from scene geometry.
+    const keepVisibleEntityIds = ["primary_subject"];
+    const shot = {
+      ...baseMoment.shot,
+      composition: {
+        ...baseMoment.shot.composition,
+        framing: "close" as const,
+        angle: "three_quarter_front" as const,
+        keep_visible_entity_ids: keepVisibleEntityIds,
+        screen_anchor: "center" as const,
+      },
+      lens: {
+        ...baseMoment.shot.lens,
+        preset: "portrait" as const,
+        focal_length_mm: 62,
+        field_of_view_degrees: 36,
+        focus_entity_id: "primary_subject",
+        depth_of_field: "deep" as const,
+      },
+      camera: {
+        ...baseMoment.shot.camera,
+        focus_entity_ids: ["primary_subject"],
+        movement_steps: [
+          {
+            movement: "pull_back" as const,
+            start_progress: 0.08,
+            end_progress: 0.72,
+            strength: 1,
+            easing: "ease_out" as const,
+            coordinate_space: "target_relative" as const,
+            target_entity_id: "primary_subject",
+            parameters: { distance_m: 4.8 },
+          },
+          {
+            movement: "settle" as const,
+            start_progress: 0.72,
+            end_progress: 0.96,
+            strength: 0.45,
+            easing: "ease_out" as const,
+            coordinate_space: "camera_relative" as const,
+            target_entity_id: "primary_subject",
+            parameters: {},
+          },
+        ],
+      },
+      continuity: {
+        ...baseMoment.shot.continuity,
+        rules: Array.from(
+          new Set([
+            ...baseMoment.shot.continuity.rules,
+            "preserve_visual_anchor" as const,
+          ]),
+        ),
+      },
+      hold_after_ms: 1200,
+    };
+
+    return {
+      ...baseMoment,
+      keeps_visible_entity_ids: keepVisibleEntityIds,
+      camera: {
+        ...baseMoment.camera,
+        shot_type: "close_up" as const,
+        movement: "pull_back" as const,
+        focus_entity_ids: ["primary_subject"],
+        keep_visible_entity_ids: keepVisibleEntityIds,
+      },
+      shot,
+    };
+  }
+
   if (capability.id !== "inside") {
     return baseMoment;
   }
