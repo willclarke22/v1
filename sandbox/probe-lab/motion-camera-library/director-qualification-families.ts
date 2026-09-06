@@ -975,6 +975,39 @@ export const DIRECTOR_QUALIFICATION_REVEAL_COMPOUND_NARRATIVE_COMPONENTS_BY_ID =
   reverse_assumption: ["isolate", "reveal", "hold_for_understanding"],
 } as const;
 
+/**
+ * A.11A.54 Scale-and-representation semantic closeout: all three author-facing
+ * verbs depend on authored representation semantics rather than claiming a new
+ * asset-independent camera primitive. Enter system needs a real interior,
+ * Change scale needs a source/target scale representation pair plus an anchor
+ * mapping, and Inside / outside needs a true exterior/interior or cutaway pair.
+ *
+ * Keep all three in the frozen 184-capability compatibility vocabulary while
+ * removing this family from independent Qualification coverage. Camera travel,
+ * reframing, and settling continue to come from already-qualified primitives.
+ */
+export const DIRECTOR_QUALIFICATION_COMPOUND_REPRESENTATION_CAPABILITY_IDS = [
+  "enter_system",
+  "change_scale",
+  "show_inside_outside",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_COMPOUND_REPRESENTATION_COMPONENTS_BY_ID = {
+  enter_system: ["change_scale", "hold_for_understanding"],
+  // The representation handoff itself is authored semantic data; the shot
+  // compiler chooses already-qualified camera primitives around that handoff.
+  change_scale: ["hold_for_understanding"],
+  show_inside_outside: ["compare", "hold_for_understanding"],
+} as const;
+
+export function isDirectorQualificationCapabilityCompoundRepresentation(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_COMPOUND_REPRESENTATION_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
 export function isDirectorQualificationCapabilityVisibilityModifier(
   capabilityId: string,
 ) {
@@ -1083,7 +1116,8 @@ export function isDirectorQualificationCapabilityActive(capabilityId: string) {
     !isDirectorQualificationCapabilityComposableModifier(capabilityId) &&
     !isDirectorQualificationCapabilityCompoundNarrative(capabilityId) &&
     !isDirectorQualificationCapabilityVisibilityModifier(capabilityId) &&
-    !isDirectorQualificationCapabilityRevealCompoundNarrative(capabilityId)
+    !isDirectorQualificationCapabilityRevealCompoundNarrative(capabilityId) &&
+    !isDirectorQualificationCapabilityCompoundRepresentation(capabilityId)
   );
 }
 
@@ -1099,11 +1133,13 @@ export function directorQualificationExpectedActiveCapabilityCount(
  * Active Qualification Room view of the frozen Director family taxonomy.
  *
  * Deferred, merge-candidate, successfully merged legacy capabilities, composable
- * modifiers, and compound-only narrative verbs remain in the 184-entry Director
- * registry and in buildDirectorQualificationFamilies(...) so historical compatibility
- * evidence stays stable. The live campaign excludes capabilities that either cannot
- * yet be proven truthfully, are awaiting/undergoing semantic consolidation, have
- * already been consolidated, or do not claim an independent visual primitive.
+ * modifiers, compound-only narrative verbs, and authored-representation-dependent
+ * verbs remain in the 184-entry Director registry and in
+ * buildDirectorQualificationFamilies(...) so historical compatibility evidence stays
+ * stable. The live campaign excludes capabilities that either cannot yet be proven
+ * truthfully, are awaiting/undergoing semantic consolidation, have already been
+ * consolidated, require authored representation semantics, or do not claim an
+ * independent visual primitive.
  */
 export function buildActiveDirectorQualificationFamilies(
   capabilities: DirectorCapability[],

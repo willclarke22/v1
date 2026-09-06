@@ -356,9 +356,72 @@ const narrativeAttention: DirectorCapability[] = [
     demo: { kind: "narrative_reverse_assumption" },
   }),
   simpleCapability({ id: "build_from_parts", label: "Build from parts", category: "narrative_attention", group: "Explanatory structure", summary: "Introduce components in a controlled order, then resolve them into one functioning system.", threejs: "compound", fallback: "establish", demo: { kind: "narrative_build_from_parts" } }),
-  simpleCapability({ id: "enter_system", label: "Enter system", category: "narrative_attention", group: "Scale & representation", summary: "Move from an exterior overview into the interior of an object or system while preserving orientation.", threejs: "compound", fallback: "push_in", demo: { kind: "narrative_enter_system" } }),
-  simpleCapability({ id: "change_scale", label: "Change scale", category: "narrative_attention", group: "Scale & representation", summary: "Transition between meaningful scales while keeping a visual anchor that tells the learner where they are.", threejs: "compound", fallback: "push_in", demo: { kind: "narrative_change_scale" } }),
-  simpleCapability({ id: "show_inside_outside", label: "Inside / outside", category: "narrative_attention", group: "Scale & representation", summary: "Preserve the exterior context while revealing an internal structure or cutaway relationship.", threejs: "compound", fallback: "compare", demo: { kind: "narrative_inside_outside" } }),
+  simpleCapability({
+    id: "enter_system",
+    label: "Enter system",
+    category: "narrative_attention",
+    group: "Scale & representation",
+    summary: "Move from an exterior overview into the interior of an object or system while preserving orientation.",
+    threejs: "compound",
+    fallback: "push_in",
+    instruction: {
+      narrative_job: "enter_system",
+      operation_kind: "compound_representation_verb",
+      compose_capability_ids: ["change_scale", "hold_for_understanding"],
+      require_authored_interior_representation: true,
+      preserve_orientation_anchor: true,
+      forbid_fake_interior_from_unrelated_assets: true,
+    },
+    demo: { kind: "narrative_enter_system" },
+  }),
+  simpleCapability({
+    id: "change_scale",
+    label: "Change scale",
+    category: "narrative_attention",
+    group: "Scale & representation",
+    summary: "Transition between meaningful scales while keeping a visual anchor that tells the learner where they are.",
+    threejs: "compound",
+    fallback: "push_in",
+    instruction: {
+      narrative_job: "change_scale",
+      operation_kind: "compound_representation_verb",
+      compose_capability_ids: ["hold_for_understanding"],
+      source_representation_role: "primary_subject",
+      target_representation_role: "secondary_subject",
+      require_authored_scale_representation_pair: true,
+      require_shared_anchor_mapping: true,
+      camera_transition_policy: "compose_from_qualified_camera_primitives",
+      preserve_visual_anchor: true,
+      forbid_single_representation_zoom_as_scale_change: true,
+      forbid_fake_target_representation_from_unrelated_assets: true,
+    },
+    demo: { kind: "narrative_change_scale" },
+  }),
+  simpleCapability({
+    id: "show_inside_outside",
+    label: "Inside / outside",
+    category: "narrative_attention",
+    group: "Scale & representation",
+    summary: "Preserve the exterior context while revealing an internal structure or cutaway relationship.",
+    threejs: "compound",
+    fallback: "compare",
+    instruction: {
+      narrative_job: "show_inside_outside",
+      operation_kind: "compound_representation_verb",
+      compose_capability_ids: ["compare", "hold_for_understanding"],
+      exterior_role: "primary_subject",
+      interior_representation_role: "secondary_subject",
+      require_authored_representation_pair: true,
+      allowed_interior_representation_kinds: [
+        "interior_mesh",
+        "cutaway",
+        "section",
+        "diagrammatic_interior",
+      ],
+      forbid_fake_interior_from_unrelated_assets: true,
+    },
+    demo: { kind: "narrative_inside_outside" },
+  }),
   simpleCapability({
     id: "hold_for_understanding",
     label: "Hold for understanding",
@@ -1220,9 +1283,26 @@ export function directorCapabilityDemoShot(capability: DirectorCapability): Dire
       shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject"]; shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"];
       shot.camera.movement_steps = [{ movement: "reframe", start_progress: 0.45, end_progress: 0.72, strength: 0.9, easing: "ease_out", coordinate_space: "target_relative", target_entity_id: "secondary_subject", parameters: {} }, { movement: "settle", start_progress: 0.7, end_progress: 1, strength: 0.55, easing: "ease_out", coordinate_space: "camera_relative", target_entity_id: "secondary_subject", parameters: {} }];
       shot.hold_after_ms = 1400;
-    } else if (capability.id === "enter_system" || capability.id === "change_scale") {
+    } else if (capability.id === "enter_system") {
+      // Enter system remains a compatibility/compound representation verb. A
+      // truthful execution requires an authored interior representation; this
+      // historical demo path remains available but is no longer independently
+      // qualified as though arbitrary exterior GLBs contained usable interiors.
       shot.composition.framing = "wide"; shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"];
       shot.camera.movement_steps = [{ movement: "push_in", start_progress: 0, end_progress: 0.42, strength: 0.65, easing: "ease_in", coordinate_space: "target_relative", target_entity_id: "primary_subject", parameters: {} }, { movement: "pass_through", start_progress: 0.35, end_progress: 0.78, strength: 0.75, easing: "ease_in_out", coordinate_space: "target_relative", target_entity_id: "primary_subject", parameters: {} }, { movement: "settle", start_progress: 0.78, end_progress: 1, strength: 0.5, easing: "ease_out", coordinate_space: "camera_relative", target_entity_id: "secondary_subject", parameters: {} }];
+    } else if (capability.id === "change_scale") {
+      // A.11A.52: Change scale is an anchored scale transition, not an Enter
+      // system pass-through. Keep one subject as the spatial anchor, materially
+      // close camera distance, then settle without inventing an interior.
+      shot.composition.framing = "wide";
+      shot.composition.keep_visible_entity_ids = ["primary_subject"];
+      shot.camera.focus_entity_ids = ["primary_subject"];
+      shot.lens.focus_entity_id = "primary_subject";
+      shot.camera.movement_steps = [
+        { movement: "push_in", start_progress: 0.08, end_progress: 0.72, strength: 0.9, easing: "ease_in_out", coordinate_space: "target_relative", target_entity_id: "primary_subject", parameters: {} },
+        { movement: "settle", start_progress: 0.72, end_progress: 0.96, strength: 0.42, easing: "ease_out", coordinate_space: "camera_relative", target_entity_id: "primary_subject", parameters: {} },
+      ];
+      shot.continuity.rules.push("preserve_visual_anchor");
     } else if (capability.id === "return_to_context" || capability.id === "summarize") {
       shot.composition.framing = "wide"; shot.composition.keep_visible_entity_ids = ["primary_subject", "secondary_subject", "context_subject"]; shot.camera.focus_entity_ids = ["primary_subject", "secondary_subject"];
       shot.camera.movement_steps = [{ movement: "pull_back", start_progress: 0, end_progress: 0.72, strength: 0.58, easing: "ease_out", coordinate_space: "target_relative", target_entity_id: "primary_subject", parameters: {} }, { movement: "settle", start_progress: 0.7, end_progress: 1, strength: 0.45, easing: "ease_out", coordinate_space: "camera_relative", target_entity_id: "primary_subject", parameters: {} }];
