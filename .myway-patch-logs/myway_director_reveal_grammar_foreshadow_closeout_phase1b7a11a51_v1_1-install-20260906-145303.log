@@ -1,0 +1,73 @@
+**********************
+PowerShell transcript start
+Start time: 20260906145303
+Username: WILLSURFACE\willc
+RunAs User: WILLSURFACE\willc
+Configuration Name: 
+Machine: WILLSURFACE (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\willc\AppData\Local\Programs\Microsoft VS Code\a44adf7f53\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 29956
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Running installer preflight against C:\Users\willc\projects\MyWay\v1
+
+
+==> TypeScript noEmit
+
+
+==> A.11A.51 Reveal-grammar Foreshadow verifier
+
+
+==> A.11A.50 Pacing closeout
+
+
+==> A.11A.49 Explanatory-structure occlusion
+
+
+==> A.11A.48 Explanatory-structure Build-from-parts
+
+
+==> A.11A.47 Causal-clarity consequence proof
+
+
+==> A.11A.46 Attention Reveal readability
+
+
+==> A.11A.45 Asset identity / fixture stability
+
+
+==> A.11A.44 Attention-sequence merge closeout
+
+
+==> A.11A.43 Subject-emphasis final spotlight proof
+
+
+==> A.11A.39 Lighting-style closeout
+
+
+==> A.11A.31 Tracking-mounted merge closeout
+
+
+==> A.10B Qualification evidence integrity
+
+
+==> A.9 Qualification presentation
+
+
+==> Production build
+
+
+[myway_director_reveal_grammar_foreshadow_closeout_phase1b7a11a51_v1_1] INSTALL SUCCESS
+Reveal grammar now independently qualifies only Foreshadow; Conceal is a visibility modifier and Reverse assumption is a semantic compound narrative verb.
+**********************
+PowerShell transcript end
+End time: 20260906145417
+**********************

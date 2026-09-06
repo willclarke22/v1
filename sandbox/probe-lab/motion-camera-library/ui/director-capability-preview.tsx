@@ -130,6 +130,78 @@ function directorQualificationPreviewMoment(
     };
   }
 
+  if (capability.id === "foreshadow") {
+    // A.11A.51: Qualification proves Foreshadow as hidden information ->
+    // partial clue -> unresolved hold. The production recipe remains untouched;
+    // this proof scaffolding narrows optical focus to the established primary,
+    // keeps the clue role concealed at first, and stops before a full Reveal.
+    const keepVisibleEntityIds = ["primary_subject"];
+    const shot = {
+      ...baseMoment.shot,
+      composition: {
+        ...baseMoment.shot.composition,
+        framing: "medium_close" as const,
+        angle: "three_quarter_front" as const,
+        screen_anchor: "left_third" as const,
+        keep_visible_entity_ids: keepVisibleEntityIds,
+        preserve_relative_scale: false,
+      },
+      lens: {
+        ...baseMoment.shot.lens,
+        preset: "portrait" as const,
+        focal_length_mm: 70,
+        field_of_view_degrees: 34,
+        focus_entity_id: "primary_subject",
+        depth_of_field: "deep" as const,
+      },
+      camera: {
+        ...baseMoment.shot.camera,
+        focus_entity_ids: ["primary_subject"],
+        movement_steps: [
+          {
+            movement: "reverse_reveal" as const,
+            start_progress: 0.18,
+            end_progress: 0.58,
+            strength: 0.34,
+            easing: "ease_in_out" as const,
+            coordinate_space: "target_relative" as const,
+            target_entity_id: "primary_subject",
+            parameters: { degrees: 14 },
+          },
+          {
+            movement: "settle" as const,
+            start_progress: 0.58,
+            end_progress: 0.82,
+            strength: 0.35,
+            easing: "ease_out" as const,
+            coordinate_space: "camera_relative" as const,
+            target_entity_id: "primary_subject",
+            parameters: {},
+          },
+        ],
+      },
+      lighting: {
+        ...baseMoment.shot.lighting,
+        intents: ["low_key", "rim_lit"] as ("low_key" | "rim_lit")[],
+      },
+      reveal_at: null,
+      hold_after_ms: 1500,
+    };
+
+    return {
+      ...baseMoment,
+      keeps_visible_entity_ids: keepVisibleEntityIds,
+      camera: {
+        ...baseMoment.camera,
+        shot_type: "close_up" as const,
+        movement: "reverse_reveal" as const,
+        focus_entity_ids: ["primary_subject"],
+        keep_visible_entity_ids: keepVisibleEntityIds,
+      },
+      shot,
+    };
+  }
+
   if (capability.id === "return_to_context") {
     // A.11A.50: Qualification proves an actual detail -> context transition.
     // Start from a close, primary-only optical target so the surrounding
@@ -264,6 +336,20 @@ const DIRECTOR_CAUSAL_CONSEQUENCE_ATTENTION_END = 0.72;
 function smoothstepProgress(progress: number, start: number, end: number) {
   const t = clamp01((progress - start) / Math.max(0.0001, end - start));
   return t * t * (3 - 2 * t);
+}
+
+const DIRECTOR_FORESHADOW_CLUE_START = 0.46;
+const DIRECTOR_FORESHADOW_CLUE_END = 0.64;
+const DIRECTOR_FORESHADOW_CLUE_MAX_OPACITY = 0.24;
+
+function qualificationForeshadowClueOpacity(progress: number) {
+  return (
+    smoothstepProgress(
+      progress,
+      DIRECTOR_FORESHADOW_CLUE_START,
+      DIRECTOR_FORESHADOW_CLUE_END,
+    ) * DIRECTOR_FORESHADOW_CLUE_MAX_OPACITY
+  );
 }
 
 
@@ -439,12 +525,15 @@ function LibraryAssetMesh({
   goldenHighlight = false,
   scaleBounds,
   scaleGroundOffset = false,
+  foreshadowClueOpacity,
 }: {
   asset: DirectorLibraryAsset;
   targetExtent: number;
   goldenHighlight?: boolean;
   scaleBounds?: [number, number];
   scaleGroundOffset?: boolean;
+  /** A.11A.51 Qualification-only unresolved clue rendering for Foreshadow. */
+  foreshadowClueOpacity?: number;
 }) {
   const gltf = useGLTF(directorRealAssetBrowserUrl(asset));
   // Preserve the historical qualification scale-guard markers while routing the
@@ -458,6 +547,7 @@ function LibraryAssetMesh({
   });
   const rotation = asset.default_rotation ?? [0, 0, 0];
   const groundOffset = Number(asset.ground_offset_m) || 0;
+  const qualificationForeshadowClue = foreshadowClueOpacity !== undefined;
   // Golden outline geometry is expensive for detailed GLBs. Build it only for the
   // one capability that actually renders the outline instead of cloning every real
   // asset used by every Qualification Room audition.
@@ -479,6 +569,56 @@ function LibraryAssetMesh({
     return clone;
   }, [gltf.scene, goldenHighlight]);
 
+  // A.11A.51: Foreshadow does not show the normal materialized answer during
+  // Qualification. The exact asset geometry is retained as a faint neutral
+  // silhouette so the viewer receives a clue without receiving a full Reveal.
+  const foreshadowClueScene = useMemo(() => {
+    if (!qualificationForeshadowClue) return null;
+    const clone = gltf.scene.clone(true);
+    clone.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      object.castShadow = false;
+      object.receiveShadow = false;
+      object.renderOrder = 2;
+      const sourceMaterials = Array.isArray(object.material)
+        ? object.material
+        : [object.material];
+      const clueMaterials = sourceMaterials.map(
+        () =>
+          new THREE.MeshBasicMaterial({
+            color: "#94a3b8",
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
+            toneMapped: false,
+            side: THREE.DoubleSide,
+          }),
+      );
+      object.material = Array.isArray(object.material)
+        ? clueMaterials
+        : clueMaterials[0]!;
+    });
+    return clone;
+  }, [gltf.scene, qualificationForeshadowClue]);
+
+  useEffect(() => {
+    if (!foreshadowClueScene) return;
+    const opacity = clamp01(foreshadowClueOpacity ?? 0);
+    foreshadowClueScene.visible = opacity > 0.005;
+    foreshadowClueScene.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(object.material)
+        ? object.material
+        : [object.material];
+      materials.forEach((material) => {
+        if (material instanceof THREE.MeshBasicMaterial) {
+          material.opacity = opacity;
+          material.needsUpdate = true;
+        }
+      });
+    });
+  }, [foreshadowClueOpacity, foreshadowClueScene]);
+
   useEffect(() => () => {
     if (!outlineScene) return;
     outlineScene.traverse((object) => {
@@ -489,17 +629,33 @@ function LibraryAssetMesh({
     });
   }, [outlineScene]);
 
+  useEffect(() => () => {
+    if (!foreshadowClueScene) return;
+    foreshadowClueScene.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(object.material)
+        ? object.material
+        : [object.material];
+      materials.forEach((material) => material.dispose());
+    });
+  }, [foreshadowClueScene]);
+
   const renderedGroundOffset = groundOffset * (scaleGroundOffset ? scale : 1);
 
   return (
     <group position={[0, -renderedGroundOffset, 0]}>
       <group scale={scale} rotation={[rotation[0], rotation[1], rotation[2]]}>
         {goldenHighlight && outlineScene ? <primitive object={outlineScene} scale={1.028} /> : null}
-        <Clone object={gltf.scene} castShadow receiveShadow />
+        {foreshadowClueScene ? (
+          <primitive object={foreshadowClueScene} />
+        ) : (
+          <Clone object={gltf.scene} castShadow receiveShadow />
+        )}
       </group>
     </group>
   );
 }
+
 
 function AtomicGoldenControlledOutline({ targetExtent }: { targetExtent: number }) {
   const scale = Math.max(0.45, targetExtent / 1.8) * 1.035;
@@ -527,6 +683,29 @@ function FallbackActor({ role }: { role: string }) {
     <group>
       <mesh castShadow receiveShadow><dodecahedronGeometry args={[0.7, 0]} /><meshStandardMaterial color={color} roughness={0.35} metalness={0.15} /></mesh>
       <mesh position={[0, -0.82, 0]} receiveShadow><cylinderGeometry args={[0.62, 0.78, 0.16, 28]} /><meshStandardMaterial color="#172554" roughness={0.8} /></mesh>
+    </group>
+  );
+}
+
+function ForeshadowQualificationFallbackClue({
+  opacity,
+}: {
+  opacity: number;
+}) {
+  if (opacity <= 0.005) return null;
+  return (
+    <group>
+      <mesh>
+        <dodecahedronGeometry args={[0.7, 0]} />
+        <meshBasicMaterial
+          color="#94a3b8"
+          transparent
+          opacity={opacity}
+          depthWrite={false}
+          toneMapped={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
     </group>
   );
 }
@@ -1054,10 +1233,17 @@ function AnimatedActor({
   ].includes(capability.id);
   const buildFromPartsProof =
     qualificationVisibilityAssist && capability.id === "build_from_parts";
+  const foreshadowProof =
+    qualificationVisibilityAssist && capability.id === "foreshadow";
+  const foreshadowClueOpacity =
+    foreshadowProof && resolvedRole.role === "secondary_subject"
+      ? qualificationForeshadowClueOpacity(progress)
+      : undefined;
   const emphasized =
     !goldenHighlight &&
     !lightingEffectOwnsAttention &&
     !buildFromPartsProof &&
+    !foreshadowProof &&
     resolvedRole.role === "primary_subject" &&
     (capability.category === "narrative_attention" || capability.category === "lighting_emphasis");
   const consequenceProof =
@@ -1124,12 +1310,18 @@ function AnimatedActor({
           {fixtureMode === "controlled" ? (
             <>
               {goldenHighlight ? <AtomicGoldenControlledOutline targetExtent={targetExtent} /> : null}
-              <ControlledAuditActor
-                capabilityId={capability.id}
-                role={resolvedRole.role}
-                fixtureKind={fixtureKind}
-                targetExtent={targetExtent}
-              />
+              {foreshadowClueOpacity !== undefined ? (
+                <ForeshadowQualificationFallbackClue
+                  opacity={foreshadowClueOpacity}
+                />
+              ) : (
+                <ControlledAuditActor
+                  capabilityId={capability.id}
+                  role={resolvedRole.role}
+                  fixtureKind={fixtureKind}
+                  targetExtent={targetExtent}
+                />
+              )}
               {fixtureKind === "object_motion_process" && resolvedRole.role === "primary_subject" ? (
                 <ControlledProcessQuantityOverlay process={sample.process} targetExtent={targetExtent} />
               ) : null}
@@ -1139,7 +1331,15 @@ function AnimatedActor({
               <DirectorRealAssetLoadBoundary
                 resetKey={`${resolvedRole.asset.asset_id}:${resolvedRole.asset.public_path}`}
                 assetLabel={resolvedRole.asset.display_name || resolvedRole.asset.canonical_label || resolvedRole.asset.asset_id}
-                fallback={<FallbackActor role={resolvedRole.role} />}
+                fallback={
+                  foreshadowClueOpacity !== undefined ? (
+                    <ForeshadowQualificationFallbackClue
+                      opacity={foreshadowClueOpacity}
+                    />
+                  ) : (
+                    <FallbackActor role={resolvedRole.role} />
+                  )
+                }
               >
                 <Suspense fallback={loadingLabel(resolvedRole.role)}>
                   <LibraryAssetMesh
@@ -1148,11 +1348,18 @@ function AnimatedActor({
                     goldenHighlight={goldenHighlight}
                     scaleBounds={resolvedRole.render_scale_bounds}
                     scaleGroundOffset={resolvedRole.scale_ground_offset_with_render}
+                    foreshadowClueOpacity={foreshadowClueOpacity}
                   />
                 </Suspense>
               </DirectorRealAssetLoadBoundary>
             ) : (
-              <FallbackActor role={resolvedRole.role} />
+              foreshadowClueOpacity !== undefined ? (
+                <ForeshadowQualificationFallbackClue
+                  opacity={foreshadowClueOpacity}
+                />
+              ) : (
+                <FallbackActor role={resolvedRole.role} />
+              )
             )
           )}
         </group>

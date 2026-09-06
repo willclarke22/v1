@@ -956,6 +956,41 @@ export const DIRECTOR_QUALIFICATION_COMPOUND_NARRATIVE_COMPONENTS_BY_ID = {
   summarize: ["return_to_context", "hold_for_understanding"],
 } as const;
 
+/**
+ * A.11A.51 Reveal-grammar closeout: Conceal is a visibility/staging modifier,
+ * not an independent camera primitive. Reverse assumption is a semantic
+ * narrative composition whose contradiction must come from authored content.
+ * Keep both ids in the frozen compatibility taxonomy, but remove them from
+ * independent active Qualification coverage.
+ */
+export const DIRECTOR_QUALIFICATION_VISIBILITY_MODIFIER_CAPABILITY_IDS = [
+  "conceal",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_REVEAL_COMPOUND_NARRATIVE_CAPABILITY_IDS = [
+  "reverse_assumption",
+] as const;
+
+export const DIRECTOR_QUALIFICATION_REVEAL_COMPOUND_NARRATIVE_COMPONENTS_BY_ID = {
+  reverse_assumption: ["isolate", "reveal", "hold_for_understanding"],
+} as const;
+
+export function isDirectorQualificationCapabilityVisibilityModifier(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_VISIBILITY_MODIFIER_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
+export function isDirectorQualificationCapabilityRevealCompoundNarrative(
+  capabilityId: string,
+) {
+  return (
+    DIRECTOR_QUALIFICATION_REVEAL_COMPOUND_NARRATIVE_CAPABILITY_IDS as readonly string[]
+  ).includes(capabilityId);
+}
+
 export function isDirectorQualificationCapabilityComposableModifier(
   capabilityId: string,
 ) {
@@ -1046,7 +1081,9 @@ export function isDirectorQualificationCapabilityActive(capabilityId: string) {
     !isDirectorQualificationCapabilityMergeCandidate(capabilityId) &&
     !isDirectorQualificationCapabilityMerged(capabilityId) &&
     !isDirectorQualificationCapabilityComposableModifier(capabilityId) &&
-    !isDirectorQualificationCapabilityCompoundNarrative(capabilityId)
+    !isDirectorQualificationCapabilityCompoundNarrative(capabilityId) &&
+    !isDirectorQualificationCapabilityVisibilityModifier(capabilityId) &&
+    !isDirectorQualificationCapabilityRevealCompoundNarrative(capabilityId)
   );
 }
 
